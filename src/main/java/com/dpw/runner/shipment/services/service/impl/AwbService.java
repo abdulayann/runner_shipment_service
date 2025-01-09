@@ -376,7 +376,8 @@ public class AwbService implements IAwbService {
                     if (awb.getAwbShipmentInfo().getEntityType().equals(Constants.MAWB)) {
                         if(request.getFromGenerateAwbButton() != null && request.getFromGenerateAwbButton()) {
                             ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(awb.getConsolidationId()).orElse(null);
-                            consolidationService.validateRaKcForConsol(consolidationDetails);
+                            V1TenantSettingsResponse tenantSettingsResponse = commonUtils.getCurrentTenantSettings();
+                            consolidationService.validateRaKcForConsol(consolidationDetails, tenantSettingsResponse);
                         }
                         if(request.getFromGenerateAwbButton() != null && request.getFromGenerateAwbButton()
                                 &&  tenantSettings != null && ((tenantSettings.getRestrictAWBEdit() != null
@@ -394,7 +395,8 @@ public class AwbService implements IAwbService {
                     } else {
                         if(request.getFromGenerateAwbButton() != null && request.getFromGenerateAwbButton()) {
                             ShipmentDetails shipmentDetails = shipmentDao.findById(awb.getShipmentId()).orElse(null);
-                            shipmentService.validateRaKcDetails(shipmentDetails);
+                            V1TenantSettingsResponse tenantSettingsResponse = commonUtils.getCurrentTenantSettings();
+                            shipmentService.validateRaKcDetails(shipmentDetails, tenantSettingsResponse);
                         }
                         if(request.getFromGenerateAwbButton() != null && request.getFromGenerateAwbButton()
                                 &&  tenantSettings != null && ((tenantSettings.getRestrictAWBEdit() != null
@@ -531,19 +533,21 @@ public class AwbService implements IAwbService {
         try {
             // fetch consolidation info
             ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(request.getConsolidationId()).get();
-            List<Awb> awbList = new ArrayList<>();
             List<AwbPackingInfo> mawbPackingInfo = new ArrayList<>();
-            for (var consoleShipment : consolidationDetails.getShipmentsList()) {
-                if (consoleShipment.getId() != null) {
-                    List<Awb> optionalAwb = awbDao.findByShipmentIdList(Arrays.asList(consoleShipment.getId()));
-                    if (optionalAwb == null || optionalAwb.isEmpty()) {
-                        throw new ValidationException(AwbConstants.GENERATE_HAWB_BEFORE_MAWB_EXCEPTION);
-                    }
-                    Awb linkAwb = optionalAwb.stream().findFirst().get();
-                    awbList.add(linkAwb);
-                    if(linkAwb.getAwbPackingInfo() != null) {
-                        mawbPackingInfo.addAll(linkAwb.getAwbPackingInfo());
-                    }
+            List<Long> shipmentDetailsIdList = consolidationDetails.getShipmentsList()
+                    .stream()
+                    .map(ShipmentDetails::getId)
+                    .toList();
+            List<Awb> awbList = awbDao.findByShipmentIdList(shipmentDetailsIdList);
+            Map<Long, Awb> shipmentIdToAwbMap = awbList.stream()
+                    .collect(Collectors.toMap(Awb::getShipmentId, awb1 -> awb1));
+            if(awbList.size()!=shipmentDetailsIdList.size()){
+                throw new ValidationException(AwbConstants.GENERATE_HAWB_BEFORE_MAWB_EXCEPTION);
+            }
+            for(Long shipmentId : shipmentDetailsIdList) {
+                Awb linkAwb = shipmentIdToAwbMap.get(shipmentId);
+                if (linkAwb.getAwbPackingInfo() != null) {
+                    mawbPackingInfo.addAll(linkAwb.getAwbPackingInfo());
                 }
             }
 
@@ -847,19 +851,21 @@ public class AwbService implements IAwbService {
 
         // validate the request
         AwbUtility.validateConsolidationInfoBeforeGeneratingAwb(consolidationDetails);
-
-        List<Awb> awbList = new ArrayList<>();
         List<AwbPackingInfo> mawbPackingInfo = new ArrayList<>();
-        for (var consoleShipment : consolidationDetails.getShipmentsList()) {
-            if (consoleShipment.getId() != null) {
-                Optional<Awb> linkAwb = awbDao.findByShipmentIdList(Arrays.asList(consoleShipment.getId())).stream().findFirst();
-                if (linkAwb.isEmpty()) {
-                    throw new ValidationException(AwbConstants.GENERATE_HAWB_BEFORE_MAWB_EXCEPTION);
-                }
-                awbList.add(linkAwb.get());
-                if(linkAwb.get().getAwbPackingInfo() != null) {
-                    mawbPackingInfo.addAll(linkAwb.get().getAwbPackingInfo());
-                }
+        List<Long> shipmentDetailsIdList = consolidationDetails.getShipmentsList()
+                .stream()
+                .map(ShipmentDetails::getId)
+                .toList();
+        List<Awb> awbList = awbDao.findByShipmentIdList(shipmentDetailsIdList);
+        Map<Long, Awb> shipmentIdToAwbMap = awbList.stream()
+                .collect(Collectors.toMap(Awb::getShipmentId, awb1 -> awb1));
+        if(awbList.size()!=shipmentDetailsIdList.size()){
+            throw new ValidationException(AwbConstants.GENERATE_HAWB_BEFORE_MAWB_EXCEPTION);
+        }
+        for(Long shipmentId : shipmentDetailsIdList) {
+            Awb linkAwb = shipmentIdToAwbMap.get(shipmentId);
+            if (linkAwb.getAwbPackingInfo() != null) {
+                mawbPackingInfo.addAll(linkAwb.getAwbPackingInfo());
             }
         }
 
@@ -888,21 +894,23 @@ public class AwbService implements IAwbService {
         }
 
         try {
-            consolidationService.validateRaKcForConsol(consolidationDetails);
+            consolidationService.validateRaKcForConsol(consolidationDetails, tenantSettingsResponse);
         }catch (ValidationException ex){
             throw new RunnerException(ex.getMessage());
         }catch (Exception e) {
             throw new RunnerException(String.format(RA_KC_VALIDATION_MESSAGE, Constants.Consolidation));
         }
-        TenantModel tenantModel = jsonHelper.convertValue(v1Service.retrieveTenant().getEntity(), TenantModel.class);
+        V1RetrieveResponse tenantResponse = v1Service.retrieveTenant();
+        TenantModel tenantModel = jsonHelper.convertValue(tenantResponse.getEntity(), TenantModel.class);
 
         AwbCargoInfo awbCargoInfo = new AwbCargoInfo();
+        PackSummaryResponse packSummary = packingService.calculatePackSummary(consolidationDetails.getPackingList(), consolidationDetails.getTransportMode(), consolidationDetails.getContainerCategory(), new ShipmentMeasurementDetailsDto());
         Awb awb = Awb.builder()
                 .awbNumber(consolidationDetails.getMawb())
-                .awbShipmentInfo(generateMawbShipmentInfo(consolidationDetails, request, awbCargoInfo))
+                .awbShipmentInfo(generateMawbShipmentInfo(consolidationDetails, request, awbCargoInfo, tenantResponse))
                 .awbNotifyPartyInfo(generateMawbNotifyPartyinfo(consolidationDetails, request))
                 .awbRoutingInfo(generateMawbRoutingInfo(consolidationDetails, request))
-                .awbGoodsDescriptionInfo(generateMawbGoodsDescriptionInfo(consolidationDetails, request, null))
+                .awbGoodsDescriptionInfo(generateMawbGoodsDescriptionInfo(consolidationDetails, request, null, packSummary))
                 .awbOtherInfo(generateMawbOtherInfo(consolidationDetails, request))
                 //.awbPackingInfo(awbPackingInfo)
                 .consolidationId(consolidationDetails.getId())
@@ -926,12 +934,12 @@ public class AwbService implements IAwbService {
         }
     }
 
-    private AwbShipmentInfo generateMawbShipmentInfo(ConsolidationDetails consolidationDetails, CreateAwbRequest request, AwbCargoInfo awbCargoInfo) throws RunnerException {
+    private AwbShipmentInfo generateMawbShipmentInfo(ConsolidationDetails consolidationDetails, CreateAwbRequest request, AwbCargoInfo awbCargoInfo, V1RetrieveResponse tenantResponse) throws RunnerException {
         AwbShipmentInfo awbShipmentInfo = new AwbShipmentInfo();
         ArrayList<String> addressIdList = new ArrayList<>();
         TenantModel tenantModel = null;
         try {
-            tenantModel = jsonHelper.convertValue(v1Service.retrieveTenant().getEntity(), TenantModel.class);
+            tenantModel = jsonHelper.convertValue(tenantResponse.getEntity(), TenantModel.class);
         } catch (Exception e) {
             throw new RunnerException("Failed while fetching tenant info from V1");
         }
@@ -957,8 +965,11 @@ public class AwbService implements IAwbService {
 //        awbShipmentInfo.setDestinationAirport(consolidationDetails.getCarrierDetails() != null ? consolidationDetails.getCarrierDetails().getDestinationPort() : null);
         setAwbShipmentInfoUnLocationData(awbShipmentInfo, consolidationDetails.getCarrierDetails(), false, false);
         setTenantFieldsInAwbShipmentInfo(awbShipmentInfo, tenantModel);
-        if(consolidationDetails.getSendingAgent().getAddressId()!=null && consolidationDetails.getReceivingAgent().getAddressId()!=null){
-            addressIdList.addAll(List.of(consolidationDetails.getSendingAgent().getAddressId(), consolidationDetails.getReceivingAgent().getAddressId()));
+        if(consolidationDetails.getSendingAgent()!=null && consolidationDetails.getSendingAgent().getAddressId()!=null){
+            addressIdList.add(consolidationDetails.getSendingAgent().getAddressId());
+        }
+        if(consolidationDetails.getReceivingAgent()!=null && consolidationDetails.getReceivingAgent().getAddressId()!=null){
+            addressIdList.add(consolidationDetails.getReceivingAgent().getAddressId());
         }
         if(!CommonUtils.listIsNullOrEmpty(addressIdList)) {
             CommonV1ListRequest addressRequest = createCriteriaToFetchAddressList(addressIdList);
@@ -1219,8 +1230,7 @@ public class AwbService implements IAwbService {
         return null;
     }
 
-    private AwbCargoInfo generateMawbCargoInfo(ConsolidationDetails consolidationDetails, CreateAwbRequest request, List<AwbPackingInfo> awbPackingList, AwbCargoInfo awbCargoInfo, List<AwbGoodsDescriptionInfo> awbGoodsDescriptionInfos, TenantModel tenantModel) throws RunnerException {
-        PackSummaryResponse packSummary = packingService.calculatePackSummary(consolidationDetails.getPackingList(), consolidationDetails.getTransportMode(), consolidationDetails.getContainerCategory(), new ShipmentMeasurementDetailsDto());
+    private AwbCargoInfo generateMawbCargoInfo(ConsolidationDetails consolidationDetails, CreateAwbRequest request, List<AwbPackingInfo> awbPackingList, AwbCargoInfo awbCargoInfo, List<AwbGoodsDescriptionInfo> awbGoodsDescriptionInfos, TenantModel tenantModel) {
         if(awbCargoInfo == null) {
             awbCargoInfo = new AwbCargoInfo();
         }
@@ -1266,8 +1276,7 @@ public class AwbService implements IAwbService {
         return awbCargoInfo;
     }
 
-    private List<AwbGoodsDescriptionInfo> generateMawbGoodsDescriptionInfo(ConsolidationDetails consolidationDetails, CreateAwbRequest request, List<AwbPackingInfo> awbPackingList) throws RunnerException {
-        PackSummaryResponse packSummary = packingService.calculatePackSummary(consolidationDetails.getPackingList(), consolidationDetails.getTransportMode(), consolidationDetails.getContainerCategory(), new ShipmentMeasurementDetailsDto());
+    private List<AwbGoodsDescriptionInfo> generateMawbGoodsDescriptionInfo(ConsolidationDetails consolidationDetails, CreateAwbRequest request, List<AwbPackingInfo> awbPackingList, PackSummaryResponse packSummary) {
         String defaultTextForQuantAndGoods = Constants.DEFAULT_NATURE_AND_QUANTITY_GOODS_TEXT_MAWB;
         AwbGoodsDescriptionInfo awbGoodsDescriptionInfo = new AwbGoodsDescriptionInfo();
         awbGoodsDescriptionInfo.setEntityId(consolidationDetails.getId());
@@ -1442,7 +1451,7 @@ public class AwbService implements IAwbService {
         }
 
         try{
-            shipmentService.validateRaKcDetails(shipmentDetails);
+            shipmentService.validateRaKcDetails(shipmentDetails, tenantSettingsResponse);
         }catch (ValidationException ex){
             throw new RunnerException(ex.getMessage());
         }catch (Exception ex){
@@ -1450,11 +1459,12 @@ public class AwbService implements IAwbService {
         }
 
         AwbCargoInfo awbCargoInfo = new AwbCargoInfo();
-        TenantModel tenantModel = jsonHelper.convertValue(v1Service.retrieveTenant().getEntity(), TenantModel.class);
+        V1RetrieveResponse tenantResponse = v1Service.retrieveTenant();
+        TenantModel tenantModel = jsonHelper.convertValue(tenantResponse.getEntity(), TenantModel.class);
         // generate Awb Entity
         Awb awb = Awb.builder()
                 .awbNumber(request.getAwbType().equals(Constants.DMAWB) ? shipmentDetails.getMasterBill() : shipmentDetails.getHouseBill())
-                .awbShipmentInfo(generateAwbShipmentInfo(shipmentDetails, request, awbCargoInfo))
+                .awbShipmentInfo(generateAwbShipmentInfo(shipmentDetails, request, awbCargoInfo, tenantResponse))
                 .awbNotifyPartyInfo(generateAwbNotifyPartyinfo(shipmentDetails, request))
                 .awbRoutingInfo(generateAwbRoutingInfo(shipmentDetails, request))
                 .awbGoodsDescriptionInfo(generateAwbGoodsDescriptionInfo(shipmentDetails, request, awbPackingInfo))
@@ -1463,13 +1473,13 @@ public class AwbService implements IAwbService {
                 .shipmentId(shipmentDetails.getId())
                 .awbSpecialHandlingCodesMappings(sph)
                 .build();
+        populateTaxRegistrationNumber(awb, shipmentDetails);
         awb.setAwbCargoInfo(generateAwbCargoInfo(shipmentDetails, request, awbPackingInfo, awbCargoInfo, awb.getAwbGoodsDescriptionInfo(), tenantModel));
         awb.getAwbCargoInfo().setSci(shipmentDetails.getAdditionalDetails().getSci());
         return awb;
     }
 
-    private AwbShipmentInfo generateAwbShipmentInfo(ShipmentDetails shipmentDetails, CreateAwbRequest request, AwbCargoInfo awbCargoInfo) throws RunnerException {
-        ArrayList<String> addressIdList = new ArrayList<>();
+    private AwbShipmentInfo generateAwbShipmentInfo(ShipmentDetails shipmentDetails, CreateAwbRequest request, AwbCargoInfo awbCargoInfo, V1RetrieveResponse tenantResponse) throws RunnerException {
         AwbShipmentInfo awbShipmentInfo = new AwbShipmentInfo();
         Map<String, String> alpha2DigitToCountry = masterDataUtils.shipmentAddressCountryMasterData(shipmentDetails);
         awbShipmentInfo.setEntityId(shipmentDetails.getId());
@@ -1490,22 +1500,6 @@ public class AwbService implements IAwbService {
         setAwbShipmentInfoUnLocationData(awbShipmentInfo,shipmentDetails.getCarrierDetails(), false, false);
 
         awbShipmentInfo.setFirstCarrier(shipmentDetails.getCarrierDetails() != null ? shipmentDetails.getCarrierDetails().getShippingLine() : null);
-        if(shipmentDetails.getConsigner().getAddressId()!=null && shipmentDetails.getConsignee().getAddressId()!=null){
-            addressIdList.addAll(List.of(shipmentDetails.getConsigner().getAddressId(), shipmentDetails.getConsignee().getAddressId()));
-        }
-        if(!CommonUtils.listIsNullOrEmpty(addressIdList)) {
-            CommonV1ListRequest addresRequest = createCriteriaToFetchAddressList(addressIdList);
-            V1DataResponse addressResponse = v1Service.addressList(addresRequest);
-            List<AddressDataV1> addressDataList = jsonHelper.convertValueToList(addressResponse.entities, AddressDataV1.class);
-            Map<Long, AddressDataV1> addressIdToEntityOrgMap = Optional.of(addressDataList.stream()
-                    .collect(Collectors.toMap(AddressDataV1::getId, entity -> entity))).orElse(new HashMap<>());
-            if (addressIdToEntityOrgMap.containsKey(Long.valueOf(shipmentDetails.getConsigner().getAddressId()))) {
-                awbShipmentInfo.setShipperTaxRegistrationNumber(addressIdToEntityOrgMap.get(Long.valueOf(shipmentDetails.getConsigner().getAddressId())).getTaxRegNumber() != null ? StringUtility.toUpperCase(StringUtility.convertToString(addressIdToEntityOrgMap.get(Long.valueOf(shipmentDetails.getConsigner().getAddressId())).getTaxRegNumber())) : null);
-            }
-            if (addressIdToEntityOrgMap.containsKey(Long.valueOf(shipmentDetails.getConsignee().getAddressId()))) {
-                awbShipmentInfo.setConsigneeTaxRegistrationNumber(addressIdToEntityOrgMap.get(Long.valueOf(shipmentDetails.getConsignee().getAddressId())).getTaxRegNumber() != null ? StringUtility.toUpperCase(StringUtility.convertToString(addressIdToEntityOrgMap.get(Long.valueOf(shipmentDetails.getConsignee().getAddressId())).getTaxRegNumber())) : null);
-            }
-        }
         for (var orgRow : shipmentDetails.getShipmentAddresses()) {
             if (orgRow.getType().equals(Constants.FAG)) {
                 ArrayList<String> issuingAgentAddressList = new ArrayList<>();
@@ -1550,7 +1544,7 @@ public class AwbService implements IAwbService {
         }
 
         try {
-            TenantModel tenantModel = jsonHelper.convertValue(v1Service.retrieveTenant().getEntity(), TenantModel.class);
+            TenantModel tenantModel = jsonHelper.convertValue(tenantResponse.getEntity(), TenantModel.class);
             setTenantFieldsInAwbShipmentInfo(awbShipmentInfo, tenantModel);
             if (awbShipmentInfo.getIssuingAgentName() == null || awbShipmentInfo.getIssuingAgentName().isEmpty()) {
                 populateIssuingAgent(awbShipmentInfo, tenantModel, awbCargoInfo);
@@ -1569,7 +1563,6 @@ public class AwbService implements IAwbService {
     }
 
     private List<AwbNotifyPartyInfo> generateAwbNotifyPartyinfo(ShipmentDetails shipmentDetails, CreateAwbRequest request) {
-        ArrayList<String> notifyPartyAddressList = new ArrayList<>();
         if (shipmentDetails.getAdditionalDetails() != null &&
                 shipmentDetails.getAdditionalDetails().getNotifyParty() != null &&
                 shipmentDetails.getAdditionalDetails().getNotifyParty().getId() != null) {
@@ -1580,15 +1573,7 @@ public class AwbService implements IAwbService {
                 alpha3CountriesList = masterDataUtils.addAlpha3Country(shipmentNotifyParty.getAddressData(), alpha3CountriesList);
                 alpha2DigitToCountry = masterDataUtils.getCountriesMasterListData(alpha3CountriesList);
             }
-            notifyPartyAddressList.add(shipmentNotifyParty.getAddressId());
             Map<Long, AddressDataV1> notifyPartyAddressIdToEntityMap = new HashMap<>();
-            if(!CommonUtils.listIsNullOrEmpty(notifyPartyAddressList)) {
-                CommonV1ListRequest addressRequest = createCriteriaToFetchAddressList(notifyPartyAddressList);
-                V1DataResponse addressResponse = v1Service.addressList(addressRequest);
-                List<AddressDataV1> notifyPartyEntityAddressIdList = jsonHelper.convertValueToList(addressResponse.entities, AddressDataV1.class);
-                notifyPartyAddressIdToEntityMap = notifyPartyEntityAddressIdList.stream()
-                        .collect(Collectors.toMap(AddressDataV1::getId, entity -> entity));
-            }
             AwbNotifyPartyInfo notifyPartyInfo = new AwbNotifyPartyInfo();
             notifyPartyInfo.setIsShipmentCreated(true);
             var name = StringUtility.convertToString(shipmentNotifyParty.getOrgData().get(PartiesConstants.FULLNAME));
@@ -1596,13 +1581,6 @@ public class AwbService implements IAwbService {
             notifyPartyInfo.setAddress(AwbUtility.constructAddressForAwb(shipmentNotifyParty.getAddressData()).toUpperCase());
             notifyPartyInfo.setEntityId(shipmentDetails.getId());
             notifyPartyInfo.setEntityType(request.getAwbType());
-            if(shipmentNotifyParty.getAddressId()!=null && !shipmentNotifyParty.getAddressId().isEmpty()){
-                if(notifyPartyAddressIdToEntityMap.containsKey(Long.valueOf(shipmentNotifyParty.getAddressId()))){
-                    if (notifyPartyAddressIdToEntityMap.get(Long.valueOf(shipmentNotifyParty.getAddressId())).getTaxRegNumber()!=null) {
-                        notifyPartyInfo.setTaxRegistrationNumber(StringUtility.toUpperCase(StringUtility.convertToString(notifyPartyAddressIdToEntityMap.get(Long.valueOf(shipmentNotifyParty.getAddressId())).getTaxRegNumber())));
-                    }
-                }
-            }
             constructNotifyPartyAddress(notifyPartyInfo, shipmentNotifyParty.getAddressData(), alpha2DigitToCountry);
             // notifyPartyInfo.setAddressId(shipmentNotifyParty.getAddressData()); // field missing: AddressId
             notifyPartyInfo.setNotifyOrgId(shipmentNotifyParty.getId());
@@ -1987,18 +1965,21 @@ public class AwbService implements IAwbService {
         switch (resetAwbRequest.getResetType()) {
             case ALL: {
                 if(resetAwbRequest.getAwbType().equals(Constants.MAWB)) {
-                    List<Awb> awbList = new ArrayList<>();
                     List<AwbPackingInfo> mawbPackingInfo = new ArrayList<>();
-                    for (var consoleShipment : consolidationDetails.get().getShipmentsList()) {
-                        if (consoleShipment.getId() != null) {
-                            Optional<Awb> linkAwb = awbDao.findByShipmentIdList(Arrays.asList(consoleShipment.getId())).stream().findFirst();
-                            if (linkAwb.isEmpty()) {
-                                throw new ValidationException(AwbConstants.GENERATE_HAWB_BEFORE_MAWB_EXCEPTION);
-                            }
-                            awbList.add(linkAwb.get());
-                            if(linkAwb.get().getAwbPackingInfo() != null) {
-                                mawbPackingInfo.addAll(linkAwb.get().getAwbPackingInfo());
-                            }
+                    List<Long> shipmentDetailsIdList = consolidationDetails.get().getShipmentsList()
+                            .stream()
+                            .map(ShipmentDetails::getId)
+                            .toList();
+                    List<Awb> awbList = awbDao.findByShipmentIdList(shipmentDetailsIdList);
+                    Map<Long, Awb> shipmentIdToAwbMap = awbList.stream()
+                            .collect(Collectors.toMap(Awb::getShipmentId, awb1 -> awb1));
+                    if(awbList.size()!=shipmentDetailsIdList.size()){
+                        throw new ValidationException(AwbConstants.GENERATE_HAWB_BEFORE_MAWB_EXCEPTION);
+                    }
+                    for(Long shipmentId : shipmentDetailsIdList) {
+                        Awb linkAwb = shipmentIdToAwbMap.get(shipmentId);
+                        if (linkAwb.getAwbPackingInfo() != null) {
+                            mawbPackingInfo.addAll(linkAwb.getAwbPackingInfo());
                         }
                     }
                     Awb resetAwb = generateMawb(createAwbRequest, consolidationDetails.get(), mawbPackingInfo);
@@ -2043,7 +2024,8 @@ public class AwbService implements IAwbService {
             }
             case AWB_PACKS_AND_GOODS: {
                 if (resetAwbRequest.getAwbType().equals(Constants.MAWB)) {
-                    awb.setAwbGoodsDescriptionInfo(generateMawbGoodsDescriptionInfo(consolidationDetails.get(), createAwbRequest, null));
+                    PackSummaryResponse packSummary = packingService.calculatePackSummary(consolidationDetails.get().getPackingList(), consolidationDetails.get().getTransportMode(), consolidationDetails.get().getContainerCategory(), new ShipmentMeasurementDetailsDto());
+                    awb.setAwbGoodsDescriptionInfo(generateMawbGoodsDescriptionInfo(consolidationDetails.get(), createAwbRequest, null, packSummary));
                     updateLinkHawbMawb(consolidationDetails.get(), awbId);
                 }
                 else {
@@ -3515,12 +3497,12 @@ public class AwbService implements IAwbService {
         try {
             if(awbType.equalsIgnoreCase(MAWB)) {
                 ConsolidationDetails consol = consolidationDetailsDao.findById(awb.getConsolidationId()).get();
-                defaultAwbShipmentInfo = jsonHelper.convertValue(generateMawbShipmentInfo(consol, createAwbRequest, new AwbCargoInfo()), AwbShipmentInfoResponse.class);
+                defaultAwbShipmentInfo = jsonHelper.convertValue(generateMawbShipmentInfo(consol, createAwbRequest, new AwbCargoInfo(), v1Service.retrieveTenant()), AwbShipmentInfoResponse.class);
                 defaultRoutingInfo = jsonHelper.convertValueToList(generateMawbRoutingInfo(consol, createAwbRequest), AwbRoutingInfoResponse.class);
                 defaultNotifyPartyInfo = generateMawbNotifyPartyinfo(consol, createAwbRequest);
             } else {
                 ShipmentDetails shipment = shipmentDao.findById(awb.getShipmentId()).get();
-                defaultAwbShipmentInfo = jsonHelper.convertValue(generateAwbShipmentInfo(shipment, createAwbRequest, new AwbCargoInfo()), AwbShipmentInfoResponse.class);
+                defaultAwbShipmentInfo = jsonHelper.convertValue(generateAwbShipmentInfo(shipment, createAwbRequest, new AwbCargoInfo(), v1Service.retrieveTenant()), AwbShipmentInfoResponse.class);
                 defaultRoutingInfo = jsonHelper.convertValueToList(generateAwbRoutingInfo(shipment, createAwbRequest), AwbRoutingInfoResponse.class);
                 defaultNotifyPartyInfo = generateAwbNotifyPartyinfo(shipment, createAwbRequest);
             }
@@ -3606,6 +3588,54 @@ public class AwbService implements IAwbService {
         return locMap.get(name);
     }
 
+    private void populateTaxRegistrationNumber(Awb awb, ShipmentDetails shipmentDetails) {
+        ArrayList<String> addressIdList = new ArrayList<>();
+        if (shipmentDetails.getConsigner() != null && shipmentDetails.getConsigner().getAddressId() != null) {
+            addressIdList.add(shipmentDetails.getConsigner().getAddressId());
+        }
+        if (shipmentDetails.getConsignee() != null && shipmentDetails.getConsignee().getAddressId() != null) {
+            addressIdList.add(shipmentDetails.getConsignee().getAddressId());
+        }
+        if (shipmentDetails.getAdditionalDetails() != null &&
+                shipmentDetails.getAdditionalDetails().getNotifyParty() != null &&
+                shipmentDetails.getAdditionalDetails().getNotifyParty().getAddressId() != null) {
+            addressIdList.add(shipmentDetails.getAdditionalDetails().getNotifyParty().getAddressId());
+        }
+        if (!CommonUtils.listIsNullOrEmpty(addressIdList)) {
+            CommonV1ListRequest addressRequest = createCriteriaToFetchAddressList(addressIdList);
+            V1DataResponse addressResponse = v1Service.addressList(addressRequest);
+            List<AddressDataV1> addressDataList = jsonHelper.convertValueToList(addressResponse.entities, AddressDataV1.class);
+
+            Map<Long, AddressDataV1> addressIdToEntityOrgMap = addressDataList.stream()
+                    .collect(Collectors.toMap(AddressDataV1::getId, entity -> entity));
+            Long consignerAddressId = Long.valueOf(shipmentDetails.getConsigner().getAddressId());
+            if (addressIdToEntityOrgMap.containsKey(consignerAddressId)) {
+                AddressDataV1 consignerAddressData = addressIdToEntityOrgMap.get(consignerAddressId);
+                String consignerTaxRegNumber = consignerAddressData.getTaxRegNumber() != null
+                        ? StringUtility.toUpperCase(StringUtility.convertToString(consignerAddressData.getTaxRegNumber()))
+                        : null;
+                awb.getAwbShipmentInfo().setShipperTaxRegistrationNumber(consignerTaxRegNumber);
+            }
+
+            Long consigneeAddressId = Long.valueOf(shipmentDetails.getConsignee().getAddressId());
+            if (addressIdToEntityOrgMap.containsKey(consigneeAddressId)) {
+                AddressDataV1 consigneeAddressData = addressIdToEntityOrgMap.get(consigneeAddressId);
+                String consigneeTaxRegNumber = consigneeAddressData.getTaxRegNumber() != null
+                        ? StringUtility.toUpperCase(StringUtility.convertToString(consigneeAddressData.getTaxRegNumber()))
+                        : null;
+                awb.getAwbShipmentInfo().setConsigneeTaxRegistrationNumber(consigneeTaxRegNumber);
+            }
+            Long notifyAddressId = Long.valueOf(shipmentDetails.getAdditionalDetails().getNotifyParty().getAddressId());
+            if(addressIdToEntityOrgMap.containsKey(notifyAddressId)) {
+                AddressDataV1 notifyAddressData = addressIdToEntityOrgMap.get(notifyAddressId);
+                String notifyTaxRegNumber = notifyAddressData.getTaxRegNumber() !=null
+                        ? StringUtility.toUpperCase(StringUtility.convertToString(notifyAddressData.getTaxRegNumber()))
+                        : null;
+                awb.getAwbNotifyPartyInfo().get(0).setTaxRegistrationNumber(notifyTaxRegNumber);
+            }
+        }
+    }
+
     private void populateIssuingAgent(AwbShipmentInfo awbShipmentInfo, TenantModel tenantModel, AwbCargoInfo awbCargoInfo) throws RunnerException {
         if(tenantModel.DefaultOrgId != null) {
             // Fetch Organization Data for defaultOrgId
@@ -3631,8 +3661,10 @@ public class AwbService implements IAwbService {
                     }
                     Map<Long, EntityTransferAddress> issuingAgentAddressIdToEntityMap = Optional.of(addressList.stream().collect(Collectors.toMap(EntityTransferAddress::getId, entity -> entity))).orElse(new HashMap<>());
                     awbShipmentInfo.setIssuingAgentName(StringUtility.toUpperCase(orgList.get(0).getFullName()));
-                    if(issuingAgentAddressIdToEntityMap.containsKey(tenantModel.getDefaultAddressId())) {
-                        awbShipmentInfo.setIssuingAgentTaxRegistrationNumber(issuingAgentAddressIdToEntityMap.get(tenantModel.getDefaultAddressId()).getTaxRegNumber()!=null ? StringUtility.toUpperCase(issuingAgentAddressIdToEntityMap.get(tenantModel.getDefaultAddressId()).getTaxRegNumber()):null);
+                    Long defaultAddressId = tenantModel.getDefaultAddressId();
+
+                    if(issuingAgentAddressIdToEntityMap.containsKey(defaultAddressId)) {
+                        awbShipmentInfo.setIssuingAgentTaxRegistrationNumber(issuingAgentAddressIdToEntityMap.get(defaultAddressId).getTaxRegNumber()!=null ? StringUtility.toUpperCase(issuingAgentAddressIdToEntityMap.get(defaultAddressId).getTaxRegNumber()):null);
                     }
                     awbShipmentInfo.setIataCode(awbShipmentInfo.getIataCode() == null ? orgList.get(0).getAgentIATACode() : awbShipmentInfo.getIataCode());
                     awbShipmentInfo.setAgentCASSCode(awbShipmentInfo.getAgentCASSCode() == null ?
@@ -3919,11 +3951,18 @@ public class AwbService implements IAwbService {
             String errorString = String.join(", ", emptyFieldsError);
             throw new ValidationException("Please add " + errorString + " and retry");
         }
-        List<String> unlocoRequests = new ArrayList<>(List.of(iataFetchRateRequest.getOriginPort(), iataFetchRateRequest.getDestinationPort()));
-        Set<String> carrierRequests = new HashSet<>(List.of(iataFetchRateRequest.getFlightCarrier()));
-
-        Map<String, UnlocationsResponse> unlocationsMap = masterDataUtils.getLocationData(new HashSet<>(unlocoRequests));
-        Map<String, EntityTransferCarrier> carriersMap = masterDataUtils.fetchInBulkCarriers(carrierRequests);
+        CompletableFuture<Map<String, UnlocationsResponse>> unlocationsFuture = CompletableFuture.supplyAsync(() ->
+                masterDataUtils.getLocationData(Set.of(iataFetchRateRequest.getOriginPort(), iataFetchRateRequest.getDestinationPort()))
+        );
+        CompletableFuture<Map<String, EntityTransferCarrier>> carriersFuture = CompletableFuture.supplyAsync(() ->
+                masterDataUtils.fetchInBulkCarriers(Set.of(iataFetchRateRequest.getFlightCarrier()))
+        );
+        CompletableFuture.allOf(unlocationsFuture, carriersFuture).join();
+        Map<String, UnlocationsResponse> unlocationsMap = unlocationsFuture.join();
+        Map<String, EntityTransferCarrier> carriersMap = carriersFuture.join();
+        if (unlocationsMap.isEmpty() || carriersMap.isEmpty()) {
+            throw new ValidationException("Invalid data fetched for location or carriers.");
+        }
         String origin = unlocationsMap.containsKey(iataFetchRateRequest.getOriginPort())? unlocationsMap.get(iataFetchRateRequest.getOriginPort()).getIataCode() : null;
         String destination = unlocationsMap.containsKey(iataFetchRateRequest.getDestinationPort())? unlocationsMap.get(iataFetchRateRequest.getDestinationPort()).getIataCode(): null;
         String carrier = carriersMap.containsKey(iataFetchRateRequest.getFlightCarrier())? carriersMap.get(iataFetchRateRequest.getFlightCarrier()).IATACode : null;
@@ -3990,15 +4029,8 @@ public class AwbService implements IAwbService {
                 }
                 int size = weightList.size();
                 for(int i = 0; i < size; i++) {
-                    if(i == (size-1) && chargeableWeight.compareTo(weightList.get(i)) >= 0){
-                        IataFetchRateResponse iataFetchRateResponse = IataFetchRateResponse.builder()
-                                .rateClass(RateClass.Q.getId())
-                                .rateCharge(weightBreakMap.get(weightList.get(i)))
-                                .build();
-                        return ResponseHelper.buildSuccessResponse(iataFetchRateResponse);
-                    }
-                    if(chargeableWeight.compareTo(weightList.get(i)) >= 0 &&
-                            chargeableWeight.compareTo(weightList.get(i + 1)) < 0){
+                    BigDecimal currentWeight = weightList.get(i);
+                    if (chargeableWeight.compareTo(currentWeight) >= 0 && (i== (size-1) || chargeableWeight.compareTo(weightList.get(i + 1)) < 0)) {
                         IataFetchRateResponse iataFetchRateResponse = IataFetchRateResponse.builder()
                                 .rateClass(RateClass.Q.getId())
                                 .rateCharge(weightBreakMap.get(weightList.get(i)))

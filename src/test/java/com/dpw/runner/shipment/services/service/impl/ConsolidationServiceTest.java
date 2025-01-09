@@ -4437,10 +4437,9 @@ import java.util.stream.Collectors;
 
 //        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
-        mockTenantSettings();
         String errorMessage = "Screening Status and Security Status is mandatory for RA.";
         Exception e = assertThrows(RunnerException.class, () -> {
-            spyService.validateRaKcForConsol(consolidationDetails);
+            spyService.validateRaKcForConsol(consolidationDetails, V1TenantSettingsResponse.builder().EnableAirMessaging(true).build());
         });
 
         assertEquals(errorMessage, e.getMessage());
@@ -4514,11 +4513,10 @@ import java.util.stream.Collectors;
 
 //        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
-        mockTenantSettings();
 
         String errorMessage = "Screening Status and Security Status is mandatory for RA.";
         Exception e = assertThrows(RunnerException.class, () -> {
-            spyService.validateRaKcForConsol(consolidationDetails);
+            spyService.validateRaKcForConsol(consolidationDetails, V1TenantSettingsResponse.builder().EnableAirMessaging(true).build());
         });
 
         assertEquals(errorMessage, e.getMessage());
@@ -4556,10 +4554,9 @@ import java.util.stream.Collectors;
 
 //        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
-        mockTenantSettings();
         String errorMessage = "Screening Status and Security Status is mandatory for RA.";
         Exception e = assertThrows(RunnerException.class, () -> {
-            spyService.validateRaKcForConsol(consolidationDetails);
+            spyService.validateRaKcForConsol(consolidationDetails, V1TenantSettingsResponse.builder().EnableAirMessaging(true).build());
         });
 
         assertEquals(errorMessage, e.getMessage());
@@ -4597,8 +4594,7 @@ import java.util.stream.Collectors;
 
 //        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
-        mockTenantSettings();
-        spyService.validateRaKcForConsol(consolidationDetails);
+        spyService.validateRaKcForConsol(consolidationDetails,V1TenantSettingsResponse.builder().EnableAirMessaging(true).build());
         verify(v1ServiceUtil, times(1)).fetchOrgInfoFromV1(anyList());
     }
 
@@ -4634,10 +4630,9 @@ import java.util.stream.Collectors;
 
 //        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
-        mockTenantSettings();
         String errorMessage = "Screening Status and Security Status is mandatory for RA.";
         Exception e = assertThrows(RunnerException.class, () -> {
-            spyService.validateRaKcForConsol(consolidationDetails);
+            spyService.validateRaKcForConsol(consolidationDetails, V1TenantSettingsResponse.builder().EnableAirMessaging(true).build());
         });
 
         assertEquals(errorMessage, e.getMessage());
@@ -4677,10 +4672,9 @@ import java.util.stream.Collectors;
 
 //        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
-        mockTenantSettings();
         String errorMessage = "Screening Status and Security Status is mandatory for RA.";
         Exception e = assertThrows(RunnerException.class, () -> {
-            spyService.validateRaKcForConsol(consolidationDetails);
+            spyService.validateRaKcForConsol(consolidationDetails, V1TenantSettingsResponse.builder().EnableAirMessaging(true).build());
         });
 
         assertEquals(errorMessage, e.getMessage());
@@ -4720,8 +4714,7 @@ import java.util.stream.Collectors;
 
 //        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
-        mockTenantSettings();
-        spyService.validateRaKcForConsol(consolidationDetails);
+        spyService.validateRaKcForConsol(consolidationDetails, V1TenantSettingsResponse.builder().EnableAirMessaging(true).build());
         verify(v1ServiceUtil, times(1)).fetchOrgInfoFromV1(any());
     }
 
@@ -4760,10 +4753,9 @@ import java.util.stream.Collectors;
 
 //        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
-        mockTenantSettings();
         String errorMessage = "Screening Status and Security Status is mandatory for RA.";
         Exception e = assertThrows(RunnerException.class, () -> {
-            spyService.validateRaKcForConsol(consolidationDetails);
+            spyService.validateRaKcForConsol(consolidationDetails, V1TenantSettingsResponse.builder().EnableAirMessaging(true).build());
         });
 
         assertEquals(errorMessage, e.getMessage());
