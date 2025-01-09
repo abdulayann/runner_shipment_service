@@ -36,6 +36,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -200,6 +201,33 @@ class QuoteContractsServiceTest {
         listContractResponse.getContracts().get(0).getContract_usage().get(0).getFilter_params().setCargo_type(null);
         quoteContractsService.updateQuoteContracts(listContractResponse);
         verify(quoteContractsDao, Mockito.times(1)).save(any());
+    }
+
+    @Test
+    void getQuoteContractsByContractId_NullResponse() {
+        assertNull(quoteContractsService.getQuoteContractsByContractId(null));
+    }
+
+    @Test
+    void getQuoteContractsByContractId() {
+        String contractId = "contract";
+        var quoteContractsResponse = List.of(QuoteContracts.builder().build());
+        when(quoteContractsDao.findByContractId(anyString())).thenReturn(quoteContractsResponse);
+
+        var response = quoteContractsService.getQuoteContractsByContractId(contractId);
+        assertNotNull(response);
+
+        verify(quoteContractsDao, Mockito.times(1)).findByContractId(anyString());
+    }
+
+    @Test
+    void getQuoteContractsByContractId_EmptyList() {
+        String contractId = "contract";
+        when(quoteContractsDao.findByContractId(anyString())).thenReturn(Collections.emptyList());
+
+        quoteContractsService.getQuoteContractsByContractId(contractId);
+
+        verify(quoteContractsDao, Mockito.times(1)).findByContractId(anyString());
     }
 
 }

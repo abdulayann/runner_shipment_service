@@ -8,10 +8,14 @@ import com.dpw.runner.shipment.services.document.request.documentmanager.Documen
 import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerFileAndRulesRequest;
 import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerSaveFileRequest;
 import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerTempFileUploadRequest;
+import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerMultipleEntityFileRequest;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerBulkDownloadResponse;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerDataResponse;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerResponse;
+import com.dpw.runner.shipment.services.document.response.DocumentManagerListResponse;
+import com.dpw.runner.shipment.services.document.response.DocumentManagerEntityFileResponse;
 import com.dpw.runner.shipment.services.dto.request.CopyDocumentsRequest;
+import com.dpw.runner.shipment.services.exception.exceptions.DocumentClientException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.utils.Generated;
@@ -37,6 +41,10 @@ public class DocumentManagerRestClient {
 
     @Value("${document-manager.copy-file}")
     private String copyFileUrl;
+
+    @Value("${document-manager.multipleEntityFilesWithTenant}")
+    private String multipleEntityFilesWithTenantUrl;
+
     private JsonHelper jsonHelper;
 
     private RestTemplate restTemplate;
@@ -154,6 +162,27 @@ public class DocumentManagerRestClient {
             log.error("Error in Copy document Api from Document Service: {}", ex.getMessage());
             // It's good practice to handle exceptions in async methods
             return CompletableFuture.failedFuture(ex);
+        }
+    }
+
+    public DocumentManagerListResponse<DocumentManagerEntityFileResponse> multipleEntityFilesWithTenant(DocumentManagerMultipleEntityFileRequest request) {
+        try {
+            HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
+            HttpEntity<DocumentManagerMultipleEntityFileRequest> requestEntity = new HttpEntity<>(request, headers);
+            String url = baseUrl + multipleEntityFilesWithTenantUrl;
+
+            ResponseEntity<DocumentManagerListResponse<DocumentManagerEntityFileResponse>> responseEntity = restTemplate.exchange(
+                    url,
+                    HttpMethod.POST,
+                    requestEntity,
+                    new ParameterizedTypeReference<>() {
+                    }
+            );
+
+            return responseEntity.getBody();
+        } catch (Exception ex) {
+            log.error("Error in MultipleEntityFilesWithTenant Api from Document Service: {}", ex.getMessage());
+            throw new DocumentClientException(ex.getMessage());
         }
     }
 }

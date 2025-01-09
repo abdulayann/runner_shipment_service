@@ -7,9 +7,12 @@ import com.dpw.runner.shipment.services.document.request.documentmanager.Documen
 import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerFileAndRulesRequest;
 import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerSaveFileRequest;
 import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerTempFileUploadRequest;
+import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerMultipleEntityFileRequest;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerBulkDownloadResponse;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerDataResponse;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerResponse;
+import com.dpw.runner.shipment.services.document.response.DocumentManagerEntityFileResponse;
+import com.dpw.runner.shipment.services.document.response.DocumentManagerListResponse;
 import com.dpw.runner.shipment.services.document.service.IDocumentManagerService;
 import com.dpw.runner.shipment.services.document.util.FileUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -84,6 +87,12 @@ public class DocumentManagerServiceImpl implements IDocumentManagerService {
         String token = httpServletRequest.getHeader(HttpHeaders.AUTHORIZATION);
         log.info("fileAndRulesRequest: {}", request);
         return restClient.getBulkDownloadLink(token, request);
+    }
+
+    @Override
+    public DocumentManagerListResponse<DocumentManagerEntityFileResponse> fetchMultipleFilesWithTenant(DocumentManagerMultipleEntityFileRequest request) {
+        log.info("multipleEntityFilesWithTenantRequest: {}", request);
+        return restClient.multipleEntityFilesWithTenant(request);
     }
 
 }

@@ -17,6 +17,7 @@ import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
 import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
 import com.dpw.runner.shipment.services.dto.request.ServiceDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentOrderRequest;
+import com.dpw.runner.shipment.services.dto.request.TriangulationPartnerRequest;
 import com.dpw.runner.shipment.services.dto.request.TruckDriverDetailsRequest;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -102,7 +103,7 @@ public class ShipmentPatchRequest extends CommonRequest implements IRunnerReques
     private JsonNullable<Long> sourceTenantId;
     private JsonNullable<Integer> status;
     private JsonNullable<String> transportMode;
-    private JsonNullable<List<Long>> triangulationPartnerList;
+    private JsonNullable<List<TriangulationPartnerRequest>> triangulationPartnerList;
     private JsonNullable<Long> triangulationPartner;
     private List<TruckDriverDetailsRequest> truckDriverDetails;
     private JsonNullable<BigDecimal> volume;
@@ -127,4 +128,5 @@ public class ShipmentPatchRequest extends CommonRequest implements IRunnerReques
     private List<ShipmentOrderRequest> shipmentOrders;
     private JsonNullable<Boolean> isNetworkFile;
     private JsonNullable<Boolean> isReceivingBranchManually;
+    private JsonNullable<Boolean> isTransferredToReceivingBranch;
 }

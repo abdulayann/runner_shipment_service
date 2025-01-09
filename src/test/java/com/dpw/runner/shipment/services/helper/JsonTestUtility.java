@@ -470,4 +470,8 @@ public class JsonTestUtility {
     public EntityTransferConsolidationDetails getImportConsolidationSea() {
         return objectMapper.convertValue(payload.get("entityTransferConsolidationDetailsSea"), EntityTransferConsolidationDetails.class);
     }
+
+    public Notification getNotification() {
+        return objectMapper.convertValue(payload.get("NOTIFICATION_RESPONSE"), Notification.class);
+    }
 }

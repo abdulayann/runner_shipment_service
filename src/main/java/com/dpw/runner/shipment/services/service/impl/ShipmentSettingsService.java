@@ -394,6 +394,8 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             if(request.getEventsRevampEnabled() == null) {
                 request.setEventsRevampEnabled(oldEntity.get().getEventsRevampEnabled());
             }
+            if(request.getIsAwbRevampEnabled() == null)
+                request.setIsAwbRevampEnabled(oldEntity.get().getIsAwbRevampEnabled());
             if(request.getHawbLockSettings() != null && oldEntity.get().getHawbLockSettings() != null) {
                 request.getHawbLockSettings().setId(oldEntity.get().getHawbLockSettings().getId());
                 request.getHawbLockSettings().setGuid(oldEntity.get().getHawbLockSettings().getGuid());
@@ -405,6 +407,15 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             if(request.getHblLockSettings() != null && oldEntity.get().getHblLockSettings() != null) {
                 request.getHblLockSettings().setId(oldEntity.get().getHblLockSettings().getId());
                 request.getHblLockSettings().setGuid(oldEntity.get().getHblLockSettings().getGuid());
+            }
+            if(request.getIsAlwaysUtilization() == null) {
+                request.setIsAlwaysUtilization(oldEntity.get().getIsAlwaysUtilization());
+            }
+            if(request.getIsUtilizationForContainerQuoted() == null) {
+                request.setIsUtilizationForContainerQuoted(oldEntity.get().getIsUtilizationForContainerQuoted());
+            }
+            if(request.getHasNoUtilization() == null) {
+                request.setHasNoUtilization(oldEntity.get().getHasNoUtilization());
             }
             ShipmentSettingsDetails shipmentSettingsDetails = convertRequestToEntity(request);
 
@@ -711,9 +722,15 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             ShipmentSettingsDetails oldShipmentSettingsDetails = oldEntity.get();
             Boolean oldEntityTransferFlag = oldShipmentSettingsDetails.getIsEntityTransferPrerequisiteEnabled();
             Boolean newEntityTransferFlag = (shipmentSettingsPatchRequest.getIsEntityTransferPrerequisiteEnabled() != null) && shipmentSettingsPatchRequest.getIsEntityTransferPrerequisiteEnabled().orElse(false);
+            Boolean newNetworkTransferFlag = (shipmentSettingsPatchRequest.getIsNetworkTransferEntityEnabled() != null) && shipmentSettingsPatchRequest.getIsNetworkTransferEntityEnabled().orElse(false);
+            Boolean newAutomaticTransferFlag = (shipmentSettingsPatchRequest.getIsAutomaticTransferEnabled() != null) && shipmentSettingsPatchRequest.getIsAutomaticTransferEnabled().orElse(false);
+            Boolean newAwbRevampFlag = (shipmentSettingsPatchRequest.getIsAwbRevampEnabled() !=null) && shipmentSettingsPatchRequest.getIsAwbRevampEnabled().orElse(false);
             LocalDateTime oldEntityTransferEnabledDate = oldShipmentSettingsDetails.getIsEntityTransferPrerequisiteEnabledDate();
             shipmentSettingsMapper.update(shipmentSettingsPatchRequest, oldShipmentSettingsDetails);
             oldShipmentSettingsDetails.setIsEntityTransferPrerequisiteEnabled(newEntityTransferFlag);
+            oldShipmentSettingsDetails.setIsNetworkTransferEntityEnabled(newNetworkTransferFlag);
+            oldShipmentSettingsDetails.setIsAutomaticTransferEnabled(newAutomaticTransferFlag);
+            oldShipmentSettingsDetails.setIsAwbRevampEnabled(newAwbRevampFlag);
             if(Boolean.TRUE.equals(newEntityTransferFlag)) {
                 oldShipmentSettingsDetails.setIsEntityTransferPrerequisiteEnabledDate(Boolean.FALSE.equals(oldEntityTransferFlag) ? LocalDateTime.now(): oldEntityTransferEnabledDate);
             } else {

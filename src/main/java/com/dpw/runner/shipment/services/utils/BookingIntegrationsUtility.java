@@ -1,18 +1,12 @@
 package com.dpw.runner.shipment.services.utils;
 
 
-import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
-
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IPlatformServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
-import com.dpw.runner.shipment.services.commons.constants.EventConstants;
-import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
-import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -20,36 +14,17 @@ import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IIntegrationResponseDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
+import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
-import com.dpw.runner.shipment.services.dto.request.platform.ChargesRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.DimensionDTO;
-import com.dpw.runner.shipment.services.dto.request.platform.DocumentMetaDTO;
-import com.dpw.runner.shipment.services.dto.request.platform.HazardousInfoRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.LoadRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.OrgRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.PlatformCreateRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.PlatformUpdateRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.ReeferInfoRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.ReferenceNumbersRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.RouteLegRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.RouteRequest;
+import com.dpw.runner.shipment.services.dto.request.platform.*;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
 import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.UpdateOrgCreditLimitBookingResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1ShipmentCreationResponse;
-import com.dpw.runner.shipment.services.entity.BookingCharges;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.CustomerBooking;
-import com.dpw.runner.shipment.services.entity.Events;
-import com.dpw.runner.shipment.services.entity.IntegrationResponse;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.Parties;
-import com.dpw.runner.shipment.services.entity.Routings;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
@@ -58,7 +33,6 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferChargeType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferVessels;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
-import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -67,21 +41,9 @@ import com.dpw.runner.shipment.services.kafka.dto.DocumentDto.Document;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
+import com.dpw.runner.shipment.services.service.interfaces.IEventService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
@@ -95,6 +57,15 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
+import static com.dpw.runner.shipment.services.commons.constants.PartiesConstants.*;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.validator.constants.CustomerBookingConstants.*;
 
 
 /**
@@ -129,6 +100,10 @@ public class BookingIntegrationsUtility {
     private CommonUtils commonUtils;
     @Autowired
     private IEventDao eventDao;
+    @Autowired
+    private IEventService eventService;
+    @Autowired
+    private IV1Service iv1Service;
 
     @Value("${platform.failure.notification.enabled}")
     private Boolean isFailureNotificationEnabled;
@@ -312,8 +287,56 @@ public class BookingIntegrationsUtility {
                 .source("RUNNER")
                 .status(platformStatusMap.get(customerBooking.getBookingStatus()))
                 .referenceNumbers(new ArrayList<>())
+                .addresses(getPartyAddresses(customerBooking.getCustomer(), customerBooking.getConsignor(), customerBooking.getConsignee(), customerBooking.getNotifyParty()))
                 .build();
         return CommonRequestModel.builder().data(platformCreateRequest).build();
+    }
+
+    private List<Map<String, Object>> getPartyAddresses(Parties client, Parties consignor, Parties consignee, Parties notifyParty) {
+        List<Map<String, Object>> response = new ArrayList<>();
+        if(client != null && client.getOrgData() != null && client.getAddressData() != null) {
+            response.add(getPartyObjectForPlatform(client, "CLIENT"));
+        }
+        if(consignor != null && consignor.getOrgData() != null && consignor.getAddressData() != null) {
+            response.add(getPartyObjectForPlatform(consignor, "CONSIGNOR"));
+        }
+        if(consignee != null && consignee.getOrgData() != null && consignee.getAddressData() != null) {
+            response.add(getPartyObjectForPlatform(consignee, "CONSIGNEE"));
+        }
+        if(notifyParty != null && notifyParty.getOrgData() != null && notifyParty.getAddressData() != null) {
+            response.add(getPartyObjectForPlatform(notifyParty, "NOTIFY_PARTY1"));
+        }
+        return response;
+    }
+
+    private Map<String, Object> getPartyObjectForPlatform(Parties parties, String partyType) {
+        Map<String, Object> map = new HashMap<>();
+        // Org Data
+        if(parties.getOrgData().containsKey(FULLNAME))
+            map.put("name", parties.getOrgData().get(FULLNAME));
+        if(parties.getOrgData().containsKey(PartiesConstants.ORGANIZATION_CODE))
+            map.put("org_code", parties.getOrgData().get(PartiesConstants.ORGANIZATION_CODE));
+        map.put("address_type", partyType);
+        // Address Data
+        if(parties.getAddressData().containsKey(PartiesConstants.ADDRESS1))
+            map.put("address1", parties.getAddressData().get(PartiesConstants.ADDRESS1));
+        if(parties.getAddressData().containsKey(PartiesConstants.ADDRESS2))
+            map.put("address2", parties.getAddressData().get(PartiesConstants.ADDRESS2));
+        if(parties.getAddressData().containsKey(PartiesConstants.COUNTRY))
+            map.put("country", parties.getAddressData().get(PartiesConstants.COUNTRY));
+        if(parties.getAddressData().containsKey(PartiesConstants.CITY))
+            map.put("city", parties.getAddressData().get(PartiesConstants.CITY));
+        if(parties.getAddressData().containsKey(PartiesConstants.STATE))
+            map.put("state", parties.getAddressData().get(PartiesConstants.STATE));
+        if(parties.getAddressData().containsKey(PartiesConstants.ZIP_POST_CODE))
+            map.put("zip_postcode", parties.getAddressData().get(PartiesConstants.ZIP_POST_CODE));
+        if(parties.getAddressData().containsKey(PartiesConstants.CONTACT_PHONE))
+            map.put("contact_phone", parties.getAddressData().get(PartiesConstants.CONTACT_PHONE));
+        if(parties.getAddressData().containsKey(PartiesConstants.EMAIL))
+            map.put("email", parties.getAddressData().get(PartiesConstants.EMAIL));
+        if(parties.getAddressData().containsKey(PartiesConstants.ADDRESS_SHORT_CODE))
+            map.put("office_code", parties.getAddressData().get(PartiesConstants.ADDRESS_SHORT_CODE));
+        return map;
     }
 
     private String getCarrierSCACCodeFromItemValue(String itemValue) {
@@ -613,6 +636,7 @@ public class BookingIntegrationsUtility {
                         sales_agent_secondary_email(StringUtility.isEmpty(shipmentDetails.getSecondarySalesAgentEmail()) ? null : shipmentDetails.getSecondarySalesAgentEmail()).
                         build())
                 .created_at(shipmentDetails.getBookingCreatedDate())
+                .addresses(getPartyAddresses(shipmentDetails.getClient(), shipmentDetails.getConsigner(), shipmentDetails.getConsignee(), shipmentDetails.getAdditionalDetails().getNotifyParty()))
                 .build();
         return CommonRequestModel.builder().data(platformUpdateRequest).build();
     }
@@ -668,32 +692,126 @@ public class BookingIntegrationsUtility {
         return OrgRequest.builder()
                 .org_id(parties.getOrgCode())
                 .office_id(parties.getAddressCode())
-                .org_name(String.valueOf(parties.getOrgData().get(PartiesConstants.FULLNAME)))
+                .org_name(String.valueOf(parties.getOrgData().get(FULLNAME)))
                 .build();
+    }
+
+    private void setOrgDataInPartiesRequest(String partyType, Map<String, PartiesRequest> requestMap, Map organizationRow, PartiesRequest party,
+                                            List<Long> orgIds) {
+        if(requestMap.containsKey(partyType) && requestMap.get(partyType).getOrgCode().equals(organizationRow.get(PartiesConstants.ORGANIZATION_CODE))) {
+            party.setOrgCode(organizationRow.get(PartiesConstants.ORGANIZATION_CODE).toString());
+            party.setOrgData(organizationRow);
+            if(organizationRow.containsKey(PartiesConstants.ID)) {
+                party.setOrgId(String.valueOf(organizationRow.get(PartiesConstants.ID)));
+                orgIds.add(Long.valueOf(organizationRow.get(PartiesConstants.ID).toString()));
+            }
+        }
+    }
+
+    private void setAddressDataInPartiesRequest(String partyType, Map<String, PartiesRequest> requestMap, Map addressRow, PartiesRequest party) {
+        if(addressRow.containsKey(ORG_ID) && party.getOrgId() != null && requestMap.containsKey(partyType) &&
+                Objects.equals(Long.valueOf(addressRow.get(ORG_ID).toString()), Long.valueOf(party.getOrgId())) &&
+                Objects.equals(requestMap.get(partyType).getAddressCode(), addressRow.get(PartiesConstants.ADDRESS_SHORT_CODE))) {
+            party.setAddressCode(addressRow.get(PartiesConstants.ADDRESS_SHORT_CODE).toString());
+            party.setAddressData(addressRow);
+            if(addressRow.containsKey(PartiesConstants.ID)) {
+                party.setAddressId(String.valueOf(addressRow.get(PartiesConstants.ID)));
+            }
+        }
+    }
+
+    public void transformOrgAndAddressPayloadToGivenParties(Map<String, PartiesRequest> requestMap) {
+        if(requestMap == null || requestMap.isEmpty())
+            return;
+        try {
+            List<String> orgCodes = new ArrayList<>();
+            List<String> addressCodes = new ArrayList<>();
+            for(Map.Entry<String, PartiesRequest> entry: requestMap.entrySet()) {
+                orgCodes.add(entry.getValue().getOrgCode());
+                addressCodes.add(entry.getValue().getAddressCode());
+            }
+            CommonV1ListRequest orgRequest = createCriteriaForTwoFields(PartiesConstants.ORGANIZATION_CODE, "in", List.of(orgCodes), ACTIVE_CLIENT, "=", Boolean.TRUE);
+            DependentServiceResponse v1OrgResponse = masterDataFactory.getMasterDataService().fetchOrganizationData(orgRequest);
+            if (v1OrgResponse.getData() == null || ((ArrayList)v1OrgResponse.getData()).isEmpty()) {
+                log.error("Request: {} || No organization exist in Runner V1 with OrgCodes: {}", LoggerHelper.getRequestIdFromMDC() ,orgCodes);
+                throw new DataRetrievalFailureException("No organization exist in Runner V1 with OrgCodes: " + orgCodes);
+            }
+            PartiesRequest client = new PartiesRequest();
+            PartiesRequest consignor = new PartiesRequest();
+            PartiesRequest consignee = new PartiesRequest();
+            PartiesRequest notifyParty = new PartiesRequest();
+            List<Object> orgRows = jsonHelper.convertValueToList(v1OrgResponse.getData(), Object.class);
+            List<Long> orgIds = new ArrayList<>();
+            for(Object orgRow: orgRows) {
+                Map organizationRow = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(orgRow));
+                setOrgDataInPartiesRequest(CUSTOMER_REQUEST, requestMap, organizationRow, client, orgIds);
+                setOrgDataInPartiesRequest(CONSIGNOR_REQUEST, requestMap, organizationRow, consignor, orgIds);
+                setOrgDataInPartiesRequest(CONSIGNEE_REQUEST, requestMap, organizationRow, consignee, orgIds);
+                setOrgDataInPartiesRequest(NOTIFY_PARTY_REQUEST, requestMap, organizationRow, notifyParty, orgIds);
+            }
+
+            CommonV1ListRequest addressRequest = createCriteriaForThreeFields(
+                    ORG_ID, "in", List.of(orgIds),
+                    PartiesConstants.ADDRESS_SHORT_CODE, "in", List.of(addressCodes),
+                    "Active", "=", Boolean.TRUE);
+            DependentServiceResponse v1AddressResponse = masterDataFactory.getMasterDataService().addressList(addressRequest);
+            if (v1OrgResponse.getData() == null || ((ArrayList)v1AddressResponse.getData()).isEmpty()) {
+                log.error("Request: {} || No Address exist in Runner V1 with OrgCodes: {} with AddressCodes: {}", LoggerHelper.getRequestIdFromMDC(), orgCodes , addressCodes);
+                throw new DataRetrievalFailureException("No Address exist in Runner V1 with OrgCodes: " + orgCodes + " with AddressCodes: " + addressCodes);
+            }
+            List<Object> addressRows = jsonHelper.convertValueToList(v1AddressResponse.getData(), Object.class);
+            for(Object addressRow: addressRows) {
+                Map addressRowMap = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(addressRow));
+                setAddressDataInPartiesRequest(CUSTOMER_REQUEST, requestMap, addressRowMap, client);
+                setAddressDataInPartiesRequest(CONSIGNOR_REQUEST, requestMap, addressRowMap, consignor);
+                setAddressDataInPartiesRequest(CONSIGNEE_REQUEST, requestMap, addressRowMap, consignee);
+                setAddressDataInPartiesRequest(NOTIFY_PARTY_REQUEST, requestMap, addressRowMap, notifyParty);
+            }
+            if(client.getOrgId() != null && client.getAddressId() != null) {
+                requestMap.put("Customer", client);
+            }
+            if(consignor.getOrgId() != null && consignor.getAddressId() != null) {
+                requestMap.put("Consignor", consignor);
+            }
+            if(consignee.getOrgId() != null && consignee.getAddressId() != null) {
+                requestMap.put("Consignee", consignee);
+            }
+            if(notifyParty.getOrgId() != null && notifyParty.getAddressId() != null) {
+                requestMap.put("Notify Party", notifyParty);
+            }
+        }
+        catch (Exception ex) {
+            log.error("Error occurred during Organization fetch from V1 with exception: {}", ex.getLocalizedMessage());
+            throw new DataRetrievalFailureException(ex.getMessage());
+        }
+
     }
 
     public void transformOrgAndAddressPayload(PartiesRequest request, String addressCode, String orgCode) {
         try {
-            CommonV1ListRequest orgRequest = createCriteriaForTwoFields("OrganizationCode", orgCode, "ActiveClient", Boolean.TRUE);
+            CommonV1ListRequest orgRequest = createCriteriaForTwoFields(PartiesConstants.ORGANIZATION_CODE, "=", orgCode, ACTIVE_CLIENT, "=", Boolean.TRUE);
             DependentServiceResponse v1OrgResponse = masterDataFactory.getMasterDataService().fetchOrganizationData(orgRequest);
             if (v1OrgResponse.getData() == null || ((ArrayList)v1OrgResponse.getData()).isEmpty()) {
                 log.error("Request: {} || No organization exist in Runner V1 with OrgCode: {}", LoggerHelper.getRequestIdFromMDC() ,orgCode);
                 throw new DataRetrievalFailureException("No organization exist in Runner V1 with OrgCode: " + orgCode);
             }
             Map organizationRow = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(((ArrayList)v1OrgResponse.getData()).get(0)));
-            if(organizationRow.containsKey("Id"))
-                request.setOrgId(String.valueOf(organizationRow.get("Id")));
+            if(organizationRow.containsKey(PartiesConstants.ID))
+                request.setOrgId(String.valueOf(organizationRow.get(PartiesConstants.ID)));
             request.setOrgData(organizationRow);
 
-            CommonV1ListRequest addressRequest = createCriteriaForThreeFields("OrgId", organizationRow.get("Id"), "AddressShortCode", addressCode, "Active", Boolean.TRUE);
+            CommonV1ListRequest addressRequest = createCriteriaForThreeFields(
+                    ORG_ID, "=", organizationRow.get(PartiesConstants.ID),
+                    PartiesConstants.ADDRESS_SHORT_CODE, "=", addressCode,
+                    "Active", "=", Boolean.TRUE);
             DependentServiceResponse v1AddressResponse = masterDataFactory.getMasterDataService().addressList(addressRequest);
             if (v1OrgResponse.getData() == null || ((ArrayList)v1AddressResponse.getData()).isEmpty()) {
                 log.error("Request: {} || No Address exist in Runner V1 with OrgCode: {} with AddressCode: {}", LoggerHelper.getRequestIdFromMDC(), orgCode , addressCode);
                 throw new DataRetrievalFailureException("No Address exist in Runner V1 with OrgCode: " + orgCode + " with AddressCode: " + addressCode);
             }
             Map addressRow = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(((ArrayList)v1AddressResponse.getData()).get(0)));
-            if(addressRow.containsKey("Id"))
-                request.setAddressId(String.valueOf(addressRow.get("Id")));
+            if(addressRow.containsKey(PartiesConstants.ID))
+                request.setAddressId(String.valueOf(addressRow.get(PartiesConstants.ID)));
             request.setAddressData(addressRow);
         }
         catch (Exception ex) {
@@ -703,25 +821,27 @@ public class BookingIntegrationsUtility {
 
     }
 
-    private CommonV1ListRequest createCriteriaForTwoFields(String field1, Object value1, String field2, Object value2) {
+    private CommonV1ListRequest createCriteriaForTwoFields(String field1, String operator1, Object value1, String field2, String operator2, Object value2) {
         List<Object> field1_ = new ArrayList<>(List.of(field1));
-        List<Object> criteria1 = new ArrayList<>(List.of(field1_, "=", value1));
+        List<Object> criteria1 = new ArrayList<>(List.of(field1_, operator1, value1));
 
         List<Object> field2_ = new ArrayList<>(List.of(field2));
-        List<Object> criteria2 = new ArrayList<>(List.of(field2_, "=", value2));
+        List<Object> criteria2 = new ArrayList<>(List.of(field2_, operator2, value2));
 
         return CommonV1ListRequest.builder().criteriaRequests(List.of(criteria1, "and", criteria2)).build();
     }
 
-    private CommonV1ListRequest createCriteriaForThreeFields(String field1, Object value1, String field2, Object value2, String field3, Object value3) {
+    private CommonV1ListRequest createCriteriaForThreeFields(String field1, String operator1, Object value1,
+                                                             String field2, String operator2, Object value2,
+                                                             String field3, String operator3, Object value3) {
         List<Object> field1_ = new ArrayList<>(List.of(field1));
-        List<Object> criteria1 = new ArrayList<>(List.of(field1_, "=", value1));
+        List<Object> criteria1 = new ArrayList<>(List.of(field1_, operator1, value1));
 
         List<Object> field2_ = new ArrayList<>(List.of(field2));
-        List<Object> criteria2 = new ArrayList<>(List.of(field2_, "=", value2));
+        List<Object> criteria2 = new ArrayList<>(List.of(field2_, operator2, value2));
 
         List<Object> field3_ = new ArrayList<>(List.of(field3));
-        List<Object> criteria3 = new ArrayList<>(List.of(field3_, "=", value3));
+        List<Object> criteria3 = new ArrayList<>(List.of(field3_, operator3, value3));
 
         return CommonV1ListRequest.builder().criteriaRequests(List.of(List.of(criteria1, "and", criteria2), "and", criteria3)).build();
     }
@@ -811,6 +931,7 @@ public class BookingIntegrationsUtility {
                 List<Events> eventListFromDb = shipmentDetails.getEventsList();
                 TenantContext.setCurrentTenant(shipmentDetails.getTenantId());
                 UserContext.setUser(UsersDto.builder().TenantId(shipmentDetails.getTenantId()).Permissions(new HashMap<>()).build());
+                iv1Service.setAuthContext();
                 boolean updatedExistingEvent = false;
 
                 // If existing events are found, iterate through them for potential updates
@@ -839,14 +960,18 @@ public class BookingIntegrationsUtility {
                         throw new IllegalStateException("Shipment ID is null for the provided entity ID.");
                     }
 
-                    CustomAutoEventRequest eventReq = new CustomAutoEventRequest();
-                    eventReq.setEntityId(shipmentDetails.getId());
-                    eventReq.setEntityType(Constants.SHIPMENT);
-                    eventReq.setEventCode(payloadData.getEventCode());
-
-                    log.info("Auto-generating event with code: {} for shipment entity ID: {}", payloadData.getEventCode(), shipmentDetails.getId());
-                    eventDao.autoGenerateEvents(eventReq);
-                    log.info("Event auto-generated successfully for entity ID: {}", shipmentDetails.getId());
+                    EventsRequest eventsRequest = new EventsRequest();
+                    eventsRequest.setActual(LocalDateTime.now());
+                    eventsRequest.setEntityId(shipmentDetails.getId());
+                    eventsRequest.setEntityType(Constants.SHIPMENT);
+                    eventsRequest.setEventCode(payloadData.getEventCode());
+                    eventsRequest.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
+                    if (EventConstants.FNMU.equals(payloadData.getEventCode())) {
+                        eventsRequest.setReferenceNumber(shipmentDetails.getMasterBill());
+                    }
+                    log.info("Generating event with code: {} for shipment entity ID: {}", payloadData.getEventCode(), shipmentDetails.getId());
+                    eventService.saveEvent(eventsRequest);
+                    log.info("Event generated successfully for entity ID: {}", shipmentDetails.getId());
                 }
             }
         } catch (Exception ex) {
@@ -855,6 +980,7 @@ public class BookingIntegrationsUtility {
             log.info("Completed event handling process for action: {} and entity ID: {}", payloadAction, payloadData.getEntityId());
             TenantContext.removeTenant();
             UserContext.removeUser();
+            iv1Service.clearAuthContext();
         }
     }
 
