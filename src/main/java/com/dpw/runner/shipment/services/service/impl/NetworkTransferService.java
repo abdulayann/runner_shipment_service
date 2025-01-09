@@ -15,18 +15,12 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferDao;
-import com.dpw.runner.shipment.services.dao.interfaces.INotificationDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.ReassignRequest;
 import com.dpw.runner.shipment.services.dto.request.RequestForTransferRequest;
 import com.dpw.runner.shipment.services.dto.response.NetworkTransferResponse;
 import com.dpw.runner.shipment.services.dto.response.NetworkTransferListResponse;
-import com.dpw.runner.shipment.services.entity.NetworkTransfer;
-import com.dpw.runner.shipment.services.entity.Notification;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
 import com.dpw.runner.shipment.services.entity.enums.NotificationRequestType;
@@ -72,6 +66,9 @@ public class NetworkTransferService implements INetworkTransferService {
     private final INetworkTransferDao networkTransferDao;
 
     private final MasterDataUtils masterDataUtils;
+    private final IConsoleShipmentMappingDao consoleShipmentMappingDao;
+    private final IShipmentDao shipmentDao;
+    private final IConsolidationDetailsDao consolidationDao;
 
     ExecutorService executorService;
 
@@ -87,7 +84,7 @@ public class NetworkTransferService implements INetworkTransferService {
     public NetworkTransferService(ModelMapper modelMapper, JsonHelper jsonHelper, INetworkTransferDao networkTransferDao,
                                   MasterDataUtils masterDataUtils, ExecutorService executorService,
                                   CommonUtils commonUtils, MasterDataKeyUtils masterDataKeyUtils, INotificationDao notificationDao,
-                                  IShipmentSettingsDao shipmentSettingsDao) {
+                                  IShipmentSettingsDao shipmentSettingsDao, IConsoleShipmentMappingDao consoleShipmentMappingDao, IShipmentDao shipmentDao, IConsolidationDetailsDao consolidationDao) {
         this.modelMapper = modelMapper;
         this.jsonHelper = jsonHelper;
         this.networkTransferDao = networkTransferDao;
@@ -97,6 +94,9 @@ public class NetworkTransferService implements INetworkTransferService {
         this.masterDataKeyUtils = masterDataKeyUtils;
         this.notificationDao = notificationDao;
         this.shipmentSettingsDao = shipmentSettingsDao;
+        this.consoleShipmentMappingDao = consoleShipmentMappingDao;
+        this.consolidationDao = consolidationDao;
+        this.shipmentDao = shipmentDao;
     }
 
 
@@ -362,13 +362,32 @@ public class NetworkTransferService implements INetworkTransferService {
         if(entityPayload!=null){
             networkTransfer.setEntityPayload(entityPayload);
         }
+        updateConsoleOrShipmentStatus(networkTransfer);   // Update shipment and console Transfer status
         networkTransferDao.save(networkTransfer);
     }
 
     public void updateNetworkTransferTransferred(NetworkTransfer networkTransfer, Map<String, Object> entityPayload) {
         networkTransfer.setEntityPayload(entityPayload);
         networkTransfer.setStatus(NetworkTransferStatus.TRANSFERRED);
+        updateConsoleOrShipmentStatus(networkTransfer);   // Update shipment and console Transfer status
         networkTransferDao.save(networkTransfer);
+    }
+
+    private void updateConsoleOrShipmentStatus(NetworkTransfer networkTransfer) {
+        if(Objects.equals(networkTransfer.getEntityType(), Constants.SHIPMENT)){
+            shipmentDao.updateTransferStatus(List.of(networkTransfer.getEntityId()), networkTransfer.getStatus());
+        } else if (Objects.equals(networkTransfer.getEntityType(), Constants.CONSOLIDATION)){
+            updateConsoleAndShipmentStatus(networkTransfer.getEntityId(), networkTransfer.getStatus());
+        }
+    }
+
+    private void updateConsoleAndShipmentStatus(Long consoleId, NetworkTransferStatus status) {
+        var consoleShipMapping = consoleShipmentMappingDao.findByConsolidationId(consoleId);
+        consolidationDao.updateTransferStatus(consoleId, status);
+        if(consoleShipMapping != null && !consoleShipMapping.isEmpty()){
+            List<Long> shipIds = consoleShipMapping.stream().map(ConsoleShipmentMapping::getShipmentId).toList();
+            shipmentDao.updateTransferStatus(shipIds, status);
+        }
     }
 
 
@@ -387,6 +406,7 @@ public class NetworkTransferService implements INetworkTransferService {
         Notification notification = getNotificationEntity(networkTransfer.get(), NotificationRequestType.REQUEST_TRANSFER, requestForTransferRequest.getRemarks(), null);
         notificationDao.save(notification);
         networkTransferDao.save(networkTransfer.get());
+        updateConsoleOrShipmentStatus(networkTransfer.get());      // Update shipment and console Transfer status
         return ResponseHelper.buildSuccessResponse();
     }
 
@@ -421,6 +441,7 @@ public class NetworkTransferService implements INetworkTransferService {
         Notification notification = getNotificationEntity(networkTransfer.get(), NotificationRequestType.REASSIGN, reassignRequest.getRemarks(), reassignRequest.getBranchId());
         notificationDao.save(notification);
         networkTransferDao.save(networkTransfer.get());
+        updateConsoleOrShipmentStatus(networkTransfer.get());    // Update shipment and console Transfer status
         return ResponseHelper.buildSuccessResponse();
     }
 
@@ -438,5 +459,12 @@ public class NetworkTransferService implements INetworkTransferService {
         }
         notification.setTenantId(networkTransfer.getSourceBranchId());
         return notification;
+    }
+
+    @Override
+    public void updateStatusAndCreatedEntityId(Long id, String status, Long createdEntityId) {
+        var networkTransfer = networkTransferDao.findById(id);
+        networkTransfer.ifPresent(this::updateConsoleOrShipmentStatus);
+        networkTransferDao.updateStatusAndCreatedEntityId(id, status, createdEntityId);
     }
 }

@@ -561,7 +561,7 @@ public class EntityTransferService implements IEntityTransferService {
         // Update task status approved
         if(Boolean.TRUE.equals(importShipmentRequest.getIsFromNte())) {
             if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsNetworkTransferEntityEnabled())) {
-                networkTransferDao.updateStatusAndCreatedEntityId(importShipmentRequest.getTaskId(), NetworkTransferStatus.ACCEPTED.name(), shipmentDetailsResponse.getId());
+                networkTransferService.updateStatusAndCreatedEntityId(importShipmentRequest.getTaskId(), NetworkTransferStatus.ACCEPTED.name(), shipmentDetailsResponse.getId());
                 Long tenantId = Long.valueOf(TenantContext.getCurrentTenant());
                 if (tenantId.equals(shipmentDetailsResponse.getReceivingBranch()))
                     shipmentDao.saveIsTransferredToReceivingBranch(shipmentDetailsResponse.getId(), Boolean.TRUE);
@@ -625,7 +625,7 @@ public class EntityTransferService implements IEntityTransferService {
         // Update task status approved
         if(Boolean.TRUE.equals(importConsolidationRequest.getIsFromNte())) {
             if (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsNetworkTransferEntityEnabled())) {
-                networkTransferDao.updateStatusAndCreatedEntityId(importConsolidationRequest.getTaskId(), NetworkTransferStatus.ACCEPTED.name(), Optional.ofNullable(consolidationDetailsResponse).map(ConsolidationDetailsResponse::getId).orElse(null));
+                networkTransferService.updateStatusAndCreatedEntityId(importConsolidationRequest.getTaskId(), NetworkTransferStatus.ACCEPTED.name(), Optional.ofNullable(consolidationDetailsResponse).map(ConsolidationDetailsResponse::getId).orElse(null));
                 Long consolId = consolidationDetailsResponse.getId();
                 Long tenantId = Long.valueOf(TenantContext.getCurrentTenant());
                 if (tenantId.equals(consolidationDetailsResponse.getReceivingBranch()))
