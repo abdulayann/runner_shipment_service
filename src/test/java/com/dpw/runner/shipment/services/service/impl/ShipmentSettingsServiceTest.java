@@ -255,9 +255,9 @@ class ShipmentSettingsServiceTest extends CommonMocks {
     @Test
     void completeSettingsUpdateCreateV1_Update2() throws RunnerException{
         shipmentSettingRequest = objectMapperTest.convertValue(testShipmentSettingsDetails, ShipmentSettingRequest.class);
-        shipmentSettingRequest.setAlwaysUtilization(false);
-        shipmentSettingRequest.setUtilizationForContainerQuoted(false);
-        shipmentSettingRequest.setNoUtilization(false);
+        shipmentSettingRequest.setIsAlwaysUtilization(false);
+        shipmentSettingRequest.setIsUtilizationForContainerQuoted(false);
+        shipmentSettingRequest.setHasNoUtilization(false);
         when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(List.of(testShipmentSettingsDetails));
         when(shipmentSettingsDao.save(any())).thenReturn(testShipmentSettingsDetails);
         when(jsonHelper.convertValue(any(), eq(ShipmentSettingsDetailsResponse.class))).thenReturn(shipmentSettingsDetailsResponse);

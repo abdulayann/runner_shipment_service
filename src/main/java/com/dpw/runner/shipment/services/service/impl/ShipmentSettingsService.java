@@ -408,14 +408,14 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
                 request.getHblLockSettings().setId(oldEntity.get().getHblLockSettings().getId());
                 request.getHblLockSettings().setGuid(oldEntity.get().getHblLockSettings().getGuid());
             }
-            if(request.getAlwaysUtilization() == null) {
-                request.setAlwaysUtilization(oldEntity.get().getAlwaysUtilization());
+            if(request.getIsAlwaysUtilization() == null) {
+                request.setIsAlwaysUtilization(oldEntity.get().getIsAlwaysUtilization());
             }
-            if(request.getUtilizationForContainerQuoted() == null) {
-                request.setUtilizationForContainerQuoted(oldEntity.get().getUtilizationForContainerQuoted());
+            if(request.getIsUtilizationForContainerQuoted() == null) {
+                request.setIsUtilizationForContainerQuoted(oldEntity.get().getIsUtilizationForContainerQuoted());
             }
-            if(request.getNoUtilization() == null) {
-                request.setNoUtilization(oldEntity.get().getNoUtilization());
+            if(request.getHasNoUtilization() == null) {
+                request.setHasNoUtilization(oldEntity.get().getHasNoUtilization());
             }
             ShipmentSettingsDetails shipmentSettingsDetails = convertRequestToEntity(request);
 

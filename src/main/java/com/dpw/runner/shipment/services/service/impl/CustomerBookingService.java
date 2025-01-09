@@ -1590,10 +1590,10 @@ public class CustomerBookingService implements ICustomerBookingService {
 
     private boolean checkNPMContractUtilization(CustomerBooking customerBooking) {
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
-        if(Boolean.TRUE.equals(shipmentSettingsDetails.getAlwaysUtilization())) {
+        if(Boolean.TRUE.equals(shipmentSettingsDetails.getIsAlwaysUtilization())) {
             return true;
         }
-        if(Boolean.TRUE.equals(shipmentSettingsDetails.getUtilizationForContainerQuoted())
+        if(Boolean.TRUE.equals(shipmentSettingsDetails.getIsUtilizationForContainerQuoted())
                 && !CommonUtils.listIsNullOrEmpty(customerBooking.getContainersList())) {
             QuoteContracts quoteContracts = quoteContractsService.getQuoteContractsByContractId(customerBooking.getContractId());
 

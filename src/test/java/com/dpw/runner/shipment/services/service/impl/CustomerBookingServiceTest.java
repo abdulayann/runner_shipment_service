@@ -20,7 +20,6 @@ import static org.mockito.Mockito.when;
 
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
-import com.dpw.runner.shipment.services.dto.request.CustomerStatusUpdateRequest;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
@@ -181,7 +180,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         customerBookingRequest = jsonTestUtility.getCustomerBookingRequest();
         customerBooking = jsonTestUtility.getCustomerBooking();
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().P100Branch(false).build());
-        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().noUtilization(true).build());
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().hasNoUtilization(true).build());
     }
 
 
@@ -215,7 +214,7 @@ class CustomerBookingServiceTest extends CommonMocks {
     void testCreateUpdatesNpmContract() throws RunnerException {
         CustomerBookingRequest request = new CustomerBookingRequest();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAlwaysUtilization(true).setNoUtilization(false);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(true).setHasNoUtilization(false);
 
         CustomerBooking inputCustomerBooking = CustomerBooking.builder()
                 .transportType(Constants.TRANSPORT_MODE_SEA)
@@ -251,7 +250,7 @@ class CustomerBookingServiceTest extends CommonMocks {
     void testCreateGeneratesBookingNumberFCLCargo() throws RunnerException {
         CustomerBookingRequest request = new CustomerBookingRequest();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAlwaysUtilization(false).setUtilizationForContainerQuoted(true).setNoUtilization(false);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(false).setIsUtilizationForContainerQuoted(true).setHasNoUtilization(false);
         List<Containers> containers = List.of(Containers.builder().build());
 
         CustomerBooking inputCustomerBooking = CustomerBooking.builder()
@@ -289,7 +288,7 @@ class CustomerBookingServiceTest extends CommonMocks {
     void testCreateGeneratesBookingNumberFTLCargo() throws RunnerException {
         CustomerBookingRequest request = new CustomerBookingRequest();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAlwaysUtilization(false).setUtilizationForContainerQuoted(true).setNoUtilization(false);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(false).setIsUtilizationForContainerQuoted(true).setHasNoUtilization(false);
         List<Containers> containers = List.of(Containers.builder().build());
 
         CustomerBooking inputCustomerBooking = CustomerBooking.builder()
@@ -327,7 +326,7 @@ class CustomerBookingServiceTest extends CommonMocks {
     void testCreateGeneratesBookingNumberLCLCargo() throws RunnerException {
         CustomerBookingRequest request = new CustomerBookingRequest();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAlwaysUtilization(false).setUtilizationForContainerQuoted(true).setNoUtilization(false);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(false).setIsUtilizationForContainerQuoted(true).setHasNoUtilization(false);
         List<Containers> containers = List.of(Containers.builder().containerCode("20GP").build());
         QuoteContracts quoteContracts = QuoteContracts.builder().contractId("contract 2").containerTypes(List.of("20GP", "40GP")).build();
 
@@ -367,7 +366,7 @@ class CustomerBookingServiceTest extends CommonMocks {
     void testCreateGeneratesBookingNumberBBKCargo() throws RunnerException {
         CustomerBookingRequest request = new CustomerBookingRequest();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAlwaysUtilization(false).setUtilizationForContainerQuoted(true).setNoUtilization(false);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(false).setIsUtilizationForContainerQuoted(true).setHasNoUtilization(false);
         List<Containers> containers = List.of(Containers.builder().containerCode("20GP").build());
         QuoteContracts quoteContracts = QuoteContracts.builder().contractId("contract 2").containerTypes(List.of("40GP")).build();
 
@@ -406,7 +405,7 @@ class CustomerBookingServiceTest extends CommonMocks {
     void testCreateGeneratesBookingNumberRORCargo() throws RunnerException {
         CustomerBookingRequest request = new CustomerBookingRequest();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAlwaysUtilization(false).setUtilizationForContainerQuoted(false).setNoUtilization(true);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(false).setIsUtilizationForContainerQuoted(false).setHasNoUtilization(true);
 
         CustomerBooking inputCustomerBooking = CustomerBooking.builder()
                 .transportType(Constants.TRANSPORT_MODE_SEA)
@@ -440,7 +439,7 @@ class CustomerBookingServiceTest extends CommonMocks {
     void testCreateGeneratesBookingNumberLTLCargo() throws RunnerException {
         CustomerBookingRequest request = new CustomerBookingRequest();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAlwaysUtilization(null).setUtilizationForContainerQuoted(null).setNoUtilization(true);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(null).setIsUtilizationForContainerQuoted(null).setHasNoUtilization(true);
 
         CustomerBooking inputCustomerBooking = CustomerBooking.builder()
                 .transportType(Constants.TRANSPORT_MODE_SEA)
@@ -1280,7 +1279,7 @@ class CustomerBookingServiceTest extends CommonMocks {
     void testBookingUpdateWithSuccess() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         var inputCustomerBooking = customerBooking;
         inputCustomerBooking.setBookingStatus(BookingStatus.PENDING_FOR_CREDIT_LIMIT);
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAlwaysUtilization(true).setNoUtilization(false);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(true).setHasNoUtilization(false);
 
         var container = Containers.builder().build();
         container.setGuid(UUID.randomUUID());
@@ -1312,7 +1311,7 @@ class CustomerBookingServiceTest extends CommonMocks {
                         .ShipmentServiceV2Enabled(true)
                         .build()
         );
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAlwaysUtilization(true).setNoUtilization(false);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(true).setHasNoUtilization(false);
         var inputCustomerBooking = customerBooking;
         inputCustomerBooking.setGuid(UUID.randomUUID());
         inputCustomerBooking.setBookingStatus(BookingStatus.PENDING_FOR_CREDIT_LIMIT);
@@ -1343,7 +1342,7 @@ class CustomerBookingServiceTest extends CommonMocks {
                         .ShipmentServiceV2Enabled(true)
                         .build()
         );
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAlwaysUtilization(true).setNoUtilization(false);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(true).setHasNoUtilization(false);
         var inputCustomerBooking = customerBooking;
         inputCustomerBooking.setGuid(UUID.randomUUID());
         inputCustomerBooking.setBookingStatus(BookingStatus.PENDING_FOR_CREDIT_LIMIT);
@@ -1377,7 +1376,7 @@ class CustomerBookingServiceTest extends CommonMocks {
                         .ShipmentServiceV2Enabled(true)
                         .build()
         );
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAlwaysUtilization(true).setNoUtilization(false);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(true).setHasNoUtilization(false);
         var inputCustomerBooking = customerBooking;
         inputCustomerBooking.setGuid(UUID.randomUUID());
         inputCustomerBooking.setBookingStatus(BookingStatus.PENDING_FOR_CREDIT_LIMIT);
@@ -1538,7 +1537,7 @@ class CustomerBookingServiceTest extends CommonMocks {
     @Test
     void testBookingUpdateWithUtilization() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         // Arrange
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAlwaysUtilization(true).setNoUtilization(false);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(true).setHasNoUtilization(false);
         var oldCustomerBooking = objectMapper.convertValue(customerBooking, CustomerBooking.class);
         var newCustomerBooking = objectMapper.convertValue(customerBooking, CustomerBooking.class);;
         oldCustomerBooking.setContractId("old");
@@ -1561,7 +1560,7 @@ class CustomerBookingServiceTest extends CommonMocks {
     @Test
     void testBookingUpdateWithUtilization2() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         // Arrange
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAlwaysUtilization(true).setNoUtilization(false);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(true).setHasNoUtilization(false);
         var oldCustomerBooking = objectMapper.convertValue(customerBooking, CustomerBooking.class);
         var newCustomerBooking = objectMapper.convertValue(customerBooking, CustomerBooking.class);;
         oldCustomerBooking.setContractId(null);
@@ -1583,7 +1582,7 @@ class CustomerBookingServiceTest extends CommonMocks {
     @Test
     void testBookingUpdateWithUtilization3() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         // Arrange
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAlwaysUtilization(true).setNoUtilization(false);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(true).setHasNoUtilization(false);
         var oldCustomerBooking = objectMapper.convertValue(customerBooking, CustomerBooking.class);
         var newCustomerBooking = objectMapper.convertValue(customerBooking, CustomerBooking.class);
         oldCustomerBooking.setContractId("old");
