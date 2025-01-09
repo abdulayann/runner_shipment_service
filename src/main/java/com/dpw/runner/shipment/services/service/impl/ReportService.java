@@ -63,6 +63,7 @@ import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.entity.enums.TypeOfHblPrint;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
+import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -172,6 +173,8 @@ public class ReportService implements IReportService {
     private IAwbDao awbDao;
     @Autowired
     private AWBLabelReport awbLabelReport;
+    @Autowired
+    private DependentServiceHelper dependentServiceHelper;
 
     @Autowired
     @Lazy
@@ -756,7 +759,7 @@ public class ReportService implements IReportService {
 //                shipmentDetails.getAdditionalDetails().setDateOfIssue(LocalDate.now().atStartOfDay());
 //            }
             shipmentDetails = shipmentDao.update(shipmentDetails, false);
-            shipmentService.pushShipmentDataToDependentService(shipmentDetails, false, false, Optional.ofNullable(shipmentDetails).map(ShipmentDetails::getContainersList).orElse(null));
+            dependentServiceHelper.pushShipmentDataToDependentService(shipmentDetails, false, false, Optional.ofNullable(shipmentDetails).map(ShipmentDetails::getContainersList).orElse(null));
             try {
                 shipmentSync.sync(shipmentDetails, null, null, UUID.randomUUID().toString(), false);
             } catch (Exception e) {

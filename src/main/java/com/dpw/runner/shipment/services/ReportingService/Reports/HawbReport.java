@@ -486,7 +486,7 @@ public class HawbReport extends IReport{
                 dictionary.put(ReportConstants.SUM_OF_CHARGEABLE_WT, ConvertToWeightNumberFormat(SumOfChargeableWt[0], v1TenantSettingsResponse));
             }
 
-            if (!hsCodesSet.isEmpty()) {
+            if (!dgHsCodesSet.isEmpty()) {
                 String commaHsCode = HSCODE + ": ";
                 commaHsCode += String.join(", ", dgHsCodesSet);
                 dictionary.put(GOOD_DESC_HS_CODE_COMMA_SEPARATED, commaHsCode);
