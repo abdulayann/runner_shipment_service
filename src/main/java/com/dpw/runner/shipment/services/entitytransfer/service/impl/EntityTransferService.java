@@ -249,10 +249,11 @@ public class EntityTransferService implements IEntityTransferService {
     public ResponseEntity<IRunnerResponse> sendShipment(CommonRequestModel commonRequestModel) {
         SendShipmentRequest sendShipmentRequest = (SendShipmentRequest) commonRequestModel.getData();
         Long shipId = sendShipmentRequest.getShipId();
-        List<Integer> sendToBranch = sendShipmentRequest.getSendToBranch();
-        List<String> additionalDocs = sendShipmentRequest.getAdditionalDocs();
-        List<String> sendToOrg = sendShipmentRequest.getSendToOrg();
-        if((sendToBranch == null || sendToBranch.isEmpty()) && (sendToOrg == null || sendToOrg.isEmpty())){
+        List<Integer> sendToBranch = Optional.ofNullable(sendShipmentRequest.getSendToBranch()).orElse(Collections.emptyList());
+        List<String> additionalDocs = Optional.ofNullable(sendShipmentRequest.getAdditionalDocs()).orElse(Collections.emptyList());
+        List<String> sendToOrg = Optional.ofNullable(sendShipmentRequest.getSendToOrg()).orElse(Collections.emptyList());
+
+        if (sendToBranch.isEmpty() && sendToOrg.isEmpty()) {
             throw new ValidationException(EntityTransferConstants.SELECT_SENDTOBRANCH_OR_SENDTOORG);
         }
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(shipId);
@@ -514,8 +515,8 @@ public class EntityTransferService implements IEntityTransferService {
     private void approvalRoleTenantValidation(Set<Integer> sendBranches) {
         List<Integer> nonApprovalTenants = new ArrayList<>();
         for (Integer tenantId: sendBranches) {
-            Integer approverRoleId = getShipmentConsoleImportApprovalRole(tenantId);
-            if (approverRoleId == null || approverRoleId == 0) {
+            Integer approverRoleId = Optional.ofNullable(getShipmentConsoleImportApprovalRole(tenantId)).orElse(0);
+            if (approverRoleId == 0) {
                 nonApprovalTenants.add(tenantId);
             }
         }
