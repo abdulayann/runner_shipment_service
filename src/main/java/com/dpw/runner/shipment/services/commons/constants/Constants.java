@@ -216,6 +216,7 @@ public class Constants {
     public static final String ACTIVITY_TYPE = "ActivityType";
     public static final String SALES_AGENT = "SalesAgent";
     public static final String TENANT_MASTER_DATA = "TenantIdData";
+    public static final String COLLECTION_TABLE = "CollectionTable";
     public static final String MASTER_DATA = "MasterData";
 
 
