@@ -42,6 +42,7 @@ import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingService;
+import com.dpw.runner.shipment.services.service.interfaces.IQuoteContractsService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -139,6 +140,8 @@ public class CustomerBookingService implements ICustomerBookingService {
     private IOrderManagementAdapter orderManagementAdapter;
     @Autowired
     private KafkaProducer producer;
+    @Autowired
+    private IQuoteContractsService quoteContractsService;
     @Value("${booking.event.kafka.queue}")
     private String senderQueue;
 
@@ -174,7 +177,9 @@ public class CustomerBookingService implements ICustomerBookingService {
         CustomerBooking customerBooking = jsonHelper.convertValue(request, CustomerBooking.class);
         customerBooking.setSource(BookingSource.Runner);
         // Update NPM for contract utilization
-        _npmContractUpdate(customerBooking, null, false, CustomerBookingConstants.REMOVE, false);
+        if(checkNPMContractUtilization(customerBooking)) {
+            _npmContractUpdate(customerBooking, null, false, CustomerBookingConstants.REMOVE, false);
+        }
         try {
             createEntities(customerBooking, request);
             /**
@@ -305,7 +310,9 @@ public class CustomerBookingService implements ICustomerBookingService {
         customerBooking.setSource(oldEntity.get().getSource());
 
         // NPM update contract
-        contractUtilisationForUpdate(customerBooking, oldEntity.get());
+        if(checkNPMContractUtilization(customerBooking)) {
+            contractUtilisationForUpdate(customerBooking, oldEntity.get());
+        }
         customerBooking = this.updateEntities(customerBooking, request, jsonHelper.convertToJson(oldEntity.get()));
         try {
             //Check 2
@@ -1606,5 +1613,34 @@ public class CustomerBookingService implements ICustomerBookingService {
         catch (Exception e) {
             log.error("Error Producing Order Management Data to kafka, error is due to " + e.getMessage());
         }
+    }
+
+    private boolean checkNPMContractUtilization(CustomerBooking customerBooking) {
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+        if(Boolean.TRUE.equals(shipmentSettingsDetails.getIsAlwaysUtilization())) {
+            return true;
+        }
+        if(Boolean.TRUE.equals(shipmentSettingsDetails.getIsUtilizationForContainerQuoted())
+                && !CommonUtils.listIsNullOrEmpty(customerBooking.getContainersList())) {
+            QuoteContracts quoteContracts = quoteContractsService.getQuoteContractsByContractId(customerBooking.getContractId());
+
+            if (quoteContracts == null || CommonUtils.listIsNullOrEmpty(quoteContracts.getContainerTypes())) {
+                return false;
+            }
+
+            // Check if all containers in booking match the contract's container types
+            return areAllContainersQuoted(customerBooking.getContainersList(), quoteContracts.getContainerTypes());
+        }
+
+        return false;
+    }
+
+    private boolean areAllContainersQuoted(List<Containers> containersList, List<String> containerTypes) {
+        for (Containers container : containersList) {
+            if (!containerTypes.contains(container.getContainerCode())) {
+                return false;
+            }
+        }
+        return true;
     }
 }

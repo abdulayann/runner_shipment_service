@@ -1,6 +1,27 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.anyBoolean;
+import static org.mockito.Mockito.anyList;
+import static org.mockito.Mockito.anyLong;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.dpw.runner.shipment.services.CommonMocks;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
+import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.impl.OrderManagementAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IFusionServiceAdapter;
@@ -39,6 +60,7 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
+import com.dpw.runner.shipment.services.service.interfaces.IQuoteContractsService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
@@ -116,6 +138,8 @@ class CustomerBookingServiceTest extends CommonMocks {
     private KafkaProducer producer;
     @Mock
     private OrderManagementAdapter orderManagementAdapter;
+    @Mock
+    private IQuoteContractsService quoteContractsService;
 
     private static JsonTestUtility jsonTestUtility;
     private static ObjectMapper objectMapper;
@@ -138,6 +162,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         customerBookingRequest = jsonTestUtility.getCustomerBookingRequest();
         customerBooking = jsonTestUtility.getCustomerBooking();
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().P100Branch(false).build());
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().hasNoUtilization(true).build());
     }
 
 
@@ -158,6 +183,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(new CustomerBooking());
         when(customerBookingDao.save(any())).thenReturn(mockCustomerBooking);
         when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
+        mockShipmentSettings();
 
         // Test
         ResponseEntity<IRunnerResponse> httpResponse = customerBookingService.create(commonRequestModel);
@@ -170,6 +196,7 @@ class CustomerBookingServiceTest extends CommonMocks {
     void testCreateUpdatesNpmContract() throws RunnerException {
         CustomerBookingRequest request = new CustomerBookingRequest();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(true).setHasNoUtilization(false);
 
         CustomerBooking inputCustomerBooking = CustomerBooking.builder()
                 .transportType(Constants.TRANSPORT_MODE_SEA)
@@ -191,6 +218,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(inputCustomerBooking);
         when(customerBookingDao.save(any())).thenReturn(mockCustomerBooking);
         when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
+        mockShipmentSettings();
 
         // Test
         ResponseEntity<IRunnerResponse> httpResponse = customerBookingService.create(commonRequestModel);
@@ -204,10 +232,14 @@ class CustomerBookingServiceTest extends CommonMocks {
     void testCreateGeneratesBookingNumberFCLCargo() throws RunnerException {
         CustomerBookingRequest request = new CustomerBookingRequest();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(false).setIsUtilizationForContainerQuoted(true).setHasNoUtilization(false);
+        List<Containers> containers = List.of(Containers.builder().build());
 
         CustomerBooking inputCustomerBooking = CustomerBooking.builder()
                 .transportType(Constants.TRANSPORT_MODE_SEA)
                 .cargoType("FCL")
+                .contractId("contract 2")
+                .containersList(containers)
                 .build();
 
         CustomerBooking mockCustomerBooking = CustomerBooking.builder()
@@ -224,6 +256,8 @@ class CustomerBookingServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(inputCustomerBooking);
         when(customerBookingDao.save(any())).thenReturn(mockCustomerBooking);
         when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
+        when(quoteContractsService.getQuoteContractsByContractId(anyString())).thenReturn(QuoteContracts.builder().build());
+        mockShipmentSettings();
 
         // Test
         ResponseEntity<IRunnerResponse> httpResponse = customerBookingService.create(commonRequestModel);
@@ -236,10 +270,14 @@ class CustomerBookingServiceTest extends CommonMocks {
     void testCreateGeneratesBookingNumberFTLCargo() throws RunnerException {
         CustomerBookingRequest request = new CustomerBookingRequest();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(false).setIsUtilizationForContainerQuoted(true).setHasNoUtilization(false);
+        List<Containers> containers = List.of(Containers.builder().build());
 
         CustomerBooking inputCustomerBooking = CustomerBooking.builder()
                 .transportType(Constants.TRANSPORT_MODE_SEA)
                 .cargoType("FTL")
+                .contractId("contract 2")
+                .containersList(containers)
                 .build();
 
         CustomerBooking mockCustomerBooking = CustomerBooking.builder()
@@ -256,6 +294,8 @@ class CustomerBookingServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(inputCustomerBooking);
         when(customerBookingDao.save(any())).thenReturn(mockCustomerBooking);
         when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
+        when(quoteContractsService.getQuoteContractsByContractId(anyString())).thenReturn(null);
+        mockShipmentSettings();
 
         // Test
         ResponseEntity<IRunnerResponse> httpResponse = customerBookingService.create(commonRequestModel);
@@ -268,10 +308,15 @@ class CustomerBookingServiceTest extends CommonMocks {
     void testCreateGeneratesBookingNumberLCLCargo() throws RunnerException {
         CustomerBookingRequest request = new CustomerBookingRequest();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(false).setIsUtilizationForContainerQuoted(true).setHasNoUtilization(false);
+        List<Containers> containers = List.of(Containers.builder().containerCode("20GP").build());
+        QuoteContracts quoteContracts = QuoteContracts.builder().contractId("contract 2").containerTypes(List.of("20GP", "40GP")).build();
 
         CustomerBooking inputCustomerBooking = CustomerBooking.builder()
                 .transportType(Constants.TRANSPORT_MODE_SEA)
                 .cargoType("LCL")
+                .contractId("contract 2")
+                .containersList(containers)
                 .build();
 
         CustomerBooking mockCustomerBooking = CustomerBooking.builder()
@@ -288,6 +333,9 @@ class CustomerBookingServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(inputCustomerBooking);
         when(customerBookingDao.save(any())).thenReturn(mockCustomerBooking);
         when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
+        when(quoteContractsService.getQuoteContractsByContractId(anyString())).thenReturn(quoteContracts);
+        when(npmService.updateContracts(any())).thenReturn(new ResponseEntity<>(HttpStatus.OK));
+        mockShipmentSettings();
 
         // Test
         ResponseEntity<IRunnerResponse> httpResponse = customerBookingService.create(commonRequestModel);
@@ -300,10 +348,15 @@ class CustomerBookingServiceTest extends CommonMocks {
     void testCreateGeneratesBookingNumberBBKCargo() throws RunnerException {
         CustomerBookingRequest request = new CustomerBookingRequest();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(false).setIsUtilizationForContainerQuoted(true).setHasNoUtilization(false);
+        List<Containers> containers = List.of(Containers.builder().containerCode("20GP").build());
+        QuoteContracts quoteContracts = QuoteContracts.builder().contractId("contract 2").containerTypes(List.of("40GP")).build();
 
         CustomerBooking inputCustomerBooking = CustomerBooking.builder()
                 .transportType(Constants.TRANSPORT_MODE_SEA)
                 .cargoType("BBK")
+                .contractId("contract 2")
+                .containersList(containers)
                 .build();
 
         CustomerBooking mockCustomerBooking = CustomerBooking.builder()
@@ -320,6 +373,8 @@ class CustomerBookingServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(inputCustomerBooking);
         when(customerBookingDao.save(any())).thenReturn(mockCustomerBooking);
         when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
+        when(quoteContractsService.getQuoteContractsByContractId(anyString())).thenReturn(quoteContracts);
+        mockShipmentSettings();
 
         // Test
         ResponseEntity<IRunnerResponse> httpResponse = customerBookingService.create(commonRequestModel);
@@ -332,6 +387,7 @@ class CustomerBookingServiceTest extends CommonMocks {
     void testCreateGeneratesBookingNumberRORCargo() throws RunnerException {
         CustomerBookingRequest request = new CustomerBookingRequest();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(false).setIsUtilizationForContainerQuoted(false).setHasNoUtilization(true);
 
         CustomerBooking inputCustomerBooking = CustomerBooking.builder()
                 .transportType(Constants.TRANSPORT_MODE_SEA)
@@ -352,6 +408,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(inputCustomerBooking);
         when(customerBookingDao.save(any())).thenReturn(mockCustomerBooking);
         when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
+        mockShipmentSettings();
 
         // Test
         ResponseEntity<IRunnerResponse> httpResponse = customerBookingService.create(commonRequestModel);
@@ -364,10 +421,12 @@ class CustomerBookingServiceTest extends CommonMocks {
     void testCreateGeneratesBookingNumberLTLCargo() throws RunnerException {
         CustomerBookingRequest request = new CustomerBookingRequest();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(null).setIsUtilizationForContainerQuoted(null).setHasNoUtilization(true);
 
         CustomerBooking inputCustomerBooking = CustomerBooking.builder()
                 .transportType(Constants.TRANSPORT_MODE_SEA)
                 .cargoType("LTL")
+                .containersList(null)
                 .build();
 
         CustomerBooking mockCustomerBooking = CustomerBooking.builder()
@@ -384,6 +443,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(inputCustomerBooking);
         when(customerBookingDao.save(any())).thenReturn(mockCustomerBooking);
         when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
+        mockShipmentSettings();
 
         // Test
         ResponseEntity<IRunnerResponse> httpResponse = customerBookingService.create(commonRequestModel);
@@ -635,6 +695,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         when(customerBookingDao.save(any())).thenReturn(customerBooking);
         when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
         when(jsonHelper.convertValue(any(), eq(BookingCharges.class))).thenReturn(bookingCharge);
+        mockShipmentSettings();
         // Test
         ResponseEntity<IRunnerResponse> httpResponse = customerBookingService.create(CommonRequestModel.buildRequest(request));
 
@@ -706,6 +767,7 @@ class CustomerBookingServiceTest extends CommonMocks {
     void testCreateWithException() throws RunnerException {
         when(customerBookingDao.save(any())).thenThrow(new RuntimeException("RuntimeException"));
         when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(customerBooking);
+        mockShipmentSettings();
         // Test
         Throwable t = assertThrows(Throwable.class, () -> customerBookingService.create(CommonRequestModel.buildRequest(new CustomerBookingRequest())));
         // Assert
@@ -903,6 +965,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
         when(containerDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(inputCustomerBooking.getContainersList());
         doThrow(new RuntimeException()).when(auditLogService).addAuditLog(any());
+        mockShipmentSettings();
         // Test
         ResponseEntity<IRunnerResponse> httpResponse = customerBookingService.create(CommonRequestModel.buildRequest(request));
 
@@ -1198,6 +1261,7 @@ class CustomerBookingServiceTest extends CommonMocks {
     void testBookingUpdateWithSuccess() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         var inputCustomerBooking = customerBooking;
         inputCustomerBooking.setBookingStatus(BookingStatus.PENDING_FOR_CREDIT_LIMIT);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(true).setHasNoUtilization(false);
 
         var container = Containers.builder().build();
         container.setGuid(UUID.randomUUID());
@@ -1214,6 +1278,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
         when(containerDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(inputCustomerBooking.getContainersList());
         doThrow(new RuntimeException()).when(auditLogService).addAuditLog(any());
+        mockShipmentSettings();
         // Test
         var responseEntity = customerBookingService.update(CommonRequestModel.builder().data(request).build());
         // Assert
@@ -1228,6 +1293,7 @@ class CustomerBookingServiceTest extends CommonMocks {
                         .ShipmentServiceV2Enabled(true)
                         .build()
         );
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(true).setHasNoUtilization(false);
         var inputCustomerBooking = customerBooking;
         inputCustomerBooking.setGuid(UUID.randomUUID());
         inputCustomerBooking.setBookingStatus(BookingStatus.PENDING_FOR_CREDIT_LIMIT);
@@ -1242,6 +1308,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         when(containerDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(inputCustomerBooking.getContainersList());
         when(bookingIntegrationsUtility.createShipmentInV2(any())).thenReturn(ResponseHelper.buildSuccessResponse(ShipmentDetailsResponse.builder().guid(UUID.randomUUID()).build()));
         mockTenantSettings();
+        mockShipmentSettings();
         // Test
         var responseEntity = customerBookingService.update(CommonRequestModel.builder().data(request).build());
         // Assert
@@ -1257,6 +1324,7 @@ class CustomerBookingServiceTest extends CommonMocks {
                         .ShipmentServiceV2Enabled(true)
                         .build()
         );
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(true).setHasNoUtilization(false);
         var inputCustomerBooking = customerBooking;
         inputCustomerBooking.setGuid(UUID.randomUUID());
         inputCustomerBooking.setBookingStatus(BookingStatus.PENDING_FOR_CREDIT_LIMIT);
@@ -1274,6 +1342,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         when(containerDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(inputCustomerBooking.getContainersList());
         when(bookingIntegrationsUtility.createShipmentInV2(any())).thenReturn(ResponseHelper.buildSuccessResponse(ShipmentDetailsResponse.builder().guid(UUID.randomUUID()).build()));
         mockTenantSettings();
+        mockShipmentSettings();
         // Test
         var responseEntity = customerBookingService.update(CommonRequestModel.builder().data(request).build());
         // Assert
@@ -1289,6 +1358,7 @@ class CustomerBookingServiceTest extends CommonMocks {
                         .ShipmentServiceV2Enabled(true)
                         .build()
         );
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(true).setHasNoUtilization(false);
         var inputCustomerBooking = customerBooking;
         inputCustomerBooking.setGuid(UUID.randomUUID());
         inputCustomerBooking.setBookingStatus(BookingStatus.PENDING_FOR_CREDIT_LIMIT);
@@ -1306,6 +1376,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         when(containerDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(inputCustomerBooking.getContainersList());
 //        when(bookingIntegrationsUtility.createShipmentInV2(any())).thenReturn(ResponseHelper.buildSuccessResponse(ShipmentDetailsResponse.builder().guid(UUID.randomUUID()).build()));
         mockTenantSettings();
+        mockShipmentSettings();
         // Test
         var req = CommonRequestModel.builder().data(request).build();
         assertThrows(ValidationException.class, () -> customerBookingService.update(req));
@@ -1336,6 +1407,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         when(containerDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(inputCustomerBooking.getContainersList());
 //        when(bookingIntegrationsUtility.createShipmentInV2(any())).thenReturn(ResponseHelper.buildSuccessResponse(ShipmentDetailsResponse.builder().guid(UUID.randomUUID()).build()));
         mockTenantSettings();
+        mockShipmentSettings();
         // Test
         var req = CommonRequestModel.builder().data(request).build();
         assertThrows(NullPointerException.class, () -> customerBookingService.update(req));
@@ -1366,6 +1438,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         when(containerDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(inputCustomerBooking.getContainersList());
 //        when(bookingIntegrationsUtility.createShipmentInV2(any())).thenReturn(ResponseHelper.buildSuccessResponse(ShipmentDetailsResponse.builder().guid(UUID.randomUUID()).build()));
         mockTenantSettings();
+        mockShipmentSettings();
         // Test
         var req = CommonRequestModel.builder().data(request).build();
         assertThrows(NullPointerException.class, () -> customerBookingService.update(req));
@@ -1394,6 +1467,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(V1ShipmentCreationResponse.class))).thenReturn(mockV1ShipmentCreationResponse);
         when(bookingIntegrationsUtility.createShipmentInV1(any(), anyBoolean(), anyBoolean(), any(), any())).thenReturn(ResponseEntity.ok(mockV1ShipmentCreationResponse));
         mockTenantSettings();
+        mockShipmentSettings();
         // Test
         var responseEntity = customerBookingService.update(CommonRequestModel.builder().data(request).build());
         // Assert
@@ -1414,6 +1488,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         when(customerBookingDao.save(any())).thenReturn(objectMapper.convertValue(request, CustomerBooking.class));
         when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
         when(bookingChargesDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(inputCustomerBooking.getBookingCharges());
+        mockShipmentSettings();
         // Test
         var responseEntity = customerBookingService.update(CommonRequestModel.builder().data(request).build());
         // Assert
@@ -1434,6 +1509,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         when(customerBookingDao.save(any())).thenReturn(objectMapper.convertValue(request, CustomerBooking.class));
         when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
         when(bookingChargesDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(inputCustomerBooking.getBookingCharges());
+        mockShipmentSettings();
         // Test
         var responseEntity = customerBookingService.update(CommonRequestModel.builder().data(request).build());
         // Assert
@@ -1443,6 +1519,7 @@ class CustomerBookingServiceTest extends CommonMocks {
     @Test
     void testBookingUpdateWithUtilization() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         // Arrange
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(true).setHasNoUtilization(false);
         var oldCustomerBooking = objectMapper.convertValue(customerBooking, CustomerBooking.class);
         var newCustomerBooking = objectMapper.convertValue(customerBooking, CustomerBooking.class);;
         oldCustomerBooking.setContractId("old");
@@ -1455,6 +1532,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         when(customerBookingDao.findById(any())).thenReturn(Optional.of(oldCustomerBooking));
         when(customerBookingDao.save(any())).thenReturn(newCustomerBooking);
         when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
+        mockShipmentSettings();
         // Test
         var responseEntity = customerBookingService.update(CommonRequestModel.builder().data(request).build());
         // Assert
@@ -1464,6 +1542,7 @@ class CustomerBookingServiceTest extends CommonMocks {
     @Test
     void testBookingUpdateWithUtilization2() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         // Arrange
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(true).setHasNoUtilization(false);
         var oldCustomerBooking = objectMapper.convertValue(customerBooking, CustomerBooking.class);
         var newCustomerBooking = objectMapper.convertValue(customerBooking, CustomerBooking.class);;
         oldCustomerBooking.setContractId(null);
@@ -1475,6 +1554,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         when(customerBookingDao.findById(any())).thenReturn(Optional.of(oldCustomerBooking));
         when(customerBookingDao.save(any())).thenReturn(newCustomerBooking);
         when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
+        mockShipmentSettings();
         // Test
         var responseEntity = customerBookingService.update(CommonRequestModel.builder().data(request).build());
         // Assert
@@ -1484,6 +1564,7 @@ class CustomerBookingServiceTest extends CommonMocks {
     @Test
     void testBookingUpdateWithUtilization3() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         // Arrange
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(true).setHasNoUtilization(false);
         var oldCustomerBooking = objectMapper.convertValue(customerBooking, CustomerBooking.class);
         var newCustomerBooking = objectMapper.convertValue(customerBooking, CustomerBooking.class);
         oldCustomerBooking.setContractId("old");
@@ -1495,6 +1576,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         when(customerBookingDao.findById(any())).thenReturn(Optional.of(oldCustomerBooking));
         when(customerBookingDao.save(any())).thenReturn(newCustomerBooking);
         when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
+        mockShipmentSettings();
         // Test
         var responseEntity = customerBookingService.update(CommonRequestModel.builder().data(request).build());
         // Assert
@@ -1682,6 +1764,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(new CustomerBooking());
         when(customerBookingDao.save(any())).thenReturn(mockCustomerBooking);
         when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
+        mockShipmentSettings();
 
         ResponseEntity<IRunnerResponse> httpResponse = customerBookingService.create(commonRequestModel);
 
@@ -1708,6 +1791,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(new CustomerBooking());
         when(customerBookingDao.save(any())).thenReturn(mockCustomerBooking);
         when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
+        mockShipmentSettings();
 
         ResponseEntity<IRunnerResponse> httpResponse = customerBookingService.create(commonRequestModel);
 
