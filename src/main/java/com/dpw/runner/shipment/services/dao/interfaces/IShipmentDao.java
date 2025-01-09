@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dao.interfaces;
 
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection;
@@ -50,4 +51,5 @@ public interface IShipmentDao {
     List<ShipmentDetails> findByShipmentIdIn(List<String> shipmentIds);
     void saveIsTransferredToReceivingBranch(Long id, Boolean entityTransferred);
     void updateIsAcceptedTriangulationPartner(Long shipmentId, Long triangulationPartner, Boolean isAccepted);
+    void updateTransferStatus(List<Long> id, NetworkTransferStatus transferStatus);
 }

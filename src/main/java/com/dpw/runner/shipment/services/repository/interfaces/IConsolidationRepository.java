@@ -91,4 +91,8 @@ public interface IConsolidationRepository extends MultiTenancyRepository<Consoli
     @Query(value = "Update triangulation_partner_consolidation set is_accepted = ?3 where consolidation_id = ?1 AND partner_id = ?2", nativeQuery = true)
     void updateIsAcceptedTriangulationPartner(Long consolidationId, Long triangulationPartner, Boolean isAccepted);
 
+
+    @Modifying @Transactional
+    @Query(value = "Update consolidation_details set transfer_status = ?2 where id = ?1", nativeQuery = true)
+    void updateTransferStatus(Long id, String transferStatus);
 }

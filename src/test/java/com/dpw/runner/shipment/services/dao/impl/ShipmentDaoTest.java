@@ -2,11 +2,7 @@ package com.dpw.runner.shipment.services.dao.impl;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -41,6 +37,7 @@ import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -1744,5 +1741,10 @@ class ShipmentDaoTest extends CommonMocks {
         when(shipmentRepository.findShipmentByIdWithQuery(anyLong())).thenReturn(Optional.of(shipmentDetails));
         Optional<ShipmentDetails> responseEntity = shipmentDao.findShipmentByIdWithQuery(shipmentDetails.getId());
         assertEquals(Optional.of(shipmentDetails), responseEntity);
+    }
+
+    @Test
+    void updateTransferStatus() {
+        assertDoesNotThrow(() -> shipmentDao.updateTransferStatus(List.of(1L), NetworkTransferStatus.TRANSFERRED));
     }
 }

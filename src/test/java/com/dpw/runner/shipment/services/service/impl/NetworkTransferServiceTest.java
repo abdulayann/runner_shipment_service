@@ -8,9 +8,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
-import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferDao;
-import com.dpw.runner.shipment.services.dao.interfaces.INotificationDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.ReassignRequest;
 import com.dpw.runner.shipment.services.dto.request.RequestForTransferRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
@@ -74,6 +72,12 @@ class NetworkTransferServiceTest extends CommonMocks{
     private INotificationDao notificationDao;
     @Mock
     private IShipmentSettingsDao shipmentSettingsDao;
+    @Mock
+    private IConsoleShipmentMappingDao consoleShipmentMappingDao;
+    @Mock
+    private IShipmentDao shipmentDao;
+    @Mock
+    private IConsolidationDetailsDao consolidationDao;
 
 
     private static JsonTestUtility jsonTestUtility;
@@ -284,6 +288,7 @@ class NetworkTransferServiceTest extends CommonMocks{
         when(networkTransferDao.save(any())).thenReturn(networkTransfer);
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
+        shipmentDetails.setId(1L);
         assertDoesNotThrow(() -> networkTransferService.processNetworkTransferEntity(123L, null,
                 Constants.SHIPMENT, shipmentDetails, null, Constants.SHIPMENT_TYPE_DRT, null));
     }
@@ -341,6 +346,7 @@ class NetworkTransferServiceTest extends CommonMocks{
         when(networkTransferDao.save(any())).thenThrow(new RuntimeException("Error"));
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
+        shipmentDetails.setId(1L);
         assertThrows(RuntimeException.class, () -> networkTransferService.processNetworkTransferEntity(123L, null,
                 Constants.SHIPMENT, shipmentDetails, null, Constants.DIRECTION_EXP, null));
     }
@@ -348,6 +354,14 @@ class NetworkTransferServiceTest extends CommonMocks{
     @Test
     void testCreateNetworkTransferEntityWithConsolidation(){
         when(networkTransferDao.save(any())).thenReturn(networkTransfer);
+        assertDoesNotThrow(() -> networkTransferService.processNetworkTransferEntity(123L, null,
+                Constants.CONSOLIDATION, null, consolidationDetails, Constants.DIRECTION_CTS, null));
+    }
+
+    @Test
+    void testCreateNetworkTransferEntityWithConsolidation1(){
+        when(networkTransferDao.save(any())).thenReturn(networkTransfer);
+        when(consoleShipmentMappingDao.findByConsolidationId(any())).thenReturn(List.of(new ConsoleShipmentMapping()));
         assertDoesNotThrow(() -> networkTransferService.processNetworkTransferEntity(123L, null,
                 Constants.CONSOLIDATION, null, consolidationDetails, Constants.DIRECTION_CTS, null));
     }
@@ -414,6 +428,12 @@ class NetworkTransferServiceTest extends CommonMocks{
         when(networkTransferDao.findByTenantAndEntity(938, 12146L, Constants.SHIPMENT)).thenReturn(Optional.of(networkTransfer));
         doThrow(new RuntimeException("Connection Time out")).when(networkTransferDao).deleteAndLog(any(), any());
         assertDoesNotThrow(() -> networkTransferService.deleteValidNetworkTransferEntity(938L, 12146L, Constants.SHIPMENT));
+    }
+
+    @Test
+    void testUpdateStatusAndCreatedEntityId() {
+        when(networkTransferDao.findById(1L)).thenReturn(Optional.of(networkTransfer));
+        assertDoesNotThrow(() -> networkTransferService.updateStatusAndCreatedEntityId(1L, NetworkTransferStatus.ACCEPTED.name(), 2L));
     }
 
 }

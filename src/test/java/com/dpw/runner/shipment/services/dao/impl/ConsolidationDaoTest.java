@@ -15,6 +15,7 @@ import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -650,6 +651,11 @@ class ConsolidationDaoTest extends CommonMocks {
         when(consolidationRepository.findConsolidationByIdWithQuery(anyLong())).thenReturn(Optional.of(consolidationDetails));
         Optional<ConsolidationDetails> responseEntity = consolidationsDao.findConsolidationByIdWithQuery(consolidationDetails.getId());
         assertEquals(Optional.of(consolidationDetails), responseEntity);
+    }
+
+    @Test
+    void testUpdateTransferStatus() {
+        assertDoesNotThrow(() -> consolidationsDao.updateTransferStatus(1L, NetworkTransferStatus.TRANSFERRED));
     }
 
 }
