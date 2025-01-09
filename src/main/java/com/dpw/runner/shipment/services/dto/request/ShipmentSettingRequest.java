@@ -184,4 +184,5 @@ public class ShipmentSettingRequest extends CommonRequest implements IRunnerRequ
     private Boolean isEntityTransferPrerequisiteEnabled;
     private Boolean isNetworkTransferEntityEnabled;
     private Boolean eventsRevampEnabled;
+    private String fcrDocument;
 }

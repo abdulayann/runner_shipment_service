@@ -174,4 +174,5 @@ public class ShipmentSettingsDetailsResponse implements IRunnerResponse {
     private Boolean isEntityTransferPrerequisiteEnabled;
     private Boolean isNetworkTransferEntityEnabled;
     private Boolean eventsRevampEnabled;
+    private String fcrDocument;
 }

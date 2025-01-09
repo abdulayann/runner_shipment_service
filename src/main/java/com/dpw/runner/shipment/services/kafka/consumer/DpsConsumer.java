@@ -29,11 +29,11 @@ public class DpsConsumer {
     @Autowired
     private RetryTemplate retryTemplate;
 
-    @KafkaListener(
-            groupId = "#{'${dps.kafka.group-id}'}",
-            topics = "#{'${dps.kafka.topic-name}'}",
-            autoStartup = "#{'${dps.kafka.consumer-auto-startup}'}",
-            containerFactory = "dpsKafkaListenerContainerFactory")
+    // @KafkaListener(
+    //         groupId = "#{'${dps.kafka.group-id}'}",
+    //         topics = "#{'${dps.kafka.topic-name}'}",
+    //         autoStartup = "#{'${dps.kafka.consumer-auto-startup}'}",
+    //         containerFactory = "dpsKafkaListenerContainerFactory")
     public void consume(
             @Payload String message,
             @Header(KafkaHeaders.RECEIVED_TOPIC) String topic,

@@ -1,15 +1,13 @@
 package com.dpw.runner.shipment.services.kafka.consumer;
 
-import com.dpw.runner.shipment.services.kafka.dto.DocumentDto;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
+import com.dpw.runner.shipment.services.kafka.dto.DocumentDto;
 import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringEscapeUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
 import java.util.Objects;
@@ -29,7 +27,7 @@ public class DocumentMasterConsumer {
         this.bookingIntegrationsUtility = bookingIntegrationsUtility;
     }
 
-    @KafkaListener(topics = {"#{'${document.master.kafka.event}'}"}, groupId = "#{'${document.master.kafka.subs}'}")
+//    @KafkaListener(topics = {"#{'${document.master.kafka.event}'}"}, groupId = "#{'${document.master.kafka.subs}'}")
     public void consume(String message)
     {
         try {

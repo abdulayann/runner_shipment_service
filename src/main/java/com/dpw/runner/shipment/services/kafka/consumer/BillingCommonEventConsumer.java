@@ -8,17 +8,17 @@ import com.dpw.runner.shipment.services.kafka.dto.BillingInvoiceDto.InvoiceDto.A
 import com.dpw.runner.shipment.services.service.interfaces.IEventService;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.time.Instant;
-import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
+
+import java.time.Instant;
+import java.util.List;
 
 @Service
 @Slf4j
@@ -32,11 +32,11 @@ public class BillingCommonEventConsumer {
     @Autowired
     private RetryTemplate retryTemplate;
 
-    @KafkaListener(
-            groupId = "#{'${bill.common-event.kafka.group-id}'}",
-            topics = "#{'${bill.common-event.kafka.queue}'}",
-            autoStartup = "#{'${bill.common-event.kafka.consumer-auto-startup}'}",
-            containerFactory = "billingCommonEventKafkaListenerContainerFactory")
+    // @KafkaListener(
+    //         groupId = "#{'${bill.common-event.kafka.group-id}'}",
+    //         topics = "#{'${bill.common-event.kafka.queue}'}",
+    //         autoStartup = "#{'${bill.common-event.kafka.consumer-auto-startup}'}",
+    //         containerFactory = "billingCommonEventKafkaListenerContainerFactory")
     public void consume(
             @Payload String message,
             @Header(KafkaHeaders.RECEIVED_TOPIC) String topic,

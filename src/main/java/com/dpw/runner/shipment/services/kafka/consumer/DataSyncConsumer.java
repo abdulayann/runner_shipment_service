@@ -1,14 +1,13 @@
 package com.dpw.runner.shipment.services.kafka.consumer;
 
-import com.dpw.runner.shipment.services.kafka.dto.SyncKafkaDto;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
+import com.dpw.runner.shipment.services.kafka.dto.SyncKafkaDto;
 import com.dpw.runner.shipment.services.service.interfaces.ISyncService;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
 
@@ -23,7 +22,7 @@ public class DataSyncConsumer {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @KafkaListener(topics = {"#{'${data.sync.kafka.queue}'}"}, groupId = "#{'${data.sync.kafka.subs}'}")
+//    @KafkaListener(topics = {"#{'${data.sync.kafka.queue}'}"}, groupId = "#{'${data.sync.kafka.subs}'}")
     public void consume(String message)
     {
         try {

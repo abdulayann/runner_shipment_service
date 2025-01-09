@@ -1,13 +1,12 @@
 package com.dpw.runner.shipment.services.kafka.consumer;
 
-import com.dpw.runner.shipment.services.kafka.dto.BookingOrderUpdateDTO;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
+import com.dpw.runner.shipment.services.kafka.dto.BookingOrderUpdateDTO;
 import com.dpw.runner.shipment.services.repository.interfaces.IOrderManagementRepository;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
 import java.util.Objects;
@@ -22,7 +21,7 @@ public class OrderManagementConsumer {
     private ObjectMapper objectMapper;
 
     //TODO:bookingseparation:Mayank - remove this once booking service go live
-    @KafkaListener(topics = {"#{'${order.management.event.kafka.queue}'}"}, groupId = "#{'${order.management.event.kafka.subs}'}")
+//    @KafkaListener(topics = {"#{'${order.management.event.kafka.queue}'}"}, groupId = "#{'${order.management.event.kafka.subs}'}")
     public void consume(String message)
     {
         try {

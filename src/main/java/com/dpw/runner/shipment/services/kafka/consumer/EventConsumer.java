@@ -14,13 +14,13 @@ import com.dpw.runner.shipment.services.kafka.dto.EventsRequestDTO;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.Generated;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
@@ -49,7 +49,7 @@ public class EventConsumer {
     this.iv1Service = iv1Service;
   }
 
-  @KafkaListener(topics = {"#{'${wfm.event.kafka.queue}'}"}, groupId = "#{'${wfm.event.kafka.subs}'}")
+  // @KafkaListener(topics = {"#{'${wfm.event.kafka.queue}'}"}, groupId = "#{'${wfm.event.kafka.subs}'}")
   public void consume(String message) {
     log.info("Received message from WFM Event Kafka queue: {}", message);
 

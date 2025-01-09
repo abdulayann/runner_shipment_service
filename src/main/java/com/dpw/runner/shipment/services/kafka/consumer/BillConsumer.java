@@ -1,14 +1,13 @@
 package com.dpw.runner.shipment.services.kafka.consumer;
 
-import com.dpw.runner.shipment.services.kafka.dto.BillDto;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
+import com.dpw.runner.shipment.services.kafka.dto.BillDto;
 import com.dpw.runner.shipment.services.repository.interfaces.IGenericQueryRepository;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
 import java.util.Objects;
@@ -24,7 +23,7 @@ public class BillConsumer {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @KafkaListener(topics = {"#{'${bill.event.kafka.queue}'}"}, groupId = "#{'${bill.event.kafka.subs}'}")
+//    @KafkaListener(topics = {"#{'${bill.event.kafka.queue}'}"}, groupId = "#{'${bill.event.kafka.subs}'}")
     public void consume(String message)
     {
         try {

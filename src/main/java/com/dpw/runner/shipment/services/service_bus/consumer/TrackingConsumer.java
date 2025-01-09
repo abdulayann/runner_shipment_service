@@ -22,6 +22,9 @@ import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
+
 @Service
 @Slf4j
 public class TrackingConsumer {
@@ -53,7 +56,7 @@ public class TrackingConsumer {
                 this::processError
         );
 
-        processorClient.start();
+//        processorClient.start();
 
         log.info("Tracking Consumer - started and listening...");
     }

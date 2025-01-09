@@ -1,10 +1,10 @@
 package com.dpw.runner.shipment.services.kafka.consumer;
 
-import com.dpw.runner.shipment.services.kafka.dto.AirMessagingEventDto;
-import com.dpw.runner.shipment.services.kafka.dto.AirMessagingStatusDto;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.kafka.dto.AirMessagingEventDto;
+import com.dpw.runner.shipment.services.kafka.dto.AirMessagingStatusDto;
 import com.dpw.runner.shipment.services.repository.interfaces.IGenericQueryRepository;
 import com.dpw.runner.shipment.services.utils.AwbUtility;
 import com.dpw.runner.shipment.services.utils.Generated;
@@ -13,7 +13,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 
 import javax.mail.MessagingException;
@@ -32,7 +31,7 @@ public class AirMessagingConsumer {
     @Autowired
     private AwbUtility awbUtility;
 
-    @KafkaListener(topics = {"#{'${air.messaging.event.kafka.queue}'}"}, groupId = "#{'${air.messaging.event.kafka.subs}'}")
+//    @KafkaListener(topics = {"#{'${air.messaging.event.kafka.queue}'}"}, groupId = "#{'${air.messaging.event.kafka.subs}'}")
     public void consume(ConsumerRecord<String, String> message)
     {
         try {

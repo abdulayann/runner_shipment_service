@@ -37,11 +37,11 @@ public class CustomContainerPraStatusConsumer {
         this.retryTemplate = retryTemplate;
     }
 
-    @KafkaListener(
-            groupId = "#{'${custom.service.container.event.kafka.subs}'}",
-            topics = "#{'${custom.service.container.event.kafka.queue}'}",
-            autoStartup = "#{'${custom.service.container.event.kafka.autostart}'}",
-            containerFactory = "customServiceContainerEventKafkaListenerContainerFactory")
+    // @KafkaListener(
+    //         groupId = "#{'${custom.service.container.event.kafka.subs}'}",
+    //         topics = "#{'${custom.service.container.event.kafka.queue}'}",
+    //         autoStartup = "#{'${custom.service.container.event.kafka.autostart}'}",
+    //         containerFactory = "customServiceContainerEventKafkaListenerContainerFactory")
     public void consume(
             @Payload String message,
             @Header(KafkaHeaders.RECEIVED_TOPIC) String topic,
