@@ -1078,8 +1078,8 @@ public abstract class IReport {
             }
             if(shipmentModel.getReferenceNumbersList() != null && !shipmentModel.getReferenceNumbersList().isEmpty()) {
                 for (ReferenceNumbersModel referenceNumbersModel: shipmentModel.getReferenceNumbersList()) {
-                    if(Objects.equals(referenceNumbersModel.getType(), ReportConstants.MRN) && !dict.containsKey(ReportConstants.MRN))
-                        dict.put(ReportConstants.MRN, referenceNumbersModel.getReferenceNumber());
+                    if(Objects.equals(referenceNumbersModel.getType(), ReportConstants.MRN) && !dict.containsKey(ReportConstants.MoRN))
+                        dict.put(ReportConstants.MoRN, referenceNumbersModel.getReferenceNumber());
                 }
             }
             if(shipmentModel.getAdditionalDetails() != null) {
