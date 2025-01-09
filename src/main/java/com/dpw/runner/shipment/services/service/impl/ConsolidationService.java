@@ -39,6 +39,11 @@ import com.dpw.runner.shipment.services.dto.v1.request.ConsoleBookingIdFilterReq
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.*;
+import com.dpw.runner.shipment.services.entity.response.ICarrierDetailsResponse;
+import com.dpw.runner.shipment.services.entity.response.IConsolidationDetailsResponse;
+import com.dpw.runner.shipment.services.entity.response.IShipmentResponse;
+import com.dpw.runner.shipment.services.entity.response.impl.CarrierDetailsResponseImpl;
+import com.dpw.runner.shipment.services.entity.response.impl.ConsolidationDetailsResponseImpl;
 import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -71,6 +76,7 @@ import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
 import com.dpw.runner.shipment.services.utils.*;
 import com.dpw.runner.shipment.services.validator.constants.ErrorConstants;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import com.nimbusds.jose.util.Pair;
@@ -81,6 +87,7 @@ import org.apache.http.auth.AuthenticationException;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.modelmapper.ModelMapper;
+import org.modelmapper.TypeToken;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.CacheManager;
@@ -397,27 +404,41 @@ public class ConsolidationService implements IConsolidationService {
         return responseList;
     }
 
-    private List<IRunnerResponse> convertEntityListToDtoListForExport(List<ConsolidationDetails> lst) {
+    private List<IRunnerResponse> convertEntityListToDtoListForExport(List<IConsolidationDetailsResponse> lst) {
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         List<IRunnerResponse> responseList = new ArrayList<>();
         List<ConsolidationListResponse> consolidationListResponses = new ArrayList<>();
-        List<ConsolidationExcelExportResponse> listResponses = ConsolidationMapper.INSTANCE.toConsolidationExportListResponses(lst);
+        List<ConsolidationExcelExportResponse> listResponses = new ArrayList<>();
+         lst.forEach(consolidations -> {
+             ConsolidationExcelExportResponse response = modelMapper.map(consolidations, ConsolidationExcelExportResponse.class);
+             var shipments = consolidations.getShipmentsList();
+             List<String> shipmentIds = null;
+             List<String> houseBills = null;
+             if (shipments != null)
+                 shipmentIds = shipments.stream().map(shipment -> shipment.getShipmentId()).toList();
+             if (shipmentIds != null)
+                 houseBills = shipments.stream().map(shipment -> shipment.getHouseBill()).filter(houseBill -> Objects.nonNull(houseBill)).toList();
+             response.setHouseBills(houseBills);
+             response.setShipmentIds(shipmentIds);
+             listResponses.add(response);
+        });
         Map<Long, ConsolidationExcelExportResponse> responseMap = listResponses.stream()
             .collect(Collectors.toMap(ConsolidationExcelExportResponse::getId, response -> response));
-
+List<ConsolidationDetails> consolidationDetailsList = new ArrayList<>();
         lst.forEach(consolidationDetails -> {
             ConsolidationExcelExportResponse res = responseMap.get(consolidationDetails.getId());
             if(consolidationDetails.getBookingStatus() != null && Arrays.stream(CarrierBookingStatus.values()).map(CarrierBookingStatus::name).toList().contains(consolidationDetails.getBookingStatus()))
                 res.setBookingStatus(CarrierBookingStatus.valueOf(consolidationDetails.getBookingStatus()).getDescription());
-            updateHouseBillsShippingIds(consolidationDetails, res);
-            containerCountUpdate(consolidationDetails, res, shipmentSettingsDetails.getIsShipmentLevelContainer() != null && shipmentSettingsDetails.getIsShipmentLevelContainer());
-
+           ConsolidationDetails consolidationDetails1 = modelMapper.map(consolidationDetails, ConsolidationDetails.class);
+            //updateHouseBillsShippingIds(consolidationDetails1, res);
+            containerCountUpdate(consolidationDetails1, res, shipmentSettingsDetails.getIsShipmentLevelContainer() != null && shipmentSettingsDetails.getIsShipmentLevelContainer());
+            consolidationDetailsList.add(consolidationDetails1);
             consolidationListResponses.add(jsonHelper.convertValue(res, ConsolidationListResponse.class));
         });
         consolidationListResponses.forEach(consolidationDetails -> {
             responseList.add(consolidationDetails);
         });
-        this.getMasterDataForList(lst, responseList, true, false);
+        this.getMasterDataForList(consolidationDetailsList, responseList, true, false);
         return responseList;
     }
 
@@ -3780,8 +3801,37 @@ public class ConsolidationService implements IConsolidationService {
             log.error(CONSOLIDATION_LIST_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
         }
         Pair<Specification<ConsolidationDetails>, Pageable> tuple = fetchData(request, ConsolidationDetails.class, tableNames);
-        Page<ConsolidationDetails> consolidationDetailsPage = consolidationDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
-        List<IRunnerResponse> consoleResponse = convertEntityListToDtoListForExport(consolidationDetailsPage.getContent());
+        //Page<ConsolidationDetails> consolidationDetailsPage1 = consolidationDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
+        Page<IConsolidationDetailsResponse> consolidationDetailsPage = consolidationDetailsDao.findAllLiteConsol(tuple.getLeft(), tuple.getRight());
+        List<IConsolidationDetailsResponse> consolidationDetailsResponses = consolidationDetailsPage.getContent();
+        Set<Long> consolIds = consolidationDetailsResponses.stream()
+            .map(IConsolidationDetailsResponse::getId).collect(
+                Collectors.toSet());
+        List<IShipmentResponse> shipmentResponses = consolidationDetailsDao.findLiteShipmentFromConsol(tuple.getLeft(), tuple.getRight());
+        Map<Long, List<IShipmentResponse>> shipmentsMap = shipmentResponses.stream()
+            .collect(Collectors.groupingBy(IShipmentResponse::getConsolId));
+        // Assuming there's a class ConsolidationDetailsResponse that implements IConsolidationDetailsResponse and has a constructor to set the fields
+        List<IConsolidationDetailsResponse> updatedConsolidationDetailsResponses = consolidationDetailsResponses.stream()
+            .map(consolidation -> {
+                Long consolId = consolidation.getId();  // Get the ID of the consolidation
+                List<IShipmentResponse> relatedShipments = shipmentsMap.getOrDefault(consolId, List.of());  // Get the list of shipments or an empty list if none exist
+                ICarrierDetailsResponse carrierDetails = new CarrierDetailsResponseImpl(
+                    consolidation.getVoyage(),
+                    consolidation.getShippingLine(),
+                    consolidation.getEta(),
+                    consolidation.getEtd(),
+                    consolidation.getAta(),
+                    consolidation.getAtd()
+                );
+                // Create a new instance of ConsolidationDetailsResponse or similar class with shipments included
+                return new ConsolidationDetailsResponseImpl(consolidation.getId(),consolidation.getConsolidationNumber(),consolidation.getConsolidationType(),consolidation.getTransportMode(),
+                    consolidation.getShipmentType(), consolidation.getDomestic(), consolidation.getCreatedBy(), consolidation.getPayment(), consolidation.getBookingCutoff(),consolidation.getEstimatedTerminalCutoff(),
+                    consolidation.getTerminalCutoff(), consolidation.getShipInstructionCutoff(), consolidation.getHazardousBookingCutoff(), consolidation.getVerifiedGrossMassCutoff(), consolidation.getReeferCutoff(),
+                    consolidation.getReferenceNumber(), consolidation.getBookingStatus(), consolidation.getBookingNumber(), consolidation.getMawb(),carrierDetails, consolidation.getContainersList(),relatedShipments
+                );
+            })
+            .collect(Collectors.toList());
+        List<IRunnerResponse> consoleResponse = convertEntityListToDtoListForExport(updatedConsolidationDetailsResponses);
         log.info("Consolidation list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
         Map<String, Integer> headerMap = new HashMap<>();
         for (int i = 0; i < ConsolidationConstants.CONSOLIDATION_HEADER.size(); i++) {

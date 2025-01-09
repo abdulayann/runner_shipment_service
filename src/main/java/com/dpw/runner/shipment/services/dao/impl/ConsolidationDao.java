@@ -13,6 +13,8 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
+import com.dpw.runner.shipment.services.entity.response.IConsolidationDetailsResponse;
+import com.dpw.runner.shipment.services.entity.response.IShipmentResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
@@ -181,7 +183,10 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     public Page<ConsolidationDetails> findAll(Specification<ConsolidationDetails> spec, Pageable pageable) {
         return consolidationRepository.findAll(spec, pageable);
     }
-
+    @Override
+    public Page<IConsolidationDetailsResponse> findAllLiteConsol(Specification<ConsolidationDetails> spec, Pageable pageable) {
+        return consolidationRepository.findAllLiteConsol(spec, pageable);
+    }
     @Override
     public Optional<ConsolidationDetails> findById(Long id) {
         return consolidationRepository.findById(id);
@@ -600,5 +605,10 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     @Transactional
     public Optional<ConsolidationDetails> findConsolidationByIdWithQuery(Long id) {
         return consolidationRepository.findConsolidationByIdWithQuery(id);
+    }
+
+    @Override
+    public List<IShipmentResponse> findLiteShipmentFromConsol(Specification<ConsolidationDetails> spec, Pageable pageable) {
+        return consolidationRepository.findLiteShipmentFromConsol(spec, pageable);
     }
 }

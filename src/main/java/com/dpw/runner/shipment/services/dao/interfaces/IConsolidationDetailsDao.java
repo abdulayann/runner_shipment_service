@@ -3,6 +3,8 @@ package com.dpw.runner.shipment.services.dao.interfaces;
 import com.dpw.runner.shipment.services.dto.request.ConsoleBookingRequest;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
+import com.dpw.runner.shipment.services.entity.response.IConsolidationDetailsResponse;
+import com.dpw.runner.shipment.services.entity.response.IShipmentResponse;
 import com.dpw.runner.shipment.services.projection.ConsolidationDetailsProjection;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,6 +22,7 @@ public interface IConsolidationDetailsDao {
     ConsolidationDetails update(ConsolidationDetails consolidationDetails, boolean fromV1Sync);
     ConsolidationDetails update(ConsolidationDetails consolidationDetails, boolean fromV1Sync, boolean updatingFromDgShipment);
     Page<ConsolidationDetails> findAll(Specification<ConsolidationDetails> spec, Pageable pageable);
+    Page<IConsolidationDetailsResponse> findAllLiteConsol(Specification<ConsolidationDetails> spec, Pageable pageable);
     Optional<ConsolidationDetails> findById(Long id);
     void delete(ConsolidationDetails consolidationDetails);
     List<ConsolidationDetails> saveAll(List<ConsolidationDetails> consolidationDetails);
@@ -39,4 +42,6 @@ public interface IConsolidationDetailsDao {
     List<ConsolidationDetails> findBySourceGuid(UUID guid);
     void entityDetach(List<ConsolidationDetails> consolidationDetails);
     Optional<ConsolidationDetails> findConsolidationByIdWithQuery(Long id);
+
+    List<IShipmentResponse> findLiteShipmentFromConsol(Specification<ConsolidationDetails> spec, Pageable pageable);
 }
