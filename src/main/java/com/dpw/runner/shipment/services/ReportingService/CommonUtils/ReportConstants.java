@@ -865,6 +865,7 @@ public class ReportConstants {
 
     public static final String CUSTOMS_ENTRY_NUMBER = "CustomsEntryNumber";
     public static final String ENTRY_NUMBER = "EntryNumber";
+    public static final String MoRN = "MoRN";
     public static final String MRN = "MRN";
     public static final String CUSTOMER_REFERENCE = "CustomerReference";
 
