@@ -250,6 +250,10 @@ public class ReportService implements IReportService {
             awbLabelReport.setRemarks(reportRequest.getRemarks());
             awbLabelReport.setCombi(reportRequest.isCombiLabel());
         }
+        if(report instanceof FCRDocumentReport fcrDocumentReport) {
+            fcrDocumentReport.setFcrShipper(reportRequest.getFcrShipper());
+            fcrDocumentReport.setPackIds(reportRequest.getPackIds());
+        }
         // user story 135668
         if(report instanceof ArrivalNoticeReport) {
             ((ArrivalNoticeReport) report).printWithoutTranslation = reportRequest.getPrintWithoutTranslation();
@@ -806,6 +810,9 @@ public class ReportService implements IReportService {
                 createEvent(reportRequest, EventConstants.DOGE);
             }
         }
+        if(reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.FCR_DOCUMENT)) {
+            shipmentDao.updateFCRNo(Long.valueOf(reportRequest.getReportId()));
+        }
 
         return pdfByteContent;
     }
@@ -1181,6 +1188,9 @@ public class ReportService implements IReportService {
             case ReportConstants.CSD_REPORT:
                 return setDocPages(null,
                         row.getCsd() == null ? adminRow.getCsd() : row.getCsd(), null, row.getCsd() != null, null, null, null);
+           case ReportConstants.FCR_DOCUMENT:
+                return setDocPages(null,
+                        row.getFcrDocument() == null ? adminRow.getFcrDocument() : row.getFcrDocument(), null, row.getFcrDocument() != null, null, null, null);
             default:
         }
 

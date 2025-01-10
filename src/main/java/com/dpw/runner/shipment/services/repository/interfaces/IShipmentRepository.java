@@ -7,11 +7,6 @@ import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection;
 import com.dpw.runner.shipment.services.utils.ExcludeTenantFilter;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.dpw.runner.shipment.services.utils.InterBranchEntity;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -19,6 +14,12 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 
 
 @Repository @Generated
@@ -130,4 +131,8 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
     @Modifying @Transactional
     @Query(value = "Update shipment_details set transfer_status = ?2 where id IN ?1", nativeQuery = true)
     void updateTransferStatus(List<Long> id, String transferStatus);
+    
+    @Modifying
+    @Query(value = "update shipment_additional_details set fcr_number = fcr_number + 1 where id in (select additional_details_id from shipment_details where id = ?1)", nativeQuery = true)
+    void updateFCRNo(Long id);
 }

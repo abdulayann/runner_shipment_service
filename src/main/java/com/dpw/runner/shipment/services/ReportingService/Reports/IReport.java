@@ -2890,6 +2890,8 @@ public abstract class IReport {
             dict.put(HS_CODE, pack.getHSCode());
             dict.put(DESCRIPTION, pack.getGoodsDescription());
             dict.put(IsDG, false);
+            dict.put(PACKS_MARKS_NUMBERS, pack.getMarksnNums());
+            dict.put(PACKS_GOODS_DESCRIPTION, pack.getGoodsDescription());
             if(pack.getHazardous() != null && pack.getHazardous().equals(true)){
                 var dgSubstanceRow = masterDataUtils.fetchDgSubstanceRow(pack.getDGSubstanceId());
                 dict.put(DG_SUBSTANCE, dgSubstanceRow.ProperShippingName);

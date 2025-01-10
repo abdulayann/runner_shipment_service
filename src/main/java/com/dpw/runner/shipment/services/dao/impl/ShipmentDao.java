@@ -741,4 +741,10 @@ public class ShipmentDao implements IShipmentDao {
     public void updateTransferStatus(List<Long> id, NetworkTransferStatus transferStatus) {
         shipmentRepository.updateTransferStatus(id, transferStatus.name());
     }
+    
+    @Override
+    @Transactional
+    public void updateFCRNo(Long id) {
+        shipmentRepository.updateFCRNo(id);
+    }
 }

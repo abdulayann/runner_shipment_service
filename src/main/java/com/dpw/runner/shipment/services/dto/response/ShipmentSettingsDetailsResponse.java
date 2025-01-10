@@ -178,4 +178,5 @@ public class ShipmentSettingsDetailsResponse implements IRunnerResponse {
     private Boolean isUtilizationForContainerQuoted;
     private Boolean hasNoUtilization;
     private Boolean isAwbRevampEnabled;
+    private String fcrDocument;
 }

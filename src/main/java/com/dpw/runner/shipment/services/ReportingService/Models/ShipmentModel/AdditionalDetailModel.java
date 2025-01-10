@@ -236,4 +236,6 @@ public class AdditionalDetailModel implements IDocumentModel {
     private String additionalSecurityInformation;
     @JsonProperty("RegulatedEntityCategory")
     private String regulatedEntityCategory;
+    @JsonProperty("FcrNumber")
+    private Integer fcrNumber;
 }

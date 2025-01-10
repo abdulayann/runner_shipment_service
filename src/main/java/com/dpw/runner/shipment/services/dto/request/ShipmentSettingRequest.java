@@ -188,4 +188,5 @@ public class ShipmentSettingRequest extends CommonRequest implements IRunnerRequ
     private Boolean isUtilizationForContainerQuoted;
     private Boolean hasNoUtilization;
     private Boolean isAwbRevampEnabled;
+    private String fcrDocument;
 }
