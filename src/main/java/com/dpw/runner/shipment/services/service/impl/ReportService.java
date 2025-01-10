@@ -745,10 +745,6 @@ public class ReportService implements IReportService {
                     //throw new ValidationException("Unable to upload doc");
                 }
             }
-            if (reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.Draft.name()))
-            {
-                createEvent(reportRequest, EventConstants.DHBL);
-            }
 
             if(reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.Original.name()) || reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.Surrender.name())){
                 try
