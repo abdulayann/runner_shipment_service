@@ -271,6 +271,7 @@ class CargoManifestAirConsolidationReportTest extends CommonMocks {
         consolidationModel.setCarrierDetails(carrierDetailModel);
         ArrivalDepartureDetailsModel arrivalDepartureDetailsModel = new ArrivalDepartureDetailsModel();
         arrivalDepartureDetailsModel.setCTOId(partiesModel);
+        arrivalDepartureDetailsModel.setLastForeignPort("123");
         consolidationModel.setArrivalDetails(arrivalDepartureDetailsModel);
         partiesModel = new PartiesModel();
         partiesModel.setType("Notify Party 1");
