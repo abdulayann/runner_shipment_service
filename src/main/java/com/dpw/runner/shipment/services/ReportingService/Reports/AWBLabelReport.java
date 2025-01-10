@@ -95,7 +95,10 @@ public class AWBLabelReport extends IReport{
                 consolidationDetails = getConsolidationsById(consoleId);
             }
             else {
-                consoleId = getShipmentDetails(id).getConsolidationList().get(0).getId();
+                ShipmentDetails shipmentDetails = getShipmentDetails(id);
+                if(listIsNullOrEmpty(shipmentDetails.getConsolidationList()))
+                    throw new RunnerException("Please attach the consolidation before printing Combi Labels");
+                consoleId = shipmentDetails.getConsolidationList().get(0).getId();
                 consolidationDetails = getConsolidationsById(consoleId);
             }
             awbLabelModel.setConsolidation(getConsolidationModel(consolidationDetails));
@@ -390,7 +393,8 @@ public class AWBLabelReport extends IReport{
                             noOfPacks = noOfPacks + Integer.parseInt(packingModel.getPacks());
                         }
                     }
-                    hawbPacksList.add(Pair.of(shipmentModel.getHouseBill(), noOfPacks));
+                    if(noOfPacks > 0)
+                        hawbPacksList.add(Pair.of(shipmentModel.getHouseBill(), noOfPacks));
                 }
             }
             dictionary.put("hawbPacksMap", hawbPacksList);
