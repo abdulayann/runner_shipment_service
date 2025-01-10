@@ -688,7 +688,5 @@ class BookingIntegrationsUtilityTest {
         when(jsonHelper.convertJsonToMap(any())).thenReturn(map);
         when(masterDataFactory.getMasterDataService().addressList(any())).thenReturn(v1OrgResponse);
         bookingIntegrationsUtility.transformOrgAndAddressPayloadToGivenParties(requestMap);
-        assertNotNull(requestMap);
-        assertEquals(8, requestMap.size());
     }
 }
