@@ -62,5 +62,4 @@ public class PartiesConstants {
 
     public static final String REGULATED_AGENT = "RegulatedAgent";
     public static final String KNOWN_CONSIGNOR = "KnownConsignor";
-    public static final String ORG_ID = "OrgId";
 }

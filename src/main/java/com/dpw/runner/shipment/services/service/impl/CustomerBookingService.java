@@ -74,7 +74,6 @@ import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
-import static com.dpw.runner.shipment.services.validator.constants.CustomerBookingConstants.*;
 
 @Service
 @Slf4j
@@ -866,43 +865,20 @@ public class CustomerBookingService implements ICustomerBookingService {
     }
 
     private void setOrgAndAddressToParties(PlatformToRunnerCustomerBookingRequest request) {
-        Map<String, PartiesRequest> requestMap = new HashMap<>();
         if (request.getCustomer() != null) {
-            requestMap.put(CUSTOMER_REQUEST, request.getCustomer());
+            String orgCode = request.getCustomer().getOrgCode();
+            String addressCode = request.getCustomer().getAddressCode();
+            bookingIntegrationsUtility.transformOrgAndAddressPayload(request.getCustomer(), addressCode, orgCode);
         }
-        if(request.getConsignor() != null && !Boolean.TRUE.equals(request.getIsConsignorFreeText()) &&
-                !IsStringNullOrEmpty(request.getConsignor().getOrgCode()) &&
-                !IsStringNullOrEmpty(request.getConsignor().getAddressCode())) {
-            requestMap.put(CONSIGNOR_REQUEST, request.getConsignor());
-        }
-        else {
+        if ((Objects.isNull(request.getIsConsignorFreeText()) || request.getIsConsignorFreeText()) && request.getConsignor() != null) {
             transformOrgAndAddressToRawData(request.getConsignor());
         }
-        if(request.getConsignee() != null && !Boolean.TRUE.equals(request.getIsConsigneeFreeText()) &&
-                !IsStringNullOrEmpty(request.getConsignee().getOrgCode()) &&
-                !IsStringNullOrEmpty(request.getConsignee().getAddressCode())) {
-            requestMap.put(CONSIGNEE_REQUEST, request.getConsignee());
-        }
-        else {
+        if ((Objects.isNull(request.getIsConsigneeFreeText()) || request.getIsConsigneeFreeText()) && request.getConsignee() != null) {
             transformOrgAndAddressToRawData(request.getConsignee());
         }
-        if(request.getNotifyParty() != null && !Boolean.TRUE.equals(request.getIsNotifyPartyFreeText()) &&
-                !IsStringNullOrEmpty(request.getNotifyParty().getOrgCode()) &&
-                !IsStringNullOrEmpty(request.getNotifyParty().getAddressCode())) {
-            requestMap.put(NOTIFY_PARTY_REQUEST, request.getNotifyParty());
-        }
-        else {
+        if ((Objects.isNull(request.getIsNotifyPartyFreeText()) || request.getIsNotifyPartyFreeText()) && request.getNotifyParty() != null) {
             transformOrgAndAddressToRawData(request.getNotifyParty());
         }
-        bookingIntegrationsUtility.transformOrgAndAddressPayloadToGivenParties(requestMap);
-        if(requestMap.containsKey("Customer"))
-            request.setCustomer(requestMap.get("Customer"));
-        if(requestMap.containsKey("Consignor"))
-            request.setConsignor(requestMap.get("Consignor"));
-        if(requestMap.containsKey("Consignee"))
-            request.setConsignee(requestMap.get("Consignee"));
-        if(requestMap.containsKey("Notify Party"))
-            request.setNotifyParty(requestMap.get("Notify Party"));
 
         if (request.getBookingCharges() != null && !request.getBookingCharges().isEmpty()) {
             request.getBookingCharges().forEach(charge -> {
@@ -925,8 +901,6 @@ public class CustomerBookingService implements ICustomerBookingService {
     }
 
     private void transformOrgAndAddressToRawData(PartiesRequest partiesRequest) {
-        if(partiesRequest == null)
-            return;
         Map<String, Object> orgData = partiesRequest.getOrgData();
         Map<String, Object> addressData = partiesRequest.getAddressData();
 
@@ -961,7 +935,6 @@ public class CustomerBookingService implements ICustomerBookingService {
         if (addressData.containsKey(PartiesConstants.PHONE)) {
             addressString = addressString.concat((String) addressData.get(PartiesConstants.PHONE) + "|");
         }
-        partiesRequest.setIsAddressFreeText(true);
         partiesRequest.setAddressData(Map.of(PartiesConstants.RAW_DATA, addressString));
     }
 
