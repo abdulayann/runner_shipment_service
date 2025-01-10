@@ -3165,7 +3165,10 @@ class ReportServiceTest {
         dataRetrived.put(ReportConstants.TOTAL_CONSOL_PACKS, 3);
         dataRetrived.put(ReportConstants.IS_COMBI, true);
         List<Pair<String, Integer>> map = new ArrayList<>();
-        map.add(Pair.of("hawb1", 23));
+        map.add(Pair.of("hawb1", 1));
+        map.add(Pair.of("hawb2", 1));
+        map.add(Pair.of("hawb3", 1));
+        map.add(Pair.of("hawb4", 1));
         dataRetrived.put("hawbPacksMap", map);
 
         List<byte[]> pdfBytes = new ArrayList<>();
