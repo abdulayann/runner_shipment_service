@@ -15,7 +15,9 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryRespon
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentMeasurementDetailsDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
@@ -24,6 +26,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
@@ -56,6 +59,10 @@ public class AWBLabelReport extends IReport{
         isMawb = mawb;
     }
 
+    public void setCombi(boolean combi) {
+        isCombi = combi;
+    }
+
     public void setRemarks(String remarks) {
         this.remarks = remarks;
     }
@@ -68,6 +75,7 @@ public class AWBLabelReport extends IReport{
         return remarks;
     }
 
+    private boolean isCombi;
     private boolean isMawb;
     private String remarks;
     @Override
@@ -79,15 +87,38 @@ public class AWBLabelReport extends IReport{
     @Override
     public IDocumentModel getDocumentModel(Long id) throws RunnerException {
         AWbLabelModel awbLabelModel = new AWbLabelModel();
-        if(isMawb) {
-            awbLabelModel.setConsolidation(getConsolidation(id));
-            awbLabelModel.setAwb(getMawb(id, true));
+        if(isCombi) {
+            ConsolidationDetails consolidationDetails;
+            Long consoleId;
+            if(isMawb) {
+                consoleId = id;
+                consolidationDetails = getConsolidationsById(consoleId);
+            }
+            else {
+                consoleId = getShipmentDetails(id).getConsolidationList().get(0).getId();
+                consolidationDetails = getConsolidationsById(consoleId);
+            }
+            awbLabelModel.setConsolidation(getConsolidationModel(consolidationDetails));
+            awbLabelModel.setAwb(getMawb(consoleId, true));
             awbLabelModel.getConsolidation().setConsoleGrossWeightAndUnit(getConsolGrossWeightAndUnit(awbLabelModel.getConsolidation()));
-        }
-        else {
-            awbLabelModel.shipment = getShipment(id);
-            awbLabelModel.setAwb(getHawb(id));
-            validateAirAndOceanDGCheck(awbLabelModel.shipment);
+            awbLabelModel.setShipmentModels(new ArrayList<>());
+            if(!listIsNullOrEmpty(consolidationDetails.getShipmentsList())) {
+                for (ShipmentDetails shipmentDetails: consolidationDetails.getShipmentsList()) {
+                    awbLabelModel.getShipmentModels().add(getShipment(shipmentDetails));
+                }
+            }
+            isMawb = true;
+        } else {
+            if(isMawb) {
+                awbLabelModel.setConsolidation(getConsolidation(id));
+                awbLabelModel.setAwb(getMawb(id, true));
+                awbLabelModel.getConsolidation().setConsoleGrossWeightAndUnit(getConsolGrossWeightAndUnit(awbLabelModel.getConsolidation()));
+            }
+            else {
+                awbLabelModel.shipment = getShipment(id);
+                awbLabelModel.setAwb(getHawb(id));
+                validateAirAndOceanDGCheck(awbLabelModel.shipment);
+            }
         }
         awbLabelModel.tenant = getTenant();
         awbLabelModel.setRemarks(this.remarks);
@@ -346,8 +377,28 @@ public class AWBLabelReport extends IReport{
         if (awbLabelModel.shipment != null && awbLabelModel.shipment.getPackingList() != null) {
             dictionary.put(ReportConstants.TOTAL_PACKS, awbLabelModel.shipment.getNoOfPacks());
         }
-        dictionary.put(ReportConstants.IS_MAWB, this.isMawb);
-        dictionary.put(ReportConstants.IS_HAWB, !this.isMawb);
+        if(isCombi) {
+            dictionary.put(IS_COMBI, true);
+            dictionary.put(ReportConstants.IS_MAWB, false);
+            dictionary.put(ReportConstants.IS_HAWB, false);
+            List<org.apache.commons.lang3.tuple.Pair<String, Integer>> hawbPacksList = new ArrayList<>();
+            if(!listIsNullOrEmpty(awbLabelModel.getShipmentModels())) {
+                for(ShipmentModel shipmentModel: awbLabelModel.getShipmentModels()) {
+                    int noOfPacks = 0;
+                    if(!listIsNullOrEmpty(shipmentModel.getPackingList())) {
+                        for(PackingModel packingModel: shipmentModel.getPackingList()) {
+                            noOfPacks = noOfPacks + Integer.parseInt(packingModel.getPacks());
+                        }
+                    }
+                    hawbPacksList.add(Pair.of(shipmentModel.getHouseBill(), noOfPacks));
+                }
+            }
+            dictionary.put("hawbPacksMap", hawbPacksList);
+        } else {
+            dictionary.put(IS_COMBI, false);
+            dictionary.put(ReportConstants.IS_MAWB, this.isMawb);
+            dictionary.put(ReportConstants.IS_HAWB, !this.isMawb);
+        }
         if(awbLabelModel.getShipment() != null && isMawb){
             //DRT SHIPMENT
             dictionary.put(AIRLINE_NAME, dictionary.get(CARRIER));

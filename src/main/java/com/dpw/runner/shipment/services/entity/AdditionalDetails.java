@@ -487,4 +487,7 @@ public class AdditionalDetails extends MultiTenancy {
 
     @Column(name = "cargo_out_for_delivery")
     private LocalDateTime cargoOutForDelivery;
+
+   @Column(name = "fcr_number")
+   private Integer fcrNumber = 0;
 }

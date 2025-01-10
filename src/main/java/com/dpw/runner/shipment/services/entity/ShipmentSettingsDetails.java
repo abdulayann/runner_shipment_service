@@ -579,4 +579,7 @@ public class ShipmentSettingsDetails extends MultiTenancy {
 
     @Column(name = "is_awb_revamp_enabled")
     private Boolean isAwbRevampEnabled;
+
+    @Column(name = "fcr_document")
+    private String fcrDocument;
 }
