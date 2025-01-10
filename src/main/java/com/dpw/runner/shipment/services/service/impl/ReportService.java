@@ -837,7 +837,7 @@ public class ReportService implements IReportService {
         // Set reference number based on event code
         if (EventConstants.DHBL.equalsIgnoreCase(eventCode) || EventConstants.FHBL.equalsIgnoreCase(eventCode)) {
             shipmentDao.findById(reportId).ifPresent(shipmentDetails ->
-                    eventsRequest.setReferenceNumber(shipmentDetails.getHouseBill())
+                    eventsRequest.setContainerNumber(shipmentDetails.getHouseBill())
             );
         }
 

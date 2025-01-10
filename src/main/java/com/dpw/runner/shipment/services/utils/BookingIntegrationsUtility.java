@@ -1003,7 +1003,7 @@ public class BookingIntegrationsUtility {
                     eventsRequest.setEventCode(payloadData.getEventCode());
                     eventsRequest.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
                     if (EventConstants.FNMU.equals(payloadData.getEventCode())) {
-                        eventsRequest.setReferenceNumber(shipmentDetails.getMasterBill());
+                        eventsRequest.setContainerNumber(shipmentDetails.getMasterBill());
                     }
                     log.info("Generating event with code: {} for shipment entity ID: {}", payloadData.getEventCode(), shipmentDetails.getId());
                     eventService.saveEvent(eventsRequest);
