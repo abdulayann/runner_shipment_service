@@ -60,7 +60,10 @@ public class FCRDocumentReport extends IReport{
         dictionary.put(SHIP_CONSIGNEE_IN_CAPS, getOrgAddressDetails(fcrDocumentModel.getShipmentModel().getConsignee()));
         dictionary.put(SHIP_NOTIFY_PARTY_IN_CAPS, getOrgAddressDetails(fcrDocumentModel.getShipmentModel().getAdditionalDetails().getNotifyParty()));
         dictionary.put(SHIPMENT_NO, fcrDocumentModel.getShipmentModel().getShipmentId());
-        dictionary.put(FCR_NO, "FCR " + fcrDocumentModel.getShipmentModel().getShipmentId() + String.format("%03d", fcrDocumentModel.getShipmentModel().getAdditionalDetails().getFcrNumber() + 1));
+        dictionary.put(FCR_NO, "FCR " +
+                fcrDocumentModel.getShipmentModel().getShipmentId() +
+                String.format("%03d",
+                        (fcrDocumentModel.getShipmentModel().getAdditionalDetails().getFcrNumber() != null ? fcrDocumentModel.getShipmentModel().getAdditionalDetails().getFcrNumber() : 0) + 1));
         fcrDocumentModel.getShipmentModel().setPackingList(
                 fcrDocumentModel.getShipmentModel()
                         .getPackingList()

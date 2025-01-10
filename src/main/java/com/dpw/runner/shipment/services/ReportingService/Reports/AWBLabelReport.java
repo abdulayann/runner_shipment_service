@@ -382,14 +382,16 @@ public class AWBLabelReport extends IReport{
             dictionary.put(ReportConstants.IS_MAWB, false);
             dictionary.put(ReportConstants.IS_HAWB, false);
             List<org.apache.commons.lang3.tuple.Pair<String, Integer>> hawbPacksList = new ArrayList<>();
-            for(ShipmentModel shipmentModel: awbLabelModel.getShipmentModels()) {
-                int noOfPacks = 0;
-                if(!listIsNullOrEmpty(shipmentModel.getPackingList())) {
-                    for(PackingModel packingModel: shipmentModel.getPackingList()) {
-                        noOfPacks = noOfPacks + Integer.parseInt(packingModel.getPacks());
+            if(!listIsNullOrEmpty(awbLabelModel.getShipmentModels())) {
+                for(ShipmentModel shipmentModel: awbLabelModel.getShipmentModels()) {
+                    int noOfPacks = 0;
+                    if(!listIsNullOrEmpty(shipmentModel.getPackingList())) {
+                        for(PackingModel packingModel: shipmentModel.getPackingList()) {
+                            noOfPacks = noOfPacks + Integer.parseInt(packingModel.getPacks());
+                        }
                     }
+                    hawbPacksList.add(Pair.of(shipmentModel.getHouseBill(), noOfPacks));
                 }
-                hawbPacksList.add(Pair.of(shipmentModel.getHouseBill(), noOfPacks));
             }
             dictionary.put("hawbPacksMap", hawbPacksList);
         } else {
