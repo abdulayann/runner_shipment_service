@@ -1530,7 +1530,7 @@ public abstract class IReport {
         List<MasterListRequest> masterListRequest = createMasterListsRequestFromConsole(consolidation);
         Map<Integer, Map<String, MasterData>> masterListsMap = fetchInBulkMasterList(MasterListRequestV2.builder().MasterListRequests(masterListRequest.stream().filter(Objects::nonNull).toList()).build());
         UnlocationsResponse lastForeignPort = null;
-        if (arrivalDetails != null) {
+        if (arrivalDetails != null && !IsStringNullOrEmpty(arrivalDetails.getLastForeignPort())) {
             List<Object> criteria = Arrays.asList(
                     Arrays.asList(EntityTransferConstants.LOCATION_SERVICE_GUID),
                     "=",

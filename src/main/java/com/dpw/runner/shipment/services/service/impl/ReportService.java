@@ -857,7 +857,8 @@ public class ReportService implements IReportService {
             noOfPacks = (Integer) dataRetrived.get(ReportConstants.TOTAL_PACKS);
         }
         if(isCombi) {
-            hawbPacksMap = (List<Pair<String, Integer>>) dataRetrived.get("hawbPacksMap");
+            hawbPacksMap = new ArrayList<>((List<Pair<String, Integer>>) dataRetrived.get("hawbPacksMap"));
+            dataRetrived.remove("hawbPacksMap");
             noOfPacks = (Integer) dataRetrived.get(ReportConstants.TOTAL_CONSOL_PACKS);
         }
         if(noOfPacks == null || noOfPacks == 0) {
