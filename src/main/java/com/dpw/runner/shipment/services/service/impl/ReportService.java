@@ -1257,7 +1257,7 @@ public class ReportService implements IReportService {
 
     public byte[] addBarCodeForCombiReport(byte[] bytes, String hawbNumber) {
         if(StringUtility.isNotEmpty(hawbNumber))
-            bytes = this.addBarCodeInReport(bytes, hawbNumber, 10, -200, ReportConstants.HAWB, true);
+            bytes = this.addBarCodeInReport(bytes, hawbNumber, 10, -225, ReportConstants.HAWB, true);
         return bytes;
     }
 
