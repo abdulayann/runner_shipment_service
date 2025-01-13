@@ -8659,7 +8659,7 @@ ShipmentServiceTest extends CommonMocks {
     @Test
     void attachDetachOrderTest() {
         ShipmentOrderAttachDetachRequest shipmentRequest = ShipmentOrderAttachDetachRequest.builder().build();
-        shipmentRequest.setOrderGuid(UUID.fromString("eaf227f3-de85-42b4-8180-cf48ccf568f9"));
+        shipmentRequest.setOrderDetailsList(List.of(ShipmentOrderAttachDetachRequest.OrderDetails.builder().orderGuid(UUID.fromString("eaf227f3-de85-42b4-8180-cf48ccf568f9")).build()));
         shipmentRequest.setShipmentGuid(UUID.fromString("3d7ac60d-5ada-4cff-9f4d-2fde960e3e06"));
         shipmentRequest.setEvent("ATTACH");
         ShipmentDetails shipmentDetails1 = ShipmentDetails.builder().build();
@@ -8668,7 +8668,7 @@ ShipmentServiceTest extends CommonMocks {
         ShipmentOrder shipmentOrder = ShipmentOrder.builder().build();
         shipmentOrder.setId(1L);
         when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(shipmentDetails1));
-        when(shipmentOrderDao.findByShipmentIdAndOrderGuid(any(), any())).thenReturn(Optional.of(shipmentOrder));
+        when(shipmentOrderDao.findByShipmentId(any())).thenReturn(List.of(shipmentOrder));
 
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.attachDetachOrder(shipmentRequest);
         assertEquals(httpResponse, ResponseHelper.buildSuccessResponse());
@@ -8677,7 +8677,7 @@ ShipmentServiceTest extends CommonMocks {
     @Test
     void attachDetachOrderTest2() {
         ShipmentOrderAttachDetachRequest shipmentRequest = ShipmentOrderAttachDetachRequest.builder().build();
-        shipmentRequest.setOrderGuid(UUID.fromString("eaf227f3-de85-42b4-8180-cf48ccf568f9"));
+        shipmentRequest.setOrderDetailsList(List.of(ShipmentOrderAttachDetachRequest.OrderDetails.builder().orderGuid(UUID.fromString("eaf227f3-de85-42b4-8180-cf48ccf568f9")).build()));
         shipmentRequest.setShipmentGuid(UUID.fromString("3d7ac60d-5ada-4cff-9f4d-2fde960e3e06"));
         shipmentRequest.setEvent("ATTACH");
         ShipmentDetails shipmentDetails1 = ShipmentDetails.builder().build();
@@ -8686,7 +8686,7 @@ ShipmentServiceTest extends CommonMocks {
         ShipmentOrder shipmentOrder = ShipmentOrder.builder().build();
         shipmentOrder.setId(1L);
         when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(shipmentDetails1));
-        when(shipmentOrderDao.findByShipmentIdAndOrderGuid(any(), any())).thenReturn(Optional.empty());
+        when(shipmentOrderDao.findByShipmentId(any())).thenReturn(new ArrayList<>());
         when(shipmentOrderDao.save(any())).thenReturn(shipmentOrder);
 
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.attachDetachOrder(shipmentRequest);
@@ -8696,7 +8696,7 @@ ShipmentServiceTest extends CommonMocks {
     @Test
     void attachDetachOrderTest3() {
         ShipmentOrderAttachDetachRequest shipmentRequest = ShipmentOrderAttachDetachRequest.builder().build();
-        shipmentRequest.setOrderGuid(UUID.fromString("eaf227f3-de85-42b4-8180-cf48ccf568f9"));
+        shipmentRequest.setOrderDetailsList(List.of(ShipmentOrderAttachDetachRequest.OrderDetails.builder().orderGuid(UUID.fromString("eaf227f3-de85-42b4-8180-cf48ccf568f9")).build()));
         shipmentRequest.setShipmentGuid(UUID.fromString("3d7ac60d-5ada-4cff-9f4d-2fde960e3e06"));
         shipmentRequest.setEvent("DETACH");
         ShipmentDetails shipmentDetails1 = ShipmentDetails.builder().build();
@@ -8704,8 +8704,9 @@ ShipmentServiceTest extends CommonMocks {
 
         ShipmentOrder shipmentOrder = ShipmentOrder.builder().build();
         shipmentOrder.setId(1L);
+        shipmentOrder.setOrderGuid(UUID.fromString("eaf227f3-de85-42b4-8180-cf48ccf568f9"));
         when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(shipmentDetails1));
-        when(shipmentOrderDao.findByShipmentIdAndOrderGuid(any(), any())).thenReturn(Optional.of(shipmentOrder));
+        when(shipmentOrderDao.findByShipmentId(any())).thenReturn(List.of(shipmentOrder));
         doNothing().when(shipmentOrderDao).delete(any());
 
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.attachDetachOrder(shipmentRequest);
@@ -8715,7 +8716,7 @@ ShipmentServiceTest extends CommonMocks {
     @Test
     void attachDetachOrderTest4() {
         ShipmentOrderAttachDetachRequest shipmentRequest = ShipmentOrderAttachDetachRequest.builder().build();
-        shipmentRequest.setOrderGuid(UUID.fromString("eaf227f3-de85-42b4-8180-cf48ccf568f9"));
+        shipmentRequest.setOrderDetailsList(List.of(ShipmentOrderAttachDetachRequest.OrderDetails.builder().orderGuid(UUID.fromString("eaf227f3-de85-42b4-8180-cf48ccf568f9")).build()));
         shipmentRequest.setShipmentGuid(UUID.fromString("3d7ac60d-5ada-4cff-9f4d-2fde960e3e06"));
         shipmentRequest.setEvent("DETACH");
         ShipmentDetails shipmentDetails1 = ShipmentDetails.builder().build();
@@ -8724,7 +8725,7 @@ ShipmentServiceTest extends CommonMocks {
         ShipmentOrder shipmentOrder = ShipmentOrder.builder().build();
         shipmentOrder.setId(1L);
         when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(shipmentDetails1));
-        when(shipmentOrderDao.findByShipmentIdAndOrderGuid(any(), any())).thenReturn(Optional.empty());
+        when(shipmentOrderDao.findByShipmentId(any())).thenReturn(new ArrayList<>());
 
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.attachDetachOrder(shipmentRequest);
         assertEquals(httpResponse, ResponseHelper.buildSuccessResponse());
@@ -8734,7 +8735,7 @@ ShipmentServiceTest extends CommonMocks {
     @Test
     void attachDetachOrderTest5_ThrowException() {
         ShipmentOrderAttachDetachRequest shipmentRequest = ShipmentOrderAttachDetachRequest.builder().build();
-        shipmentRequest.setOrderGuid(UUID.fromString("eaf227f3-de85-42b4-8180-cf48ccf568f9"));
+        shipmentRequest.setOrderDetailsList(List.of(ShipmentOrderAttachDetachRequest.OrderDetails.builder().orderGuid(UUID.fromString("eaf227f3-de85-42b4-8180-cf48ccf568f9")).build()));
         shipmentRequest.setShipmentGuid(UUID.fromString("3d7ac60d-5ada-4cff-9f4d-2fde960e3e06"));
         shipmentRequest.setEvent("DETACHED");
         ShipmentDetails shipmentDetails1 = ShipmentDetails.builder().build();
@@ -8743,7 +8744,7 @@ ShipmentServiceTest extends CommonMocks {
         ShipmentOrder shipmentOrder = ShipmentOrder.builder().build();
         shipmentOrder.setId(1L);
         when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(shipmentDetails1));
-        when(shipmentOrderDao.findByShipmentIdAndOrderGuid(any(), any())).thenReturn(Optional.empty());
+        when(shipmentOrderDao.findByShipmentId(any())).thenReturn(new ArrayList<>());
 
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.attachDetachOrder(shipmentRequest);
         assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
@@ -8752,7 +8753,7 @@ ShipmentServiceTest extends CommonMocks {
     @Test
     void attachDetachOrderTest6_ThrowException() {
         ShipmentOrderAttachDetachRequest shipmentRequest = ShipmentOrderAttachDetachRequest.builder().build();
-        shipmentRequest.setOrderGuid(UUID.fromString("eaf227f3-de85-42b4-8180-cf48ccf568f9"));
+        shipmentRequest.setOrderDetailsList(List.of(ShipmentOrderAttachDetachRequest.OrderDetails.builder().orderGuid(UUID.fromString("eaf227f3-de85-42b4-8180-cf48ccf568f9")).build()));
         shipmentRequest.setShipmentGuid(UUID.fromString("3d7ac60d-5ada-4cff-9f4d-2fde960e3e06"));
         shipmentRequest.setEvent("DETACHED");
         ShipmentDetails shipmentDetails1 = ShipmentDetails.builder().build();
@@ -8768,15 +8769,7 @@ ShipmentServiceTest extends CommonMocks {
     @Test
     void attachDetachOrderTest7_ThrowException() {
         ShipmentOrderAttachDetachRequest shipmentRequest = ShipmentOrderAttachDetachRequest.builder().build();
-        shipmentRequest.setOrderGuid(UUID.fromString("eaf227f3-de85-42b4-8180-cf48ccf568f9"));
-        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.attachDetachOrder(shipmentRequest);
-        assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
-    }
-
-    @Test
-    void attachDetachOrderTest8_ThrowException() {
-        ShipmentOrderAttachDetachRequest shipmentRequest = ShipmentOrderAttachDetachRequest.builder().build();
-        shipmentRequest.setShipmentGuid(UUID.fromString("3d7ac60d-5ada-4cff-9f4d-2fde960e3e06"));
+        shipmentRequest.setOrderDetailsList(List.of(ShipmentOrderAttachDetachRequest.OrderDetails.builder().orderGuid(UUID.fromString("eaf227f3-de85-42b4-8180-cf48ccf568f9")).build()));
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.attachDetachOrder(shipmentRequest);
         assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
     }
@@ -8784,7 +8777,7 @@ ShipmentServiceTest extends CommonMocks {
     @Test
     void attachDetachOrderTest9_ThrowException() {
         ShipmentOrderAttachDetachRequest shipmentRequest = ShipmentOrderAttachDetachRequest.builder().build();
-        shipmentRequest.setOrderGuid(UUID.fromString("eaf227f3-de85-42b4-8180-cf48ccf568f9"));
+        shipmentRequest.setOrderDetailsList(List.of(ShipmentOrderAttachDetachRequest.OrderDetails.builder().orderGuid(UUID.fromString("eaf227f3-de85-42b4-8180-cf48ccf568f9")).build()));
         shipmentRequest.setShipmentGuid(UUID.fromString("3d7ac60d-5ada-4cff-9f4d-2fde960e3e06"));
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.attachDetachOrder(shipmentRequest);
         assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
