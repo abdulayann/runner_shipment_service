@@ -7391,7 +7391,7 @@ public class ShipmentService implements IShipmentService {
             {
                 for(var order: orderList)
                 {
-                    if(!shipmentOrderMap.containsKey(order.getOrderGuid()) && order.getOrderGuid() != null && !StringUtility.isEmpty(order.getOrderNumber()))
+                    if(!shipmentOrderMap.containsKey(order.getOrderGuid()) && order.getOrderGuid() != null)
                     {
                         shipmentOrderDao.save(
                                 ShipmentOrder.builder().
