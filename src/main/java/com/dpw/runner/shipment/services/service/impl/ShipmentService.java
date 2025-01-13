@@ -7369,34 +7369,48 @@ public class ShipmentService implements IShipmentService {
     @Override
     public ResponseEntity<IRunnerResponse> attachDetachOrder(ShipmentOrderAttachDetachRequest shipmentRequest) {
         try {
-            if(shipmentRequest.getShipmentGuid() == null || shipmentRequest.getOrderGuid() == null || StringUtility.isEmpty(shipmentRequest.getEvent()))
+            if(shipmentRequest.getShipmentGuid() == null)
                 throw new ValidationException("Shipment GUID or Order GUID cannot be null");
+            var orderList = shipmentRequest.getOrderDetailsList();
+            if(orderList == null || orderList.isEmpty())
+                return ResponseHelper.buildSuccessResponse();
             var shipment = shipmentDao.findByGuid(shipmentRequest.getShipmentGuid());
             if(!shipment.isPresent())
             {
                 throw new ValidationException("Shipment doesn't exists!");
             }
             var shipmentId = shipment.get().getId();
-            var shipmentOrder = shipmentOrderDao.findByShipmentIdAndOrderGuid(shipmentId, shipmentRequest.getOrderGuid());
+            var shipmentOrders = shipmentOrderDao.findByShipmentId(shipmentId);
+            Map<UUID, ShipmentOrder> shipmentOrderMap = new HashMap<>();
+            if(shipmentOrders != null && !shipmentOrders.isEmpty()) {
+                shipmentOrderMap = shipmentOrders.stream().filter(shipmentOrder -> {
+                    return shipmentOrder.getOrderGuid() != null;
+                }).collect(Collectors.toMap(ShipmentOrder::getOrderGuid, shipmentorder -> shipmentorder));
+            }
             if(shipmentRequest.getEvent().equals("ATTACH"))
             {
-
-                if(!shipmentOrder.isPresent())
+                for(var order: orderList)
                 {
-                    shipmentOrderDao.save(
-                            ShipmentOrder.builder().
-                            shipmentId(shipmentId).
-                            orderGuid(shipmentRequest.getOrderGuid()).
-                            orderNumber(shipmentRequest.getOrderNumber()).
-                            build()
-                    );
+                    if(!shipmentOrderMap.containsKey(order.getOrderGuid()) && order.getOrderGuid() != null && !StringUtility.isEmpty(order.getOrderNumber()))
+                    {
+                        shipmentOrderDao.save(
+                                ShipmentOrder.builder().
+                                        shipmentId(shipmentId).
+                                        orderGuid(order.getOrderGuid()).
+                                        orderNumber(order.getOrderNumber()).
+                                        build()
+                        );
+                    }
                 }
             }
             else if(shipmentRequest.getEvent().equals("DETACH"))
             {
-                if(shipmentOrder.isPresent())
+                for(var order: orderList)
                 {
-                    shipmentOrderDao.delete(shipmentOrder.get());
+                    if(order.getOrderGuid() != null && shipmentOrderMap.containsKey(order.getOrderGuid()))
+                    {
+                        shipmentOrderDao.delete(shipmentOrderMap.get(order.getOrderGuid()));
+                    }
                 }
             }
             else {
