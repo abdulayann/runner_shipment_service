@@ -10,10 +10,12 @@ import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.dao.impl.ShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,6 +51,9 @@ public class FCRDocumentReportTest {
 
     @Mock
     private ShipmentDao shipmentDao;
+
+    @Mock
+    private CommonUtils commonUtils;
 
     private static ObjectMapper objectMapper;
     private static JsonTestUtility jsonTestUtility;
@@ -216,6 +221,7 @@ public class FCRDocumentReportTest {
         referenceNumbersModel.setType(ReportConstants.MoRN);
         shipmentModel.setReferenceNumbersList(Arrays.asList(referenceNumbersModel));
         when(modelMapper.map(any(), eq(ShipmentModel.class))).thenReturn(shipmentModel);
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(V1TenantSettingsResponse.builder().build());
         fcrDocumentReport.setPackIds(new ArrayList<>(List.of(1L)));
         Map<String, Object> data = fcrDocumentReport.getData(id);
         assertNotNull(data);
