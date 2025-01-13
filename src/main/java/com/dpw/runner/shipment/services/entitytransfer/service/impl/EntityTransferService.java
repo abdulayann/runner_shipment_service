@@ -562,13 +562,16 @@ public class EntityTransferService implements IEntityTransferService {
         if(Boolean.TRUE.equals(importShipmentRequest.getIsFromNte())) {
             if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsNetworkTransferEntityEnabled())) {
                 networkTransferService.updateStatusAndCreatedEntityId(importShipmentRequest.getTaskId(), NetworkTransferStatus.ACCEPTED.name(), shipmentDetailsResponse.getId());
-                Long tenantId = Long.valueOf(TenantContext.getCurrentTenant());
-                if (tenantId.equals(shipmentDetailsResponse.getReceivingBranch()))
-                    shipmentDao.saveIsTransferredToReceivingBranch(shipmentDetailsResponse.getId(), Boolean.TRUE);
-                if (shipmentDetailsResponse.getTriangulationPartnerList() != null && shipmentDetailsResponse.getTriangulationPartnerList().stream()
-                        .filter(Objects::nonNull)
-                        .anyMatch(tp -> Objects.equals(tenantId, tp.getTriangulationPartner())))
-                    shipmentDao.updateIsAcceptedTriangulationPartner(shipmentDetailsResponse.getId(), tenantId, Boolean.TRUE);
+                var nte = networkTransferDao.findById(importShipmentRequest.getTaskId());
+                if(nte.isPresent()) {
+                    Long tenantId = Long.valueOf(TenantContext.getCurrentTenant());
+                    if (tenantId.equals(shipmentDetailsResponse.getReceivingBranch()))
+                        shipmentDao.saveIsTransferredToReceivingBranch(nte.get().getEntityId(), Boolean.TRUE);
+                    if (shipmentDetailsResponse.getTriangulationPartnerList() != null && shipmentDetailsResponse.getTriangulationPartnerList().stream()
+                            .filter(Objects::nonNull)
+                            .anyMatch(tp -> Objects.equals(tenantId, tp.getTriangulationPartner())))
+                        shipmentDao.updateIsAcceptedTriangulationPartner(nte.get().getEntityId(), tenantId, Boolean.TRUE);
+                }
             } else{
                 throw new ValidationException("Network Transfer feature is not enabled");
             }
@@ -626,25 +629,28 @@ public class EntityTransferService implements IEntityTransferService {
         if(Boolean.TRUE.equals(importConsolidationRequest.getIsFromNte())) {
             if (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsNetworkTransferEntityEnabled())) {
                 networkTransferService.updateStatusAndCreatedEntityId(importConsolidationRequest.getTaskId(), NetworkTransferStatus.ACCEPTED.name(), Optional.ofNullable(consolidationDetailsResponse).map(ConsolidationDetailsResponse::getId).orElse(null));
-                Long consolId = consolidationDetailsResponse.getId();
-                Long tenantId = Long.valueOf(TenantContext.getCurrentTenant());
-                if (tenantId.equals(consolidationDetailsResponse.getReceivingBranch()))
-                    consolidationDetailsDao.saveIsTransferredToReceivingBranch(consolId, Boolean.TRUE);
-                if (consolidationDetailsResponse.getTriangulationPartnerList() != null && consolidationDetailsResponse.getTriangulationPartnerList().stream()
-                        .filter(Objects::nonNull).anyMatch(tp -> Objects.equals(tenantId, tp.getTriangulationPartner())))
-                    consolidationDetailsDao.updateIsAcceptedTriangulationPartner(consolId, tenantId, Boolean.TRUE);
-                Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(consolId);
-                if (!consolidationDetails.isPresent()) {
-                    log.debug(CONSOLIDATION_DETAILS_IS_NULL_FOR_ID_WITH_REQUEST_ID, consolId, LoggerHelper.getRequestIdFromMDC());
-                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-                }
-                for (var shipment : consolidationDetails.get().getShipmentsList()) {
-                    if (tenantId.equals(shipment.getReceivingBranch()))
-                        shipmentDao.saveIsTransferredToReceivingBranch(shipment.getId(), Boolean.TRUE);
-                    if (shipment.getTriangulationPartnerList() != null && shipment.getTriangulationPartnerList().stream()
-                            .filter(Objects::nonNull)
-                            .anyMatch(tp -> Objects.equals(tp.getTriangulationPartner(), tenantId)))
-                        shipmentDao.updateIsAcceptedTriangulationPartner(shipment.getId(), tenantId, Boolean.TRUE);
+                var nte = networkTransferDao.findById(importConsolidationRequest.getTaskId());
+                if(nte.isPresent()) {
+                    Long consolId = nte.get().getEntityId();
+                    Long tenantId = Long.valueOf(TenantContext.getCurrentTenant());
+                    if (tenantId.equals(consolidationDetailsResponse.getReceivingBranch()))
+                        consolidationDetailsDao.saveIsTransferredToReceivingBranch(consolId, Boolean.TRUE);
+                    if (consolidationDetailsResponse.getTriangulationPartnerList() != null && consolidationDetailsResponse.getTriangulationPartnerList().stream()
+                            .filter(Objects::nonNull).anyMatch(tp -> Objects.equals(tenantId, tp.getTriangulationPartner())))
+                        consolidationDetailsDao.updateIsAcceptedTriangulationPartner(consolId, tenantId, Boolean.TRUE);
+                    Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findConsolidationByIdWithQuery(consolId);
+                    if (!consolidationDetails.isPresent()) {
+                        log.debug(CONSOLIDATION_DETAILS_IS_NULL_FOR_ID_WITH_REQUEST_ID, consolId, LoggerHelper.getRequestIdFromMDC());
+                        throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+                    }
+                    for (var shipment : consolidationDetails.get().getShipmentsList()) {
+                        if (tenantId.equals(shipment.getReceivingBranch()))
+                            shipmentDao.saveIsTransferredToReceivingBranch(shipment.getId(), Boolean.TRUE);
+                        if (shipment.getTriangulationPartnerList() != null && shipment.getTriangulationPartnerList().stream()
+                                .filter(Objects::nonNull)
+                                .anyMatch(tp -> Objects.equals(tp.getTriangulationPartner(), tenantId)))
+                            shipmentDao.updateIsAcceptedTriangulationPartner(shipment.getId(), tenantId, Boolean.TRUE);
+                    }
                 }
             } else {
                 throw new ValidationException("Network Transfer feature is not enabled");
