@@ -111,6 +111,7 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.response.ValidationRe
 import com.dpw.runner.shipment.services.entitytransfer.service.interfaces.IEntityTransferService;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
+import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -207,10 +208,12 @@ public class EntityTransferService implements IEntityTransferService {
     private INetworkTransferService networkTransferService;
     private INetworkTransferDao networkTransferDao;
     private INotificationDao notificationDao;
+    private DependentServiceHelper dependentServiceHelper;
 
     @Autowired
     public EntityTransferService(IShipmentSettingsDao shipmentSettingsDao, IShipmentDao shipmentDao, IShipmentService shipmentService, IConsolidationService consolidationService
-            , IConsolidationDetailsDao consolidationDetailsDao, IShipmentsContainersMappingDao shipmentsContainersMappingDao, ModelMapper modelMapper, IV1Service v1Service, JsonHelper jsonHelper, IHblDao hblDao, IAwbDao awbDao, IEventDao eventDao, MasterDataUtils masterDataUtils, ILogsHistoryService logsHistoryService, IContainerDao containerDao, IPackingDao packingDao, MasterDataFactory masterDataFactory, CommonUtils commonUtils, IV1Service iv1Service, V1ServiceUtil v1ServiceUtil, ITasksService tasksService, INotificationService notificationService, ExecutorService executorService, DocumentManagerRestClient documentManagerRestClient, IConsoleShipmentMappingDao consoleShipmentMappingDao, ConsolidationSync consolidationSync, ShipmentSync shipmentSync, INetworkTransferService networkTransferService, INetworkTransferDao networkTransferDao, IEventService eventService, INotificationDao notificationDao) {
+            , IConsolidationDetailsDao consolidationDetailsDao, IShipmentsContainersMappingDao shipmentsContainersMappingDao, ModelMapper modelMapper, IV1Service v1Service, JsonHelper jsonHelper, IHblDao hblDao, IAwbDao awbDao, IEventDao eventDao, MasterDataUtils masterDataUtils, ILogsHistoryService logsHistoryService, IContainerDao containerDao, IPackingDao packingDao, MasterDataFactory masterDataFactory, CommonUtils commonUtils, IV1Service iv1Service, V1ServiceUtil v1ServiceUtil, ITasksService tasksService, INotificationService notificationService, ExecutorService executorService, DocumentManagerRestClient documentManagerRestClient, IConsoleShipmentMappingDao consoleShipmentMappingDao, ConsolidationSync consolidationSync, ShipmentSync shipmentSync, INetworkTransferService networkTransferService, INetworkTransferDao networkTransferDao, IEventService eventService, INotificationDao notificationDao,
+                                 DependentServiceHelper dependentServiceHelper) {
         this.shipmentSettingsDao = shipmentSettingsDao;
         this.shipmentDao = shipmentDao;
         this.shipmentService = shipmentService;
@@ -242,6 +245,7 @@ public class EntityTransferService implements IEntityTransferService {
         this.networkTransferDao = networkTransferDao;
         this.notificationDao = notificationDao;
         this.eventService = eventService;
+        this.dependentServiceHelper = dependentServiceHelper;
     }
 
     @Transactional
@@ -596,7 +600,7 @@ public class EntityTransferService implements IEntityTransferService {
     private void pushImportShipmentDataToDependantService(Long shipmentId, boolean isCreateShip) {
         try {
             Optional<ShipmentDetails> shipment = shipmentDao.findById(shipmentId);
-            shipment.ifPresent(shipmentDetails -> shipmentService.pushShipmentDataToDependentService(shipmentDetails, isCreateShip, false, shipmentDetails.getContainersList()));
+            shipment.ifPresent(shipmentDetails -> dependentServiceHelper.pushShipmentDataToDependentService(shipmentDetails, isCreateShip, false, shipmentDetails.getContainersList()));
         } catch (Exception ex) {
             log.error("Error occurred while pushing import shipment data to dependent service : {}", ex.getMessage());
         }
@@ -766,7 +770,7 @@ public class EntityTransferService implements IEntityTransferService {
 
             List<ShipmentDetails> shipments = shipmentDao.findShipmentsByIds(new HashSet<>(shipmentIds));
             for (ShipmentDetails shipment : shipments) {
-                shipmentService.pushShipmentDataToDependentService(shipment, isCreateShipMap.containsKey(shipment.getId()) && Boolean.TRUE.equals(isCreateShipMap.get(shipment.getId())), false, shipment.getContainersList());
+                dependentServiceHelper.pushShipmentDataToDependentService(shipment, isCreateShipMap.containsKey(shipment.getId()) && Boolean.TRUE.equals(isCreateShipMap.get(shipment.getId())), false, shipment.getContainersList());
             }
         } catch (Exception ex) {
             log.error("Error occurred while pushing import console data to dependent service : {}", ex.getMessage());

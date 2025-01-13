@@ -175,10 +175,7 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.response.SendShipment
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
-import com.dpw.runner.shipment.services.helpers.JsonHelper;
-import com.dpw.runner.shipment.services.helpers.LoggerHelper;
-import com.dpw.runner.shipment.services.helpers.MasterDataHelper;
-import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.helpers.*;
 import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.mapper.CarrierDetailsMapper;
@@ -371,6 +368,9 @@ public class ShipmentService implements IShipmentService {
 
     @Autowired
     private IV1Service v1Service;
+
+    @Autowired
+    private DependentServiceHelper dependentServiceHelper;
 
     @Autowired
     private SyncEntityConversionService syncEntityConversionService;
@@ -630,7 +630,7 @@ public class ShipmentService implements IShipmentService {
              */
 
             shipmentDetail = shipmentDao.save(shipmentDetail, false);
-            pushShipmentDataToDependentService(shipmentDetail, true, false, shipmentDetail.getContainersList());
+            dependentServiceHelper.pushShipmentDataToDependentService(shipmentDetail, true, false, shipmentDetail.getContainersList());
         }
 
         return response;
@@ -866,7 +866,7 @@ public class ShipmentService implements IShipmentService {
                 }
             }
             String transactionId = shipmentDetails.getGuid().toString();
-            pushShipmentDataToDependentService(shipmentDetails, true, false, null);
+            dependentServiceHelper.pushShipmentDataToDependentService(shipmentDetails, true, false, null);
             try {
                 shipmentDetails.setNotesList(null);
                 shipmentSync.syncFromBooking(shipmentDetails, null, notesRequest);
@@ -1747,7 +1747,7 @@ public class ShipmentService implements IShipmentService {
         // update Ata/Atd in shipment from events
         eventService.updateAtaAtdInShipment(entity.getEventsList(), entity, shipmentSettingsDetails);
         entity = shipmentDao.update(entity, false);
-            pushShipmentDataToDependentService(entity, false, Boolean.TRUE.equals(request.getIsAutoSellRequired()), oldEntity.get().getContainersList());
+        dependentServiceHelper.pushShipmentDataToDependentService(entity, false, Boolean.TRUE.equals(request.getIsAutoSellRequired()), oldEntity.get().getContainersList());
         try {
             shipmentSync.sync(entity, null, null, entity.getGuid().toString(), false);
         } catch (Exception e){
@@ -2630,7 +2630,7 @@ public class ShipmentService implements IShipmentService {
         }
         log.info("shipment afterSave hblService.checkAllContainerAssigned..... ");
         if(!isFromET) {
-            pushShipmentDataToDependentService(shipmentDetails, isCreate, Boolean.TRUE.equals(shipmentRequest.getIsAutoSellRequired()), Optional.ofNullable(oldEntity).map(ShipmentDetails::getContainersList).orElse(null));
+            dependentServiceHelper.pushShipmentDataToDependentService(shipmentDetails, isCreate, Boolean.TRUE.equals(shipmentRequest.getIsAutoSellRequired()), Optional.ofNullable(oldEntity).map(ShipmentDetails::getContainersList).orElse(null));
             log.info("shipment afterSave pushShipmentDataToDependentService..... ");
         }
 
@@ -4491,7 +4491,7 @@ public class ShipmentService implements IShipmentService {
                 syncShipment(newShipmentDetails, null, null, null, consolidationDetails, true);
             }
 
-            pushShipmentDataToDependentService(newShipmentDetails, false, false, oldShipmentDetails.get().getContainersList());
+            dependentServiceHelper.pushShipmentDataToDependentService(newShipmentDetails, false, false, oldShipmentDetails.get().getContainersList());
             ShipmentDetailsResponse response = shipmentDetailsMapper.map(newShipmentDetails);
             ShipmentDetails newShipment = newShipmentDetails;
             if (commonUtils.getCurrentTenantSettings().getP100Branch() != null && commonUtils.getCurrentTenantSettings().getP100Branch())
@@ -4528,7 +4528,7 @@ public class ShipmentService implements IShipmentService {
         }
         shipmentDetails = shipmentDao.save(shipmentDetails, false);
         shipmentSync.syncLockStatus(shipmentDetails);
-        pushShipmentDataToDependentService(shipmentDetails, false, false, shipmentDetails.getContainersList());
+        dependentServiceHelper.pushShipmentDataToDependentService(shipmentDetails, false, false, shipmentDetails.getContainersList());
         return ResponseHelper.buildSuccessResponse();
     }
 
@@ -4817,7 +4817,7 @@ public class ShipmentService implements IShipmentService {
             if(oldEntity.isPresent())
                 oldConts = oldEntity.get().getContainersList();
             if(!dataMigration)
-                pushShipmentDataToDependentService(entity, isCreate, false, oldConts);
+                dependentServiceHelper.pushShipmentDataToDependentService(entity, isCreate, false, oldConts);
             ShipmentDetailsResponse response = jsonHelper.convertValue(entity, ShipmentDetailsResponse.class);
 
             return ResponseHelper.buildSuccessResponse(response);
@@ -7998,7 +7998,7 @@ public class ShipmentService implements IShipmentService {
                 }
             }
 
-            pushShipmentDataToDependentService(shipmentDetails, true, false, null);
+            dependentServiceHelper.pushShipmentDataToDependentService(shipmentDetails, true, false, null);
 
             setShipmentFromBooking(shipmentDetails, notesRequest);
 
@@ -8050,7 +8050,7 @@ public class ShipmentService implements IShipmentService {
             log.info("Request: {} | Deleting console_shipment_mapping due to shipment cancelled for shipment: {}", LoggerHelper.getRequestIdFromMDC(), shipment.getShipmentId());
             consoleShipmentMappingDao.deletePendingStateByShipmentId(shipment.getId());
         }
-        pushShipmentDataToDependentService(shipment, false, false, shipment.getContainersList());
+        dependentServiceHelper.pushShipmentDataToDependentService(shipment, false, false, shipment.getContainersList());
         syncShipment(shipment, null, null, null, null, false);
         if (commonUtils.getCurrentTenantSettings().getP100Branch() != null && commonUtils.getCurrentTenantSettings().getP100Branch())
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> bookingIntegrationsUtility.updateBookingInPlatform(shipment)), executorService);

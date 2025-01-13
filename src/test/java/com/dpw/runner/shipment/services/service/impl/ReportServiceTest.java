@@ -24,6 +24,7 @@ import com.dpw.runner.shipment.services.entity.enums.PrintType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
+import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IEventService;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
@@ -164,6 +165,9 @@ class ReportServiceTest {
 
     @Mock
     private CSDReport csdReport;
+
+    @Mock
+    private DependentServiceHelper dependentServiceHelper;
 
     private Map<String, Object> dataRetrived;
 

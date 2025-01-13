@@ -98,6 +98,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
+import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.MasterDataHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -224,6 +225,8 @@ ShipmentServiceTest extends CommonMocks {
     private INotesDao notesDao;
     @Mock
     private IAwbDao awbDao;
+    @Mock
+    private DependentServiceHelper dependentServiceHelper;
     @Mock
     private IPickupDeliveryDetailsDao pickupDeliveryDetailsDao;
     @Mock
@@ -865,19 +868,14 @@ ShipmentServiceTest extends CommonMocks {
 
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
         ShipmentDetailsResponse mockShipmentResponse = objectMapper.convertValue(mockShipment, ShipmentDetailsResponse.class);
-        EventsResponse eventsResponse = EventsResponse.builder()
-                .containerNumber("containerNumber")
-                .eventCode("eventType").build();
 
         // Mock
-        when(jsonHelper.convertValue(any(), eq(EventsResponse.class))).thenReturn(eventsResponse);
         when(jsonHelper.convertCreateValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
         mockShipment.setId(1L).setGuid(UUID.randomUUID());
         when(shipmentDao.save(any(), eq(false))).thenReturn(mockShipment);
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(mockShipmentResponse);
 
-        when(trackingServiceAdapter.fetchTrackingData(any())).thenReturn(trackingResponse);
         Events eventType = Events.builder()
                 .eventCode("eventType")
                 .source(Constants.MASTER_DATA_SOURCE_CARGOES_TRACKING)
@@ -927,19 +925,14 @@ ShipmentServiceTest extends CommonMocks {
 
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
         ShipmentDetailsResponse mockShipmentResponse = objectMapper.convertValue(mockShipment, ShipmentDetailsResponse.class);
-        EventsResponse eventsResponse = EventsResponse.builder()
-                .containerNumber("containerNumber")
-                .eventCode("eventType").build();
 
         // Mock
-        when(jsonHelper.convertValue(any(), eq(EventsResponse.class))).thenReturn(eventsResponse);
         when(jsonHelper.convertCreateValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
         mockShipment.setId(1L).setGuid(UUID.randomUUID());
         when(shipmentDao.save(any(), eq(false))).thenReturn(mockShipment);
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(mockShipmentResponse);
 
-        when(trackingServiceAdapter.fetchTrackingData(any())).thenThrow(new RunnerException());
         Events eventType = Events.builder()
                 .eventCode("eventType")
                 .source(Constants.MASTER_DATA_SOURCE_CARGOES_TRACKING)
@@ -987,19 +980,14 @@ ShipmentServiceTest extends CommonMocks {
 
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
         ShipmentDetailsResponse mockShipmentResponse = objectMapper.convertValue(mockShipment, ShipmentDetailsResponse.class);
-        EventsResponse eventsResponse = EventsResponse.builder()
-                .containerNumber("containerNumber")
-                .eventCode("eventType").build();
 
         // Mock
-        when(jsonHelper.convertValue(any(), eq(EventsResponse.class))).thenReturn(eventsResponse);
         when(jsonHelper.convertCreateValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
         mockShipment.setId(1L).setGuid(UUID.randomUUID());
         when(shipmentDao.save(any(), eq(false))).thenReturn(mockShipment);
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(mockShipmentResponse);
 
-        when(trackingServiceAdapter.fetchTrackingData(any())).thenReturn(null);
         Events eventType = Events.builder()
                 .eventCode("eventType")
                 .source(Constants.MASTER_DATA_SOURCE_CARGOES_TRACKING)
@@ -1047,19 +1035,14 @@ ShipmentServiceTest extends CommonMocks {
 
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
         ShipmentDetailsResponse mockShipmentResponse = objectMapper.convertValue(mockShipment, ShipmentDetailsResponse.class);
-        EventsResponse eventsResponse = EventsResponse.builder()
-                .containerNumber("containerNumber")
-                .eventCode("eventType").build();
 
         // Mock
-        when(jsonHelper.convertValue(any(), eq(EventsResponse.class))).thenReturn(eventsResponse);
         when(jsonHelper.convertCreateValue(any(), eq(ShipmentDetails.class))).thenReturn(mockShipment);
         mockShipment.setId(1L).setGuid(UUID.randomUUID());
         when(shipmentDao.save(any(), eq(false))).thenReturn(mockShipment);
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(mockShipmentResponse);
 
-        when(trackingServiceAdapter.fetchTrackingData(any())).thenReturn(trackingResponse);
         Events eventType = Events.builder()
                 .eventCode("eventType")
                 .source(Constants.MASTER_DATA_SOURCE_CARGOES_TRACKING)
@@ -1274,17 +1257,6 @@ ShipmentServiceTest extends CommonMocks {
         assertEquals(ResponseHelper.buildSuccessResponse(), httpResponse);
         verify(shipmentSync, times(1)).syncLockStatus(any());
     }
-
-    @Test
-    void pushShipmentDataToDependentService_success() {
-        //Test
-        when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(new ShipmentRequest());
-        when(kafkaProducer.getKafkaResponse(any(),any(Boolean.class))).thenReturn(new KafkaResponse());
-        shipmentService.pushShipmentDataToDependentService(shipmentDetails, false, false, null);
-        verify(kafkaProducer, atLeast(1)).produceToKafka(any(), any(), any());
-        verify(kafkaProducer, atLeast(1)).getKafkaResponse(any(), any(Boolean.class));
-    }
-
 
     @Test
     void cloneShipment() {
@@ -3601,8 +3573,6 @@ ShipmentServiceTest extends CommonMocks {
 
         ReferenceNumbersRequest referenceNumberObj2 = ReferenceNumbersRequest.builder().build();
 
-        when(jsonHelper.convertValue(shipmentDetails.getAdditionalDetails().getImportBroker(), PartiesRequest.class)).thenReturn(importBrokerRequest);
-        when(jsonHelper.convertValue(shipmentDetails.getAdditionalDetails().getExportBroker(), PartiesRequest.class)).thenReturn(importBrokerRequest);
         when(jsonHelper.convertValue(anyList(), any(TypeReference.class))).thenReturn(Collections.singletonList(referenceNumberObj2));
 
         when(jsonHelper.convertValueToList(any(), eq(Packing.class))).thenReturn(Collections.singletonList(new Packing()));
@@ -4160,7 +4130,6 @@ ShipmentServiceTest extends CommonMocks {
                                 shipmentDetails
                                         .setContainersList(new ArrayList<>())));
         when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
-        when(jsonHelper.convertValue(any(), eq(CarrierDetails.class))).thenReturn(CarrierDetails.builder().build());
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>(List.of(ConsoleShipmentMapping.builder().build()))));
         when(shipmentDao.update(any(), eq(false))).thenReturn(mockShipment);
@@ -4516,40 +4485,6 @@ ShipmentServiceTest extends CommonMocks {
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.delete(commonRequestModel);
         assertEquals(ResponseHelper.buildSuccessResponse(), httpResponse);
     }
-
-    @Test
-    void pushShipmentDataToDependentServiceCatch() {
-        shipmentDetails.setStatus(1);
-        shipmentDetails.setShipmentType(Constants.SHIPMENT_TYPE_DRT);
-        shipmentDetails.setMasterBill("MBL22");
-        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
-        when(kafkaProducer.getKafkaResponse(any(),any(Boolean.class))).thenReturn(new KafkaResponse());
-        when(trackingServiceAdapter.mapShipmentDataToTrackingServiceData(shipmentDetails)).thenReturn(UniversalTrackingPayload.builder().bookingReferenceNumber("1").build());
-        when(jsonHelper.convertToJson(any())).thenReturn("json");
-        when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(new ShipmentRequest());
-        shipmentService.pushShipmentDataToDependentService(shipmentDetails, false, false, null);
-        verify(kafkaProducer, atLeast(1)).produceToKafka(any(), any(), any());
-        verify(kafkaProducer, atLeast(1)).getKafkaResponse(any(), any(Boolean.class));
-    }
-
-    @Test
-    void pushShipmentDataToDependentServiceSourceNotNull() {
-        shipmentDetails.setStatus(1);
-        shipmentDetails.setShipmentType(Constants.SHIPMENT_TYPE_DRT);
-        shipmentDetails.setHouseBill("HBL11");
-        shipmentDetails.setMasterBill("MBL22");
-        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
-        shipmentDetails.setSource(Constants.API);
-        when(kafkaProducer.getKafkaResponse(any(),any(Boolean.class))).thenReturn(new KafkaResponse());
-        when(trackingServiceAdapter.mapShipmentDataToTrackingServiceData(shipmentDetails)).thenReturn(UniversalTrackingPayload.builder().bookingReferenceNumber("1").build());
-        when(trackingServiceAdapter.mapEventDetailsForTracking(any(), any(), any(), any())).thenReturn(UniversalTrackingPayload.UniversalEventsPayload.builder().build());
-        when(jsonHelper.convertToJson(any())).thenReturn("json");
-        when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(new ShipmentRequest());
-        shipmentService.pushShipmentDataToDependentService(shipmentDetails, false, false, null);
-        verify(kafkaProducer, atLeast(1)).produceToKafka(any(), any(), any());
-        verify(kafkaProducer, atLeast(1)).getKafkaResponse(any(), any(Boolean.class));
-    }
-
 
     @Test
     void partialUpdateTestSameOrg() throws RunnerException {
@@ -5462,7 +5397,6 @@ ShipmentServiceTest extends CommonMocks {
                                 shipmentDetails
                                         .setContainersList(new ArrayList<>())));
         when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
-        when(jsonHelper.convertValue(any(), eq(CarrierDetails.class))).thenReturn(CarrierDetails.builder().build());
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         when(commonUtils.checkIfDGClass1(any())).thenReturn(true);
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>(List.of(ConsoleShipmentMapping.builder().build()))));
@@ -5562,7 +5496,6 @@ ShipmentServiceTest extends CommonMocks {
                                 shipmentDetails
                                         .setContainersList(new ArrayList<>())));
         when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
-        when(jsonHelper.convertValue(any(), eq(CarrierDetails.class))).thenReturn(CarrierDetails.builder().build());
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>(List.of(ConsoleShipmentMapping.builder().build()))));
         when(jsonHelper.convertValueToList(any(), eq(ConsoleShipmentMapping.class))).thenReturn(List.of(ConsoleShipmentMapping.builder().build()));
@@ -5623,7 +5556,6 @@ ShipmentServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(shipmentRequest).build();
 
         when(jsonHelper.convertValueToList(any(), eq(Packing.class))).thenReturn(Arrays.asList(packing));
-        when(jsonHelper.convertValueToList(any(), eq(Routings.class))).thenReturn(Arrays.asList(routings));
 
         when(jsonHelper.convertValueToList(any(), eq(Containers.class))).thenReturn(Arrays.asList(Containers.builder().build()));
         when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
@@ -6288,10 +6220,8 @@ ShipmentServiceTest extends CommonMocks {
         shipmentDetails.setGuid(UUID.randomUUID());
         ConsolidationDetailsResponse mockConsolidationDetailsResponse = new ConsolidationDetailsResponse();
 
-        when(jsonHelper.convertValue(any(), eq(ConsolidationDetailsRequest.class))).thenReturn(ConsolidationDetailsRequest.builder().build());
         when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolRequest.class))).thenReturn(new AutoUpdateWtVolRequest());
         when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolResponse.class))).thenReturn(new AutoUpdateWtVolResponse());
-        doReturn(ResponseHelper.buildSuccessResponse(ConsolidationDetailsResponse.builder().build())).when(consolidationService).createFromBooking(any());
 
         when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
@@ -6300,9 +6230,6 @@ ShipmentServiceTest extends CommonMocks {
 
         when(jsonHelper.convertValue(any(), eq(Notes.class))).thenReturn(Notes.builder().build());
         when(notesDao.save(any())).thenReturn(Notes.builder().build());
-
-        when(jsonHelper.convertValue(any(), eq(CarrierDetails.class))).thenReturn(new CarrierDetails());
-        when(routingsDao.generateDefaultRouting(any(), any())).thenReturn(List.of());
 
         ShipmentDetailsResponse shipmentDetailsResponse = jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class);
         when(jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class)).thenReturn(shipmentDetailsResponse);
@@ -7686,7 +7613,6 @@ ShipmentServiceTest extends CommonMocks {
         when(shipmentDao.findById(any())).thenReturn(Optional.of(newShipmentDetails));
         doNothing().when(shipmentDetailsMapper).update(any(), any());
         when(shipmentDao.update(any(), eq(false))).thenReturn(newShipmentDetails);
-        when(jsonHelper.convertValue(any(), eq(Events.class))).thenReturn(event);
         when(jsonHelper.convertValueToList(any(), eq(Events.class))).thenReturn(Arrays.asList(event));
         mockTenantSettings();
         mockShipmentSettings();
@@ -7739,7 +7665,6 @@ ShipmentServiceTest extends CommonMocks {
         when(shipmentDao.save(any(), eq(false))).thenReturn(mockShipment);
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(mockShipmentResponse);
-        when(hblDao.findByShipmentId(any())).thenReturn(Collections.emptyList());
         mockShipmentSettings();
         mockTenantSettings();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.create(commonRequestModel);
@@ -7806,7 +7731,6 @@ ShipmentServiceTest extends CommonMocks {
             when(shipmentDao.findById(any())).thenReturn(Optional.of(newShipmentDetails));
             doNothing().when(shipmentDetailsMapper).update(any(), any());
             when(shipmentDao.update(any(), eq(false))).thenReturn(newShipmentDetails);
-            when(jsonHelper.convertValue(any(), eq(Events.class))).thenReturn(event);
             when(jsonHelper.convertValueToList(any(), eq(Events.class))).thenReturn(Arrays.asList(event));
             mockTenantSettings();
             when(eventDao.updateEntityFromOtherEntity(any(), any(), any())).thenReturn(eventsList);
@@ -8469,7 +8393,6 @@ ShipmentServiceTest extends CommonMocks {
 
         when(jsonHelper.convertValueToList(any(), eq(ShipmentOrder.class))).thenReturn(Collections.singletonList(new ShipmentOrder()));
         when(shipmentOrderDao.updateEntityFromShipment(any(), any())).thenReturn(Collections.singletonList(new ShipmentOrder()));
-        when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(shipmentRequest);
         when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
         when(shipmentDao.save(any(), eq(false))).thenReturn(shipmentDetails);
 
@@ -8505,7 +8428,6 @@ ShipmentServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolRequest.class))).thenReturn(new AutoUpdateWtVolRequest());
         when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolResponse.class))).thenReturn(new AutoUpdateWtVolResponse());
 
-        when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(shipmentRequest);
         when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
         when(shipmentDao.save(any(), eq(false))).thenReturn(shipmentDetails);
 
@@ -8537,7 +8459,6 @@ ShipmentServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolRequest.class))).thenReturn(new AutoUpdateWtVolRequest());
         when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolResponse.class))).thenReturn(new AutoUpdateWtVolResponse());
 
-        when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(shipmentRequest);
         when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
         when(shipmentDao.save(any(), eq(false))).thenReturn(shipmentDetails);
 
@@ -8578,7 +8499,6 @@ ShipmentServiceTest extends CommonMocks {
 
         when(jsonHelper.convertValue(anyList(), any(TypeReference.class))).thenReturn(Collections.singletonList(referenceNumberObj2));
 
-        when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(shipmentRequest);
         when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
         when(shipmentDao.save(any(), eq(false))).thenReturn(shipmentDetails);
 
@@ -8610,7 +8530,6 @@ ShipmentServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolRequest.class))).thenReturn(new AutoUpdateWtVolRequest());
         when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolResponse.class))).thenReturn(new AutoUpdateWtVolResponse());
 
-        when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(shipmentRequest);
         when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
         when(shipmentDao.save(any(), eq(false))).thenReturn(shipmentDetails);
 
@@ -9052,7 +8971,7 @@ ShipmentServiceTest extends CommonMocks {
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().IsMAWBColoadingEnabled(true).build());
 
         var shipmentServiceSpy = Mockito.spy(shipmentService);
-        doNothing().when(shipmentServiceSpy).pushShipmentDataToDependentService(any(), anyBoolean(), anyBoolean(), any());
+        doNothing().when(dependentServiceHelper).pushShipmentDataToDependentService(any(), anyBoolean(), anyBoolean(), any());
         mockTenantSettings();
 
         // Act
@@ -9312,7 +9231,6 @@ ShipmentServiceTest extends CommonMocks {
             // Add any additional behavior or return value as needed
             return mockRunnable;
         });
-        when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(mockShipmentRequest);
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(mockShipmentResponse);
 
         // Test
@@ -9422,7 +9340,6 @@ ShipmentServiceTest extends CommonMocks {
             // Add any additional behavior or return value as needed
             return mockRunnable;
         });
-        when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(mockShipmentRequest);
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(mockShipmentResponse);
 
         // Test

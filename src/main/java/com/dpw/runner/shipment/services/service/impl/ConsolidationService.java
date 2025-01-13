@@ -121,6 +121,7 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.response.SendConsoleV
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
+import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -355,6 +356,8 @@ public class ConsolidationService implements IConsolidationService {
 
     @Autowired
     private INotificationDao notificationDao;
+    @Autowired
+    private DependentServiceHelper dependentServiceHelper;
 
     @Value("${consolidationsKafka.queue}")
     private String senderQueue;
@@ -4266,8 +4269,10 @@ public class ConsolidationService implements IConsolidationService {
             consolidationDetails.setConsolidationAddresses(updatedFileRepos);
         }
 
-        if(!isFromET)
+        if(!isFromET) {
             pushShipmentDataToDependentService(consolidationDetails, isCreate, Optional.ofNullable(oldEntity).map(ConsolidationDetails::getContainersList).orElse(null));
+            this.pushAllShipmentDataToDependentService(consolidationDetails);
+        }
         try {
             if (!isFromBooking)
                 consolidationSync.sync(consolidationDetails, StringUtility.convertToString(consolidationDetails.getGuid()), isFromBooking);
@@ -4283,6 +4288,18 @@ public class ConsolidationService implements IConsolidationService {
 
         CompletableFuture.runAsync(masterDataUtils.withMdc(() -> createOrUpdateNetworkTransferEntity(shipmentSettingsDetails, consolidationDetails, oldEntity)), executorService);
         CompletableFuture.runAsync(masterDataUtils.withMdc(() -> triggerAutomaticTransfer(consolidationDetails, oldEntity, false)), executorService);
+    }
+
+    private void pushAllShipmentDataToDependentService(ConsolidationDetails consolidationDetails) {
+        if(consolidationDetails.getShipmentsList() != null) {
+            List<Long> shipmentIds = consolidationDetails.getShipmentsList().stream().map(BaseEntity::getId).toList();
+            if (!shipmentIds.isEmpty()) {
+                List<ShipmentDetails> shipments = shipmentDao.findShipmentsByIds(new HashSet<>(shipmentIds));
+                for (ShipmentDetails shipment : shipments) {
+                    dependentServiceHelper.pushShipmentDataToDependentService(shipment, false, false, shipment.getContainersList());
+                }
+            }
+        }
     }
 
     private void processNetworkTransferEntity(Long tenantId, Long oldTenantId, ConsolidationDetails consolidationDetails, String jobType) {
