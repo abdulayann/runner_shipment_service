@@ -23,6 +23,9 @@ public class BillingInvoiceDto {
             private String invoiceNumber;
             private LocalDateTime invoiceDate;
             private String fusionInvoiceStatus;
+            private String userDisplayName;
+            private String userEmail;
+            private String branchCode;
             private List<BillDto> bills;
             private List<BillChargeDto> billCharges;
 

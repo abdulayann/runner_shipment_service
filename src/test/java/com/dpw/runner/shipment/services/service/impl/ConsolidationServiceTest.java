@@ -2732,6 +2732,7 @@ import java.util.stream.Collectors;
         var spyService = Mockito.spy(consolidationService);
 
         Mockito.doReturn(Optional.of(oldEntity)).when(spyService).retrieveByIdOrGuid(any());
+        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         when(jsonHelper.convertValue(oldEntity, ConsolidationDetails.class)).thenReturn(oldEntity);
         when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(jsonHelper.convertToJson(oldEntity)).thenReturn("");
