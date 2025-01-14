@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import com.azure.core.implementation.util.ObjectsUtil;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.impl.BridgeServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -14,6 +13,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerPartialListResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentMeasurementDetailsDto;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.awb.*;
@@ -22,7 +22,10 @@ import com.dpw.runner.shipment.services.dto.request.reportService.CompanyDto;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.bridgeService.BridgeServiceResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.V1RetrieveRequest;
-import com.dpw.runner.shipment.services.dto.v1.response.*;
+import com.dpw.runner.shipment.services.dto.v1.response.AddressDataV1;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.*;
@@ -37,7 +40,6 @@ import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
 import com.dpw.runner.shipment.services.service.interfaces.*;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
@@ -3625,13 +3627,15 @@ public class AwbService implements IAwbService {
                         : null;
                 awb.getAwbShipmentInfo().setConsigneeTaxRegistrationNumber(consigneeTaxRegNumber);
             }
-            Long notifyAddressId = Long.valueOf(shipmentDetails.getAdditionalDetails().getNotifyParty().getAddressId());
-            if(addressIdToEntityOrgMap.containsKey(notifyAddressId)) {
-                AddressDataV1 notifyAddressData = addressIdToEntityOrgMap.get(notifyAddressId);
-                String notifyTaxRegNumber = notifyAddressData.getTaxRegNumber() !=null
-                        ? StringUtility.toUpperCase(StringUtility.convertToString(notifyAddressData.getTaxRegNumber()))
-                        : null;
-                awb.getAwbNotifyPartyInfo().get(0).setTaxRegistrationNumber(notifyTaxRegNumber);
+            if(!Objects.isNull(shipmentDetails.getAdditionalDetails().getNotifyParty())) {
+                Long notifyAddressId = Long.valueOf(shipmentDetails.getAdditionalDetails().getNotifyParty().getAddressId());
+                if(addressIdToEntityOrgMap.containsKey(notifyAddressId)) {
+                    AddressDataV1 notifyAddressData = addressIdToEntityOrgMap.get(notifyAddressId);
+                    String notifyTaxRegNumber = notifyAddressData.getTaxRegNumber() !=null
+                            ? StringUtility.toUpperCase(StringUtility.convertToString(notifyAddressData.getTaxRegNumber()))
+                            : null;
+                    awb.getAwbNotifyPartyInfo().get(0).setTaxRegistrationNumber(notifyTaxRegNumber);
+                }
             }
         }
     }
