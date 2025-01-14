@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.INotificationDao;
 import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
@@ -76,6 +77,8 @@ class NotificationServiceTest {
     private IConsolidationService consolidationService;
     @Mock
     private V1ServiceUtil v1ServiceUtil;
+    @Mock
+    private IConsolidationDetailsDao consolidationDetailsDao;
 
     @InjectMocks
     private NotificationService notificationService;
@@ -274,9 +277,6 @@ class NotificationServiceTest {
         mockResponse.setEntityId(10L);
         mockResponse.setRequestedBranchId(1L);
         mockResponse.setReassignedToBranchId(2L);
-        CommonGetRequest request = CommonGetRequest.builder().id(mockResponse.getEntityId()).build();
-        CommonRequestModel requestModel = CommonRequestModel.buildRequest(request);
-        ConsolidationDetailsResponse consolidationDetailsResponse = objectMapper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class);
 
         when(notificationDao.findById(anyLong())).thenReturn(Optional.of(notification));
         Runnable mockRunnable = mock(Runnable.class);
@@ -286,7 +286,7 @@ class NotificationServiceTest {
             return mockRunnable;
         });
         when(jsonHelper.convertValue(any(), eq(NotificationResponse.class))).thenReturn(mockResponse);
-        when(consolidationService.retrieveById(requestModel)).thenReturn(getResponse(consolidationDetailsResponse, HttpStatus.OK));
+        when(consolidationDetailsDao.findById(10L)).thenReturn(Optional.of(consolidationDetails));
 
         var response = notificationService.confirmationMessage(id);
 
@@ -336,13 +336,10 @@ class NotificationServiceTest {
         mockResponse.setEntityId(10L);
         mockResponse.setRequestedBranchId(3L);
         mockResponse.setReassignedToBranchId(2L);
-        CommonGetRequest request = CommonGetRequest.builder().id(mockResponse.getEntityId()).build();
-        CommonRequestModel requestModel = CommonRequestModel.buildRequest(request);
         consolidationDetails.setTriangulationPartnerList(
                 triangulationPartners.stream().map(partner ->
                         TriangulationPartner.builder().triangulationPartner(partner).build()).toList()
         );
-        ConsolidationDetailsResponse consolidationDetailsResponse = objectMapper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class);
 
         when(notificationDao.findById(anyLong())).thenReturn(Optional.of(notification));
         Runnable mockRunnable = mock(Runnable.class);
@@ -352,7 +349,7 @@ class NotificationServiceTest {
             return mockRunnable;
         });
         when(jsonHelper.convertValue(any(), eq(NotificationResponse.class))).thenReturn(mockResponse);
-        when(consolidationService.retrieveById(requestModel)).thenReturn(getResponse(consolidationDetailsResponse, HttpStatus.OK));
+        when(consolidationDetailsDao.findById(10L)).thenReturn(Optional.of(consolidationDetails));
 
         var response = notificationService.confirmationMessage(id);
 
@@ -525,14 +522,12 @@ class NotificationServiceTest {
         tenantModel.setDefaultAddressId(200L);
         PartiesRequest partiesRequest = new PartiesRequest();
 
-        CommonGetRequest request = CommonGetRequest.builder().id(notification.getEntityId()).build();
-        CommonRequestModel requestModel = CommonRequestModel.buildRequest(request);
         ConsolidationDetailsResponse consolidationDetailsResponse = objectMapper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class);
         ConsolidationDetailsRequest consolidationDetailsRequest = objectMapper.convertValue(consolidationDetails, ConsolidationDetailsRequest.class);
 
         when(notificationDao.findById(anyLong())).thenReturn(Optional.of(notification));
-        when(consolidationService.retrieveById(requestModel)).thenReturn(getResponse(consolidationDetailsResponse, HttpStatus.OK));
-        when(jsonHelper.convertValue(consolidationDetailsResponse, ConsolidationDetailsRequest.class)).thenReturn(consolidationDetailsRequest);
+        when(consolidationDetailsDao.findById(10L)).thenReturn(Optional.of(consolidationDetails));
+        when(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsRequest.class)).thenReturn(consolidationDetailsRequest);
         when(v1ServiceUtil.getTenantDetails(anyList())).thenReturn(Map.of(tenantId, new Object()));
         when(jsonHelper.convertValue(any(), eq(TenantModel.class))).thenReturn(tenantModel);
         when(v1ServiceUtil.getPartiesRequestFromOrgIdAndAddressId(100L, 200L)).thenReturn(partiesRequest);
@@ -590,8 +585,6 @@ class NotificationServiceTest {
         notification.setRequestedBranchId(3);
         notification.setReassignedToBranchId(2);
 
-        CommonGetRequest request = CommonGetRequest.builder().id(notification.getEntityId()).build();
-        CommonRequestModel requestModel = CommonRequestModel.buildRequest(request);
         consolidationDetails.setTriangulationPartnerList(
                 triangulationPartners.stream().map(partner ->
                         TriangulationPartner.builder().triangulationPartner(partner).build()).toList()
@@ -600,8 +593,8 @@ class NotificationServiceTest {
         ConsolidationDetailsRequest consolidationDetailsRequest = objectMapper.convertValue(consolidationDetails, ConsolidationDetailsRequest.class);
 
         when(notificationDao.findById(anyLong())).thenReturn(Optional.of(notification));
-        when(consolidationService.retrieveById(requestModel)).thenReturn(getResponse(consolidationDetailsResponse, HttpStatus.OK));
-        when(jsonHelper.convertValue(consolidationDetailsResponse, ConsolidationDetailsRequest.class)).thenReturn(consolidationDetailsRequest);
+        when(consolidationDetailsDao.findById(10L)).thenReturn(Optional.of(consolidationDetails));
+        when(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsRequest.class)).thenReturn(consolidationDetailsRequest);
         when(consolidationService.completeUpdate(any(CommonRequestModel.class))).thenReturn(getResponse(consolidationDetailsResponse, HttpStatus.OK));
         doNothing().when(notificationDao).delete(notification);
 

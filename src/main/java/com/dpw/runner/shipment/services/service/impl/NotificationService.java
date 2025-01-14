@@ -8,18 +8,20 @@ import com.dpw.runner.shipment.services.commons.constants.NotificationConstants;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.INotificationDao;
 import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.TriangulationPartnerRequest;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.TriangulationPartnerResponse;
 import com.dpw.runner.shipment.services.dto.response.NotificationListResponse;
 import com.dpw.runner.shipment.services.dto.response.NotificationResponse;
 import com.dpw.runner.shipment.services.dto.response.NotificationConfirmationMsgResponse;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Notification;
+import com.dpw.runner.shipment.services.entity.TriangulationPartner;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.NotificationRequestType;
 import com.dpw.runner.shipment.services.exception.NotificationServiceException;
@@ -76,11 +78,13 @@ public class NotificationService implements INotificationService {
 
     private final V1ServiceUtil v1ServiceUtil;
 
+    private final IConsolidationDetailsDao consolidationDetailsDao;
+
     @Autowired
     public NotificationService(ModelMapper modelMapper, JsonHelper jsonHelper, INotificationDao notificationDao,
                                   MasterDataUtils masterDataUtils, ExecutorService executorService,
                                   MasterDataKeyUtils masterDataKeyUtils, IShipmentService shipmentService,
-                                  IConsolidationService consolidationService, V1ServiceUtil v1ServiceUtil) {
+                                  IConsolidationService consolidationService, V1ServiceUtil v1ServiceUtil, IConsolidationDetailsDao consolidationDetailsDao) {
         this.jsonHelper = jsonHelper;
         this.notificationDao = notificationDao;
         this.masterDataUtils = masterDataUtils;
@@ -90,6 +94,7 @@ public class NotificationService implements INotificationService {
         this.shipmentService = shipmentService;
         this.consolidationService = consolidationService;
         this.v1ServiceUtil = v1ServiceUtil;
+        this.consolidationDetailsDao = consolidationDetailsDao;
     }
 
     private final Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
@@ -266,13 +271,12 @@ public class NotificationService implements INotificationService {
                         .stream()
                         .map(TriangulationPartnerResponse::getTriangulationPartner).toList();
             } else if (Objects.equals(notificationResponse.getEntityType(), Constants.CONSOLIDATION)){
-                RunnerResponse<ConsolidationDetailsResponse> runnerConsolidationResponse = (RunnerResponse<ConsolidationDetailsResponse>) consolidationService.retrieveById(CommonRequestModel.buildRequest(request)).getBody();
-                ConsolidationDetailsResponse consolidationDetailsResponse = runnerConsolidationResponse.getData();
-                receivingBranch = consolidationDetailsResponse.getReceivingBranch();
-                triangulationPartners = Optional.ofNullable(consolidationDetailsResponse.getTriangulationPartnerList())
+                Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(request.getId());
+                receivingBranch = consolidationDetails.get().getReceivingBranch();
+                triangulationPartners = Optional.ofNullable(consolidationDetails.get().getTriangulationPartnerList())
                         .orElse(Collections.emptyList())
                         .stream()
-                        .map(TriangulationPartnerResponse::getTriangulationPartner).toList();
+                        .map(TriangulationPartner::getTriangulationPartner).toList();
             }
             String oldBranchName = notificationResponse.getTenantIdsData().getOrDefault(
                     NotificationConstants.RECEIVING_BRANCH_ID_FIELD,
@@ -366,23 +370,22 @@ public class NotificationService implements INotificationService {
     }
 
     private void processConsolidationReassignment(Notification notification, CommonGetRequest request) throws RunnerException {
-        RunnerResponse<ConsolidationDetailsResponse> runnerResponse =
-                (RunnerResponse<ConsolidationDetailsResponse>) consolidationService.retrieveById(CommonRequestModel.buildRequest(request)).getBody();
-        if(runnerResponse == null || runnerResponse.getData() == null)
+        Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(request.getId());
+        if(consolidationDetails.isEmpty()) {
             return;
-        ConsolidationDetailsResponse consolidationDetailsResponse = runnerResponse.getData();
-        List<Long> triangulationPartners = Optional.ofNullable(consolidationDetailsResponse.getTriangulationPartnerList())
+        }
+        List<Long> triangulationPartners = Optional.ofNullable(consolidationDetails.get().getTriangulationPartnerList())
                 .orElse(Collections.emptyList())
                 .stream()
-                .map(TriangulationPartnerResponse::getTriangulationPartner).toList();
-        String branchType = getReassignType(notification.getRequestedBranchId().longValue(), consolidationDetailsResponse.getReceivingBranch(), triangulationPartners);
+                .map(TriangulationPartner::getTriangulationPartner).toList();
+        String branchType = getReassignType(notification.getRequestedBranchId().longValue(), consolidationDetails.get().getReceivingBranch(), triangulationPartners);
 
-        ConsolidationDetailsRequest consolidationRequest = jsonHelper.convertValue(consolidationDetailsResponse, ConsolidationDetailsRequest.class);
+        ConsolidationDetailsRequest consolidationRequest = jsonHelper.convertValue(consolidationDetails.get(), ConsolidationDetailsRequest.class);
         Long requestedBranchId = notification.getRequestedBranchId() != null ? notification.getRequestedBranchId().longValue() : null;
         Long reassignedToBranchId = notification.getReassignedToBranchId() != null ? notification.getReassignedToBranchId().longValue() : null;
         if (Objects.equals(branchType, NotificationConstants.RECEIVING_BRANCH)) {
             consolidationRequest.setReceivingBranch(reassignedToBranchId);
-            if (!Boolean.TRUE.equals(consolidationDetailsResponse.getIsReceivingBranchManually())) {
+            if (!Boolean.TRUE.equals(consolidationDetails.get().getIsReceivingBranchManually())) {
                 PartiesRequest partiesRequest = getPartiesRequestFromTenantDefaultOrg(notification.getReassignedToBranchId());
                 Optional.ofNullable(partiesRequest).ifPresent(consolidationRequest::setReceivingAgent);
             }
