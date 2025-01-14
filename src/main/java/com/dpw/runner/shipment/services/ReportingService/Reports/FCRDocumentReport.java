@@ -4,17 +4,17 @@ import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConst
 import com.dpw.runner.shipment.services.ReportingService.Models.FCRDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
+import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
@@ -72,8 +72,11 @@ public class FCRDocumentReport extends IReport{
                         .collect(Collectors.toList())
         );
         getPackingDetails(fcrDocumentModel.getShipmentModel(), dictionary);
-        dictionary.put(PLACE_OF_ISSUE, fcrDocumentModel.getShipmentModel().getAdditionalDetails().getPlaceOfIssue());
-        dictionary.put(SHIPMENT_DETAIL_DATE_OF_ISSUE, fcrDocumentModel.getShipmentModel().getAdditionalDetails().getDateOfIssue());
+        if(!CommonUtils.IsStringNullOrEmpty(fcrDocumentModel.getShipmentModel().getAdditionalDetails().getPlaceOfIssue())) {
+            Map<String, EntityTransferUnLocations> map = masterDataUtils.getLocationDataFromCache(Set.of(fcrDocumentModel.getShipmentModel().getAdditionalDetails().getPlaceOfIssue()), EntityTransferConstants.LOCATION_SERVICE_GUID);
+            dictionary.put(PLACE_OF_ISSUE, map.get(fcrDocumentModel.getShipmentModel().getAdditionalDetails().getPlaceOfIssue()).Name);
+        }
+        dictionary.put(SHIPMENT_DETAIL_DATE_OF_ISSUE, ConvertToDPWDateFormat(fcrDocumentModel.getShipmentModel().getAdditionalDetails().getDateOfIssue()));
         return convertValuesToUpperCase(dictionary);
     }
 
