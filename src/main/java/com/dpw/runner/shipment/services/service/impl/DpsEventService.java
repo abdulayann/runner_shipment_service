@@ -148,7 +148,7 @@ public class DpsEventService implements IDpsEventService {
         );
 
         if (CollectionUtils.isEmpty(implications)) {
-            log.warn("No implications found for the provided entity ID: {}" , shipmentGuid);
+            log.info("No implications found for the provided entity ID: {}" , shipmentGuid);
             return Collections.emptyList();
         }
 
