@@ -2751,6 +2751,9 @@ public class ShipmentService implements IShipmentService {
                 if (shouldCreateOrUpdateQuartzJob(quartzJobInfo, oldEntity, shipmentDetails, isDocAdded)) {
                     createOrUpdateQuartzJob(shipmentDetails, quartzJobInfo);
                 }
+            } else if (isEligibleForNetworkTransfer(shipmentDetails) && ObjectUtils.isEmpty(shipmentDetails.getReceivingBranch())
+                && oldEntity != null && ObjectUtils.isNotEmpty(oldEntity.getReceivingBranch())) {
+                commonErrorLogsDao.deleteShipmentErrorsLogs(shipmentDetails.getId());
             }
             if (hasHouseBillChange(shipmentDetails, oldEntity)) {
                 triggerConsoleTransfer(shipmentDetails);
