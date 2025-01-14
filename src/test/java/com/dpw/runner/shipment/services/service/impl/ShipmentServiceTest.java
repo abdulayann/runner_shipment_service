@@ -1653,8 +1653,9 @@ ShipmentServiceTest extends CommonMocks {
 
         // Update with inputs
         mockShipment.getAdditionalDetails().setDateOfIssue(mockDateTime);
-        mockShipment.setStatus(mockStatus);
+        mockShipment.setStatus(5);
         // Mock
+        when(eventDao.findAll(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>()));
         when(shipmentDao.save(eq(mockShipment), eq(false))).thenReturn(mockShipment);
         // Test
         shipmentService.updateDateAndStatus(1L, mockDateTime, mockStatus);
