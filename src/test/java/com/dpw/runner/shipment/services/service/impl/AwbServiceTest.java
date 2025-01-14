@@ -3357,6 +3357,130 @@ class AwbServiceTest extends CommonMocks {
     }
 
     @Test
+    void generateAwb_success_WithConsignerAddressIdNull() throws RunnerException {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
+        CreateAwbRequest awbRequest = CreateAwbRequest.builder().ShipmentId(1L).AwbType("DMAWB").build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(awbRequest);
+
+        testShipment.setHouseBill("custom-house-bill");
+        testShipment.getConsigner().setAddressId(null);
+        testShipment.setContainsHazardous(Boolean.TRUE);
+        testShipment.getPackingList().get(0).setHazardous(Boolean.TRUE);
+        testShipment.getPackingList().get(0).setPacks(String.valueOf(1));  // Set packs value
+        testShipment.getAdditionalDetails().setExportBroker(Parties.builder().orgCode("org").addressCode("add").build());
+        addShipmentDataForAwbGeneration(testShipment);
+
+        Mockito.when(shipmentDao.findById(any())).thenReturn(Optional.of(testShipment));
+        when(awbDao.save(any())).thenReturn(testDmawb);
+
+        // UnLocation response mocking
+        when(v1Service.fetchUnlocation(any())).thenReturn(new V1DataResponse());
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferUnLocations.class))).thenReturn(List.of(
+                EntityTransferUnLocations.builder().LocationsReferenceGUID("8F39C4F8-158E-4A10-A9B6-4E8FDF52C3BA").Name("Chennai (ex Madras)").build(),
+                EntityTransferUnLocations.builder().LocationsReferenceGUID("428A59C1-1B6C-4764-9834-4CC81912DAC0").Name("John F. Kennedy Apt/New York, NY").build()
+        ));
+        // TenantModel Response mocking
+        TenantModel mockTenantModel = new TenantModel();
+        mockTenantModel.DefaultOrgId = 1L;
+        when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
+        when(jsonHelper.convertValue(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
+
+        V1DataResponse mockV1DataResponse = V1DataResponse.builder().entities("").build();
+        List<EntityTransferOrganizations> mockOrgList = List.of(EntityTransferOrganizations.builder().build());
+        when(v1Service.fetchOrganization(any())).thenReturn(mockV1DataResponse);
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferOrganizations.class))).thenReturn(mockOrgList);
+        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
+        List<AddressDataV1> addressDataV1List = List.of(AddressDataV1.builder().build());
+        when(jsonHelper.convertValueToList(any(), eq(AddressDataV1.class))).thenReturn(addressDataV1List);
+
+        // OtherInfo Master data mocking
+        when(jsonHelper.convertValue(any(), eq(LocalDateTime.class))).thenReturn(
+                objectMapper.convertValue(DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_T_HH_MM_SS).format(LocalDateTime.now()), LocalDateTime.class)
+        );
+        V1DataResponse v1DataResponse = V1DataResponse.builder().entities(List.of(new EntityTransferMasterLists())).build();
+        when(v1Service.fetchMasterData(any())).thenReturn(v1DataResponse);
+
+        when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(
+                objectMapper.convertValue(testDmawb, AwbResponse.class)
+        );
+
+        // mocking for populateCsdInfo
+        testShipment.getAdditionalDetails().setScreeningStatus(List.of("EDD", "ETD", "XRY"));
+        testShipment.setSecurityStatus("SPX");
+        OrgAddressResponse mockOrgAddressResponse = createOrgAddressResponse();
+
+        when(v1ServiceUtil.fetchOrgInfoFromV1(anyList())).thenReturn(mockOrgAddressResponse);
+        when(masterDataUtils.shipmentAddressCountryMasterData(any())).thenReturn(Map.of("PE", "Peru", "CA", "Canada"));
+        mockShipmentSettings();
+        mockTenantSettings();
+        ResponseEntity<IRunnerResponse> httpResponse = awbService.createAwb(commonRequestModel);
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void generateAwb_success_WithNotifyPartyAddressIdNull() throws RunnerException {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
+        CreateAwbRequest awbRequest = CreateAwbRequest.builder().ShipmentId(1L).AwbType("DMAWB").build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(awbRequest);
+
+        testShipment.setHouseBill("custom-house-bill");
+        testShipment.getConsigner().setAddressId(null);
+        testShipment.setContainsHazardous(Boolean.TRUE);
+        testShipment.getPackingList().get(0).setHazardous(Boolean.TRUE);
+        testShipment.getConsignee().setAddressId(null);
+        testShipment.getPackingList().get(0).setPacks(String.valueOf(1));  // Set packs value
+        testShipment.getAdditionalDetails().setExportBroker(Parties.builder().orgCode("org").addressCode("add").build());
+        testShipment.getAdditionalDetails().getNotifyParty().setAddressId(null);
+        addShipmentDataForAwbGeneration(testShipment);
+
+        Mockito.when(shipmentDao.findById(any())).thenReturn(Optional.of(testShipment));
+        when(awbDao.save(any())).thenReturn(testDmawb);
+
+        // UnLocation response mocking
+        when(v1Service.fetchUnlocation(any())).thenReturn(new V1DataResponse());
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferUnLocations.class))).thenReturn(List.of(
+                EntityTransferUnLocations.builder().LocationsReferenceGUID("8F39C4F8-158E-4A10-A9B6-4E8FDF52C3BA").Name("Chennai (ex Madras)").build(),
+                EntityTransferUnLocations.builder().LocationsReferenceGUID("428A59C1-1B6C-4764-9834-4CC81912DAC0").Name("John F. Kennedy Apt/New York, NY").build()
+        ));
+        // TenantModel Response mocking
+        TenantModel mockTenantModel = new TenantModel();
+        mockTenantModel.DefaultOrgId = 1L;
+        when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
+        when(jsonHelper.convertValue(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
+
+        V1DataResponse mockV1DataResponse = V1DataResponse.builder().entities("").build();
+        List<EntityTransferOrganizations> mockOrgList = List.of(EntityTransferOrganizations.builder().build());
+        when(v1Service.fetchOrganization(any())).thenReturn(mockV1DataResponse);
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferOrganizations.class))).thenReturn(mockOrgList);
+        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
+        List<AddressDataV1> addressDataV1List = List.of(AddressDataV1.builder().build());
+        when(jsonHelper.convertValueToList(any(), eq(AddressDataV1.class))).thenReturn(addressDataV1List);
+
+        // OtherInfo Master data mocking
+        when(jsonHelper.convertValue(any(), eq(LocalDateTime.class))).thenReturn(
+                objectMapper.convertValue(DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_T_HH_MM_SS).format(LocalDateTime.now()), LocalDateTime.class)
+        );
+        V1DataResponse v1DataResponse = V1DataResponse.builder().entities(List.of(new EntityTransferMasterLists())).build();
+        when(v1Service.fetchMasterData(any())).thenReturn(v1DataResponse);
+
+        when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(
+                objectMapper.convertValue(testDmawb, AwbResponse.class)
+        );
+
+        // mocking for populateCsdInfo
+        testShipment.getAdditionalDetails().setScreeningStatus(List.of("EDD", "ETD", "XRY"));
+        testShipment.setSecurityStatus("SPX");
+        OrgAddressResponse mockOrgAddressResponse = createOrgAddressResponse();
+
+        when(v1ServiceUtil.fetchOrgInfoFromV1(anyList())).thenReturn(mockOrgAddressResponse);
+        when(masterDataUtils.shipmentAddressCountryMasterData(any())).thenReturn(Map.of("PE", "Peru", "CA", "Canada"));
+        mockShipmentSettings();
+        mockTenantSettings();
+        ResponseEntity<IRunnerResponse> httpResponse = awbService.createAwb(commonRequestModel);
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+    }
+
+    @Test
     void testValidateAwbThrowsExceptionIfNotAllHawbGenerated() {
         Awb mockAwb = testMawb;
         mockAwb.setAirMessageResubmitted(false);
