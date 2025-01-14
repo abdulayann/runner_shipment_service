@@ -5642,8 +5642,26 @@ import java.util.stream.Collectors;
                 .isAutomaticTransferEnabled(true)
                 .build());
         mockShipmentSettings();
-
         consolidationService.triggerAutomaticTransfer(testConsol, null, false);
+
+        verify(quartzJobInfoDao, times(0)).findByJobFilters(any(), anyLong(), anyString());
+        verify(quartzJobInfoService, times(0)).createSimpleJob(any());
+        verify(quartzJobInfoService, times(0)).getQuartzJobTime(any(), any(), any(), any());
+        verify(quartzJobInfoDao, times(0)).save(any(QuartzJobInfo.class));
+    }
+
+    @Test
+    void triggerAutomaticTransfer_NoExistingQuartzJob_CreateNewJob1() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
+                .isAutomaticTransferEnabled(true)
+                .build());
+        mockShipmentSettings();
+        ConsolidationDetails consolidationDetails1 = jsonTestUtility.getCompleteConsolidation();
+        consolidationDetails1.setReceivingBranch(1L);
+        ConsolidationDetails consolidationDetails2 = testConsol;
+        consolidationDetails2.setReceivingBranch(null);
+        consolidationDetails2.setShipmentsList(List.of());
+        consolidationService.triggerAutomaticTransfer(consolidationDetails2, consolidationDetails1, false);
 
         verify(quartzJobInfoDao, times(0)).findByJobFilters(any(), anyLong(), anyString());
         verify(quartzJobInfoService, times(0)).createSimpleJob(any());
