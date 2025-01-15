@@ -9347,6 +9347,8 @@ ShipmentServiceTest extends CommonMocks {
         mockShipmentSettings();
         mockTenantSettings();
 
+        List<V1TenantSettingsResponse.FileTransferConfigurations> fileTransferConfigurationsList = Collections.singletonList(V1TenantSettingsResponse.FileTransferConfigurations.builder().build());
+        when(quartzJobInfoService.getActiveFileTransferConfigurations()).thenReturn(fileTransferConfigurationsList);
         when(quartzJobInfoService.getQuartzJobTime(any(),any(),any(),any())).thenReturn(LocalDateTime.now());
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.create(commonRequestModel);
         assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
@@ -9401,6 +9403,8 @@ ShipmentServiceTest extends CommonMocks {
             return mockRunnable;
         });
         when(shipmentDetailsMapper.map((ShipmentDetails) any())).thenReturn(mockShipmentResponse);
+        List<V1TenantSettingsResponse.FileTransferConfigurations> fileTransferConfigurationsList = Collections.singletonList(V1TenantSettingsResponse.FileTransferConfigurations.builder().build());
+        when(quartzJobInfoService.getActiveFileTransferConfigurations()).thenReturn(fileTransferConfigurationsList);
         when(quartzJobInfoService.getQuartzJobTime(any(),any(),any(),any())).thenReturn(LocalDateTime.now());
         QuartzJobInfo quartzJobInfo = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
         quartzJobInfo.setId(1L);
@@ -9428,6 +9432,8 @@ ShipmentServiceTest extends CommonMocks {
 
         QuartzJobInfo quartzJobInfo = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
         quartzJobInfo.setId(1L);
+        List<V1TenantSettingsResponse.FileTransferConfigurations> fileTransferConfigurationsList = Collections.singletonList(V1TenantSettingsResponse.FileTransferConfigurations.builder().build());
+        when(quartzJobInfoService.getActiveFileTransferConfigurations()).thenReturn(fileTransferConfigurationsList);
         when(quartzJobInfoService.getQuartzJobTime(any(),any(),any(),any())).thenReturn(LocalDateTime.now());
         shipmentService.triggerAutomaticTransfer(shipmentDetails2, null, false);
 
@@ -9557,6 +9563,8 @@ ShipmentServiceTest extends CommonMocks {
         when(quartzJobInfoDao.save(any())).thenReturn(quartzJobInfo);
         when(quartzJobInfoService.isJobWithNamePresent(any())).thenReturn(true);
         when(quartzJobInfoService.updateSimpleJob(any())).thenReturn(null);
+        List<V1TenantSettingsResponse.FileTransferConfigurations> fileTransferConfigurationsList = Collections.singletonList(V1TenantSettingsResponse.FileTransferConfigurations.builder().build());
+        when(quartzJobInfoService.getActiveFileTransferConfigurations()).thenReturn(fileTransferConfigurationsList);
         NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build();
         when(networkTransferDao.findByTenantAndEntity(any(), any(), any())).thenReturn(Optional.of(networkTransfer));
         shipmentService.triggerAutomaticTransfer(shipmentDetails2, shipmentDetails2, true);
@@ -9640,6 +9648,8 @@ ShipmentServiceTest extends CommonMocks {
         QuartzJobInfo quartzJobInfo = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
         quartzJobInfo.setId(1L);
         when(quartzJobInfoDao.findByJobFilters(any(), any(), any())).thenReturn(Optional.of(quartzJobInfo));
+        List<V1TenantSettingsResponse.FileTransferConfigurations> fileTransferConfigurationsList = Collections.singletonList(V1TenantSettingsResponse.FileTransferConfigurations.builder().build());
+        when(quartzJobInfoService.getActiveFileTransferConfigurations()).thenReturn(fileTransferConfigurationsList);
         when(quartzJobInfoService.getQuartzJobTime(any(), any(), any(), any())).thenReturn(LocalDateTime.now());
         when(quartzJobInfoDao.save(any())).thenReturn(quartzJobInfo);
         when(quartzJobInfoService.isJobWithNamePresent(any())).thenReturn(false);
@@ -9677,6 +9687,8 @@ ShipmentServiceTest extends CommonMocks {
         when(quartzJobInfoDao.save(any())).thenReturn(quartzJobInfo);
         when(quartzJobInfoService.isJobWithNamePresent(any())).thenReturn(false);
         when(quartzJobInfoService.createSimpleJob(any())).thenReturn(null);
+        List<V1TenantSettingsResponse.FileTransferConfigurations> fileTransferConfigurationsList = Collections.singletonList(V1TenantSettingsResponse.FileTransferConfigurations.builder().build());
+        when(quartzJobInfoService.getActiveFileTransferConfigurations()).thenReturn(fileTransferConfigurationsList);
         NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build();
         when(networkTransferDao.findByTenantAndEntity(any(), any(), any())).thenReturn(Optional.of(networkTransfer));
         shipmentService.triggerAutomaticTransfer(shipmentDetails2, shipmentDetails3, false);
@@ -9708,6 +9720,8 @@ ShipmentServiceTest extends CommonMocks {
         when(quartzJobInfoDao.findByJobFilters(any(), any(), any())).thenReturn(Optional.of(quartzJobInfo));
         when(quartzJobInfoService.getQuartzJobTime(any(), any(), any(), any())).thenReturn(LocalDateTime.now());
         when(quartzJobInfoDao.save(any())).thenReturn(quartzJobInfo);
+        List<V1TenantSettingsResponse.FileTransferConfigurations> fileTransferConfigurationsList = Collections.singletonList(V1TenantSettingsResponse.FileTransferConfigurations.builder().build());
+        when(quartzJobInfoService.getActiveFileTransferConfigurations()).thenReturn(fileTransferConfigurationsList);
         when(quartzJobInfoService.isJobWithNamePresent(any())).thenReturn(false);
         when(quartzJobInfoService.createSimpleJob(any())).thenReturn(null);
         NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build();

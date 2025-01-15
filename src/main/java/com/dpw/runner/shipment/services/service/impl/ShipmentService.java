@@ -2620,6 +2620,11 @@ public class ShipmentService implements IShipmentService {
                 if (isInvalidNetworkTransfer(shipmentDetails))
                     return;
 
+                List<V1TenantSettingsResponse.FileTransferConfigurations> fileTransferConfigurations = quartzJobInfoService.getActiveFileTransferConfigurations();
+                if (ObjectUtils.isEmpty(fileTransferConfigurations)) {
+                    return;
+                }
+
                 if (isCarrierDetailsInvalid(shipmentDetails)) {
                     handleInvalidCarrierDetails(quartzJobInfo, shipmentDetails);
                     return;
