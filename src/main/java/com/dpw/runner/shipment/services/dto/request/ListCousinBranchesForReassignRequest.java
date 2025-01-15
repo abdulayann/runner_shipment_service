@@ -1,10 +1,7 @@
 package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
-import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import lombok.*;
-
-import java.util.ArrayList;
 import java.util.List;
 
 @Data
