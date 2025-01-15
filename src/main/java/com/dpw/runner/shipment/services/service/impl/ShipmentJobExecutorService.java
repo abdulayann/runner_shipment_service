@@ -202,7 +202,7 @@ public class ShipmentJobExecutorService implements QuartzJobExecutorService {
                     .isAutomaticTransfer(Boolean.TRUE)
                     .build();
             fetchConsoleAndShipmentDocs(consolidation.get(), sendConsolidationRequest);
-            ValidateSendShipmentRequest request = ValidateSendShipmentRequest.builder().shipId(quartzJobInfo.getEntityId()).build();
+            ValidateSendConsolidationRequest request = ValidateSendConsolidationRequest.builder().consoleId(quartzJobInfo.getEntityId()).build();
             try {
                 List<Long> shipmentIds = consolidation.get().getShipmentsList().stream().map(BaseEntity::getId).toList();
                 var response = entityTransferService.automaticTransferConsoleValidation(CommonRequestModel.buildRequest(request));
