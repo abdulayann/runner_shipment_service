@@ -1733,7 +1733,7 @@ public class ConsolidationService implements IConsolidationService {
                 i.setDirection(console.getShipmentType());
                 i.setBookingNumber(console.getCarrierBookingRef());
                 if (Boolean.TRUE.equals(console.getInterBranchConsole())) {
-                    i.setTriangulationPartnerList(new ArrayList<>(console.getTriangulationPartnerList()));
+                    i.setTriangulationPartnerList(console.getTriangulationPartnerList() != null ? new ArrayList<>(console.getTriangulationPartnerList()) : null);
                     i.setTriangulationPartner(console.getTriangulationPartner());
                     i.setDocumentationPartner(console.getDocumentationPartner());
                     if (!Boolean.TRUE.equals(i.getIsReceivingBranchAdded()))
