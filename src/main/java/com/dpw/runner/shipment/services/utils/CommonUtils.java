@@ -2115,4 +2115,40 @@ public class CommonUtils {
                 .toList() : Collections.emptyList();
     }
 
+    public List<Long> getTenantIdsFromEntity(Long entityId, String entityType) {
+        Set<Long> tenantIds = new HashSet<>();
+        Long sourceTenantId = null;
+        Long receivingBranch = null;
+        List<Long> triangulationPartners = new ArrayList<>();
+        if(Objects.equals(entityType, Constants.SHIPMENT)) {
+            Optional<ShipmentDetails> shipmentDetails = shipmentDao.findShipmentByIdWithQuery(entityId);
+            if(shipmentDetails.isEmpty()) {
+                return new ArrayList<>();
+            }
+            sourceTenantId = Long.valueOf(shipmentDetails.get().getTenantId());
+            receivingBranch = shipmentDetails.get().getReceivingBranch();
+            triangulationPartners = Optional.ofNullable(shipmentDetails.get().getTriangulationPartnerList())
+                    .orElse(Collections.emptyList())
+                    .stream()
+                    .map(TriangulationPartner::getTriangulationPartner).toList();
+        } else if (Objects.equals(entityType, Constants.CONSOLIDATION)){
+            Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(entityId);
+            if(consolidationDetails.isEmpty()) {
+                return new ArrayList<>();
+            }
+            sourceTenantId = Long.valueOf(consolidationDetails.get().getTenantId());
+            receivingBranch = consolidationDetails.get().getReceivingBranch();
+            triangulationPartners = Optional.ofNullable(consolidationDetails.get().getTriangulationPartnerList())
+                    .orElse(Collections.emptyList())
+                    .stream()
+                    .map(TriangulationPartner::getTriangulationPartner).toList();
+        } else {
+            return new ArrayList<>();
+        }
+        tenantIds.add(sourceTenantId);
+        tenantIds.add(receivingBranch);
+        tenantIds.addAll(triangulationPartners);
+        return tenantIds.stream().toList();
+    }
+
 }
