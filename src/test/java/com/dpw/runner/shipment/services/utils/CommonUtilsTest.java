@@ -3215,4 +3215,77 @@ class CommonUtilsTest {
         assertTrue(triangulationPartnerIds.contains(1L));
         assertTrue(triangulationPartnerIds.contains(2L));
     }
+
+    @Test
+    void testGetTenantIdsFromEntity_ShipmentSuccess() {
+        Long entityId = 1L;
+        ShipmentDetails mockShipment = new ShipmentDetails();
+        mockShipment.setTenantId(100);
+        mockShipment.setReceivingBranch(200L);
+        mockShipment.setTriangulationPartnerList(List.of(
+                TriangulationPartner.builder().triangulationPartner(300L).build(),
+                TriangulationPartner.builder().triangulationPartner(400L).build()
+        ));
+
+        when(shipmentDao.findShipmentByIdWithQuery(entityId)).thenReturn(Optional.of(mockShipment));
+
+        List<Long> result = commonUtils.getTenantIdsFromEntity(entityId, Constants.SHIPMENT);
+
+        assertEquals(4, result.size());
+    }
+
+    @Test
+    void testGetTenantIdsFromEntity_ConsolidationSuccess() {
+        Long entityId = 2L;
+        ConsolidationDetails mockConsolidation = new ConsolidationDetails();
+        mockConsolidation.setTenantId(500);
+        mockConsolidation.setReceivingBranch(600L);
+        mockConsolidation.setTriangulationPartnerList(List.of(
+                TriangulationPartner.builder().triangulationPartner(700L).build()
+        ));
+
+        when(consolidationDetailsDao.findById(entityId)).thenReturn(Optional.of(mockConsolidation));
+
+        List<Long> result = commonUtils.getTenantIdsFromEntity(entityId, Constants.CONSOLIDATION);
+
+        assertEquals(3, result.size());
+    }
+
+    @Test
+    void testGetTenantIdsFromEntity_ShipmentNotFound() {
+        Long entityId = 1L;
+
+        when(shipmentDao.findShipmentByIdWithQuery(entityId)).thenReturn(Optional.empty());
+
+        List<Long> result = commonUtils.getTenantIdsFromEntity(entityId, Constants.SHIPMENT);
+
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testGetTenantIdsFromEntity_ConsolidationNotFound() {
+        Long entityId = 2L;
+
+        when(consolidationDetailsDao.findById(entityId)).thenReturn(Optional.empty());
+
+        List<Long> result = commonUtils.getTenantIdsFromEntity(entityId, Constants.CONSOLIDATION);
+
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testGetTenantIdsFromEntity_EmptyTriangulationPartners() {
+        Long entityId = 3L;
+        ShipmentDetails mockShipment = new ShipmentDetails();
+        mockShipment.setTenantId(800);
+        mockShipment.setReceivingBranch(900L);
+        mockShipment.setTriangulationPartnerList(Collections.emptyList());
+
+        when(shipmentDao.findShipmentByIdWithQuery(entityId)).thenReturn(Optional.of(mockShipment));
+
+        List<Long> result = commonUtils.getTenantIdsFromEntity(entityId, Constants.SHIPMENT);
+
+        assertEquals(2, result.size());
+    }
+
 }

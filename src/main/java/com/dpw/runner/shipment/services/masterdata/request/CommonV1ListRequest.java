@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.masterdata.request;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
+import org.apache.kafka.common.protocol.types.Field;
 
 import java.util.List;
 
@@ -24,5 +25,9 @@ public class CommonV1ListRequest {
     private int columnSelection;
     @JsonProperty("IncludeColumns")
     private List<String> includeColumns = null;
+    @JsonProperty("ContainsText")
+    private String containsText;
+    @JsonProperty("ExcludeTotalCount")
+    private Boolean excludeTotalCount;
 
 }
