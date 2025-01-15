@@ -2119,7 +2119,7 @@ public class CommonUtils {
         Set<Long> tenantIds = new HashSet<>();
         Long sourceTenantId = null;
         Long receivingBranch = null;
-        List<Long> triangulationPartners = new ArrayList<>();
+        List<Long> triangulationPartners = null;
         if(Objects.equals(entityType, Constants.SHIPMENT)) {
             Optional<ShipmentDetails> shipmentDetails = shipmentDao.findShipmentByIdWithQuery(entityId);
             if(shipmentDetails.isEmpty()) {
