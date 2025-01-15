@@ -4398,10 +4398,10 @@ public class ConsolidationService implements IConsolidationService {
 
     private boolean isInvalidForTransfer(ConsolidationDetails consolidationDetails) {
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
-        return !Boolean.TRUE.equals(shipmentSettingsDetails.getIsAutomaticTransferEnabled()) ||
-                ObjectUtils.isEmpty(consolidationDetails.getReceivingBranch())
-                || (consolidationDetails.getTransportMode()!=null &&
-                Constants.TRANSPORT_MODE_RAI.equals(consolidationDetails.getTransportMode())) ;
+        return !Boolean.TRUE.equals(shipmentSettingsDetails.getIsAutomaticTransferEnabled())
+                || ObjectUtils.isEmpty(consolidationDetails.getReceivingBranch())
+                || (consolidationDetails.getTransportMode()!=null && Constants.TRANSPORT_MODE_RAI.equals(consolidationDetails.getTransportMode()))
+                || Boolean.TRUE.equals(consolidationDetails.getInterBranchConsole());
     }
 
     private boolean shouldUpdateExistingJob(QuartzJobInfo quartzJobInfo, ConsolidationDetails oldEntity, ConsolidationDetails consolidationDetails, Boolean isDocAdded, Optional<NetworkTransfer> optionalNetworkTransfer) {
