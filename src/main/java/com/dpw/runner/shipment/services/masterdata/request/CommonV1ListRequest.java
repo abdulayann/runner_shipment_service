@@ -2,7 +2,6 @@ package com.dpw.runner.shipment.services.masterdata.request;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
-import org.apache.kafka.common.protocol.types.Field;
 
 import java.util.List;
 
