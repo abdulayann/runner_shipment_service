@@ -687,7 +687,7 @@ class EntityTransferServiceTest extends CommonMocks {
         mockShipmentSettings();
         when(consolidationDetailsDao.findById(request.getConsoleId())).thenReturn(Optional.of(consolidationDetails1));
         Exception exception = assertThrows(ValidationException.class, () -> entityTransferService.sendConsolidationValidation(commonRequestModel));
-        assertEquals("Please enter the MBL, Eta, Etd, Shipping line, Vessel, Voyage, Origin agent, Destination agent, one of the branches in the entity transfer details section for the consolidation and print the Original HAWB for the shipment/s SHP000110207 to retrigger the transfer.", exception.getMessage());
+        assertEquals("Please enter the MBL, Eta, Etd, Shipping line, Vessel, Voyage, Origin agent, Destination agent, one of the branches in the entity transfer details section for the consolidation and print the Original HAWB for the shipment/s SHP000110207 to transfer the files.", exception.getMessage());
     }
 
     @Test
@@ -708,7 +708,7 @@ class EntityTransferServiceTest extends CommonMocks {
         mockShipmentSettings();
         when(consolidationDetailsDao.findById(request.getConsoleId())).thenReturn(Optional.of(consolidationDetails1));
         Exception exception = assertThrows(ValidationException.class, () -> entityTransferService.sendConsolidationValidation(commonRequestModel));
-        assertEquals("Please print the Original HAWB for the shipment/s SHP000110207 to retrigger the transfer.", exception.getMessage());
+        assertEquals("Please print the Original HAWB for the shipment/s SHP000110207 to transfer the files.", exception.getMessage());
     }
 
     @Test
@@ -728,7 +728,7 @@ class EntityTransferServiceTest extends CommonMocks {
         mockShipmentSettings();
         when(consolidationDetailsDao.findById(request.getConsoleId())).thenReturn(Optional.of(consolidationDetails1));
         Exception exception = assertThrows(ValidationException.class, () -> entityTransferService.sendConsolidationValidation(commonRequestModel));
-        assertEquals("Please enter the Flight Number, Eta, Etd, one of the branches in the entity transfer details section and print the original MAWB for the consolidation and print the Original HAWB for the shipment/s SHP000110207 to retrigger the transfer.", exception.getMessage());
+        assertEquals("Please enter the Flight Number, Eta, Etd, one of the branches in the entity transfer details section and print the original MAWB for the consolidation and print the Original HAWB for the shipment/s SHP000110207 to transfer the files.", exception.getMessage());
     }
 
     @Test
@@ -746,7 +746,7 @@ class EntityTransferServiceTest extends CommonMocks {
         mockShipmentSettings();
         when(consolidationDetailsDao.findById(request.getConsoleId())).thenReturn(Optional.of(consolidationDetails1));
         Exception exception = assertThrows(ValidationException.class, () -> entityTransferService.sendConsolidationValidation(commonRequestModel));
-        assertEquals("Please print the original MAWB for the consolidation and print the Original HAWB for the shipment/s SHP000110207 to retrigger the transfer.", exception.getMessage());
+        assertEquals("Please print the original MAWB for the consolidation and print the Original HAWB for the shipment/s SHP000110207 to transfer the files.", exception.getMessage());
     }
 
     @Test
@@ -765,7 +765,7 @@ class EntityTransferServiceTest extends CommonMocks {
         when(consolidationDetailsDao.findById(request.getConsoleId())).thenReturn(Optional.of(consolidationDetails1));
         when(awbDao.findByConsolidationId(anyLong())).thenReturn(new ArrayList<>(List.of(new Awb())));
         Exception exception = assertThrows(ValidationException.class, () -> entityTransferService.sendConsolidationValidation(commonRequestModel));
-        assertEquals("Please print the Original HAWB for the shipment/s SHP000110207 to retrigger the transfer.", exception.getMessage());
+        assertEquals("Please print the Original HAWB for the shipment/s SHP000110207 to transfer the files.", exception.getMessage());
     }
     @Test
     void testSendConsolidationValidation_Success_NetworkTransfer_AIR() {
@@ -807,7 +807,7 @@ class EntityTransferServiceTest extends CommonMocks {
         mockShipmentSettings();
         when(consolidationDetailsDao.findById(request.getConsoleId())).thenReturn(Optional.of(consolidationDetails1));
         Exception exception = assertThrows(ValidationException.class, () -> entityTransferService.sendConsolidationValidation(commonRequestModel));
-        assertEquals("Please enter the Flight Number, Eta, Etd, one of the branches in the entity transfer details section, MAWB Number for the consolidation and enter the HAWB number for the shipment/s SHP000110207 to retrigger the transfer.", exception.getMessage());
+        assertEquals("Please enter the Flight Number, Eta, Etd, one of the branches in the entity transfer details section, MAWB Number for the consolidation and enter the HAWB number for the shipment/s SHP000110207 to transfer the files.", exception.getMessage());
     }
 
     @Test
@@ -843,7 +843,7 @@ class EntityTransferServiceTest extends CommonMocks {
         mockShipmentSettings();
         when(consolidationDetailsDao.findById(request.getConsoleId())).thenReturn(Optional.of(consolidationDetails1));
         Exception exception = assertThrows(ValidationException.class, () -> entityTransferService.sendConsolidationValidation(commonRequestModel));
-        assertEquals("Please enter the Eta, Etd, Origin agent, Destination agent, one of the branches in the entity transfer details section for the consolidation", exception.getMessage());
+        assertEquals("Please enter the Eta, Etd, Origin agent, Destination agent, one of the branches in the entity transfer details section for the consolidation to transfer the files.", exception.getMessage());
     }
 
     @Test
@@ -1108,7 +1108,7 @@ class EntityTransferServiceTest extends CommonMocks {
         mockShipmentSettings();
         when(shipmentDao.findById(request.getShipId())).thenReturn(Optional.of(shipmentDetails1));
         Exception exception = assertThrows(ValidationException.class, () -> entityTransferService.sendShipmentValidation(commonRequestModel));
-        assertEquals("Please enter the Flight number,Eta,Etd,one of the branches in the entity transfer details section and print original MAWB to retrigger the transfer.", exception.getMessage());
+        assertEquals("Please enter the Flight number,Eta,Etd,one of the branches in the entity transfer details section and print original MAWB to transfer the shipment.", exception.getMessage());
     }
     @Test
     void testSendShipmentValidation_Failure_NetworkTransferShipmentFieldsException1() {
@@ -1148,7 +1148,7 @@ class EntityTransferServiceTest extends CommonMocks {
         mockShipmentSettings();
         when(shipmentDao.findById(request.getShipId())).thenReturn(Optional.of(shipmentDetails1));
         Exception exception = assertThrows(ValidationException.class, () -> entityTransferService.sendShipmentValidation(commonRequestModel));
-        assertEquals("Please print original MAWB to retrigger the transfer.", exception.getMessage());
+        assertEquals("Please print original MAWB to transfer the shipment.", exception.getMessage());
     }
     @Test
     void testSendShipmentValidation_Success_NetworkTransferShipmentFieldsException3() {
