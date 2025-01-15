@@ -58,6 +58,7 @@ import org.springframework.cache.CacheManager;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 
+
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -272,7 +273,7 @@ class CargoManifestAirConsolidationReportTest extends CommonMocks {
         shipmentModel.setPackingList(packingModels);
 
         ReferenceNumbersModel referenceNumbersModel = new ReferenceNumbersModel();
-        referenceNumbersModel.setType(ReportConstants.MORN);
+        referenceNumbersModel.setType(ReportConstants.MoRN);
         shipmentModel.setReferenceNumbersList(Arrays.asList(referenceNumbersModel));
 
         ConsolidationModel consolidationModel = new ConsolidationModel();
@@ -282,6 +283,7 @@ class CargoManifestAirConsolidationReportTest extends CommonMocks {
         consolidationModel.setCarrierDetails(carrierDetailModel);
         ArrivalDepartureDetailsModel arrivalDepartureDetailsModel = new ArrivalDepartureDetailsModel();
         arrivalDepartureDetailsModel.setCTOId(partiesModel);
+        arrivalDepartureDetailsModel.setLastForeignPort("123");
         consolidationModel.setArrivalDetails(arrivalDepartureDetailsModel);
         partiesModel = new PartiesModel();
         partiesModel.setType("Notify Party 1");

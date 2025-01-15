@@ -216,6 +216,7 @@ public class Constants {
     public static final String ACTIVITY_TYPE = "ActivityType";
     public static final String SALES_AGENT = "SalesAgent";
     public static final String TENANT_MASTER_DATA = "TenantIdData";
+    public static final String COLLECTION_TABLE = "CollectionTable";
     public static final String MASTER_DATA = "MasterData";
 
 
@@ -595,14 +596,16 @@ public class Constants {
     public static final String SOURCE_SERVICE_TYPE = "SourceServiceType";
 
     public static final String NETWORK_TRANSFER_ENTITY = "NetworkTransfer";
+    public static final String COMMON_ERROR_LOGS_ENTITY = "CommonErrorLogs";
     public static final String NETWORK_TRANSFER_ENTITY_STATUS = "NetworkTransferEntityStatus";
     public static final String NETWORK_TRANSFER_ENTITY_TYPES = "NetworkTransferEntityTypes";
     public static final String UAE_TWO_DIGIT_IATA_CODE = "AE";
     public static final String HOUR = "hour";
     public static final String MINUTE = "minute";
     public static final String SECOND = "second";
-
     public static final String TRACKING_PUSH_API = "TRACKING_PUSH_API";
+    public static final String NOTIFICATION_ENTITY = "Notification";
+    public static final String NOTIFICATION_REQUEST_TYPES = "NotificationRequestTypes";
 
     public static final String ADDRESS_SHORT_CODE = "AddressShortCode";
     public static final String ORG_ADDRESS = "orgAddress";

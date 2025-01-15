@@ -1106,8 +1106,8 @@ public abstract class IReport {
             }
             if(shipmentModel.getReferenceNumbersList() != null && !shipmentModel.getReferenceNumbersList().isEmpty()) {
                 for (ReferenceNumbersModel referenceNumbersModel: shipmentModel.getReferenceNumbersList()) {
-                    if(Objects.equals(referenceNumbersModel.getType(), ReportConstants.MORN) && !dict.containsKey(ReportConstants.MORN))
-                        dict.put(ReportConstants.MORN, referenceNumbersModel.getReferenceNumber());
+                    if(Objects.equals(referenceNumbersModel.getType(), ReportConstants.MRN) && !dict.containsKey(ReportConstants.MoRN))
+                        dict.put(ReportConstants.MoRN, referenceNumbersModel.getReferenceNumber());
                 }
             }
             if(shipmentModel.getAdditionalDetails() != null) {
@@ -1320,6 +1320,10 @@ public abstract class IReport {
 
     public ConsolidationModel getConsolidation(Long id) {
         ConsolidationDetails consolidationDetails = getConsolidationsById(id);
+        return getConsolidationModel(consolidationDetails);
+    }
+
+    public ConsolidationModel getConsolidationModel(ConsolidationDetails consolidationDetails) {
         return modelMapper.map(consolidationDetails, ConsolidationModel.class);
     }
 
@@ -1554,7 +1558,7 @@ public abstract class IReport {
         List<MasterListRequest> masterListRequest = createMasterListsRequestFromConsole(consolidation);
         Map<Integer, Map<String, MasterData>> masterListsMap = fetchInBulkMasterList(MasterListRequestV2.builder().MasterListRequests(masterListRequest.stream().filter(Objects::nonNull).toList()).build());
         UnlocationsResponse lastForeignPort = null;
-        if (arrivalDetails != null) {
+        if (arrivalDetails != null && !IsStringNullOrEmpty(arrivalDetails.getLastForeignPort())) {
             List<Object> criteria = Arrays.asList(
                     Arrays.asList(EntityTransferConstants.LOCATION_SERVICE_GUID),
                     "=",
@@ -2048,7 +2052,10 @@ public abstract class IReport {
     /**
      Added this method to change the Address format of HAWB and MAWB reports without disturbing the other reports
      */
-    public static List<String> getAwbFormattedDetails(String name, String address1, String address2, String city, String state, String zipCode, String country, String contactName, String phone, String taxRegistrationNumber)
+    public static List<String> getAwbFormattedDetails(String name, String address1, String address2, String city, String state, String zipCode, String country, String contactName, String phone, String taxRegistrationNumber) {
+        return getAwbFormattedDetails(name, address1, address2, city, state, zipCode, country, contactName, phone, taxRegistrationNumber, false);
+    }
+    public static List<String> getAwbFormattedDetails(String name, String address1, String address2, String city, String state, String zipCode, String country, String contactName, String phone, String taxRegistrationNumber, boolean addStringPHReqd)
     {
         List<String> details = new ArrayList<>();
         if(!Strings.isNullOrEmpty(name)){
@@ -2088,7 +2095,10 @@ public abstract class IReport {
         if (!Strings.isNullOrEmpty(phone)) {
             if(!contactAndPhoneDetails.isEmpty())
                 contactAndPhoneDetails.append(", ");
-            contactAndPhoneDetails.append(phone);
+            String ph = phone;
+            if(addStringPHReqd)
+                ph = "PH: " + phone;
+            contactAndPhoneDetails.append(ph);
         }
         if (!contactAndPhoneDetails.isEmpty()) {
             details.add(contactAndPhoneDetails.toString());
@@ -2920,6 +2930,8 @@ public abstract class IReport {
             dict.put(HS_CODE, pack.getHSCode());
             dict.put(DESCRIPTION, pack.getGoodsDescription());
             dict.put(IsDG, false);
+            dict.put(PACKS_MARKS_NUMBERS, pack.getMarksnNums());
+            dict.put(PACKS_GOODS_DESCRIPTION, pack.getGoodsDescription());
             if(pack.getHazardous() != null && pack.getHazardous().equals(true)){
                 var dgSubstanceRow = masterDataUtils.fetchDgSubstanceRow(pack.getDGSubstanceId());
                 dict.put(DG_SUBSTANCE, dgSubstanceRow.ProperShippingName);

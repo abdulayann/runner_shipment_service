@@ -3,11 +3,7 @@ package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
-import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
-import com.dpw.runner.shipment.services.entity.enums.FileStatus;
-import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
-import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
+import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
 import com.dpw.runner.shipment.services.utils.MasterData;
@@ -290,13 +286,10 @@ public class ShipmentDetails extends MultiTenancy {
     @TenantIdData
     private Long documentationPartner;
 
-    @Column(name = "partner_id")
-    @ElementCollection(targetClass = Long.class, fetch = FetchType.LAZY)
-    @CollectionTable(
-            name = "triangulation_partner_shipment",
-            joinColumns = @JoinColumn(name = "shipment_id"))
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "triangulation_partner_shipment", joinColumns = @JoinColumn(name = "shipment_id"))
     @BatchSize(size = 50)
-    private List<Long> triangulationPartnerList;
+    private List<TriangulationPartner> triangulationPartnerList;
 
     @Column(name = "triangulation_partner")
     @TenantIdData
@@ -585,7 +578,13 @@ public class ShipmentDetails extends MultiTenancy {
     @Column(name = "is_network_file")
     private Boolean isNetworkFile;
 
+    @Column(name = "transfer_status")
+    @Enumerated(EnumType.STRING)
+    private NetworkTransferStatus transferStatus;
+
     @Column(name = "is_receiving_branch_manually")
     private Boolean isReceivingBranchManually;
 
+    @Column(name = "is_transferred_to_receiving_branch")
+    private Boolean isTransferredToReceivingBranch;
 }

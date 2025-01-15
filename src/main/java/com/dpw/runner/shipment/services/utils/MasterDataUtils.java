@@ -1,19 +1,59 @@
 package com.dpw.runner.shipment.services.utils;
 
+import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
+
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.*;
-import com.dpw.runner.shipment.services.commons.constants.*;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
+import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
+import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
-import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
+import com.dpw.runner.shipment.services.dto.response.CustomerBookingResponse;
+import com.dpw.runner.shipment.services.dto.response.MasterDataDescriptionResponse;
+import com.dpw.runner.shipment.services.dto.response.NetworkTransferListResponse;
+import com.dpw.runner.shipment.services.dto.response.NotificationListResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentSettingsDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.TriangulationPartnerResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.ShipmentBillingListRequest;
-import com.dpw.runner.shipment.services.dto.v1.response.*;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.dto.v1.response.ActivityMasterResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.SalesAgentResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.ShipmentBillingListResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
+import com.dpw.runner.shipment.services.entity.AdditionalDetails;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.NetworkTransfer;
+import com.dpw.runner.shipment.services.entity.Notification;
+import com.dpw.runner.shipment.services.entity.Parties;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
-import com.dpw.runner.shipment.services.entitytransfer.dto.*;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferChargeType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCurrency;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferDGSubstance;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferVessels;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -26,6 +66,21 @@ import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
+import java.lang.reflect.Field;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import javax.persistence.CollectionTable;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.slf4j.MDC;
@@ -34,14 +89,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Component;
-
-import java.lang.reflect.Field;
-import java.math.BigDecimal;
-import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 
 @Slf4j
 @Component
@@ -210,6 +257,9 @@ public class MasterDataUtils{
                 if (response instanceof NetworkTransferListResponse networkTransferListResponse && (networkTransferListResponse.getSourceBranchId() != null)) {
                     tenantIdList.addAll(createInBulkTenantsRequest(networkTransferListResponse, NetworkTransfer.class, fieldNameKeyMap, NetworkTransfer.class.getSimpleName() + networkTransferListResponse.getId(), cacheMap));
                 }
+                if (response instanceof NotificationListResponse notificationListResponse && (notificationListResponse.getRequestedBranchId() != null || notificationListResponse.getReassignedToBranchId() != null)) {
+                    tenantIdList.addAll(createInBulkTenantsRequest(notificationListResponse, Notification.class, fieldNameKeyMap, Notification.class.getSimpleName() + notificationListResponse.getId(), cacheMap));
+                }
             }
 
             Map<String, TenantModel> v1Data = fetchInTenantsList(tenantIdList);
@@ -235,6 +285,12 @@ public class MasterDataUtils{
                     networkTransferListResponse.setTenantMasterData(new HashMap<>());
                     if (networkTransferListResponse.getSourceBranchId() != null)
                         networkTransferListResponse.getTenantMasterData().putAll(setMasterData(fieldNameKeyMap.get(NetworkTransfer.class.getSimpleName() + networkTransferListResponse.getId()), CacheConstants.TENANTS, cacheMap));
+                }
+
+                if (response instanceof NotificationListResponse notificationListResponse) {
+                    notificationListResponse.setTenantMasterData(new HashMap<>());
+                    if (notificationListResponse.getRequestedBranchId() != null || notificationListResponse.getReassignedToBranchId() != null)
+                        notificationListResponse.getTenantMasterData().putAll(setMasterData(fieldNameKeyMap.get(Notification.class.getSimpleName() + notificationListResponse.getId()), CacheConstants.TENANTS, cacheMap));
                 }
             }
             log.info("Time taken to fetch Tenant Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.SHIPMENT_LIST_MASTER_DATA, (System.currentTimeMillis() - _start) , LoggerHelper.getRequestIdFromMDC());
@@ -850,6 +906,11 @@ public class MasterDataUtils{
             List<String> fields = new ArrayList<>();
             for (Field field : mainClass.getDeclaredFields()) {
                 switch (masterDataType) {
+                    case Constants.COLLECTION_TABLE:
+                        if (field.isAnnotationPresent(CollectionTable.class)) {
+                            fields.add(field.getName());
+                        }
+                        break;
                     case Constants.VESSEL_MASTER_DATA:
                         if (field.isAnnotationPresent(DedicatedMasterData.class) && field.getDeclaredAnnotation(DedicatedMasterData.class).type().equals(Constants.VESSEL_MASTER_DATA))
                             fields.add(field.getName());
@@ -1164,35 +1225,100 @@ public class MasterDataUtils{
         return keyMasterDataMap;
     }
 
-    public List<String> createInBulkTenantsRequest (IRunnerResponse entityPayload, Class mainClass, Map<String, Map<String, String>> fieldNameMainKeyMap, String code, Map<String, Object> cacheMap) {
+    public List<String> createInBulkTenantsRequest(IRunnerResponse entityPayload, Class<?> mainClass, Map<String, Map<String, String>> fieldNameMainKeyMap, String code,
+            Map<String, Object> cacheMap) {
+        // List to store tenant IDs that need to be fetched
         List<String> requests = new ArrayList<>();
-        if (Objects.isNull(entityPayload))
-            return requests;
 
+        // Return an empty list if entityPayload is null
+        if (Objects.isNull(entityPayload)) {
+            return requests;
+        }
+
+        // Map to hold field-to-tenant ID mappings for the given code
         Map<String, String> fieldNameKeyMap = new HashMap<>();
+        // Fetching the cache instance for tenant data
         Cache cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
-        List<String> fields = fetchFieldsMap(mainClass, Constants.TENANT_MASTER_DATA);
-        for (String field: fields){
+
+        // Handle fields marked as Tenant Master Data
+        List<String> tenantMasterDataFields = fetchFieldsMap(mainClass, Constants.TENANT_MASTER_DATA);
+        for (String tenantMasterDataField : tenantMasterDataFields) {
             try {
-                Field field1 = entityPayload.getClass().getDeclaredField(field);
-                field1.setAccessible(true);
-                Long tenantId = null;
-                if(field1.get(entityPayload) != null) {
-                    if(!IsStringNullOrEmpty(field1.get(entityPayload).toString()))
-                        tenantId = Long.parseLong(field1.get(entityPayload).toString());
-                }
-                if(tenantId != null) {
-                    Cache.ValueWrapper cacheValue = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.TENANTS, StringUtility.convertToString(tenantId)));
-                    if (Objects.isNull(cacheValue)) requests.add(StringUtility.convertToString(tenantId));
-                    else cacheMap.put(StringUtility.convertToString(tenantId), cacheValue.get());
-                    fieldNameKeyMap.put(field, StringUtility.convertToString(tenantId));
+                // Access the field in the entityPayload object
+                Field field = entityPayload.getClass().getDeclaredField(tenantMasterDataField);
+                field.setAccessible(true);
+                Object fieldValue = field.get(entityPayload);
+
+                // Process the field value if it's not null or empty
+                if (fieldValue != null && !IsStringNullOrEmpty(fieldValue.toString())) {
+                    Long tenantId = Long.parseLong(fieldValue.toString());
+                    // Add tenant ID to requests or cache, and map it to the field name
+                    processTenantId(tenantId, tenantMasterDataField, requests, cache, cacheMap, fieldNameKeyMap);
                 }
             } catch (Exception e) {
-                throw new RuntimeException(e);
+                // Handle any errors that occur while processing this field
+                handleFieldProcessingError(tenantMasterDataField, e);
             }
         }
+
+        // Handle fields representing collection tables (e.g., lists)
+        List<String> collectionTableFields = fetchFieldsMap(mainClass, "CollectionTable");
+        for (String collectionTableField : collectionTableFields) {
+            try {
+                // Access the collection field in the entityPayload object
+                Field field = entityPayload.getClass().getDeclaredField(collectionTableField);
+                field.setAccessible(true);
+                Object fieldValue = field.get(entityPayload);
+
+                // Check if the field value is a List
+                if (fieldValue instanceof List<?> fieldValueList) {
+                    // Iterate over each item in the list
+                    for (int i = 0; i < fieldValueList.size(); i++) {
+                        Object item = fieldValueList.get(i);
+
+                        // Handle items of type TriangulationPartnerResponse
+                        if (item instanceof TriangulationPartnerResponse partner) {
+                            Long tenantId = partner.getTriangulationPartner();
+
+                            // Process tenant ID if it exists
+                            if (tenantId != null) {
+                                // Create a unique field key for the collection item
+                                String fieldKey = collectionTableField + "_item" + (i + 1);
+                                processTenantId(tenantId, fieldKey, requests, cache, cacheMap, fieldNameKeyMap);
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                handleFieldProcessingError(collectionTableField, e);
+            }
+        }
+
+        // Add the field-to-tenant ID mapping for this code to the main map
         fieldNameMainKeyMap.put(code, fieldNameKeyMap);
+
         return requests;
+    }
+
+    /**
+     * Process a tenant ID: checks cache, updates requests and cacheMap, and maps field-to-tenant ID.
+     */
+    private void processTenantId(Long tenantId, String fieldKey, List<String> requests, Cache cache, Map<String, Object> cacheMap, Map<String, String> fieldNameKeyMap) {
+        // Generate cache key and check if tenant data is already cached
+        Cache.ValueWrapper cacheValue = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.TENANTS, StringUtility.convertToString(tenantId)));
+        if (Objects.isNull(cacheValue)) {
+            // Add tenant ID to requests if it's not found in the cache
+            requests.add(StringUtility.convertToString(tenantId));
+        } else {
+            // Store the cached tenant data in cacheMap
+            cacheMap.put(StringUtility.convertToString(tenantId), cacheValue.get());
+        }
+        // Map the field key to the tenant ID
+        fieldNameKeyMap.put(fieldKey, StringUtility.convertToString(tenantId));
+    }
+
+    private void handleFieldProcessingError(String fieldName, Exception e) {
+        throw new RuntimeException("Error processing field: " + fieldName, e);
     }
 
     public Map<String, TenantModel> fetchInTenantsList(Set<String> requests) {
@@ -1490,6 +1616,13 @@ public class MasterDataUtils{
             pushToCache(masterListsMap, CacheConstants.MASTER_LIST, commodityGroupCodesFetchFromV1, new EntityTransferUnLocations(), null);
         }
         return responseMap;
+    }
+
+    /*
+     * Gets the location data from cache and populates into supplied unLocationsMap
+     */
+    public void getLocationDataFromCache(Set<String> locCodes, Map<String, EntityTransferUnLocations> unLocationsMap) {
+        unLocationsMap.putAll(getLocationDataFromCache(locCodes, EntityTransferConstants.LOCATION_SERVICE_GUID));
     }
 
     public Map<String, EntityTransferUnLocations> getLocationDataFromCache(Set<String> locCodes, String fieldName) {

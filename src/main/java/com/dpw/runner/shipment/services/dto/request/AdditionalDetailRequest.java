@@ -146,4 +146,5 @@ public class AdditionalDetailRequest extends CommonRequest implements IRunnerReq
     private Boolean isExportCustomClearanceCompleted;
     private LocalDateTime blInstructionReceived;
     private LocalDateTime cargoOutForDelivery;
+    private Integer fcrNumber = 0;
 }

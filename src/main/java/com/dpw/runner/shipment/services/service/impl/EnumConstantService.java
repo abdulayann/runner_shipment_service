@@ -122,6 +122,12 @@ public class EnumConstantService implements IEnumConstantService {
         }
         response.put(Constants.CONTAINER_PRA_STATUS_ENTITY, enumList);
 
+        enumList = new ArrayList<>();
+        for(NotificationRequestType entity : NotificationRequestType.values()) {
+            enumList.add(EnumConstantResponse.builder().id(entity.getValue()).name(entity.name()).description(entity.getDescription()).build());
+        }
+        response.put(Constants.NOTIFICATION_REQUEST_TYPES, enumList);
+
         return ResponseHelper.buildSuccessResponse(EnumResponse.builder().dataMap(response).build());
     }
 }

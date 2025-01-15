@@ -1,18 +1,13 @@
 package com.dpw.runner.shipment.services.utils;
 
 
-import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
-
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IPlatformServiceAdapter;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
-import com.dpw.runner.shipment.services.commons.constants.EventConstants;
-import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
-import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -20,36 +15,17 @@ import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IIntegrationResponseDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
+import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
-import com.dpw.runner.shipment.services.dto.request.platform.ChargesRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.DimensionDTO;
-import com.dpw.runner.shipment.services.dto.request.platform.DocumentMetaDTO;
-import com.dpw.runner.shipment.services.dto.request.platform.HazardousInfoRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.LoadRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.OrgRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.PlatformCreateRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.PlatformUpdateRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.ReeferInfoRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.ReferenceNumbersRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.RouteLegRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.RouteRequest;
+import com.dpw.runner.shipment.services.dto.request.platform.*;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
 import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.UpdateOrgCreditLimitBookingResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1ShipmentCreationResponse;
-import com.dpw.runner.shipment.services.entity.BookingCharges;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.CustomerBooking;
-import com.dpw.runner.shipment.services.entity.Events;
-import com.dpw.runner.shipment.services.entity.IntegrationResponse;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.Parties;
-import com.dpw.runner.shipment.services.entity.Routings;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
@@ -58,7 +34,6 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferChargeType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferVessels;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
-import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -67,24 +42,13 @@ import com.dpw.runner.shipment.services.kafka.dto.DocumentDto.Document;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
+import com.dpw.runner.shipment.services.service.interfaces.IEventService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -95,6 +59,13 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
+import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 
 
 /**
@@ -129,6 +100,8 @@ public class BookingIntegrationsUtility {
     private CommonUtils commonUtils;
     @Autowired
     private IEventDao eventDao;
+    @Autowired
+    private IEventService eventService;
 
     @Value("${platform.failure.notification.enabled}")
     private Boolean isFailureNotificationEnabled;
@@ -659,11 +632,7 @@ public class BookingIntegrationsUtility {
     }
 
     private String mapBookingStatus(ShipmentStatus status) {
-        if (status == ShipmentStatus.Created)
-            return ShipmentConstants.PENDING;
-        else if (status == ShipmentStatus.Booked)
-            return ShipmentConstants.BOOKED;
-        else if (status == ShipmentStatus.Cancelled)
+        if (status == ShipmentStatus.Cancelled)
             return ShipmentConstants.CANCELLED;
         else
             return ShipmentConstants.CONFIRMED;
@@ -813,6 +782,7 @@ public class BookingIntegrationsUtility {
                         .stream().findFirst().orElse(new ShipmentDetails());
 
                 List<Events> eventListFromDb = shipmentDetails.getEventsList();
+                RequestAuthContext.setAuthToken("Bearer " + StringUtils.defaultString(v1Service.generateToken()));
                 TenantContext.setCurrentTenant(shipmentDetails.getTenantId());
                 UserContext.setUser(UsersDto.builder().TenantId(shipmentDetails.getTenantId()).Permissions(new HashMap<>()).build());
                 boolean updatedExistingEvent = false;
@@ -843,14 +813,18 @@ public class BookingIntegrationsUtility {
                         throw new IllegalStateException("Shipment ID is null for the provided entity ID.");
                     }
 
-                    CustomAutoEventRequest eventReq = new CustomAutoEventRequest();
-                    eventReq.setEntityId(shipmentDetails.getId());
-                    eventReq.setEntityType(Constants.SHIPMENT);
-                    eventReq.setEventCode(payloadData.getEventCode());
-
-                    log.info("Auto-generating event with code: {} for shipment entity ID: {}", payloadData.getEventCode(), shipmentDetails.getId());
-                    eventDao.autoGenerateEvents(eventReq);
-                    log.info("Event auto-generated successfully for entity ID: {}", shipmentDetails.getId());
+                    EventsRequest eventsRequest = new EventsRequest();
+                    eventsRequest.setActual(LocalDateTime.now());
+                    eventsRequest.setEntityId(shipmentDetails.getId());
+                    eventsRequest.setEntityType(Constants.SHIPMENT);
+                    eventsRequest.setEventCode(payloadData.getEventCode());
+                    eventsRequest.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
+                    if (EventConstants.FNMU.equals(payloadData.getEventCode())) {
+                        eventsRequest.setContainerNumber(shipmentDetails.getMasterBill());
+                    }
+                    log.info("Generating event with code: {} for shipment entity ID: {}", payloadData.getEventCode(), shipmentDetails.getId());
+                    eventService.saveEvent(eventsRequest);
+                    log.info("Event generated successfully for entity ID: {}", shipmentDetails.getId());
                 }
             }
         } catch (Exception ex) {
@@ -859,6 +833,7 @@ public class BookingIntegrationsUtility {
             log.info("Completed event handling process for action: {} and entity ID: {}", payloadAction, payloadData.getEntityId());
             TenantContext.removeTenant();
             UserContext.removeUser();
+            RequestAuthContext.removeToken();
         }
     }
 

@@ -97,7 +97,7 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private String route;
     private Long sourceTenantId;
     private Long documentationPartner;
-    private List<Long> triangulationPartnerList;
+    private List<TriangulationPartnerResponse> triangulationPartnerList;
     private Long triangulationPartner;
     private Long receivingBranch;
     private boolean intraBranch;
@@ -224,5 +224,7 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private OceanDGStatus oceanDGStatus;
     private Boolean syncRoutingFromConsolidation;
     private Boolean isNetworkFile;
+    private String transferStatus;
     private Boolean isReceivingBranchManually;
+    private Boolean isTransferredToReceivingBranch;
 }

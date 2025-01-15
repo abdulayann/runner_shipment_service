@@ -932,9 +932,11 @@ public class PackingService implements IPackingService {
         achievedQuantities.setConsolidatedWeightUnit(toWeightUnit);
         achievedQuantities.setConsolidatedVolumeUnit(toVolumeUnit);
 
+        List<Packing> consolPackingList = Optional.ofNullable(consol.getPackingList()).orElse(Collections.emptyList());
+
         if(shipmentRequest != null) {
             // Filter out the old shipment-linked packs from the consol packs stream
-            packingList.addAll(consol.getPackingList().stream().filter(i -> !Objects.equals(i.getShipmentId(),shipmentRequest.getId())).toList());
+            packingList.addAll(consolPackingList.stream().filter(i -> !Objects.equals(i.getShipmentId(),shipmentRequest.getId())).toList());
             // Add the current updated packs of the shipment
             var shipmentPackingList = jsonHelper.convertValueToList(shipmentRequest.getPackingList(), Packing.class);
             packingList.addAll(Optional.ofNullable(shipmentPackingList).orElse(Collections.emptyList()));
@@ -942,8 +944,8 @@ public class PackingService implements IPackingService {
         else if (attachingShipments != null && !attachingShipments.isEmpty()) {
             Set<Long> packingIdSet = new HashSet<>();
             if(!Boolean.TRUE.equals(request.getIgnoreConsolidationPacks())) {
-                packingList.addAll(consol.getPackingList());
-                packingIdSet = consol.getPackingList().stream().map(Packing::getId).collect(Collectors.toSet());
+                packingList.addAll(consolPackingList);
+                packingIdSet = consolPackingList.stream().map(Packing::getId).collect(Collectors.toSet());
             }
             Set<Long> finalPackingIdSet = packingIdSet;
             packingList.addAll(getShipmentPacks(attachingShipments).stream().filter(i -> !finalPackingIdSet.contains(i.getId())).toList());
@@ -982,7 +984,6 @@ public class PackingService implements IPackingService {
             flag = false;
         if(!(consol.getAllocations() != null && consol.getAllocations().getWeight() != null))
             flag = false;
-
         return flag;
     }
 
