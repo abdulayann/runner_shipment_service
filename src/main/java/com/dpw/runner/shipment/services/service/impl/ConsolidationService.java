@@ -4365,6 +4365,11 @@ public class ConsolidationService implements IConsolidationService {
                 return;
             }
 
+            List<V1TenantSettingsResponse.FileTransferConfigurations> fileTransferConfigurations = quartzJobInfoService.getActiveFileTransferConfigurations();
+            if (ObjectUtils.isEmpty(fileTransferConfigurations)) {
+                return;
+            }
+
             Optional<NetworkTransfer> optionalNetworkTransfer = networkTransferDao.findByTenantAndEntity(Math.toIntExact(consolidationDetails.getReceivingBranch()), consolidationDetails.getId(), CONSOLIDATION);
             if(optionalNetworkTransfer.isPresent() && (optionalNetworkTransfer.get().getStatus()==NetworkTransferStatus.TRANSFERRED ||
                     optionalNetworkTransfer.get().getStatus()==NetworkTransferStatus.ACCEPTED))
