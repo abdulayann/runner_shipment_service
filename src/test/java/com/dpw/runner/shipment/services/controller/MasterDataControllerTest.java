@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
+import com.dpw.runner.shipment.services.dto.request.ListCousinBranchesForReassignRequest;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
@@ -2225,6 +2226,36 @@ class MasterDataControllerTest {
         when(iMasterDataService.listBranchesByDefaultOrgAndAddress(any())).thenThrow(new RuntimeException("RuntimeException"));
         //Test
         var responseEntity = masterDataController.listBranchesByDefaultOrgAndAddress(new Object());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void listCousinBranchForNTEReassignTest() {
+        // Mock
+        when(iMasterDataService.listCousinBranchForNTEReassign(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = masterDataController.listCousinBranchForNTEReassign(new ListCousinBranchesForReassignRequest());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void listCousinBranchForNTEReassignTest2() {
+        // Mock
+        when(iMasterDataService.listCousinBranchForNTEReassign(any())).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = masterDataController.listCousinBranchForNTEReassign(new ListCousinBranchesForReassignRequest());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void listCousinBranchForNTEReassignTest3() {
+        // Mock
+        when(iMasterDataService.listCousinBranchForNTEReassign(any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = masterDataController.listCousinBranchForNTEReassign(new ListCousinBranchesForReassignRequest());
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
