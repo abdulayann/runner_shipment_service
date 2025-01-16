@@ -14,4 +14,5 @@ public class DocUploadRequest implements IDocumentModel{
     private String reportId;
     private String transportMode;
     private String templateCode;
+    private Boolean isTransferEnabled;
 }

@@ -1557,6 +1557,7 @@ public class ReportService implements IReportService {
             fileVersion = blObject.getHblData().getOriginalSeq() != null ? StringUtility.convertToString(blObject.getHblData().getOriginalSeq()) : null;
             blObject.getHblData().setOriginalSeq(blObject.getHblData().getOriginalSeq() != null ? blObject.getHblData().getOriginalSeq() + 1 : 1);
             updateInReleaseMappingTable(blObject, releaseType, shipmentSettingsDetails);
+            uploadRequest.setIsTransferEnabled(Boolean.TRUE);
             hblDao.save(blObject);
         } else {
             fileVersion = blObject.getHblData().getVersion().toString();
@@ -1623,6 +1624,8 @@ public class ReportService implements IReportService {
             docUploadRequest.setId(Long.parseLong(reportRequest.getReportId()));
             docUploadRequest.setType(documentType);
             docUploadRequest.setReportId(reportRequest.getReportId());
+            if(reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.ORIGINAL))
+                docUploadRequest.setIsTransferEnabled(Boolean.TRUE);
             String filename = docUploadRequest.getType() + "_" + reportRequest.getPrintType() + "_" + docUploadRequest.getId() + ".pdf";
             String finalGuid = guid;
             CompletableFuture.runAsync(masterDataUtils.withMdc(
@@ -1671,6 +1674,7 @@ public class ReportService implements IReportService {
                     .docType(uploadRequest.getType())
                     .docName(uploadRequest.getType())
                     .childType(uploadRequest.getType())
+                    .isTransferEnabled(uploadRequest.getIsTransferEnabled())
                     .build());
             return saveResponse;
         } catch (Exception ex) {

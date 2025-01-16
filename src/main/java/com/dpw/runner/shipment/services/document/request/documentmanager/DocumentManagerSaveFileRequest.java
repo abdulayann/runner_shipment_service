@@ -29,4 +29,5 @@ public class DocumentManagerSaveFileRequest {
     private String docName;
     private String entityKey;
     private String childType;
+    private Boolean isTransferEnabled;
 }
