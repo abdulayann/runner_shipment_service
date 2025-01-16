@@ -4083,6 +4083,11 @@ public class ConsolidationService implements IConsolidationService {
             consolidationDetails.setOpenForAttachment(true);
 
         this.checkInterBranchPermission(consolidationDetails, oldEntity);
+
+        // Ignore events update if events Revamp flag is enabled to avoid transaction issues
+        if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEventsRevampEnabled())) {
+            consolidationDetails.setEventsList(null);
+        }
         populateUnlocCodeFuture.join();
     }
 
