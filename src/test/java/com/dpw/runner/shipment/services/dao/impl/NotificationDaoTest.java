@@ -187,9 +187,9 @@ class NotificationDaoTest {
 
     @Test
     void testFindNotificationForEntityTransfer() {
-        notificationDao.findNotificationForEntityTransfer(anyLong(), anyString(), anyInt(), anyString());
+        notificationDao.findNotificationForEntityTransfer(anyLong(), anyString(), anyInt(), anyList());
         verify(notificationRepository, times(1)).
-                findNotificationBasedOnEntityIdAndEntityTypeAndRequestedBranchIdAndRequestType(anyLong(), anyString(), anyInt(), anyString());
+                findNotificationBasedOnEntityIdAndEntityTypeAndBranchIdAndRequestTypes(anyLong(), anyString(), anyInt(), anyList());
     }
 
     @Test
