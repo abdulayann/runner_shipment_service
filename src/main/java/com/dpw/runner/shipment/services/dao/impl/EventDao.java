@@ -86,6 +86,9 @@ public class EventDao implements IEventDao {
     @Autowired
     private IShipmentDao shipmentDao;
 
+    @Autowired
+    private CommonUtils commonUtils;
+
     @PersistenceContext
     private EntityManager entityManager;
 
@@ -141,12 +144,13 @@ public class EventDao implements IEventDao {
                     listCommonRequest = CommonUtils.constructListCommonRequest("consolidationId", entityId, "=");
                 }
                 Pair<Specification<Events>, Pageable> pair = fetchData(listCommonRequest, Events.class);
-                Page<Events> events = findAll(pair.getLeft(), pair.getRight());
-                hashMap = events.stream()
+                Page<Events> eventsPage = findAll(pair.getLeft(), pair.getRight());
+                hashMap = eventsPage.stream()
                         .collect(Collectors.toMap(Events::getId, Function.identity()));
 //            }
             Map<Long, Events> copyHashMap = new HashMap<>(hashMap);
             List<Events> eventsRequestList = new ArrayList<>();
+            eventsList = filterStaleEvents(eventsList, eventsPage.getContent());
             if (eventsList != null && eventsList.size() != 0) {
                 for (Events request : eventsList) {
                     Long id = request.getId();
@@ -609,5 +613,37 @@ public class EventDao implements IEventDao {
         return eventRepository.saveAll(shipmentEvents);
     }
 
+    private List<Events> filterStaleEvents(List<Events> requestList, List<Events> dbList) {
+        // requestList : remove any clashing key from dbList if id of request event < id of dbList event
+        Map<String, Events> dbEventsMap = dbList.stream().collect(Collectors.toMap(i -> commonUtils.getTrackingEventsUniqueKey(
+                i.getEventCode(),
+                i.getContainerNumber(),
+                i.getShipmentNumber(),
+                i.getSource(),
+                i.getPlaceName()
+        ) , Function.identity()));
+
+        List<Events> newEventList = new ArrayList<>();
+        List<Events> filteredEvents = new ArrayList<>(requestList.stream().filter(e -> {
+            String uniqueKey = commonUtils.getTrackingEventsUniqueKey(
+                    e.getEventCode(),
+                    e.getContainerNumber(),
+                    e.getShipmentNumber(),
+                    e.getSource(),
+                    e.getPlaceName()
+            );
+            if (dbEventsMap.containsKey(uniqueKey)) {
+                Events dbEvent = dbEventsMap.get(uniqueKey);
+                if (e.getId() < dbEvent.getId()) {
+                    newEventList.add(dbEvent);
+                    return false;
+                }
+            }
+
+            return true;
+        }).toList());
+        filteredEvents.addAll(newEventList);
+        return filteredEvents;
+    }
 
 }

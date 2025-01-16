@@ -4084,10 +4084,9 @@ public class ConsolidationService implements IConsolidationService {
 
         this.checkInterBranchPermission(consolidationDetails, oldEntity);
 
-        // Ignore events update if events Revamp flag is enabled to avoid transaction issues
-        if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEventsRevampEnabled())) {
-            consolidationDetails.setEventsList(null);
-        }
+        // Ignore events payload to avoid transaction issues bypassing consolidationDao.update(...);
+        // Update happens in after save from request body
+        consolidationDetails.setEventsList(null);
         populateUnlocCodeFuture.join();
     }
 
