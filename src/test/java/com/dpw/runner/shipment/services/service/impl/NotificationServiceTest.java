@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferDao;
 import com.dpw.runner.shipment.services.dao.interfaces.INotificationDao;
 import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
@@ -77,6 +78,8 @@ class NotificationServiceTest {
     private IConsolidationService consolidationService;
     @Mock
     private V1ServiceUtil v1ServiceUtil;
+    @Mock
+    private INetworkTransferDao networkTransferDao;
     @Mock
     private IConsolidationDetailsDao consolidationDetailsDao;
 
