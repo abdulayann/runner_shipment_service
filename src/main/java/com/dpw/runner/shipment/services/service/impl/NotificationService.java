@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferDao;
 import com.dpw.runner.shipment.services.dao.interfaces.INotificationDao;
 import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
@@ -19,10 +20,12 @@ import com.dpw.runner.shipment.services.dto.response.TriangulationPartnerRespons
 import com.dpw.runner.shipment.services.dto.response.NotificationListResponse;
 import com.dpw.runner.shipment.services.dto.response.NotificationResponse;
 import com.dpw.runner.shipment.services.dto.response.NotificationConfirmationMsgResponse;
+import com.dpw.runner.shipment.services.entity.NetworkTransfer;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Notification;
 import com.dpw.runner.shipment.services.entity.TriangulationPartner;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
+import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
 import com.dpw.runner.shipment.services.entity.enums.NotificationRequestType;
 import com.dpw.runner.shipment.services.exception.NotificationServiceException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -53,6 +56,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
 @SuppressWarnings("ALL")
@@ -80,11 +84,14 @@ public class NotificationService implements INotificationService {
 
     private final IConsolidationDetailsDao consolidationDetailsDao;
 
+    private final INetworkTransferDao networkTransferDao;
+
     @Autowired
     public NotificationService(ModelMapper modelMapper, JsonHelper jsonHelper, INotificationDao notificationDao,
                                   MasterDataUtils masterDataUtils, ExecutorService executorService,
                                   MasterDataKeyUtils masterDataKeyUtils, IShipmentService shipmentService,
-                                  IConsolidationService consolidationService, V1ServiceUtil v1ServiceUtil, IConsolidationDetailsDao consolidationDetailsDao) {
+                                  IConsolidationService consolidationService, V1ServiceUtil v1ServiceUtil, INetworkTransferDao networkTransferDao,
+                                  IConsolidationDetailsDao consolidationDetailsDao) {
         this.jsonHelper = jsonHelper;
         this.notificationDao = notificationDao;
         this.masterDataUtils = masterDataUtils;
@@ -94,6 +101,7 @@ public class NotificationService implements INotificationService {
         this.shipmentService = shipmentService;
         this.consolidationService = consolidationService;
         this.v1ServiceUtil = v1ServiceUtil;
+        this.networkTransferDao = networkTransferDao;
         this.consolidationDetailsDao = consolidationDetailsDao;
     }
 
@@ -323,6 +331,11 @@ public class NotificationService implements INotificationService {
         String responseMsg;
         try {
             CommonGetRequest request = CommonGetRequest.builder().id(notification.getEntityId()).build();
+            Optional< NetworkTransfer > optionalNetworkTransfer = networkTransferDao.findByTenantAndEntity(
+                    Math.toIntExact(notification.getReassignedToBranchId()), notification.getEntityId(), notification.getEntityType());
+            if (optionalNetworkTransfer.isPresent()) {
+                throw new ValidationException("Network Transfer already exist on the reassigned branch.");
+            }
             if (Objects.equals(notification.getEntityType(), Constants.SHIPMENT)) {
                 processShipmentReassignment(notification, request);
             } else {
