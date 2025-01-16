@@ -261,7 +261,7 @@ class CargoManifestReportTest extends CommonMocks {
         unlocationsResponse.setName("Test");
         unlocationsResponse.setCountry("IND");
         unlocationsResponse.setPortName("Test");
-        when(masterDataUtils.getLocationDataFromCache(any(), any())).thenReturn(new HashMap<>());
+        when(masterDataUtils.getLocationDataFromCache(any(), anyString())).thenReturn(new HashMap<>());
 
         Parties parties = new Parties();
         parties.setOrgCode("Test");
@@ -421,7 +421,7 @@ class CargoManifestReportTest extends CommonMocks {
         unlocationsResponse.setName("Test");
         unlocationsResponse.setCountry("IND");
         unlocationsResponse.setPortName("Test");
-        when(masterDataUtils.getLocationDataFromCache(any(), any())).thenReturn(new HashMap<>());
+        when(masterDataUtils.getLocationDataFromCache(any(), anyString())).thenReturn(new HashMap<>());
 
         Parties parties = new Parties();
         parties.setOrgCode("Test");
@@ -704,7 +704,7 @@ class CargoManifestReportTest extends CommonMocks {
         UnlocationsResponse unlocationsResponse1 = new UnlocationsResponse();
         unlocationsResponse1.setLocCode("TestForeignPort");
         doReturn(unlocationsResponse1).when(jsonHelper).convertValue(any(EntityTransferUnLocations.class), eq(UnlocationsResponse.class));
-        when(masterDataUtils.getLocationDataFromCache(any(), any())).thenReturn(entityTransferUnLocationsMap);
+        when(masterDataUtils.getLocationDataFromCache(any(), anyString())).thenReturn(entityTransferUnLocationsMap);
 
         Map<String, Object> dictionary = cargoManifestReport.populateDictionary(cargoManifestModel);
         assertNotNull(dictionary);

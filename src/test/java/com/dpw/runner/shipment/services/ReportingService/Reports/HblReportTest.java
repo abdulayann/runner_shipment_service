@@ -332,7 +332,7 @@ class HblReportTest extends CommonMocks {
         unlocationsResponse.setCountry("IND");
         locationMap.put(locationGuid, unlocationsResponse);
         Map<String, EntityTransferUnLocations> entityTransferUnLocationsMap = new HashMap<>();
-        when(masterDataUtils.getLocationDataFromCache(any(), any())).thenReturn(entityTransferUnLocationsMap);
+        when(masterDataUtils.getLocationDataFromCache(any(), anyString())).thenReturn(entityTransferUnLocationsMap);
         when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
         when(shipmentSettingsDao.getSettingsByTenantIds(Arrays.asList(1))).thenReturn(Arrays.asList(ShipmentSettingsDetails.builder().build()));
 
@@ -720,7 +720,7 @@ class HblReportTest extends CommonMocks {
         consolidationModel.setConsolidationAddresses(Arrays.asList(partiesModel));
         consolidationModel.setReferenceNumbersList(Arrays.asList(referenceNumbersModel));
 
-        when(masterDataUtils.getLocationDataFromCache(any(), any())).thenReturn(new HashMap<>());
+        when(masterDataUtils.getLocationDataFromCache(any(), anyString())).thenReturn(new HashMap<>());
         when(masterDataUtils.fetchDgSubstanceRow(any())).thenReturn(new EntityTransferDGSubstance());
 
         V1DataResponse v1DataResponse = new V1DataResponse();
