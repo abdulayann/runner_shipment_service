@@ -126,6 +126,7 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.mutable.MutableBoolean;
+import org.apache.http.auth.AuthenticationException;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -6550,7 +6551,7 @@ ShipmentServiceTest extends CommonMocks {
     }
 
     @Test
-    void testConsoleShipmentList_Success() {
+    void testConsoleShipmentList_Success() throws AuthenticationException {
         Criteria criteria = Criteria.builder().fieldName("wayBillNumber").value(1).build();
         ListCommonRequest listCommonRequest = ListCommonRequest.builder().filterCriteria(Arrays.asList(FilterCriteria.builder().criteria(criteria).innerFilter(new ArrayList<>()).build())).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(listCommonRequest).build();
@@ -6572,12 +6573,40 @@ ShipmentServiceTest extends CommonMocks {
         when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
         when(consoleShipmentMappingDao.findByConsolidationIdAll(1L)).thenReturn(Arrays.asList(consoleShipmentMapping));
 
-        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.consoleShipmentList(commonRequestModel, 1L, null,false, true);
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.consoleShipmentList(commonRequestModel, 1L, null,false, true, false);
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+    }
+    @Test
+    void testConsoleShipmentList_SuccessForNte() throws AuthenticationException {
+        Criteria criteria = Criteria.builder().fieldName("wayBillNumber").value(1).build();
+        ListCommonRequest listCommonRequest = ListCommonRequest.builder().filterCriteria(Arrays.asList(FilterCriteria.builder().criteria(criteria).innerFilter(new ArrayList<>()).build())).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(listCommonRequest).build();
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(1L);
+        consolidationDetails.setInterBranchConsole(true);
+        consolidationDetails.setReceivingBranch(23L);
+        TenantContext.setCurrentTenant(23);
+        ConsoleShipmentMapping consoleShipmentMapping = ConsoleShipmentMapping.builder().shipmentId(2L).consolidationId(1L)
+                .isAttachmentDone(false).requestedType(ShipmentRequestedType.SHIPMENT_PULL_REQUESTED).build();
+
+        GuidsListResponse guidsListResponse = new GuidsListResponse();
+        when(v1Service.fetchWayBillNumberFilterGuids(any())).thenReturn(guidsListResponse);
+
+        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setId(2L);
+        shipmentDetailsList.add(shipmentDetails);
+        PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(shipmentDetailsList);
+        when(shipmentDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
+        when(consolidationDetailsDao.findConsolidationByIdWithQuery(1L)).thenReturn(Optional.of(consolidationDetails));
+        when(consoleShipmentMappingDao.findByConsolidationIdAll(1L)).thenReturn(Arrays.asList(consoleShipmentMapping));
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.consoleShipmentList(commonRequestModel, 1L, null,false, true, true);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
 
     @Test
-    void testConsoleShipmentList_WithGuidSuccess() {
+    void testConsoleShipmentList_WithGuidSuccess() throws AuthenticationException {
         Criteria criteria = Criteria.builder().fieldName("wayBillNumber").value(1).build();
         ListCommonRequest listCommonRequest = ListCommonRequest.builder().filterCriteria(Collections.singletonList(FilterCriteria.builder().criteria(criteria).innerFilter(new ArrayList<>()).build())).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(listCommonRequest).build();
@@ -6599,7 +6628,7 @@ ShipmentServiceTest extends CommonMocks {
         when(consolidationDetailsDao.findByGuid(any())).thenReturn(Optional.of(consoleDetails));
         when(consoleShipmentMappingDao.findByConsolidationIdAll(1L)).thenReturn(Collections.singletonList(consoleShipmentMapping));
 
-        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.consoleShipmentList(commonRequestModel, null, "382bd0b8-e5e4-4482-b599-2e53a52cf7f3",false, true);
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.consoleShipmentList(commonRequestModel, null, "382bd0b8-e5e4-4482-b599-2e53a52cf7f3",false, true, false);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
 
@@ -6608,11 +6637,11 @@ ShipmentServiceTest extends CommonMocks {
         Criteria criteria = Criteria.builder().fieldName("wayBillNumber").value(1).build();
         ListCommonRequest listCommonRequest = ListCommonRequest.builder().filterCriteria(Collections.singletonList(FilterCriteria.builder().criteria(criteria).innerFilter(new ArrayList<>()).build())).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(listCommonRequest).build();
-        assertThrows(ValidationException.class,  () ->  shipmentService.consoleShipmentList(commonRequestModel, null, null,false, true));
+        assertThrows(ValidationException.class,  () ->  shipmentService.consoleShipmentList(commonRequestModel, null, null,false, true, false));
     }
 
     @Test
-    void testConsoleShipmentList_Success_IsAttachedTrue() {
+    void testConsoleShipmentList_Success_IsAttachedTrue() throws AuthenticationException {
         Criteria criteria = Criteria.builder().fieldName("wayBillNumber").value(1).build();
         ListCommonRequest listCommonRequest = ListCommonRequest.builder().filterCriteria(Arrays.asList(FilterCriteria.builder().criteria(criteria).innerFilter(new ArrayList<>()).build())).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(listCommonRequest).build();
@@ -6631,12 +6660,12 @@ ShipmentServiceTest extends CommonMocks {
         when(shipmentDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
         when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
 
-        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.consoleShipmentList(commonRequestModel, 1L, null, true, true);
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.consoleShipmentList(commonRequestModel, 1L, null, true, true, false);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
 
     @Test
-    void testConsoleShipmentList_Success_InterBranchFalse() {
+    void testConsoleShipmentList_Success_InterBranchFalse() throws AuthenticationException {
         Criteria criteria = Criteria.builder().fieldName("wayBillNumber").value(1).build();
         ListCommonRequest listCommonRequest = ListCommonRequest.builder().filterCriteria(Arrays.asList(FilterCriteria.builder().criteria(criteria).innerFilter(new ArrayList<>()).build())).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(listCommonRequest).build();
@@ -6655,7 +6684,7 @@ ShipmentServiceTest extends CommonMocks {
         when(shipmentDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
         when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
 
-        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.consoleShipmentList(commonRequestModel, 1L, null, true, true);
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.consoleShipmentList(commonRequestModel, 1L, null, true, true, false);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
 
@@ -6666,7 +6695,7 @@ ShipmentServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(listCommonRequest).build();
 
         when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.empty());
-        assertThrows(DataRetrievalFailureException.class,  () -> shipmentService.consoleShipmentList(commonRequestModel, 1L, null, true, true));
+        assertThrows(DataRetrievalFailureException.class,  () -> shipmentService.consoleShipmentList(commonRequestModel, 1L, null, true, true, false));
     }
 
     @Test
@@ -6677,7 +6706,7 @@ ShipmentServiceTest extends CommonMocks {
         consolidationDetails.setInterBranchConsole(false);
 
         when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(consolidationDetails));
-        assertThrows(ValidationException.class,  () -> shipmentService.consoleShipmentList(commonRequestModel, 1L, null, true, true));
+        assertThrows(ValidationException.class,  () -> shipmentService.consoleShipmentList(commonRequestModel, 1L, null, true, true, false));
     }
 
 
