@@ -6150,13 +6150,21 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> consoleShipmentList(CommonRequestModel commonRequestModel, Long consoleId, String consoleGuid, boolean isAttached, boolean getMasterData){
+    public ResponseEntity<IRunnerResponse> consoleShipmentList(CommonRequestModel commonRequestModel, Long consoleId, String consoleGuid, boolean isAttached, boolean getMasterData, boolean fromNte) throws AuthenticationException {
         if(consoleId==null && consoleGuid==null)
             throw new ValidationException("Required parameters missing: consoleId and consoleGuid");
 
         Optional<ConsolidationDetails> consolidationDetails;
         if(consoleId != null ){
-            consolidationDetails = consolidationDetailsDao.findById(consoleId);
+            if (fromNte) {
+                consolidationDetails = consolidationDetailsDao.findConsolidationByIdWithQuery(consoleId);
+                if(consolidationDetails.isPresent()) {
+                    this.isValidNte(consolidationDetails.get());
+                    TenantContext.setCurrentTenant(consolidationDetails.get().getTenantId());
+                }
+            }
+            else
+                consolidationDetails = consolidationDetailsDao.findById(consoleId);
         } else {
             UUID guid = UUID.fromString(consoleGuid);
             consolidationDetails = consolidationDetailsDao.findByGuid(guid);
@@ -6209,7 +6217,26 @@ public class ShipmentService implements IShipmentService {
                 }
             }
         }
+        if(fromNte) {
+            TenantContext.removeTenant();
+        }
         return response;
+    }
+
+    private void isValidNte(ConsolidationDetails consolidationDetails) throws AuthenticationException {
+        List<TriangulationPartner> triangulationPartners = consolidationDetails.getTriangulationPartnerList();
+        Long currentTenant = TenantContext.getCurrentTenant().longValue();
+        if ((triangulationPartners == null
+                || triangulationPartners.stream()
+                .filter(Objects::nonNull)
+                .noneMatch(tp -> Objects.equals(tp.getTriangulationPartner(), currentTenant)))
+                && !Objects.equals(consolidationDetails.getReceivingBranch(), currentTenant)) {
+            throw new AuthenticationException(Constants.NOT_ALLOWED_TO_VIEW_CONSOLIDATION_FOR_NTE);
+        } else if (triangulationPartners == null
+                && !Objects.equals(consolidationDetails.getTriangulationPartner(), TenantContext.getCurrentTenant().longValue())
+                && !Objects.equals(consolidationDetails.getReceivingBranch(), TenantContext.getCurrentTenant().longValue())) {
+            throw new AuthenticationException(Constants.NOT_ALLOWED_TO_VIEW_CONSOLIDATION_FOR_NTE);
+        }
     }
 
     @Override
