@@ -14,6 +14,9 @@ import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
 import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
+import com.dpw.runner.shipment.services.entity.response.Consolidation.IConsolidationDetailsResponse;
+import com.dpw.runner.shipment.services.entity.response.Consolidation.IShipmentContainerLiteResponse;
+import com.dpw.runner.shipment.services.entity.response.Consolidation.IShipmentLiteResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
@@ -620,4 +623,23 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     public void updateTransferStatus(Long id, NetworkTransferStatus transferStatus) {
         consolidationRepository.updateTransferStatus(id, transferStatus.name());
     }
+
+
+    @Override
+    public List<IShipmentLiteResponse> findIShipmentsByConsolidationIds(
+        List<Long> consolidationIDs) {
+        return consolidationRepository.findIShipmentsByConsolidationIds(consolidationIDs);
+    }
+
+    @Override
+    public List<IShipmentContainerLiteResponse> findShipmentDetailsWithContainersByConsolidationIds(
+        List<Long> consolidationIDs) {
+        return consolidationRepository.findShipmentDetailsWithContainersByConsolidationIds(consolidationIDs);
+    }
+
+    @Override
+    public Page<IConsolidationDetailsResponse> findAllLiteConsol(Specification<ConsolidationDetails> spec, Pageable pageable) {
+        return consolidationRepository.findAllLiteConsol(spec, pageable);
+    }
+
 }

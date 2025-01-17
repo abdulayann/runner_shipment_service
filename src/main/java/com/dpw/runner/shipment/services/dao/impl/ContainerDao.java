@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
 import com.dpw.runner.shipment.services.dto.mapper.ContainersMapper;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
+import com.dpw.runner.shipment.services.entity.response.Consolidation.IContainerLiteResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -109,6 +110,11 @@ public class ContainerDao implements IContainerDao {
     @Override
     public Page<Containers> findAll(Specification<Containers> spec, Pageable pageable) {
         return containerRepository.findAll(spec, pageable);
+    }
+
+    @Override
+    public List<IContainerLiteResponse> findAllLiteContainer(List<Long> consolidationId) {
+        return containerRepository.findAllLiteContainer(consolidationId);
     }
 
     @Override
