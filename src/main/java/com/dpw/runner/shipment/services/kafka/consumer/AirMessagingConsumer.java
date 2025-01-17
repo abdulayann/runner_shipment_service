@@ -32,7 +32,10 @@ public class AirMessagingConsumer {
     @Autowired
     private AwbUtility awbUtility;
 
-    @KafkaListener(topics = {"#{'${air.messaging.event.kafka.queue}'}"}, groupId = "#{'${air.messaging.event.kafka.subs}'}")
+    @KafkaListener(
+            topics = {"#{'${air.messaging.event.kafka.queue}'}"},
+            autoStartup = "#{'${air.messaging.event.kafka.consumer-auto-startup}'}",
+            groupId = "#{'${air.messaging.event.kafka.subs}'}")
     public void consume(ConsumerRecord<String, String> message)
     {
         try {

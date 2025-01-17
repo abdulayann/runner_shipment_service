@@ -49,7 +49,10 @@ public class EventConsumer {
     this.iv1Service = iv1Service;
   }
 
-  @KafkaListener(topics = {"#{'${wfm.event.kafka.queue}'}"}, groupId = "#{'${wfm.event.kafka.subs}'}")
+  @KafkaListener(
+          topics = {"#{'${wfm.event.kafka.queue}'}"},
+          autoStartup = "#{'${wfm.event.kafka.consumer-auto-startup}'}",
+          groupId = "#{'${wfm.event.kafka.subs}'}")
   public void consume(String message) {
     log.info("Received message from WFM Event Kafka queue: {}", message);
 
