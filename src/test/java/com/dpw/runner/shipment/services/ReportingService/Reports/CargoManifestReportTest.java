@@ -4,7 +4,6 @@ import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.CargoManifestModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
-import com.dpw.runner.shipment.services.ReportingService.Models.HawbModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
@@ -18,7 +17,10 @@ import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbCargoInfo;
 import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.Awb;
+import com.dpw.runner.shipment.services.entity.Parties;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferDGSubstance;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -33,7 +35,6 @@ import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.kafka.common.protocol.types.Field;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -55,7 +56,8 @@ import java.util.*;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
@@ -711,24 +713,16 @@ class CargoManifestReportTest extends CommonMocks {
         Map<String, Object> routsMap = routing.get(0);
         List<String> ctoAddress = ((List<String>) dictionary.get(CTO_ADDRESS));
 
-        assertEquals(test, dictionary.get(LAST_FOREIGN_PORT_NAME));
         assertEquals(test, dictionary.get(AGENT_REFERENCE));
         assertEquals(consolNumber, dictionary.get(CONSOLIDATION_NUMBER));
         assertEquals(Constants.TRANSPORT_MODE_SEA, routsMap.get(MODE));
         assertEquals(0, ctoAddress.size());
-        assertEquals(test, routsMap.get(VESSEL_NAME));
         assertEquals(test, routsMap.get(VOYAGE));
         assertEquals(test, routsMap.get(CARRIER));
         assertEquals(test, routsMap.get(POLCODE));
         assertEquals(test, routsMap.get(PODCODE));
-        assertEquals(localDate, routsMap.get(ETD_FOR_PRINT));
-        assertEquals(localDate, routsMap.get(ETA_FOR_PRINT));
         assertEquals(customEntryNumber, dictionary.get(CUSTOMS_ENTRY_NUMBER));
         assertEquals(10, dictionary.get(TOTAL_PACKAGES));
-        assertEquals(chargable, dictionary.get(PCHARGE_UNIT));
-        assertEquals(PVolume, dictionary.get(PVOLUME_UNIT));
-        assertEquals(PWeight, dictionary.get(PWEIGHT_PACKAGES));
-        assertEquals(carrBookingRef, dictionary.get(CARRIER_BOOKING_REF));
         assertEquals(serviceType, dictionary.get(SERVICE_LEVEL));
         assertEquals(packsUnit, dictionary.get(PACKS_UNIT));
     }

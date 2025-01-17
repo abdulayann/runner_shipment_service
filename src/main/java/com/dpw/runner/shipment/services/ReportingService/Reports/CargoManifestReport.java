@@ -10,8 +10,9 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbCargoInfo;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferVessels;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
@@ -284,23 +285,33 @@ public class CargoManifestReport extends IReport{
 
         if (cargoManifestModel.shipmentDetails.getConsolidationList() != null && !cargoManifestModel.shipmentDetails.getConsolidationList().isEmpty()) {
             ConsolidationModel consol = cargoManifestModel.shipmentDetails.getConsolidationList().get(0);
-            var ctoAddress = consol.getArrivalDetails() == null ? new ArrayList<>(): ReportHelper.getOrgAddress(consol.getArrivalDetails().getCTOId());
-
-            dictionary.put(CTO_ADDRESS, ctoAddress);
             dictionary.put(CONSOLIDATION_NUMBER, consol.getConsolidationNumber());
             dictionary.put(AGENT_REFERENCE, consol.getAgentReference());
-            UnlocationsResponse arrival = consol.getArrivalDetails() == null ? null : getUNLocRow(consol.getArrivalDetails().getLastForeignPort());
-            if (arrival != null)
-                dictionary.put(LAST_FOREIGN_PORT_NAME, arrival.getLocCode());
+            if(Constants.IMP.equalsIgnoreCase(cargoManifestModel.shipmentDetails.getDirection())) {
+                var ctoAddress = consol.getArrivalDetails() == null ? new ArrayList<>(): ReportHelper.getOrgAddress(consol.getArrivalDetails().getCTOId());
+                dictionary.put(CTO_ADDRESS, ctoAddress);
+                UnlocationsResponse arrival = consol.getArrivalDetails() == null ? null : getUNLocRow(consol.getArrivalDetails().getLastForeignPort());
+                if (arrival != null)
+                    dictionary.put(LAST_FOREIGN_PORT_NAME, arrival.getLocCode());
+            } else {
+                var ctoAddress = consol.getDepartureDetails() == null ? new ArrayList<>(): ReportHelper.getOrgAddress(consol.getDepartureDetails().getCTOId());
+                dictionary.put(CTO_ADDRESS, ctoAddress);
+                UnlocationsResponse departure = consol.getDepartureDetails() == null ? null : getUNLocRow(consol.getDepartureDetails().getLastForeignPort());
+                if (departure != null)
+                    dictionary.put(LAST_FOREIGN_PORT_NAME, departure.getLocCode());
+            }
         }
 
         dictionary.put(INSERT_DATE, ConvertToDPWDateFormat(LocalDateTime.now(), tsDateTimeFormat));
-        dictionary.put(PWEIGHT_PACKAGES, ConvertToWeightNumberFormat(cargoManifestModel.shipmentDetails.getWeight(), v1TenantSettingsResponse) + " " + cargoManifestModel.shipmentDetails.getWeightUnit());
-        dictionary.put(PVOLUME_UNIT, ConvertToVolumeNumberFormat(cargoManifestModel.shipmentDetails.getVolumetricWeight(), v1TenantSettingsResponse) + " " + cargoManifestModel.shipmentDetails.getVolumetricWeightUnit());
-        dictionary.put(PCHARGE_UNIT, ConvertToWeightNumberFormat(cargoManifestModel.shipmentDetails.getChargable(), v1TenantSettingsResponse) + " " + cargoManifestModel.shipmentDetails.getChargeableUnit());
+        dictionary.put(TOTAL_WEIGHT_, ConvertToWeightNumberFormat(cargoManifestModel.shipmentDetails.getWeight(), v1TenantSettingsResponse));
+        dictionary.put(PWEIGHT_PACKAGES, cargoManifestModel.shipmentDetails.getWeightUnit());
+        dictionary.put(TOTAL_VOLUME_, ConvertToVolumeNumberFormat(cargoManifestModel.shipmentDetails.getVolume(), v1TenantSettingsResponse));
+        dictionary.put(PVOLUME_UNIT, cargoManifestModel.shipmentDetails.getVolumeUnit());
+        dictionary.put(CHARGEABLE, ConvertToWeightNumberFormat(cargoManifestModel.shipmentDetails.getChargable(), v1TenantSettingsResponse));
+        dictionary.put(PCHARGE_UNIT, cargoManifestModel.shipmentDetails.getChargeableUnit());
         dictionary.put(TOTAL_PACKAGES, cargoManifestModel.shipmentDetails.getNoOfPacks());
         dictionary.put(PACKS_UNIT, cargoManifestModel.shipmentDetails.getPacksUnit());
-        dictionary.put(CARRIER_BOOKING_REF, cargoManifestModel.shipmentDetails.getBookingNumber());
+        dictionary.put(CARRIER_BOOKING_REF, cargoManifestModel.shipmentDetails.getBookingReference());
         dictionary.put(SERVICE_LEVEL, cargoManifestModel.shipmentDetails.getServiceType());
 
         if (cargoManifestModel.shipmentDetails.getRoutingsList() != null && !cargoManifestModel.shipmentDetails.getRoutingsList().isEmpty()) {
@@ -309,16 +320,20 @@ public class CargoManifestReport extends IReport{
                     .toList();
             if (!mainCarriageRouts.isEmpty()) {
                 List<Map<String, Object>> mainCarriageRoutsList = new ArrayList<>();
+                Set<String> vesselGuids = new HashSet<>();
+                mainCarriageRouts.stream().filter(e -> !CommonUtils.IsStringNullOrEmpty(e.getVesselName())).forEach(e -> vesselGuids.add(e.getVesselName()));
+                Map<String, EntityTransferVessels> vesselsMap = masterDataUtils.fetchInBulkVessels(vesselGuids);
                 for (RoutingsModel route : mainCarriageRouts) {
                     Map<String, Object> routeMap = new HashMap<>();
                     routeMap.put(MODE, route.getMode());
-                    routeMap.put(VESSEL_NAME, route.getVesselName());
+                    if(!CommonUtils.IsStringNullOrEmpty(route.getVesselName()) && vesselsMap.containsKey(route.getVesselName()))
+                        routeMap.put(VESSEL_NAME, vesselsMap.get(route.getVesselName()).getName());
                     routeMap.put(VOYAGE, route.getVoyage());
                     routeMap.put(CARRIER, route.getCarrier());
                     routeMap.put(POLCODE, route.getPol());
                     routeMap.put(PODCODE, route.getPod());
-                    routeMap.put(ETD_FOR_PRINT, route.getEtd());
-                    routeMap.put(ETA_FOR_PRINT, route.getEta());
+                    routeMap.put(ETD_FOR_PRINT, ConvertToDPWDateFormat(route.getEtd()));
+                    routeMap.put(ETA_FOR_PRINT, ConvertToDPWDateFormat(route.getEta()));
                     mainCarriageRoutsList.add(routeMap);
                 }
                 dictionary.put(ROUTINGS, mainCarriageRoutsList);
