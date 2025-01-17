@@ -109,6 +109,7 @@ import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
 import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
+import com.dpw.runner.shipment.services.entity.enums.JobType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
@@ -4083,6 +4084,11 @@ public class ConsolidationService implements IConsolidationService {
             consolidationDetails.setOpenForAttachment(true);
 
         this.checkInterBranchPermission(consolidationDetails, oldEntity);
+
+        // Ignore events update if events Revamp flag is enabled to avoid transaction issues
+        if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEventsRevampEnabled())) {
+            consolidationDetails.setEventsList(null);
+        }
         populateUnlocCodeFuture.join();
     }
 
@@ -4483,6 +4489,7 @@ public class ConsolidationService implements IConsolidationService {
                 .entityId(consolidationDetails.getId())
                 .entityType(CONSOLIDATION)
                 .tenantId(consolidationDetails.getTenantId())
+                .jobType(JobType.SIMPLE_JOB)
                 .build();
     }
 

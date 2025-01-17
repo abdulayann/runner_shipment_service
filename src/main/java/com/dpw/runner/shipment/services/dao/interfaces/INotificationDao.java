@@ -24,7 +24,7 @@ public interface INotificationDao {
 
     Map<Long, Integer> pendingNotificationCountBasedOnEntityIdsAndEntityType(List<Long> entityIds, String entityType);
 
-    List<Notification> findNotificationForEntityTransfer(Long entityId, String entityType, Integer branchId, String requestType);
+    List<Notification> findNotificationForEntityTransfer(Long entityId, String entityType, Integer branchId, List<String> requestTypes);
 
     void deleteAll(List<Notification> notificationList);
 
