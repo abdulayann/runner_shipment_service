@@ -307,7 +307,7 @@ public class EntityTransferService implements IEntityTransferService {
                     networkTransferService.processNetworkTransferEntity(Long.valueOf(tenant), null, SHIPMENT, shipment,
                             null, taskPayload.getDirection(), entityPayload);
 
-                List<Notification> notificationList = notificationDao.findNotificationForEntityTransfer(shipId, SHIPMENT, tenant, NotificationRequestType.REQUEST_TRANSFER.name());
+                List<Notification> notificationList = notificationDao.findNotificationForEntityTransfer(shipId, SHIPMENT, tenant, List.of(NotificationRequestType.REQUEST_TRANSFER.name(), NotificationRequestType.REASSIGN.name()));
                 notificationDao.deleteAll(notificationList);
             } else {
                 createTask(taskPayload, shipment.getId(), Constants.Shipments, tenant);
@@ -432,7 +432,7 @@ public class EntityTransferService implements IEntityTransferService {
                     networkTransferService.processNetworkTransferEntity(Long.valueOf(tenant), null, CONSOLIDATION,
                             null, consol, consolidationPayload.getShipmentType(), entityPayload);
 
-                List<Notification> notificationList = notificationDao.findNotificationForEntityTransfer(consolId, CONSOLIDATION, tenant, NotificationRequestType.REQUEST_TRANSFER.name());
+                List<Notification> notificationList = notificationDao.findNotificationForEntityTransfer(consolId, CONSOLIDATION, tenant, List.of(NotificationRequestType.REQUEST_TRANSFER.name(), NotificationRequestType.REASSIGN.name()));
                 notificationDao.deleteAll(notificationList);
             }else{
                 createTask(consolidationPayload, consol.getId(), Constants.Consolidations, tenant);
@@ -1041,7 +1041,7 @@ public class EntityTransferService implements IEntityTransferService {
             commonUtils.setInterBranchContextForHub();
 
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
-        if(Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled())) {
+        if(Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled()) && Objects.equals(consolidationDetails.get().getShipmentType(), Constants.DIRECTION_EXP)) {
             SendConsoleValidationResponse response;
             if(Objects.equals(consolidationDetails.get().getTransportMode(), Constants.TRANSPORT_MODE_AIR))
                 response = this.networkTransferValidationsForAirConsolidation(consolidationDetails.get(), false);
@@ -1250,7 +1250,7 @@ public class EntityTransferService implements IEntityTransferService {
         StringBuilder shipErrorMsg = new StringBuilder();
 
         // Error message construction
-        String errorMsg = this.errorMsgPreparationForAirConsole(missingField, isPrintMawbError, isPrintHawbError, errorShipments, isHawbNumberError, shipErrorMsg);
+        String errorMsg = this.errorMsgPreparationForAirConsole(missingField, isPrintMawbError, isPrintHawbError, errorShipments, isHawbNumberError, shipErrorMsg, isAutomaticTransfer);
         if(!errorMsg.isEmpty()){
             return SendConsoleValidationResponse.builder()
                     .consoleErrorMessage(errorMsg)
@@ -1288,8 +1288,9 @@ public class EntityTransferService implements IEntityTransferService {
         }
         return missingField;
     }
-    private String errorMsgPreparationForAirConsole(List<String> missingField, boolean isPrintMawbError, boolean isPrintHawbError, List<String> errorShipments, boolean isHawbNumberError, StringBuilder shipErrorMsg) {
+    private String errorMsgPreparationForAirConsole(List<String> missingField, boolean isPrintMawbError, boolean isPrintHawbError, List<String> errorShipments, boolean isHawbNumberError, StringBuilder shipErrorMsg, boolean isAutomaticTransfer) {
         String errorMsg = "";
+        String msgSuffix = (isAutomaticTransfer? " to retrigger the transfer." : " to transfer the files.");
         if(!missingField.isEmpty()) {
             String missingFieldString = String.join(", ", missingField);
             if(isPrintMawbError)
@@ -1300,21 +1301,24 @@ public class EntityTransferService implements IEntityTransferService {
         }
         if(isPrintHawbError) {
             if (!errorMsg.isEmpty()) {
-                errorMsg = errorMsg + " and print the Original HAWB for the shipment/s "+ String.join(", " ,errorShipments) +EntityTransferConstants.TO_RE_TRIGGER_THE_TRANSFER;
+                errorMsg = errorMsg + " and print the Original HAWB for the shipment/s "+ String.join(", " ,errorShipments);
             } else {
-                errorMsg = "Please print the Original HAWB for the shipment/s " + String.join(", " ,errorShipments) + EntityTransferConstants.TO_RE_TRIGGER_THE_TRANSFER;
+                errorMsg = "Please print the Original HAWB for the shipment/s " + String.join(", " ,errorShipments);
             }
             shipErrorMsg.setLength(0);
             shipErrorMsg.append("Please print the Original HAWB to retrigger the transfer.");
         }
         if(isHawbNumberError) {
             if (!errorMsg.isEmpty()) {
-                errorMsg = errorMsg + " and enter the HAWB number for the shipment/s "+ String.join(", " ,errorShipments) +EntityTransferConstants.TO_RE_TRIGGER_THE_TRANSFER;
+                errorMsg = errorMsg + " and enter the HAWB number for the shipment/s "+ String.join(", " ,errorShipments);
             } else {
-                errorMsg = "Please enter the HAWB number for the shipment/s " + String.join(", " ,errorShipments) + EntityTransferConstants.TO_RE_TRIGGER_THE_TRANSFER;
+                errorMsg = "Please enter the HAWB number for the shipment/s " + String.join(", " ,errorShipments);
             }
             shipErrorMsg.setLength(0);
             shipErrorMsg.append("Please enter the HAWB number to retrigger the transfer.");
+        }
+        if(!errorMsg.isEmpty()) {
+            errorMsg = errorMsg + msgSuffix;
         }
         return errorMsg;
     }
@@ -1338,6 +1342,7 @@ public class EntityTransferService implements IEntityTransferService {
             }
         }
         String errorMsg = "";
+        String msgSuffix = (isAutomaticTransfer? " to retrigger the transfer." : " to transfer the files.");
         if(!missingField.isEmpty()) {
             String missingFieldString = String.join(", ", missingField);
             errorMsg = EntityTransferConstants.PLEASE_ENTER_THE + missingFieldString + EntityTransferConstants.FOR_THE_CONSOLIDATION;
@@ -1345,13 +1350,14 @@ public class EntityTransferService implements IEntityTransferService {
         String shipErrorMsg = "";
         if(isPrintHblError) {
             if (!errorMsg.isEmpty()) {
-                errorMsg = errorMsg + " and print the Original HAWB for the shipment/s "+ String.join(", " ,errorShipments) +EntityTransferConstants.TO_RE_TRIGGER_THE_TRANSFER;
+                errorMsg = errorMsg + " and print the Original HAWB for the shipment/s "+ String.join(", " ,errorShipments);
             } else {
-                errorMsg = "Please print the Original HAWB for the shipment/s " + String.join(", " ,errorShipments) + EntityTransferConstants.TO_RE_TRIGGER_THE_TRANSFER;
+                errorMsg = "Please print the Original HAWB for the shipment/s " + String.join(", " ,errorShipments);
             }
             shipErrorMsg = "Please print the Original HAWB to retrigger the transfer.";
         }
         if(!errorMsg.isEmpty()){
+            errorMsg = errorMsg + msgSuffix;
             return SendConsoleValidationResponse.builder()
                     .consoleErrorMessage(errorMsg)
                     .shipmentErrorMessage(shipErrorMsg)
@@ -1413,11 +1419,13 @@ public class EntityTransferService implements IEntityTransferService {
         }
 
         String errorMsg = "";
+        String msgSuffix = (isAutomaticTransfer? " to retrigger the transfer." : " to transfer the files.");
         if(!missingField.isEmpty()) {
             String missingFieldString = String.join(", ", missingField);
             errorMsg = EntityTransferConstants.PLEASE_ENTER_THE + missingFieldString + EntityTransferConstants.FOR_THE_CONSOLIDATION;
         }
         if(!errorMsg.isEmpty()){
+            errorMsg = errorMsg + msgSuffix;
             return SendConsoleValidationResponse.builder()
                     .consoleErrorMessage(errorMsg)
                     .isError(Boolean.TRUE)
@@ -1437,7 +1445,7 @@ public class EntityTransferService implements IEntityTransferService {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
-        if(Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled())) {
+        if(Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled()) && Objects.equals(shipmentDetails.get().getDirection(), Constants.DIRECTION_EXP)) {
             var sendShipmentValidationResponse = this.networkTransferValidationsForShipment(shipmentDetails.get(), false);
             if(Boolean.TRUE.equals(sendShipmentValidationResponse.getIsError())) {
                 throw new ValidationException(sendShipmentValidationResponse.getShipmentErrorMessage());
@@ -1550,14 +1558,15 @@ public class EntityTransferService implements IEntityTransferService {
             }
 
             String responseErrorMsg = "";
+            String msgSuffix = (isAutomaticTransfer? " to retrigger the transfer." : " to transfer the shipment.");
             if(!missingField.isEmpty()) {
                 String missingFieldString = String.join(",", missingField);
                 if(isAwbPrintError)
-                    responseErrorMsg = EntityTransferConstants.PLEASE_ENTER_THE + missingFieldString + " and print original MAWB to retrigger the transfer.";
+                    responseErrorMsg = EntityTransferConstants.PLEASE_ENTER_THE + missingFieldString + " and print original MAWB" + msgSuffix;
                 else
-                    responseErrorMsg = EntityTransferConstants.PLEASE_ENTER_THE+ missingFieldString + "to retrigger the transfer.";
+                    responseErrorMsg = EntityTransferConstants.PLEASE_ENTER_THE + missingFieldString + msgSuffix;
             } else if (isAwbPrintError) {
-                responseErrorMsg = "Please print original MAWB to retrigger the transfer.";
+                responseErrorMsg = "Please print original MAWB" + msgSuffix;
             }
             if(!Strings.isNullOrEmpty(responseErrorMsg)) {
                 return SendShipmentValidationResponse.builder()

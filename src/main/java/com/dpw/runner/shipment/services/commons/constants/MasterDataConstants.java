@@ -24,6 +24,7 @@ public class MasterDataConstants {
     public static final String TENANT = "/tenant";
     public static final String LIST_COUSIN_BRANCH = "/listCousinBranches";
     public static final String LIST_COUSIN_BRANCH_WITHOUT_CURRENT = "/listCousinWithoutCurrent";
+    public static final String LIST_COUSIN_BRANCH_FOR_NTE_REASSIGN = "/listCousinBranchForNTEReassign";
     public static final String SCHEDULE = "/schedule";
     public static final String IMPORT_SCHEDULE = "/import-schedule";
     public static final String IMPORT_FLIGHT_SCHEDULE = "/import-flight-schedule";

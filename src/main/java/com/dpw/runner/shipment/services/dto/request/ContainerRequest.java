@@ -96,7 +96,8 @@ public class ContainerRequest extends CommonRequest implements IRunnerRequest {
     private Boolean isContractEnforced;
     private PartiesRequest pickupAddress;
     private PartiesRequest deliveryAddress;
-    private List<EventsRequest> eventsList;
+    // Commenting this to avoid entity update failures. Events in containers are not used as of now
+//    private List<EventsRequest> eventsList;
     private List<PackingRequest> packsList;
     private List<ShipmentRequest> shipmentsList;
     private Long contractEnforcedQuantityLimit;

@@ -74,8 +74,7 @@ public class QuartzJobInfoService implements IQuartzJobInfoService {
 
     @Override
     public LocalDateTime getQuartzJobTime(LocalDateTime eta, LocalDateTime etd, LocalDateTime ata, LocalDateTime atd) {
-        V1TenantSettingsResponse tenantSettingsResponse = commonUtils.getCurrentTenantSettings();
-        List<FileTransferConfigurations> fileTransferConfigurations = getActiveFileTransferConfigurations(tenantSettingsResponse);
+        List<FileTransferConfigurations> fileTransferConfigurations = getActiveFileTransferConfigurations();
         if (ObjectUtils.isEmpty(fileTransferConfigurations)) {
             return null;
         }
@@ -93,7 +92,8 @@ public class QuartzJobInfoService implements IQuartzJobInfoService {
         return jobDateTime;
     }
 
-    private List<FileTransferConfigurations> getActiveFileTransferConfigurations(V1TenantSettingsResponse tenantSettingsResponse) {
+    public List<FileTransferConfigurations> getActiveFileTransferConfigurations() {
+        V1TenantSettingsResponse tenantSettingsResponse = commonUtils.getCurrentTenantSettings();
         List<FileTransferConfigurations> configurations = tenantSettingsResponse.getFileTransferConfigurations();
         if (ObjectUtils.isEmpty(configurations)) {
             return Collections.emptyList();

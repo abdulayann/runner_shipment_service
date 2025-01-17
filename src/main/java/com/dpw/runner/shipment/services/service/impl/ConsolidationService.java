@@ -112,6 +112,7 @@ import com.dpw.runner.shipment.services.entity.response.Consolidation.Consolidat
 import com.dpw.runner.shipment.services.entity.response.Consolidation.IContainerLiteResponse;
 import com.dpw.runner.shipment.services.entity.response.Consolidation.IShipmentContainerLiteResponse;
 import com.dpw.runner.shipment.services.entity.response.Consolidation.IShipmentLiteResponse;
+import com.dpw.runner.shipment.services.entity.enums.JobType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
@@ -4207,6 +4208,11 @@ public class ConsolidationService implements IConsolidationService {
             consolidationDetails.setOpenForAttachment(true);
 
         this.checkInterBranchPermission(consolidationDetails, oldEntity);
+
+        // Ignore events update if events Revamp flag is enabled to avoid transaction issues
+        if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEventsRevampEnabled())) {
+            consolidationDetails.setEventsList(null);
+        }
         populateUnlocCodeFuture.join();
     }
 
@@ -4489,6 +4495,11 @@ public class ConsolidationService implements IConsolidationService {
                 return;
             }
 
+            List<V1TenantSettingsResponse.FileTransferConfigurations> fileTransferConfigurations = quartzJobInfoService.getActiveFileTransferConfigurations();
+            if (ObjectUtils.isEmpty(fileTransferConfigurations)) {
+                return;
+            }
+
             Optional<NetworkTransfer> optionalNetworkTransfer = networkTransferDao.findByTenantAndEntity(Math.toIntExact(consolidationDetails.getReceivingBranch()), consolidationDetails.getId(), CONSOLIDATION);
             if(optionalNetworkTransfer.isPresent() && (optionalNetworkTransfer.get().getStatus()==NetworkTransferStatus.TRANSFERRED ||
                     optionalNetworkTransfer.get().getStatus()==NetworkTransferStatus.ACCEPTED))
@@ -4522,10 +4533,10 @@ public class ConsolidationService implements IConsolidationService {
 
     private boolean isInvalidForTransfer(ConsolidationDetails consolidationDetails) {
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
-        return !Boolean.TRUE.equals(shipmentSettingsDetails.getIsAutomaticTransferEnabled()) ||
-                ObjectUtils.isEmpty(consolidationDetails.getReceivingBranch())
-                || (consolidationDetails.getTransportMode()!=null &&
-                Constants.TRANSPORT_MODE_RAI.equals(consolidationDetails.getTransportMode())) ;
+        return !Boolean.TRUE.equals(shipmentSettingsDetails.getIsAutomaticTransferEnabled())
+                || ObjectUtils.isEmpty(consolidationDetails.getReceivingBranch())
+                || (consolidationDetails.getTransportMode()!=null && Constants.TRANSPORT_MODE_RAI.equals(consolidationDetails.getTransportMode()))
+                || Boolean.TRUE.equals(consolidationDetails.getInterBranchConsole());
     }
 
     private boolean shouldUpdateExistingJob(QuartzJobInfo quartzJobInfo, ConsolidationDetails oldEntity, ConsolidationDetails consolidationDetails, Boolean isDocAdded, Optional<NetworkTransfer> optionalNetworkTransfer) {
@@ -4602,6 +4613,7 @@ public class ConsolidationService implements IConsolidationService {
                 .entityId(consolidationDetails.getId())
                 .entityType(CONSOLIDATION)
                 .tenantId(consolidationDetails.getTenantId())
+                .jobType(JobType.SIMPLE_JOB)
                 .build();
     }
 

@@ -4,20 +4,21 @@ import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dto.request.ListCousinBranchesForReassignRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
+import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.interfaces.IMasterDataService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 @Service
@@ -26,12 +27,14 @@ public class MasterDataImpl implements IMasterDataService {
     private final MasterDataFactory masterDataFactory;
     private final IV1Service v1Service;
     private final MasterDataUtils masterDataUtils;
+    private final CommonUtils commonUtils;
 
     @Autowired
-    public MasterDataImpl (MasterDataFactory masterDataFactory, IV1Service v1Service, MasterDataUtils masterDataUtils) {
+    public MasterDataImpl (MasterDataFactory masterDataFactory, IV1Service v1Service, MasterDataUtils masterDataUtils, CommonUtils commonUtils) {
         this.masterDataFactory = masterDataFactory;
         this.v1Service = v1Service;
         this.masterDataUtils = masterDataUtils;
+        this.commonUtils = commonUtils;
     }
 
     @Override
@@ -390,5 +393,30 @@ public class MasterDataImpl implements IMasterDataService {
         V1DataResponse v1DataResponse = v1Service.listBranchesByDefaultOrgAndAddress(commonRequestModel.getDependentData());
         return ResponseHelper.buildDependentServiceResponse(DependentServiceResponse.builder().success(true)
                 .data(v1DataResponse.entities).pageSize(v1DataResponse.take).numberOfRecords(v1DataResponse.totalCount).pageNo(v1DataResponse.skip).build());
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> listCousinBranchForNTEReassign(ListCousinBranchesForReassignRequest request) {
+        List<Long> tenantIds = commonUtils.getTenantIdsFromEntity(request.getEntityId(), request.getEntityType());
+        List<Object> criteria = convertToV1NotInCriteria("TenantId", tenantIds);
+        CommonV1ListRequest v1ListRequest = CommonV1ListRequest.builder()
+                .sort(request.getSort())
+                .containsText(request.getContainsText())
+                .excludeTotalCount(request.getExcludeTotalCount())
+                .columnSelection(request.getColumnSelection())
+                .includeColumns(request.getIncludeColumns())
+                .take(request.getTake())
+                .skip(request.getSkip())
+                .criteriaRequests(criteria)
+                .build();
+        return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().listCousinBranches(v1ListRequest));
+    }
+
+    public List<Object> convertToV1NotInCriteria(String filterValue, List<?> values) {
+        List<String> itemType = new ArrayList<>();
+        itemType.add(filterValue);
+        List<List<?>> param = new ArrayList<>();
+        param.add(values);
+        return new ArrayList<>(Arrays.asList(itemType, "not in", param));
     }
 }
