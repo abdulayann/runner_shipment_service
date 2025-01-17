@@ -38,6 +38,7 @@ public class DocumentMasterConsumer {
     @KafkaListener(
             topics = {"#{'${document.master.kafka.event}'}"},
             groupId = "#{'${document.master.kafka.subs}'}",
+            autoStartup = "#{'${document.master.kafka.consumer-auto-startup}'}",
             containerFactory = "documentKafkaListenerContainerFactory")
     public void consume(@Payload String message,
             @Header(KafkaHeaders.RECEIVED_TOPIC) String topic,
