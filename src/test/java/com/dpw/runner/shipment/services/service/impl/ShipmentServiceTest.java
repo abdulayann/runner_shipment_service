@@ -56,6 +56,7 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentConsoleId
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentContainerAssignRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
+import com.dpw.runner.shipment.services.dto.mapper.AttachListShipmentMapper;
 import com.dpw.runner.shipment.services.dto.mapper.ShipmentMapper;
 import com.dpw.runner.shipment.services.dto.patchrequest.CarrierPatchRequest;
 import com.dpw.runner.shipment.services.dto.patchrequest.ShipmentPatchRequest;
@@ -76,7 +77,6 @@ import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiRe
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Event;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Journey;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteContainerResponse;
-import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.v1.request.PartiesOrgAddressRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
@@ -1857,7 +1857,7 @@ ShipmentServiceTest extends CommonMocks {
 
 
         var expectedResponse = ResponseHelper.buildListSuccessResponse(
-                convertEntityListToDtoList(shipmentDetailsList),
+                convertEntityListToDtoListForAttachListShipment(shipmentDetailsList),
                 shipmentDetailsPage.getTotalPages(),
                 shipmentDetailsPage.getTotalElements()
         );
@@ -1903,7 +1903,7 @@ ShipmentServiceTest extends CommonMocks {
 
 
         var expectedResponse = ResponseHelper.buildListSuccessResponse(
-                convertEntityListToDtoList(shipmentDetailsList),
+                convertEntityListToDtoListForAttachListShipment(shipmentDetailsList),
                 shipmentDetailsPage.getTotalPages(),
                 shipmentDetailsPage.getTotalElements()
         );
@@ -1949,7 +1949,7 @@ ShipmentServiceTest extends CommonMocks {
 
 
         var expectedResponse = ResponseHelper.buildListSuccessResponse(
-                convertEntityListToDtoList(shipmentDetailsList),
+                convertEntityListToDtoListForAttachListShipment(shipmentDetailsList),
                 shipmentDetailsPage.getTotalPages(),
                 shipmentDetailsPage.getTotalElements()
         );
@@ -1991,7 +1991,7 @@ ShipmentServiceTest extends CommonMocks {
 
 
         var expectedResponse = ResponseHelper.buildListSuccessResponse(
-                convertEntityListToDtoList(shipmentDetailsList),
+                convertEntityListToDtoListForAttachListShipment(shipmentDetailsList),
                 shipmentDetailsPage.getTotalPages(),
                 shipmentDetailsPage.getTotalElements()
         );
@@ -2035,7 +2035,7 @@ ShipmentServiceTest extends CommonMocks {
 
 
         var expectedResponse = ResponseHelper.buildListSuccessResponse(
-                convertEntityListToDtoList(shipmentDetailsList),
+                convertEntityListToDtoListForAttachListShipment(shipmentDetailsList),
                 shipmentDetailsPage.getTotalPages(),
                 shipmentDetailsPage.getTotalElements()
         );
@@ -2081,7 +2081,7 @@ ShipmentServiceTest extends CommonMocks {
         when(shipmentDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
 
         var expectedResponse = ResponseHelper.buildListSuccessResponse(
-                convertEntityListToDtoList(shipmentDetailsList),
+                convertEntityListToDtoListForAttachListShipment(shipmentDetailsList),
                 shipmentDetailsPage.getTotalPages(),
                 shipmentDetailsPage.getTotalElements()
         );
@@ -2126,7 +2126,7 @@ ShipmentServiceTest extends CommonMocks {
 
 
         var expectedResponse = ResponseHelper.buildListSuccessResponse(
-                convertEntityListToDtoList(shipmentDetailsList),
+                convertEntityListToDtoListForAttachListShipment(shipmentDetailsList),
                 shipmentDetailsPage.getTotalPages(),
                 shipmentDetailsPage.getTotalElements()
         );
@@ -2171,7 +2171,7 @@ ShipmentServiceTest extends CommonMocks {
 
 
         var expectedResponse = ResponseHelper.buildListSuccessResponse(
-                convertEntityListToDtoList(shipmentDetailsList),
+                convertEntityListToDtoListForAttachListShipment(shipmentDetailsList),
                 shipmentDetailsPage.getTotalPages(),
                 shipmentDetailsPage.getTotalElements()
         );
@@ -2216,7 +2216,7 @@ ShipmentServiceTest extends CommonMocks {
 
 
         var expectedResponse = ResponseHelper.buildListSuccessResponse(
-                convertEntityListToDtoList(shipmentDetailsList),
+                convertEntityListToDtoListForAttachListShipment(shipmentDetailsList),
                 shipmentDetailsPage.getTotalPages(),
                 shipmentDetailsPage.getTotalElements()
         );
@@ -5853,7 +5853,7 @@ ShipmentServiceTest extends CommonMocks {
 
 
         var expectedResponse = ResponseHelper.buildListSuccessResponse(
-                convertEntityListToDtoList(shipmentDetailsList),
+                convertEntityListToDtoListForAttachListShipment(shipmentDetailsList),
                 shipmentDetailsPage.getTotalPages(),
                 shipmentDetailsPage.getTotalElements()
         );
@@ -6393,6 +6393,18 @@ ShipmentServiceTest extends CommonMocks {
                 i.setShipmentStatus(ShipmentStatus.values()[i.getStatus()].toString());
             if (ObjectUtils.isNotEmpty(i.getShipmentOrders()))
                 i.setOrdersCount(i.getShipmentOrders().size());
+            responseList.add(i);
+        }
+
+        return responseList;
+    }
+
+    private List<IRunnerResponse> convertEntityListToDtoListForAttachListShipment(List<ShipmentDetails> lst) {
+        List<IRunnerResponse> responseList = new ArrayList<>();
+        List<AttachListShipmentResponse> attachListShipmentResponse  = AttachListShipmentMapper.INSTANCE.toAttachListShipmentResponse(lst);
+        for(var i: attachListShipmentResponse) {
+            if (i.getStatus() != null && i.getStatus() < ShipmentStatus.values().length)
+                i.setShipmentStatus(ShipmentStatus.values()[i.getStatus()].toString());
             responseList.add(i);
         }
 
