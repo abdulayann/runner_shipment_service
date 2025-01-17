@@ -14,6 +14,7 @@ import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.syncing.Entity.AuditLogRequestV2;
+import org.apache.http.auth.AuthenticationException;
 import org.springframework.http.ResponseEntity;
 
 import javax.servlet.http.HttpServletResponse;
@@ -100,7 +101,7 @@ public interface IShipmentService extends ICommonService {
 
     ResponseEntity<IRunnerResponse> getDateTimeChangeUpdates(Long shipmentId) throws RunnerException;
     void validateRaKcDetails(ShipmentDetails shipmentDetails, V1TenantSettingsResponse tenantSettingsResponse) throws RunnerException;
-    ResponseEntity<IRunnerResponse> consoleShipmentList(CommonRequestModel commonRequestModel, Long consoleId, String consoleGuid, boolean isAttached, boolean getMasterData);
+    ResponseEntity<IRunnerResponse> consoleShipmentList(CommonRequestModel commonRequestModel, Long consoleId, String consoleGuid, boolean isAttached, boolean getMasterData, boolean fromNte) throws AuthenticationException;
     ResponseEntity<IRunnerResponse> shipmentRetrieveWithMeasurmentBasis(CommonRequestModel commonRequestModel);
 
     ResponseEntity<IRunnerResponse> getAllShipments(Long consoleId);
