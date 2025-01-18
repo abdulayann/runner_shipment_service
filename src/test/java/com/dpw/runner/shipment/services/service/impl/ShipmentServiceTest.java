@@ -1343,7 +1343,7 @@ ShipmentServiceTest extends CommonMocks {
         String mockHbl = "hblPrefix-hblSuffix-001";
 
         // Mock
-        when(productEngine.getCustomizedBLNumber(any(), any())).thenReturn(mockHbl);
+        when(productEngine.getCustomizedBLNumber(any())).thenReturn(mockHbl);
         mockShipmentSettings();
         // Test
         String hbl = shipmentService.generateCustomHouseBL(mockShipment);
