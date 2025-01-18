@@ -4416,7 +4416,7 @@ public class ShipmentService implements IShipmentService {
                 log.info("CR-ID {} || Inside generateShipmentId: with shipmentID: {} | counter: {}", LoggerHelper.getRequestIdFromMDC(), shipmentId, counter++);
                 if(shipmentSettingsList != null && shipmentSettingsList.size() != 0 && shipmentSettingsList.get(0) != null && shipmentSettingsList.get(0).getCustomisedSequence()) {
                     try{
-                        shipmentId = getCustomizedShipmentProcessNumber(shipmentSettingsList.get(0), ProductProcessTypes.ShipmentNumber, shipmentDetails);
+                        shipmentId = getCustomizedShipmentProcessNumber(ProductProcessTypes.ShipmentNumber, shipmentDetails);
                     } catch (Exception ignored) {
                         log.error("Execption during common sequence {}", ignored.getMessage());
                         log.error("Execption occurred for common sequence {}", ignored.getStackTrace());
@@ -4435,8 +4435,8 @@ public class ShipmentService implements IShipmentService {
 //        return createShipmentSequence(shipmentSettingsList.get(0));
     }
 
-    private String getCustomizedShipmentProcessNumber(ShipmentSettingsDetails shipmentSettingsDetails, ProductProcessTypes productProcessType, ShipmentDetails currentShipment) throws RunnerException {
-        List<TenantProducts> tenantProducts = productEngine.populateEnabledTenantProducts(shipmentSettingsDetails);
+    private String getCustomizedShipmentProcessNumber(ProductProcessTypes productProcessType, ShipmentDetails currentShipment) throws RunnerException {
+        List<TenantProducts> tenantProducts = productEngine.populateEnabledTenantProducts();
         // to check the commmon sequence
         var sequenceNumber = productEngine.GetCommonSequenceNumber(currentShipment.getTransportMode(), ProductProcessTypes.Consol_Shipment_TI);
         if (sequenceNumber != null && !sequenceNumber.isEmpty()) {
@@ -5241,7 +5241,7 @@ public class ShipmentService implements IShipmentService {
 
         if (shipmentDetails != null && tenantSetting.getCustomisedSequence()) {
             try {
-                res = productEngine.getCustomizedBLNumber(shipmentDetails, tenantSetting);
+                res = productEngine.getCustomizedBLNumber(shipmentDetails);
             } catch (Exception e) {
                 log.error(e.getMessage());
             }
