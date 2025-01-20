@@ -777,8 +777,7 @@ public class ConsolidationService implements IConsolidationService {
      */
     @Override
     public void generateConsolidationNumber(ConsolidationDetails consolidationDetails) throws RunnerException {
-        Integer tenantId = TenantContext.getCurrentTenant();
-        Boolean customisedSequence = shipmentSettingsDao.getCustomisedSequence(tenantId);
+        Boolean customisedSequence = shipmentSettingsDao.getCustomisedSequence();
 
         if(consolidationDetails.getConsolidationNumber() == null) {
             if(Boolean.TRUE.equals(customisedSequence)) {
