@@ -23,10 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 @Slf4j
 @Service
@@ -73,8 +70,8 @@ public class QuartzJobInfoService implements IQuartzJobInfoService {
 
 
     @Override
-    public LocalDateTime getQuartzJobTime(LocalDateTime eta, LocalDateTime etd, LocalDateTime ata, LocalDateTime atd) {
-        List<FileTransferConfigurations> fileTransferConfigurations = getActiveFileTransferConfigurations();
+    public LocalDateTime getQuartzJobTime(LocalDateTime eta, LocalDateTime etd, LocalDateTime ata, LocalDateTime atd, String transportMode) {
+        List<FileTransferConfigurations> fileTransferConfigurations = getActiveFileTransferConfigurations(transportMode);
         if (ObjectUtils.isEmpty(fileTransferConfigurations)) {
             return null;
         }
@@ -92,13 +89,14 @@ public class QuartzJobInfoService implements IQuartzJobInfoService {
         return jobDateTime;
     }
 
-    public List<FileTransferConfigurations> getActiveFileTransferConfigurations() {
+    public List<FileTransferConfigurations> getActiveFileTransferConfigurations(String transportMode) {
         V1TenantSettingsResponse tenantSettingsResponse = commonUtils.getCurrentTenantSettings();
         List<FileTransferConfigurations> configurations = tenantSettingsResponse.getFileTransferConfigurations();
         if (ObjectUtils.isEmpty(configurations)) {
             return Collections.emptyList();
         }
         configurations.removeIf(config -> config.getIsActive() == 0);
+        configurations.removeIf(config -> !Objects.equals(config.getTransportMode(), transportMode));
         return configurations;
     }
 
