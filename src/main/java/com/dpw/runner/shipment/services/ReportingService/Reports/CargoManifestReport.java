@@ -304,14 +304,14 @@ public class CargoManifestReport extends IReport{
 
         dictionary.put(INSERT_DATE, ConvertToDPWDateFormat(LocalDateTime.now(), tsDateTimeFormat));
         dictionary.put(TOTAL_WEIGHT_, ConvertToWeightNumberFormat(cargoManifestModel.shipmentDetails.getWeight(), v1TenantSettingsResponse));
-        dictionary.put(PWEIGHT_PACKAGES, cargoManifestModel.shipmentDetails.getWeightUnit());
+        dictionary.put(ReportConstants.PWEIGHT_UNIT, cargoManifestModel.shipmentDetails.getWeightUnit());
         dictionary.put(TOTAL_VOLUME_, ConvertToVolumeNumberFormat(cargoManifestModel.shipmentDetails.getVolume(), v1TenantSettingsResponse));
         dictionary.put(PVOLUME_UNIT, cargoManifestModel.shipmentDetails.getVolumeUnit());
         dictionary.put(CHARGEABLE, ConvertToWeightNumberFormat(cargoManifestModel.shipmentDetails.getChargable(), v1TenantSettingsResponse));
         dictionary.put(PCHARGE_UNIT, cargoManifestModel.shipmentDetails.getChargeableUnit());
         dictionary.put(TOTAL_PACKAGES, cargoManifestModel.shipmentDetails.getNoOfPacks());
         dictionary.put(PACKS_UNIT, cargoManifestModel.shipmentDetails.getPacksUnit());
-        dictionary.put(CARRIER_BOOKING_REF, cargoManifestModel.shipmentDetails.getBookingReference());
+        dictionary.put(CARRIER_BOOKING_REF, cargoManifestModel.shipmentDetails.getBookingNumber());
         dictionary.put(SERVICE_LEVEL, cargoManifestModel.shipmentDetails.getServiceType());
 
         if (cargoManifestModel.shipmentDetails.getRoutingsList() != null && !cargoManifestModel.shipmentDetails.getRoutingsList().isEmpty()) {

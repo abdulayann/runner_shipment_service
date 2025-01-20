@@ -1293,7 +1293,6 @@ public class ReportConstants {
 
     public static final String CONSOLIDATION_NUMBER = "ConsolidationNumber";
     public static final String INSERT_DATE = "InsertDate";
-    public static final String PWEIGHT_PACKAGES = "PWeightPackages";
     public static final String SERVICE_LEVEL = "ServiceLevel";
     public static final String CARRIER_BOOKING_REF = "CarrierBookingRef";
     public static final String TOTAL_PACKAGES = "TotalPackages";
