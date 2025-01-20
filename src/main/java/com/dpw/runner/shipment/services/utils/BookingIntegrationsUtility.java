@@ -6,6 +6,7 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrE
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IPlatformServiceAdapter;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -20,8 +21,8 @@ import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IIntegrationResponseDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
+import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.platform.ChargesRequest;
@@ -58,7 +59,6 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferChargeType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferVessels;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
-import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -67,6 +67,7 @@ import com.dpw.runner.shipment.services.kafka.dto.DocumentDto.Document;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
+import com.dpw.runner.shipment.services.service.interfaces.IEventService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import java.time.LocalDateTime;
@@ -85,6 +86,7 @@ import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -129,6 +131,8 @@ public class BookingIntegrationsUtility {
     private CommonUtils commonUtils;
     @Autowired
     private IEventDao eventDao;
+    @Autowired
+    private IEventService eventService;
 
     @Value("${platform.failure.notification.enabled}")
     private Boolean isFailureNotificationEnabled;
@@ -166,9 +170,6 @@ public class BookingIntegrationsUtility {
         try {
             if (!Objects.equals(customerBooking.getTransportType(), Constants.TRANSPORT_MODE_ROA) && !Objects.equals(customerBooking.getTransportType(), Constants.TRANSPORT_MODE_RAI)) {
                 platformServiceAdapter.createAtPlatform(request);
-                int count = customerBookingDao.updateIsPlatformBookingCreated(customerBooking.getId(), true);
-                if (count == 0)
-                    throw new ValidationException("No booking found to update IsPlatformBookingCreated flag");
                 this.saveErrorResponse(customerBooking.getId(), Constants.BOOKING, IntegrationType.PLATFORM_CREATE_BOOKING, Status.SUCCESS, "SAVED SUCESSFULLY");
             }
         } catch (Exception ex) {
@@ -178,6 +179,7 @@ public class BookingIntegrationsUtility {
         }
     }
 
+    //Not to be used now
     public void updateBookingInPlatform(CustomerBooking customerBooking) {
         var request = createPlatformUpdateRequest(customerBooking);
         try {
@@ -195,9 +197,9 @@ public class BookingIntegrationsUtility {
             var request = createPlatformUpdateRequestFromShipment(shipmentDetails);
             try {
                 if(!Objects.equals(shipmentDetails.getTransportMode(), Constants.TRANSPORT_MODE_ROA) && !Objects.equals(shipmentDetails.getTransportMode(), Constants.TRANSPORT_MODE_RAI))
-                    platformServiceAdapter.updateAtPlaform(request);
+                    platformServiceAdapter.createAtPlatform(request);
             } catch (Exception e) {
-                this.saveErrorResponse(shipmentDetails.getId(), Constants.SHIPMENT, IntegrationType.PLATFORM_UPDATE_BOOKING, Status.FAILED, e.getLocalizedMessage());
+                this.saveErrorResponse(shipmentDetails.getId(), Constants.SHIPMENT, IntegrationType.PLATFORM_CREATE_BOOKING, Status.FAILED, e.getLocalizedMessage());
                 log.error("Booking Update error from Platform from Shipment for booking number: {} with error message: {}", shipmentDetails.getBookingReference(), e.getMessage());
                 sendFailureAlerts(jsonHelper.convertToJson(request), jsonHelper.convertToJson(e.getLocalizedMessage()), shipmentDetails.getBookingReference(), shipmentDetails.getShipmentId());
             }
@@ -312,6 +314,8 @@ public class BookingIntegrationsUtility {
                 .load(createLoad(customerBooking))
                 .route(createRoute(customerBooking))
                 .source("RUNNER")
+                .status(platformStatusMap.get(customerBooking.getBookingStatus()))
+                .referenceNumbers(new ArrayList<>())
                 .build();
         return CommonRequestModel.builder().data(platformCreateRequest).build();
     }
@@ -580,25 +584,23 @@ public class BookingIntegrationsUtility {
 
     private CommonRequestModel createPlatformUpdateRequestFromShipment(@NonNull final ShipmentDetails shipmentDetails) {
         var carrierDetails = shipmentDetails.getCarrierDetails();
-        PlatformUpdateRequest platformUpdateRequest = PlatformUpdateRequest.builder()
-                .booking_reference_code(StringUtility.getNullIfEmpty(shipmentDetails.getBookingReference()))
+        PlatformCreateRequest platformUpdateRequest = PlatformCreateRequest.builder()
+                .booking_ref_code(StringUtility.getNullIfEmpty(shipmentDetails.getBookingReference()))
                 .origin_code(StringUtility.getNullIfEmpty(carrierDetails.getOrigin()))
                 .destination_code(StringUtility.getNullIfEmpty(carrierDetails.getDestination()))
                 .load(createLoad(shipmentDetails))
                 .pol(StringUtility.getNullIfEmpty(carrierDetails.getOriginPort()))
                 .pod(StringUtility.getNullIfEmpty(carrierDetails.getDestinationPort()))
-                .carrier_code(getCarrierSCACCodeFromItemValue(StringUtility.getNullIfEmpty(carrierDetails.getShippingLine())))
-                .carrier_display_name(masterDataUtils.getCarrierName(carrierDetails.getShippingLine()))
-                .vessel_name(masterDataUtils.getVesselName(carrierDetails.getVessel()))
-                .air_carrier_details(null)
+                .mainLegCarrierCode(getCarrierSCACCodeFromItemValue(StringUtility.getNullIfEmpty(carrierDetails.getShippingLine())))
+                .carrierDisplayName(masterDataUtils.getCarrierName(carrierDetails.getShippingLine()))
+                .vesselName(masterDataUtils.getVesselName(carrierDetails.getVessel()))
                 .status(mapBookingStatus(ShipmentStatus.fromValue(shipmentDetails.getStatus())))
-                .pickup_date(null)
                 .eta(carrierDetails.getEta())
                 .ets(carrierDetails.getEtd())
                 .ata(carrierDetails.getAta())
                 .ats(carrierDetails.getAtd())
-                .contractId(shipmentDetails.getContractId())
-                .parentContractId(shipmentDetails.getParentContractId())
+                .contract_id(shipmentDetails.getContractId())
+                .parent_contract_id(shipmentDetails.getParentContractId())
                 .voyage(StringUtility.getNullIfEmpty(carrierDetails.getVoyage()))
                 .transportMode(shipmentDetails.getTransportMode())
                 .isDg(shipmentDetails.getContainsHazardous())
@@ -606,6 +608,15 @@ public class BookingIntegrationsUtility {
                 .route(createRoute(shipmentDetails))
                 .referenceNumbers(createReferenceNumbers(shipmentDetails))
                 .source("RUNNER")
+                .business_code(getBusinessCode(shipmentDetails.getShipmentType()))
+                .customer_org_id(shipmentDetails.getClient().getOrgCode())
+                .bill_to_party(Collections.singletonList(createOrgRequest(shipmentDetails.getClient())))
+                .branch_info(ListContractResponse.BranchInfo.builder().
+                        id(StringUtility.isEmpty(shipmentDetails.getSalesBranch()) ? null : shipmentDetails.getSalesBranch()).
+                        sales_agent_primary_email(StringUtility.isEmpty(shipmentDetails.getPrimarySalesAgentEmail()) ? null : shipmentDetails.getPrimarySalesAgentEmail()).
+                        sales_agent_secondary_email(StringUtility.isEmpty(shipmentDetails.getSecondarySalesAgentEmail()) ? null : shipmentDetails.getSecondarySalesAgentEmail()).
+                        build())
+                .created_at(shipmentDetails.getBookingCreatedDate())
                 .build();
         return CommonRequestModel.builder().data(platformUpdateRequest).build();
     }
@@ -652,11 +663,7 @@ public class BookingIntegrationsUtility {
     }
 
     private String mapBookingStatus(ShipmentStatus status) {
-        if (status == ShipmentStatus.Created)
-            return ShipmentConstants.PENDING;
-        else if (status == ShipmentStatus.Booked)
-            return ShipmentConstants.BOOKED;
-        else if (status == ShipmentStatus.Cancelled)
+        if (status == ShipmentStatus.Cancelled)
             return ShipmentConstants.CANCELLED;
         else
             return ShipmentConstants.CONFIRMED;
@@ -806,6 +813,7 @@ public class BookingIntegrationsUtility {
                         .stream().findFirst().orElse(new ShipmentDetails());
 
                 List<Events> eventListFromDb = shipmentDetails.getEventsList();
+                RequestAuthContext.setAuthToken("Bearer " + StringUtils.defaultString(v1Service.generateToken()));
                 TenantContext.setCurrentTenant(shipmentDetails.getTenantId());
                 UserContext.setUser(UsersDto.builder().TenantId(shipmentDetails.getTenantId()).Permissions(new HashMap<>()).build());
                 boolean updatedExistingEvent = false;
@@ -822,8 +830,9 @@ public class BookingIntegrationsUtility {
                             event.setActual(LocalDateTime.now());
                             event.setEntityType(Constants.SHIPMENT);
 
-                            // Update the event details in the database
+                            // Update the event details and save in the database
                             eventDao.updateEventDetails(event);
+                            eventDao.save(event);
                             updatedExistingEvent = true;
                             log.info("Event updated successfully for event code: {}", event.getEventCode());
                         }
@@ -836,14 +845,18 @@ public class BookingIntegrationsUtility {
                         throw new IllegalStateException("Shipment ID is null for the provided entity ID.");
                     }
 
-                    CustomAutoEventRequest eventReq = new CustomAutoEventRequest();
-                    eventReq.setEntityId(shipmentDetails.getId());
-                    eventReq.setEntityType(Constants.SHIPMENT);
-                    eventReq.setEventCode(payloadData.getEventCode());
-
-                    log.info("Auto-generating event with code: {} for shipment entity ID: {}", payloadData.getEventCode(), shipmentDetails.getId());
-                    eventDao.autoGenerateEvents(eventReq);
-                    log.info("Event auto-generated successfully for entity ID: {}", shipmentDetails.getId());
+                    EventsRequest eventsRequest = new EventsRequest();
+                    eventsRequest.setActual(LocalDateTime.now());
+                    eventsRequest.setEntityId(shipmentDetails.getId());
+                    eventsRequest.setEntityType(Constants.SHIPMENT);
+                    eventsRequest.setEventCode(payloadData.getEventCode());
+                    eventsRequest.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
+                    if (EventConstants.FNMU.equals(payloadData.getEventCode())) {
+                        eventsRequest.setContainerNumber(shipmentDetails.getMasterBill());
+                    }
+                    log.info("Generating event with code: {} for shipment entity ID: {}", payloadData.getEventCode(), shipmentDetails.getId());
+                    eventService.saveEvent(eventsRequest);
+                    log.info("Event generated successfully for entity ID: {}", shipmentDetails.getId());
                 }
             }
         } catch (Exception ex) {
@@ -852,6 +865,7 @@ public class BookingIntegrationsUtility {
             log.info("Completed event handling process for action: {} and entity ID: {}", payloadAction, payloadData.getEntityId());
             TenantContext.removeTenant();
             UserContext.removeUser();
+            RequestAuthContext.removeToken();
         }
     }
 

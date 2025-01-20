@@ -24,7 +24,10 @@ public class BillConsumer {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @KafkaListener(topics = {"#{'${bill.event.kafka.queue}'}"}, groupId = "#{'${bill.event.kafka.subs}'}")
+    @KafkaListener(
+            topics = {"#{'${bill.event.kafka.queue}'}"},
+            autoStartup = "#{'${bill.event.kafka.consumer-auto-startup}'}",
+            groupId = "#{'${bill.event.kafka.subs}'}")
     public void consume(String message)
     {
         try {

@@ -169,6 +169,7 @@ public class AdditionalDetailResponse implements IRunnerResponse {
     private Boolean isExportCustomClearanceCompleted;
     private LocalDateTime blInstructionReceived;
     private LocalDateTime cargoOutForDelivery;
+    private Integer fcrNumber;
 
     public void addTextData(Map<String, String> dataMap) {
         if(textData == null) {

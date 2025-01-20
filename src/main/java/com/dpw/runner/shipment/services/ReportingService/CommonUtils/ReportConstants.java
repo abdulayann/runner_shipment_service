@@ -865,7 +865,8 @@ public class ReportConstants {
 
     public static final String CUSTOMS_ENTRY_NUMBER = "CustomsEntryNumber";
     public static final String ENTRY_NUMBER = "EntryNumber";
-    public static final String MORN = "MoRN";
+    public static final String MoRN = "MoRN";
+    public static final String MRN = "MRN";
     public static final String CUSTOMER_REFERENCE = "CustomerReference";
 
     public static final String CONSOL_SHIPMENT_TOTAL_PACKAGES = "TotalPackages";
@@ -1263,10 +1264,12 @@ public class ReportConstants {
     public static final String AIR_LABEL_REMARKS = "AirLabelRemarks";
     public static final String IS_MAWB = "IsMAWB";
     public static final String IS_HAWB = "IsHAWB";
+    public static final String IS_COMBI = "IsCombi";
     public static final String IS_DMAWB = "IsDMAWB";
     public static final String IS_B2BMAWB = "IsB2BMAWB";
     public static final String CONSOL_TOTAL_WEIGHT_AND_UNIT = "ConsolTotalWeightandUnit";
     public static final String CSD_REPORT = "CSD";
+    public static final String FCR_DOCUMENT = "FCR Document";
     public static final String DATE_OF_PRINT = "DateOfPrint";
     public static final String TIME_OF_PRINT = "TimeOfPrint";
     public static final String AWB_NOTIFYPARTY = "AWB_NotifyParty";
@@ -1324,4 +1327,11 @@ public class ReportConstants {
     public static final String OTHER_INFO_CODE = "OtherInfoCode";
     public static final String ISSUING_AGENT_CITY = "IssuingAgentCity";
     public static final String RA_CSD = "RA_CSD";
+    public static final String FCR_CONSIGNOR_IN_CAPS = "FCR_ConsignorInCaps";
+    public static final String SHIP_CONSIGNEE_IN_CAPS = "Ship_ConsigneeInCaps";
+    public static final String SHIP_NOTIFY_PARTY_IN_CAPS = "Ship_NotifyPartyInCaps";
+    public static final String FCR_NO = "FCRNo";
+    public static final String PACKS_MARKS_NUMBERS = "PacksMarksNumbers";
+    public static final String PACKS_GOODS_DESCRIPTION = "PacksGoodsDescription";
+    public static final String PLACE_OF_ISSUE = "PlaceOfIssue";
 }

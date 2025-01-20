@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.TriangulationPartnerModel;
 import com.dpw.runner.shipment.services.config.CustomVolumeValueSerializer;
 import com.dpw.runner.shipment.services.config.CustomWeightValueSerializer;
 import com.dpw.runner.shipment.services.config.DecimalPlaceValueSerializer;
@@ -175,7 +176,7 @@ public class ShipmentModel implements IDocumentModel {
     @JsonProperty("TransportMode")
     private String transportMode;
     @JsonProperty("TriangulationPartnerList")
-    private List<Long> triangulationPartnerList;
+    private List<TriangulationPartnerModel> triangulationPartnerList;
     @JsonProperty("TriangulationPartner")
     private Long triangulationPartner;
     @JsonProperty("TruckDriverDetails")

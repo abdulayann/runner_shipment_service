@@ -1,8 +1,8 @@
 package com.dpw.runner.shipment.services.service.v1.util;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.when;
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -12,24 +12,25 @@ import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitFromV1Respo
 import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
 import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
-
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
-
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import org.junit.jupiter.api.BeforeAll;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -544,6 +545,95 @@ class V1ServiceUtilTest {
         when(iV1Service.getCoLoadingStations(any())).thenReturn(mockResponse);
         var response = v1ServiceUtil.fetchCoLoadInfo(Arrays.asList(), "PARENT_TENANT_ID");
         assertTrue(response.isEmpty());
+    }
+
+    @Test
+    void testGetPartiesRequestFromOrgIdAndAddressId_Success() {
+        Long orgId = 1L;
+        Long addressId = 100L;
+
+        V1DataResponse mockOrgResponse = new V1DataResponse();
+        V1DataResponse mockAddressResponse = new V1DataResponse();
+        mockOrgResponse.setEntities(new ArrayList<>());
+        mockAddressResponse.setEntities(new ArrayList<>());
+
+        List<EntityTransferOrganizations> mockOrgList = Collections.singletonList(new EntityTransferOrganizations());
+        List<EntityTransferAddress> mockAddressList = Collections.singletonList(new EntityTransferAddress());
+
+        Map<String, Object> mockOrgMap = Map.of("Id", orgId, "OrganizationCode", "Org123");
+        Map<String, Object> mockAddressMap = Map.of("Id", addressId, "AddressShortCode", "Address123");
+
+        when(iV1Service.fetchOrganization(any(CommonV1ListRequest.class))).thenReturn(mockOrgResponse);
+        when(jsonHelper.convertValueToList(mockOrgResponse.getEntities(), EntityTransferOrganizations.class)).thenReturn(mockOrgList);
+        when(jsonHelper.convertToJson(mockOrgList.get(0))).thenReturn("EntityOrg");
+        when(jsonHelper.convertJsonToMap("EntityOrg")).thenReturn(mockOrgMap);
+
+        when(iV1Service.addressList(any(CommonV1ListRequest.class))).thenReturn(mockAddressResponse);
+        when(jsonHelper.convertValueToList(mockAddressResponse.getEntities(), EntityTransferAddress.class)).thenReturn(mockAddressList);
+        when(jsonHelper.convertToJson(mockAddressList.get(0))).thenReturn("EntityAddress");
+        when(jsonHelper.convertJsonToMap("EntityAddress")).thenReturn(mockAddressMap);
+
+        var result = v1ServiceUtil.getPartiesRequestFromOrgIdAndAddressId(orgId, addressId);
+
+        assertEquals(String.valueOf(orgId), result.getOrgId());
+        assertEquals("Org123", result.getOrgCode());
+        assertEquals(String.valueOf(addressId), result.getAddressId());
+        assertEquals("Address123", result.getAddressCode());
+
+        verify(iV1Service, times(1)).fetchOrganization(any());
+        verify(iV1Service, times(1)).addressList(any());
+    }
+
+    @Test
+    void testGetPartiesRequestFromOrgIdAndAddressId_NoOrganizationsFound() {
+        Long orgId = 1L;
+        Long addressId = 100L;
+
+        V1DataResponse mockOrgResponse = new V1DataResponse();
+        mockOrgResponse.setEntities(new ArrayList<>());
+
+        when(iV1Service.fetchOrganization(any(CommonV1ListRequest.class))).thenReturn(mockOrgResponse);
+        when(jsonHelper.convertValueToList(mockOrgResponse.getEntities(), EntityTransferOrganizations.class)).thenReturn(Collections.emptyList());
+
+        assertThrows(DataRetrievalFailureException.class, () -> v1ServiceUtil.getPartiesRequestFromOrgIdAndAddressId(orgId, addressId));
+
+        verify(iV1Service, times(1)).fetchOrganization(any());
+    }
+
+    @Test
+    void testGetPartiesRequestFromOrgIdAndAddressId_NoAddressesFound() {
+        Long orgId = 1L;
+        Long addressId = 100L;
+
+        V1DataResponse mockOrgResponse = new V1DataResponse();
+        List<EntityTransferOrganizations> mockOrgList = Collections.singletonList(new EntityTransferOrganizations());
+        Map<String, Object> mockOrgMap = Map.of("Id", orgId, "OrganizationCode", "Org123");
+
+        V1DataResponse mockAddressResponse = new V1DataResponse();
+
+        when(iV1Service.fetchOrganization(any(CommonV1ListRequest.class))).thenReturn(mockOrgResponse);
+        when(jsonHelper.convertValueToList(mockOrgResponse.getEntities(), EntityTransferOrganizations.class)).thenReturn(mockOrgList);
+        when(jsonHelper.convertJsonToMap(anyString())).thenReturn(mockOrgMap);
+
+        when(iV1Service.addressList(any(CommonV1ListRequest.class))).thenReturn(mockAddressResponse);
+        when(jsonHelper.convertValueToList(mockAddressResponse.getEntities(), EntityTransferAddress.class)).thenReturn(Collections.emptyList());
+
+        assertThrows(DataRetrievalFailureException.class, () -> v1ServiceUtil.getPartiesRequestFromOrgIdAndAddressId(orgId, addressId));
+
+        verify(iV1Service, times(1)).fetchOrganization(any());
+        verify(iV1Service, times(1)).addressList(any());
+    }
+
+    @Test
+    void testGetPartiesRequestFromOrgIdAndAddressId_ExceptionThrown() {
+        Long orgId = 1L;
+        Long addressId = 100L;
+
+        when(iV1Service.fetchOrganization(any())).thenThrow(new RuntimeException("Unexpected Error"));
+
+        assertThrows(DataRetrievalFailureException.class, () -> v1ServiceUtil.getPartiesRequestFromOrgIdAndAddressId(orgId, addressId));
+
+        verify(iV1Service, times(1)).fetchOrganization(any());
     }
 
 }

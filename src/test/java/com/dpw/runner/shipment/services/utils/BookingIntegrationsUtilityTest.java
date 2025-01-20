@@ -13,7 +13,6 @@ import static org.mockito.Mockito.anyList;
 import static org.mockito.Mockito.anyLong;
 import static org.mockito.Mockito.anySet;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -121,6 +120,9 @@ class BookingIntegrationsUtilityTest {
     @Mock
     private IShipmentDao shipmentDao;
 
+    @Mock
+    private IV1Service iv1Service;
+
     private static JsonTestUtility jsonTestUtility;
 
     @BeforeAll
@@ -133,7 +135,6 @@ class BookingIntegrationsUtilityTest {
     void testCreateBookingInPlatform_SuccessfulBooking_FCL_CargoType() throws RunnerException {
         CustomerBooking customerBooking = getCustomerBooking("FCL");
         when(masterDataUtils.getChargeTypes(anyList())).thenReturn(Map.of("ct1", EntityTransferChargeType.builder().Services("services").Description("Desc").build()));
-        when(customerBookingDao.updateIsPlatformBookingCreated(anyLong(), eq(true))).thenReturn(1);
 
         bookingIntegrationsUtility.createBookingInPlatform(customerBooking);
 
@@ -146,7 +147,6 @@ class BookingIntegrationsUtilityTest {
     void testCreateBookingInPlatform(String cargoType) throws RunnerException {
         CustomerBooking customerBooking = getCustomerBooking(cargoType);
         when(masterDataUtils.getChargeTypes(anyList())).thenReturn(Map.of("ct1", EntityTransferChargeType.builder().Services("services").Description("Desc").build()));
-        when(customerBookingDao.updateIsPlatformBookingCreated(anyLong(), eq(true))).thenReturn(1);
         customerBooking.setTransportType(Constants.TRANSPORT_MODE_SEA);
 
         bookingIntegrationsUtility.createBookingInPlatform(customerBooking);
@@ -188,7 +188,6 @@ class BookingIntegrationsUtilityTest {
         customerBooking.getCarrierDetails().setShippingLine("");
 
         when(masterDataUtils.getChargeTypes(anyList())).thenReturn(Map.of("ct1", EntityTransferChargeType.builder().Services("services").Description("Desc").build()));
-        when(customerBookingDao.updateIsPlatformBookingCreated(anyLong(), eq(true))).thenReturn(1);
 
         bookingIntegrationsUtility.createBookingInPlatform(customerBooking);
 
@@ -202,7 +201,6 @@ class BookingIntegrationsUtilityTest {
 
         when(masterDataUtils.getChargeTypes(anyList())).thenReturn(Map.of("ct1", EntityTransferChargeType.builder().Services("services").Description("Desc").build()));
         when(masterDataUtils.fetchInBulkCarriers(anySet())).thenReturn(Map.of("Maersk Line", EntityTransferCarrier.builder().ItemValue("item val").Identifier1("code").build()));
-        when(customerBookingDao.updateIsPlatformBookingCreated(anyLong(), eq(true))).thenReturn(1);
 
         bookingIntegrationsUtility.createBookingInPlatform(customerBooking);
 
@@ -216,7 +214,6 @@ class BookingIntegrationsUtilityTest {
         customerBooking.setPackingList(List.of(jsonTestUtility.getTestPacking()));
 
         when(masterDataUtils.getChargeTypes(anyList())).thenReturn(Map.of("ct1", EntityTransferChargeType.builder().Services("services").Description("Desc").build()));
-        when(customerBookingDao.updateIsPlatformBookingCreated(anyLong(), eq(true))).thenReturn(1);
 
         bookingIntegrationsUtility.createBookingInPlatform(customerBooking);
 
@@ -230,7 +227,6 @@ class BookingIntegrationsUtilityTest {
         customerBooking.setPackingList(List.of(jsonTestUtility.getTestPacking()));
 
         when(masterDataUtils.getChargeTypes(anyList())).thenReturn(Map.of("ct1", EntityTransferChargeType.builder().Services("services").Description("Desc").build()));
-        when(customerBookingDao.updateIsPlatformBookingCreated(anyLong(), eq(true))).thenReturn(0);
 
         bookingIntegrationsUtility.createBookingInPlatform(customerBooking);
 
@@ -289,12 +285,11 @@ class BookingIntegrationsUtilityTest {
 
     @Test
     void testUpdateBookingInPlatform_fromShipment_throwsException() throws RunnerException {
-        doThrow(new RuntimeException()).when(platformServiceAdapter).updateAtPlaform(any(CommonRequestModel.class));
         var shipment = jsonTestUtility.getTestShipment();
         shipment.setBookingType(CustomerBookingConstants.ONLINE);
         shipment.setBookingReference("12345");
         bookingIntegrationsUtility.updateBookingInPlatform(shipment);
-        verify(platformServiceAdapter, times((1))).updateAtPlaform(any());
+        verify(platformServiceAdapter, times((1))).createAtPlatform(any());
     }
 
     @Test
@@ -317,7 +312,7 @@ class BookingIntegrationsUtilityTest {
         referenceNumbers.setReferenceNumber("1234");
         shipment.setReferenceNumbersList(List.of(referenceNumbers));
         bookingIntegrationsUtility.updateBookingInPlatform(shipment);
-        verify(platformServiceAdapter, times(1)).updateAtPlaform(any(CommonRequestModel.class));
+        verify(platformServiceAdapter, times(1)).createAtPlatform(any(CommonRequestModel.class));
     }
 
     @Test
@@ -380,7 +375,7 @@ class BookingIntegrationsUtilityTest {
         bookingIntegrationsUtility.updateBookingInPlatform(cancelledShipment);
         bookingIntegrationsUtility.updateBookingInPlatform(confirmedShipment);
 
-        verify(platformServiceAdapter, times(3)).updateAtPlaform(any(CommonRequestModel.class));
+        verify(platformServiceAdapter, times(3)).createAtPlatform(any(CommonRequestModel.class));
     }
 
     @Test
@@ -391,7 +386,7 @@ class BookingIntegrationsUtilityTest {
         shipment.setBookingReference("1234");
         shipment.setContainersList(List.of(jsonTestUtility.getTestContainer()));
         bookingIntegrationsUtility.updateBookingInPlatform(shipment);
-        verify(platformServiceAdapter, times(1)).updateAtPlaform(any(CommonRequestModel.class));
+        verify(platformServiceAdapter, times(1)).createAtPlatform(any(CommonRequestModel.class));
     }
 
     @Test

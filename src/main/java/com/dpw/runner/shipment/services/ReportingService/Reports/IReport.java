@@ -1078,8 +1078,8 @@ public abstract class IReport {
             }
             if(shipmentModel.getReferenceNumbersList() != null && !shipmentModel.getReferenceNumbersList().isEmpty()) {
                 for (ReferenceNumbersModel referenceNumbersModel: shipmentModel.getReferenceNumbersList()) {
-                    if(Objects.equals(referenceNumbersModel.getType(), ReportConstants.MORN) && !dict.containsKey(ReportConstants.MORN))
-                        dict.put(ReportConstants.MORN, referenceNumbersModel.getReferenceNumber());
+                    if(Objects.equals(referenceNumbersModel.getType(), ReportConstants.MRN) && !dict.containsKey(ReportConstants.MoRN))
+                        dict.put(ReportConstants.MoRN, referenceNumbersModel.getReferenceNumber());
                 }
             }
             if(shipmentModel.getAdditionalDetails() != null) {
@@ -1292,6 +1292,10 @@ public abstract class IReport {
 
     public ConsolidationModel getConsolidation(Long id) {
         ConsolidationDetails consolidationDetails = getConsolidationsById(id);
+        return getConsolidationModel(consolidationDetails);
+    }
+
+    public ConsolidationModel getConsolidationModel(ConsolidationDetails consolidationDetails) {
         return modelMapper.map(consolidationDetails, ConsolidationModel.class);
     }
 
@@ -1526,7 +1530,7 @@ public abstract class IReport {
         List<MasterListRequest> masterListRequest = createMasterListsRequestFromConsole(consolidation);
         Map<Integer, Map<String, MasterData>> masterListsMap = fetchInBulkMasterList(MasterListRequestV2.builder().MasterListRequests(masterListRequest.stream().filter(Objects::nonNull).toList()).build());
         UnlocationsResponse lastForeignPort = null;
-        if (arrivalDetails != null) {
+        if (arrivalDetails != null && !IsStringNullOrEmpty(arrivalDetails.getLastForeignPort())) {
             List<Object> criteria = Arrays.asList(
                     Arrays.asList(EntityTransferConstants.LOCATION_SERVICE_GUID),
                     "=",
@@ -2020,7 +2024,10 @@ public abstract class IReport {
     /**
      Added this method to change the Address format of HAWB and MAWB reports without disturbing the other reports
      */
-    public static List<String> getAwbFormattedDetails(String name, String address1, String address2, String city, String state, String zipCode, String country, String contactName, String phone, String taxRegistrationNumber)
+    public static List<String> getAwbFormattedDetails(String name, String address1, String address2, String city, String state, String zipCode, String country, String contactName, String phone, String taxRegistrationNumber) {
+        return getAwbFormattedDetails(name, address1, address2, city, state, zipCode, country, contactName, phone, taxRegistrationNumber, false);
+    }
+    public static List<String> getAwbFormattedDetails(String name, String address1, String address2, String city, String state, String zipCode, String country, String contactName, String phone, String taxRegistrationNumber, boolean addStringPHReqd)
     {
         List<String> details = new ArrayList<>();
         if(!Strings.isNullOrEmpty(name)){
@@ -2060,7 +2067,10 @@ public abstract class IReport {
         if (!Strings.isNullOrEmpty(phone)) {
             if(!contactAndPhoneDetails.isEmpty())
                 contactAndPhoneDetails.append(", ");
-            contactAndPhoneDetails.append(phone);
+            String ph = phone;
+            if(addStringPHReqd)
+                ph = "PH: " + phone;
+            contactAndPhoneDetails.append(ph);
         }
         if (!contactAndPhoneDetails.isEmpty()) {
             details.add(contactAndPhoneDetails.toString());
@@ -2880,6 +2890,8 @@ public abstract class IReport {
             dict.put(HS_CODE, pack.getHSCode());
             dict.put(DESCRIPTION, pack.getGoodsDescription());
             dict.put(IsDG, false);
+            dict.put(PACKS_MARKS_NUMBERS, pack.getMarksnNums());
+            dict.put(PACKS_GOODS_DESCRIPTION, pack.getGoodsDescription());
             if(pack.getHazardous() != null && pack.getHazardous().equals(true)){
                 var dgSubstanceRow = masterDataUtils.fetchDgSubstanceRow(pack.getDGSubstanceId());
                 dict.put(DG_SUBSTANCE, dgSubstanceRow.ProperShippingName);
@@ -3334,6 +3346,25 @@ public abstract class IReport {
         dictionary.put(prefix + ZIP_POST_CODE, getValueFromMap(addressData, ZIP_POST_CODE));
     }
 
+    private Map<String, Object> getAddressForParty(Parties party, Map<String, Object> partiesOrgInfoFromCache) {
+        if (party == null) {
+            return Collections.emptyMap();
+        }
+        Map<String, Object> partiesOrgData = (Map<String, Object>) partiesOrgInfoFromCache.get(party.getOrgCode());
+        if (partiesOrgData == null) {
+            return Collections.emptyMap();
+        }
+        List<Map<String, Object>> partiesAddressData = (List<Map<String, Object>>) partiesOrgData.get(Constants.ORG_ADDRESS);
+        if (partiesAddressData != null) {
+            for (Map<String, Object> addressData : partiesAddressData) {
+                if (Objects.equals(addressData.get(Constants.ADDRESS_SHORT_CODE), party.getAddressCode())) {
+                    return addressData;
+                }
+            }
+        }
+        return Collections.emptyMap();
+    }
+
     public void populateRaKcData(Map<String, Object> dictionary, ShipmentModel shipmentModel) {
         Parties partiesModelSendingAgent = shipmentModel.getAdditionalDetails().getExportBroker() != null ? modelMapper.map(shipmentModel.getAdditionalDetails().getExportBroker(), Parties.class) : null;
         Parties partiesModelReceivingAgent = shipmentModel.getAdditionalDetails().getImportBroker() != null ? modelMapper.map(shipmentModel.getAdditionalDetails().getImportBroker(), Parties.class) : null;
@@ -3344,22 +3375,11 @@ public abstract class IReport {
                 partiesModelReceivingAgent,
                 consignor
         );
+        Map<String, Object> partiesOrgInfoFromCache = masterDataUtils.getPartiesOrgInfoFromCache(parties);
 
-        OrgAddressResponse orgAddressResponse = v1ServiceUtil.fetchOrgInfoFromV1(parties);
-        Map<String, Object> addressSendingAgent = null;
-        Map<String, Object> addressReceivingAgent = null;
-        Map<String, Object> addressConsignorAgent = null;
-
-        Map<String, Map<String, Object>> addressMap = orgAddressResponse.getAddresses();
-        if(partiesModelSendingAgent != null) {
-            addressSendingAgent = addressMap.get(partiesModelSendingAgent.getOrgCode() + "#" + partiesModelSendingAgent.getAddressCode());
-        }
-        if(partiesModelReceivingAgent != null) {
-            addressReceivingAgent = addressMap.get(partiesModelReceivingAgent.getOrgCode() + "#" + partiesModelReceivingAgent.getAddressCode());
-        }
-        if(consignor != null) {
-            addressConsignorAgent = addressMap.get(consignor.getOrgCode() + "#" + consignor.getAddressCode());
-        }
+        Map<String, Object> addressSendingAgent = getAddressForParty(partiesModelSendingAgent, partiesOrgInfoFromCache);
+        Map<String, Object> addressReceivingAgent = getAddressForParty(partiesModelReceivingAgent, partiesOrgInfoFromCache);
+        Map<String, Object> addressConsignorAgent = getAddressForParty(consignor, partiesOrgInfoFromCache);
 
         processAgent(addressSendingAgent, dictionary, ONE, ORIGIN_AGENT);
         processAgent(addressReceivingAgent, dictionary, ONE, DESTINATION_AGENT);

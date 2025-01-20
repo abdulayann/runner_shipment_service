@@ -31,4 +31,8 @@ public interface IContainerRepository extends MultiTenancyRepository<Containers>
     @Transactional @ExcludeTenantFilter
     @Query(value = "Update containers set pra_status = ?1 where guid = ?2 and consolidation_id = ?3", nativeQuery = true)
     void savePraStatus(String praStatus, UUID guid, Long consolidationId);
+
+    List<Containers> findByConsolidationIdIn(List<Long> consolidationIds);
+
+    List<Containers> findByIdIn(List<Long> containerIds);
 }
