@@ -2284,12 +2284,11 @@ class EntityTransferServiceTest extends CommonMocks {
         when(shipmentDetails.getShipmentId()).thenReturn("1");
         when(shipmentDetails.getHouseBill()).thenReturn("hbn");
         when(shipmentDetails.getMasterBill()).thenReturn("mbn");
-        when(shipmentSettingsDao.getSettingsByTenantIds(destinationBranches)).thenReturn(List.of(shipmentSettingsDetails));
         when(v1Service.getUsersWithGivenPermissions(any())).thenReturn(List.of(mockUser));
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
         entityTransferService.sendShipmentEmailNotification(shipmentDetails, destinationBranches);
 
-        verify(shipmentSettingsDao, times(1)).getSettingsByTenantIds(anyList());
+        verify(v1Service, times(3)).getUsersWithGivenPermissions(any());
 
     }
 
@@ -2307,11 +2306,10 @@ class EntityTransferServiceTest extends CommonMocks {
         when(shipmentDetails.getShipmentId()).thenReturn("1");
         when(shipmentDetails.getHouseBill()).thenReturn("hbn");
         when(shipmentDetails.getMasterBill()).thenReturn("mbn");
-        when(shipmentSettingsDao.getSettingsByTenantIds(destinationBranches)).thenReturn(List.of(shipmentSettingsDetails));
         when(v1Service.getUsersWithGivenPermissions(any())).thenReturn(new ArrayList<>());
         entityTransferService.sendShipmentEmailNotification(shipmentDetails, destinationBranches);
 
-        verify(shipmentSettingsDao, times(1)).getSettingsByTenantIds(anyList());
+        verify(v1Service, times(3)).getUsersWithGivenPermissions(any());
 
     }
 
