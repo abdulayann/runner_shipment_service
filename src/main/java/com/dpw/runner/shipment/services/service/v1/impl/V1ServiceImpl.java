@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.Perm
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
+import com.dpw.runner.shipment.services.dto.request.UserWithPermissionRequestV1;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.*;
@@ -380,6 +381,9 @@ public class V1ServiceImpl implements IV1Service {
 
     @Value("${v1service.url.base}${v1service.url.listBranchesByDefaultOrgAndAddress}")
     private String listBranchesByDefaultOrgAndAddress;
+
+    @Value("${v1service.url.base}${v1service.url.getUserWithGivenPermission}")
+    private String getUserWithGivenPermission;
 
     @Autowired
     private JsonHelper jsonHelper;
@@ -2583,6 +2587,27 @@ public class V1ServiceImpl implements IV1Service {
             HttpEntity<Object> entity = new HttpEntity<>(jsonHelper.convertToJson(request), V1AuthHelper.getHeaders());
             response = this.restTemplate.postForEntity(this.listBranchesByDefaultOrgAndAddress, entity, V1DataResponse.class);
             log.info("Token time taken in listBranchesByDefaultOrgAndAddress() function {}", (System.currentTimeMillis() - time));
+            return response.getBody();
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public List<UsersDto> getUsersWithGivenPermissions(UserWithPermissionRequestV1 request) {
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<Object> entity = new HttpEntity<>(request, V1AuthHelper.getHeaders());
+            ResponseEntity<List<UsersDto>> response = this.restTemplate.exchange(
+                    this.getUserWithGivenPermission,
+                    HttpMethod.POST,
+                    entity,
+                    new ParameterizedTypeReference<List<UsersDto>>() {}
+            );
+
+            log.info("Token time taken in getUsersWithGivenPermissions() function {} ms", (System.currentTimeMillis() - time));
             return response.getBody();
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
             throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
