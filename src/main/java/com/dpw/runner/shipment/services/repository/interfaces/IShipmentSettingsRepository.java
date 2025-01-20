@@ -27,6 +27,6 @@ public interface IShipmentSettingsRepository extends MultiTenancyRepository<Ship
     List<ShipmentSettingsDetails> getTenantSetting(List<Integer> tenantId);
     Optional<ShipmentSettingsDetails> findByTenantId(Integer tenantId);
 
-    @Query(value = "SELECT customised_sequence FROM shipment_setting sd where sd.tenant_id = ?1")
-    Boolean getCustomisedSequence(Integer tenantId);
+    @Query(value = "SELECT customised_sequence FROM shipment_setting LIMIT 1", nativeQuery = true)
+    Boolean getCustomisedSequence();
 }
