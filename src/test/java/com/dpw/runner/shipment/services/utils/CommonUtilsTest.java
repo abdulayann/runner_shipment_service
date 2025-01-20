@@ -3244,7 +3244,7 @@ class CommonUtilsTest {
                 TriangulationPartner.builder().triangulationPartner(700L).build()
         ));
 
-        when(consolidationDetailsDao.findById(entityId)).thenReturn(Optional.of(mockConsolidation));
+        when(consolidationDetailsDao.findConsolidationByIdWithQuery(entityId)).thenReturn(Optional.of(mockConsolidation));
 
         List<Long> result = commonUtils.getTenantIdsFromEntity(entityId, Constants.CONSOLIDATION);
 
@@ -3266,7 +3266,7 @@ class CommonUtilsTest {
     void testGetTenantIdsFromEntity_ConsolidationNotFound() {
         Long entityId = 2L;
 
-        when(consolidationDetailsDao.findById(entityId)).thenReturn(Optional.empty());
+        when(consolidationDetailsDao.findConsolidationByIdWithQuery(entityId)).thenReturn(Optional.empty());
 
         List<Long> result = commonUtils.getTenantIdsFromEntity(entityId, Constants.CONSOLIDATION);
 

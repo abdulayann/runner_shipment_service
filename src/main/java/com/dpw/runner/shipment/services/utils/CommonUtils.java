@@ -2132,7 +2132,7 @@ public class CommonUtils {
                     .stream()
                     .map(TriangulationPartner::getTriangulationPartner).toList();
         } else if (Objects.equals(entityType, Constants.CONSOLIDATION)){
-            Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(entityId);
+            Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findConsolidationByIdWithQuery(entityId);
             if(consolidationDetails.isEmpty()) {
                 return new ArrayList<>();
             }
@@ -2146,8 +2146,12 @@ public class CommonUtils {
             return new ArrayList<>();
         }
         tenantIds.add(sourceTenantId);
-        tenantIds.add(receivingBranch);
-        tenantIds.addAll(triangulationPartners);
+        if (receivingBranch != null) {
+            tenantIds.add(receivingBranch);
+        }
+        if (!CommonUtils.listIsNullOrEmpty(triangulationPartners)) {
+            tenantIds.addAll(triangulationPartners);
+        }
         return tenantIds.stream().toList();
     }
 
