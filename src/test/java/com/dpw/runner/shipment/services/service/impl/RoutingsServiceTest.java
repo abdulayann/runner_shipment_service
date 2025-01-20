@@ -233,8 +233,6 @@ class RoutingsServiceTest extends CommonMocks {
 
         Mockito.when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(shipmentDetails));
         Mockito.when(trackingServiceAdapter.fetchTrackingData(any())).thenReturn(null);
-        Runnable mockedRunnable = mock(Runnable.class);
-        when(masterDataUtils.withMdc(any())).thenReturn(mockedRunnable);
 
         routingsService.updateRoutingsBasedOnTracking(shipmentId, routingsList);
 
@@ -251,8 +249,6 @@ class RoutingsServiceTest extends CommonMocks {
 
         Mockito.when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(shipmentDetails));
         Mockito.when(trackingServiceAdapter.fetchTrackingData(any())).thenReturn(emptyResponse);
-        Runnable mockedRunnable = mock(Runnable.class);
-        when(masterDataUtils.withMdc(any())).thenReturn(mockedRunnable);
 
         routingsService.updateRoutingsBasedOnTracking(shipmentId, routingsList);
 
@@ -312,8 +308,6 @@ class RoutingsServiceTest extends CommonMocks {
         Mockito.when(shipmentDao.findById(Mockito.anyLong())).thenReturn(Optional.of(shipmentDetails));
         Mockito.doThrow(new RunnerException("Tracking update failed"))
                 .when(trackingServiceAdapter).fetchTrackingData(any());
-        Runnable mockedRunnable = mock(Runnable.class);
-        when(masterDataUtils.withMdc(any())).thenReturn(mockedRunnable);
 
         assertThrows(RoutingException.class, () -> routingsService.updateRoutings(routingsUpdateRequest));
     }
