@@ -85,13 +85,16 @@ public class RoutingsService implements IRoutingsService {
             return;
         }
 
-        CompletableFuture<TrackingServiceApiResponse> trackingServiceApiResponseFuture =  CompletableFuture.supplyAsync(() -> {
-            try {
-                return getTrackingServiceApiResponse(shipmentId, shipmentDetails);
-            } catch (RunnerException e) {
-                throw new RoutingException(e.getMessage(), e);
-            }
-        }, executorService);
+        TrackingServiceApiResponse trackingServiceApiResponse;
+        try {
+            trackingServiceApiResponse = getTrackingServiceApiResponse(shipmentId, shipmentDetails);
+        } catch (RunnerException e) {
+            throw new RoutingException(e.getMessage(), e);
+        }
+        if (trackingServiceApiResponse == null) {
+            return;
+        }
+        log.info("Tracking data successfully fetched for shipment ID: {}. Processing container events.", shipmentId);
         Map<String, List<Routings>> polToRoutingMap = new HashMap<>();
         Map<String, List<Routings>> podToRoutingMap = new HashMap<>();
         CompletableFuture<Void> polToRoutingMapFuture = CompletableFuture.runAsync(
@@ -100,13 +103,7 @@ public class RoutingsService implements IRoutingsService {
         CompletableFuture<Void> podToRoutingMapFuture = CompletableFuture.runAsync(
             masterDataUtils.withMdc(() -> createRoutingMap(routings, false, podToRoutingMap)),
             executorService);
-        CompletableFuture.allOf(trackingServiceApiResponseFuture, polToRoutingMapFuture, podToRoutingMapFuture).join();
-        TrackingServiceApiResponse trackingServiceApiResponse = trackingServiceApiResponseFuture.get();
-        if (trackingServiceApiResponse == null) {
-            return;
-        }
-
-        log.info("Tracking data successfully fetched for shipment ID: {}. Processing container events.", shipmentId);
+        CompletableFuture.allOf(polToRoutingMapFuture, podToRoutingMapFuture).join();
 
         // Create routing maps for POL and POD
 
