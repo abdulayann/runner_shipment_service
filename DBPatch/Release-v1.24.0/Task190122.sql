@@ -5,4 +5,4 @@ org_data = '{"Id": 126197, "City": "Bologna", "Guid": "50f160ac-a3e2-4f57-9453-2
 address_data = '{"Id": 164932, "City": "Bologna", "Email": "Massimo.lin@reagens-group.com", "State": "Emilia-Romagna", "label": "FRO00011190", "value": "FRO00011190", "Country": "ITA", "OrgGuid": "50f160ac-a3e2-4f57-9453-2ccf59dcb40c", "Address1": "Via Codronchi 4 San Giorgio di Piano", "OrgSource": "CRP", "AddressType": 2, "CompanyName": "Reagens Spa", "OrgFullName": "Reagens Spa", "OrgPayables": false, "ZipPostCode": "40016", "TaxRegNumber": "IT00605801208", "OrgReceivables": true, "OrgActiveClient": true, "AddressShortCode": "FRO00011190", "OrgOrganizationCode": "FRC00010895"}',
 org_id = '126197',
 address_id = '164932'
-where id in (select client_id from shipment_details where id in (20239));
+where id in (select client_id from shipment_details where id in (20239) and tenant_id = '474');
