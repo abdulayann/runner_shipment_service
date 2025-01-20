@@ -67,8 +67,8 @@ public class ShipmentSettingsDao implements IShipmentSettingsDao {
     }
 
     @Override
-    public Boolean getCustomisedSequence(Integer tenantId) {
-        return shipmentSettingsRepository.getCustomisedSequence(tenantId);
+    public Boolean getCustomisedSequence() {
+        return shipmentSettingsRepository.getCustomisedSequence();
     }
 
     @Override
