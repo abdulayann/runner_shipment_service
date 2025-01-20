@@ -5646,7 +5646,7 @@ import java.util.stream.Collectors;
 
         verify(quartzJobInfoDao, times(0)).findByJobFilters(any(), anyLong(), anyString());
         verify(quartzJobInfoService, times(0)).createSimpleJob(any());
-        verify(quartzJobInfoService, times(0)).getQuartzJobTime(any(), any(), any(), any());
+        verify(quartzJobInfoService, times(0)).getQuartzJobTime(any(), any(), any(), any(), any());
         verify(quartzJobInfoDao, times(0)).save(any(QuartzJobInfo.class));
     }
 
@@ -5665,7 +5665,7 @@ import java.util.stream.Collectors;
 
         verify(quartzJobInfoDao, times(0)).findByJobFilters(any(), anyLong(), anyString());
         verify(quartzJobInfoService, times(0)).createSimpleJob(any());
-        verify(quartzJobInfoService, times(0)).getQuartzJobTime(any(), any(), any(), any());
+        verify(quartzJobInfoService, times(0)).getQuartzJobTime(any(), any(), any(), any(), any());
         verify(quartzJobInfoDao, times(0)).save(any(QuartzJobInfo.class));
     }
 
@@ -5684,7 +5684,7 @@ import java.util.stream.Collectors;
         when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
         mockShipmentSettings();
         List<V1TenantSettingsResponse.FileTransferConfigurations> fileTransferConfigurationsList = Collections.singletonList(V1TenantSettingsResponse.FileTransferConfigurations.builder().build());
-        when(quartzJobInfoService.getActiveFileTransferConfigurations()).thenReturn(fileTransferConfigurationsList);
+        when(quartzJobInfoService.getActiveFileTransferConfigurations(any())).thenReturn(fileTransferConfigurationsList);
         consolidationService.triggerAutomaticTransfer(consolidationDetails1, consolidationDetails, false);
 
         verify(quartzJobInfoDao, times(0)).findByJobFilters(any(), anyLong(), anyString());
@@ -5707,17 +5707,17 @@ import java.util.stream.Collectors;
         newJob.setId(1L);
         when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.of(existingJob));
         when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
-        when(quartzJobInfoService.getQuartzJobTime(any(), any(), any(), any())).thenReturn(LocalDateTime.now());
+        when(quartzJobInfoService.getQuartzJobTime(any(), any(), any(), any(), any())).thenReturn(LocalDateTime.now());
         when(quartzJobInfoService.isJobWithNamePresent(anyString())).thenReturn(true);
         when(quartzJobInfoDao.save(any(QuartzJobInfo.class))).thenReturn(newJob);
         mockShipmentSettings();
         List<V1TenantSettingsResponse.FileTransferConfigurations> fileTransferConfigurationsList = Collections.singletonList(V1TenantSettingsResponse.FileTransferConfigurations.builder().build());
-        when(quartzJobInfoService.getActiveFileTransferConfigurations()).thenReturn(fileTransferConfigurationsList);
+        when(quartzJobInfoService.getActiveFileTransferConfigurations(any())).thenReturn(fileTransferConfigurationsList);
 
         consolidationService.triggerAutomaticTransfer(consolidationDetails1, consolidationDetails, false);
 
         verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
-        verify(quartzJobInfoService, times(1)).getQuartzJobTime(any(), any(), any(), any());
+        verify(quartzJobInfoService, times(1)).getQuartzJobTime(any(), any(), any(), any(), any());
         verify(quartzJobInfoDao, times(1)).save(any(QuartzJobInfo.class));
     }
 
@@ -5735,7 +5735,7 @@ import java.util.stream.Collectors;
         when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
         mockShipmentSettings();
         List<V1TenantSettingsResponse.FileTransferConfigurations> fileTransferConfigurationsList = Collections.singletonList(V1TenantSettingsResponse.FileTransferConfigurations.builder().build());
-        when(quartzJobInfoService.getActiveFileTransferConfigurations()).thenReturn(fileTransferConfigurationsList);
+        when(quartzJobInfoService.getActiveFileTransferConfigurations(any())).thenReturn(fileTransferConfigurationsList);
 
         consolidationService.triggerAutomaticTransfer(consolidationDetails1, null, false);
 
@@ -5761,7 +5761,7 @@ import java.util.stream.Collectors;
         doNothing().when(commonErrorLogsDao).logConsoleAutomaticTransferErrors(any(), anyLong(), anyList());
         mockShipmentSettings();
         List<V1TenantSettingsResponse.FileTransferConfigurations> fileTransferConfigurationsList = Collections.singletonList(V1TenantSettingsResponse.FileTransferConfigurations.builder().build());
-        when(quartzJobInfoService.getActiveFileTransferConfigurations()).thenReturn(fileTransferConfigurationsList);
+        when(quartzJobInfoService.getActiveFileTransferConfigurations(any())).thenReturn(fileTransferConfigurationsList);
 
         consolidationService.triggerAutomaticTransfer(consolidationDetails1, consolidationDetails, false);
 
@@ -5789,15 +5789,15 @@ import java.util.stream.Collectors;
         when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.of(existingJob));
         when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
         List<V1TenantSettingsResponse.FileTransferConfigurations> fileTransferConfigurationsList = Collections.singletonList(V1TenantSettingsResponse.FileTransferConfigurations.builder().build());
-        when(quartzJobInfoService.getActiveFileTransferConfigurations()).thenReturn(fileTransferConfigurationsList);
-        when(quartzJobInfoService.getQuartzJobTime(any(), any(), any(), any())).thenReturn(null);
+        when(quartzJobInfoService.getActiveFileTransferConfigurations(any())).thenReturn(fileTransferConfigurationsList);
+        when(quartzJobInfoService.getQuartzJobTime(any(), any(), any(), any(), any())).thenReturn(null);
         mockShipmentSettings();
 
         consolidationService.triggerAutomaticTransfer(consolidationDetails1, null, false);
 
         verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
         verify(networkTransferDao, times(1)).findByTenantAndEntity(any(), anyLong(), anyString());
-        verify(quartzJobInfoService, times(1)).getQuartzJobTime(any(), any(), any(), any());
+        verify(quartzJobInfoService, times(1)).getQuartzJobTime(any(), any(), any(), any(), any());
     }
 
     @Test
@@ -5817,10 +5817,10 @@ import java.util.stream.Collectors;
 
         when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.empty());
         when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
-        when(quartzJobInfoService.getQuartzJobTime(any(), any(), any(), any())).thenReturn(LocalDateTime.now());
+        when(quartzJobInfoService.getQuartzJobTime(any(), any(), any(), any(), any())).thenReturn(LocalDateTime.now());
         when(quartzJobInfoDao.save(any())).thenReturn(new QuartzJobInfo());
         List<V1TenantSettingsResponse.FileTransferConfigurations> fileTransferConfigurationsList = Collections.singletonList(V1TenantSettingsResponse.FileTransferConfigurations.builder().build());
-        when(quartzJobInfoService.getActiveFileTransferConfigurations()).thenReturn(fileTransferConfigurationsList);
+        when(quartzJobInfoService.getActiveFileTransferConfigurations(any())).thenReturn(fileTransferConfigurationsList);
         when(quartzJobInfoService.createSimpleJob(any())).thenReturn(new QuartzJobResponse());
         doNothing().when(commonErrorLogsDao).deleteAllConsoleAndShipmentErrorsLogs(any(), anyList());
         mockShipmentSettings();
@@ -5829,7 +5829,7 @@ import java.util.stream.Collectors;
 
         verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
         verify(networkTransferDao, times(1)).findByTenantAndEntity(any(), anyLong(), anyString());
-        verify(quartzJobInfoService, times(1)).getQuartzJobTime(any(), any(), any(), any());
+        verify(quartzJobInfoService, times(1)).getQuartzJobTime(any(), any(), any(), any(), any());
         verify(quartzJobInfoDao, times(1)).save(any());
         verify(quartzJobInfoService, times(1)).createSimpleJob(any());
         verify(commonErrorLogsDao, times(1)).deleteAllConsoleAndShipmentErrorsLogs(any(), anyList());
@@ -5854,10 +5854,10 @@ import java.util.stream.Collectors;
         QuartzJobInfo newQuartzJob = QuartzJobInfo.builder().jobStatus(JobState.QUEUED).build();
         newQuartzJob.setId(2L);
         List<V1TenantSettingsResponse.FileTransferConfigurations> fileTransferConfigurationsList = Collections.singletonList(V1TenantSettingsResponse.FileTransferConfigurations.builder().build());
-        when(quartzJobInfoService.getActiveFileTransferConfigurations()).thenReturn(fileTransferConfigurationsList);
+        when(quartzJobInfoService.getActiveFileTransferConfigurations(any())).thenReturn(fileTransferConfigurationsList);
         when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.of(existingJob));
         when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
-        when(quartzJobInfoService.getQuartzJobTime(any(), any(), any(), any())).thenReturn(LocalDateTime.now());
+        when(quartzJobInfoService.getQuartzJobTime(any(), any(), any(), any(), any())).thenReturn(LocalDateTime.now());
         when(quartzJobInfoDao.save(any())).thenReturn(newQuartzJob);
         when(quartzJobInfoService.isJobWithNamePresent(anyString())).thenReturn(false);
         when(quartzJobInfoService.createSimpleJob(any())).thenReturn(new QuartzJobResponse());
@@ -5868,7 +5868,7 @@ import java.util.stream.Collectors;
 
         verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
         verify(networkTransferDao, times(1)).findByTenantAndEntity(any(), anyLong(), anyString());
-        verify(quartzJobInfoService, times(1)).getQuartzJobTime(any(), any(), any(), any());
+        verify(quartzJobInfoService, times(1)).getQuartzJobTime(any(), any(), any(), any(), any());
         verify(quartzJobInfoDao, times(1)).save(any());
         verify(quartzJobInfoService, times(1)).isJobWithNamePresent(anyString());
         verify(quartzJobInfoService, times(1)).createSimpleJob(any());
@@ -5894,10 +5894,10 @@ import java.util.stream.Collectors;
         QuartzJobInfo newQuartzJob = QuartzJobInfo.builder().jobStatus(JobState.QUEUED).build();
         newQuartzJob.setId(2L);
         List<V1TenantSettingsResponse.FileTransferConfigurations> fileTransferConfigurationsList = Collections.singletonList(V1TenantSettingsResponse.FileTransferConfigurations.builder().build());
-        when(quartzJobInfoService.getActiveFileTransferConfigurations()).thenReturn(fileTransferConfigurationsList);
+        when(quartzJobInfoService.getActiveFileTransferConfigurations(any())).thenReturn(fileTransferConfigurationsList);
         when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.of(existingJob));
         when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
-        when(quartzJobInfoService.getQuartzJobTime(any(), any(), any(), any())).thenReturn(LocalDateTime.now());
+        when(quartzJobInfoService.getQuartzJobTime(any(), any(), any(), any(), any())).thenReturn(LocalDateTime.now());
         when(quartzJobInfoDao.save(any())).thenReturn(newQuartzJob);
         when(quartzJobInfoService.isJobWithNamePresent(anyString())).thenReturn(true);
         when(quartzJobInfoService.updateSimpleJob(any())).thenReturn(new QuartzJobResponse());
@@ -5908,7 +5908,7 @@ import java.util.stream.Collectors;
 
         verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
         verify(networkTransferDao, times(1)).findByTenantAndEntity(any(), anyLong(), anyString());
-        verify(quartzJobInfoService, times(1)).getQuartzJobTime(any(), any(), any(), any());
+        verify(quartzJobInfoService, times(1)).getQuartzJobTime(any(), any(), any(), any(), any());
         verify(quartzJobInfoDao, times(1)).save(any());
         verify(quartzJobInfoService, times(1)).isJobWithNamePresent(anyString());
         verify(quartzJobInfoService, times(1)).updateSimpleJob(any());
@@ -5921,7 +5921,7 @@ import java.util.stream.Collectors;
                 .isAutomaticTransferEnabled(true)
                 .build());
         List<V1TenantSettingsResponse.FileTransferConfigurations> fileTransferConfigurationsList = Collections.singletonList(V1TenantSettingsResponse.FileTransferConfigurations.builder().build());
-        when(quartzJobInfoService.getActiveFileTransferConfigurations()).thenReturn(fileTransferConfigurationsList);
+        when(quartzJobInfoService.getActiveFileTransferConfigurations(any())).thenReturn(fileTransferConfigurationsList);
         ConsolidationDetails consolidationDetails1 = testConsol;
         consolidationDetails1.setTransportMode(TRANSPORT_MODE_AIR);
         consolidationDetails1.setReceivingBranch(100L);
@@ -5958,13 +5958,13 @@ import java.util.stream.Collectors;
         consolidationDetails.getCarrierDetails().setAtd(carrierDetails.getAtd());
 
         List<V1TenantSettingsResponse.FileTransferConfigurations> fileTransferConfigurationsList = Collections.singletonList(V1TenantSettingsResponse.FileTransferConfigurations.builder().build());
-        when(quartzJobInfoService.getActiveFileTransferConfigurations()).thenReturn(fileTransferConfigurationsList);
+        when(quartzJobInfoService.getActiveFileTransferConfigurations(any())).thenReturn(fileTransferConfigurationsList);
         NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build();
 
         QuartzJobInfo existingJob = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
         when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.of(existingJob));
         when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
-        when(quartzJobInfoService.getQuartzJobTime(any(), any(), any(), any())).thenReturn(null);
+        when(quartzJobInfoService.getQuartzJobTime(any(), any(), any(), any(), any())).thenReturn(null);
         mockShipmentSettings();
 
         consolidationService.triggerAutomaticTransfer(consolidationDetails1, consolidationDetails, false);
@@ -5990,10 +5990,10 @@ import java.util.stream.Collectors;
         QuartzJobInfo existingJob = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
         when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.of(existingJob));
         when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
-        when(quartzJobInfoService.getQuartzJobTime(any(), any(), any(), any())).thenReturn(null);
+        when(quartzJobInfoService.getQuartzJobTime(any(), any(), any(), any(), any())).thenReturn(null);
         mockShipmentSettings();
         List<V1TenantSettingsResponse.FileTransferConfigurations> fileTransferConfigurationsList = Collections.singletonList(V1TenantSettingsResponse.FileTransferConfigurations.builder().build());
-        when(quartzJobInfoService.getActiveFileTransferConfigurations()).thenReturn(fileTransferConfigurationsList);
+        when(quartzJobInfoService.getActiveFileTransferConfigurations(any())).thenReturn(fileTransferConfigurationsList);
         consolidationService.triggerAutomaticTransfer(consolidationDetails1, consolidationDetails, false);
 
         verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
@@ -6012,9 +6012,9 @@ import java.util.stream.Collectors;
         consolidationDetails.setCarrierDetails(null);
 
         mockShipmentSettings();
-        when(quartzJobInfoService.getActiveFileTransferConfigurations()).thenReturn(null);
+        when(quartzJobInfoService.getActiveFileTransferConfigurations(any())).thenReturn(null);
         consolidationService.triggerAutomaticTransfer(consolidationDetails1, consolidationDetails, false);
-        verify(quartzJobInfoService, times(1)).getActiveFileTransferConfigurations();
+        verify(quartzJobInfoService, times(1)).getActiveFileTransferConfigurations(any());
     }
 
 
@@ -6034,10 +6034,10 @@ import java.util.stream.Collectors;
         QuartzJobInfo existingJob = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
         when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.of(existingJob));
         when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
-        when(quartzJobInfoService.getQuartzJobTime(any(), any(), any(), any())).thenReturn(null);
+        when(quartzJobInfoService.getQuartzJobTime(any(), any(), any(), any(), any())).thenReturn(null);
         mockShipmentSettings();
         List<V1TenantSettingsResponse.FileTransferConfigurations> fileTransferConfigurationsList = Collections.singletonList(V1TenantSettingsResponse.FileTransferConfigurations.builder().build());
-        when(quartzJobInfoService.getActiveFileTransferConfigurations()).thenReturn(fileTransferConfigurationsList);
+        when(quartzJobInfoService.getActiveFileTransferConfigurations(any())).thenReturn(fileTransferConfigurationsList);
         consolidationService.triggerAutomaticTransfer(consolidationDetails1, consolidationDetails, false);
 
         verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
@@ -6062,8 +6062,8 @@ import java.util.stream.Collectors;
         when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.of(existingJob));
         when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
         List<V1TenantSettingsResponse.FileTransferConfigurations> fileTransferConfigurationsList = Collections.singletonList(V1TenantSettingsResponse.FileTransferConfigurations.builder().build());
-        when(quartzJobInfoService.getActiveFileTransferConfigurations()).thenReturn(fileTransferConfigurationsList);
-        when(quartzJobInfoService.getQuartzJobTime(any(), any(), any(), any())).thenReturn(null);
+        when(quartzJobInfoService.getActiveFileTransferConfigurations(any())).thenReturn(fileTransferConfigurationsList);
+        when(quartzJobInfoService.getQuartzJobTime(any(), any(), any(), any(), any())).thenReturn(null);
         mockShipmentSettings();
 
         consolidationService.triggerAutomaticTransfer(consolidationDetails1, consolidationDetails, false);
@@ -6100,7 +6100,7 @@ import java.util.stream.Collectors;
         when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
         mockShipmentSettings();
         List<V1TenantSettingsResponse.FileTransferConfigurations> fileTransferConfigurationsList = Collections.singletonList(V1TenantSettingsResponse.FileTransferConfigurations.builder().build());
-        when(quartzJobInfoService.getActiveFileTransferConfigurations()).thenReturn(fileTransferConfigurationsList);
+        when(quartzJobInfoService.getActiveFileTransferConfigurations(any())).thenReturn(fileTransferConfigurationsList);
         consolidationService.triggerAutomaticTransfer(consolidationDetails1, consolidationDetails, false);
 
         verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
@@ -6122,7 +6122,7 @@ import java.util.stream.Collectors;
         consolidationDetails.setSendingAgent(new Parties());
         consolidationDetails.setCarrierDetails(new CarrierDetails());
         List<V1TenantSettingsResponse.FileTransferConfigurations> fileTransferConfigurationsList = Collections.singletonList(V1TenantSettingsResponse.FileTransferConfigurations.builder().build());
-        when(quartzJobInfoService.getActiveFileTransferConfigurations()).thenReturn(fileTransferConfigurationsList);
+        when(quartzJobInfoService.getActiveFileTransferConfigurations(any())).thenReturn(fileTransferConfigurationsList);
         NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build();
 
         QuartzJobInfo existingJob = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
