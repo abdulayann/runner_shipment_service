@@ -4370,7 +4370,7 @@ public class ConsolidationService implements IConsolidationService {
                 return;
             }
 
-            List<V1TenantSettingsResponse.FileTransferConfigurations> fileTransferConfigurations = quartzJobInfoService.getActiveFileTransferConfigurations();
+            List<V1TenantSettingsResponse.FileTransferConfigurations> fileTransferConfigurations = quartzJobInfoService.getActiveFileTransferConfigurations(consolidationDetails.getTransportMode());
             if (ObjectUtils.isEmpty(fileTransferConfigurations)) {
                 return;
             }
@@ -4462,7 +4462,8 @@ public class ConsolidationService implements IConsolidationService {
         CarrierDetails carrierDetails = consolidationDetails.getCarrierDetails();
 
         LocalDateTime jobTime = quartzJobInfoService.getQuartzJobTime(
-                carrierDetails.getEta(), carrierDetails.getEtd(), carrierDetails.getAta(), carrierDetails.getAtd());
+                carrierDetails.getEta(), carrierDetails.getEtd(), carrierDetails.getAta(), carrierDetails.getAtd(),
+                consolidationDetails.getTransportMode());
 
         if(jobTime == null)
             return;

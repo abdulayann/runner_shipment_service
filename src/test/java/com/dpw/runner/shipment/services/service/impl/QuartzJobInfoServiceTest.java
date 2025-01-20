@@ -139,7 +139,7 @@ class QuartzJobInfoServiceTest {
     void testGetQuartzJobTime_NoActiveConfigurations() {
         when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantSettingsResponse);
 
-        LocalDateTime result = quartzJobInfoService.getQuartzJobTime(eta, etd, ata, atd);
+        LocalDateTime result = quartzJobInfoService.getQuartzJobTime(eta, etd, ata, atd, "SEA");
 
         assertNull(result);
         verify(commonUtils).getCurrentTenantSettings();
@@ -150,7 +150,7 @@ class QuartzJobInfoServiceTest {
         tenantSettingsResponse.setFileTransferConfigurations(Collections.emptyList());
         when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantSettingsResponse);
 
-        LocalDateTime result = quartzJobInfoService.getQuartzJobTime(eta, etd, ata, atd);
+        LocalDateTime result = quartzJobInfoService.getQuartzJobTime(eta, etd, ata, atd, "SEA");
 
         assertNull(result);
         verify(commonUtils).getCurrentTenantSettings();
@@ -178,7 +178,7 @@ class QuartzJobInfoServiceTest {
         fileTransferConfigurations.add(config2);
         when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantSettingsResponse);
 
-        LocalDateTime result = quartzJobInfoService.getQuartzJobTime(eta, etd, ata, atd);
+        LocalDateTime result = quartzJobInfoService.getQuartzJobTime(eta, etd, ata, atd, "AIR");
 
         assertNotNull(result);
         assertEquals(eta.minusHours(2), result);
@@ -198,7 +198,7 @@ class QuartzJobInfoServiceTest {
         fileTransferConfigurations.add(config);
         when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantSettingsResponse);
 
-        LocalDateTime result = quartzJobInfoService.getQuartzJobTime(eta, etd, null, atd);
+        LocalDateTime result = quartzJobInfoService.getQuartzJobTime(eta, etd, null, atd, "AIR");
 
         assertNull(result);
         verify(commonUtils).getCurrentTenantSettings();
@@ -226,7 +226,7 @@ class QuartzJobInfoServiceTest {
         fileTransferConfigurations.add(config2);
         when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantSettingsResponse);
 
-        LocalDateTime result = quartzJobInfoService.getQuartzJobTime(eta, etd, ata, atd);
+        LocalDateTime result = quartzJobInfoService.getQuartzJobTime(eta, etd, ata, atd, "AIR");
 
         assertNotNull(result);
         assertEquals(eta.minusHours(1), result);
@@ -255,7 +255,7 @@ class QuartzJobInfoServiceTest {
         fileTransferConfigurations.add(config2);
         when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantSettingsResponse);
 
-        LocalDateTime result = quartzJobInfoService.getQuartzJobTime(eta, etd, ata, atd);
+        LocalDateTime result = quartzJobInfoService.getQuartzJobTime(eta, etd, ata, atd, "AIR");
 
         assertNotNull(result);
         assertEquals(eta.minusHours(1), result);
@@ -275,10 +275,9 @@ class QuartzJobInfoServiceTest {
         fileTransferConfigurations.add(config);
         when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantSettingsResponse);
 
-        LocalDateTime result = quartzJobInfoService.getQuartzJobTime(eta, etd, ata, atd);
+        LocalDateTime result = quartzJobInfoService.getQuartzJobTime(eta, etd, ata, atd, "AIR");
 
-        assertNotNull(result);
-        assertEquals(eta.minusHours(3), result);
+        assertNull(result);
         verify(commonUtils).getCurrentTenantSettings();
     }
 

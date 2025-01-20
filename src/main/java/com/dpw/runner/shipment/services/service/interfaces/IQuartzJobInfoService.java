@@ -11,8 +11,8 @@ public interface IQuartzJobInfoService {
     QuartzJobResponse createSimpleJob(QuartzJobInfo jobInfo);
     QuartzJobResponse updateSimpleJob(QuartzJobInfo jobInfo);
     QuartzJobResponse deleteJobById(Long jobId);
-    LocalDateTime getQuartzJobTime(LocalDateTime eta, LocalDateTime etd, LocalDateTime ata, LocalDateTime atd);
-    List<V1TenantSettingsResponse.FileTransferConfigurations> getActiveFileTransferConfigurations();
+    LocalDateTime getQuartzJobTime(LocalDateTime eta, LocalDateTime etd, LocalDateTime ata, LocalDateTime atd, String transportMode);
+    List<V1TenantSettingsResponse.FileTransferConfigurations> getActiveFileTransferConfigurations(String transportMode);
     boolean isJobWithNamePresent(String jobName);
 
 }

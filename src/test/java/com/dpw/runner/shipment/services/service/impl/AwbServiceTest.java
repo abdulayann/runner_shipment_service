@@ -262,7 +262,6 @@ class AwbServiceTest extends CommonMocks {
         addDataForAutomaticTransfer(shipmentDetails);
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         doNothing().when(shipmentService).triggerAutomaticTransfer(any(), any(), anyBoolean());
-        doNothing().when(consolidationService).triggerAutomaticTransfer(any(), any(), anyBoolean());
 
         ResponseEntity<IRunnerResponse> httpResponse = awbService.createAwb(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
@@ -398,6 +397,76 @@ class AwbServiceTest extends CommonMocks {
         shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
         shipmentDetails.setMasterBill("098-2343234");
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().transportMode(Constants.TRANSPORT_MODE_SEA).build();
+        shipmentDetails.setConsolidationList(Collections.singletonList(consolidationDetails));
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+
+        ResponseEntity<IRunnerResponse> httpResponse = awbService.createAwb(commonRequestModel);
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+    }
+
+    @Test
+    void createAwb_success4() throws RunnerException {
+        CreateAwbRequest awbRequest = CreateAwbRequest.builder().ShipmentId(1L).AwbType("DMAWB").build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(awbRequest);
+
+        testShipment.setHouseBill("custom-house-bill");
+        testShipment.setSecurityStatus(Constants.SHR);
+        addShipmentDataForAwbGeneration(testShipment);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAutomaticTransferEnabled(true);
+
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(testShipment));
+        when(awbDao.save(any())).thenReturn(testDmawb);
+
+        // UnLocation response mocking
+        when(v1Service.fetchUnlocation(any())).thenReturn(new V1DataResponse());
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferUnLocations.class))).thenReturn(List.of(
+                EntityTransferUnLocations.builder().LocationsReferenceGUID("8F39C4F8-158E-4A10-A9B6-4E8FDF52C3BA").Name("Chennai (ex Madras)").build(),
+                EntityTransferUnLocations.builder().LocationsReferenceGUID("428A59C1-1B6C-4764-9834-4CC81912DAC0").Name("John F. Kennedy Apt/New York, NY").build()
+        ));
+
+        // TenantModel Response mocking
+        TenantModel mockTenantModel = new TenantModel();
+        mockTenantModel.DefaultOrgId = 1L;
+        mockTenantModel.setDefaultAddressId(2L);
+        when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
+        when(jsonHelper.convertValue(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
+
+        V1DataResponse mockV1DataResponse = V1DataResponse.builder().entities("").build();
+        when(v1Service.fetchOrganization(any())).thenReturn(mockV1DataResponse);
+        List<EntityTransferOrganizations> mockOrgList = List.of(EntityTransferOrganizations.builder().build());
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferOrganizations.class))).thenReturn(mockOrgList);
+        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
+
+        // OtherInfo Master data mocking
+        when(jsonHelper.convertValue(any(), eq(LocalDateTime.class))).thenReturn(
+                objectMapper.convertValue(DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_T_HH_MM_SS).format(LocalDateTime.now()), LocalDateTime.class)
+        );
+        when(v1Service.fetchMasterData(any())).thenReturn(new V1DataResponse());
+
+        when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(
+                objectMapper.convertValue(testDmawb, AwbResponse.class)
+        );
+
+        V1DataResponse v1Response = V1DataResponse.builder().entities("").build();
+        when(v1Service.getCompaniesDetails(any())).thenReturn(v1Response);
+        CompanyDto companyDto = CompanyDto.builder().country("IND").city("test").zipPostCode("test").address1("test").address2("test").state("test").build();
+        List<CompanyDto> companyDtos = new ArrayList<>(List.of(companyDto));
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferMasterLists.class))).thenReturn(null);
+        when(jsonHelper.convertValueToList(any(), eq(CompanyDto.class))).thenReturn(companyDtos);
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferAddress.class))).thenReturn(List.of(EntityTransferAddress.builder().TaxRegNumber("23454").OrgId(1L).build()));
+        when(v1Service.fetchOrganization(any())).thenReturn(mockV1DataResponse);
+        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
+        List<AddressDataV1> addressDataV1List = List.of(AddressDataV1.builder().build());
+        when(jsonHelper.convertValueToList(any(), eq(AddressDataV1.class))).thenReturn(addressDataV1List);
+
+        mockShipmentSettings();
+        mockTenantSettings();
+
+        ShipmentDetails shipmentDetails = testShipment;
+        shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
+        shipmentDetails.setMasterBill("098-2343234");
+        shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_STD);
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().transportMode(Constants.TRANSPORT_MODE_AIR).build();
         shipmentDetails.setConsolidationList(Collections.singletonList(consolidationDetails));
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
 

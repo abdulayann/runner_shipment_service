@@ -221,7 +221,7 @@ public class AwbService implements IAwbService {
                     for(ConsolidationDetails consolidationDetails: shipmentDetails.getConsolidationList()){
                         if (consolidationDetails!=null &&
                                 (Objects.equals(Constants.TRANSPORT_MODE_AIR, consolidationDetails.getTransportMode()) &&
-                                        Objects.equals(Constants.SHIPMENT_TYPE_STD, consolidationDetails.getConsolidationType())))
+                                        Objects.equals(Constants.SHIPMENT_TYPE_STD, shipmentDetails.getJobType())))
                             consolidationService.triggerAutomaticTransfer(consolidationDetails, null, true);
                     }
                 }

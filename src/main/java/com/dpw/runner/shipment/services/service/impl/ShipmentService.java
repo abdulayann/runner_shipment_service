@@ -2620,7 +2620,7 @@ public class ShipmentService implements IShipmentService {
                 if (isInvalidNetworkTransfer(shipmentDetails))
                     return;
 
-                List<V1TenantSettingsResponse.FileTransferConfigurations> fileTransferConfigurations = quartzJobInfoService.getActiveFileTransferConfigurations();
+                List<V1TenantSettingsResponse.FileTransferConfigurations> fileTransferConfigurations = quartzJobInfoService.getActiveFileTransferConfigurations(shipmentDetails.getTransportMode());
                 if (ObjectUtils.isEmpty(fileTransferConfigurations)) {
                     return;
                 }
@@ -2709,8 +2709,8 @@ public class ShipmentService implements IShipmentService {
         CarrierDetails carrierDetails = shipmentDetails.getCarrierDetails();
 
         LocalDateTime jobTime = quartzJobInfoService.getQuartzJobTime(
-                carrierDetails.getEta(), carrierDetails.getEtd(),
-                carrierDetails.getAta(), carrierDetails.getAtd());
+                carrierDetails.getEta(), carrierDetails.getEtd(), carrierDetails.getAta(), carrierDetails.getAtd(),
+                shipmentDetails.getTransportMode());
 
         if(jobTime == null)
             return;

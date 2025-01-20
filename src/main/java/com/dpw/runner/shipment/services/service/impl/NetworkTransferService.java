@@ -159,7 +159,7 @@ public class NetworkTransferService implements INetworkTransferService {
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
             Set<MasterListRequest> listRequests = new HashSet<>();
 
-            networkTransferListResponses.forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, NetworkTransfer.class, fieldNameKeyMap, NetworkTransfer.class.getSimpleName(), cacheMap)));
+            networkTransferListResponses.forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, NetworkTransfer.class, fieldNameKeyMap, NetworkTransfer.class.getSimpleName()+r.getId(), cacheMap)));
 
             MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
             masterListRequestV2.setMasterListRequests(listRequests.stream().toList());
@@ -170,7 +170,7 @@ public class NetworkTransferService implements INetworkTransferService {
             commonUtils.createMasterDataKeysList(listRequests, keys);
             masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST, keys, new EntityTransferMasterLists(), cacheMap);
 
-            networkTransferListResponses.forEach(r -> r.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(NetworkTransfer.class.getSimpleName()), CacheConstants.MASTER_LIST, cacheMap)));
+            networkTransferListResponses.forEach(r -> r.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(NetworkTransfer.class.getSimpleName()+r.getId()), CacheConstants.MASTER_LIST, cacheMap)));
 
             CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
         } catch (Exception ex) {
