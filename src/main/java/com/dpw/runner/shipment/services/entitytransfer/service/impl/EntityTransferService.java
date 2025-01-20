@@ -2419,10 +2419,8 @@ public class EntityTransferService implements IEntityTransferService {
             if (!CommonUtils.listIsNullOrEmpty(shipmentIds)) {
                 shipments = shipmentDao.findShipmentsByIds(new HashSet<>(shipmentIds));
                 shipmentDao.entityDetach(shipments);
-                //todo: remove this redundant db call
                 shipments = shipmentDao.findShipmentsByIds(new HashSet<>(shipmentIds));
             }
-            //todo: remove this redundant db call
             consolidation = consolidationDetailsDao.findById(id).orElse(new ConsolidationDetails());
             Set<Long> containerIds = new HashSet<>();
             for(ShipmentDetails shipment : shipments) {
