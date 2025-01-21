@@ -3839,8 +3839,8 @@ public class ShipmentService implements IShipmentService {
             checkWayBillNumberCriteria(request);
             log.info(ShipmentConstants.SHIPMENT_LIST_CRITERIA_PREPARING, LoggerHelper.getRequestIdFromMDC());
             Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class, tableNames);
-//            Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
-            Page<ShipmentDetails> shipmentDetailsPage = this.findAllWithOutIncludeColumn(tuple.getLeft(), tuple.getRight());
+           Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
+          //  Page<ShipmentDetails> shipmentDetailsPage = this.findAllWithOutIncludeColumn(tuple.getLeft(), tuple.getRight());
 
             log.info(ShipmentConstants.SHIPMENT_LIST_RESPONSE_SUCCESS, LoggerHelper.getRequestIdFromMDC());
             if(!Boolean.TRUE.equals(request.getNotificationFlag())) {
