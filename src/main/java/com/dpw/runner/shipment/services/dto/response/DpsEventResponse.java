@@ -8,14 +8,13 @@ import com.dpw.runner.shipment.services.entity.enums.DpsWorkflowState;
 import com.dpw.runner.shipment.services.entity.enums.DpsWorkflowType;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
 
 @Builder
 @NoArgsConstructor
@@ -47,6 +46,7 @@ public class DpsEventResponse implements IRunnerResponse {
     private String transactionId;
     private List<String> usernameList;
     private transient List<Object> tasks;
+    private List<DpsApprovalDetailResponse> dpsApprovalDetailList;
 
     @Data
     @NoArgsConstructor
@@ -55,4 +55,20 @@ public class DpsEventResponse implements IRunnerResponse {
         private String key;
         private String value;
     }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    public static class DpsApprovalDetailResponse {
+        private String username;
+        @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+        private LocalDateTime actionTime;
+        private String message;
+        private String state;
+        private String approvalLevel;
+        private String roleName;
+        private String roleId;
+    }
+
 }
