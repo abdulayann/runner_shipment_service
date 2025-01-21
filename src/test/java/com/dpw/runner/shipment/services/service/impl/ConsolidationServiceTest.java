@@ -1979,7 +1979,7 @@ import java.util.stream.Collectors;
         when(shipmentDao.findShipmentsByIds(shipmentIds.stream().collect(Collectors.toSet()))).thenReturn(List.of(shipmentDetails));
         when(containerDao.saveAll(anyList())).thenReturn(shipmentDetails.getContainersList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
-        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.detachShipments(1L, shipmentIds);
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.detachShipments(1L, shipmentIds, null);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
@@ -2016,7 +2016,7 @@ import java.util.stream.Collectors;
         when(shipmentDao.findShipmentsByIds(shipmentIds.stream().collect(Collectors.toSet()))).thenReturn(List.of(shipmentDetails));
         when(containerDao.saveAll(anyList())).thenReturn(shipmentDetails.getContainersList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
-        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.detachShipments(1L, shipmentIds);
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.detachShipments(1L, shipmentIds, null);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
@@ -2054,7 +2054,7 @@ import java.util.stream.Collectors;
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails));
         when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails.getPackingList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
-        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.detachShipments(1L, shipmentIds);
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.detachShipments(1L, shipmentIds, null);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
@@ -2096,7 +2096,7 @@ import java.util.stream.Collectors;
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
         mockShipmentSettings();
-        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.detachShipments(1L, shipmentIds);
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.detachShipments(1L, shipmentIds, null);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
@@ -2145,7 +2145,7 @@ import java.util.stream.Collectors;
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
         mockShipmentSettings();
-        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.detachShipments(1L, shipmentIds);
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.detachShipments(1L, shipmentIds, null);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
@@ -2187,7 +2187,7 @@ import java.util.stream.Collectors;
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(false);
         mockShipmentSettings();
-        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.detachShipments(1L, shipmentIds);
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.detachShipments(1L, shipmentIds, null);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
@@ -2272,7 +2272,7 @@ import java.util.stream.Collectors;
         when(packingsADSync.sync(anyList(), any())).thenThrow(new RuntimeException("Test"));
         when(consolidationSync.sync(any(), any(), anyBoolean())).thenThrow(new RunnerException("Test"));
 
-        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.detachShipments(1L, shipmentIds);
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.detachShipments(1L, shipmentIds, null);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
@@ -4175,10 +4175,9 @@ import java.util.stream.Collectors;
         tenantProducts.setId(1L);
         ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
         shipmentSettingsDetails.setConsolidationLite(false);
-        shipmentSettingsDetails.setCustomisedSequence(true);
         var spyService = Mockito.spy(consolidationService);
-        when(shipmentSettingsDao.list()).thenReturn(List.of(shipmentSettingsDetails));
-        when(productEngine.populateEnabledTenantProducts(shipmentSettingsDetails)).thenReturn(List.of(tenantProducts));
+        when(shipmentSettingsDao.getCustomisedSequence()).thenReturn(true);
+        when(productEngine.populateEnabledTenantProducts()).thenReturn(List.of(tenantProducts));
         when(productEngine.GetCommonSequenceNumber(consolidationDetails.getTransportMode(), ProductProcessTypes.Consol_Shipment_TI)).thenReturn("CONS007262");
         when(productEngine.IdentifyProduct(any(ConsolidationDetails.class), any())).thenReturn(tenantProducts);
         when(getNextNumberHelper.getProductSequence(anyLong(), any())).thenReturn(new ProductSequenceConfig());
@@ -4200,10 +4199,9 @@ import java.util.stream.Collectors;
         tenantProducts.setId(1L);
         ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
         shipmentSettingsDetails.setConsolidationLite(false);
-        shipmentSettingsDetails.setCustomisedSequence(true);
         var spyService = Mockito.spy(consolidationService);
-        when(shipmentSettingsDao.list()).thenReturn(List.of(shipmentSettingsDetails));
-        when(productEngine.populateEnabledTenantProducts(shipmentSettingsDetails)).thenReturn(List.of(tenantProducts));
+        when(shipmentSettingsDao.getCustomisedSequence()).thenReturn(true);
+        when(productEngine.populateEnabledTenantProducts()).thenReturn(List.of(tenantProducts));
         when(productEngine.GetCommonSequenceNumber(consolidationDetails.getTransportMode(), ProductProcessTypes.Consol_Shipment_TI)).thenReturn("");
         when(productEngine.IdentifyProduct(any(ConsolidationDetails.class), any())).thenReturn(tenantProducts);
         when(getNextNumberHelper.getProductSequence(anyLong(), any())).thenReturn(new ProductSequenceConfig());
@@ -4227,10 +4225,9 @@ import java.util.stream.Collectors;
         tenantProducts.setId(1L);
         ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
         shipmentSettingsDetails.setConsolidationLite(false);
-        shipmentSettingsDetails.setCustomisedSequence(false);
         var spyService = Mockito.spy(consolidationService);
-        when(shipmentSettingsDao.list()).thenReturn(List.of(shipmentSettingsDetails));
-        when(productEngine.populateEnabledTenantProducts(shipmentSettingsDetails)).thenReturn(List.of(tenantProducts));
+        when(shipmentSettingsDao.getCustomisedSequence()).thenReturn(false);
+        when(productEngine.populateEnabledTenantProducts()).thenReturn(List.of(tenantProducts));
         when(productEngine.IdentifyProduct(any(ConsolidationDetails.class), any())).thenReturn(tenantProducts);
         when(getNextNumberHelper.getProductSequence(anyLong(), any())).thenReturn(new ProductSequenceConfig());
         when(getNextNumberHelper.generateCustomSequence(any(), anyString(), anyInt(), anyBoolean(), any(), anyBoolean())).thenReturn("");
@@ -4253,9 +4250,8 @@ import java.util.stream.Collectors;
         tenantProducts.setId(1L);
         ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
         shipmentSettingsDetails.setConsolidationLite(true);
-        shipmentSettingsDetails.setCustomisedSequence(false);
+        when(shipmentSettingsDao.getCustomisedSequence()).thenReturn(false);
         var spyService = Mockito.spy(consolidationService);
-        when(shipmentSettingsDao.list()).thenReturn(List.of(shipmentSettingsDetails));
         when(v1Service.getMaxConsolidationId()).thenReturn("123311");
         mockShipmentSettings();
         spyService.generateConsolidationNumber(consolidationDetails);
@@ -5477,7 +5473,7 @@ import java.util.stream.Collectors;
         when(shipmentDao.findShipmentsByIds(shipmentIds.stream().collect(Collectors.toSet()))).thenReturn(List.of(shipmentDetails));
         when(containerDao.saveAll(anyList())).thenReturn(shipmentDetails.getContainersList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
-        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.detachShipments(1L, shipmentIds);
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.detachShipments(1L, shipmentIds, null);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
@@ -5520,7 +5516,7 @@ import java.util.stream.Collectors;
         when(shipmentDao.findShipmentsByIds(shipmentIds.stream().collect(Collectors.toSet()))).thenReturn(List.of(shipmentDetails));
         when(containerDao.saveAll(anyList())).thenReturn(shipmentDetails.getContainersList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
-        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.detachShipments(1L, shipmentIds);
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.detachShipments(1L, shipmentIds, null);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 

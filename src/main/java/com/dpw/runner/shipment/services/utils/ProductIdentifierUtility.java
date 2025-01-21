@@ -49,13 +49,12 @@ public class ProductIdentifierUtility {
   /**
    * Alternative for v1 constructor call with TenantSettings as a parameter
    *
-   * @param shipmentSettingsDetails (tenant settings)
    */
-  public List<TenantProducts> populateEnabledTenantProducts(ShipmentSettingsDetails shipmentSettingsDetails) {
-     return mapTenantProducts(shipmentSettingsDetails);
+  public List<TenantProducts> populateEnabledTenantProducts() {
+     return mapTenantProducts();
   }
 
-  private List<TenantProducts> mapTenantProducts(ShipmentSettingsDetails tenantSettings) {
+  private List<TenantProducts> mapTenantProducts() {
     var tenantProducts = new ArrayList<TenantProducts>();
     var findProduct = fetchRegisteredProduct();
     for (var p : findProduct) {
@@ -646,8 +645,8 @@ public class ProductIdentifierUtility {
     }
   }
 
-  public String getCustomizedBLNumber(ShipmentDetails shipmentDetails, ShipmentSettingsDetails tenantSettings) throws RunnerException {
-    List<TenantProducts> enabledTenantProducts = this.populateEnabledTenantProducts(tenantSettings);
+  public String getCustomizedBLNumber(ShipmentDetails shipmentDetails) throws RunnerException {
+    List<TenantProducts> enabledTenantProducts = this.populateEnabledTenantProducts();
 
     TenantProducts identifiedProduct = this.IdentifyProduct(shipmentDetails, enabledTenantProducts);
     if (identifiedProduct == null){
