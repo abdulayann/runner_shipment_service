@@ -5143,7 +5143,7 @@ public class ConsolidationService implements IConsolidationService {
             } catch (Exception e){
                 log.error("Failed in fetching tenant data from V1 with error : {}", e);
             }
-            this.createConsolidationPayload(null, response);
+            this.createConsolidationPayload(new ConsolidationDetails(), response);
 
             return ResponseHelper.buildSuccessResponse(response);
         } catch(Exception e) {
