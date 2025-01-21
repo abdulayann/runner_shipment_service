@@ -2239,7 +2239,7 @@ class EntityTransferServiceTest extends CommonMocks {
 
         Map<String, List<Integer>> shipmentGuidSendToBranch = new HashMap<>();
         shipmentGuidSendToBranch.put("1", List.of(1,2,3));
-        entityTransferService.sendConsolidationEmailNotification(consolidationDetails, destinationBranches, shipmentGuidSendToBranch, true);
+        entityTransferService.sendConsolidationEmailNotification(consolidationDetails, destinationBranches, shipmentGuidSendToBranch);
 
         verify(v1ServiceUtil, times(1)).getTenantDetails(anyList());
 
@@ -2260,7 +2260,7 @@ class EntityTransferServiceTest extends CommonMocks {
         when(consolidationDetails.getBol()).thenReturn("bol");
 
         Map<String, List<Integer>> shipmentGuidSendToBranch = null;
-        entityTransferService.sendConsolidationEmailNotification(consolidationDetails, destinationBranches, shipmentGuidSendToBranch, true);
+        entityTransferService.sendConsolidationEmailNotification(consolidationDetails, destinationBranches, shipmentGuidSendToBranch);
 
         verify(v1ServiceUtil, times(1)).getTenantDetails(anyList());
 
@@ -2285,7 +2285,7 @@ class EntityTransferServiceTest extends CommonMocks {
         when(shipmentSettingsDao.getSettingsByTenantIds(destinationBranches)).thenReturn(List.of(shipmentSettingsDetails));
         when(shipmentSettingsDetails.getShipmentConsoleImportApproverRole()).thenReturn("123");
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
-        entityTransferService.sendShipmentEmailNotification(shipmentDetails, destinationBranches, true);
+        entityTransferService.sendShipmentEmailNotification(shipmentDetails, destinationBranches);
 
         verify(shipmentSettingsDao, times(1)).getSettingsByTenantIds(anyList());
 
@@ -2307,7 +2307,7 @@ class EntityTransferServiceTest extends CommonMocks {
         when(shipmentDetails.getMasterBill()).thenReturn("mbn");
         when(shipmentSettingsDao.getSettingsByTenantIds(destinationBranches)).thenReturn(List.of(shipmentSettingsDetails));
         when(shipmentSettingsDetails.getShipmentConsoleImportApproverRole()).thenReturn("123");
-        entityTransferService.sendShipmentEmailNotification(shipmentDetails, destinationBranches, true);
+        entityTransferService.sendShipmentEmailNotification(shipmentDetails, destinationBranches);
 
         verify(shipmentSettingsDao, times(1)).getSettingsByTenantIds(anyList());
 

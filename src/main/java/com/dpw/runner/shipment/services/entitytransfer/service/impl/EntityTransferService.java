@@ -319,11 +319,12 @@ public class EntityTransferService implements IEntityTransferService {
         if(Objects.equals(shipment.getTransportMode(), Constants.TRANSPORT_MODE_SEA) && Objects.equals(shipment.getDirection(), Constants.DIRECTION_EXP))
             shipmentDao.saveEntityTransfer(shipId, Boolean.TRUE);
 
-        Boolean isAutomaticTransfer = sendShipmentRequest.getIsAutomaticTransfer();
-        try {
-            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> sendShipmentEmailNotification(shipment, uniqueDestinationTenants.stream().toList(), isAutomaticTransfer)), executorService);
-        } catch (Exception ex) {
-            log.error(String.format(ErrorConstants.ERROR_WHILE_EMAIL, ex.getMessage()));
+        if(!Boolean.TRUE.equals(sendShipmentRequest.getIsAutomaticTransfer())) {
+            try {
+                CompletableFuture.runAsync(masterDataUtils.withMdc(() -> sendShipmentEmailNotification(shipment, uniqueDestinationTenants.stream().toList())), executorService);
+            } catch (Exception ex) {
+                log.error(String.format(ErrorConstants.ERROR_WHILE_EMAIL, ex.getMessage()));
+            }
         }
 
         SendShipmentResponse sendShipmentResponse = SendShipmentResponse.builder().successTenantIds(successTenantIds)
@@ -453,11 +454,12 @@ public class EntityTransferService implements IEntityTransferService {
                 shipmentDao.saveEntityTransfer(shipment.getId(), Boolean.TRUE);
         }
 
-        Boolean isAutomaticTransfer = sendConsolidationRequest.getIsAutomaticTransfer();
-        try {
-            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> sendConsolidationEmailNotification(consol, sendToBranch, shipmentGuidSendToBranch, isAutomaticTransfer)), executorService);
-        } catch (Exception ex) {
-            log.error(String.format(ErrorConstants.ERROR_WHILE_EMAIL, ex.getMessage()));
+        if(!Boolean.TRUE.equals(sendConsolidationRequest.getIsAutomaticTransfer())) {
+            try {
+                CompletableFuture.runAsync(masterDataUtils.withMdc(() -> sendConsolidationEmailNotification(consol, sendToBranch, shipmentGuidSendToBranch)), executorService);
+            } catch (Exception ex) {
+                log.error(String.format(ErrorConstants.ERROR_WHILE_EMAIL, ex.getMessage()));
+            }
         }
 
         SendConsolidationResponse sendConsolidationResponse = SendConsolidationResponse.builder().successTenantIds(successTenantIds)
@@ -2119,7 +2121,7 @@ public class EntityTransferService implements IEntityTransferService {
         tasksService.createTask(CommonRequestModel.buildRequest(taskCreateRequest));
     }
 
-    public void sendConsolidationEmailNotification(ConsolidationDetails consolidationDetails, List<Integer> destinationBranches, Map<String, List<Integer>> shipmentGuidSendToBranch, Boolean isAutomaticTransfer) {
+    public void sendConsolidationEmailNotification(ConsolidationDetails consolidationDetails, List<Integer> destinationBranches, Map<String, List<Integer>> shipmentGuidSendToBranch) {
 
         var emailTemplatesRequests = getEmailTemplates(CONSOLIDATION_IMPORT_EMAIL_TYPE);
         var emailTemplateModel = emailTemplatesRequests.stream().findFirst().orElse(new EmailTemplatesRequest());
@@ -2128,7 +2130,7 @@ public class EntityTransferService implements IEntityTransferService {
         List<String> ccEmails = new ArrayList<>();
         // Current user (the sender) in CC for NTE
         UsersDto user = UserContext.getUser();
-        if(user.Email!=null && !Boolean.TRUE.equals(isAutomaticTransfer))
+        if(user.Email!=null)
             ccEmails.add(user.Email);
         // Fetching role ids corresponding to console destination branches
         var shipDestinationBranchIds = new ArrayList<>(destinationBranches);
@@ -2146,7 +2148,7 @@ public class EntityTransferService implements IEntityTransferService {
         }
     }
 
-    public void sendShipmentEmailNotification(ShipmentDetails shipmentDetails, List<Integer> destinationBranches, Boolean isAutomaticTransfer) {
+    public void sendShipmentEmailNotification(ShipmentDetails shipmentDetails, List<Integer> destinationBranches) {
         var emailTemplatesRequests = getEmailTemplates(SHIPMENT_IMPORT_EMAIL_TYPE);
         var emailTemplateModel = emailTemplatesRequests.stream().findFirst().orElse(new EmailTemplatesRequest());
         createShipmentImportEmailBody(shipmentDetails, emailTemplateModel);
@@ -2155,7 +2157,7 @@ public class EntityTransferService implements IEntityTransferService {
         List<String> ccEmails = new ArrayList<>();
         // Current user (the sender) in CC for NTE
         UsersDto user = UserContext.getUser();
-        if(user.Email!=null && !Boolean.TRUE.equals(isAutomaticTransfer))
+        if(user.Email!=null)
             ccEmails.add(user.Email);
 
         // Fetching role ids corresponding to shipment destination branches
