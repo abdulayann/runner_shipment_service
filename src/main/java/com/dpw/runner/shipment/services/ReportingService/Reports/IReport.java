@@ -2896,6 +2896,10 @@ public abstract class IReport {
             dict.put(IsDG, false);
             dict.put(PACKS_MARKS_NUMBERS, pack.getMarksnNums());
             dict.put(PACKS_GOODS_DESCRIPTION, pack.getGoodsDescription());
+            if(Objects.isNull(pack.getGoodsDescription())) {
+                dict.put(PACKS_GOODS_DESCRIPTION, "");
+                dict.put(DESCRIPTION, "");
+            }
             if(pack.getHazardous() != null && pack.getHazardous().equals(true)){
                 var dgSubstanceRow = masterDataUtils.fetchDgSubstanceRow(pack.getDGSubstanceId());
                 dict.put(DG_SUBSTANCE, dgSubstanceRow.ProperShippingName);
