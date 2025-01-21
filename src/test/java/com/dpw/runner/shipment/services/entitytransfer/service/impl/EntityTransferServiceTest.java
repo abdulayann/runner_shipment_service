@@ -1703,6 +1703,7 @@ class EntityTransferServiceTest extends CommonMocks {
                 .entityData(entityTransferShipmentDetails)
                 .taskId(1L)
                 .isFromNte(true)
+                .assignedTo("EGYPQAP100ALEX@dpworld.com")
                 .build();
 
         ShipmentDetailsResponse shipmentDetailsResponse = new ShipmentDetailsResponse();
@@ -1953,10 +1954,13 @@ class EntityTransferServiceTest extends CommonMocks {
     void testImportConsolidation_Success_Create_Air_interBranch_NTE() throws RunnerException {
         UserContext.getUser().setTenantId(728);
         EntityTransferConsolidationDetails entityTransferConsolidationDetails = jsonTestUtility.getImportConsolidationAir();
+        Map<String, String> shipmentNumberAssignedToMap = new HashMap<>();
+        shipmentNumberAssignedToMap.put("TQAA24080071", "EGYPQAP100ALEX@dpworld.com");
         ImportConsolidationRequest importConsolidationRequest = ImportConsolidationRequest.builder()
                 .isFromNte(true)
                 .taskId(2L)
                 .entityData(entityTransferConsolidationDetails)
+                .shipmentNumberAssignedToMap(shipmentNumberAssignedToMap)
                 .build();
         EntityTransferShipmentDetails entityTransferShipmentDetails = entityTransferConsolidationDetails.getShipmentsList().get(0);
         entityTransferShipmentDetails.setSendToBranch(720);
@@ -2089,11 +2093,15 @@ class EntityTransferServiceTest extends CommonMocks {
         shipmentDetails1.setTriangulationPartnerList(List.of(TriangulationPartner.builder().triangulationPartner(728L).build()));
         consolidationDetails2.setShipmentsList(List.of(shipmentDetails1));
 
+        Map<String, String> shipmentNumberAssignedToMap = new HashMap<>();
+        shipmentNumberAssignedToMap.put("TQAA24080078", "EGYPQAP100ALEX@dpworld.com");
+
         ImportConsolidationRequest importConsolidationRequest = ImportConsolidationRequest.builder()
                 .operation(TaskStatus.APPROVED.getDescription())
                 .taskId(2L)
                 .entityData(entityTransferConsolidationDetails)
                 .isFromNte(true)
+                .shipmentNumberAssignedToMap(shipmentNumberAssignedToMap)
                 .build();
         EntityTransferShipmentDetails entityTransferShipmentDetails = entityTransferConsolidationDetails.getShipmentsList().get(0);
         entityTransferShipmentDetails.setSendToBranch(720);
