@@ -224,7 +224,7 @@ public class AWBLabelReport extends IReport{
                 dictionary.put(CARRIER, shippingLine);
             }
             var unit = awbLabelModel.getShipment().getPackingList() == null || awbLabelModel.getShipment().getPackingList().isEmpty() ? "" : awbLabelModel.getShipment().getPackingList().get(0).getChargeableUnit();
-            var value = addCommasWithPrecision(getChargeable(awbLabelModel.getShipment().getPackingList()) , 2);
+            var value = addCommasWithPrecision(getChargeable(awbLabelModel.getShipment().getPackingList()) , 2, false);
             dictionary.put(ReportConstants.TOTAL_WEIGHT_AND_UNIT, value + " " + awbLabelModel.getShipment().getChargeableUnit());
             //TODO
             try {
@@ -374,7 +374,7 @@ public class AWBLabelReport extends IReport{
             }
             dictionary.put(ReportConstants.TOTAL_CONSOL_PACKS, totalPacks);
             var packingModelList = awbLabelModel.getConsolidation().getPackingList().stream().filter(c -> c.getWeight() != null && c.getWeightUnit() != null).toList();
-            var value = addCommasWithPrecision(BigDecimal.valueOf(packingModelList.stream().mapToDouble(c -> c.getWeight().doubleValue()).sum()) , 2);
+            var value = addCommasWithPrecision(BigDecimal.valueOf(packingModelList.stream().mapToDouble(c -> c.getWeight().doubleValue()).sum()) , 2, false);
             dictionary.put(CONSOL_TOTAL_WEIGHT_AND_UNIT,  value + " " + (!packingModelList.isEmpty() ? packingModelList.get(0).getWeightUnit() : null));
         }
         if (awbLabelModel.shipment != null && awbLabelModel.shipment.getPackingList() != null) {

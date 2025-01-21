@@ -47,7 +47,7 @@ public class AmountNumberFormatter {
 
     public static String displayFormat(BigDecimal amount, int numberDecimalDigits, V1TenantSettingsResponse tenantSettings) {
         if (amount != null) {
-            return DisplayFormat(amount, numberDecimalDigits, tenantSettings);
+            return DisplayFormat(amount, numberDecimalDigits, tenantSettings, false);
         }
         return null;
     }
