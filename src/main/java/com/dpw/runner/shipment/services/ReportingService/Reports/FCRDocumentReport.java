@@ -14,6 +14,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -33,11 +34,18 @@ public class FCRDocumentReport extends IReport{
     public void setPackIds(List<Long> packIds1) {
         this.packIds = packIds1;
     }
+    public void setPlaceOfIssue(String placeOfIssue) {
+        this.placeOfIssue = placeOfIssue;
+    }
+    public void setIssueDate(LocalDateTime issueDate) {
+        this.issueDate = issueDate;
+    }
 
     private PartiesRequest fcrShipper;
 
     private List<Long> packIds;
-
+    private String placeOfIssue;
+    private LocalDateTime issueDate;
     @Override
     public Map<String, Object> getData(Long id) throws RunnerException {
         FCRDocumentModel fcrDocumentModel = (FCRDocumentModel) getDocumentModel(id);
@@ -77,6 +85,8 @@ public class FCRDocumentReport extends IReport{
             dictionary.put(PLACE_OF_ISSUE, map.get(fcrDocumentModel.getShipmentModel().getAdditionalDetails().getPlaceOfIssue()).Name);
         }
         dictionary.put(SHIPMENT_DETAIL_DATE_OF_ISSUE, ConvertToDPWDateFormat(fcrDocumentModel.getShipmentModel().getAdditionalDetails().getDateOfIssue()));
+        dictionary.put(FCR_PLACE_OF_ISSUE, this.placeOfIssue);
+        dictionary.put(FCR_DATE_OF_ISSUE, ConvertToDPWDateFormat(this.issueDate));
         return convertValuesToUpperCase(dictionary);
     }
 

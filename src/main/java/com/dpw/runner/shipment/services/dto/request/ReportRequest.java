@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Getter
@@ -41,4 +42,6 @@ public class ReportRequest implements IRunnerRequest {
     boolean combiLabel;
     PartiesRequest fcrShipper;
     List<Long> packIds;
+    String placeOfIssue;
+    LocalDateTime dateOfIssue;
 }
