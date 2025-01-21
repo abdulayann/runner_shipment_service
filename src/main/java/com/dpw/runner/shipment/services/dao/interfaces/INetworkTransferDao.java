@@ -20,6 +20,8 @@ public interface INetworkTransferDao {
 
     Optional<NetworkTransfer> findByTenantAndEntity(Integer tenantId, Long entityId, String entityType);
 
+    Optional<NetworkTransfer> findByTenantAndEntityAndJobType(Integer tenantId, Long entityId, String entityType, String jobType);
+
     List<NetworkTransfer> findByEntityAndTenantList(Long entityId, String entityType, List<Integer> tenantIds);
 
     void delete(NetworkTransfer networkTransfer);
