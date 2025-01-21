@@ -4904,6 +4904,10 @@ public class ShipmentService implements IShipmentService {
             cloneShipmentDetails.setOceanDGStatus(null);
             cloneShipmentDetails.setCreatedBy(null);
             cloneShipmentDetails.setShipmentOrders(null);
+            cloneShipmentDetails.setIsReceivingBranchAdded(null);
+            cloneShipmentDetails.setIsTransferredToReceivingBranch(null);
+            cloneShipmentDetails.setIsNetworkFile(null);
+            cloneShipmentDetails.setIsReceivingBranchManually(null);
             if(!Objects.isNull(cloneShipmentDetails.getPackingList()))
                 cloneShipmentDetails.getPackingList().forEach(e -> e.setId(null));
 
@@ -6230,6 +6234,8 @@ public class ShipmentService implements IShipmentService {
     private void isValidNte(ConsolidationDetails consolidationDetails) throws AuthenticationException {
         List<TriangulationPartner> triangulationPartners = consolidationDetails.getTriangulationPartnerList();
         Long currentTenant = TenantContext.getCurrentTenant().longValue();
+        if(Objects.equals(currentTenant, consolidationDetails.getTenantId()))
+            return;
         if ((triangulationPartners == null
                 || triangulationPartners.stream()
                 .filter(Objects::nonNull)
