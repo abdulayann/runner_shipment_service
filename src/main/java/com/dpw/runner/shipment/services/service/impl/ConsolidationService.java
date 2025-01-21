@@ -4360,7 +4360,9 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     private void deleteAllConsoleErrorsLogs(ConsolidationDetails consolidationDetails){
-        List<Long> shipmentIds = consolidationDetails.getShipmentsList().stream().map(BaseEntity::getId).toList();
+        List<Long> shipmentIds = new ArrayList<>();
+        if(consolidationDetails.getShipmentsList()!=null)
+            shipmentIds = consolidationDetails.getShipmentsList().stream().map(BaseEntity::getId).toList();
         commonErrorLogsDao.deleteAllConsoleAndShipmentErrorsLogs(consolidationDetails.getId(), shipmentIds);
     }
 
