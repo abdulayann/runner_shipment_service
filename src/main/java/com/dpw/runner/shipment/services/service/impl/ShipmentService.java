@@ -2621,11 +2621,13 @@ public class ShipmentService implements IShipmentService {
 
             if(isEligibleForNetworkTransfer(shipmentDetails) && ObjectUtils.isNotEmpty(shipmentDetails.getReceivingBranch())){
 
-                if (isInvalidNetworkTransfer(shipmentDetails))
-                    return;
+                if (isInvalidNetworkTransfer(shipmentDetails)){
+                    commonErrorLogsDao.deleteShipmentErrorsLogs(shipmentDetails.getId());
+                }
 
                 List<V1TenantSettingsResponse.FileTransferConfigurations> fileTransferConfigurations = quartzJobInfoService.getActiveFileTransferConfigurations(shipmentDetails.getTransportMode());
                 if (ObjectUtils.isEmpty(fileTransferConfigurations)) {
+                    commonErrorLogsDao.deleteShipmentErrorsLogs(shipmentDetails.getId());
                     return;
                 }
 
@@ -2692,8 +2694,8 @@ public class ShipmentService implements IShipmentService {
                 QuartzJobInfo quartzJobInfo = optionalQuartzJobInfo.orElse(null);
                 if(quartzJobInfo!=null && quartzJobInfo.getJobStatus()==JobState.ERROR
                         && TRANSPORT_MODE_AIR.equals(consolidationDetails.getTransportMode()) &&
-                        !Objects.equals(consolidationDetails.getConsolidationType(), CONSOLIDATION_TYPE_DRT) &&
-                        !Objects.equals(consolidationDetails.getConsolidationType(), SHIPMENT_TYPE_STD))
+                        !Objects.equals(shipmentDetails.getJobType(), SHIPMENT_TYPE_DRT) &&
+                        !Objects.equals(shipmentDetails.getJobType(), SHIPMENT_TYPE_STD))
                     consolidationService.triggerAutomaticTransfer(consolidationDetails, null, true);
             }
         }
