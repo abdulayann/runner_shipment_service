@@ -2623,6 +2623,7 @@ public class ShipmentService implements IShipmentService {
 
                 if (isInvalidNetworkTransfer(shipmentDetails)){
                     commonErrorLogsDao.deleteShipmentErrorsLogs(shipmentDetails.getId());
+                    return;
                 }
 
                 List<V1TenantSettingsResponse.FileTransferConfigurations> fileTransferConfigurations = quartzJobInfoService.getActiveFileTransferConfigurations(shipmentDetails.getTransportMode());
