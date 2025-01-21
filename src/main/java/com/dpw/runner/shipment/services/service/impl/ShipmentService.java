@@ -1987,9 +1987,9 @@ public class ShipmentService implements IShipmentService {
             }
         }
 
-        if (Boolean.TRUE.equals(shipmentSettingsDetails.getEventsRevampEnabled())) {
-            shipmentDetails.setEventsList(Optional.ofNullable(oldEntity).map(ShipmentDetails::getEventsList).orElse(new ArrayList<>()));
-        }
+        // Ignore events payload to avoid transaction issues bypassing shipmentDetailsDao.update(...);
+        // Update happens in after save from request body
+        shipmentDetails.setEventsList(null);
 
         populateUnlocCodeFuture.join();
         return syncConsole;
