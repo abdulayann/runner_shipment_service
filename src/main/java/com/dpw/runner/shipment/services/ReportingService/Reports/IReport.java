@@ -1999,7 +1999,11 @@ public abstract class IReport {
         }
         List<String> details = new ArrayList<>();
         details.add(name);
-        details.addAll(Arrays.asList(address1,address2));
+        if(!StringUtility.isEmpty(address2)) {
+            details.addAll(Arrays.asList(address1, address2));
+        }else{
+            details.addAll(Arrays.asList(address1));
+        }
         StringBuilder tempAddress = new StringBuilder();
         if (!Strings.isNullOrEmpty(state)){
             tempAddress.append(state);
