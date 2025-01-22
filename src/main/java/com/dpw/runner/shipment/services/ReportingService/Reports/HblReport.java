@@ -219,6 +219,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.Pi
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ReferenceNumbersModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.enums.ModuleValidationFieldType;
 import com.dpw.runner.shipment.services.dto.request.HblPartyDto;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
@@ -229,6 +230,9 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse
 import com.dpw.runner.shipment.services.entity.Hbl;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferVessels;
 import com.dpw.runner.shipment.services.exception.exceptions.ReportException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
@@ -245,14 +249,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -354,12 +351,31 @@ public class HblReport extends IReport {
         }
         // UnLocations Master-data
         List<String> unlocoRequests = this.createUnLocoRequestFromShipmentModel(hblModel.shipment);
-        Map<String, UnlocationsResponse> unlocationsMap = masterDataUtils.getLocationData(new HashSet<>(unlocoRequests));
+        Map<String, UnlocationsResponse> unlocationsMap = new HashMap<>();
+        Map<String, EntityTransferUnLocations> entityTransferUnLocationsMap = masterDataUtils.getLocationDataFromCache(new HashSet<>(unlocoRequests), EntityTransferConstants.LOCATION_SERVICE_GUID);
+        for (Map.Entry<String, EntityTransferUnLocations> entry : entityTransferUnLocationsMap.entrySet()) {
+            String key = entry.getKey();
+            UnlocationsResponse value = jsonHelper.convertValue(entry.getValue(), UnlocationsResponse.class);
+            unlocationsMap.put(key, value);
+        }
         // Master lists Master-data
         List<MasterListRequest> masterListRequest = createMasterListsRequestFromShipment(hblModel.shipment);
         masterListRequest.addAll(createMasterListsRequestFromUnLocoMap(unlocationsMap));
-        Map<Integer, Map<String, MasterData>> masterListsMap = fetchInBulkMasterList(MasterListRequestV2.builder().MasterListRequests(masterListRequest.stream().filter(Objects::nonNull).collect(Collectors.toList())).build());
-
+        Map<String, EntityTransferMasterLists> entityTransferMasterListsMap = masterDataUtils.fetchMasterListFromCache(MasterListRequestV2.builder().MasterListRequests(masterListRequest.stream().filter(Objects::nonNull).collect(Collectors.toList())).build());
+        Map<Integer, Map<String, MasterData>> masterListsMap = new HashMap<>();
+        for (Map.Entry<String, EntityTransferMasterLists> entry : entityTransferMasterListsMap.entrySet()) {
+            String key = entry.getKey();
+            String[] parts = key.split("#");
+            String itemType = parts[0];
+            String itemValue = parts[1];
+            MasterDataType masterDataType = Arrays.stream(MasterDataType.values())
+                    .filter(type -> type.getDescription().equals(itemType))
+                    .findFirst()
+                    .orElse(null);
+            int masterDataKey = masterDataType.getId();
+            MasterData masterData = jsonHelper.convertValue(entry.getValue(), MasterData.class);
+            masterListsMap.computeIfAbsent(masterDataKey, k -> new HashMap<>()).put(itemValue, masterData);
+        }
         if (masterListsMap.containsKey(MasterDataType.PAYMENT.getId()) && masterListsMap.get(MasterDataType.PAYMENT.getId()).containsKey(hblModel.shipment.getPaymentTerms()))
             hblModel.paymentTerms = masterListsMap.get(MasterDataType.PAYMENT.getId()).get(hblModel.shipment.getPaymentTerms()).getItemDescription();
         if (masterListsMap.containsKey(MasterDataType.SERVICE_MODE.getId()) && masterListsMap.get(MasterDataType.SERVICE_MODE.getId()).containsKey(hblModel.shipment.getServiceType()))
@@ -412,19 +428,21 @@ public class HblReport extends IReport {
                 }
             }
         }
+
         if(bookingCarriage != null)
         {
             String vessel = bookingCarriage.getVessel();
-            List<Object> vesselCriteria = Arrays.asList(
-                    Arrays.asList(Constants.VESSEL_GUID_V1),
-                    "=",
-                    vessel
-            );
-            CommonV1ListRequest vesselRequest = CommonV1ListRequest.builder().skip(0).criteriaRequests(vesselCriteria).build();
-            V1DataResponse vesselResponse = v1Service.fetchVesselData(vesselRequest);
-            List<VesselsResponse> vesselsResponse = jsonHelper.convertValueToList(vesselResponse.entities, VesselsResponse.class);
-            if(vesselsResponse != null && vesselsResponse.size() > 0)
-                hblModel.preCarriageVessel = vesselsResponse.get(0);
+            Set<String> vesselIds = new HashSet<>();
+            vesselIds.add(vessel);
+            Map<String, EntityTransferVessels> entityTransferVesselsMap = masterDataUtils.getVesselDataFromCache(vesselIds);
+            Map<String, VesselsResponse> vesselsResponseMap = new HashMap<>();
+            for (Map.Entry<String, EntityTransferVessels> entry : entityTransferVesselsMap.entrySet()) {
+                String key = entry.getKey();
+                VesselsResponse value = jsonHelper.convertValue(entry.getValue(), VesselsResponse.class);
+                vesselsResponseMap.put(key, value);
+            }
+            if(!vesselsResponseMap.isEmpty() && vesselsResponseMap.containsKey(vessel))
+                hblModel.preCarriageVessel = vesselsResponseMap.get(vessel);
         }
         hblModel.noofPackages = 0;
         if(hblModel.shipment.getContainersList() != null && hblModel.shipment.getContainersList().size() > 0) {
@@ -469,7 +487,8 @@ public class HblReport extends IReport {
     public Map<String, Object> populateDictionary(IDocumentModel documentModel) {
         HblModel hblModel = (HblModel) documentModel;
         validateAirAndOceanDGCheck(hblModel.shipment);
-        String json = jsonHelper.convertToJsonWithDateTimeFormatter(hblModel.shipment, GetDPWDateFormatOrDefault());
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
+        String json = jsonHelper.convertToJsonWithDateTimeFormatter(hblModel.shipment, GetDPWDateFormatOrDefault(v1TenantSettingsResponse));
         if(hblModel.blObject == null) {
             hblModel.blObject = new Hbl();
             hblModel.blObject.setHblData(new HblDataDto());
@@ -479,7 +498,6 @@ public class HblReport extends IReport {
         populateShipmentFields(hblModel.shipment, dictionary);
         populateConsolidationFields(hblModel.consolidation, dictionary);
         JsonDateFormat(dictionary);
-        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         if (hblModel.blObject != null) {
             String blObjectJson = jsonHelper.convertToJson(hblModel.blObject);
             Map<String, Object> blObjectDictionary = jsonHelper.convertJsonToMap(blObjectJson);
@@ -734,7 +752,17 @@ public class HblReport extends IReport {
 
         // SHIPMENT FIELDS
         dictionary.put(ENTRY_REF_NUMBER, hblModel.shipment.getEntryRefNo());
-        VesselsResponse vesselsResponse = getVesselsData(hblModel.shipment.getCarrierDetails().getVessel());
+        String shipmentCarrierVesselId = hblModel.shipment.getCarrierDetails().getVessel();
+        Set<String> vesselIds = new HashSet<>();
+        vesselIds.add(shipmentCarrierVesselId);
+        Map<String, EntityTransferVessels> entityTransferVesselsMap = masterDataUtils.getVesselDataFromCache(vesselIds);
+        Map<String, VesselsResponse> vesselsResponseMap = new HashMap<>();
+        for (Map.Entry<String, EntityTransferVessels> entry : entityTransferVesselsMap.entrySet()) {
+            String key = entry.getKey();
+            VesselsResponse value = jsonHelper.convertValue(entry.getValue(), VesselsResponse.class);
+            vesselsResponseMap.put(key, value);
+        }
+        VesselsResponse vesselsResponse = vesselsResponseMap.get(shipmentCarrierVesselId);
         if(vesselsResponse != null)
             dictionary.put(VESSEL_NAME, vesselsResponse.getName());
         dictionary.put(VOYAGE, hblModel.shipment.getCarrierDetails().getVoyage());
@@ -792,7 +820,7 @@ public class HblReport extends IReport {
         }
         String tsDateTimeFormat = v1TenantSettingsResponse.getDPWDateFormat();
 
-        dictionary.put(CURRENT_DATE, ConvertToDPWDateFormat(LocalDateTime.now(), tsDateTimeFormat));
+        dictionary.put(CURRENT_DATE, ConvertToDPWDateFormat(LocalDateTime.now(), tsDateTimeFormat, v1TenantSettingsResponse));
         dictionary.put(HOUSE_BILL, StringUtility.toUpperCase(hblModel.shipment.getHouseBill()));
 //        dictionary.put(SUMMARY, hblModel.shipment.getSummary);
         dictionary.put(SHIPMENT_ID, hblModel.shipment.getShipmentId());
@@ -804,19 +832,19 @@ public class HblReport extends IReport {
 
 
         if (hblModel.shipment.getCarrierDetails().getEtd() != null)
-            dictionary.put(ETD, ConvertToDPWDateFormat(hblModel.shipment.getCarrierDetails().getEtd(), tsDateTimeFormat));
+            dictionary.put(ETD, ConvertToDPWDateFormat(hblModel.shipment.getCarrierDetails().getEtd(), tsDateTimeFormat, v1TenantSettingsResponse));
         if (hblModel.shipment.getCarrierDetails().getEta() != null)
-            dictionary.put(ETA, ConvertToDPWDateFormat(hblModel.shipment.getCarrierDetails().getEta(), tsDateTimeFormat));
+            dictionary.put(ETA, ConvertToDPWDateFormat(hblModel.shipment.getCarrierDetails().getEta(), tsDateTimeFormat, v1TenantSettingsResponse));
         if (hblModel.shipment.getAdditionalDetails().getDateOfIssue() != null) {
             dictionary.put(DATE_OF_ISSUE_MDY, ConvertToDPWDateFormat(hblModel.shipment.getAdditionalDetails().getDateOfIssue(), tsDateTimeFormat, true));
             dictionary.put(DATE_OF_ISSUE_DMY, ConvertToDPWDateFormat(hblModel.shipment.getAdditionalDetails().getDateOfIssue(), "dd/MM/yyyy", true));
             dictionary.put(DATE_OF_ISSUE_DMMY, ConvertToDPWDateFormat(hblModel.shipment.getAdditionalDetails().getDateOfIssue(), "dd-MMM-yyyy", true));
         }
         if (hblModel.shipment.getAdditionalDetails().getDateOfReceipt() != null)
-            dictionary.put(DATE_OF_RECEIPT, ConvertToDPWDateFormat(hblModel.shipment.getAdditionalDetails().getDateOfReceipt(), tsDateTimeFormat));
+            dictionary.put(DATE_OF_RECEIPT, ConvertToDPWDateFormat(hblModel.shipment.getAdditionalDetails().getDateOfReceipt(), tsDateTimeFormat, v1TenantSettingsResponse));
         if (hblModel.shipment.getCarrierDetails().getAtd() != null) {
             LocalDateTime atd = hblModel.shipment.getCarrierDetails().getAtd();
-            dictionary.put(ATD_MDY, ConvertToDPWDateFormat(atd, tsDateTimeFormat));
+            dictionary.put(ATD_MDY, ConvertToDPWDateFormat(atd, tsDateTimeFormat, v1TenantSettingsResponse));
             dictionary.put(ATD_DMY, DateTimeFormatter.ofPattern("dd/MM/yyyy").format(atd));
             dictionary.put(ATD_DMMY, DateTimeFormatter.ofPattern("dd-MMM-yyyy").format(atd));
         }
@@ -997,9 +1025,9 @@ public class HblReport extends IReport {
 //        }
 
         if (hblModel.shipment.getCarrierDetails().getAtd() != null)
-            dictionary.put(ATD, ConvertToDPWDateFormat(hblModel.shipment.getCarrierDetails().getAtd(), tsDateTimeFormat));
+            dictionary.put(ATD, ConvertToDPWDateFormat(hblModel.shipment.getCarrierDetails().getAtd(), tsDateTimeFormat, v1TenantSettingsResponse));
         if (hblModel.shipment.getCarrierDetails().getAta() != null)
-            dictionary.put(ATA, ConvertToDPWDateFormat(hblModel.shipment.getCarrierDetails().getAta(), tsDateTimeFormat));
+            dictionary.put(ATA, ConvertToDPWDateFormat(hblModel.shipment.getCarrierDetails().getAta(), tsDateTimeFormat, v1TenantSettingsResponse));
 
         dictionary.put(ATTENTION, dictionary.get(CONSIGNEE));
         dictionary.put(DO_NO, hblModel.shipment.getShipmentId());
@@ -1090,7 +1118,7 @@ public class HblReport extends IReport {
 
         dictionary.put(BOOKING_NUMBER, hblModel.shipment.getBookingNumber());
         dictionary.put(ADDITIONAL_TERMS, hblModel.shipment.getAdditionalTerms());
-        dictionary.put(VESSEL_BERTHING_DATE, ConvertToDPWDateFormat(hblModel.shipment.getCarrierDetails().getVesselBerthingDate(), tsDateTimeFormat));
+        dictionary.put(VESSEL_BERTHING_DATE, ConvertToDPWDateFormat(hblModel.shipment.getCarrierDetails().getVesselBerthingDate(), tsDateTimeFormat, v1TenantSettingsResponse));
 
         dictionary.put(UCR_REFERENCE, EMPTY_STRING);
         dictionary.put(EMPTY_TRUCK_IN_DATE, EMPTY_STRING);
@@ -1099,9 +1127,9 @@ public class HblReport extends IReport {
         {
             PickupDeliveryDetailsModel pickupDetails = hblModel.shipment.getPickupDetails();
             dictionary.put(UCR_REFERENCE, pickupDetails.getUcrReference());
-            dictionary.put(EMPTY_TRUCK_IN_DATE, ConvertToDPWDateFormat(pickupDetails.getEmptyTruckInDate(), tsDateTimeFormat));
-            dictionary.put(LOADED_TRUCK_GATE_OUT_DATE, ConvertToDPWDateFormat(pickupDetails.getLoadedTruckGateOutDate(), tsDateTimeFormat));
-            dictionary.put(PICKUP_PORT_TRANSPORT_ADVISED, ConvertToDPWDateFormat(pickupDetails.getPortTransportAdvised(), tsDateTimeFormat));
+            dictionary.put(EMPTY_TRUCK_IN_DATE, ConvertToDPWDateFormat(pickupDetails.getEmptyTruckInDate(), tsDateTimeFormat, v1TenantSettingsResponse));
+            dictionary.put(LOADED_TRUCK_GATE_OUT_DATE, ConvertToDPWDateFormat(pickupDetails.getLoadedTruckGateOutDate(), tsDateTimeFormat, v1TenantSettingsResponse));
+            dictionary.put(PICKUP_PORT_TRANSPORT_ADVISED, ConvertToDPWDateFormat(pickupDetails.getPortTransportAdvised(), tsDateTimeFormat, v1TenantSettingsResponse));
         }
 
         List<String> bookingPreCarriageMode = new ArrayList<>();

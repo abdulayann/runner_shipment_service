@@ -532,6 +532,46 @@ public class MasterDataUtils{
         return requests;
     }
 
+    public Map<String, EntityTransferMasterLists> fetchMasterListFromCache(MasterListRequestV2 requests) {
+        Map<String, EntityTransferMasterLists> responseMap = new HashMap<>();
+        if(Objects.isNull(requests) || Objects.isNull(requests.getMasterListRequests())|| requests.getMasterListRequests().isEmpty()){
+            return new HashMap<>();
+        }
+        Cache cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
+        assert !Objects.isNull(cache);
+        List<MasterListRequest> fetchMasterListFromV1 = new ArrayList<>();
+        for (MasterListRequest masterListRequest : requests.getMasterListRequests()) {
+            String key = masterListRequest.getItemType() + "#" + masterListRequest.getItemValue();
+            Cache.ValueWrapper value = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.MASTER_LIST, key));
+            if(Objects.isNull(value)) {
+                fetchMasterListFromV1.add(masterListRequest);
+            } else {
+                responseMap.put(key, (EntityTransferMasterLists) value.get());
+            }
+        }
+        if (!fetchMasterListFromV1.isEmpty()) {
+            MasterListRequestV2 missingRequestV2 = new MasterListRequestV2();
+            missingRequestV2.setMasterListRequests(fetchMasterListFromV1);
+            missingRequestV2.setIncludeCols(Arrays.asList("ItemType", "ItemValue", "ItemDescription"));
+            List<EntityTransferMasterLists> masterLists = fetchMultipleMasterData(missingRequestV2);
+            Map<String, EntityTransferMasterLists> v1Datamap = new HashMap<>();
+            masterLists.forEach(masterData -> {
+                String key = (Objects.isNull(MasterDataType.masterData(masterData.ItemType)) ? StringUtility.getEmptyString() : MasterDataType.masterData(masterData.ItemType).name()) + '#' + masterData.ItemValue;
+                v1Datamap.put(key, masterData);
+                responseMap.put(key, masterData);
+            });
+            Set<String> masterDataKeys = new HashSet<>();
+            List<MasterListRequest> missingMasterListRequests = missingRequestV2.getMasterListRequests();
+            missingMasterListRequests.forEach(
+                    masterListRequest -> {
+                        masterDataKeys.add((Objects.isNull(masterListRequest.ItemType) ? StringUtility.getEmptyString(): masterListRequest.ItemType) + '#' + (Objects.isNull(masterListRequest.ItemValue) ? StringUtility.getEmptyString(): masterListRequest.ItemValue));
+                    }
+            );
+            pushToCache(v1Datamap, CacheConstants.MASTER_LIST, masterDataKeys, new EntityTransferUnLocations(), null);
+        }
+        return responseMap;
+    }
+
 
     public Map<String, EntityTransferMasterLists> fetchInBulkMasterList(MasterListRequestV2 requests) {
         Map<String, EntityTransferMasterLists> keyMasterDataMap = new HashMap<>();
@@ -1664,6 +1704,29 @@ public class MasterDataUtils{
             Map<String, EntityTransferUnLocations> unLocationsMap = fetchInBulkUnlocations(locCodesFetchFromV1, fieldName);
             responseMap.putAll(unLocationsMap);
             pushToCache(unLocationsMap, customCacheKey, locCodesFetchFromV1, new EntityTransferUnLocations(), null);
+        }
+        return responseMap;
+    }
+
+    public Map<String, EntityTransferVessels> getVesselDataFromCache(Set<String> vesselGuids) {
+        if(Objects.isNull(vesselGuids))
+            return new HashMap<>();
+        Map<String, EntityTransferVessels> responseMap = new HashMap<>();
+        Cache cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
+        assert !Objects.isNull(cache);
+        Set<String> fetchVeseelFromV1 = new HashSet<>();
+        String customCacheKey = CacheConstants.VESSELS;
+        for(String guid: vesselGuids) {
+            Cache.ValueWrapper value = cache.get(keyGenerator.customCacheKeyForMasterData(customCacheKey, guid));
+            if(Objects.isNull(value))
+                fetchVeseelFromV1.add(guid);
+            else
+                responseMap.put(guid, (EntityTransferVessels) value.get());
+        }
+        if(!fetchVeseelFromV1.isEmpty()) {
+            Map<String, EntityTransferVessels> entityTransferVesselsMap = fetchInBulkVessels(fetchVeseelFromV1);
+            responseMap.putAll(entityTransferVesselsMap);
+            pushToCache(entityTransferVesselsMap, customCacheKey, fetchVeseelFromV1, new EntityTransferVessels(), null);
         }
         return responseMap;
     }

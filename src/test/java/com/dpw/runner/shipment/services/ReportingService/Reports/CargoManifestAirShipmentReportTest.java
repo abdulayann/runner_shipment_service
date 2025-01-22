@@ -119,10 +119,7 @@ class CargoManifestAirShipmentReportTest extends CommonMocks {
     }
 
     private void mockVessel() {
-        V1DataResponse v1DataResponse = new V1DataResponse();
-        v1DataResponse.entities = Arrays.asList(new VesselsResponse());
-        when(v1Service.fetchVesselData(any())).thenReturn(v1DataResponse);
-        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), VesselsResponse.class)).thenReturn(Arrays.asList(new VesselsResponse()));
+        when(masterDataUtils.getVesselDataFromCache(any())).thenReturn(new HashMap<>());
     }
 
     private void populateModel(CargoManifestAirShipmentModel cargoManifestAirShipmentModel) {
@@ -376,7 +373,7 @@ class CargoManifestAirShipmentReportTest extends CommonMocks {
     private void masterDataMock() {
         V1DataResponse v1DataResponse = new V1DataResponse();
         v1DataResponse.entities = Arrays.asList(new MasterData());
-        when(v1Service.fetchMultipleMasterData(any())).thenReturn(v1DataResponse);
+        when(masterDataUtils.fetchMasterListFromCache(any())).thenReturn(new HashMap<>());
 
         List<MasterData> masterDataList = new ArrayList<>();
         MasterData masterData = new MasterData();
@@ -432,7 +429,6 @@ class CargoManifestAirShipmentReportTest extends CommonMocks {
         masterData.setItemValue("IND");
         masterData.setItemDescription("IND");
         masterDataList.add(masterData);
-        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), MasterData.class)).thenReturn(masterDataList);
     }
 
     private void mockCarrier() {

@@ -92,7 +92,8 @@ public class FreightCertificationReport extends IReport{
     @Override
     public Map<String, Object> populateDictionary(IDocumentModel documentModel) {
         FreightCertificationModel freightCertificationModel = (FreightCertificationModel) documentModel;
-        String json = jsonHelper.convertToJsonWithDateTimeFormatter(freightCertificationModel.shipmentDetails, GetDPWDateFormatOrDefault());
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
+        String json = jsonHelper.convertToJsonWithDateTimeFormatter(freightCertificationModel.shipmentDetails, GetDPWDateFormatOrDefault(v1TenantSettingsResponse));
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
         addTenantDetails(dictionary, freightCertificationModel.tenantDetails);
 
