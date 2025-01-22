@@ -44,6 +44,8 @@ import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.*;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferConsolidationDetails;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferShipmentDetails;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.SendShipmentValidationResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -4019,7 +4021,7 @@ public class ShipmentService implements IShipmentService {
     }
 
 
-    public ResponseEntity<IRunnerResponse> retrieveForNTE(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> retrieveForNTE(CommonRequestModel commonRequestModel, Long consolidationId, boolean fromConsoleNte) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -4037,7 +4039,14 @@ public class ShipmentService implements IShipmentService {
 
             List<TriangulationPartner> triangulationPartners = shipmentDetails.get().getTriangulationPartnerList();
             Long currentTenant = TenantContext.getCurrentTenant().longValue();
-            if (isNotAllowedToViewShipment(triangulationPartners, shipmentDetails.get(), currentTenant)) {
+            boolean allowedToView = false;
+            if(fromConsoleNte && consolidationId != null){
+                Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findConsolidationByIdWithQuery(consolidationId);
+                if (consolidationDetails.isPresent()) {
+                    allowedToView = this.isValidNte(consolidationDetails.get());
+                }
+            }
+            if (Boolean.FALSE.equals(allowedToView) && isNotAllowedToViewShipment(triangulationPartners, shipmentDetails.get(), currentTenant)) {
                 throw new AuthenticationException(Constants.NOT_ALLOWED_TO_VIEW_SHIPMENT_FOR_NTE);
             }
             List<Notes> notes = notesDao.findByEntityIdAndEntityType(request.getId(), Constants.CUSTOMER_BOOKING);
@@ -6227,7 +6236,7 @@ public class ShipmentService implements IShipmentService {
         return response;
     }
 
-    private void isValidNte(ConsolidationDetails consolidationDetails) throws AuthenticationException {
+    private boolean isValidNte(ConsolidationDetails consolidationDetails) throws AuthenticationException {
         List<TriangulationPartner> triangulationPartners = consolidationDetails.getTriangulationPartnerList();
         Long currentTenant = TenantContext.getCurrentTenant().longValue();
         if ((triangulationPartners == null
@@ -6241,6 +6250,7 @@ public class ShipmentService implements IShipmentService {
                 && !Objects.equals(consolidationDetails.getReceivingBranch(), TenantContext.getCurrentTenant().longValue())) {
             throw new AuthenticationException(Constants.NOT_ALLOWED_TO_VIEW_CONSOLIDATION_FOR_NTE);
         }
+        return true;
     }
 
     @Override
