@@ -598,11 +598,13 @@ public class EventDao implements IEventDao {
         event.setUserName(Optional.ofNullable(UserContext.getUser()).map(UsersDto::getDisplayName).orElse(null));
         event.setUserEmail(Optional.ofNullable(UserContext.getUser()).map(UsersDto::getEmail).orElse(null));
         event.setBranch(Optional.ofNullable(UserContext.getUser()).map(UsersDto::getCode).orElse(null));
+        event.setBranchName(Optional.ofNullable(UserContext.getUser()).map(UsersDto::getTenantDisplayName).orElse(null));
 
         if(Constants.MASTER_DATA_SOURCE_CARGOES_TRACKING.equals(event.getSource())) {
             event.setUserName(EventConstants.SYSTEM_GENERATED);
             event.setUserEmail(null);
             event.setBranch(null);
+            event.setBranchName(null);
         }
         return event;
     }
