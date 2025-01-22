@@ -9104,7 +9104,7 @@ ShipmentServiceTest extends CommonMocks {
         when(shipmentDao.findShipmentByIdWithQuery(any())).thenReturn(Optional.of(shipmentDetails));
         when(consolidationDetailsDao.findConsolidationByIdWithQuery(anyLong())).thenReturn(Optional.of(consolidationDetails));
         CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
-        ResponseEntity<IRunnerResponse> response = shipmentService.retrieveForNTE(CommonRequestModel.buildRequest(commonGetRequest), 1L, true);
+        shipmentService.retrieveForNTE(CommonRequestModel.buildRequest(commonGetRequest), 1L, true);
         verify(consolidationDetailsDao, times(1)).findConsolidationByIdWithQuery(anyLong());
     }
 
