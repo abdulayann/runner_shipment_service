@@ -256,6 +256,8 @@ public class ReportService implements IReportService {
         if(report instanceof FCRDocumentReport fcrDocumentReport) {
             fcrDocumentReport.setFcrShipper(reportRequest.getFcrShipper());
             fcrDocumentReport.setPackIds(reportRequest.getPackIds());
+            fcrDocumentReport.setIssueDate(reportRequest.getDateOfIssue());
+            fcrDocumentReport.setPlaceOfIssue(reportRequest.getPlaceOfIssue());
         }
         // user story 135668
         if(report instanceof ArrivalNoticeReport) {
