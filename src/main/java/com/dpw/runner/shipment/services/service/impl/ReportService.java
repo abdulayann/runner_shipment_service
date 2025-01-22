@@ -12,6 +12,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.DpsConstants;
 import com.dpw.runner.shipment.services.commons.constants.EventConstants;
 import com.dpw.runner.shipment.services.commons.enums.MawbPrintFor;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
@@ -28,12 +29,14 @@ import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.request.ReportRequest;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.*;
+import com.dpw.runner.shipment.services.exception.exceptions.ReportException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.service.interfaces.IDpsEventService;
 import com.dpw.runner.shipment.services.service.interfaces.IEventService;
 import com.dpw.runner.shipment.services.service.interfaces.IReportService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
@@ -132,6 +135,8 @@ public class ReportService implements IReportService {
     private AWBLabelReport awbLabelReport;
     @Autowired
     private DependentServiceHelper dependentServiceHelper;
+    @Autowired
+    private IDpsEventService dpsEventService;
 
     @Autowired
     @Lazy
@@ -304,8 +309,27 @@ public class ReportService implements IReportService {
         //TODO - Need to handle for new flow
         if (report instanceof PickupOrderReport pickupOrderReport && StringUtility.isNotEmpty(reportRequest.getTransportInstructionId())) {
             dataRetrived = pickupOrderReport.getData(Long.parseLong(reportRequest.getReportId()), Long.parseLong(reportRequest.getTransportInstructionId()));
-        } else if (report instanceof DeliveryOrderReport deliveryOrderReport && StringUtility.isNotEmpty(reportRequest.getTransportInstructionId())) {
-            dataRetrived = deliveryOrderReport.getData(Long.parseLong(reportRequest.getReportId()), Long.parseLong(reportRequest.getTransportInstructionId()));
+        } else if (report instanceof DeliveryOrderReport vDeliveryOrderReport) {
+            // Verify if the specified implication (DOPR) exists for the report's ID.
+            // If true, throw a ReportException indicating the implication is already present.
+            if (Boolean.TRUE.equals(dpsEventService.isImplicationPresent(Long.parseLong(reportRequest.getReportId()), DpsConstants.DOPR))) {
+                throw new ReportException(DpsConstants.DPS_ERROR_1);
+            }
+
+            // If a Transport Instruction ID is provided in the request:
+            if (StringUtility.isNotEmpty(reportRequest.getTransportInstructionId())) {
+                // Retrieve data using both the Report ID and Transport Instruction ID.
+                dataRetrived = vDeliveryOrderReport.getData(
+                        Long.parseLong(reportRequest.getReportId()),
+                        Long.parseLong(reportRequest.getTransportInstructionId()));
+            } else {
+                // If no Transport Instruction ID is provided, retrieve data using only the Report ID.
+                dataRetrived = report.getData(Long.parseLong(reportRequest.getReportId()));
+            }
+
+            // Create an event for the report request with the specific event constant DOGE.
+            createEvent(reportRequest, EventConstants.DOGE);
+
         } else if (report instanceof TransportOrderReport transportOrderReport && StringUtility.isNotEmpty(reportRequest.getTransportInstructionId())) {
             dataRetrived = transportOrderReport.getData(Long.parseLong(reportRequest.getReportId()), Long.parseLong(reportRequest.getTransportInstructionId()));
         } else if (report instanceof HblReport vHblReport) {
@@ -807,8 +831,6 @@ public class ReportService implements IReportService {
 
             if (reportInfo.equals(ReportConstants.SHIPMENT_CAN_DOCUMENT.toUpperCase())) {
                 createEvent(reportRequest, EventConstants.CANG);
-            } else if (reportInfo.equals(ReportConstants.DELIVERY_ORDER.toUpperCase())) {
-                createEvent(reportRequest, EventConstants.DOGE);
             }
         }
         if(reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.FCR_DOCUMENT)) {

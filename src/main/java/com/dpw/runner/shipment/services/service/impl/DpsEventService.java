@@ -32,6 +32,7 @@ import javax.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -153,6 +154,50 @@ public class DpsEventService implements IDpsEventService {
         }
 
         return implications;
+    }
+
+    /**
+     * Checks whether a specific implication is present for a given shipment GUID.
+     *
+     * @param shipmentGuid the unique identifier (GUID) of the shipment.
+     * @param implication  the implication to check for.
+     * @return {@code true} if the implication is present and active for the shipment, {@code false} otherwise.
+     * @throws DpsException if the shipment GUID is null or empty.
+     */
+    @Override
+    public Boolean isImplicationPresent(String shipmentGuid, String implication) {
+        if (Strings.isNullOrEmpty(shipmentGuid)) {
+            throw new DpsException("Shipment guid cannot be null or empty!");
+        }
+
+        return dpsEventRepository.isImplicationPresent(
+                shipmentGuid,
+                DpsEntityType.SHIPMENT.name(),
+                implication,
+                DpsExecutionStatus.ACTIVE.name()) > 0;
+    }
+
+    /**
+     * Checks whether a specific implication is present for a given shipment ID.
+     *
+     * @param shipmentId   the unique identifier (ID) of the shipment.
+     * @param implication  the implication to check for.
+     * @return {@code true} if the implication is present and active for the shipment, {@code false} otherwise.
+     * @throws DpsException if the shipment ID is null.
+     * @throws DataRetrievalFailureException if no shipment details are found for the given shipment ID.
+     */
+    @Override
+    public Boolean isImplicationPresent(Long shipmentId, String implication) {
+        if (shipmentId == null) {
+            throw new DpsException("Shipment Id cannot be null or empty!");
+        }
+
+        ShipmentDetails shipmentDetails = shipmentDao.findById(shipmentId)
+                .orElseThrow(() -> new DataRetrievalFailureException("Shipment details not found for ID: " + shipmentId));
+
+        String shipmentGuid = shipmentDetails.getGuid().toString();
+
+        return isImplicationPresent(shipmentGuid, implication);
     }
     /**
      * Creates an audit log entry for the given {@link DpsEvent} and {@link ShipmentDetails}. This method captures relevant details about the DPS event and the associated shipment,

@@ -14,6 +14,10 @@ public interface IDpsEventService {
 
     List<String> getImplicationsForShipment(String entityId);
 
+    Boolean isImplicationPresent(String shipmentGuid, String implication);
+
+    Boolean isImplicationPresent(Long shipmentId, String implication);
+
     void createAuditLog(DpsEvent dpsEvent, ShipmentDetails shipmentDetails);
 
     ResponseEntity<IRunnerResponse> getShipmentMatchingRulesByGuid(String shipmentGuid);

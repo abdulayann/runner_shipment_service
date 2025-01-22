@@ -25,4 +25,16 @@ public interface IDpsEventRepository extends JpaRepository<DpsEvent, Long> {
       """, nativeQuery = true)
     List<String> findImplicationsByEntityIdAndEntityType(String entityId, String entityType, String status);
 
+
+    @Query(value = """
+    SELECT COUNT(*)
+    FROM dps_event de
+    JOIN dps_event_implication dei ON de.id = dei.dps_event_id
+    WHERE de.entity_id = ?1
+      AND de.entity_type = ?2
+      AND dei.implication = ?3
+      AND de.status = ?4
+      """, nativeQuery = true)
+    int isImplicationPresent(String entityId, String entityType, String implication, String status);
+
 }
