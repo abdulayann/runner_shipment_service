@@ -4351,6 +4351,13 @@ public class ConsolidationService implements IConsolidationService {
                 } else if (consolidationDetails.getTriangulationPartner() != null) {
                     processNetworkTransferEntity(consolidationDetails.getTriangulationPartner(),
                             oldEntity != null ? oldEntity.getTriangulationPartner() : null, consolidationDetails, Constants.DIRECTION_CTS);
+                } else if(consolidationDetails.getTriangulationPartnerList() == null) {
+                    List<Long> oldPartners = oldEntity != null ? commonUtils.getTriangulationPartnerList(oldEntity.getTriangulationPartnerList())
+                            : Collections.emptyList();
+                    Set<Long> oldTenantIds = new HashSet<>(oldPartners);
+                    oldTenantIds.forEach(oldTenantId ->
+                            processNetworkTransferEntity(null, oldTenantId, consolidationDetails, Constants.DIRECTION_CTS)
+                    );
                 }
             }
         } catch (Exception ex) {
