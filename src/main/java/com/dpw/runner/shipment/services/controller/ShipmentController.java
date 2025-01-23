@@ -181,11 +181,11 @@ public class ShipmentController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ShipmentConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ShipmentConstants.API_SHIPMENT_RETRIEVE_FOR_NTE_SCREEN)
-    public ResponseEntity<IRunnerResponse> retrieveForNTE(@ApiParam(value = ShipmentConstants.SHIPMENT_ID) @RequestParam Optional<Long> id) {
+    public ResponseEntity<IRunnerResponse> retrieveForNTE(@ApiParam(value = ShipmentConstants.SHIPMENT_ID) @RequestParam Optional<Long> id, @ApiParam (value = "Consolidation Id") @RequestParam(required = false) Long consolidationId, @RequestParam(required = false, defaultValue = "false") boolean fromConsoleNte) {
         CommonGetRequest request = CommonGetRequest.builder().build();
         id.ifPresent(request::setId);
         log.info("Received Shipment NTE retrieve request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
-        return shipmentService.retrieveForNTE(CommonRequestModel.buildRequest(request));
+        return shipmentService.retrieveForNTE(CommonRequestModel.buildRequest(request), consolidationId, fromConsoleNte);
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ShipmentConstants.RETRIEVE_BY_ID_SUCCESSFUL)})

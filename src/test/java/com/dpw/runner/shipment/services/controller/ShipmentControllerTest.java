@@ -653,9 +653,9 @@ class ShipmentControllerTest {
     void retrieveForNTE() {
         // Mock
         when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(10));
-        when(shipmentService.retrieveForNTE(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        when(shipmentService.retrieveForNTE(any(), any(), anyBoolean())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
-        var responseEntity = shipmentController.retrieveForNTE(Optional.of(111L));
+        var responseEntity = shipmentController.retrieveForNTE(Optional.of(111L), 1L, false);
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
