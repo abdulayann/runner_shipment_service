@@ -4316,7 +4316,7 @@ public class ConsolidationService implements IConsolidationService {
     private void processNetworkTransferEntity(Long tenantId, Long oldTenantId, ConsolidationDetails consolidationDetails, String jobType) {
         try{
             networkTransferService.processNetworkTransferEntity(tenantId, oldTenantId, Constants.CONSOLIDATION, null,
-                    consolidationDetails, jobType, null);
+                    consolidationDetails, jobType, null, false);
         } catch (Exception ex) {
             log.error("Exception during processing Network Transfer entity for Consolidation Number: {} with exception: {}", consolidationDetails.getConsolidationNumber(), ex.getMessage());
         }

@@ -290,13 +290,13 @@ class NetworkTransferServiceTest extends CommonMocks{
         shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
         shipmentDetails.setId(1L);
         assertDoesNotThrow(() -> networkTransferService.processNetworkTransferEntity(123L, null,
-                Constants.SHIPMENT, shipmentDetails, null, Constants.SHIPMENT_TYPE_DRT, null));
+                Constants.SHIPMENT, shipmentDetails, null, Constants.SHIPMENT_TYPE_DRT, null, false));
     }
 
     @Test
     void testCreateNetworkTransferEntityWithEmptyShipment(){
         assertDoesNotThrow(() -> networkTransferService.processNetworkTransferEntity(123L, null,
-                Constants.SHIPMENT, null, null, Constants.SHIPMENT_TYPE_DRT, null));
+                Constants.SHIPMENT, null, null, Constants.SHIPMENT_TYPE_DRT, null, false));
 
     }
 
@@ -308,7 +308,7 @@ class NetworkTransferServiceTest extends CommonMocks{
         shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
         shipmentDetails.setId(1L);
         assertDoesNotThrow(() -> networkTransferService.processNetworkTransferEntity(123L, 132L,
-                Constants.SHIPMENT, shipmentDetails, null, Constants.SHIPMENT_TYPE_DRT, null));
+                Constants.SHIPMENT, shipmentDetails, null, Constants.SHIPMENT_TYPE_DRT, null, false));
 
     }
 
@@ -318,7 +318,7 @@ class NetworkTransferServiceTest extends CommonMocks{
         shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
         shipmentDetails.setId(1L);
         assertDoesNotThrow(() -> networkTransferService.processNetworkTransferEntity(123L, 123L,
-                Constants.SHIPMENT, shipmentDetails, null, Constants.SHIPMENT_TYPE_DRT, null));
+                Constants.SHIPMENT, shipmentDetails, null, Constants.SHIPMENT_TYPE_DRT, null, false));
 
     }
 
@@ -329,7 +329,7 @@ class NetworkTransferServiceTest extends CommonMocks{
         shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
         shipmentDetails.setId(1L);
         assertDoesNotThrow(() -> networkTransferService.processNetworkTransferEntity(null, 132L,
-                Constants.SHIPMENT, shipmentDetails, null, Constants.DIRECTION_EXP, null));
+                Constants.SHIPMENT, shipmentDetails, null, Constants.DIRECTION_EXP, null, false));
     }
 
     @Test
@@ -338,7 +338,7 @@ class NetworkTransferServiceTest extends CommonMocks{
         shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
         shipmentDetails.setId(1L);
         assertDoesNotThrow(() -> networkTransferService.processNetworkTransferEntity(null, 132L,
-                Constants.Shipment, shipmentDetails, null, Constants.DIRECTION_EXP, null));
+                Constants.Shipment, shipmentDetails, null, Constants.DIRECTION_EXP, null, false));
     }
 
     @Test
@@ -348,14 +348,14 @@ class NetworkTransferServiceTest extends CommonMocks{
         shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
         shipmentDetails.setId(1L);
         assertThrows(RuntimeException.class, () -> networkTransferService.processNetworkTransferEntity(123L, null,
-                Constants.SHIPMENT, shipmentDetails, null, Constants.DIRECTION_EXP, null));
+                Constants.SHIPMENT, shipmentDetails, null, Constants.DIRECTION_EXP, null, false));
     }
 
     @Test
     void testCreateNetworkTransferEntityWithConsolidation(){
         when(networkTransferDao.save(any())).thenReturn(networkTransfer);
         assertDoesNotThrow(() -> networkTransferService.processNetworkTransferEntity(123L, null,
-                Constants.CONSOLIDATION, null, consolidationDetails, Constants.DIRECTION_CTS, null));
+                Constants.CONSOLIDATION, null, consolidationDetails, Constants.DIRECTION_CTS, null, false));
     }
 
     @Test
@@ -363,20 +363,20 @@ class NetworkTransferServiceTest extends CommonMocks{
         when(networkTransferDao.save(any())).thenReturn(networkTransfer);
         when(consoleShipmentMappingDao.findByConsolidationId(any())).thenReturn(List.of(new ConsoleShipmentMapping()));
         assertDoesNotThrow(() -> networkTransferService.processNetworkTransferEntity(123L, null,
-                Constants.CONSOLIDATION, null, consolidationDetails, Constants.DIRECTION_CTS, null));
+                Constants.CONSOLIDATION, null, consolidationDetails, Constants.DIRECTION_CTS, null, false));
     }
 
     @Test
     void testCreateNetworkTransferEntityWithEmptyConsolidation(){
         assertDoesNotThrow(() -> networkTransferService.processNetworkTransferEntity(123L, null,
-                Constants.CONSOLIDATION, null, null, Constants.DIRECTION_CTS, null));
+                Constants.CONSOLIDATION, null, null, Constants.DIRECTION_CTS, null, false));
     }
 
     @Test
     void testCreateNetworkTransferEntityWithOldConsolidation(){
         when(networkTransferDao.findByTenantAndEntity(any(),any(), any())).thenReturn(Optional.of(networkTransfer));
         assertDoesNotThrow(() -> networkTransferService.processNetworkTransferEntity(null, 132L,
-                Constants.CONSOLIDATION, null, consolidationDetails, Constants.DIRECTION_EXP, null));
+                Constants.CONSOLIDATION, null, consolidationDetails, Constants.DIRECTION_EXP, null, false));
     }
 
     @Test
@@ -385,7 +385,7 @@ class NetworkTransferServiceTest extends CommonMocks{
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
         assertThrows(RuntimeException.class, () -> networkTransferService.processNetworkTransferEntity(123L, 321L,
-                Constants.SHIPMENT, shipmentDetails, null, Constants.DIRECTION_EXP, null));
+                Constants.SHIPMENT, shipmentDetails, null, Constants.DIRECTION_EXP, null, false));
     }
 
     @Test
@@ -395,7 +395,7 @@ class NetworkTransferServiceTest extends CommonMocks{
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
         assertThrows(RuntimeException.class, () -> networkTransferService.processNetworkTransferEntity(123L, 321L,
-                Constants.SHIPMENT, shipmentDetails, null, Constants.DIRECTION_EXP, null));
+                Constants.SHIPMENT, shipmentDetails, null, Constants.DIRECTION_EXP, null, false));
     }
 
     @Test

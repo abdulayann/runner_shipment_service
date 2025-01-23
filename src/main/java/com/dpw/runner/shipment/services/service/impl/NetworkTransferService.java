@@ -276,7 +276,7 @@ public class NetworkTransferService implements INetworkTransferService {
         }
     }
 
-    public NetworkTransfer getNetworkTransferEntityFromShipment(ShipmentDetails shipmentDetails, Integer tenantId, String jobType){
+    public NetworkTransfer getNetworkTransferEntityFromShipment(ShipmentDetails shipmentDetails, Integer tenantId, String jobType, Boolean isInterBranchEntity){
         NetworkTransfer networkTransfer = new NetworkTransfer();
         networkTransfer.setTenantId(tenantId);
         networkTransfer.setEntityId(shipmentDetails.getId());
@@ -285,6 +285,7 @@ public class NetworkTransferService implements INetworkTransferService {
         networkTransfer.setTransportMode(shipmentDetails.getTransportMode());
         networkTransfer.setSourceBranchId(shipmentDetails.getTenantId());
         networkTransfer.setJobType(jobType);
+        networkTransfer.setIsInterBranchEntity(isInterBranchEntity);
         return networkTransfer;
     }
 
@@ -303,7 +304,7 @@ public class NetworkTransferService implements INetworkTransferService {
     @Transactional
     public void processNetworkTransferEntity(Long newTenantId, Long oldTenantId, String entityType,
                                              ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails,
-                                             String jobType, Map<String, Object> entityPayload){
+                                             String jobType, Map<String, Object> entityPayload, Boolean isInterBranchEntity){
             NetworkTransfer networkTransfer = null;
 
             if(Objects.equals(newTenantId, Long.valueOf(TenantContext.getCurrentTenant())))
@@ -314,7 +315,7 @@ public class NetworkTransferService implements INetworkTransferService {
             }
             var intTenantId = (newTenantId!=null) ? Math.toIntExact(newTenantId) : null;
             if (Objects.equals(entityType, Constants.SHIPMENT) && ObjectUtils.isNotEmpty(shipmentDetails)) {
-                networkTransfer = getNetworkTransferEntityFromShipment(shipmentDetails, intTenantId, jobType);
+                networkTransfer = getNetworkTransferEntityFromShipment(shipmentDetails, intTenantId, jobType, isInterBranchEntity);
             } else if (Objects.equals(entityType, Constants.CONSOLIDATION) && ObjectUtils.isNotEmpty(consolidationDetails)) {
                 networkTransfer = getNetworkTransferEntityFromConsolidation(consolidationDetails, intTenantId, jobType);
             }
@@ -403,7 +404,18 @@ public class NetworkTransferService implements INetworkTransferService {
             throw new DataRetrievalFailureException("Network Transfer is already in Request to Transfer state.");
         }
         networkTransfer.get().setStatus(NetworkTransferStatus.REQUESTED_TO_TRANSFER);
-        Notification notification = getNotificationEntity(networkTransfer.get(), NotificationRequestType.REQUEST_TRANSFER, requestForTransferRequest.getRemarks(), null);
+        var entityId = networkTransfer.get().getEntityId();
+        var entityType = networkTransfer.get().getEntityType();
+
+        // For Overarching Shipment
+        if(Boolean.TRUE.equals(networkTransfer.get().getIsInterBranchEntity()) && Objects.equals(networkTransfer.get().getEntityType(), Constants.SHIPMENT)) {
+            var consoleShipmentMapping = consoleShipmentMappingDao.findByShipmentId(networkTransfer.get().getEntityId());
+            if(CommonUtils.listIsNullOrEmpty(consoleShipmentMapping)) {
+                entityId = consoleShipmentMapping.get(0).getConsolidationId();
+                entityType = Constants.CONSOLIDATION;
+            }
+        }
+        Notification notification = getNotificationEntity(networkTransfer.get(), NotificationRequestType.REQUEST_TRANSFER, requestForTransferRequest.getRemarks(), null, entityType, entityId);
         notificationDao.save(notification);
         networkTransferDao.save(networkTransfer.get());
         updateConsoleOrShipmentStatus(networkTransfer.get());      // Update shipment and console Transfer status
@@ -438,17 +450,17 @@ public class NetworkTransferService implements INetworkTransferService {
             throw new DataRetrievalFailureException("Network Transfer is already in Reassigned state.");
         }
         networkTransfer.get().setStatus(NetworkTransferStatus.REASSIGNED);
-        Notification notification = getNotificationEntity(networkTransfer.get(), NotificationRequestType.REASSIGN, reassignRequest.getRemarks(), reassignRequest.getBranchId());
+        Notification notification = getNotificationEntity(networkTransfer.get(), NotificationRequestType.REASSIGN, reassignRequest.getRemarks(), reassignRequest.getBranchId(), networkTransfer.get().getEntityType(), networkTransfer.get().getEntityId());
         notificationDao.save(notification);
         networkTransferDao.save(networkTransfer.get());
         updateConsoleOrShipmentStatus(networkTransfer.get());    // Update shipment and console Transfer status
         return ResponseHelper.buildSuccessResponse();
     }
 
-    public Notification getNotificationEntity(NetworkTransfer networkTransfer, NotificationRequestType notificationRequestType, String reason, Integer reassignBranchId) {
+    public Notification getNotificationEntity(NetworkTransfer networkTransfer, NotificationRequestType notificationRequestType, String reason, Integer reassignBranchId, String entityType, Long entityId) {
         Notification notification = new Notification();
-        notification.setEntityId(networkTransfer.getEntityId());
-        notification.setEntityType(networkTransfer.getEntityType());
+        notification.setEntityId(entityId);
+        notification.setEntityType(entityType);
         notification.setRequestedBranchId(TenantContext.getCurrentTenant());
         notification.setRequestedUser(UserContext.getUser().getUsername());
         notification.setRequestedOn(LocalDateTime.now(ZoneOffset.UTC));

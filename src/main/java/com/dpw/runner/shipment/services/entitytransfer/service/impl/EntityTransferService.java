@@ -305,7 +305,7 @@ public class EntityTransferService implements IEntityTransferService {
                     networkTransferService.updateNetworkTransferTransferred(optionalNetworkTransfer.get(), entityPayload);
                 else
                     networkTransferService.processNetworkTransferEntity(Long.valueOf(tenant), null, SHIPMENT, shipment,
-                            null, taskPayload.getDirection(), entityPayload);
+                            null, taskPayload.getDirection(), entityPayload, false);
 
                 List<Notification> notificationList = notificationDao.findNotificationForEntityTransfer(shipId, SHIPMENT, tenant, List.of(NotificationRequestType.REQUEST_TRANSFER.name(), NotificationRequestType.REASSIGN.name()));
                 notificationDao.deleteAll(notificationList);
@@ -430,7 +430,7 @@ public class EntityTransferService implements IEntityTransferService {
                     networkTransferService.updateNetworkTransferTransferred(optionalNetworkTransfer.get(), entityPayload);
                 else
                     networkTransferService.processNetworkTransferEntity(Long.valueOf(tenant), null, CONSOLIDATION,
-                            null, consol, consolidationPayload.getShipmentType(), entityPayload);
+                            null, consol, consolidationPayload.getShipmentType(), entityPayload, false);
 
                 List<Notification> notificationList = notificationDao.findNotificationForEntityTransfer(consolId, CONSOLIDATION, tenant, List.of(NotificationRequestType.REQUEST_TRANSFER.name(), NotificationRequestType.REASSIGN.name()));
                 notificationDao.deleteAll(notificationList);

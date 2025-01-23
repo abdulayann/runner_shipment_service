@@ -2563,7 +2563,7 @@ public class ShipmentService implements IShipmentService {
     private void processNetworkTransferEntity(Long tenantId, Long oldTenantId, ShipmentDetails shipmentDetails, String jobType) {
         try{
             networkTransferService.processNetworkTransferEntity(tenantId, oldTenantId, Constants.SHIPMENT, shipmentDetails,
-                    null, jobType, null);
+                    null, jobType, null, false);
         } catch (Exception ex) {
             log.error("Exception during processing Network Transfer entity for shipment Id: {} with exception: {}", shipmentDetails.getShipmentId(), ex.getMessage());
         }
