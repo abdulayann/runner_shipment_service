@@ -2091,11 +2091,11 @@ public class ShipmentService implements IShipmentService {
             // - The old entity's consolidation list is empty (no prior consolidations).
             // - There are removed consolidation IDs (indicating changes in consolidations).
             if (ObjectUtils.isNotEmpty(consolidationDetailsRequests)
-                    && (oldEntity == null || ObjectUtils.isEmpty(oldEntity.getConsolidationList()) || removedConsolIds.size() > 0)) {
+                    && (oldEntity == null || ObjectUtils.isEmpty(oldEntity.getConsolidationList()) || ObjectUtils.isNotEmpty(removedConsolIds))) {
 
                 // Check if the specific implication (CONCR) is already present for the given shipment ID.
                 // If true, throw a ValidationException to prevent further processing to maintain business constraints.
-                if (dpsEventService.isImplicationPresent(List.of(shipmentDetails.getId()), DpsConstants.CONCR)) {
+                if (Boolean.TRUE.equals(dpsEventService.isImplicationPresent(List.of(shipmentDetails.getId()), DpsConstants.CONCR))) {
                     throw new ValidationException(DpsConstants.DPS_ERROR_1);
                 }
 
@@ -2164,7 +2164,7 @@ public class ShipmentService implements IShipmentService {
 
                 // Check if the specific implication (CONCR) is already present for the given shipment ID.
                 // If true, throw a ValidationException to prevent further processing.
-                if (dpsEventService.isImplicationPresent(List.of(shipmentDetails.getId()), DpsConstants.CONCR)) {
+                if (Boolean.TRUE.equals(dpsEventService.isImplicationPresent(List.of(shipmentDetails.getId()), DpsConstants.CONCR))) {
                     throw new ValidationException(DpsConstants.DPS_ERROR_1);
                 }
 

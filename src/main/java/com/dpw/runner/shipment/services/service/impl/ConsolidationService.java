@@ -1335,7 +1335,7 @@ public class ConsolidationService implements IConsolidationService {
         for (ShipmentDetails shipmentDetails : shipmentDetailsList) {
             // Check if the specific implication (CONCR) is already present for the current shipment's GUID.
             // If true, throw a RunnerException with a detailed error message including the shipment ID.
-            if (dpsEventService.isImplicationPresent(Set.of(shipmentDetails.getGuid().toString()), DpsConstants.CONCR)) {
+            if (Boolean.TRUE.equals(dpsEventService.isImplicationPresent(Set.of(shipmentDetails.getGuid().toString()), DpsConstants.CONCR))) {
                 throw new RunnerException(DpsConstants.DPS_ERROR_2 + " : " + shipmentDetails.getShipmentId());
             }
         }

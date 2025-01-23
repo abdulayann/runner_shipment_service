@@ -291,7 +291,7 @@ public class ReportService implements IReportService {
                 if (Boolean.TRUE.equals(dpsEventService.isImplicationPresent(shipmentIdsList, DpsConstants.MAWBPR))) {
                     throw new ReportException(DpsConstants.DPS_ERROR_1);
                 }
-            } else if (isOriginalPrint) { // Case: Request came from shipment and is an original print
+            } else if (Boolean.TRUE.equals(isOriginalPrint)) { // Case: Request came from shipment and is an original print
                 long shipmentId = Long.parseLong(reportRequest.getReportId());
                 ShipmentDetails shipmentDetails = shipmentDao.findById(shipmentId)
                         .orElseThrow(() -> new ValidationException("No Shipment found with Id: " + shipmentId));
