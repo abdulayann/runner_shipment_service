@@ -35,6 +35,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IHblDao;
@@ -51,6 +52,7 @@ import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.request.ReportRequest;
 import com.dpw.runner.shipment.services.entity.Awb;
+import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Hbl;
 import com.dpw.runner.shipment.services.entity.HblReleaseTypeMapping;
@@ -160,6 +162,8 @@ public class ReportService implements IReportService {
 
     @Autowired
     private IShipmentService shipmentService;
+    @Autowired
+    private IConsoleShipmentMappingDao consoleShipmentMappingDao;
     @Autowired
     private IShipmentSync shipmentSync;
     @Autowired
@@ -274,6 +278,32 @@ public class ReportService implements IReportService {
             isNeutralPrint = reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.NEUTRAL);
         }
 
+        IReport report = reportsFactory.getReport(reportRequest.getReportInfo());
+        if (report instanceof MawbReport mawbReport) {
+            mawbReport.isDMawb = reportRequest.isFromShipment(); // Set isDMawb based on isFromShipment flag
+
+            if (!reportRequest.isFromShipment()) { // Case: Request came from consolidation
+                long consolidationId = Long.parseLong(reportRequest.getReportId());
+                List<Long> shipmentIdsList = consoleShipmentMappingDao.findByConsolidationId(consolidationId)
+                        .stream().map(ConsoleShipmentMapping::getShipmentId).toList(); // Extract shipment IDs
+
+                // Check if DPS implication(MAWBPR) is present for any shipment
+                if (Boolean.TRUE.equals(dpsEventService.isImplicationPresent(shipmentIdsList, DpsConstants.MAWBPR))) {
+                    throw new ReportException(DpsConstants.DPS_ERROR_1);
+                }
+            } else if (isOriginalPrint) { // Case: Request came from shipment and is an original print
+                long shipmentId = Long.parseLong(reportRequest.getReportId());
+                ShipmentDetails shipmentDetails = shipmentDao.findById(shipmentId)
+                        .orElseThrow(() -> new ValidationException("No Shipment found with Id: " + shipmentId));
+
+                // Check if the shipment type is DRT and has a DPS implication (MAWBPR)
+                if (Constants.SHIPMENT_TYPE_DRT.equals(shipmentDetails.getJobType()) &&
+                        Boolean.TRUE.equals(dpsEventService.isImplicationPresent(List.of(shipmentId), DpsConstants.MAWBPR))) {
+                    throw new ReportException(DpsConstants.DPS_ERROR_1); // Throw error if implication is found
+                }
+            }
+        }
+
         // Awb print status set for Hawb and Mawb
         this.setPrintTypeForAwb(reportRequest, isOriginalPrint);
 
@@ -290,14 +320,6 @@ public class ReportService implements IReportService {
         Map<String, Object> dataRetrived = new HashMap<>();
         boolean newFlowSuccess = false;
 
-        IReport report =  reportsFactory.getReport(reportRequest.getReportInfo());
-        if(report instanceof MawbReport) {
-            if(reportRequest.isFromShipment()) {
-                ((MawbReport)report).isDMawb = true;
-            } else {
-                ((MawbReport)report).isDMawb = false;
-            }
-        }
         if(report instanceof AWBLabelReport awbLabelReport) {
             awbLabelReport.setMawb(reportRequest.isFromConsolidation());
             awbLabelReport.setRemarks(reportRequest.getRemarks());
@@ -357,7 +379,7 @@ public class ReportService implements IReportService {
         } else if (report instanceof DeliveryOrderReport vDeliveryOrderReport) {
             // Verify if the specified implication (DOPR) exists for the report's ID.
             // If true, throw a ReportException indicating the implication is already present.
-            if (Boolean.TRUE.equals(dpsEventService.isImplicationPresent(Long.parseLong(reportRequest.getReportId()), DpsConstants.DOPR))) {
+            if (Boolean.TRUE.equals(dpsEventService.isImplicationPresent(List.of(Long.parseLong(reportRequest.getReportId())), DpsConstants.DOPR))) {
                 throw new ReportException(DpsConstants.DPS_ERROR_1);
             }
 
@@ -381,7 +403,7 @@ public class ReportService implements IReportService {
 
                 // Verify if the specified implication (HBLPR) exists for the report's ID.
                 // If true, throw a ReportException indicating the implication is already present.
-                if (Boolean.TRUE.equals(dpsEventService.isImplicationPresent(Long.parseLong(reportRequest.getReportId()), DpsConstants.HBLPR))) {
+                if (Boolean.TRUE.equals(dpsEventService.isImplicationPresent(List.of(Long.parseLong(reportRequest.getReportId())), DpsConstants.HBLPR))) {
                     throw new ReportException(DpsConstants.DPS_ERROR_1);
                 }
 
@@ -400,7 +422,7 @@ public class ReportService implements IReportService {
 
             // Verify if the specified implication (HAWBPR) exists for the report's ID.
             // If true, throw a ReportException indicating the implication is already present.
-            if (Boolean.TRUE.equals(dpsEventService.isImplicationPresent(Long.parseLong(reportRequest.getReportId()), DpsConstants.HAWBPR))) {
+            if (Boolean.TRUE.equals(dpsEventService.isImplicationPresent(List.of(Long.parseLong(reportRequest.getReportId())), DpsConstants.HAWBPR))) {
                 throw new ReportException(DpsConstants.DPS_ERROR_1);
             }
 
