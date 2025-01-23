@@ -21,6 +21,9 @@ import javax.validation.constraints.Size;
 @AllArgsConstructor
 public class TiReferences extends MultiTenancy {
 
+    @Column(name = "ti_leg_id")
+    private Long tiLegId;
+
     @Column(name = "type")
     @MasterData(type = MasterDataType.REFERENCE_NUMBER_TYPE)
     private String type;

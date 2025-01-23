@@ -19,6 +19,9 @@ import javax.validation.constraints.Size;
 @AllArgsConstructor
 public class TiTruckDriverDetails extends MultiTenancy {
 
+    @Column(name = "ti_leg_id")
+    private Long tiLegId;
+
     @Column(name = "driver_name")
     @Size(max=30, message = "max size is 30 for driver_name")
     private String driverName;

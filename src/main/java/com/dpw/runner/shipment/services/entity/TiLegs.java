@@ -9,20 +9,22 @@ import lombok.Setter;
 import lombok.ToString;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
+import org.hibernate.annotations.BatchSize;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Setter
 @Getter
-@Table(name = "legs")
+@Table(name = "ti_legs")
 @Accessors(chain = true)
 @ToString(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @AllArgsConstructor
-public class Legs extends MultiTenancy {
+public class TiLegs extends MultiTenancy {
 
     @Column(name = "sequence")
     private Long sequence;
@@ -37,35 +39,25 @@ public class Legs extends MultiTenancy {
     private Parties origin;
 
     @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
-    @JoinColumn(name = "origin_address_id", referencedColumnName = "id")
-    @OrganizationData
-    private Parties originAddress;
-
-    @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "destination_id", referencedColumnName = "id")
     @OrganizationData
     private Parties destination;
 
-    @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
-    @JoinColumn(name = "destination_address_id", referencedColumnName = "id")
-    @OrganizationData
-    private Parties destinationAddress;
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "tiLegId")
+    @BatchSize(size = 50)
+    private List<TiReferences> tiReferences;
 
-    @OneToOne(fetch = FetchType.LAZY, targetEntity = TiReferences.class, cascade = CascadeType.ALL)
-    @JoinColumn(name = "reference_id", referencedColumnName = "id")
-    private TiReferences tiReferences;
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "tiLegId")
+    @BatchSize(size = 50)
+    private List<TiTruckDriverDetails> tiTruckDriverDetails;
 
-    @OneToOne(fetch = FetchType.LAZY, targetEntity = TiTruckDriverDetails.class, cascade = CascadeType.ALL)
-    @JoinColumn(name = "ti_truck_driver_id", referencedColumnName = "id")
-    private TiTruckDriverDetails tiTruckDriverDetails;
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "tiLegId")
+    @BatchSize(size = 50)
+    private List<TiContainers> tiContainers;
 
-    @OneToOne(fetch = FetchType.LAZY, targetEntity = TiContainers.class, cascade = CascadeType.ALL)
-    @JoinColumn(name = "ti_container_id", referencedColumnName = "id")
-    private TiContainers tiContainers;
-
-    @OneToOne(fetch = FetchType.LAZY, targetEntity = TiPackages.class, cascade = CascadeType.ALL)
-    @JoinColumn(name = "ti_package_id", referencedColumnName = "id")
-    private TiPackages tiPackages;
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "tiLegId")
+    @BatchSize(size = 50)
+    private List<TiPackages> tiPackages;
 
     @Column(name = "estimated_pickup")
     private LocalDateTime estimatedPickup;

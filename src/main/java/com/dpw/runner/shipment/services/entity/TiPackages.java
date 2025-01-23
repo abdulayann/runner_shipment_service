@@ -21,6 +21,10 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TiPackages extends MultiTenancy {
+
+    @Column(name = "ti_leg_id")
+    private Long tiLegId;
+
     @Column(name = "no_of_packages")
     @Size(max=5, message = "max size is 5 for noOfPackages")
     private String noOfPackages;

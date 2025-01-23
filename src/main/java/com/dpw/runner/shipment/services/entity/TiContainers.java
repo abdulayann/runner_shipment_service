@@ -23,6 +23,9 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class TiContainers extends MultiTenancy {
 
+    @Column(name = "ti_leg_id")
+    private Long tiLegId;
+
     @NonNull
     @Column(name = "type")
     @MasterData(type = MasterDataType.CONTAINER_CATEGORY)
