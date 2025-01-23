@@ -5149,6 +5149,10 @@ public class ConsolidationService implements IConsolidationService {
         }
     }
 
+    private boolean shouldGenerateBol(String transportMode) {
+        return !Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(transportMode);
+    }
+
     @Override
     public ResponseEntity<IRunnerResponse> getDefaultConsolidation() {
         String responseMsg;
@@ -5160,8 +5164,8 @@ public class ConsolidationService implements IConsolidationService {
             response.setTransportMode(tenantSettings.getDefaultTransportMode());
             response.setContainerCategory(tenantSettings.getDefaultContainerType());
             response.setShipmentType(tenantSettings.getDefaultShipmentType());
-            response.setBol((response.getTransportMode() == null || !response.getTransportMode().equalsIgnoreCase(Constants.TRANSPORT_MODE_AIR)) ? generateCustomBolNumber() : null);
-            if(!Objects.equals(null, response.getTransportMode()) && response.getTransportMode().equalsIgnoreCase(Constants.TRANSPORT_MODE_SEA)) {
+            response.setBol(shouldGenerateBol(response.getTransportMode()) ? generateCustomBolNumber() : null);
+            if (Constants.TRANSPORT_MODE_SEA.equalsIgnoreCase(response.getTransportMode())) {
                 response.setModeOfBooking(Constants.INTTRA);
             }
             response.setCreatedBy(UserContext.getUser().getUsername());
@@ -5176,9 +5180,13 @@ public class ConsolidationService implements IConsolidationService {
             try {
                 log.info("Fetching Tenant Model");
                 TenantModel tenantModel = modelMapper.map(v1Service.retrieveTenant().getEntity(), TenantModel.class);
-                List<UnlocationsResponse> unlocationsResponse = masterDataUtils.fetchUnlocationByOneIdentifier(EntityTransferConstants.ID, StringUtility.convertToString(tenantModel.getUnloco()));
-                if (!Objects.isNull(unlocationsResponse) && !unlocationsResponse.isEmpty())
-                    response.setPlaceOfIssue(unlocationsResponse.get(0).getLocationsReferenceGUID());
+                Optional.ofNullable(masterDataUtils.fetchUnlocationByOneIdentifier(
+                        EntityTransferConstants.ID,
+                        StringUtility.convertToString(tenantModel.getUnloco())
+                    ))
+                    .filter(list -> !list.isEmpty())
+                    .map(list -> list.get(0).getLocationsReferenceGUID())
+                    .ifPresent(response::setPlaceOfIssue);
             } catch (Exception e){
                 log.error("Failed in fetching tenant data from V1 with error : {}", e);
             }
