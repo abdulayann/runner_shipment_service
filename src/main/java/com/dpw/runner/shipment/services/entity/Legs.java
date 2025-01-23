@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 
+import com.dpw.runner.shipment.services.utils.OrganizationData;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
@@ -9,9 +10,7 @@ import lombok.ToString;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Table;
+import javax.persistence.*;
 import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 
@@ -32,17 +31,41 @@ public class Legs extends MultiTenancy {
     @Column(name = "leg_type")
     private String legType;
 
-    @Column(name = "origin")
-    private String origin;
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @JoinColumn(name = "origin_id", referencedColumnName = "id")
+    @OrganizationData
+    private Parties origin;
 
-    @Column(name = "origin_address")
-    private String originAddress;
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @JoinColumn(name = "origin_address_id", referencedColumnName = "id")
+    @OrganizationData
+    private Parties originAddress;
 
-    @Column(name = "destination")
-    private String destination;
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @JoinColumn(name = "destination_id", referencedColumnName = "id")
+    @OrganizationData
+    private Parties destination;
 
-    @Column(name = "destination_address")
-    private String destinationAddress;
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @JoinColumn(name = "destination_address_id", referencedColumnName = "id")
+    @OrganizationData
+    private Parties destinationAddress;
+
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = TiReferences.class, cascade = CascadeType.ALL)
+    @JoinColumn(name = "reference_id", referencedColumnName = "id")
+    private TiReferences tiReferences;
+
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = TiTruckDriverDetails.class, cascade = CascadeType.ALL)
+    @JoinColumn(name = "ti_truck_driver_id", referencedColumnName = "id")
+    private TiTruckDriverDetails tiTruckDriverDetails;
+
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = TiContainers.class, cascade = CascadeType.ALL)
+    @JoinColumn(name = "ti_container_id", referencedColumnName = "id")
+    private TiContainers tiContainers;
+
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = TiPackages.class, cascade = CascadeType.ALL)
+    @JoinColumn(name = "ti_package_id", referencedColumnName = "id")
+    private TiPackages tiPackages;
 
     @Column(name = "estimated_pickup")
     private LocalDateTime estimatedPickup;

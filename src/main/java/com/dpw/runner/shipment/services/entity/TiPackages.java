@@ -3,17 +3,29 @@ package com.dpw.runner.shipment.services.entity;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.MasterData;
+import lombok.*;
+import lombok.experimental.Accessors;
 
 import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Table;
 import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 
+@Entity
+@Setter
+@Getter
+@Table(name = "ti_packages")
+@Accessors(chain = true)
+@ToString(onlyExplicitlyIncluded = true)
+@NoArgsConstructor
+@AllArgsConstructor
 public class TiPackages extends MultiTenancy {
     @Column(name = "no_of_packages")
     @Size(max=5, message = "max size is 5 for noOfPackages")
     private String noOfPackages;
 
-    @Column(name = "packageType")
+    @Column(name = "package_type")
     @MasterData(type = MasterDataType.PACKAGE_TYPE)
     private String packageType;
 
