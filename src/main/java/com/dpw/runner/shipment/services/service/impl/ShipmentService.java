@@ -4918,6 +4918,9 @@ public class ShipmentService implements IShipmentService {
             cloneShipmentDetails.setIsTransferredToReceivingBranch(null);
             cloneShipmentDetails.setIsNetworkFile(null);
             cloneShipmentDetails.setIsReceivingBranchManually(null);
+            cloneShipmentDetails.setReceivingBranch(null);
+            cloneShipmentDetails.setTriangulationPartnerList(null);
+            cloneShipmentDetails.setTriangulationPartner(null);
             if(!Objects.isNull(cloneShipmentDetails.getPackingList()))
                 cloneShipmentDetails.getPackingList().forEach(e -> e.setId(null));
 
