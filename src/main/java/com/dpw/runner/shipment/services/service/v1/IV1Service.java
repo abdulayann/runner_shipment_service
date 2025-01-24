@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.v1;
 
+import com.dpw.runner.shipment.services.dto.request.UserWithPermissionRequestV1;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.*;
@@ -203,4 +204,5 @@ public interface IV1Service {
 
     V1DataResponse listOrgs(Object request);
     V1DataResponse listBranchesByDefaultOrgAndAddress(Object request);
+    List<UsersDto> getUsersWithGivenPermissions(UserWithPermissionRequestV1 request);
 }
