@@ -2597,18 +2597,14 @@ public class V1ServiceImpl implements IV1Service {
 
     @Override
     public List<UsersDto> getUsersWithGivenPermissions(UserWithPermissionRequestV1 request) {
+        ResponseEntity<V1DataResponse> response;
         try {
             long time = System.currentTimeMillis();
             HttpEntity<Object> entity = new HttpEntity<>(request, V1AuthHelper.getHeaders());
-            ResponseEntity<List<UsersDto>> response = this.restTemplate.exchange(
-                    this.getUserWithGivenPermission,
-                    HttpMethod.POST,
-                    entity,
-                    new ParameterizedTypeReference<List<UsersDto>>() {}
-            );
+            response = this.restTemplate.postForEntity(this.getUserWithGivenPermission, entity, V1DataResponse.class);
 
             log.info("Token time taken in getUsersWithGivenPermissions() function {} ms", (System.currentTimeMillis() - time));
-            return response.getBody();
+            return jsonHelper.convertValueToList(response.getBody().getEntities(), UsersDto.class);
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
             throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {

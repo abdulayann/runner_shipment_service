@@ -2209,6 +2209,7 @@ class EntityTransferServiceTest extends CommonMocks {
 
         when(jsonHelper.convertValue(any(), eq(V1TenantResponse.class))).thenReturn(v1TenantResponse);
         when(v1TenantResponse.getTenantName()).thenReturn("abcd");
+        when(v1Service.getUsersWithGivenPermissions(any())).thenReturn(List.of(UsersDto.builder().Email("abcd").build()));
 
         // When
         entityTransferService.sendGroupedEmailForShipmentImport(shipmentDetailsList, consoleSourceBranchTenantName);

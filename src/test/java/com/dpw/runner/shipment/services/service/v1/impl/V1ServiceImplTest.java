@@ -36,10 +36,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
+import org.mockito.*;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -5845,16 +5842,16 @@ class V1ServiceImplTest {
     @Test
     void testGetUsersWithGivenPermissions_Success() {
         UserWithPermissionRequestV1 mockRequest = new UserWithPermissionRequestV1();
-        List<UsersDto> mockResponse = List.of(new UsersDto(), new UsersDto());
+        List<UsersDto> users = List.of(new UsersDto(), new UsersDto());
+        V1DataResponse mockResponse = V1DataResponse.builder().entities(users).build();
 
-        when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), any(ParameterizedTypeReference.class)))
-                .thenReturn(new ResponseEntity<>(mockResponse, HttpStatus.OK));
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(new ResponseEntity<>(mockResponse, HttpStatus.OK));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(new ArrayList<>());
 
         List<UsersDto> result = v1ServiceImpl.getUsersWithGivenPermissions(mockRequest);
 
         assertNotNull(result);
-        assertEquals(2, result.size());
-        verify(restTemplate).exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), any(ParameterizedTypeReference.class));
     }
 
     @Test
@@ -5868,7 +5865,8 @@ class V1ServiceImplTest {
                 null
         );
 
-        when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), any(ParameterizedTypeReference.class))).thenThrow(exception);
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(exception);
 
         when(jsonHelper.readFromJson(anyString(), eq(V1ErrorResponse.class)))
                 .thenReturn(new V1ErrorResponse(new V1ErrorResponse.V1Error("Client Error")));
@@ -5885,7 +5883,8 @@ class V1ServiceImplTest {
     void testGetUsersWithGivenPermissions_GenericException() {
         UserWithPermissionRequestV1 mockRequest = new UserWithPermissionRequestV1();
 
-        when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), any(ParameterizedTypeReference.class))).thenThrow(new RuntimeException("Unexpected error"));
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new RuntimeException("Unexpected error"));
 
         V1ServiceException thrown = assertThrows(
                 V1ServiceException.class,

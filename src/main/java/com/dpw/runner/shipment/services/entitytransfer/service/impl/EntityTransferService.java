@@ -2446,6 +2446,7 @@ public class EntityTransferService implements IEntityTransferService {
         List<UsersDto> usersDtoList = v1Service.getUsersWithGivenPermissions(request);
         return usersDtoList.stream()
                 .map(UsersDto::getEmail)
+                .filter(Objects::nonNull)
                 .collect(Collectors.toList());
     }
 
