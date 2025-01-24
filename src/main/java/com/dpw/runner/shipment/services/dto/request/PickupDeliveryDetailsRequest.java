@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.config.CustomLocalTimeDeserializer;
 import com.dpw.runner.shipment.services.entity.Parties;
+import com.dpw.runner.shipment.services.entity.TiLegs;
 import com.dpw.runner.shipment.services.entity.enums.InstructionType;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.swagger.annotations.ApiModel;
@@ -66,4 +67,5 @@ public class PickupDeliveryDetailsRequest extends CommonRequest implements IRunn
     private LocalDateTime deliveryGateOut;
     private List<Parties> partiesList;
     private String remarks;
+    private List<TiLegsRequest> tiLegsList;
 }

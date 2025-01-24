@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -11,10 +12,10 @@ import java.util.UUID;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class TiContainersResponse implements IRunnerRequest {
+public class TiContainersResponse implements IRunnerResponse {
     private Long id;
     private UUID guid;
-    private Long tiLegId;
+//    private Long tiLegId;
     private String type;
     private String number;
     private String description;

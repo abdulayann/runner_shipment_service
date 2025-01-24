@@ -19,10 +19,10 @@ public class TiLegsRequest implements IRunnerRequest {
     private String legType;
     private PartiesRequest origin;
     private PartiesRequest destination;
-    private List<TiReferencesRequest> tiReferencesRequests;
-    private List<TiTruckDriverDetailsRequest> tiTruckDriverDetailsRequests;
-    private List<TiContainersRequest> tiContainersRequests;
-    private List<TiPackagesRequest> tiPackagesRequests;
+    private List<TiReferencesRequest> tiReferences;
+    private List<TiTruckDriverDetailsRequest> tiTruckDriverDetails;
+    private List<TiContainersRequest> tiContainers;
+    private List<TiPackagesRequest> tiPackages;
     private LocalDateTime estimatedPickup;
     private LocalDateTime estimatedDelivery;
     private LocalDateTime actualPickup;
