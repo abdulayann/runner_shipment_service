@@ -512,7 +512,10 @@ public class HblService implements IHblService {
         hblData.setNoOfCopies(StringUtility.convertToString(additionalDetails.getCopy()));
         hblData.setVersion(1);
         hblData.setOriginOfGoods(additionalDetails.getGoodsCO());
-        hblData.setPurchaseOrderNumber(shipmentDetail.getOrderManagementNumber());
+        List<ShipmentOrder> shipmentOrders = shipmentDetail.getShipmentOrders();
+        if(shipmentOrders != null && !shipmentOrders.isEmpty()) {
+            hblData.setPurchaseOrderNumber(shipmentOrders.stream().map(ShipmentOrder::getOrderNumber).filter(Objects::nonNull).collect(Collectors.joining(", ")));
+        }
         if (!Objects.isNull(additionalDetails.getImportBroker())) {
             Parties broker = additionalDetails.getImportBroker();
             if (!Objects.isNull(broker.getOrgData()) && broker.getOrgData().containsKey(PartiesConstants.FULLNAME))
