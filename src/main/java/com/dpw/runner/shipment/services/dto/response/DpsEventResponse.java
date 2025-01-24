@@ -46,7 +46,7 @@ public class DpsEventResponse implements IRunnerResponse {
     private String transactionId;
     private List<String> usernameList;
     private transient List<Object> tasks;
-    private List<DpsApprovalDetailResponse> dpsApprovalDetailList;
+    private transient List<DpsApprovalDetailResponse> dpsApprovalDetailList;
 
     @Data
     @NoArgsConstructor
