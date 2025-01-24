@@ -621,7 +621,7 @@ public class EventDao implements IEventDao {
                 i.getShipmentNumber(),
                 i.getSource(),
                 i.getPlaceName()
-        ) , Function.identity()));
+        ) , Function.identity(), (existing, replacement) -> existing.getId() > replacement.getId() ? existing : replacement));
 
         List<Events> newEventList = new ArrayList<>();
         List<Events> filteredEvents = new ArrayList<>(requestList.stream().filter(e -> {

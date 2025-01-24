@@ -5651,7 +5651,6 @@ import java.util.stream.Collectors;
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
                 .isAutomaticTransferEnabled(true)
                 .build());
-        mockShipmentSettings();
         ConsolidationDetails consolidationDetails1 = jsonTestUtility.getCompleteConsolidation();
         consolidationDetails1.setReceivingBranch(1L);
         ConsolidationDetails consolidationDetails2 = testConsol;

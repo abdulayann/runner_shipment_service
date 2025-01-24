@@ -4357,6 +4357,13 @@ public class ConsolidationService implements IConsolidationService {
                 } else if (consolidationDetails.getTriangulationPartner() != null) {
                     processNetworkTransferEntity(consolidationDetails.getTriangulationPartner(),
                             oldEntity != null ? oldEntity.getTriangulationPartner() : null, consolidationDetails, Constants.DIRECTION_CTS);
+                } else if(consolidationDetails.getTriangulationPartnerList() == null) {
+                    List<Long> oldPartners = oldEntity != null ? commonUtils.getTriangulationPartnerList(oldEntity.getTriangulationPartnerList())
+                            : Collections.emptyList();
+                    Set<Long> oldTenantIds = new HashSet<>(oldPartners);
+                    oldTenantIds.forEach(oldTenantId ->
+                            processNetworkTransferEntity(null, oldTenantId, consolidationDetails, Constants.DIRECTION_CTS)
+                    );
                 }
             }
         } catch (Exception ex) {
@@ -4365,26 +4372,35 @@ public class ConsolidationService implements IConsolidationService {
 
     }
 
+    private void deleteAllConsoleErrorsLogs(ConsolidationDetails consolidationDetails){
+        List<Long> shipmentIds = new ArrayList<>();
+        if(consolidationDetails.getShipmentsList()!=null)
+            shipmentIds = consolidationDetails.getShipmentsList().stream().map(BaseEntity::getId).toList();
+        commonErrorLogsDao.deleteAllConsoleAndShipmentErrorsLogs(consolidationDetails.getId(), shipmentIds);
+    }
+
     public void triggerAutomaticTransfer(ConsolidationDetails consolidationDetails,
                                          ConsolidationDetails oldEntity, Boolean isDocOrHawbNumAdded) {
         try {
-            if(ObjectUtils.isEmpty(consolidationDetails.getReceivingBranch()) && oldEntity != null && ObjectUtils.isNotEmpty(oldEntity.getReceivingBranch())) {
-                List<Long> shipmentIds = consolidationDetails.getShipmentsList().stream().map(BaseEntity::getId).toList();
-                commonErrorLogsDao.deleteAllConsoleAndShipmentErrorsLogs(consolidationDetails.getId(), shipmentIds);
-            }
-            if (isInvalidForTransfer(consolidationDetails)) {
+
+            Boolean isReceivingBranchEmpty = ObjectUtils.isEmpty(consolidationDetails.getReceivingBranch()) && oldEntity != null && ObjectUtils.isNotEmpty(oldEntity.getReceivingBranch());
+            if(Boolean.TRUE.equals(isReceivingBranchEmpty) || isInvalidForTransfer(consolidationDetails)) {
+                deleteAllConsoleErrorsLogs(consolidationDetails);
                 return;
             }
 
             List<V1TenantSettingsResponse.FileTransferConfigurations> fileTransferConfigurations = quartzJobInfoService.getActiveFileTransferConfigurations(consolidationDetails.getTransportMode());
             if (ObjectUtils.isEmpty(fileTransferConfigurations)) {
+                deleteAllConsoleErrorsLogs(consolidationDetails);
                 return;
             }
 
             Optional<NetworkTransfer> optionalNetworkTransfer = networkTransferDao.findByTenantAndEntity(Math.toIntExact(consolidationDetails.getReceivingBranch()), consolidationDetails.getId(), CONSOLIDATION);
             if(optionalNetworkTransfer.isPresent() && (optionalNetworkTransfer.get().getStatus()==NetworkTransferStatus.TRANSFERRED ||
-                    optionalNetworkTransfer.get().getStatus()==NetworkTransferStatus.ACCEPTED))
+                    optionalNetworkTransfer.get().getStatus()==NetworkTransferStatus.ACCEPTED)) {
+                deleteAllConsoleErrorsLogs(consolidationDetails);
                 return;
+            }
 
             Optional<QuartzJobInfo> optionalQuartzJobInfo = quartzJobInfoDao.findByJobFilters(
                     consolidationDetails.getTenantId(), consolidationDetails.getId(), CONSOLIDATION);
@@ -4486,8 +4502,7 @@ public class ConsolidationService implements IConsolidationService {
         }else{
             quartzJobInfoService.createSimpleJob(newQuartzJobInfo);
         }
-        List<Long> shipmentIds = consolidationDetails.getShipmentsList().stream().map(BaseEntity::getId).toList();
-        commonErrorLogsDao.deleteAllConsoleAndShipmentErrorsLogs(consolidationDetails.getId(), shipmentIds);
+        deleteAllConsoleErrorsLogs(consolidationDetails);
     }
 
     private QuartzJobInfo createNewQuartzJob(ConsolidationDetails consolidationDetails) {
