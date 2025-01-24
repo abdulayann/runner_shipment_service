@@ -132,7 +132,7 @@ public interface IShipmentService extends ICommonService {
 
     ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel, boolean getMasterData);
     ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel, boolean getMasterData);
-    ResponseEntity<IRunnerResponse> retrieveForNTE(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> retrieveForNTE(CommonRequestModel commonRequestModel, Long consolidationId, boolean fromConsoleNte);
      void triggerAutomaticTransfer(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, Boolean isDocAdded);
 
 }
