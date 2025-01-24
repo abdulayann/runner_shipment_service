@@ -87,6 +87,9 @@ import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.entity.response.consolidation.ConsolidationLiteResponse;
+import com.dpw.runner.shipment.services.entity.response.consolidation.IContainerLiteResponse;
+import com.dpw.runner.shipment.services.entity.response.consolidation.IShipmentContainerLiteResponse;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -101,6 +104,7 @@ import com.dpw.runner.shipment.services.mapper.ConsolidationDetailsMapper;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.CarrierResponse;
 import com.dpw.runner.shipment.services.projection.ConsolidationDetailsProjection;
+import com.dpw.runner.shipment.services.repository.impl.CustomConsolidationDetailsRepositoryImpl;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
@@ -155,6 +159,8 @@ import java.util.stream.Collectors;
     private PartialFetchUtils partialFetchUtils;
     @Mock
     private IConsolidationDetailsDao consolidationDetailsDao;
+    @Mock
+    private CustomConsolidationDetailsRepositoryImpl customConsolidationDetailsRepository;
     @Mock
     private IConsoleShipmentMappingDao consoleShipmentMappingDao;
     @Mock
@@ -586,6 +592,35 @@ import java.util.stream.Collectors;
         verify(consolidationDetailsDao).findMblNumberInDifferentTenant(mblNumber);
     }
 
+    @Test
+    void testAddRelationShipFields(){
+      List<ConsolidationLiteResponse> consolidationLiteResponseList = new ArrayList<>();
+      boolean isShipmentLevelContainer = true;
+
+      ConsolidationLiteResponse consolidationLiteResponse = ConsolidationLiteResponse.builder()
+          .id(1l)
+          .build();
+      consolidationLiteResponseList.add(consolidationLiteResponse);
+
+      ConsolidationDetails consolidationDetails1 = new ConsolidationDetails();
+      consolidationDetails1.setId(1l);
+
+      IContainerLiteResponse iContainerLiteResponse = mock(IContainerLiteResponse.class);
+      when(iContainerLiteResponse.getConsolidationId()).thenReturn(1l);
+
+      IShipmentContainerLiteResponse iShipmentContainerLiteResponse = mock(IShipmentContainerLiteResponse.class);
+      when(iShipmentContainerLiteResponse.getConsolId()).thenReturn(1l);
+      when(iShipmentContainerLiteResponse.getShipId()).thenReturn(1l);
+
+      when(containerDao.findAllLiteContainer(anyList())).thenReturn(List.of(iContainerLiteResponse));
+      when(consolidationDetailsDao.findShipmentDetailsWithContainersByConsolidationIds(anyList()))
+          .thenReturn(List.of(iShipmentContainerLiteResponse));
+      when(objectMapper.convertValue(any(), eq(ConsolidationDetails.class))).thenReturn(consolidationDetails1);
+      when(jsonHelper.convertValue(any(), eq(CarrierDetails.class))).thenReturn(new CarrierDetails());
+
+      consolidationService.addRelationShipFields(consolidationLiteResponseList, isShipmentLevelContainer);
+      verify(containerDao).findAllLiteContainer(anyList());
+    }
 
     @Test
     void testValidateCarrierDetails_EmptyCarrierDetails() {
@@ -3678,17 +3713,23 @@ import java.util.stream.Collectors;
         ListCommonRequest listCommonRequest = constructListCommonRequest("id", 1, "=");
         MockHttpServletResponse response = new MockHttpServletResponse();
         ConsolidationDetails consolidationDetails = testConsol;
+        ConsolidationLiteResponse liteResponse = new ConsolidationLiteResponse();
         UsersDto usersDto = UserContext.getUser();
         usersDto.setEnableTimeZone(false);
         UserContext.setUser(usersDto);
         ConsolidationListResponse consolidationListResponse = modelMapperTest.map(consolidationDetails, ConsolidationListResponse.class);
 
-        when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consolidationDetails)));
-        mockShipmentSettings();
+        when(customConsolidationDetailsRepository.findAllLiteConsol(any(), any())).thenReturn(new PageImpl<>(List.of(liteResponse)));
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
 
         when(jsonHelper.convertValue(any(), eq(ConsolidationListResponse.class))).thenReturn(consolidationListResponse);
-
+        when(jsonHelper.convertValue(any(), eq(CarrierDetails.class))).thenReturn(new CarrierDetails());
+        when(objectMapper.convertValue(any(), eq(ConsolidationDetails.class))).thenReturn(new ConsolidationDetails());
+        when(containerDao.findAllLiteContainer(anyList())).thenReturn(new ArrayList<>());
+        when(consolidationDetailsDao.findIShipmentsByConsolidationIds(anyList())).thenReturn(new ArrayList<>());
         consolidationService.exportExcel(response, CommonRequestModel.buildRequest(listCommonRequest));
+
         assertEquals(200,response.getStatus());
     }
 

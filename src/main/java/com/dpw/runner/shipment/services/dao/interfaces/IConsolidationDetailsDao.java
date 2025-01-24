@@ -4,6 +4,9 @@ import com.dpw.runner.shipment.services.dto.request.ConsoleBookingRequest;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
+import com.dpw.runner.shipment.services.entity.response.consolidation.IConsolidationDetailsResponse;
+import com.dpw.runner.shipment.services.entity.response.consolidation.IShipmentContainerLiteResponse;
+import com.dpw.runner.shipment.services.entity.response.consolidation.IShipmentLiteResponse;
 import com.dpw.runner.shipment.services.projection.ConsolidationDetailsProjection;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -43,4 +46,8 @@ public interface IConsolidationDetailsDao {
     void saveIsTransferredToReceivingBranch(Long id, Boolean entityTransferred);
     void updateIsAcceptedTriangulationPartner(Long consolidationId, Long triangulationPartner, Boolean isAccepted);
     void updateTransferStatus(Long id, NetworkTransferStatus transferStatus);
+    List<IShipmentLiteResponse> findIShipmentsByConsolidationIds(List<Long> consolidationIDs);
+    List<IShipmentContainerLiteResponse> findShipmentDetailsWithContainersByConsolidationIds(List<Long> consolidationIDs);
+    Page<IConsolidationDetailsResponse> findAllLiteConsol(Specification<ConsolidationDetails> spec, Pageable pageable);
+
 }
