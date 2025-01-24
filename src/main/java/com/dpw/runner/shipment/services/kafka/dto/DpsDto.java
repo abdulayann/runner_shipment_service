@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services.kafka.dto;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.LocalDateTime;
@@ -35,7 +34,6 @@ public class DpsDto {
         @JsonProperty("username")
         private List<String> usernameList;
         private List<DpsFieldDataDto> fieldsDetectedValues;
-        @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSS")
         private LocalDateTime eventTimestamp;
         private List<Object> tasks;
         private String entityType;
