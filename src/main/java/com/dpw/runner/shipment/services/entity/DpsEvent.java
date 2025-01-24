@@ -139,6 +139,11 @@ public class DpsEvent {
     @Column(name = "tasks", columnDefinition = "jsonb")
     private List<Object> tasks;
 
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "dps_approval_detail", joinColumns = @JoinColumn(name = "dps_event_id"))
+    @BatchSize(size = 50)
+    private List<DpsApprovalDetail> dpsApprovalDetailList;
+
     @PreUpdate
     void preUpdate() {
         this.updatedAt = LocalDateTime.now();
@@ -166,6 +171,34 @@ public class DpsEvent {
     public static class DpsFieldData {
         private String key;
         private String value;
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Embeddable
+    public static class DpsApprovalDetail {
+        @Column(name = "username")
+        private String username;
+
+        @Column(name = "action_time")
+        private LocalDateTime actionTime;
+
+        @Column(name = "message")
+        private String message;
+
+        @Column(name = "state")
+        private String state;
+
+        @Column(name = "approval_level")
+        private String approvalLevel;
+
+        @Column(name = "role_name")
+        private String roleName;
+
+        @Column(name = "role_id")
+        private String roleId;
     }
 
 }
