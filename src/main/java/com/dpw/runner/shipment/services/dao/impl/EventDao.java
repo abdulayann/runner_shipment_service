@@ -30,6 +30,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.syncing.interfaces.IEventsSync;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.ExcludeTenantFilter;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
@@ -595,16 +596,16 @@ public class EventDao implements IEventDao {
 
 
     private Events updateUserFieldsInEvent(Events event) {
-        if (event.getUserName() == null) {
+        if (StringUtility.isNotEmpty(event.getUserName())) {
             event.setUserName(Optional.ofNullable(UserContext.getUser()).map(UsersDto::getDisplayName).orElse(null));
         }
-        if (event.getUserEmail() == null) {
+        if (StringUtility.isNotEmpty(event.getUserEmail())) {
             event.setUserEmail(Optional.ofNullable(UserContext.getUser()).map(UsersDto::getEmail).orElse(null));
         }
-        if (event.getBranch() == null) {
+        if (StringUtility.isNotEmpty(event.getBranch())) {
             event.setBranch(Optional.ofNullable(UserContext.getUser()).map(UsersDto::getCode).orElse(null));
         }
-        if (event.getBranchName() == null) {
+        if (StringUtility.isNotEmpty(event.getBranchName())) {
             event.setBranchName(Optional.ofNullable(UserContext.getUser()).map(UsersDto::getTenantDisplayName).orElse(null));
         }
 
