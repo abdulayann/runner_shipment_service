@@ -13,7 +13,7 @@ import java.util.UUID;
 public class TiTruckDriverDetailsRequest implements IRunnerRequest {
     private Long id;
     private UUID guid;
-    private Long tiLegId;
+//    private Long tiLegId;
     private String driverName;
     private String driverMobileNumber;
     private String truckNumberPlate;

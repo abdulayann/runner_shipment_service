@@ -10,6 +10,8 @@ import lombok.ToString;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.BatchSize;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.Where;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
@@ -24,7 +26,12 @@ import java.util.List;
 @ToString(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @AllArgsConstructor
+@SQLDelete(sql = "UPDATE ti_legs SET is_deleted = true WHERE id=?")
+@Where(clause = "is_deleted = false")
 public class TiLegs extends MultiTenancy {
+
+    @Column(name = "pickup_delivery_details_id")
+    private Long pickupDeliveryDetailsId;
 
     @Column(name = "sequence")
     private Long sequence;
@@ -43,19 +50,23 @@ public class TiLegs extends MultiTenancy {
     @OrganizationData
     private Parties destination;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "tiLegId", cascade = CascadeType.ALL)
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "ti_leg_id")
     @BatchSize(size = 50)
     private List<TiReferences> tiReferences;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "tiLegId", cascade = CascadeType.ALL)
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "ti_leg_id")
     @BatchSize(size = 50)
     private List<TiTruckDriverDetails> tiTruckDriverDetails;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "tiLegId", cascade = CascadeType.ALL)
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "ti_leg_id")
     @BatchSize(size = 50)
     private List<TiContainers> tiContainers;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "tiLegId", cascade = CascadeType.ALL)
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "ti_leg_id")
     @BatchSize(size = 50)
     private List<TiPackages> tiPackages;
 

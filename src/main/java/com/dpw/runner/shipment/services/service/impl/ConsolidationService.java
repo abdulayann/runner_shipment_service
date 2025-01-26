@@ -777,11 +777,11 @@ public class ConsolidationService implements IConsolidationService {
      */
     @Override
     public void generateConsolidationNumber(ConsolidationDetails consolidationDetails) throws RunnerException {
-        List<ShipmentSettingsDetails> shipmentSettingsList = shipmentSettingsDao.list();
+        Boolean customisedSequence = shipmentSettingsDao.getCustomisedSequence();
 
         if(consolidationDetails.getConsolidationNumber() == null) {
-            if(shipmentSettingsList.get(0) != null && shipmentSettingsList.get(0).getCustomisedSequence()) {
-                String consoleNumber = getCustomizedConsolidationProcessNumber(consolidationDetails, shipmentSettingsList.get(0), ProductProcessTypes.ReferenceNumber);
+            if(Boolean.TRUE.equals(customisedSequence)) {
+                String consoleNumber = getCustomizedConsolidationProcessNumber(consolidationDetails, ProductProcessTypes.ReferenceNumber);
                 if(consoleNumber != null && !consoleNumber.isEmpty())
                     consolidationDetails.setConsolidationNumber(consoleNumber);
                 if (consolidationDetails.getConsolidationNumber() == null || consolidationDetails.getConsolidationNumber().isEmpty())
@@ -797,7 +797,7 @@ public class ConsolidationService implements IConsolidationService {
         }
 
         if (StringUtility.isEmpty(consolidationDetails.getBol()) && Objects.equals(commonUtils.getShipmentSettingFromContext().getConsolidationLite(), false)) {
-            String bol = getCustomizedConsolidationProcessNumber(consolidationDetails, shipmentSettingsList.get(0), ProductProcessTypes.BOLNumber);
+            String bol = getCustomizedConsolidationProcessNumber(consolidationDetails, ProductProcessTypes.BOLNumber);
             if (StringUtility.isEmpty(bol)) {
                 bol = generateCustomBolNumber();
             }
@@ -816,8 +816,8 @@ public class ConsolidationService implements IConsolidationService {
         return maxId;
     }
 
-    private String getCustomizedConsolidationProcessNumber(ConsolidationDetails consolidationDetails, ShipmentSettingsDetails shipmentSettingsDetails, ProductProcessTypes productProcessTypes) throws RunnerException {
-        List<TenantProducts> enabledTenantProducts = productEngine.populateEnabledTenantProducts(shipmentSettingsDetails);
+    private String getCustomizedConsolidationProcessNumber(ConsolidationDetails consolidationDetails, ProductProcessTypes productProcessTypes) throws RunnerException {
+        List<TenantProducts> enabledTenantProducts = productEngine.populateEnabledTenantProducts();
         if (productProcessTypes == ProductProcessTypes.ReferenceNumber) {
             // to check the commmon sequence
             var sequenceNumber = productEngine.GetCommonSequenceNumber(consolidationDetails.getTransportMode(), ProductProcessTypes.Consol_Shipment_TI);
@@ -1247,24 +1247,30 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     @Transactional
-    public ResponseEntity<IRunnerResponse> detachShipments(Long consolidationId, List<Long> shipmentIds) throws RunnerException {
-        return detachShipments(consolidationId, shipmentIds, null);
+    public ResponseEntity<IRunnerResponse> detachShipments(ConsolidationDetails consol, List<Long> shipmentIds) throws RunnerException {
+        return detachShipmentsHelper(consol, shipmentIds, null);
     }
 
     @Transactional
     public ResponseEntity<IRunnerResponse> detachShipments(Long consolidationId, List<Long> shipmentIds, String remarks) throws RunnerException {
         Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationId);
+        if(consol.isPresent())
+            return detachShipmentsHelper(consol.get(), shipmentIds, remarks);
+        return ResponseHelper.buildFailedResponse("Consol is null");
+    }
 
+    public ResponseEntity<IRunnerResponse> detachShipmentsHelper(ConsolidationDetails consol, List<Long> shipmentIds, String remarks) throws RunnerException {
         List<ShipmentDetails> shipmentDetails = Optional.ofNullable(shipmentIds)
                 .filter(ObjectUtils::isNotEmpty).map(ids -> shipmentDao.findShipmentsByIds(ids.stream().collect(Collectors.toSet())))
                 .orElse(Collections.emptyList());
         validateShipmentDetachment(shipmentDetails);
 
-        if (consol.isPresent() && Boolean.TRUE.equals(consol.get().getInterBranchConsole())) {
+        if (Boolean.TRUE.equals(consol.getInterBranchConsole())) {
             commonUtils.setInterBranchContextForHub();
         }
 
         boolean saveSeaPacks = false;
+        Long consolidationId = consol.getId();
         List<Packing> packingList = new ArrayList<>();
         List<ShipmentDetails> shipmentDetailsToSave = new ArrayList<>();
         if(consolidationId != null && shipmentIds!= null && shipmentIds.size() > 0) {
@@ -1338,16 +1344,16 @@ public class ConsolidationService implements IConsolidationService {
             shipmentDetailsToSave = shipmentDetailsMap.values().stream().toList();
             shipmentDao.saveAll(shipmentDetailsToSave);
         }
-        if(consol.isPresent() && checkAttachDgAirShipments(consol.get())){
-            consol.get().setHazardous(false);
-            consolidationDetailsDao.save(consol.get(), false);
+        if(checkAttachDgAirShipments(consol)){
+            consol.setHazardous(false);
+            consolidationDetailsDao.save(consol, false);
         }
-        if(consol.isPresent() && Objects.equals(consol.get().getTransportMode(), Constants.TRANSPORT_MODE_AIR))
+        if(Objects.equals(consol.getTransportMode(), Constants.TRANSPORT_MODE_AIR))
             this.checkSciForDetachConsole(consolidationId);
         Set<ShipmentRequestedType> shipmentRequestedTypes = new HashSet<>();
         if(remarks != null)
-            sendEmailForDetachShipments(consol.get(), shipmentDetails, shipmentRequestedTypes, remarks);
-        String transactionId = consol.get().getGuid().toString();
+            sendEmailForDetachShipments(consol, shipmentDetails, shipmentRequestedTypes, remarks);
+        String transactionId = consol.getGuid().toString();
         if(packingList != null) {
             try {
                 packingsADSync.sync(packingList, transactionId);
@@ -1356,7 +1362,7 @@ public class ConsolidationService implements IConsolidationService {
             }
         }
         try {
-            consolidationSync.sync(consol.get(), transactionId, false);
+            consolidationSync.sync(consol, transactionId, false);
         } catch (Exception e) {
             log.error("Error Syncing Consol");
         }
@@ -4351,6 +4357,13 @@ public class ConsolidationService implements IConsolidationService {
                 } else if (consolidationDetails.getTriangulationPartner() != null) {
                     processNetworkTransferEntity(consolidationDetails.getTriangulationPartner(),
                             oldEntity != null ? oldEntity.getTriangulationPartner() : null, consolidationDetails, Constants.DIRECTION_CTS);
+                } else if(consolidationDetails.getTriangulationPartnerList() == null) {
+                    List<Long> oldPartners = oldEntity != null ? commonUtils.getTriangulationPartnerList(oldEntity.getTriangulationPartnerList())
+                            : Collections.emptyList();
+                    Set<Long> oldTenantIds = new HashSet<>(oldPartners);
+                    oldTenantIds.forEach(oldTenantId ->
+                            processNetworkTransferEntity(null, oldTenantId, consolidationDetails, Constants.DIRECTION_CTS)
+                    );
                 }
             }
         } catch (Exception ex) {
@@ -4359,26 +4372,35 @@ public class ConsolidationService implements IConsolidationService {
 
     }
 
+    private void deleteAllConsoleErrorsLogs(ConsolidationDetails consolidationDetails){
+        List<Long> shipmentIds = new ArrayList<>();
+        if(consolidationDetails.getShipmentsList()!=null)
+            shipmentIds = consolidationDetails.getShipmentsList().stream().map(BaseEntity::getId).toList();
+        commonErrorLogsDao.deleteAllConsoleAndShipmentErrorsLogs(consolidationDetails.getId(), shipmentIds);
+    }
+
     public void triggerAutomaticTransfer(ConsolidationDetails consolidationDetails,
                                          ConsolidationDetails oldEntity, Boolean isDocOrHawbNumAdded) {
         try {
-            if(ObjectUtils.isEmpty(consolidationDetails.getReceivingBranch()) && oldEntity != null && ObjectUtils.isNotEmpty(oldEntity.getReceivingBranch())) {
-                List<Long> shipmentIds = consolidationDetails.getShipmentsList().stream().map(BaseEntity::getId).toList();
-                commonErrorLogsDao.deleteAllConsoleAndShipmentErrorsLogs(consolidationDetails.getId(), shipmentIds);
-            }
-            if (isInvalidForTransfer(consolidationDetails)) {
+
+            Boolean isReceivingBranchEmpty = ObjectUtils.isEmpty(consolidationDetails.getReceivingBranch()) && oldEntity != null && ObjectUtils.isNotEmpty(oldEntity.getReceivingBranch());
+            if(Boolean.TRUE.equals(isReceivingBranchEmpty) || isInvalidForTransfer(consolidationDetails)) {
+                deleteAllConsoleErrorsLogs(consolidationDetails);
                 return;
             }
 
             List<V1TenantSettingsResponse.FileTransferConfigurations> fileTransferConfigurations = quartzJobInfoService.getActiveFileTransferConfigurations(consolidationDetails.getTransportMode());
             if (ObjectUtils.isEmpty(fileTransferConfigurations)) {
+                deleteAllConsoleErrorsLogs(consolidationDetails);
                 return;
             }
 
             Optional<NetworkTransfer> optionalNetworkTransfer = networkTransferDao.findByTenantAndEntity(Math.toIntExact(consolidationDetails.getReceivingBranch()), consolidationDetails.getId(), CONSOLIDATION);
             if(optionalNetworkTransfer.isPresent() && (optionalNetworkTransfer.get().getStatus()==NetworkTransferStatus.TRANSFERRED ||
-                    optionalNetworkTransfer.get().getStatus()==NetworkTransferStatus.ACCEPTED))
+                    optionalNetworkTransfer.get().getStatus()==NetworkTransferStatus.ACCEPTED)) {
+                deleteAllConsoleErrorsLogs(consolidationDetails);
                 return;
+            }
 
             Optional<QuartzJobInfo> optionalQuartzJobInfo = quartzJobInfoDao.findByJobFilters(
                     consolidationDetails.getTenantId(), consolidationDetails.getId(), CONSOLIDATION);
@@ -4480,8 +4502,7 @@ public class ConsolidationService implements IConsolidationService {
         }else{
             quartzJobInfoService.createSimpleJob(newQuartzJobInfo);
         }
-        List<Long> shipmentIds = consolidationDetails.getShipmentsList().stream().map(BaseEntity::getId).toList();
-        commonErrorLogsDao.deleteAllConsoleAndShipmentErrorsLogs(consolidationDetails.getId(), shipmentIds);
+        deleteAllConsoleErrorsLogs(consolidationDetails);
     }
 
     private QuartzJobInfo createNewQuartzJob(ConsolidationDetails consolidationDetails) {

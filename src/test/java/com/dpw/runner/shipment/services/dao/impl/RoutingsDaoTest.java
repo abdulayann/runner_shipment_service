@@ -322,6 +322,7 @@ class RoutingsDaoTest extends CommonMocks {
         RoutingsDao spyService = spy(routingsDao);
         doNothing().when(auditLogService).addAuditLog(any(AuditLogMetaData.class));
         doReturn(routingsList).when(spyService).saveAll(any());
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
         Map<Long, Routings> map = new HashMap<>();
         map.put(testRoutings.getId(), testRoutings);
         List<Routings> routings = spyService.saveEntityFromShipment(routingsList, 1L, map);
@@ -335,6 +336,7 @@ class RoutingsDaoTest extends CommonMocks {
         RoutingsDao spyService = spy(routingsDao);
         doNothing().when(auditLogService).addAuditLog(any(AuditLogMetaData.class));
         doReturn(routingsList).when(spyService).saveAll(any());
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
         Map<Long, Routings> map = new HashMap<>();
         map.put(testRoutings.getId(), testRoutings);
         List<Routings> routings = spyService.saveEntityFromShipment(routingsList, 1L, map);
@@ -348,6 +350,7 @@ class RoutingsDaoTest extends CommonMocks {
         RoutingsDao spyService = spy(routingsDao);
         doThrow(InvocationTargetException.class).when(auditLogService).addAuditLog(any(AuditLogMetaData.class));
         doReturn(routingsList).when(spyService).saveAll(any());
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
         Map<Long, Routings> map = new HashMap<>();
         map.put(testRoutings.getId(), testRoutings);
         List<Routings> routings = spyService.saveEntityFromShipment(routingsList, 1L, map);

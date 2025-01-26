@@ -56,6 +56,7 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentConsoleId
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentContainerAssignRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
+import com.dpw.runner.shipment.services.dto.mapper.AttachListShipmentMapper;
 import com.dpw.runner.shipment.services.dto.mapper.ShipmentMapper;
 import com.dpw.runner.shipment.services.dto.patchrequest.CarrierPatchRequest;
 import com.dpw.runner.shipment.services.dto.patchrequest.ShipmentPatchRequest;
@@ -76,7 +77,6 @@ import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiRe
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Event;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Journey;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteContainerResponse;
-import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.v1.request.PartiesOrgAddressRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
@@ -1344,7 +1344,7 @@ ShipmentServiceTest extends CommonMocks {
         String mockHbl = "hblPrefix-hblSuffix-001";
 
         // Mock
-        when(productEngine.getCustomizedBLNumber(any(), any())).thenReturn(mockHbl);
+        when(productEngine.getCustomizedBLNumber(any())).thenReturn(mockHbl);
         mockShipmentSettings();
         // Test
         String hbl = shipmentService.generateCustomHouseBL(mockShipment);
@@ -1859,7 +1859,7 @@ ShipmentServiceTest extends CommonMocks {
 
 
         var expectedResponse = ResponseHelper.buildListSuccessResponse(
-                convertEntityListToDtoList(shipmentDetailsList),
+                convertEntityListToDtoListForAttachListShipment(shipmentDetailsList),
                 shipmentDetailsPage.getTotalPages(),
                 shipmentDetailsPage.getTotalElements()
         );
@@ -1905,7 +1905,7 @@ ShipmentServiceTest extends CommonMocks {
 
 
         var expectedResponse = ResponseHelper.buildListSuccessResponse(
-                convertEntityListToDtoList(shipmentDetailsList),
+                convertEntityListToDtoListForAttachListShipment(shipmentDetailsList),
                 shipmentDetailsPage.getTotalPages(),
                 shipmentDetailsPage.getTotalElements()
         );
@@ -1951,7 +1951,7 @@ ShipmentServiceTest extends CommonMocks {
 
 
         var expectedResponse = ResponseHelper.buildListSuccessResponse(
-                convertEntityListToDtoList(shipmentDetailsList),
+                convertEntityListToDtoListForAttachListShipment(shipmentDetailsList),
                 shipmentDetailsPage.getTotalPages(),
                 shipmentDetailsPage.getTotalElements()
         );
@@ -1993,7 +1993,7 @@ ShipmentServiceTest extends CommonMocks {
 
 
         var expectedResponse = ResponseHelper.buildListSuccessResponse(
-                convertEntityListToDtoList(shipmentDetailsList),
+                convertEntityListToDtoListForAttachListShipment(shipmentDetailsList),
                 shipmentDetailsPage.getTotalPages(),
                 shipmentDetailsPage.getTotalElements()
         );
@@ -2037,7 +2037,7 @@ ShipmentServiceTest extends CommonMocks {
 
 
         var expectedResponse = ResponseHelper.buildListSuccessResponse(
-                convertEntityListToDtoList(shipmentDetailsList),
+                convertEntityListToDtoListForAttachListShipment(shipmentDetailsList),
                 shipmentDetailsPage.getTotalPages(),
                 shipmentDetailsPage.getTotalElements()
         );
@@ -2083,7 +2083,7 @@ ShipmentServiceTest extends CommonMocks {
         when(shipmentDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
 
         var expectedResponse = ResponseHelper.buildListSuccessResponse(
-                convertEntityListToDtoList(shipmentDetailsList),
+                convertEntityListToDtoListForAttachListShipment(shipmentDetailsList),
                 shipmentDetailsPage.getTotalPages(),
                 shipmentDetailsPage.getTotalElements()
         );
@@ -2128,7 +2128,7 @@ ShipmentServiceTest extends CommonMocks {
 
 
         var expectedResponse = ResponseHelper.buildListSuccessResponse(
-                convertEntityListToDtoList(shipmentDetailsList),
+                convertEntityListToDtoListForAttachListShipment(shipmentDetailsList),
                 shipmentDetailsPage.getTotalPages(),
                 shipmentDetailsPage.getTotalElements()
         );
@@ -2173,7 +2173,7 @@ ShipmentServiceTest extends CommonMocks {
 
 
         var expectedResponse = ResponseHelper.buildListSuccessResponse(
-                convertEntityListToDtoList(shipmentDetailsList),
+                convertEntityListToDtoListForAttachListShipment(shipmentDetailsList),
                 shipmentDetailsPage.getTotalPages(),
                 shipmentDetailsPage.getTotalElements()
         );
@@ -2218,7 +2218,7 @@ ShipmentServiceTest extends CommonMocks {
 
 
         var expectedResponse = ResponseHelper.buildListSuccessResponse(
-                convertEntityListToDtoList(shipmentDetailsList),
+                convertEntityListToDtoListForAttachListShipment(shipmentDetailsList),
                 shipmentDetailsPage.getTotalPages(),
                 shipmentDetailsPage.getTotalElements()
         );
@@ -5855,7 +5855,7 @@ ShipmentServiceTest extends CommonMocks {
 
 
         var expectedResponse = ResponseHelper.buildListSuccessResponse(
-                convertEntityListToDtoList(shipmentDetailsList),
+                convertEntityListToDtoListForAttachListShipment(shipmentDetailsList),
                 shipmentDetailsPage.getTotalPages(),
                 shipmentDetailsPage.getTotalElements()
         );
@@ -6395,6 +6395,18 @@ ShipmentServiceTest extends CommonMocks {
                 i.setShipmentStatus(ShipmentStatus.values()[i.getStatus()].toString());
             if (ObjectUtils.isNotEmpty(i.getShipmentOrders()))
                 i.setOrdersCount(i.getShipmentOrders().size());
+            responseList.add(i);
+        }
+
+        return responseList;
+    }
+
+    private List<IRunnerResponse> convertEntityListToDtoListForAttachListShipment(List<ShipmentDetails> lst) {
+        List<IRunnerResponse> responseList = new ArrayList<>();
+        List<AttachListShipmentResponse> attachListShipmentResponse  = AttachListShipmentMapper.INSTANCE.toAttachListShipmentResponse(lst);
+        for(var i: attachListShipmentResponse) {
+            if (i.getStatus() != null && i.getStatus() < ShipmentStatus.values().length)
+                i.setShipmentStatus(ShipmentStatus.values()[i.getStatus()].toString());
             responseList.add(i);
         }
 
@@ -9067,7 +9079,7 @@ ShipmentServiceTest extends CommonMocks {
     void testRetrieveForNTEAuthError() {
         when(shipmentDao.findShipmentByIdWithQuery(any())).thenReturn(Optional.of(shipmentDetails));
         CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
-        ResponseEntity<IRunnerResponse> response = shipmentService.retrieveForNTE(CommonRequestModel.buildRequest(commonGetRequest));
+        ResponseEntity<IRunnerResponse> response = shipmentService.retrieveForNTE(CommonRequestModel.buildRequest(commonGetRequest), null, false);
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
     }
 
@@ -9075,15 +9087,25 @@ ShipmentServiceTest extends CommonMocks {
     void testRetrieveForNTERetrievalError() {
         when(shipmentDao.findShipmentByIdWithQuery(any())).thenReturn(Optional.empty());
         CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
-        ResponseEntity<IRunnerResponse> response = shipmentService.retrieveForNTE(CommonRequestModel.buildRequest(commonGetRequest));
+        ResponseEntity<IRunnerResponse> response = shipmentService.retrieveForNTE(CommonRequestModel.buildRequest(commonGetRequest), null, false);
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
     }
 
     @Test
     void testRetrieveForNTEIdNullError() {
         CommonGetRequest commonGetRequest = CommonGetRequest.builder().build();
-        ResponseEntity<IRunnerResponse> response = shipmentService.retrieveForNTE(CommonRequestModel.buildRequest(commonGetRequest));
+        ResponseEntity<IRunnerResponse> response = shipmentService.retrieveForNTE(CommonRequestModel.buildRequest(commonGetRequest), null, false);
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    }
+
+    @Test
+    void testRetrieveForNTE_InvalidNTE() {
+        shipmentDetails.setReceivingBranch(TenantContext.getCurrentTenant().longValue());
+        when(shipmentDao.findShipmentByIdWithQuery(any())).thenReturn(Optional.of(shipmentDetails));
+        when(consolidationDetailsDao.findConsolidationByIdWithQuery(anyLong())).thenReturn(Optional.of(consolidationDetails));
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
+        shipmentService.retrieveForNTE(CommonRequestModel.buildRequest(commonGetRequest), 1L, true);
+        verify(consolidationDetailsDao, times(1)).findConsolidationByIdWithQuery(anyLong());
     }
 
     @Test
@@ -9095,7 +9117,7 @@ ShipmentServiceTest extends CommonMocks {
         when(shipmentDao.findShipmentByIdWithQuery(any())).thenReturn(Optional.of(shipmentDetails));
         when(modelMapper.map(any(), eq(ShipmentDetailsResponse.class))).thenReturn(objectMapper.convertValue(shipmentDetails, ShipmentDetailsResponse.class));
         CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
-        ResponseEntity<IRunnerResponse> response = shipmentService.retrieveForNTE(CommonRequestModel.buildRequest(commonGetRequest));
+        ResponseEntity<IRunnerResponse> response = shipmentService.retrieveForNTE(CommonRequestModel.buildRequest(commonGetRequest), null, false);
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
@@ -9103,9 +9125,16 @@ ShipmentServiceTest extends CommonMocks {
     void testRetrieveForNTE1() {
         shipmentDetails.setReceivingBranch(TenantContext.getCurrentTenant().longValue());
         when(shipmentDao.findShipmentByIdWithQuery(any())).thenReturn(Optional.of(shipmentDetails));
+        TenantContext.setCurrentTenant(1);
+        List<TriangulationPartner> triangulationPartners = List.of(
+                TriangulationPartner.builder().triangulationPartner(1L).build()
+        );
+        testConsol.setTriangulationPartnerList(triangulationPartners);
+        testConsol.setReceivingBranch(1L);
+        when(consolidationDetailsDao.findConsolidationByIdWithQuery(any())).thenReturn(Optional.of(testConsol));
         when(modelMapper.map(any(), eq(ShipmentDetailsResponse.class))).thenReturn(objectMapper.convertValue(shipmentDetails, ShipmentDetailsResponse.class));
         CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
-        ResponseEntity<IRunnerResponse> response = shipmentService.retrieveForNTE(CommonRequestModel.buildRequest(commonGetRequest));
+        ResponseEntity<IRunnerResponse> response = shipmentService.retrieveForNTE(CommonRequestModel.buildRequest(commonGetRequest), 1L, true);
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
@@ -9116,9 +9145,26 @@ ShipmentServiceTest extends CommonMocks {
                 .triangulationPartner(TenantContext.getCurrentTenant().longValue()).build();
         shipmentDetails.setTriangulationPartnerList(List.of(triangulationPartner));
         when(shipmentDao.findShipmentByIdWithQuery(any())).thenReturn(Optional.of(shipmentDetails));
+        when(consolidationDetailsDao.findConsolidationByIdWithQuery(any())).thenReturn(Optional.empty());
         when(modelMapper.map(any(), eq(ShipmentDetailsResponse.class))).thenReturn(objectMapper.convertValue(shipmentDetails, ShipmentDetailsResponse.class));
         CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
-        ResponseEntity<IRunnerResponse> response = shipmentService.retrieveForNTE(CommonRequestModel.buildRequest(commonGetRequest));
+        ResponseEntity<IRunnerResponse> response = shipmentService.retrieveForNTE(CommonRequestModel.buildRequest(commonGetRequest), 1L, true);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testRetrieveForNTE3() {
+        shipmentDetails.setReceivingBranch(TenantContext.getCurrentTenant().longValue());
+        when(shipmentDao.findShipmentByIdWithQuery(any())).thenReturn(Optional.of(shipmentDetails));
+        TenantContext.setCurrentTenant(1);
+        List<TriangulationPartner> triangulationPartners = List.of(
+                TriangulationPartner.builder().triangulationPartner(1L).build()
+        );
+        testConsol.setTriangulationPartnerList(triangulationPartners);
+        when(consolidationDetailsDao.findConsolidationByIdWithQuery(any())).thenReturn(Optional.of(testConsol));
+        when(modelMapper.map(any(), eq(ShipmentDetailsResponse.class))).thenReturn(objectMapper.convertValue(shipmentDetails, ShipmentDetailsResponse.class));
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
+        ResponseEntity<IRunnerResponse> response = shipmentService.retrieveForNTE(CommonRequestModel.buildRequest(commonGetRequest), 1L, true);
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 

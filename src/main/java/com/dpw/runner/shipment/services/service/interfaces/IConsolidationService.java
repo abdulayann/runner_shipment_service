@@ -44,7 +44,7 @@ public interface IConsolidationService extends ICommonService{
 
     ResponseEntity<IRunnerResponse> attachShipments(ShipmentRequestedType shipmentRequestedType, Long consolidationId, List<Long> shipmentIds, boolean fromConsolidation) throws RunnerException;
 
-    ResponseEntity<IRunnerResponse> detachShipments(Long consolidationId, List<Long> shipmentIds) throws RunnerException;
+    ResponseEntity<IRunnerResponse> detachShipments(ConsolidationDetails consol, List<Long> shipmentIds) throws RunnerException;
 
     ResponseEntity<IRunnerResponse> detachShipments(Long consolidationId, List<Long> shipmentIds, String remarks) throws RunnerException;
 

@@ -694,7 +694,7 @@ public class EntityTransferService implements IEntityTransferService {
         if(!CommonUtils.listIsNullOrEmpty(oldConsolidationDetailsList)) {
             List<Long> detachShipIds = oldConsolidationDetailsList.get(0).getShipmentsList().stream().map(BaseEntity::getId).toList();
             if(!detachShipIds.isEmpty())
-                consolidationService.detachShipments(oldConsolidationDetailsList.get(0).getId(), detachShipIds);
+                consolidationService.detachShipments(oldConsolidationDetailsList.get(0), detachShipIds);
         }
 
         // Create shipments

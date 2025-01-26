@@ -16,6 +16,7 @@ public interface IShipmentSettingsDao {
     Page<ShipmentSettingsDetails> list(Specification<ShipmentSettingsDetails> spec, Pageable pageable);
     void delete(ShipmentSettingsDetails shipmentSetting);
     List<ShipmentSettingsDetails> list();
+    Boolean getCustomisedSequence();
     Optional<ShipmentSettingsDetails> findByGuid(UUID guid);
     Integer getShipmentConsoleImportApprovarRole(int tenantId);
     List<ShipmentSettingsDetails> getSettingsByTenantIds(List<Integer> tenantId);

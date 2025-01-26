@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import lombok.*;
 
 import java.util.UUID;
@@ -10,10 +11,10 @@ import java.util.UUID;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class TiTruckDriverDetailsResponse implements IRunnerRequest {
+public class TiTruckDriverDetailsResponse implements IRunnerResponse {
     private Long id;
     private UUID guid;
-    private Long tiLegId;
+//    private Long tiLegId;
     private String driverName;
     private String driverMobileNumber;
     private String truckNumberPlate;
