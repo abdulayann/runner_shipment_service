@@ -43,19 +43,19 @@ public class TiLegs extends MultiTenancy {
     @OrganizationData
     private Parties destination;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "tiLegId")
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "tiLegId", cascade = CascadeType.ALL)
     @BatchSize(size = 50)
     private List<TiReferences> tiReferences;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "tiLegId")
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "tiLegId", cascade = CascadeType.ALL)
     @BatchSize(size = 50)
     private List<TiTruckDriverDetails> tiTruckDriverDetails;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "tiLegId")
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "tiLegId", cascade = CascadeType.ALL)
     @BatchSize(size = 50)
     private List<TiContainers> tiContainers;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "tiLegId")
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "tiLegId", cascade = CascadeType.ALL)
     @BatchSize(size = 50)
     private List<TiPackages> tiPackages;
 
