@@ -430,7 +430,6 @@ public class ReportService implements IReportService {
             createEvent(reportRequest, EventConstants.HAWB);
         } else if (report instanceof BookingConfirmationReport vBookingConfirmationReport) {
             dataRetrived = vBookingConfirmationReport.getData(Long.parseLong(reportRequest.getReportId()));
-            createEvent(reportRequest, EventConstants.BOCO);
         } else {
             dataRetrived = report.getData(Long.parseLong(reportRequest.getReportId()));
         }

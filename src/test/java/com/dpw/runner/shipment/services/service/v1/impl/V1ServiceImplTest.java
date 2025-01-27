@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.request.CreateBookingModuleInV1;
+import com.dpw.runner.shipment.services.dto.request.UserWithPermissionRequestV1;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.*;
@@ -35,10 +36,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
+import org.mockito.*;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -5839,5 +5837,60 @@ class V1ServiceImplTest {
 
         // Assert
         assertNotNull(throwable);
+    }
+
+    @Test
+    void testGetUsersWithGivenPermissions_Success() {
+        UserWithPermissionRequestV1 mockRequest = new UserWithPermissionRequestV1();
+        List<UsersDto> users = List.of(new UsersDto(), new UsersDto());
+        V1DataResponse mockResponse = V1DataResponse.builder().entities(users).build();
+
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(new ResponseEntity<>(mockResponse, HttpStatus.OK));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(new ArrayList<>());
+
+        List<UsersDto> result = v1ServiceImpl.getUsersWithGivenPermissions(mockRequest);
+
+        assertNotNull(result);
+    }
+
+    @Test
+    void testGetUsersWithGivenPermissions_ClientError() {
+        UserWithPermissionRequestV1 mockRequest = new UserWithPermissionRequestV1();
+        HttpClientErrorException exception = HttpClientErrorException.create(
+                HttpStatus.BAD_REQUEST,
+                "Bad Request",
+                null,
+                "{\"error\": {\"message\": \"Client Error\"}}".getBytes(),
+                null
+        );
+
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(exception);
+
+        when(jsonHelper.readFromJson(anyString(), eq(V1ErrorResponse.class)))
+                .thenReturn(new V1ErrorResponse(new V1ErrorResponse.V1Error("Client Error")));
+
+        V1ServiceException thrown = assertThrows(
+                V1ServiceException.class,
+                () -> v1ServiceImpl.getUsersWithGivenPermissions(mockRequest)
+        );
+
+        assertEquals("Client Error", thrown.getMessage());
+    }
+
+    @Test
+    void testGetUsersWithGivenPermissions_GenericException() {
+        UserWithPermissionRequestV1 mockRequest = new UserWithPermissionRequestV1();
+
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new RuntimeException("Unexpected error"));
+
+        V1ServiceException thrown = assertThrows(
+                V1ServiceException.class,
+                () -> v1ServiceImpl.getUsersWithGivenPermissions(mockRequest)
+        );
+
+        assertEquals("Unexpected error", thrown.getMessage());
     }
 }

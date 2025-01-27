@@ -133,6 +133,7 @@ public class Packing extends MultiTenancy {
     private String countryCode;
 
     @Column(name = "goods_description")
+    @Size(max=255, message = "max size is 255 for goods_description")
     private String goodsDescription;
 
     @Column(name = "reference_number")

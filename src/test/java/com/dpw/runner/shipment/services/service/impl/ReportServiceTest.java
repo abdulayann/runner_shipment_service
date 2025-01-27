@@ -1847,6 +1847,7 @@ class ReportServiceTest {
 
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
+        verify(eventService, times(0)).saveEvent(any());
         assertNotNull(data);
     }
 
@@ -1883,6 +1884,7 @@ class ReportServiceTest {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
+        verify(eventService, times(0)).saveEvent(any());
     }
 
     @Test
