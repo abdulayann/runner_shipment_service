@@ -135,4 +135,7 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
     @Modifying
     @Query(value = "update shipment_additional_details set fcr_number = fcr_number + 1 where id in (select additional_details_id from shipment_details where id = ?1)", nativeQuery = true)
     void updateFCRNo(Long id);
+
+    @Query(value = "SELECT * FROM shipment_details WHERE guid = ?1", nativeQuery = true)
+    Optional<ShipmentDetails> findShipmentByGuidWithQuery(UUID guid);
 }

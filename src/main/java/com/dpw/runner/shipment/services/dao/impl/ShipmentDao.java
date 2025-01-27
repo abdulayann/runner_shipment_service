@@ -747,4 +747,10 @@ public class ShipmentDao implements IShipmentDao {
     public void updateFCRNo(Long id) {
         shipmentRepository.updateFCRNo(id);
     }
+
+    @Override
+    @Transactional
+    public Optional<ShipmentDetails> findShipmentByGuidWithQuery(UUID guid) {
+        return shipmentRepository.findShipmentByGuidWithQuery(guid);
+    }
 }
