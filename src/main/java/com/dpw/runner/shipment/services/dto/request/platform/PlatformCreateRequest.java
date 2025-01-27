@@ -8,6 +8,7 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Getter
 @Setter
@@ -58,4 +59,5 @@ public class PlatformCreateRequest extends CommonRequest implements IRunnerReque
     private String status;
     @JsonProperty(value = "reference_numbers")
     private List<ReferenceNumbersRequest> referenceNumbers;
+    private List<Map<String, Object>> addresses;
 }
