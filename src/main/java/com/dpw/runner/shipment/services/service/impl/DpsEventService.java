@@ -232,6 +232,7 @@ public class DpsEventService implements IDpsEventService {
                     .transactionId(dpsEvent.getTransactionId())
                     .usernameList(ObjectUtils.isNotEmpty(dpsEvent.getUsernameList()) ? String.join(",", dpsEvent.getUsernameList()) : null)
                     .workflowType(dpsEvent.getWorkflowType())
+                    .status(dpsEvent.getStatus())
                     .dpsWorkflowState(dpsEvent.getState())
                     .ruleMatchedFieldList(ObjectUtils.isNotEmpty(dpsEvent.getRuleMatchedFieldList()) ? String.join(",", dpsEvent.getRuleMatchedFieldList()) : null)
                     .implicationList(ObjectUtils.isNotEmpty(dpsEvent.getImplicationList()) ? String.join(",", dpsEvent.getImplicationList()) : null)
