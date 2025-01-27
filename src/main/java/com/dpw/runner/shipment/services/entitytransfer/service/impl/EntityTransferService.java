@@ -549,7 +549,6 @@ public class EntityTransferService implements IEntityTransferService {
         }
         CopyDocumentsRequest copyDocumentsRequest = CopyDocumentsRequest.builder().documents(new ArrayList<>()).build();
         EntityTransferShipmentDetails entityTransferShipmentDetails = importShipmentRequest.getEntityData();
-        entityTransferShipmentDetails.setId(null);
         MutableBoolean isCreateShip = new MutableBoolean(false);
         log.info("Import shipment request: {} with RequestId: {}", jsonHelper.convertToJson(entityTransferShipmentDetails), LoggerHelper.getRequestIdFromMDC());
 
@@ -821,7 +820,6 @@ public class EntityTransferService implements IEntityTransferService {
                 // Container will be created with consolidation
                 ship.setContainersList(List.of());
                 ship.setMasterBill(null);
-                ship.setId(null);
 
                 // Replaced old packing guid with new
                 if (!CommonUtils.listIsNullOrEmpty(ship.getPackingList())) {
