@@ -1055,6 +1055,15 @@ public class ConsolidationService implements IConsolidationService {
             validationsBeforeAttachShipments(consolidationDetails, consoleShipmentMappings, shipmentIds, consolidationId, shipmentDetailsList, fromConsolidation);
 
             attachedShipmentIds = consoleShipmentMappingDao.assignShipments(shipmentRequestedType, consolidationId, shipmentIds, consoleShipmentMappings, interBranchRequestedShipIds, interBranchApprovedShipIds, interBranchImportShipmentMap);
+            Integer agentCount = 0;
+            if (CommonUtils.checkPartyNotNull(consolidationDetails.getSendingAgent())) {
+                agentCount++;
+            }
+            if (CommonUtils.checkPartyNotNull(consolidationDetails.getReceivingAgent())) {
+                agentCount++;
+            }
+            Set<Parties> originParties = new HashSet<>();
+            Set<Parties> destinationParties = new HashSet<>();
             for(ShipmentDetails shipmentDetails : shipmentDetailsList) {
                 if(attachedShipmentIds.contains(shipmentDetails.getId()) && !interBranchRequestedShipIds.contains(shipmentDetails.getId())) {
                     if (shipmentDetails.getContainersList() != null) {
@@ -1081,8 +1090,24 @@ public class ConsolidationService implements IConsolidationService {
                         }
                         eventDao.saveAll(eventsList);
                     }
+                    if (!Boolean.TRUE.equals(consolidationDetails.getInterBranchConsole()) && agentCount < 2) {
+                        if (shipmentDetails.getAdditionalDetails() != null && CommonUtils.checkPartyNotNull(shipmentDetails.getAdditionalDetails().getExportBroker())) {
+                            originParties.add(shipmentDetails.getAdditionalDetails().getExportBroker());
+                        }
+                        if (shipmentDetails.getAdditionalDetails() != null && CommonUtils.checkPartyNotNull(shipmentDetails.getAdditionalDetails().getImportBroker())) {
+                            destinationParties.add(shipmentDetails.getAdditionalDetails().getImportBroker());
+                        }
+                    }
                     this.createLogHistoryForShipment(shipmentDetails);
                 }
+            }
+            if (!CommonUtils.checkPartyNotNull(consolidationDetails.getSendingAgent()) && originParties.size() == 1) {
+                Parties originAgent = originParties.iterator().next();
+                consolidationDetails.setSendingAgent(commonUtils.removeIdFromParty(originAgent));
+            }
+            if (!CommonUtils.checkPartyNotNull(consolidationDetails.getReceivingAgent()) && destinationParties.size() == 1) {
+                Parties destinationAgent = destinationParties.iterator().next();
+                consolidationDetails.setReceivingAgent(commonUtils.removeIdFromParty(destinationAgent));
             }
             this.checkSciForAttachConsole(consolidationId);
             // detaching the shipmentDetailsList but still able to access raw entity data, fetch any lazy load data beforehand if need to be used
@@ -1731,7 +1756,9 @@ public class ConsolidationService implements IConsolidationService {
                         !Objects.equals(console.getCarrierDetails().getEta(), oldEntity.getCarrierDetails().getEta()) ||
                         !Objects.equals(console.getCarrierDetails().getAtd(), oldEntity.getCarrierDetails().getAtd()) ||
                         !Objects.equals(console.getCarrierDetails().getAta(), oldEntity.getCarrierDetails().getAta())
-                )) || !dgStatusChangeInShipments.isEmpty())) {
+                )) || !dgStatusChangeInShipments.isEmpty() ||
+                !CommonUtils.checkSameParties(console.getSendingAgent(), oldEntity.getSendingAgent()) ||
+                !CommonUtils.checkSameParties(console.getReceivingAgent(), oldEntity.getReceivingAgent()))) {
             if(shipments == null)
                 shipments = getShipmentsList(console.getId());
             for(ShipmentDetails i: shipments) {
@@ -1775,6 +1802,21 @@ public class ConsolidationService implements IConsolidationService {
                         checkIfShipmentDateGreaterThanConsole(i.getShipmentGateInDate(), console.getCfsCutOffDate()))
                     throw new RunnerException("Cut Off Date entered is lesser than the Shipment Cargo Gate In Date, please check and enter correct dates.");
                 syncMainCarriageRoutingToShipment(console.getRoutingsList(), i, true);
+                if(!Boolean.TRUE.equals(console.getInterBranchConsole())) {
+                    if (i.getAdditionalDetails() != null && !CommonUtils.checkSameParties(console.getSendingAgent(), i.getAdditionalDetails().getExportBroker())) {
+                        i.getAdditionalDetails().setExportBroker(commonUtils.removeIdFromParty(console.getSendingAgent()));
+                    } else if (i.getAdditionalDetails() == null) {
+                        i.setAdditionalDetails(new AdditionalDetails());
+                        i.getAdditionalDetails().setExportBroker(commonUtils.removeIdFromParty(console.getSendingAgent()));
+                    }
+
+                    if (i.getAdditionalDetails() != null && !CommonUtils.checkSameParties(console.getReceivingAgent(), i.getAdditionalDetails().getImportBroker())) {
+                        i.getAdditionalDetails().setImportBroker(commonUtils.removeIdFromParty(console.getReceivingAgent()));
+                    } else if (i.getAdditionalDetails() == null) {
+                        i.setAdditionalDetails(new AdditionalDetails());
+                        i.getAdditionalDetails().setImportBroker(commonUtils.removeIdFromParty(console.getReceivingAgent()));
+                    }
+                }
             }
 
             shipmentDao.saveAll(shipments);
@@ -5187,6 +5229,13 @@ public class ConsolidationService implements IConsolidationService {
                     .filter(list -> !list.isEmpty())
                     .map(list -> list.get(0).getLocationsReferenceGUID())
                     .ifPresent(response::setPlaceOfIssue);
+
+                PartiesResponse partiesResponse = v1ServiceUtil.getDefaultAgentOrg(tenantModel);
+                if(Constants.DIRECTION_EXP.equals(response.getShipmentType())) {
+                    response.setSendingAgent(partiesResponse);
+                } else if(Constants.DIRECTION_IMP.equals(response.getShipmentType())) {
+                    response.setReceivingAgent(partiesResponse);
+                }
             } catch (Exception e){
                 log.error("Failed in fetching tenant data from V1 with error : {}", e);
             }
