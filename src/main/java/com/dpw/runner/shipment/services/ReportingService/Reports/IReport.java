@@ -2027,7 +2027,11 @@ public abstract class IReport {
         }
         List<String> details = new ArrayList<>();
         details.add(name);
-        details.addAll(Arrays.asList(address1,address2));
+        if(!StringUtility.isEmpty(address2)) {
+            details.addAll(Arrays.asList(address1, address2));
+        }else{
+            details.addAll(Arrays.asList(address1));
+        }
         StringBuilder tempAddress = new StringBuilder();
         if (!Strings.isNullOrEmpty(state)){
             tempAddress.append(state);
@@ -2318,12 +2322,14 @@ public abstract class IReport {
         return null;
     }
 
-    public static String addCommasWithPrecision(BigDecimal number, int decimalPlaces) {
+    public static String addCommasWithPrecision(BigDecimal number, int decimalPlaces, boolean strictPrecision) {
         if (number != null) {
             try {
                 BigDecimal roundedNumber = number.setScale(decimalPlaces, RoundingMode.HALF_UP);
                 DecimalFormat decimalFormat = new DecimalFormat();
                 decimalFormat.setMaximumFractionDigits(decimalPlaces);
+                if (Boolean.TRUE.equals(strictPrecision))
+                    decimalFormat.setMinimumFractionDigits(decimalPlaces);
                 return decimalFormat.format(roundedNumber);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -2332,7 +2338,7 @@ public abstract class IReport {
         return String.valueOf(number);
     }
 
-    public static String DisplayFormat(BigDecimal value, int numberDecimalDigits, V1TenantSettingsResponse v1TenantSettingsResponse) {
+    public static String DisplayFormat(BigDecimal value, int numberDecimalDigits, V1TenantSettingsResponse v1TenantSettingsResponse, boolean strictPrecision) {
         if(value != null && v1TenantSettingsResponse != null) {
             if(v1TenantSettingsResponse.getCurrencyDigitGrouping() != null) {
                 char customThousandsSeparator = ',';
@@ -2344,7 +2350,7 @@ public abstract class IReport {
                 return formatValue(value, customDecimalSeparator, customThousandsSeparator, numberDecimalDigits, v1TenantSettingsResponse.getCurrencyDigitGrouping());
             }
             else {
-                return addCommasWithPrecision(value, numberDecimalDigits);
+                return addCommasWithPrecision(value, numberDecimalDigits, strictPrecision);
             }
         }
         if(value != null)
@@ -2364,7 +2370,7 @@ public abstract class IReport {
                 return formatValue(value, customDecimalSeparator, customThousandsSeparator, numberDecimalDigits, v1TenantSettingsResponse.getWVDigitGrouping());
             }
             else {
-                return addCommasWithPrecision(value, numberDecimalDigits);
+                return addCommasWithPrecision(value, numberDecimalDigits, false);
             }
         }
         if(value != null)

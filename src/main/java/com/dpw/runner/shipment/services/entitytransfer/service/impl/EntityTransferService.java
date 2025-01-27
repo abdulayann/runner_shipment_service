@@ -35,6 +35,7 @@ import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstan
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.constants.EventConstants;
+import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
@@ -58,6 +59,7 @@ import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.request.UserWithPermissionRequestV1;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.LogHistoryResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
@@ -547,6 +549,7 @@ public class EntityTransferService implements IEntityTransferService {
         }
         CopyDocumentsRequest copyDocumentsRequest = CopyDocumentsRequest.builder().documents(new ArrayList<>()).build();
         EntityTransferShipmentDetails entityTransferShipmentDetails = importShipmentRequest.getEntityData();
+        entityTransferShipmentDetails.setId(null);
         MutableBoolean isCreateShip = new MutableBoolean(false);
         log.info("Import shipment request: {} with RequestId: {}", jsonHelper.convertToJson(entityTransferShipmentDetails), LoggerHelper.getRequestIdFromMDC());
 
@@ -818,6 +821,7 @@ public class EntityTransferService implements IEntityTransferService {
                 // Container will be created with consolidation
                 ship.setContainersList(List.of());
                 ship.setMasterBill(null);
+                ship.setId(null);
 
                 // Replaced old packing guid with new
                 if (!CommonUtils.listIsNullOrEmpty(ship.getPackingList())) {
@@ -2142,7 +2146,7 @@ public class EntityTransferService implements IEntityTransferService {
         var branchIdVsTenantModelMap = convertToTenantModel(v1ServiceUtil.getTenantDetails(shipDestinationBranchIds));
 
         for (int i = 0; i < destinationBranches.size(); i++) {
-            List<String> emailList = getRoleListByRoleId(getShipmentConsoleImportApprovalRole(destinationBranches.get(i)));
+            List<String> emailList = getEmailsListByPermissionKeysAndTenantId(Collections.singletonList(PermissionConstants.SHIPMENT_IN_PIPELINE_MODIFY), destinationBranches.get(i));
             var template = createConsolidationImportEmailBody(consolidationDetails, emailTemplateModel, shipmentGuidSendToBranch, i, branchIdVsTenantModelMap, destinationBranches);
             sendEmailNotification(template, emailList, ccEmails);
         }
@@ -2160,11 +2164,8 @@ public class EntityTransferService implements IEntityTransferService {
         if(user.Email!=null)
             ccEmails.add(user.Email);
 
-        // Fetching role ids corresponding to shipment destination branches
-        var shipmentSettingsList = shipmentSettingsDao.getSettingsByTenantIds(destinationBranches);
-
-        for(var shipmentSetting: shipmentSettingsList) {
-            List<String> emailList = getRoleListByRoleId(Integer.parseInt(shipmentSetting.getShipmentConsoleImportApproverRole()));
+        for(Integer tenantId: destinationBranches) {
+            List<String> emailList = getEmailsListByPermissionKeysAndTenantId(Collections.singletonList(PermissionConstants.SHIPMENT_IN_PIPELINE_MODIFY), tenantId);
             sendEmailNotification(emailTemplateModel, emailList, ccEmails);
         }
     }
@@ -2270,7 +2271,7 @@ public class EntityTransferService implements IEntityTransferService {
         var tenantMap = getTenantMap(sourceTenantIds.stream().toList());
         for(Integer tenantId: tenantIds) {
             commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, tenantId, false);
-            List<String> importerEmailIds = getRoleListByRoleId(getShipmentConsoleImportApprovalRole(tenantId));
+            List<String> importerEmailIds = getEmailsListByPermissionKeysAndTenantId(Collections.singletonList(PermissionConstants.SHIPMENT_IN_PIPELINE_MODIFY), tenantId);
             List<ShipmentDetails> shipmentDetailsForTenant = tenantShipmentMapping.get(tenantId);
 
             List<String> toEmailIdsList = new ArrayList<>(toEmailIds);
@@ -2437,6 +2438,18 @@ public class EntityTransferService implements IEntityTransferService {
         } catch (Exception ex) {
             log.error(String.format(ErrorConstants.ERROR_WHILE_SYNC, ex.getMessage()));
         }
+    }
+
+    private List<String> getEmailsListByPermissionKeysAndTenantId(List<String> permissionKeys, Integer tenantId) {
+        UserWithPermissionRequestV1 request = new UserWithPermissionRequestV1();
+        request.setUserTenantId(tenantId);
+        request.setPermissionKeys(permissionKeys);
+
+        List<UsersDto> usersDtoList = v1Service.getUsersWithGivenPermissions(request);
+        return usersDtoList.stream()
+                .map(UsersDto::getEmail)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
     }
 
 }

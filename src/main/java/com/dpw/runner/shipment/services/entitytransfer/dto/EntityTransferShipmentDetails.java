@@ -27,6 +27,7 @@ import lombok.ToString;
 @AllArgsConstructor
 @ToString
 public class EntityTransferShipmentDetails implements IEntityTranferBaseEntity, Serializable {
+    private Long id;
     private UUID guid;
     private String houseBill;
     private String transportMode;
