@@ -3281,7 +3281,6 @@ public class ShipmentService implements IShipmentService {
             else {
                 if(routeRequest.isPresent()) {
                     createRoutes.add(jsonHelper.convertValue(routeRequest.get(), Routings.class));
-                    //todo
                     createRoutes = createConsoleRoutePayload(createRoutes);
                     consolidationDetails.setRoutingsList(createRoutes);
                 }
@@ -5176,7 +5175,6 @@ public class ShipmentService implements IShipmentService {
                         return newItem;
                     }).
                     toList();
-            //todo
             shipment.setRoutingsList(routingsResponse);
         }
 
