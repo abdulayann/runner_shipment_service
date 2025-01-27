@@ -26,6 +26,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IDpsEventService;
 import com.google.common.base.Strings;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -34,6 +35,7 @@ import javax.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -155,6 +157,61 @@ public class DpsEventService implements IDpsEventService {
         }
 
         return implications;
+    }
+
+    /**
+     * Checks if an implication is present for a given list of shipment IDs.
+     *
+     * @param shipmentIds the list of shipment IDs to check for implications.
+     * @param implication the specific implication to look for.
+     * @return {@code true} if the implication is present for any shipment in the list, otherwise {@code false}.
+     * @throws DpsException if the list of shipment IDs is null or empty.
+     * @throws DataRetrievalFailureException if no shipment details are found for the provided IDs.
+     */
+    @Override
+    public Boolean isImplicationPresent(List<Long> shipmentIds, String implication) {
+        if (shipmentIds == null || shipmentIds.isEmpty()) {
+            throw new DpsException("Shipment IDs cannot be null or empty!");
+        }
+
+        // Fetch all shipment details in bulk
+        List<ShipmentDetails> shipmentDetailsList = shipmentDao.findShipmentsByIds(new HashSet<>(shipmentIds));
+        if (shipmentDetailsList.isEmpty()) {
+            throw new DataRetrievalFailureException("No Shipment details found for provided IDs.");
+        }
+
+        // Extract GUIDs from the shipment details
+        Set<String> shipmentGuids = shipmentDetailsList.stream()
+                .map(ShipmentDetails::getGuid).map(UUID::toString)
+                .collect(Collectors.toSet());
+
+        return isImplicationPresent(shipmentGuids, implication);
+    }
+
+    /**
+     * Checks if an implication is present for a given set of shipment GUIDs.
+     *
+     * @param shipmentGuids the set of shipment GUIDs to check for implications.
+     * @param implication the specific implication to look for.
+     * @return {@code true} if the implication is present for any GUID in the set, otherwise {@code false}.
+     * @throws DpsException if the set of shipment GUIDs is null or empty.
+     */
+    @Override
+    public Boolean isImplicationPresent(Set<String> shipmentGuids, String implication) {
+        if (shipmentGuids == null || shipmentGuids.isEmpty()) {
+            throw new DpsException("Shipment GUIDs cannot be null or empty!");
+        }
+
+        List<String> activeStatuses = Collections.singletonList(DpsExecutionStatus.ACTIVE.name());
+
+        // Check implications for all GUIDs in a single query
+        int count = dpsEventRepository.isImplicationPresentForGuids(
+                shipmentGuids.stream().toList(),
+                DpsEntityType.SHIPMENT.name(),
+                implication,
+                activeStatuses);
+
+        return count > 0; // Return true if any GUID has an implication
     }
     /**
      * Creates an audit log entry for the given {@link DpsEvent} and {@link ShipmentDetails}. This method captures relevant details about the DPS event and the associated shipment,
