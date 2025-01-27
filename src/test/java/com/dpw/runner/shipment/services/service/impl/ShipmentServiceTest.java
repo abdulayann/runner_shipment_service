@@ -136,6 +136,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -161,6 +163,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED;
@@ -1091,6 +1094,61 @@ ShipmentServiceTest extends CommonMocks {
 
         assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
     }
+
+
+
+    @ParameterizedTest
+    @MethodSource("shipmentTypeAndB2bProvider")
+    void completeUpdate_withMultipleShipmentTypesAndB2bValues_success(String shipmentType, Boolean b2b) throws RunnerException {
+        shipmentDetails.setId(1L);
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
+
+        // Convert ShipmentDetails to ShipmentRequest and apply test case
+        ShipmentRequest mockShipmentRequest = objectMapper.convertValue(shipmentDetails, ShipmentRequest.class);
+        mockShipmentRequest.setShipmentType(shipmentType);
+        mockShipmentRequest.setB2b(b2b);
+
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
+        ShipmentDetailsResponse mockShipmentResponse = objectMapper.convertValue(shipmentDetails, ShipmentDetailsResponse.class);
+
+        // Mock behaviors
+        when(shipmentDao.findById(any()))
+                .thenReturn(Optional.of(
+                        shipmentDetails
+                                .setConsolidationList(new ArrayList<>())
+                                .setContainersList(new ArrayList<>())
+                ));
+        when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
+        when(shipmentDao.update(any(), eq(false))).thenReturn(shipmentDetails);
+        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+        when(shipmentDetailsMapper.map((ShipmentDetails) any())).thenReturn(mockShipmentResponse);
+        when(commonUtils.getCurrentTenantSettings())
+                .thenReturn(V1TenantSettingsResponse.builder().transportModeConfig(true).build());
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setEnableRouteMaster(true);
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
+
+        // Test the method
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeUpdate(commonRequestModel);
+
+        // Verify response
+        assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
+    }
+
+    private static Stream<Arguments> shipmentTypeAndB2bProvider() {
+        return Stream.of(
+                Arguments.of("HSE", false),  // Matches: HSE and not b2b
+                Arguments.of("HSE", true),   // Matches: b2b is true
+                Arguments.of("SCN", false), // Matches: SCN
+                Arguments.of("SCN", true),  // Matches: SCN
+                Arguments.of("BCN", false), // Matches: BCN
+                Arguments.of("BCN", true),  // Matches: BCN
+                Arguments.of("DRT", false), // Matches: DRT
+                Arguments.of("DRT", true),  // Matches: DRT
+                Arguments.of("OTH", false) // Does not match any condition
+        );
+    }
+
+
 
     @Test
     void completeUpdate_success_validMasterBill() throws RunnerException {
