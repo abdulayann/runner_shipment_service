@@ -53,6 +53,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
 import com.dpw.runner.shipment.services.helpers.*;
+import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.mapper.CarrierDetailsMapper;
 import com.dpw.runner.shipment.services.mapper.ShipmentDetailsMapper;
@@ -1845,7 +1846,19 @@ public class ShipmentService implements IShipmentService {
                     removedConsolIds.add(oldConsoleId);
             }
 
-            if (!consolidationDetailsRequests.isEmpty() && (oldEntity == null || oldEntity.getConsolidationList() == null || oldEntity.getConsolidationList().size() == 0 || removedConsolIds.size() > 0)) {
+            // Check if the consolidation details are not empty and if one of the following conditions is true:
+            // - The old entity is null (no previous data exists).
+            // - The old entity's consolidation list is empty (no prior consolidations).
+            // - There are removed consolidation IDs (indicating changes in consolidations).
+            if (ObjectUtils.isNotEmpty(consolidationDetailsRequests)
+                    && (oldEntity == null || ObjectUtils.isEmpty(oldEntity.getConsolidationList()) || ObjectUtils.isNotEmpty(removedConsolIds))) {
+
+                // Check if the specific implication (CONCR) is already present for the given shipment ID.
+                // If true, throw a ValidationException to prevent further processing to maintain business constraints.
+                if (Boolean.TRUE.equals(dpsEventService.isImplicationPresent(List.of(shipmentDetails.getId()), DpsConstants.CONCR))) {
+                    throw new ValidationException(DpsConstants.DPS_ERROR_1);
+                }
+
                 isNewConsolAttached.setTrue();
             }
         } else {
@@ -1908,6 +1921,13 @@ public class ShipmentService implements IShipmentService {
 
         if(updatedContainers.size() > 0 || (shipmentRequest.getAutoCreateConsole() != null  && shipmentRequest.getAutoCreateConsole())) {
             if((tempConsolIds == null || tempConsolIds.size() == 0) && (shipmentSettingsDetails.getIsShipmentLevelContainer() == null || !shipmentSettingsDetails.getIsShipmentLevelContainer())) {
+
+                // Check if the specific implication (CONCR) is already present for the given shipment ID.
+                // If true, throw a ValidationException to prevent further processing.
+                if (Boolean.TRUE.equals(dpsEventService.isImplicationPresent(List.of(shipmentDetails.getId()), DpsConstants.CONCR))) {
+                    throw new ValidationException(DpsConstants.DPS_ERROR_1);
+                }
+
                 deletePendingRequestsOnConsoleAttach(shipmentDetails, isCreate);
                 consolidationDetails = createConsolidation(shipmentDetails, updatedContainers);
                 if (!Objects.isNull(consolidationDetails)) {
