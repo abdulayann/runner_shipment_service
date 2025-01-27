@@ -541,7 +541,7 @@ public class MasterDataUtils{
         assert !Objects.isNull(cache);
         List<MasterListRequest> fetchMasterListFromV1 = new ArrayList<>();
         for (MasterListRequest masterListRequest : requests.getMasterListRequests()) {
-            String key = masterListRequest.getItemType() + "#" + masterListRequest.getItemValue();
+            String key = getEnumNameFromDescription(masterListRequest.getItemType()) + "#" + masterListRequest.getItemValue();
             Cache.ValueWrapper value = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.MASTER_LIST, key));
             if(Objects.isNull(value)) {
                 fetchMasterListFromV1.add(masterListRequest);
@@ -567,9 +567,17 @@ public class MasterDataUtils{
                         masterDataKeys.add((Objects.isNull(masterListRequest.ItemType) ? StringUtility.getEmptyString(): masterListRequest.ItemType) + '#' + (Objects.isNull(masterListRequest.ItemValue) ? StringUtility.getEmptyString(): masterListRequest.ItemValue));
                     }
             );
-            pushToCache(v1Datamap, CacheConstants.MASTER_LIST, masterDataKeys, new EntityTransferUnLocations(), null);
+            pushToCache(v1Datamap, CacheConstants.MASTER_LIST, masterDataKeys, new EntityTransferMasterLists(), null);
         }
         return responseMap;
+    }
+
+    public static String getEnumNameFromDescription(String description) {
+        return Arrays.stream(MasterDataType.values())
+                .filter(type -> type.getDescription().equalsIgnoreCase(description))
+                .map(Enum::name)
+                .findFirst()
+                .orElse(null);
     }
 
 

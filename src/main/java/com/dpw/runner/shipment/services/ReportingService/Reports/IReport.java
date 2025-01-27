@@ -366,10 +366,7 @@ public abstract class IReport {
             String[] parts = key.split("#");
             String itemType = parts[0];
             String itemValue = parts[1];
-            MasterDataType masterDataType = Arrays.stream(MasterDataType.values())
-                    .filter(type -> type.getDescription().equals(itemType))
-                    .findFirst()
-                    .orElse(null);
+            MasterDataType masterDataType = MasterDataType.valueOf(itemType);
             int masterDataKey = masterDataType.getId();
             MasterData masterData = jsonHelper.convertValue(entry.getValue(), MasterData.class);
             masterListsMap.computeIfAbsent(masterDataKey, k -> new HashMap<>()).put(itemValue, masterData);
