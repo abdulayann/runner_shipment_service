@@ -1,8 +1,5 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
-import lombok.NoArgsConstructor;
-
-@NoArgsConstructor
 public class DpsConstants {
 
     public static final String DOPR = "DOPR";
@@ -12,4 +9,6 @@ public class DpsConstants {
     public static final String HBLPR = "HBLPR";
     public static final String CONCR = "CONCR";
     public static final String MAWBPR = "MAWBPR";
+
+    private DpsConstants(){}
 }
