@@ -386,6 +386,7 @@ public class Constants {
 
     public static final String IS_NULL = "ISNULL";
     public static final String CONTAINERS_LIST = "containersList";
+    public static final String ROUTING_LIST = "routingsList";
     public static final String CONSOLIDATION_LIST = "consolidationList";
     public static final String ORDER_MANAGEMENT_ID = "orderManagementId";
     public static final String ORDER_NUMBER = "orderNumber";
