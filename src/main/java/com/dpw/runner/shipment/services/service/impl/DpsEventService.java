@@ -5,7 +5,9 @@ import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.response.DpsEventResponse;
+import com.dpw.runner.shipment.services.dto.response.DpsEventResponse.DpsApprovalDetailResponse;
 import com.dpw.runner.shipment.services.entity.DpsEvent;
+import com.dpw.runner.shipment.services.entity.DpsEvent.DpsApprovalDetail;
 import com.dpw.runner.shipment.services.entity.DpsEvent.DpsFieldData;
 import com.dpw.runner.shipment.services.entity.DpsEventLog;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
@@ -24,6 +26,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IDpsEventService;
 import com.google.common.base.Strings;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -32,6 +35,7 @@ import javax.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -154,6 +158,61 @@ public class DpsEventService implements IDpsEventService {
 
         return implications;
     }
+
+    /**
+     * Checks if an implication is present for a given list of shipment IDs.
+     *
+     * @param shipmentIds the list of shipment IDs to check for implications.
+     * @param implication the specific implication to look for.
+     * @return {@code true} if the implication is present for any shipment in the list, otherwise {@code false}.
+     * @throws DpsException if the list of shipment IDs is null or empty.
+     * @throws DataRetrievalFailureException if no shipment details are found for the provided IDs.
+     */
+    @Override
+    public Boolean isImplicationPresent(List<Long> shipmentIds, String implication) {
+        if (shipmentIds == null || shipmentIds.isEmpty()) {
+            throw new DpsException("Shipment IDs cannot be null or empty!");
+        }
+
+        // Fetch all shipment details in bulk
+        List<ShipmentDetails> shipmentDetailsList = shipmentDao.findShipmentsByIds(new HashSet<>(shipmentIds));
+        if (shipmentDetailsList.isEmpty()) {
+            throw new DataRetrievalFailureException("No Shipment details found for provided IDs.");
+        }
+
+        // Extract GUIDs from the shipment details
+        Set<String> shipmentGuids = shipmentDetailsList.stream()
+                .map(ShipmentDetails::getGuid).map(UUID::toString)
+                .collect(Collectors.toSet());
+
+        return isImplicationPresent(shipmentGuids, implication);
+    }
+
+    /**
+     * Checks if an implication is present for a given set of shipment GUIDs.
+     *
+     * @param shipmentGuids the set of shipment GUIDs to check for implications.
+     * @param implication the specific implication to look for.
+     * @return {@code true} if the implication is present for any GUID in the set, otherwise {@code false}.
+     * @throws DpsException if the set of shipment GUIDs is null or empty.
+     */
+    @Override
+    public Boolean isImplicationPresent(Set<String> shipmentGuids, String implication) {
+        if (shipmentGuids == null || shipmentGuids.isEmpty()) {
+            throw new DpsException("Shipment GUIDs cannot be null or empty!");
+        }
+
+        List<String> activeStatuses = Collections.singletonList(DpsExecutionStatus.ACTIVE.name());
+
+        // Check implications for all GUIDs in a single query
+        int count = dpsEventRepository.isImplicationPresentForGuids(
+                shipmentGuids.stream().toList(),
+                DpsEntityType.SHIPMENT.name(),
+                implication,
+                activeStatuses);
+
+        return count > 0; // Return true if any GUID has an implication
+    }
     /**
      * Creates an audit log entry for the given {@link DpsEvent} and {@link ShipmentDetails}. This method captures relevant details about the DPS event and the associated shipment,
      * and persists the audit information for tracking and future reference.
@@ -172,10 +231,16 @@ public class DpsEventService implements IDpsEventService {
                     .executionId(dpsEvent.getExecutionId().toString())
                     .transactionId(dpsEvent.getTransactionId())
                     .usernameList(ObjectUtils.isNotEmpty(dpsEvent.getUsernameList()) ? String.join(",", dpsEvent.getUsernameList()) : null)
+                    .workflowType(dpsEvent.getWorkflowType())
+                    .status(dpsEvent.getStatus())
                     .dpsWorkflowState(dpsEvent.getState())
+                    .ruleMatchedFieldList(ObjectUtils.isNotEmpty(dpsEvent.getRuleMatchedFieldList()) ? String.join(",", dpsEvent.getRuleMatchedFieldList()) : null)
+                    .implicationList(ObjectUtils.isNotEmpty(dpsEvent.getImplicationList()) ? String.join(",", dpsEvent.getImplicationList()) : null)
                     .eventTimeStamp(dpsEvent.getEventTimestamp())
                     .shipmentId(shipmentDetails.getShipmentId())
                     .tenantId(shipmentDetails.getTenantId())
+                    .approvalDetailList(ObjectUtils.isNotEmpty(dpsEvent.getDpsApprovalDetailList()) ?
+                            constructDpsApprovalDetailString(dpsEvent.getDpsApprovalDetailList()) : null)
                     .build();
 
             AuditLogMetaData auditLogMetaData = AuditLogMetaData.builder()
@@ -194,6 +259,26 @@ public class DpsEventService implements IDpsEventService {
             throw new DpsException("DPS EVENT LOG ERROR -- " + e.getMessage(), e);
         }
     }
+
+    private String constructDpsApprovalDetailString(List<DpsApprovalDetail> dpsApprovalDetailList) {
+        if (dpsApprovalDetailList == null || dpsApprovalDetailList.isEmpty()) {
+            return "No approval details available.";
+        }
+
+        StringBuilder result = new StringBuilder();
+        for (DpsApprovalDetail detail : dpsApprovalDetailList) {
+            result.append("Username: ").append(detail.getUsername() != null ? detail.getUsername() : "N/A").append(", ")
+                    .append("Action time: ").append(detail.getActionTime() != null ? detail.getActionTime() : "N/A").append(", ")
+                    .append("Message: ").append(detail.getMessage() != null ? detail.getMessage() : "N/A").append(", ")
+                    .append("State: ").append(detail.getState() != null ? detail.getState() : "N/A").append(", ")
+                    .append("Approval Level: ").append(detail.getApprovalLevel() != null ? detail.getApprovalLevel() : "N/A").append(", ")
+                    .append("Role Name: ").append(detail.getRoleName() != null ? detail.getRoleName() : "N/A").append(", ")
+                    .append("Role ID: ").append(detail.getRoleId() != null ? detail.getRoleId() : "N/A").append("\n");
+        }
+
+        return result.toString();
+    }
+
 
     @Override
     public ResponseEntity<IRunnerResponse> getShipmentMatchingRulesByGuid(String shipmentGuid) {
@@ -231,6 +316,22 @@ public class DpsEventService implements IDpsEventService {
                             .map(dpsFieldData -> new DpsEventResponse.DpsFieldDataResponse(dpsFieldData.getKey(), dpsFieldData.getValue()))
                             .collect(Collectors.toList())
                             : Collections.emptyList();
+
+            List<DpsApprovalDetailResponse> dpsApprovalDetailResponseList =
+                    dpsEvent.getDpsApprovalDetailList() != null
+                            ? dpsEvent.getDpsApprovalDetailList().stream()
+                            .map(dpsApprovalDetail -> DpsApprovalDetailResponse.builder()
+                                    .username(dpsApprovalDetail.getUsername())
+                                    .actionTime(dpsApprovalDetail.getActionTime())
+                                    .message(dpsApprovalDetail.getMessage())
+                                    .state(dpsApprovalDetail.getState())
+                                    .approvalLevel(dpsApprovalDetail.getApprovalLevel())
+                                    .roleName(dpsApprovalDetail.getRoleName())
+                                    .roleId(dpsApprovalDetail.getRoleId())
+                                    .build())
+                            .collect(Collectors.toList())
+                            : Collections.emptyList();
+
             return  DpsEventResponse.builder()
                     .id(dpsEvent.getId())
                     .guid(dpsEvent.getGuid())
@@ -264,6 +365,7 @@ public class DpsEventService implements IDpsEventService {
                             ObjectUtils.isNotEmpty(dpsEvent.getTasks()) ?
                             new ArrayList<>(dpsEvent.getTasks()) :
                                     new ArrayList<>())
+                    .dpsApprovalDetailList(dpsApprovalDetailResponseList)
                     .build();
         } catch (Exception e) {
             throw new DpsException("Error while constructing DpsEventResponse: " + e.getMessage(), e);
@@ -354,6 +456,21 @@ public class DpsEventService implements IDpsEventService {
                                 .build())
                 );
                 dpsEvent.setDpsFieldData(fieldDataList); // Set the updated list back to the entity
+            }
+            if (dtoData.getApprovalLineUpdates() != null) {
+                List<DpsApprovalDetail> approvalDetailList = ObjectUtils.defaultIfNull(dpsEvent.getDpsApprovalDetailList(), new ArrayList<>());
+                dtoData.getApprovalLineUpdates().forEach(approvalDetailDto ->
+                        approvalDetailList.add(DpsApprovalDetail.builder()
+                                .username(approvalDetailDto.getUsername())
+                                .actionTime(approvalDetailDto.getTime())
+                                .message(approvalDetailDto.getMessage())
+                                .state(approvalDetailDto.getState())
+                                .approvalLevel(approvalDetailDto.getLevel())
+                                .roleName(approvalDetailDto.getRoleName())
+                                .roleId(approvalDetailDto.getRoleId())
+                                .build())
+                );
+                dpsEvent.setDpsApprovalDetailList(approvalDetailList);
             }
 
             return dpsEvent;

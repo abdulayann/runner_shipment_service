@@ -67,7 +67,6 @@ import org.springframework.transaction.TransactionSystemException;
 import org.springframework.util.CollectionUtils;
 
 import javax.imageio.ImageIO;
-import javax.mail.Part;
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
 import java.awt.image.BufferedImage;

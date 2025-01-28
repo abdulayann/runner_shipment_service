@@ -45,6 +45,8 @@ import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.*;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferConsolidationDetails;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferShipmentDetails;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.SendShipmentValidationResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -1845,7 +1847,19 @@ public class ShipmentService implements IShipmentService {
                     removedConsolIds.add(oldConsoleId);
             }
 
-            if (!consolidationDetailsRequests.isEmpty() && (oldEntity == null || oldEntity.getConsolidationList() == null || oldEntity.getConsolidationList().size() == 0 || removedConsolIds.size() > 0)) {
+            // Check if the consolidation details are not empty and if one of the following conditions is true:
+            // - The old entity is null (no previous data exists).
+            // - The old entity's consolidation list is empty (no prior consolidations).
+            // - There are removed consolidation IDs (indicating changes in consolidations).
+            if (ObjectUtils.isNotEmpty(consolidationDetailsRequests)
+                    && (oldEntity == null || ObjectUtils.isEmpty(oldEntity.getConsolidationList()) || ObjectUtils.isNotEmpty(removedConsolIds))) {
+
+                // Check if the specific implication (CONCR) is already present for the given shipment ID.
+                // If true, throw a ValidationException to prevent further processing to maintain business constraints.
+                if (Boolean.TRUE.equals(dpsEventService.isImplicationPresent(List.of(shipmentDetails.getId()), DpsConstants.CONCR))) {
+                    throw new ValidationException(DpsConstants.DPS_ERROR_1);
+                }
+
                 isNewConsolAttached.setTrue();
             }
         } else {
@@ -1908,6 +1922,13 @@ public class ShipmentService implements IShipmentService {
 
         if(updatedContainers.size() > 0 || (shipmentRequest.getAutoCreateConsole() != null  && shipmentRequest.getAutoCreateConsole())) {
             if((tempConsolIds == null || tempConsolIds.size() == 0) && (shipmentSettingsDetails.getIsShipmentLevelContainer() == null || !shipmentSettingsDetails.getIsShipmentLevelContainer())) {
+
+                // Check if the specific implication (CONCR) is already present for the given shipment ID.
+                // If true, throw a ValidationException to prevent further processing.
+                if (Boolean.TRUE.equals(dpsEventService.isImplicationPresent(List.of(shipmentDetails.getId()), DpsConstants.CONCR))) {
+                    throw new ValidationException(DpsConstants.DPS_ERROR_1);
+                }
+
                 deletePendingRequestsOnConsoleAttach(shipmentDetails, isCreate);
                 consolidationDetails = createConsolidation(shipmentDetails, updatedContainers);
                 if (!Objects.isNull(consolidationDetails)) {
@@ -4047,12 +4068,19 @@ public class ShipmentService implements IShipmentService {
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             double start = System.currentTimeMillis();
-            if(request.getId() == null) {
-                log.error(ShipmentConstants.SHIPMENT_RETRIEVE_NULL_REQUEST, LoggerHelper.getRequestIdFromMDC());
-                throw new RunnerException("Id can't be null!");
+            if(request.getId() == null && request.getGuid() == null) {
+                log.error("Request Id and Guid are null for Shipment retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                throw new RunnerException("Id and GUID can't be null. Please provide any one !");
             }
             Long id = request.getId();
-            Optional<ShipmentDetails> shipmentDetails = shipmentDao.findShipmentByIdWithQuery(id);
+            Optional<ShipmentDetails> shipmentDetails = Optional.ofNullable(null);
+            if(id != null){
+                shipmentDetails = shipmentDao.findShipmentByIdWithQuery(id);
+            }
+            else {
+                UUID guid = UUID.fromString(request.getGuid());
+                shipmentDetails = shipmentDao.findShipmentByGuidWithQuery(guid);
+            }
             if (!shipmentDetails.isPresent()) {
                 log.debug("Shipment Details is null for the input with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
@@ -4060,7 +4088,15 @@ public class ShipmentService implements IShipmentService {
 
             List<TriangulationPartner> triangulationPartners = shipmentDetails.get().getTriangulationPartnerList();
             Long currentTenant = TenantContext.getCurrentTenant().longValue();
-            if (isNotAllowedToViewShipment(triangulationPartners, shipmentDetails.get(), currentTenant)) {
+            boolean allowedToView = false;
+            ConsolidationDetails consolidationDetails = null;
+            if (!CommonUtils.listIsNullOrEmpty(shipmentDetails.get().getConsolidationList())) {
+                consolidationDetails = shipmentDetails.get().getConsolidationList().get(0);
+            }
+            if (consolidationDetails != null) {
+                allowedToView = this.isValidNte(consolidationDetails);
+            }
+            if (Boolean.FALSE.equals(allowedToView) && isNotAllowedToViewShipment(triangulationPartners, shipmentDetails.get(), currentTenant)) {
                 throw new AuthenticationException(Constants.NOT_ALLOWED_TO_VIEW_SHIPMENT_FOR_NTE);
             }
             List<Notes> notes = notesDao.findByEntityIdAndEntityType(request.getId(), Constants.CUSTOMER_BOOKING);
@@ -6290,7 +6326,7 @@ public class ShipmentService implements IShipmentService {
         return response;
     }
 
-    private void isValidNte(ConsolidationDetails consolidationDetails) throws AuthenticationException {
+    private boolean isValidNte(ConsolidationDetails consolidationDetails) throws AuthenticationException {
         List<TriangulationPartner> triangulationPartners = consolidationDetails.getTriangulationPartnerList();
         Long currentTenant = TenantContext.getCurrentTenant().longValue();
         if ((triangulationPartners == null
@@ -6304,6 +6340,7 @@ public class ShipmentService implements IShipmentService {
                 && !Objects.equals(consolidationDetails.getReceivingBranch(), TenantContext.getCurrentTenant().longValue())) {
             throw new AuthenticationException(Constants.NOT_ALLOWED_TO_VIEW_CONSOLIDATION_FOR_NTE);
         }
+        return true;
     }
 
     @Override

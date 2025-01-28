@@ -9091,6 +9091,14 @@ ShipmentServiceTest extends CommonMocks {
     }
 
     @Test
+    void testRetrieveForNTE_InvalidNTE() {
+        shipmentDetails.setReceivingBranch(TenantContext.getCurrentTenant().longValue());
+        when(shipmentDao.findShipmentByIdWithQuery(any())).thenReturn(Optional.of(shipmentDetails));
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
+        shipmentService.retrieveForNTE(CommonRequestModel.buildRequest(commonGetRequest));
+    }
+
+    @Test
     void testRetrieveForNTE() {
         shipmentDetails.setStatus(null);
         TriangulationPartner triangulationPartner = TriangulationPartner.builder()
@@ -9106,7 +9114,14 @@ ShipmentServiceTest extends CommonMocks {
     @Test
     void testRetrieveForNTE1() {
         shipmentDetails.setReceivingBranch(TenantContext.getCurrentTenant().longValue());
+        List<TriangulationPartner> triangulationPartners = List.of(
+                TriangulationPartner.builder().triangulationPartner(1L).build()
+        );
+        testConsol.setTriangulationPartnerList(triangulationPartners);
+        testConsol.setReceivingBranch(1L);
+        shipmentDetails.setConsolidationList(List.of(testConsol));
         when(shipmentDao.findShipmentByIdWithQuery(any())).thenReturn(Optional.of(shipmentDetails));
+        TenantContext.setCurrentTenant(1);
         when(modelMapper.map(any(), eq(ShipmentDetailsResponse.class))).thenReturn(objectMapper.convertValue(shipmentDetails, ShipmentDetailsResponse.class));
         CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
         ResponseEntity<IRunnerResponse> response = shipmentService.retrieveForNTE(CommonRequestModel.buildRequest(commonGetRequest));
@@ -9120,6 +9135,22 @@ ShipmentServiceTest extends CommonMocks {
                 .triangulationPartner(TenantContext.getCurrentTenant().longValue()).build();
         shipmentDetails.setTriangulationPartnerList(List.of(triangulationPartner));
         when(shipmentDao.findShipmentByIdWithQuery(any())).thenReturn(Optional.of(shipmentDetails));
+        when(modelMapper.map(any(), eq(ShipmentDetailsResponse.class))).thenReturn(objectMapper.convertValue(shipmentDetails, ShipmentDetailsResponse.class));
+        CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
+        ResponseEntity<IRunnerResponse> response = shipmentService.retrieveForNTE(CommonRequestModel.buildRequest(commonGetRequest));
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testRetrieveForNTE3() {
+        shipmentDetails.setReceivingBranch(TenantContext.getCurrentTenant().longValue());
+        List<TriangulationPartner> triangulationPartners = List.of(
+                TriangulationPartner.builder().triangulationPartner(1L).build()
+        );
+        testConsol.setTriangulationPartnerList(triangulationPartners);
+        shipmentDetails.setConsolidationList(List.of(testConsol));
+        when(shipmentDao.findShipmentByIdWithQuery(any())).thenReturn(Optional.of(shipmentDetails));
+        TenantContext.setCurrentTenant(1);
         when(modelMapper.map(any(), eq(ShipmentDetailsResponse.class))).thenReturn(objectMapper.convertValue(shipmentDetails, ShipmentDetailsResponse.class));
         CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
         ResponseEntity<IRunnerResponse> response = shipmentService.retrieveForNTE(CommonRequestModel.buildRequest(commonGetRequest));
