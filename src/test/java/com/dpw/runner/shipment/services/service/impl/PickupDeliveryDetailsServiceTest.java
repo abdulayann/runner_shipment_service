@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
@@ -7,10 +8,12 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IPickupDeliveryDetailsDao;
 import com.dpw.runner.shipment.services.dto.request.PickupDeliveryDetailsRequest;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.PickupDeliveryDetailsResponse;
 import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,7 +33,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
@@ -51,12 +56,16 @@ class PickupDeliveryDetailsServiceTest {
     @Mock
     private AuditLogService auditLogService;
 
+    @Mock
+    private KafkaProducer producer;
+
     @InjectMocks
     private PickupDeliveryDetailsService pickupDeliveryDetailsService;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
+        UserContext.setUser(UsersDto.builder().TenantId(1).Username("test").build());
     }
 
     @Test
@@ -64,10 +73,15 @@ class PickupDeliveryDetailsServiceTest {
         PickupDeliveryDetailsRequest request = new PickupDeliveryDetailsRequest();
         PickupDeliveryDetails entity = new PickupDeliveryDetails();
         entity.setId(1L);
+        entity.setShipmentId(1L);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
 
         when(pickupDeliveryDetailsDao.save(any(PickupDeliveryDetails.class))).thenReturn(entity);
         when(jsonHelper.convertValue(any(), eq(PickupDeliveryDetails.class))).thenReturn(entity);
+        when(jsonHelper.convertValue(any(), eq(PickupDeliveryDetailsResponse.class))).thenReturn(new PickupDeliveryDetailsResponse());
+        when(pickupDeliveryDetailsDao.findByShipmentId(anyLong())).thenReturn(List.of(entity));
+        when(jsonHelper.convertToJson(any())).thenReturn("");
+        doNothing().when(producer).produceToKafka(any(), anyString(), anyString());
 
         ResponseEntity<IRunnerResponse> response = pickupDeliveryDetailsService.create(commonRequestModel);
 
@@ -104,6 +118,7 @@ class PickupDeliveryDetailsServiceTest {
         PickupDeliveryDetails oldEntity = new PickupDeliveryDetails();
         PickupDeliveryDetails newEntity = new PickupDeliveryDetails();
         newEntity.setId(1L);
+        newEntity.setShipmentId(1L);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
 
         when(pickupDeliveryDetailsDao.findById(anyLong())).thenReturn(Optional.of(oldEntity));
@@ -111,6 +126,10 @@ class PickupDeliveryDetailsServiceTest {
         when(jsonHelper.convertToJson(any())).thenReturn("{}");
         when(jsonHelper.readFromJson(anyString(), eq(PickupDeliveryDetails.class))).thenReturn(oldEntity);
         when(jsonHelper.convertValue(any(), eq(PickupDeliveryDetails.class))).thenReturn(newEntity);
+        when(jsonHelper.convertValue(any(), eq(PickupDeliveryDetailsResponse.class))).thenReturn(new PickupDeliveryDetailsResponse());
+        when(pickupDeliveryDetailsDao.findByShipmentId(anyLong())).thenReturn(List.of(newEntity));
+        when(jsonHelper.convertToJson(any())).thenReturn("");
+        doNothing().when(producer).produceToKafka(any(), anyString(), anyString());
 
         ResponseEntity<IRunnerResponse> response = pickupDeliveryDetailsService.update(commonRequestModel);
 
@@ -196,9 +215,11 @@ class PickupDeliveryDetailsServiceTest {
         CommonGetRequest request = CommonGetRequest.builder().id(1L).build();
         PickupDeliveryDetails entity = new PickupDeliveryDetails();
         entity.setId(1L);
+        entity.setShipmentId(1L);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
 
         when(pickupDeliveryDetailsDao.findById(anyLong())).thenReturn(Optional.of(entity));
+        when(pickupDeliveryDetailsDao.findByShipmentId(anyLong())).thenReturn(new ArrayList<>());
 
         ResponseEntity<IRunnerResponse> response = pickupDeliveryDetailsService.delete(commonRequestModel);
 
