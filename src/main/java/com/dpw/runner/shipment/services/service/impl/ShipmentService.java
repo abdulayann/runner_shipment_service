@@ -730,6 +730,7 @@ public class ShipmentService implements IShipmentService {
             if(!commonUtils.checkIfPartyExists(shipmentDetails.getAdditionalDetails().getExportBroker())) {
                 shipmentDetails.getAdditionalDetails().setExportBrokerCountry(commonUtils.getCountryFromUnLocCode(shipmentDetails.getCarrierDetails().getOriginLocCode()));
             }
+            populateOriginDestinationAgentDetailsForBookingShipment(shipmentDetails);
             shipmentDetails = getShipment(shipmentDetails);
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
             if(shipmentSettingsDetails.getAutoEventCreate() != null && shipmentSettingsDetails.getAutoEventCreate())
@@ -1969,6 +1970,25 @@ public class ShipmentService implements IShipmentService {
                     shipmentDetails.getCarrierDetails().setEta(consolidationDetails1.getCarrierDetails().getEta());
                     shipmentDetails.getCarrierDetails().setAtd(consolidationDetails1.getCarrierDetails().getAtd());
                     shipmentDetails.getCarrierDetails().setAta(consolidationDetails1.getCarrierDetails().getAta());
+                }
+            }
+            if(!Boolean.TRUE.equals(consolidationDetails1.getInterBranchConsole())) {
+                if (CommonUtils.checkPartyNotNull(consolidationDetails1.getSendingAgent())) {
+                    if (shipmentDetails.getAdditionalDetails() != null && !CommonUtils.checkSameParties(consolidationDetails1.getSendingAgent(), shipmentDetails.getAdditionalDetails().getExportBroker())) {
+                        shipmentDetails.getAdditionalDetails().setExportBroker(commonUtils.removeIdFromParty(consolidationDetails1.getSendingAgent()));
+                    } else if (shipmentDetails.getAdditionalDetails() == null) {
+                        shipmentDetails.setAdditionalDetails(new AdditionalDetails());
+                        shipmentDetails.getAdditionalDetails().setExportBroker(commonUtils.removeIdFromParty(consolidationDetails1.getSendingAgent()));
+                    }
+                }
+
+                if (CommonUtils.checkPartyNotNull(consolidationDetails1.getReceivingAgent())) {
+                    if (shipmentDetails.getAdditionalDetails() != null && !CommonUtils.checkSameParties(consolidationDetails1.getReceivingAgent(), shipmentDetails.getAdditionalDetails().getImportBroker())) {
+                        shipmentDetails.getAdditionalDetails().setImportBroker(commonUtils.removeIdFromParty(consolidationDetails1.getReceivingAgent()));
+                    } else if (shipmentDetails.getAdditionalDetails() == null) {
+                        shipmentDetails.setAdditionalDetails(new AdditionalDetails());
+                        shipmentDetails.getAdditionalDetails().setImportBroker(commonUtils.removeIdFromParty(consolidationDetails1.getReceivingAgent()));
+                    }
                 }
             }
             var console = shipmentDetails.getConsolidationList().get(0);
@@ -3251,28 +3271,9 @@ public class ShipmentService implements IShipmentService {
             if(Objects.equals(TRANSPORT_MODE_SEA, shipmentDetails.getTransportMode()) || Objects.equals(TRANSPORT_MODE_AIR, shipmentDetails.getTransportMode()))
                 consolidationDetails.setHazardous(shipmentDetails.getContainsHazardous());
             consolidationService.generateConsolidationNumber(consolidationDetails);
-            if(consolidationDetails.getShipmentType() != null && !consolidationDetails.getShipmentType().isEmpty()
-            && consolidationDetails.getShipmentType().equals(Constants.IMP) || consolidationDetails.getShipmentType().equals(Constants.DIRECTION_EXP)) {
-                Parties defaultParty = null;
-                try {
-                    PartyRequestV2 partyRequestV2 = v1Service.getDefaultOrg();
-                    if(!Objects.isNull(partyRequestV2))
-                        defaultParty = modelMapper.map(partyRequestV2, Parties.class);
-                } catch (Exception ignored) {}
-                if(!Objects.isNull(defaultParty)) {
-                    if(consolidationDetails.getShipmentType().equals(Constants.DIRECTION_EXP)) {
-                        consolidationDetails.setSendingAgent(defaultParty);
-                        if(consolidationDetails.getReceivingAgent() != null && consolidationDetails.getReceivingAgent().getOrgCode() != null
-                            && consolidationDetails.getReceivingAgent().getOrgCode().equals(defaultParty.getOrgCode()))
-                            consolidationDetails.setReceivingAgent(null);
-                    }
-                    else {
-                        consolidationDetails.setReceivingAgent(defaultParty);
-                        if(consolidationDetails.getSendingAgent() != null && consolidationDetails.getSendingAgent().getOrgCode() != null
-                            && consolidationDetails.getSendingAgent().getOrgCode().equals(defaultParty.getOrgCode()))
-                            consolidationDetails.setSendingAgent(null);
-                    }
-                }
+            if(shipmentDetails.getAdditionalDetails() != null) {
+                consolidationDetails.setSendingAgent(shipmentDetails.getAdditionalDetails().getExportBroker());
+                consolidationDetails.setReceivingAgent(shipmentDetails.getAdditionalDetails().getImportBroker());
             }
             if(!commonUtils.checkIfPartyExists(consolidationDetails.getSendingAgent())) {
                 consolidationDetails.setSendingAgentCountry(commonUtils.getCountryFromUnLocCode(consolidationDetails.getCarrierDetails().getOriginPortLocCode()));
@@ -5345,6 +5346,12 @@ public class ShipmentService implements IShipmentService {
                     response.getAdditionalDetails().setPaidPlace(unlocationsResponse.get(0).getLocationsReferenceGUID());
                     response.getAdditionalDetails().setPlaceOfSupply(unlocationsResponse.get(0).getLocationsReferenceGUID());
                 }
+                PartiesResponse partiesResponse = v1ServiceUtil.getDefaultAgentOrg(tenantModel);
+                if(Constants.DIRECTION_EXP.equals(response.getDirection())) {
+                    response.getAdditionalDetails().setExportBroker(partiesResponse);
+                } else if(Constants.DIRECTION_IMP.equals(response.getDirection())) {
+                    response.getAdditionalDetails().setImportBroker(partiesResponse);
+                }
             } catch (Exception e){
                 log.error("Failed in fetching tenant data from V1 with error : {}", e);
             }
@@ -5671,7 +5678,10 @@ public class ShipmentService implements IShipmentService {
         AtomicBoolean makeConsoleSciT1 = new AtomicBoolean(shipment.getAdditionalDetails() != null && Objects.equals(shipment.getAdditionalDetails().getSci(), AwbConstants.T1));
         if(linkedConsol != null && (oldEntity == null || !Objects.equals(shipment.getMasterBill(),oldEntity.getMasterBill()) ||
                 !Objects.equals(shipment.getDirection(),oldEntity.getDirection()) ||
-                (shipment.getAdditionalDetails() != null && !Objects.equals(shipment.getAdditionalDetails().getSci(),oldEntity.getAdditionalDetails().getSci())) ||
+                (shipment.getAdditionalDetails() != null && oldEntity.getAdditionalDetails() != null &&
+                (!Objects.equals(shipment.getAdditionalDetails().getSci(),oldEntity.getAdditionalDetails().getSci()) ||
+                !CommonUtils.checkSameParties(shipment.getAdditionalDetails().getExportBroker(), oldEntity.getAdditionalDetails().getExportBroker()) ||
+                !CommonUtils.checkSameParties(shipment.getAdditionalDetails().getImportBroker(), oldEntity.getAdditionalDetails().getImportBroker()))) ||
                 (shipment.getCarrierDetails() != null && oldEntity.getCarrierDetails() != null &&
                 (!Objects.equals(shipment.getCarrierDetails().getVoyage(),oldEntity.getCarrierDetails().getVoyage()) ||
                         !Objects.equals(shipment.getCarrierDetails().getVessel(),oldEntity.getCarrierDetails().getVessel()) ||
@@ -5690,6 +5700,20 @@ public class ShipmentService implements IShipmentService {
 
             if(makeConsoleDG)
                 consolidationDetails.setHazardous(true);
+            if(!Boolean.TRUE.equals(consolidationDetails.getInterBranchConsole())) {
+                if (shipment.getAdditionalDetails() != null) {
+                    if(!CommonUtils.checkSameParties(shipment.getAdditionalDetails().getExportBroker(), consolidationDetails.getSendingAgent())) {
+                        consolidationDetails.setSendingAgent(commonUtils.removeIdFromParty(shipment.getAdditionalDetails().getExportBroker()));
+                    }
+                    if(!CommonUtils.checkSameParties(shipment.getAdditionalDetails().getImportBroker(), consolidationDetails.getReceivingAgent())) {
+                        consolidationDetails.setReceivingAgent(commonUtils.removeIdFromParty(shipment.getAdditionalDetails().getImportBroker()));
+                    }
+                } else {
+                    consolidationDetails.setSendingAgent(null);
+                    consolidationDetails.setReceivingAgent(null);
+                }
+            }
+            boolean interBranchConsole = consolidationDetails.getInterBranchConsole();
             List<Long> shipmentIdList = getShipmentIdsExceptCurrentShipment(consolidationList.get(0).getId(), shipment);
             if (!shipmentIdList.isEmpty()) {
                 List<ShipmentDetails> shipments = shipmentDao.findShipmentsByIds(shipmentIdList.stream().collect(
@@ -5703,6 +5727,23 @@ public class ShipmentService implements IShipmentService {
                             i.getCarrierDetails().setVessel(shipment.getCarrierDetails().getVessel());
                             i.getCarrierDetails().setShippingLine(shipment.getCarrierDetails().getShippingLine());
                             i.getCarrierDetails().setAircraftType(shipment.getCarrierDetails().getAircraftType());
+                        }
+                        if(!Boolean.TRUE.equals(interBranchConsole)) {
+                            if (shipment.getAdditionalDetails() != null &&
+                                    (CommonUtils.checkPartyNotNull(shipment.getAdditionalDetails().getExportBroker()) || CommonUtils.checkPartyNotNull(shipment.getAdditionalDetails().getImportBroker()))) {
+                                if(i.getAdditionalDetails() == null) {
+                                    i.setAdditionalDetails(new AdditionalDetails());
+                                }
+                                if (!CommonUtils.checkSameParties(shipment.getAdditionalDetails().getExportBroker(), i.getAdditionalDetails().getExportBroker())) {
+                                    i.getAdditionalDetails().setExportBroker(commonUtils.removeIdFromParty(shipment.getAdditionalDetails().getExportBroker()));
+                                }
+                                if (!CommonUtils.checkSameParties(shipment.getAdditionalDetails().getImportBroker(), i.getAdditionalDetails().getImportBroker())) {
+                                    i.getAdditionalDetails().setImportBroker(commonUtils.removeIdFromParty(shipment.getAdditionalDetails().getImportBroker()));
+                                }
+                            } else if(shipment.getAdditionalDetails() == null && i.getAdditionalDetails() != null) {
+                                i.getAdditionalDetails().setExportBroker(null);
+                                i.getAdditionalDetails().setImportBroker(null);
+                            }
                         }
                         if (makeConsoleNonDG.get() && Boolean.TRUE.equals(i.getContainsHazardous()))
                             makeConsoleNonDG.set(false);
@@ -7901,6 +7942,7 @@ public class ShipmentService implements IShipmentService {
                 shipmentDetails.setConsolidationList(jsonHelper.convertValueToList(request.getConsolidationList(), ConsolidationDetails.class));
             if(request.getContainersList() != null)
                 shipmentDetails.setContainersList(jsonHelper.convertValueToList(request.getContainersList(), Containers.class));
+            populateOriginDestinationAgentDetailsForBookingShipment(shipmentDetails);
             shipmentDetails = getShipment(shipmentDetails);
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
             if(shipmentSettingsDetails.getAutoEventCreate() != null && shipmentSettingsDetails.getAutoEventCreate())
@@ -8000,5 +8042,59 @@ public class ShipmentService implements IShipmentService {
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> bookingIntegrationsUtility.updateBookingInPlatform(shipment)), executorService);
 
         return ResponseHelper.buildSuccessResponse();
+    }
+
+    public void populateOriginDestinationAgentDetailsForBookingShipment(ShipmentDetails shipmentDetails) {
+        ConsolidationDetails consolidationDetails = null;
+        if(!CommonUtils.listIsNullOrEmpty(shipmentDetails.getConsolidationList())) {
+            consolidationDetails = shipmentDetails.getConsolidationList().get(0);
+        }
+        if(consolidationDetails != null && !Boolean.TRUE.equals(consolidationDetails.getInterBranchConsole())) {
+            boolean consolUpdated = false;
+            if (CommonUtils.checkPartyNotNull(consolidationDetails.getSendingAgent())) {
+                if(shipmentDetails.getAdditionalDetails() != null &&
+                        !CommonUtils.checkSameParties(consolidationDetails.getSendingAgent(), shipmentDetails.getAdditionalDetails().getExportBroker())) {
+                    shipmentDetails.getAdditionalDetails().setExportBroker(commonUtils.removeIdFromParty(consolidationDetails.getSendingAgent()));
+                } else if (shipmentDetails.getAdditionalDetails() == null) {
+                    shipmentDetails.setAdditionalDetails(new AdditionalDetails());
+                    shipmentDetails.getAdditionalDetails().setExportBroker(commonUtils.removeIdFromParty(consolidationDetails.getSendingAgent()));
+                }
+            } else if (shipmentDetails.getAdditionalDetails() != null && CommonUtils.checkPartyNotNull(shipmentDetails.getAdditionalDetails().getExportBroker())) {
+                consolidationDetails.setSendingAgent(shipmentDetails.getAdditionalDetails().getExportBroker());
+                consolUpdated = true;
+            }
+
+            if (CommonUtils.checkPartyNotNull(consolidationDetails.getReceivingAgent())) {
+                if(shipmentDetails.getAdditionalDetails() != null &&
+                        !CommonUtils.checkSameParties(consolidationDetails.getReceivingAgent(), shipmentDetails.getAdditionalDetails().getImportBroker())) {
+                    shipmentDetails.getAdditionalDetails().setImportBroker(commonUtils.removeIdFromParty(consolidationDetails.getReceivingAgent()));
+                } else if (shipmentDetails.getAdditionalDetails() == null) {
+                    shipmentDetails.setAdditionalDetails(new AdditionalDetails());
+                    shipmentDetails.getAdditionalDetails().setImportBroker(commonUtils.removeIdFromParty(consolidationDetails.getReceivingAgent()));
+                }
+            } else if (shipmentDetails.getAdditionalDetails() != null && CommonUtils.checkPartyNotNull(shipmentDetails.getAdditionalDetails().getImportBroker())) {
+                consolidationDetails.setReceivingAgent(shipmentDetails.getAdditionalDetails().getImportBroker());
+                consolUpdated = true;
+            }
+
+            if (consolUpdated) {
+                consolidationDetailsDao.save(consolidationDetails, false);
+            }
+        }
+        if (consolidationDetails == null) {
+            if (Constants.DIRECTION_EXP.equals(shipmentDetails.getDirection()) &&
+                    (shipmentDetails.getAdditionalDetails() == null || !CommonUtils.checkPartyNotNull(shipmentDetails.getAdditionalDetails().getExportBroker()))) {
+                if(shipmentDetails.getAdditionalDetails() == null) {
+                    shipmentDetails.setAdditionalDetails(new AdditionalDetails());
+                }
+                shipmentDetails.getAdditionalDetails().setExportBroker(v1ServiceUtil.getDefaultAgentOrgParty(null));
+            } else if (Constants.DIRECTION_IMP.equals(shipmentDetails.getDirection()) &&
+                    (shipmentDetails.getAdditionalDetails() == null || !CommonUtils.checkPartyNotNull(shipmentDetails.getAdditionalDetails().getImportBroker()))) {
+                if(shipmentDetails.getAdditionalDetails() == null) {
+                    shipmentDetails.setAdditionalDetails(new AdditionalDetails());
+                }
+                shipmentDetails.getAdditionalDetails().setImportBroker(v1ServiceUtil.getDefaultAgentOrgParty(null));
+            }
+        }
     }
 }
