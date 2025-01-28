@@ -289,7 +289,7 @@ public class NetworkTransferService implements INetworkTransferService {
         return networkTransfer;
     }
 
-    public NetworkTransfer getNetworkTransferEntityFromConsolidation(ConsolidationDetails consolidationDetails, Integer tenantId, String jobType){
+    public NetworkTransfer getNetworkTransferEntityFromConsolidation(ConsolidationDetails consolidationDetails, Integer tenantId, String jobType, Boolean isInterBranchEntity){
         NetworkTransfer networkTransfer = new NetworkTransfer();
         networkTransfer.setTenantId(tenantId);
         networkTransfer.setEntityId(consolidationDetails.getId());
@@ -298,6 +298,7 @@ public class NetworkTransferService implements INetworkTransferService {
         networkTransfer.setTransportMode(consolidationDetails.getTransportMode());
         networkTransfer.setSourceBranchId(consolidationDetails.getTenantId());
         networkTransfer.setJobType(jobType);
+        networkTransfer.setIsInterBranchEntity(isInterBranchEntity);
         return networkTransfer;
     }
 
@@ -317,7 +318,7 @@ public class NetworkTransferService implements INetworkTransferService {
             if (Objects.equals(entityType, Constants.SHIPMENT) && ObjectUtils.isNotEmpty(shipmentDetails)) {
                 networkTransfer = getNetworkTransferEntityFromShipment(shipmentDetails, intTenantId, jobType, isInterBranchEntity);
             } else if (Objects.equals(entityType, Constants.CONSOLIDATION) && ObjectUtils.isNotEmpty(consolidationDetails)) {
-                networkTransfer = getNetworkTransferEntityFromConsolidation(consolidationDetails, intTenantId, jobType);
+                networkTransfer = getNetworkTransferEntityFromConsolidation(consolidationDetails, intTenantId, jobType, isInterBranchEntity);
             }
 
             if (oldTenantId != null && networkTransfer != null)

@@ -22,6 +22,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.ROAD_
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_STD;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.APPROVE;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_DETACH;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_REQUESTED;
@@ -1230,6 +1231,7 @@ public class ConsolidationService implements IConsolidationService {
             // detaching the shipmentDetailsList but still able to access raw entity data, fetch any lazy load data beforehand if need to be used
             shipmentDao.entityDetach(shipmentDetailsList);
             updateLinkedShipmentData(consolidationDetails, null, true, new HashMap<>());
+            processInterConsoleAttachShipment(consolidationDetails, shipmentDetailsList);
             // Update pack utilisation if user accepts any pull or push request
             if(ShipmentRequestedType.APPROVE.equals(shipmentRequestedType)) {
                 packingService.savePackUtilisationCalculationInConsole(CalculatePackUtilizationRequest.builder()
@@ -1411,6 +1413,23 @@ public class ConsolidationService implements IConsolidationService {
         return ResponseHelper.buildFailedResponse("Consol is null");
     }
 
+    private void processInterConsoleDetachShipment(ConsolidationDetails console, List<Long> shipmentIds){
+        try {
+            boolean isInterBranchConsole = console.getInterBranchConsole();
+            ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+            boolean isNetworkTransferEntityEnabled = Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled());
+            if(!isInterBranchConsole || isNetworkTransferEntityEnabled ||(shipmentIds==null || shipmentIds.isEmpty()))
+                return;
+            List<ShipmentDetails> shipmentDetailsList = shipmentDao.findShipmentsByIds((Set<Long>) shipmentIds);
+            for(ShipmentDetails shipmentDetails: shipmentDetailsList) {
+                if(shipmentDetails.getReceivingBranch()!=null)
+                    networkTransferService.deleteValidNetworkTransferEntity(shipmentDetails.getReceivingBranch(), shipmentDetails.getId(), SHIPMENT);
+            }
+        } catch(Exception e){
+            log.error("Error in attach shipment process: ", e.getMessage());
+        }
+    }
+
     public ResponseEntity<IRunnerResponse> detachShipmentsHelper(ConsolidationDetails consol, List<Long> shipmentIds, String remarks) throws RunnerException {
         List<ShipmentDetails> shipmentDetails = Optional.ofNullable(shipmentIds)
                 .filter(ObjectUtils::isNotEmpty).map(ids -> shipmentDao.findShipmentsByIds(ids.stream().collect(Collectors.toSet())))
@@ -1523,6 +1542,7 @@ public class ConsolidationService implements IConsolidationService {
         if(!shipmentRequestedTypes.isEmpty()) {
             warning = "Mail Template not found, please inform the region users individually";
         }
+        processInterConsoleDetachShipment(consol, shipmentIds);
         return ResponseHelper.buildSuccessResponseWithWarning(warning);
     }
 
@@ -1952,6 +1972,73 @@ public class ConsolidationService implements IConsolidationService {
             }
         }
         return shipments;
+    }
+
+    private void processInterConsoleAttachShipment(ConsolidationDetails console, List<ShipmentDetails> shipments) {
+        try {
+            if (!isValidRequest(console, shipments)) return;
+
+            ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+            if (!isNetworkTransferEntityEnabled(shipmentSettingsDetails)) return;
+
+            List<Long> shipmentIds = getShipmentIds(shipments);
+            if (shipmentIds.isEmpty()) return;
+
+            Map<Long, Map<Integer, NetworkTransfer>> shipmentNetworkTransferMap = getShipmentNetworkTransferMap(shipmentIds);
+
+            Long consoleReceivingBranch = console.getReceivingBranch();
+            List<Long> networkTransferListToDelete = new ArrayList<>();
+
+            for (ShipmentDetails shipment : shipments) {
+                processNTEConsoleShipment(consoleReceivingBranch, shipment, shipmentNetworkTransferMap, networkTransferListToDelete);
+            }
+
+            if (!networkTransferListToDelete.isEmpty()) {
+                networkTransferDao.deleteByIdsAndLog(networkTransferListToDelete);
+            }
+        } catch (Exception e) {
+            log.error("Error in attach shipment process: ", e.getMessage());
+        }
+    }
+
+    private boolean isValidRequest(ConsolidationDetails console, List<ShipmentDetails> shipments) {
+        return Boolean.TRUE.equals(console.getInterBranchConsole()) && shipments != null && !shipments.isEmpty();
+    }
+
+    private boolean isNetworkTransferEntityEnabled(ShipmentSettingsDetails shipmentSettingsDetails) {
+        return Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled());
+    }
+
+    private List<Long> getShipmentIds(List<ShipmentDetails> shipments) {
+        return shipments.stream().map(ShipmentDetails::getId).filter(Objects::nonNull).toList();
+    }
+
+    private Map<Long, Map<Integer, NetworkTransfer>> getShipmentNetworkTransferMap(List<Long> shipmentIds) {
+        return networkTransferDao.getInterConsoleNTList(shipmentIds, Constants.SHIPMENT).stream()
+                .collect(Collectors.groupingBy(
+                        NetworkTransfer::getEntityId,
+                        Collectors.toMap(NetworkTransfer::getTenantId, transfer -> transfer)
+                ));
+    }
+
+    private void processNTEConsoleShipment(Long consoleReceivingBranch, ShipmentDetails shipment,
+                                           Map<Long, Map<Integer, NetworkTransfer>> shipmentNetworkTransferMap,
+                                           List<Long> networkTransferListToDelete) {
+        Long receivingBranch = shipment.getReceivingBranch();
+        if (receivingBranch == null) return;
+
+        Map<Integer, NetworkTransfer> tenantMap = shipmentNetworkTransferMap.get(shipment.getId());
+        NetworkTransfer networkTransfer = tenantMap != null ? tenantMap.get(receivingBranch.intValue()) : null;
+
+        if (Objects.equals(receivingBranch, consoleReceivingBranch)) {
+            if (networkTransfer != null && networkTransfer.getStatus() != NetworkTransferStatus.ACCEPTED) {
+                networkTransferListToDelete.add(networkTransfer.getId());
+            }
+        } else if (networkTransfer == null) {
+            networkTransferService.processNetworkTransferEntity(
+                    receivingBranch, null, Constants.SHIPMENT,
+                    shipment, null, Constants.DIRECTION_IMP, null, true);
+        }
     }
 
     @Override
@@ -4600,10 +4687,10 @@ public class ConsolidationService implements IConsolidationService {
         }
     }
 
-    private void processNetworkTransferEntity(Long tenantId, Long oldTenantId, ConsolidationDetails consolidationDetails, String jobType) {
+    private void processNetworkTransferEntity(Long tenantId, Long oldTenantId, ConsolidationDetails consolidationDetails, String jobType, Boolean isInterBranchConsole) {
         try{
             networkTransferService.processNetworkTransferEntity(tenantId, oldTenantId, Constants.CONSOLIDATION, null,
-                    consolidationDetails, jobType, null, false);
+                    consolidationDetails, jobType, null, isInterBranchConsole);
         } catch (Exception ex) {
             log.error("Exception during processing Network Transfer entity for Consolidation Number: {} with exception: {}", consolidationDetails.getConsolidationNumber(), ex.getMessage());
         }
@@ -4612,14 +4699,19 @@ public class ConsolidationService implements IConsolidationService {
 
     private void createOrUpdateNetworkTransferEntity(ShipmentSettingsDetails shipmentSettingsDetails, ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity) {
         try{
+            boolean isNetworkTransferEntityEnabled = Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled());
+            boolean isInterBranchConsole = Boolean.TRUE.equals(consolidationDetails.getInterBranchConsole());
+            if(isNetworkTransferEntityEnabled && isInterBranchConsole)
+                processInterBranchEntityCase(consolidationDetails, oldEntity);
+
             if (consolidationDetails.getTransportMode()!=null &&
                     !Constants.TRANSPORT_MODE_RAI.equals(consolidationDetails.getTransportMode())
                     && Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled())) {
                 processNetworkTransferEntity(consolidationDetails.getReceivingBranch(),
                         oldEntity != null ? oldEntity.getReceivingBranch() : null, consolidationDetails,
-                        reverseDirection(consolidationDetails.getShipmentType()));
+                        reverseDirection(consolidationDetails.getShipmentType()), isInterBranchConsole);
 
-                if (consolidationDetails.getTriangulationPartnerList() != null) {
+                if (consolidationDetails.getTriangulationPartnerList() != null && !isInterBranchConsole) {
                     List<Long> currentPartners = commonUtils.getTriangulationPartnerList(consolidationDetails.getTriangulationPartnerList());
                     List<Long> oldPartners = oldEntity != null ? commonUtils.getTriangulationPartnerList(oldEntity.getTriangulationPartnerList())
                             : Collections.emptyList();
@@ -4634,22 +4726,22 @@ public class ConsolidationService implements IConsolidationService {
 
                     // Process new tenant IDs for network transfer
                     newTenantIds.forEach(newTenantId -> {
-                        processNetworkTransferEntity(newTenantId, null, consolidationDetails, Constants.DIRECTION_CTS);
+                        processNetworkTransferEntity(newTenantId, null, consolidationDetails, Constants.DIRECTION_CTS, false);
                     });
 
                     // Process old tenant IDs for removal from network transfer
                     oldTenantIds.forEach(oldTenantId -> {
-                        processNetworkTransferEntity(null, oldTenantId, consolidationDetails, Constants.DIRECTION_CTS);
+                        processNetworkTransferEntity(null, oldTenantId, consolidationDetails, Constants.DIRECTION_CTS, false);
                     });
-                } else if (consolidationDetails.getTriangulationPartner() != null) {
+                } else if (consolidationDetails.getTriangulationPartner() != null && !isInterBranchConsole) {
                     processNetworkTransferEntity(consolidationDetails.getTriangulationPartner(),
-                            oldEntity != null ? oldEntity.getTriangulationPartner() : null, consolidationDetails, Constants.DIRECTION_CTS);
+                            oldEntity != null ? oldEntity.getTriangulationPartner() : null, consolidationDetails, Constants.DIRECTION_CTS, false);
                 } else if(consolidationDetails.getTriangulationPartnerList() == null) {
                     List<Long> oldPartners = oldEntity != null ? commonUtils.getTriangulationPartnerList(oldEntity.getTriangulationPartnerList())
                             : Collections.emptyList();
                     Set<Long> oldTenantIds = new HashSet<>(oldPartners);
                     oldTenantIds.forEach(oldTenantId ->
-                            processNetworkTransferEntity(null, oldTenantId, consolidationDetails, Constants.DIRECTION_CTS)
+                            processNetworkTransferEntity(null, oldTenantId, consolidationDetails, Constants.DIRECTION_CTS, false)
                     );
                 }
             }
@@ -4665,6 +4757,71 @@ public class ConsolidationService implements IConsolidationService {
             shipmentIds = consolidationDetails.getShipmentsList().stream().map(BaseEntity::getId).toList();
         commonErrorLogsDao.deleteAllConsoleAndShipmentErrorsLogs(consolidationDetails.getId(), shipmentIds);
     }
+
+    private void processInterBranchEntityCase(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity) {
+        boolean isConsoleBranchUpdate = oldEntity != null && oldEntity.getReceivingBranch() != null
+                && !oldEntity.getReceivingBranch().equals(consolidationDetails.getReceivingBranch());
+
+        if (consolidationDetails.getShipmentsList() != null && !consolidationDetails.getShipmentsList().isEmpty()) {
+            processShipments(consolidationDetails, isConsoleBranchUpdate);
+        } else if (oldEntity != null && !oldEntity.getShipmentsList().isEmpty()) {
+            deleteNetworkTransferForOldShipments(oldEntity);
+        }
+    }
+
+    private void processShipments(ConsolidationDetails consolidationDetails, boolean isConsoleBranchUpdate) {
+        List<Long> shipmentIds = consolidationDetails.getShipmentsList().stream().map(ShipmentDetails::getId).toList();
+
+        List<NetworkTransfer> networkTransferList = networkTransferDao.getInterConsoleNTList(shipmentIds, Constants.SHIPMENT);
+        Map<Long, Map<Integer, NetworkTransfer>> shipmentNetworkTranferMap = networkTransferList.stream()
+                .collect(Collectors.groupingBy(
+                        NetworkTransfer::getEntityId,
+                        Collectors.toMap(NetworkTransfer::getTenantId, transfer -> transfer)
+                ));
+
+        List<ShipmentDetails> shipmentsForNte = new ArrayList<>();
+        List<ShipmentDetails> shipmentsToDelete = new ArrayList<>();
+
+        for (ShipmentDetails shipmentDetails : consolidationDetails.getShipmentsList()) {
+            NetworkTransfer existingNTE = shipmentNetworkTranferMap.getOrDefault(shipmentDetails.getId(), new HashMap<>())
+                    .get(shipmentDetails.getReceivingBranch().intValue());
+
+            if (isConsoleBranchUpdate && existingNTE != null && existingNTE.getEntityPayload() != null
+                    && existingNTE.getStatus() != NetworkTransferStatus.REASSIGNED
+                    && existingNTE.getStatus() != NetworkTransferStatus.ACCEPTED) {
+                existingNTE.setEntityPayload(null);
+                existingNTE.setStatus(NetworkTransferStatus.SCHEDULED);
+                networkTransferDao.save(existingNTE);
+            }
+
+            if (shipmentDetails.getReceivingBranch() != null && !Objects.equals(consolidationDetails.getReceivingBranch(), shipmentDetails.getReceivingBranch())) {
+                if (existingNTE == null) {
+                    shipmentsForNte.add(shipmentDetails);
+                }
+            } else {
+                shipmentsToDelete.add(shipmentDetails);
+            }
+        }
+
+        shipmentsForNte.forEach(shipmentDetails ->
+                networkTransferService.processNetworkTransferEntity(
+                        shipmentDetails.getReceivingBranch(), null, SHIPMENT, shipmentDetails,
+                        null, Constants.DIRECTION_IMP, null, true)
+        );
+
+        shipmentsToDelete.forEach(shipmentDetails ->
+                networkTransferService.deleteValidNetworkTransferEntity(shipmentDetails.getReceivingBranch(),
+                        shipmentDetails.getId(), Constants.SHIPMENT)
+        );
+    }
+
+    private void deleteNetworkTransferForOldShipments(ConsolidationDetails oldEntity) {
+        oldEntity.getShipmentsList().forEach(shipmentDetails ->
+                networkTransferService.deleteValidNetworkTransferEntity(shipmentDetails.getReceivingBranch(),
+                        oldEntity.getId(), Constants.SHIPMENT)
+        );
+    }
+
 
     public void triggerAutomaticTransfer(ConsolidationDetails consolidationDetails,
                                          ConsolidationDetails oldEntity, Boolean isDocOrHawbNumAdded) {
