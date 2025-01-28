@@ -1,6 +1,8 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_ROA;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -13,7 +15,22 @@ import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.anyBoolean;
+import static org.mockito.Mockito.anyInt;
+import static org.mockito.Mockito.anyList;
+import static org.mockito.Mockito.anyMap;
+import static org.mockito.Mockito.anySet;
+import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 import com.dpw.messaging.api.response.QuartzJobResponse;
 import com.dpw.runner.shipment.services.CommonMocks;
@@ -46,6 +63,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
 import com.dpw.runner.shipment.services.dao.interfaces.INotesDao;
+import com.dpw.runner.shipment.services.dao.interfaces.INotificationDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IReferenceNumbersDao;
@@ -54,7 +72,6 @@ import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ITruckDriverDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.INotificationDao;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculateContainerSummaryRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackSummaryRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackUtilizationRequest;
@@ -69,24 +86,73 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryR
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.patchrequest.ConsolidationPatchRequest;
-import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.dto.request.AutoAttachConsolidationRequest;
+import com.dpw.runner.shipment.services.dto.request.ConsoleBookingRequest;
+import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
+import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
+import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
+import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
+import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.request.ValidateMawbNumberRequest;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbCargoInfo;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
-import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.response.AchievedQuantitiesResponse;
+import com.dpw.runner.shipment.services.dto.response.AllocationsResponse;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
+import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.GenerateCustomHblResponse;
+import com.dpw.runner.shipment.services.dto.response.MblCheckResponse;
+import com.dpw.runner.shipment.services.dto.response.MeasurementBasisResponse;
+import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.TruckDriverDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ValidateMawbNumberResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingDueSummary;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingSummary;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingConsolidationActionResponse;
 import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
-import com.dpw.runner.shipment.services.entity.*;
-import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.dto.v1.response.GuidsListResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.entity.AchievedQuantities;
+import com.dpw.runner.shipment.services.entity.Allocations;
+import com.dpw.runner.shipment.services.entity.Awb;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
+import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.Events;
+import com.dpw.runner.shipment.services.entity.NetworkTransfer;
+import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.Parties;
+import com.dpw.runner.shipment.services.entity.ProductSequenceConfig;
+import com.dpw.runner.shipment.services.entity.QuartzJobInfo;
+import com.dpw.runner.shipment.services.entity.Routings;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
+import com.dpw.runner.shipment.services.entity.TenantProducts;
+import com.dpw.runner.shipment.services.entity.TriangulationPartner;
+import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
+import com.dpw.runner.shipment.services.entity.AdditionalDetails;
+import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
+import com.dpw.runner.shipment.services.entity.enums.GenerationType;
+import com.dpw.runner.shipment.services.entity.enums.JobState;
+import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
+import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
+import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
+import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
+import com.dpw.runner.shipment.services.entity.response.consolidation.ConsolidationLiteResponse;
+import com.dpw.runner.shipment.services.entity.response.consolidation.IContainerLiteResponse;
+import com.dpw.runner.shipment.services.entity.response.consolidation.IShipmentContainerLiteResponse;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -101,8 +167,10 @@ import com.dpw.runner.shipment.services.mapper.ConsolidationDetailsMapper;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.CarrierResponse;
 import com.dpw.runner.shipment.services.projection.ConsolidationDetailsProjection;
+import com.dpw.runner.shipment.services.repository.impl.CustomConsolidationDetailsRepositoryImpl;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
+import com.dpw.runner.shipment.services.service.interfaces.IDpsEventService;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
@@ -112,12 +180,39 @@ import com.dpw.runner.shipment.services.service_bus.ISBUtils;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IPackingsSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
-import com.dpw.runner.shipment.services.utils.*;
+import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
+import com.dpw.runner.shipment.services.utils.CSVParsingUtil;
+import com.dpw.runner.shipment.services.utils.GetNextNumberHelper;
+import com.dpw.runner.shipment.services.utils.MasterDataKeyUtils;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
+import com.dpw.runner.shipment.services.utils.ProductIdentifierUtility;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 import org.jetbrains.annotations.NotNull;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -137,16 +232,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
-
 @ExtendWith({MockitoExtension.class, SpringExtension.class})
 @Execution(CONCURRENT)
   class ConsolidationServiceTest extends CommonMocks {
@@ -154,7 +239,11 @@ import java.util.stream.Collectors;
     @Mock
     private PartialFetchUtils partialFetchUtils;
     @Mock
+    private IDpsEventService dpsEventService;
+    @Mock
     private IConsolidationDetailsDao consolidationDetailsDao;
+    @Mock
+    private CustomConsolidationDetailsRepositoryImpl customConsolidationDetailsRepository;
     @Mock
     private IConsoleShipmentMappingDao consoleShipmentMappingDao;
     @Mock
@@ -586,6 +675,35 @@ import java.util.stream.Collectors;
         verify(consolidationDetailsDao).findMblNumberInDifferentTenant(mblNumber);
     }
 
+    @Test
+    void testAddRelationShipFields(){
+      List<ConsolidationLiteResponse> consolidationLiteResponseList = new ArrayList<>();
+      boolean isShipmentLevelContainer = true;
+
+      ConsolidationLiteResponse consolidationLiteResponse = ConsolidationLiteResponse.builder()
+          .id(1l)
+          .build();
+      consolidationLiteResponseList.add(consolidationLiteResponse);
+
+      ConsolidationDetails consolidationDetails1 = new ConsolidationDetails();
+      consolidationDetails1.setId(1l);
+
+      IContainerLiteResponse iContainerLiteResponse = mock(IContainerLiteResponse.class);
+      when(iContainerLiteResponse.getConsolidationId()).thenReturn(1l);
+
+      IShipmentContainerLiteResponse iShipmentContainerLiteResponse = mock(IShipmentContainerLiteResponse.class);
+      when(iShipmentContainerLiteResponse.getConsolId()).thenReturn(1l);
+      when(iShipmentContainerLiteResponse.getShipId()).thenReturn(1l);
+
+      when(containerDao.findAllLiteContainer(anyList())).thenReturn(List.of(iContainerLiteResponse));
+      when(consolidationDetailsDao.findShipmentDetailsWithContainersByConsolidationIds(anyList()))
+          .thenReturn(List.of(iShipmentContainerLiteResponse));
+      when(objectMapper.convertValue(any(), eq(ConsolidationDetails.class))).thenReturn(consolidationDetails1);
+      when(jsonHelper.convertValue(any(), eq(CarrierDetails.class))).thenReturn(new CarrierDetails());
+
+      consolidationService.addRelationShipFields(consolidationLiteResponseList, isShipmentLevelContainer);
+      verify(containerDao).findAllLiteContainer(anyList());
+    }
 
     @Test
     void testValidateCarrierDetails_EmptyCarrierDetails() {
@@ -876,17 +994,39 @@ import java.util.stream.Collectors;
     }
 
     @Test
+    public void testCreateFromBooking_Import_Success() {
+        // Setup
+        ConsolidationDetailsRequest request = new ConsolidationDetailsRequest();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setShipmentType(Constants.IMP);
+        ConsolidationDetailsResponse expectedResponse = testConsolResponse;
+        ResponseEntity<IRunnerResponse> expectedEntity = ResponseHelper.buildSuccessResponse(expectedResponse);
+
+        when(jsonHelper.convertValue(request, ConsolidationDetails.class)).thenReturn(consolidationDetails1);
+        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+        when(consolidationDetailsDao.save(any(ConsolidationDetails.class), anyBoolean(), eq(false))).thenReturn(consolidationDetails1);
+        when(jsonHelper.convertValue(consolidationDetails1, ConsolidationDetailsResponse.class)).thenReturn(expectedResponse);
+        mockShipmentSettings();
+        ResponseEntity<IRunnerResponse> response = consolidationService.createFromBooking(commonRequestModel);
+
+        assertEquals(expectedEntity, response);
+    }
+
+    @Test
     void testCreateFromBooking_AuditLogException() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         // Setup
         ConsolidationDetailsRequest request = new ConsolidationDetailsRequest();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
         ConsolidationDetails consolidationDetails = testConsol;
+        consolidationDetails.setSendingAgent(null);
         ConsolidationDetailsResponse expectedResponse = testConsolResponse;
         ResponseEntity<IRunnerResponse> expectedEntity = ResponseHelper.buildSuccessResponse(expectedResponse);
 
         when(jsonHelper.convertValue(request, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         when(consolidationDetailsDao.save(any(ConsolidationDetails.class), anyBoolean())).thenReturn(consolidationDetails);
+        when(v1ServiceUtil.getDefaultAgentOrgParty(any())).thenReturn(new Parties());
         doThrow(new IllegalAccessException("IllegalAccessException")).when(auditLogService).addAuditLog(any());
         mockShipmentSettings();
         // mockTenantSettings();
@@ -905,10 +1045,13 @@ import java.util.stream.Collectors;
         ConsolidationDetailsRequest request = new ConsolidationDetailsRequest();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
         ConsolidationDetails consolidationDetails = testConsol;
+        consolidationDetails.setShipmentType(Constants.IMP);
+        consolidationDetails.setReceivingAgent(null);
 
         when(jsonHelper.convertValue(request, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         when(consolidationDetailsDao.save(any(ConsolidationDetails.class), anyBoolean())).thenThrow(new ValidationException("TEST"));
+        when(v1ServiceUtil.getDefaultAgentOrgParty(any())).thenReturn(new Parties());
         mockShipmentSettings();
         mockTenantSettings();
         assertThrows(ValidationException.class, () -> consolidationService.createFromBooking(commonRequestModel));
@@ -970,13 +1113,14 @@ import java.util.stream.Collectors;
         ShipmentSettingsDetails tenantSettings = new ShipmentSettingsDetails();
         tenantSettings.setDefaultTransportMode("Sea");
         tenantSettings.setDefaultContainerType("ContainerType");
-        tenantSettings.setDefaultShipmentType("ShipmentType");
+        tenantSettings.setDefaultShipmentType("EXP");
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(tenantSettings);
 
         TenantModel tenantModel = new TenantModel();
 
         when(v1Service.retrieveTenant()).thenReturn(new V1RetrieveResponse());
         when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(tenantModel);
+        when(v1ServiceUtil.getDefaultAgentOrg(any())).thenReturn(PartiesResponse.builder().build());
 
         UserContext.setUser(UsersDto.builder().Username("Username").TenantId(1).build());
         LocalDateTime currentTime = LocalDateTime.now();
@@ -990,7 +1134,6 @@ import java.util.stream.Collectors;
         ConsolidationDetailsResponse responseBody = (ConsolidationDetailsResponse)((RunnerResponse) response.getBody()).getData();
         assertNotNull(responseBody);
         assertEquals("ContainerType", responseBody.getContainerCategory());
-        assertEquals("ShipmentType", responseBody.getShipmentType());
         assertEquals("Username", responseBody.getCreatedBy());
         assertEquals(currentTime.getDayOfYear(), responseBody.getCreatedAt().getDayOfYear());
         assertEquals(1, responseBody.getSourceTenantId());
@@ -1001,7 +1144,7 @@ import java.util.stream.Collectors;
         ShipmentSettingsDetails tenantSettings = new ShipmentSettingsDetails();
         tenantSettings.setDefaultTransportMode("Sea");
         tenantSettings.setDefaultContainerType("ContainerType");
-        tenantSettings.setDefaultShipmentType("ShipmentType");
+        tenantSettings.setDefaultShipmentType("IMP");
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(tenantSettings);
 
         TenantModel tenantModel = new TenantModel();
@@ -1009,6 +1152,7 @@ import java.util.stream.Collectors;
         when(v1Service.retrieveTenant()).thenReturn(new V1RetrieveResponse());
         when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(tenantModel);
         when(commonUtils.getAutoPopulateDepartment(anyString(), anyString(), anyString())).thenReturn("AE");
+        when(v1ServiceUtil.getDefaultAgentOrg(any())).thenReturn(PartiesResponse.builder().build());
 
         UserContext.setUser(UsersDto.builder().Username("Username").TenantId(1).build());
         LocalDateTime currentTime = LocalDateTime.now();
@@ -1022,7 +1166,6 @@ import java.util.stream.Collectors;
         ConsolidationDetailsResponse responseBody = (ConsolidationDetailsResponse)((RunnerResponse) response.getBody()).getData();
         assertNotNull(responseBody);
         assertEquals("ContainerType", responseBody.getContainerCategory());
-        assertEquals("ShipmentType", responseBody.getShipmentType());
         assertEquals("Username", responseBody.getCreatedBy());
         assertEquals(currentTime.getDayOfYear(), responseBody.getCreatedAt().getDayOfYear());
         assertEquals(1, responseBody.getSourceTenantId());
@@ -1398,10 +1541,15 @@ import java.util.stream.Collectors;
         shipmentDetails.setTransportMode(TRANSPORT_MODE_SEA);
         shipmentDetails.setCarrierDetails(new CarrierDetails());
         shipmentDetails.setTenantId(UserContext.getUser().TenantId);
+        shipmentDetails.setGuid(UUID.randomUUID());
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setImportBroker(Parties.builder().orgId("import").build());
+        shipmentDetails.setAdditionalDetails(additionalDetails);
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(1L);
         consolidationDetails.setCarrierDetails(new CarrierDetails());
         consolidationDetails.setInterBranchConsole(false);
+        consolidationDetails.setSendingAgent(Parties.builder().orgId("sending").build());
 
         ConsoleShipmentMapping consoleShipmentMapping1 = new ConsoleShipmentMapping();
         consoleShipmentMapping1.setShipmentId(2L);
@@ -1411,6 +1559,7 @@ import java.util.stream.Collectors;
         shipmentDetails1.setId(1L);
         shipmentDetails1.setCarrierDetails(new CarrierDetails());
         shipmentDetails1.setTenantId(UserContext.getUser().TenantId);
+        shipmentDetails1.setGuid(UUID.randomUUID());
 
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails, shipmentDetails1));
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
@@ -1445,6 +1594,7 @@ import java.util.stream.Collectors;
         shipmentDetails.setCarrierDetails(new CarrierDetails());
         shipmentDetails.setShipmentGateInDate(LocalDateTime.now());
         shipmentDetails.setTenantId(UserContext.getUser().TenantId);
+        shipmentDetails.setGuid(UUID.randomUUID());
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(1L);
         consolidationDetails.setInterBranchConsole(true);
@@ -1461,6 +1611,7 @@ import java.util.stream.Collectors;
         shipmentDetails1.setId(1L);
         shipmentDetails1.setCarrierDetails(new CarrierDetails());
         shipmentDetails1.setTenantId(UserContext.getUser().TenantId);
+        shipmentDetails1.setGuid(UUID.randomUUID());
 
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails, shipmentDetails1));
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
@@ -1493,12 +1644,17 @@ import java.util.stream.Collectors;
         shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
         shipmentDetails.setCarrierDetails(new CarrierDetails());
         shipmentDetails.setTenantId(UserContext.getUser().TenantId);
+        shipmentDetails.setGuid(UUID.randomUUID());
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setExportBroker(Parties.builder().orgId("export").build());
+        shipmentDetails.setAdditionalDetails(additionalDetails);
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(1L);
         consolidationDetails.setCarrierDetails(new CarrierDetails());
         consolidationDetails.setInterBranchConsole(false);
         consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
         consolidationDetails.setShipmentType(Constants.DIRECTION_EXP);
+        consolidationDetails.setReceivingAgent(Parties.builder().orgId("receiving").build());
 
         ConsoleShipmentMapping consoleShipmentMapping1 = new ConsoleShipmentMapping();
         consoleShipmentMapping1.setShipmentId(2L);
@@ -1508,11 +1664,13 @@ import java.util.stream.Collectors;
         shipmentDetails1.setId(1L);
         shipmentDetails1.setCarrierDetails(new CarrierDetails());
         shipmentDetails1.setTenantId(UserContext.getUser().TenantId);
+        shipmentDetails1.setGuid(UUID.randomUUID());
 
         ShipmentDetails shipmentDetails2 = new ShipmentDetails();
         shipmentDetails2.setId(3L);
         shipmentDetails2.setTenantId(780);
         shipmentDetails2.setDirection("IMP");
+        shipmentDetails2.setGuid(UUID.randomUUID());
 
         ShipmentDetails shipmentDetails3 = new ShipmentDetails();
         shipmentDetails3.setId(4L);
@@ -1520,6 +1678,7 @@ import java.util.stream.Collectors;
         shipmentDetails3.setDirection("IMP");
         shipmentDetails2.setCreatedBy("abc");
         shipmentDetails2.setAssignedTo("def");
+        shipmentDetails3.setGuid(UUID.randomUUID());
 
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails, shipmentDetails1, shipmentDetails2, shipmentDetails3));
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
@@ -1552,6 +1711,7 @@ import java.util.stream.Collectors;
         shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
         shipmentDetails.setCarrierDetails(new CarrierDetails());
         shipmentDetails.setTenantId(UserContext.getUser().TenantId);
+        shipmentDetails.setGuid(UUID.randomUUID());
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(1L);
         consolidationDetails.setCarrierDetails(new CarrierDetails());
@@ -1567,11 +1727,13 @@ import java.util.stream.Collectors;
         shipmentDetails1.setId(1L);
         shipmentDetails1.setCarrierDetails(new CarrierDetails());
         shipmentDetails1.setTenantId(UserContext.getUser().TenantId);
+        shipmentDetails1.setGuid(UUID.randomUUID());
 
         ShipmentDetails shipmentDetails2 = new ShipmentDetails();
         shipmentDetails2.setId(3L);
         shipmentDetails2.setTenantId(780);
         shipmentDetails2.setDirection("IMP");
+        shipmentDetails2.setGuid(UUID.randomUUID());
 
         ShipmentDetails shipmentDetails3 = new ShipmentDetails();
         shipmentDetails3.setId(4L);
@@ -1579,6 +1741,7 @@ import java.util.stream.Collectors;
         shipmentDetails3.setDirection("IMP");
         shipmentDetails2.setCreatedBy("abc");
         shipmentDetails2.setAssignedTo("def");
+        shipmentDetails3.setGuid(UUID.randomUUID());
 
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails, shipmentDetails1, shipmentDetails2, shipmentDetails3));
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
@@ -1613,6 +1776,7 @@ import java.util.stream.Collectors;
         shipmentDetails.setCarrierDetails(new CarrierDetails());
         shipmentDetails.setTenantId(UserContext.getUser().TenantId);
         shipmentDetails.setDirection("IMP");
+        shipmentDetails.setGuid(UUID.randomUUID());
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(1L);
         consolidationDetails.setCarrierDetails(new CarrierDetails());
@@ -1658,6 +1822,7 @@ import java.util.stream.Collectors;
         shipmentDetails.setCarrierDetails(new CarrierDetails());
         shipmentDetails.setTenantId(UserContext.getUser().TenantId);
         shipmentDetails.setDirection("IMP");
+        shipmentDetails.setGuid(UUID.randomUUID());
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(1L);
         consolidationDetails.setCarrierDetails(new CarrierDetails());
@@ -1704,6 +1869,7 @@ import java.util.stream.Collectors;
         shipmentDetails.setCarrierDetails(new CarrierDetails());
         shipmentDetails.setTenantId(UserContext.getUser().TenantId);
         shipmentDetails.setDirection("IMP");
+        shipmentDetails.setGuid(UUID.randomUUID());
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(1L);
         consolidationDetails.setCarrierDetails(new CarrierDetails());
@@ -1751,6 +1917,7 @@ import java.util.stream.Collectors;
         shipmentDetails.setDirection("IMP");
         shipmentDetails.setCreatedBy("abc");
         shipmentDetails.setAssignedTo("def");
+        shipmentDetails.setGuid(UUID.randomUUID());
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(1L);
         consolidationDetails.setCarrierDetails(new CarrierDetails());
@@ -1799,6 +1966,7 @@ import java.util.stream.Collectors;
         shipmentDetails.setDirection("IMP");
         shipmentDetails.setCreatedBy("abc");
         shipmentDetails.setAssignedTo("def");
+        shipmentDetails.setGuid(UUID.randomUUID());
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(1L);
         consolidationDetails.setCarrierDetails(new CarrierDetails());
@@ -1843,6 +2011,7 @@ import java.util.stream.Collectors;
         shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
         shipmentDetails.setCarrierDetails(new CarrierDetails());
         shipmentDetails.setContainsHazardous(true);
+        shipmentDetails.setGuid(UUID.randomUUID());
         shipmentDetails.setTenantId(UserContext.getUser().TenantId);
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(1L);
@@ -1860,6 +2029,7 @@ import java.util.stream.Collectors;
         shipmentDetails1.setId(1L);
         shipmentDetails1.setCarrierDetails(new CarrierDetails());
         shipmentDetails1.setTenantId(UserContext.getUser().TenantId);
+        shipmentDetails1.setGuid(UUID.randomUUID());
 
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails, shipmentDetails1));
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
@@ -1916,6 +2086,7 @@ import java.util.stream.Collectors;
         shipmentDetails.setCarrierDetails(new CarrierDetails());
         shipmentDetails.setTenantId(UserContext.getUser().TenantId);
         shipmentDetails.setEventsList(List.of(new Events()));
+        shipmentDetails.setGuid(UUID.randomUUID());
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(1L);
         consolidationDetails.setCarrierDetails(new CarrierDetails());
@@ -1929,6 +2100,7 @@ import java.util.stream.Collectors;
         shipmentDetails1.setId(1L);
         shipmentDetails1.setCarrierDetails(new CarrierDetails());
         shipmentDetails1.setTenantId(UserContext.getUser().TenantId);
+        shipmentDetails1.setGuid(UUID.randomUUID());
 
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails, shipmentDetails1));
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
@@ -3678,17 +3850,23 @@ import java.util.stream.Collectors;
         ListCommonRequest listCommonRequest = constructListCommonRequest("id", 1, "=");
         MockHttpServletResponse response = new MockHttpServletResponse();
         ConsolidationDetails consolidationDetails = testConsol;
+        ConsolidationLiteResponse liteResponse = new ConsolidationLiteResponse();
         UsersDto usersDto = UserContext.getUser();
         usersDto.setEnableTimeZone(false);
         UserContext.setUser(usersDto);
         ConsolidationListResponse consolidationListResponse = modelMapperTest.map(consolidationDetails, ConsolidationListResponse.class);
 
-        when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consolidationDetails)));
-        mockShipmentSettings();
+        when(customConsolidationDetailsRepository.findAllLiteConsol(any(), any())).thenReturn(new PageImpl<>(List.of(liteResponse)));
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(shipmentSettingsDetails);
 
         when(jsonHelper.convertValue(any(), eq(ConsolidationListResponse.class))).thenReturn(consolidationListResponse);
-
+        when(jsonHelper.convertValue(any(), eq(CarrierDetails.class))).thenReturn(new CarrierDetails());
+        when(objectMapper.convertValue(any(), eq(ConsolidationDetails.class))).thenReturn(new ConsolidationDetails());
+        when(containerDao.findAllLiteContainer(anyList())).thenReturn(new ArrayList<>());
+        when(consolidationDetailsDao.findIShipmentsByConsolidationIds(anyList())).thenReturn(new ArrayList<>());
         consolidationService.exportExcel(response, CommonRequestModel.buildRequest(listCommonRequest));
+
         assertEquals(200,response.getStatus());
     }
 
@@ -5651,7 +5829,6 @@ import java.util.stream.Collectors;
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
                 .isAutomaticTransferEnabled(true)
                 .build());
-        mockShipmentSettings();
         ConsolidationDetails consolidationDetails1 = jsonTestUtility.getCompleteConsolidation();
         consolidationDetails1.setReceivingBranch(1L);
         ConsolidationDetails consolidationDetails2 = testConsol;

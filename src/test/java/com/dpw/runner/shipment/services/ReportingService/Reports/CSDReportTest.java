@@ -17,7 +17,7 @@ import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
 import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
-import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -27,9 +27,7 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.stubbing.Answer;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -51,6 +49,9 @@ class CSDReportTest {
 
     @Mock
     MasterDataUtils masterDataUtils;
+
+    @Mock
+    CommonUtils commonUtils;
 
     @Mock
     IAwbDao awbDao;
@@ -282,6 +283,7 @@ class CSDReportTest {
         doNothing().when(spyReport).populateRaKcDataConsolidation(any(), any());
         V1TenantSettingsResponse sampleResponse = new V1TenantSettingsResponse();
         sampleResponse.setDPWDateFormat("yyyy-MM-dd");
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(sampleResponse);
         var resp = spyReport.populateDictionary(getSampleCSDModel());
         assertNotNull(resp);
     }
@@ -295,6 +297,7 @@ class CSDReportTest {
         doNothing().when(spyReport).populateRaKcDataConsolidation(any(), any());
         V1TenantSettingsResponse sampleResponse = new V1TenantSettingsResponse();
         sampleResponse.setDPWDateFormat("yyyy-MM-dd");
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(sampleResponse);
         CSDModel csdModel = getSampleCSDModel();
         csdModel.getConsolidationModel().setScreeningStatus(List.of("AOM", "SCC"));
         var resp = spyReport.populateDictionary(csdModel);
@@ -310,6 +313,7 @@ class CSDReportTest {
         doNothing().when(spyReport).populateRaKcData(any(), any());
         V1TenantSettingsResponse sampleResponse = new V1TenantSettingsResponse();
         sampleResponse.setDPWDateFormat("yyyy-MM-dd");
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(sampleResponse);
         var resp = spyReport.populateDictionary(getSampleCSDModel());
         assertNotNull(resp);
     }
@@ -330,6 +334,7 @@ class CSDReportTest {
         doNothing().when(spyReport).populateRaKcData(any(), any());
         V1TenantSettingsResponse sampleResponse = new V1TenantSettingsResponse();
         sampleResponse.setDPWDateFormat("yyyy-MM-dd");
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(sampleResponse);
 
         shipment.setSecurityStatus(AwbConstants.EXEMPTION_CARGO_SECURITY_STATUS);
         var resp = spyReport.populateDictionary(csdModel);
@@ -344,6 +349,7 @@ class CSDReportTest {
         spyReport.setIsConsolidation(false);
         doNothing().when(spyReport).populateShipmentFields(any(), any());
         doNothing().when(spyReport).populateRaKcData(any(), any());
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(new V1TenantSettingsResponse());
         V1TenantSettingsResponse sampleResponse = new V1TenantSettingsResponse();
         sampleResponse.setDPWDateFormat("yyyy-MM-dd");
         CSDModel csdModel = getSampleCSDModel();
@@ -355,13 +361,6 @@ class CSDReportTest {
         routingsModel.setPod("Airport2");
         routingsModel.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
         shipment.setRoutingsList(List.of(routingsModel));
-
-        UnlocationsResponse unlocationsResponse = UnlocationsResponse.builder().iataCode("AI1").build();
-
-        Mockito.when(masterDataUtils.getLocationData(any())).thenReturn(Map.ofEntries(
-                Map.entry("Airport1", unlocationsResponse),
-                Map.entry("Airport2", unlocationsResponse)
-        ));
 
         var resp = spyReport.populateDictionary(csdModel);
         assertNotNull(resp);

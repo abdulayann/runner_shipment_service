@@ -186,6 +186,10 @@ public class RoutingsDao implements IRoutingsDao {
                 oldEntityJsonStringMap.put(id, oldEntityJsonString);
             }
             req.setShipmentId(shipmentId);
+            if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster())) {
+                req.setFlightNumber(null);
+                req.setCarrier(null);
+            }
             res.add(req);
         }
         res = saveAll(res);

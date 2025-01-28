@@ -4,11 +4,13 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.INotesDao;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitFromV1Response;
+import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
@@ -634,6 +636,192 @@ class V1ServiceUtilTest {
         assertThrows(DataRetrievalFailureException.class, () -> v1ServiceUtil.getPartiesRequestFromOrgIdAndAddressId(orgId, addressId));
 
         verify(iV1Service, times(1)).fetchOrganization(any());
+    }
+
+    @Test
+    void testGetDefaultAgentOrg_WhenTenantModelIsNull() {
+        Long orgId = 1L;
+        Long addressId = 100L;
+        V1RetrieveResponse tenantEntity = new V1RetrieveResponse();
+        TenantModel tenantModel = new TenantModel();
+        tenantModel.setDefaultOrgId(orgId);
+        tenantModel.setDefaultAddressId(addressId);
+
+        V1DataResponse mockOrgResponse = new V1DataResponse();
+        V1DataResponse mockAddressResponse = new V1DataResponse();
+        mockOrgResponse.setEntities(new ArrayList<>());
+        mockAddressResponse.setEntities(new ArrayList<>());
+
+        List<EntityTransferOrganizations> mockOrgList = Collections.singletonList(new EntityTransferOrganizations());
+        List<EntityTransferAddress> mockAddressList = Collections.singletonList(new EntityTransferAddress());
+
+        Map<String, Object> mockOrgMap = Map.of("Id", orgId, "OrganizationCode", "Org123");
+        Map<String, Object> mockAddressMap = Map.of("Id", addressId, "AddressShortCode", "Address123");
+
+        when(iV1Service.fetchOrganization(any(CommonV1ListRequest.class))).thenReturn(mockOrgResponse);
+        when(jsonHelper.convertValueToList(mockOrgResponse.getEntities(), EntityTransferOrganizations.class)).thenReturn(mockOrgList);
+        when(jsonHelper.convertToJson(mockOrgList.get(0))).thenReturn("EntityOrg");
+        when(jsonHelper.convertJsonToMap("EntityOrg")).thenReturn(mockOrgMap);
+
+        when(iV1Service.addressList(any(CommonV1ListRequest.class))).thenReturn(mockAddressResponse);
+        when(jsonHelper.convertValueToList(mockAddressResponse.getEntities(), EntityTransferAddress.class)).thenReturn(mockAddressList);
+        when(jsonHelper.convertToJson(mockAddressList.get(0))).thenReturn("EntityAddress");
+        when(jsonHelper.convertJsonToMap("EntityAddress")).thenReturn(mockAddressMap);
+
+        when(iV1Service.retrieveTenant()).thenReturn(tenantEntity);
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(tenantModel);
+        when(jsonHelper.convertValue(any(), eq(PartiesResponse.class))).thenReturn(PartiesResponse.builder().build());
+
+        var response = v1ServiceUtil.getDefaultAgentOrg(null);
+
+        assertNotNull(response);
+
+        verify(iV1Service).retrieveTenant();
+        verify(modelMapper).map(any(), eq(TenantModel.class));
+        verify(jsonHelper).convertValue(any(), eq(PartiesResponse.class));
+    }
+
+    @Test
+    void testGetDefaultAgentOrg_WhenTenantModelHasDefaultIds() {
+        Long orgId = 1L;
+        Long addressId = 100L;
+        TenantModel tenantModel = new TenantModel();
+        tenantModel.setDefaultOrgId(orgId);
+        tenantModel.setDefaultAddressId(addressId);
+
+        V1DataResponse mockOrgResponse = new V1DataResponse();
+        V1DataResponse mockAddressResponse = new V1DataResponse();
+        mockOrgResponse.setEntities(new ArrayList<>());
+        mockAddressResponse.setEntities(new ArrayList<>());
+
+        List<EntityTransferOrganizations> mockOrgList = Collections.singletonList(new EntityTransferOrganizations());
+        List<EntityTransferAddress> mockAddressList = Collections.singletonList(new EntityTransferAddress());
+
+        Map<String, Object> mockOrgMap = Map.of("Id", orgId, "OrganizationCode", "Org123");
+        Map<String, Object> mockAddressMap = Map.of("Id", addressId, "AddressShortCode", "Address123");
+
+        when(iV1Service.fetchOrganization(any(CommonV1ListRequest.class))).thenReturn(mockOrgResponse);
+        when(jsonHelper.convertValueToList(mockOrgResponse.getEntities(), EntityTransferOrganizations.class)).thenReturn(mockOrgList);
+        when(jsonHelper.convertToJson(mockOrgList.get(0))).thenReturn("EntityOrg");
+        when(jsonHelper.convertJsonToMap("EntityOrg")).thenReturn(mockOrgMap);
+
+        when(iV1Service.addressList(any(CommonV1ListRequest.class))).thenReturn(mockAddressResponse);
+        when(jsonHelper.convertValueToList(mockAddressResponse.getEntities(), EntityTransferAddress.class)).thenReturn(mockAddressList);
+        when(jsonHelper.convertToJson(mockAddressList.get(0))).thenReturn("EntityAddress");
+        when(jsonHelper.convertJsonToMap("EntityAddress")).thenReturn(mockAddressMap);
+
+        when(jsonHelper.convertValue(any(), eq(PartiesResponse.class))).thenReturn(PartiesResponse.builder().build());
+
+        var response = v1ServiceUtil.getDefaultAgentOrg(tenantModel);
+
+        assertNotNull(response);
+
+        verify(jsonHelper).convertValue(any(), eq(PartiesResponse.class));
+        verifyNoInteractions(modelMapper);
+    }
+
+    @Test
+    void testGetDefaultAgentOrg_WhenDefaultIdsAreNull() {
+        TenantModel tenantModel = new TenantModel();
+
+        var response = v1ServiceUtil.getDefaultAgentOrg(tenantModel);
+
+        assertNull(response);
+
+        verifyNoInteractions(jsonHelper, iV1Service, modelMapper);
+    }
+
+    @Test
+    void testGetDefaultAgentOrgParty_WhenTenantModelIsNull() {
+        Long orgId = 1L;
+        Long addressId = 100L;
+        V1RetrieveResponse tenantEntity = new V1RetrieveResponse();
+        TenantModel tenantModel = new TenantModel();
+        tenantModel.setDefaultOrgId(orgId);
+        tenantModel.setDefaultAddressId(addressId);
+
+        V1DataResponse mockOrgResponse = new V1DataResponse();
+        V1DataResponse mockAddressResponse = new V1DataResponse();
+        mockOrgResponse.setEntities(new ArrayList<>());
+        mockAddressResponse.setEntities(new ArrayList<>());
+
+        List<EntityTransferOrganizations> mockOrgList = Collections.singletonList(new EntityTransferOrganizations());
+        List<EntityTransferAddress> mockAddressList = Collections.singletonList(new EntityTransferAddress());
+
+        Map<String, Object> mockOrgMap = Map.of("Id", orgId, "OrganizationCode", "Org123");
+        Map<String, Object> mockAddressMap = Map.of("Id", addressId, "AddressShortCode", "Address123");
+
+        when(iV1Service.fetchOrganization(any(CommonV1ListRequest.class))).thenReturn(mockOrgResponse);
+        when(jsonHelper.convertValueToList(mockOrgResponse.getEntities(), EntityTransferOrganizations.class)).thenReturn(mockOrgList);
+        when(jsonHelper.convertToJson(mockOrgList.get(0))).thenReturn("EntityOrg");
+        when(jsonHelper.convertJsonToMap("EntityOrg")).thenReturn(mockOrgMap);
+
+        when(iV1Service.addressList(any(CommonV1ListRequest.class))).thenReturn(mockAddressResponse);
+        when(jsonHelper.convertValueToList(mockAddressResponse.getEntities(), EntityTransferAddress.class)).thenReturn(mockAddressList);
+        when(jsonHelper.convertToJson(mockAddressList.get(0))).thenReturn("EntityAddress");
+        when(jsonHelper.convertJsonToMap("EntityAddress")).thenReturn(mockAddressMap);
+
+        when(iV1Service.retrieveTenant()).thenReturn(tenantEntity);
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(tenantModel);
+        when(jsonHelper.convertValue(any(), eq(Parties.class))).thenReturn(Parties.builder().build());
+
+        var response = v1ServiceUtil.getDefaultAgentOrgParty(null);
+
+        assertNotNull(response);
+
+        verify(iV1Service).retrieveTenant();
+        verify(modelMapper).map(any(), eq(TenantModel.class));
+        verify(jsonHelper).convertValue(any(), eq(Parties.class));
+    }
+
+    @Test
+    void testGetDefaultAgentOrgParty_WhenTenantModelHasDefaultIds() {
+        Long orgId = 1L;
+        Long addressId = 100L;
+        TenantModel tenantModel = new TenantModel();
+        tenantModel.setDefaultOrgId(orgId);
+        tenantModel.setDefaultAddressId(addressId);
+
+        V1DataResponse mockOrgResponse = new V1DataResponse();
+        V1DataResponse mockAddressResponse = new V1DataResponse();
+        mockOrgResponse.setEntities(new ArrayList<>());
+        mockAddressResponse.setEntities(new ArrayList<>());
+
+        List<EntityTransferOrganizations> mockOrgList = Collections.singletonList(new EntityTransferOrganizations());
+        List<EntityTransferAddress> mockAddressList = Collections.singletonList(new EntityTransferAddress());
+
+        Map<String, Object> mockOrgMap = Map.of("Id", orgId, "OrganizationCode", "Org123");
+        Map<String, Object> mockAddressMap = Map.of("Id", addressId, "AddressShortCode", "Address123");
+
+        when(iV1Service.fetchOrganization(any(CommonV1ListRequest.class))).thenReturn(mockOrgResponse);
+        when(jsonHelper.convertValueToList(mockOrgResponse.getEntities(), EntityTransferOrganizations.class)).thenReturn(mockOrgList);
+        when(jsonHelper.convertToJson(mockOrgList.get(0))).thenReturn("EntityOrg");
+        when(jsonHelper.convertJsonToMap("EntityOrg")).thenReturn(mockOrgMap);
+
+        when(iV1Service.addressList(any(CommonV1ListRequest.class))).thenReturn(mockAddressResponse);
+        when(jsonHelper.convertValueToList(mockAddressResponse.getEntities(), EntityTransferAddress.class)).thenReturn(mockAddressList);
+        when(jsonHelper.convertToJson(mockAddressList.get(0))).thenReturn("EntityAddress");
+        when(jsonHelper.convertJsonToMap("EntityAddress")).thenReturn(mockAddressMap);
+
+        when(jsonHelper.convertValue(any(), eq(Parties.class))).thenReturn(Parties.builder().build());
+
+        var response = v1ServiceUtil.getDefaultAgentOrgParty(tenantModel);
+
+        assertNotNull(response);
+
+        verify(jsonHelper).convertValue(any(), eq(Parties.class));
+        verifyNoInteractions(modelMapper);
+    }
+
+    @Test
+    void testGetDefaultAgentOrgParty_WhenDefaultIdsAreNull() {
+        TenantModel tenantModel = new TenantModel();
+
+        var response = v1ServiceUtil.getDefaultAgentOrgParty(tenantModel);
+
+        assertNull(response);
+
+        verifyNoInteractions(jsonHelper, iV1Service, modelMapper);
     }
 
 }

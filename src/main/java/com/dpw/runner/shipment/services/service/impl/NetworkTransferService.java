@@ -322,8 +322,8 @@ public class NetworkTransferService implements INetworkTransferService {
 
             if (oldTenantId != null && networkTransfer != null)
             {
-                Optional<NetworkTransfer> optionalNetworkTransfer = networkTransferDao.findByTenantAndEntity(
-                        Math.toIntExact(oldTenantId), networkTransfer.getEntityId(), entityType);
+                Optional<NetworkTransfer> optionalNetworkTransfer = networkTransferDao.findByTenantAndEntityAndJobType(
+                        Math.toIntExact(oldTenantId), networkTransfer.getEntityId(), entityType, jobType);
                 String auditLogEntityType = getAuditLogEntityType(entityType);
                 optionalNetworkTransfer.ifPresent(dbNetworkTransfer -> {
                     if (dbNetworkTransfer.getStatus() == NetworkTransferStatus.ACCEPTED) {

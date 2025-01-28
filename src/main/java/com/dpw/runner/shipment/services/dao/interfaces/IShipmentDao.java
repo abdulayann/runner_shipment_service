@@ -54,4 +54,5 @@ public interface IShipmentDao {
     void updateIsAcceptedTriangulationPartner(Long shipmentId, Long triangulationPartner, Boolean isAccepted);
     void updateTransferStatus(List<Long> id, NetworkTransferStatus transferStatus);
     void updateFCRNo(Long id);
+    Optional<ShipmentDetails> findShipmentByGuidWithQuery(UUID guid);
 }

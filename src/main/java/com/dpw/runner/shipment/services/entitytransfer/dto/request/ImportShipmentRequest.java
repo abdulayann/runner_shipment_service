@@ -15,4 +15,5 @@ public class ImportShipmentRequest implements IRunnerRequest {
     private String operation;
     private String rejectRemarks;
     private Boolean isFromNte;
+    private String assignedTo;
 }
