@@ -549,6 +549,9 @@ public class EntityTransferService implements IEntityTransferService {
         }
         CopyDocumentsRequest copyDocumentsRequest = CopyDocumentsRequest.builder().documents(new ArrayList<>()).build();
         EntityTransferShipmentDetails entityTransferShipmentDetails = importShipmentRequest.getEntityData();
+        boolean isNetworkTransferFeatureEnabled = Boolean.TRUE.equals(getIsNetworkTransferFeatureEnabled());
+        if(isNetworkTransferFeatureEnabled && importShipmentRequest.getAssignedTo()!=null)
+            entityTransferShipmentDetails.setAssignedTo(importShipmentRequest.getAssignedTo());
         MutableBoolean isCreateShip = new MutableBoolean(false);
         log.info("Import shipment request: {} with RequestId: {}", jsonHelper.convertToJson(entityTransferShipmentDetails), LoggerHelper.getRequestIdFromMDC());
 
@@ -566,7 +569,7 @@ public class EntityTransferService implements IEntityTransferService {
 
         // Update task status approved
         if(Boolean.TRUE.equals(importShipmentRequest.getIsFromNte())) {
-            if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsNetworkTransferEntityEnabled())) {
+            if(isNetworkTransferFeatureEnabled) {
                 networkTransferService.updateStatusAndCreatedEntityId(importShipmentRequest.getTaskId(), NetworkTransferStatus.ACCEPTED.name(), shipmentDetailsResponse.getId());
                 var nte = networkTransferDao.findById(importShipmentRequest.getTaskId());
                 if(nte.isPresent()) {
@@ -627,13 +630,24 @@ public class EntityTransferService implements IEntityTransferService {
         }
         EntityTransferConsolidationDetails entityTransferConsolidationDetails = importConsolidationRequest.getEntityData();
 
+        boolean isNetworkTransferFeatureEnabled = Boolean.TRUE.equals(getIsNetworkTransferFeatureEnabled());
+        if (isNetworkTransferFeatureEnabled && entityTransferConsolidationDetails.getShipmentsList()!=null
+        && importConsolidationRequest.getShipmentNumberAssignedToMap()!=null) {
+            Map<String, String> shipmentNumberAssignedToMap = importConsolidationRequest.getShipmentNumberAssignedToMap();
+            for(EntityTransferShipmentDetails shipmentDetails: entityTransferConsolidationDetails.getShipmentsList()){
+                String assignedTo = shipmentNumberAssignedToMap.get(shipmentDetails.getShipmentId());
+                if(assignedTo!=null)
+                    shipmentDetails.setAssignedTo(assignedTo);
+            }
+        }
+
         // Import consolidation implementation
         ConsolidationDetailsResponse consolidationDetailsResponse = this.createConsolidation(entityTransferConsolidationDetails);
         String consolidationNumber = Optional.ofNullable(consolidationDetailsResponse).map(ConsolidationDetailsResponse::getConsolidationNumber).orElse(null);
 
         // Update task status approved
         if(Boolean.TRUE.equals(importConsolidationRequest.getIsFromNte())) {
-            if (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsNetworkTransferEntityEnabled())) {
+            if (isNetworkTransferFeatureEnabled) {
                 networkTransferService.updateStatusAndCreatedEntityId(importConsolidationRequest.getTaskId(), NetworkTransferStatus.ACCEPTED.name(), Optional.ofNullable(consolidationDetailsResponse).map(ConsolidationDetailsResponse::getId).orElse(null));
                 var nte = networkTransferDao.findById(importConsolidationRequest.getTaskId());
                 if(nte.isPresent()) {
@@ -645,7 +659,7 @@ public class EntityTransferService implements IEntityTransferService {
                             .filter(Objects::nonNull).anyMatch(tp -> Objects.equals(tenantId, tp.getTriangulationPartner())))
                         consolidationDetailsDao.updateIsAcceptedTriangulationPartner(consolId, tenantId, Boolean.TRUE);
                     Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findConsolidationByIdWithQuery(consolId);
-                    if (!consolidationDetails.isPresent()) {
+                    if (consolidationDetails.isEmpty()) {
                         log.debug(CONSOLIDATION_DETAILS_IS_NULL_FOR_ID_WITH_REQUEST_ID, consolId, LoggerHelper.getRequestIdFromMDC());
                         throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                     }
