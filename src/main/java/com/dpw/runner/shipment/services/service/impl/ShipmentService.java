@@ -6306,7 +6306,7 @@ public class ShipmentService implements IShipmentService {
         List<TriangulationPartner> triangulationPartners = consolidationDetails.getTriangulationPartnerList();
         Long currentTenant = TenantContext.getCurrentTenant().longValue();
         if(Objects.equals(currentTenant, consolidationDetails.getTenantId()))
-            return;
+            return false;
         if ((triangulationPartners == null
                 || triangulationPartners.stream()
                 .filter(Objects::nonNull)
