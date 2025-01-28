@@ -1835,6 +1835,12 @@ public class ShipmentService implements IShipmentService {
             shipmentDetails.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));
 
         List<ConsolidationDetailsRequest> consolidationDetailsRequests = shipmentRequest.getConsolidationList();
+        List<Routings> mainCarriageRoutings = shipmentDetails.getRoutingsList().stream().filter(i -> RoutingCarriage.MAIN_CARRIAGE.equals(i.getCarriage())).toList();
+        boolean isRouteMasterEnabled = Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster());
+        if (isRouteMasterEnabled && mainCarriageRoutings != null && !mainCarriageRoutings.isEmpty() && shouldSetPorts(shipmentRequest)) {
+            shipmentDetails.getCarrierDetails().setOriginPort(mainCarriageRoutings.get(0).getPol());
+            shipmentDetails.getCarrierDetails().setDestinationPort(mainCarriageRoutings.get(mainCarriageRoutings.size() - 1).getPod());
+        }
         if (consolidationDetailsRequests != null) {
             Set<Long> oldConsolIds = Objects.isNull(oldEntity) ? null : oldEntity.getConsolidationList().stream().map(e -> e.getId()).collect(Collectors.toSet());
             for (ConsolidationDetailsRequest consolidation : consolidationDetailsRequests) {
@@ -1997,6 +2003,11 @@ public class ShipmentService implements IShipmentService {
             if (!Objects.isNull(console) && !Objects.isNull(console.getId()))
                 awbDao.validateAirMessaging(console.getId());
             deletePendingRequestsOnConsoleAttach(shipmentDetails, isCreate);
+        } else {
+            if(isRouteMasterEnabled && mainCarriageRoutings != null && !mainCarriageRoutings.isEmpty()) {
+                    shipmentDetails.getCarrierDetails().setEtd(mainCarriageRoutings.get(0).getEtd());
+                    shipmentDetails.getCarrierDetails().setEta(mainCarriageRoutings.get(mainCarriageRoutings.size() - 1).getEta());
+                }
         }
 
         if (shipmentDetails.getReceivingBranch() != null && shipmentDetails.getReceivingBranch() == 0)
@@ -2058,6 +2069,14 @@ public class ShipmentService implements IShipmentService {
 
         populateUnlocCodeFuture.join();
         return syncConsole;
+    }
+
+    private boolean shouldSetPorts(ShipmentRequest shipmentRequest) {
+        return (shipmentRequest.getShipmentType().equals(SHIPMENT_TYPE_HSE) && Boolean.FALSE.equals(shipmentRequest.getB2b())) ||
+                shipmentRequest.getShipmentType().equals(SHIPMENT_TYPE_SCN) ||
+                shipmentRequest.getShipmentType().equals(SHIPMENT_TYPE_BCN) ||
+                shipmentRequest.getShipmentType().equals(SHIPMENT_TYPE_DRT) ||
+                Boolean.TRUE.equals(shipmentRequest.getB2b());
     }
 
     private CompletableFuture<Void> getPopulateUnlocCodeFuture(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
