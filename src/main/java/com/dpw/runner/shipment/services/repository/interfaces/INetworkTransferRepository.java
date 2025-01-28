@@ -51,4 +51,8 @@ public interface INetworkTransferRepository extends MultiTenancyRepository<Netwo
     @Transactional
     @Query(value = "Update network_transfer set status = ?2, created_entity_id = ?3 Where id = ?1", nativeQuery = true)
     void updateStatusAndCreatedEntityId(Long id, String status, Long createdEntityId);
+
+    @ExcludeTenantFilter
+    @Query(value = "SELECT * FROM network_transfer WHERE entity_id IN (?1) AND entity_type = ?2 AND is_inter_branch_entity = ?3 AND status IN (?4)", nativeQuery = true)
+    List<NetworkTransfer> findByEntityIdAndEntityTypeAndIsInterBranchEntity(List<Long> entityIds, String entityType, Boolean isInterBranchEntity, List<String> status);
 }

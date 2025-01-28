@@ -385,6 +385,9 @@ public class EntityTransferService implements IEntityTransferService {
         }
 
         ConsolidationDetails consol = consolidationDetails.get();
+        Map<UUID, ShipmentDetails> guidVsShipmentMap = new HashMap<>();
+        if(!CommonUtils.listIsNullOrEmpty(consol.getShipmentsList()))
+            guidVsShipmentMap = consol.getShipmentsList().stream().collect(Collectors.toMap(ShipmentDetails::getGuid, Function.identity()));
 
         interBranchValidation(consol, sendConsolidationRequest);
         EntityTransferConsolidationDetails entityTransferPayload = prepareConsolidationPayload(consol, sendConsolidationRequest);
@@ -421,6 +424,16 @@ public class EntityTransferService implements IEntityTransferService {
                         entityTransferShipment.setSendToBranch(shipmentGuidSendToBranch.get(guid.toString()).get(index));
                     else
                         entityTransferShipment.setSendToBranch(tenant);
+
+                    if(Boolean.TRUE.equals(getIsNetworkTransferFeatureEnabled()) && !Objects.equals(tenant, entityTransferShipment.getSendToBranch())) {
+                        this.sendOverarchingShipmentToNetworkTransfer(entityTransferShipment.getSendToBranch(), entityTransferShipment, guidVsShipmentMap.get(guid));
+                    }
+                }
+                // Clear all pending shipment notifications for Inter branch console
+                if(Boolean.TRUE.equals(getIsNetworkTransferFeatureEnabled()) && Boolean.TRUE.equals(consolidationPayload.getInterBranchConsole())) {
+                    List<Long> shipIds = consol.getShipmentsList().stream().map(BaseEntity::getId).toList();
+                    List<Notification> notificationList = notificationDao.findNotificationByEntityIdsForEntityTransfer(shipIds, SHIPMENT, tenant, List.of(NotificationRequestType.REQUEST_TRANSFER.name(), NotificationRequestType.REASSIGN.name()));
+                    notificationDao.deleteAll(notificationList);
                 }
             }
 
@@ -470,6 +483,21 @@ public class EntityTransferService implements IEntityTransferService {
                 .message(String.format("Consolidation Sent to branches %s", String.join(", ", getTenantName(successTenantIds))))
             .build();
         return ResponseHelper.buildSuccessResponse(sendConsolidationResponse);
+
+    }
+
+    private void sendOverarchingShipmentToNetworkTransfer(Integer tenant, EntityTransferShipmentDetails entityTransferShipment, ShipmentDetails shipment) {
+        Long shipId = shipment.getId();
+        Optional<NetworkTransfer> optionalNetworkTransfer = networkTransferDao.findByTenantAndEntity(
+                Math.toIntExact(tenant), shipId, SHIPMENT);
+        Map<String, Object> entityPayload = getNetworkTransferEntityPayload(entityTransferShipment);
+        if (optionalNetworkTransfer.isPresent()) {
+            optionalNetworkTransfer.get().setIsInterBranchEntity(true);
+            networkTransferService.updateNetworkTransferTransferred(optionalNetworkTransfer.get(), entityPayload);
+        }
+        else
+            networkTransferService.processNetworkTransferEntity(Long.valueOf(tenant), null, SHIPMENT,
+                    shipment, null, entityTransferShipment.getShipmentType(), entityPayload, true);
 
     }
 

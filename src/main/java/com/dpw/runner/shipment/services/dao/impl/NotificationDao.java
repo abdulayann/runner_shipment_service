@@ -116,6 +116,11 @@ public class NotificationDao implements INotificationDao {
     }
 
     @Override
+    public List<Notification> findNotificationByEntityIdsForEntityTransfer(List<Long> entityIds, String entityType, Integer branchId, List<String> requestTypes) {
+        return notificationRepository.findNotificationBasedOnEntityIdsAndEntityTypeAndBranchIdAndRequestTypes(entityIds, entityType, branchId, requestTypes);
+    }
+
+    @Override
     public void deleteAll(List<Notification> notificationList) {
         notificationRepository.deleteAll(notificationList);
     }

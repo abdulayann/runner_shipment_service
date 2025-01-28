@@ -11,6 +11,7 @@ import java.util.UUID;
 
 public interface INetworkTransferDao {
     NetworkTransfer save(NetworkTransfer networkTransfer);
+    List<NetworkTransfer> saveAll(List<NetworkTransfer> networkTransferEntityList);
 
     Page<NetworkTransfer> findAll(Specification<NetworkTransfer> spec, Pageable pageable);
 
@@ -33,4 +34,6 @@ public interface INetworkTransferDao {
     void deleteByIdsAndLog(List<Long> networkTransferEntityIds);
 
     void updateStatusAndCreatedEntityId(Long id, String status, Long createdEntityId);
+
+    List<NetworkTransfer> findByEntityIdAndEntityTypeAndIsInterBranchEntity(List<Long> entityIds, String entityType, Boolean isInterBranchEntity, List<String> status);
 }
