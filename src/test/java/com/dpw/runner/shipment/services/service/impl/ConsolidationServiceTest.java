@@ -141,6 +141,7 @@ import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
 import com.dpw.runner.shipment.services.entity.TenantProducts;
 import com.dpw.runner.shipment.services.entity.TriangulationPartner;
 import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
+import com.dpw.runner.shipment.services.entity.AdditionalDetails;
 import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.entity.enums.GenerationType;
 import com.dpw.runner.shipment.services.entity.enums.JobState;
@@ -993,17 +994,39 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
     }
 
     @Test
+    public void testCreateFromBooking_Import_Success() {
+        // Setup
+        ConsolidationDetailsRequest request = new ConsolidationDetailsRequest();
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setShipmentType(Constants.IMP);
+        ConsolidationDetailsResponse expectedResponse = testConsolResponse;
+        ResponseEntity<IRunnerResponse> expectedEntity = ResponseHelper.buildSuccessResponse(expectedResponse);
+
+        when(jsonHelper.convertValue(request, ConsolidationDetails.class)).thenReturn(consolidationDetails1);
+        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+        when(consolidationDetailsDao.save(any(ConsolidationDetails.class), anyBoolean(), eq(false))).thenReturn(consolidationDetails1);
+        when(jsonHelper.convertValue(consolidationDetails1, ConsolidationDetailsResponse.class)).thenReturn(expectedResponse);
+        mockShipmentSettings();
+        ResponseEntity<IRunnerResponse> response = consolidationService.createFromBooking(commonRequestModel);
+
+        assertEquals(expectedEntity, response);
+    }
+
+    @Test
     void testCreateFromBooking_AuditLogException() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         // Setup
         ConsolidationDetailsRequest request = new ConsolidationDetailsRequest();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
         ConsolidationDetails consolidationDetails = testConsol;
+        consolidationDetails.setSendingAgent(null);
         ConsolidationDetailsResponse expectedResponse = testConsolResponse;
         ResponseEntity<IRunnerResponse> expectedEntity = ResponseHelper.buildSuccessResponse(expectedResponse);
 
         when(jsonHelper.convertValue(request, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         when(consolidationDetailsDao.save(any(ConsolidationDetails.class), anyBoolean())).thenReturn(consolidationDetails);
+        when(v1ServiceUtil.getDefaultAgentOrgParty(any())).thenReturn(new Parties());
         doThrow(new IllegalAccessException("IllegalAccessException")).when(auditLogService).addAuditLog(any());
         mockShipmentSettings();
         // mockTenantSettings();
@@ -1022,10 +1045,13 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         ConsolidationDetailsRequest request = new ConsolidationDetailsRequest();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
         ConsolidationDetails consolidationDetails = testConsol;
+        consolidationDetails.setShipmentType(Constants.IMP);
+        consolidationDetails.setReceivingAgent(null);
 
         when(jsonHelper.convertValue(request, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         when(consolidationDetailsDao.save(any(ConsolidationDetails.class), anyBoolean())).thenThrow(new ValidationException("TEST"));
+        when(v1ServiceUtil.getDefaultAgentOrgParty(any())).thenReturn(new Parties());
         mockShipmentSettings();
         mockTenantSettings();
         assertThrows(ValidationException.class, () -> consolidationService.createFromBooking(commonRequestModel));
@@ -1087,13 +1113,14 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         ShipmentSettingsDetails tenantSettings = new ShipmentSettingsDetails();
         tenantSettings.setDefaultTransportMode("Sea");
         tenantSettings.setDefaultContainerType("ContainerType");
-        tenantSettings.setDefaultShipmentType("ShipmentType");
+        tenantSettings.setDefaultShipmentType("EXP");
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(tenantSettings);
 
         TenantModel tenantModel = new TenantModel();
 
         when(v1Service.retrieveTenant()).thenReturn(new V1RetrieveResponse());
         when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(tenantModel);
+        when(v1ServiceUtil.getDefaultAgentOrg(any())).thenReturn(PartiesResponse.builder().build());
 
         UserContext.setUser(UsersDto.builder().Username("Username").TenantId(1).build());
         LocalDateTime currentTime = LocalDateTime.now();
@@ -1107,7 +1134,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         ConsolidationDetailsResponse responseBody = (ConsolidationDetailsResponse)((RunnerResponse) response.getBody()).getData();
         assertNotNull(responseBody);
         assertEquals("ContainerType", responseBody.getContainerCategory());
-        assertEquals("ShipmentType", responseBody.getShipmentType());
         assertEquals("Username", responseBody.getCreatedBy());
         assertEquals(currentTime.getDayOfYear(), responseBody.getCreatedAt().getDayOfYear());
         assertEquals(1, responseBody.getSourceTenantId());
@@ -1118,7 +1144,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         ShipmentSettingsDetails tenantSettings = new ShipmentSettingsDetails();
         tenantSettings.setDefaultTransportMode("Sea");
         tenantSettings.setDefaultContainerType("ContainerType");
-        tenantSettings.setDefaultShipmentType("ShipmentType");
+        tenantSettings.setDefaultShipmentType("IMP");
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(tenantSettings);
 
         TenantModel tenantModel = new TenantModel();
@@ -1126,6 +1152,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         when(v1Service.retrieveTenant()).thenReturn(new V1RetrieveResponse());
         when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(tenantModel);
         when(commonUtils.getAutoPopulateDepartment(anyString(), anyString(), anyString())).thenReturn("AE");
+        when(v1ServiceUtil.getDefaultAgentOrg(any())).thenReturn(PartiesResponse.builder().build());
 
         UserContext.setUser(UsersDto.builder().Username("Username").TenantId(1).build());
         LocalDateTime currentTime = LocalDateTime.now();
@@ -1139,7 +1166,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         ConsolidationDetailsResponse responseBody = (ConsolidationDetailsResponse)((RunnerResponse) response.getBody()).getData();
         assertNotNull(responseBody);
         assertEquals("ContainerType", responseBody.getContainerCategory());
-        assertEquals("ShipmentType", responseBody.getShipmentType());
         assertEquals("Username", responseBody.getCreatedBy());
         assertEquals(currentTime.getDayOfYear(), responseBody.getCreatedAt().getDayOfYear());
         assertEquals(1, responseBody.getSourceTenantId());
@@ -1516,10 +1542,14 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         shipmentDetails.setCarrierDetails(new CarrierDetails());
         shipmentDetails.setTenantId(UserContext.getUser().TenantId);
         shipmentDetails.setGuid(UUID.randomUUID());
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setImportBroker(Parties.builder().orgId("import").build());
+        shipmentDetails.setAdditionalDetails(additionalDetails);
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(1L);
         consolidationDetails.setCarrierDetails(new CarrierDetails());
         consolidationDetails.setInterBranchConsole(false);
+        consolidationDetails.setSendingAgent(Parties.builder().orgId("sending").build());
 
         ConsoleShipmentMapping consoleShipmentMapping1 = new ConsoleShipmentMapping();
         consoleShipmentMapping1.setShipmentId(2L);
@@ -1615,12 +1645,16 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         shipmentDetails.setCarrierDetails(new CarrierDetails());
         shipmentDetails.setTenantId(UserContext.getUser().TenantId);
         shipmentDetails.setGuid(UUID.randomUUID());
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setExportBroker(Parties.builder().orgId("export").build());
+        shipmentDetails.setAdditionalDetails(additionalDetails);
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(1L);
         consolidationDetails.setCarrierDetails(new CarrierDetails());
         consolidationDetails.setInterBranchConsole(false);
         consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
         consolidationDetails.setShipmentType(Constants.DIRECTION_EXP);
+        consolidationDetails.setReceivingAgent(Parties.builder().orgId("receiving").build());
 
         ConsoleShipmentMapping consoleShipmentMapping1 = new ConsoleShipmentMapping();
         consoleShipmentMapping1.setShipmentId(2L);

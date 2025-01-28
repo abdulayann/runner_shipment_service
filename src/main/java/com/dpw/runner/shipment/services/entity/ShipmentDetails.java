@@ -587,4 +587,7 @@ public class ShipmentDetails extends MultiTenancy {
 
     @Column(name = "is_transferred_to_receiving_branch")
     private Boolean isTransferredToReceivingBranch;
+
+    @Column(name = "b2b")
+    private Boolean b2b;
 }

@@ -149,10 +149,7 @@ class ArrivalNoticeReportTest extends CommonMocks {
     }
 
     private void mockVessel() {
-        V1DataResponse v1DataResponse = new V1DataResponse();
-        v1DataResponse.entities = Arrays.asList(new VesselsResponse());
-        when(v1Service.fetchVesselData(any())).thenReturn(v1DataResponse);
-        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), VesselsResponse.class)).thenReturn(Arrays.asList(new VesselsResponse()));
+        when(masterDataUtils.getVesselDataFromCache(any())).thenReturn(new HashMap<>());
     }
 
     private void populateModel(ArrivalNoticeModel arrivalNoticeModel) {
@@ -372,6 +369,9 @@ class ArrivalNoticeReportTest extends CommonMocks {
         mockCommodity();
         mockShipmentSettings();
         mockTenantSettings();
+        when(cacheManager.getCache(any())).thenReturn(cache);
+        when(cache.get(any())).thenReturn(null);
+        when(keyGenerator.customCacheKeyForMasterData(any(),any())).thenReturn(new StringBuilder());
         assertNotNull(arrivalNoticeReport.populateDictionary(arrivalNoticeModel));
     }
 
@@ -416,6 +416,9 @@ class ArrivalNoticeReportTest extends CommonMocks {
         mockCommodity();
         mockShipmentSettings();
         mockTenantSettings();
+        when(cacheManager.getCache(any())).thenReturn(cache);
+        when(cache.get(any())).thenReturn(null);
+        when(keyGenerator.customCacheKeyForMasterData(any(),any())).thenReturn(new StringBuilder());
         assertNotNull(arrivalNoticeReport.populateDictionary(arrivalNoticeModel));
     }
 
@@ -457,6 +460,9 @@ class ArrivalNoticeReportTest extends CommonMocks {
         mockCommodity();
         mockShipmentSettings();
         mockTenantSettings();
+        when(cacheManager.getCache(any())).thenReturn(cache);
+        when(cache.get(any())).thenReturn(null);
+        when(keyGenerator.customCacheKeyForMasterData(any(),any())).thenReturn(new StringBuilder());
         assertNotNull(arrivalNoticeReport.populateDictionary(arrivalNoticeModel));
     }
 

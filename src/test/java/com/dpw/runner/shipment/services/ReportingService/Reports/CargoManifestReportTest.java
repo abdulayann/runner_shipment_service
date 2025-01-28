@@ -23,6 +23,7 @@ import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferDGSubstance;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -55,7 +56,7 @@ import java.util.*;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
@@ -261,9 +262,7 @@ class CargoManifestReportTest extends CommonMocks {
         unlocationsResponse.setName("Test");
         unlocationsResponse.setCountry("IND");
         unlocationsResponse.setPortName("Test");
-        when(masterDataUtils.getUNLocRow(any())).thenReturn(unlocationsResponse);
-
-        when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
+        when(masterDataUtils.getLocationDataFromCache(any(), anyString())).thenReturn(new HashMap<>());
 
         Parties parties = new Parties();
         parties.setOrgCode("Test");
@@ -423,9 +422,7 @@ class CargoManifestReportTest extends CommonMocks {
         unlocationsResponse.setName("Test");
         unlocationsResponse.setCountry("IND");
         unlocationsResponse.setPortName("Test");
-        when(masterDataUtils.getUNLocRow(any())).thenReturn(unlocationsResponse);
-
-        when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
+        when(masterDataUtils.getLocationDataFromCache(any(), anyString())).thenReturn(new HashMap<>());
 
         Parties parties = new Parties();
         parties.setOrgCode("Test");
@@ -657,9 +654,6 @@ class CargoManifestReportTest extends CommonMocks {
         unlocationsResponse.setCountry("IND");
         unlocationsResponse.setPortName("Test");
         unlocationsResponse.setLocCode("test");
-        when(masterDataUtils.getUNLocRow(any())).thenReturn(unlocationsResponse);
-
-        when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
 
         Parties parties = new Parties();
         parties.setOrgCode("Test");
@@ -705,6 +699,14 @@ class CargoManifestReportTest extends CommonMocks {
         String customEntryNumber = "12345";
         String test  = "test";
         String consolNumber = "AIR-CAN-00001";
+        EntityTransferUnLocations entityTransferUnLocations = new EntityTransferUnLocations();
+        entityTransferUnLocations.setLocCode("TestForeignPort");
+        Map<String, EntityTransferUnLocations> entityTransferUnLocationsMap = new HashMap<>();
+        entityTransferUnLocationsMap.put("TestForeignPort", entityTransferUnLocations);
+        UnlocationsResponse unlocationsResponse1 = new UnlocationsResponse();
+        unlocationsResponse1.setLocCode("TestForeignPort");
+        doReturn(unlocationsResponse1).when(jsonHelper).convertValue(any(EntityTransferUnLocations.class), eq(UnlocationsResponse.class));
+        when(masterDataUtils.getLocationDataFromCache(any(), anyString())).thenReturn(entityTransferUnLocationsMap);
 
         Map<String, Object> dictionary = cargoManifestReport.populateDictionary(cargoManifestModel);
         assertNotNull(dictionary);

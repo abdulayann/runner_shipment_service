@@ -63,6 +63,8 @@ import com.dpw.runner.shipment.services.dto.patchrequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.billing.InvoicePostingValidationRequest;
+import com.dpw.runner.shipment.services.dto.request.hbl.HblCargoDto;
+import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
 import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
@@ -136,6 +138,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -161,6 +165,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED;
@@ -505,6 +510,34 @@ ShipmentServiceTest extends CommonMocks {
         assertNull(hblCheckResponse.getMessage());
 
         verify(shipmentDao).findByHblNumberAndExcludeShipmentId(hblNumber, shipmentId);
+    }
+
+    @Test
+    public void testContainersWithoutContainerNumber_ShouldThrowException() {
+        Containers containerWithoutNumber = new Containers();
+        containerWithoutNumber.setContainerNumber(null);
+
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        shipmentDetails1.setContainersList(List.of(containerWithoutNumber));
+
+        assertThrows(ValidationException.class, () ->
+                shipmentService.validateHblContainerNumberCondition(shipmentDetails1),
+            "Please assign container number to all the containers before generating the HBL."
+        );
+    }
+
+    @Test
+    public void testPackingListWithoutContainerId_ShouldThrowException() {
+        Packing packingWithoutContainerId = new Packing();
+        packingWithoutContainerId.setContainerId(null);
+
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        shipmentDetails1.setPackingList(List.of(packingWithoutContainerId));
+
+        assertThrows(ValidationException.class, () ->
+                shipmentService.validateHblContainerNumberCondition(shipmentDetails1),
+            "Container Number is Mandatory for HBL Generation, please assign the container number for all the packages in the shipment."
+        );
     }
 
     @Test
@@ -1091,6 +1124,61 @@ ShipmentServiceTest extends CommonMocks {
 
         assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
     }
+
+
+
+    @ParameterizedTest
+    @MethodSource("shipmentTypeAndB2bProvider")
+    void completeUpdate_withMultipleShipmentTypesAndB2bValues_success(String shipmentType, Boolean b2b) throws RunnerException {
+        shipmentDetails.setId(1L);
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
+
+        // Convert ShipmentDetails to ShipmentRequest and apply test case
+        ShipmentRequest mockShipmentRequest = objectMapper.convertValue(shipmentDetails, ShipmentRequest.class);
+        mockShipmentRequest.setShipmentType(shipmentType);
+        mockShipmentRequest.setB2b(b2b);
+
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
+        ShipmentDetailsResponse mockShipmentResponse = objectMapper.convertValue(shipmentDetails, ShipmentDetailsResponse.class);
+
+        // Mock behaviors
+        when(shipmentDao.findById(any()))
+                .thenReturn(Optional.of(
+                        shipmentDetails
+                                .setConsolidationList(new ArrayList<>())
+                                .setContainersList(new ArrayList<>())
+                ));
+        when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
+        when(shipmentDao.update(any(), eq(false))).thenReturn(shipmentDetails);
+        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+        when(shipmentDetailsMapper.map((ShipmentDetails) any())).thenReturn(mockShipmentResponse);
+        when(commonUtils.getCurrentTenantSettings())
+                .thenReturn(V1TenantSettingsResponse.builder().transportModeConfig(true).build());
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setEnableRouteMaster(true);
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
+
+        // Test the method
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeUpdate(commonRequestModel);
+
+        // Verify response
+        assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
+    }
+
+    private static Stream<Arguments> shipmentTypeAndB2bProvider() {
+        return Stream.of(
+                Arguments.of("HSE", false),  // Matches: HSE and not b2b
+                Arguments.of("HSE", true),   // Matches: b2b is true
+                Arguments.of("SCN", false), // Matches: SCN
+                Arguments.of("SCN", true),  // Matches: SCN
+                Arguments.of("BCN", false), // Matches: BCN
+                Arguments.of("BCN", true),  // Matches: BCN
+                Arguments.of("DRT", false), // Matches: DRT
+                Arguments.of("DRT", true),  // Matches: DRT
+                Arguments.of("OTH", false) // Does not match any condition
+        );
+    }
+
+
 
     @Test
     void completeUpdate_success_validMasterBill() throws RunnerException {
@@ -2515,9 +2603,6 @@ ShipmentServiceTest extends CommonMocks {
 
         Parties parties = Parties.builder().orgCode("1").build();
 
-        when(v1Service.getDefaultOrg()).thenReturn(partyRequestV2);
-        when(modelMapper.map(any(), any())).thenReturn(parties);
-
         doNothing().when(consolidationService).generateConsolidationNumber(any(ConsolidationDetails.class));
         CarrierDetails carrierDetails = CarrierDetails.builder().originPort("OriginPort").destinationPort("DestinationPort").build();
         Routings routings = new Routings();
@@ -2551,9 +2636,6 @@ ShipmentServiceTest extends CommonMocks {
         partyRequestV2.setTenantId(1);
 
         Parties parties = Parties.builder().orgCode("1").build();
-
-        when(v1Service.getDefaultOrg()).thenReturn(partyRequestV2);
-        when(modelMapper.map(any(), any())).thenReturn(parties);
 
         doNothing().when(consolidationService).generateConsolidationNumber(any(ConsolidationDetails.class));
         CarrierDetails carrierDetails = CarrierDetails.builder().originPort("OriginPort").destinationPort("DestinationPort").build();
@@ -4854,7 +4936,7 @@ ShipmentServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(CarrierDetails.class))).thenReturn(CarrierDetails.builder().build());
         when(consolidationDetailsDao.save(any(), eq(false), anyBoolean())).thenReturn(ConsolidationDetails.builder().build());
 
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(ConsolidationDetails.builder().build()));
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(ConsolidationDetails.builder().interBranchConsole(false).build()));
         mockShipmentSettings();
         mockTenantSettings();
 
@@ -6062,9 +6144,6 @@ ShipmentServiceTest extends CommonMocks {
         partyRequestV2.setTenantId(1);
 
         Parties parties = Parties.builder().orgCode("1").build();
-
-        when(v1Service.getDefaultOrg()).thenReturn(partyRequestV2);
-        when(modelMapper.map(any(), any())).thenReturn(parties);
 
         doNothing().when(consolidationService).generateConsolidationNumber(any(ConsolidationDetails.class));
         CarrierDetails carrierDetails = CarrierDetails.builder().originPort("OriginPort").destinationPort("DestinationPort").build();
@@ -7759,11 +7838,12 @@ ShipmentServiceTest extends CommonMocks {
                     .containersList(Arrays.asList(Containers.builder().build()))
                     .additionalDetails(additionalDetailsNew)
                     .eventsList(Collections.singletonList(event))
-                    .transportMode(Constants.TRANSPORT_MODE_SEA)
-                    .shipmentType(Constants.SHIPMENT_TYPE_LCL)
+                    .transportMode(TRANSPORT_MODE_SEA)
+                    .shipmentType(SHIPMENT_TYPE_LCL)
                     .bookingNumber("5678-1234")
                     .shipmentGateInDate(LocalDateTime.now().plusDays(1))
                     .dateType(DateBehaviorType.ACTUAL)
+                    .carrierDetails(CarrierDetails.builder().build())
                     .build();
 
             when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(oldshipmentDetails);
@@ -9801,6 +9881,118 @@ ShipmentServiceTest extends CommonMocks {
         shipmentService.triggerAutomaticTransfer(shipmentDetails2, shipmentDetails3, false);
 
         verify(quartzJobInfoService, times(1)).getQuartzJobTime(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void testPopulateOriginDestinationAgentDetailsForBookingShipment_NoConsolidationList() {
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        shipmentDetails1.setConsolidationList(Collections.emptyList());
+
+        shipmentService.populateOriginDestinationAgentDetailsForBookingShipment(shipmentDetails1);
+
+        verifyNoInteractions(commonUtils, v1ServiceUtil, consolidationDetailsDao);
+    }
+
+    @Test
+    void testPopulateOriginDestinationAgentDetailsForBookingShipment_ConsolidationDetailsNotInterBranch() {
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        ConsolidationDetails consolidationDetails1 = new ConsolidationDetails();
+        Parties parties = Parties.builder().orgId("agent").build();
+        consolidationDetails1.setSendingAgent(parties);
+        consolidationDetails1.setReceivingAgent(parties);
+        consolidationDetails1.setInterBranchConsole(false);
+        shipmentDetails1.setConsolidationList(List.of(consolidationDetails1));
+
+        shipmentService.populateOriginDestinationAgentDetailsForBookingShipment(shipmentDetails1);
+
+        verifyNoInteractions(v1ServiceUtil, consolidationDetailsDao);
+    }
+
+    @Test
+    void testPopulateOriginDestinationAgentDetailsForBookingShipment_ConsolidationDetailsNotInterBranch2() {
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        ConsolidationDetails consolidationDetails1 = new ConsolidationDetails();
+        Parties parties = Parties.builder().orgId("agent").build();
+        consolidationDetails1.setReceivingAgent(parties);
+        consolidationDetails1.setInterBranchConsole(false);
+        shipmentDetails1.setConsolidationList(List.of(consolidationDetails1));
+
+        shipmentService.populateOriginDestinationAgentDetailsForBookingShipment(shipmentDetails1);
+
+        verifyNoInteractions(v1ServiceUtil, consolidationDetailsDao);
+    }
+
+    @Test
+    void testPopulateOriginDestinationAgentDetailsForBookingShipment_ConsolidationDetailsNotInterBranch3() {
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        shipmentDetails1.setAdditionalDetails(new AdditionalDetails());
+        ConsolidationDetails consolidationDetails1 = new ConsolidationDetails();
+        Parties parties = Parties.builder().orgId("agent").build();
+        consolidationDetails1.setSendingAgent(parties);
+        consolidationDetails1.setReceivingAgent(parties);
+        consolidationDetails1.setInterBranchConsole(false);
+        shipmentDetails1.setConsolidationList(List.of(consolidationDetails1));
+
+        shipmentService.populateOriginDestinationAgentDetailsForBookingShipment(shipmentDetails1);
+
+        verifyNoInteractions(v1ServiceUtil, consolidationDetailsDao);
+    }
+
+    @Test
+    void testPopulateOriginDestinationAgentDetailsForBookingShipment_ConsolidationDetailsInterBranch() {
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        ConsolidationDetails consolidationDetails1 = new ConsolidationDetails();
+        consolidationDetails1.setInterBranchConsole(true);
+        shipmentDetails1.setConsolidationList(List.of(consolidationDetails1));
+
+        shipmentService.populateOriginDestinationAgentDetailsForBookingShipment(shipmentDetails1);
+
+        verifyNoInteractions(commonUtils, v1ServiceUtil, consolidationDetailsDao);
+    }
+
+    @Test
+    void testPopulateOriginDestinationAgentDetailsForBookingShipment_SetDefaultExportBroker() {
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        shipmentDetails1.setDirection(Constants.DIRECTION_EXP);
+
+        when(v1ServiceUtil.getDefaultAgentOrgParty(null)).thenReturn(new Parties());
+
+        shipmentService.populateOriginDestinationAgentDetailsForBookingShipment(shipmentDetails1);
+
+        verify(v1ServiceUtil).getDefaultAgentOrgParty(null);
+        assertNotNull(shipmentDetails1.getAdditionalDetails().getExportBroker());
+    }
+
+    @Test
+    void testPopulateOriginDestinationAgentDetailsForBookingShipment_SetDefaultImportBroker() {
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        shipmentDetails1.setDirection(Constants.DIRECTION_IMP);
+
+        when(v1ServiceUtil.getDefaultAgentOrgParty(null)).thenReturn(new Parties());
+
+        shipmentService.populateOriginDestinationAgentDetailsForBookingShipment(shipmentDetails1);
+
+        verify(v1ServiceUtil).getDefaultAgentOrgParty(null);
+        assertNotNull(shipmentDetails1.getAdditionalDetails().getImportBroker());
+    }
+
+    @Test
+    void testPopulateOriginDestinationAgentDetailsForBookingShipment_SetConsolidationAgent() {
+        ConsolidationDetails consolidationDetails1 = mock(ConsolidationDetails.class);
+        Parties agent = new Parties();
+        agent.setOrgId("SendingAgent");
+
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        shipmentDetails1.setConsolidationList(List.of(consolidationDetails1));
+
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setExportBroker(Parties.builder().orgId("ExportBroker").build());
+        additionalDetails.setImportBroker(Parties.builder().orgId("ImportBroker").build());
+        shipmentDetails1.setAdditionalDetails(additionalDetails);
+
+        shipmentService.populateOriginDestinationAgentDetailsForBookingShipment(shipmentDetails1);
+
+        verify(consolidationDetailsDao).save(any(), anyBoolean());
     }
 
 }

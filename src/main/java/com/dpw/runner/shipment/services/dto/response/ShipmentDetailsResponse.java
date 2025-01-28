@@ -227,4 +227,5 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private String transferStatus;
     private Boolean isReceivingBranchManually;
     private Boolean isTransferredToReceivingBranch;
+    private Boolean b2b;
 }

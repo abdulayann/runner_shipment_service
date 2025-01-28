@@ -32,6 +32,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.ValidationException
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.service.interfaces.IHblService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.HblRequestV2;
@@ -97,6 +98,7 @@ class HblServiceTest extends CommonMocks {
     @Mock
     private ConsolidationService consolidationService;
 
+
     @BeforeAll
     static void init() throws IOException {
         jsonTestUtility = new JsonTestUtility();
@@ -160,6 +162,32 @@ class HblServiceTest extends CommonMocks {
         // Assert
         assertEquals(ResponseHelper.buildSuccessResponse(convertEntityToDto(mockHbl)), httpResponse);
 
+    }
+
+    @Test
+    public void testHblContainersWithoutContainerNumber_ShouldThrowException() {
+        Hbl hblObject = new Hbl();
+        HblContainerDto hblContainerWithoutNumber = new HblContainerDto();
+        hblContainerWithoutNumber.setContainerNumber(null);
+        hblObject.setHblContainer(List.of(hblContainerWithoutNumber));
+
+        assertThrows(ValidationException.class, () ->
+                hblService.validateHblContainerNumberCondition(hblObject),
+            "Please assign container number to all the containers in HBL before generating the HBL."
+        );
+    }
+
+    @Test
+    public void testHblCargosWithoutContainerNumber_ShouldThrowException() {
+        Hbl hblObject = new Hbl();
+        HblCargoDto hblCargoWithoutContainerNumber = new HblCargoDto();
+        hblCargoWithoutContainerNumber.setBlContainerContainerNumber(null);
+        hblObject.setHblCargo(List.of(hblCargoWithoutContainerNumber));
+
+        assertThrows(ValidationException.class, () ->
+                hblService.validateHblContainerNumberCondition(hblObject),
+            "Container Number is Mandatory for HBL Generation, please assign the container number for all the HBLCargo in the shipment."
+        );
     }
 
     @Test

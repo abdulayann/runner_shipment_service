@@ -736,6 +736,20 @@ public class HblService implements IHblService {
         }
         
     }
+
+    public void validateHblContainerNumberCondition(Hbl hblObject){
+        if(!Objects.isNull(hblObject.getHblContainer()) ) {
+            List<HblContainerDto> hblContainers = hblObject.getHblContainer().stream().filter(c -> StringUtility.isEmpty(c.getContainerNumber())).toList();
+            if (!hblContainers.isEmpty())
+                throw new ValidationException("Please assign container number to all the containers in HBL before generating the HBL.");
+        }
+
+        if(!Objects.isNull(hblObject.getHblCargo()) ) {
+            List<HblCargoDto> hblCargos = hblObject.getHblCargo().stream().filter(c -> StringUtility.isEmpty(c.getBlContainerContainerNumber())).toList();
+            if (!hblCargos.isEmpty())
+                throw new ValidationException("Container Number is Mandatory for HBL Generation, please assign the container number for all the HBLCargo in the shipment.");
+        }
+    }
     private void updateShipmentToHBL(ShipmentDetails shipmentDetail, Hbl hbl, HblLockSettings hblLock) {
         HblDataDto hblData = hbl.getHblData();
         Routings routing = null;
