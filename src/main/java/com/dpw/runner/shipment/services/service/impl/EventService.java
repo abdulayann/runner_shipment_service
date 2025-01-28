@@ -1303,15 +1303,19 @@ public class EventService implements IEventService {
 
     @Override
     public ResponseEntity<IRunnerResponse> pushTrackingEvents(Container container) {
+
         String messageId = UUID.randomUUID().toString();
         log.info("Tracking API - container payload {} messageId {}", jsonHelper.convertToJson(container), messageId);
         MDC.put(LoggingConstants.TS_ID, messageId);
         v1Service.setAuthContext();
         IgnoreAutoTenantPopulationContext.setContext(Boolean.TRUE);
-        boolean processSuccess = processUpstreamTrackingMessage(container, messageId);
-        v1Service.clearAuthContext();
-        IgnoreAutoTenantPopulationContext.clearContext();
-
+        boolean processSuccess = false;
+        try {
+            processSuccess = processUpstreamTrackingMessage(container, messageId);
+        } finally {
+            v1Service.clearAuthContext();
+            IgnoreAutoTenantPopulationContext.clearContext();
+        }
         return ResponseHelper.buildSuccessResponse(processSuccess);
     }
 
