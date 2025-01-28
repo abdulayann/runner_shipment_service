@@ -428,9 +428,11 @@ public class EntityTransferService implements IEntityTransferService {
                 Map<String, Object> entityPayload = getNetworkTransferEntityPayload(consolidationPayload);
                 if (optionalNetworkTransfer.isPresent())
                     networkTransferService.updateNetworkTransferTransferred(optionalNetworkTransfer.get(), entityPayload);
-                else
+                else {
+                    boolean isInterBranchConsole = Boolean.TRUE.equals(consolidationPayload.getInterBranchConsole());
                     networkTransferService.processNetworkTransferEntity(Long.valueOf(tenant), null, CONSOLIDATION,
-                            null, consol, consolidationPayload.getShipmentType(), entityPayload, false);
+                            null, consol, consolidationPayload.getShipmentType(), entityPayload, isInterBranchConsole);
+                }
 
                 List<Notification> notificationList = notificationDao.findNotificationForEntityTransfer(consolId, CONSOLIDATION, tenant, List.of(NotificationRequestType.REQUEST_TRANSFER.name(), NotificationRequestType.REASSIGN.name()));
                 notificationDao.deleteAll(notificationList);
