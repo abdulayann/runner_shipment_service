@@ -1,8 +1,10 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
@@ -13,14 +15,18 @@ import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IPickupDeliveryDetailsDao;
 import com.dpw.runner.shipment.services.dto.request.PickupDeliveryDetailsRequest;
 import com.dpw.runner.shipment.services.dto.response.PickupDeliveryDetailsResponse;
-import com.dpw.runner.shipment.services.entity.Parties;
-import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
+import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
+import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.service.interfaces.IPickupDeliveryDetailsService;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.MasterDataKeyUtils;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,10 +38,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
@@ -51,14 +57,20 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
     private IPartiesDao partiesDao;
 
     private CommonUtils commonUtils;
+    private MasterDataUtils masterDataUtils;
+    private MasterDataKeyUtils masterDataKeyUtils;
+    private ExecutorService executorService;
 
     @Autowired
-    public PickupDeliveryDetailsService(CommonUtils commonUtils, IPartiesDao partiesDao, IPickupDeliveryDetailsDao pickupDeliveryDetailsDao, JsonHelper jsonHelper, AuditLogService auditLogService) {
+    public PickupDeliveryDetailsService(CommonUtils commonUtils, IPartiesDao partiesDao, IPickupDeliveryDetailsDao pickupDeliveryDetailsDao, JsonHelper jsonHelper, AuditLogService auditLogService, MasterDataUtils masterDataUtils, MasterDataKeyUtils masterDataKeyUtils, ExecutorService executorService) {
         this.pickupDeliveryDetailsDao = pickupDeliveryDetailsDao;
         this.jsonHelper = jsonHelper;
         this.auditLogService = auditLogService;
         this.partiesDao = partiesDao;
         this.commonUtils = commonUtils;
+        this.masterDataUtils = masterDataUtils;
+        this.masterDataKeyUtils = masterDataKeyUtils;
+        this.executorService = executorService;
     }
 
     @Transactional
@@ -92,6 +104,19 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(pickupDeliveryDetails));
+    }
+
+    private void beforeSave(PickupDeliveryDetailsRequest request, PickupDeliveryDetails entity, PickupDeliveryDetails oldEntity) throws RunnerException {
+        Long id = entity.getId();
+        // Set proper references
+        commonUtils.emptyIfNull(entity.getTiLegsList()).forEach(leg -> {
+            Long legId = leg.getId();
+            leg.setPickupDeliveryDetailsId(id);
+            commonUtils.emptyIfNull(leg.getTiReferences()).forEach(i -> i.setTiLegId(legId));
+            commonUtils.emptyIfNull(leg.getTiPackages()).forEach(i -> i.setTiLegId(legId));
+            commonUtils.emptyIfNull(leg.getTiContainers()).forEach(i -> i.setTiLegId(legId));
+            commonUtils.emptyIfNull(leg.getTiTruckDriverDetails()).forEach(i -> i.setTiLegId(legId));
+        });
     }
 
     private void afterSave(PickupDeliveryDetails pickupDeliveryDetails, boolean isCreate, PickupDeliveryDetailsRequest request) throws RunnerException {
@@ -129,6 +154,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
         pickupDeliveryDetails.setId(oldEntity.get().getId());
         try {
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
+            beforeSave(request, pickupDeliveryDetails, oldEntity.get());
             pickupDeliveryDetails = pickupDeliveryDetailsDao.save(pickupDeliveryDetails);
 
             // audit logs
@@ -266,5 +292,95 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
 
     public PickupDeliveryDetails convertRequestToEntity(PickupDeliveryDetailsRequest request) {
         return jsonHelper.convertValue(request, PickupDeliveryDetails.class);
+    }
+
+    // V2 Endpoints
+
+    // create
+    @Override
+    @Transactional
+    public ResponseEntity<IRunnerResponse> createV2(CommonRequestModel commonRequestModel) {
+        return create(commonRequestModel);
+    }
+
+    // update
+    @Override
+    @Transactional
+    public ResponseEntity<IRunnerResponse> updateV2(CommonRequestModel commonRequestModel) throws RunnerException {
+        return update(commonRequestModel);
+    }
+
+    // list
+    @Override
+    public ResponseEntity<IRunnerResponse> listV2(CommonRequestModel commonRequestModel) {
+        return list(commonRequestModel);
+    }
+
+    // delete
+    @Override
+    @Transactional
+    public ResponseEntity<IRunnerResponse> deleteV2(CommonRequestModel commonRequestModel) {
+        return delete(commonRequestModel);
+    }
+
+    // retrieve
+    @Override
+    public ResponseEntity<IRunnerResponse> retrieveByIdV2(CommonRequestModel commonRequestModel) {
+        return retrieveById(commonRequestModel);
+    }
+
+
+    private Map<String, Object> fetchAllMasterDataByKey(PickupDeliveryDetails pickupDeliveryDetails, PickupDeliveryDetailsResponse pickupDeliveryDetailsResponse) {
+        Map<String, Object> masterDataResponse = new HashMap<>();
+        var masterListFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllMasterDataInSingleCall(pickupDeliveryDetails, pickupDeliveryDetailsResponse, masterDataResponse)), executorService);
+        CompletableFuture.allOf(masterListFuture).join();
+        return masterDataResponse;
+    }
+
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllMasterDataInSingleCall (PickupDeliveryDetails pickupDeliveryDetails, PickupDeliveryDetailsResponse pickupDeliveryDetailsResponse, Map<String, Object> masterDataResponse) {
+        try {
+            Map<String, Object> cacheMap = new HashMap<>();
+            Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+            AtomicInteger count = new AtomicInteger();
+            Set<MasterListRequest> listRequests = new HashSet<>(masterDataUtils.createInBulkMasterListRequest(pickupDeliveryDetailsResponse, PickupDeliveryDetails.class, fieldNameKeyMap, PickupDeliveryDetails.class.getSimpleName(), cacheMap));
+            // Populate all the master data in inner objects
+            if (!commonUtils.listIsNullOrEmpty(pickupDeliveryDetails.getTiLegsList())) {
+                pickupDeliveryDetailsResponse.getTiLegsList().forEach(leg -> {
+                    listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(leg, TiLegs.class, fieldNameKeyMap, TiLegs.class.getSimpleName() + count.incrementAndGet(), cacheMap));
+                    // Add master data fields for sub entities
+                    if(!CommonUtils.listIsNullOrEmpty(leg.getTiReferences())) {
+                        leg.getTiReferences().forEach(i -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(i, TiReferences.class, fieldNameKeyMap, TiReferences.class.getSimpleName() + count.incrementAndGet(), cacheMap)));
+                    }
+                    if(!CommonUtils.listIsNullOrEmpty(leg.getTiPackages())) {
+                        leg.getTiPackages().forEach(i -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(i, TiPackages.class, fieldNameKeyMap, TiPackages.class.getSimpleName() + count.incrementAndGet(), cacheMap)));
+                    }
+                    if(!CommonUtils.listIsNullOrEmpty(leg.getTiContainers())) {
+                        leg.getTiContainers().forEach(i -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(i, TiContainers.class, fieldNameKeyMap, TiContainers.class.getSimpleName() + count.incrementAndGet(), cacheMap)));
+                    }
+                });
+            }
+
+            MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
+            masterListRequestV2.setMasterListRequests(listRequests.stream().toList());
+            masterListRequestV2.setIncludeCols(Arrays.asList(MasterDataConstants.ITEM_TYPE, MasterDataConstants.ITEM_VALUE, "ItemDescription", "ValuenDesc", "Cascade"));
+
+            Map<String, EntityTransferMasterLists> keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(masterListRequestV2);
+            Set<String> keys = new HashSet<>();
+            commonUtils.createMasterDataKeysList(listRequests, keys);
+            masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST, keys, new EntityTransferMasterLists(), cacheMap);
+
+            if(masterDataResponse != null) {
+                pickupDeliveryDetailsResponse.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(TiContainers.class.getSimpleName() + count.get()), CacheConstants.MASTER_LIST, cacheMap));
+            }
+            else {
+                masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.MASTER_LIST, masterDataResponse, cacheMap);
+            }
+
+            return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
+        } catch (Exception ex) {
+            log.error("Request: {} | Error Occured in CompletableFuture: addAllMasterDataInSingleCall in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), AwbService.class.getSimpleName(), ex.getMessage());
+            return CompletableFuture.completedFuture(null);
+        }
+
     }
 }

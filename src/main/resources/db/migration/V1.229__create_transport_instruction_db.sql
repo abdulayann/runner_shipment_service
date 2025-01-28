@@ -118,3 +118,7 @@ CREATE TABLE ti_truck_driver_details (
     truck_or_trailer_type varchar,
     FOREIGN KEY (ti_leg_id) REFERENCES ti_legs(id)
 );
+
+-- FEATURE FLAG FOR THE SERVICE
+ALTER TABLE IF EXISTS shipment_setting
+    ADD COLUMN IF NOT EXISTS is_ti_revamp_enabled boolean DEFAULT FALSE;
