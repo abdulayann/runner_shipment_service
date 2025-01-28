@@ -27,6 +27,8 @@ import com.dpw.runner.shipment.services.dto.patchrequest.CarrierPatchRequest;
 import com.dpw.runner.shipment.services.dto.patchrequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.billing.InvoicePostingValidationRequest;
+import com.dpw.runner.shipment.services.dto.request.hbl.HblCargoDto;
+import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
 import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
@@ -6780,6 +6782,23 @@ public class ShipmentService implements IShipmentService {
         if (ObjectUtils.isEmpty(carrierDetails.getEta())) {
             missingFields.add(ModuleValidationFieldType.CARRIER_ETA);
         }
+    }
+
+    public void validateHblContainerNumberCondition(ShipmentDetails shipmentDetails){
+        if(!Objects.isNull(shipmentDetails.getContainersList()) ) {
+            List<Containers> containers = shipmentDetails.getContainersList().stream().filter(c -> StringUtility.isEmpty(c.getContainerNumber())).toList();
+            if (!containers.isEmpty())
+                throw new ValidationException("Please assign container number to all the containers before generating the HBL.");
+        }
+
+        if(!Objects.isNull(shipmentDetails.getPackingList())) {
+            var packsList = shipmentDetails.getPackingList().stream().filter(x -> Objects.isNull(x.getContainerId())).toList();
+            if(!packsList.isEmpty()){
+                throw new ValidationException("Container Number is Mandatory for HBL Generation, please assign the container number for all the packages in the shipment.");
+            }
+        }
+
+
     }
 
     public void validateMblDetails(ShipmentDetails shipment, List<ModuleValidationFieldType> missingFields) {
