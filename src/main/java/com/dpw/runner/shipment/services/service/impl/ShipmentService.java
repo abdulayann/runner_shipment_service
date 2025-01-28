@@ -2030,9 +2030,9 @@ public class ShipmentService implements IShipmentService {
             }
         }
 
-        if (Boolean.TRUE.equals(shipmentSettingsDetails.getEventsRevampEnabled())) {
-            shipmentDetails.setEventsList(Optional.ofNullable(oldEntity).map(ShipmentDetails::getEventsList).orElse(new ArrayList<>()));
-        }
+        // Ignore events payload to avoid transaction issues bypassing shipmentDetailsDao.update(...);
+        // Update happens in after save from request body
+        shipmentDetails.setEventsList(null);
 
         populateUnlocCodeFuture.join();
         return syncConsole;
@@ -2627,6 +2627,13 @@ public class ShipmentService implements IShipmentService {
                     processNetworkTransferEntity(shipmentDetails.getTriangulationPartner(),
                             oldEntity != null ? oldEntity.getTriangulationPartner() : null, shipmentDetails,
                             Constants.DIRECTION_CTS);
+                } else if(shipmentDetails.getTriangulationPartnerList() == null) {
+                    List<Long> oldPartners = oldEntity != null ? commonUtils.getTriangulationPartnerList(oldEntity.getTriangulationPartnerList())
+                            : Collections.emptyList();
+                    Set<Long> oldTenantIds = new HashSet<>(oldPartners);
+                    oldTenantIds.forEach(oldTenantId -> {
+                        processNetworkTransferEntity(null, oldTenantId, shipmentDetails, Constants.DIRECTION_CTS);
+                    });
                 }
 
             } else {
@@ -2664,11 +2671,14 @@ public class ShipmentService implements IShipmentService {
 
             if(isEligibleForNetworkTransfer(shipmentDetails) && ObjectUtils.isNotEmpty(shipmentDetails.getReceivingBranch())){
 
-                if (isInvalidNetworkTransfer(shipmentDetails))
+                if (isInvalidNetworkTransfer(shipmentDetails)){
+                    commonErrorLogsDao.deleteShipmentErrorsLogs(shipmentDetails.getId());
                     return;
+                }
 
                 List<V1TenantSettingsResponse.FileTransferConfigurations> fileTransferConfigurations = quartzJobInfoService.getActiveFileTransferConfigurations(shipmentDetails.getTransportMode());
                 if (ObjectUtils.isEmpty(fileTransferConfigurations)) {
+                    commonErrorLogsDao.deleteShipmentErrorsLogs(shipmentDetails.getId());
                     return;
                 }
 
@@ -2735,8 +2745,8 @@ public class ShipmentService implements IShipmentService {
                 QuartzJobInfo quartzJobInfo = optionalQuartzJobInfo.orElse(null);
                 if(quartzJobInfo!=null && quartzJobInfo.getJobStatus()==JobState.ERROR
                         && TRANSPORT_MODE_AIR.equals(consolidationDetails.getTransportMode()) &&
-                        !Objects.equals(consolidationDetails.getConsolidationType(), CONSOLIDATION_TYPE_DRT) &&
-                        !Objects.equals(consolidationDetails.getConsolidationType(), SHIPMENT_TYPE_STD))
+                        !Objects.equals(shipmentDetails.getJobType(), SHIPMENT_TYPE_DRT) &&
+                        !Objects.equals(shipmentDetails.getJobType(), SHIPMENT_TYPE_STD))
                     consolidationService.triggerAutomaticTransfer(consolidationDetails, null, true);
             }
         }
@@ -3882,8 +3892,8 @@ public class ShipmentService implements IShipmentService {
             checkWayBillNumberCriteria(request);
             log.info(ShipmentConstants.SHIPMENT_LIST_CRITERIA_PREPARING, LoggerHelper.getRequestIdFromMDC());
             Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class, tableNames);
-//            Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
-            Page<ShipmentDetails> shipmentDetailsPage = this.findAllWithOutIncludeColumn(tuple.getLeft(), tuple.getRight());
+           Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
+          //  Page<ShipmentDetails> shipmentDetailsPage = this.findAllWithOutIncludeColumn(tuple.getLeft(), tuple.getRight());
 
             log.info(ShipmentConstants.SHIPMENT_LIST_RESPONSE_SUCCESS, LoggerHelper.getRequestIdFromMDC());
             if(!Boolean.TRUE.equals(request.getNotificationFlag())) {
@@ -4962,6 +4972,13 @@ public class ShipmentService implements IShipmentService {
             cloneShipmentDetails.setOceanDGStatus(null);
             cloneShipmentDetails.setCreatedBy(null);
             cloneShipmentDetails.setShipmentOrders(null);
+            cloneShipmentDetails.setIsReceivingBranchAdded(null);
+            cloneShipmentDetails.setIsTransferredToReceivingBranch(null);
+            cloneShipmentDetails.setIsNetworkFile(null);
+            cloneShipmentDetails.setIsReceivingBranchManually(null);
+            cloneShipmentDetails.setReceivingBranch(null);
+            cloneShipmentDetails.setTriangulationPartnerList(null);
+            cloneShipmentDetails.setTriangulationPartner(null);
             if(!Objects.isNull(cloneShipmentDetails.getPackingList()))
                 cloneShipmentDetails.getPackingList().forEach(e -> e.setId(null));
 
@@ -6288,6 +6305,8 @@ public class ShipmentService implements IShipmentService {
     private boolean isValidNte(ConsolidationDetails consolidationDetails) throws AuthenticationException {
         List<TriangulationPartner> triangulationPartners = consolidationDetails.getTriangulationPartnerList();
         Long currentTenant = TenantContext.getCurrentTenant().longValue();
+        if(Objects.equals(currentTenant, consolidationDetails.getTenantId()))
+            return false;
         if ((triangulationPartners == null
                 || triangulationPartners.stream()
                 .filter(Objects::nonNull)

@@ -5795,7 +5795,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder()
                 .isAutomaticTransferEnabled(true)
                 .build());
-        mockShipmentSettings();
         ConsolidationDetails consolidationDetails1 = jsonTestUtility.getCompleteConsolidation();
         consolidationDetails1.setReceivingBranch(1L);
         ConsolidationDetails consolidationDetails2 = testConsol;
