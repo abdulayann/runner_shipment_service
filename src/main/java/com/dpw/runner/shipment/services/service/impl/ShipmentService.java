@@ -4988,6 +4988,7 @@ public class ShipmentService implements IShipmentService {
             cloneShipmentDetails.getAdditionalDetails().setIsExportCustomClearanceCompleted(null);
             cloneShipmentDetails.getAdditionalDetails().setBlInstructionReceived(null);
             cloneShipmentDetails.getAdditionalDetails().setCargoOutForDelivery(null);
+            cloneShipmentDetails.getAdditionalDetails().setFcrNumber(0);
             cloneShipmentDetails.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));
             cloneShipmentDetails.setAutoUpdateWtVol(false);
             cloneShipmentDetails.setFileStatus(null);
