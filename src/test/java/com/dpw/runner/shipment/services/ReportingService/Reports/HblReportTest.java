@@ -72,6 +72,7 @@ import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.helper.impl.v1.V1MasterDataImpl;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
+import com.dpw.runner.shipment.services.service.impl.HblService;
 import com.dpw.runner.shipment.services.service.impl.ShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
@@ -155,6 +156,9 @@ class HblReportTest extends CommonMocks {
 
     @Mock
     private CustomKeyGenerator keyGenerator;
+
+    @Mock
+    private HblService hblService;
 
     @BeforeAll
     static void init() throws IOException {

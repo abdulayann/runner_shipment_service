@@ -242,6 +242,7 @@ import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
+import com.dpw.runner.shipment.services.service.impl.HblService;
 import com.dpw.runner.shipment.services.service.impl.ShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.StringUtility;
@@ -264,6 +265,9 @@ public class HblReport extends IReport {
     private IV1Service v1Service;
     @Autowired
     private ShipmentService shipmentService;
+    @Autowired
+    private HblService hblService;
+
     private V1TenantSettingsResponse tenantSettings;
 
     @Override
@@ -281,31 +285,44 @@ public class HblReport extends IReport {
     public void validatePrinting(Long shipmentId, String printType) {
         tenantSettings = getCurrentTenantSettings();
 
-        if (Boolean.TRUE.equals(tenantSettings.getIsModuleValidationEnabled())) {
-            List<ModuleValidationFieldType> missingFields = new ArrayList<>();
+        if (ReportConstants.ORIGINAL.equalsIgnoreCase(printType)) {
             ShipmentDetails shipment = getShipmentDetails(shipmentId);
+
             if (shipment == null) {
                 throw new ReportException("No shipment found with id: " + shipmentId);
             }
 
-            if (ReportConstants.ORIGINAL.equalsIgnoreCase(printType)
-                    && Constants.TRANSPORT_MODE_SEA.equalsIgnoreCase(shipment.getTransportMode())
+            if (Constants.TRANSPORT_MODE_SEA.equalsIgnoreCase(shipment.getTransportMode())
+                && Constants.DIRECTION_EXP.equalsIgnoreCase(shipment.getDirection())
+                && (Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipment.getShipmentType()))
+                && ObjectUtils.isNotEmpty(shipment.getJobType())
+                && !Constants.SHIPMENT_TYPE_DRT.equalsIgnoreCase(shipment.getJobType())) {
+                Hbl hblObject = getHbl(shipmentId);
+                shipmentService.validateHblContainerNumberCondition(shipment);
+                hblService.validateHblContainerNumberCondition(hblObject);
+            }
+
+            if (Boolean.TRUE.equals(tenantSettings.getIsModuleValidationEnabled())) {
+                List<ModuleValidationFieldType> missingFields = new ArrayList<>();
+
+                if (Constants.TRANSPORT_MODE_SEA.equalsIgnoreCase(shipment.getTransportMode())
                     && Constants.DIRECTION_EXP.equalsIgnoreCase(shipment.getDirection())
                     && (Constants.CARGO_TYPE_FCL.equalsIgnoreCase(shipment.getShipmentType())
                     || Constants.SHIPMENT_TYPE_LCL.equalsIgnoreCase(shipment.getShipmentType()))
                     && ObjectUtils.isNotEmpty(shipment.getJobType())
                     && !Constants.SHIPMENT_TYPE_DRT.equalsIgnoreCase(shipment.getJobType())) {
 
-                shipmentService.validateCarrierDetails(shipment, missingFields);
-                shipmentService.validateContainerDetails(shipment, missingFields);
+                    shipmentService.validateCarrierDetails(shipment, missingFields);
+                    shipmentService.validateContainerDetails(shipment, missingFields);
 
-            }
+                }
 
-            if (ObjectUtils.isNotEmpty(missingFields)) {
-                String missingFieldsDescription = missingFields.stream()
+                if (ObjectUtils.isNotEmpty(missingFields)) {
+                    String missingFieldsDescription = missingFields.stream()
                         .map(ModuleValidationFieldType::getDescription)
                         .collect(Collectors.joining(" | "));
-                throw new ReportException(missingFieldsDescription);
+                    throw new ReportException(missingFieldsDescription);
+                }
             }
         }
     }

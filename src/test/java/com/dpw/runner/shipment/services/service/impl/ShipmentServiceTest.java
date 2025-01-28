@@ -63,6 +63,8 @@ import com.dpw.runner.shipment.services.dto.patchrequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.billing.InvoicePostingValidationRequest;
+import com.dpw.runner.shipment.services.dto.request.hbl.HblCargoDto;
+import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
 import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
@@ -505,6 +507,34 @@ ShipmentServiceTest extends CommonMocks {
         assertNull(hblCheckResponse.getMessage());
 
         verify(shipmentDao).findByHblNumberAndExcludeShipmentId(hblNumber, shipmentId);
+    }
+
+    @Test
+    public void testContainersWithoutContainerNumber_ShouldThrowException() {
+        Containers containerWithoutNumber = new Containers();
+        containerWithoutNumber.setContainerNumber(null);
+
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        shipmentDetails1.setContainersList(List.of(containerWithoutNumber));
+
+        assertThrows(ValidationException.class, () ->
+                shipmentService.validateHblContainerNumberCondition(shipmentDetails1),
+            "Please assign container number to all the containers before generating the HBL."
+        );
+    }
+
+    @Test
+    public void testPackingListWithoutContainerId_ShouldThrowException() {
+        Packing packingWithoutContainerId = new Packing();
+        packingWithoutContainerId.setContainerId(null);
+
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        shipmentDetails1.setPackingList(List.of(packingWithoutContainerId));
+
+        assertThrows(ValidationException.class, () ->
+                shipmentService.validateHblContainerNumberCondition(shipmentDetails1),
+            "Container Number is Mandatory for HBL Generation, please assign the container number for all the packages in the shipment."
+        );
     }
 
     @Test
