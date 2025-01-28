@@ -75,7 +75,8 @@ public class PickupDeliveryDetailsDao implements IPickupDeliveryDetailsDao {
         }
     }
 
-    private List<PickupDeliveryDetails> findByShipmentId(Long shipmentId) {
+    @Override
+    public List<PickupDeliveryDetails> findByShipmentId(Long shipmentId) {
         return pickupDeliveryDetailsRepository.findByShipmentId(shipmentId);
     }
 
