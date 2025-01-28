@@ -2468,6 +2468,14 @@ public class ShipmentService implements IShipmentService {
             if(CommonUtils.listIsNullOrEmpty(shipmentDetails.getConsolidationList()) && Constants.TRANSPORT_MODE_AIR.equals(shipmentDetails.getTransportMode()) && Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster()))
                 syncMainLegRoute(shipmentDetails, oldEntity, routingsRequestList);
             List<Routings> updatedRoutings = routingsDao.updateEntityFromShipment(commonUtils.convertToEntityList(routingsRequestList, Routings.class, isCreate), id);
+            if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster())) {
+                for(Routings req: updatedRoutings) {
+                    if(shipmentDetails.getCarrierDetails().getFlightNumber() != null && req.getFlightNumber() == null)
+                        req.setFlightNumber(null);
+                    if(shipmentDetails.getCarrierDetails().getShippingLine() != null && req.getCarrier() == null)
+                        req.setCarrier(null);
+                }
+            }
             shipmentDetails.setRoutingsList(updatedRoutings);
         }
         log.info("shipment afterSave routingsDao.updateEntityFromShipment..... ");
