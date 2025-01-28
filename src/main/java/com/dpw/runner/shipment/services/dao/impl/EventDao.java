@@ -596,16 +596,16 @@ public class EventDao implements IEventDao {
 
 
     private Events updateUserFieldsInEvent(Events event) {
-        if (StringUtility.isNotEmpty(event.getUserName())) {
+        if (!StringUtility.isNotEmpty(event.getUserName())) {
             event.setUserName(Optional.ofNullable(UserContext.getUser()).map(UsersDto::getDisplayName).orElse(null));
         }
-        if (StringUtility.isNotEmpty(event.getUserEmail())) {
+        if (!StringUtility.isNotEmpty(event.getUserEmail())) {
             event.setUserEmail(Optional.ofNullable(UserContext.getUser()).map(UsersDto::getEmail).orElse(null));
         }
-        if (StringUtility.isNotEmpty(event.getBranch())) {
+        if (!StringUtility.isNotEmpty(event.getBranch())) {
             event.setBranch(Optional.ofNullable(UserContext.getUser()).map(UsersDto::getCode).orElse(null));
         }
-        if (StringUtility.isNotEmpty(event.getBranchName())) {
+        if (!StringUtility.isNotEmpty(event.getBranchName())) {
             event.setBranchName(Optional.ofNullable(UserContext.getUser()).map(UsersDto::getTenantDisplayName).orElse(null));
         }
 
@@ -632,7 +632,7 @@ public class EventDao implements IEventDao {
                 i.getShipmentNumber(),
                 i.getSource(),
                 i.getPlaceName()
-        ) , Function.identity()));
+        ) , Function.identity(), (existing, replacement) -> existing.getId() > replacement.getId() ? existing : replacement));
 
         List<Events> newEventList = new ArrayList<>();
         List<Events> filteredEvents = new ArrayList<>(requestList.stream().filter(e -> {

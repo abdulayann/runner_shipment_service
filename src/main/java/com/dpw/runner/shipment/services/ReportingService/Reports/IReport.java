@@ -44,9 +44,7 @@ import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.DigitGrouping;
 import com.dpw.runner.shipment.services.entity.enums.GroupingNumber;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
+import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.TranslationException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -351,11 +349,28 @@ public abstract class IReport {
         }
         // UnLocations Master-data
         List<String> unlocoRequests = this.createUnLocoRequestFromShipmentModel(shipment);
-        Map<String, UnlocationsResponse> unlocationsMap = masterDataUtils.getLocationData(new HashSet<>(unlocoRequests));
+        Map<String, UnlocationsResponse> unlocationsMap = new HashMap<>();
+        Map<String, EntityTransferUnLocations> entityTransferUnLocationsMap = masterDataUtils.getLocationDataFromCache(new HashSet<>(unlocoRequests), EntityTransferConstants.LOCATION_SERVICE_GUID);
+        for (Map.Entry<String, EntityTransferUnLocations> entry : entityTransferUnLocationsMap.entrySet()) {
+            String key = entry.getKey();
+            UnlocationsResponse value = jsonHelper.convertValue(entry.getValue(), UnlocationsResponse.class);
+            unlocationsMap.put(key, value);
+        }
         // Master lists Master-data
         List<MasterListRequest> masterListRequest = createMasterListsRequestFromShipment(shipment);
         masterListRequest.addAll(createMasterListsRequestFromUnLocoMap(unlocationsMap));
-        Map<Integer, Map<String, MasterData>> masterListsMap = fetchInBulkMasterList(MasterListRequestV2.builder().MasterListRequests(masterListRequest.stream().filter(Objects::nonNull).toList()).build());
+        Map<String, EntityTransferMasterLists> entityTransferMasterListsMap = masterDataUtils.fetchMasterListFromCache(MasterListRequestV2.builder().MasterListRequests(masterListRequest.stream().filter(Objects::nonNull).collect(Collectors.toList())).build());
+        Map<Integer, Map<String, MasterData>> masterListsMap = new HashMap<>();
+        for (Map.Entry<String, EntityTransferMasterLists> entry : entityTransferMasterListsMap.entrySet()) {
+            String key = entry.getKey();
+            String[] parts = key.split("#");
+            String itemType = parts[0];
+            String itemValue = parts[1];
+            MasterDataType masterDataType = MasterDataType.valueOf(itemType);
+            int masterDataKey = masterDataType.getId();
+            MasterData masterData = jsonHelper.convertValue(entry.getValue(), MasterData.class);
+            masterListsMap.computeIfAbsent(masterDataKey, k -> new HashMap<>()).put(itemValue, masterData);
+        }
         PartiesModel shipmentNotify = additionalDetails.getNotifyParty();
         if (shipment.getReferenceNumbersList() != null) {
             dictionary.put(AMS_NUMBER, shipment.getReferenceNumbersList().stream()
@@ -384,7 +399,17 @@ public abstract class IReport {
         dictionary.put(ReportConstants.MASTER_BILL,shipment.getMasterBill());
         dictionary.put(ReportConstants.HOUSE_BILL,shipment.getHouseBill());
         dictionary.put(SHIPMENT_ID, shipment.getShipmentId());
-        VesselsResponse vesselsResponse = getVesselsData(shipment.getCarrierDetails().getVessel());
+        String carrierVesselId = shipment.getCarrierDetails().getVessel();
+        Set<String> vesselIds = new HashSet<>();
+        vesselIds.add(carrierVesselId);
+        Map<String, EntityTransferVessels> entityTransferVesselsMap = masterDataUtils.getVesselDataFromCache(vesselIds);
+        Map<String, VesselsResponse> vesselsResponseMap = new HashMap<>();
+        for (Map.Entry<String, EntityTransferVessels> entry : entityTransferVesselsMap.entrySet()) {
+            String key = entry.getKey();
+            VesselsResponse value = jsonHelper.convertValue(entry.getValue(), VesselsResponse.class);
+            vesselsResponseMap.put(key, value);
+        }
+        VesselsResponse vesselsResponse = vesselsResponseMap.get(carrierVesselId);
         if(Objects.equals(shipment.getTransportMode(), AIR))
         {
             dictionary.put(VesselsNameFlightName, shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getShippingLine() : null);
@@ -490,18 +515,18 @@ public abstract class IReport {
         dictionary.put(DELIVERY_INSTRUCTIONS, shipment.getDeliveryDetails() != null ? shipment.getDeliveryDetails().getPickupDeliveryInstruction() : null);
         V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         String tsDateTimeFormat = v1TenantSettingsResponse.getDPWDateFormat();
-        dictionary.put(ReportConstants.ETA, ConvertToDPWDateFormat(shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getEta() : null, tsDateTimeFormat));
-        dictionary.put(ReportConstants.ETD, ConvertToDPWDateFormat(shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getEtd() : null, tsDateTimeFormat));
-        dictionary.put(ReportConstants.ATA, ConvertToDPWDateFormat(shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getAta() : null, tsDateTimeFormat));
-        dictionary.put(ReportConstants.ATD, ConvertToDPWDateFormat(shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getAtd() : null, tsDateTimeFormat));
+        dictionary.put(ReportConstants.ETA, ConvertToDPWDateFormat(shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getEta() : null, tsDateTimeFormat, v1TenantSettingsResponse));
+        dictionary.put(ReportConstants.ETD, ConvertToDPWDateFormat(shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getEtd() : null, tsDateTimeFormat, v1TenantSettingsResponse));
+        dictionary.put(ReportConstants.ATA, ConvertToDPWDateFormat(shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getAta() : null, tsDateTimeFormat, v1TenantSettingsResponse));
+        dictionary.put(ReportConstants.ATD, ConvertToDPWDateFormat(shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getAtd() : null, tsDateTimeFormat, v1TenantSettingsResponse));
         dictionary.put(ReportConstants.DATE_OF_DEPARTURE, dictionary.get(ReportConstants.ATD) == null ? dictionary.get(ReportConstants.ETD) : dictionary.get(ReportConstants.ATD));
-        dictionary.put(ReportConstants.SYSTEM_DATE, ConvertToDPWDateFormat(LocalDateTime.now(), tsDateTimeFormat));
-        dictionary.put(ReportConstants.ONBOARD_DATE, ConvertToDPWDateFormat(additionalDetails.getOnBoardDate(), tsDateTimeFormat));
+        dictionary.put(ReportConstants.SYSTEM_DATE, ConvertToDPWDateFormat(LocalDateTime.now(), tsDateTimeFormat, v1TenantSettingsResponse));
+        dictionary.put(ReportConstants.ONBOARD_DATE, ConvertToDPWDateFormat(additionalDetails.getOnBoardDate(), tsDateTimeFormat, v1TenantSettingsResponse));
         dictionary.put(ReportConstants.ESTIMATED_READY_FOR_PICKUP, pickup != null ? pickup.getEstimatedPickupOrDelivery() : null);
         String formatPattern = "dd/MMM/y";
         if(!CommonUtils.IsStringNullOrEmpty(v1TenantSettingsResponse.getDPWDateFormat()))
             formatPattern = v1TenantSettingsResponse.getDPWDateFormat();
-        dictionary.put(ReportConstants.SHIPMENT_CREATION_DATE, ConvertToDPWDateFormat(shipment.getShipmentCreatedOn(), tsDateTimeFormat));
+        dictionary.put(ReportConstants.SHIPMENT_CREATION_DATE, ConvertToDPWDateFormat(shipment.getShipmentCreatedOn(), tsDateTimeFormat, v1TenantSettingsResponse));
         dictionary.put(ReportConstants.DATE_OF_ISSUE, ConvertToDPWDateFormat(additionalDetails.getDateOfIssue(), formatPattern, true));
         dictionary.put(SHIPMENT_DETAIL_DATE_OF_ISSUE, ConvertToDPWDateFormat(additionalDetails.getDateOfIssue(), formatPattern, true));
         dictionary.put(SHIPMENT_DETAIL_DATE_OF_ISSUE_IN_CAPS, StringUtility.toUpperCase(ConvertToDPWDateFormat(additionalDetails.getDateOfIssue(), formatPattern, true)));
@@ -595,7 +620,7 @@ public abstract class IReport {
         dictionary.put(ReportConstants.DESTINATION, destination != null ? destination.getName() : null);
         dictionary.put(ReportConstants.DESTINATION_COUNTRY, destination != null ? destination.getCountry() : null);
 
-        dictionary.put(ReportConstants.PRINT_DATE, ConvertToDPWDateFormat(LocalDateTime.now(), tsDateTimeFormat));
+        dictionary.put(ReportConstants.PRINT_DATE, ConvertToDPWDateFormat(LocalDateTime.now(), tsDateTimeFormat, v1TenantSettingsResponse));
         if(destination != null) {
             dictionary.put(ReportConstants.DESTINATION_NAME_IN_CAPS, destination.getName().toUpperCase());
             String destinationCountry = masterListsMap.containsKey(MasterDataType.COUNTRIES.getId()) && masterListsMap.get(MasterDataType.COUNTRIES.getId()).containsKey(destination.getCountry()) ? masterListsMap.get(MasterDataType.COUNTRIES.getId()).get(destination.getCountry()).getItemDescription() : "";
@@ -643,13 +668,13 @@ public abstract class IReport {
                             getValueFromMap(consignerAddress,ZIP_POST_CODE));
 
                     consignerWoCont = ReportHelper.getOrgAddressWithoutPhoneEmail(
-                        getValueFromMap(consignerAddress, COMPANY_NAME),
-                        getValueFromMap(consignerAddress, ADDRESS1),
-                        getValueFromMap(consignerAddress, ADDRESS2),
-                        getValueFromMap(consignerAddress, CITY),
-                        getValueFromMap(consignerAddress, STATE),
-                        getValueFromMap(consignerAddress, ZIP_POST_CODE),
-                        getValueFromMap(consignerAddress, COUNTRY)
+                            getValueFromMap(consignerAddress, COMPANY_NAME),
+                            getValueFromMap(consignerAddress, ADDRESS1),
+                            getValueFromMap(consignerAddress, ADDRESS2),
+                            getValueFromMap(consignerAddress, CITY),
+                            getValueFromMap(consignerAddress, STATE),
+                            getValueFromMap(consignerAddress, ZIP_POST_CODE),
+                            getValueFromMap(consignerAddress, COUNTRY)
                     );
 
                     dictionary.put(ReportConstants.CONSIGNER_NAME, consignerAddress.get(COMPANY_NAME));
@@ -689,13 +714,13 @@ public abstract class IReport {
                             getValueFromMap(notifyAddress,ZIP_POST_CODE));
 
                     notifyWoCont = ReportHelper.getOrgAddressWithoutPhoneEmail(
-                        getValueFromMap(notifyAddress, COMPANY_NAME),
-                        getValueFromMap(notifyAddress, ADDRESS1),
-                        getValueFromMap(notifyAddress, ADDRESS2),
-                        getValueFromMap(notifyAddress, CITY),
-                        getValueFromMap(notifyAddress, STATE),
-                        getValueFromMap(notifyAddress, ZIP_POST_CODE),
-                        getValueFromMap(notifyAddress, COUNTRY)
+                            getValueFromMap(notifyAddress, COMPANY_NAME),
+                            getValueFromMap(notifyAddress, ADDRESS1),
+                            getValueFromMap(notifyAddress, ADDRESS2),
+                            getValueFromMap(notifyAddress, CITY),
+                            getValueFromMap(notifyAddress, STATE),
+                            getValueFromMap(notifyAddress, ZIP_POST_CODE),
+                            getValueFromMap(notifyAddress, COUNTRY)
                     );
 
                     dictionary.put(ReportConstants.NOTIFY_PARTY_NAME,getValueFromMap(notifyAddress, COMPANY_NAME));
@@ -727,9 +752,9 @@ public abstract class IReport {
                             getValueFromMap(clientAddress, ZIP_POST_CODE));
 
                     clientWoCont = ReportHelper.getOrgAddressWithoutPhoneEmail(getValueFromMap(clientAddress, COMPANY_NAME), getValueFromMap(clientAddress, ADDRESS1),
-                        getValueFromMap(clientAddress, ADDRESS2),
-                        getValueFromMap(clientAddress, CITY), getValueFromMap(clientAddress, STATE), getValueFromMap(clientAddress, ZIP_POST_CODE),
-                        getValueFromMap(clientAddress, COUNTRY));
+                            getValueFromMap(clientAddress, ADDRESS2),
+                            getValueFromMap(clientAddress, CITY), getValueFromMap(clientAddress, STATE), getValueFromMap(clientAddress, ZIP_POST_CODE),
+                            getValueFromMap(clientAddress, COUNTRY));
 
                     dictionary.put(ReportConstants.CLIENT_NAME, getValueFromMap(clientAddress, COMPANY_NAME));
                     dictionary.put(ReportConstants.CLIENT_ADDRESS_1, getValueFromMap(clientAddress, ADDRESS1));
@@ -761,10 +786,10 @@ public abstract class IReport {
             if(notifyParty1 != null){
                 Map<String, Object> addressData = notifyParty1.getAddressData();
                 List<String> notifyPartyAddress = ReportHelper.getOrgAddressWithPhoneEmail(StringUtility.convertToString(addressData.get(COMPANY_NAME)), StringUtility.convertToString(addressData.get(ADDRESS1)),
-                    StringUtility.convertToString(addressData.get(ADDRESS2)),
-                    ReportHelper.getCityCountry(StringUtility.convertToString(addressData.get(CITY)), StringUtility.convertToString(addressData.get(COUNTRY))),
-                    null, StringUtility.convertToString(addressData.get(CONTACT_PHONE)),
-                    StringUtility.convertToString(addressData.get(ZIP_POST_CODE))
+                        StringUtility.convertToString(addressData.get(ADDRESS2)),
+                        ReportHelper.getCityCountry(StringUtility.convertToString(addressData.get(CITY)), StringUtility.convertToString(addressData.get(COUNTRY))),
+                        null, StringUtility.convertToString(addressData.get(CONTACT_PHONE)),
+                        StringUtility.convertToString(addressData.get(ZIP_POST_CODE))
                 );
                 dictionary.put(SHIPMENT_NOTIFY_PARTY, notifyPartyAddress);
             }
@@ -1164,13 +1189,13 @@ public abstract class IReport {
                         getValueFromMap(consigneeAddress,ZIP_POST_CODE));
 
                 consigneeWoCont = ReportHelper.getOrgAddressWithoutPhoneEmail(
-                    getValueFromMap(consigneeAddress, COMPANY_NAME),
-                    getValueFromMap(consigneeAddress, ADDRESS1),
-                    getValueFromMap(consigneeAddress, ADDRESS2),
-                    getValueFromMap(consigneeAddress, CITY),
-                    getValueFromMap(consigneeAddress, STATE),
-                    getValueFromMap(consigneeAddress, ZIP_POST_CODE),
-                    getValueFromMap(consigneeAddress, COUNTRY)
+                        getValueFromMap(consigneeAddress, COMPANY_NAME),
+                        getValueFromMap(consigneeAddress, ADDRESS1),
+                        getValueFromMap(consigneeAddress, ADDRESS2),
+                        getValueFromMap(consigneeAddress, CITY),
+                        getValueFromMap(consigneeAddress, STATE),
+                        getValueFromMap(consigneeAddress, ZIP_POST_CODE),
+                        getValueFromMap(consigneeAddress, COUNTRY)
                 );
 
                 dictionary.put(CONSIGNEE_ADD_WITHOUT_CONTACT, consigneeWoCont);
@@ -1604,8 +1629,8 @@ public abstract class IReport {
         if (consolidation.getReceivingAgent() != null && consolidation.getIsReceivingAgentFreeTextAddress() != null && consolidation.getIsReceivingAgentFreeTextAddress())
         {
             Map importAgentAddressData = consolidation.getReceivingAgent().getAddressData();
-                if (importAgentAddressData != null && importAgentAddressData.containsKey(PartiesConstants.RAW_DATA))
-                    importAgentFreeTextAddress = ReportHelper.getAddressList(StringUtility.convertToString(importAgentAddressData.get(PartiesConstants.RAW_DATA)));
+            if (importAgentAddressData != null && importAgentAddressData.containsKey(PartiesConstants.RAW_DATA))
+                importAgentFreeTextAddress = ReportHelper.getAddressList(StringUtility.convertToString(importAgentAddressData.get(PartiesConstants.RAW_DATA)));
         }
         else  {
             importAgentFreeTextAddress = importAgentAddress;
@@ -1807,7 +1832,7 @@ public abstract class IReport {
         List<MasterListRequest> masterListRequest = createMasterListsRequestFromHbl(hbl);
         Map<Integer, Map<String, MasterData>> masterListsMap = fetchInBulkMasterList(MasterListRequestV2.builder().MasterListRequests(masterListRequest.stream().filter(Objects::nonNull).toList()).build());
         dictionary.put(ReportConstants.BL_NOTIFY_PARTY, notify);
-            dictionary.put(ReportConstants.BL_NOTIFY_PARTY_CAPS, notify.stream().map(String::toUpperCase).toList());
+        dictionary.put(ReportConstants.BL_NOTIFY_PARTY_CAPS, notify.stream().map(String::toUpperCase).toList());
         HblDataDto hblDataDto = hbl.getHblData();
         List<String> consignor;
         List<String> consignee;
@@ -1833,7 +1858,7 @@ public abstract class IReport {
 
         V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         String tsDateTimeFormat = v1TenantSettingsResponse.getDPWDateFormat();
-        dictionary.put(ReportConstants.PRINT_DATE, ConvertToDPWDateFormat(LocalDateTime.now(), tsDateTimeFormat));
+        dictionary.put(ReportConstants.PRINT_DATE, ConvertToDPWDateFormat(LocalDateTime.now(), tsDateTimeFormat, v1TenantSettingsResponse));
 
         if(StringUtility.isNotEmpty(hblDataDto.getCargoDescription())) {
             dictionary.put(ReportConstants.DO_MESSAGE, hblDataDto.getCargoDescription());
@@ -2145,9 +2170,8 @@ public abstract class IReport {
         return customDecimalFormat.format(value);
     }
 
-    public DateTimeFormatter GetDPWDateFormatOrDefault()
+    public DateTimeFormatter GetDPWDateFormatOrDefault(V1TenantSettingsResponse v1TenantSettingsResponse)
     {
-        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         if(!CommonUtils.IsStringNullOrEmpty(v1TenantSettingsResponse.getDPWDateFormat()))
             return DateTimeFormatter.ofPattern(v1TenantSettingsResponse.getDPWDateFormat());
         return DateTimeFormatter.ofPattern(GetDPWDateFormatOrDefaultString());
@@ -2174,9 +2198,11 @@ public abstract class IReport {
     }
 
     public String ConvertToDPWDateFormat(LocalDateTime date) {
-        return ConvertToDPWDateFormat(date, null);
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
+        return ConvertToDPWDateFormat(date, null, v1TenantSettingsResponse);
     }
-    public String ConvertToDPWDateFormat(LocalDateTime date, String tsDatetimeFormat)
+
+    public String ConvertToDPWDateFormat(LocalDateTime date, String tsDatetimeFormat, V1TenantSettingsResponse v1TenantSettingsResponse)
     {
         String strDate = "";
         if (date != null)
@@ -2184,7 +2210,7 @@ public abstract class IReport {
             if(!IsStringNullOrEmpty(tsDatetimeFormat))
                 strDate = date.format(DateTimeFormatter.ofPattern(tsDatetimeFormat));
             else
-                strDate = date.format(GetDPWDateFormatOrDefault());
+                strDate = date.format(GetDPWDateFormatOrDefault(v1TenantSettingsResponse));
         }
         return strDate;
     }
@@ -2212,6 +2238,7 @@ public abstract class IReport {
     {
         String strDate = "";
         LocalDateTime formatedDate;
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         if (date != null)
         {
             formatedDate = date;
@@ -2221,7 +2248,7 @@ public abstract class IReport {
             if(!IsStringNullOrEmpty(tsDatetimeFormat))
                 strDate = formatedDate.format(DateTimeFormatter.ofPattern(tsDatetimeFormat));
             else
-                strDate = formatedDate.format(GetDPWDateFormatOrDefault());
+                strDate = formatedDate.format(GetDPWDateFormatOrDefault(v1TenantSettingsResponse));
         }
         return strDate;
     }
@@ -2421,7 +2448,16 @@ public abstract class IReport {
     }
 
     public String getPortDetails(String UNLocCode) {
-        UnlocationsResponse unlocationsResponse = getUNLocRow(UNLocCode);
+        Map<String, UnlocationsResponse> unlocationsMap = new HashMap<>();
+        Set<String> locCodes = new HashSet<>();
+        locCodes.add(UNLocCode);
+        Map<String, EntityTransferUnLocations> entityTransferUnLocationsMap = masterDataUtils.getLocationDataFromCache(locCodes, EntityTransferConstants.LOCATION_SERVICE_GUID);
+        for (Map.Entry<String, EntityTransferUnLocations> entry : entityTransferUnLocationsMap.entrySet()) {
+            String key = entry.getKey();
+            UnlocationsResponse value = jsonHelper.convertValue(entry.getValue(), UnlocationsResponse.class);
+            unlocationsMap.put(key, value);
+        }
+        UnlocationsResponse unlocationsResponse = unlocationsMap.get(UNLocCode);
         if(unlocationsResponse != null) {
             return combineStringsWithComma(unlocationsResponse.getName(), unlocationsResponse.getCountry());
         }
@@ -2766,6 +2802,7 @@ public abstract class IReport {
         return dataMap;
     }
 
+
     public void populateHasContainerFields(ShipmentModel shipmentModel, Map<String, Object> dictionary, V1TenantSettingsResponse v1TenantSettingsResponse) {
         if ((!dictionary.containsKey(SHIPMENT_CONTAINERS) || dictionary.get(SHIPMENT_CONTAINERS) == null) && shipmentModel.getContainersList() != null && shipmentModel.getContainersList().size() > 0) {
             dictionary.put(ReportConstants.SHIPMENT_PACKING_HAS_CONTAINERS, true);
@@ -2898,6 +2935,10 @@ public abstract class IReport {
             dict.put(IsDG, false);
             dict.put(PACKS_MARKS_NUMBERS, pack.getMarksnNums());
             dict.put(PACKS_GOODS_DESCRIPTION, pack.getGoodsDescription());
+            if(Objects.isNull(pack.getGoodsDescription())) {
+                dict.put(PACKS_GOODS_DESCRIPTION, "");
+                dict.put(DESCRIPTION, "");
+            }
             if(pack.getHazardous() != null && pack.getHazardous().equals(true)){
                 var dgSubstanceRow = masterDataUtils.fetchDgSubstanceRow(pack.getDGSubstanceId());
                 dict.put(DG_SUBSTANCE, dgSubstanceRow.ProperShippingName);
@@ -3087,7 +3128,7 @@ public abstract class IReport {
         } catch (Exception ex) { }
         Map<String, AddressTranslationListResponse.AddressTranslationResponse> orgVsAddressTranslationMap = new HashMap<>();
         if(!Objects.isNull(response) && !Objects.isNull(response.getAddressTranslationList()) && !response.getAddressTranslationList().isEmpty()){
-           orgVsAddressTranslationMap =
+            orgVsAddressTranslationMap =
                     response.getAddressTranslationList().stream().collect(Collectors.toMap(obj -> obj.getOrgCode() + "_" + obj.getAddressCode(), obj -> obj));
         }
         if(!Objects.isNull(shipmentDetails.getClient()) && !Strings.isNullOrEmpty(shipmentDetails.getClient().getOrgCode())){
@@ -3427,7 +3468,7 @@ public abstract class IReport {
         Parties partiesModelSendingAgent = consolidationModel.getSendingAgent() != null ? modelMapper.map(consolidationModel.getSendingAgent(), Parties.class) : null;
 
         List<Parties> parties = Arrays.asList(
-            partiesModelSendingAgent
+                partiesModelSendingAgent
         );
 
         OrgAddressResponse orgAddressResponse = v1ServiceUtil.fetchOrgInfoFromV1(parties);
@@ -3471,7 +3512,7 @@ public abstract class IReport {
 
     private String getDate(Map<String, Object> agent) {
         V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
-        return ConvertToDPWDateFormat(LocalDateTime.parse(StringUtility.convertToString(agent.get(KCRA_EXPIRY))), v1TenantSettingsResponse.getDPWDateFormat());
+        return ConvertToDPWDateFormat(LocalDateTime.parse(StringUtility.convertToString(agent.get(KCRA_EXPIRY))), v1TenantSettingsResponse.getDPWDateFormat(), v1TenantSettingsResponse);
     }
 
     private void processAgent(Map<String, Object> agent, Map<String, Object> dictionary, String type, String agentType) {
@@ -3578,14 +3619,14 @@ public abstract class IReport {
     public void validateAirDGCheckConsolidations(ConsolidationModel consolidationModel) {
         if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getAirDGFlag()) &&
                 Boolean.TRUE.equals(consolidationModel.getHazardous()) && consolidationModel.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && !isAirDgUser()) {
-                throw new ValidationException("You do not have permission to print the freight documents.");
+            throw new ValidationException("You do not have permission to print the freight documents.");
         }
     }
 
     public void validateAirDGCheckShipments(ShipmentModel shipmentModel) {
         if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getAirDGFlag()) &&
                 Boolean.TRUE.equals(shipmentModel.getContainsHazardous()) && shipmentModel.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && !isAirDgUser()) {
-                throw new ValidationException("You do not have permission to print the freight documents.");
+            throw new ValidationException("You do not have permission to print the freight documents.");
         }
     }
 

@@ -114,7 +114,8 @@ public class DeliveryOrderReport extends IReport{
         DeliveryOrderModel deliveryOrderModel = (DeliveryOrderModel) documentModel;
         List<String> orgWithoutTranslation = new ArrayList<>();
         List<String> chargeTypesWithoutTranslation = new ArrayList<>();
-        String json = jsonHelper.convertToJsonWithDateTimeFormatter(deliveryOrderModel.shipmentDetails, GetDPWDateFormatOrDefault());
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
+        String json = jsonHelper.convertToJsonWithDateTimeFormatter(deliveryOrderModel.shipmentDetails, GetDPWDateFormatOrDefault(v1TenantSettingsResponse));
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
         deliveryOrderModel.shipmentDetails.setTransportInstructionId(deliveryOrderModel.getTransportInstructionId());
         populateShipmentFields(deliveryOrderModel.shipmentDetails, dictionary);
@@ -130,7 +131,6 @@ public class DeliveryOrderReport extends IReport{
         if(deliveryOrderModel.shipmentDetails.getAdditionalDetails() != null) {
             dictionary.put(NOTIFY_PARTY, ReportHelper.getOrgAddressDetails(deliveryOrderModel.shipmentDetails.getAdditionalDetails().getNotifyParty()));
         }
-        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         dictionary.put(ReportConstants.WEIGHT, ConvertToWeightNumberFormat(deliveryOrderModel.shipmentDetails.getWeight(), v1TenantSettingsResponse));
         dictionary.put(ReportConstants.VOLUME, ConvertToVolumeNumberFormat(deliveryOrderModel.shipmentDetails.getVolume(), v1TenantSettingsResponse));
         dictionary.put(ReportConstants.CHARGEABLE, ConvertToWeightNumberFormat(deliveryOrderModel.shipmentDetails.getChargable(), v1TenantSettingsResponse));

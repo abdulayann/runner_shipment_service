@@ -15,10 +15,7 @@ import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
-import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
-import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
-import com.dpw.runner.shipment.services.dto.request.PackingRequest;
-import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
@@ -2153,6 +2150,28 @@ public class CommonUtils {
             tenantIds.addAll(triangulationPartners);
         }
         return tenantIds.stream().toList();
+    }
+
+    public Parties removeIdFromParty(Parties parties) {
+        if(parties == null || IsStringNullOrEmpty(parties.getOrgId()))
+            return null;
+        PartiesRequest partiesRequest = jsonHelper.convertValue(parties, PartiesRequest.class);
+        partiesRequest.setId(null);
+        return jsonHelper.convertValue(partiesRequest, Parties.class);
+    }
+
+    public static boolean checkSameParties(Parties obj1, Parties obj2) {
+        if (obj1 == null && obj2 == null) return true;
+        if (obj1 == null || obj2 == null) return false;
+
+        return Objects.equals(obj1.getOrgId(), obj2.getOrgId()) &&
+                Objects.equals(obj1.getAddressId(), obj2.getAddressId());
+    }
+
+    public static boolean checkPartyNotNull(Parties party) {
+        if (party == null) return false;
+        else if (party.getOrgId() == null) return false;
+        else return !IsStringNullOrEmpty(party.getOrgId());
     }
 
 }

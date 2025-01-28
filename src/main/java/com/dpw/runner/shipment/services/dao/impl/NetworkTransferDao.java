@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
@@ -95,6 +96,7 @@ public class NetworkTransferDao implements INetworkTransferDao {
                             .prevData(networkTransferEntity)
                             .parent(entityType)
                             .parentId(networkTransferEntity.getEntityId())
+                            .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                             .operation(DBOperationType.DELETE.name()).build()
             );
         } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
@@ -106,6 +108,11 @@ public class NetworkTransferDao implements INetworkTransferDao {
     @Override
     public Optional<NetworkTransfer> findByTenantAndEntity(Integer tenantId, Long entityId, String entityType) {
         return networkTransferRepository.findByTenantAndEntity(tenantId, entityId, entityType);
+    }
+
+    @Override
+    public Optional<NetworkTransfer> findByTenantAndEntityAndJobType(Integer tenantId, Long entityId, String entityType, String jobType) {
+        return networkTransferRepository.findByTenantAndEntityAndJobType(tenantId, entityId, entityType, jobType);
     }
 
     @Override
