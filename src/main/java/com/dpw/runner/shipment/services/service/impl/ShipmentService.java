@@ -1832,7 +1832,7 @@ public class ShipmentService implements IShipmentService {
         List<ConsolidationDetailsRequest> consolidationDetailsRequests = shipmentRequest.getConsolidationList();
         List<Routings> mainCarriageRoutings = shipmentDetails.getRoutingsList().stream().filter(i -> RoutingCarriage.MAIN_CARRIAGE.equals(i.getCarriage())).toList();
         boolean isRouteMasterEnabled = Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster());
-        if (isRouteMasterEnabled && shouldSetPorts(shipmentRequest)) {
+        if (isRouteMasterEnabled && mainCarriageRoutings != null && !mainCarriageRoutings.isEmpty() && shouldSetPorts(shipmentRequest)) {
             shipmentDetails.getCarrierDetails().setOriginPort(mainCarriageRoutings.get(0).getPol());
             shipmentDetails.getCarrierDetails().setDestinationPort(mainCarriageRoutings.get(mainCarriageRoutings.size() - 1).getPod());
         }
@@ -2029,10 +2029,10 @@ public class ShipmentService implements IShipmentService {
     }
 
     private boolean shouldSetPorts(ShipmentRequest shipmentRequest) {
-        return (shipmentRequest.getShipmentType().equals("HSE") && Boolean.FALSE.equals(shipmentRequest.getB2b())) ||
-                shipmentRequest.getShipmentType().equals("SCN") ||
-                shipmentRequest.getShipmentType().equals("BCN") ||
-                shipmentRequest.getShipmentType().equals("DRT") ||
+        return (shipmentRequest.getShipmentType().equals(SHIPMENT_TYPE_HSE) && Boolean.FALSE.equals(shipmentRequest.getB2b())) ||
+                shipmentRequest.getShipmentType().equals(SHIPMENT_TYPE_SCN) ||
+                shipmentRequest.getShipmentType().equals(SHIPMENT_TYPE_BCN) ||
+                shipmentRequest.getShipmentType().equals(SHIPMENT_TYPE_DRT) ||
                 Boolean.TRUE.equals(shipmentRequest.getB2b());
     }
 
