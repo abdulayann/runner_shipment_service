@@ -1933,7 +1933,7 @@ public class ShipmentService implements IShipmentService {
 
                 // Check if the specific implication (CONCR) is already present for the given shipment ID.
                 // If true, throw a ValidationException to prevent further processing.
-                if (Boolean.TRUE.equals(dpsEventService.isImplicationPresent(List.of(shipmentDetails.getId()), DpsConstants.CONCR))) {
+                if (Objects.nonNull(shipmentDetails.getId()) && Boolean.TRUE.equals(dpsEventService.isImplicationPresent(List.of(shipmentDetails.getId()), DpsConstants.CONCR))) {
                     throw new ValidationException(DpsConstants.DPS_ERROR_1);
                 }
 
