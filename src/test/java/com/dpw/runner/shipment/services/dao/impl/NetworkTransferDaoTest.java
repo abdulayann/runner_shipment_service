@@ -172,4 +172,10 @@ class NetworkTransferDaoTest {
         verify(networkTransferRepository, times(1)).getInterConsoleNTList(anyList(), anyString());
     }
 
+    @Test
+    void deleteByIdsAndLog(){
+        networkTransferDao.deleteByIdsAndLog(anyList());
+        verify(networkTransferRepository, times(1)).deleteAllById(anyList());
+    }
+
 }
