@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dto.request.awb.OtherPartyInfo;
 import lombok.Data;
 
 import java.util.Map;
@@ -21,6 +22,7 @@ public class AwbShipmentInfoResponse implements IRunnerResponse {
     private String shipperReferenceNumber;
     private String shipperContactName;
     private String shipperTaxRegistrationNumber;
+    private OtherPartyInfo shipperPartyInfo;
     private String consigneeName;
     private String consigneeAddress;
     private String consigneeAddress2;
@@ -33,6 +35,7 @@ public class AwbShipmentInfoResponse implements IRunnerResponse {
     private String consigneeReferenceNumber;
     private String consigneeContactName;
     private String consigneeTaxRegistrationNumber;
+    private OtherPartyInfo consigneePartyInfo;
     private String issuingAgentName;
     private String issuingAgentAddress;
     private String issuingAgentAddress2;
@@ -44,6 +47,7 @@ public class AwbShipmentInfoResponse implements IRunnerResponse {
     private String issuingAgentPhone;
     private String issuingAgentContactName;
     private String issuingAgentTaxRegistrationNumber;
+    private OtherPartyInfo issuingAgentPartyInfo;
     private String iataCode;
     private String noOfCopies;
     private String status;

@@ -1,6 +1,9 @@
 package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.commons.constants.*;
+import com.dpw.runner.shipment.services.dto.request.awb.AirMessagingAdditionalFields;
+import com.dpw.runner.shipment.services.dto.request.awb.AwbNotifyPartyInfo;
+import com.dpw.runner.shipment.services.dto.request.awb.OtherPartyInfo;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.kafka.dto.AirMessagingEventDto;
@@ -408,6 +411,42 @@ public class AwbUtility {
             awbResponse.getMeta().setSchCodes(sphCodeMap);
         }
     }
+
+    private void populateOtherPartyInfoList(AwbAirMessagingResponse awbResponse) {
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+        if (!Boolean.TRUE.equals(shipmentSettingsDetails.getIsAwbRevampEnabled()) || awbResponse == null) {
+            return;
+        }
+
+        if (awbResponse.getAirMessagingAdditionalFields() == null) {
+            awbResponse.setAirMessagingAdditionalFields(AirMessagingAdditionalFields.builder().otherPartyInfo(new ArrayList<>()).build());
+        }
+
+        List<OtherPartyInfo> otherPartyInfoList = awbResponse.getAirMessagingAdditionalFields().getOtherPartyInfo();
+        if (otherPartyInfoList == null) {
+            otherPartyInfoList = new ArrayList<>();
+            awbResponse.getAirMessagingAdditionalFields().setOtherPartyInfo(otherPartyInfoList);
+        }
+
+        addOtherPartyInfo(awbResponse.getAwbShipmentInfo() != null ? awbResponse.getAwbShipmentInfo().getShipperPartyInfo() : null, OtherPartyType.SHIPPER, otherPartyInfoList);
+        addOtherPartyInfo(awbResponse.getAwbShipmentInfo() != null ? awbResponse.getAwbShipmentInfo().getConsigneePartyInfo() : null, OtherPartyType.CONSIGNEE, otherPartyInfoList);
+        addOtherPartyInfo(awbResponse.getAwbShipmentInfo() != null ? awbResponse.getAwbShipmentInfo().getIssuingAgentPartyInfo() : null, OtherPartyType.ISSUING_AGENT, otherPartyInfoList);
+
+        List<AwbNotifyPartyInfo> notifyPartyInfoList = awbResponse.getAwbNotifyPartyInfo();
+        if (notifyPartyInfoList != null && !notifyPartyInfoList.isEmpty()) {
+            addOtherPartyInfo(notifyPartyInfoList.get(0).getOtherPartyInfo(), OtherPartyType.NOTIFY, otherPartyInfoList);
+        }
+    }
+
+    private void addOtherPartyInfo(OtherPartyInfo partyInfo, OtherPartyType partyType, List<OtherPartyInfo> otherPartyInfoList) {
+        if (partyInfo == null) {
+            return;
+        }
+        partyInfo.setParty(partyType);
+        otherPartyInfoList.add(partyInfo);
+    }
+
+
     private void populateEnums(AwbAirMessagingResponse awbResponse) {
         Map<String, String> chargeDue = Arrays.stream(ChargesDue.values()).collect(Collectors.toMap(e -> String.valueOf(e.getId()), ChargesDue::getDescription));
         Map<String, String> chargeBasis = Arrays.stream(ChargeBasis.values()).collect(Collectors.toMap(e -> String.valueOf(e.getId()), ChargeBasis::getDescription));
@@ -466,6 +505,7 @@ public class AwbUtility {
         awbResponse.getMeta().setVolumeDecimalPlaces(Objects.isNull(v1TenantSettingsResponse.getVolumeDecimalPlace()) ? 3 : v1TenantSettingsResponse.getVolumeDecimalPlace());
         // Populate Special handling codes master data
         this.populateMasterDataMap(awbResponse, awb);
+        this.populateOtherPartyInfoList(awbResponse);
 
         List<Parties> orgLists = new ArrayList<>();
         Parties issuingAgent = null;
