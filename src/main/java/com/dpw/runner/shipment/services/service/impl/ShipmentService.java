@@ -2601,10 +2601,6 @@ public class ShipmentService implements IShipmentService {
 
     private void processNetworkTransferEntity(Long tenantId, Long oldTenantId, ShipmentDetails shipmentDetails, String jobType) {
         try{
-            System.out.println(tenantId);
-            System.out.println(oldTenantId);
-            System.out.println(shipmentDetails);
-            System.out.println(jobType);
             networkTransferService.processNetworkTransferEntity(tenantId, oldTenantId, Constants.SHIPMENT, shipmentDetails,
                     null, jobType, null, false);
         } catch (Exception ex) {
@@ -2615,7 +2611,7 @@ public class ShipmentService implements IShipmentService {
     public void createOrUpdateNetworkTransferEntity(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
         try{
             processInterBranchEntityCase(shipmentDetails, oldEntity);
-            if (isInterBranchConsole(shipmentDetails))
+            if (isInterBranchConsole(shipmentDetails) || oldEntityHasInterBranchConsole(oldEntity))
                 return;
             // Check if the shipment is eligible for network transfer
             if (isEligibleForNetworkTransfer(shipmentDetails)) {
@@ -2909,6 +2905,7 @@ public class ShipmentService implements IShipmentService {
 
     private void processReceivingBranchChanges(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
         ConsolidationDetails consolidationDetails = shipmentDetails.getConsolidationList().get(0);
+        // check whether it can be null or not
         List<Long> shipmentIdsList = shipmentDetails.getConsolidationList().get(0).getShipmentsList().stream()
                 .map(ShipmentDetails::getId).toList();
         Map<Long, NetworkTransfer> shipmentNetworkTransferMap = networkTransferDao.getInterConsoleNTList(shipmentIdsList, SHIPMENT).stream()
@@ -2941,7 +2938,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     private boolean shouldDeleteOldTransfer(ShipmentDetails oldEntity, NetworkTransfer existingNTE) {
-        return oldEntity != null && oldEntity.getReceivingBranch() != null &&
+        return oldEntity != null && oldEntity.getReceivingBranch() != null && existingNTE!=null &&
                 Boolean.TRUE.equals(existingNTE.getIsInterBranchEntity());
     }
 
@@ -4229,14 +4226,10 @@ public class ShipmentService implements IShipmentService {
 
             List<TriangulationPartner> triangulationPartners = shipmentDetails.get().getTriangulationPartnerList();
             Long currentTenant = TenantContext.getCurrentTenant().longValue();
-            boolean allowedToView = false;
             ConsolidationDetails consolidationDetails = null;
             if (!CommonUtils.listIsNullOrEmpty(shipmentDetails.get().getConsolidationList())) {
                 consolidationDetails = shipmentDetails.get().getConsolidationList().get(0);
             }
-//            if (consolidationDetails != null) {
-//                allowedToView = this.isValidNte(consolidationDetails);
-//            }
             if (isNotAllowedToViewShipment(triangulationPartners, shipmentDetails.get(), currentTenant, consolidationDetails)) {
                 throw new AuthenticationException(Constants.NOT_ALLOWED_TO_VIEW_SHIPMENT_FOR_NTE);
             }

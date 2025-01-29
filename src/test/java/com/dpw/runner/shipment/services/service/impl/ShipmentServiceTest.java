@@ -9908,11 +9908,7 @@ ShipmentServiceTest extends CommonMocks {
     }
 
     @Test
-    void testCreateOrUpdateNetworkTransferEntity_EligibleForNetworkTransfer_Interconsole() {
-        TriangulationPartner triangulationPartner = TriangulationPartner.builder().triangulationPartner(1L).build();
-        TriangulationPartner triangulationPartner1 = TriangulationPartner.builder().triangulationPartner(2L).build();
-        TriangulationPartner triangulationPartner2 = TriangulationPartner.builder().triangulationPartner(3L).build();
-        TriangulationPartner triangulationPartner3 = TriangulationPartner.builder().triangulationPartner(4L).build();
+    void testCreateOrUpdateNetworkTransferEntity_EligibleForNetworkTransfer_InterConsole() {
         // Arrange
         ShipmentDetails newShipmentDetails = new ShipmentDetails();
         newShipmentDetails.setReceivingBranch(1L);
@@ -9920,7 +9916,6 @@ ShipmentServiceTest extends CommonMocks {
         newShipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
         newShipmentDetails.setJobType(SHIPMENT_TYPE_STD);
         newShipmentDetails.setDirection(DIRECTION_EXP);
-        newShipmentDetails.setTriangulationPartnerList(List.of(triangulationPartner, triangulationPartner1, triangulationPartner2));
         ConsolidationDetails consolidationDetails1 = testConsol;
         consolidationDetails1.setInterBranchConsole(true);
         consolidationDetails1.setShipmentsList(Collections.singletonList(newShipmentDetails));
@@ -9928,13 +9923,119 @@ ShipmentServiceTest extends CommonMocks {
 
         ShipmentDetails oldEntity = new ShipmentDetails();
         oldEntity.setReceivingBranch(1L);
-        oldEntity.setTriangulationPartnerList(List.of(triangulationPartner2, triangulationPartner3));
 
         // Act
         shipmentService.createOrUpdateNetworkTransferEntity(newShipmentDetails, oldEntity);
 
         // Verify old tenant IDs processing for removal
         verify(networkTransferService, times(1)).processNetworkTransferEntity(eq(1L), isNull(), eq(Constants.SHIPMENT), eq(newShipmentDetails), isNull(), eq(IMP), isNull(), eq(true));
+    }
+
+    @Test
+    void testCreateOrUpdateNetworkTransferEntity_EligibleForNetworkTransfer_OldInterConsole() {
+        // Arrange
+        ShipmentDetails newShipmentDetails = new ShipmentDetails();
+        newShipmentDetails.setReceivingBranch(1L);
+        newShipmentDetails.setDirection("Inbound");
+        newShipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        newShipmentDetails.setJobType(SHIPMENT_TYPE_STD);
+        newShipmentDetails.setDirection(DIRECTION_EXP);
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setInterBranchConsole(true);
+
+        ShipmentDetails oldEntity = new ShipmentDetails();
+        oldEntity.setReceivingBranch(1L);
+        oldEntity.setConsolidationList(Collections.singletonList(consolidationDetails1));
+
+        // Act
+        shipmentService.createOrUpdateNetworkTransferEntity(newShipmentDetails, oldEntity);
+
+        // Verify old tenant IDs processing for removal
+        verify(networkTransferService, times(1)).deleteValidNetworkTransferEntity(any(), any(), any());
+    }
+
+    @Test
+    void testCreateOrUpdateNetworkTransferEntity_EligibleForNetworkTransfer_InterConsole2() {
+        // Arrange
+        ShipmentDetails newShipmentDetails = new ShipmentDetails();
+        newShipmentDetails.setReceivingBranch(2L);
+        newShipmentDetails.setDirection("Inbound");
+        newShipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        newShipmentDetails.setJobType(SHIPMENT_TYPE_STD);
+        newShipmentDetails.setDirection(DIRECTION_EXP);
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setInterBranchConsole(true);
+        consolidationDetails1.setShipmentsList(Collections.singletonList(newShipmentDetails));
+        newShipmentDetails.setConsolidationList(Collections.singletonList(consolidationDetails1));
+
+        ShipmentDetails oldEntity = new ShipmentDetails();
+        oldEntity.setReceivingBranch(1L);
+        oldEntity.setConsolidationList(Collections.singletonList(consolidationDetails1));
+
+        // Act
+        shipmentService.createOrUpdateNetworkTransferEntity(newShipmentDetails, oldEntity);
+
+        // Verify old tenant IDs processing for removal
+        verify(networkTransferService, times(1)).processNetworkTransferEntity(eq(2L), eq(1L), eq(Constants.SHIPMENT), eq(newShipmentDetails), isNull(), eq(IMP), isNull(), eq(true));
+    }
+
+    @Test
+    void testCreateOrUpdateNetworkTransferEntity_EligibleForNetworkTransfer_OldInterConsole2() {
+        // Arrange
+        ShipmentDetails newShipmentDetails = new ShipmentDetails();
+        newShipmentDetails.setId(1L);
+        newShipmentDetails.setDirection("Inbound");
+        newShipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        newShipmentDetails.setJobType(SHIPMENT_TYPE_STD);
+        newShipmentDetails.setDirection(DIRECTION_EXP);
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setInterBranchConsole(true);
+        consolidationDetails1.setShipmentsList(Collections.singletonList(newShipmentDetails));
+        newShipmentDetails.setConsolidationList(Collections.singletonList(consolidationDetails1));
+
+        ShipmentDetails oldEntity = new ShipmentDetails();
+        oldEntity.setId(1L);
+        oldEntity.setReceivingBranch(1L);
+        oldEntity.setConsolidationList(Collections.singletonList(consolidationDetails1));
+
+        when(networkTransferDao.getInterConsoleNTList(any(), any())).thenReturn(Collections.singletonList(NetworkTransfer.builder().entityId(1L).isInterBranchEntity(true).build()));
+
+        // Act
+        shipmentService.createOrUpdateNetworkTransferEntity(newShipmentDetails, oldEntity);
+
+        // Verify old tenant IDs processing for removal
+        verify(networkTransferDao, times(1)).deleteAndLog(any(), any());
+    }
+
+    @Test
+    void testCreateOrUpdateNetworkTransferEntity_EligibleForNetworkTransfer_InterConsole3() {
+        // Arrange
+        ShipmentDetails newShipmentDetails = new ShipmentDetails();
+        newShipmentDetails.setId(1L);
+        newShipmentDetails.setReceivingBranch(2L);
+        newShipmentDetails.setDirection("Inbound");
+        newShipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        newShipmentDetails.setJobType(SHIPMENT_TYPE_STD);
+        newShipmentDetails.setDirection(DIRECTION_EXP);
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setInterBranchConsole(true);
+        consolidationDetails1.setReceivingBranch(2L);
+        consolidationDetails1.setShipmentsList(Collections.singletonList(newShipmentDetails));
+        newShipmentDetails.setConsolidationList(Collections.singletonList(consolidationDetails1));
+
+        ShipmentDetails oldEntity = new ShipmentDetails();
+        oldEntity.setId(1L);
+        oldEntity.setReceivingBranch(1L);
+        oldEntity.setConsolidationList(Collections.singletonList(consolidationDetails1));
+
+        Map<String, Object> entityPayload = Map.of("abcd", 1);
+        when(networkTransferDao.getInterConsoleNTList(any(), any())).thenReturn(Collections.singletonList(NetworkTransfer.builder().entityId(1L).entityPayload(entityPayload).isInterBranchEntity(true).build()));
+
+        // Act
+        shipmentService.createOrUpdateNetworkTransferEntity(newShipmentDetails, oldEntity);
+
+        // Verify old tenant IDs processing for removal
+        verify(networkTransferDao, times(1)).deleteByIdsAndLog(any());
     }
 
 }

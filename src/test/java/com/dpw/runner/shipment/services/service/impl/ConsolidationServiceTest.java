@@ -6475,13 +6475,13 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         copy.setEfreightStatus("newEfreightStatus");
         commonRequestModel.setData(copy);
         UserContext.getUser().setPermissions(Map.of(PermissionConstants.CONSOLIDATIONS_AIR_INTER_BRANCH, true));
-        ConsolidationDetails consolidationDetails = jsonTestUtility.getTestConsolidationAir();
-        consolidationDetails.setEfreightStatus("newEfreightStatus");
-        consolidationDetails.setInterBranchConsole(true);
-        consolidationDetails.setReceivingBranch(1L);
+        ConsolidationDetails consoleDetails = jsonTestUtility.getTestConsolidationAir();
+        consoleDetails.setEfreightStatus("newEfreightStatus");
+        consoleDetails.setInterBranchConsole(true);
+        consoleDetails.setReceivingBranch(1L);
         TriangulationPartner triangulationPartner = TriangulationPartner.builder().triangulationPartner(12L).build();
-        consolidationDetails.setTriangulationPartnerList(List.of(triangulationPartner));
-        consolidationDetails.setShipmentsList(Collections.singletonList(ShipmentDetails.builder().receivingBranch(2L).build()));
+        consoleDetails.setTriangulationPartnerList(List.of(triangulationPartner));
+        consoleDetails.setShipmentsList(Collections.singletonList(ShipmentDetails.builder().receivingBranch(2L).build()));
 
         ConsolidationDetailsResponse expectedResponse = jsonTestUtility.getJson("CONSOLIDATION_AIR", ConsolidationDetailsResponse.class);
         ConsolidationDetails oldEntity = jsonTestUtility.getTestConsolidationAir();
@@ -6506,20 +6506,20 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
         Mockito.doReturn(Optional.of(oldEntity)).when(spyService).retrieveByIdOrGuid(any());
         when(jsonHelper.convertValue(oldEntity, ConsolidationDetails.class)).thenReturn(oldEntity);
-        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
+        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consoleDetails);
         when(jsonHelper.convertToJson(oldEntity)).thenReturn("");
         when(jsonHelper.convertValue(any(), eq(CarrierDetails.class))).thenReturn(CarrierDetails.builder().build());
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of()));
-        when(awbDao.findByConsolidationId(consolidationDetails.getId())).thenReturn(List.of(awb));
-        when(consolidationDetailsDao.update(any(ConsolidationDetails.class), anyBoolean())).thenReturn(consolidationDetails);
+        when(awbDao.findByConsolidationId(consoleDetails.getId())).thenReturn(List.of(awb));
+        when(consolidationDetailsDao.update(any(ConsolidationDetails.class), anyBoolean())).thenReturn(consoleDetails);
         when(commonUtils.convertToEntityList(anyList(), any(), anyBoolean())).thenReturn(List.of());
-        when(containerDao.updateEntityFromShipmentConsole(any(), any(), any(), anyBoolean())).thenReturn(consolidationDetails.getContainersList());
-        when(packingDao.updateEntityFromConsole(any(), anyLong())).thenReturn(consolidationDetails.getPackingList());
-        when(eventDao.updateEntityFromOtherEntity(any(), anyLong(), anyString())).thenReturn(consolidationDetails.getEventsList());
-        when(referenceNumbersDao.updateEntityFromConsole(any(), anyLong())).thenReturn(consolidationDetails.getReferenceNumbersList());
-        when(routingsDao.updateEntityFromConsole(any(), anyLong())).thenReturn(consolidationDetails.getRoutingsList());
-        when(partiesDao.updateEntityFromOtherEntity(any(), anyLong(), anyString())).thenReturn(consolidationDetails.getConsolidationAddresses());
+        when(containerDao.updateEntityFromShipmentConsole(any(), any(), any(), anyBoolean())).thenReturn(consoleDetails.getContainersList());
+        when(packingDao.updateEntityFromConsole(any(), anyLong())).thenReturn(consoleDetails.getPackingList());
+        when(eventDao.updateEntityFromOtherEntity(any(), anyLong(), anyString())).thenReturn(consoleDetails.getEventsList());
+        when(referenceNumbersDao.updateEntityFromConsole(any(), anyLong())).thenReturn(consoleDetails.getReferenceNumbersList());
+        when(routingsDao.updateEntityFromConsole(any(), anyLong())).thenReturn(consoleDetails.getRoutingsList());
+        when(partiesDao.updateEntityFromOtherEntity(any(), anyLong(), anyString())).thenReturn(consoleDetails.getConsolidationAddresses());
         when(consolidationSync.sync(any(), anyString(), anyBoolean())).thenReturn(ResponseHelper.buildSuccessResponse());
         Runnable mockRunnable = mock(Runnable.class);
         when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
@@ -6530,7 +6530,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
             // Add any additional behavior or return value as needed
             return mockRunnable;
         });
-        when(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class)).thenReturn(expectedResponse);
+        when(jsonHelper.convertValue(consoleDetails, ConsolidationDetailsResponse.class)).thenReturn(expectedResponse);
 
         mockShipmentSettings();
         mockTenantSettings();
