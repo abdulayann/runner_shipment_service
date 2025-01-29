@@ -3262,8 +3262,8 @@ public class ShipmentService implements IShipmentService {
                 consolidationDetails.setHazardous(shipmentDetails.getContainsHazardous());
             consolidationService.generateConsolidationNumber(consolidationDetails);
             if(shipmentDetails.getAdditionalDetails() != null) {
-                consolidationDetails.setSendingAgent(shipmentDetails.getAdditionalDetails().getExportBroker());
-                consolidationDetails.setReceivingAgent(shipmentDetails.getAdditionalDetails().getImportBroker());
+                consolidationDetails.setSendingAgent(commonUtils.removeIdFromParty(shipmentDetails.getAdditionalDetails().getExportBroker()));
+                consolidationDetails.setReceivingAgent(commonUtils.removeIdFromParty(shipmentDetails.getAdditionalDetails().getImportBroker()));
             }
             if(!commonUtils.checkIfPartyExists(consolidationDetails.getSendingAgent())) {
                 consolidationDetails.setSendingAgentCountry(commonUtils.getCountryFromUnLocCode(consolidationDetails.getCarrierDetails().getOriginPortLocCode()));
