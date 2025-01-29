@@ -262,7 +262,7 @@ public class HblService implements IHblService {
     }
     private void validateBeforeGeneration(ShipmentDetails shipmentDetails){
         if(!Objects.isNull(shipmentDetails.getContainersList())
-            && !(Objects.equals(shipmentDetails.getShipmentType(), Constants.SHIPMENT_TYPE_LCL) || Objects.equals(shipmentDetails.getShipmentType(), Constants.CARGO_TYPE_FCL))) {
+            && !(Objects.equals(shipmentDetails.getShipmentType(), Constants.SHIPMENT_TYPE_LCL) || (Objects.equals(shipmentDetails.getShipmentType(), Constants.CARGO_TYPE_FCL) && !Objects.equals(shipmentDetails.getJobType(), Constants.SHIPMENT_TYPE_DRT)))) {
             List<Containers> containers = shipmentDetails.getContainersList().stream().filter(c -> StringUtility.isEmpty(c.getContainerNumber())).toList();
             if (!containers.isEmpty())
                 throw new ValidationException("Please assign container number to all the containers before generating the HBL.");

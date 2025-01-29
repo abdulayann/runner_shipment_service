@@ -578,6 +578,7 @@ class HblServiceTest extends CommonMocks {
         List<Containers> containersList = List.of(new Containers());
         testShipment.setContainersList(containersList);
         testShipment.setShipmentType(Constants.CARGO_TYPE_FCL);
+        testShipment.setJobType(Constants.SHIPMENT_TYPE_DRT);
 
         // Mock
         when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(testShipment));
@@ -600,6 +601,7 @@ class HblServiceTest extends CommonMocks {
         List<Packing> packingList = List.of(new Packing());
         testShipment.setPackingList(packingList);
         testShipment.setShipmentType(Constants.CARGO_TYPE_FCL);
+        testShipment.setJobType(Constants.SHIPMENT_TYPE_DRT);
 
         // Mock
         when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(testShipment));
