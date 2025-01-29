@@ -1835,7 +1835,7 @@ public class ShipmentService implements IShipmentService {
             shipmentDetails.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));
 
         List<ConsolidationDetailsRequest> consolidationDetailsRequests = shipmentRequest.getConsolidationList();
-        List<Routings> mainCarriageRoutings = shipmentDetails.getRoutingsList().stream().filter(i -> RoutingCarriage.MAIN_CARRIAGE.equals(i.getCarriage())).toList();
+        List<Routings> mainCarriageRoutings = (shipmentDetails.getRoutingsList() != null ? shipmentDetails.getRoutingsList().stream().filter(i -> RoutingCarriage.MAIN_CARRIAGE.equals(i.getCarriage())).toList() : Collections.emptyList());
         boolean isRouteMasterEnabled = Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster());
         if (isRouteMasterEnabled && mainCarriageRoutings != null && !mainCarriageRoutings.isEmpty() && shouldSetPorts(shipmentRequest)) {
             shipmentDetails.getCarrierDetails().setOriginPort(mainCarriageRoutings.get(0).getPol());
