@@ -435,7 +435,7 @@ public class ConsolidationDetails extends MultiTenancy {
 
     @Column(name = "screening_status")
     @Size(max=50, message = "max size is 50 for screening_status")
-    @ElementCollection(targetClass = String.class, fetch = FetchType.LAZY)
+    @ElementCollection(targetClass = String.class, fetch = FetchType.EAGER)
     @CollectionTable(name = "screening_status_consol", joinColumns = @JoinColumn(name = "consolidation_details_id"))
     @BatchSize(size = 10)
     private List<String> screeningStatus;
