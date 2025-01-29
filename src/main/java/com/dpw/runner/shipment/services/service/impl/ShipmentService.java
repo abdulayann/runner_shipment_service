@@ -2601,6 +2601,10 @@ public class ShipmentService implements IShipmentService {
 
     private void processNetworkTransferEntity(Long tenantId, Long oldTenantId, ShipmentDetails shipmentDetails, String jobType) {
         try{
+            System.out.println(tenantId);
+            System.out.println(oldTenantId);
+            System.out.println(shipmentDetails);
+            System.out.println(jobType);
             networkTransferService.processNetworkTransferEntity(tenantId, oldTenantId, Constants.SHIPMENT, shipmentDetails,
                     null, jobType, null, false);
         } catch (Exception ex) {
@@ -2611,6 +2615,8 @@ public class ShipmentService implements IShipmentService {
     public void createOrUpdateNetworkTransferEntity(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
         try{
             processInterBranchEntityCase(shipmentDetails, oldEntity);
+            if (isInterBranchConsole(shipmentDetails))
+                return;
             // Check if the shipment is eligible for network transfer
             if (isEligibleForNetworkTransfer(shipmentDetails)) {
 
@@ -4174,14 +4180,14 @@ public class ShipmentService implements IShipmentService {
                                               ShipmentDetails shipmentDetails, Long currentTenant,
                                               ConsolidationDetails consolidationDetails) {
         boolean isNotAllowed = true;
-        if(Objects.equals(consolidationDetails.getReceivingBranch(), currentTenant))
+        if(consolidationDetails!=null && Objects.equals(consolidationDetails.getReceivingBranch(), currentTenant))
             isNotAllowed = false;
 
-        if(consolidationDetails.getTriangulationPartnerList() != null && consolidationDetails.getTriangulationPartnerList().stream().filter(Objects::nonNull)
+        if(consolidationDetails!=null && consolidationDetails.getTriangulationPartnerList() != null && consolidationDetails.getTriangulationPartnerList().stream().filter(Objects::nonNull)
                 .anyMatch(tp -> Objects.equals(tp.getTriangulationPartner(), currentTenant)))
             isNotAllowed = false;
 
-        if(Objects.equals(consolidationDetails.getTriangulationPartner(), currentTenant))
+        if(consolidationDetails!=null && Objects.equals(consolidationDetails.getTriangulationPartner(), currentTenant))
             isNotAllowed = false;
 
         if(Objects.equals(shipmentDetails.getReceivingBranch(), currentTenant))

@@ -488,7 +488,7 @@ public class NetworkTransferService implements INetworkTransferService {
             throw new DataRetrievalFailureException("Network Transfer is already in Reassigned state.");
         }
         MutableBoolean updateStatus = new MutableBoolean(true);
-        if(Objects.equals(networkTransfer.get().getEntityType(), Constants.SHIPMENT) && networkTransfer.get().getIsInterBranchEntity()) {
+        if(Objects.equals(networkTransfer.get().getEntityType(), Constants.SHIPMENT) && Boolean.TRUE.equals(networkTransfer.get().getIsInterBranchEntity())) {
             updateStatus.setFalse();
         }
         List<NetworkTransfer> networkTransferList = new ArrayList<>();

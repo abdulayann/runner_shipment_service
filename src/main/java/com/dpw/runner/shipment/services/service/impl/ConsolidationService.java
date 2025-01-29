@@ -1418,15 +1418,16 @@ public class ConsolidationService implements IConsolidationService {
             boolean isInterBranchConsole = console.getInterBranchConsole();
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
             boolean isNetworkTransferEntityEnabled = Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled());
-            if(!isInterBranchConsole || isNetworkTransferEntityEnabled ||(shipmentIds==null || shipmentIds.isEmpty()))
+            if(!isInterBranchConsole || !isNetworkTransferEntityEnabled ||(shipmentIds==null || shipmentIds.isEmpty()))
                 return;
-            List<ShipmentDetails> shipmentDetailsList = shipmentDao.findShipmentsByIds((Set<Long>) shipmentIds);
+            Set<Long> shipmentIdsSet = new HashSet<>(shipmentIds);
+            List<ShipmentDetails> shipmentDetailsList = shipmentDao.findShipmentsByIds(shipmentIdsSet);
             for(ShipmentDetails shipmentDetails: shipmentDetailsList) {
                 if(shipmentDetails.getReceivingBranch()!=null)
                     networkTransferService.deleteValidNetworkTransferEntity(shipmentDetails.getReceivingBranch(), shipmentDetails.getId(), SHIPMENT);
             }
         } catch(Exception e){
-            log.error("Error in attach shipment process: ", e.getMessage());
+            log.error("Error in detach shipment process: ", e.getMessage());
         }
     }
 
@@ -1978,11 +1979,7 @@ public class ConsolidationService implements IConsolidationService {
         try {
             if (!isValidRequest(console, shipments)) return;
 
-            ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
-            if (!isNetworkTransferEntityEnabled(shipmentSettingsDetails)) return;
-
             List<Long> shipmentIds = getShipmentIds(shipments);
-            if (shipmentIds.isEmpty()) return;
 
             Map<Long, Map<Integer, NetworkTransfer>> shipmentNetworkTransferMap = getShipmentNetworkTransferMap(shipmentIds);
 
@@ -2002,11 +1999,8 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     private boolean isValidRequest(ConsolidationDetails console, List<ShipmentDetails> shipments) {
-        return Boolean.TRUE.equals(console.getInterBranchConsole()) && shipments != null && !shipments.isEmpty();
-    }
-
-    private boolean isNetworkTransferEntityEnabled(ShipmentSettingsDetails shipmentSettingsDetails) {
-        return Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled());
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+        return Boolean.TRUE.equals(console.getInterBranchConsole()) && shipments != null && !shipments.isEmpty() && Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled());
     }
 
     private List<Long> getShipmentIds(List<ShipmentDetails> shipments) {
