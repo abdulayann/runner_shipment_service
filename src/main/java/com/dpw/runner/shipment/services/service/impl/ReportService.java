@@ -879,12 +879,12 @@ public class ReportService implements IReportService {
                 if(isCombi) {
                     dataRetrived.put(ReportConstants.HAWB_NUMBER, hawbPacksMap.get(ind).getKey());
                     packsOfTotal = (packs - prevPacks) + "/" + hawbPacksMap.get(ind).getValue();
+                    hawbPacksCountForCombi = getSerialCount(packs - prevPacks, copies);
+                    dataRetrived.put(COMBI_HAWB_COUNT, hawbPacksCountForCombi);
                     if((packs-prevPacks)%hawbPacksMap.get(ind).getValue() == 0) {
                         prevPacks = prevPacks + hawbPacksMap.get(ind).getValue();
                         ind++;
                     }
-                    hawbPacksCountForCombi = getSerialCount(packs - prevPacks, copies);
-                    dataRetrived.put(COMBI_HAWB_COUNT, hawbPacksCountForCombi);
                 }
                 if (dataRetrived.get(ReportConstants.MAWB_NUMBER) != null || dataRetrived.get(ReportConstants.HAWB_NUMBER) != null) {
                     dataRetrived.put(ReportConstants.COUNT, packsCount);
