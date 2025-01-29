@@ -123,6 +123,7 @@ class NetworkTransferServiceTest extends CommonMocks{
         when(notificationDao.save(any(Notification.class))).thenReturn(new Notification());
         when(consoleShipmentMappingDao.findByShipmentId(any())).thenReturn(Collections.singletonList(ConsoleShipmentMapping.builder().consolidationId(1L).build()));
         when(consoleShipmentMappingDao.findByConsolidationId(any())).thenReturn(Collections.singletonList(ConsoleShipmentMapping.builder().consolidationId(1L).build()));
+        when(networkTransferDao.findByEntityIdAndEntityTypeAndIsInterBranchEntity(any(), any(), any(), any())).thenReturn(Collections.singletonList(NetworkTransfer.builder().build()));
         var response = networkTransferService.requestForTransfer(request);
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
@@ -189,6 +190,7 @@ class NetworkTransferServiceTest extends CommonMocks{
         when(shipmentSettingsDao.getShipmentConsoleImportApprovarRole(anyInt())).thenReturn(1);
         ShipmentDetails shipmentDetails1 = ShipmentDetails.builder().receivingBranch(1L).build();
         shipmentDetails1.setGuid(shipmentGuid);
+        when(networkTransferDao.findByTenantAndEntity(any(), any(), any())).thenReturn(Optional.of(NetworkTransfer.builder().build()));
         when(consolidationDao.findConsolidationByIdWithQuery(any())).thenReturn(Optional.of(ConsolidationDetails.builder().interBranchConsole(true).shipmentsList(Collections.singletonList(shipmentDetails1)).build()));
         mockShipmentSettings();
         var response = networkTransferService.requestForReassign(request);

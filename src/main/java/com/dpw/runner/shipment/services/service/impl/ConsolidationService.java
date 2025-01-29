@@ -4763,15 +4763,23 @@ public class ConsolidationService implements IConsolidationService {
         }
     }
 
-    private void processShipments(ConsolidationDetails consolidationDetails, boolean isConsoleBranchUpdate) {
+    private Map<Long, Map<Integer, NetworkTransfer>> getNetworkTransferMap(ConsolidationDetails consolidationDetails){
         List<Long> shipmentIds = consolidationDetails.getShipmentsList().stream().map(ShipmentDetails::getId).toList();
 
         List<NetworkTransfer> networkTransferList = networkTransferDao.getInterConsoleNTList(shipmentIds, Constants.SHIPMENT);
-        Map<Long, Map<Integer, NetworkTransfer>> shipmentNetworkTranferMap = networkTransferList.stream()
-                .collect(Collectors.groupingBy(
-                        NetworkTransfer::getEntityId,
-                        Collectors.toMap(NetworkTransfer::getTenantId, transfer -> transfer)
-                ));
+        Map<Long, Map<Integer, NetworkTransfer>> shipmentNetworkTranferMap = null;
+        if(networkTransferList!=null){
+            shipmentNetworkTranferMap = networkTransferList.stream()
+                    .collect(Collectors.groupingBy(
+                            NetworkTransfer::getEntityId,
+                            Collectors.toMap(NetworkTransfer::getTenantId, transfer -> transfer)
+                    ));
+        }
+        return shipmentNetworkTranferMap;
+    }
+
+    private void processShipments(ConsolidationDetails consolidationDetails, boolean isConsoleBranchUpdate) {
+        Map<Long, Map<Integer, NetworkTransfer>> shipmentNetworkTranferMap = getNetworkTransferMap(consolidationDetails);
 
         List<ShipmentDetails> shipmentsForNte = new ArrayList<>();
         List<ShipmentDetails> shipmentsToDelete = new ArrayList<>();
@@ -4779,20 +4787,14 @@ public class ConsolidationService implements IConsolidationService {
         for (ShipmentDetails shipmentDetails : consolidationDetails.getShipmentsList()) {
             if(shipmentDetails.getReceivingBranch()==null)
                 continue;
-            NetworkTransfer existingNTE = shipmentNetworkTranferMap.getOrDefault(shipmentDetails.getId(), new HashMap<>())
-                    .get(shipmentDetails.getReceivingBranch().intValue());
+            NetworkTransfer existingNTE = shipmentNetworkTranferMap!=null ? shipmentNetworkTranferMap.getOrDefault(shipmentDetails.getId(), new HashMap<>())
+                    .get(shipmentDetails.getReceivingBranch().intValue()): null;
 
             if (shipmentDetails.getReceivingBranch() != null && !Objects.equals(consolidationDetails.getReceivingBranch(), shipmentDetails.getReceivingBranch())) {
                 if (existingNTE == null) {
                     shipmentsForNte.add(shipmentDetails);
                 }
-                if (isConsoleBranchUpdate && existingNTE != null && existingNTE.getEntityPayload() != null
-                        && existingNTE.getStatus() != NetworkTransferStatus.REASSIGNED
-                        && existingNTE.getStatus() != NetworkTransferStatus.ACCEPTED) {
-                    existingNTE.setEntityPayload(null);
-                    existingNTE.setStatus(NetworkTransferStatus.SCHEDULED);
-                    networkTransferDao.save(existingNTE);
-                }
+                processConsoleBranchUpdate(isConsoleBranchUpdate, existingNTE);
             } else {
                 shipmentsToDelete.add(shipmentDetails);
             }
@@ -4810,13 +4812,22 @@ public class ConsolidationService implements IConsolidationService {
         );
     }
 
+    private void processConsoleBranchUpdate(boolean isConsoleBranchUpdate, NetworkTransfer existingNTE){
+        if (isConsoleBranchUpdate && existingNTE != null && existingNTE.getEntityPayload() != null
+                && existingNTE.getStatus() != NetworkTransferStatus.REASSIGNED
+                && existingNTE.getStatus() != NetworkTransferStatus.ACCEPTED) {
+            existingNTE.setEntityPayload(null);
+            existingNTE.setStatus(NetworkTransferStatus.SCHEDULED);
+            networkTransferDao.save(existingNTE);
+        }
+    }
+
     private void deleteNetworkTransferForOldShipments(ConsolidationDetails oldEntity) {
         oldEntity.getShipmentsList().forEach(shipmentDetails ->
                 networkTransferService.deleteValidNetworkTransferEntity(shipmentDetails.getReceivingBranch(),
                         oldEntity.getId(), Constants.SHIPMENT)
         );
     }
-
 
     public void triggerAutomaticTransfer(ConsolidationDetails consolidationDetails,
                                          ConsolidationDetails oldEntity, Boolean isDocOrHawbNumAdded) {
