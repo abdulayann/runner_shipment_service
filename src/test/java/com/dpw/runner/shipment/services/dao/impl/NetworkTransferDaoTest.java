@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.INetworkTransferRepository;
 import com.dpw.runner.shipment.services.service.impl.AuditLogService;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
+import org.apache.tomcat.util.bcel.Const;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -158,6 +159,18 @@ class NetworkTransferDaoTest {
         assertThrows(ValidationException.class, () -> {
             networkTransferDao.save(networkTransfer1);
         });
+    }
+
+    @Test
+    void findByEntityIdAndEntityTypeAndIsInterBranchEntityTest(){
+        networkTransferDao.findByEntityIdAndEntityTypeAndIsInterBranchEntity(anyList(), anyString(), anyBoolean(), anyList());
+        verify(networkTransferRepository, times(1)).findByEntityIdAndEntityTypeAndIsInterBranchEntity(anyList(), anyString(), anyBoolean(), anyList());
+    }
+
+    @Test
+    void getInterConsoleNTListTest(){
+        networkTransferDao.getInterConsoleNTList(anyList(), anyString());
+        verify(networkTransferRepository, times(1)).getInterConsoleNTList(anyList(), anyString());
     }
 
 }

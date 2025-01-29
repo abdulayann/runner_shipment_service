@@ -4691,7 +4691,7 @@ public class ConsolidationService implements IConsolidationService {
 
     }
 
-    private void createOrUpdateNetworkTransferEntity(ShipmentSettingsDetails shipmentSettingsDetails, ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity) {
+    public void createOrUpdateNetworkTransferEntity(ShipmentSettingsDetails shipmentSettingsDetails, ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity) {
         try{
             boolean isNetworkTransferEntityEnabled = Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled());
             boolean isInterBranchConsole = Boolean.TRUE.equals(consolidationDetails.getInterBranchConsole());
@@ -4777,20 +4777,21 @@ public class ConsolidationService implements IConsolidationService {
         List<ShipmentDetails> shipmentsToDelete = new ArrayList<>();
 
         for (ShipmentDetails shipmentDetails : consolidationDetails.getShipmentsList()) {
+            if(shipmentDetails.getReceivingBranch()==null)
+                continue;
             NetworkTransfer existingNTE = shipmentNetworkTranferMap.getOrDefault(shipmentDetails.getId(), new HashMap<>())
                     .get(shipmentDetails.getReceivingBranch().intValue());
-
-            if (isConsoleBranchUpdate && existingNTE != null && existingNTE.getEntityPayload() != null
-                    && existingNTE.getStatus() != NetworkTransferStatus.REASSIGNED
-                    && existingNTE.getStatus() != NetworkTransferStatus.ACCEPTED) {
-                existingNTE.setEntityPayload(null);
-                existingNTE.setStatus(NetworkTransferStatus.SCHEDULED);
-                networkTransferDao.save(existingNTE);
-            }
 
             if (shipmentDetails.getReceivingBranch() != null && !Objects.equals(consolidationDetails.getReceivingBranch(), shipmentDetails.getReceivingBranch())) {
                 if (existingNTE == null) {
                     shipmentsForNte.add(shipmentDetails);
+                }
+                if (isConsoleBranchUpdate && existingNTE != null && existingNTE.getEntityPayload() != null
+                        && existingNTE.getStatus() != NetworkTransferStatus.REASSIGNED
+                        && existingNTE.getStatus() != NetworkTransferStatus.ACCEPTED) {
+                    existingNTE.setEntityPayload(null);
+                    existingNTE.setStatus(NetworkTransferStatus.SCHEDULED);
+                    networkTransferDao.save(existingNTE);
                 }
             } else {
                 shipmentsToDelete.add(shipmentDetails);
