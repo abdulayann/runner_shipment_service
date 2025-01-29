@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IPickupDeliveryDetailsDao;
 import com.dpw.runner.shipment.services.dto.request.PickupDeliveryDetailsRequest;
 import com.dpw.runner.shipment.services.dto.response.PickupDeliveryDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.TIKafkaEventResponse;
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -115,7 +116,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
         }
         if (pickupDeliveryDetails.getShipmentId() != null) {
             List<PickupDeliveryDetails> pickupDeliveryDetailsList = pickupDeliveryDetailsDao.findByShipmentId(pickupDeliveryDetails.getShipmentId());
-            pushToKafka(pickupDeliveryDetailsList, isCreate);
+            pushToKafka(pickupDeliveryDetailsList, isCreate, pickupDeliveryDetails.getShipmentId());
         }
     }
 
@@ -222,7 +223,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
 
             if (pickupDeliveryDetails.get().getShipmentId() != null) {
                 List<PickupDeliveryDetails> pickupDeliveryDetailsList = pickupDeliveryDetailsDao.findByShipmentId(pickupDeliveryDetails.get().getShipmentId());
-                pushToKafka(pickupDeliveryDetailsList, false);
+                pushToKafka(pickupDeliveryDetailsList, false, pickupDeliveryDetails.get().getShipmentId());
             }
             auditLogService.addAuditLog(
                     AuditLogMetaData.builder()
@@ -288,14 +289,17 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
     }
 
     @Async
-    public void pushToKafka(List<PickupDeliveryDetails> pickupDeliveryDetails, boolean isCreate) {
+    public void pushToKafka(List<PickupDeliveryDetails> pickupDeliveryDetails, boolean isCreate, Long shipmentId) {
         try {
-            if (CommonUtils.listIsNullOrEmpty(pickupDeliveryDetails)) {
-                return;
+            List<IRunnerResponse> pickupDeliveryDetailsResponses = null;
+            if (!CommonUtils.listIsNullOrEmpty(pickupDeliveryDetails)) {
+                pickupDeliveryDetailsResponses = convertEntityListToDtoList(pickupDeliveryDetails);
             }
-            List<IRunnerResponse> pickupDeliveryDetailsResponses = convertEntityListToDtoList(pickupDeliveryDetails);
+            TIKafkaEventResponse tiKafkaEventResponse = new TIKafkaEventResponse();
+            tiKafkaEventResponse.setShipmentId(shipmentId);
+            tiKafkaEventResponse.setPickupDeliveryDetails(pickupDeliveryDetailsResponses);
 
-            KafkaResponse kafkaResponse = producer.getKafkaResponse(pickupDeliveryDetailsResponses, isCreate);
+            KafkaResponse kafkaResponse = producer.getKafkaResponse(tiKafkaEventResponse, isCreate);
             producer.produceToKafka(jsonHelper.convertToJson(kafkaResponse), senderQueue, UUID.randomUUID().toString());
         }
         catch (Exception e)
