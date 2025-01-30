@@ -773,6 +773,7 @@ public class ReportConstants {
     public static final String PRINTED_ORIGINAL = "PrintedOriginal";
     public static final String HOUSE_BILL_TYPE = "HouseBillType";
     public static final String COUNT = "Count";
+    public static final String COMBI_HAWB_COUNT = "CombiHAWBCount";
     public static final String PACKS_OF_TOTAL = "PacksOfTotal";
     public static final String PACK_NUMBER = "PackNumber";
     public static final String HAWB_NUMBER = "HAWBNumber";
