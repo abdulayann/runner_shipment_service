@@ -3631,6 +3631,9 @@ ShipmentServiceTest extends CommonMocks {
         ShipmentDetailsResponse shipmentDetailsResponse = jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class);
         when(jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class)).thenReturn(shipmentDetailsResponse);
 
+        when(jsonHelper.convertValue(any(), eq(CarrierDetails.class))).thenReturn(new CarrierDetails());
+        when(routingsDao.generateDefaultRouting(any(), any())).thenReturn(List.of());
+
         when(jsonHelper.convertValueToList(any(), eq(ConsolidationDetails.class))).thenReturn(List.of(new ConsolidationDetails()));
         mockShipmentSettings();
         mockTenantSettings();
@@ -6268,6 +6271,7 @@ ShipmentServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class)).thenReturn(shipmentDetailsResponse);
         mockShipmentSettings();
         mockTenantSettings();
+        commonUtils.getShipmentSettingFromContext().setEnableRouteMaster(false);
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.createShipmentInV2(customerBookingRequest);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
