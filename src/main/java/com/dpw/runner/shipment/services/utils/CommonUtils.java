@@ -15,10 +15,7 @@ import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
-import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
-import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
-import com.dpw.runner.shipment.services.dto.request.PackingRequest;
-import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
@@ -76,6 +73,7 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
@@ -88,6 +86,7 @@ import java.util.List;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
@@ -1552,7 +1551,7 @@ public class CommonUtils {
                     unlocoRequests.add(carrierDetails.getDestination());
                 if(!IsStringNullOrEmpty(carrierDetails.getDestinationPort()))
                     unlocoRequests.add(carrierDetails.getDestinationPort());
-                Map<String, EntityTransferUnLocations> unlocationsMap = masterDataUtils.getLocationDataFromCache(unlocoRequests);
+                Map<String, EntityTransferUnLocations> unlocationsMap = masterDataUtils.getLocationDataFromCache(unlocoRequests, EntityTransferConstants.LOCATION_SERVICE_GUID);
                 EntityTransferUnLocations pol = unlocationsMap.get(carrierDetails.getOriginPort());
                 EntityTransferUnLocations pod = unlocationsMap.get(carrierDetails.getDestinationPort());
                 EntityTransferUnLocations origin = unlocationsMap.get(carrierDetails.getOrigin());
@@ -1569,6 +1568,71 @@ public class CommonUtils {
         }
         catch (Exception e) {
             log.error("Error while updating unlocCode for Carrier with Id {} due to {}", carrierDetails.getId(), e.getMessage());
+        }
+    }
+
+    public void updateCarrierUnLocData(CarrierDetails carrierDetails, Map<String, EntityTransferUnLocations> unlocationsMap) {
+        try {
+            EntityTransferUnLocations pol = unlocationsMap.get(carrierDetails.getOriginPort());
+            EntityTransferUnLocations pod = unlocationsMap.get(carrierDetails.getDestinationPort());
+            EntityTransferUnLocations origin = unlocationsMap.get(carrierDetails.getOrigin());
+            EntityTransferUnLocations destination = unlocationsMap.get(carrierDetails.getDestination());
+            if(!Objects.isNull(origin))
+                carrierDetails.setOriginLocCode(origin.getLocCode());
+            if(!Objects.isNull(destination))
+                carrierDetails.setDestinationLocCode(destination.getLocCode());
+            if(!Objects.isNull(pol))
+                carrierDetails.setOriginPortLocCode(pol.getLocCode());
+            if(!Objects.isNull(pod))
+                carrierDetails.setDestinationPortLocCode(pod.getLocCode());
+        }
+        catch (Exception e) {
+            log.error("Error while updating unlocCode for Carrier with Id {} due to {}", carrierDetails.getId(), e.getMessage());
+        }
+    }
+
+    public void updateRoutingUnLocData(List<Routings> routingsList, Map<String, EntityTransferUnLocations> unlocationsMap) {
+        try {
+            for(var routing : routingsList) {
+                EntityTransferUnLocations pol = unlocationsMap.get(routing.getPol());
+                EntityTransferUnLocations pod = unlocationsMap.get(routing.getPod());
+                if(!Objects.isNull(pol))
+                    routing.setOriginPortLocCode(pol.getLocCode());
+                if(!Objects.isNull(pod))
+                    routing.setDestinationPortLocCode(pod.getLocCode());
+            }
+        }
+        catch (Exception e) {
+            log.error("Error while updating un-locCode for routing list {}", e.getMessage());
+        }
+    }
+
+    public <T> void getChangedUnLocationFields(T newEntity, T oldEntity, Set<String> unlocationSet) {
+        if(Objects.isNull(newEntity))
+            return;
+        Class<?> clazz = newEntity.getClass();
+        try {
+            for (Field field : clazz.getDeclaredFields()) {
+                field.setAccessible(true);
+                if (field.isAnnotationPresent(UnlocationData.class)) {
+                    if((Objects.isNull(oldEntity) || !Objects.equals(field.get(newEntity), field.get(oldEntity))) && !Objects.isNull(field.get(newEntity))) {
+                        unlocationSet.add((String) field.get(newEntity));
+                    }
+                }
+
+            }
+        } catch(Exception e) {
+            log.warn("Error while getting un-location fields for class {}", clazz.getSimpleName());
+        }
+    }
+
+    public <T extends BaseEntity> void getChangedUnLocationFields(List<T> newEntityList, List<T> oldEntityList, Set<String> unlocationSet) {
+        if(CollectionUtils.isEmpty(newEntityList))
+            return;
+
+        Map<Long, T>  oldEntityMap = Optional.ofNullable(oldEntityList).orElse(Collections.emptyList()).stream().collect(Collectors.toMap(BaseEntity::getId, Function.identity()));
+        for (T newEntity : newEntityList) {
+            getChangedUnLocationFields(newEntity, oldEntityMap.get(newEntity.getId()), unlocationSet);
         }
     }
 
@@ -2039,6 +2103,75 @@ public class CommonUtils {
     private String capitalize(String str) {
         if (str == null || str.isEmpty()) return str;
         return str.substring(0, 1).toUpperCase() + str.substring(1);
+    }
+
+    public List<Long> getTriangulationPartnerList(List<TriangulationPartner> partnerList) {
+        return partnerList != null ? partnerList.stream()
+                .filter(Objects::nonNull)
+                .map(TriangulationPartner::getTriangulationPartner)
+                .toList() : Collections.emptyList();
+    }
+
+    public List<Long> getTenantIdsFromEntity(Long entityId, String entityType) {
+        Set<Long> tenantIds = new HashSet<>();
+        Long sourceTenantId = null;
+        Long receivingBranch = null;
+        List<Long> triangulationPartners = null;
+        if(Objects.equals(entityType, Constants.SHIPMENT)) {
+            Optional<ShipmentDetails> shipmentDetails = shipmentDao.findShipmentByIdWithQuery(entityId);
+            if(shipmentDetails.isEmpty()) {
+                return new ArrayList<>();
+            }
+            sourceTenantId = Long.valueOf(shipmentDetails.get().getTenantId());
+            receivingBranch = shipmentDetails.get().getReceivingBranch();
+            triangulationPartners = Optional.ofNullable(shipmentDetails.get().getTriangulationPartnerList())
+                    .orElse(Collections.emptyList())
+                    .stream()
+                    .map(TriangulationPartner::getTriangulationPartner).toList();
+        } else if (Objects.equals(entityType, Constants.CONSOLIDATION)){
+            Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findConsolidationByIdWithQuery(entityId);
+            if(consolidationDetails.isEmpty()) {
+                return new ArrayList<>();
+            }
+            sourceTenantId = Long.valueOf(consolidationDetails.get().getTenantId());
+            receivingBranch = consolidationDetails.get().getReceivingBranch();
+            triangulationPartners = Optional.ofNullable(consolidationDetails.get().getTriangulationPartnerList())
+                    .orElse(Collections.emptyList())
+                    .stream()
+                    .map(TriangulationPartner::getTriangulationPartner).toList();
+        } else {
+            return new ArrayList<>();
+        }
+        tenantIds.add(sourceTenantId);
+        if (receivingBranch != null) {
+            tenantIds.add(receivingBranch);
+        }
+        if (!CommonUtils.listIsNullOrEmpty(triangulationPartners)) {
+            tenantIds.addAll(triangulationPartners);
+        }
+        return tenantIds.stream().toList();
+    }
+
+    public Parties removeIdFromParty(Parties parties) {
+        if(parties == null || IsStringNullOrEmpty(parties.getOrgId()))
+            return null;
+        PartiesRequest partiesRequest = jsonHelper.convertValue(parties, PartiesRequest.class);
+        partiesRequest.setId(null);
+        return jsonHelper.convertValue(partiesRequest, Parties.class);
+    }
+
+    public static boolean checkSameParties(Parties obj1, Parties obj2) {
+        if (obj1 == null && obj2 == null) return true;
+        if (obj1 == null || obj2 == null) return false;
+
+        return Objects.equals(obj1.getOrgId(), obj2.getOrgId()) &&
+                Objects.equals(obj1.getAddressId(), obj2.getAddressId());
+    }
+
+    public static boolean checkPartyNotNull(Parties party) {
+        if (party == null) return false;
+        else if (party.getOrgId() == null) return false;
+        else return !IsStringNullOrEmpty(party.getOrgId());
     }
 
 }

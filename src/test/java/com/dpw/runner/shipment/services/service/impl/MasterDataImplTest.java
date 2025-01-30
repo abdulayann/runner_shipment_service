@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.service.impl;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dto.request.ListCousinBranchesForReassignRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
@@ -10,6 +11,7 @@ import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.helper.impl.v1.V1MasterDataImpl;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -23,6 +25,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +45,8 @@ class MasterDataImplTest {
     private V1MasterDataImpl v1MasterData;
     @Mock
     private MasterDataUtils masterDataUtils;
+    @Mock
+    private CommonUtils commonUtils;
 
     @InjectMocks
     private MasterDataImpl masterData;
@@ -741,6 +746,17 @@ class MasterDataImplTest {
                 .build();
         Mockito.when(v1Service.listBranchesByDefaultOrgAndAddress(Mockito.any())).thenReturn(v1DataResponse);
         ResponseEntity<IRunnerResponse> responseEntity = masterData.listBranchesByDefaultOrgAndAddress(commonRequestModel);
+        Assertions.assertNotNull(responseEntity);
+        Assertions.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void listCousinBranchForNTEReassign() {
+        ListCousinBranchesForReassignRequest commonRequestModel = ListCousinBranchesForReassignRequest.builder().build();
+        Mockito.when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
+        Mockito.when(masterDataFactory.getMasterDataService().listCousinBranches(Mockito.any())).thenReturn(new DependentServiceResponse());
+        Mockito.when(commonUtils.getTenantIdsFromEntity(Mockito.any(), Mockito.any())).thenReturn(new ArrayList<>());
+        ResponseEntity<IRunnerResponse> responseEntity = masterData.listCousinBranchForNTEReassign(commonRequestModel);
         Assertions.assertNotNull(responseEntity);
         Assertions.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }

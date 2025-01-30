@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Routings;
@@ -43,7 +44,7 @@ public interface IConsolidationService extends ICommonService{
 
     ResponseEntity<IRunnerResponse> attachShipments(ShipmentRequestedType shipmentRequestedType, Long consolidationId, List<Long> shipmentIds, boolean fromConsolidation) throws RunnerException;
 
-    ResponseEntity<IRunnerResponse> detachShipments(Long consolidationId, List<Long> shipmentIds) throws RunnerException;
+    ResponseEntity<IRunnerResponse> detachShipments(ConsolidationDetails consol, List<Long> shipmentIds) throws RunnerException;
 
     ResponseEntity<IRunnerResponse> detachShipments(Long consolidationId, List<Long> shipmentIds, String remarks) throws RunnerException;
 
@@ -87,7 +88,7 @@ public interface IConsolidationService extends ICommonService{
     ResponseEntity<IRunnerResponse> fullConsolidationsList(CommonRequestModel commonRequestModel);
     void checkSciForDetachConsole(Long consoleId) throws RunnerException;
     void checkSciForAttachConsole(Long consoleId) throws RunnerException;
-    void validateRaKcForConsol(ConsolidationDetails consolidationDetails) throws RunnerException;
+    void validateRaKcForConsol(ConsolidationDetails consolidationDetails, V1TenantSettingsResponse tenantSettingsResponse) throws RunnerException;
     ResponseEntity<IRunnerResponse> consolidationRetrieveWithMeasurmentBasis(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> mblCheck(String mblNumber);
     ResponseEntity<IRunnerResponse> getPendingNotifications(CommonRequestModel commonRequestModel);
@@ -98,4 +99,5 @@ public interface IConsolidationService extends ICommonService{
     ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel, boolean getMasterData);
     ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel, boolean getMasterData);
     ResponseEntity<IRunnerResponse> retrieveForNTE(CommonRequestModel commonRequestModel);
+    void triggerAutomaticTransfer(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, Boolean isDocOrHawbNumAdded);
 }

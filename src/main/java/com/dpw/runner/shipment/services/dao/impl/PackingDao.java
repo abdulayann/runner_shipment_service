@@ -86,14 +86,9 @@ public class PackingDao implements IPackingDao {
         List<Packing> responsePackings = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            Map<Long, Packing> hashMap;
-//            if(!Objects.isNull(packIdList) && !packIdList.isEmpty()) {
-                ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", shipmentId, "=");
-                Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
-                Page<Packing> packings = findAll(pair.getLeft(), pair.getRight());
-                hashMap = packings.stream()
+            List<Packing> packings = findByShipmentId(shipmentId);
+            Map<Long, Packing> hashMap = packings.stream()
                         .collect(Collectors.toMap(Packing::getId, Function.identity()));
-//            }
             Map<Long, Packing> hashMapCopy = new HashMap<>(hashMap);
             List<Packing> packingRequestList = new ArrayList<>();
             if (packingList != null && packingList.size() != 0) {
@@ -116,6 +111,10 @@ public class PackingDao implements IPackingDao {
             log.error(responseMsg, e);
             throw new RunnerException(e.getMessage());
         }
+    }
+
+    public List<Packing> findByShipmentId(Long shipmentId) {
+        return packingRepository.findByShipmentId(shipmentId);
     }
 
     public List<Packing> updateEntityFromBooking(List<Packing> packingList, Long bookingId) throws RunnerException {
@@ -513,5 +512,10 @@ public class PackingDao implements IPackingDao {
     @Override
     public List<Packing> findByConsolidationId(Long consolidationId) {
         return packingRepository.findByConsolidationId(consolidationId);
+    }
+
+    @Override
+    public List<Packing> findByContainerIdIn(List<Long> deleteContainerIds) {
+        return packingRepository.findByContainerIdIn(deleteContainerIds);
     }
 }

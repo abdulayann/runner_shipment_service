@@ -5,7 +5,10 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSetting
 import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbNotifyPartyInfo;
+import com.dpw.runner.shipment.services.dto.request.awb.OtherPartyInfo;
+import com.dpw.runner.shipment.services.dto.request.awb.AirMessagingAdditionalFields;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.dto.response.AwbShipmentInfoResponse;
 import com.dpw.runner.shipment.services.kafka.dto.AirMessagingEventDto;
 import com.dpw.runner.shipment.services.kafka.dto.AirMessagingStatusDto;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
@@ -639,8 +642,24 @@ class AwbUtilityTest extends CommonMocks {
             awbPaymentInfo.setTotalPrepaid(BigDecimal.ZERO);
             awbPaymentInfo.setTotalCollect(BigDecimal.ZERO);
         }
+
+        OtherPartyInfo shipperPartyInfo = OtherPartyInfo.builder().additionalId("1").build();
+        OtherPartyInfo consigneePartyInfo = OtherPartyInfo.builder().additionalId("2").build();
+        OtherPartyInfo issuingAgentPartyInfo = OtherPartyInfo.builder().additionalId("3").build();
+        OtherPartyInfo notifyPartyInfo = OtherPartyInfo.builder().additionalId("1").build();
+        AwbShipmentInfoResponse awbShipmentInfoResponse = new AwbShipmentInfoResponse();
+        awbShipmentInfoResponse.setShipperPartyInfo(shipperPartyInfo);
+        awbShipmentInfoResponse.setConsigneePartyInfo(consigneePartyInfo);
+        AwbNotifyPartyInfo awbNotifyPartyInfo = new AwbNotifyPartyInfo();
+        if(args==3){
+            awbShipmentInfoResponse.setIssuingAgentPartyInfo(issuingAgentPartyInfo);
+            awbAirMessagingResponse.setAirMessagingAdditionalFields(AirMessagingAdditionalFields.builder().build());
+            awbNotifyPartyInfo.setOtherPartyInfo(notifyPartyInfo);
+        }
         awbAirMessagingResponse.setAwbPaymentInfo(awbPaymentInfo);
         awbAirMessagingResponse.setAwbRoutingInfo(List.of(awbRoutingInfoResponse));
+        awbAirMessagingResponse.setAwbShipmentInfo(awbShipmentInfoResponse);
+        awbAirMessagingResponse.setAwbNotifyPartyInfo(Collections.singletonList(awbNotifyPartyInfo));
         when(jsonHelper.convertValue(any(), eq(AwbAirMessagingResponse.class))).thenReturn(awbAirMessagingResponse);
 
         //Mock fetchOrgInfoFromV1
@@ -688,6 +707,8 @@ class AwbUtilityTest extends CommonMocks {
         carriersMap.put(mockByCarrier, mockCarrier);
         when(masterDataUtils.fetchInBulkCarriers(any())).thenReturn(carriersMap);
         mockTenantSettings();
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().volumeChargeableUnit("M3").weightChargeableUnit("KG").isAwbRevampEnabled(true).build());
+        mockShipmentSettings();
         var expectedResponse = awbUtility.createAirMessagingRequestForShipment(mockAwb, mockShipment, null, null);
 
         assertNotNull(expectedResponse);
@@ -727,7 +748,7 @@ class AwbUtilityTest extends CommonMocks {
                 .organizations(responseOrgs).addresses(responseAddrs).build();
         when(v1ServiceUtil.fetchOrgInfoFromV1(anyList())).thenReturn(mockOrgAddressResponse);
         mockTenantSettings();
-
+        mockShipmentSettings();
         var expectedResponse = awbUtility.createAirMessagingRequestForShipment(mockAwb, mockShipment, null, null);
 
         assertNotNull(expectedResponse);
@@ -783,7 +804,7 @@ class AwbUtilityTest extends CommonMocks {
                 .organizations(responseOrgs).addresses(responseAddrs).build();
         when(v1ServiceUtil.fetchOrgInfoFromV1(anyList())).thenReturn(mockOrgAddressResponse);
         mockTenantSettings();
-
+        mockShipmentSettings();
         var expectedResponse = awbUtility.createAirMessagingRequestForShipment(mockAwb, mockShipment, null, masterAwb);
 
         assertNotNull(expectedResponse);

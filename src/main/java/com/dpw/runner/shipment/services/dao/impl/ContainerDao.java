@@ -8,8 +8,10 @@ import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
+import com.dpw.runner.shipment.services.dto.mapper.ContainersMapper;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
+import com.dpw.runner.shipment.services.entity.response.consolidation.IContainerLiteResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -34,6 +36,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.springframework.util.CollectionUtils;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
@@ -107,6 +110,11 @@ public class ContainerDao implements IContainerDao {
     @Override
     public Page<Containers> findAll(Specification<Containers> spec, Pageable pageable) {
         return containerRepository.findAll(spec, pageable);
+    }
+
+    @Override
+    public List<IContainerLiteResponse> findAllLiteContainer(List<Long> consolidationId) {
+        return containerRepository.findAllLiteContainer(consolidationId);
     }
 
     @Override
@@ -250,15 +258,9 @@ public class ContainerDao implements IContainerDao {
             if (containersList != null) {
                 List<Containers> containerList = new ArrayList<>(containersList);
                 if(fromConsolidation) {
-                    Map<Long, Containers> hashMap;
-                    ListCommonRequest listCommonRequest;
-//                    if(!Objects.isNull(containersIdList) && !containersIdList.isEmpty()) {
-                        listCommonRequest = constructListCommonRequest("consolidationId", consolidationId, "=");
-                        Pair<Specification<Containers>, Pageable> pair = fetchData(listCommonRequest, Containers.class);
-                        Page<Containers> containersPage = findAll(pair.getLeft(), pair.getRight());
-                        hashMap = containersPage.stream()
+                    List<Containers> containersPage = findByConsolidationId(consolidationId);
+                    Map<Long, Containers> hashMap = containersPage.stream()
                                 .collect(Collectors.toMap(Containers::getId, Function.identity()));
-//                    }
                     for (Containers containers: containerList) {
                         containers.setConsolidationId(consolidationId);
                         Long id = containers.getId();
@@ -272,16 +274,14 @@ public class ContainerDao implements IContainerDao {
                     if(!hashMap.isEmpty()) {
                         List<Long> deletedContIds = hashMap.keySet().stream().toList();
                         if(deletedContIds.size() > 0) {
-                            listCommonRequest = constructListCommonRequest("containerId", deletedContIds, "IN");
-                            Pair<Specification<Packing>, Pageable> pair2 = fetchData(listCommonRequest, Packing.class);
-                            Page<Packing> packingPage = packingDao.findAll(pair2.getLeft(), pair2.getRight());
-                            if(packingPage != null && !packingPage.isEmpty()) {
-                                for (Packing packing : packingPage.getContent()) {
+                            List<Packing> packings = packingDao.findByContainerIdIn(deletedContIds);
+                            if(!CollectionUtils.isEmpty(packings)) {
+                                for (Packing packing : packings) {
                                     packing.setContainerId(null);
                                 }
-                                packingDao.saveAll(packingPage.getContent());
+                                packingDao.saveAll(packings);
                                 try {
-                                    packingsSync.sync(packingPage.getContent(), UUID.randomUUID().toString());
+                                    packingsSync.sync(packings, UUID.randomUUID().toString());
                                 } catch (Exception e) {
                                     log.error("Error performing sync on packings list, {}", e.getMessage());
                                 }
@@ -303,7 +303,7 @@ public class ContainerDao implements IContainerDao {
                             if(oldEntity.isPresent())
                             {
                                 operation = DBOperationType.UPDATE.name();
-                                oldEntityJson = modelMapper.map(oldEntity.get(), Containers.class);
+                                oldEntityJson = ContainersMapper.INSTANCE.toContainers(oldEntity.get());
                             }
                         }
                         try {
@@ -430,4 +430,17 @@ public class ContainerDao implements IContainerDao {
         return containerRepository.findByConsolidationId(consolidationId);
     }
 
+    @Override
+    public List<Containers> findByConsolidationIdIn(List<Long> consolidationIds) {
+        return containerRepository.findByConsolidationIdIn(consolidationIds);
+    }
+    @Override
+    public List<Containers> findByIdIn(List<Long> containerIds) {
+        return containerRepository.findByIdIn(containerIds);
+    }
+
+    @Override
+    public void deleteByIdIn(List<Long> containerIds) {
+        containerRepository.deleteAllById(containerIds);
+    }
 }

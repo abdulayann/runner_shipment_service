@@ -30,6 +30,9 @@ public class TopicConfigs {
     @Value("${containersKafka.queue}")
     private String containerKafkaBeanName;
 
+    @Value("${tiKafka.queue}")
+    private String tiKafkaBeanName;
+
     @PostConstruct
     void init() {
         NewTopic awbTopic = TopicBuilder.name(awbKafkaBeanName)
@@ -63,6 +66,14 @@ public class TopicConfigs {
                 .compact()
                 .build();
         context.registerBean(containerKafkaBeanName, NewTopic.class, () -> containerKafkaTopic);
+
+        NewTopic tiKafkaTopic = TopicBuilder.name(tiKafkaBeanName)
+                .partitions(3)
+                .replicas(1)
+                .config(TopicConfig.MIN_IN_SYNC_REPLICAS_CONFIG, String.valueOf(1))
+                .compact()
+                .build();
+        context.registerBean(tiKafkaBeanName, NewTopic.class, () -> tiKafkaTopic);
 
 
     }

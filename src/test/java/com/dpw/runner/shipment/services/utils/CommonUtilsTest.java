@@ -954,10 +954,110 @@ class CommonUtilsTest {
         carrierDetails.setDestinationPort("test");
         Map<String, EntityTransferUnLocations> unlocationsMap = new HashMap<>();
         unlocationsMap.put("test", new EntityTransferUnLocations());
-        when(masterDataUtils.getLocationDataFromCache(any())).thenReturn(unlocationsMap);
+        when(masterDataUtils.getLocationDataFromCache(any(), anyString())).thenReturn(unlocationsMap);
         commonUtils.updateUnLocData(carrierDetails, null);
         verify(carrierDetailsDao, times(0)).saveUnLocCodes(any());
     }
+
+    @Test
+    void testUpdateCarrierUnLocData() {
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setOrigin("test");
+        carrierDetails.setOriginPort("test");
+        carrierDetails.setDestination("test");
+        carrierDetails.setDestinationPort("test");
+        String mockLocCode = "LocCode-test";
+        Map<String, EntityTransferUnLocations> unlocationsMap = new HashMap<>();
+        unlocationsMap.put("test", EntityTransferUnLocations.builder().LocCode(mockLocCode).build());
+        commonUtils.updateCarrierUnLocData(carrierDetails, unlocationsMap);
+        assertEquals(carrierDetails.getOriginLocCode(), mockLocCode);
+        assertEquals(carrierDetails.getDestinationLocCode(), mockLocCode);
+        assertEquals(carrierDetails.getOriginPortLocCode(), mockLocCode);
+        assertEquals(carrierDetails.getDestinationPortLocCode(), mockLocCode);
+    }
+
+    @Test
+    void testUpdateCarrierUnLocData_FailsToUpdateInCaseOfError() {
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setOrigin("test");
+        carrierDetails.setOriginPort("test");
+        carrierDetails.setDestination("test");
+        carrierDetails.setDestinationPort("test");
+        commonUtils.updateCarrierUnLocData(carrierDetails, null);
+        assertEquals(carrierDetails.getOriginLocCode(), null);
+    }
+
+    @Test
+    void testUpdateRoutingUnLocData() {
+        Routings routings = new Routings();
+        routings.setPol("test");
+        routings.setPod("test");
+        String mockLocCode = "LocCode-test";
+        Map<String, EntityTransferUnLocations> unlocationsMap = new HashMap<>();
+        unlocationsMap.put("test", EntityTransferUnLocations.builder().LocCode(mockLocCode).build());
+        commonUtils.updateRoutingUnLocData(List.of(routings), unlocationsMap);
+        assertEquals(routings.getOriginPortLocCode(), mockLocCode);
+        assertEquals(routings.getDestinationPortLocCode(), mockLocCode);
+    }
+
+    @Test
+    void testUpdateRoutingUnLocData_FailsToUpdateInCaseOfError() {
+        Routings routings = new Routings();
+        routings.setPol("test");
+        routings.setPod("test");
+        String mockLocCode = null;
+        commonUtils.updateRoutingUnLocData(List.of(routings), null);
+        assertEquals(routings.getOriginPortLocCode(), mockLocCode);
+        assertEquals(routings.getDestinationPortLocCode(), mockLocCode);
+    }
+
+    @Test
+    void testGetChangedUnLocationFields_ForInputEntity() {
+        Routings routings = new Routings();
+        routings.setPol("testPol");
+        routings.setPod("testPod");
+        Set<String> unLocationSet = new HashSet<>();
+
+        commonUtils.getChangedUnLocationFields(routings, null, unLocationSet);
+        assertEquals(2, unLocationSet.size());
+    }
+
+    @Test
+    void testGetChangedUnLocationFields_ShouldNotChangeSetIfFieldsAreSame() {
+        Routings routings = new Routings();
+        routings.setPol("testPol");
+        routings.setPod("testPod");
+
+        Routings oldRouting = new Routings();
+        oldRouting.setPol("testPol");
+        oldRouting.setPod("testPod");
+        Set<String> unLocationSet = new HashSet<>();
+
+        commonUtils.getChangedUnLocationFields(routings, oldRouting, unLocationSet);
+        assertEquals(0, unLocationSet.size());
+    }
+
+    @Test
+    void testGetChangedUnLocationFields_ForInputList() {
+        Routings routings1 = new Routings();
+        routings1.setPol("testPol1");
+        routings1.setPod("testPod1");
+        Routings routings2 = new Routings();
+        routings2.setPol("testPol2");
+        routings2.setPod("testPod2");
+        Set<String> unLocationSet = new HashSet<>();
+
+        commonUtils.getChangedUnLocationFields(List.of(routings1, routings2), null, unLocationSet);
+        assertEquals(4, unLocationSet.size());
+    }
+
+    @Test
+    void testGetChangedUnLocationFields_ForEmptyInputList() {
+        Set<String> unLocationSet = new HashSet<>();
+        commonUtils.getChangedUnLocationFields(null, null, unLocationSet);
+        assertEquals(0, unLocationSet.size());
+    }
+
 
     @Test
     void testUpdateUnLocData_Data1() {
@@ -3089,4 +3189,103 @@ class CommonUtilsTest {
     void testChangeShipmentDGStatusToReqd() {
         assertFalse(commonUtils.changeShipmentDGStatusToReqd(ShipmentDetails.builder().direction(IMP).build(), false));
     }
+
+    @Test
+    void testGetTriangulationPartnerList_EmptyInput() {
+        List<Long> triangulationPartnerIds = commonUtils.getTriangulationPartnerList(null);
+
+        assertNotNull(triangulationPartnerIds);
+        assertTrue(triangulationPartnerIds.isEmpty());
+    }
+
+    @Test
+    void testGetTriangulationPartnerList_NonEmptyInput() {
+        List<TriangulationPartner> partnerList = Arrays.asList(
+                TriangulationPartner.builder().triangulationPartner(1L).isAccepted(true).build(),
+                TriangulationPartner.builder().triangulationPartner(2L).isAccepted(false).build(),
+                null
+        );
+
+        // Act
+        List<Long> triangulationPartnerIds = commonUtils.getTriangulationPartnerList(partnerList);
+
+        // Assert
+        assertNotNull(triangulationPartnerIds);
+        assertEquals(2, triangulationPartnerIds.size());
+        assertTrue(triangulationPartnerIds.contains(1L));
+        assertTrue(triangulationPartnerIds.contains(2L));
+    }
+
+    @Test
+    void testGetTenantIdsFromEntity_ShipmentSuccess() {
+        Long entityId = 1L;
+        ShipmentDetails mockShipment = new ShipmentDetails();
+        mockShipment.setTenantId(100);
+        mockShipment.setReceivingBranch(200L);
+        mockShipment.setTriangulationPartnerList(List.of(
+                TriangulationPartner.builder().triangulationPartner(300L).build(),
+                TriangulationPartner.builder().triangulationPartner(400L).build()
+        ));
+
+        when(shipmentDao.findShipmentByIdWithQuery(entityId)).thenReturn(Optional.of(mockShipment));
+
+        List<Long> result = commonUtils.getTenantIdsFromEntity(entityId, Constants.SHIPMENT);
+
+        assertEquals(4, result.size());
+    }
+
+    @Test
+    void testGetTenantIdsFromEntity_ConsolidationSuccess() {
+        Long entityId = 2L;
+        ConsolidationDetails mockConsolidation = new ConsolidationDetails();
+        mockConsolidation.setTenantId(500);
+        mockConsolidation.setReceivingBranch(600L);
+        mockConsolidation.setTriangulationPartnerList(List.of(
+                TriangulationPartner.builder().triangulationPartner(700L).build()
+        ));
+
+        when(consolidationDetailsDao.findConsolidationByIdWithQuery(entityId)).thenReturn(Optional.of(mockConsolidation));
+
+        List<Long> result = commonUtils.getTenantIdsFromEntity(entityId, Constants.CONSOLIDATION);
+
+        assertEquals(3, result.size());
+    }
+
+    @Test
+    void testGetTenantIdsFromEntity_ShipmentNotFound() {
+        Long entityId = 1L;
+
+        when(shipmentDao.findShipmentByIdWithQuery(entityId)).thenReturn(Optional.empty());
+
+        List<Long> result = commonUtils.getTenantIdsFromEntity(entityId, Constants.SHIPMENT);
+
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testGetTenantIdsFromEntity_ConsolidationNotFound() {
+        Long entityId = 2L;
+
+        when(consolidationDetailsDao.findConsolidationByIdWithQuery(entityId)).thenReturn(Optional.empty());
+
+        List<Long> result = commonUtils.getTenantIdsFromEntity(entityId, Constants.CONSOLIDATION);
+
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testGetTenantIdsFromEntity_EmptyTriangulationPartners() {
+        Long entityId = 3L;
+        ShipmentDetails mockShipment = new ShipmentDetails();
+        mockShipment.setTenantId(800);
+        mockShipment.setReceivingBranch(900L);
+        mockShipment.setTriangulationPartnerList(Collections.emptyList());
+
+        when(shipmentDao.findShipmentByIdWithQuery(entityId)).thenReturn(Optional.of(mockShipment));
+
+        List<Long> result = commonUtils.getTenantIdsFromEntity(entityId, Constants.SHIPMENT);
+
+        assertEquals(2, result.size());
+    }
+
 }

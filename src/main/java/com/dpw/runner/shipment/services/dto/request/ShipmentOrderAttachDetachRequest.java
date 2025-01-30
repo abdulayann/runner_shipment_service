@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -13,8 +14,16 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 public class ShipmentOrderAttachDetachRequest implements IRunnerRequest {
-    private UUID orderGuid;
     private UUID shipmentGuid;
-    private String orderNumber;
     private String event;
+    private List<OrderDetails> orderDetailsList;
+
+    @Builder
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class OrderDetails {
+        private String orderNumber;
+        private UUID orderGuid;
+    }
 }

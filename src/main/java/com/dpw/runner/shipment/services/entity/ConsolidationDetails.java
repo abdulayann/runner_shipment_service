@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
 import com.dpw.runner.shipment.services.utils.MasterData;
@@ -12,19 +13,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
-import javax.persistence.CascadeType;
-import javax.persistence.CollectionTable;
-import javax.persistence.Column;
-import javax.persistence.ElementCollection;
-import javax.persistence.Entity;
-import javax.persistence.FetchType;
-import javax.persistence.JoinColumn;
-import javax.persistence.JoinTable;
-import javax.persistence.ManyToMany;
-import javax.persistence.OneToMany;
-import javax.persistence.OneToOne;
-import javax.persistence.OrderBy;
-import javax.persistence.Table;
+import javax.persistence.*;
 import javax.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -268,13 +257,10 @@ public class ConsolidationDetails extends MultiTenancy {
     @Size(max=50, message = "max size is 50 for edi_transaction_id")
     private String ediTransactionId;
 
-    @Column(name = "partner_id")
-    @ElementCollection(targetClass = Long.class, fetch = FetchType.LAZY)
-    @CollectionTable(
-            name = "triangulation_partner_consolidation",
-            joinColumns = @JoinColumn(name = "consolidation_id"))
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "triangulation_partner_consolidation", joinColumns = @JoinColumn(name = "consolidation_id"))
     @BatchSize(size = 50)
-    private List<Long> triangulationPartnerList;
+    private List<TriangulationPartner> triangulationPartnerList;
 
     @Column(name = "triangulation_partner")
     @TenantIdData
@@ -496,7 +482,13 @@ public class ConsolidationDetails extends MultiTenancy {
     @Column(name = "is_network_file")
     private Boolean isNetworkFile;
 
+    @Column(name = "transfer_status")
+    @Enumerated(EnumType.STRING)
+    private NetworkTransferStatus transferStatus;
+
     @Column(name = "is_receiving_branch_manually")
     private Boolean isReceivingBranchManually;
 
+    @Column(name = "is_transferred_to_receiving_branch")
+    private Boolean isTransferredToReceivingBranch;
 }

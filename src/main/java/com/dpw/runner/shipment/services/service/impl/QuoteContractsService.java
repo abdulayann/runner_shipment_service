@@ -14,8 +14,10 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IQuoteContractsService;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -151,6 +153,18 @@ public class QuoteContractsService implements IQuoteContractsService {
 
     private IRunnerResponse convertEntityToDto(QuoteContracts quoteContracts) {
         return jsonHelper.convertValue(quoteContracts, QuoteContractsResponse.class);
+    }
+
+    @Override
+    public QuoteContracts getQuoteContractsByContractId(String contractId) {
+        if(StringUtils.isEmpty(contractId)) {
+            return null;
+        }
+        List<QuoteContracts> quoteContractsList = quoteContractsDao.findByContractId(contractId);
+        if(!CommonUtils.listIsNullOrEmpty(quoteContractsList)) {
+            return quoteContractsList.get(0);
+        }
+        return null;
     }
 
 }

@@ -64,6 +64,8 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import javax.servlet.http.HttpServletResponse;
+
+import org.apache.http.auth.AuthenticationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -653,7 +655,7 @@ class ShipmentControllerTest {
         when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(10));
         when(shipmentService.retrieveForNTE(any())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
-        var responseEntity = shipmentController.retrieveForNTE(Optional.of(111L));
+        var responseEntity = shipmentController.retrieveForNTE(Optional.of(111L), Optional.of("dda5d586-0f21-47df-a905-ab4103ae009f"));
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -1117,7 +1119,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void testConsoleShipmentList_Success() {
+    void testConsoleShipmentList_Success() throws AuthenticationException {
         // Mock
         ListCommonRequest listCommonRequest = new ListCommonRequest();
         Long consoleId = 1L;
@@ -1125,23 +1127,23 @@ class ShipmentControllerTest {
         IRunnerResponse runnerResponse = new RunnerListResponse<>();
         ResponseEntity<IRunnerResponse> responseEntity = ResponseEntity.ok(runnerResponse);
 
-        when(shipmentService.consoleShipmentList(any(CommonRequestModel.class), eq(consoleId), eq(isAttached), anyBoolean()))
+        when(shipmentService.consoleShipmentList(any(CommonRequestModel.class), eq(consoleId), eq(""), eq(isAttached), anyBoolean(), anyBoolean()))
                 .thenReturn(responseEntity);
         // Test
-        responseEntity = shipmentController.consoleShipmentList(listCommonRequest, 1L, true, true);
+        responseEntity = shipmentController.consoleShipmentList(listCommonRequest, 1L, "", true, true, false);
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
     @Test
-    void testConsoleShipmentList_Exception() {
+    void testConsoleShipmentList_Exception() throws AuthenticationException {
         // Mock
-        when(shipmentService.consoleShipmentList(any(), anyLong(), anyBoolean(), anyBoolean())).thenThrow(new RuntimeException("Test Exception"));
+        when(shipmentService.consoleShipmentList(any(), anyLong(), eq(null),  anyBoolean(), anyBoolean(), anyBoolean())).thenThrow(new RuntimeException("Test Exception"));
         ListCommonRequest request = mock(ListCommonRequest.class);
         // Test
-        var responseEntity = shipmentController.consoleShipmentList(request, 1L, true, true);
+        var responseEntity = shipmentController.consoleShipmentList(request, 1L, null,true, true, false);
         // Assert
-        assertEquals(HttpStatus.FORBIDDEN, responseEntity.getStatusCode());
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
     @Test

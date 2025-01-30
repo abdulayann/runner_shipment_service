@@ -10,6 +10,8 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.dpw.runner.shipment.services.DocumentService.DocumentService;
@@ -42,6 +44,7 @@ import com.dpw.runner.shipment.services.dao.impl.HblDao;
 import com.dpw.runner.shipment.services.dao.impl.HblReleaseTypeMappingDao;
 import com.dpw.runner.shipment.services.dao.impl.HblTermsConditionTemplateDao;
 import com.dpw.runner.shipment.services.dao.impl.ShipmentDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerDataResponse;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerResponse;
@@ -63,7 +66,9 @@ import com.dpw.runner.shipment.services.entity.enums.PrintType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
+import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.service.interfaces.IDpsEventService;
 import com.dpw.runner.shipment.services.service.interfaces.IEventService;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
@@ -82,6 +87,7 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -114,6 +120,12 @@ class ReportServiceTest {
 
     @Mock
     private SeawayBillReport seawayBillReport;
+
+    @Mock
+    private IConsoleShipmentMappingDao consoleShipmentMappingDao;
+
+    @Mock
+    private IDpsEventService dpsEventService;
 
     @Mock
     private MawbReport mawbReport;
@@ -203,6 +215,9 @@ class ReportServiceTest {
 
     @Mock
     private CSDReport csdReport;
+
+    @Mock
+    private DependentServiceHelper dependentServiceHelper;
 
     private Map<String, Object> dataRetrived;
 
@@ -1834,6 +1849,7 @@ class ReportServiceTest {
 
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
+        verify(eventService, times(0)).saveEvent(any());
         assertNotNull(data);
     }
 
@@ -1870,6 +1886,7 @@ class ReportServiceTest {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
+        verify(eventService, times(0)).saveEvent(any());
     }
 
     @Test
@@ -3186,6 +3203,39 @@ class ReportServiceTest {
 
         // Assert that the correct mawbNumber is generated
         assertTrue(pdfBytes.size() > 0);
+    }
+
+    @Test
+    void testGeneratePdfBytes_Combi() {
+        // Test case where reportRequest.isFromConsolidation() returns true
+        ReportService reportService1 = spy(new ReportService());
+        ReportRequest reportRequest = mock(ReportRequest.class);
+        when(reportRequest.getCopyCountForAWB()).thenReturn(2);
+        when(reportRequest.isFromConsolidation()).thenReturn(true);
+
+        DocPages pages = mock(DocPages.class);
+        when(pages.getMainPageId()).thenReturn("mainPageId");
+
+        Map<String, Object> dataRetrived = new HashMap<>();
+        dataRetrived.put(ReportConstants.MAWB_NUMBER, "MAWB123");
+        dataRetrived.put(ReportConstants.TOTAL_CONSOL_PACKS, 3);
+        dataRetrived.put(ReportConstants.IS_COMBI, true);
+        List<Pair<String, Integer>> map = new ArrayList<>();
+        map.add(Pair.of("hawb1", 1));
+        map.add(Pair.of("hawb2", 1));
+        map.add(Pair.of("hawb3", 1));
+        map.add(Pair.of("hawb4", 1));
+        dataRetrived.put("hawbPacksMap", map);
+
+        List<byte[]> pdfBytes = new ArrayList<>();
+
+        // Mock GetFromDocumentService and other methods
+        doReturn(new byte[1]).when(reportService1).GetFromDocumentService(any(Map.class), anyString());
+        doReturn(new byte[1]).when(reportService1).addBarCodeInAWBLableReport(any(byte[].class), anyString(), anyString());
+
+        reportService1.generatePdfBytes(reportRequest, pages, dataRetrived, pdfBytes);
+
+        assertEquals(6, pdfBytes.size()); // 2 copies * 3 packs
     }
 
     @Test

@@ -1,10 +1,5 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.getConstrainViolationErrorMessage;
-
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -18,18 +13,10 @@ import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksLinkDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.entity.CarrierDetails;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.MawbStocks;
-import com.dpw.runner.shipment.services.entity.MawbStocksLink;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.Parties;
-import com.dpw.runner.shipment.services.entity.Routings;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
+import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -46,19 +33,6 @@ import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.google.common.base.Strings;
 import com.nimbusds.jose.util.Pair;
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import javax.persistence.EntityManager;
-import javax.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -68,6 +42,15 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
+
+import javax.persistence.EntityManager;
+import javax.validation.ConstraintViolationException;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.*;
+
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
 
 @Repository
 @Slf4j
@@ -220,7 +203,7 @@ public class ShipmentDao implements IShipmentDao {
             if (!Strings.isNullOrEmpty(shipmentDetails.getMasterBill()) && Boolean.FALSE.equals(isMAWBNumberValid(shipmentDetails.getMasterBill())))
                 throw new ValidationException("Please enter a valid MAWB number.");
             if ((shipmentDetails.getJobType() != null && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)) || (oldShipment != null && oldShipment.getJobType() != null && oldShipment.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)))
-                directShipmentMAWBCheck(shipmentDetails, oldShipment != null ? oldShipment.getMasterBill() : null);
+                directShipmentMAWBCheck(shipmentDetails, oldShipment != null ? oldShipment.getMasterBill() : null, oldShipment != null ? oldShipment.getJobType():null);
         }
 
 
@@ -494,7 +477,7 @@ public class ShipmentDao implements IShipmentDao {
         return null;
     }
 
-    private void directShipmentMAWBCheck(ShipmentDetails shipmentRequest, String oldMasterBill) {
+    private void directShipmentMAWBCheck(ShipmentDetails shipmentRequest, String oldMasterBill, String oldJobType) {
 
         if (StringUtility.isEmpty(shipmentRequest.getMasterBill())) {
             if(!shipmentRequest.getDirection().equals("IMP")) {
@@ -502,7 +485,9 @@ public class ShipmentDao implements IShipmentDao {
             }
             return;
         }
-        if (!Objects.equals(shipmentRequest.getMasterBill(), oldMasterBill) && !shipmentRequest.getDirection().equals("IMP")) {
+        if (!shipmentRequest.getDirection().equals("IMP") &&
+                (!Objects.equals(shipmentRequest.getMasterBill(), oldMasterBill) ||
+                (!StringUtility.isEmpty(oldMasterBill) && Constants.SHIPMENT_TYPE_DRT.equals(oldJobType) && !Constants.SHIPMENT_TYPE_DRT.equals(shipmentRequest.getJobType())))) {
             mawbStocksLinkDao.deLinkExistingMawbStockLink(oldMasterBill);
         }
 
@@ -726,5 +711,46 @@ public class ShipmentDao implements IShipmentDao {
     @Override
     public void updateAdditionalDetailsByShipmentId(Long id, boolean emptyContainerReturned) {
         shipmentRepository.updateAdditionalDetailsByShipmentId(id, emptyContainerReturned);
+    }
+
+    @Override
+    public List<ShipmentDetails> findByShipmentIdInAndContainsHazardous(List<Long> shipmentIdList,
+        boolean containsHazardous) {
+       return shipmentRepository.findByShipmentIdInAndContainsHazardous(shipmentIdList, containsHazardous);
+    }
+
+    @Override
+    public List<ShipmentDetails> findByShipmentIdIn(List<String> shipmentIds) {
+        return shipmentRepository.findByShipmentIdIn(shipmentIds);
+    }
+
+    @Override
+    @Transactional
+    public void saveIsTransferredToReceivingBranch(Long id, Boolean entityTransferred) {
+        shipmentRepository.saveIsTransferredToReceivingBranch(id, entityTransferred);
+    }
+
+    @Override
+    @Transactional
+    public void updateIsAcceptedTriangulationPartner(Long shipmentId, Long triangulationPartner, Boolean isAccepted) {
+        shipmentRepository.updateIsAcceptedTriangulationPartner(shipmentId, triangulationPartner, isAccepted);
+    }
+
+    @Override
+    @Transactional
+    public void updateTransferStatus(List<Long> id, NetworkTransferStatus transferStatus) {
+        shipmentRepository.updateTransferStatus(id, transferStatus.name());
+    }
+    
+    @Override
+    @Transactional
+    public void updateFCRNo(Long id) {
+        shipmentRepository.updateFCRNo(id);
+    }
+
+    @Override
+    @Transactional
+    public Optional<ShipmentDetails> findShipmentByGuidWithQuery(UUID guid) {
+        return shipmentRepository.findShipmentByGuidWithQuery(guid);
     }
 }

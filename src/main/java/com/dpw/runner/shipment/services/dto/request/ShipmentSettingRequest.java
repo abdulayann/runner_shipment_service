@@ -183,5 +183,11 @@ public class ShipmentSettingRequest extends CommonRequest implements IRunnerRequ
     private LocalDateTime isEntityTransferPrerequisiteEnabledDate;
     private Boolean isEntityTransferPrerequisiteEnabled;
     private Boolean isNetworkTransferEntityEnabled;
+    private Boolean isAutomaticTransferEnabled;
     private Boolean eventsRevampEnabled;
+    private Boolean isAlwaysUtilization;
+    private Boolean isUtilizationForContainerQuoted;
+    private Boolean hasNoUtilization;
+    private Boolean isAwbRevampEnabled;
+    private String fcrDocument;
 }

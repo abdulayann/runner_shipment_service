@@ -95,7 +95,7 @@ public class ShipmentSettingsDetails extends MultiTenancy {
     private Boolean isAtdAtaAutoPopulateEnabled;
 
     @Column(name = "restricted_locations")
-    @ElementCollection(targetClass = String.class, fetch = FetchType.EAGER)
+    @ElementCollection(targetClass = String.class, fetch = FetchType.LAZY)
     @CollectionTable(name = "shipment_settings_details_restricted_locations", joinColumns = @JoinColumn(name = "shipment_settings_details_id"))//    @OneToMany(fetch = FetchType.EAGER)
     @BatchSize(size = 50)
     private List<String> restrictedLocations;
@@ -562,6 +562,24 @@ public class ShipmentSettingsDetails extends MultiTenancy {
     @Column(name = "is_network_transfer_entity_enabled")
     private Boolean isNetworkTransferEntityEnabled = false;
 
+    @Column(name = "is_automatic_transfer_enabled")
+    private Boolean isAutomaticTransferEnabled = false;
+
     @Column(name = "events_revamp_enabled")
     private Boolean eventsRevampEnabled;
+
+    @Column(name = "is_always_utilization")
+    private Boolean isAlwaysUtilization;
+
+    @Column(name = "is_utilization_for_container_quoted")
+    private Boolean isUtilizationForContainerQuoted;
+
+    @Column(name = "has_no_utilization")
+    private Boolean hasNoUtilization;
+
+    @Column(name = "is_awb_revamp_enabled")
+    private Boolean isAwbRevampEnabled;
+
+    @Column(name = "fcr_document")
+    private String fcrDocument;
 }

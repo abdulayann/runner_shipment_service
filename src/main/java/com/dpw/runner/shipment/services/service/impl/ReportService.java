@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.ReportingService.Reports.CSDReport;
 import com.dpw.runner.shipment.services.ReportingService.Reports.CargoManifestAirConsolidationReport;
 import com.dpw.runner.shipment.services.ReportingService.Reports.CargoManifestAirShipmentReport;
 import com.dpw.runner.shipment.services.ReportingService.Reports.DeliveryOrderReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.FCRDocumentReport;
 import com.dpw.runner.shipment.services.ReportingService.Reports.HawbReport;
 import com.dpw.runner.shipment.services.ReportingService.Reports.HblReport;
 import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
@@ -27,12 +28,14 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.DpsConstants;
 import com.dpw.runner.shipment.services.commons.constants.EventConstants;
 import com.dpw.runner.shipment.services.commons.enums.MawbPrintFor;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IHblDao;
@@ -49,6 +52,7 @@ import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.request.ReportRequest;
 import com.dpw.runner.shipment.services.entity.Awb;
+import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Hbl;
 import com.dpw.runner.shipment.services.entity.HblReleaseTypeMapping;
@@ -61,11 +65,14 @@ import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.entity.enums.PrintType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.entity.enums.TypeOfHblPrint;
+import com.dpw.runner.shipment.services.exception.exceptions.ReportException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
+import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.service.interfaces.IDpsEventService;
 import com.dpw.runner.shipment.services.service.interfaces.IEventService;
 import com.dpw.runner.shipment.services.service.interfaces.IReportService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
@@ -105,6 +112,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -113,6 +122,22 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COMBI_HAWB_COUNT;
 
 @Service
 @Slf4j
@@ -154,6 +179,8 @@ public class ReportService implements IReportService {
     @Autowired
     private IShipmentService shipmentService;
     @Autowired
+    private IConsoleShipmentMappingDao consoleShipmentMappingDao;
+    @Autowired
     private IShipmentSync shipmentSync;
     @Autowired
     private IHblReleaseTypeMappingDao hblReleaseTypeMappingDao;
@@ -171,6 +198,10 @@ public class ReportService implements IReportService {
     private IAwbDao awbDao;
     @Autowired
     private AWBLabelReport awbLabelReport;
+    @Autowired
+    private DependentServiceHelper dependentServiceHelper;
+    @Autowired
+    private IDpsEventService dpsEventService;
 
     @Autowired
     @Lazy
@@ -263,6 +294,32 @@ public class ReportService implements IReportService {
             isNeutralPrint = reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.NEUTRAL);
         }
 
+        IReport report = reportsFactory.getReport(reportRequest.getReportInfo());
+        if (report instanceof MawbReport mawbReport) {
+            mawbReport.isDMawb = reportRequest.isFromShipment(); // Set isDMawb based on isFromShipment flag
+
+            if (!reportRequest.isFromShipment()) { // Case: Request came from consolidation
+                long consolidationId = Long.parseLong(reportRequest.getReportId());
+                List<Long> shipmentIdsList = consoleShipmentMappingDao.findByConsolidationId(consolidationId)
+                        .stream().map(ConsoleShipmentMapping::getShipmentId).toList(); // Extract shipment IDs
+
+                // Check if DPS implication(MAWBPR) is present for any shipment
+                if (!shipmentIdsList.isEmpty() && Boolean.TRUE.equals(dpsEventService.isImplicationPresent(shipmentIdsList, DpsConstants.MAWBPR))) {
+                    throw new ReportException(DpsConstants.DPS_ERROR_1);
+                }
+            } else if (Boolean.TRUE.equals(isOriginalPrint)) { // Case: Request came from shipment and is an original print
+                long shipmentId = Long.parseLong(reportRequest.getReportId());
+                ShipmentDetails shipmentDetails = shipmentDao.findById(shipmentId)
+                        .orElseThrow(() -> new ValidationException("No Shipment found with Id: " + shipmentId));
+
+                // Check if the shipment type is DRT and has a DPS implication (MAWBPR)
+                if (Constants.SHIPMENT_TYPE_DRT.equals(shipmentDetails.getJobType()) &&
+                        Boolean.TRUE.equals(dpsEventService.isImplicationPresent(List.of(shipmentId), DpsConstants.MAWBPR))) {
+                    throw new ReportException(DpsConstants.DPS_ERROR_1); // Throw error if implication is found
+                }
+            }
+        }
+
         // Awb print status set for Hawb and Mawb
         this.setPrintTypeForAwb(reportRequest, isOriginalPrint);
 
@@ -279,17 +336,16 @@ public class ReportService implements IReportService {
         Map<String, Object> dataRetrived = new HashMap<>();
         boolean newFlowSuccess = false;
 
-        IReport report =  reportsFactory.getReport(reportRequest.getReportInfo());
-        if(report instanceof MawbReport) {
-            if(reportRequest.isFromShipment()) {
-                ((MawbReport)report).isDMawb = true;
-            } else {
-                ((MawbReport)report).isDMawb = false;
-            }
-        }
         if(report instanceof AWBLabelReport awbLabelReport) {
             awbLabelReport.setMawb(reportRequest.isFromConsolidation());
             awbLabelReport.setRemarks(reportRequest.getRemarks());
+            awbLabelReport.setCombi(reportRequest.isCombiLabel());
+        }
+        if(report instanceof FCRDocumentReport fcrDocumentReport) {
+            fcrDocumentReport.setFcrShipper(reportRequest.getFcrShipper());
+            fcrDocumentReport.setPackIds(reportRequest.getPackIds());
+            fcrDocumentReport.setIssueDate(reportRequest.getDateOfIssue());
+            fcrDocumentReport.setPlaceOfIssue(reportRequest.getPlaceOfIssue());
         }
         // user story 135668
         if(report instanceof ArrivalNoticeReport) {
@@ -336,17 +392,42 @@ public class ReportService implements IReportService {
         //TODO - Need to handle for new flow
         if (report instanceof PickupOrderReport pickupOrderReport && StringUtility.isNotEmpty(reportRequest.getTransportInstructionId())) {
             dataRetrived = pickupOrderReport.getData(Long.parseLong(reportRequest.getReportId()), Long.parseLong(reportRequest.getTransportInstructionId()));
-        } else if (report instanceof DeliveryOrderReport deliveryOrderReport && StringUtility.isNotEmpty(reportRequest.getTransportInstructionId())) {
-            dataRetrived = deliveryOrderReport.getData(Long.parseLong(reportRequest.getReportId()), Long.parseLong(reportRequest.getTransportInstructionId()));
+        } else if (report instanceof DeliveryOrderReport vDeliveryOrderReport) {
+            // Verify if the specified implication (DOPR) exists for the report's ID.
+            // If true, throw a ReportException indicating the implication is already present.
+            if (Boolean.TRUE.equals(dpsEventService.isImplicationPresent(List.of(Long.parseLong(reportRequest.getReportId())), DpsConstants.DOPR))) {
+                throw new ReportException(DpsConstants.DPS_ERROR_1);
+            }
+
+            // If a Transport Instruction ID is provided in the request:
+            if (StringUtility.isNotEmpty(reportRequest.getTransportInstructionId())) {
+                // Retrieve data using both the Report ID and Transport Instruction ID.
+                dataRetrived = vDeliveryOrderReport.getData(
+                        Long.parseLong(reportRequest.getReportId()),
+                        Long.parseLong(reportRequest.getTransportInstructionId()));
+            } else {
+                // If no Transport Instruction ID is provided, retrieve data using only the Report ID.
+                dataRetrived = report.getData(Long.parseLong(reportRequest.getReportId()));
+            }
+
+            // Create an event for the report request with the specific event constant DOGE.
+            createEvent(reportRequest, EventConstants.DOGE);
         } else if (report instanceof TransportOrderReport transportOrderReport && StringUtility.isNotEmpty(reportRequest.getTransportInstructionId())) {
             dataRetrived = transportOrderReport.getData(Long.parseLong(reportRequest.getReportId()), Long.parseLong(reportRequest.getTransportInstructionId()));
         } else if (report instanceof HblReport vHblReport) {
             if (reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.ORIGINAL)) {
+
+                // Verify if the specified implication (HBLPR) exists for the report's ID.
+                // If true, throw a ReportException indicating the implication is already present.
+                if (Boolean.TRUE.equals(dpsEventService.isImplicationPresent(List.of(Long.parseLong(reportRequest.getReportId())), DpsConstants.HBLPR))) {
+                    throw new ReportException(DpsConstants.DPS_ERROR_1);
+                }
+
                 dataRetrived = vHblReport.getData(Long.parseLong(reportRequest.getReportId()), ReportConstants.ORIGINAL);
-                createAutoEvent(reportRequest.getReportId(), EventConstants.FHBL, tenantSettingsRow);
+                createEvent(reportRequest, EventConstants.FHBL);
             } else if (reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.DRAFT)) {
                 dataRetrived = vHblReport.getData(Long.parseLong(reportRequest.getReportId()), ReportConstants.DRAFT);
-                createAutoEvent(reportRequest.getReportId(), EventConstants.DHBL, tenantSettingsRow);
+                createEvent(reportRequest, EventConstants.DHBL);
             } else {
                 dataRetrived = report.getData(Long.parseLong(reportRequest.getReportId()));
             }
@@ -354,11 +435,17 @@ public class ReportService implements IReportService {
             dataRetrived = vPreAlertReport.getData(Long.parseLong(reportRequest.getReportId()));
             createEvent(reportRequest, EventConstants.PRST);
         } else if (report instanceof HawbReport vHawbReport && reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.ORIGINAL)) {
+
+            // Verify if the specified implication (HAWBPR) exists for the report's ID.
+            // If true, throw a ReportException indicating the implication is already present.
+            if (Boolean.TRUE.equals(dpsEventService.isImplicationPresent(List.of(Long.parseLong(reportRequest.getReportId())), DpsConstants.HAWBPR))) {
+                throw new ReportException(DpsConstants.DPS_ERROR_1);
+            }
+
             dataRetrived = vHawbReport.getData(Long.parseLong(reportRequest.getReportId()));
-            createAutoEvent(reportRequest.getReportId(), EventConstants.HAWB, tenantSettingsRow);
+            createEvent(reportRequest, EventConstants.HAWB);
         } else if (report instanceof BookingConfirmationReport vBookingConfirmationReport) {
             dataRetrived = vBookingConfirmationReport.getData(Long.parseLong(reportRequest.getReportId()));
-            createEvent(reportRequest, EventConstants.BOCO);
         } else {
             dataRetrived = report.getData(Long.parseLong(reportRequest.getReportId()));
         }
@@ -755,7 +842,7 @@ public class ReportService implements IReportService {
 //                shipmentDetails.getAdditionalDetails().setDateOfIssue(LocalDate.now().atStartOfDay());
 //            }
             shipmentDetails = shipmentDao.update(shipmentDetails, false);
-            shipmentService.pushShipmentDataToDependentService(shipmentDetails, false, false, Optional.ofNullable(shipmentDetails).map(ShipmentDetails::getContainersList).orElse(null));
+            dependentServiceHelper.pushShipmentDataToDependentService(shipmentDetails, false, false, Optional.ofNullable(shipmentDetails).map(ShipmentDetails::getContainersList).orElse(null));
             try {
                 shipmentSync.sync(shipmentDetails, null, null, UUID.randomUUID().toString(), false);
             } catch (Exception e) {
@@ -781,10 +868,6 @@ public class ReportService implements IReportService {
                     //TODO - Abhimanyu doc upload failing
                     //throw new ValidationException("Unable to upload doc");
                 }
-            }
-            if (reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.Draft.name()))
-            {
-                createAutoEvent(reportRequest.getReportId(), EventConstants.DHBL, tenantSettingsRow);
             }
 
             if(reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.Original.name()) || reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.Surrender.name())){
@@ -833,30 +916,54 @@ public class ReportService implements IReportService {
                 }
             }
         }
-        if(reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.SHIPMENT_CAN_DOCUMENT) ||
-                reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.PICKUP_ORDER) ||
-            reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.DELIVERY_ORDER)) {
-            Map<String, String> eventCodeMapping = new HashMap<>();
-            eventCodeMapping.put(ReportConstants.SHIPMENT_CAN_DOCUMENT.toUpperCase(), EventConstants.CANG);
-            //todo: check for event: PICORDCNF
-            eventCodeMapping.put(ReportConstants.PICKUP_ORDER.toUpperCase(), ReportConstants.PICKUP_ORDER_GEN);
-            eventCodeMapping.put(ReportConstants.DELIVERY_ORDER.toUpperCase(), EventConstants.DOGE);
-            if(eventCodeMapping.containsKey(reportRequest.getReportInfo().toUpperCase())){
-                createAutoEvent(reportRequest.getReportId(), eventCodeMapping.get(reportRequest.getReportInfo().toUpperCase()) , tenantSettingsRow);
+
+        if (ObjectUtils.isNotEmpty(reportRequest.getReportInfo())) {
+            String reportInfo = reportRequest.getReportInfo().toUpperCase();
+
+            if (reportInfo.equals(ReportConstants.PICKUP_ORDER.toUpperCase())) {
+                createAutoEvent(reportRequest.getReportId(), ReportConstants.PICKUP_ORDER_GEN, tenantSettingsRow);
             }
+
+            if (reportInfo.equals(ReportConstants.SHIPMENT_CAN_DOCUMENT.toUpperCase())) {
+                createEvent(reportRequest, EventConstants.CANG);
+            }
+        }
+        if(reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.FCR_DOCUMENT)) {
+            shipmentDao.updateFCRNo(Long.valueOf(reportRequest.getReportId()));
         }
 
         return pdfByteContent;
     }
 
     private void createEvent(ReportRequest reportRequest, String eventCode) {
+        if (reportRequest == null || reportRequest.getReportId() == null) {
+            throw new IllegalArgumentException("Invalid report request or report ID.");
+        }
+
+        Long reportId;
+        try {
+            reportId = Long.parseLong(reportRequest.getReportId());
+        } catch (NumberFormatException ex) {
+            throw new IllegalArgumentException("Invalid report ID format.", ex);
+        }
+
+        // Create EventsRequest
         EventsRequest eventsRequest = new EventsRequest();
         eventsRequest.setActual(LocalDateTime.now());
-        eventsRequest.setEntityId(Long.parseLong(reportRequest.getReportId()));
+        eventsRequest.setEntityId(reportId);
         eventsRequest.setEntityType(Constants.SHIPMENT);
         eventsRequest.setEventCode(eventCode);
         eventsRequest.setEventType(EventType.REPORT.name());
         eventsRequest.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
+
+        // Set reference number based on event code
+        if (EventConstants.DHBL.equalsIgnoreCase(eventCode) || EventConstants.FHBL.equalsIgnoreCase(eventCode)) {
+            shipmentDao.findById(reportId).ifPresent(shipmentDetails ->
+                    eventsRequest.setContainerNumber(shipmentDetails.getHouseBill())
+            );
+        }
+
+        // Save the event
         eventService.saveEvent(eventsRequest);
     }
 
@@ -864,18 +971,38 @@ public class ReportService implements IReportService {
         int copies = reportRequest.getCopyCountForAWB() != null ? reportRequest.getCopyCountForAWB() : 0;
         if(copies < 1) throw new ValidationException("Copy count is less than 1");
         Integer noOfPacks = 0;
+        boolean isCombi = dataRetrived.containsKey(ReportConstants.IS_COMBI) && Boolean.TRUE.equals(dataRetrived.get(ReportConstants.IS_COMBI));
+        List<Pair<String, Integer>> hawbPacksMap = null; // used only for combi label
         if(reportRequest.isFromConsolidation() && dataRetrived.get(ReportConstants.TOTAL_CONSOL_PACKS) != null) {
             noOfPacks = (Integer) dataRetrived.get(ReportConstants.TOTAL_CONSOL_PACKS);
         } else if (dataRetrived.get(ReportConstants.TOTAL_PACKS) != null) {
             noOfPacks = (Integer) dataRetrived.get(ReportConstants.TOTAL_PACKS);
         }
+        if(isCombi) {
+            hawbPacksMap = new ArrayList<>((List<Pair<String, Integer>>) dataRetrived.get("hawbPacksMap"));
+            dataRetrived.remove("hawbPacksMap");
+            noOfPacks = (Integer) dataRetrived.get(ReportConstants.TOTAL_CONSOL_PACKS);
+        }
         if(noOfPacks == null || noOfPacks == 0) {
             throw new ValidationException("no of pack is less than 1");
         }
         for(int i = 1; i <=copies; i++) {
+            int ind = 0;
+            int prevPacks = 0;
             for (int packs = 1; packs <= noOfPacks; packs++) {
                 String packsCount = getSerialCount(packs, copies);
                 String packsOfTotal = packs + "/" + noOfPacks;
+                String hawbPacksCountForCombi = "";
+                if(isCombi) {
+                    dataRetrived.put(ReportConstants.HAWB_NUMBER, hawbPacksMap.get(ind).getKey());
+                    packsOfTotal = (packs - prevPacks) + "/" + hawbPacksMap.get(ind).getValue();
+                    hawbPacksCountForCombi = getSerialCount(packs - prevPacks, copies);
+                    dataRetrived.put(COMBI_HAWB_COUNT, hawbPacksCountForCombi);
+                    if((packs-prevPacks)%hawbPacksMap.get(ind).getValue() == 0) {
+                        prevPacks = prevPacks + hawbPacksMap.get(ind).getValue();
+                        ind++;
+                    }
+                }
                 if (dataRetrived.get(ReportConstants.MAWB_NUMBER) != null || dataRetrived.get(ReportConstants.HAWB_NUMBER) != null) {
                     dataRetrived.put(ReportConstants.COUNT, packsCount);
                     dataRetrived.put(ReportConstants.PACKS_OF_TOTAL, packsOfTotal);
@@ -887,11 +1014,15 @@ public class ReportService implements IReportService {
                     throw new ValidationException(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE);
                 String mawbNumber = StringUtility.getEmptyString();
                 String hawbNumber = StringUtility.getEmptyString();
-                if(reportRequest.isFromConsolidation() || dataRetrived.get(ReportConstants.HAWB_NUMBER) == null || StringUtility.isEmpty(dataRetrived.get(ReportConstants.HAWB_NUMBER).toString()))
+                if(reportRequest.isFromConsolidation() || dataRetrived.get(ReportConstants.HAWB_NUMBER) == null ||
+                        StringUtility.isEmpty(dataRetrived.get(ReportConstants.HAWB_NUMBER).toString()) || isCombi)
                     mawbNumber = dataRetrived.get(ReportConstants.MAWB_NUMBER) != null ? dataRetrived.get(ReportConstants.MAWB_NUMBER) + packsCount : packsCount;
                 else
                     hawbNumber = dataRetrived.get(ReportConstants.HAWB_NUMBER) != null ? dataRetrived.get(ReportConstants.HAWB_NUMBER) + packsCount : packsCount;
                 byte[] docBytes = addBarCodeInAWBLableReport(mainDocPage, mawbNumber, hawbNumber);
+                if(isCombi) {
+                    docBytes = addBarCodeForCombiReport(docBytes, dataRetrived.get(ReportConstants.HAWB_NUMBER) != null ? dataRetrived.get(ReportConstants.HAWB_NUMBER) + hawbPacksCountForCombi : hawbPacksCountForCombi);
+                }
                 pdfBytes.add(docBytes);
             }
         }
@@ -1182,6 +1313,9 @@ public class ReportService implements IReportService {
             case ReportConstants.CSD_REPORT:
                 return setDocPages(null,
                         row.getCsd() == null ? adminRow.getCsd() : row.getCsd(), null, row.getCsd() != null, null, null, null);
+           case ReportConstants.FCR_DOCUMENT:
+                return setDocPages(null,
+                        row.getFcrDocument() == null ? adminRow.getFcrDocument() : row.getFcrDocument(), null, row.getFcrDocument() != null, null, null, null);
             default:
         }
 
@@ -1243,6 +1377,12 @@ public class ReportService implements IReportService {
             }
         }
         return ans;
+    }
+
+    public byte[] addBarCodeForCombiReport(byte[] bytes, String hawbNumber) {
+        if(StringUtility.isNotEmpty(hawbNumber))
+            bytes = this.addBarCodeInReport(bytes, hawbNumber, 10, -225, ReportConstants.HAWB, true);
+        return bytes;
     }
 
     public byte[] addBarCodeInAWBLableReport(byte[] bytes, String mawbNumber, String hawbNumber)
@@ -1538,6 +1678,7 @@ public class ReportService implements IReportService {
             fileVersion = blObject.getHblData().getOriginalSeq() != null ? StringUtility.convertToString(blObject.getHblData().getOriginalSeq()) : null;
             blObject.getHblData().setOriginalSeq(blObject.getHblData().getOriginalSeq() != null ? blObject.getHblData().getOriginalSeq() + 1 : 1);
             updateInReleaseMappingTable(blObject, releaseType, shipmentSettingsDetails);
+            uploadRequest.setIsTransferEnabled(Boolean.TRUE);
             hblDao.save(blObject);
         } else {
             fileVersion = blObject.getHblData().getVersion().toString();
@@ -1604,6 +1745,8 @@ public class ReportService implements IReportService {
             docUploadRequest.setId(Long.parseLong(reportRequest.getReportId()));
             docUploadRequest.setType(documentType);
             docUploadRequest.setReportId(reportRequest.getReportId());
+            if(reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.ORIGINAL))
+                docUploadRequest.setIsTransferEnabled(Boolean.TRUE);
             String filename = docUploadRequest.getType() + "_" + reportRequest.getPrintType() + "_" + docUploadRequest.getId() + ".pdf";
             String finalGuid = guid;
             CompletableFuture.runAsync(masterDataUtils.withMdc(
@@ -1652,6 +1795,7 @@ public class ReportService implements IReportService {
                     .docType(uploadRequest.getType())
                     .docName(uploadRequest.getType())
                     .childType(uploadRequest.getType())
+                    .isTransferEnabled(uploadRequest.getIsTransferEnabled())
                     .build());
             return saveResponse;
         } catch (Exception ex) {
