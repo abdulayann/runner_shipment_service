@@ -25,7 +25,6 @@ import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
 import com.dpw.runner.shipment.services.entity.enums.NotificationRequestType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
-import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -410,24 +409,8 @@ public class NetworkTransferService implements INetworkTransferService {
         return ResponseHelper.buildSuccessResponse();
     }
 
-    private Boolean getIsNetworkTransferFeatureEnabled(){
-        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
-        return Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled());
-    }
-
-    private void validateApprovalRoleForImport() {
-        if(Boolean.TRUE.equals(getIsNetworkTransferFeatureEnabled())){
-            var tenantId = TenantContext.getCurrentTenant();
-            Integer approverRoleId = shipmentSettingsDao.getShipmentConsoleImportApprovarRole(tenantId);
-            if (approverRoleId == null || approverRoleId == 0) {
-                throw new ValidationException(EntityTransferConstants.APPROVAL_ROLE_ACTION_NOT_ALLOWED);
-            }
-        }
-    }
-
     @Override
     public ResponseEntity<IRunnerResponse> requestForReassign(CommonRequestModel commonRequestModel) {
-        validateApprovalRoleForImport();
         ReassignRequest reassignRequest = (ReassignRequest) commonRequestModel.getData();
         var networkTransfer = networkTransferDao.findById(reassignRequest.getId());
         if(networkTransfer.isEmpty()){

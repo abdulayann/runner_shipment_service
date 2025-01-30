@@ -6,6 +6,8 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.INotesDao;
 import com.dpw.runner.shipment.services.dto.request.CreateBookingModuleInV1;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
+import com.dpw.runner.shipment.services.dto.request.UserWithPermissionRequestV1;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitFromV1Response;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
@@ -458,5 +460,13 @@ public class V1ServiceUtil {
             parties = jsonHelper.convertValue(partiesRequest, Parties.class);
         }
         return parties;
+    }
+
+    public List<UsersDto> getUsersWithGivenPermission(List<String> permissionKeys, Integer tenantId) {
+        UserWithPermissionRequestV1 request = new UserWithPermissionRequestV1();
+        request.setUserTenantId(tenantId);
+        request.setPermissionKeys(permissionKeys);
+
+        return v1Service.getUsersWithGivenPermissions(request);
     }
 }
