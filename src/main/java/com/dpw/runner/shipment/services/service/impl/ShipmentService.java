@@ -37,7 +37,6 @@ import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiRe
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Container;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteContainerResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteContainerResponse.LiteContainer;
-import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.v1.request.*;
 import com.dpw.runner.shipment.services.dto.v1.request.TaskStatusUpdateRequest.EntityDetails;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
@@ -50,7 +49,6 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
 import com.dpw.runner.shipment.services.helpers.*;
-import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.mapper.CarrierDetailsMapper;
 import com.dpw.runner.shipment.services.mapper.ShipmentDetailsMapper;
@@ -4379,7 +4377,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     private String generateShipmentId(ShipmentDetails shipmentDetails) {
-        List<ShipmentSettingsDetails> shipmentSettingsList = shipmentSettingsDao.list();
+        Optional<ShipmentSettingsDetails> shipmentSettingsOptional = shipmentSettingsDao.findByTenantId(TenantContext.getCurrentTenant());
         String shipmentId = "";
         boolean flag = true;
         int counter = 1;
@@ -4392,9 +4390,9 @@ public class ShipmentService implements IShipmentService {
                 flag = false;
             else {
                 log.info("CR-ID {} || Inside generateShipmentId: with shipmentID: {} | counter: {}", LoggerHelper.getRequestIdFromMDC(), shipmentId, counter++);
-                if(shipmentSettingsList != null && shipmentSettingsList.size() != 0 && shipmentSettingsList.get(0) != null && shipmentSettingsList.get(0).getCustomisedSequence()) {
+                if(shipmentSettingsOptional != null && shipmentSettingsOptional.isPresent() && shipmentSettingsOptional.get().getCustomisedSequence()) {
                     try{
-                        shipmentId = getCustomizedShipmentProcessNumber(shipmentSettingsList.get(0), ProductProcessTypes.ShipmentNumber, shipmentDetails);
+                        shipmentId = getCustomizedShipmentProcessNumber(shipmentSettingsOptional.get(), ProductProcessTypes.ShipmentNumber, shipmentDetails);
                     } catch (Exception ignored) {
                         log.error("Execption during common sequence {}", ignored.getMessage());
                         log.error("Execption occurred for common sequence {}", ignored.getStackTrace());
@@ -4402,6 +4400,11 @@ public class ShipmentService implements IShipmentService {
                     }
                 }
                 if(StringUtility.isEmpty(shipmentId)) {
+                    if(shipmentSettingsOptional != null && shipmentSettingsOptional.isPresent()) {
+                        log.info("CR-ID {} || no common sequence found and shipment settings data is: {}",
+                                LoggerHelper.getRequestIdFromMDC(),
+                                jsonHelper.convertToJson(shipmentSettingsOptional.get()));
+                    }
                     log.info("CR-ID {} || no common sequence found", LoggerHelper.getRequestIdFromMDC());
                     shipmentId = Constants.SHIPMENT_ID_PREFIX + getShipmentsSerialNumber();
                 }
