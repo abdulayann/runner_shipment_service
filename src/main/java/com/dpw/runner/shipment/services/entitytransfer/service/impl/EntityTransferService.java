@@ -1366,11 +1366,11 @@ public class EntityTransferService implements IEntityTransferService {
         String shipErrorMsg = "";
         if(isPrintHblError) {
             if (!errorMsg.isEmpty()) {
-                errorMsg = errorMsg + " and print the Original HAWB for the shipment/s "+ String.join(", " ,errorShipments);
+                errorMsg = errorMsg + " and print the Original HBL for the shipment/s "+ String.join(", " ,errorShipments);
             } else {
-                errorMsg = "Please print the Original HAWB for the shipment/s " + String.join(", " ,errorShipments);
+                errorMsg = "Please print the Original HBL for the shipment/s " + String.join(", " ,errorShipments);
             }
-            shipErrorMsg = "Please print the Original HAWB to retrigger the transfer.";
+            shipErrorMsg = "Please print the Original HBL to retrigger the transfer.";
         }
         if(!errorMsg.isEmpty()){
             errorMsg = errorMsg + msgSuffix;
