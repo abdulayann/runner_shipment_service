@@ -5016,6 +5016,12 @@ public class ConsolidationService implements IConsolidationService {
         if (shipmentRes.isEmpty())
             throw new DataRetrievalFailureException("Failed to fetch the ShipmentId with id " + shipmentId);
 
+        // Check if the specific implication (CONCR) is already present for the current shipment's GUID.
+        // If true, throw a RuntimeException with a detailed error message including the shipment ID.
+        if (Boolean.TRUE.equals(dpsEventService.isImplicationPresent(Set.of(shipmentRes.get().getGuid().toString()), DpsConstants.CONCR))) {
+            throw new RuntimeException(DpsConstants.DPS_ERROR_2 + " : " + shipmentRes.get().getShipmentId());
+        }
+
         var shipment = modelMapper.map(shipmentRes.get(), ShipmentDetailsResponse.class);
 
         var additionalDetails = shipment.getAdditionalDetails();
