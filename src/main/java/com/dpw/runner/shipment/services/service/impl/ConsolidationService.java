@@ -4612,6 +4612,8 @@ public class ConsolidationService implements IConsolidationService {
 
     private void createOrUpdateNetworkTransferEntity(ShipmentSettingsDetails shipmentSettingsDetails, ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity) {
         try{
+            if(consolidationDetails.getShipmentType()==null || !Constants.DIRECTION_EXP.equals(consolidationDetails.getShipmentType()))
+                return;
             if (consolidationDetails.getTransportMode()!=null &&
                     !Constants.TRANSPORT_MODE_RAI.equals(consolidationDetails.getTransportMode())
                     && Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled())) {
@@ -4669,7 +4671,8 @@ public class ConsolidationService implements IConsolidationService {
     public void triggerAutomaticTransfer(ConsolidationDetails consolidationDetails,
                                          ConsolidationDetails oldEntity, Boolean isDocOrHawbNumAdded) {
         try {
-
+            if(consolidationDetails.getShipmentType()==null || !Constants.DIRECTION_EXP.equals(consolidationDetails.getShipmentType()))
+                return;
             Boolean isReceivingBranchEmpty = ObjectUtils.isEmpty(consolidationDetails.getReceivingBranch()) && oldEntity != null && ObjectUtils.isNotEmpty(oldEntity.getReceivingBranch());
             if(Boolean.TRUE.equals(isReceivingBranchEmpty) || isInvalidForTransfer(consolidationDetails)) {
                 deleteAllConsoleErrorsLogs(consolidationDetails);
