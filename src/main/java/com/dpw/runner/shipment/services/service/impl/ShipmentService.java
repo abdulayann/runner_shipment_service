@@ -2957,6 +2957,7 @@ public class ShipmentService implements IShipmentService {
                 networkTransferDao.deleteByIdsAndLog(Collections.singletonList(existingNTE.getId()));
             }
         }
+        // empty entity payload here
         updateNetworkTransfersForShipments(shipmentDetails.getId(), shipmentNetworkTransferMap);
         updateConsoleNetworkTransfer(consolidationDetails);
     }
@@ -2969,8 +2970,9 @@ public class ShipmentService implements IShipmentService {
 
     private void resetNetworkTransferIfNeeded(NetworkTransfer networkTransfer) {
         if (networkTransfer.getEntityPayload() != null && !networkTransfer.getEntityPayload().isEmpty()
-                && networkTransfer.getStatus() != NetworkTransferStatus.REASSIGNED && networkTransfer.getStatus() != NetworkTransferStatus.ACCEPTED) {
-            networkTransfer.setStatus(NetworkTransferStatus.SCHEDULED);
+                 && networkTransfer.getStatus() != NetworkTransferStatus.ACCEPTED) {
+            if(networkTransfer.getStatus() != NetworkTransferStatus.REASSIGNED)
+                networkTransfer.setStatus(NetworkTransferStatus.SCHEDULED);
             networkTransfer.setEntityPayload(null);
             networkTransferDao.save(networkTransfer);
         }

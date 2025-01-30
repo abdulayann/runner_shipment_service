@@ -4789,12 +4789,11 @@ public class ConsolidationService implements IConsolidationService {
                 continue;
             NetworkTransfer existingNTE = shipmentNetworkTranferMap!=null ? shipmentNetworkTranferMap.getOrDefault(shipmentDetails.getId(), new HashMap<>())
                     .get(shipmentDetails.getReceivingBranch().intValue()): null;
-
+            processConsoleBranchUpdate(isConsoleBranchUpdate, existingNTE);
             if (shipmentDetails.getReceivingBranch() != null && !Objects.equals(consolidationDetails.getReceivingBranch(), shipmentDetails.getReceivingBranch())) {
                 if (existingNTE == null) {
                     shipmentsForNte.add(shipmentDetails);
                 }
-                processConsoleBranchUpdate(isConsoleBranchUpdate, existingNTE);
             } else {
                 shipmentsToDelete.add(shipmentDetails);
             }
@@ -4814,10 +4813,10 @@ public class ConsolidationService implements IConsolidationService {
 
     private void processConsoleBranchUpdate(boolean isConsoleBranchUpdate, NetworkTransfer existingNTE){
         if (isConsoleBranchUpdate && existingNTE != null && existingNTE.getEntityPayload() != null
-                && existingNTE.getStatus() != NetworkTransferStatus.REASSIGNED
                 && existingNTE.getStatus() != NetworkTransferStatus.ACCEPTED) {
+            if(existingNTE.getStatus() != NetworkTransferStatus.REASSIGNED)
+                existingNTE.setStatus(NetworkTransferStatus.SCHEDULED);
             existingNTE.setEntityPayload(null);
-            existingNTE.setStatus(NetworkTransferStatus.SCHEDULED);
             networkTransferDao.save(existingNTE);
         }
     }
