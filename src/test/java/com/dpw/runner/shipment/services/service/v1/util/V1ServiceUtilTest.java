@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSetting
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.INotesDao;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitFromV1Response;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
@@ -822,6 +823,48 @@ class V1ServiceUtilTest {
         assertNull(response);
 
         verifyNoInteractions(jsonHelper, iV1Service, modelMapper);
+    }
+
+    @Test
+    void testGetUsersWithGivenPermission_Success() {
+        List<String> permissionKeys = List.of("SHIPMENT_IN_PIPELINE_MODIFY");
+        Integer tenantId = 123;
+        List<UsersDto> mockUsers = List.of(new UsersDto(), new UsersDto());
+
+        when(iV1Service.getUsersWithGivenPermissions(any())).thenReturn(mockUsers);
+
+        List<UsersDto> result = v1ServiceUtil.getUsersWithGivenPermission(permissionKeys, tenantId);
+
+        assertNotNull(result);
+        assertEquals(2, result.size());
+        verify(iV1Service, times(1)).getUsersWithGivenPermissions(any());
+    }
+
+    @Test
+    void testGetUsersWithGivenPermission_EmptyResponse() {
+        List<String> permissionKeys = List.of("SHIPMENT_IN_PIPELINE_MODIFY");
+        Integer tenantId = 123;
+
+        when(iV1Service.getUsersWithGivenPermissions(any())).thenReturn(List.of());
+
+        List<UsersDto> result = v1ServiceUtil.getUsersWithGivenPermission(permissionKeys, tenantId);
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+        verify(iV1Service, times(1)).getUsersWithGivenPermissions(any());
+    }
+
+    @Test
+    void testGetUsersWithGivenPermission_NullResponse() {
+        List<String> permissionKeys = List.of("SHIPMENT_IN_PIPELINE_MODIFY");
+        Integer tenantId = 123;
+
+        when(iV1Service.getUsersWithGivenPermissions(any())).thenReturn(null);
+
+        List<UsersDto> result = v1ServiceUtil.getUsersWithGivenPermission(permissionKeys, tenantId);
+
+        assertNull(result);
+        verify(iV1Service, times(1)).getUsersWithGivenPermissions(any());
     }
 
 }
