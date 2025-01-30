@@ -304,7 +304,7 @@ public class ReportService implements IReportService {
                         .stream().map(ConsoleShipmentMapping::getShipmentId).toList(); // Extract shipment IDs
 
                 // Check if DPS implication(MAWBPR) is present for any shipment
-                if (Boolean.TRUE.equals(dpsEventService.isImplicationPresent(shipmentIdsList, DpsConstants.MAWBPR))) {
+                if (!shipmentIdsList.isEmpty() && Boolean.TRUE.equals(dpsEventService.isImplicationPresent(shipmentIdsList, DpsConstants.MAWBPR))) {
                     throw new ReportException(DpsConstants.DPS_ERROR_1);
                 }
             } else if (Boolean.TRUE.equals(isOriginalPrint)) { // Case: Request came from shipment and is an original print
