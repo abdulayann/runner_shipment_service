@@ -773,6 +773,7 @@ public class ReportConstants {
     public static final String PRINTED_ORIGINAL = "PrintedOriginal";
     public static final String HOUSE_BILL_TYPE = "HouseBillType";
     public static final String COUNT = "Count";
+    public static final String COMBI_HAWB_COUNT = "CombiHAWBCount";
     public static final String PACKS_OF_TOTAL = "PacksOfTotal";
     public static final String PACK_NUMBER = "PackNumber";
     public static final String HAWB_NUMBER = "HAWBNumber";
@@ -1293,7 +1294,6 @@ public class ReportConstants {
 
     public static final String CONSOLIDATION_NUMBER = "ConsolidationNumber";
     public static final String INSERT_DATE = "InsertDate";
-    public static final String PWEIGHT_PACKAGES = "PWeightPackages";
     public static final String SERVICE_LEVEL = "ServiceLevel";
     public static final String CARRIER_BOOKING_REF = "CarrierBookingRef";
     public static final String TOTAL_PACKAGES = "TotalPackages";
@@ -1334,4 +1334,7 @@ public class ReportConstants {
     public static final String PACKS_MARKS_NUMBERS = "PacksMarksNumbers";
     public static final String PACKS_GOODS_DESCRIPTION = "PacksGoodsDescription";
     public static final String PLACE_OF_ISSUE = "PlaceOfIssue";
+    public static final String FCR_PLACE_OF_ISSUE = "FCR_Placeofissue";
+    public static final String FCR_DATE_OF_ISSUE = "FCR_Dateofissue";
+
 }

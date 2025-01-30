@@ -16,4 +16,6 @@ public final class PermissionConstants {
     public static final String OCEAN_DG_APPROVER = "OceanDgPermission";
     public static final String OCEAN_DG_COMMERCIAL_APPROVER = "OceanDgCommercialPermission";
     public static final String CONSOLIDATIONS_AIR_INTER_BRANCH = "Consolidations:Air:Interbranch Consolidation";
+    public static final String SHIPMENT_IN_PIPELINE_MODIFY = "Operations:ShipmentInPipeline:Modify";
+    public static final String SHIPMENT_IN_PIPELINE_VIEW = "Operations:ShipmentInPipeline:View";
 }

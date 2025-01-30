@@ -6,18 +6,43 @@ import com.dpw.runner.shipment.services.ReportingService.Models.DocPages;
 import com.dpw.runner.shipment.services.ReportingService.Models.DocUploadRequest;
 import com.dpw.runner.shipment.services.ReportingService.Models.DocumentRequest;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
-import com.dpw.runner.shipment.services.ReportingService.Reports.*;
+import com.dpw.runner.shipment.services.ReportingService.Reports.AWBLabelReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.ArrivalNoticeReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.BookingConfirmationReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.CSDReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.CargoManifestAirConsolidationReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.CargoManifestAirShipmentReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.DeliveryOrderReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.FCRDocumentReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.HawbReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.HblReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.MawbReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.PickupOrderReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.PreAlertReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.ShipmentCANReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.ShipmentTagsForExteranlServices;
+import com.dpw.runner.shipment.services.ReportingService.Reports.TransportOrderReport;
 import com.dpw.runner.shipment.services.ReportingService.ReportsFactory;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.DpsConstants;
 import com.dpw.runner.shipment.services.commons.constants.EventConstants;
 import com.dpw.runner.shipment.services.commons.enums.MawbPrintFor;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IHblDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IHblReleaseTypeMappingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IHblTermsConditionTemplateDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerSaveFileRequest;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerDataResponse;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerResponse;
@@ -26,14 +51,28 @@ import com.dpw.runner.shipment.services.document.util.BASE64DecodedMultipartFile
 import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.request.ReportRequest;
-import com.dpw.runner.shipment.services.entity.*;
-import com.dpw.runner.shipment.services.entity.enums.*;
+import com.dpw.runner.shipment.services.entity.Awb;
+import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.Hbl;
+import com.dpw.runner.shipment.services.entity.HblReleaseTypeMapping;
+import com.dpw.runner.shipment.services.entity.HblTermsConditionTemplate;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
+import com.dpw.runner.shipment.services.entity.enums.EventType;
+import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
+import com.dpw.runner.shipment.services.entity.enums.PrintType;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
+import com.dpw.runner.shipment.services.entity.enums.TypeOfHblPrint;
+import com.dpw.runner.shipment.services.exception.exceptions.ReportException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.service.interfaces.IDpsEventService;
 import com.dpw.runner.shipment.services.service.interfaces.IEventService;
 import com.dpw.runner.shipment.services.service.interfaces.IReportService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
@@ -46,7 +85,32 @@ import com.google.common.base.Strings;
 import com.itextpdf.text.DocumentException;
 import com.itextpdf.text.Image;
 import com.itextpdf.text.Rectangle;
-import com.itextpdf.text.pdf.*;
+import com.itextpdf.text.pdf.BaseFont;
+import com.itextpdf.text.pdf.PdfConcatenate;
+import com.itextpdf.text.pdf.PdfContentByte;
+import com.itextpdf.text.pdf.PdfGState;
+import com.itextpdf.text.pdf.PdfReader;
+import com.itextpdf.text.pdf.PdfStamper;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -72,6 +136,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COMBI_HAWB_COUNT;
 
 @Service
 @Slf4j
@@ -113,6 +179,8 @@ public class ReportService implements IReportService {
     @Autowired
     private IShipmentService shipmentService;
     @Autowired
+    private IConsoleShipmentMappingDao consoleShipmentMappingDao;
+    @Autowired
     private IShipmentSync shipmentSync;
     @Autowired
     private IHblReleaseTypeMappingDao hblReleaseTypeMappingDao;
@@ -132,6 +200,8 @@ public class ReportService implements IReportService {
     private AWBLabelReport awbLabelReport;
     @Autowired
     private DependentServiceHelper dependentServiceHelper;
+    @Autowired
+    private IDpsEventService dpsEventService;
 
     @Autowired
     @Lazy
@@ -224,6 +294,32 @@ public class ReportService implements IReportService {
             isNeutralPrint = reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.NEUTRAL);
         }
 
+        IReport report = reportsFactory.getReport(reportRequest.getReportInfo());
+        if (report instanceof MawbReport mawbReport) {
+            mawbReport.isDMawb = reportRequest.isFromShipment(); // Set isDMawb based on isFromShipment flag
+
+            if (!reportRequest.isFromShipment()) { // Case: Request came from consolidation
+                long consolidationId = Long.parseLong(reportRequest.getReportId());
+                List<Long> shipmentIdsList = consoleShipmentMappingDao.findByConsolidationId(consolidationId)
+                        .stream().map(ConsoleShipmentMapping::getShipmentId).toList(); // Extract shipment IDs
+
+                // Check if DPS implication(MAWBPR) is present for any shipment
+                if (!shipmentIdsList.isEmpty() && Boolean.TRUE.equals(dpsEventService.isImplicationPresent(shipmentIdsList, DpsConstants.MAWBPR))) {
+                    throw new ReportException(DpsConstants.DPS_ERROR_1);
+                }
+            } else if (Boolean.TRUE.equals(isOriginalPrint)) { // Case: Request came from shipment and is an original print
+                long shipmentId = Long.parseLong(reportRequest.getReportId());
+                ShipmentDetails shipmentDetails = shipmentDao.findById(shipmentId)
+                        .orElseThrow(() -> new ValidationException("No Shipment found with Id: " + shipmentId));
+
+                // Check if the shipment type is DRT and has a DPS implication (MAWBPR)
+                if (Constants.SHIPMENT_TYPE_DRT.equals(shipmentDetails.getJobType()) &&
+                        Boolean.TRUE.equals(dpsEventService.isImplicationPresent(List.of(shipmentId), DpsConstants.MAWBPR))) {
+                    throw new ReportException(DpsConstants.DPS_ERROR_1); // Throw error if implication is found
+                }
+            }
+        }
+
         // Awb print status set for Hawb and Mawb
         this.setPrintTypeForAwb(reportRequest, isOriginalPrint);
 
@@ -240,14 +336,6 @@ public class ReportService implements IReportService {
         Map<String, Object> dataRetrived = new HashMap<>();
         boolean newFlowSuccess = false;
 
-        IReport report =  reportsFactory.getReport(reportRequest.getReportInfo());
-        if(report instanceof MawbReport) {
-            if(reportRequest.isFromShipment()) {
-                ((MawbReport)report).isDMawb = true;
-            } else {
-                ((MawbReport)report).isDMawb = false;
-            }
-        }
         if(report instanceof AWBLabelReport awbLabelReport) {
             awbLabelReport.setMawb(reportRequest.isFromConsolidation());
             awbLabelReport.setRemarks(reportRequest.getRemarks());
@@ -256,6 +344,8 @@ public class ReportService implements IReportService {
         if(report instanceof FCRDocumentReport fcrDocumentReport) {
             fcrDocumentReport.setFcrShipper(reportRequest.getFcrShipper());
             fcrDocumentReport.setPackIds(reportRequest.getPackIds());
+            fcrDocumentReport.setIssueDate(reportRequest.getDateOfIssue());
+            fcrDocumentReport.setPlaceOfIssue(reportRequest.getPlaceOfIssue());
         }
         // user story 135668
         if(report instanceof ArrivalNoticeReport) {
@@ -302,12 +392,37 @@ public class ReportService implements IReportService {
         //TODO - Need to handle for new flow
         if (report instanceof PickupOrderReport pickupOrderReport && StringUtility.isNotEmpty(reportRequest.getTransportInstructionId())) {
             dataRetrived = pickupOrderReport.getData(Long.parseLong(reportRequest.getReportId()), Long.parseLong(reportRequest.getTransportInstructionId()));
-        } else if (report instanceof DeliveryOrderReport deliveryOrderReport && StringUtility.isNotEmpty(reportRequest.getTransportInstructionId())) {
-            dataRetrived = deliveryOrderReport.getData(Long.parseLong(reportRequest.getReportId()), Long.parseLong(reportRequest.getTransportInstructionId()));
+        } else if (report instanceof DeliveryOrderReport vDeliveryOrderReport) {
+            // Verify if the specified implication (DOPR) exists for the report's ID.
+            // If true, throw a ReportException indicating the implication is already present.
+            if (Boolean.TRUE.equals(dpsEventService.isImplicationPresent(List.of(Long.parseLong(reportRequest.getReportId())), DpsConstants.DOPR))) {
+                throw new ReportException(DpsConstants.DPS_ERROR_1);
+            }
+
+            // If a Transport Instruction ID is provided in the request:
+            if (StringUtility.isNotEmpty(reportRequest.getTransportInstructionId())) {
+                // Retrieve data using both the Report ID and Transport Instruction ID.
+                dataRetrived = vDeliveryOrderReport.getData(
+                        Long.parseLong(reportRequest.getReportId()),
+                        Long.parseLong(reportRequest.getTransportInstructionId()));
+            } else {
+                // If no Transport Instruction ID is provided, retrieve data using only the Report ID.
+                dataRetrived = report.getData(Long.parseLong(reportRequest.getReportId()));
+            }
+
+            // Create an event for the report request with the specific event constant DOGE.
+            createEvent(reportRequest, EventConstants.DOGE);
         } else if (report instanceof TransportOrderReport transportOrderReport && StringUtility.isNotEmpty(reportRequest.getTransportInstructionId())) {
             dataRetrived = transportOrderReport.getData(Long.parseLong(reportRequest.getReportId()), Long.parseLong(reportRequest.getTransportInstructionId()));
         } else if (report instanceof HblReport vHblReport) {
             if (reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.ORIGINAL)) {
+
+                // Verify if the specified implication (HBLPR) exists for the report's ID.
+                // If true, throw a ReportException indicating the implication is already present.
+                if (Boolean.TRUE.equals(dpsEventService.isImplicationPresent(List.of(Long.parseLong(reportRequest.getReportId())), DpsConstants.HBLPR))) {
+                    throw new ReportException(DpsConstants.DPS_ERROR_1);
+                }
+
                 dataRetrived = vHblReport.getData(Long.parseLong(reportRequest.getReportId()), ReportConstants.ORIGINAL);
                 createEvent(reportRequest, EventConstants.FHBL);
             } else if (reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.DRAFT)) {
@@ -320,11 +435,17 @@ public class ReportService implements IReportService {
             dataRetrived = vPreAlertReport.getData(Long.parseLong(reportRequest.getReportId()));
             createEvent(reportRequest, EventConstants.PRST);
         } else if (report instanceof HawbReport vHawbReport && reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.ORIGINAL)) {
+
+            // Verify if the specified implication (HAWBPR) exists for the report's ID.
+            // If true, throw a ReportException indicating the implication is already present.
+            if (Boolean.TRUE.equals(dpsEventService.isImplicationPresent(List.of(Long.parseLong(reportRequest.getReportId())), DpsConstants.HAWBPR))) {
+                throw new ReportException(DpsConstants.DPS_ERROR_1);
+            }
+
             dataRetrived = vHawbReport.getData(Long.parseLong(reportRequest.getReportId()));
             createEvent(reportRequest, EventConstants.HAWB);
         } else if (report instanceof BookingConfirmationReport vBookingConfirmationReport) {
             dataRetrived = vBookingConfirmationReport.getData(Long.parseLong(reportRequest.getReportId()));
-            createEvent(reportRequest, EventConstants.BOCO);
         } else {
             dataRetrived = report.getData(Long.parseLong(reportRequest.getReportId()));
         }
@@ -805,8 +926,6 @@ public class ReportService implements IReportService {
 
             if (reportInfo.equals(ReportConstants.SHIPMENT_CAN_DOCUMENT.toUpperCase())) {
                 createEvent(reportRequest, EventConstants.CANG);
-            } else if (reportInfo.equals(ReportConstants.DELIVERY_ORDER.toUpperCase())) {
-                createEvent(reportRequest, EventConstants.DOGE);
             }
         }
         if(reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.FCR_DOCUMENT)) {
@@ -873,10 +992,12 @@ public class ReportService implements IReportService {
             for (int packs = 1; packs <= noOfPacks; packs++) {
                 String packsCount = getSerialCount(packs, copies);
                 String packsOfTotal = packs + "/" + noOfPacks;
-
+                String hawbPacksCountForCombi = "";
                 if(isCombi) {
                     dataRetrived.put(ReportConstants.HAWB_NUMBER, hawbPacksMap.get(ind).getKey());
                     packsOfTotal = (packs - prevPacks) + "/" + hawbPacksMap.get(ind).getValue();
+                    hawbPacksCountForCombi = getSerialCount(packs - prevPacks, copies);
+                    dataRetrived.put(COMBI_HAWB_COUNT, hawbPacksCountForCombi);
                     if((packs-prevPacks)%hawbPacksMap.get(ind).getValue() == 0) {
                         prevPacks = prevPacks + hawbPacksMap.get(ind).getValue();
                         ind++;
@@ -900,7 +1021,7 @@ public class ReportService implements IReportService {
                     hawbNumber = dataRetrived.get(ReportConstants.HAWB_NUMBER) != null ? dataRetrived.get(ReportConstants.HAWB_NUMBER) + packsCount : packsCount;
                 byte[] docBytes = addBarCodeInAWBLableReport(mainDocPage, mawbNumber, hawbNumber);
                 if(isCombi) {
-                    docBytes = addBarCodeForCombiReport(docBytes, dataRetrived.get(ReportConstants.HAWB_NUMBER) != null ? dataRetrived.get(ReportConstants.HAWB_NUMBER) + packsCount : packsCount);
+                    docBytes = addBarCodeForCombiReport(docBytes, dataRetrived.get(ReportConstants.HAWB_NUMBER) != null ? dataRetrived.get(ReportConstants.HAWB_NUMBER) + hawbPacksCountForCombi : hawbPacksCountForCombi);
                 }
                 pdfBytes.add(docBytes);
             }

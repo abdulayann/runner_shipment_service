@@ -303,7 +303,7 @@ class NetworkTransferServiceTest extends CommonMocks{
     @Test
     void testCreateNetworkTransferEntityWithNewAndOldShipment(){
         when(networkTransferDao.save(any())).thenReturn(networkTransfer);
-        when(networkTransferDao.findByTenantAndEntity(any(),any(), any())).thenReturn(Optional.of(networkTransfer));
+        when(networkTransferDao.findByTenantAndEntityAndJobType(any(),any(), any(), any())).thenReturn(Optional.of(networkTransfer));
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
         shipmentDetails.setId(1L);
@@ -324,7 +324,7 @@ class NetworkTransferServiceTest extends CommonMocks{
 
     @Test
     void testCreateNetworkTransferEntityWithOldShipment(){
-        when(networkTransferDao.findByTenantAndEntity(any(),any(), any())).thenReturn(Optional.of(networkTransfer));
+        when(networkTransferDao.findByTenantAndEntityAndJobType(any(),any(), any(), any())).thenReturn(Optional.of(networkTransfer));
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
         shipmentDetails.setId(1L);
@@ -374,14 +374,14 @@ class NetworkTransferServiceTest extends CommonMocks{
 
     @Test
     void testCreateNetworkTransferEntityWithOldConsolidation(){
-        when(networkTransferDao.findByTenantAndEntity(any(),any(), any())).thenReturn(Optional.of(networkTransfer));
+        when(networkTransferDao.findByTenantAndEntityAndJobType(any(),any(), any(), any())).thenReturn(Optional.of(networkTransfer));
         assertDoesNotThrow(() -> networkTransferService.processNetworkTransferEntity(null, 132L,
                 Constants.CONSOLIDATION, null, consolidationDetails, Constants.DIRECTION_EXP, null));
     }
 
     @Test
     void testCreateNetworkTransferEntityDBFindFailure(){
-        when(networkTransferDao.findByTenantAndEntity(any(), any(), any())).thenThrow(new RuntimeException("Connection Time out"));
+        when(networkTransferDao.findByTenantAndEntityAndJobType(any(), any(), any(), any())).thenThrow(new RuntimeException("Connection Time out"));
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
         assertThrows(RuntimeException.class, () -> networkTransferService.processNetworkTransferEntity(123L, 321L,
@@ -390,7 +390,7 @@ class NetworkTransferServiceTest extends CommonMocks{
 
     @Test
     void testCreateNetworkTransferEntityDBDeleteFailure(){
-        when(networkTransferDao.findByTenantAndEntity(any(),any(), any())).thenReturn(Optional.of(networkTransfer));
+        when(networkTransferDao.findByTenantAndEntityAndJobType(any(),any(), any(), any())).thenReturn(Optional.of(networkTransfer));
         doThrow(new RuntimeException("Connection Time out")).when(networkTransferDao).deleteAndLog(any(), any());
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);

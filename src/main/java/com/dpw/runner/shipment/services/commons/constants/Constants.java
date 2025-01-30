@@ -146,6 +146,9 @@ public class Constants {
     public static final String SHIPMENT_TYPE_LCL = "LCL";
     public static final String SHIPMENT_TYPE_LSE = "LSE";
     public static final String SHIPMENT_TYPE_BLK = "BLK";
+    public static final String SHIPMENT_TYPE_HSE = "HSE";
+    public static final String SHIPMENT_TYPE_SCN = "SCN";
+    public static final String SHIPMENT_TYPE_BCN = "BCN";
     public static final String CARGO_TYPE_FCL = "FCL";
     public static final String CARGO_TYPE_LSE = "LSE";
     public static final String CARGO_TYPE_FTL = "FTL";
@@ -386,6 +389,7 @@ public class Constants {
 
     public static final String IS_NULL = "ISNULL";
     public static final String CONTAINERS_LIST = "containersList";
+    public static final String ROUTING_LIST = "routingsList";
     public static final String CONSOLIDATION_LIST = "consolidationList";
     public static final String ORDER_MANAGEMENT_ID = "orderManagementId";
     public static final String ORDER_NUMBER = "orderNumber";

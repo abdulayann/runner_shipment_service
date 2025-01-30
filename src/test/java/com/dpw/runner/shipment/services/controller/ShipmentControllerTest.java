@@ -655,7 +655,7 @@ class ShipmentControllerTest {
         when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(10));
         when(shipmentService.retrieveForNTE(any())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
-        var responseEntity = shipmentController.retrieveForNTE(Optional.of(111L));
+        var responseEntity = shipmentController.retrieveForNTE(Optional.of(111L), Optional.of("dda5d586-0f21-47df-a905-ab4103ae009f"));
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }

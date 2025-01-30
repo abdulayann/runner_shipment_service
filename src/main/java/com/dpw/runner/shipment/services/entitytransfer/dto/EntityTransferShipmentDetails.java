@@ -164,4 +164,5 @@ public class EntityTransferShipmentDetails implements IEntityTranferBaseEntity, 
     private Integer sendToBranch;
 
     private List<String> additionalDocs;
+    private Boolean b2b;
 }
