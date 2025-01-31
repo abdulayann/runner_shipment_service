@@ -2470,10 +2470,8 @@ public class EntityTransferService implements IEntityTransferService {
         List<String> userEmailIds = new ArrayList<>();
         if(!CommonUtils.listIsNullOrEmpty(usersDtoList)) {
             for(UsersDto user: usersDtoList) {
-                if (Objects.equals(user.getTenantId(), tenantId)) {
-                    if (!CommonUtils.IsStringNullOrEmpty(user.getEmail())) {
-                        userEmailIds.add(user.getEmail());
-                    }
+                if (!CommonUtils.IsStringNullOrEmpty(user.getEmail())) {
+                    userEmailIds.add(user.getEmail());
                 }
             }
         }
