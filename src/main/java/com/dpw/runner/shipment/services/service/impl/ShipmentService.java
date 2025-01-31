@@ -595,6 +595,9 @@ public class ShipmentService implements IShipmentService {
     @Value("${include.master.data}")
     private Boolean includeMasterData;
 
+    @Value("${runner-3.0}")
+    private Boolean runnerV3Flag;
+
     public static final String CONSOLIDATION_ID = "consolidationId";
     public static final String TEMPLATE_NOT_FOUND_MESSAGE = "Template not found, please inform the region users manually";
 
@@ -2068,7 +2071,7 @@ public class ShipmentService implements IShipmentService {
         List<ConsolidationDetailsRequest> consolidationDetailsRequests = shipmentRequest.getConsolidationList();
         List<Routings> mainCarriageRoutings = (shipmentDetails.getRoutingsList() != null ? shipmentDetails.getRoutingsList().stream().filter(i -> RoutingCarriage.MAIN_CARRIAGE.equals(i.getCarriage())).toList() : Collections.emptyList());
         boolean isRouteMasterEnabled = Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster());
-        if (isRouteMasterEnabled && mainCarriageRoutings != null && !mainCarriageRoutings.isEmpty() && shouldSetPorts(shipmentRequest)) {
+        if (Boolean.TRUE.equals(runnerV3Flag) && Boolean.TRUE.equals(isRouteMasterEnabled) && mainCarriageRoutings != null && !mainCarriageRoutings.isEmpty() && shouldSetPorts(shipmentRequest)) {
             shipmentDetails.getCarrierDetails().setOriginPort(mainCarriageRoutings.get(0).getPol());
             shipmentDetails.getCarrierDetails().setDestinationPort(mainCarriageRoutings.get(mainCarriageRoutings.size() - 1).getPod());
         }
@@ -2235,7 +2238,7 @@ public class ShipmentService implements IShipmentService {
                 awbDao.validateAirMessaging(console.getId());
             deletePendingRequestsOnConsoleAttach(shipmentDetails, isCreate);
         } else {
-            if(isRouteMasterEnabled && mainCarriageRoutings != null && !mainCarriageRoutings.isEmpty()) {
+            if(Boolean.TRUE.equals(runnerV3Flag) && Boolean.TRUE.equals(isRouteMasterEnabled) && mainCarriageRoutings != null && !mainCarriageRoutings.isEmpty()) {
                     shipmentDetails.getCarrierDetails().setEtd(mainCarriageRoutings.get(0).getEtd());
                     shipmentDetails.getCarrierDetails().setEta(mainCarriageRoutings.get(mainCarriageRoutings.size() - 1).getEta());
                 }
