@@ -7128,6 +7128,9 @@ public class ShipmentService implements IShipmentService {
     }
 
     public void validateHblContainerNumberCondition(ShipmentDetails shipmentDetails){
+        if(Objects.isNull(shipmentDetails.getContainersList())){
+            throw new ValidationException("Container number is Mandatory for HBL Generation, please assign the container number to all the containers & packs in the shipment");
+        }
         if(!Objects.isNull(shipmentDetails.getContainersList()) ) {
             List<Containers> containers = shipmentDetails.getContainersList().stream().filter(c -> StringUtility.isEmpty(c.getContainerNumber())).toList();
             if (!containers.isEmpty())
