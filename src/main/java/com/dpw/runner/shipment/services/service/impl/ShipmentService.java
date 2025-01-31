@@ -1172,6 +1172,7 @@ public class ShipmentService implements IShipmentService {
         List<ConsolidationDetailsRequest> consolidationDetails = new ArrayList<>();
         List<ContainerRequest> containerList = new ArrayList<>();
         List<Notes> notes = notesDao.findByEntityIdAndEntityType(customerBookingRequest.getId(), "CustomerBooking");
+        boolean isRouteMasterEnabled = commonUtils.getShipmentSettingFromContext().getEnableRouteMaster();
         if(isConsoleCreationNeeded(customerBookingRequest))
         {
             ConsolidationDetailsRequest consolidationDetailsRequest = ConsolidationDetailsRequest.builder().
@@ -1207,7 +1208,7 @@ public class ShipmentService implements IShipmentService {
                     sourceTenantId(Long.valueOf(UserContext.getUser().TenantId)).
                     build();
             // Generate default routes based on O-D pairs
-            if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster())) {
+            if(Boolean.FALSE.equals(isRouteMasterEnabled)) {
                 var routingList = routingsDao.generateDefaultRouting(jsonHelper.convertValue(consolidationDetailsRequest.getCarrierDetails(), CarrierDetails.class), consolidationDetailsRequest.getTransportMode());
                 consolidationDetailsRequest.setRoutingsList(commonUtils.convertToList(routingList, RoutingsRequest.class));
             }
@@ -1290,7 +1291,7 @@ public class ShipmentService implements IShipmentService {
                     return obj;
                 }).collect(Collectors.toList()) : null).
                 fileRepoList(customerBookingRequest.getFileRepoList()).
-                routingsList(customerBookingRequestRoutingList).
+                routingsList(isRouteMasterEnabled ? null: customerBookingRequestRoutingList).
                 consolidationList(isConsoleCreationNeeded(customerBookingRequest) ? consolidationDetails : null).
                 notesList(createNotes(notes)).
                 sourceTenantId(Long.valueOf(UserContext.getUser().TenantId)).
@@ -1358,7 +1359,6 @@ public class ShipmentService implements IShipmentService {
         shipmentRequest.setContainsHazardous(customerBookingRequest.getIsDg());
         return this.createFromBooking(CommonRequestModel.buildRequest(shipmentRequest));
     }
-
 
     @Override
     public List<RoutingsRequest> getCustomerBookingRequestRoutingList(CarrierDetailRequest carrierDetailRequest, String transportMode) {
