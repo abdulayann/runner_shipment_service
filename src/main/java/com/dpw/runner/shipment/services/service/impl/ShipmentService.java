@@ -2610,9 +2610,11 @@ public class ShipmentService implements IShipmentService {
 
     public void createOrUpdateNetworkTransferEntity(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
         try{
-            processInterBranchEntityCase(shipmentDetails, oldEntity);
+            if(shipmentDetails.getDirection()!=null && Constants.DIRECTION_EXP.equals(shipmentDetails.getDirection()))
+                processInterBranchEntityCase(shipmentDetails, oldEntity);
             if (isInterBranchConsole(shipmentDetails) || oldEntityHasInterBranchConsole(oldEntity))
                 return;
+
             // Check if the shipment is eligible for network transfer
             if (isEligibleForNetworkTransfer(shipmentDetails)) {
 

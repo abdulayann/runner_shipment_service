@@ -1415,6 +1415,8 @@ public class ConsolidationService implements IConsolidationService {
 
     private void processInterConsoleDetachShipment(ConsolidationDetails console, List<Long> shipmentIds){
         try {
+            if(console.getShipmentType()==null || !Constants.DIRECTION_EXP.equals(console.getShipmentType()))
+                return;
             boolean isInterBranchConsole = console.getInterBranchConsole();
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
             boolean isNetworkTransferEntityEnabled = Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled());
@@ -2000,7 +2002,8 @@ public class ConsolidationService implements IConsolidationService {
 
     private boolean isValidRequest(ConsolidationDetails console, List<ShipmentDetails> shipments) {
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
-        return Boolean.TRUE.equals(console.getInterBranchConsole()) && shipments != null && !shipments.isEmpty() && Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled());
+        boolean isValidShipmentType = console.getShipmentType()!=null && Constants.DIRECTION_EXP.equals(console.getShipmentType());
+        return Boolean.TRUE.equals(console.getInterBranchConsole()) && shipments != null && !shipments.isEmpty() && Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled()) && isValidShipmentType;
     }
 
     private List<Long> getShipmentIds(List<ShipmentDetails> shipments) {
@@ -4693,6 +4696,8 @@ public class ConsolidationService implements IConsolidationService {
 
     public void createOrUpdateNetworkTransferEntity(ShipmentSettingsDetails shipmentSettingsDetails, ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity) {
         try{
+            if(consolidationDetails.getShipmentType()==null || !Constants.DIRECTION_EXP.equals(consolidationDetails.getShipmentType()))
+                return;
             boolean isNetworkTransferEntityEnabled = Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled());
             boolean isInterBranchConsole = Boolean.TRUE.equals(consolidationDetails.getInterBranchConsole());
             if(isNetworkTransferEntityEnabled && isInterBranchConsole)

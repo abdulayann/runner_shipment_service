@@ -1,8 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_ROA;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -6339,6 +6337,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         consoleDetails.setTransportMode(TRANSPORT_MODE_AIR);
         consoleDetails.setGuid(UUID.randomUUID());
         consoleDetails.setInterBranchConsole(true);
+        consoleDetails.setShipmentType(DIRECTION_EXP);
 
         when(consoleShipmentMappingDao.detachShipments(anyLong(), any())).thenReturn(shipmentIds);
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails1));
