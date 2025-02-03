@@ -9,7 +9,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
-import java.io.Serializable;
 import java.util.UUID;
 
 @Data
@@ -47,4 +46,5 @@ public class AwbNotifyPartyInfo implements IRunnerResponse {
     private String specifiedAddressLocation;
     private String specifiedAddressLocationIATACode;
     private String specifiedAddressLocationName;
+    private OtherPartyInfo otherPartyInfo;
 }

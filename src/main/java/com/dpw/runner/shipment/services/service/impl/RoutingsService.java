@@ -44,6 +44,7 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
@@ -61,8 +62,9 @@ public class RoutingsService implements IRoutingsService {
     public MasterDataUtils masterDataUtils;
     @Autowired
     private CommonUtils commonUtils;
+    @Qualifier("executorServiceRouting")
     @Autowired
-    ExecutorService executorService;
+    ExecutorService executorServiceRouting;
 
     @Override
     public void updateRoutingsBasedOnTracking(Long shipmentId, List<Routings> routings)
@@ -85,28 +87,25 @@ public class RoutingsService implements IRoutingsService {
             return;
         }
 
-        CompletableFuture<TrackingServiceApiResponse> trackingServiceApiResponseFuture =  CompletableFuture.supplyAsync(() -> {
-            try {
-                return getTrackingServiceApiResponse(shipmentId, shipmentDetails);
-            } catch (RunnerException e) {
-                throw new RoutingException(e.getMessage(), e);
-            }
-        }, executorService);
+        TrackingServiceApiResponse trackingServiceApiResponse;
+        try {
+            trackingServiceApiResponse = getTrackingServiceApiResponse(shipmentId, shipmentDetails);
+        } catch (RunnerException e) {
+            throw new RoutingException(e.getMessage(), e);
+        }
+        if (trackingServiceApiResponse == null) {
+            return;
+        }
+        log.info("Tracking data successfully fetched for shipment ID: {}. Processing container events.", shipmentId);
         Map<String, List<Routings>> polToRoutingMap = new HashMap<>();
         Map<String, List<Routings>> podToRoutingMap = new HashMap<>();
         CompletableFuture<Void> polToRoutingMapFuture = CompletableFuture.runAsync(
             masterDataUtils.withMdc(() -> createRoutingMap(routings, true, polToRoutingMap)),
-            executorService);
+            executorServiceRouting);
         CompletableFuture<Void> podToRoutingMapFuture = CompletableFuture.runAsync(
             masterDataUtils.withMdc(() -> createRoutingMap(routings, false, podToRoutingMap)),
-            executorService);
-        CompletableFuture.allOf(trackingServiceApiResponseFuture, polToRoutingMapFuture, podToRoutingMapFuture).join();
-        TrackingServiceApiResponse trackingServiceApiResponse = trackingServiceApiResponseFuture.get();
-        if (trackingServiceApiResponse == null) {
-            return;
-        }
-
-        log.info("Tracking data successfully fetched for shipment ID: {}. Processing container events.", shipmentId);
+            executorServiceRouting);
+        CompletableFuture.allOf(polToRoutingMapFuture, podToRoutingMapFuture).join();
 
         // Create routing maps for POL and POD
 

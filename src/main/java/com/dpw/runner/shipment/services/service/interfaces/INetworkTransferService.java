@@ -19,4 +19,5 @@ public interface INetworkTransferService{
     void updateNetworkTransferTransferred(NetworkTransfer networkTransfer, Map<String, Object> payload);
     ResponseEntity<IRunnerResponse> requestForTransfer(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> requestForReassign(CommonRequestModel commonRequestModel);
+    void updateStatusAndCreatedEntityId(Long id, String status, Long createdEntityId);
 }

@@ -1128,6 +1128,9 @@ public class EventService implements IEventService {
         eventsRequest.setEventType(EventType.INVOICE.name());
         eventsRequest.setContainerNumber(accountReceivableDto.getInvoiceNumber());
         eventsRequest.setReferenceNumber(accountReceivableDto.getId());
+        eventsRequest.setBranch(accountReceivableDto.getBranchCode());
+        eventsRequest.setUserEmail(accountReceivableDto.getUserEmail());
+        eventsRequest.setUserName(accountReceivableDto.getUserDisplayName());
 
         return List.of(eventsRequest);
     }
@@ -1303,15 +1306,19 @@ public class EventService implements IEventService {
 
     @Override
     public ResponseEntity<IRunnerResponse> pushTrackingEvents(Container container) {
+
         String messageId = UUID.randomUUID().toString();
         log.info("Tracking API - container payload {} messageId {}", jsonHelper.convertToJson(container), messageId);
         MDC.put(LoggingConstants.TS_ID, messageId);
         v1Service.setAuthContext();
         IgnoreAutoTenantPopulationContext.setContext(Boolean.TRUE);
-        boolean processSuccess = processUpstreamTrackingMessage(container, messageId);
-        v1Service.clearAuthContext();
-        IgnoreAutoTenantPopulationContext.clearContext();
-
+        boolean processSuccess = false;
+        try {
+            processSuccess = processUpstreamTrackingMessage(container, messageId);
+        } finally {
+            v1Service.clearAuthContext();
+            IgnoreAutoTenantPopulationContext.clearContext();
+        }
         return ResponseHelper.buildSuccessResponse(processSuccess);
     }
 
@@ -1408,9 +1415,17 @@ public class EventService implements IEventService {
         if (duplicateEventPage != null && duplicateEventPage.hasContent()) {
             // List of events fetched based on the duplication criteria, (getting single event is fine we can update existing event) but can we make an invariant on this
             // these events are irrelevant as we found a replacement : current event | Delete all rest events excluding the current one
+            List<Events> eventsToDelete = new ArrayList<>();
             duplicateEventPage.getContent().stream()
                     .filter(dupEvent -> !dupEvent.getId().equals(event.getId()))
-                    .forEach(dupEvent -> eventDao.delete(dupEvent));
+                    .forEach(dupEvent -> {
+                                dupEvent.setIsDeleted(true);
+                                eventsToDelete.add(dupEvent);
+                            }
+                    );
+            if (ObjectUtils.isNotEmpty(eventsToDelete)) {
+                eventDao.saveAll(eventsToDelete);
+            }
         }
     }
 

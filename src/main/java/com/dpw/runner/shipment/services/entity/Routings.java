@@ -122,6 +122,14 @@ public class Routings extends MultiTenancy {
     @MasterData(type = MasterDataType.COUNTRIES)
     private String carrierCountry;
 
+    @Size(max=64, message = "max size is 64 for origin_port_loc_code")
+    @Column(name = "origin_port_loc_code")
+    private String originPortLocCode;
+
+    @Size(max=64, message = "max size is 64 for destination_port_loc_code")
+    @Column(name = "destination_port_loc_code")
+    private String destinationPortLocCode;
+
     @Column(name = "inherited_from_consolidation")
     private Boolean inheritedFromConsolidation = false;
 

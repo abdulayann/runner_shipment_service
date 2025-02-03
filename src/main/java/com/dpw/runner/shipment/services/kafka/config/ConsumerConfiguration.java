@@ -27,6 +27,8 @@ public class ConsumerConfiguration {
     private String customServiceContainerEventGroupId;
     @Value("${dps.kafka.group-id}")
     private String dpsKafkaGroupId;
+    @Value("${document.master.kafka.subs}")
+    private String documentKafkaGroupId;
     @Value("${bill.common-event.kafka.group-id}")
     private String billCommonEventKafkaGroupId;
 
@@ -77,6 +79,25 @@ public class ConsumerConfiguration {
         return new DefaultKafkaConsumerFactory<>(props, new StringDeserializer(), new StringDeserializer());
     }
 
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, String> documentKafkaListenerContainerFactory() {
+        ConcurrentKafkaListenerContainerFactory<String, String> factory = new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(documentConsumerFactory());
+        factory.setConcurrency(1);
+        factory.getContainerProperties().setAckMode(AckMode.MANUAL_IMMEDIATE);
+        return factory;
+    }
+
+    @Bean
+    public ConsumerFactory<String, String> documentConsumerFactory() {
+        Map<String, Object> props = new HashMap<>();
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServerConfig);
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, documentKafkaGroupId);
+        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
+        return new DefaultKafkaConsumerFactory<>(props, new StringDeserializer(), new StringDeserializer());
+    }
 
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, String> dpsKafkaListenerContainerFactory() {

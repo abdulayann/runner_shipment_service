@@ -30,6 +30,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.syncing.interfaces.IEventsSync;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.ExcludeTenantFilter;
+import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
@@ -86,6 +87,9 @@ public class EventDao implements IEventDao {
     @Autowired
     private IShipmentDao shipmentDao;
 
+    @Autowired
+    private CommonUtils commonUtils;
+
     @PersistenceContext
     private EntityManager entityManager;
 
@@ -141,12 +145,13 @@ public class EventDao implements IEventDao {
                     listCommonRequest = CommonUtils.constructListCommonRequest("consolidationId", entityId, "=");
                 }
                 Pair<Specification<Events>, Pageable> pair = fetchData(listCommonRequest, Events.class);
-                Page<Events> events = findAll(pair.getLeft(), pair.getRight());
-                hashMap = events.stream()
+                Page<Events> eventsPage = findAll(pair.getLeft(), pair.getRight());
+                hashMap = eventsPage.stream()
                         .collect(Collectors.toMap(Events::getId, Function.identity()));
 //            }
             Map<Long, Events> copyHashMap = new HashMap<>(hashMap);
             List<Events> eventsRequestList = new ArrayList<>();
+            eventsList = filterStaleEvents(eventsList, eventsPage.getContent());
             if (eventsList != null && eventsList.size() != 0) {
                 for (Events request : eventsList) {
                     Long id = request.getId();
@@ -591,14 +596,24 @@ public class EventDao implements IEventDao {
 
 
     private Events updateUserFieldsInEvent(Events event) {
-        event.setUserName(Optional.ofNullable(UserContext.getUser()).map(UsersDto::getDisplayName).orElse(null));
-        event.setUserEmail(Optional.ofNullable(UserContext.getUser()).map(UsersDto::getEmail).orElse(null));
-        event.setBranch(Optional.ofNullable(UserContext.getUser()).map(UsersDto::getCode).orElse(null));
+        if (!StringUtility.isNotEmpty(event.getUserName())) {
+            event.setUserName(Optional.ofNullable(UserContext.getUser()).map(UsersDto::getDisplayName).orElse(null));
+        }
+        if (!StringUtility.isNotEmpty(event.getUserEmail())) {
+            event.setUserEmail(Optional.ofNullable(UserContext.getUser()).map(UsersDto::getEmail).orElse(null));
+        }
+        if (!StringUtility.isNotEmpty(event.getBranch())) {
+            event.setBranch(Optional.ofNullable(UserContext.getUser()).map(UsersDto::getCode).orElse(null));
+        }
+        if (!StringUtility.isNotEmpty(event.getBranchName())) {
+            event.setBranchName(Optional.ofNullable(UserContext.getUser()).map(UsersDto::getTenantDisplayName).orElse(null));
+        }
 
         if(Constants.MASTER_DATA_SOURCE_CARGOES_TRACKING.equals(event.getSource())) {
             event.setUserName(EventConstants.SYSTEM_GENERATED);
             event.setUserEmail(null);
             event.setBranch(null);
+            event.setBranchName(null);
         }
         return event;
     }
@@ -609,5 +624,37 @@ public class EventDao implements IEventDao {
         return eventRepository.saveAll(shipmentEvents);
     }
 
+    private List<Events> filterStaleEvents(List<Events> requestList, List<Events> dbList) {
+        // requestList : remove any clashing key from dbList if id of request event < id of dbList event
+        Map<String, Events> dbEventsMap = dbList.stream().collect(Collectors.toMap(i -> commonUtils.getTrackingEventsUniqueKey(
+                i.getEventCode(),
+                i.getContainerNumber(),
+                i.getShipmentNumber(),
+                i.getSource(),
+                i.getPlaceName()
+        ) , Function.identity(), (existing, replacement) -> existing.getId() > replacement.getId() ? existing : replacement));
+
+        List<Events> newEventList = new ArrayList<>();
+        List<Events> filteredEvents = new ArrayList<>(requestList.stream().filter(e -> {
+            String uniqueKey = commonUtils.getTrackingEventsUniqueKey(
+                    e.getEventCode(),
+                    e.getContainerNumber(),
+                    e.getShipmentNumber(),
+                    e.getSource(),
+                    e.getPlaceName()
+            );
+            if (dbEventsMap.containsKey(uniqueKey)) {
+                Events dbEvent = dbEventsMap.get(uniqueKey);
+                if (e.getId() < dbEvent.getId()) {
+                    newEventList.add(dbEvent);
+                    return false;
+                }
+            }
+
+            return true;
+        }).toList());
+        filteredEvents.addAll(newEventList);
+        return filteredEvents;
+    }
 
 }

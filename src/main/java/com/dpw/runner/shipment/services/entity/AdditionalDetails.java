@@ -293,7 +293,7 @@ public class AdditionalDetails extends MultiTenancy {
     @Column(name = "screening_status")
     @Size(max=50, message = "max size is 50 for screening_status")
     //@MasterData(type = MasterDataType.SCREENING_STATUS)
-    @ElementCollection(targetClass = String.class, fetch = FetchType.EAGER)
+    @ElementCollection(targetClass = String.class, fetch = FetchType.LAZY)
     @CollectionTable(name = "screening_status", joinColumns = @JoinColumn(name = "shipment_additional_details_id"))
     @BatchSize(size = 50)
     private List<String> screeningStatus;
@@ -487,4 +487,7 @@ public class AdditionalDetails extends MultiTenancy {
 
     @Column(name = "cargo_out_for_delivery")
     private LocalDateTime cargoOutForDelivery;
+
+   @Column(name = "fcr_number")
+   private Integer fcrNumber = 0;
 }

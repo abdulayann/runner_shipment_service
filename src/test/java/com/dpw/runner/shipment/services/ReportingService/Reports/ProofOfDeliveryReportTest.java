@@ -1,5 +1,8 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import com.dpw.runner.shipment.services.ReportingService.Models.HblModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ProofOfDeliveryModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
@@ -27,17 +30,22 @@ class ProofOfDeliveryReportTest {
 
     @Test
     void populateDictionary() {
-        assertNotNull(proofOfDeliveryReport.populateDictionary(null));
+        ProofOfDeliveryModel proofOfDeliveryModel = new ProofOfDeliveryModel();
+        proofOfDeliveryModel.hblModel = new HblModel();
+        assertNotNull(proofOfDeliveryReport.populateDictionary(proofOfDeliveryModel));
     }
 
     @Test
     void getDocumentModel() {
-        assertNull(proofOfDeliveryReport.getDocumentModel(null));
+        assertNotNull(proofOfDeliveryReport.getDocumentModel(null));
     }
 
     @Test
     void getData() {
-        when(hblReport.getData(any())).thenReturn(new HashMap<>());
+        ProofOfDeliveryModel proofOfDeliveryModel = new ProofOfDeliveryModel();
+        HblModel model = new HblModel();
+        proofOfDeliveryModel.hblModel = model;
+        when(hblReport.getDocumentModel(any())).thenReturn(model);
         assertNotNull(proofOfDeliveryReport.getData(null));
     }
 }

@@ -1,0 +1,1 @@
+update mawb_stocks_link set status = 'Unused', entity_id = NULL, entity_type = NULL where mawb_number = '074-02641796' and tenant_id = '484';

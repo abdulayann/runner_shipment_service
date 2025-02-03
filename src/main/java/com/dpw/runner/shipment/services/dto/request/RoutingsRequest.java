@@ -55,7 +55,8 @@ public class RoutingsRequest extends CommonRequest implements IRunnerRequest {
     private String carrier;
     private String truckReferenceNumber;
     private String carrierCountry;
-    
+    private String originPortLocCode;
+    private String destinationPortLocCode;
     public void setIsDomestic(boolean isDomestic) {
         this.isDomestic = isDomestic;
     }

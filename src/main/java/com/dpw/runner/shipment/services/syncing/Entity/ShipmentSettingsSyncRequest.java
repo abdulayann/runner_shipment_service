@@ -328,4 +328,6 @@ public class ShipmentSettingsSyncRequest implements IRunnerRequest {
     private String csd;
     @JsonProperty("HideManifest")
     private Boolean hideManifest;
+    @JsonProperty("FcrDocument")
+    private String fcrDocument;
 }

@@ -1,16 +1,22 @@
 package com.dpw.runner.shipment.services.service.v1.util;
 
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.INotesDao;
 import com.dpw.runner.shipment.services.dto.request.CreateBookingModuleInV1;
+import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
+import com.dpw.runner.shipment.services.dto.request.UserWithPermissionRequestV1;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitFromV1Response;
+import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.CreditLimitValidateRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TenantDetailsByListRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
 import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -22,14 +28,16 @@ import com.dpw.runner.shipment.services.utils.StringUtility;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
+
+
 @Component
 @Slf4j
 public class V1ServiceUtil {
@@ -383,5 +391,82 @@ public class V1ServiceUtil {
                                 Collectors.toList(),
                                 list -> list.stream().map(CoLoadingMAWBDetailsResponse::getChildTenantId).collect(Collectors.toSet())
                         )));
+    }
+
+    public PartiesRequest getPartiesRequestFromOrgIdAndAddressId(Long orgId, Long addressId) {
+        try {
+            PartiesRequest request = new PartiesRequest();
+            CommonV1ListRequest orgRequest = createCriteriaForTwoFields("Id", orgId, "ActiveClient", Boolean.TRUE);
+            V1DataResponse v1OrgResponse = v1Service.fetchOrganization(orgRequest);
+            List<EntityTransferOrganizations> organizationsList = jsonHelper.convertValueToList(v1OrgResponse.getEntities(), EntityTransferOrganizations.class);
+            if (CommonUtils.listIsNullOrEmpty(organizationsList)) {
+                throw new DataRetrievalFailureException("No organization exist in Runner V1 with OrgId: " + orgId);
+            }
+            Map<String, Object> organizationMap = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(organizationsList.get(0)));
+            if(organizationMap.containsKey("Id"))
+                request.setOrgId(String.valueOf(organizationMap.get("Id")));
+            if(organizationMap.containsKey("OrganizationCode"))
+                request.setOrgCode(String.valueOf(organizationMap.get("OrganizationCode")));
+            request.setOrgData(organizationMap);
+
+            CommonV1ListRequest addressRequest = createCriteriaForTwoFields("Id", addressId, "Active", Boolean.TRUE);
+            V1DataResponse v1AddressResponse = v1Service.addressList(addressRequest);
+            List<EntityTransferAddress> addressList = jsonHelper.convertValueToList(v1AddressResponse.getEntities(), EntityTransferAddress.class);
+            if (CommonUtils.listIsNullOrEmpty(addressList)) {
+                throw new DataRetrievalFailureException("No Address exist in Runner V1 with AddressId: " + addressId);
+            }
+            Map<String, Object> addressMap = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(addressList.get(0)));
+            if(addressMap.containsKey("Id"))
+                request.setAddressId(String.valueOf(addressMap.get("Id")));
+            if(addressMap.containsKey("AddressShortCode"))
+                request.setAddressCode(String.valueOf(addressMap.get("AddressShortCode")));
+            request.setAddressData(addressMap);
+            return request;
+        }
+        catch (Exception ex) {
+            throw new DataRetrievalFailureException(ex.getMessage());
+        }
+    }
+
+    private CommonV1ListRequest createCriteriaForTwoFields(String field1, Object value1, String field2, Object value2) {
+        List<Object> field1List = new ArrayList<>(List.of(field1));
+        List<Object> criteria1 = new ArrayList<>(List.of(field1List, "=", value1));
+
+        List<Object> field2List = new ArrayList<>(List.of(field2));
+        List<Object> criteria2 = new ArrayList<>(List.of(field2List, "=", value2));
+
+        return CommonV1ListRequest.builder().criteriaRequests(List.of(criteria1, "and", criteria2)).build();
+    }
+
+    public PartiesResponse getDefaultAgentOrg(TenantModel tenantModel) {
+        if(tenantModel == null) {
+            tenantModel = modelMapper.map(v1Service.retrieveTenant().getEntity(), TenantModel.class);
+        }
+        PartiesResponse partiesResponse = null;
+        if(tenantModel.getDefaultOrgId() != null && tenantModel.getDefaultAddressId() != null) {
+            PartiesRequest partiesRequest = getPartiesRequestFromOrgIdAndAddressId(tenantModel.getDefaultOrgId(), tenantModel.getDefaultAddressId());
+            partiesResponse = jsonHelper.convertValue(partiesRequest, PartiesResponse.class);
+        }
+        return partiesResponse;
+    }
+
+    public Parties getDefaultAgentOrgParty(TenantModel tenantModel) {
+        if(tenantModel == null) {
+            tenantModel = modelMapper.map(v1Service.retrieveTenant().getEntity(), TenantModel.class);
+        }
+        Parties parties = null;
+        if(tenantModel.getDefaultOrgId() != null && tenantModel.getDefaultAddressId() != null) {
+            PartiesRequest partiesRequest = getPartiesRequestFromOrgIdAndAddressId(tenantModel.getDefaultOrgId(), tenantModel.getDefaultAddressId());
+            parties = jsonHelper.convertValue(partiesRequest, Parties.class);
+        }
+        return parties;
+    }
+
+    public List<UsersDto> getUsersWithGivenPermission(List<String> permissionKeys, Integer tenantId) {
+        UserWithPermissionRequestV1 request = new UserWithPermissionRequestV1();
+        request.setUserTenantId(tenantId);
+        request.setPermissionKeys(permissionKeys);
+
+        return v1Service.getUsersWithGivenPermissions(request);
     }
 }
