@@ -772,6 +772,8 @@ public class CustomerBookingService implements ICustomerBookingService {
             });
             platformResponse.setCharges(referenceNumbersGuidMapResponses);
         }
+        if(request.getBookingStatus()==null && request.getSource()!=null && BookingSource.B2B.equals(request.getSource()))
+            request.setBookingStatus(BookingStatus.PENDING_FOR_REVIEW);
 
         CustomerBookingRequest customerBookingRequest = modelMapper.map(request, CustomerBookingRequest.class);
         assignCarrierDetailsToRequest(customerBookingRequest, request);
