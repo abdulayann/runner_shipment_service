@@ -359,6 +359,7 @@ public class NetworkTransferService implements INetworkTransferService {
     private void createNetworkTransfer(NetworkTransfer networkTransfer, Map<String, Object> entityPayload){
         networkTransfer.setStatus(NetworkTransferStatus.SCHEDULED);
         if(entityPayload!=null){
+            networkTransfer.setStatus(NetworkTransferStatus.TRANSFERRED);
             networkTransfer.setEntityPayload(entityPayload);
         }
         updateConsoleOrShipmentStatus(networkTransfer);   // Update shipment and console Transfer status
