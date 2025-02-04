@@ -5974,7 +5974,7 @@ public class ShipmentService implements IShipmentService {
                     consolidationDetails.setReceivingAgent(null);
                 }
             }
-            boolean interBranchConsole = consolidationDetails.getInterBranchConsole();
+            Boolean interBranchConsole = consolidationDetails.getInterBranchConsole();
             List<Long> shipmentIdList = getShipmentIdsExceptCurrentShipment(consolidationList.get(0).getId(), shipment);
             if (!shipmentIdList.isEmpty()) {
                 List<ShipmentDetails> shipments = shipmentDao.findShipmentsByIds(shipmentIdList.stream().collect(
