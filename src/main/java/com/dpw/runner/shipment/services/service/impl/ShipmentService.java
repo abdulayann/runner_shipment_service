@@ -2787,8 +2787,6 @@ public class ShipmentService implements IShipmentService {
         }
         log.info("shipment afterSave referenceNumbersDao.updateEntityFromShipment..... ");
         if (routingsRequestList != null) {
-            if(CommonUtils.listIsNullOrEmpty(shipmentDetails.getConsolidationList()) && Constants.TRANSPORT_MODE_AIR.equals(shipmentDetails.getTransportMode()) && Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster()))
-                syncMainLegRoute(shipmentDetails, oldEntity, routingsRequestList);
             List<Routings> updatedRoutings = routingsDao.updateEntityFromShipment(commonUtils.convertToEntityList(routingsRequestList, Routings.class, isCreate), id);
             shipmentDetails.setRoutingsList(updatedRoutings);
         }
@@ -3148,19 +3146,6 @@ public class ShipmentService implements IShipmentService {
             res = Constants.DIRECTION_EXP;
         }
         return res;
-    }
-
-    public void syncMainLegRoute(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, List<RoutingsRequest> routingsRequests) {
-        if(oldEntity == null || !Objects.equals(shipmentDetails.getCarrierDetails().getFlightNumber(), oldEntity.getCarrierDetails().getFlightNumber())
-                || !Objects.equals(shipmentDetails.getCarrierDetails().getShippingLine(), oldEntity.getCarrierDetails().getShippingLine())) {
-            routingsRequests.stream().filter(i -> (RoutingCarriage.MAIN_CARRIAGE.equals(i.getCarriage())
-                    && Objects.equals(shipmentDetails.getCarrierDetails().getOriginPort(), i.getPol())
-                    && Objects.equals(shipmentDetails.getCarrierDetails().getDestinationPort(), i.getPod())))
-                    .forEach(i -> {
-                        i.setFlightNumber(shipmentDetails.getCarrierDetails().getFlightNumber());
-                        i.setCarrier(shipmentDetails.getCarrierDetails().getShippingLine());
-                    });
-        }
     }
 
     public List<Events> createOrUpdateEvents(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, List<Events> updatedEvents, Boolean isNewShipment) {
