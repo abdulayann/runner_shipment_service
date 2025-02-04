@@ -4708,7 +4708,7 @@ public class ShipmentService implements IShipmentService {
                 log.info("CR-ID {} || Inside generateShipmentId: with shipmentID: {} | counter: {}", LoggerHelper.getRequestIdFromMDC(), shipmentId, counter++);
                 if(shipmentSettingsOptional != null && shipmentSettingsOptional.isPresent() && shipmentSettingsOptional.get().getCustomisedSequence()) {
                     try{
-                        shipmentId = getCustomizedShipmentProcessNumber(shipmentSettingsOptional.get(), ProductProcessTypes.ShipmentNumber, shipmentDetails);
+                        shipmentId = getCustomizedShipmentProcessNumber(ProductProcessTypes.ShipmentNumber, shipmentDetails);
                     } catch (Exception ignored) {
                         log.error("Execption during common sequence {}", ignored.getMessage());
                         log.error("Execption occurred for common sequence {}", ignored.getStackTrace());
@@ -4732,7 +4732,7 @@ public class ShipmentService implements IShipmentService {
 //        return createShipmentSequence(shipmentSettingsList.get(0));
     }
 
-    private String getCustomizedShipmentProcessNumber(ShipmentSettingsDetails shipmentSettingsDetails, ProductProcessTypes productProcessType, ShipmentDetails currentShipment) throws RunnerException {
+    private String getCustomizedShipmentProcessNumber(ProductProcessTypes productProcessType, ShipmentDetails currentShipment) throws RunnerException {
         List<TenantProducts> tenantProducts = productEngine.populateEnabledTenantProducts();
         // to check the commmon sequence
         var sequenceNumber = productEngine.GetCommonSequenceNumber(currentShipment.getTransportMode(), ProductProcessTypes.Consol_Shipment_TI);
