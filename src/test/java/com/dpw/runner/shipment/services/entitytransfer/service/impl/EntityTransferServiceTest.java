@@ -94,7 +94,17 @@ import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.Collections;
 import java.util.concurrent.ExecutorService;
 
 import org.junit.jupiter.api.BeforeAll;
@@ -2780,17 +2790,17 @@ class EntityTransferServiceTest extends CommonMocks {
 
     @Test
     void testCreateBulkExportEventForMultipleShipments1() {
-        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
-        consolidationDetails.setShipmentsList(Collections.emptyList());
+        ConsolidationDetails consolidationDetails1 = new ConsolidationDetails();
+        consolidationDetails1.setShipmentsList(Collections.emptyList());
 
-        entityTransferService.createBulkExportEventForMultipleShipments(consolidationDetails, new HashMap<>());
+        entityTransferService.createBulkExportEventForMultipleShipments(consolidationDetails1, new HashMap<>());
 
         verifyNoInteractions(eventService);
     }
 
     @Test
     void testCreateBulkExportEventForMultipleShipments2() {
-        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        ConsolidationDetails consolidationDetails1 = new ConsolidationDetails();
         ShipmentDetails shipment1 = new ShipmentDetails();
         shipment1.setId(1L);
         shipment1.setGuid(UUID.randomUUID());
@@ -2801,7 +2811,7 @@ class EntityTransferServiceTest extends CommonMocks {
         shipment2.setGuid(UUID.randomUUID());
         shipment2.setTenantId(102);
 
-        consolidationDetails.setShipmentsList(List.of(shipment1, shipment2));
+        consolidationDetails1.setShipmentsList(List.of(shipment1, shipment2));
 
         Map<String, List<Integer>> shipmentGuidBranchMap = Map.of(
                 shipment1.getGuid().toString(), List.of(101),
@@ -2809,26 +2819,26 @@ class EntityTransferServiceTest extends CommonMocks {
         );
         doNothing().when(eventService).saveEvent(any());
 
-        entityTransferService.createBulkExportEventForMultipleShipments(consolidationDetails, shipmentGuidBranchMap);
+        entityTransferService.createBulkExportEventForMultipleShipments(consolidationDetails1, shipmentGuidBranchMap);
 
         verify(eventService, times(2)).saveEvent(any());
     }
 
     @Test
     void testCreateBulkExportEventForMultipleShipments3() {
-        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        ConsolidationDetails consolidationDetails1 = new ConsolidationDetails();
         ShipmentDetails shipment = new ShipmentDetails();
         shipment.setId(1L);
         shipment.setGuid(UUID.randomUUID());
         shipment.setTenantId(101);
-        consolidationDetails.setShipmentsList(List.of(shipment));
+        consolidationDetails1.setShipmentsList(List.of(shipment));
 
         Map<String, List<Integer>> shipmentGuidBranchMap = Map.of(
                 shipment.getGuid().toString(), List.of(101)
         );
         doNothing().when(eventService).saveEvent(any());
 
-        entityTransferService.createBulkExportEventForMultipleShipments(consolidationDetails, shipmentGuidBranchMap);
+        entityTransferService.createBulkExportEventForMultipleShipments(consolidationDetails1, shipmentGuidBranchMap);
 
         verify(eventService, times(1)).saveEvent(any());
     }
