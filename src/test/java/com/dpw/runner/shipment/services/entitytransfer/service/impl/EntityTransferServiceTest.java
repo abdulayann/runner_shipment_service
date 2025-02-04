@@ -18,6 +18,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
 
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
@@ -25,6 +28,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSetti
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
@@ -90,16 +94,9 @@ import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.ExecutorService;
+
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -111,6 +108,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
+import org.slf4j.MDC;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
@@ -202,6 +200,8 @@ class EntityTransferServiceTest extends CommonMocks {
     private ConsolidationSync consolidationSync;
     @Mock
     private INotificationDao notificationDao;
+    @Mock
+    private ExecutorService executorService;
 
     private static JsonTestUtility jsonTestUtility;
     private static ObjectMapper objectMapperTest;
@@ -426,6 +426,7 @@ class EntityTransferServiceTest extends CommonMocks {
         EntityTransferConsolidationDetails mockETPayload = objectMapperTest.convertValue(consolidationDetails, EntityTransferConsolidationDetails.class);
         ShipmentDetails mockLinkedShipment = new ShipmentDetails();
         EntityTransferShipmentDetails mockETShipment = new EntityTransferShipmentDetails();
+        mockETShipment.setGuid(UUID.randomUUID());
         V1TenantResponse mockV1TenantResponse = V1TenantResponse.builder().TenantName("mockTenant").build();
 
         Map<Integer, Object> mockTenantNameMap = Map.ofEntries(
@@ -531,6 +532,7 @@ class EntityTransferServiceTest extends CommonMocks {
         EntityTransferConsolidationDetails mockETPayload = objectMapperTest.convertValue(consolidationDetails, EntityTransferConsolidationDetails.class);
         ShipmentDetails mockLinkedShipment = new ShipmentDetails();
         EntityTransferShipmentDetails mockETShipment = new EntityTransferShipmentDetails();
+        mockETShipment.setGuid(UUID.randomUUID());
         V1TenantResponse mockV1TenantResponse = V1TenantResponse.builder().TenantName("mockTenant").build();
 
         Map<Integer, Object> mockTenantNameMap = Map.ofEntries(
@@ -2457,6 +2459,7 @@ class EntityTransferServiceTest extends CommonMocks {
         EntityTransferConsolidationDetails mockETPayload = objectMapperTest.convertValue(consolidationDetails, EntityTransferConsolidationDetails.class);
         ShipmentDetails mockLinkedShipment = new ShipmentDetails();
         EntityTransferShipmentDetails mockETShipment = new EntityTransferShipmentDetails();
+        mockETShipment.setGuid(UUID.randomUUID());
         V1TenantResponse mockV1TenantResponse = V1TenantResponse.builder().TenantName("mockTenant").build();
 
         Map<Integer, Object> mockTenantNameMap = Map.ofEntries(
@@ -2508,6 +2511,7 @@ class EntityTransferServiceTest extends CommonMocks {
         EntityTransferConsolidationDetails mockETPayload = objectMapperTest.convertValue(consolidationDetails, EntityTransferConsolidationDetails.class);
         ShipmentDetails mockLinkedShipment = new ShipmentDetails();
         EntityTransferShipmentDetails mockETShipment = new EntityTransferShipmentDetails();
+        mockETShipment.setGuid(UUID.randomUUID());
         V1TenantResponse mockV1TenantResponse = V1TenantResponse.builder().TenantName("mockTenant").build();
 
         Map<Integer, Object> mockTenantNameMap = Map.ofEntries(
@@ -2713,6 +2717,207 @@ class EntityTransferServiceTest extends CommonMocks {
 
         assertNotNull(response);
         verify(shipmentDao).findById(1L);
+    }
+
+    @Test
+    void testCreateBulkExportEvent() {
+        entityTransferService.createBulkExportEvent(1L, "EVENT_CODE", "SHIPMENT", new ArrayList<>());
+
+        verifyNoInteractions(v1ServiceUtil, jsonHelper, eventService);
+    }
+
+    @Test
+    void testCreateBulkExportEvent2() {
+        List<Integer> tenantIds = List.of(101, 102);
+        Map<Integer, Object> tenantMap = Map.of(
+                101, new Object(),
+                102, new Object()
+        );
+
+        V1TenantResponse tenantResponse1 = new V1TenantResponse();
+        tenantResponse1.setCode("T101");
+        V1TenantResponse tenantResponse2 = new V1TenantResponse();
+        tenantResponse2.setCode("T102");
+
+        when(v1ServiceUtil.getTenantDetails(tenantIds)).thenReturn(tenantMap);
+        when(jsonHelper.convertValue(tenantMap.get(101), V1TenantResponse.class)).thenReturn(tenantResponse1);
+        when(jsonHelper.convertValue(tenantMap.get(102), V1TenantResponse.class)).thenReturn(tenantResponse2);
+        doNothing().when(eventService).saveEvent(any());
+
+        entityTransferService.createBulkExportEvent(1L, "EVENT_CODE", "SHIPMENT", tenantIds);
+
+        verify(eventService, times(2)).saveEvent(any());
+    }
+
+    @Test
+    void testCreateBulkExportEvent3() {
+        List<Integer> tenantIds = List.of(101);
+        Map<Integer, Object> tenantMap = Map.of(101, new Object());
+
+        when(v1ServiceUtil.getTenantDetails(tenantIds)).thenReturn(tenantMap);
+        when(jsonHelper.convertValue(tenantMap.get(101), V1TenantResponse.class)).thenReturn(null);
+
+        entityTransferService.createBulkExportEvent(1L, "EVENT_CODE", "SHIPMENT", tenantIds);
+
+        verify(eventService, times(1)).saveEvent(any());
+    }
+
+    @Test
+    void testCreateBulkExportEvent4() {
+        List<Integer> tenantIds = List.of(101);
+        Map<Integer, Object> tenantMap = Map.of(101, new Object());
+        V1TenantResponse tenantResponse = new V1TenantResponse();
+        tenantResponse.setCode("T101");
+
+        when(v1ServiceUtil.getTenantDetails(tenantIds)).thenReturn(tenantMap);
+        when(jsonHelper.convertValue(tenantMap.get(101), V1TenantResponse.class)).thenReturn(tenantResponse);
+        doThrow(new RuntimeException("Save Event Failed")).when(eventService).saveEvent(any());
+
+        assertThrows(RuntimeException.class, () -> entityTransferService.createBulkExportEvent(1L, "EVENT_CODE", "SHIPMENT", tenantIds));
+
+        verify(eventService, times(1)).saveEvent(any());
+    }
+
+    @Test
+    void testCreateBulkExportEventForMultipleShipments1() {
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setShipmentsList(Collections.emptyList());
+
+        entityTransferService.createBulkExportEventForMultipleShipments(consolidationDetails, new HashMap<>());
+
+        verifyNoInteractions(eventService);
+    }
+
+    @Test
+    void testCreateBulkExportEventForMultipleShipments2() {
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        ShipmentDetails shipment1 = new ShipmentDetails();
+        shipment1.setId(1L);
+        shipment1.setGuid(UUID.randomUUID());
+        shipment1.setTenantId(101);
+
+        ShipmentDetails shipment2 = new ShipmentDetails();
+        shipment2.setId(2L);
+        shipment2.setGuid(UUID.randomUUID());
+        shipment2.setTenantId(102);
+
+        consolidationDetails.setShipmentsList(List.of(shipment1, shipment2));
+
+        Map<String, List<Integer>> shipmentGuidBranchMap = Map.of(
+                shipment1.getGuid().toString(), List.of(101),
+                shipment2.getGuid().toString(), List.of(102)
+        );
+        doNothing().when(eventService).saveEvent(any());
+
+        entityTransferService.createBulkExportEventForMultipleShipments(consolidationDetails, shipmentGuidBranchMap);
+
+        verify(eventService, times(2)).saveEvent(any());
+    }
+
+    @Test
+    void testCreateBulkExportEventForMultipleShipments3() {
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setId(1L);
+        shipment.setGuid(UUID.randomUUID());
+        shipment.setTenantId(101);
+        consolidationDetails.setShipmentsList(List.of(shipment));
+
+        Map<String, List<Integer>> shipmentGuidBranchMap = Map.of(
+                shipment.getGuid().toString(), List.of(101)
+        );
+        doNothing().when(eventService).saveEvent(any());
+
+        entityTransferService.createBulkExportEventForMultipleShipments(consolidationDetails, shipmentGuidBranchMap);
+
+        verify(eventService, times(1)).saveEvent(any());
+    }
+
+    @Test
+    void testCreateAutoEvent_Success() {
+        Long entityId = 1001L;
+        String eventCode = "EVENT_TEST";
+        String entityType = "SHIPMENT";
+        List<Integer> tenantIds = List.of(1, 2);
+        Map<Integer, Object> tenantDetailsMap = Map.of(
+                1, new Object(),
+                2, new Object()
+        );
+
+        V1TenantResponse tenantResponse1 = new V1TenantResponse();
+        tenantResponse1.setCode("Tenant1");
+
+        V1TenantResponse tenantResponse2 = new V1TenantResponse();
+        tenantResponse2.setCode("Tenant2");
+
+        when(v1ServiceUtil.getTenantDetails(tenantIds)).thenReturn(tenantDetailsMap);
+        when(jsonHelper.convertValue(tenantDetailsMap.get(1), V1TenantResponse.class)).thenReturn(tenantResponse1);
+        when(jsonHelper.convertValue(tenantDetailsMap.get(2), V1TenantResponse.class)).thenReturn(tenantResponse2);
+        doNothing().when(eventService).saveEvent(any());
+
+        entityTransferService.createAutoEvent(entityId, eventCode, entityType, tenantIds);
+
+        verify(eventService, times(2)).saveEvent(any());
+    }
+
+    @Test
+    void testCreateAutoEvent_ShouldNotCreateEvent_WhenEntityIdIsNull() {
+        List<Integer> tenantIds = List.of(1, 2);
+
+        entityTransferService.createAutoEvent(null, "EVENT_CODE", "SHIPMENT", tenantIds);
+
+        verify(eventService, never()).saveEvent(any());
+    }
+
+    @Test
+    void testCreateAutoEvent_ShouldNotCreateEvent_WhenTenantIdsAreEmpty() {
+        Long entityId = 1001L;
+        List<Integer> tenantIds = List.of();
+
+        entityTransferService.createAutoEvent(entityId, "EVENT_CODE", "SHIPMENT", tenantIds);
+
+        verify(eventService, never()).saveEvent(any());
+    }
+
+    @Test
+    void testCreateAutoEvent_ShouldHandleNullTenantDetails() {
+        Long entityId = 1001L;
+        List<Integer> tenantIds = List.of(1, 2);
+        Map<Integer, Object> tenantDetailsMap = Map.of(1, new Object());
+
+        when(v1ServiceUtil.getTenantDetails(tenantIds)).thenReturn(tenantDetailsMap);
+        when(jsonHelper.convertValue(any(), eq(V1TenantResponse.class))).thenReturn(null);
+        doNothing().when(eventService).saveEvent(any());
+
+        entityTransferService.createAutoEvent(entityId, "EVENT_CODE", "SHIPMENT", tenantIds);
+
+        verify(eventService, times(2)).saveEvent(any());
+    }
+
+    @Test
+    void testWithMdc_ShouldPreserveAndRestoreContext() {
+        MDC.put("traceId", "12345");
+        RequestAuthContext.setAuthToken("test-token");
+        TenantContext.setCurrentTenant(1001);
+        UserContext.setUser(UsersDto.builder().build());
+
+        Map<String, String> initialMdc = MDC.getCopyOfContextMap();
+        String initialToken = RequestAuthContext.getAuthToken();
+        Integer initialTenantId = TenantContext.getCurrentTenant();
+        UsersDto initialUser = UserContext.getUser();
+
+        Runnable wrappedRunnable = entityTransferService.withMdc(() -> {
+            assertEquals(initialMdc, MDC.getCopyOfContextMap(), "MDC should be preserved inside runnable");
+            assertEquals(initialToken, RequestAuthContext.getAuthToken(), "Auth Token should be preserved");
+            assertEquals(initialTenantId, TenantContext.getCurrentTenant(), "Tenant ID should be preserved");
+            assertEquals(initialUser, UserContext.getUser(), "User should be preserved");
+        });
+
+        wrappedRunnable.run();
+
+        assertNull(MDC.getCopyOfContextMap(), "MDC should be cleared after execution");
+        assertNull(RequestAuthContext.getAuthToken(), "Auth Token should be cleared");
+        assertNull(UserContext.getUser(), "User should be cleared");
     }
 
 

@@ -6,23 +6,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.DocPages;
 import com.dpw.runner.shipment.services.ReportingService.Models.DocUploadRequest;
 import com.dpw.runner.shipment.services.ReportingService.Models.DocumentRequest;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
-import com.dpw.runner.shipment.services.ReportingService.Reports.AWBLabelReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.ArrivalNoticeReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.BookingConfirmationReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.CSDReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.CargoManifestAirConsolidationReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.CargoManifestAirShipmentReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.DeliveryOrderReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.FCRDocumentReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.HawbReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.HblReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.MawbReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.PickupOrderReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.PreAlertReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.ShipmentCANReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.ShipmentTagsForExteranlServices;
-import com.dpw.runner.shipment.services.ReportingService.Reports.TransportOrderReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.*;
 import com.dpw.runner.shipment.services.ReportingService.ReportsFactory;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -446,6 +430,9 @@ public class ReportService implements IReportService {
             createEvent(reportRequest, EventConstants.HAWB);
         } else if (report instanceof BookingConfirmationReport vBookingConfirmationReport) {
             dataRetrived = vBookingConfirmationReport.getData(Long.parseLong(reportRequest.getReportId()));
+        } else if (report instanceof SeawayBillReport vSeawayBillReport) {
+            dataRetrived = vSeawayBillReport.getData(Long.parseLong(reportRequest.getReportId()));
+            createEvent(reportRequest, EventConstants.FHBL);
         } else {
             dataRetrived = report.getData(Long.parseLong(reportRequest.getReportId()));
         }

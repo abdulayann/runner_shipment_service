@@ -165,6 +165,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.modelmapper.ModelMapper;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -172,6 +173,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 @Service
 @Slf4j
@@ -329,6 +331,12 @@ public class EntityTransferService implements IEntityTransferService {
             }
         }
 
+        try {
+            CompletableFuture.runAsync(withMdc(() -> this.createBulkExportEvent(shipId, EventConstants.PRST, SHIPMENT, successTenantIds)), executorService);
+        } catch (Exception ex) {
+            log.error(String.format(ErrorConstants.ERROR_WHILE_CREATING_EVENT, ex.getMessage()));
+        }
+
         SendShipmentResponse sendShipmentResponse = SendShipmentResponse.builder().successTenantIds(successTenantIds)
                 .message(String.format("Shipment Sent to branches %s", String.join(", ", getTenantName(successTenantIds))))
                 .build();
@@ -393,6 +401,7 @@ public class EntityTransferService implements IEntityTransferService {
             checkForAcceptedNetworkTransfer(consol.getId(), CONSOLIDATION, sendToBranch);
         }
 
+        Map<String, List<Integer>> shipmentGuidBranchMap = new HashMap<>();
         for (int index = 0; index < sendToBranch.size(); index++) {
             var tenant = sendToBranch.get(index);
 
@@ -421,6 +430,8 @@ public class EntityTransferService implements IEntityTransferService {
                         entityTransferShipment.setSendToBranch(shipmentGuidSendToBranch.get(guid.toString()).get(index));
                     else
                         entityTransferShipment.setSendToBranch(tenant);
+                    shipmentGuidBranchMap.computeIfAbsent(guid.toString(), k -> new ArrayList<>())
+                            .add(entityTransferShipment.getSendToBranch());
                 }
             }
 
@@ -443,7 +454,11 @@ public class EntityTransferService implements IEntityTransferService {
             successTenantIds.add(tenant);
         }
 
-        this.createAutoEvent(consolidationDetails.get().getId(), EventConstants.COSN, CONSOLIDATION);
+        try {
+            CompletableFuture.runAsync(withMdc(() -> this.createAutoEvent(consolidationDetails.get().getId(), EventConstants.COSN, CONSOLIDATION, successTenantIds)), executorService);
+        } catch (Exception ex) {
+            log.error(String.format(ErrorConstants.ERROR_WHILE_CREATING_EVENT, ex.getMessage()));
+        }
 
         List<String> tenantName = getTenantName(successTenantIds);
         for (var shipment : consolidationDetails.get().getShipmentsList()) {
@@ -462,6 +477,12 @@ public class EntityTransferService implements IEntityTransferService {
             } catch (Exception ex) {
                 log.error(String.format(ErrorConstants.ERROR_WHILE_EMAIL, ex.getMessage()));
             }
+        }
+
+        try {
+            CompletableFuture.runAsync(withMdc(() -> this.createBulkExportEventForMultipleShipments(consol, shipmentGuidBranchMap)), executorService);
+        } catch (Exception ex) {
+            log.error(String.format(ErrorConstants.ERROR_WHILE_CREATING_EVENT, ex.getMessage()));
         }
 
         SendConsolidationResponse sendConsolidationResponse = SendConsolidationResponse.builder().successTenantIds(successTenantIds)
@@ -1033,6 +1054,35 @@ public class EntityTransferService implements IEntityTransferService {
             }
             log.info("Packs got attached to containers with RequestId: {}", LoggerHelper.getRequestIdFromMDC());
         }
+    }
+
+    public void createBulkExportEvent(Long entityId, String eventCode, String entityType, List<Integer> tenantIds) {
+        if (CommonUtils.listIsNullOrEmpty(tenantIds))
+            return;
+        var tenantMap = v1ServiceUtil.getTenantDetails(tenantIds);
+        for (Integer tenantId : tenantIds) {
+            var tenantDetails = jsonHelper.convertValue(tenantMap.get(tenantId), V1TenantResponse.class);
+            EventsRequest eventsRequest = new EventsRequest();
+            eventsRequest.setActual(LocalDateTime.now());
+            eventsRequest.setEntityId(entityId);
+            eventsRequest.setEntityType(entityType);
+            eventsRequest.setEventCode(eventCode);
+            if (tenantDetails != null)
+                eventsRequest.setPlaceName(tenantDetails.getCode());
+            eventsRequest.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
+            eventService.saveEvent(eventsRequest);
+        }
+    }
+
+    public void createBulkExportEventForMultipleShipments(ConsolidationDetails consolidationDetails, Map<String, List<Integer>> shipmentGuidBranchMap) {
+        if (CollectionUtils.isEmpty(shipmentGuidBranchMap) || CommonUtils.listIsNullOrEmpty(consolidationDetails.getShipmentsList()))
+            return;
+        for (ShipmentDetails shipmentDetails : consolidationDetails.getShipmentsList()) {
+            if(!Objects.equals(TenantContext.getCurrentTenant(), shipmentDetails.getTenantId()))
+                TenantContext.setCurrentTenant(shipmentDetails.getTenantId());
+            this.createBulkExportEvent(shipmentDetails.getId(), EventConstants.PRST, SHIPMENT, shipmentGuidBranchMap.getOrDefault(shipmentDetails.getGuid().toString(), new ArrayList<>()));
+        }
+        TenantContext.setCurrentTenant(UserContext.getUser().getTenantId());
     }
 
     private void createImportEvent(String tenantName, Long entityId, String eventCode, String entityType) {
@@ -1661,15 +1711,21 @@ public class EntityTransferService implements IEntityTransferService {
         return CommonV1ListRequest.builder().criteriaRequests(List.of(List.of(List.of(criteria1, "and", criteria2), "and", criteria3), "and" , criteria4)).build();
     }
 
-    private void createAutoEvent(Long entityId, String eventCode, String entityType) {
-        if (ObjectUtils.isNotEmpty(entityId)) {
-            EventsRequest eventsRequest = new EventsRequest();
-            eventsRequest.setActual(LocalDateTime.now());
-            eventsRequest.setEntityId(entityId);
-            eventsRequest.setEntityType(entityType);
-            eventsRequest.setEventCode(eventCode);
-            eventsRequest.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
-            eventService.saveEvent(eventsRequest);
+    public void createAutoEvent(Long entityId, String eventCode, String entityType, List<Integer> tenantIds) {
+        if (ObjectUtils.isNotEmpty(entityId) && !CommonUtils.listIsNullOrEmpty(tenantIds)) {
+            var tenantMap = v1ServiceUtil.getTenantDetails(tenantIds);
+            for (Integer tenantId : tenantIds) {
+                var tenantDetails = jsonHelper.convertValue(tenantMap.get(tenantId), V1TenantResponse.class);
+                EventsRequest eventsRequest = new EventsRequest();
+                eventsRequest.setActual(LocalDateTime.now());
+                eventsRequest.setEntityId(entityId);
+                eventsRequest.setEntityType(entityType);
+                eventsRequest.setEventCode(eventCode);
+                eventsRequest.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
+                if (tenantDetails != null)
+                    eventsRequest.setPlaceName(tenantDetails.getCode());
+                eventService.saveEvent(eventsRequest);
+            }
         }
     }
 
@@ -2476,6 +2532,27 @@ public class EntityTransferService implements IEntityTransferService {
             }
         }
         return userEmailIds;
+    }
+
+    public Runnable withMdc(Runnable runnable) {
+        Map<String, String> mdc = MDC.getCopyOfContextMap();
+        String token = RequestAuthContext.getAuthToken();
+        var tenantId = TenantContext.getCurrentTenant();
+        var userContext = UserContext.getUser();
+        return () -> {
+            try {
+                MDC.setContextMap(mdc);
+                RequestAuthContext.setAuthToken(token);
+                TenantContext.setCurrentTenant(tenantId);
+                UserContext.setUser(userContext);
+                runnable.run();
+            } finally {
+                MDC.clear();
+                RequestAuthContext.removeToken();
+                TenantContext.removeTenant();
+                UserContext.removeUser();
+            }
+        };
     }
 
 }
