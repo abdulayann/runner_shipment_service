@@ -46,8 +46,8 @@ public class CustomerBookingValidations {
             case PENDING_FOR_KYC:
                 if (Objects.isNull(newEntity.getCustomer()) || (newEntity.getIsCustomerFreeText() && Objects.isNull(newEntity.getCustomer().getOrgData()))
                         || (!newEntity.getIsCustomerFreeText() && Objects.isNull(newEntity.getCustomer().getOrgCode()))
-                        || (newEntity.getIsCustomerAddressFreeText() && Objects.isNull(newEntity.getCustomer().getAddressData()))
-                        || (!newEntity.getIsCustomerAddressFreeText() && Objects.isNull(newEntity.getCustomer().getAddressCode())))
+                        || (Boolean.TRUE.equals(newEntity.getIsCustomerAddressFreeText()) && Objects.isNull(newEntity.getCustomer().getAddressData()))
+                        || (!Boolean.TRUE.equals(newEntity.getIsCustomerAddressFreeText()) && Objects.isNull(newEntity.getCustomer().getAddressCode())))
                     throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Customer detail"));
                 break;
 
