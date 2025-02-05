@@ -582,7 +582,4 @@ public class ShipmentSettingsDetails extends MultiTenancy {
 
     @Column(name = "fcr_document")
     private String fcrDocument;
-
-    @Column(name = "is_ti_revamp_enabled")
-    private Boolean isTiRevampEnabled;
 }
