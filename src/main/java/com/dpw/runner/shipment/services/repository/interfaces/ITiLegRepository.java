@@ -26,6 +26,4 @@ public interface ITiLegRepository extends MultiTenancyRepository<TiLegs> {
         Specification<TiLegs> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("guid"), id);
         return findOne(spec);
     }
-
-    List<TiLegs> saveAll(List<TiLegs> tiLegsList);
 }

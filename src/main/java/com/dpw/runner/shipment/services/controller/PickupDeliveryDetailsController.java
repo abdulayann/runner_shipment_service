@@ -105,7 +105,7 @@ public class PickupDeliveryDetailsController {
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = PickupDeliveryDetailsConstants.PICKUP_DELIVERY_DETAILS_LIST_SUCCESSFUL, responseContainer = PickupDeliveryDetailsConstants.RESPONSE_CONTAINER_LIST)})
-    @PostMapping(PickupDeliveryDetailsConstants.PICKUP_DELIVERY_DETAILS_API_RETRIEVE_BY_ID_V2)
+    @PostMapping(PickupDeliveryDetailsConstants.PICKUP_DELIVERY_DETAILS_API_LIST_V2)
     public ResponseEntity<IRunnerResponse> listV2(@RequestBody @Valid ListCommonRequest listCommonRequest) {
         return pickupDeliveryDetailsService.listV2(CommonRequestModel.buildRequest(listCommonRequest));
     }
