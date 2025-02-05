@@ -228,4 +228,11 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private Boolean isReceivingBranchManually;
     private Boolean isTransferredToReceivingBranch;
     private Boolean b2b;
+
+    private Boolean isCoLoadEnabled;
+    private String coLoadCarrierName;
+    private String coLoadBlNumber;
+
+    private String issuingCarrierName;
+    private String oceanBlNumber;
 }
