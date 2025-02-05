@@ -2112,36 +2112,43 @@ public class CommonUtils {
                 .toList() : Collections.emptyList();
     }
 
-    public List<Long> getTenantIdsFromEntity(Long entityId, String entityType) {
+    public List<Long> getTenantIdsFromEntity(Long entityId, String entityType, Boolean isReassign, Boolean isReceivingBranch, Boolean isTriangulationBranch) {
         Set<Long> tenantIds = new HashSet<>();
-        Long sourceTenantId = null;
+        Long sourceTenantId = TenantContext.getCurrentTenant().longValue();
         Long receivingBranch = null;
         List<Long> triangulationPartners = null;
-        if(Objects.equals(entityType, Constants.SHIPMENT)) {
-            Optional<ShipmentDetails> shipmentDetails = shipmentDao.findShipmentByIdWithQuery(entityId);
-            if(shipmentDetails.isEmpty()) {
+        List<Long> otherIds = new ArrayList<>();
+
+        if (Objects.equals(entityType, Constants.SHIPMENT) && entityId != null) {
+            Optional<ShipmentDetails> optionalShipmentDetails = shipmentDao.findShipmentByIdWithQuery(entityId);
+            if (optionalShipmentDetails.isEmpty()) {
                 return new ArrayList<>();
             }
-            sourceTenantId = Long.valueOf(shipmentDetails.get().getTenantId());
-            receivingBranch = shipmentDetails.get().getReceivingBranch();
-            triangulationPartners = Optional.ofNullable(shipmentDetails.get().getTriangulationPartnerList())
-                    .orElse(Collections.emptyList())
-                    .stream()
-                    .map(TriangulationPartner::getTriangulationPartner).toList();
-        } else if (Objects.equals(entityType, Constants.CONSOLIDATION)){
-            Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findConsolidationByIdWithQuery(entityId);
-            if(consolidationDetails.isEmpty()) {
+            ShipmentDetails shipmentDetails = optionalShipmentDetails.get();
+            sourceTenantId = Long.valueOf(shipmentDetails.getTenantId());
+
+            if (Boolean.TRUE.equals(isReassign)) {
+                receivingBranch = shipmentDetails.getReceivingBranch();
+                triangulationPartners = extractTriangulationPartners(shipmentDetails.getTriangulationPartnerList());
+            }
+
+            processConsolidationDetails(shipmentDetails, isReceivingBranch, isTriangulationBranch, otherIds);
+        } else if (Objects.equals(entityType, Constants.CONSOLIDATION) && entityId != null) {
+            Optional<ConsolidationDetails> optionalConsolidationDetails = consolidationDetailsDao.findConsolidationByIdWithQuery(entityId);
+            if (optionalConsolidationDetails.isEmpty()) {
                 return new ArrayList<>();
             }
-            sourceTenantId = Long.valueOf(consolidationDetails.get().getTenantId());
-            receivingBranch = consolidationDetails.get().getReceivingBranch();
-            triangulationPartners = Optional.ofNullable(consolidationDetails.get().getTriangulationPartnerList())
-                    .orElse(Collections.emptyList())
-                    .stream()
-                    .map(TriangulationPartner::getTriangulationPartner).toList();
-        } else {
-            return new ArrayList<>();
+            ConsolidationDetails consolidationDetails = optionalConsolidationDetails.get();
+            sourceTenantId = Long.valueOf(consolidationDetails.getTenantId());
+
+            if (Boolean.TRUE.equals(isReassign)) {
+                receivingBranch = consolidationDetails.getReceivingBranch();
+                triangulationPartners = extractTriangulationPartners(consolidationDetails.getTriangulationPartnerList());
+            }
+
+            processConsolidationShipments(consolidationDetails, isReceivingBranch, isTriangulationBranch, otherIds);
         }
+
         tenantIds.add(sourceTenantId);
         if (receivingBranch != null) {
             tenantIds.add(receivingBranch);
@@ -2149,7 +2156,56 @@ public class CommonUtils {
         if (!CommonUtils.listIsNullOrEmpty(triangulationPartners)) {
             tenantIds.addAll(triangulationPartners);
         }
-        return tenantIds.stream().toList();
+        if (!CommonUtils.listIsNullOrEmpty(otherIds)) {
+            tenantIds.addAll(otherIds);
+        }
+        return new ArrayList<>(tenantIds);
+    }
+
+    private void processConsolidationDetails(ShipmentDetails shipmentDetails, Boolean isReceivingBranch, Boolean isTriangulationBranch, List<Long> otherIds) {
+        List<ConsolidationDetails> consolidationList = shipmentDetails.getConsolidationList();
+        if (consolidationList != null && !consolidationList.isEmpty()) {
+            ConsolidationDetails consolidationDetails = consolidationList.get(0);
+            if (Boolean.TRUE.equals(consolidationDetails.getInterBranchConsole())) {
+                if (Boolean.TRUE.equals(isReceivingBranch)) {
+                    otherIds.add(Long.valueOf(consolidationDetails.getTenantId()));
+                    otherIds.addAll(extractTriangulationPartners(consolidationDetails.getTriangulationPartnerList()));
+                    consolidationDetails.getShipmentsList().forEach(s -> otherIds.add(Long.valueOf(s.getTenantId())));
+                }
+                if (Boolean.TRUE.equals(isTriangulationBranch)) {
+                    otherIds.add(consolidationDetails.getReceivingBranch());
+                    otherIds.addAll(extractTriangulationPartners(consolidationDetails.getTriangulationPartnerList()));
+                    consolidationDetails.getShipmentsList().forEach(s -> {
+                        otherIds.add(Long.valueOf(s.getTenantId()));
+                        if (!Objects.equals(s.getId(), shipmentDetails.getId())) {
+                            otherIds.add(s.getReceivingBranch());
+                        }
+                    });
+                }
+            }
+        }
+    }
+
+    private void processConsolidationShipments(ConsolidationDetails consolidationDetails, Boolean isReceivingBranch, Boolean isTriangulationBranch, List<Long> otherIds) {
+        if (Boolean.TRUE.equals(consolidationDetails.getInterBranchConsole())) {
+            if (Boolean.TRUE.equals(isReceivingBranch)) {
+                consolidationDetails.getShipmentsList().forEach(s -> otherIds.add(Long.valueOf(s.getTenantId())));
+            }
+            if (Boolean.TRUE.equals(isTriangulationBranch)) {
+                consolidationDetails.getShipmentsList().forEach(s -> {
+                    otherIds.add(s.getReceivingBranch());
+                    otherIds.add(Long.valueOf(s.getTenantId()));
+                });
+            }
+        }
+    }
+
+    private List<Long> extractTriangulationPartners(List<TriangulationPartner> partners) {
+        return Optional.ofNullable(partners)
+                .orElse(Collections.emptyList())
+                .stream()
+                .map(TriangulationPartner::getTriangulationPartner)
+                .toList();
     }
 
     public Parties removeIdFromParty(Parties parties) {
