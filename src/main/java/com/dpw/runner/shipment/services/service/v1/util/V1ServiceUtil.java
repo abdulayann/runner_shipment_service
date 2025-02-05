@@ -1,11 +1,15 @@
 package com.dpw.runner.shipment.services.service.v1.util;
 
+import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.INotesDao;
 import com.dpw.runner.shipment.services.dto.request.CreateBookingModuleInV1;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
+import com.dpw.runner.shipment.services.dto.request.UserWithPermissionRequestV1;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitFromV1Response;
+import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.CreditLimitValidateRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TenantDetailsByListRequest;
@@ -432,5 +436,37 @@ public class V1ServiceUtil {
         List<Object> criteria2 = new ArrayList<>(List.of(field2List, "=", value2));
 
         return CommonV1ListRequest.builder().criteriaRequests(List.of(criteria1, "and", criteria2)).build();
+    }
+
+    public PartiesResponse getDefaultAgentOrg(TenantModel tenantModel) {
+        if(tenantModel == null) {
+            tenantModel = modelMapper.map(v1Service.retrieveTenant().getEntity(), TenantModel.class);
+        }
+        PartiesResponse partiesResponse = null;
+        if(tenantModel.getDefaultOrgId() != null && tenantModel.getDefaultAddressId() != null) {
+            PartiesRequest partiesRequest = getPartiesRequestFromOrgIdAndAddressId(tenantModel.getDefaultOrgId(), tenantModel.getDefaultAddressId());
+            partiesResponse = jsonHelper.convertValue(partiesRequest, PartiesResponse.class);
+        }
+        return partiesResponse;
+    }
+
+    public Parties getDefaultAgentOrgParty(TenantModel tenantModel) {
+        if(tenantModel == null) {
+            tenantModel = modelMapper.map(v1Service.retrieveTenant().getEntity(), TenantModel.class);
+        }
+        Parties parties = null;
+        if(tenantModel.getDefaultOrgId() != null && tenantModel.getDefaultAddressId() != null) {
+            PartiesRequest partiesRequest = getPartiesRequestFromOrgIdAndAddressId(tenantModel.getDefaultOrgId(), tenantModel.getDefaultAddressId());
+            parties = jsonHelper.convertValue(partiesRequest, Parties.class);
+        }
+        return parties;
+    }
+
+    public List<UsersDto> getUsersWithGivenPermission(List<String> permissionKeys, Integer tenantId) {
+        UserWithPermissionRequestV1 request = new UserWithPermissionRequestV1();
+        request.setUserTenantId(tenantId);
+        request.setPermissionKeys(permissionKeys);
+
+        return v1Service.getUsersWithGivenPermissions(request);
     }
 }

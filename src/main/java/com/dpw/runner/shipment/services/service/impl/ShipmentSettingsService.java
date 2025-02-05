@@ -296,6 +296,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             log.error("Request Tenant Id is null for Shipment Settings update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
+        log.info("CR-ID {} || Shipment Settings syncing from V1 with payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
 
         Optional<ShipmentSettingsDetails> oldEntity = Optional.empty();
         if(request.getTenantId() != null) {

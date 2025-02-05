@@ -154,7 +154,7 @@ class RoutingsServiceTest extends CommonMocks {
         routingsUpdateRequest.setRoutingsRequests(routingsRequests);
 
         routingsResponseList = List.of(new RoutingsResponse());
-        routingsService.executorService = executorService;
+        routingsService.executorServiceRouting = executorService;
     }
 
     @Test

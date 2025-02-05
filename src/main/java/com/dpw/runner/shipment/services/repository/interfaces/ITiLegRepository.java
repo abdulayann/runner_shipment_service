@@ -27,5 +27,4 @@ public interface ITiLegRepository extends MultiTenancyRepository<TiLegs> {
         return findOne(spec);
     }
 
-    List<TiLegs> saveAll(List<TiLegs> tiLegsList);
 }

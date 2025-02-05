@@ -34,6 +34,7 @@ public class AwbShipmentInfo implements Serializable {
     private String shipperReferenceNumber;
     private String shipperContactName;
     private String shipperTaxRegistrationNumber;
+    private OtherPartyInfo shipperPartyInfo;
     private String consigneeName;
     private String consigneeAddress;
     private String consigneeAddress2;
@@ -48,6 +49,7 @@ public class AwbShipmentInfo implements Serializable {
     private String consigneeReferenceNumber;
     private String consigneeContactName;
     private String consigneeTaxRegistrationNumber;
+    private OtherPartyInfo consigneePartyInfo;
     private String issuingAgentName;
     private String issuingAgentAddress;
     private String issuingAgentAddress2;
@@ -61,6 +63,7 @@ public class AwbShipmentInfo implements Serializable {
     private String issuingAgentPhone;
     private String issuingAgentContactName;
     private String issuingAgentTaxRegistrationNumber;
+    private OtherPartyInfo issuingAgentPartyInfo;
     private String iataCode;
     private String noOfCopies;
     private String status;

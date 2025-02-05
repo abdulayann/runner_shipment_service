@@ -20,7 +20,7 @@ public class PickupDeliveryDetailsConstants {
     // v2 api endpoints
     public static final String PICKUP_DELIVERY_DETAILS_API_CREATE_V2 = "/createV2";
     public static final String PICKUP_DELIVERY_DETAILS_API_UPDATE_V2 = "/updateV2";
-    public static final String PICKUP_DELIVERY_DETAILS_API_RETRIEVE_BY_ID_V2 = "/retrieve/idV2";
+    public static final String PICKUP_DELIVERY_DETAILS_API_RETRIEVE_BY_ID_V2 = "/retrieveV2/id";
     public static final String PICKUP_DELIVERY_DETAILS_API_LIST_V2 = "/listV2";
     public static final String PICKUP_DELIVERY_DETAILS_API_DELETE_V2 = "/deleteV2";
 }
