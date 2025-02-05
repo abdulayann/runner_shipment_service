@@ -582,4 +582,8 @@ public class ShipmentSettingsDetails extends MultiTenancy {
 
     @Column(name = "fcr_document")
     private String fcrDocument;
+
+    @Column(name = "is_runner_v3_enabled")
+    private Boolean isRunnerV3Enabled;
+
 }
