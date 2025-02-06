@@ -29,6 +29,7 @@ public class NetworkTransferListResponse implements IRunnerResponse {
     private Map<String, Object> entityPayload;
     private Integer tenantId;
     private LocalDateTime createdAt;
+    private Boolean isInterBranchEntity;
     private Map<String, String> tenantMasterData;
     private Map<String, String> masterData;
 }
