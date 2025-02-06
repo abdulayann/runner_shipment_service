@@ -301,7 +301,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
         else
             trackingPayload = mapDetailsForTracking(Constants.SHIPMENT, shipmentNumber,masterBill, shipmentDetails, entityDetails);
 
-        if(inputShipment != null && inputShipment.getSource().equals("API")) {
+        if(inputShipment != null && "API".equals(inputShipment.getSource())) {
             if(!isRequestFromShipment)
                 trackingPayload.setBookingReferenceNumber(inputConsol.getReferenceNumber());
             else

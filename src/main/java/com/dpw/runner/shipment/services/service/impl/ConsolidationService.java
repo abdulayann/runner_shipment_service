@@ -4945,7 +4945,12 @@ public class ConsolidationService implements IConsolidationService {
 
     private boolean isMasterDataChange(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity){
         boolean isMawbChange =  !Objects.equals(consolidationDetails.getMawb(), oldEntity.getMawb());
-        boolean isCarrierSpacChange = !(Objects.equals(consolidationDetails.getCarrierDetails().getShippingLine(), oldEntity.getCarrierDetails().getShippingLine()));
+        boolean isCarrierSpacChange = false;
+        if(consolidationDetails.getCarrierDetails() != null) {
+            isCarrierSpacChange  = !(Objects.equals(
+                consolidationDetails.getCarrierDetails().getShippingLine(),
+                oldEntity.getCarrierDetails().getShippingLine()));
+        }
 
         return isMawbChange || isCarrierSpacChange;
     }
@@ -4981,7 +4986,7 @@ public class ConsolidationService implements IConsolidationService {
         return shipmentDao.findShipmentsByIds(shipmentIds);
     }
 
-    private List<ShipmentDetails> findShipmentForTrackingService(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity){
+    public List<ShipmentDetails> findShipmentForTrackingService(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity){
         if(oldEntity == null) return null;
 
         // check MBL / MAWB / Carrier Scac change
