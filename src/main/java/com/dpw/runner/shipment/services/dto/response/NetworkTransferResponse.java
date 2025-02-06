@@ -31,4 +31,5 @@ public class NetworkTransferResponse implements IRunnerResponse {
     private Map<String, String> tenantIdsData;
     private Integer tenantId;
     private LocalDateTime createdAt;
+    private Boolean isInterBranchEntity;
 }

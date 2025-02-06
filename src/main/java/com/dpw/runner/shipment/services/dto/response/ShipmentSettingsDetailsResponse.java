@@ -180,4 +180,5 @@ public class ShipmentSettingsDetailsResponse implements IRunnerResponse {
     private Boolean hasNoUtilization;
     private Boolean isAwbRevampEnabled;
     private String fcrDocument;
+    private Boolean isRunnerV3Enabled;
 }

@@ -39,6 +39,13 @@ public interface INotificationRepository extends MultiTenancyRepository<Notifica
             nativeQuery = true)
     List<Notification> findNotificationBasedOnEntityIdAndEntityTypeAndBranchIdAndRequestTypes(Long entityId, String entityType, Integer branchId, List<String> requestTypes);
 
+    @Query(value = "SELECT * FROM notification " +
+            "WHERE entity_id IN (?1) AND entity_type = ?2 " +
+            "AND (requested_branch_id = ?3 OR reassigned_to_branch_id = ?3) " +
+            "AND request_type IN (?4)",
+            nativeQuery = true)
+    List<Notification> findNotificationBasedOnEntityIdsAndEntityTypeAndBranchIdAndRequestTypes(List<Long> entityIds, String entityType, Integer branchId, List<String> requestTypes);
+
     @Query("SELECT DISTINCT n.entityId FROM Notification n WHERE n.entityType = :entityType")
     List<Long> findEntityIdsByEntityType(@Param("entityType") String entityType);
 }

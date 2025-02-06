@@ -232,4 +232,11 @@ class NotificationDaoTest {
         verify(notificationRepository, times(1)).pendingNotificationCountBasedOnEntityIdsAndEntityType(entityIds, entityType);
     }
 
+    @Test
+    void testFindNotificationByEntityIdsForEntityTransfer() {
+        notificationDao.findNotificationByEntityIdsForEntityTransfer(anyList(), anyString(), anyInt(), anyList());
+        verify(notificationRepository, times(1)).
+                findNotificationBasedOnEntityIdsAndEntityTypeAndBranchIdAndRequestTypes(anyList(), anyString(), anyInt(), anyList());
+    }
+
 }
