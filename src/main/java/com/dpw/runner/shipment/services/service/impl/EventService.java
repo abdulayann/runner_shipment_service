@@ -1079,6 +1079,8 @@ public class EventService implements IEventService {
     public void processUpstreamBillingCommonEventMessage(BillingInvoiceDto billingInvoiceDto) {
         try {
             v1Service.setAuthContext();
+            UsersDto originalUser = UserContext.getUser();
+            Integer originalTenant = TenantContext.getCurrentTenant();
             InvoiceDto invoiceDto = billingInvoiceDto.getPayload();
             AccountReceivableDto accountReceivableDto = invoiceDto.getAccountReceivable();
             List<BillDto> billDtoList = accountReceivableDto.getBills();
@@ -1111,8 +1113,8 @@ public class EventService implements IEventService {
                 } catch (Exception e) {
                     throw new BillingException(e.getMessage());
                 } finally {
-                    TenantContext.removeTenant();
-                    UserContext.removeUser();
+                    TenantContext.setCurrentTenant(originalTenant);
+                    UserContext.setUser(originalUser);
                 }
 
             });
