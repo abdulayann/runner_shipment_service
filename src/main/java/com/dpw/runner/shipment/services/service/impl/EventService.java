@@ -1094,15 +1094,23 @@ public class EventService implements IEventService {
                     (existing, replacement) -> replacement));
 
             billDtoList.forEach(billDto -> {
-                if (Constants.SHIPMENT.equalsIgnoreCase(billDto.getModuleTypeCode())) {
-                    ShipmentDetails shipmentDetails = shipmentMap.get(UUID.fromString(billDto.getModuleId()));
+                try {
+                    if (Constants.SHIPMENT.equalsIgnoreCase(billDto.getModuleTypeCode())) {
+                        ShipmentDetails shipmentDetails = shipmentMap.get(UUID.fromString(billDto.getModuleId()));
 
-                    TenantContext.setCurrentTenant(shipmentDetails.getTenantId());
-                    UserContext.setUser(UsersDto.builder().TenantId(shipmentDetails.getTenantId()).Permissions(new HashMap<>()).build());
+                        TenantContext.setCurrentTenant(shipmentDetails.getTenantId());
 
-                    List<EventsRequest> eventsRequests = prepareEventsFromBillingCommonEvent(billingInvoiceDto, shipmentDetails);
-                    eventsRequests.forEach(this::saveEvent);
+                        UsersDto user = UserContext.getUser();
+                        user.setTenantId(shipmentDetails.getTenantId());
+                        user.setPermissions(new HashMap<>());
+                        UserContext.setUser(user);
 
+                        List<EventsRequest> eventsRequests = prepareEventsFromBillingCommonEvent(billingInvoiceDto, shipmentDetails);
+                        eventsRequests.forEach(this::saveEvent);
+                    }
+                } catch (Exception e) {
+                    throw new BillingException(e.getMessage());
+                } finally {
                     TenantContext.removeTenant();
                     UserContext.removeUser();
                 }
@@ -1110,6 +1118,8 @@ public class EventService implements IEventService {
             });
         } catch (Exception e) {
             throw new BillingException(e.getMessage());
+        } finally {
+            v1Service.clearAuthContext();
         }
     }
 
