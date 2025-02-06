@@ -159,7 +159,9 @@ public enum MasterDataType {
     IATA_CHARGE_CODES(186, "IATAChargeCodes"),
     PACKING_GROUP(188, "PackingGroup"),
     LOCATION_ROLE(189, "LocationRole"),
-    EVENT_SOURCE(190, "EventSource");
+    EVENT_SOURCE(190, "EventSource"),
+    PACKAGE_TYPE(191, "PackageType"),
+    CONTAINER_TYPE(192, "ContainerType");
 
     private int id;
     private String description;

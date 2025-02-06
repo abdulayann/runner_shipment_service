@@ -3,7 +3,7 @@ package com.dpw.runner.shipment.services.service.impl;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dto.request.ListCousinBranchesForReassignRequest;
+import com.dpw.runner.shipment.services.dto.request.ListCousinBranchesForNteRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
@@ -30,6 +30,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+
+import static org.mockito.ArgumentMatchers.eq;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
@@ -751,13 +753,54 @@ class MasterDataImplTest {
     }
 
     @Test
-    void listCousinBranchForNTEReassign() {
-        ListCousinBranchesForReassignRequest commonRequestModel = ListCousinBranchesForReassignRequest.builder().build();
+    void listCousinBranchForNTE() {
+        ListCousinBranchesForNteRequest commonRequestModel = ListCousinBranchesForNteRequest.builder().build();
+        commonRequestModel.setIsReassign(true);
+        commonRequestModel.setIsReceivingBranch(false);
+        commonRequestModel.setIsTriangulationBranch(false);
         Mockito.when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
         Mockito.when(masterDataFactory.getMasterDataService().listCousinBranches(Mockito.any())).thenReturn(new DependentServiceResponse());
-        Mockito.when(commonUtils.getTenantIdsFromEntity(Mockito.any(), Mockito.any())).thenReturn(new ArrayList<>());
-        ResponseEntity<IRunnerResponse> responseEntity = masterData.listCousinBranchForNTEReassign(commonRequestModel);
+        Mockito.when(commonUtils.getTenantIdsFromEntity(Mockito.any(), Mockito.any(), eq(true), eq(false), eq(false))).thenReturn(new ArrayList<>());
+        ResponseEntity<IRunnerResponse> responseEntity = masterData.listCousinBranchForNTE(commonRequestModel);
         Assertions.assertNotNull(responseEntity);
         Assertions.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
+
+    @Test
+    void listCousinBranchForNteWithEmptyTenantIds() {
+        ListCousinBranchesForNteRequest commonRequestModel = ListCousinBranchesForNteRequest.builder().build();
+        Mockito.when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
+        Mockito.when(masterDataFactory.getMasterDataService().listCousinBranches(Mockito.any())).thenReturn(new DependentServiceResponse());
+        Mockito.when(commonUtils.getTenantIdsFromEntity(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(null);
+        ResponseEntity<IRunnerResponse> responseEntity = masterData.listCousinBranchForNTE(commonRequestModel);
+        Assertions.assertNotNull(responseEntity);
+        Assertions.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void listCousinBranchForNteWithTenantIdsAndExistingCriteria() {
+        ListCousinBranchesForNteRequest commonRequestModel = ListCousinBranchesForNteRequest.builder().build();
+        List<Object> criteria = List.of(List.of("TenantId"), "not in", List.of(150));
+        commonRequestModel.setCriteria(criteria);
+        Mockito.when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
+        Mockito.when(masterDataFactory.getMasterDataService().listCousinBranches(Mockito.any())).thenReturn(new DependentServiceResponse());
+        Mockito.when(commonUtils.getTenantIdsFromEntity(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(new ArrayList<>());
+        ResponseEntity<IRunnerResponse> responseEntity = masterData.listCousinBranchForNTE(commonRequestModel);
+        Assertions.assertNotNull(responseEntity);
+        Assertions.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void listCousinBranchForNteWithTenantIdsAndExistingCriteria2() {
+        ListCousinBranchesForNteRequest commonRequestModel = ListCousinBranchesForNteRequest.builder().build();
+        List<Object> criteria = List.of(List.of("TenantId"), "not in", List.of(List.of(150)));
+        commonRequestModel.setCriteria(criteria);
+        Mockito.when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
+        Mockito.when(masterDataFactory.getMasterDataService().listCousinBranches(Mockito.any())).thenReturn(new DependentServiceResponse());
+        Mockito.when(commonUtils.getTenantIdsFromEntity(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(new ArrayList<>());
+        ResponseEntity<IRunnerResponse> responseEntity = masterData.listCousinBranchForNTE(commonRequestModel);
+        Assertions.assertNotNull(responseEntity);
+        Assertions.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
 }

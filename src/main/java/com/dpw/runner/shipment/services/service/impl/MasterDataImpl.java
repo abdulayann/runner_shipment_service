@@ -4,7 +4,7 @@ import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dto.request.ListCousinBranchesForReassignRequest;
+import com.dpw.runner.shipment.services.dto.request.ListCousinBranchesForNteRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
@@ -396,9 +396,13 @@ public class MasterDataImpl implements IMasterDataService {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> listCousinBranchForNTEReassign(ListCousinBranchesForReassignRequest request) {
-        List<Long> tenantIds = commonUtils.getTenantIdsFromEntity(request.getEntityId(), request.getEntityType());
-        List<Object> criteria = convertToV1NotInCriteria("TenantId", tenantIds);
+    public ResponseEntity<IRunnerResponse> listCousinBranchForNTE(ListCousinBranchesForNteRequest request) {
+        List<Object> criteria = request.getCriteria() ;
+        List<Long> tenantIds = commonUtils.getTenantIdsFromEntity(request.getEntityId(), request.getEntityType(), request.getIsReassign(), request.getIsReceivingBranch(), request.getIsTriangulationBranch());
+        if(tenantIds!=null) {
+            List<Long> existingTenantIds = criteria!=null && !criteria.isEmpty() && criteria.size() > 2 ? (List<Long>) criteria.get(2): null;
+            criteria = convertToV1NotInCriteria("TenantId", tenantIds, existingTenantIds);
+        }
         CommonV1ListRequest v1ListRequest = CommonV1ListRequest.builder()
                 .sort(request.getSort())
                 .containsText(request.getContainsText())
@@ -412,11 +416,21 @@ public class MasterDataImpl implements IMasterDataService {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().listCousinBranches(v1ListRequest));
     }
 
-    public List<Object> convertToV1NotInCriteria(String filterValue, List<?> values) {
+    public List<Object> convertToV1NotInCriteria(String filterValue, List<?> values, List<Long> existingTenantIds) {
         List<String> itemType = new ArrayList<>();
         itemType.add(filterValue);
-        List<List<?>> param = new ArrayList<>();
-        param.add(values);
-        return new ArrayList<>(Arrays.asList(itemType, "not in", param));
+        List<Object> param = new ArrayList<>();
+        if(values!=null)
+            param.addAll(values);
+        if (existingTenantIds != null) {
+            for (Object obj : existingTenantIds) {
+                if (obj instanceof List) {
+                    param.addAll((List<?>) obj);
+                } else {
+                    param.add(obj);
+                }
+            }
+        }
+        return new ArrayList<>(Arrays.asList(itemType, "not in", Collections.singletonList(param)));
     }
 }
