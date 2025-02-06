@@ -44,6 +44,7 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
@@ -61,8 +62,9 @@ public class RoutingsService implements IRoutingsService {
     public MasterDataUtils masterDataUtils;
     @Autowired
     private CommonUtils commonUtils;
+    @Qualifier("executorServiceRouting")
     @Autowired
-    ExecutorService executorService;
+    ExecutorService executorServiceRouting;
 
     @Override
     public void updateRoutingsBasedOnTracking(Long shipmentId, List<Routings> routings)
@@ -99,10 +101,10 @@ public class RoutingsService implements IRoutingsService {
         Map<String, List<Routings>> podToRoutingMap = new HashMap<>();
         CompletableFuture<Void> polToRoutingMapFuture = CompletableFuture.runAsync(
             masterDataUtils.withMdc(() -> createRoutingMap(routings, true, polToRoutingMap)),
-            executorService);
+            executorServiceRouting);
         CompletableFuture<Void> podToRoutingMapFuture = CompletableFuture.runAsync(
             masterDataUtils.withMdc(() -> createRoutingMap(routings, false, podToRoutingMap)),
-            executorService);
+            executorServiceRouting);
         CompletableFuture.allOf(polToRoutingMapFuture, podToRoutingMapFuture).join();
 
         // Create routing maps for POL and POD

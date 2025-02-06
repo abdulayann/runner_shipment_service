@@ -807,7 +807,6 @@ public class ConsolidationService implements IConsolidationService {
         if (request == null) {
             log.error("Request is null for Consolidation Create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
-        syncMainLegRoute(request, null);
         ConsolidationDetails consolidationDetails = jsonHelper.convertValue(request, ConsolidationDetails.class);
         try {
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
@@ -840,7 +839,6 @@ public class ConsolidationService implements IConsolidationService {
             throw new ValidationException("Request is null for Consolidation Create");
         }
 
-        syncMainLegRoute(request, null);
         ConsolidationDetails consolidationDetails = jsonHelper.convertValue(request, ConsolidationDetails.class);
         try {
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
@@ -1823,7 +1821,6 @@ public class ConsolidationService implements IConsolidationService {
 
         try {
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
-            syncMainLegRoute(consolidationDetailsRequest, oldEntity.get());
             ConsolidationDetails entity = jsonHelper.convertValue(consolidationDetailsRequest, ConsolidationDetails.class);
             setInterBranchContext(entity.getInterBranchConsole());
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
@@ -4836,7 +4833,8 @@ public class ConsolidationService implements IConsolidationService {
     public void triggerAutomaticTransfer(ConsolidationDetails consolidationDetails,
                                          ConsolidationDetails oldEntity, Boolean isDocOrHawbNumAdded) {
         try {
-
+            if(consolidationDetails.getShipmentType()==null || !Constants.DIRECTION_EXP.equals(consolidationDetails.getShipmentType()))
+                return;
             Boolean isReceivingBranchEmpty = ObjectUtils.isEmpty(consolidationDetails.getReceivingBranch()) && oldEntity != null && ObjectUtils.isNotEmpty(oldEntity.getReceivingBranch());
             if(Boolean.TRUE.equals(isReceivingBranchEmpty) || isInvalidForTransfer(consolidationDetails)) {
                 deleteAllConsoleErrorsLogs(consolidationDetails);
@@ -5078,21 +5076,6 @@ public class ConsolidationService implements IConsolidationService {
         return res;
     }
 
-    public void syncMainLegRoute(ConsolidationDetailsRequest consolidationDetailsRequest, ConsolidationDetails oldEntity) {
-        if (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster()) && Constants.TRANSPORT_MODE_AIR.equals(consolidationDetailsRequest.getTransportMode())) {
-            List<RoutingsRequest> routingsRequests = consolidationDetailsRequest.getRoutingsList();
-            if (oldEntity == null || !Objects.equals(consolidationDetailsRequest.getCarrierDetails().getFlightNumber(), oldEntity.getCarrierDetails().getFlightNumber())
-                    || !Objects.equals(consolidationDetailsRequest.getCarrierDetails().getShippingLine(), oldEntity.getCarrierDetails().getShippingLine())) {
-                routingsRequests.stream().filter(i -> (RoutingCarriage.MAIN_CARRIAGE.equals(i.getCarriage())
-                                && Objects.equals(consolidationDetailsRequest.getCarrierDetails().getOriginPort(), i.getPol())
-                                && Objects.equals(consolidationDetailsRequest.getCarrierDetails().getDestinationPort(), i.getPod())))
-                        .forEach(i -> {
-                            i.setFlightNumber(consolidationDetailsRequest.getCarrierDetails().getFlightNumber());
-                            i.setCarrier(consolidationDetailsRequest.getCarrierDetails().getShippingLine());
-                        });
-            }
-        }
-    }
 
     private List<EventsRequest> setEventDetails(List<EventsRequest> eventsRequestList, ConsolidationDetails consolidationDetails) {
         if(eventsRequestList != null && !eventsRequestList.isEmpty()) {
@@ -5182,6 +5165,12 @@ public class ConsolidationService implements IConsolidationService {
 
         if (shipmentRes.isEmpty())
             throw new DataRetrievalFailureException("Failed to fetch the ShipmentId with id " + shipmentId);
+
+        // Check if the specific implication (CONCR) is already present for the current shipment's GUID.
+        // If true, throw a RuntimeException with a detailed error message including the shipment ID.
+        if (Boolean.TRUE.equals(dpsEventService.isImplicationPresent(Set.of(shipmentRes.get().getGuid().toString()), DpsConstants.CONCR))) {
+            throw new RuntimeException(DpsConstants.DPS_ERROR_2 + " : " + shipmentRes.get().getShipmentId());
+        }
 
         var shipment = modelMapper.map(shipmentRes.get(), ShipmentDetailsResponse.class);
 

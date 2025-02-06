@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dto.request.platformBooking;
 
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
+import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.annotations.ApiModel;
@@ -20,6 +21,7 @@ import java.util.List;
 public class PlatformToRunnerCustomerBookingRequest implements IRunnerRequest {
     @JsonProperty("status")
     private BookingStatus bookingStatus;
+    private BookingSource source;
     private PartiesRequest customer;
     private Boolean isCustomerFreeText;
     private PartiesRequest consignor;

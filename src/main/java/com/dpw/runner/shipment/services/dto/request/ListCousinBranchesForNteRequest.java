@@ -9,7 +9,7 @@ import java.util.List;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class ListCousinBranchesForReassignRequest implements IRunnerRequest {
+public class ListCousinBranchesForNteRequest implements IRunnerRequest {
     private String containsText;
     private List<String> includeColumns;
     private Long entityId;
@@ -19,4 +19,8 @@ public class ListCousinBranchesForReassignRequest implements IRunnerRequest {
     private int skip;
     private int columnSelection;
     private Boolean excludeTotalCount;
+    private Boolean isReassign;
+    private Boolean isReceivingBranch;
+    private Boolean isTriangulationBranch;
+    private List<Object> criteria;
 }

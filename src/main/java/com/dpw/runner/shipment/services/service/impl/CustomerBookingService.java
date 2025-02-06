@@ -772,6 +772,8 @@ public class CustomerBookingService implements ICustomerBookingService {
             });
             platformResponse.setCharges(referenceNumbersGuidMapResponses);
         }
+        if(request.getBookingStatus()==null && request.getSource()!=null && BookingSource.B2B.equals(request.getSource()))
+            request.setBookingStatus(BookingStatus.PENDING_FOR_REVIEW);
 
         CustomerBookingRequest customerBookingRequest = modelMapper.map(request, CustomerBookingRequest.class);
         assignCarrierDetailsToRequest(customerBookingRequest, request);
@@ -936,7 +938,8 @@ public class CustomerBookingService implements ICustomerBookingService {
             orgString = orgString.concat((String) orgData.get(PartiesConstants.FULLNAME));
             addressString = addressString.concat((String) orgData.get(PartiesConstants.FULLNAME) + "|");
         }
-        partiesRequest.setOrgData(Map.of(PartiesConstants.RAW_DATA, orgString));
+        partiesRequest.setOrgData(new HashMap<>(Map.of(PartiesConstants.RAW_DATA, orgString)));
+        partiesRequest.getOrgData().putAll(orgData);
         if (addressData.containsKey(PartiesConstants.ADDRESS1)) {
             addressString = addressString.concat((String) addressData.get(PartiesConstants.ADDRESS1) + "|");
         }
@@ -962,7 +965,8 @@ public class CustomerBookingService implements ICustomerBookingService {
             addressString = addressString.concat((String) addressData.get(PartiesConstants.PHONE) + "|");
         }
         partiesRequest.setIsAddressFreeText(true);
-        partiesRequest.setAddressData(Map.of(PartiesConstants.RAW_DATA, addressString));
+        partiesRequest.setAddressData(new HashMap<>(Map.of(PartiesConstants.RAW_DATA, addressString)));
+        partiesRequest.getAddressData().putAll(addressData);
     }
 
 

@@ -261,7 +261,8 @@ public class HblService implements IHblService {
         return hbl;
     }
     private void validateBeforeGeneration(ShipmentDetails shipmentDetails){
-        if(!Objects.isNull(shipmentDetails.getContainersList()) && !Objects.equals(shipmentDetails.getShipmentType(), Constants.SHIPMENT_TYPE_LCL)) {
+        if(!Objects.isNull(shipmentDetails.getContainersList())
+            && !(Objects.equals(shipmentDetails.getShipmentType(), Constants.SHIPMENT_TYPE_LCL) || (Objects.equals(shipmentDetails.getShipmentType(), Constants.CARGO_TYPE_FCL) && !Objects.equals(shipmentDetails.getJobType(), Constants.SHIPMENT_TYPE_DRT)))) {
             List<Containers> containers = shipmentDetails.getContainersList().stream().filter(c -> StringUtility.isEmpty(c.getContainerNumber())).toList();
             if (!containers.isEmpty())
                 throw new ValidationException("Please assign container number to all the containers before generating the HBL.");
@@ -269,10 +270,12 @@ public class HblService implements IHblService {
         if(!shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)
                 || !shipmentDetails.getDirection().equals(Constants.DIRECTION_EXP)
                 || (!shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL) && !shipmentDetails.getShipmentType().equals(Constants.SHIPMENT_TYPE_LCL))
-                || (shipmentDetails.getShipmentType().equals(Constants.SHIPMENT_TYPE_LCL) && Objects.equals(shipmentDetails.getJobType(), Constants.JOB_TYPE_CLB))){
+                || (shipmentDetails.getShipmentType().equals(Constants.SHIPMENT_TYPE_LCL) && Objects.equals(shipmentDetails.getJobType(), Constants.JOB_TYPE_CLB))
+                || (shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL) && !Objects.equals(shipmentDetails.getJobType(), Constants.SHIPMENT_TYPE_DRT))){
             return;
         }
-        if(!Objects.isNull(shipmentDetails.getPackingList()) && !Objects.equals(shipmentDetails.getShipmentType(), Constants.SHIPMENT_TYPE_LCL)) {
+        if(!Objects.isNull(shipmentDetails.getPackingList())
+            && !Objects.equals(shipmentDetails.getShipmentType(), Constants.SHIPMENT_TYPE_LCL)) {
             var packsList = shipmentDetails.getPackingList().stream().filter(x -> Objects.isNull(x.getContainerId())).toList();
             if(!packsList.isEmpty()){
                 throw new ValidationException("Container Number is Mandatory for HBL Generation, please assign the container number for all the packages in the shipment.");
@@ -735,6 +738,20 @@ public class HblService implements IHblService {
             throw new RuntimeException(e);
         }
         
+    }
+
+    public void validateHblContainerNumberCondition(Hbl hblObject){
+        if(!Objects.isNull(hblObject.getHblContainer()) ) {
+            List<HblContainerDto> hblContainers = hblObject.getHblContainer().stream().filter(c -> StringUtility.isEmpty(c.getContainerNumber())).toList();
+            if (!hblContainers.isEmpty())
+                throw new ValidationException("Please assign container number to all the containers in HBL before generating the HBL.");
+        }
+
+        if(!Objects.isNull(hblObject.getHblCargo()) ) {
+            List<HblCargoDto> hblCargos = hblObject.getHblCargo().stream().filter(c -> StringUtility.isEmpty(c.getBlContainerContainerNumber())).toList();
+            if (!hblCargos.isEmpty())
+                throw new ValidationException("Container Number is Mandatory for HBL Generation, please assign the container number for all the HBLCargo in the shipment.");
+        }
     }
     private void updateShipmentToHBL(ShipmentDetails shipmentDetail, Hbl hbl, HblLockSettings hblLock) {
         HblDataDto hblData = hbl.getHblData();

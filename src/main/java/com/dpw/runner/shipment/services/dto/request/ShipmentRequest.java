@@ -185,4 +185,5 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private Boolean isReceivingBranchManually;
     private Boolean isTransferredToReceivingBranch;
     private String shipmentStatus;
+    private Boolean b2b;
 }

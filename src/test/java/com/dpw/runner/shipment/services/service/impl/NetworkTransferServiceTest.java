@@ -160,8 +160,6 @@ class NetworkTransferServiceTest extends CommonMocks{
         var request = CommonRequestModel.builder().data(reassignRequest).build();
         when(networkTransferDao.findById(anyLong())).thenReturn(Optional.of(NetworkTransfer.builder().isInterBranchEntity(false).build()));
         when(notificationDao.save(any(Notification.class))).thenReturn(new Notification());
-        when(shipmentSettingsDao.getShipmentConsoleImportApprovarRole(anyInt())).thenReturn(1);
-        mockShipmentSettings();
         var response = networkTransferService.requestForReassign(request);
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
@@ -202,27 +200,7 @@ class NetworkTransferServiceTest extends CommonMocks{
         ReassignRequest reassignRequest = ReassignRequest.builder().id(12L).branchId(12).remarks("Test").build();
         var request = CommonRequestModel.builder().data(reassignRequest).build();
         when(networkTransferDao.findById(anyLong())).thenReturn(Optional.empty());
-        when(shipmentSettingsDao.getShipmentConsoleImportApprovarRole(anyInt())).thenReturn(1);
-        mockShipmentSettings();
         assertThrows(DataRetrievalFailureException.class, () -> networkTransferService.requestForReassign(request));
-    }
-
-    @Test
-    void requestForReassign_DataRetrievalFailure2() {
-        ReassignRequest reassignRequest = ReassignRequest.builder().id(12L).remarks("Test").build();
-        var request = CommonRequestModel.builder().data(reassignRequest).build();
-        when(shipmentSettingsDao.getShipmentConsoleImportApprovarRole(anyInt())).thenReturn(0);
-        mockShipmentSettings();
-        assertThrows(ValidationException.class, () -> networkTransferService.requestForReassign(request));
-    }
-
-    @Test
-    void requestForReassign_DataRetrievalFailure3() {
-        ReassignRequest reassignRequest = ReassignRequest.builder().id(12L).remarks("Test").build();
-        var request = CommonRequestModel.builder().data(reassignRequest).build();
-        when(shipmentSettingsDao.getShipmentConsoleImportApprovarRole(anyInt())).thenReturn(null);
-        mockShipmentSettings();
-        assertThrows(ValidationException.class, () -> networkTransferService.requestForReassign(request));
     }
 
     @Test
@@ -230,8 +208,6 @@ class NetworkTransferServiceTest extends CommonMocks{
         ReassignRequest reassignRequest = ReassignRequest.builder().id(12L).branchId(12).remarks("Test").build();
         var request = CommonRequestModel.builder().data(reassignRequest).build();
         when(networkTransferDao.findById(anyLong())).thenReturn(Optional.of(NetworkTransfer.builder().status(NetworkTransferStatus.REASSIGNED).build()));
-        when(shipmentSettingsDao.getShipmentConsoleImportApprovarRole(anyInt())).thenReturn(1);
-        mockShipmentSettings();
         assertThrows(DataRetrievalFailureException.class, () -> networkTransferService.requestForReassign(request));
     }
 

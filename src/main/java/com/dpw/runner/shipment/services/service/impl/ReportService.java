@@ -123,6 +123,22 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COMBI_HAWB_COUNT;
+
 @Service
 @Slf4j
 public class ReportService implements IReportService {
@@ -288,7 +304,7 @@ public class ReportService implements IReportService {
                         .stream().map(ConsoleShipmentMapping::getShipmentId).toList(); // Extract shipment IDs
 
                 // Check if DPS implication(MAWBPR) is present for any shipment
-                if (Boolean.TRUE.equals(dpsEventService.isImplicationPresent(shipmentIdsList, DpsConstants.MAWBPR))) {
+                if (!shipmentIdsList.isEmpty() && Boolean.TRUE.equals(dpsEventService.isImplicationPresent(shipmentIdsList, DpsConstants.MAWBPR))) {
                     throw new ReportException(DpsConstants.DPS_ERROR_1);
                 }
             } else if (Boolean.TRUE.equals(isOriginalPrint)) { // Case: Request came from shipment and is an original print
@@ -976,10 +992,12 @@ public class ReportService implements IReportService {
             for (int packs = 1; packs <= noOfPacks; packs++) {
                 String packsCount = getSerialCount(packs, copies);
                 String packsOfTotal = packs + "/" + noOfPacks;
-
+                String hawbPacksCountForCombi = "";
                 if(isCombi) {
                     dataRetrived.put(ReportConstants.HAWB_NUMBER, hawbPacksMap.get(ind).getKey());
                     packsOfTotal = (packs - prevPacks) + "/" + hawbPacksMap.get(ind).getValue();
+                    hawbPacksCountForCombi = getSerialCount(packs - prevPacks, copies);
+                    dataRetrived.put(COMBI_HAWB_COUNT, hawbPacksCountForCombi);
                     if((packs-prevPacks)%hawbPacksMap.get(ind).getValue() == 0) {
                         prevPacks = prevPacks + hawbPacksMap.get(ind).getValue();
                         ind++;
@@ -1003,7 +1021,7 @@ public class ReportService implements IReportService {
                     hawbNumber = dataRetrived.get(ReportConstants.HAWB_NUMBER) != null ? dataRetrived.get(ReportConstants.HAWB_NUMBER) + packsCount : packsCount;
                 byte[] docBytes = addBarCodeInAWBLableReport(mainDocPage, mawbNumber, hawbNumber);
                 if(isCombi) {
-                    docBytes = addBarCodeForCombiReport(docBytes, dataRetrived.get(ReportConstants.HAWB_NUMBER) != null ? dataRetrived.get(ReportConstants.HAWB_NUMBER) + packsCount : packsCount);
+                    docBytes = addBarCodeForCombiReport(docBytes, dataRetrived.get(ReportConstants.HAWB_NUMBER) != null ? dataRetrived.get(ReportConstants.HAWB_NUMBER) + hawbPacksCountForCombi : hawbPacksCountForCombi);
                 }
                 pdfBytes.add(docBytes);
             }

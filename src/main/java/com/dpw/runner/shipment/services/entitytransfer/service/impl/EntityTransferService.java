@@ -627,8 +627,17 @@ public class EntityTransferService implements IEntityTransferService {
     private void validateApprovalRoleForImport() {
         if(Boolean.TRUE.equals(getIsNetworkTransferFeatureEnabled())){
             var tenantId = TenantContext.getCurrentTenant();
-            Integer approverRoleId = getShipmentConsoleImportApprovalRole(tenantId);
-            if (approverRoleId == null || approverRoleId == 0) {
+            List<UsersDto> users = v1ServiceUtil.getUsersWithGivenPermission(List.of(PermissionConstants.SHIPMENT_IN_PIPELINE_MODIFY), tenantId);
+            if (CommonUtils.listIsNullOrEmpty(users)) {
+                throw new ValidationException(EntityTransferConstants.APPROVAL_ROLE_ACTION_NOT_ALLOWED);
+            }
+            Long userId = UserContext.getUser().getUserId();
+            Set<Long> userIds = users.stream()
+                    .map(UsersDto::getUserId)
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toSet());
+
+            if (!userIds.contains(userId)) {
                 throw new ValidationException(EntityTransferConstants.APPROVAL_ROLE_ACTION_NOT_ALLOWED);
             }
         }
@@ -1395,11 +1404,11 @@ public class EntityTransferService implements IEntityTransferService {
         String shipErrorMsg = "";
         if(isPrintHblError) {
             if (!errorMsg.isEmpty()) {
-                errorMsg = errorMsg + " and print the Original HAWB for the shipment/s "+ String.join(", " ,errorShipments);
+                errorMsg = errorMsg + " and print the Original HBL for the shipment/s "+ String.join(", " ,errorShipments);
             } else {
-                errorMsg = "Please print the Original HAWB for the shipment/s " + String.join(", " ,errorShipments);
+                errorMsg = "Please print the Original HBL for the shipment/s " + String.join(", " ,errorShipments);
             }
-            shipErrorMsg = "Please print the Original HAWB to retrigger the transfer.";
+            shipErrorMsg = "Please print the Original HBL to retrigger the transfer.";
         }
         if(!errorMsg.isEmpty()){
             errorMsg = errorMsg + msgSuffix;
@@ -2487,10 +2496,15 @@ public class EntityTransferService implements IEntityTransferService {
         request.setPermissionKeys(permissionKeys);
 
         List<UsersDto> usersDtoList = v1Service.getUsersWithGivenPermissions(request);
-        return usersDtoList.stream()
-                .map(UsersDto::getEmail)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+        List<String> userEmailIds = new ArrayList<>();
+        if(!CommonUtils.listIsNullOrEmpty(usersDtoList)) {
+            for(UsersDto user: usersDtoList) {
+                if (!CommonUtils.IsStringNullOrEmpty(user.getEmail())) {
+                    userEmailIds.add(user.getEmail());
+                }
+            }
+        }
+        return userEmailIds;
     }
 
 }

@@ -25,7 +25,6 @@ import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
 import com.dpw.runner.shipment.services.entity.enums.NotificationRequestType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
-import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -363,6 +362,7 @@ public class NetworkTransferService implements INetworkTransferService {
     private void createNetworkTransfer(NetworkTransfer networkTransfer, Map<String, Object> entityPayload){
         networkTransfer.setStatus(NetworkTransferStatus.SCHEDULED);
         if(entityPayload!=null){
+            networkTransfer.setStatus(NetworkTransferStatus.TRANSFERRED);
             networkTransfer.setEntityPayload(entityPayload);
         }
         updateConsoleOrShipmentStatus(networkTransfer.getEntityId(), networkTransfer.getEntityType(),  networkTransfer.getStatus(), networkTransfer.getIsInterBranchEntity());   // Update shipment and console Transfer status
@@ -473,7 +473,6 @@ public class NetworkTransferService implements INetworkTransferService {
     @Override
     @Transactional
     public ResponseEntity<IRunnerResponse> requestForReassign(CommonRequestModel commonRequestModel) {
-        validateApprovalRoleForImport();
         ReassignRequest reassignRequest = (ReassignRequest) commonRequestModel.getData();
         var shipmentGuidReassignBranch = reassignRequest.getShipmentGuidReassignBranch();
         if(reassignRequest.getBranchId() == null && (shipmentGuidReassignBranch == null || shipmentGuidReassignBranch.isEmpty())){

@@ -5799,6 +5799,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder()
                 .transportMode(TRANSPORT_MODE_AIR)
                 .receivingBranch(null)
+                .shipmentType(DIRECTION_EXP)
                 .build();
         mockShipmentSettings();
 
@@ -6285,7 +6286,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
         ConsolidationDetails consolidationDetails1 = testConsol;
         consolidationDetails1.setTransportMode(TRANSPORT_MODE_ROA);
-        consolidationDetails1.setShipmentType(null);
+        consolidationDetails1.setShipmentType(DIRECTION_EXP);
         consolidationDetails1.setReceivingBranch(100L);
         consolidationDetails1.setReceivingAgent(new Parties());
         consolidationDetails1.setSendingAgent(new Parties());
