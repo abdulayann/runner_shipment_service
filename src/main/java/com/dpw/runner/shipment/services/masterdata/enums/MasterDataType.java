@@ -1,8 +1,7 @@
 package com.dpw.runner.shipment.services.masterdata.enums;
 
-import lombok.Getter;
-
 import java.util.Objects;
+import lombok.Getter;
 
 @Getter
 public enum MasterDataType {
@@ -39,7 +38,7 @@ public enum MasterDataType {
     ORG_CATEGORY(31, "OrgCategory"),
     CUSTOM_SHIPMENT_TYPE(32, "CustomShipmentType"),
     CUSTOM_DECL_TYPE(33, "CustomDeclType"),
-            // Carrier(34, "Carrier"),
+    CARRIER(34, "Carrier"),
     DOC_TYPES(35, "DocTypes"),
     COUNTRY_STATES(60, "CountryStates"),
     AdditionalServices(61, "AdditionalServices"),
