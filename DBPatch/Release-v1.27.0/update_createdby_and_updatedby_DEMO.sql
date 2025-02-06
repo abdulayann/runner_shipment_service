@@ -1,0 +1,1 @@
+UPDATE events SET created_by = 'serviceaccountdemo@dpworld.com' and updated_by = 'serviceaccountdemo@dpworld.com' WHERE event_type = 'INVOICE';

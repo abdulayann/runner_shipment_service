@@ -1,0 +1,5 @@
+POST Deployment
+----------------
+1. RUN update_createdby_and_updatedby_DEMO.sql in DEMO env
+2. RUN update_createdby_and_updatedby_QA.sql in QA env
+3. RUN update_createdby_and_updatedby_STAGE.sql in STAGE env
