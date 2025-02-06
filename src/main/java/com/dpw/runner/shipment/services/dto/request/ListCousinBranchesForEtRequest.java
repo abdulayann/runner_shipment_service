@@ -9,7 +9,7 @@ import java.util.List;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class ListCousinBranchesForNteRequest implements IRunnerRequest {
+public class ListCousinBranchesForEtRequest implements IRunnerRequest {
     private String containsText;
     private List<String> includeColumns;
     private Long entityId;
