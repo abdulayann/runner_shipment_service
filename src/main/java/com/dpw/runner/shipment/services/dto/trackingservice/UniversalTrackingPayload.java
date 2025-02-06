@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dto.trackingservice;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -9,7 +10,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
+@JsonInclude(JsonInclude.Include.ALWAYS)
 @Data
 @Builder
 @AllArgsConstructor
@@ -21,6 +22,7 @@ public class UniversalTrackingPayload {
   private String runnerReferenceNumber;
   private String referenceNumberType;
   private String entityType;
+  @JsonInclude(JsonInclude.Include.NON_EMPTY)
   private List<EntityDetail> entityDetails;
   private List<ShipmentDetail> shipmentDetails;
 
