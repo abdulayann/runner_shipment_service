@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services.dto.response;
 
-import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import lombok.*;
 
@@ -15,7 +14,7 @@ import java.util.UUID;
 public class TiPackagesResponse implements IRunnerResponse {
     private Long id;
     private UUID guid;
-//    private Long tiLegId;
+    private Long tiLegId;
     private String noOfPackages;
     private String packageType;
     private String description;

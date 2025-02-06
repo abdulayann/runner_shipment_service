@@ -89,6 +89,10 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
     @Transactional
     @Override
     public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
+        return createPickupDeliveryDetails(commonRequestModel);
+    }
+
+    private ResponseEntity<IRunnerResponse> createPickupDeliveryDetails(CommonRequestModel commonRequestModel) {
         String responseMsg;
         PickupDeliveryDetailsRequest request = (PickupDeliveryDetailsRequest) commonRequestModel.getData();
         if (request == null) {
@@ -103,7 +107,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
             // audit logs
             auditLogService.addAuditLog(
                     AuditLogMetaData.builder()
-                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
+                            .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                             .newData(pickupDeliveryDetails)
                             .prevData(null)
                             .parent(PickupDeliveryDetails.class.getSimpleName())
@@ -119,16 +123,16 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(pickupDeliveryDetails));
     }
 
-    private void beforeSave(PickupDeliveryDetailsRequest request, PickupDeliveryDetails entity, PickupDeliveryDetails oldEntity) throws RunnerException {
+    private void beforeSave(PickupDeliveryDetailsRequest request, PickupDeliveryDetails entity, PickupDeliveryDetails oldEntity) {
         Long id = entity.getId();
         // Set proper references
-        commonUtils.emptyIfNull(entity.getTiLegsList()).forEach(leg -> {
+        CommonUtils.emptyIfNull(entity.getTiLegsList()).forEach(leg -> {
             Long legId = leg.getId();
             leg.setPickupDeliveryDetailsId(id);
-            commonUtils.emptyIfNull(leg.getTiReferences()).forEach(i -> i.setTiLegId(legId));
-            commonUtils.emptyIfNull(leg.getTiPackages()).forEach(i -> i.setTiLegId(legId));
-            commonUtils.emptyIfNull(leg.getTiContainers()).forEach(i -> i.setTiLegId(legId));
-            commonUtils.emptyIfNull(leg.getTiTruckDriverDetails()).forEach(i -> i.setTiLegId(legId));
+            CommonUtils.emptyIfNull(leg.getTiReferences()).forEach(i -> i.setTiLegId(legId));
+            CommonUtils.emptyIfNull(leg.getTiPackages()).forEach(i -> i.setTiLegId(legId));
+            CommonUtils.emptyIfNull(leg.getTiContainers()).forEach(i -> i.setTiLegId(legId));
+            CommonUtils.emptyIfNull(leg.getTiTruckDriverDetails()).forEach(i -> i.setTiLegId(legId));
         });
     }
 
@@ -148,6 +152,10 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
 
     @Transactional
     public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException {
+        return updatePickupDeliveryDetails(commonRequestModel);
+    }
+
+    private ResponseEntity<IRunnerResponse> updatePickupDeliveryDetails(CommonRequestModel commonRequestModel) throws RunnerException{
         String responseMsg;
         PickupDeliveryDetailsRequest request = (PickupDeliveryDetailsRequest) commonRequestModel.getData();
         if (request == null) {
@@ -177,7 +185,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
             // audit logs
             auditLogService.addAuditLog(
                     AuditLogMetaData.builder()
-                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
+                            .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                             .newData(pickupDeliveryDetails)
                             .prevData(jsonHelper.readFromJson(oldEntityJsonString, PickupDeliveryDetails.class))
                             .parent(PickupDeliveryDetails.class.getSimpleName())
@@ -341,33 +349,32 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
     @Override
     @Transactional
     public ResponseEntity<IRunnerResponse> createV2(CommonRequestModel commonRequestModel) {
-        return create(commonRequestModel);
+        return createPickupDeliveryDetails(commonRequestModel);
     }
 
     // update
     @Override
-    @Transactional
     public ResponseEntity<IRunnerResponse> updateV2(CommonRequestModel commonRequestModel) throws RunnerException {
-        return update(commonRequestModel);
+        return updatePickupDeliveryDetails(commonRequestModel);
     }
 
     // list
     @Override
     public ResponseEntity<IRunnerResponse> listV2(CommonRequestModel commonRequestModel) {
-        return list(commonRequestModel);
+        return this.list(commonRequestModel);
     }
 
     // delete
     @Override
     @Transactional
     public ResponseEntity<IRunnerResponse> deleteV2(CommonRequestModel commonRequestModel) {
-        return delete(commonRequestModel);
+        return this.delete(commonRequestModel);
     }
 
     // retrieve
     @Override
     public ResponseEntity<IRunnerResponse> retrieveByIdV2(CommonRequestModel commonRequestModel) {
-        return retrieveById(commonRequestModel);
+        return this.retrieveById(commonRequestModel);
     }
 
 
@@ -385,7 +392,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
             AtomicInteger count = new AtomicInteger();
             Set<MasterListRequest> listRequests = new HashSet<>(masterDataUtils.createInBulkMasterListRequest(pickupDeliveryDetailsResponse, PickupDeliveryDetails.class, fieldNameKeyMap, PickupDeliveryDetails.class.getSimpleName(), cacheMap));
             // Populate all the master data in inner objects
-            if (!commonUtils.listIsNullOrEmpty(pickupDeliveryDetails.getTiLegsList())) {
+            if (!CommonUtils.listIsNullOrEmpty(pickupDeliveryDetails.getTiLegsList())) {
                 pickupDeliveryDetailsResponse.getTiLegsList().forEach(leg -> {
                     listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(leg, TiLegs.class, fieldNameKeyMap, TiLegs.class.getSimpleName() + count.incrementAndGet(), cacheMap));
                     // Add master data fields for sub entities

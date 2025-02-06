@@ -16,8 +16,14 @@ import java.util.Optional;
 @Repository
 @Slf4j
 public class TiContainerDao implements ITiContainerDao {
+
+    private final ITiContainerRepository tiContainerRepository;
+
     @Autowired
-    private ITiContainerRepository tiContainerRepository;
+    public TiContainerDao(ITiContainerRepository tiContainerRepository) {
+        this.tiContainerRepository = tiContainerRepository;
+    }
+
     @Override
     public List<TiContainers> saveAll(List<TiContainers> tiContainersList) {
         return tiContainerRepository.saveAll(tiContainersList);

@@ -16,8 +16,14 @@ import java.util.Optional;
 @Repository
 @Slf4j
 public class TiTruckDriverDetailDao implements ITiTruckDriverDetailDao {
+
+    private final ITiTruckDriverDetailRepository tiTruckDriverDetailRepository;
+
     @Autowired
-    private ITiTruckDriverDetailRepository tiTruckDriverDetailRepository;
+    public TiTruckDriverDetailDao(ITiTruckDriverDetailRepository tiTruckDriverDetailRepository) {
+        this.tiTruckDriverDetailRepository = tiTruckDriverDetailRepository;
+    }
+
     @Override
     public List<TiTruckDriverDetails> saveAll(List<TiTruckDriverDetails> tiTruckDriverDetailsList) {
         return tiTruckDriverDetailRepository.saveAll(tiTruckDriverDetailsList);

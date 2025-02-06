@@ -14,7 +14,7 @@ import java.util.UUID;
 public class TiPackagesRequest implements IRunnerRequest {
     private Long id;
     private UUID guid;
-//    private Long tiLegId;
+    private Long tiLegId;
     private String noOfPackages;
     private String packageType;
     private String description;

@@ -14,7 +14,7 @@ import java.util.UUID;
 public class TiContainersRequest implements IRunnerRequest {
     private Long id;
     private UUID guid;
-//    private Long tiLegId;
+    private Long tiLegId;
     private String type;
     private String number;
     private String description;

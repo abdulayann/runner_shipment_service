@@ -6,7 +6,6 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import org.springframework.http.ResponseEntity;
 
-import java.util.concurrent.CompletableFuture;
 
 public interface IPickupDeliveryDetailsService extends ICommonService {
     ResponseEntity<IRunnerResponse> createV2(CommonRequestModel commonRequestModel);

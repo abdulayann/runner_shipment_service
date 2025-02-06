@@ -16,8 +16,14 @@ import java.util.Optional;
 @Repository
 @Slf4j
 public class TiReferenceDao implements ITiReferenceDao {
+
+    private final ITiReferenceRepository tiReferenceRepository;
+
     @Autowired
-    private ITiReferenceRepository tiReferenceRepository;
+    public TiReferenceDao(ITiReferenceRepository tiReferenceRepository) {
+        this.tiReferenceRepository = tiReferenceRepository;
+    }
+
     @Override
     public List<TiReferences> saveAll(List<TiReferences> tiReferencesList) {
         return tiReferenceRepository.saveAll(tiReferencesList);

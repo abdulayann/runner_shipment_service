@@ -16,8 +16,13 @@ import java.util.Optional;
 @Repository
 @Slf4j
 public class TiPackageDao implements ITiPackageDao {
+
+    private final ITiPackageRepository tiPackageRepository;
+
     @Autowired
-    private ITiPackageRepository tiPackageRepository;
+    public TiPackageDao(ITiPackageRepository tiPackageRepository) {
+        this.tiPackageRepository = tiPackageRepository;
+    }
 
     @Override
     public List<TiPackages> saveAll(List<TiPackages> tiPackagesList) {
