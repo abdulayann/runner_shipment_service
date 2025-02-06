@@ -170,8 +170,6 @@ class NetworkTransferServiceTest extends CommonMocks{
         var request = CommonRequestModel.builder().data(reassignRequest).build();
         when(networkTransferDao.findById(anyLong())).thenReturn(Optional.of(NetworkTransfer.builder().entityType(Constants.SHIPMENT).isInterBranchEntity(true).build()));
         when(notificationDao.save(any(Notification.class))).thenReturn(new Notification());
-        when(shipmentSettingsDao.getShipmentConsoleImportApprovarRole(anyInt())).thenReturn(1);
-        mockShipmentSettings();
         var response = networkTransferService.requestForReassign(request);
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
@@ -185,12 +183,10 @@ class NetworkTransferServiceTest extends CommonMocks{
         var request = CommonRequestModel.builder().data(reassignRequest).build();
         when(networkTransferDao.findById(anyLong())).thenReturn(Optional.of(NetworkTransfer.builder().entityType(Constants.CONSOLIDATION).isInterBranchEntity(true).build()));
         when(notificationDao.save(any(Notification.class))).thenReturn(new Notification());
-        when(shipmentSettingsDao.getShipmentConsoleImportApprovarRole(anyInt())).thenReturn(1);
         ShipmentDetails shipmentDetails1 = ShipmentDetails.builder().receivingBranch(1L).build();
         shipmentDetails1.setGuid(shipmentGuid);
         when(networkTransferDao.findByTenantAndEntity(any(), any(), any())).thenReturn(Optional.of(NetworkTransfer.builder().build()));
         when(consolidationDao.findConsolidationByIdWithQuery(any())).thenReturn(Optional.of(ConsolidationDetails.builder().interBranchConsole(true).shipmentsList(Collections.singletonList(shipmentDetails1)).build()));
-        mockShipmentSettings();
         var response = networkTransferService.requestForReassign(request);
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
