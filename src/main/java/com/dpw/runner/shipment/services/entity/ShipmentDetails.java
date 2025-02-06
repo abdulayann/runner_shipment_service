@@ -601,16 +601,20 @@ public class ShipmentDetails extends MultiTenancy {
 
     @Column(name = "co_load_carrier_name")
     @MasterData(type = MasterDataType.CARRIER)
+    @Size(max = 64)
     private String coLoadCarrierName;
 
     @Column(name = "co_load_bl_number")
+    @Size(max = 64)
     private String coLoadBlNumber;
 
     @Column(name = "issuing_carrier_name")
     @MasterData(type = MasterDataType.CARRIER)
+    @Size(max = 64)
     private String issuingCarrierName;
 
     @Column(name = "ocean_bl_number")
+    @Size(max = 64)
     private String oceanBlNumber;
 
 }
