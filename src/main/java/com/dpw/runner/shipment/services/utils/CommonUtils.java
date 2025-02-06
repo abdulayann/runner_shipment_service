@@ -20,7 +20,7 @@ import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsLazyResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.SendEmailDto;
 import com.dpw.runner.shipment.services.dto.v1.request.DGTaskCreateRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TenantDetailsByListRequest;
@@ -2073,12 +2073,12 @@ public class CommonUtils {
         return department;
     }
 
-    public ShipmentDetailsLazyResponse getShipmentDetailsResponse(ShipmentDetails shipmentDetails, List<String> includeColumns) {
+    public ShipmentDetailsResponse getShipmentDetailsResponse(ShipmentDetails shipmentDetails, List<String> includeColumns) {
         return setIncludedFields(shipmentDetails, includeColumns);
     }
 
-    private ShipmentDetailsLazyResponse setIncludedFields(ShipmentDetails shipmentDetail, List<String> includeColumns) {
-        ShipmentDetailsLazyResponse shipmentDetailsLazyResponse = new ShipmentDetailsLazyResponse();
+    private ShipmentDetailsResponse setIncludedFields(ShipmentDetails shipmentDetail, List<String> includeColumns) {
+        ShipmentDetailsResponse shipmentDetailsResponse = new ShipmentDetailsResponse();
 
         includeColumns.forEach(field -> {
             try {
@@ -2087,16 +2087,16 @@ public class CommonUtils {
 
                 // Reflectively obtain the getter and setter methods once
                 Method getter = ShipmentDetails.class.getMethod("get" + capitalizedField);
-                Method setter = ShipmentDetailsLazyResponse.class.getMethod("set" + capitalizedField, getter.getReturnType());
+                Method setter = ShipmentDetailsResponse.class.getMethod("set" + capitalizedField, getter.getReturnType());
 
                 Object value = getter.invoke(shipmentDetail);
-                setter.invoke(shipmentDetailsLazyResponse, value);
+                setter.invoke(shipmentDetailsResponse, value);
             } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
                 // Handle non-existent methods gracefully
                 log.error("No such field: {}", field);
             }
         });
-        return shipmentDetailsLazyResponse;
+        return shipmentDetailsResponse;
     }
 
 

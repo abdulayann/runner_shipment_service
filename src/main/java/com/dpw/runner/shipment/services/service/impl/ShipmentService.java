@@ -3800,10 +3800,12 @@ public class ShipmentService implements IShipmentService {
             List<IRunnerResponse>filteredList=new ArrayList<>();
 
             for( var curr:shipmentDetailsPage.getContent()){
-                ShipmentDetailsLazyResponse shipmentDetailsLazyResponse = commonUtils.getShipmentDetailsResponse(curr, request.getIncludeColumns());
-                RunnerPartialListResponse res=new RunnerPartialListResponse();
-                res.setData(shipmentDetailsLazyResponse);
-                filteredList.add( res);
+                ShipmentDetailsResponse shipmentDetailsResponse = commonUtils.getShipmentDetailsResponse(curr, request.getIncludeColumns());
+                // from dps we will receive one guid at a time
+                if (request.getIncludeColumns().contains(ShipmentConstants.IMPLICATIONS_LIST_COLUMN)) {
+                    shipmentDetailsResponse.setImplicationList(dpsEventService.getImplicationsForShipment(shipmentDetailsResponse.getGuid().toString()));
+                }
+                filteredList.add(shipmentDetailsResponse);
             }
             return ResponseHelper.buildListSuccessResponse(
                     filteredList,
