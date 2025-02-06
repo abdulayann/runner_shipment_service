@@ -1495,6 +1495,7 @@ class AwbServiceTest extends CommonMocks {
         when(awbDao.findById(anyLong())).thenReturn(Optional.of(testDmawb));
         when(shipmentDao.findById(any())).thenReturn(Optional.of(testShipment));
         when(consolidationDetailsDao.findById(any())).thenReturn(Optional.empty());
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
         when(awbDao.save(any())).thenReturn(testDmawb);
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(objectMapper.convertValue(testDmawb, AwbResponse.class));
 
@@ -1670,6 +1671,7 @@ class AwbServiceTest extends CommonMocks {
         when(awbDao.findById(anyLong())).thenReturn(Optional.of(testMawb));
         when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(testConsol));
         when(awbDao.save(any())).thenReturn(testMawb);
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(objectMapper.convertValue(testMawb, AwbResponse.class));
 
         ResponseEntity<IRunnerResponse> httpResponse = awbService.reset(commonRequestModel);

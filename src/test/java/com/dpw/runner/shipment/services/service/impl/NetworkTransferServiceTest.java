@@ -41,9 +41,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -111,7 +109,30 @@ class NetworkTransferServiceTest extends CommonMocks{
     void requestForTransfer() {
         RequestForTransferRequest requestForTransferRequest = RequestForTransferRequest.builder().id(12L).remarks("Test").build();
         var request = CommonRequestModel.builder().data(requestForTransferRequest).build();
-        when(networkTransferDao.findById(anyLong())).thenReturn(Optional.of(NetworkTransfer.builder().build()));
+        when(networkTransferDao.findById(anyLong())).thenReturn(Optional.of(NetworkTransfer.builder().isInterBranchEntity(false).build()));
+        when(notificationDao.save(any(Notification.class))).thenReturn(new Notification());
+        var response = networkTransferService.requestForTransfer(request);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void requestForTransfer_ForInterConsole() {
+        RequestForTransferRequest requestForTransferRequest = RequestForTransferRequest.builder().id(12L).remarks("Test").build();
+        var request = CommonRequestModel.builder().data(requestForTransferRequest).build();
+        when(networkTransferDao.findById(anyLong())).thenReturn(Optional.of(NetworkTransfer.builder().entityId(12L).isInterBranchEntity(true).entityType(Constants.SHIPMENT).build()));
+        when(notificationDao.save(any(Notification.class))).thenReturn(new Notification());
+        when(consoleShipmentMappingDao.findByShipmentId(any())).thenReturn(Collections.singletonList(ConsoleShipmentMapping.builder().consolidationId(1L).build()));
+        when(consoleShipmentMappingDao.findByConsolidationId(any())).thenReturn(Collections.singletonList(ConsoleShipmentMapping.builder().consolidationId(1L).build()));
+        when(networkTransferDao.findByEntityIdAndEntityTypeAndIsInterBranchEntity(any(), any(), any(), any())).thenReturn(Collections.singletonList(NetworkTransfer.builder().build()));
+        var response = networkTransferService.requestForTransfer(request);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void requestForTransfer_ForInterConsole_EmptyMapping() {
+        RequestForTransferRequest requestForTransferRequest = RequestForTransferRequest.builder().id(12L).remarks("Test").build();
+        var request = CommonRequestModel.builder().data(requestForTransferRequest).build();
+        when(networkTransferDao.findById(anyLong())).thenReturn(Optional.of(NetworkTransfer.builder().entityId(12L).isInterBranchEntity(true).entityType(Constants.SHIPMENT).build()));
         when(notificationDao.save(any(Notification.class))).thenReturn(new Notification());
         var response = networkTransferService.requestForTransfer(request);
         assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -135,17 +156,44 @@ class NetworkTransferServiceTest extends CommonMocks{
 
     @Test
     void requestForReassign() {
-        ReassignRequest reassignRequest = ReassignRequest.builder().id(12L).remarks("Test").build();
+        ReassignRequest reassignRequest = ReassignRequest.builder().id(12L).branchId(12).remarks("Test").build();
         var request = CommonRequestModel.builder().data(reassignRequest).build();
-        when(networkTransferDao.findById(anyLong())).thenReturn(Optional.of(NetworkTransfer.builder().build()));
+        when(networkTransferDao.findById(anyLong())).thenReturn(Optional.of(NetworkTransfer.builder().isInterBranchEntity(false).build()));
         when(notificationDao.save(any(Notification.class))).thenReturn(new Notification());
         var response = networkTransferService.requestForReassign(request);
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
     @Test
+    void requestForReassign_InterConsoleTrue() {
+        ReassignRequest reassignRequest = ReassignRequest.builder().id(12L).branchId(12).remarks("Test").build();
+        var request = CommonRequestModel.builder().data(reassignRequest).build();
+        when(networkTransferDao.findById(anyLong())).thenReturn(Optional.of(NetworkTransfer.builder().entityType(Constants.SHIPMENT).isInterBranchEntity(true).build()));
+        when(notificationDao.save(any(Notification.class))).thenReturn(new Notification());
+        var response = networkTransferService.requestForReassign(request);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+
+    @Test
+    void requestForReassign_InterConsole() {
+        UUID shipmentGuid = UUID.randomUUID();
+        Map<String, Integer> shipmentGuidReassignBranch = Map.of(shipmentGuid.toString(), 1);
+        ReassignRequest reassignRequest = ReassignRequest.builder().id(12L).branchId(12).shipmentGuidReassignBranch(shipmentGuidReassignBranch).remarks("Test").build();
+        var request = CommonRequestModel.builder().data(reassignRequest).build();
+        when(networkTransferDao.findById(anyLong())).thenReturn(Optional.of(NetworkTransfer.builder().entityType(Constants.CONSOLIDATION).isInterBranchEntity(true).build()));
+        when(notificationDao.save(any(Notification.class))).thenReturn(new Notification());
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder().receivingBranch(1L).build();
+        shipmentDetails1.setGuid(shipmentGuid);
+        when(networkTransferDao.findByTenantAndEntity(any(), any(), any())).thenReturn(Optional.of(NetworkTransfer.builder().build()));
+        when(consolidationDao.findConsolidationByIdWithQuery(any())).thenReturn(Optional.of(ConsolidationDetails.builder().interBranchConsole(true).shipmentsList(Collections.singletonList(shipmentDetails1)).build()));
+        var response = networkTransferService.requestForReassign(request);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
     void requestForReassign_DataRetrievalFailure() {
-        ReassignRequest reassignRequest = ReassignRequest.builder().id(12L).remarks("Test").build();
+        ReassignRequest reassignRequest = ReassignRequest.builder().id(12L).branchId(12).remarks("Test").build();
         var request = CommonRequestModel.builder().data(reassignRequest).build();
         when(networkTransferDao.findById(anyLong())).thenReturn(Optional.empty());
         assertThrows(DataRetrievalFailureException.class, () -> networkTransferService.requestForReassign(request));
@@ -153,7 +201,7 @@ class NetworkTransferServiceTest extends CommonMocks{
 
     @Test
     void requestForReassign_Already_REASSIGNED() {
-        ReassignRequest reassignRequest = ReassignRequest.builder().id(12L).remarks("Test").build();
+        ReassignRequest reassignRequest = ReassignRequest.builder().id(12L).branchId(12).remarks("Test").build();
         var request = CommonRequestModel.builder().data(reassignRequest).build();
         when(networkTransferDao.findById(anyLong())).thenReturn(Optional.of(NetworkTransfer.builder().status(NetworkTransferStatus.REASSIGNED).build()));
         assertThrows(DataRetrievalFailureException.class, () -> networkTransferService.requestForReassign(request));
@@ -266,13 +314,13 @@ class NetworkTransferServiceTest extends CommonMocks{
         shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
         shipmentDetails.setId(1L);
         assertDoesNotThrow(() -> networkTransferService.processNetworkTransferEntity(123L, null,
-                Constants.SHIPMENT, shipmentDetails, null, Constants.SHIPMENT_TYPE_DRT, null));
+                Constants.SHIPMENT, shipmentDetails, null, Constants.SHIPMENT_TYPE_DRT, null, false));
     }
 
     @Test
     void testCreateNetworkTransferEntityWithEmptyShipment(){
         assertDoesNotThrow(() -> networkTransferService.processNetworkTransferEntity(123L, null,
-                Constants.SHIPMENT, null, null, Constants.SHIPMENT_TYPE_DRT, null));
+                Constants.SHIPMENT, null, null, Constants.SHIPMENT_TYPE_DRT, null, false));
 
     }
 
@@ -284,7 +332,7 @@ class NetworkTransferServiceTest extends CommonMocks{
         shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
         shipmentDetails.setId(1L);
         assertDoesNotThrow(() -> networkTransferService.processNetworkTransferEntity(123L, 132L,
-                Constants.SHIPMENT, shipmentDetails, null, Constants.SHIPMENT_TYPE_DRT, null));
+                Constants.SHIPMENT, shipmentDetails, null, Constants.SHIPMENT_TYPE_DRT, null, false));
 
     }
 
@@ -294,7 +342,7 @@ class NetworkTransferServiceTest extends CommonMocks{
         shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
         shipmentDetails.setId(1L);
         assertDoesNotThrow(() -> networkTransferService.processNetworkTransferEntity(123L, 123L,
-                Constants.SHIPMENT, shipmentDetails, null, Constants.SHIPMENT_TYPE_DRT, null));
+                Constants.SHIPMENT, shipmentDetails, null, Constants.SHIPMENT_TYPE_DRT, null, false));
 
     }
 
@@ -305,7 +353,7 @@ class NetworkTransferServiceTest extends CommonMocks{
         shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
         shipmentDetails.setId(1L);
         assertDoesNotThrow(() -> networkTransferService.processNetworkTransferEntity(null, 132L,
-                Constants.SHIPMENT, shipmentDetails, null, Constants.DIRECTION_EXP, null));
+                Constants.SHIPMENT, shipmentDetails, null, Constants.DIRECTION_EXP, null, false));
     }
 
     @Test
@@ -314,7 +362,7 @@ class NetworkTransferServiceTest extends CommonMocks{
         shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
         shipmentDetails.setId(1L);
         assertDoesNotThrow(() -> networkTransferService.processNetworkTransferEntity(null, 132L,
-                Constants.Shipment, shipmentDetails, null, Constants.DIRECTION_EXP, null));
+                Constants.Shipment, shipmentDetails, null, Constants.DIRECTION_EXP, null, false));
     }
 
     @Test
@@ -324,14 +372,14 @@ class NetworkTransferServiceTest extends CommonMocks{
         shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
         shipmentDetails.setId(1L);
         assertThrows(RuntimeException.class, () -> networkTransferService.processNetworkTransferEntity(123L, null,
-                Constants.SHIPMENT, shipmentDetails, null, Constants.DIRECTION_EXP, null));
+                Constants.SHIPMENT, shipmentDetails, null, Constants.DIRECTION_EXP, null, false));
     }
 
     @Test
     void testCreateNetworkTransferEntityWithConsolidation(){
         when(networkTransferDao.save(any())).thenReturn(networkTransfer);
         assertDoesNotThrow(() -> networkTransferService.processNetworkTransferEntity(123L, null,
-                Constants.CONSOLIDATION, null, consolidationDetails, Constants.DIRECTION_CTS, null));
+                Constants.CONSOLIDATION, null, consolidationDetails, Constants.DIRECTION_CTS, null, false));
     }
 
     @Test
@@ -339,20 +387,20 @@ class NetworkTransferServiceTest extends CommonMocks{
         when(networkTransferDao.save(any())).thenReturn(networkTransfer);
         when(consoleShipmentMappingDao.findByConsolidationId(any())).thenReturn(List.of(new ConsoleShipmentMapping()));
         assertDoesNotThrow(() -> networkTransferService.processNetworkTransferEntity(123L, null,
-                Constants.CONSOLIDATION, null, consolidationDetails, Constants.DIRECTION_CTS, null));
+                Constants.CONSOLIDATION, null, consolidationDetails, Constants.DIRECTION_CTS, null, false));
     }
 
     @Test
     void testCreateNetworkTransferEntityWithEmptyConsolidation(){
         assertDoesNotThrow(() -> networkTransferService.processNetworkTransferEntity(123L, null,
-                Constants.CONSOLIDATION, null, null, Constants.DIRECTION_CTS, null));
+                Constants.CONSOLIDATION, null, null, Constants.DIRECTION_CTS, null, false));
     }
 
     @Test
     void testCreateNetworkTransferEntityWithOldConsolidation(){
         when(networkTransferDao.findByTenantAndEntityAndJobType(any(),any(), any(), any())).thenReturn(Optional.of(networkTransfer));
         assertDoesNotThrow(() -> networkTransferService.processNetworkTransferEntity(null, 132L,
-                Constants.CONSOLIDATION, null, consolidationDetails, Constants.DIRECTION_EXP, null));
+                Constants.CONSOLIDATION, null, consolidationDetails, Constants.DIRECTION_EXP, null, false));
     }
 
     @Test
@@ -361,7 +409,7 @@ class NetworkTransferServiceTest extends CommonMocks{
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
         assertThrows(RuntimeException.class, () -> networkTransferService.processNetworkTransferEntity(123L, 321L,
-                Constants.SHIPMENT, shipmentDetails, null, Constants.DIRECTION_EXP, null));
+                Constants.SHIPMENT, shipmentDetails, null, Constants.DIRECTION_EXP, null, false));
     }
 
     @Test
@@ -371,7 +419,7 @@ class NetworkTransferServiceTest extends CommonMocks{
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
         assertThrows(RuntimeException.class, () -> networkTransferService.processNetworkTransferEntity(123L, 321L,
-                Constants.SHIPMENT, shipmentDetails, null, Constants.DIRECTION_EXP, null));
+                Constants.SHIPMENT, shipmentDetails, null, Constants.DIRECTION_EXP, null, false));
     }
 
     @Test

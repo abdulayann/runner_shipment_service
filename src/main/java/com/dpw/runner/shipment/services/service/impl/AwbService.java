@@ -1199,7 +1199,7 @@ public class AwbService implements IAwbService {
                     awbRoutingInfo.setOriginPortName(route.getPol());
                     awbRoutingInfo.setDestinationPortName(route.getPod());
                     awbRoutingInfo.setByCarrier(route.getCarrier());
-                    awbRoutingInfo.setFlightNumber(route.getFlightNumber());
+                    awbRoutingInfo.setFlightNumber(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster()) ? route.getVoyage() : route.getFlightNumber());
                     awbRoutingInfo.setFlightDate(route.getEtd());
                     awbRoutingInfo.setEta(route.getEta());
                     awbRoutingInfo.setEntityId(consolidationDetails.getId());
@@ -1604,7 +1604,7 @@ public class AwbService implements IAwbService {
                     awbRoutingInfo.setOriginPortName(route.getPol());
                     awbRoutingInfo.setDestinationPortName(route.getPod());
                     awbRoutingInfo.setByCarrier(route.getCarrier());
-                    awbRoutingInfo.setFlightNumber(route.getFlightNumber());
+                    awbRoutingInfo.setFlightNumber(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster()) ? route.getVoyage() : route.getFlightNumber());
                     awbRoutingInfo.setFlightDate(route.getEtd());
                     awbRoutingInfo.setEta(route.getEta());
                     awbRoutingInfo.setEntityId(shipmentDetails.getId());

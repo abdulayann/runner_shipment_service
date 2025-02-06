@@ -160,4 +160,22 @@ class NetworkTransferDaoTest {
         });
     }
 
+    @Test
+    void findByEntityIdAndEntityTypeAndIsInterBranchEntityTest(){
+        networkTransferDao.findByEntityIdAndEntityTypeAndIsInterBranchEntity(anyList(), anyString(), anyBoolean(), anyList());
+        verify(networkTransferRepository, times(1)).findByEntityIdAndEntityTypeAndIsInterBranchEntity(anyList(), anyString(), anyBoolean(), anyList());
+    }
+
+    @Test
+    void getInterConsoleNTListTest(){
+        networkTransferDao.getInterConsoleNTList(anyList(), anyString());
+        verify(networkTransferRepository, times(1)).getInterConsoleNTList(anyList(), anyString());
+    }
+
+    @Test
+    void deleteByIdsAndLog(){
+        networkTransferDao.deleteByIdsAndLog(anyList());
+        verify(networkTransferRepository, times(1)).deleteAllById(anyList());
+    }
+
 }
