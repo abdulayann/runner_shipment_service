@@ -3979,6 +3979,7 @@ public class ShipmentService implements IShipmentService {
             List<Containers> conts = new ArrayList<>();
             List<Long> containerIds = new ArrayList<>();
             ShipmentDetails shipmentDetails = shipmentDao.findById(containerAssignRequest.getShipmentId()).get();
+            List<Containers> oldContainers = shipmentDetails.getContainersList();
             if(lclAndSeaOrRoadFlag) {
                 for (Containers container : containers.getContent()) {
                     List<ShipmentsContainersMapping> shipmentsContainersMappings = shipmentsContainersMappingDao.findByContainerId(container.getId());
@@ -4045,6 +4046,7 @@ public class ShipmentService implements IShipmentService {
                 shipmentsContainersMappingDao.assignContainers(containerAssignRequest.getShipmentId(), containerIds, shipmentDetails.getGuid().toString());
                 makeShipmentsDG(containersMap, shipmentDetails);
             }
+            dependentServiceHelper.pushShipmentDataToDependentService(shipmentDetails, false, false, oldContainers);
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()

@@ -197,11 +197,10 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
     }
 
     @Override
-    public UniversalTrackingPayload mapConsoleDataToTrackingServiceData(ConsolidationDetails consolidationDetails) {
+    public UniversalTrackingPayload mapConsoleDataToTrackingServiceData(ConsolidationDetails consolidationDetails, ShipmentDetails shipment) {
         UniversalTrackingPayload trackingPayload = null;
         if(consolidationDetails != null) {
-            ShipmentDetails shipment = GetShipmentIfConsolAttached(consolidationDetails);
-            trackingPayload = mapDetailsToTSData(consolidationDetails, shipment, false);
+            trackingPayload = mapDetailsToTSData(consolidationDetails, shipment, true);
             log.info("Consolidation tracking payload : {}", trackingPayload);
         }
         return trackingPayload;

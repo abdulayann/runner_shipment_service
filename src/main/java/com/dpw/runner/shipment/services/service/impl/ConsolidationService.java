@@ -1018,7 +1018,7 @@ public class ConsolidationService implements IConsolidationService {
             beforeSave(entity, oldEntity.get(), false);
             entity = consolidationDetailsDao.update(entity, false);
             syncConsole(entity, false);
-            pushShipmentDataToDependentService(entity, false, oldEntity.get().getContainersList());
+            pushShipmentDataToDependentService(entity, false, oldEntity.get());
             return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class));
         }
         catch (Exception e) {
@@ -1764,7 +1764,7 @@ public class ConsolidationService implements IConsolidationService {
                     log.error("Error performing sync on consolidation entity, {}", e);
                 }
             }
-            pushShipmentDataToDependentService(entity, false, oldEntity.get().getContainersList());
+            pushShipmentDataToDependentService(entity, false, oldEntity.get());
 
             ConsolidationDetailsResponse response = jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class);
             response.setPackSummary(packingService.calculatePackSummary(entity.getPackingList(), entity.getTransportMode(), entity.getContainerCategory(), new ShipmentMeasurementDetailsDto()));
@@ -3877,7 +3877,7 @@ public class ConsolidationService implements IConsolidationService {
         }
         consolidationDetails = consolidationDetailsDao.save(consolidationDetails, false);
         consolidationSync.syncLockStatus(consolidationDetails);
-        pushShipmentDataToDependentService(consolidationDetails, false, consolidationDetails.getContainersList());
+        pushShipmentDataToDependentService(consolidationDetails, false, consolidationDetails);
 
         return ResponseHelper.buildSuccessResponse();
     }
@@ -4022,11 +4022,8 @@ public class ConsolidationService implements IConsolidationService {
                 List<Parties> updatedParties = partiesDao.updateEntityFromOtherEntity(commonUtils.convertToEntityList(consolidationAddresses, Parties.class), id, Constants.CONSOLIDATION_ADDRESSES, oldParties.stream().toList());
                 entity.setConsolidationAddresses(updatedParties);
             }
-            List<Containers> oldConts = null;
-            if(oldEntity.isPresent())
-                oldConts = oldEntity.get().getContainersList();
             if(!dataMigration)
-                pushShipmentDataToDependentService(entity, isCreate, oldConts);
+                pushShipmentDataToDependentService(entity, isCreate, oldEntity.orElse(null));
             ConsolidationDetailsResponse response = jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class);
 
             return ResponseHelper.buildSuccessResponse(response);
@@ -4565,7 +4562,7 @@ public class ConsolidationService implements IConsolidationService {
         }
 
         if(!isFromET) {
-            pushShipmentDataToDependentService(consolidationDetails, isCreate, Optional.ofNullable(oldEntity).map(ConsolidationDetails::getContainersList).orElse(null));
+            pushShipmentDataToDependentService(consolidationDetails, isCreate, oldEntity);
             this.pushAllShipmentDataToDependentService(consolidationDetails);
         }
         try {
@@ -4946,8 +4943,58 @@ public class ConsolidationService implements IConsolidationService {
         }
     }
 
+    private boolean isMasterDataChange(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity){
+        boolean isMawbChange =  !Objects.equals(consolidationDetails.getMawb(), oldEntity.getMawb());
+        boolean isCarrierSpacChange = !(Objects.equals(consolidationDetails.getCarrierDetails().getShippingLine(), oldEntity.getCarrierDetails().getShippingLine()));
+
+        return isMawbChange || isCarrierSpacChange;
+    }
+
+    private List<ShipmentDetails> findContainerNumberChangeShipment(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity){
+        List<Containers> containersList = consolidationDetails.getContainersList();
+        List<Containers> oldContainerList = oldEntity.getContainersList();
+
+        Map<Long, String> oldContainerMap = oldContainerList.stream()
+            .collect(Collectors.toMap(Containers::getId, Containers::getContainerNumber));
+
+        Map<Long, String> containerMap = containersList.stream()
+            .collect(Collectors.toMap(Containers::getId, Containers::getContainerNumber));
+
+        List<Long> containerIds = new ArrayList<>();
+        for(Long id : oldContainerMap.keySet()){
+            String oldContainerNumber = oldContainerMap.get(id);
+            String newContainerNumber = containerMap.getOrDefault(id, null);
+
+            if(newContainerNumber == null) continue;
+
+            if (!Objects.equals(oldContainerNumber, newContainerNumber)) {
+                containerIds.add(id);
+            }
+        }
+
+        List<ShipmentsContainersMapping> shipmentsContainersMappingList = shipmentsContainersMappingDao.findByContainerIdIn(containerIds);
+
+        Set<Long> shipmentIds = shipmentsContainersMappingList.stream()
+            .map(ShipmentsContainersMapping::getShipmentId)
+            .collect(Collectors.toSet());
+
+        return shipmentDao.findShipmentsByIds(shipmentIds);
+    }
+
+    private List<ShipmentDetails> findShipmentForTrackingService(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity){
+        if(oldEntity == null) return null;
+
+        // check MBL / MAWB / Carrier Scac change
+        if(isMasterDataChange(consolidationDetails, oldEntity)){
+            return consolidationDetails.getShipmentsList();
+        }
+
+        // check Container Number change
+        return findContainerNumberChangeShipment(consolidationDetails, oldEntity);
+    }
+
     @Override
-    public void pushShipmentDataToDependentService(ConsolidationDetails consolidationDetails, boolean isCreate, List<Containers> oldContainers)
+    public void pushShipmentDataToDependentService(ConsolidationDetails consolidationDetails, boolean isCreate, ConsolidationDetails oldEntity)
     {
         try {
             if(consolidationDetails.getTenantId() == null)
@@ -4962,13 +5009,20 @@ public class ConsolidationService implements IConsolidationService {
         }
         try {
             if(trackingServiceAdapter.checkIfConsolContainersExist(consolidationDetails) || trackingServiceAdapter.checkIfAwbExists(consolidationDetails)) {
-                UniversalTrackingPayload _utPayload = trackingServiceAdapter.mapConsoleDataToTrackingServiceData(consolidationDetails);
-                List<UniversalTrackingPayload> trackingPayloads = new ArrayList<>();
-                if(_utPayload != null) {
-                    trackingPayloads.add(_utPayload);
-                    var jsonBody = jsonHelper.convertToJson(trackingPayloads);
-                    log.info("Producing tracking service payload from consolidation with RequestId: {} and payload: {}",LoggerHelper.getRequestIdFromMDC(), jsonBody);
-                    trackingServiceAdapter.publishUpdatesToTrackingServiceQueue(jsonBody, false);
+                List<ShipmentDetails> shipmentDetailsList = findShipmentForTrackingService(consolidationDetails, oldEntity);
+                for(ShipmentDetails shipmentDetails : shipmentDetailsList) {
+                    UniversalTrackingPayload _utPayload = trackingServiceAdapter.mapConsoleDataToTrackingServiceData(
+                        consolidationDetails, shipmentDetails);
+                    List<UniversalTrackingPayload> trackingPayloads = new ArrayList<>();
+                    if (_utPayload != null) {
+                        trackingPayloads.add(_utPayload);
+                        var jsonBody = jsonHelper.convertToJson(trackingPayloads);
+                        log.info(
+                            "Producing tracking service payload from consolidation with RequestId: {} and payload: {}",
+                            LoggerHelper.getRequestIdFromMDC(), jsonBody);
+                        trackingServiceAdapter.publishUpdatesToTrackingServiceQueue(jsonBody,
+                            false);
+                    }
                 }
             }
             if(consolidationDetails != null) {
@@ -4986,7 +5040,7 @@ public class ConsolidationService implements IConsolidationService {
             log.error(e.getMessage());
         }
         try {
-            containerService.pushContainersToDependentServices(consolidationDetails.getContainersList(), oldContainers);
+            containerService.pushContainersToDependentServices(consolidationDetails.getContainersList(), oldEntity != null ? oldEntity.getContainersList() : null);
         }
         catch (Exception e) {
             log.error("Error producing message due to " + e.getMessage());
