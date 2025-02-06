@@ -1139,6 +1139,7 @@ public class MasterDataController {
     public ResponseEntity<IRunnerResponse> listCousinBranchForNTEReassign(@RequestBody @Valid ListCousinBranchesForNteRequest request) {
         String responseMsg;
         try {
+            request.setIsReassign(true);
             return   masterDataService.listCousinBranchForNTE(request);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
