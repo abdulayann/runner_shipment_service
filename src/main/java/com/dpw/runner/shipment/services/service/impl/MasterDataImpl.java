@@ -4,7 +4,7 @@ import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dto.request.ListCousinBranchesForNteRequest;
+import com.dpw.runner.shipment.services.dto.request.ListCousinBranchesForEtRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
@@ -396,7 +396,7 @@ public class MasterDataImpl implements IMasterDataService {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> listCousinBranchForNTE(ListCousinBranchesForNteRequest request) {
+    public ResponseEntity<IRunnerResponse> listCousinBranchForEt(ListCousinBranchesForEtRequest request) {
         List<Object> criteria = request.getCriteria() ;
         List<Long> tenantIds = commonUtils.getTenantIdsFromEntity(request.getEntityId(), request.getEntityType(), request.getIsReassign(), request.getIsReceivingBranch(), request.getIsTriangulationBranch());
         if(tenantIds!=null) {

@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
-import com.dpw.runner.shipment.services.dto.request.ListCousinBranchesForNteRequest;
+import com.dpw.runner.shipment.services.dto.request.ListCousinBranchesForEtRequest;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
@@ -2231,62 +2231,62 @@ class MasterDataControllerTest {
     }
 
     @Test
-    void listCousinBranchForNTEReassignTest() {
+    void listCousinBranchForEtReassignTest() {
         // Mock
-        when(iMasterDataService.listCousinBranchForNTE(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        when(iMasterDataService.listCousinBranchForEt(any())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
-        var responseEntity = masterDataController.listCousinBranchForNTEReassign(new ListCousinBranchesForNteRequest());
+        var responseEntity = masterDataController.listCousinBranchForNTEReassign(new ListCousinBranchesForEtRequest());
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
     @Test
-    void listCousinBranchForNTEReassignTest2() {
+    void listCousinBranchForEtReassignTest2() {
         // Mock
-        when(iMasterDataService.listCousinBranchForNTE(any())).thenThrow(new RuntimeException());
+        when(iMasterDataService.listCousinBranchForEt(any())).thenThrow(new RuntimeException());
         // Test
-        var responseEntity = masterDataController.listCousinBranchForNTEReassign(new ListCousinBranchesForNteRequest());
+        var responseEntity = masterDataController.listCousinBranchForNTEReassign(new ListCousinBranchesForEtRequest());
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
     @Test
-    void listCousinBranchForNTEReassignTest3() {
+    void listCousinBranchForEtReassignTest3() {
         // Mock
-        when(iMasterDataService.listCousinBranchForNTE(any())).thenThrow(new RuntimeException("RuntimeException"));
+        when(iMasterDataService.listCousinBranchForEt(any())).thenThrow(new RuntimeException("RuntimeException"));
         // Test
-        var responseEntity = masterDataController.listCousinBranchForNTEReassign(new ListCousinBranchesForNteRequest());
+        var responseEntity = masterDataController.listCousinBranchForNTEReassign(new ListCousinBranchesForEtRequest());
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
 
     @Test
-    void listCousinBranchForNTETest() {
+    void listCousinBranchForEtTest() {
         // Mock
-        when(iMasterDataService.listCousinBranchForNTE(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        when(iMasterDataService.listCousinBranchForEt(any())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
-        var responseEntity = masterDataController.listCousinBranchForNTE(new ListCousinBranchesForNteRequest());
+        var responseEntity = masterDataController.listCousinBranchForEt(new ListCousinBranchesForEtRequest());
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
     @Test
-    void listCousinBranchForNTETest2() {
+    void listCousinBranchForEtTest2() {
         // Mock
-        when(iMasterDataService.listCousinBranchForNTE(any())).thenThrow(new RuntimeException());
+        when(iMasterDataService.listCousinBranchForEt(any())).thenThrow(new RuntimeException());
         // Test
-        var responseEntity = masterDataController.listCousinBranchForNTE(new ListCousinBranchesForNteRequest());
+        var responseEntity = masterDataController.listCousinBranchForEt(new ListCousinBranchesForEtRequest());
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
     @Test
-    void listCousinBranchForNTETest3() {
+    void listCousinBranchForEtTest3() {
         // Mock
-        when(iMasterDataService.listCousinBranchForNTE(any())).thenThrow(new RuntimeException("RuntimeException"));
+        when(iMasterDataService.listCousinBranchForEt(any())).thenThrow(new RuntimeException("RuntimeException"));
         // Test
-        var responseEntity = masterDataController.listCousinBranchForNTE(new ListCousinBranchesForNteRequest());
+        var responseEntity = masterDataController.listCousinBranchForEt(new ListCousinBranchesForEtRequest());
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
