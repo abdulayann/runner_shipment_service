@@ -1863,7 +1863,7 @@ public class EntityTransferService implements IEntityTransferService {
                                     var ships = destinationShipmentsMap.get(originShipment.getGuid());
                                     var isShip = ships.stream().filter(x -> x.getTenantId().equals(triangulationPartner.intValue())).findAny();
                                     if (isShip.isPresent()) {
-                                        ArValidationResponse.ProfitShareShipmentData triangulationShipmentData = mapShipmentDataToProfitShare(shipmentDetails);
+                                        ArValidationResponse.ProfitShareShipmentData triangulationShipmentData = mapShipmentDataToProfitShare(isShip.get());
                                         arValidationResponse.setTransferToTriangulationPartner(true);
                                         arValidationResponse.setTriangulationShipment(triangulationShipmentData);
                                         arValidationResponse.setTriangulationShipmentList(List.of(triangulationShipmentData));
@@ -2484,10 +2484,8 @@ public class EntityTransferService implements IEntityTransferService {
         List<String> userEmailIds = new ArrayList<>();
         if(!CommonUtils.listIsNullOrEmpty(usersDtoList)) {
             for(UsersDto user: usersDtoList) {
-                if (Objects.equals(user.getTenantId(), tenantId)) {
-                    if (!CommonUtils.IsStringNullOrEmpty(user.getEmail())) {
-                        userEmailIds.add(user.getEmail());
-                    }
+                if (!CommonUtils.IsStringNullOrEmpty(user.getEmail())) {
+                    userEmailIds.add(user.getEmail());
                 }
             }
         }

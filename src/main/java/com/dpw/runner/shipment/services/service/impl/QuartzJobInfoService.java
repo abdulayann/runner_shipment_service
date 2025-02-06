@@ -76,7 +76,7 @@ public class QuartzJobInfoService implements IQuartzJobInfoService {
             return null;
         }
 
-        HashMap<String, LocalDateTime> finalMap = new HashMap<>();
+        HashMap<String, HashMap<Integer, LocalDateTime>> finalMap = new HashMap<>();
         LocalDateTime jobDateTime = null;
 
         for (var fileTransferConfiguration : fileTransferConfigurations) {
@@ -102,9 +102,9 @@ public class QuartzJobInfoService implements IQuartzJobInfoService {
 
     private LocalDateTime calculateJobTime(FileTransferConfigurations fileTransferConfiguration, LocalDateTime eta,
                                            LocalDateTime etd, LocalDateTime ata, LocalDateTime atd,
-                                           HashMap<String, LocalDateTime> finalMap) {
+                                           HashMap<String, HashMap<Integer, LocalDateTime>> finalMap) {
         String transportMode = fileTransferConfiguration.getTransportMode();
-        if (finalMap.containsKey(transportMode)) {
+        if (finalMap.containsKey(transportMode) && finalMap.get(transportMode).get(fileTransferConfiguration.getCriteriaField())!=null) {
             return null;
         }
 
@@ -122,7 +122,9 @@ public class QuartzJobInfoService implements IQuartzJobInfoService {
                 ? baseDateTime.plus(intervalTime, unit)
                 : baseDateTime.minus(intervalTime, unit);
 
-        finalMap.put(transportMode, newTime);
+        HashMap<Integer, LocalDateTime> map = new HashMap<>();
+        map.put(fileTransferConfiguration.getCriteriaField(), newTime);
+        finalMap.put(transportMode, map);
         return newTime;
     }
 

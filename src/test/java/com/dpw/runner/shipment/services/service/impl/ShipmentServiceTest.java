@@ -6271,6 +6271,7 @@ ShipmentServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class)).thenReturn(shipmentDetailsResponse);
         mockShipmentSettings();
         mockTenantSettings();
+        commonUtils.getShipmentSettingFromContext().setEnableRouteMaster(false);
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.createShipmentInV2(customerBookingRequest);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
