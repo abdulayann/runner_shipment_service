@@ -1,1 +1,5 @@
-UPDATE events SET created_by = 'serviceaccountP100' and updated_by = 'serviceaccountP100' WHERE event_type = 'INVOICE';
+UPDATE events
+SET
+    created_by = COALESCE(created_by, 'serviceaccountP100'),
+    updated_by = COALESCE(updated_by, 'serviceaccountP100')
+WHERE event_type = 'INVOICE';
