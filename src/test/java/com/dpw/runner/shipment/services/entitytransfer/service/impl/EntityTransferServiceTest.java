@@ -2483,6 +2483,75 @@ class EntityTransferServiceTest extends CommonMocks {
     }
 
     @Test
+    void testSendConsolidation_For_InterBranchConsole_And_NTE() {
+        int mockTenantId = 10;
+        UUID shipGuid = UUID.randomUUID();
+        ConsolidationDetails consolidationDetails1 = jsonTestUtility.getCompleteConsolidation();
+        consolidationDetails1.setTenantId(mockTenantId);
+        consolidationDetails1.getShipmentsList().forEach(i -> {
+            i.setTenantId(mockTenantId);
+            i.setGuid(shipGuid);
+        });
+        consolidationDetails1.setInterBranchConsole(true);
+
+        EntityTransferOrganizations organizations = jsonTestUtility.getOrganizationData();
+
+        Map<String, List<String>> shipAdditionalDocs = new HashMap<>();
+        shipAdditionalDocs.put(consolidationDetails1.getShipmentsList().get(0).getGuid().toString(), List.of(UUID.randomUUID().toString()));
+        SendConsolidationRequest sendConsolidationRequest = SendConsolidationRequest.builder()
+                .sendToBranch(List.of(66))
+                .consolId(consolidationDetails1.getId())
+                .sendToOrg(List.of(organizations.getWhitelistedTenantGUID()))
+                .additionalDocs(List.of(UUID.randomUUID().toString()))
+                .shipAdditionalDocs(shipAdditionalDocs)
+                .shipmentGuidSendToBranch(Map.ofEntries(
+                        Map.entry(shipGuid.toString(), List.of(69))
+                ))
+                .build();
+
+        EntityTransferConsolidationDetails mockETPayload = objectMapperTest.convertValue(consolidationDetails1, EntityTransferConsolidationDetails.class);
+        ShipmentDetails mockLinkedShipment = consolidationDetails1.getShipmentsList().get(0);
+        EntityTransferShipmentDetails mockETShipment = objectMapperTest.convertValue(mockLinkedShipment, EntityTransferShipmentDetails.class);
+        V1TenantResponse mockV1TenantResponse = V1TenantResponse.builder().TenantName("mockTenant").build();
+
+        Map<Integer, Object> mockTenantNameMap = Map.ofEntries(
+                Map.entry(mockTenantId, mockV1TenantResponse)
+        );
+
+        V1TenantSettingsResponse mockV1TenantSettings = V1TenantSettingsResponse.builder()
+                .IsColoadingMAWBStationEnabled(true)
+                .ColoadingBranchIds(List.of(69))
+                .build();
+        Map<Integer, V1TenantSettingsResponse> mockV1TenantSettingsMap = Map.ofEntries(
+                Map.entry(66, mockV1TenantSettings)
+        );
+
+        var coLoadMap = new HashMap<Integer, Set<Integer>>();
+        coLoadMap.put(66, Set.of(69));
+
+        NetworkTransfer mockNetworkTransfer = jsonTestUtility.getNetworkTransfer();
+
+        when(consolidationDetailsDao.findById(consolidationDetails1.getId())).thenReturn(Optional.of(consolidationDetails1));
+        when(v1ServiceUtil.getTenantDetails(any())).thenReturn(mockTenantNameMap);
+        when(v1ServiceUtil.getTenantSettingsMap(anyList())).thenReturn(mockV1TenantSettingsMap);
+        when(jsonHelper.convertValue(any(), eq(V1TenantResponse.class))).thenReturn(mockV1TenantResponse);
+        when(jsonHelper.convertValue(any(), eq(EntityTransferConsolidationDetails.class))).thenReturn(mockETPayload);
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(mockLinkedShipment));
+        when(jsonHelper.convertValue(any(), eq(EntityTransferShipmentDetails.class))).thenReturn(mockETShipment);
+        when(v1Service.tenantNameByTenantId(any())).thenReturn(V1DataResponse.builder().build());
+        when(jsonHelper.convertValueToList(any(), eq(V1TenantResponse.class))).thenReturn(List.of(mockV1TenantResponse));
+        when(networkTransferDao.findByTenantAndEntity(66, 2258L, Constants.CONSOLIDATION)).thenReturn(Optional.of(mockNetworkTransfer));
+        when(networkTransferDao.findByTenantAndEntity(69, 5607L, Constants.SHIPMENT)).thenReturn(Optional.of(mockNetworkTransfer));
+        when(notificationDao.findNotificationForEntityTransfer(anyLong(), anyString(), anyInt(), anyList())).thenReturn(new ArrayList<>());
+        doNothing().when(notificationDao).deleteAll(anyList());
+        when(v1ServiceUtil.fetchCoLoadInfo(any(), any())).thenReturn(coLoadMap);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(Boolean.TRUE);
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
+        ResponseEntity<IRunnerResponse> responseEntity = entityTransferService.sendConsolidation(CommonRequestModel.buildRequest(sendConsolidationRequest));
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
     void testSendConsolidationWithTriangulationPartner() {
         int mockTenantId = 10;
         ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();

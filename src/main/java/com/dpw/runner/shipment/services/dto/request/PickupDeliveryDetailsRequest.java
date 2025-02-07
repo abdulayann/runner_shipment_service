@@ -66,4 +66,5 @@ public class PickupDeliveryDetailsRequest extends CommonRequest implements IRunn
     private LocalDateTime deliveryGateOut;
     private List<Parties> partiesList;
     private String remarks;
+    private List<TiLegsRequest> tiLegsList;
 }

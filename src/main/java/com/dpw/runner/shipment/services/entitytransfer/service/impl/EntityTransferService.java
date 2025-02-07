@@ -307,7 +307,7 @@ public class EntityTransferService implements IEntityTransferService {
                     networkTransferService.updateNetworkTransferTransferred(optionalNetworkTransfer.get(), entityPayload);
                 else
                     networkTransferService.processNetworkTransferEntity(Long.valueOf(tenant), null, SHIPMENT, shipment,
-                            null, taskPayload.getDirection(), entityPayload);
+                            null, taskPayload.getDirection(), entityPayload, false);
 
                 List<Notification> notificationList = notificationDao.findNotificationForEntityTransfer(shipId, SHIPMENT, tenant, List.of(NotificationRequestType.REQUEST_TRANSFER.name(), NotificationRequestType.REASSIGN.name()));
                 notificationDao.deleteAll(notificationList);
@@ -385,6 +385,9 @@ public class EntityTransferService implements IEntityTransferService {
         }
 
         ConsolidationDetails consol = consolidationDetails.get();
+        Map<UUID, ShipmentDetails> guidVsShipmentMap = new HashMap<>();
+        if(!CommonUtils.listIsNullOrEmpty(consol.getShipmentsList()))
+            guidVsShipmentMap = consol.getShipmentsList().stream().collect(Collectors.toMap(ShipmentDetails::getGuid, Function.identity()));
 
         interBranchValidation(consol, sendConsolidationRequest);
         EntityTransferConsolidationDetails entityTransferPayload = prepareConsolidationPayload(consol, sendConsolidationRequest);
@@ -421,6 +424,16 @@ public class EntityTransferService implements IEntityTransferService {
                         entityTransferShipment.setSendToBranch(shipmentGuidSendToBranch.get(guid.toString()).get(index));
                     else
                         entityTransferShipment.setSendToBranch(tenant);
+
+                    if(Boolean.TRUE.equals(getIsNetworkTransferFeatureEnabled()) && !Objects.equals(tenant, entityTransferShipment.getSendToBranch())) {
+                        this.sendOverarchingShipmentToNetworkTransfer(entityTransferShipment.getSendToBranch(), entityTransferShipment, guidVsShipmentMap.get(guid));
+                    }
+                }
+                // Clear all pending shipment notifications for Inter branch console
+                if(Boolean.TRUE.equals(getIsNetworkTransferFeatureEnabled()) && Boolean.TRUE.equals(consolidationPayload.getInterBranchConsole())) {
+                    List<Long> shipIds = consol.getShipmentsList().stream().map(BaseEntity::getId).toList();
+                    List<Notification> notificationList = notificationDao.findNotificationByEntityIdsForEntityTransfer(shipIds, SHIPMENT, tenant, List.of(NotificationRequestType.REQUEST_TRANSFER.name(), NotificationRequestType.REASSIGN.name()));
+                    notificationDao.deleteAll(notificationList);
                 }
             }
 
@@ -430,9 +443,11 @@ public class EntityTransferService implements IEntityTransferService {
                 Map<String, Object> entityPayload = getNetworkTransferEntityPayload(consolidationPayload);
                 if (optionalNetworkTransfer.isPresent())
                     networkTransferService.updateNetworkTransferTransferred(optionalNetworkTransfer.get(), entityPayload);
-                else
+                else {
+                    boolean isInterBranchConsole = Boolean.TRUE.equals(consolidationPayload.getInterBranchConsole());
                     networkTransferService.processNetworkTransferEntity(Long.valueOf(tenant), null, CONSOLIDATION,
-                            null, consol, consolidationPayload.getShipmentType(), entityPayload);
+                            null, consol, consolidationPayload.getShipmentType(), entityPayload, isInterBranchConsole);
+                }
 
                 List<Notification> notificationList = notificationDao.findNotificationForEntityTransfer(consolId, CONSOLIDATION, tenant, List.of(NotificationRequestType.REQUEST_TRANSFER.name(), NotificationRequestType.REASSIGN.name()));
                 notificationDao.deleteAll(notificationList);
@@ -445,7 +460,6 @@ public class EntityTransferService implements IEntityTransferService {
 
         this.createAutoEvent(consolidationDetails.get().getId(), EventConstants.COSN, CONSOLIDATION);
 
-        List<String> tenantName = getTenantName(successTenantIds);
         for (var shipment : consolidationDetails.get().getShipmentsList()) {
             // Set TenantId Context for inter branch shipment for Event creation
             if(Objects.equals(shipment.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && !Objects.equals(TenantContext.getCurrentTenant(), shipment.getTenantId()))
@@ -468,6 +482,21 @@ public class EntityTransferService implements IEntityTransferService {
                 .message(String.format("Consolidation Sent to branches %s", String.join(", ", getTenantName(successTenantIds))))
             .build();
         return ResponseHelper.buildSuccessResponse(sendConsolidationResponse);
+
+    }
+
+    private void sendOverarchingShipmentToNetworkTransfer(Integer tenant, EntityTransferShipmentDetails entityTransferShipment, ShipmentDetails shipment) {
+        Long shipId = shipment.getId();
+        Optional<NetworkTransfer> optionalNetworkTransfer = networkTransferDao.findByTenantAndEntity(
+                Math.toIntExact(tenant), shipId, SHIPMENT);
+        Map<String, Object> entityPayload = getNetworkTransferEntityPayload(entityTransferShipment);
+        if (optionalNetworkTransfer.isPresent()) {
+            optionalNetworkTransfer.get().setIsInterBranchEntity(true);
+            networkTransferService.updateNetworkTransferTransferred(optionalNetworkTransfer.get(), entityPayload);
+        }
+        else
+            networkTransferService.processNetworkTransferEntity(Long.valueOf(tenant), null, SHIPMENT,
+                    shipment, null, entityTransferShipment.getShipmentType(), entityPayload, true);
 
     }
 
@@ -1727,9 +1756,6 @@ public class EntityTransferService implements IEntityTransferService {
             Set<UUID> shipmentGuids = new HashSet<>();
             Set<String> locationRefGuids = new HashSet<>();
             for (var shipmentDetails: shipmentDetailsList) {
-                if(Objects.equals(shipmentDetails.getJobType(),  Constants.SHIPMENT_TYPE_DRT)){
-                    continue;
-                }
                 if(shipmentDetails.getSourceGuid() != null){
                     sourceGuids.add(shipmentDetails.getSourceGuid());
                 }
@@ -1786,10 +1812,6 @@ public class EntityTransferService implements IEntityTransferService {
                 arValidationResponse.setShipmentGuid(shipmentDetails.getGuid());
                 arValidationResponse.setConsolidationType(shipmentDetails.getJobType());
                 arValidationResponse.setSourceBranch(shipmentDetails.getTenantId());
-                if (Objects.equals(shipmentDetails.getJobType(), Constants.SHIPMENT_TYPE_DRT)) {
-                    responseList.add(arValidationResponse);
-                    continue;
-                }
                 if(shipmentDetails.getSourceGuid() != null) {
                     if(originShipmentsMap.containsKey(shipmentDetails.getSourceGuid())){
                         ShipmentDetails originShipment = originShipmentsMap.get(shipmentDetails.getSourceGuid());
@@ -1798,6 +1820,9 @@ public class EntityTransferService implements IEntityTransferService {
                                 originConsoleMap.containsKey(originShipment.getConsolidationList().get(0).getGuid())){
                             consolidationDetails = originConsoleMap.get(originShipment.getConsolidationList().get(0).getGuid());
                             var receivingAgent = consolidationDetails.getReceivingBranch();
+                            if (Objects.isNull(receivingAgent) && Objects.equals(shipmentDetails.getJobType(), Constants.SHIPMENT_TYPE_DRT)) {
+                                receivingAgent = shipmentDetails.getReceivingBranch();
+                            }
                             List<TriangulationPartner> triangulationPartnerList = consolidationDetails.getTriangulationPartnerList();
                             var triangulationPartner = consolidationDetails.getTriangulationPartner();
                             ArValidationResponse.ProfitShareShipmentData originShipmentData = mapShipmentDataToProfitShare(originShipment);
@@ -1816,13 +1841,14 @@ public class EntityTransferService implements IEntityTransferService {
                             arValidationResponse.setTriangulationPartner(triangulationPartner);
                             arValidationResponse.setOriginShipment(originShipmentData);
                             if (receivingAgent != null) {
+                                Long receiving_agent = receivingAgent;
                                 if (shipmentDetails.getTenantId().equals(receivingAgent.intValue())) {
                                     ArValidationResponse.ProfitShareShipmentData receivingShipmentData = mapShipmentDataToProfitShare(shipmentDetails);
                                     arValidationResponse.setTransferToReceivingAgent(true);
                                     arValidationResponse.setReceivingShipment(receivingShipmentData);
                                 } else if (destinationShipmentsMap.containsKey(originShipment.getGuid())) {
                                     var ships = destinationShipmentsMap.get(originShipment.getGuid());
-                                    var isShip = ships.stream().filter(x -> x.getTenantId().equals(receivingAgent.intValue())).findAny();
+                                    var isShip = ships.stream().filter(x -> x.getTenantId().equals(receiving_agent.intValue())).findAny();
                                     if (isShip.isPresent()) {
                                         ArValidationResponse.ProfitShareShipmentData receivingShipmentData = mapShipmentDataToProfitShare(isShip.get());
                                         arValidationResponse.setTransferToReceivingAgent(true);
@@ -1837,17 +1863,23 @@ public class EntityTransferService implements IEntityTransferService {
                                     ArValidationResponse.ProfitShareShipmentData triangulationShipmentData = mapShipmentDataToProfitShare(shipmentDetails);
                                     arValidationResponse.setTransferToTriangulationPartner(true);
                                     arValidationResponse.setTriangulationShipment(triangulationShipmentData);
+                                    arValidationResponse.setTriangulationShipmentList(List.of(triangulationShipmentData));
                                 } else if (destinationShipmentsMap.containsKey(originShipment.getGuid())) {
                                     var ships = destinationShipmentsMap.get(originShipment.getGuid());
-                                    var isShip = ships.stream()
+                                    var isShips = ships.stream()
                                             .filter(shp -> triangulationPartnerList.stream()
                                                     .filter(Objects::nonNull)
                                                     .anyMatch(partner -> Objects.equals(partner.getTriangulationPartner(), shp.getTenantId().longValue())))
-                                            .findAny();
-                                    if (isShip.isPresent()) {
-                                        ArValidationResponse.ProfitShareShipmentData triangulationShipmentData = mapShipmentDataToProfitShare(shipmentDetails);
+                                            .toList();
+                                    if (!isShips.isEmpty()) {
+                                        List<ArValidationResponse.ProfitShareShipmentData> triangulationShipmentDataList = new ArrayList<>();
+                                        for(var ship: isShips) {
+                                            ArValidationResponse.ProfitShareShipmentData triangulationShipment = mapShipmentDataToProfitShare(ship);
+                                            triangulationShipmentDataList.add(triangulationShipment);
+                                        }
                                         arValidationResponse.setTransferToTriangulationPartner(true);
-                                        arValidationResponse.setTriangulationShipment(triangulationShipmentData);
+                                        arValidationResponse.setTriangulationShipment(triangulationShipmentDataList.get(0));
+                                        arValidationResponse.setTriangulationShipmentList(triangulationShipmentDataList);
                                     }
                                 }
                             } else if (triangulationPartnerList == null && triangulationPartner != null) {
@@ -1855,13 +1887,15 @@ public class EntityTransferService implements IEntityTransferService {
                                     ArValidationResponse.ProfitShareShipmentData triangulationShipmentData = mapShipmentDataToProfitShare(shipmentDetails);
                                     arValidationResponse.setTransferToTriangulationPartner(true);
                                     arValidationResponse.setTriangulationShipment(triangulationShipmentData);
+                                    arValidationResponse.setTriangulationShipmentList(List.of(triangulationShipmentData));
                                 } else if (destinationShipmentsMap.containsKey(originShipment.getGuid())) {
                                     var ships = destinationShipmentsMap.get(originShipment.getGuid());
                                     var isShip = ships.stream().filter(x -> x.getTenantId().equals(triangulationPartner.intValue())).findAny();
                                     if (isShip.isPresent()) {
-                                        ArValidationResponse.ProfitShareShipmentData triangulationShipmentData = mapShipmentDataToProfitShare(shipmentDetails);
+                                        ArValidationResponse.ProfitShareShipmentData triangulationShipmentData = mapShipmentDataToProfitShare(isShip.get());
                                         arValidationResponse.setTransferToTriangulationPartner(true);
                                         arValidationResponse.setTriangulationShipment(triangulationShipmentData);
+                                        arValidationResponse.setTriangulationShipmentList(List.of(triangulationShipmentData));
                                     }
                                 }
                             }
@@ -1910,26 +1944,34 @@ public class EntityTransferService implements IEntityTransferService {
                             if (triangulationPartnerList.stream().filter(Objects::nonNull).anyMatch(tp -> Objects.equals(tp.getTriangulationPartner(), receivingAgent))) {
                                 arValidationResponse.setTransferToTriangulationPartner(arValidationResponse.getTransferToReceivingAgent());
                                 arValidationResponse.setTriangulationShipment(arValidationResponse.getReceivingShipment());
+                                arValidationResponse.setTriangulationShipmentList(List.of(arValidationResponse.getReceivingShipment()));
                             } else if (triangulationPartnerList.stream()
                                     .filter(Objects::nonNull)
                                     .noneMatch(tp -> Objects.equals(tp.getTriangulationPartner(), shipmentDetails.getTenantId().longValue()))
                                     && destinationShipmentsMap.containsKey(shipmentDetails.getGuid())
                             ) {
                                 var ships = destinationShipmentsMap.get(shipmentDetails.getGuid());
-                                var isShip = ships.stream()
+                                var isShips = ships.stream()
                                         .filter(shp -> triangulationPartnerList.stream().filter(Objects::nonNull)
                                                 .anyMatch(partner -> Objects.equals(partner.getTriangulationPartner(), shp.getTenantId().longValue())))
-                                        .findFirst();
-                                if (isShip.isPresent()) {
+                                        .toList();
+
+                                if (!isShips.isEmpty()) {
+                                    List<ArValidationResponse.ProfitShareShipmentData> triangulationShipmentDataList = new ArrayList<>();
+                                    for(var ship: isShips) {
+                                        ArValidationResponse.ProfitShareShipmentData triangulationShipment = mapShipmentDataToProfitShare(ship);
+                                        triangulationShipmentDataList.add(triangulationShipment);
+                                    }
                                     arValidationResponse.setTransferToTriangulationPartner(true);
-                                    ArValidationResponse.ProfitShareShipmentData triangulationData = mapShipmentDataToProfitShare(isShip.get());
-                                    arValidationResponse.setTriangulationShipment(triangulationData);
+                                    arValidationResponse.setTriangulationShipment(triangulationShipmentDataList.get(0));
+                                    arValidationResponse.setTriangulationShipmentList(triangulationShipmentDataList);
                                 }
                             }
                         } else if (triangulationPartnerList == null && triangulationPartner != null) {
                             if (Objects.equals(triangulationPartner, receivingAgent)) {
                                 arValidationResponse.setTransferToTriangulationPartner(arValidationResponse.getTransferToReceivingAgent());
                                 arValidationResponse.setTriangulationShipment(arValidationResponse.getReceivingShipment());
+                                arValidationResponse.setTriangulationShipmentList(List.of(arValidationResponse.getReceivingShipment()));
                             } else if (!shipmentDetails.getTenantId().equals(triangulationPartner.intValue()) && destinationShipmentsMap.containsKey(shipmentDetails.getGuid())) {
                                 var ships = destinationShipmentsMap.get(shipmentDetails.getGuid());
                                 var isShip = ships.stream().filter(x -> x.getTenantId().equals(triangulationPartner.intValue())).findAny();
@@ -1937,6 +1979,7 @@ public class EntityTransferService implements IEntityTransferService {
                                     arValidationResponse.setTransferToTriangulationPartner(true);
                                     ArValidationResponse.ProfitShareShipmentData triangulationData = mapShipmentDataToProfitShare(isShip.get());
                                     arValidationResponse.setTriangulationShipment(triangulationData);
+                                    arValidationResponse.setTriangulationShipmentList(List.of(triangulationData));
                                 }
                             }
                         }
