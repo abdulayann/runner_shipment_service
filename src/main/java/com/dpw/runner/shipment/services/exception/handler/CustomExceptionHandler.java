@@ -8,6 +8,9 @@ import com.dpw.runner.shipment.services.exception.exceptions.InvalidAuthenticati
 import com.dpw.runner.shipment.services.exception.exceptions.ReportException;
 import com.dpw.runner.shipment.services.exception.exceptions.RoutingException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.SectionDetailsException;
+import com.dpw.runner.shipment.services.exception.exceptions.SectionFieldsException;
+import com.dpw.runner.shipment.services.exception.exceptions.SectionVisibilityException;
 import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.utils.Generated;
@@ -105,5 +108,17 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
 //                new RunnerResponse(false, new ApiError(HttpStatus.BAD_REQUEST, ex.getLocalizedMessage()));
         ResponseEntity<IRunnerResponse> responseEntity = ResponseHelper.buildFailedResponse(ex.getLocalizedMessage(), HttpStatus.BAD_REQUEST);
         return ResponseEntity.status(responseEntity.getStatusCode()).body(responseEntity.getBody());
+    }
+    @ExceptionHandler({SectionVisibilityException.class})
+    private ResponseEntity<IRunnerResponse> handleSectionVisibilityException(final SectionVisibilityException ex) {
+        return ResponseHelper.buildFailedResponse(ex.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+    @ExceptionHandler({SectionDetailsException.class})
+    private ResponseEntity<IRunnerResponse> handleSectionDetailsException(final SectionDetailsException ex) {
+        return ResponseHelper.buildFailedResponse(ex.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+    @ExceptionHandler({SectionFieldsException.class})
+    private ResponseEntity<IRunnerResponse> handleSectionFieldsException(final SectionFieldsException ex) {
+        return ResponseHelper.buildFailedResponse(ex.getMessage(), HttpStatus.BAD_REQUEST);
     }
 }
