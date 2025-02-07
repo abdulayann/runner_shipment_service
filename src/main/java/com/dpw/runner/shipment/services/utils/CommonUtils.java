@@ -19,8 +19,7 @@ import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
-import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsLazyResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.SendEmailDto;
 import com.dpw.runner.shipment.services.dto.v1.request.DGTaskCreateRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TenantDetailsByListRequest;
@@ -36,6 +35,7 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocat
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
@@ -58,6 +58,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.krysalis.barcode4j.impl.upcean.EAN13Bean;
 import org.krysalis.barcode4j.output.bitmap.BitmapCanvasProvider;
 import org.modelmapper.ModelMapper;
+import org.modelmapper.TypeToken;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -2073,30 +2074,96 @@ public class CommonUtils {
         return department;
     }
 
-    public ShipmentDetailsLazyResponse getShipmentDetailsResponse(ShipmentDetails shipmentDetails, List<String> includeColumns) {
+    public ShipmentDetailsResponse getShipmentDetailsResponse(ShipmentDetails shipmentDetails, List<String> includeColumns) {
         return setIncludedFields(shipmentDetails, includeColumns);
     }
 
-    private ShipmentDetailsLazyResponse setIncludedFields(ShipmentDetails shipmentDetail, List<String> includeColumns) {
-        ShipmentDetailsLazyResponse shipmentDetailsLazyResponse = new ShipmentDetailsLazyResponse();
+    private ShipmentDetailsResponse setIncludedFields(ShipmentDetails shipmentDetail, List<String> includeColumns) {
+        ShipmentDetailsResponse shipmentDetailsResponse = new ShipmentDetailsResponse();
 
         includeColumns.forEach(field -> {
             try {
-                // Capitalize the field name once for reuse
                 String capitalizedField = capitalize(field);
 
                 // Reflectively obtain the getter and setter methods once
                 Method getter = ShipmentDetails.class.getMethod("get" + capitalizedField);
-                Method setter = ShipmentDetailsLazyResponse.class.getMethod("set" + capitalizedField, getter.getReturnType());
-
                 Object value = getter.invoke(shipmentDetail);
-                setter.invoke(shipmentDetailsLazyResponse, value);
-            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-                // Handle non-existent methods gracefully
-                log.error("No such field: {}", field);
+
+                Object dtoValue = null;
+                if(value instanceof CarrierDetails) {
+                    dtoValue = modelMapper.map(value, CarrierDetailResponse.class);
+                }
+                else if(value instanceof AdditionalDetails) {
+                    dtoValue = modelMapper.map(value, AdditionalDetailResponse.class);
+                }
+                else if(value instanceof PickupDeliveryDetails) {
+                    dtoValue = modelMapper.map(value, PickupDeliveryDetailsResponse.class);
+                }
+                else if(value instanceof Parties) {
+                    dtoValue = modelMapper.map(value, PartiesResponse.class);
+                }
+
+                if(value instanceof List<?>) {
+                    List<?> list = (List<?>) value;
+                    if(!list.isEmpty() && list.get(0) instanceof Containers) {
+                        dtoValue = modelMapper.map(value, new TypeToken<List<ContainerResponse>>() {}.getType());
+                    }
+                    else if(!list.isEmpty() && list.get(0) instanceof BookingCarriage) {
+                        dtoValue = modelMapper.map(value, new TypeToken<List<BookingCarriageResponse>>() {}.getType());
+                    }
+                    else if(!list.isEmpty() && list.get(0) instanceof ELDetails) {
+                        dtoValue = modelMapper.map(value, new TypeToken<List<ELDetailsResponse>>() {}.getType());
+                    }
+                    else if(!list.isEmpty() && list.get(0) instanceof Events) {
+                        dtoValue = modelMapper.map(value, new TypeToken<List<EventsResponse>>() {}.getType());
+                    }
+                    else if(!list.isEmpty() && list.get(0) instanceof Packing) {
+                        dtoValue = modelMapper.map(value, new TypeToken<List<PackingResponse>>() {}.getType());
+                    }
+                    else if(!list.isEmpty() && list.get(0) instanceof ReferenceNumbers) {
+                        dtoValue = modelMapper.map(value, new TypeToken<List<ReferenceNumbersResponse>>() {}.getType());
+                    }
+                    else if(!list.isEmpty() && list.get(0) instanceof Routings) {
+                        dtoValue = modelMapper.map(value, new TypeToken<List<RoutingsResponse>>() {}.getType());
+                    }
+                    else if(!list.isEmpty() && list.get(0) instanceof ServiceDetails) {
+                        dtoValue = modelMapper.map(value, new TypeToken<List<ServiceDetailsResponse>>() {}.getType());
+                    }
+                    else if(!list.isEmpty() && list.get(0) instanceof TruckDriverDetails) {
+                        dtoValue = modelMapper.map(value, new TypeToken<List<TruckDriverDetailsResponse>>() {}.getType());
+                    }
+                    else if(!list.isEmpty() && list.get(0) instanceof Notes) {
+                        dtoValue = modelMapper.map(value, new TypeToken<List<NotesResponse>>() {}.getType());
+                    }
+                    else if(!list.isEmpty() && list.get(0) instanceof Jobs) {
+                        dtoValue = modelMapper.map(value, new TypeToken<List<JobResponse>>() {}.getType());
+                    }
+                    else if(!list.isEmpty() && list.get(0) instanceof ConsolidationDetails) {
+                        dtoValue = modelMapper.map(value, new TypeToken<List<ConsolidationListResponse>>() {}.getType());
+                    }
+                    else if(!list.isEmpty() && list.get(0) instanceof Parties) {
+                        dtoValue = modelMapper.map(value, new TypeToken<List<PartiesResponse>>() {}.getType());
+                    }
+                    else if(!list.isEmpty() && list.get(0) instanceof ShipmentOrder) {
+                        dtoValue = modelMapper.map(value, new TypeToken<List<ShipmentOrderResponse>>() {}.getType());
+                    }
+                }
+                Class<?> paramType;
+                if (dtoValue instanceof List<?> list && !list.isEmpty()) {
+                    paramType = List.class;
+                } else if (dtoValue != null) {
+                    paramType = dtoValue.getClass();
+                } else {
+                    paramType = getter != null ? getter.getReturnType() : Object.class;
+                }
+
+                Method setter = ShipmentDetailsResponse.class.getMethod("set" + capitalizedField, paramType);
+                setter.invoke(shipmentDetailsResponse, dtoValue != null ? dtoValue : value);
+            } catch (Exception e) {
+                log.error("No such field: {}", field, e);
             }
         });
-        return shipmentDetailsLazyResponse;
+        return shipmentDetailsResponse;
     }
 
 
@@ -2112,36 +2179,43 @@ public class CommonUtils {
                 .toList() : Collections.emptyList();
     }
 
-    public List<Long> getTenantIdsFromEntity(Long entityId, String entityType) {
+    public List<Long> getTenantIdsFromEntity(Long entityId, String entityType, Boolean isReassign, Boolean isReceivingBranch, Boolean isTriangulationBranch) {
         Set<Long> tenantIds = new HashSet<>();
-        Long sourceTenantId = null;
+        Long sourceTenantId = TenantContext.getCurrentTenant().longValue();
         Long receivingBranch = null;
         List<Long> triangulationPartners = null;
-        if(Objects.equals(entityType, Constants.SHIPMENT)) {
-            Optional<ShipmentDetails> shipmentDetails = shipmentDao.findShipmentByIdWithQuery(entityId);
-            if(shipmentDetails.isEmpty()) {
+        List<Long> otherIds = new ArrayList<>();
+
+        if (Objects.equals(entityType, Constants.SHIPMENT) && entityId != null) {
+            Optional<ShipmentDetails> optionalShipmentDetails = shipmentDao.findShipmentByIdWithQuery(entityId);
+            if (optionalShipmentDetails.isEmpty()) {
                 return new ArrayList<>();
             }
-            sourceTenantId = Long.valueOf(shipmentDetails.get().getTenantId());
-            receivingBranch = shipmentDetails.get().getReceivingBranch();
-            triangulationPartners = Optional.ofNullable(shipmentDetails.get().getTriangulationPartnerList())
-                    .orElse(Collections.emptyList())
-                    .stream()
-                    .map(TriangulationPartner::getTriangulationPartner).toList();
-        } else if (Objects.equals(entityType, Constants.CONSOLIDATION)){
-            Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findConsolidationByIdWithQuery(entityId);
-            if(consolidationDetails.isEmpty()) {
+            ShipmentDetails shipmentDetails = optionalShipmentDetails.get();
+            sourceTenantId = Long.valueOf(shipmentDetails.getTenantId());
+
+            if (Boolean.TRUE.equals(isReassign)) {
+                receivingBranch = shipmentDetails.getReceivingBranch();
+                triangulationPartners = extractTriangulationPartners(shipmentDetails.getTriangulationPartnerList());
+            }
+
+            processConsolidationDetails(shipmentDetails, isReceivingBranch, isTriangulationBranch, otherIds);
+        } else if (Objects.equals(entityType, Constants.CONSOLIDATION) && entityId != null) {
+            Optional<ConsolidationDetails> optionalConsolidationDetails = consolidationDetailsDao.findConsolidationByIdWithQuery(entityId);
+            if (optionalConsolidationDetails.isEmpty()) {
                 return new ArrayList<>();
             }
-            sourceTenantId = Long.valueOf(consolidationDetails.get().getTenantId());
-            receivingBranch = consolidationDetails.get().getReceivingBranch();
-            triangulationPartners = Optional.ofNullable(consolidationDetails.get().getTriangulationPartnerList())
-                    .orElse(Collections.emptyList())
-                    .stream()
-                    .map(TriangulationPartner::getTriangulationPartner).toList();
-        } else {
-            return new ArrayList<>();
+            ConsolidationDetails consolidationDetails = optionalConsolidationDetails.get();
+            sourceTenantId = Long.valueOf(consolidationDetails.getTenantId());
+
+            if (Boolean.TRUE.equals(isReassign)) {
+                receivingBranch = consolidationDetails.getReceivingBranch();
+                triangulationPartners = extractTriangulationPartners(consolidationDetails.getTriangulationPartnerList());
+            }
+
+            processConsolidationShipments(consolidationDetails, isReceivingBranch, isTriangulationBranch, otherIds);
         }
+
         tenantIds.add(sourceTenantId);
         if (receivingBranch != null) {
             tenantIds.add(receivingBranch);
@@ -2149,7 +2223,56 @@ public class CommonUtils {
         if (!CommonUtils.listIsNullOrEmpty(triangulationPartners)) {
             tenantIds.addAll(triangulationPartners);
         }
-        return tenantIds.stream().toList();
+        if (!CommonUtils.listIsNullOrEmpty(otherIds)) {
+            tenantIds.addAll(otherIds);
+        }
+        return new ArrayList<>(tenantIds);
+    }
+
+    private void processConsolidationDetails(ShipmentDetails shipmentDetails, Boolean isReceivingBranch, Boolean isTriangulationBranch, List<Long> otherIds) {
+        List<ConsolidationDetails> consolidationList = shipmentDetails.getConsolidationList();
+        if (consolidationList != null && !consolidationList.isEmpty()) {
+            ConsolidationDetails consolidationDetails = consolidationList.get(0);
+            if (Boolean.TRUE.equals(consolidationDetails.getInterBranchConsole())) {
+                if (Boolean.TRUE.equals(isReceivingBranch)) {
+                    otherIds.add(Long.valueOf(consolidationDetails.getTenantId()));
+                    otherIds.addAll(extractTriangulationPartners(consolidationDetails.getTriangulationPartnerList()));
+                    consolidationDetails.getShipmentsList().forEach(s -> otherIds.add(Long.valueOf(s.getTenantId())));
+                }
+                if (Boolean.TRUE.equals(isTriangulationBranch)) {
+                    otherIds.add(consolidationDetails.getReceivingBranch());
+                    otherIds.addAll(extractTriangulationPartners(consolidationDetails.getTriangulationPartnerList()));
+                    consolidationDetails.getShipmentsList().forEach(s -> {
+                        otherIds.add(Long.valueOf(s.getTenantId()));
+                        if (!Objects.equals(s.getId(), shipmentDetails.getId())) {
+                            otherIds.add(s.getReceivingBranch());
+                        }
+                    });
+                }
+            }
+        }
+    }
+
+    private void processConsolidationShipments(ConsolidationDetails consolidationDetails, Boolean isReceivingBranch, Boolean isTriangulationBranch, List<Long> otherIds) {
+        if (Boolean.TRUE.equals(consolidationDetails.getInterBranchConsole())) {
+            if (Boolean.TRUE.equals(isReceivingBranch)) {
+                consolidationDetails.getShipmentsList().forEach(s -> otherIds.add(Long.valueOf(s.getTenantId())));
+            }
+            if (Boolean.TRUE.equals(isTriangulationBranch)) {
+                consolidationDetails.getShipmentsList().forEach(s -> {
+                    otherIds.add(s.getReceivingBranch());
+                    otherIds.add(Long.valueOf(s.getTenantId()));
+                });
+            }
+        }
+    }
+
+    private List<Long> extractTriangulationPartners(List<TriangulationPartner> partners) {
+        return Optional.ofNullable(partners)
+                .orElse(Collections.emptyList())
+                .stream()
+                .map(TriangulationPartner::getTriangulationPartner)
+                .toList();
     }
 
     public Parties removeIdFromParty(Parties parties) {

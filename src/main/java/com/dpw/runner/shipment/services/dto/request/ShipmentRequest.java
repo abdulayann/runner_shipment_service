@@ -186,4 +186,12 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private Boolean isTransferredToReceivingBranch;
     private String shipmentStatus;
     private Boolean b2b;
+
+    private Boolean isCoLoadEnabled;
+    private String coLoadCarrierName;
+    private String coLoadBlNumber;
+
+    private String issuingCarrierName;
+    private String oceanBlNumber;
+
 }
