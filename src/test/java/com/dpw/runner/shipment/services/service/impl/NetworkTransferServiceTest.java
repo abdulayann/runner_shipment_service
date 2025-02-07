@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -16,12 +17,10 @@ import com.dpw.runner.shipment.services.dto.response.NetworkTransferListResponse
 import com.dpw.runner.shipment.services.dto.response.NetworkTransferResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
-import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.utils.MasterDataKeyUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
-import com.dpw.runner.shipment.services.CommonMocks;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -45,8 +44,8 @@ import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
@@ -186,7 +185,7 @@ class NetworkTransferServiceTest extends CommonMocks{
         ShipmentDetails shipmentDetails1 = ShipmentDetails.builder().receivingBranch(1L).build();
         shipmentDetails1.setGuid(shipmentGuid);
         when(networkTransferDao.findByTenantAndEntity(any(), any(), any())).thenReturn(Optional.of(NetworkTransfer.builder().build()));
-        when(consolidationDao.findConsolidationByIdWithQuery(any())).thenReturn(Optional.of(ConsolidationDetails.builder().interBranchConsole(true).shipmentsList(Collections.singletonList(shipmentDetails1)).build()));
+        when(consolidationDao.findConsolidationByIdWithQuery(any())).thenReturn(Optional.of(ConsolidationDetails.builder().interBranchConsole(true).shipmentsList(new HashSet<>(Collections.singletonList(shipmentDetails1))).build()));
         var response = networkTransferService.requestForReassign(request);
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }

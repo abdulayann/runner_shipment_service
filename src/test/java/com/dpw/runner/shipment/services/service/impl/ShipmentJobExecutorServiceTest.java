@@ -297,7 +297,7 @@ class ShipmentJobExecutorServiceTest {
     void testExecuteJob_WhenQuartzJobInfoExistsAndIsConsolidation() {
         String jobId = "1";
         quartzJobInfo.setEntityType(Constants.CONSOLIDATION);
-        consolidationDetails.getShipmentsList().get(0).setTenantId(1);
+        consolidationDetails.getShipmentsList().iterator().next().setTenantId(1);
         JobDetail jobDetail = mock(JobDetail.class);
         SendConsoleValidationResponse sendConsoleValidationResponse = new SendConsoleValidationResponse();
         sendConsoleValidationResponse.setIsError(false);
@@ -333,7 +333,7 @@ class ShipmentJobExecutorServiceTest {
     void testExecuteJob_QuartzJobInfoExists_SendConsolidation_BadRequest() {
         String jobId = "1";
         quartzJobInfo.setEntityType(Constants.CONSOLIDATION);
-        consolidationDetails.getShipmentsList().get(0).setTenantId(1);
+        consolidationDetails.getShipmentsList().iterator().next().setTenantId(1);
         JobDetail jobDetail = mock(JobDetail.class);
         SendConsoleValidationResponse sendConsoleValidationResponse = new SendConsoleValidationResponse();
         sendConsoleValidationResponse.setIsError(false);
@@ -367,7 +367,7 @@ class ShipmentJobExecutorServiceTest {
     void testExecuteJob_WhenQuartzJobInfoExistsAndIsConsolidation_ValidationError() {
         String jobId = "1";
         quartzJobInfo.setEntityType(Constants.CONSOLIDATION);
-        consolidationDetails.getShipmentsList().get(0).setTenantId(1);
+        consolidationDetails.getShipmentsList().iterator().next().setTenantId(1);
         JobDetail jobDetail = mock(JobDetail.class);
         SendConsoleValidationResponse sendConsoleValidationResponse = new SendConsoleValidationResponse();
         sendConsoleValidationResponse.setIsError(true);
@@ -401,7 +401,7 @@ class ShipmentJobExecutorServiceTest {
     void testExecuteJob_WhenQuartzJobInfoExistsAndIsConsolidation_ValidationThrowsException() {
         String jobId = "1";
         quartzJobInfo.setEntityType(Constants.CONSOLIDATION);
-        consolidationDetails.getShipmentsList().get(0).setTenantId(1);
+        consolidationDetails.getShipmentsList().iterator().next().setTenantId(1);
         consolidationDetails.setReceivingBranch(null);
         consolidationDetails.setTriangulationPartnerList(null);
         JobDetail jobDetail = mock(JobDetail.class);

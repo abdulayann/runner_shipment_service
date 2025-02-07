@@ -108,8 +108,8 @@ class ShipmentDaoTest extends CommonMocks {
     void saveTestCatch() throws RunnerException {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
-        shipmentDetails.setContainersList(Arrays.asList(Containers.builder().build()));
-        shipmentDetails.setConsolidationList(Arrays.asList(ConsolidationDetails.builder().build()));
+        shipmentDetails.setContainersList(new HashSet<>(Collections.singletonList(Containers.builder().build())));
+        shipmentDetails.setConsolidationList(new HashSet<>(Collections.singletonList(ConsolidationDetails.builder().build())));
         shipmentDetails.setId(1L);
 
         when(shipmentRepository.findById(any())).thenReturn(Optional.of(shipmentDetails));
@@ -124,8 +124,8 @@ class ShipmentDaoTest extends CommonMocks {
     void saveTestOldEntityNotPresent() throws RunnerException {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
-        shipmentDetails.setContainersList(Arrays.asList(Containers.builder().build()));
-        shipmentDetails.setConsolidationList(Arrays.asList(ConsolidationDetails.builder().build()));
+        shipmentDetails.setContainersList(new HashSet<>(Collections.singletonList(Containers.builder().build())));
+        shipmentDetails.setConsolidationList(new HashSet<>(Collections.singletonList(ConsolidationDetails.builder().build())));
         shipmentDetails.setId(1L);
 
         when(shipmentRepository.findById(any())).thenReturn(Optional.empty());
@@ -140,8 +140,8 @@ class ShipmentDaoTest extends CommonMocks {
     void saveTest() throws RunnerException {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
-        shipmentDetails.setContainersList(Arrays.asList(Containers.builder().build()));
-        shipmentDetails.setConsolidationList(Arrays.asList(ConsolidationDetails.builder().build()));
+        shipmentDetails.setContainersList(new HashSet<>(Collections.singletonList(Containers.builder().build())));
+        shipmentDetails.setConsolidationList(new HashSet<>(Collections.singletonList(ConsolidationDetails.builder().build())));
         shipmentDetails.setCarrierDetails(CarrierDetails.builder().origin("origin").destination("destination").originPort("originPort").destinationPort("destinationPort").build());
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
         shipmentDetails.setId(1L);
@@ -170,8 +170,8 @@ class ShipmentDaoTest extends CommonMocks {
     void saveTest2() throws RunnerException {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
-        shipmentDetails.setContainersList(Arrays.asList(Containers.builder().build()));
-        shipmentDetails.setConsolidationList(Arrays.asList(ConsolidationDetails.builder().build()));
+        shipmentDetails.setContainersList(new HashSet<>(Collections.singletonList(Containers.builder().build())));
+        shipmentDetails.setConsolidationList(new HashSet<>(Collections.singletonList(ConsolidationDetails.builder().build())));
         shipmentDetails.setCarrierDetails(CarrierDetails.builder().origin("origin").destination("destination").originPort("originPort").destinationPort("destinationPort").build());
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
         when(shipmentRepository.save(any(ShipmentDetails.class))).thenReturn(shipmentDetails);
@@ -185,8 +185,8 @@ class ShipmentDaoTest extends CommonMocks {
     void saveTest3() throws RunnerException {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
-        shipmentDetails.setContainersList(Arrays.asList(Containers.builder().build()));
-        shipmentDetails.setConsolidationList(Arrays.asList(ConsolidationDetails.builder().build()));
+        shipmentDetails.setContainersList(new HashSet<>(Collections.singletonList(Containers.builder().build())));
+        shipmentDetails.setConsolidationList(new HashSet<>(Collections.singletonList(ConsolidationDetails.builder().build())));
         shipmentDetails.setCarrierDetails(CarrierDetails.builder().origin("origin").destination("destination").originPort("originPort").destinationPort("destinationPort").build());
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
         shipmentDetails.setId(1L);
@@ -231,14 +231,14 @@ class ShipmentDaoTest extends CommonMocks {
         consolidationDetails.setId(1L);
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
-                .consolidationList(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build()))
+                .consolidationList(new HashSet<>(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build())))
                 .containsHazardous(false)
                 .transportMode(Constants.TRANSPORT_MODE_AIR)
                 .packingList(Arrays.asList(packing))
                 .routingsList(Arrays.asList(routings, routings))
-                .containersList(Arrays.asList(containers, containers))
+                .containersList(new HashSet<>(Arrays.asList(containers, containers)))
                 .shipmentAddresses(Arrays.asList(parties, parties))
-                .consolidationList(Arrays.asList(consolidationDetails, consolidationDetails))
+                .consolidationList(new HashSet<>(Arrays.asList(consolidationDetails, consolidationDetails)))
                 .carrierDetails(CarrierDetails.builder().build())
                 .direction(Constants.DIRECTION_IMP)
                 .build();
@@ -270,14 +270,14 @@ class ShipmentDaoTest extends CommonMocks {
         consolidationDetails.setId(1L);
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
-                .consolidationList(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build()))
+                .consolidationList(new HashSet<>(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build())))
                 .containsHazardous(false)
                 .transportMode(Constants.TRANSPORT_MODE_AIR)
                 .packingList(Arrays.asList(packing))
                 .routingsList(Arrays.asList(routings, routings))
-                .containersList(Arrays.asList(containers, containers))
+                .containersList(new HashSet<>(Arrays.asList(containers, containers)))
                 .shipmentAddresses(Arrays.asList(parties, parties))
-                .consolidationList(Arrays.asList(consolidationDetails, consolidationDetails))
+                .consolidationList(new HashSet<>(Arrays.asList(consolidationDetails, consolidationDetails)))
                 .carrierDetails(CarrierDetails.builder().build())
                 .direction(Constants.DIRECTION_EXP)
                 .masterBill("MBL123")
@@ -309,14 +309,14 @@ class ShipmentDaoTest extends CommonMocks {
         consolidationDetails.setId(1L);
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
-                .consolidationList(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build()))
+                .consolidationList(new HashSet<>(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build())))
                 .containsHazardous(false)
                 .transportMode(Constants.TRANSPORT_MODE_AIR)
                 .packingList(Arrays.asList(packing))
                 .routingsList(Arrays.asList(routings, routings))
-                .containersList(Arrays.asList(containers, containers))
+                .containersList(new HashSet<>(Arrays.asList(containers, containers)))
                 .shipmentAddresses(Arrays.asList(parties, parties))
-                .consolidationList(Arrays.asList(consolidationDetails, consolidationDetails))
+                .consolidationList(new HashSet<>(Arrays.asList(consolidationDetails, consolidationDetails)))
                 .carrierDetails(CarrierDetails.builder().build())
                 .direction(Constants.DIRECTION_EXP)
                 .masterBill("MBL123")
@@ -355,14 +355,14 @@ class ShipmentDaoTest extends CommonMocks {
         consolidationDetails.setId(1L);
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
-                .consolidationList(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build()))
+                .consolidationList(new HashSet<>(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build())))
                 .containsHazardous(false)
                 .transportMode(Constants.TRANSPORT_MODE_AIR)
                 .packingList(Arrays.asList(packing))
                 .routingsList(Arrays.asList(routings, routings))
-                .containersList(Arrays.asList(containers, containers))
+                .containersList(new HashSet<>(Arrays.asList(containers, containers)))
                 .shipmentAddresses(Arrays.asList(parties, parties))
-                .consolidationList(Arrays.asList(consolidationDetails, consolidationDetails))
+                .consolidationList(new HashSet<>(Arrays.asList(consolidationDetails, consolidationDetails)))
                 .carrierDetails(CarrierDetails.builder().build())
                 .direction(Constants.DIRECTION_EXP)
                 .masterBill("MBL123")
@@ -401,14 +401,14 @@ class ShipmentDaoTest extends CommonMocks {
         consolidationDetails.setId(1L);
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
-                .consolidationList(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build()))
+                .consolidationList(new HashSet<>(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build())))
                 .containsHazardous(false)
                 .transportMode(Constants.TRANSPORT_MODE_AIR)
                 .packingList(Arrays.asList(packing))
                 .routingsList(Arrays.asList(routings, routings))
-                .containersList(Arrays.asList(containers, containers))
+                .containersList(new HashSet<>(Arrays.asList(containers, containers)))
                 .shipmentAddresses(Arrays.asList(parties, parties))
-                .consolidationList(Arrays.asList(consolidationDetails, consolidationDetails))
+                .consolidationList(new HashSet<>(Arrays.asList(consolidationDetails, consolidationDetails)))
                 .carrierDetails(CarrierDetails.builder().build())
                 .direction(Constants.DIRECTION_EXP)
                 .masterBill("MBL123")
@@ -1285,14 +1285,14 @@ class ShipmentDaoTest extends CommonMocks {
         consolidationDetails.setId(1L);
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
-                .consolidationList(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build()))
+                .consolidationList(new HashSet<>(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build())))
                 .containsHazardous(false)
                 .transportMode(Constants.TRANSPORT_MODE_AIR)
                 .packingList(Arrays.asList(packing))
                 .routingsList(Arrays.asList(routings, routings))
-                .containersList(Arrays.asList(containers, containers))
+                .containersList(new HashSet<>(Arrays.asList(containers, containers)))
                 .shipmentAddresses(Arrays.asList(parties, parties))
-                .consolidationList(Arrays.asList(consolidationDetails, consolidationDetails))
+                .consolidationList(new HashSet<>(Arrays.asList(consolidationDetails, consolidationDetails)))
                 .carrierDetails(CarrierDetails.builder().build())
                 .direction(Constants.DIRECTION_IMP)
                 .houseBill("HBL123")
@@ -1325,14 +1325,14 @@ class ShipmentDaoTest extends CommonMocks {
         consolidationDetails.setId(1L);
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
-                .consolidationList(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build()))
+                .consolidationList(new HashSet<>(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build())))
                 .containsHazardous(false)
                 .transportMode(Constants.TRANSPORT_MODE_AIR)
                 .packingList(Arrays.asList(packing))
                 .routingsList(Arrays.asList(routings, routings))
-                .containersList(Arrays.asList(containers, containers))
+                .containersList(new HashSet<>(Arrays.asList(containers, containers)))
                 .shipmentAddresses(Arrays.asList(parties, parties))
-                .consolidationList(Arrays.asList(consolidationDetails, consolidationDetails))
+                .consolidationList(new HashSet<>(Arrays.asList(consolidationDetails, consolidationDetails)))
                 .carrierDetails(CarrierDetails.builder().build())
                 .direction(Constants.DIRECTION_IMP)
                 .houseBill("HBL123")
@@ -1371,14 +1371,14 @@ class ShipmentDaoTest extends CommonMocks {
         consolidationDetails.setId(2L);
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
-                .consolidationList(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build()))
+                .consolidationList(new HashSet<>(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build())))
                 .containsHazardous(false)
                 .transportMode(Constants.TRANSPORT_MODE_AIR)
                 .packingList(Arrays.asList(packing))
                 .routingsList(Arrays.asList(routings, routings))
-                .containersList(Arrays.asList(containers, containers))
+                .containersList(new HashSet<>(Arrays.asList(containers, containers)))
                 .shipmentAddresses(Arrays.asList(parties, parties))
-                .consolidationList(Arrays.asList(consolidationDetails, consolidationDetails))
+                .consolidationList(new HashSet<>(Arrays.asList(consolidationDetails, consolidationDetails)))
                 .carrierDetails(CarrierDetails.builder().build())
                 .direction(Constants.DIRECTION_IMP)
                 .houseBill("HBL123")
@@ -1403,8 +1403,8 @@ class ShipmentDaoTest extends CommonMocks {
     void saveAll() throws RunnerException {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
-        shipmentDetails.setContainersList(Arrays.asList(Containers.builder().build()));
-        shipmentDetails.setConsolidationList(Arrays.asList(ConsolidationDetails.builder().build()));
+        shipmentDetails.setContainersList(new HashSet<>(Collections.singletonList(Containers.builder().build())));
+        shipmentDetails.setConsolidationList(new HashSet<>(Collections.singletonList(ConsolidationDetails.builder().build())));
         shipmentDetails.setCarrierDetails(CarrierDetails.builder().origin("origin").destination("destination").originPort("originPort").destinationPort("destinationPort").build());
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
         shipmentDetails.setId(1L);
@@ -1535,16 +1535,16 @@ class ShipmentDaoTest extends CommonMocks {
         consolidationDetails.setId(1L);
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
-                .consolidationList(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build()))
+                .consolidationList(new HashSet<>(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build())))
                 .containsHazardous(false)
                 .transportMode(Constants.TRANSPORT_MODE_SEA)
                 .shipmentType(Constants.SHIPMENT_TYPE_LCL)
                 .jobType(Constants.SHIPMENT_TYPE_STD)
                 .packingList(Arrays.asList(packing))
                 .routingsList(Arrays.asList(routings, routings))
-                .containersList(Arrays.asList(containers, containers))
+                .containersList(new HashSet<>(Arrays.asList(containers, containers)))
                 .shipmentAddresses(Arrays.asList(parties, parties))
-                .consolidationList(Arrays.asList(consolidationDetails, consolidationDetails))
+                .consolidationList(new HashSet<>(Arrays.asList(consolidationDetails, consolidationDetails)))
                 .carrierDetails(CarrierDetails.builder().build())
                 .direction(Constants.DIRECTION_EXP)
                 .masterBill("MBL123")
@@ -1583,16 +1583,16 @@ class ShipmentDaoTest extends CommonMocks {
         consolidationDetails.setId(1L);
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
-                .consolidationList(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build()))
+                .consolidationList(new HashSet<>(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build())))
                 .containsHazardous(false)
                 .transportMode(Constants.TRANSPORT_MODE_SEA)
                 .shipmentType(Constants.CARGO_TYPE_FCL)
                 .jobType(Constants.SHIPMENT_TYPE_STD)
                 .packingList(Arrays.asList(packing))
                 .routingsList(Arrays.asList(routings, routings))
-                .containersList(Arrays.asList(containers, containers))
+                .containersList(new HashSet<>(Arrays.asList(containers, containers)))
                 .shipmentAddresses(Arrays.asList(parties, parties))
-                .consolidationList(Arrays.asList(consolidationDetails, consolidationDetails))
+                .consolidationList(new HashSet<>(Arrays.asList(consolidationDetails, consolidationDetails)))
                 .carrierDetails(CarrierDetails.builder().build())
                 .direction(Constants.DIRECTION_EXP)
                 .masterBill("MBL123")
@@ -1631,16 +1631,16 @@ class ShipmentDaoTest extends CommonMocks {
         consolidationDetails.setId(1L);
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
-                .consolidationList(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build()))
+                .consolidationList(new HashSet<>(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build())))
                 .containsHazardous(false)
                 .transportMode(Constants.TRANSPORT_MODE_SEA)
                 .shipmentType(Constants.SHIPMENT_TYPE_LCL)
                 .jobType(Constants.CONSOLIDATION_TYPE_AGT)
                 .packingList(Arrays.asList(packing))
                 .routingsList(Arrays.asList(routings, routings))
-                .containersList(Arrays.asList(containers, containers))
+                .containersList(new HashSet<>(Arrays.asList(containers, containers)))
                 .shipmentAddresses(Arrays.asList(parties, parties))
-                .consolidationList(Arrays.asList(consolidationDetails, consolidationDetails))
+                .consolidationList(new HashSet<>(Arrays.asList(consolidationDetails, consolidationDetails)))
                 .carrierDetails(CarrierDetails.builder().build())
                 .direction(Constants.DIRECTION_EXP)
                 .masterBill("MBL123")
@@ -1679,16 +1679,16 @@ class ShipmentDaoTest extends CommonMocks {
         consolidationDetails.setId(1L);
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
-                .consolidationList(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build()))
+                .consolidationList(new HashSet<>(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build())))
                 .containsHazardous(false)
                 .transportMode(Constants.TRANSPORT_MODE_SEA)
                 .shipmentType(Constants.SHIPMENT_TYPE_LCL)
                 .jobType(Constants.CONSOLIDATION_TYPE_CLD)
                 .packingList(Arrays.asList(packing))
                 .routingsList(Arrays.asList(routings, routings))
-                .containersList(Arrays.asList(containers, containers))
+                .containersList(new HashSet<>(Arrays.asList(containers, containers)))
                 .shipmentAddresses(Arrays.asList(parties, parties))
-                .consolidationList(Arrays.asList(consolidationDetails, consolidationDetails))
+                .consolidationList(new HashSet<>(Arrays.asList(consolidationDetails, consolidationDetails)))
                 .carrierDetails(CarrierDetails.builder().build())
                 .direction(Constants.DIRECTION_EXP)
                 .masterBill("MBL123")

@@ -35,7 +35,6 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocat
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
-import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
@@ -75,7 +74,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -2234,9 +2232,9 @@ public class CommonUtils {
     }
 
     private void processConsolidationDetails(ShipmentDetails shipmentDetails, Boolean isReceivingBranch, Boolean isTriangulationBranch, List<Long> otherIds) {
-        List<ConsolidationDetails> consolidationList = shipmentDetails.getConsolidationList();
+        Set<ConsolidationDetails> consolidationList = shipmentDetails.getConsolidationList();
         if (consolidationList != null && !consolidationList.isEmpty()) {
-            ConsolidationDetails consolidationDetails = consolidationList.get(0);
+            ConsolidationDetails consolidationDetails = consolidationList.iterator().next();
             if (Boolean.TRUE.equals(consolidationDetails.getInterBranchConsole())) {
                 if (Boolean.TRUE.equals(isReceivingBranch)) {
                     otherIds.add(Long.valueOf(consolidationDetails.getTenantId()));

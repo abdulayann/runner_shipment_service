@@ -309,7 +309,7 @@ public class EntityTransferService implements IEntityTransferService {
 
         ConsolidationDetails consol = consolidationDetails.get();
         Map<UUID, ShipmentDetails> guidVsShipmentMap = new HashMap<>();
-        if(!CommonUtils.listIsNullOrEmpty(consol.getShipmentsList()))
+        if(!CommonUtils.setIsNullOrEmpty(consol.getShipmentsList()))
             guidVsShipmentMap = consol.getShipmentsList().stream().collect(Collectors.toMap(ShipmentDetails::getGuid, Function.identity()));
 
         interBranchValidation(consol, sendConsolidationRequest);

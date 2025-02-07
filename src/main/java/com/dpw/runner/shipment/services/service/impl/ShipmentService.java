@@ -2937,9 +2937,9 @@ public class ShipmentService implements IShipmentService {
     }
 
     private void processReceivingBranchChanges(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
-        ConsolidationDetails consolidationDetails = shipmentDetails.getConsolidationList().get(0);
+        ConsolidationDetails consolidationDetails = shipmentDetails.getConsolidationList().iterator().next();
         // check whether it can be null or not
-        List<Long> shipmentIdsList = shipmentDetails.getConsolidationList().get(0).getShipmentsList().stream()
+        List<Long> shipmentIdsList = shipmentDetails.getConsolidationList().iterator().next().getShipmentsList().stream()
                 .map(ShipmentDetails::getId).toList();
         Map<Long, NetworkTransfer> shipmentNetworkTransferMap = networkTransferDao.getInterConsoleNTList(shipmentIdsList, SHIPMENT).stream()
                 .collect(Collectors.toMap(NetworkTransfer::getEntityId, transfer -> transfer));
