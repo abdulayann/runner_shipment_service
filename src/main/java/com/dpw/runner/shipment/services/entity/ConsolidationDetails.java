@@ -4,28 +4,21 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
-import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
-import com.dpw.runner.shipment.services.utils.MasterData;
-import com.dpw.runner.shipment.services.utils.OrganizationData;
-import com.dpw.runner.shipment.services.utils.TenantIdData;
-import com.dpw.runner.shipment.services.utils.UnlocationData;
+import com.dpw.runner.shipment.services.utils.*;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
-import javax.persistence.*;
-import javax.validation.constraints.Size;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 import org.hibernate.annotations.WhereJoinTable;
+
+import javax.persistence.*;
+import javax.validation.constraints.Size;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 @Entity
 @Table(name = "consolidation_details")
@@ -389,7 +382,7 @@ public class ConsolidationDetails extends MultiTenancy {
     @JsonIgnoreProperties(value = "consolidationList", allowSetters = true)
     @BatchSize(size = 50)
     @WhereJoinTable(clause = "is_attachment_done = 'True'")
-    private List<ShipmentDetails> shipmentsList;
+    private Set<ShipmentDetails> shipmentsList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
     @Where(clause = "entity_type = 'CONSOLIDATION_ADDRESSES'")

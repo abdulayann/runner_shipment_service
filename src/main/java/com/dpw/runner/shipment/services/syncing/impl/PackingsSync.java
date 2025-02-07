@@ -24,10 +24,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -53,7 +50,7 @@ public class PackingsSync implements IPackingsSync {
             return ResponseHelper.buildSuccessResponse();
 
         List<PackingRequestV2> packingRequestV2List = new ArrayList<>();
-        List<Containers> containers = new ArrayList<>();
+        Set<Containers> containers = new HashSet<>();
         if(packingList != null && packingList.size() > 0) {
             List<Long> containerIds = packingList.stream().map(Packing::getContainerId).filter(Objects::nonNull).toList();
             if(containerIds.size() > 0) {
@@ -61,11 +58,11 @@ public class PackingsSync implements IPackingsSync {
                 Pair<Specification<Containers>, Pageable> pair = DbAccessHelper.fetchData(listCommonRequest, Containers.class);
                 Page<Containers> containersPage = containerDao.findAll(pair.getLeft(), pair.getRight());
                 if(containersPage != null && !containersPage.isEmpty()) {
-                    containers = containersPage.getContent();
+                    containers = new HashSet<>(containersPage.getContent());
                 }
             }
 
-            packingRequestV2List = syncEntityConversionService.packingsV2ToV1(packingList, containers, null, null);
+            packingRequestV2List = syncEntityConversionService.packingsV2ToV1(packingList, new ArrayList<>(containers), null, null);
 
             String json = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(packingRequestV2List).module(SyncingConstants.PACKINGS).build());
 

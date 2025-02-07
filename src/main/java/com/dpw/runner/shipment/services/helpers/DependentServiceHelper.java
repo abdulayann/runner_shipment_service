@@ -17,10 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 
 import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 @Component
@@ -42,7 +39,7 @@ public class DependentServiceHelper {
         this.containerService = containerService;
     }
 
-    public void pushShipmentDataToDependentService(ShipmentDetails shipmentDetails, boolean isCreate, boolean isAutoSellRequired, List<Containers> oldContainers) {
+    public void pushShipmentDataToDependentService(ShipmentDetails shipmentDetails, boolean isCreate, boolean isAutoSellRequired, Set<Containers> oldContainers) {
         try {
             if(shipmentDetails.getTenantId() == null)
                 shipmentDetails.setTenantId(TenantContext.getCurrentTenant());
@@ -88,7 +85,7 @@ public class DependentServiceHelper {
             log.error(e.getMessage());
         }
         try {
-            containerService.pushContainersToDependentServices(shipmentDetails.getContainersList(), oldContainers);
+            containerService.pushContainersToDependentServices(new ArrayList<>(shipmentDetails.getContainersList()), new ArrayList<>(oldContainers));
         }
         catch (Exception e) {
             log.error("Error producing message due to " + e.getMessage());

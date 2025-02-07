@@ -107,7 +107,7 @@ public class ShipmentDao implements IShipmentDao {
                 shipmentDetails.setContainersList(oldEntity.get().getContainersList());
             }
             if(shipmentDetails.getConsolidationList() == null ||
-                    (!CollectionUtils.isEmpty(shipmentDetails.getConsolidationList()) && !CollectionUtils.isEmpty(oldEntity.get().getConsolidationList()) && (Objects.equals(oldEntity.get().getConsolidationList().get(0).getId(), shipmentDetails.getConsolidationList().get(0).getId())))) {
+                    (!CollectionUtils.isEmpty(shipmentDetails.getConsolidationList()) && !CollectionUtils.isEmpty(oldEntity.get().getConsolidationList()) && (Objects.equals(oldEntity.get().getConsolidationList().iterator().next().getId(), shipmentDetails.getConsolidationList().iterator().next().getId())))) {
                 shipmentDetails.setConsolidationList(oldEntity.get().getConsolidationList());
             }
             oldShipment = oldEntity.get();
@@ -115,9 +115,9 @@ public class ShipmentDao implements IShipmentDao {
         }
         else {
             if(shipmentDetails.getConsolidationList() == null)
-                shipmentDetails.setConsolidationList(new ArrayList<>());
+                shipmentDetails.setConsolidationList(new HashSet<>());
             if(shipmentDetails.getContainersList() == null)
-                shipmentDetails.setContainersList(new ArrayList<>());
+                shipmentDetails.setContainersList(new HashSet<>());
         }
         try {
             onSave(shipmentDetails, errors, oldShipment, fromV1Sync);
@@ -155,7 +155,7 @@ public class ShipmentDao implements IShipmentDao {
                 shipmentDetails.setContainersList(oldEntity.get().getContainersList());
             }
             if(shipmentDetails.getConsolidationList() == null ||
-                    (!CollectionUtils.isEmpty(shipmentDetails.getConsolidationList()) && !CollectionUtils.isEmpty(oldEntity.get().getConsolidationList()) && (Objects.equals(oldEntity.get().getConsolidationList().get(0).getId(), shipmentDetails.getConsolidationList().get(0).getId())))) {
+                    (!CollectionUtils.isEmpty(shipmentDetails.getConsolidationList()) && !CollectionUtils.isEmpty(oldEntity.get().getConsolidationList()) && (Objects.equals(oldEntity.get().getConsolidationList().iterator().next().getId(), shipmentDetails.getConsolidationList().iterator().next().getId())))) {
                 shipmentDetails.setConsolidationList(oldEntity.get().getConsolidationList());
             }
             oldShipment = oldEntity.get();

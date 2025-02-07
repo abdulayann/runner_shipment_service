@@ -153,7 +153,7 @@ public class MasterDataHelper {
             if(!Objects.isNull(shipmentDetailsResponse.getAdditionalDetails()))
                 tenantIdList.addAll(masterDataUtils.createInBulkTenantsRequest(shipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class, fieldNameKeyMap, AdditionalDetails.class.getSimpleName(), cacheMap));
             if(!Objects.isNull(shipmentDetailsResponse.getConsolidationList()) && !shipmentDetailsResponse.getConsolidationList().isEmpty()){
-                tenantIdList.addAll(masterDataUtils.createInBulkTenantsRequest(shipmentDetailsResponse.getConsolidationList().get(0), MultiTenancy.class, fieldNameKeyMap, MultiTenancy.class.getSimpleName(), cacheMap));
+                tenantIdList.addAll(masterDataUtils.createInBulkTenantsRequest(shipmentDetailsResponse.getConsolidationList().iterator().next(), MultiTenancy.class, fieldNameKeyMap, MultiTenancy.class.getSimpleName(), cacheMap));
             }
 
             Map<String, TenantModel> v1Data = masterDataUtils.fetchInTenantsList(tenantIdList);
@@ -414,7 +414,7 @@ public class MasterDataHelper {
 
     public void setContainersPacksAutoUpdateData (ShipmentDetailsResponse shipmentDetailsResponse, Map<Long, ContainerResponse> map) {
         List<PackingResponse> packings = shipmentDetailsResponse.getPackingList();
-        List<ContainerResponse> containers = shipmentDetailsResponse.getContainersList();
+        Set<ContainerResponse> containers = shipmentDetailsResponse.getContainersList();
         Map<Long, Map<String, String>> contMap = new HashMap<>();
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         boolean flag = shipmentDetailsResponse.getContainerAutoWeightVolumeUpdate() != null && shipmentDetailsResponse.getContainerAutoWeightVolumeUpdate().booleanValue()

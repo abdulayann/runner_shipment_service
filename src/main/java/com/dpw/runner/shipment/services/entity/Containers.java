@@ -21,6 +21,7 @@ import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 
 @Entity
 @Setter
@@ -301,7 +302,7 @@ public class Containers extends MultiTenancy {
             inverseJoinColumns = @JoinColumn(name = "shipment_id"))
     @JsonIgnoreProperties(value = "containersList", allowSetters = true)
     @BatchSize(size = 50)
-    private List<ShipmentDetails> shipmentsList;
+    private Set<ShipmentDetails> shipmentsList;
 
     @ManyToMany(fetch = FetchType.LAZY,
             mappedBy = "containersList")

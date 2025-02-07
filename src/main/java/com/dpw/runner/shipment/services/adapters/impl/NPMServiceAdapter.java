@@ -898,11 +898,11 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         return null;
     }
 
-    private List<ContainerResponse> createContainers(ListContractResponse.ContractResponse contractResponse)
+    private Set<ContainerResponse> createContainers(ListContractResponse.ContractResponse contractResponse)
     {
         if(contractResponse.getContract_usage() != null && contractResponse.getContract_usage().size() > 0) {
             List<ListContractResponse.ContractUsage> contractUsages = contractResponse.getContract_usage();
-            List<ContainerResponse> containerList = new ArrayList<>();
+            Set<ContainerResponse> containerList = new HashSet<>();
             for(var contractUsage: contractUsages)
             {
                 ContainerResponse containerResponse = new ContainerResponse();

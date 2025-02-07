@@ -127,9 +127,9 @@ public class ShipmentSync implements IShipmentSync {
         mapTruckDriverDetail(cs, sd);
         cs.setRoutings(syncEntityConversionService.routingsV2ToV1(sd.getRoutingsList()));
         mapEvents(cs, sd);
-        cs.setContainersList(syncEntityConversionService.containersV2ToV1(sd.getContainersList()));
+        cs.setContainersList(syncEntityConversionService.containersV2ToV1(new ArrayList<>(sd.getContainersList())));
         cs.setReferenceNumbers(convertToList(sd.getReferenceNumbersList(), ReferenceNumbersRequestV2.class));
-        cs.setPackings_(syncEntityConversionService.packingsV2ToV1(sd.getPackingList(), sd.getContainersList(), sd.getGuid(), null));
+        cs.setPackings_(syncEntityConversionService.packingsV2ToV1(sd.getPackingList(), new ArrayList<>(sd.getContainersList()), sd.getGuid(), null));
         cs.setShipmentAddresses(syncEntityConversionService.addressesV2ToV1(sd.getShipmentAddresses()));
         cs.setELDetails(convertToList(sd.getElDetailsList(), ElDetailsRequestV2.class));
         cs.setCustomerBookingNotesList(convertToList(customerBookingNotes, NoteRequestV2.class));
@@ -191,7 +191,7 @@ public class ShipmentSync implements IShipmentSync {
         HttpHeaders httpHeaders = v1AuthHelper.getHeadersForDataSyncFromKafka(sd.getCreatedBy(), sd.getTenantId(), null);
         String shipment = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(cs).module(SyncingConstants.SHIPMENT).build());
         if (!Objects.isNull(sd.getConsolidationList()) && !sd.getConsolidationList().isEmpty()) {
-            var console = consolidationDetailsDao.findById(sd.getConsolidationList().get(0).getId());
+            var console = consolidationDetailsDao.findById(sd.getConsolidationList().iterator().next().getId());
             if (console.isPresent()) {
                 CustomConsolidationRequest response = consolidationSync.createConsoleSyncReq(console.get());
                 String consolidationRequest = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(response).module(SyncingConstants.CONSOLIDATION).build());

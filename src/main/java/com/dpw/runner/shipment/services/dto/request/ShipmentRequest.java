@@ -3,23 +3,21 @@ package com.dpw.runner.shipment.services.dto.request;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerIdDltReq;
-import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
-import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
-import com.dpw.runner.shipment.services.entity.enums.FileStatus;
-import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
-import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
+import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.utils.TrimStringDeserializer;
 import com.dpw.runner.shipment.services.validator.annotations.ValidCargoDeliveryDate;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 @Data
 @Builder
@@ -45,7 +43,7 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private PartiesRequest consigner;
     private String consolRef;
     private Boolean containerAutoWeightVolumeUpdate;
-    private List<ContainerRequest> containersList;
+    private Set<ContainerRequest> containersList;
     private String direction;
     private Long documentationPartner;
     private List<ELDetailsRequest> elDetailsList;
@@ -112,7 +110,7 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private String volumetricWeightUnit;
     private BigDecimal weight;
     private String weightUnit;
-    private List<ConsolidationDetailsRequest> consolidationList;
+    private Set<ConsolidationDetailsRequest> consolidationList;
     private String jobStatus;
     public BigDecimal goodsValue;
     public String goodsValueCurrency;
