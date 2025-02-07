@@ -1051,7 +1051,7 @@ public class EntityTransferService implements IEntityTransferService {
     }
 
     public void createBulkExportEventForMultipleShipments(ConsolidationDetails consolidationDetails, Map<String, List<Integer>> shipmentGuidBranchMap) {
-        if (CollectionUtils.isEmpty(shipmentGuidBranchMap) || CommonUtils.listIsNullOrEmpty(consolidationDetails.getShipmentsList())) {
+        if (CollectionUtils.isEmpty(shipmentGuidBranchMap) || CommonUtils.setIsNullOrEmpty(consolidationDetails.getShipmentsList())) {
             return;
         }
 
