@@ -30,12 +30,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthCo
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.sync.SyncingContext;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
-import com.dpw.runner.shipment.services.commons.constants.EventConstants;
-import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
@@ -585,7 +580,8 @@ public class EntityTransferService implements IEntityTransferService {
         log.info("Import shipment request: {} with RequestId: {}", jsonHelper.convertToJson(entityTransferShipmentDetails), LoggerHelper.getRequestIdFromMDC());
 
         // Import shipment implementation
-        ShipmentDetailsResponse shipmentDetailsResponse =  this.createShipment(entityTransferShipmentDetails, copyDocumentsRequest, isCreateShip);
+        String department = commonUtils.getAutoPopulateDepartment(entityTransferShipmentDetails.getTransportMode(), entityTransferShipmentDetails.getDirection(), MdmConstants.SHIPMENT_MODULE);
+        ShipmentDetailsResponse shipmentDetailsResponse =  this.createShipment(entityTransferShipmentDetails, copyDocumentsRequest, isCreateShip, department);
         log.info("Shipment got created successfully with RequestId: {}" , LoggerHelper.getRequestIdFromMDC());
         String shipmentId = shipmentDetailsResponse.getShipmentId();
 
@@ -840,6 +836,7 @@ public class EntityTransferService implements IEntityTransferService {
     private ConsolidationDetailsResponse createOrUpdateConsolidation(EntityTransferConsolidationDetails entityTransferConsolidationDetails, List<ConsolidationDetails> oldConsolidationDetailsList, MutableBoolean isCreateConsole) throws RunnerException {
         ConsolidationDetailsRequest consolidationDetailsRequest =  modelMapper.map(entityTransferConsolidationDetails, ConsolidationDetailsRequest.class);
         ConsolidationDetailsResponse consolidationDetailsResponse;
+        consolidationDetailsRequest.setDepartment(commonUtils.getAutoPopulateDepartment(consolidationDetailsRequest.getTransportMode(), consolidationDetailsRequest.getShipmentType(), MdmConstants.CONSOLIDATION_MODULE));
         if(oldConsolidationDetailsList == null || oldConsolidationDetailsList.isEmpty()) {
             consolidationDetailsRequest.setGuid(null);
             consolidationDetailsRequest.setShipmentsList(null);
@@ -868,6 +865,7 @@ public class EntityTransferService implements IEntityTransferService {
 
     private void createOrUpdateShipment(EntityTransferConsolidationDetails entityTransferConsolidationDetails, Map<UUID, UUID> newVsOldPackingGuid, Map<UUID, Long> oldVsNewShipIds, List<UUID> shipmentGuids, List<Long> shipmentIds, List<Long> interBranchShipment, CopyDocumentsRequest copyDocumentsRequest, Map<Long, Boolean> isCreateShipMap) throws RunnerException {
         if(!CommonUtils.listIsNullOrEmpty(entityTransferConsolidationDetails.getShipmentsList())) {
+            String department = commonUtils.getAutoPopulateDepartment(entityTransferConsolidationDetails.getShipmentsList().get(0).getTransportMode(), entityTransferConsolidationDetails.getShipmentsList().get(0).getDirection(), MdmConstants.SHIPMENT_MODULE);
             for (var ship : entityTransferConsolidationDetails.getShipmentsList()) {
                 // Container will be created with consolidation
                 ship.setContainersList(List.of());
@@ -889,7 +887,7 @@ public class EntityTransferService implements IEntityTransferService {
                 MutableBoolean isCreateShip = new MutableBoolean(false);
 
                 // Create shipment
-                ShipmentDetailsResponse shipmentDetailsResponse = createShipment(ship, copyDocumentsRequest, isCreateShip);
+                ShipmentDetailsResponse shipmentDetailsResponse = createShipment(ship, copyDocumentsRequest, isCreateShip, department);
                 isCreateShipMap.put(shipmentDetailsResponse.getId(), isCreateShip.booleanValue());
 
                 oldVsNewShipIds.put(ship.getGuid(), shipmentDetailsResponse.getId());
@@ -927,10 +925,10 @@ public class EntityTransferService implements IEntityTransferService {
     }
 
 
-    private ShipmentDetailsResponse createShipment(EntityTransferShipmentDetails entityTransferShipmentDetails, CopyDocumentsRequest copyDocumentsRequest, MutableBoolean isCreateShip) throws RunnerException {
+    private ShipmentDetailsResponse createShipment(EntityTransferShipmentDetails entityTransferShipmentDetails, CopyDocumentsRequest copyDocumentsRequest, MutableBoolean isCreateShip, String department) throws RunnerException {
         ShipmentRequest shipmentRequest = modelMapper.map(entityTransferShipmentDetails, ShipmentRequest.class);
         var tenantId = UserContext.getUser().getTenantId();
-
+        shipmentRequest.setDepartment(department);
         // Set Inter Branch TenantId in TenantContext for inter branch Shipment
         if(Objects.equals(shipmentRequest.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && !Objects.equals(shipmentRequest.getJobType(), Constants.SHIPMENT_TYPE_DRT) && !Objects.equals(entityTransferShipmentDetails.getSendToBranch(), tenantId)){
             commonUtils.setInterBranchContextForHub();
