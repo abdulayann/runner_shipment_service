@@ -424,7 +424,7 @@ public class EntityTransferService implements IEntityTransferService {
                     else if (sendingToTriangulationPartner)
                         entityTransferShipment.setDirection(Constants.DIRECTION_CTS);
 
-                    if(shipmentGuidSendToBranch != null && shipmentGuidSendToBranch.containsKey(guid.toString()))
+                    if(shipmentGuidSendToBranch != null && shipmentGuidSendToBranch.containsKey(guid.toString()) && !CommonUtils.listIsNullOrEmpty(shipmentGuidSendToBranch.get(guid.toString())))
                         entityTransferShipment.setSendToBranch(shipmentGuidSendToBranch.get(guid.toString()).get(index));
                     else
                         entityTransferShipment.setSendToBranch(tenant);
