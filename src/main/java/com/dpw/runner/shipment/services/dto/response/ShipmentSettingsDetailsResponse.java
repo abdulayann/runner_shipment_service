@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dto.section.response.SectionVisibilityResponse;
 import com.dpw.runner.shipment.services.entity.enums.GenerationType;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -180,7 +181,7 @@ public class ShipmentSettingsDetailsResponse implements IRunnerResponse {
     private Boolean isAwbRevampEnabled;
     private String fcrDocument;
     private Boolean isRunnerV3Enabled;
-
     private Boolean isRAEnabled;
     private Boolean isKCEnabled;
+    private List<SectionVisibilityResponse> sectionVisibilityResponses;
 }
