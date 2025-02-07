@@ -575,7 +575,7 @@ public class EventDao implements IEventDao {
                 event.setConsolidationId(event.getEntityId());
             }
 
-            updateUserFieldsInEvent(event);
+            updateUserFieldsInEvent(event, false);
         }
     }
 
