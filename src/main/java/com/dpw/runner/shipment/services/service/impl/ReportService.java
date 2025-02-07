@@ -23,6 +23,7 @@ import com.dpw.runner.shipment.services.ReportingService.Reports.PreAlertReport;
 import com.dpw.runner.shipment.services.ReportingService.Reports.ShipmentCANReport;
 import com.dpw.runner.shipment.services.ReportingService.Reports.ShipmentTagsForExteranlServices;
 import com.dpw.runner.shipment.services.ReportingService.Reports.TransportOrderReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.SeawayBillReport;
 import com.dpw.runner.shipment.services.ReportingService.ReportsFactory;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -446,6 +447,9 @@ public class ReportService implements IReportService {
             createEvent(reportRequest, EventConstants.HAWB);
         } else if (report instanceof BookingConfirmationReport vBookingConfirmationReport) {
             dataRetrived = vBookingConfirmationReport.getData(Long.parseLong(reportRequest.getReportId()));
+        } else if (report instanceof SeawayBillReport vSeawayBillReport) {
+            dataRetrived = vSeawayBillReport.getData(Long.parseLong(reportRequest.getReportId()));
+            createEvent(reportRequest, EventConstants.FHBL);
         } else {
             dataRetrived = report.getData(Long.parseLong(reportRequest.getReportId()));
         }
