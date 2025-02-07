@@ -2,7 +2,7 @@ package com.dpw.runner.shipment.services.service.interfaces;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.dto.request.ListCousinBranchesForReassignRequest;
+import com.dpw.runner.shipment.services.dto.request.ListCousinBranchesForEtRequest;
 import org.springframework.http.ResponseEntity;
 
 public interface IMasterDataService extends ICommonService{
@@ -123,5 +123,5 @@ public interface IMasterDataService extends ICommonService{
     ResponseEntity<IRunnerResponse> listOrgs(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> fetchMultipleMasterData(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> listBranchesByDefaultOrgAndAddress(CommonRequestModel commonRequestModel);
-    ResponseEntity<IRunnerResponse> listCousinBranchForNTEReassign(ListCousinBranchesForReassignRequest request);
+    ResponseEntity<IRunnerResponse> listCousinBranchForEt(ListCousinBranchesForEtRequest request);
 }

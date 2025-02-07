@@ -8,7 +8,6 @@ import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferDao;
 import com.dpw.runner.shipment.services.entity.NetworkTransfer;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
-import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.INetworkTransferRepository;
@@ -106,6 +105,11 @@ public class NetworkTransferDao implements INetworkTransferDao {
     }
 
     @Override
+    public void deleteByIdsAndLog(List<Long> networkTransferEntityIds) {
+        networkTransferRepository.deleteAllById(networkTransferEntityIds);
+    }
+
+    @Override
     public Optional<NetworkTransfer> findByTenantAndEntity(Integer tenantId, Long entityId, String entityType) {
         return networkTransferRepository.findByTenantAndEntity(tenantId, entityId, entityType);
     }
@@ -120,6 +124,11 @@ public class NetworkTransferDao implements INetworkTransferDao {
         return networkTransferRepository.findByEntityAndTenantList(entityId, entityType, tenantIds);
     }
 
+    @Override
+    public List<NetworkTransfer> getInterConsoleNTList(List<Long> entityIdList, String entityType) {
+        return networkTransferRepository.getInterConsoleNTList(entityIdList, entityType);
+    }
+
     public List<NetworkTransfer> saveAll(List<NetworkTransfer> networkTransferEntityList) {
         for(var networkTransferEntity : networkTransferEntityList){
             Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(networkTransferEntity), Constants.NETWORK_TRANSFER_ENTITY, LifecycleHooks.ON_CREATE, false);
@@ -131,5 +140,9 @@ public class NetworkTransferDao implements INetworkTransferDao {
 
     public void updateStatusAndCreatedEntityId(Long id, String status, Long createdEntityId) {
         networkTransferRepository.updateStatusAndCreatedEntityId(id, status, createdEntityId);
+    }
+    @Override
+    public List<NetworkTransfer> findByEntityIdAndEntityTypeAndIsInterBranchEntity(List<Long> entityIds, String entityType, Boolean isInterBranchEntity, List<String> status) {
+        return networkTransferRepository.findByEntityIdAndEntityTypeAndIsInterBranchEntity(entityIds, entityType, isInterBranchEntity, status);
     }
 }

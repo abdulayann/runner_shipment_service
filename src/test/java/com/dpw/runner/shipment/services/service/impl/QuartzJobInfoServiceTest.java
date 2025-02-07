@@ -289,4 +289,33 @@ class QuartzJobInfoServiceTest {
 
         verify(quartzJobService, times(1)).isJobWithNamePresent(anyString());
     }
+
+    @Test
+    void testGetQuartzJobTime_DuplicateConfigurations2() {
+        FileTransferConfigurations config1 = new FileTransferConfigurations();
+        config1.setIsActive(1);
+        config1.setTransportMode("AIR");
+        config1.setCriteriaField(FileTransferCriteriaFields.ETA.getId());
+        config1.setTriggerType(PrePostTrigger.PRE.getId());
+        config1.setIntervalTime(1);
+        config1.setIntervalTimeUnit(TimeUnit.HOUR.getId());
+
+        FileTransferConfigurations config2 = new FileTransferConfigurations();
+        config2.setIsActive(1);
+        config2.setTransportMode("AIR");
+        config2.setCriteriaField(FileTransferCriteriaFields.ATD.getId());
+        config2.setTriggerType(PrePostTrigger.PRE.getId());
+        config2.setIntervalTime(3);
+        config2.setIntervalTimeUnit(TimeUnit.DAY.getId());
+
+        fileTransferConfigurations.add(config1);
+        fileTransferConfigurations.add(config2);
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(tenantSettingsResponse);
+
+        LocalDateTime result = quartzJobInfoService.getQuartzJobTime(eta, etd, ata, atd, "AIR");
+
+        assertNotNull(result);
+        assertEquals(atd.minusDays(3), result);
+        verify(commonUtils).getCurrentTenantSettings();
+    }
 }
