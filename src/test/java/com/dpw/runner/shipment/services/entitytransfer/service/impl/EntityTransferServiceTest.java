@@ -1,27 +1,5 @@
 package com.dpw.runner.shipment.services.entitytransfer.service.impl;
 
-import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.CONSOLIDATION;
-import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.SHIPMENT;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyBoolean;
-import static org.mockito.Mockito.anyInt;
-import static org.mockito.Mockito.anyList;
-import static org.mockito.Mockito.anyLong;
-import static org.mockito.Mockito.anyMap;
-import static org.mockito.Mockito.anySet;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.never;
-
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
@@ -68,21 +46,6 @@ import com.dpw.runner.shipment.services.syncing.impl.ConsolidationSync;
 import com.dpw.runner.shipment.services.syncing.impl.ShipmentSync;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.Collections;
-import java.util.concurrent.ExecutorService;
-
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -103,6 +66,7 @@ import org.springframework.http.ResponseEntity;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
 
 import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.CONSOLIDATION;
 import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.SHIPMENT;
@@ -2850,7 +2814,7 @@ class EntityTransferServiceTest extends CommonMocks {
     @Test
     void testCreateBulkExportEventForMultipleShipments1() {
         ConsolidationDetails consolidationDetails1 = new ConsolidationDetails();
-        consolidationDetails1.setShipmentsList(Collections.emptyList());
+        consolidationDetails1.setShipmentsList(Collections.emptySet());
 
         entityTransferService.createBulkExportEventForMultipleShipments(consolidationDetails1, new HashMap<>());
 
@@ -2870,7 +2834,7 @@ class EntityTransferServiceTest extends CommonMocks {
         shipment2.setGuid(UUID.randomUUID());
         shipment2.setTenantId(102);
 
-        consolidationDetails1.setShipmentsList(List.of(shipment1, shipment2));
+        consolidationDetails1.setShipmentsList(Set.of(shipment1, shipment2));
 
         Map<String, List<Integer>> shipmentGuidBranchMap = Map.of(
                 shipment1.getGuid().toString(), List.of(101),
@@ -2890,7 +2854,7 @@ class EntityTransferServiceTest extends CommonMocks {
         shipment.setId(1L);
         shipment.setGuid(UUID.randomUUID());
         shipment.setTenantId(101);
-        consolidationDetails1.setShipmentsList(List.of(shipment));
+        consolidationDetails1.setShipmentsList(Set.of(shipment));
 
         Map<String, List<Integer>> shipmentGuidBranchMap = Map.of(
                 shipment.getGuid().toString(), List.of(101)
