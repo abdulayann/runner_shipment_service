@@ -28,7 +28,6 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSetti
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
@@ -118,7 +117,6 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
-import org.slf4j.MDC;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
@@ -2752,11 +2750,11 @@ class EntityTransferServiceTest extends CommonMocks {
         when(v1ServiceUtil.getTenantDetails(tenantIds)).thenReturn(tenantMap);
         when(jsonHelper.convertValue(tenantMap.get(101), V1TenantResponse.class)).thenReturn(tenantResponse1);
         when(jsonHelper.convertValue(tenantMap.get(102), V1TenantResponse.class)).thenReturn(tenantResponse2);
-        doNothing().when(eventService).saveEvent(any());
+        doNothing().when(eventService).saveAllEvent(anyList());
 
         entityTransferService.createBulkExportEvent(1L, "EVENT_CODE", "SHIPMENT", tenantIds);
 
-        verify(eventService, times(2)).saveEvent(any());
+        verify(eventService, times(1)).saveAllEvent(anyList());
     }
 
     @Test
@@ -2766,10 +2764,11 @@ class EntityTransferServiceTest extends CommonMocks {
 
         when(v1ServiceUtil.getTenantDetails(tenantIds)).thenReturn(tenantMap);
         when(jsonHelper.convertValue(tenantMap.get(101), V1TenantResponse.class)).thenReturn(null);
+        doNothing().when(eventService).saveAllEvent(anyList());
 
         entityTransferService.createBulkExportEvent(1L, "EVENT_CODE", "SHIPMENT", tenantIds);
 
-        verify(eventService, times(1)).saveEvent(any());
+        verify(eventService, times(1)).saveAllEvent(anyList());
     }
 
     @Test
@@ -2781,11 +2780,11 @@ class EntityTransferServiceTest extends CommonMocks {
 
         when(v1ServiceUtil.getTenantDetails(tenantIds)).thenReturn(tenantMap);
         when(jsonHelper.convertValue(tenantMap.get(101), V1TenantResponse.class)).thenReturn(tenantResponse);
-        doThrow(new RuntimeException("Save Event Failed")).when(eventService).saveEvent(any());
+        doThrow(new RuntimeException("Save Event Failed")).when(eventService).saveAllEvent(anyList());
 
         assertThrows(RuntimeException.class, () -> entityTransferService.createBulkExportEvent(1L, "EVENT_CODE", "SHIPMENT", tenantIds));
 
-        verify(eventService, times(1)).saveEvent(any());
+        verify(eventService, times(1)).saveAllEvent(anyList());
     }
 
     @Test
@@ -2817,11 +2816,11 @@ class EntityTransferServiceTest extends CommonMocks {
                 shipment1.getGuid().toString(), List.of(101),
                 shipment2.getGuid().toString(), List.of(102)
         );
-        doNothing().when(eventService).saveEvent(any());
+        doNothing().when(eventService).saveAllEvent(anyList());
 
         entityTransferService.createBulkExportEventForMultipleShipments(consolidationDetails1, shipmentGuidBranchMap);
 
-        verify(eventService, times(2)).saveEvent(any());
+        verify(eventService, times(2)).saveAllEvent(anyList());
     }
 
     @Test
@@ -2836,11 +2835,11 @@ class EntityTransferServiceTest extends CommonMocks {
         Map<String, List<Integer>> shipmentGuidBranchMap = Map.of(
                 shipment.getGuid().toString(), List.of(101)
         );
-        doNothing().when(eventService).saveEvent(any());
+        doNothing().when(eventService).saveAllEvent(anyList());
 
         entityTransferService.createBulkExportEventForMultipleShipments(consolidationDetails1, shipmentGuidBranchMap);
 
-        verify(eventService, times(1)).saveEvent(any());
+        verify(eventService, times(1)).saveAllEvent(anyList());
     }
 
     @Test
@@ -2863,11 +2862,11 @@ class EntityTransferServiceTest extends CommonMocks {
         when(v1ServiceUtil.getTenantDetails(tenantIds)).thenReturn(tenantDetailsMap);
         when(jsonHelper.convertValue(tenantDetailsMap.get(1), V1TenantResponse.class)).thenReturn(tenantResponse1);
         when(jsonHelper.convertValue(tenantDetailsMap.get(2), V1TenantResponse.class)).thenReturn(tenantResponse2);
-        doNothing().when(eventService).saveEvent(any());
+        doNothing().when(eventService).saveAllEvent(anyList());
 
         entityTransferService.createAutoEvent(entityId, eventCode, entityType, tenantIds);
 
-        verify(eventService, times(2)).saveEvent(any());
+        verify(eventService, times(1)).saveAllEvent(anyList());
     }
 
     @Test
@@ -2876,7 +2875,7 @@ class EntityTransferServiceTest extends CommonMocks {
 
         entityTransferService.createAutoEvent(null, "EVENT_CODE", "SHIPMENT", tenantIds);
 
-        verify(eventService, never()).saveEvent(any());
+        verify(eventService, never()).saveAllEvent(anyList());
     }
 
     @Test
@@ -2886,7 +2885,7 @@ class EntityTransferServiceTest extends CommonMocks {
 
         entityTransferService.createAutoEvent(entityId, "EVENT_CODE", "SHIPMENT", tenantIds);
 
-        verify(eventService, never()).saveEvent(any());
+        verify(eventService, never()).saveAllEvent(anyList());
     }
 
     @Test
@@ -2897,40 +2896,12 @@ class EntityTransferServiceTest extends CommonMocks {
 
         when(v1ServiceUtil.getTenantDetails(tenantIds)).thenReturn(tenantDetailsMap);
         when(jsonHelper.convertValue(any(), eq(V1TenantResponse.class))).thenReturn(null);
-        doNothing().when(eventService).saveEvent(any());
+        doNothing().when(eventService).saveAllEvent(anyList());
 
         entityTransferService.createAutoEvent(entityId, "EVENT_CODE", "SHIPMENT", tenantIds);
 
-        verify(eventService, times(2)).saveEvent(any());
+        verify(eventService, times(1)).saveAllEvent(anyList());
     }
-
-    @Test
-    void testWithMdc_ShouldPreserveAndRestoreContext() {
-        MDC.put("traceId", "12345");
-        RequestAuthContext.setAuthToken("test-token");
-        TenantContext.setCurrentTenant(1001);
-        UserContext.setUser(UsersDto.builder().build());
-
-        Map<String, String> initialMdc = MDC.getCopyOfContextMap();
-        String initialToken = RequestAuthContext.getAuthToken();
-        Integer initialTenantId = TenantContext.getCurrentTenant();
-        UsersDto initialUser = UserContext.getUser();
-
-        Runnable wrappedRunnable = entityTransferService.withMdc(() -> {
-            assertEquals(initialMdc, MDC.getCopyOfContextMap(), "MDC should be preserved inside runnable");
-            assertEquals(initialToken, RequestAuthContext.getAuthToken(), "Auth Token should be preserved");
-            assertEquals(initialTenantId, TenantContext.getCurrentTenant(), "Tenant ID should be preserved");
-            assertEquals(initialUser, UserContext.getUser(), "User should be preserved");
-        });
-
-        wrappedRunnable.run();
-
-        assertNull(MDC.getCopyOfContextMap(), "MDC should be cleared after execution");
-        assertNull(RequestAuthContext.getAuthToken(), "Auth Token should be cleared");
-        assertNull(UserContext.getUser(), "User should be cleared");
-    }
-
-
 
     private Runnable mockRunnable() {
         return null;

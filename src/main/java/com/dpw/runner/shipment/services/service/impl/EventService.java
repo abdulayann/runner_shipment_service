@@ -362,6 +362,10 @@ public class EventService implements IEventService {
         return jsonHelper.convertValue(request, Events.class);
     }
 
+    public List<Events> convertRequestListToEntityList(List<EventsRequest> requests) {
+        return jsonHelper.convertValueToList(requests, Events.class);
+    }
+
     private EventsResponse convertEntityToDto(Events event) {
         return jsonHelper.convertValue(event, EventsResponse.class);
     }
@@ -1353,6 +1357,23 @@ public class EventService implements IEventService {
 
         eventDao.save(entity);
         // auto generate runner events | will remain as it is inside shipment and consolidation
+    }
+
+    @Override
+    @Transactional
+    public void saveAllEvent(List<EventsRequest> eventsRequests) {
+        if (CommonUtils.listIsNullOrEmpty(eventsRequests))
+            return;
+        List<Events> entities = convertRequestListToEntityList(eventsRequests);
+
+        commonUtils.updateEventWithMasterData(entities);
+        eventDao.updateAllEventDetails(entities);
+
+        for (Events event: entities) {
+            handleDuplicationForExistingEvents(event);
+        }
+
+        eventDao.saveAll(entities);
     }
 
     public Specification<Events> buildDuplicateEventSpecification(Events event) {

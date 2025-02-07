@@ -535,6 +535,52 @@ public class EventDao implements IEventDao {
         updateUserFieldsInEvent(event);
     }
 
+    @Override
+    public void updateAllEventDetails(List<Events> events) {
+        log.info("event-entity : populating consolidationId, shipmentNumber if available for multiple events...");
+
+        Set<Long> shipmentIds = events.stream()
+                .filter(event -> Constants.SHIPMENT.equals(event.getEntityType()))
+                .map(Events::getEntityId)
+                .collect(Collectors.toSet());
+
+        Map<Long, ShipmentDetails> shipmentDetailsMap = shipmentDao.getShipmentNumberFromId(shipmentIds.stream().toList()).stream()
+                .collect(Collectors.toMap(ShipmentDetails::getId, Function.identity()));
+
+        Map<Long, Long> shipmentToConsolidationMap = consoleShipmentMappingDao.findByShipmentIds(shipmentIds).stream()
+                .collect(Collectors.toMap(
+                        ConsoleShipmentMapping::getShipmentId,
+                        ConsoleShipmentMapping::getConsolidationId,
+                        (existing, replacement) -> existing  // Keep first occurrence
+                ));
+
+        for (Events event : events) {
+            if (Constants.SHIPMENT.equals(event.getEntityType())) {
+                ShipmentDetails shipmentDetails = shipmentDetailsMap.get(event.getEntityId());
+
+                if (shipmentDetails != null) {
+                    event.setShipmentNumber(shipmentDetails.getShipmentId());
+                    event.setEntityId(shipmentDetails.getId());
+
+                    if (event.getDirection() == null) {
+                        event.setDirection(shipmentDetails.getDirection());
+                    }
+
+                    Long consolidationId = shipmentToConsolidationMap.get(event.getEntityId());
+                    if (consolidationId != null &&
+                            shouldSendEventFromShipmentToConsolidation(event, shipmentDetails.getTransportMode())) {
+                        event.setConsolidationId(consolidationId);
+                    }
+                }
+            } else if (Constants.CONSOLIDATION.equals(event.getEntityType())) {
+                event.setConsolidationId(event.getEntityId());
+            }
+
+            updateUserFieldsInEvent(event);
+        }
+    }
+
+
     /**
      * Determines if an event should be sent from shipment to consolidation based on the transport mode
      * and the event code associated with the shipment event.
