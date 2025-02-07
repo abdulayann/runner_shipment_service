@@ -540,7 +540,7 @@ public class EntityTransferService implements IEntityTransferService {
                     for (var set : shipmentGuidSendToBranch.entrySet()) {
                         var list = set.getValue();
 
-                        if (!Objects.equals(consoleReceivingBranch, list.get(i)) &&
+                        if (!CommonUtils.listIsNullOrEmpty(list) && !Objects.equals(consoleReceivingBranch, list.get(i)) &&
                                 (!Boolean.TRUE.equals(tenantSettings.getIsColoadingMAWBStationEnabled()) || !coloadInfoMap.containsKey(consoleReceivingBranch) || !coloadInfoMap.get(consoleReceivingBranch).contains(list.get(i))) ) {
                             errorTenants.add(consoleReceivingBranch);
                         }
