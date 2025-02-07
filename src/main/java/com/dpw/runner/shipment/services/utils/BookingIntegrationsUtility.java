@@ -993,7 +993,8 @@ public class BookingIntegrationsUtility {
                         }
                     }
                 }
-                if (!updatedExistingEvent && (EventConstants.DNMU.equals(payloadData.getEventCode()) || EventConstants.FNMU.equals(payloadData.getEventCode()))) {
+                if (!updatedExistingEvent && (EventConstants.DNMU.equals(payloadData.getEventCode()) || EventConstants.FNMU.equals(payloadData.getEventCode())
+                    || (EventConstants.BOCO.equals(payloadData.getEventCode()) && Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP)))) {
                     log.debug("No existing events found for shipment with entity ID: {}. Checking conditions for auto-generation.", payloadData.getEntityId());
 
                     if (shipmentDetails.getId() == null) {

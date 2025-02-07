@@ -46,4 +46,6 @@ public interface IEventDao {
     void updateFieldsForShipmentGeneratedEvents(List<Events> eventsList, ShipmentDetails shipmentDetails);
 
     List<Events> updateEventsList(List<Events> shipmentEvents);
+
+    void updateAllEventDetails(List<Events> events);
 }
