@@ -11,38 +11,21 @@ import com.dpw.runner.shipment.services.utils.OrganizationData;
 import com.dpw.runner.shipment.services.utils.TenantIdData;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
+import lombok.*;
+import lombok.experimental.Accessors;
+import org.hibernate.annotations.*;
+
+import javax.persistence.CascadeType;
+import javax.persistence.Entity;
+import javax.persistence.OrderBy;
+import javax.persistence.Table;
+import javax.persistence.*;
+import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
-import javax.persistence.CascadeType;
-import javax.persistence.CollectionTable;
-import javax.persistence.Column;
-import javax.persistence.ElementCollection;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.FetchType;
-import javax.persistence.JoinColumn;
-import javax.persistence.JoinTable;
-import javax.persistence.ManyToMany;
-import javax.persistence.OneToMany;
-import javax.persistence.OneToOne;
-import javax.persistence.OrderBy;
-import javax.persistence.Table;
-import javax.validation.constraints.Size;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.ToString;
-import lombok.experimental.Accessors;
-import org.hibernate.annotations.BatchSize;
-import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.TypeDef;
-import org.hibernate.annotations.Where;
-import org.hibernate.annotations.WhereJoinTable;
 
 
 @Entity
@@ -88,7 +71,7 @@ public class ShipmentDetails extends MultiTenancy {
             inverseJoinColumns = @JoinColumn(name = "container_id"))
     @JsonIgnoreProperties(value = "shipmentsList", allowSetters = true)
     @BatchSize(size = 50)
-    private List<Containers> containersList;
+    private Set<Containers> containersList;
 
     @Column(name = "status")
     private Integer status;
@@ -401,7 +384,7 @@ public class ShipmentDetails extends MultiTenancy {
     @JsonIgnoreProperties(value = {"shipmentsList", "containersList"}, allowSetters = true)
     @WhereJoinTable(clause = "is_attachment_done = 'True'")
     @BatchSize(size = 50)
-    private List<ConsolidationDetails> consolidationList;
+    private Set<ConsolidationDetails> consolidationList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
     @Where(clause = "entity_type = 'SHIPMENT_ADDRESSES'")

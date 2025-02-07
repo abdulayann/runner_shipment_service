@@ -415,7 +415,7 @@ public class BookingIntegrationsUtility {
     private List<LoadRequest> createLoad(final ShipmentDetails shipmentDetails) {
         List<LoadRequest> loadRequests = new ArrayList<>();
         if (Objects.equals(shipmentDetails.getShipmentType(), Constants.CARGO_TYPE_FCL)) {
-            List<Containers> containers = shipmentDetails.getContainersList();
+            Set<Containers> containers = shipmentDetails.getContainersList();
             if(Objects.isNull(containers) || containers.isEmpty())
                 return loadRequests;
             containers.forEach(container -> {

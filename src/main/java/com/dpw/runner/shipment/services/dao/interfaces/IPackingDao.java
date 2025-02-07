@@ -7,10 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 public interface IPackingDao {
     Packing save(Packing packing);
@@ -46,7 +43,7 @@ public interface IPackingDao {
 
     void deleteEntityFromContainer(Long id);
 
-    List<Packing> updateEntityFromShipment(List<Packing> packingList, Long shipmentId, List<Packing> oldEntityList, List<Packing> oldConsoleEntityList, List<Containers> containers, Map<UUID, String> map) throws RunnerException;
+    List<Packing> updateEntityFromShipment(List<Packing> packingList, Long shipmentId, List<Packing> oldEntityList, List<Packing> oldConsoleEntityList, Set<Containers> containers, Map<UUID, String> map) throws RunnerException;
 
     List<Packing> findByConsolidationId(Long consolidationId);
     List<Packing> findByContainerIdIn(List<Long> containerIds);

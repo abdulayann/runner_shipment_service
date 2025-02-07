@@ -488,6 +488,10 @@ public class CommonUtils {
         return list == null || list.isEmpty();
     }
 
+    public static <T> boolean setIsNullOrEmpty(Set<T> set) {
+        return set == null || set.isEmpty();
+    }
+
     public static Integer getIntFromString(String s) {
         if(IsStringNullOrEmpty(s))
             return null;

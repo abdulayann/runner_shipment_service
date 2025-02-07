@@ -1635,7 +1635,7 @@ public class ContainerService implements IContainerService {
             EventMessage eventMessage = new EventMessage();
             eventMessage.setMessageType(ContainerConstants.CONTAINER_UPDATE_MSG);
             List<ContainerPayloadDetails> payloadDetails = new ArrayList<>();
-            String bookingRef = getRefNum(containersList.get(0));
+            String bookingRef = getRefNum(containersList.iterator().next());
             log.info("Booking reference obtained: {}", bookingRef);
             for (Containers containers : containersList) {
                 if(!StringUtility.isEmpty(containers.getContainerNumber())) {

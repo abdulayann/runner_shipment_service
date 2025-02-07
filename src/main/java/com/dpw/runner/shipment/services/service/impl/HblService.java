@@ -200,7 +200,7 @@ public class HblService implements IHblService {
             return ResponseHelper.buildSuccessResponse(partialFetchUtils.fetchPartialListData(convertEntityToDto(hbl.get()),request.getIncludeColumns()));
     }
 
-    public Hbl checkAllContainerAssigned(ShipmentDetails shipment, List<Containers> containersList, List<Packing> packings) {
+    public Hbl checkAllContainerAssigned(ShipmentDetails shipment, Set<Containers> containersList, List<Packing> packings) {
         var shipmentId = shipment.getId();
         boolean allContainerAssigned = true;
         Hbl hbl = null;
@@ -303,7 +303,7 @@ public class HblService implements IHblService {
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
             if(Boolean.TRUE.equals(shipmentSettingsDetails.getIsAutomaticTransferEnabled())){
                 Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(request.getShipmentId());
-                if(shipmentDetails.isPresent() && !CommonUtils.listIsNullOrEmpty(shipmentDetails.get().getConsolidationList())){
+                if(shipmentDetails.isPresent() && !CommonUtils.setIsNullOrEmpty(shipmentDetails.get().getConsolidationList())){
                     for(ConsolidationDetails consolidationDetails: shipmentDetails.get().getConsolidationList()){
                         if (consolidationDetails!=null  &&
                                 (Objects.equals(Constants.TRANSPORT_MODE_SEA, consolidationDetails.getTransportMode()) &&
@@ -628,7 +628,7 @@ public class HblService implements IHblService {
         }
         var containers = shipment.getContainersList();
         if(Objects.equals(containers, null)) {
-            containers = new ArrayList<>();
+            containers = new HashSet<>();
         }
         List<HblContainerDto> hblContainers = new ArrayList<>();
         containers.forEach(container -> {
@@ -654,7 +654,7 @@ public class HblService implements IHblService {
 
     }
 
-    private List<HblCargoDto> mapShipmentCargoToHBL(List<Packing> packings, List<Containers> containers) {
+    private List<HblCargoDto> mapShipmentCargoToHBL(List<Packing> packings, Set<Containers> containers) {
         List<HblCargoDto> hblCargoes = new ArrayList<>();
         Map<Long, String> map = new HashMap<>();
         if(containers != null && containers.size() > 0)
@@ -862,7 +862,7 @@ public class HblService implements IHblService {
         }
 
     }
-    private void updateShipmentCargoToHBL(List<Packing> packings, Hbl hbl, HblLockSettings hblLock, List<Containers> containers) {
+    private void updateShipmentCargoToHBL(List<Packing> packings, Hbl hbl, HblLockSettings hblLock, Set<Containers> containers) {
         Map<UUID, Packing> packMap = new HashMap<>();
         packings.forEach(pack -> {
             packMap.put(pack.getGuid(), pack);
@@ -934,7 +934,7 @@ public class HblService implements IHblService {
         if(!hblLock.getPackageTypeLock())
             cargo.setPackageType(pack.getPacksType());
     }
-    private void updateShipmentContainersToHBL(List<Containers> containers, Hbl hbl, HblLockSettings hblLock) {
+    private void updateShipmentContainersToHBL(Set<Containers> containers, Hbl hbl, HblLockSettings hblLock) {
         Map<UUID, Containers> contMap = new HashMap<>();
         containers.forEach(cont -> {
             contMap.put(cont.getGuid(), cont);

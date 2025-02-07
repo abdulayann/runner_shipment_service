@@ -10,6 +10,7 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Getter
@@ -99,7 +100,7 @@ public class ContainerRequest extends CommonRequest implements IRunnerRequest {
     // Commenting this to avoid entity update failures. Events in containers are not used as of now
 //    private List<EventsRequest> eventsList;
     private List<PackingRequest> packsList;
-    private List<ShipmentRequest> shipmentsList;
+    private Set<ShipmentRequest> shipmentsList;
     private Long contractEnforcedQuantityLimit;
     private String ownType;
     private String handlingInfo;
