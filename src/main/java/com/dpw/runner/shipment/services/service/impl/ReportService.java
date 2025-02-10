@@ -116,6 +116,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.modelmapper.ModelMapper;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -139,6 +140,9 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COMBI_HAWB_COUNT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CSD_REPORT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.RA_CSD;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.IS_CSD_DOCUMENT_ADDED;
 
 @Service
 @Slf4j
@@ -480,6 +484,11 @@ public class ReportService implements IReportService {
             } else {
                 dataRetrived.remove(ReportConstants.OTHER_CHARGES_IATA);
             }
+
+            if(!reportRequest.isPrintCSD()){
+                dataRetrived.remove(RA_CSD);
+            }
+
             if(reportRequest.getDisplayFreightAmount()!=null && !reportRequest.getDisplayFreightAmount())
             {
                 dataRetrived.put(ReportConstants.PACKING_LIST, dataRetrived.get(ReportConstants.PACKING_LIST_FAT));
@@ -559,6 +568,9 @@ public class ReportService implements IReportService {
         {
             if (!reportRequest.isPrintIATAChargeCode()) {
                 dataRetrived.remove(ReportConstants.OTHER_CHARGES_IATA);
+            }
+            if(!reportRequest.isPrintCSD()){
+                dataRetrived.remove(RA_CSD);
             }
             if (reportRequest.getDisplayFreightAmount() != null && !reportRequest.getDisplayFreightAmount())
             {
@@ -1756,8 +1768,35 @@ public class ReportService implements IReportService {
             CompletableFuture.runAsync(masterDataUtils.withMdc(
                 () -> addFilesFromReport(new BASE64DecodedMultipartFile(finalPdfByte_Content), filename,
                     docUploadRequest, finalGuid)), executorService);
+
+
+            if(reportRequest.isPrintCSD() && ReportConstants.ORIGINAL.equalsIgnoreCase(reportRequest.getPrintType())){
+                addCSDDocumentToDocumentMaster(reportRequest.getReportId(), docUploadRequest, guid);
+                MDC.put(IS_CSD_DOCUMENT_ADDED, "true");
+            }
         }catch(Exception ex){
             log.error(ex.getMessage());
+        }
+    }
+
+    private void addCSDDocumentToDocumentMaster(String reportId, DocUploadRequest docUploadRequest, String guid)
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+        ReportRequest reportRequest = new ReportRequest();
+        reportRequest.setReportId(reportId);
+        reportRequest.setReportInfo(CSD_REPORT);
+        try{
+        CommonRequestModel commonRequestModel =  CommonRequestModel.buildRequest(reportRequest);
+        byte[] pdfByte_Content = getDocumentData(commonRequestModel);
+
+        docUploadRequest.setType(CSD_REPORT);
+
+        String filename = CSD_REPORT + "_" + docUploadRequest.getId() + ".pdf";
+      CompletableFuture.runAsync(masterDataUtils.withMdc(
+            () -> addFilesFromReport(new BASE64DecodedMultipartFile(pdfByte_Content), filename,
+                docUploadRequest, guid)), executorService);
+      } catch (Exception e) {
+            MDC.put(IS_CSD_DOCUMENT_ADDED, "false");
+            log.error(e.getMessage());
         }
     }
 
