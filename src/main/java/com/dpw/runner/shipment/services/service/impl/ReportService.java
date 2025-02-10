@@ -962,8 +962,9 @@ public class ReportService implements IReportService {
         // Custom Air Labels-Master dialogue box
         if(Boolean.TRUE.equals(reportRequest.getPrintCustomLabel()) && reportRequest.isFromConsolidation()) {
             dataRetrived.put(ReportConstants.AIRLINE_NAME, reportRequest.getConsolAirline());
-            dataRetrived.put(ReportConstants.MAWB_NUMBER, reportRequest.getMawbNumber());
-            dataRetrived.put(ReportConstants.DESTINATION, reportRequest.getConsolDestinationAirportCode());
+            AWBLabelReport.populateMawb(dataRetrived, reportRequest.getMawbNumber());
+            dataRetrived.put(ReportConstants.CONSOL_DESTINATION_AIRPORT_CODE_CAPS, reportRequest.getDestination());
+            dataRetrived.put(ReportConstants.TOTAL_CONSOL_PACKS, reportRequest.getTotalMawbPieces());
         }
 
         int copies = reportRequest.getCopyCountForAWB() != null ? reportRequest.getCopyCountForAWB() : 0;
