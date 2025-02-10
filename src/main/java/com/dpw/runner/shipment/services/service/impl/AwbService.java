@@ -3976,12 +3976,9 @@ public class AwbService implements IAwbService {
             throw new ValidationException("Please add " + errorString + " and retry");
         }
 
-        Map<String, UnlocationsResponse> unlocationsMap = new HashMap<>();
-        Map<String, EntityTransferCarrier> carriersMap = new HashMap<>();
-        var unlocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> unlocationsMap.putAll(masterDataUtils.getLocationData(Set.of(iataFetchRateRequest.getOriginPort(), iataFetchRateRequest.getDestinationPort())))), executorService);
-        var carriersFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> carriersMap.putAll(masterDataUtils.fetchInBulkCarriers(Set.of(iataFetchRateRequest.getFlightCarrier())))), executorService);
-        CompletableFuture.allOf(unlocationsFuture, carriersFuture).join();
-        
+        Map<String, UnlocationsResponse> unlocationsMap = masterDataUtils.getLocationData(Set.of(iataFetchRateRequest.getOriginPort(), iataFetchRateRequest.getDestinationPort()));
+        Map<String, EntityTransferCarrier> carriersMap = masterDataUtils.fetchInBulkCarriers(Set.of(iataFetchRateRequest.getFlightCarrier()));
+
         if (unlocationsMap.isEmpty() || carriersMap.isEmpty()) {
             throw new ValidationException("Invalid data fetched for location or carriers.");
         }
@@ -4086,4 +4083,26 @@ public class AwbService implements IAwbService {
                 throw new ValidationException(String.format(ErrorConstants.HAWB_NOT_GENERATED_ERROR, String.join(", ", errorShipments)));
         }
     }
+
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> getLocationAsync (Set<String> codes, Map<String, UnlocationsResponse> unlocationsMap) {
+        try {
+            unlocationsMap.putAll(masterDataUtils.getLocationData(codes));
+            return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse());
+        }
+        catch (Exception e) {
+            return CompletableFuture.completedFuture(ResponseHelper.buildFailedResponse(e.getMessage()));
+        }
+    }
+
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> getCarrierAsync (Set<String> codes, Map<String, EntityTransferCarrier> carriersMap) {
+        try {
+            carriersMap.putAll(masterDataUtils.fetchInBulkCarriers(codes));
+            return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse());
+        }
+        catch (Exception e) {
+            return CompletableFuture.completedFuture(ResponseHelper.buildFailedResponse(e.getMessage()));
+        }
+    }
+
+
 }
