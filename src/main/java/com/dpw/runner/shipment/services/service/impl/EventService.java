@@ -1090,6 +1090,8 @@ public class EventService implements IEventService {
     public void processUpstreamBillingCommonEventMessage(BillingInvoiceDto billingInvoiceDto) {
         try {
             v1Service.setAuthContext();
+            UsersDto originalUser = UserContext.getUser();
+            Integer originalTenant = TenantContext.getCurrentTenant();
             InvoiceDto invoiceDto = billingInvoiceDto.getPayload();
             AccountReceivableDto accountReceivableDto = invoiceDto.getAccountReceivable();
             List<BillDto> billDtoList = accountReceivableDto.getBills();
@@ -1105,22 +1107,32 @@ public class EventService implements IEventService {
                     (existing, replacement) -> replacement));
 
             billDtoList.forEach(billDto -> {
-                if (Constants.SHIPMENT.equalsIgnoreCase(billDto.getModuleTypeCode())) {
-                    ShipmentDetails shipmentDetails = shipmentMap.get(UUID.fromString(billDto.getModuleId()));
+                try {
+                    if (Constants.SHIPMENT.equalsIgnoreCase(billDto.getModuleTypeCode())) {
+                        ShipmentDetails shipmentDetails = shipmentMap.get(UUID.fromString(billDto.getModuleId()));
 
-                    TenantContext.setCurrentTenant(shipmentDetails.getTenantId());
-                    UserContext.setUser(UsersDto.builder().TenantId(shipmentDetails.getTenantId()).Permissions(new HashMap<>()).build());
+                        TenantContext.setCurrentTenant(shipmentDetails.getTenantId());
 
-                    List<EventsRequest> eventsRequests = prepareEventsFromBillingCommonEvent(billingInvoiceDto, shipmentDetails);
-                    eventsRequests.forEach(this::saveEvent);
+                        UsersDto user = UserContext.getUser();
+                        user.setTenantId(shipmentDetails.getTenantId());
+                        user.setPermissions(new HashMap<>());
+                        UserContext.setUser(user);
 
-                    TenantContext.removeTenant();
-                    UserContext.removeUser();
+                        List<EventsRequest> eventsRequests = prepareEventsFromBillingCommonEvent(billingInvoiceDto, shipmentDetails);
+                        eventsRequests.forEach(this::saveEvent);
+                    }
+                } catch (Exception e) {
+                    throw new BillingException(e.getMessage());
+                } finally {
+                    TenantContext.setCurrentTenant(originalTenant);
+                    UserContext.setUser(originalUser);
                 }
 
             });
         } catch (Exception e) {
             throw new BillingException(e.getMessage());
+        } finally {
+            v1Service.clearAuthContext();
         }
     }
 
