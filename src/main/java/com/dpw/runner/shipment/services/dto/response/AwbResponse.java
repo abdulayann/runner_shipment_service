@@ -46,4 +46,6 @@ public class AwbResponse implements IRunnerResponse {
     private AwbStatus linkedHawbAirMessageStatus;
     private LocalDateTime originalPrintedAt;
     private AirMessagingAdditionalFields airMessagingAdditionalFields;
+
+    private String userDisplayName;
 }

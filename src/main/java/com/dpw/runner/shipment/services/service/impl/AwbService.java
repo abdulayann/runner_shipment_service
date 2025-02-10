@@ -758,6 +758,7 @@ public class AwbService implements IAwbService {
 
     private AwbResponse convertEntityToDto(Awb awbShipmentInfo) {
         var awbResponse = jsonHelper.convertValue(awbShipmentInfo, AwbResponse.class);
+        awbResponse.setUserDisplayName(UserContext.getUser().DisplayName);
         if(awbShipmentInfo.getAwbSpecialHandlingCodesMappings() != null && awbShipmentInfo.getAwbSpecialHandlingCodesMappings().size() > 0) {
             awbResponse.setShcIdList(awbShipmentInfo.getAwbSpecialHandlingCodesMappings().stream()
                     .map(i -> i.getShcId())
