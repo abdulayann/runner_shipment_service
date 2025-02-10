@@ -44,6 +44,10 @@ public class DocumentDto {
         private Long fileSize;
         private Long createdBy;
         private Long tenantId;
+        private String userDisplayName;
+        private String userEmail;
+        private String branchDisplayName;
+        private String branchCode;
     }
 }
 
