@@ -1919,7 +1919,6 @@ public class ShipmentService implements IShipmentService {
         try {
             mid = System.currentTimeMillis();
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
-            shipmentRequest.getRoutingsList().get(1).setInheritedFromConsolidation(true);
             ShipmentDetails entity = objectMapper.convertValue(shipmentRequest, ShipmentDetails.class);
             log.info("{} | completeUpdateShipment object mapper request.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
             entity.setId(oldEntity.get().getId());

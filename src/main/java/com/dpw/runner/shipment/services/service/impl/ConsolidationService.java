@@ -2086,23 +2086,6 @@ public class ConsolidationService implements IConsolidationService {
         shipmentDetails.setRoutingsList(finalShipmentRouteList);
     }
 
-    // Helper method to create a synced route from consolidation routings
-    private Routings createSyncedRouteFromConsol(Routings existingRoute, List<Routings> consolidationRoutings, ShipmentDetails shipmentDetails) {
-        return consolidationRoutings.stream()
-                .filter(consolRoute -> RoutingCarriage.MAIN_CARRIAGE.equals(consolRoute.getCarriage()))
-                .filter(consolRoute -> existingRoute.getPol().equals(consolRoute.getPol()) && existingRoute.getPod().equals(consolRoute.getPod()))
-                .findFirst()
-                .map(consolRoute -> {
-                    var syncedRoute = jsonHelper.convertCreateValue(consolRoute, Routings.class);
-                    syncedRoute.setConsolidationId(null);
-                    syncedRoute.setShipmentId(shipmentDetails.getId());
-                    syncedRoute.setBookingId(null);
-                    //syncedRoute.setInheritedFromConsolidation(true); // Mark as inherited
-                    return syncedRoute;
-                })
-                .orElse(existingRoute); // If no matching consol route is found, retain the existing route
-    }
-
     /**
      * Merges carriage routes back into shipment routing list
      * @param carriageRoute input routing list
