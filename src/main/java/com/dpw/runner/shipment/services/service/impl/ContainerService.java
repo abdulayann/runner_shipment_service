@@ -1751,6 +1751,19 @@ public class ContainerService implements IContainerService {
                     payloadDetails.add(prepareQueuePayload(containers, bookingRef));
                 }
             }
+            List<ContainerPayloadDetails> platformPayloadDetails = new ArrayList<>();
+            for (Containers containers : containersList) {
+                if(!StringUtility.isEmpty(containers.getContainerNumber()) && containers.getShipmentsList()!=null  && !containers.getShipmentsList().isEmpty()) {
+                    List<ShipmentDetails> shipmentDetailsList = containers.getShipmentsList();
+                    for(ShipmentDetails shipmentDetail: shipmentDetailsList) {
+                        String platformBookingRef = shipmentDetail.getBookingReference();
+                        log.info("Platform Booking reference obtained: {}", platformBookingRef);
+                        log.info("Preparing platform payload for container ID: {} with container number: {}",
+                                containers.getId(), containers.getContainerNumber());
+                        platformPayloadDetails.add(prepareQueuePayload(containers, platformBookingRef));
+                    }
+                }
+            }
             ContainerUpdateRequest updateRequest = new ContainerUpdateRequest();
             updateRequest.setContainers(payloadDetails);
             updateRequest.setTenantCode(UserContext.getUser().getCode());
@@ -1761,8 +1774,10 @@ public class ContainerService implements IContainerService {
                 log.info("Producing message to Kafka for transport orchestrator.");
                 producer.produceToKafka(jsonBody, transportOrchestratorQueue, UUID.randomUUID().toString());
             }
+            log.info("Container pushed to kafka dependent services with data {}", jsonBody);
+            updateRequest.setContainers(platformPayloadDetails);
             sbUtils.sendMessagesToTopic(isbProperties, messageTopic, List.of(new ServiceBusMessage(jsonBody)));
-            log.info("Container pushed to dependent services with data {}", jsonBody);
+            log.info("Container pushed to platform service with data {}", jsonBody);
         }
     }
 
