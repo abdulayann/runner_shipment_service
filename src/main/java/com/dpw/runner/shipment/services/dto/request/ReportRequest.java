@@ -44,4 +44,10 @@ public class ReportRequest implements IRunnerRequest {
     List<Long> packIds;
     String placeOfIssue;
     LocalDateTime dateOfIssue;
+    String consolAirline;
+    String consolDestinationAirportCode;
+    String mawbNumber;
+    Integer totalMawbPieces;
+    Boolean printCustomLabel;
+
 }
