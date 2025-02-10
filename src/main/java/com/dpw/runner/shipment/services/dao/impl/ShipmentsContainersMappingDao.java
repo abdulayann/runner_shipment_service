@@ -181,7 +181,9 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
             }
         }
     }
-    private List<ShipmentsContainersMapping> findByContainerIdIn(List<Long> containerIds) {
+
+    @Override
+    public List<ShipmentsContainersMapping> findByContainerIdIn(List<Long> containerIds) {
         return shipmentsContainersMappingRepository.findByContainerIdIn(containerIds);
     }
 

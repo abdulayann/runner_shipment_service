@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.adapters;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -234,23 +235,23 @@ class TrackingServiceAdapterTest {
                 .build();
         when(v1MasterData.fetchCarrierMasterData(any())).thenReturn(dependentServiceResponse);
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(new ArrayList<>());
-        UniversalTrackingPayload res = trackingServiceAdapter.mapConsoleDataToTrackingServiceData(consolidationDetails);
+        UniversalTrackingPayload res = trackingServiceAdapter.mapConsoleDataToTrackingServiceData(consolidationDetails, new ShipmentDetails());
         assertNotNull(res);
     }
 
     @Test
     void mapConsoleDataToTrackingServiceData_MappingFound() {
         ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
-        when(consoleShipmentMappingDao.findByConsolidationId(any())).thenReturn(List.of(new ConsoleShipmentMapping()));
-        when(shipmentDao.findById(any())).thenReturn(Optional.of(jsonTestUtility.getTestShipment()));
+        lenient().when(consoleShipmentMappingDao.findByConsolidationId(any())).thenReturn(List.of(new ConsoleShipmentMapping()));
+        lenient().when(shipmentDao.findById(any())).thenReturn(Optional.of(jsonTestUtility.getTestShipment()));
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
         DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder()
                 .data(new ArrayList<>())
                 .build();
-        when(v1MasterData.fetchCarrierMasterData(any())).thenReturn(dependentServiceResponse);
-        when(v1Service.fetchUnlocation(any())).thenReturn(V1DataResponse.builder().build());
+        lenient().when(v1MasterData.fetchCarrierMasterData(any())).thenReturn(dependentServiceResponse);
+        lenient().when(v1Service.fetchUnlocation(any())).thenReturn(V1DataResponse.builder().build());
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(new ArrayList<>());
-        UniversalTrackingPayload res = trackingServiceAdapter.mapConsoleDataToTrackingServiceData(consolidationDetails);
+        UniversalTrackingPayload res = trackingServiceAdapter.mapConsoleDataToTrackingServiceData(consolidationDetails, new ShipmentDetails());
         assertNotNull(res);
     }
 

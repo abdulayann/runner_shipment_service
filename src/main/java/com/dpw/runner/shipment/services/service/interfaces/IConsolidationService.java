@@ -52,7 +52,7 @@ public interface IConsolidationService extends ICommonService{
 
     void exportExcel(HttpServletResponse response, CommonRequestModel commonRequestModel) throws IOException, IllegalAccessException;
 
-    void pushShipmentDataToDependentService(ConsolidationDetails consolidationDetails, boolean isCreate, List<Containers> oldContainers);
+    void pushShipmentDataToDependentService(ConsolidationDetails consolidationDetails, boolean isCreate, ConsolidationDetails oldEntity);
 
     void generateConsolidationNumber(ConsolidationDetails consolidationDetails) throws RunnerException;
 

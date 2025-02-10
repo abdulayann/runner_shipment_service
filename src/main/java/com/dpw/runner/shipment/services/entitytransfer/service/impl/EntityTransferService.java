@@ -834,7 +834,7 @@ public class EntityTransferService implements IEntityTransferService {
     private void pushImportConsoleDataToDependantService(Long consoleId, List<Long> shipmentIds, boolean isCreateConsole, Map<Long, Boolean> isCreateShipMap) {
         try {
             Optional<ConsolidationDetails> consolidation = consolidationDetailsDao.findById(consoleId);
-            consolidation.ifPresent(consolidationDetails -> consolidationService.pushShipmentDataToDependentService(consolidationDetails, isCreateConsole, consolidationDetails.getContainersList()));
+            consolidation.ifPresent(consolidationDetails -> consolidationService.pushShipmentDataToDependentService(consolidationDetails, isCreateConsole, consolidationDetails));
 
             List<ShipmentDetails> shipments = shipmentDao.findShipmentsByIds(new HashSet<>(shipmentIds));
             for (ShipmentDetails shipment : shipments) {
