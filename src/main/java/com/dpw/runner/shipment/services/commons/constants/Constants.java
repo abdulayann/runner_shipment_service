@@ -613,6 +613,7 @@ public class Constants {
 
     public static final String ADDRESS_SHORT_CODE = "AddressShortCode";
     public static final String ORG_ADDRESS = "orgAddress";
+    public static final String IS_CSD_DOCUMENT_ADDED = "isCSDDocumentAdded";
 
     private Constants() {
     }

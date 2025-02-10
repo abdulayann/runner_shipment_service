@@ -17,6 +17,7 @@ import static org.mockito.Mockito.when;
 import com.dpw.runner.shipment.services.DocumentService.DocumentService;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.DocPages;
+import com.dpw.runner.shipment.services.ReportingService.Models.DocUploadRequest;
 import com.dpw.runner.shipment.services.ReportingService.Reports.ArrivalNoticeReport;
 import com.dpw.runner.shipment.services.ReportingService.Reports.BookingConfirmationReport;
 import com.dpw.runner.shipment.services.ReportingService.Reports.CSDReport;
@@ -3250,6 +3251,20 @@ class ReportServiceTest {
         byte[] pdfByte_Content = new byte[1];
         reportService.addDocumentToDocumentMaster(reportRequest, pdfByte_Content);
         assertNotNull(shipmentDetails);
+    }
+
+    @Test
+    void addDocumentToDocumentMasterTestHAWBORIGNALWithCSDPrint()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+        ReportRequest reportRequest = new ReportRequest();
+        reportRequest.setReportId("1");
+        reportRequest.setPrintType("ORIGINAL");
+        reportRequest.setPrintCSD(true);
+        reportRequest.setReportInfo("HAWB");
+
+        DocUploadRequest docUploadRequest = new DocUploadRequest();
+        reportService.addCSDDocumentToDocumentMaster("1", docUploadRequest, "123");
+        assertNotNull(reportRequest);
     }
 
     @Test
