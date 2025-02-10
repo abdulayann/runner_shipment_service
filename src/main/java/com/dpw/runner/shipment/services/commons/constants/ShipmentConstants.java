@@ -26,6 +26,7 @@ public class ShipmentConstants {
     );
 
     private ShipmentConstants(){}
+    public static final String IMPLICATIONS_LIST_COLUMN = "implicationList";
     public static final String SHIPMENT_API_HANDLE = "/api/v2/shipment";
 
     public static final String HBL_NUMBER_CHECK_SUCCESSFUL = "HBL Number check successful";

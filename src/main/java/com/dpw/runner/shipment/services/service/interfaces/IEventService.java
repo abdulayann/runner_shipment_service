@@ -24,4 +24,5 @@ public interface IEventService extends ICommonService {
     void processUpstreamBillingCommonEventMessage(BillingInvoiceDto billingInvoiceDto);
     void saveEvent(EventsRequest eventsRequest);
     ResponseEntity<IRunnerResponse> pushTrackingEvents(@Valid Container request);
+    void saveAllEvent(List<EventsRequest> eventsRequests);
 }
