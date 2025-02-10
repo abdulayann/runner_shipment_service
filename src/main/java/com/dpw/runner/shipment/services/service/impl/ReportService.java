@@ -1779,18 +1779,17 @@ public class ReportService implements IReportService {
         }
     }
 
-    private void addCSDDocumentToDocumentMaster(String reportId, DocUploadRequest docUploadRequest, String guid)
+    public void addCSDDocumentToDocumentMaster(String reportId, DocUploadRequest docUploadRequest, String guid)
         throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ReportRequest reportRequest = new ReportRequest();
         reportRequest.setReportId(reportId);
         reportRequest.setReportInfo(CSD_REPORT);
         try{
         CommonRequestModel commonRequestModel =  CommonRequestModel.buildRequest(reportRequest);
-        byte[] pdfByte_Content = getDocumentData(commonRequestModel);
-
         docUploadRequest.setType(CSD_REPORT);
-
         String filename = CSD_REPORT + "_" + docUploadRequest.getId() + ".pdf";
+
+        byte[] pdfByte_Content = getDocumentData(commonRequestModel);
       CompletableFuture.runAsync(masterDataUtils.withMdc(
             () -> addFilesFromReport(new BASE64DecodedMultipartFile(pdfByte_Content), filename,
                 docUploadRequest, guid)), executorService);
