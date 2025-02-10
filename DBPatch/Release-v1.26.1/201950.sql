@@ -1,0 +1,1 @@
+update consolidation_details set tenant_id = 582 where reference_number ='DBAR-5196245-783513';
