@@ -3286,7 +3286,7 @@ public class ShipmentService implements IShipmentService {
         return newUpdatedEvents;
     }
 
-    private Map<String, List<Events>> getCargoesRunnerTrackingEventMap(List<Events> events) {
+    private Map<String, List<Events>> groupCargoesRunnerEventsByCode(List<Events> events) {
         Map<String, List<Events>> eventMap = new HashMap<>();
 
         for (Events event : events) {
@@ -3308,15 +3308,15 @@ public class ShipmentService implements IShipmentService {
 
     private void createUpdateEvent(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, List<Events> events, Boolean isNewShipment) {
         commonUtils.removeDuplicateTrackingEvents(events);
-        Map<String, List<Events>> dbeventMap = getCargoesRunnerTrackingEventMap(events);
+        Map<String, List<Events>> cargoesRunnerDbEvents = groupCargoesRunnerEventsByCode(events);
         oldEntity = Optional.ofNullable(oldEntity).orElse(new ShipmentDetails());
         oldEntity.setAdditionalDetails(Optional.ofNullable(oldEntity.getAdditionalDetails()).orElse(new AdditionalDetails()));
 
         if (isLclOrFclOrAir(shipmentDetails)) {
 
             if (isEventChanged(shipmentDetails.getBookingNumber(), oldEntity.getBookingNumber(), isNewShipment) && Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP)) {
-                if (ObjectUtils.isNotEmpty(dbeventMap) && ObjectUtils.isNotEmpty(dbeventMap.get(EventConstants.BOCO))) {
-                    List<Events> dbEvents = dbeventMap.get(EventConstants.BOCO);
+                if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.BOCO))) {
+                    List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.BOCO);
                     for (Events event : dbEvents) {
                         event.setActual(LocalDateTime.now());
                     }
@@ -3330,8 +3330,8 @@ public class ShipmentService implements IShipmentService {
                     isEventChanged(shipmentDetails.getAdditionalDetails().getCargoDeliveredDate(),
                             oldEntity.getAdditionalDetails().getCargoDeliveredDate(), isNewShipment)) {
 
-                if (ObjectUtils.isNotEmpty(dbeventMap) && ObjectUtils.isNotEmpty(dbeventMap.get(EventConstants.CADE))) {
-                    List<Events> dbEvents = dbeventMap.get(EventConstants.CADE);
+                if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.CADE))) {
+                    List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.CADE);
                     for (Events event : dbEvents) {
                         event.setActual(shipmentDetails.getAdditionalDetails().getCargoDeliveredDate());
                     }
@@ -3344,8 +3344,8 @@ public class ShipmentService implements IShipmentService {
             if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) &&
                     isEventChanged(shipmentDetails.getAdditionalDetails().getPickupDate(),
                             oldEntity.getAdditionalDetails().getPickupDate(), isNewShipment)) {
-                if (ObjectUtils.isNotEmpty(dbeventMap) && ObjectUtils.isNotEmpty(dbeventMap.get(EventConstants.CACO))) {
-                    List<Events> dbEvents = dbeventMap.get(EventConstants.CACO);
+                if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.CACO))) {
+                    List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.CACO);
                     for (Events event : dbEvents) {
                         event.setActual(shipmentDetails.getAdditionalDetails().getPickupDate());
                     }
@@ -3358,8 +3358,8 @@ public class ShipmentService implements IShipmentService {
             if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) &&
                     isEventChanged(shipmentDetails.getAdditionalDetails().getCustomReleaseDate(),
                             oldEntity.getAdditionalDetails().getCustomReleaseDate(), isNewShipment)) {
-                if (ObjectUtils.isNotEmpty(dbeventMap) && ObjectUtils.isNotEmpty(dbeventMap.get(EventConstants.CURE))) {
-                    List<Events> dbEvents = dbeventMap.get(EventConstants.CURE);
+                if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.CURE))) {
+                    List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.CURE);
                     for (Events event : dbEvents) {
                         event.setActual(shipmentDetails.getAdditionalDetails().getCustomReleaseDate());
                     }
@@ -3373,8 +3373,8 @@ public class ShipmentService implements IShipmentService {
                     isEventBooleanChanged(shipmentDetails.getAdditionalDetails().getDocTurnedOverToCustomer(),
                             oldEntity.getAdditionalDetails().getDocTurnedOverToCustomer(), isNewShipment)) {
 
-                if (ObjectUtils.isNotEmpty(dbeventMap) && ObjectUtils.isNotEmpty(dbeventMap.get(EventConstants.DOTP))) {
-                    List<Events> dbEvents = dbeventMap.get(EventConstants.DOTP);
+                if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.DOTP))) {
+                    List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.DOTP);
                     for (Events event : dbEvents) {
                         event.setActual(LocalDateTime.now());
                     }
@@ -3387,8 +3387,8 @@ public class ShipmentService implements IShipmentService {
             if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) &&
                     isEventChanged(shipmentDetails.getAdditionalDetails().getProofOfDeliveryDate(),
                             oldEntity.getAdditionalDetails().getProofOfDeliveryDate(), isNewShipment)) {
-                if (ObjectUtils.isNotEmpty(dbeventMap) && ObjectUtils.isNotEmpty(dbeventMap.get(EventConstants.PRDE))) {
-                    List<Events> dbEvents = dbeventMap.get(EventConstants.PRDE);
+                if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.PRDE))) {
+                    List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.PRDE);
                     for (Events event : dbEvents) {
                         event.setActual(shipmentDetails.getAdditionalDetails().getProofOfDeliveryDate());
                     }
@@ -3402,8 +3402,8 @@ public class ShipmentService implements IShipmentService {
                     isEventBooleanChanged(shipmentDetails.getAdditionalDetails().getPickupByConsigneeCompleted(),
                             oldEntity.getAdditionalDetails().getPickupByConsigneeCompleted(), isNewShipment)) {
 
-                if(ObjectUtils.isNotEmpty(dbeventMap) && ObjectUtils.isNotEmpty(dbeventMap.get(EventConstants.SEPU))){
-                    List<Events> dbEvents = dbeventMap.get(EventConstants.SEPU);
+                if(ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.SEPU))){
+                    List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.SEPU);
                     for(Events event: dbEvents){
                         event.setActual(LocalDateTime.now());
                     }
@@ -3418,8 +3418,8 @@ public class ShipmentService implements IShipmentService {
             if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) &&
                     isEventChanged(shipmentDetails.getAdditionalDetails().getWarehouseCargoArrivalDate(),
                             oldEntity.getAdditionalDetails().getWarehouseCargoArrivalDate(), isNewShipment)) {
-                if(ObjectUtils.isNotEmpty(dbeventMap) && ObjectUtils.isNotEmpty(dbeventMap.get(EventConstants.CAFS))){
-                    List<Events> dbEvents = dbeventMap.get(EventConstants.CAFS);
+                if(ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.CAFS))){
+                    List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.CAFS);
                     for(Events event: dbEvents){
                         event.setActual(shipmentDetails.getAdditionalDetails().getWarehouseCargoArrivalDate());
                     }
@@ -3431,8 +3431,8 @@ public class ShipmentService implements IShipmentService {
 
             if (isEventChanged(shipmentDetails.getShipmentGateInDate(), oldEntity.getShipmentGateInDate(), isNewShipment) &&
                     shipmentDetails.getDateType()!=null) {
-                if(ObjectUtils.isNotEmpty(dbeventMap) && ObjectUtils.isNotEmpty(dbeventMap.get(EventConstants.CAAW))){
-                    List<Events> dbEvents = dbeventMap.get(EventConstants.CAAW);
+                if(ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.CAAW))){
+                    List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.CAAW);
                     for(Events event: dbEvents){
                         if(ACTUAL.equals(shipmentDetails.getDateType())) {
                             event.setActual(shipmentDetails.getShipmentGateInDate());
@@ -3456,8 +3456,8 @@ public class ShipmentService implements IShipmentService {
                 isEventBooleanChanged(shipmentDetails.getAdditionalDetails().getEmptyContainerReturned(),
                         oldEntity.getAdditionalDetails().getEmptyContainerReturned(), isNewShipment)) {
 
-            if(ObjectUtils.isNotEmpty(dbeventMap) && ObjectUtils.isNotEmpty(dbeventMap.get(EventConstants.EMCR))){
-                List<Events> dbEvents = dbeventMap.get(EventConstants.EMCR);
+            if(ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.EMCR))){
+                List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.EMCR);
                 for(Events event: dbEvents){
                     event.setActual(LocalDateTime.now());
                 }
@@ -3471,8 +3471,8 @@ public class ShipmentService implements IShipmentService {
                 isEventBooleanChanged(shipmentDetails.getAdditionalDetails().getIsExportCustomClearanceCompleted(),
                         oldEntity.getAdditionalDetails().getIsExportCustomClearanceCompleted(), isNewShipment)) {
 
-            if (ObjectUtils.isNotEmpty(dbeventMap) && ObjectUtils.isNotEmpty(dbeventMap.get(EventConstants.ECCC))) {
-                List<Events> dbEvents = dbeventMap.get(EventConstants.ECCC);
+            if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.ECCC))) {
+                List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.ECCC);
                 for (Events event : dbEvents) {
                     event.setActual(LocalDateTime.now());
                 }
@@ -3486,8 +3486,8 @@ public class ShipmentService implements IShipmentService {
                 isEventChanged(shipmentDetails.getAdditionalDetails().getBlInstructionReceived(),
                         oldEntity.getAdditionalDetails().getBlInstructionReceived(), isNewShipment)) {
 
-            if (ObjectUtils.isNotEmpty(dbeventMap) && ObjectUtils.isNotEmpty(dbeventMap.get(EventConstants.BLRS))) {
-                List<Events> dbEvents = dbeventMap.get(EventConstants.BLRS);
+            if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.BLRS))) {
+                List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.BLRS);
                 for (Events event : dbEvents) {
                     event.setActual(shipmentDetails.getAdditionalDetails().getBlInstructionReceived());
                 }
@@ -3497,12 +3497,23 @@ public class ShipmentService implements IShipmentService {
             }
         }
 
+        if (ObjectUtils.isNotEmpty(shipmentDetails.getMasterBill()) &&
+                isEventChanged(shipmentDetails.getMasterBill(), oldEntity.getMasterBill(), isNewShipment)) {
+
+            if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.FNMU))) {
+                List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.FNMU);
+                for (Events event : dbEvents) {
+                    event.setContainerNumber(shipmentDetails.getMasterBill());
+                }
+            }
+        }
+
         if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) &&
                 isEventChanged(shipmentDetails.getAdditionalDetails().getCargoOutForDelivery(),
                         oldEntity.getAdditionalDetails().getCargoOutForDelivery(), isNewShipment)) {
 
-            if (ObjectUtils.isNotEmpty(dbeventMap) && ObjectUtils.isNotEmpty(dbeventMap.get(EventConstants.COOD))) {
-                List<Events> dbEvents = dbeventMap.get(EventConstants.COOD);
+            if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.COOD))) {
+                List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.COOD);
                 for (Events event : dbEvents) {
                     event.setActual(shipmentDetails.getAdditionalDetails().getCargoOutForDelivery());
                 }
