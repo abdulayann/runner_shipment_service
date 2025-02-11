@@ -8,9 +8,7 @@ import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
 import com.dpw.runner.shipment.services.utils.MasterData;
 import com.dpw.runner.shipment.services.utils.UnlocationData;
 import java.time.LocalDateTime;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Table;
+import javax.persistence.*;
 import javax.validation.constraints.Size;
 
 import lombok.*;
@@ -130,8 +128,19 @@ public class Routings extends MultiTenancy {
     @Column(name = "destination_port_loc_code")
     private String destinationPortLocCode;
 
+    @Column(name = "inherited_from_consolidation", columnDefinition = "boolean default false")
+    private Boolean inheritedFromConsolidation;
+
     public boolean getIsDomestic() {
         return isDomestic;
+    }
+
+    @PrePersist
+    @PreUpdate
+    public void ensureDefaultValues() {
+        if (inheritedFromConsolidation == null) {
+            inheritedFromConsolidation = false;
+        }
     }
 }
 
