@@ -981,6 +981,10 @@ public class BookingIntegrationsUtility {
                             log.info("Updating event: {} with new actual time and entity type.", event.getEventCode());
                             event.setActual(LocalDateTime.now());
                             event.setEntityType(Constants.SHIPMENT);
+                            event.setUserName(payloadData.getUserDisplayName());
+                            event.setUserEmail(payloadData.getUserEmail());
+                            event.setBranchName(payloadData.getBranchDisplayName());
+                            event.setBranch(payloadData.getBranchCode());
                             if (EventConstants.FNMU.equals(payloadData.getEventCode())) {
                                 event.setContainerNumber(shipmentDetails.getMasterBill());
                             }
@@ -1007,6 +1011,10 @@ public class BookingIntegrationsUtility {
                     eventsRequest.setEntityType(Constants.SHIPMENT);
                     eventsRequest.setEventCode(payloadData.getEventCode());
                     eventsRequest.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
+                    eventsRequest.setUserName(payloadData.getUserDisplayName());
+                    eventsRequest.setUserEmail(payloadData.getUserEmail());
+                    eventsRequest.setBranchName(payloadData.getBranchDisplayName());
+                    eventsRequest.setBranch(payloadData.getBranchCode());
                     if (EventConstants.FNMU.equals(payloadData.getEventCode())) {
                         eventsRequest.setContainerNumber(shipmentDetails.getMasterBill());
                     }
