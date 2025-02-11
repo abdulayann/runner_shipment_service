@@ -50,5 +50,6 @@ public class ReportRequest implements IRunnerRequest {
     String mawbNumber;
     Integer totalMawbPieces;
     Boolean printCustomLabel;
-
+    String hawbNumber;
+    String totalHawbPieces;
 }
