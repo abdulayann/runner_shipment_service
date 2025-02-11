@@ -2297,4 +2297,16 @@ public class CommonUtils {
         else return !IsStringNullOrEmpty(party.getOrgId());
     }
 
+    public static boolean checkAddressNotNull(Parties party) {
+        if (party == null) return false;
+        else if (IsStringNullOrEmpty(party.getOrgId())) return false;
+        else return !IsStringNullOrEmpty(party.getAddressId());
+    }
+
+    public static boolean checkAddressNotNull(PartiesResponse party) {
+        if (party == null) return false;
+        else if (IsStringNullOrEmpty(party.getOrgId())) return false;
+        else return !IsStringNullOrEmpty(party.getAddressId());
+    }
+
 }

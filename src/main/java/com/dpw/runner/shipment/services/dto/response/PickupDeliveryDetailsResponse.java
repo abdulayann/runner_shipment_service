@@ -83,4 +83,5 @@ public class PickupDeliveryDetailsResponse implements IRunnerResponse {
     private List<TiLegsReponse> tiLegsList;
 
     private Map<String, String> masterData;
+    private Boolean isDirectDelivery;
 }
