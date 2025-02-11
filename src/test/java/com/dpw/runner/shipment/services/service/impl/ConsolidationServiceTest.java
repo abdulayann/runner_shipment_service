@@ -5402,7 +5402,7 @@ import static org.mockito.Mockito.*;
         mockShip2.setRoutingsList(new ArrayList<>());
         mockShip2.setSyncRoutingFromConsolidation(true);
 
-        mockConoslidation.setShipmentsList(Set.of(mockShip1, mockShip2));
+        mockConoslidation.setShipmentsList(new HashSet<>(List.of(mockShip1, mockShip2)));
 
         Map<String, EntityTransferContainerType> keyMasterDataMap = new HashMap<>();
         EntityTransferContainerType containerTypeMasterData = jsonTestUtility.getJson("CONTAINER_TYPE_MASTER_DATA", EntityTransferContainerType.class);

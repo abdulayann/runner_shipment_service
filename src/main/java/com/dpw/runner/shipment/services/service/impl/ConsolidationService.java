@@ -5335,7 +5335,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     private ConsolidationDetailsResponse partyCheckForConsole(ConsolidationDetails consolidationDetails, AutoAttachConsolidationRequest request) {
-        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>(consolidationDetails.getShipmentsList());
+        List<ShipmentDetails> shipmentDetailsList = consolidationDetails.getShipmentsList() != null ? new ArrayList<>(consolidationDetails.getShipmentsList()) : null;
         ShipmentSettingsDetails  shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         Parties client;
         Parties consigner;

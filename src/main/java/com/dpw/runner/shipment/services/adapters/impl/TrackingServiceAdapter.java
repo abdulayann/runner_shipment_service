@@ -343,7 +343,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
     }
 
     private List<UniversalTrackingPayload.EntityDetail> GetContainerDetailsAttachedForShipment(ShipmentDetails inputShipment) {
-        return getEntityDetailsFromContainers(new ArrayList<>(inputShipment.getContainersList()));
+        return getEntityDetailsFromContainers(inputShipment.getContainersList() != null ? new ArrayList<>(inputShipment.getContainersList()) : null);
     }
 
 
