@@ -288,6 +288,7 @@ public class NetworkTransferService implements INetworkTransferService {
         networkTransfer.setJobType(jobType);
         networkTransfer.setIsInterBranchEntity(isInterBranchEntity);
         networkTransfer.setEntityGuid(shipmentDetails.getGuid());
+        networkTransfer.setIsHidden(Boolean.FALSE);
         return networkTransfer;
     }
 
@@ -302,6 +303,7 @@ public class NetworkTransferService implements INetworkTransferService {
         networkTransfer.setJobType(jobType);
         networkTransfer.setIsInterBranchEntity(isInterBranchEntity);
         networkTransfer.setEntityGuid(consolidationDetails.getGuid());
+        networkTransfer.setIsHidden(Boolean.FALSE);
         return networkTransfer;
     }
 
@@ -548,5 +550,24 @@ public class NetworkTransferService implements INetworkTransferService {
         var networkTransfer = networkTransferDao.findById(id);
         networkTransfer.ifPresent(transfer -> updateConsoleOrShipmentStatus(transfer.getEntityId(), transfer.getEntityType(), transfer.getStatus(), transfer.getIsInterBranchEntity()));
         networkTransferDao.updateStatusAndCreatedEntityId(id, status, createdEntityId);
+    }
+
+    @Transactional
+    @Override
+    public void bulkProcessInterConsoleNte(List<ShipmentDetails> shipmentDetailsList) {
+        List<NetworkTransfer> nteToCreate = new ArrayList<>();
+        for (ShipmentDetails shipmentDetails : shipmentDetailsList) {
+            NetworkTransfer networkTransfer;
+
+            if (Objects.equals(shipmentDetails.getReceivingBranch(), Long.valueOf(TenantContext.getCurrentTenant())))
+                return; // Skip processing if entry is getting created for existing branch
+
+            var intTenantId = (shipmentDetails.getReceivingBranch() != null) ? Math.toIntExact(shipmentDetails.getReceivingBranch()) : null;
+            networkTransfer = getNetworkTransferEntityFromShipment(shipmentDetails, intTenantId, Constants.IMP, true);
+            networkTransfer.setIsHidden(true);
+            nteToCreate.add(networkTransfer);
+        }
+        if(!nteToCreate.isEmpty())
+            networkTransferDao.saveAll(nteToCreate);
     }
 }

@@ -3165,8 +3165,9 @@ public class ShipmentService implements IShipmentService {
         if(consolidationDetails.getReceivingBranch()!=null) {
             List<Long> shipmentIdsList = shipmentDetails.getConsolidationList().get(0).getShipmentsList().stream()
                     .map(ShipmentDetails::getId).toList();
-            Map<Long, NetworkTransfer> shipmentNetworkTransferMap = networkTransferDao.getInterConsoleNTList(shipmentIdsList, SHIPMENT).stream()
-                    .collect(Collectors.toMap(NetworkTransfer::getEntityId, transfer -> transfer));
+            List<NetworkTransfer> nteList = networkTransferDao.getInterConsoleNTList(shipmentIdsList, SHIPMENT);
+            Map<Long, NetworkTransfer> shipmentNetworkTransferMap = nteList!=null ? nteList.stream()
+                    .collect(Collectors.toMap(NetworkTransfer::getEntityId, transfer -> transfer)) : null;
             NetworkTransfer existingNTE = shipmentNetworkTransferMap != null ? shipmentNetworkTransferMap.get(shipmentDetails.getId()) : null;
 
             if (shipmentDetails.getReceivingBranch() != null) {
@@ -3213,8 +3214,11 @@ public class ShipmentService implements IShipmentService {
             networkTransferService.processNetworkTransferEntity(shipmentDetails.getReceivingBranch(), oldEntity.getReceivingBranch(),
                     Constants.SHIPMENT, shipmentDetails, null, reverseDirection(shipmentDetails.getDirection()), null, true);
         } else {
-            if (existingNTE != null && existingNTE.getStatus() != NetworkTransferStatus.ACCEPTED) {
-                networkTransferService.deleteNetworkTransferEntity(existingNTE);
+            if (existingNTE != null) {
+                existingNTE.setIsHidden(Boolean.TRUE);
+                networkTransferDao.save(existingNTE);
+            } else {
+                networkTransferService.bulkProcessInterConsoleNte(Collections.singletonList(shipmentDetails));
             }
         }
         // empty entity payload here
@@ -3223,6 +3227,8 @@ public class ShipmentService implements IShipmentService {
     }
 
     private void updateNetworkTransfersForShipments(Long currentShipmentId, Map<Long, NetworkTransfer> shipmentNetworkTransferMap) {
+        if(shipmentNetworkTransferMap==null)
+            return;
         shipmentNetworkTransferMap.values().stream()
                 .filter(networkTransfer -> !Objects.equals(networkTransfer.getEntityId(), currentShipmentId))
                 .forEach(this::resetNetworkTransferIfNeeded);

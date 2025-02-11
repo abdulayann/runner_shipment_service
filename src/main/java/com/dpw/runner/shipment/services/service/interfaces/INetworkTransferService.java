@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.entity.NetworkTransfer;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import org.springframework.http.ResponseEntity;
 
+import java.util.List;
 import java.util.Map;
 
 public interface INetworkTransferService{
@@ -21,4 +22,5 @@ public interface INetworkTransferService{
     ResponseEntity<IRunnerResponse> requestForTransfer(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> requestForReassign(CommonRequestModel commonRequestModel);
     void updateStatusAndCreatedEntityId(Long id, String status, Long createdEntityId);
+    void bulkProcessInterConsoleNte(List<ShipmentDetails> shipmentDetails);
 }
