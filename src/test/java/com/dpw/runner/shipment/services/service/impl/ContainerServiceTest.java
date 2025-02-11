@@ -1387,7 +1387,6 @@ class ContainerServiceTest extends CommonMocks {
 
         when(jsonHelper.convertToJson(any(EventMessage.class))).thenReturn("jsonBody");
         when(modelMapper.map(any(), eq(ContainerBoomiUniversalJson.class))).thenReturn(containerBoomiUniversalJson);
-        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(ConsolidationDetails.builder().referenceNumber("ref123").build()));
 
         // Act
         containerService.pushContainersToDependentServices(containersList, oldContainers);

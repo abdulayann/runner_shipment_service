@@ -1742,16 +1742,6 @@ public class ContainerService implements IContainerService {
             EventMessage eventMessage = new EventMessage();
             eventMessage.setMessageType(ContainerConstants.CONTAINER_UPDATE_MSG);
             List<ContainerPayloadDetails> payloadDetails = new ArrayList<>();
-            String bookingRef = getRefNum(containersList.get(0));
-            log.info("Booking reference obtained: {}", bookingRef);
-            for (Containers containers : containersList) {
-                if(!StringUtility.isEmpty(containers.getContainerNumber())) {
-                    log.info("Preparing payload for container ID: {} with container number: {}",
-                            containers.getId(), containers.getContainerNumber());
-                    payloadDetails.add(prepareQueuePayload(containers, bookingRef));
-                }
-            }
-            List<ContainerPayloadDetails> platformPayloadDetails = new ArrayList<>();
             for (Containers containers : containersList) {
                 if(!StringUtility.isEmpty(containers.getContainerNumber()) && containers.getShipmentsList()!=null  && !containers.getShipmentsList().isEmpty()) {
                     List<ShipmentDetails> shipmentDetailsList = containers.getShipmentsList();
@@ -1760,7 +1750,7 @@ public class ContainerService implements IContainerService {
                         log.info("Platform Booking reference obtained: {}", platformBookingRef);
                         log.info("Preparing platform payload for container ID: {} with container number: {}",
                                 containers.getId(), containers.getContainerNumber());
-                        platformPayloadDetails.add(prepareQueuePayload(containers, platformBookingRef));
+                        payloadDetails.add(prepareQueuePayload(containers, platformBookingRef));
                     }
                 }
             }
@@ -1774,10 +1764,8 @@ public class ContainerService implements IContainerService {
                 log.info("Producing message to Kafka for transport orchestrator.");
                 producer.produceToKafka(jsonBody, transportOrchestratorQueue, UUID.randomUUID().toString());
             }
-            log.info("Container pushed to kafka dependent services with data {}", jsonBody);
-            updateRequest.setContainers(platformPayloadDetails);
             sbUtils.sendMessagesToTopic(isbProperties, messageTopic, List.of(new ServiceBusMessage(jsonBody)));
-            log.info("Container pushed to platform service with data {}", jsonBody);
+            log.info("Container pushed to kafka dependent services with data {}", jsonBody);
         }
     }
 
