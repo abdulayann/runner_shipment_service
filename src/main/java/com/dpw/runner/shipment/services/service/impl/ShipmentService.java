@@ -3167,7 +3167,7 @@ public class ShipmentService implements IShipmentService {
                 .map(ShipmentDetails::getId).toList();
         Map<Long, NetworkTransfer> shipmentNetworkTransferMap = networkTransferDao.getInterConsoleNTList(shipmentIdsList, SHIPMENT).stream()
                 .collect(Collectors.toMap(NetworkTransfer::getEntityId, transfer -> transfer));
-        NetworkTransfer existingNTE = shipmentNetworkTransferMap.get(shipmentDetails.getId());
+        NetworkTransfer existingNTE = shipmentNetworkTransferMap!=null? shipmentNetworkTransferMap.get(shipmentDetails.getId()) : null;
 
         if (shipmentDetails.getReceivingBranch() != null) {
             handleReceivingBranchUpdates(shipmentDetails, oldEntity, consolidationDetails, existingNTE, shipmentNetworkTransferMap);

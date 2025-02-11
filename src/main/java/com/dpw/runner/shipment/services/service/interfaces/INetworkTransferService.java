@@ -16,6 +16,7 @@ public interface INetworkTransferService{
                                       ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails,
                                       String jobType, Map<String, Object> entityPayload, Boolean isInterBranchEntity);
     void deleteValidNetworkTransferEntity(Long tenantId, Long entityId, String entityType);
+    void deleteNetworkTransferEntity(NetworkTransfer networkTransfer);
     void updateNetworkTransferTransferred(NetworkTransfer networkTransfer, Map<String, Object> payload);
     ResponseEntity<IRunnerResponse> requestForTransfer(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> requestForReassign(CommonRequestModel commonRequestModel);

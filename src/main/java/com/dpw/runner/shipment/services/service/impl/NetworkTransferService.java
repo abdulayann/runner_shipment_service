@@ -287,6 +287,7 @@ public class NetworkTransferService implements INetworkTransferService {
         networkTransfer.setSourceBranchId(shipmentDetails.getTenantId());
         networkTransfer.setJobType(jobType);
         networkTransfer.setIsInterBranchEntity(isInterBranchEntity);
+        networkTransfer.setEntityGuid(shipmentDetails.getGuid());
         return networkTransfer;
     }
 
@@ -300,6 +301,7 @@ public class NetworkTransferService implements INetworkTransferService {
         networkTransfer.setSourceBranchId(consolidationDetails.getTenantId());
         networkTransfer.setJobType(jobType);
         networkTransfer.setIsInterBranchEntity(isInterBranchEntity);
+        networkTransfer.setEntityGuid(consolidationDetails.getGuid());
         return networkTransfer;
     }
 
@@ -357,6 +359,20 @@ public class NetworkTransferService implements INetworkTransferService {
         } catch (Exception e) {
             log.error("Error while deleting the Network Transfer Delete Request: {} for entityId: {} entityType: {}",
                     e.getMessage(), entityId, entityType);
+        }
+    }
+
+
+    @Override
+    public void deleteNetworkTransferEntity(NetworkTransfer networkTransfer) {
+        try{
+            String auditLogEntityType = getAuditLogEntityType(networkTransfer.getEntityType());
+            if (networkTransfer.getStatus() != NetworkTransferStatus.ACCEPTED) {
+                networkTransferDao.deleteAndLog(networkTransfer, auditLogEntityType);
+            }
+        } catch (Exception e) {
+            log.error("Error while deleting the NTE Delete Request: {} for entityId: {} entityType: {}",
+                    e.getMessage(), networkTransfer.getEntityId(), networkTransfer.getEntityType());
         }
     }
 

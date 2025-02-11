@@ -455,6 +455,24 @@ class NetworkTransferServiceTest extends CommonMocks{
     }
 
     @Test
+    void testDeleteNetworkTransferEntity(){
+        assertDoesNotThrow(() -> networkTransferService.deleteNetworkTransferEntity(networkTransfer));
+    }
+
+
+    @Test
+    void testDeleteNetworkTransferEntity2(){
+        networkTransfer.setStatus(NetworkTransferStatus.ACCEPTED);
+        assertDoesNotThrow(() -> networkTransferService.deleteNetworkTransferEntity(networkTransfer));
+    }
+
+    @Test
+    void testDeleteNetworkTransferEntityException(){
+        doThrow(new RuntimeException("Connection Time out")).when(networkTransferDao).deleteAndLog(any(), any());
+        assertDoesNotThrow(() -> networkTransferService.deleteNetworkTransferEntity(networkTransfer));
+    }
+
+    @Test
     void testUpdateStatusAndCreatedEntityId() {
         when(networkTransferDao.findById(1L)).thenReturn(Optional.of(networkTransfer));
         assertDoesNotThrow(() -> networkTransferService.updateStatusAndCreatedEntityId(1L, NetworkTransferStatus.ACCEPTED.name(), 2L));

@@ -4691,6 +4691,7 @@ public class ConsolidationService implements IConsolidationService {
 
     }
 
+    @Transactional
     public void createOrUpdateNetworkTransferEntity(ShipmentSettingsDetails shipmentSettingsDetails, ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity) {
         try{
             if(consolidationDetails.getShipmentType()==null || !Constants.DIRECTION_EXP.equals(consolidationDetails.getShipmentType()))
@@ -4707,7 +4708,7 @@ public class ConsolidationService implements IConsolidationService {
                         oldEntity != null ? oldEntity.getReceivingBranch() : null, consolidationDetails,
                         reverseDirection(consolidationDetails.getShipmentType()), isInterBranchConsole);
 
-                if (consolidationDetails.getTriangulationPartnerList() != null && !isInterBranchConsole) {
+                if (consolidationDetails.getTriangulationPartnerList() != null) {
                     List<Long> currentPartners = commonUtils.getTriangulationPartnerList(consolidationDetails.getTriangulationPartnerList());
                     List<Long> oldPartners = oldEntity != null ? commonUtils.getTriangulationPartnerList(oldEntity.getTriangulationPartnerList())
                             : Collections.emptyList();
@@ -4729,7 +4730,7 @@ public class ConsolidationService implements IConsolidationService {
                     oldTenantIds.forEach(oldTenantId -> {
                         processNetworkTransferEntity(null, oldTenantId, consolidationDetails, Constants.DIRECTION_CTS, false);
                     });
-                } else if (consolidationDetails.getTriangulationPartner() != null && !isInterBranchConsole) {
+                } else if (consolidationDetails.getTriangulationPartner() != null) {
                     processNetworkTransferEntity(consolidationDetails.getTriangulationPartner(),
                             oldEntity != null ? oldEntity.getTriangulationPartner() : null, consolidationDetails, Constants.DIRECTION_CTS, false);
                 } else if(consolidationDetails.getTriangulationPartnerList() == null) {
@@ -4784,20 +4785,24 @@ public class ConsolidationService implements IConsolidationService {
         Map<Long, Map<Integer, NetworkTransfer>> shipmentNetworkTranferMap = getNetworkTransferMap(consolidationDetails);
 
         List<ShipmentDetails> shipmentsForNte = new ArrayList<>();
-        List<ShipmentDetails> shipmentsToDelete = new ArrayList<>();
+        List<NetworkTransfer> nteToDelete = new ArrayList<>();
 
         for (ShipmentDetails shipmentDetails : consolidationDetails.getShipmentsList()) {
             if(shipmentDetails.getReceivingBranch()==null)
                 continue;
             NetworkTransfer existingNTE = shipmentNetworkTranferMap!=null ? shipmentNetworkTranferMap.getOrDefault(shipmentDetails.getId(), new HashMap<>())
                     .get(shipmentDetails.getReceivingBranch().intValue()): null;
+            if(consolidationDetails.getReceivingBranch()==null) {
+                nteToDelete.add(existingNTE);
+                continue;
+            }
             processConsoleBranchUpdate(isConsoleBranchUpdate, existingNTE);
             if (shipmentDetails.getReceivingBranch() != null && !Objects.equals(consolidationDetails.getReceivingBranch(), shipmentDetails.getReceivingBranch())) {
                 if (existingNTE == null) {
                     shipmentsForNte.add(shipmentDetails);
                 }
             } else {
-                shipmentsToDelete.add(shipmentDetails);
+                nteToDelete.add(existingNTE);
             }
         }
 
@@ -4807,10 +4812,9 @@ public class ConsolidationService implements IConsolidationService {
                         null, Constants.DIRECTION_IMP, null, true)
         );
 
-        shipmentsToDelete.forEach(shipmentDetails ->
-                networkTransferService.deleteValidNetworkTransferEntity(shipmentDetails.getReceivingBranch(),
-                        shipmentDetails.getId(), Constants.SHIPMENT)
-        );
+        nteToDelete.stream()
+                .filter(Objects::nonNull)
+                .forEach(networkTransferService::deleteNetworkTransferEntity);
     }
 
     private void processConsoleBranchUpdate(boolean isConsoleBranchUpdate, NetworkTransfer existingNTE){
