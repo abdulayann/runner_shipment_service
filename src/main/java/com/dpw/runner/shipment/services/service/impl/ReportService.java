@@ -1,5 +1,10 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COMBI_HAWB_COUNT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CSD_REPORT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.HAWB_PACKS_MAP;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.RA_CSD;
+
 import com.dpw.runner.shipment.services.DocumentService.DocumentService;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.DocPages;
@@ -20,6 +25,7 @@ import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.ReportingService.Reports.MawbReport;
 import com.dpw.runner.shipment.services.ReportingService.Reports.PickupOrderReport;
 import com.dpw.runner.shipment.services.ReportingService.Reports.PreAlertReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.SeawayBillReport;
 import com.dpw.runner.shipment.services.ReportingService.Reports.ShipmentCANReport;
 import com.dpw.runner.shipment.services.ReportingService.Reports.ShipmentTagsForExteranlServices;
 import com.dpw.runner.shipment.services.ReportingService.Reports.TransportOrderReport;
@@ -98,6 +104,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -115,6 +122,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.modelmapper.ModelMapper;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -122,22 +130,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COMBI_HAWB_COUNT;
 
 @Service
 @Slf4j
@@ -446,6 +438,9 @@ public class ReportService implements IReportService {
             createEvent(reportRequest, EventConstants.HAWB);
         } else if (report instanceof BookingConfirmationReport vBookingConfirmationReport) {
             dataRetrived = vBookingConfirmationReport.getData(Long.parseLong(reportRequest.getReportId()));
+        } else if (report instanceof SeawayBillReport vSeawayBillReport) {
+            dataRetrived = vSeawayBillReport.getData(Long.parseLong(reportRequest.getReportId()));
+            createEvent(reportRequest, EventConstants.FHBL);
         } else {
             dataRetrived = report.getData(Long.parseLong(reportRequest.getReportId()));
         }
@@ -476,6 +471,11 @@ public class ReportService implements IReportService {
             } else {
                 dataRetrived.remove(ReportConstants.OTHER_CHARGES_IATA);
             }
+
+            if(!reportRequest.isPrintCSD()){
+                dataRetrived.remove(RA_CSD);
+            }
+
             if(reportRequest.getDisplayFreightAmount()!=null && !reportRequest.getDisplayFreightAmount())
             {
                 dataRetrived.put(ReportConstants.PACKING_LIST, dataRetrived.get(ReportConstants.PACKING_LIST_FAT));
@@ -555,6 +555,9 @@ public class ReportService implements IReportService {
         {
             if (!reportRequest.isPrintIATAChargeCode()) {
                 dataRetrived.remove(ReportConstants.OTHER_CHARGES_IATA);
+            }
+            if(!reportRequest.isPrintCSD()){
+                dataRetrived.remove(RA_CSD);
             }
             if (reportRequest.getDisplayFreightAmount() != null && !reportRequest.getDisplayFreightAmount())
             {
@@ -968,6 +971,39 @@ public class ReportService implements IReportService {
     }
 
     public void generatePdfBytes(ReportRequest reportRequest, DocPages pages, Map<String, Object> dataRetrived, List<byte[]> pdfBytes) {
+
+        // Custom Air Labels-Master dialogue box
+        if(Boolean.TRUE.equals(reportRequest.getPrintCustomLabel()) && reportRequest.isFromConsolidation()) {
+            dataRetrived.put(ReportConstants.AIRLINE_NAME, reportRequest.getConsolAirline());
+            AWBLabelReport.populateMawb(dataRetrived, reportRequest.getMawbNumber());
+            dataRetrived.put(ReportConstants.CONSOL_DESTINATION_AIRPORT_CODE_CAPS, reportRequest.getDestination());
+            dataRetrived.put(ReportConstants.TOTAL_CONSOL_PACKS, reportRequest.getTotalMawbPieces());
+        }
+
+        // Custom Air Labels-Combi dialogue box
+        if (Boolean.TRUE.equals(reportRequest.getPrintCustomLabel()) && reportRequest.isCombiLabel()) {
+            List<Pair<String, Integer>> hawbPackageList = Optional.ofNullable(reportRequest.getHawbInfo())
+                    .orElse(Collections.emptyList()).stream()
+                    .filter(hawb -> hawb != null && (hawb.getHawbNumber() != null || hawb.getHawbPieceCount() != null))
+                    .map(hawb -> Pair.of(
+                            Objects.toString(hawb.getHawbNumber(), ""),
+                            Objects.requireNonNullElse(hawb.getHawbPieceCount(), 0)
+                    )).toList();
+
+            dataRetrived.put(HAWB_PACKS_MAP, hawbPackageList);
+            dataRetrived.put(ReportConstants.AIRLINE_NAME, reportRequest.getConsolAirline());
+            AWBLabelReport.populateMawb(dataRetrived, reportRequest.getMawbNumber());
+            dataRetrived.put(ReportConstants.CONSOL_DESTINATION_AIRPORT_CODE_CAPS, reportRequest.getDestination());
+            dataRetrived.put(ReportConstants.TOTAL_CONSOL_PACKS, reportRequest.getTotalMawbPieces());
+        }
+
+        // Custom Air Labels-House dialogue box
+        if(Boolean.TRUE.equals(reportRequest.getPrintCustomLabel()) && !reportRequest.isFromConsolidation()) {
+            dataRetrived.put(ReportConstants.HAWB_NUMBER, reportRequest.getHawbNumber());
+            dataRetrived.put(ReportConstants.POD_AIRPORT_CODE_IN_CAPS, reportRequest.getDestination());
+            dataRetrived.put(ReportConstants.TOTAL_PACKS, reportRequest.getTotalHawbPieces());
+        }
+
         int copies = reportRequest.getCopyCountForAWB() != null ? reportRequest.getCopyCountForAWB() : 0;
         if(copies < 1) throw new ValidationException("Copy count is less than 1");
         Integer noOfPacks = 0;
@@ -979,8 +1015,8 @@ public class ReportService implements IReportService {
             noOfPacks = (Integer) dataRetrived.get(ReportConstants.TOTAL_PACKS);
         }
         if(isCombi) {
-            hawbPacksMap = new ArrayList<>((List<Pair<String, Integer>>) dataRetrived.get("hawbPacksMap"));
-            dataRetrived.remove("hawbPacksMap");
+            hawbPacksMap = new ArrayList<>((List<Pair<String, Integer>>) dataRetrived.get(HAWB_PACKS_MAP));
+            dataRetrived.remove(HAWB_PACKS_MAP);
             noOfPacks = (Integer) dataRetrived.get(ReportConstants.TOTAL_CONSOL_PACKS);
         }
         if(noOfPacks == null || noOfPacks == 0) {
@@ -1752,8 +1788,35 @@ public class ReportService implements IReportService {
             CompletableFuture.runAsync(masterDataUtils.withMdc(
                 () -> addFilesFromReport(new BASE64DecodedMultipartFile(finalPdfByte_Content), filename,
                     docUploadRequest, finalGuid)), executorService);
+
+
+            if(reportRequest.isPrintCSD() && ReportConstants.ORIGINAL.equalsIgnoreCase(reportRequest.getPrintType())){
+                addCSDDocumentToDocumentMaster(reportRequest.getReportId(), docUploadRequest, guid);
+            }
         }catch(Exception ex){
             log.error(ex.getMessage());
+        }
+    }
+
+    public void addCSDDocumentToDocumentMaster(String reportId, DocUploadRequest docUploadRequest, String guid)
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+        ReportRequest reportRequest = new ReportRequest();
+        reportRequest.setReportId(reportId);
+        reportRequest.setReportInfo(CSD_REPORT);
+        try{
+        CommonRequestModel commonRequestModel =  CommonRequestModel.buildRequest(reportRequest);
+        DocUploadRequest csdDocumentUploadRequest = new DocUploadRequest(docUploadRequest);
+        csdDocumentUploadRequest.setType(CSD_REPORT);
+        String filename = CSD_REPORT + "_" + docUploadRequest.getId() + ".pdf";
+
+        byte[] pdfByte_Content = getDocumentData(commonRequestModel);
+      CompletableFuture.runAsync(masterDataUtils.withMdc(
+            () -> addFilesFromReport(new BASE64DecodedMultipartFile(pdfByte_Content), filename,
+                csdDocumentUploadRequest, guid)), executorService);
+            MDC.put(Constants.IS_CSD_DOCUMENT_ADDED, "true");
+      } catch (Exception e) {
+            MDC.put(Constants.IS_CSD_DOCUMENT_ADDED, "false");
+            log.error(e.getMessage());
         }
     }
 

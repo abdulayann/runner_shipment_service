@@ -758,6 +758,7 @@ public class AwbService implements IAwbService {
 
     private AwbResponse convertEntityToDto(Awb awbShipmentInfo) {
         var awbResponse = jsonHelper.convertValue(awbShipmentInfo, AwbResponse.class);
+        awbResponse.setUserDisplayName(UserContext.getUser().DisplayName);
         if(awbShipmentInfo.getAwbSpecialHandlingCodesMappings() != null && awbShipmentInfo.getAwbSpecialHandlingCodesMappings().size() > 0) {
             awbResponse.setShcIdList(awbShipmentInfo.getAwbSpecialHandlingCodesMappings().stream()
                     .map(i -> i.getShcId())
@@ -1199,7 +1200,7 @@ public class AwbService implements IAwbService {
                     awbRoutingInfo.setOriginPortName(route.getPol());
                     awbRoutingInfo.setDestinationPortName(route.getPod());
                     awbRoutingInfo.setByCarrier(route.getCarrier());
-                    awbRoutingInfo.setFlightNumber(route.getFlightNumber());
+                    awbRoutingInfo.setFlightNumber(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster()) ? route.getVoyage() : route.getFlightNumber());
                     awbRoutingInfo.setFlightDate(route.getEtd());
                     awbRoutingInfo.setEta(route.getEta());
                     awbRoutingInfo.setEntityId(consolidationDetails.getId());
@@ -1604,7 +1605,7 @@ public class AwbService implements IAwbService {
                     awbRoutingInfo.setOriginPortName(route.getPol());
                     awbRoutingInfo.setDestinationPortName(route.getPod());
                     awbRoutingInfo.setByCarrier(route.getCarrier());
-                    awbRoutingInfo.setFlightNumber(route.getFlightNumber());
+                    awbRoutingInfo.setFlightNumber(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster()) ? route.getVoyage() : route.getFlightNumber());
                     awbRoutingInfo.setFlightDate(route.getEtd());
                     awbRoutingInfo.setEta(route.getEta());
                     awbRoutingInfo.setEntityId(shipmentDetails.getId());
@@ -3975,15 +3976,10 @@ public class AwbService implements IAwbService {
             String errorString = String.join(", ", emptyFieldsError);
             throw new ValidationException("Please add " + errorString + " and retry");
         }
-        CompletableFuture<Map<String, UnlocationsResponse>> unlocationsFuture = CompletableFuture.supplyAsync(() ->
-                masterDataUtils.getLocationData(Set.of(iataFetchRateRequest.getOriginPort(), iataFetchRateRequest.getDestinationPort()))
-        );
-        CompletableFuture<Map<String, EntityTransferCarrier>> carriersFuture = CompletableFuture.supplyAsync(() ->
-                masterDataUtils.fetchInBulkCarriers(Set.of(iataFetchRateRequest.getFlightCarrier()))
-        );
-        CompletableFuture.allOf(unlocationsFuture, carriersFuture).join();
-        Map<String, UnlocationsResponse> unlocationsMap = unlocationsFuture.join();
-        Map<String, EntityTransferCarrier> carriersMap = carriersFuture.join();
+
+        Map<String, UnlocationsResponse> unlocationsMap = masterDataUtils.getLocationData(Set.of(iataFetchRateRequest.getOriginPort(), iataFetchRateRequest.getDestinationPort()));
+        Map<String, EntityTransferCarrier> carriersMap = masterDataUtils.fetchInBulkCarriers(Set.of(iataFetchRateRequest.getFlightCarrier()));
+
         if (unlocationsMap.isEmpty() || carriersMap.isEmpty()) {
             throw new ValidationException("Invalid data fetched for location or carriers.");
         }

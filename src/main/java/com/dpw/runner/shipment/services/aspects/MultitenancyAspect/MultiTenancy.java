@@ -33,6 +33,6 @@ public class MultiTenancy extends BaseEntity {
     public static final String TENANT_COLUMN = "tenant_id";
 
     @TenantIdData
-    @Column(name = "tenant_id")
+    @Column(name = "tenant_id", nullable = false, updatable = false)
     private Integer tenantId;
 }

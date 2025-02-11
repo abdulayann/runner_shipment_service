@@ -187,7 +187,6 @@ import com.dpw.runner.shipment.services.dto.response.MeasurementBasisResponse;
 import com.dpw.runner.shipment.services.dto.response.NotesResponse;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsLazyResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentExcelExportResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
@@ -200,7 +199,12 @@ import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiRe
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Container;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteContainerResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteContainerResponse.LiteContainer;
-import com.dpw.runner.shipment.services.dto.v1.request.*;
+import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.PartiesOrgAddressRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.TaskCreateRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.TaskStatusUpdateRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TaskStatusUpdateRequest.EntityDetails;
 import com.dpw.runner.shipment.services.dto.v1.request.WayBillNumberFilterRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.AddressDataV1;
@@ -264,7 +268,11 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.response.SendShipment
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
-import com.dpw.runner.shipment.services.helpers.*;
+import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
+import com.dpw.runner.shipment.services.helpers.MasterDataHelper;
+import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.mapper.CarrierDetailsMapper;
 import com.dpw.runner.shipment.services.mapper.ShipmentDetailsMapper;
@@ -594,9 +602,6 @@ public class ShipmentService implements IShipmentService {
 
     @Value("${include.master.data}")
     private Boolean includeMasterData;
-
-    @Value("${runner-3.0}")
-    private Boolean runnerV3Flag;
 
     public static final String CONSOLIDATION_ID = "consolidationId";
     public static final String TEMPLATE_NOT_FOUND_MESSAGE = "Template not found, please inform the region users manually";
@@ -1210,8 +1215,12 @@ public class ShipmentService implements IShipmentService {
                     containersList(customerBookingRequest.getContainersList()).
                     sourceTenantId(Long.valueOf(UserContext.getUser().TenantId)).
                     build();
+            // Set Department in case single department is available
+            consolidationDetailsRequest.setDepartment(commonUtils.getAutoPopulateDepartment(
+                    consolidationDetailsRequest.getTransportMode(), consolidationDetailsRequest.getShipmentType(), MdmConstants.CONSOLIDATION_MODULE
+            ));
             // Generate default routes based on O-D pairs
-            if(Boolean.FALSE.equals(isRouteMasterEnabled)) {
+            if(Boolean.FALSE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled()) && Boolean.FALSE.equals(isRouteMasterEnabled)) {
                 var routingList = routingsDao.generateDefaultRouting(jsonHelper.convertValue(consolidationDetailsRequest.getCarrierDetails(), CarrierDetails.class), consolidationDetailsRequest.getTransportMode());
                 consolidationDetailsRequest.setRoutingsList(commonUtils.convertToList(routingList, RoutingsRequest.class));
             }
@@ -1294,7 +1303,7 @@ public class ShipmentService implements IShipmentService {
                     return obj;
                 }).collect(Collectors.toList()) : null).
                 fileRepoList(customerBookingRequest.getFileRepoList()).
-                routingsList(isRouteMasterEnabled ? null: customerBookingRequestRoutingList).
+                routingsList(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled()) && Boolean.TRUE.equals(isRouteMasterEnabled) ? null: customerBookingRequestRoutingList).
                 consolidationList(isConsoleCreationNeeded(customerBookingRequest) ? consolidationDetails : null).
                 notesList(createNotes(notes)).
                 sourceTenantId(Long.valueOf(UserContext.getUser().TenantId)).
@@ -1306,6 +1315,10 @@ public class ShipmentService implements IShipmentService {
                 currentPartyForQuote(customerBookingRequest.getCurrentPartyForQuote()).
                 autoUpdateWtVol(true).
                 build();
+        // Set Department in case single department is available
+        shipmentRequest.setDepartment(commonUtils.getAutoPopulateDepartment(
+                shipmentRequest.getTransportMode(), shipmentRequest.getDirection(), MdmConstants.SHIPMENT_MODULE
+        ));
         AutoUpdateWtVolResponse autoUpdateWtVolResponse = calculateShipmentWV(jsonHelper.convertValue(shipmentRequest, AutoUpdateWtVolRequest.class));
         shipmentRequest.setNoOfPacks(getIntFromString(autoUpdateWtVolResponse.getNoOfPacks()));
         shipmentRequest.setPacksUnit(autoUpdateWtVolResponse.getPacksUnit());
@@ -2071,7 +2084,7 @@ public class ShipmentService implements IShipmentService {
         List<ConsolidationDetailsRequest> consolidationDetailsRequests = shipmentRequest.getConsolidationList();
         List<Routings> mainCarriageRoutings = (shipmentDetails.getRoutingsList() != null ? shipmentDetails.getRoutingsList().stream().filter(i -> RoutingCarriage.MAIN_CARRIAGE.equals(i.getCarriage())).toList() : Collections.emptyList());
         boolean isRouteMasterEnabled = Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster());
-        if (Boolean.TRUE.equals(runnerV3Flag) && Boolean.TRUE.equals(isRouteMasterEnabled) && mainCarriageRoutings != null && !mainCarriageRoutings.isEmpty() && shouldSetPorts(shipmentRequest)) {
+        if (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled()) && Boolean.TRUE.equals(isRouteMasterEnabled) && mainCarriageRoutings != null && !mainCarriageRoutings.isEmpty() && shouldSetPorts(shipmentRequest)) {
             shipmentDetails.getCarrierDetails().setOriginPort(mainCarriageRoutings.get(0).getPol());
             shipmentDetails.getCarrierDetails().setDestinationPort(mainCarriageRoutings.get(mainCarriageRoutings.size() - 1).getPod());
         }
@@ -2187,7 +2200,7 @@ public class ShipmentService implements IShipmentService {
         if (Boolean.TRUE.equals(isNewConsolAttached.getValue())) {
             ConsolidationDetails consolidationDetails1 = shipmentDetails.getConsolidationList().get(0);
             List<Routings> routings = routingsDao.findRoutingsByConsolidationId(consolidationDetails1.getId());
-            consolidationService.syncMainCarriageRoutingToShipment(routings, shipmentDetails, false);
+            consolidationService.syncMainCarriageRoutingToShipment(routings, shipmentDetails, false, false);
             dgValidations(shipmentDetails, consolidationDetails1, 1);
             if (shipmentDetails.getCargoDeliveryDate() != null && consolidationDetails1.getLatDate() != null && consolidationDetails1.getLatDate().isAfter(shipmentDetails.getCargoDeliveryDate())) {
                 throw new RunnerException("Cargo Delivery Date is lesser than LAT Date.");
@@ -2238,7 +2251,7 @@ public class ShipmentService implements IShipmentService {
                 awbDao.validateAirMessaging(console.getId());
             deletePendingRequestsOnConsoleAttach(shipmentDetails, isCreate);
         } else {
-            if(Boolean.TRUE.equals(runnerV3Flag) && Boolean.TRUE.equals(isRouteMasterEnabled) && mainCarriageRoutings != null && !mainCarriageRoutings.isEmpty()) {
+            if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled()) && Boolean.TRUE.equals(isRouteMasterEnabled) && mainCarriageRoutings != null && !mainCarriageRoutings.isEmpty()) {
                     shipmentDetails.getCarrierDetails().setEtd(mainCarriageRoutings.get(0).getEtd());
                     shipmentDetails.getCarrierDetails().setEta(mainCarriageRoutings.get(mainCarriageRoutings.size() - 1).getEta());
                 }
@@ -3296,7 +3309,7 @@ public class ShipmentService implements IShipmentService {
         return newUpdatedEvents;
     }
 
-    private Map<String, List<Events>> getCargoesRunnerTrackingEventMap(List<Events> events) {
+    private Map<String, List<Events>> groupCargoesRunnerEventsByCode(List<Events> events) {
         Map<String, List<Events>> eventMap = new HashMap<>();
 
         for (Events event : events) {
@@ -3318,17 +3331,18 @@ public class ShipmentService implements IShipmentService {
 
     private void createUpdateEvent(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, List<Events> events, Boolean isNewShipment) {
         commonUtils.removeDuplicateTrackingEvents(events);
-        Map<String, List<Events>> dbeventMap = getCargoesRunnerTrackingEventMap(events);
+        Map<String, List<Events>> cargoesRunnerDbEvents = groupCargoesRunnerEventsByCode(events);
         oldEntity = Optional.ofNullable(oldEntity).orElse(new ShipmentDetails());
         oldEntity.setAdditionalDetails(Optional.ofNullable(oldEntity.getAdditionalDetails()).orElse(new AdditionalDetails()));
 
         if (isLclOrFclOrAir(shipmentDetails)) {
 
-            if (isEventChanged(shipmentDetails.getBookingNumber(), oldEntity.getBookingNumber(), isNewShipment)) {
-                if (ObjectUtils.isNotEmpty(dbeventMap) && ObjectUtils.isNotEmpty(dbeventMap.get(EventConstants.BOCO))) {
-                    List<Events> dbEvents = dbeventMap.get(EventConstants.BOCO);
+            if (isEventChanged(shipmentDetails.getBookingNumber(), oldEntity.getBookingNumber(), isNewShipment) && Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP)) {
+                if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.BOCO))) {
+                    List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.BOCO);
                     for (Events event : dbEvents) {
                         event.setActual(LocalDateTime.now());
+                        eventDao.updateUserFieldsInEvent(event, true);
                     }
                 } else {
                     events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.BOCO,
@@ -3340,10 +3354,11 @@ public class ShipmentService implements IShipmentService {
                     isEventChanged(shipmentDetails.getAdditionalDetails().getCargoDeliveredDate(),
                             oldEntity.getAdditionalDetails().getCargoDeliveredDate(), isNewShipment)) {
 
-                if (ObjectUtils.isNotEmpty(dbeventMap) && ObjectUtils.isNotEmpty(dbeventMap.get(EventConstants.CADE))) {
-                    List<Events> dbEvents = dbeventMap.get(EventConstants.CADE);
+                if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.CADE))) {
+                    List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.CADE);
                     for (Events event : dbEvents) {
                         event.setActual(shipmentDetails.getAdditionalDetails().getCargoDeliveredDate());
+                        eventDao.updateUserFieldsInEvent(event, true);
                     }
                 } else {
                     events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CADE,
@@ -3354,10 +3369,11 @@ public class ShipmentService implements IShipmentService {
             if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) &&
                     isEventChanged(shipmentDetails.getAdditionalDetails().getPickupDate(),
                             oldEntity.getAdditionalDetails().getPickupDate(), isNewShipment)) {
-                if (ObjectUtils.isNotEmpty(dbeventMap) && ObjectUtils.isNotEmpty(dbeventMap.get(EventConstants.CACO))) {
-                    List<Events> dbEvents = dbeventMap.get(EventConstants.CACO);
+                if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.CACO))) {
+                    List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.CACO);
                     for (Events event : dbEvents) {
                         event.setActual(shipmentDetails.getAdditionalDetails().getPickupDate());
+                        eventDao.updateUserFieldsInEvent(event, true);
                     }
                 } else {
                     events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CACO,
@@ -3368,10 +3384,11 @@ public class ShipmentService implements IShipmentService {
             if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) &&
                     isEventChanged(shipmentDetails.getAdditionalDetails().getCustomReleaseDate(),
                             oldEntity.getAdditionalDetails().getCustomReleaseDate(), isNewShipment)) {
-                if (ObjectUtils.isNotEmpty(dbeventMap) && ObjectUtils.isNotEmpty(dbeventMap.get(EventConstants.CURE))) {
-                    List<Events> dbEvents = dbeventMap.get(EventConstants.CURE);
+                if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.CURE))) {
+                    List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.CURE);
                     for (Events event : dbEvents) {
                         event.setActual(shipmentDetails.getAdditionalDetails().getCustomReleaseDate());
+                        eventDao.updateUserFieldsInEvent(event, true);
                     }
                 } else {
                     events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CURE,
@@ -3383,10 +3400,11 @@ public class ShipmentService implements IShipmentService {
                     isEventBooleanChanged(shipmentDetails.getAdditionalDetails().getDocTurnedOverToCustomer(),
                             oldEntity.getAdditionalDetails().getDocTurnedOverToCustomer(), isNewShipment)) {
 
-                if (ObjectUtils.isNotEmpty(dbeventMap) && ObjectUtils.isNotEmpty(dbeventMap.get(EventConstants.DOTP))) {
-                    List<Events> dbEvents = dbeventMap.get(EventConstants.DOTP);
+                if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.DOTP))) {
+                    List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.DOTP);
                     for (Events event : dbEvents) {
                         event.setActual(LocalDateTime.now());
+                        eventDao.updateUserFieldsInEvent(event, true);
                     }
                 } else {
                     events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.DOTP,
@@ -3397,10 +3415,11 @@ public class ShipmentService implements IShipmentService {
             if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) &&
                     isEventChanged(shipmentDetails.getAdditionalDetails().getProofOfDeliveryDate(),
                             oldEntity.getAdditionalDetails().getProofOfDeliveryDate(), isNewShipment)) {
-                if (ObjectUtils.isNotEmpty(dbeventMap) && ObjectUtils.isNotEmpty(dbeventMap.get(EventConstants.PRDE))) {
-                    List<Events> dbEvents = dbeventMap.get(EventConstants.PRDE);
+                if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.PRDE))) {
+                    List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.PRDE);
                     for (Events event : dbEvents) {
                         event.setActual(shipmentDetails.getAdditionalDetails().getProofOfDeliveryDate());
+                        eventDao.updateUserFieldsInEvent(event, true);
                     }
                 } else {
                 events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.PRDE,
@@ -3412,10 +3431,11 @@ public class ShipmentService implements IShipmentService {
                     isEventBooleanChanged(shipmentDetails.getAdditionalDetails().getPickupByConsigneeCompleted(),
                             oldEntity.getAdditionalDetails().getPickupByConsigneeCompleted(), isNewShipment)) {
 
-                if(ObjectUtils.isNotEmpty(dbeventMap) && ObjectUtils.isNotEmpty(dbeventMap.get(EventConstants.SEPU))){
-                    List<Events> dbEvents = dbeventMap.get(EventConstants.SEPU);
+                if(ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.SEPU))){
+                    List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.SEPU);
                     for(Events event: dbEvents){
                         event.setActual(LocalDateTime.now());
+                        eventDao.updateUserFieldsInEvent(event, true);
                     }
                 }else{
                     events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.SEPU,
@@ -3428,10 +3448,11 @@ public class ShipmentService implements IShipmentService {
             if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) &&
                     isEventChanged(shipmentDetails.getAdditionalDetails().getWarehouseCargoArrivalDate(),
                             oldEntity.getAdditionalDetails().getWarehouseCargoArrivalDate(), isNewShipment)) {
-                if(ObjectUtils.isNotEmpty(dbeventMap) && ObjectUtils.isNotEmpty(dbeventMap.get(EventConstants.CAFS))){
-                    List<Events> dbEvents = dbeventMap.get(EventConstants.CAFS);
+                if(ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.CAFS))){
+                    List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.CAFS);
                     for(Events event: dbEvents){
                         event.setActual(shipmentDetails.getAdditionalDetails().getWarehouseCargoArrivalDate());
+                        eventDao.updateUserFieldsInEvent(event, true);
                     }
                 }else{
                     events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CAFS,
@@ -3441,14 +3462,15 @@ public class ShipmentService implements IShipmentService {
 
             if (isEventChanged(shipmentDetails.getShipmentGateInDate(), oldEntity.getShipmentGateInDate(), isNewShipment) &&
                     shipmentDetails.getDateType()!=null) {
-                if(ObjectUtils.isNotEmpty(dbeventMap) && ObjectUtils.isNotEmpty(dbeventMap.get(EventConstants.CAAW))){
-                    List<Events> dbEvents = dbeventMap.get(EventConstants.CAAW);
+                if(ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.CAAW))){
+                    List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.CAAW);
                     for(Events event: dbEvents){
                         if(ACTUAL.equals(shipmentDetails.getDateType())) {
                             event.setActual(shipmentDetails.getShipmentGateInDate());
                         }else if (ESTIMATED.equals(shipmentDetails.getDateType() )){
                             event.setEstimated(shipmentDetails.getShipmentGateInDate());
                         }
+                        eventDao.updateUserFieldsInEvent(event, true);
                     }
                 }else{
                     if(shipmentDetails.getDateType() == ACTUAL){
@@ -3466,10 +3488,11 @@ public class ShipmentService implements IShipmentService {
                 isEventBooleanChanged(shipmentDetails.getAdditionalDetails().getEmptyContainerReturned(),
                         oldEntity.getAdditionalDetails().getEmptyContainerReturned(), isNewShipment)) {
 
-            if(ObjectUtils.isNotEmpty(dbeventMap) && ObjectUtils.isNotEmpty(dbeventMap.get(EventConstants.EMCR))){
-                List<Events> dbEvents = dbeventMap.get(EventConstants.EMCR);
+            if(ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.EMCR))){
+                List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.EMCR);
                 for(Events event: dbEvents){
                     event.setActual(LocalDateTime.now());
+                    eventDao.updateUserFieldsInEvent(event, true);
                 }
             }else{
                 events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.EMCR,
@@ -3481,10 +3504,11 @@ public class ShipmentService implements IShipmentService {
                 isEventBooleanChanged(shipmentDetails.getAdditionalDetails().getIsExportCustomClearanceCompleted(),
                         oldEntity.getAdditionalDetails().getIsExportCustomClearanceCompleted(), isNewShipment)) {
 
-            if (ObjectUtils.isNotEmpty(dbeventMap) && ObjectUtils.isNotEmpty(dbeventMap.get(EventConstants.ECCC))) {
-                List<Events> dbEvents = dbeventMap.get(EventConstants.ECCC);
+            if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.ECCC))) {
+                List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.ECCC);
                 for (Events event : dbEvents) {
                     event.setActual(LocalDateTime.now());
+                    eventDao.updateUserFieldsInEvent(event, true);
                 }
             } else {
                 events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.ECCC,
@@ -3496,10 +3520,11 @@ public class ShipmentService implements IShipmentService {
                 isEventChanged(shipmentDetails.getAdditionalDetails().getBlInstructionReceived(),
                         oldEntity.getAdditionalDetails().getBlInstructionReceived(), isNewShipment)) {
 
-            if (ObjectUtils.isNotEmpty(dbeventMap) && ObjectUtils.isNotEmpty(dbeventMap.get(EventConstants.BLRS))) {
-                List<Events> dbEvents = dbeventMap.get(EventConstants.BLRS);
+            if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.BLRS))) {
+                List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.BLRS);
                 for (Events event : dbEvents) {
                     event.setActual(shipmentDetails.getAdditionalDetails().getBlInstructionReceived());
+                    eventDao.updateUserFieldsInEvent(event, true);
                 }
             } else {
                 events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.BLRS,
@@ -3507,14 +3532,27 @@ public class ShipmentService implements IShipmentService {
             }
         }
 
+        if (ObjectUtils.isNotEmpty(shipmentDetails.getMasterBill()) &&
+                isEventChanged(shipmentDetails.getMasterBill(), oldEntity.getMasterBill(), isNewShipment)) {
+
+            if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.FNMU))) {
+                List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.FNMU);
+                for (Events event : dbEvents) {
+                    event.setContainerNumber(shipmentDetails.getMasterBill());
+                    eventDao.updateUserFieldsInEvent(event, true);
+                }
+            }
+        }
+
         if (ObjectUtils.isNotEmpty(shipmentDetails.getAdditionalDetails()) &&
                 isEventChanged(shipmentDetails.getAdditionalDetails().getCargoOutForDelivery(),
                         oldEntity.getAdditionalDetails().getCargoOutForDelivery(), isNewShipment)) {
 
-            if (ObjectUtils.isNotEmpty(dbeventMap) && ObjectUtils.isNotEmpty(dbeventMap.get(EventConstants.COOD))) {
-                List<Events> dbEvents = dbeventMap.get(EventConstants.COOD);
+            if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.COOD))) {
+                List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.COOD);
                 for (Events event : dbEvents) {
                     event.setActual(shipmentDetails.getAdditionalDetails().getCargoOutForDelivery());
+                    eventDao.updateUserFieldsInEvent(event, true);
                 }
             } else {
                 events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.COOD,
@@ -3912,10 +3950,12 @@ public class ShipmentService implements IShipmentService {
             List<IRunnerResponse>filteredList=new ArrayList<>();
 
             for( var curr:shipmentDetailsPage.getContent()){
-                ShipmentDetailsLazyResponse shipmentDetailsLazyResponse = commonUtils.getShipmentDetailsResponse(curr, request.getIncludeColumns());
-                RunnerPartialListResponse res=new RunnerPartialListResponse();
-                res.setData(shipmentDetailsLazyResponse);
-                filteredList.add( res);
+                ShipmentDetailsResponse shipmentDetailsResponse = commonUtils.getShipmentDetailsResponse(curr, request.getIncludeColumns());
+                // from dps we will receive one guid at a time
+                if (request.getIncludeColumns().contains(ShipmentConstants.IMPLICATIONS_LIST_COLUMN)) {
+                    shipmentDetailsResponse.setImplicationList(dpsEventService.getImplicationsForShipment(shipmentDetailsResponse.getGuid().toString()));
+                }
+                filteredList.add(shipmentDetailsResponse);
             }
             return ResponseHelper.buildListSuccessResponse(
                     filteredList,
@@ -4037,6 +4077,7 @@ public class ShipmentService implements IShipmentService {
             ShipmentContainerAssignRequest request = (ShipmentContainerAssignRequest) commonRequestModel.getData();
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
             ShipmentDetails shipmentDetails = shipmentDao.findById(request.getShipmentId()).get();
+            List<Containers> oldContainers = shipmentDetails.getContainersList();
             ListCommonRequest listCommonRequest = constructListCommonRequest("id", request.getContainerIds(), "IN");
             Pair<Specification<Containers>, Pageable> pair = fetchData(listCommonRequest, Containers.class);
             Page<Containers> containers = containerDao.findAll(pair.getLeft(), pair.getRight());
@@ -4074,6 +4115,7 @@ public class ShipmentService implements IShipmentService {
             }
             shipmentsContainersMappingDao.assignContainers(request.getShipmentId(), request.getContainerIds(), shipmentDetails.getGuid().toString());
             makeShipmentsDG(containersMap, shipmentDetails);
+            dependentServiceHelper.pushShipmentDataToDependentService(shipmentDetails, false, false, oldContainers);
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -4106,6 +4148,7 @@ public class ShipmentService implements IShipmentService {
             List<Containers> conts = new ArrayList<>();
             List<Long> containerIds = new ArrayList<>();
             ShipmentDetails shipmentDetails = shipmentDao.findById(containerAssignRequest.getShipmentId()).get();
+            List<Containers> oldContainers = shipmentDetails.getContainersList();
             if(lclAndSeaOrRoadFlag) {
                 for (Containers container : containers.getContent()) {
                     List<ShipmentsContainersMapping> shipmentsContainersMappings = shipmentsContainersMappingDao.findByContainerId(container.getId());
@@ -4172,6 +4215,7 @@ public class ShipmentService implements IShipmentService {
                 shipmentsContainersMappingDao.assignContainers(containerAssignRequest.getShipmentId(), containerIds, shipmentDetails.getGuid().toString());
                 makeShipmentsDG(containersMap, shipmentDetails);
             }
+            dependentServiceHelper.pushShipmentDataToDependentService(shipmentDetails, false, false, oldContainers);
             return ResponseHelper.buildSuccessResponse();
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()

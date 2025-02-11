@@ -1,8 +1,10 @@
 package com.dpw.runner.shipment.services.helpers;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.responses.*;
 import com.dpw.runner.shipment.services.dto.response.ByteArrayResourceResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -124,6 +126,8 @@ public class ResponseHelper {
                 .contentType(contentType)
                 .contentLength(resource.contentLength())
                 .header(HttpHeaders.CONTENT_DISPOSITION,"attachment; filename=" + fileName)
+                .header("X-CSD-Document-Status",
+                    String.valueOf(Boolean.parseBoolean(MDC.get(Constants.IS_CSD_DOCUMENT_ADDED))))
                 .body(resource);
     }
 }

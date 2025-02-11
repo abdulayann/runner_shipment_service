@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -23,6 +24,7 @@ import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -200,6 +202,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -4475,15 +4478,15 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         var spyService = Mockito.spy(consolidationService);
         when(producer.getKafkaResponse(any(), anyBoolean())).thenReturn(new KafkaResponse());
         when(trackingServiceAdapter.checkIfConsolContainersExist(consolidationDetails)).thenReturn(true);
-        when(trackingServiceAdapter.mapConsoleDataToTrackingServiceData(consolidationDetails)).thenReturn(universalTrackingPayload);
+        lenient().when(trackingServiceAdapter.mapConsoleDataToTrackingServiceData(consolidationDetails, new ShipmentDetails())).thenReturn(universalTrackingPayload);
         when(jsonHelper.convertToJson(any())).thenReturn("");
-        doNothing().when(trackingServiceAdapter).publishUpdatesToTrackingServiceQueue("", false);
-        when(trackingServiceAdapter.getAllEvents(null,consolidationDetails, consolidationDetails.getReferenceNumber())).thenReturn(List.of());
-        when(trackingServiceAdapter.mapEventDetailsForTracking(anyString(), anyString(), anyString(), anyList())).thenReturn(eventsPayload);
-        doNothing().when(trackingServiceAdapter).publishUpdatesToTrackingServiceQueue("", true);
+      lenient().doNothing().when(trackingServiceAdapter).publishUpdatesToTrackingServiceQueue("", false);
+      lenient().when(trackingServiceAdapter.getAllEvents(null,consolidationDetails, consolidationDetails.getReferenceNumber())).thenReturn(List.of());
+      lenient().when(trackingServiceAdapter.mapEventDetailsForTracking(anyString(), anyString(), anyString(), anyList())).thenReturn(eventsPayload);
+      lenient().doNothing().when(trackingServiceAdapter).publishUpdatesToTrackingServiceQueue("", true);
         spyService.pushShipmentDataToDependentService(consolidationDetails, true, null);
-        verify(trackingServiceAdapter, times(1)).publishUpdatesToTrackingServiceQueue("", false);
-        verify(trackingServiceAdapter, times(1)).publishUpdatesToTrackingServiceQueue("", true);
+        verify(trackingServiceAdapter, times(0)).publishUpdatesToTrackingServiceQueue("", false);
+        verify(trackingServiceAdapter, times(0)).publishUpdatesToTrackingServiceQueue("", true);
         verify(producer, atLeast(1)).produceToKafka(any(), any(), any());
         verify(producer, atLeast(1)).getKafkaResponse(any(), any(Boolean.class));
     }
@@ -5490,6 +5493,12 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         Routings mockRouting = new Routings();
         mockRouting.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
 
+        // Create a mock routing for shipmentRoutingList with inheritedFromConsolidation = false
+        Routings existingRouting = new Routings();
+        existingRouting.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+        existingRouting.setInheritedFromConsolidation(false);
+        existingRouting.setId(123L);
+
         ConsolidationDetails mockConoslidation = objectMapperTest.convertValue(testConsol, ConsolidationDetails.class);
         mockConoslidation.setCarrierBookingRef("BookingRef#TEST");
         mockConoslidation.setRoutingsList(List.of(mockRouting));
@@ -5497,7 +5506,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
         ShipmentDetails mockShip1 = new ShipmentDetails();
         mockShip1.setCarrierDetails(new CarrierDetails());
-        mockShip1.setRoutingsList(new ArrayList<>());
+        mockShip1.setRoutingsList(List.of(existingRouting));
         mockShip1.setSyncRoutingFromConsolidation(true);
         ShipmentDetails mockShip2 = new ShipmentDetails();
         mockShip2.setCarrierDetails(new CarrierDetails());
@@ -5539,6 +5548,10 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         mockTenantSettings();
         ResponseEntity<IRunnerResponse> responseEntity = spyService.completeUpdate(commonRequestModel);
         assertEquals(expectedEntity, responseEntity);
+
+        Routings updatedRouting = mockShip1.getRoutingsList().get(0);
+        assertNull(updatedRouting.getConsolidationId()); // Consolidation ID should be cleared
+        assertTrue(updatedRouting.getInheritedFromConsolidation());
     }
 
     @Test
@@ -6307,6 +6320,94 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
     }
 
+  @Test
+  void shouldReturnShipmentsListWhenMasterDataChanges() {
+    // Given: Master Bill or Carrier SCAC changes
+    consolidationDetails.setMawb("NEW_MAWB");
+    ConsolidationDetails oldEntity = new ConsolidationDetails();
+    oldEntity.setMawb("OLD_MAWB");
+
+    consolidationDetails.setShipmentsList(List.of(new ShipmentDetails()));
+
+    // When
+    List<ShipmentDetails> result = consolidationService.findShipmentForTrackingService(consolidationDetails, oldEntity);
+
+    // Then
+    assertThat(result).isNotEmpty();
+    assertThat(result).hasSize(1);
+  }
+
+  @Test
+  void shouldReturnShipmentsWhenContainerNumberChanges() {
+    // Given: Container number change
+    Containers oldContainer = new Containers();
+    oldContainer.setId(1L);
+    oldContainer.setContainerNumber("CONT_123");
+
+    Containers newContainer = new Containers();
+    newContainer.setId(1L);
+    newContainer.setContainerNumber("CONT_456");
+
+    ConsolidationDetails oldEntity = new ConsolidationDetails();
+    oldEntity.setContainersList(List.of(oldContainer));
+    consolidationDetails.setContainersList(List.of(newContainer));
+
+    ShipmentsContainersMapping mapping = new ShipmentsContainersMapping();
+    mapping.setShipmentId(101L);
+
+    when(shipmentsContainersMappingDao.findByContainerIdIn(List.of(1L)))
+        .thenReturn(List.of(mapping));
+
+    ShipmentDetails shipmentDetails = new ShipmentDetails();
+    when(shipmentDao.findShipmentsByIds(Set.of(101L)))
+        .thenReturn(List.of(shipmentDetails));
+
+    // When
+    List<ShipmentDetails> result = consolidationService.findShipmentForTrackingService(consolidationDetails, oldEntity);
+
+    // Then
+    assertThat(result).isNotEmpty();
+    assertThat(result).hasSize(1);
+    verify(shipmentsContainersMappingDao).findByContainerIdIn(List.of(1L));
+    verify(shipmentDao).findShipmentsByIds(Set.of(101L));
+  }
+
+  @Test
+  void shouldReturnNullWhenOldEntityIsNull() {
+    // When
+    List<ShipmentDetails> result = consolidationService.findShipmentForTrackingService(consolidationDetails, null);
+
+    // Then
+    assertThat(result).isNull();
+  }
+
+  @Test
+  void shouldReturnEmptyListWhenNoChangesDetected() {
+    // Given: No changes in master data or container numbers
+    ConsolidationDetails oldEntity = new ConsolidationDetails();
+    oldEntity.setMawb("MAWB_123");
+    consolidationDetails.setMawb("MAWB_123");
+
+    Containers oldContainer = new Containers();
+    oldContainer.setId(1L);
+    oldContainer.setContainerNumber("CONT_123");
+
+    Containers newContainer = new Containers();
+    newContainer.setId(1L);
+    newContainer.setContainerNumber("CONT_123");
+
+    oldEntity.setContainersList(List.of(oldContainer));
+    consolidationDetails.setContainersList(List.of(newContainer));
+
+    when(shipmentsContainersMappingDao.findByContainerIdIn(anyList())).thenReturn(List.of());
+    when(shipmentDao.findShipmentsByIds(anySet())).thenReturn(List.of());
+
+    // When
+    List<ShipmentDetails> result = consolidationService.findShipmentForTrackingService(consolidationDetails, oldEntity);
+
+    // Then
+    assertThat(result).isEmpty();
+  }
     @Test
     void testDetachShipments_Success_InterConsole_Nte() throws RunnerException {
         Runnable mockRunnable = mock(Runnable.class);

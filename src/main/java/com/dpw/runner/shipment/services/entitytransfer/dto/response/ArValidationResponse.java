@@ -30,6 +30,7 @@ public class ArValidationResponse implements IRunnerResponse {
     private ProfitShareShipmentData originShipment;
     private ProfitShareShipmentData receivingShipment;
     private ProfitShareShipmentData triangulationShipment;
+    private List<ProfitShareShipmentData> triangulationShipmentList;
 
     @Data
     @Builder
