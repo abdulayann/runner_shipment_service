@@ -77,7 +77,7 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
             response.setPackingList(jsonHelper.convertValueToList(syncEntityConversionService.packingsV1ToV2(request.getPackingList()), PackingRequest.class));
             response.setRoutingsList(jsonHelper.convertValueToList(syncEntityConversionService.routingsV1ToV2(request.getRoutingsList()), RoutingsRequest.class));
             mapReverseJobs(response, request);
-            response.setContainersList(jsonHelper.convertValueToList(syncEntityConversionService.containersV1ToV2(request.getContainersList()), ContainerRequest.class));
+            response.setContainersList(jsonHelper.convertValueToList(syncEntityConversionService.containersV1ToV2(request.getContainersList()).stream().toList(), ContainerRequest.class));
             response.setConsolidationAddresses(jsonHelper.convertValueToList(syncEntityConversionService.addressesV1ToV2(request.getConsolidationAddresses()), PartiesRequest.class));
             response.setFileRepoList(convertToList(request.getDocsList(), FileRepoRequest.class));
 

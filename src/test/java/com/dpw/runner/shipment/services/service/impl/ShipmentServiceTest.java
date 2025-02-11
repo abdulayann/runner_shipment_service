@@ -7415,7 +7415,7 @@ ShipmentServiceTest extends CommonMocks {
         shipmentDetails1.setCargoDeliveryDate(LocalDateTime.of(2023, 8, 15, 10, 0));
         ShipmentDetails shipmentDetails2 = new ShipmentDetails();
         shipmentDetails2.setCargoDeliveryDate(LocalDateTime.of(2023, 8, 16, 10, 0));
-        Set<ShipmentDetails> shipmentDetailsList = Set.of(shipmentDetails1, shipmentDetails2);
+        Set<ShipmentDetails> shipmentDetailsList = new HashSet<>(List.of(shipmentDetails1, shipmentDetails2));
         when(consolidationDetails.getShipmentsList()).thenReturn(shipmentDetailsList);
         when(consolidationDetailsDao.findById(consoleId)).thenReturn(Optional.of(consolidationDetails));
 
@@ -8110,7 +8110,7 @@ ShipmentServiceTest extends CommonMocks {
 
         TaskCreateResponse taskCreateResponse = TaskCreateResponse.builder().build();
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
-            .containersList(Set.of(containers1, containers2))
+            .containersList(new HashSet<>(List.of(containers1, containers2)))
             .packingList(List.of(packing1, packing2))
             .build();
         String remarks = "Remarks";

@@ -722,9 +722,9 @@ public class ShipmentService implements IShipmentService {
             var populateUnlocCodeFuture = getPopulateUnlocCodeFuture(shipmentDetails, null);
 
             if(request.getConsolidationList() != null)
-                shipmentDetails.setConsolidationList(new HashSet<>(jsonHelper.convertValueToList(request.getConsolidationList(), ConsolidationDetails.class)));
+                shipmentDetails.setConsolidationList(new HashSet<>(jsonHelper.convertValueToList(request.getConsolidationList().stream().toList(), ConsolidationDetails.class)));
             if(request.getContainersList() != null)
-                shipmentDetails.setContainersList(new HashSet<>(jsonHelper.convertValueToList(request.getContainersList(), Containers.class)));
+                shipmentDetails.setContainersList(new HashSet<>(jsonHelper.convertValueToList(request.getContainersList().stream().toList(), Containers.class)));
 
             populateUnlocCodeFuture.join();
 
@@ -818,7 +818,7 @@ public class ShipmentService implements IShipmentService {
 
         ShipmentDetails shipmentDetails = includeGuid ? jsonHelper.convertValue(request, ShipmentDetails.class) : jsonHelper.convertCreateValue(request, ShipmentDetails.class);
         if(request.getConsolidationList() != null)
-            shipmentDetails.setConsolidationList(new HashSet<>(jsonHelper.convertValueToList(request.getConsolidationList(), ConsolidationDetails.class)));
+            shipmentDetails.setConsolidationList(new HashSet<>(jsonHelper.convertValueToList(request.getConsolidationList().stream().toList(), ConsolidationDetails.class)));
 
         try {
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
@@ -993,7 +993,7 @@ public class ShipmentService implements IShipmentService {
             {
                 ConsolidationDetailsResponse consolDetailsResponse = (ConsolidationDetailsResponse) (((RunnerResponse)consolidationDetailsResponse.getBody()).getData());
                 ConsolidationDetailsRequest consolRequest = jsonHelper.convertValue(consolDetailsResponse, ConsolidationDetailsRequest.class);
-                containerList = new HashSet<>(consolRequest.getContainersList());
+                containerList = consolRequest.getContainersList() != null ? new HashSet<>(consolRequest.getContainersList()) : null;
                 consolRequest.setContainersList(null);
                 consolidationDetails.add(consolRequest);
             }
@@ -1166,7 +1166,7 @@ public class ShipmentService implements IShipmentService {
                 CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(consolidationDetailsRequest);
                 ConsolidationDetailsResponse consolidationDetailsResponse = consolidationService.createConsolidationForBooking(commonRequestModel);
                 ConsolidationDetailsRequest consolRequest = jsonHelper.convertValue(consolidationDetailsResponse, ConsolidationDetailsRequest.class);
-                containerList = new HashSet<>(consolRequest.getContainersList());
+                containerList = consolRequest.getContainersList() != null ? new HashSet<>(consolRequest.getContainersList()) : null;
                 consolRequest.setContainersList(null);
                 consolidationDetails.add(consolRequest);
             }
@@ -1903,7 +1903,7 @@ public class ShipmentService implements IShipmentService {
             if (containersList != null && containersList.size() > 0) {
                 allConsolConts.addAll(containersList);
                 if (Objects.isNull(containerRequest) && !Objects.isNull(oldEntity)) {
-                    containerRequest = new HashSet<>(jsonHelper.convertValueToList(oldEntity.getContainersList(),ContainerRequest.class));
+                    containerRequest = new HashSet<>(jsonHelper.convertValueToList(oldEntity.getContainersList().stream().toList(),ContainerRequest.class));
                 }
                 containerRequest.removeIf(obj2 -> allConsolConts.stream().anyMatch(obj1 -> obj1.getId().equals(obj2.getId())));
                 changeContainerWtVolOnDetach(shipmentRequest, allConsolConts);
@@ -1913,7 +1913,7 @@ public class ShipmentService implements IShipmentService {
 
         if (shipmentDetails.getContainerAutoWeightVolumeUpdate() != null && shipmentDetails.getContainerAutoWeightVolumeUpdate().booleanValue() && packingRequest != null) {
             if (Objects.isNull(containerRequest) && !Objects.isNull(oldEntity))
-                containerRequest = new HashSet<>(jsonHelper.convertValueToList(oldEntity.getContainersList(), ContainerRequest.class));
+                containerRequest = new HashSet<>(jsonHelper.convertValueToList(oldEntity.getContainersList().stream().toList(), ContainerRequest.class));
             containerRequest = calculateAutoContainerWeightAndVolume(containerRequest, packingRequest);
         }
         if (Constants.TRANSPORT_MODE_SEA.equals(shipmentDetails.getTransportMode()))
@@ -4787,7 +4787,7 @@ public class ShipmentService implements IShipmentService {
                         oldContainers.addAll(oldConsolContainers.getContent());
                     }
                 }
-                updatedContainers = new HashSet<>(containerDao.updateEntityFromShipmentV1(jsonHelper.convertValueToList(containerRequestList, Containers.class), oldContainers));
+                updatedContainers = new HashSet<>(containerDao.updateEntityFromShipmentV1(jsonHelper.convertValueToList(containerRequestList.stream().toList(), Containers.class), oldContainers));
             } else if(!oldEntity.isEmpty()){
                 updatedContainers = oldEntity.get().getContainersList();
             }
@@ -5947,7 +5947,7 @@ public class ShipmentService implements IShipmentService {
             return consolidationDetails;
         }
         else // only execute when above logic execution not required (i.e. saving all shipments not required)
-            return changeConsolidationDGValues(makeConsoleDG, makeConsoleNonDG, new ArrayList<>(consolidationList), shipment);
+            return changeConsolidationDGValues(makeConsoleDG, makeConsoleNonDG, consolidationList, shipment);
     }
 
     private List<Long> getShipmentIdsExceptCurrentShipment(Long consolidationId, ShipmentDetails shipment) {
@@ -5956,9 +5956,9 @@ public class ShipmentService implements IShipmentService {
                 .map(ConsoleShipmentMapping::getShipmentId).toList();
     }
 
-    private ConsolidationDetails changeConsolidationDGValues(boolean makeConsoleDG, AtomicBoolean makeConsoleNonDG, List<ConsolidationDetails> consolidationList, ShipmentDetails shipment) {
+    private ConsolidationDetails changeConsolidationDGValues(boolean makeConsoleDG, AtomicBoolean makeConsoleNonDG, Set<ConsolidationDetails> consolidationList, ShipmentDetails shipment) {
         if(consolidationList != null && !consolidationList.isEmpty()) {
-            return changeConsolidationDGValues(makeConsoleDG, makeConsoleNonDG, consolidationList.get(0).getId(), shipment, null);
+            return changeConsolidationDGValues(makeConsoleDG, makeConsoleNonDG, consolidationList.iterator().next().getId(), shipment, null);
         }
         return null;
     }
@@ -8142,9 +8142,9 @@ public class ShipmentService implements IShipmentService {
         ShipmentDetails shipmentDetails = jsonHelper.convertValue(request, ShipmentDetails.class);
         try {
             if(request.getConsolidationList() != null)
-                shipmentDetails.setConsolidationList(new HashSet<>(jsonHelper.convertValueToList(request.getConsolidationList(), ConsolidationDetails.class)));
+                shipmentDetails.setConsolidationList(new HashSet<>(jsonHelper.convertValueToList(request.getConsolidationList().stream().toList(), ConsolidationDetails.class)));
             if(request.getContainersList() != null)
-                shipmentDetails.setContainersList(new HashSet<>(jsonHelper.convertValueToList(request.getContainersList(), Containers.class)));
+                shipmentDetails.setContainersList(new HashSet<>(jsonHelper.convertValueToList(request.getContainersList().stream().toList(), Containers.class)));
             populateOriginDestinationAgentDetailsForBookingShipment(shipmentDetails);
             shipmentDetails = getShipment(shipmentDetails);
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
