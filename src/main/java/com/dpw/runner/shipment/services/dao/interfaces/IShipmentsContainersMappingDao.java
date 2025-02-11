@@ -12,6 +12,7 @@ public interface IShipmentsContainersMappingDao {
     Page<ShipmentsContainersMapping> findAll(Specification<ShipmentsContainersMapping> spec, Pageable pageable);
     Page<ShipmentsContainersMapping> findAllByContainerIds(List<Long> containerIds);
     List<ShipmentsContainersMapping> findByContainerId(Long containerId);
+    List<ShipmentsContainersMapping> findByContainerIdIn(List<Long> containerIds);
 
     List<ShipmentsContainersMapping> findByShipmentId(Long shipmentId);
 

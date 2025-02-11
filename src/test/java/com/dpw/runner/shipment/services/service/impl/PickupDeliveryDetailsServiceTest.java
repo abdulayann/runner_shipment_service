@@ -9,11 +9,16 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IPickupDeliveryDetailsDao;
 import com.dpw.runner.shipment.services.dto.request.PickupDeliveryDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
 import com.dpw.runner.shipment.services.dto.response.PickupDeliveryDetailsResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.RAKCDetailsResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
+import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -58,6 +63,9 @@ class PickupDeliveryDetailsServiceTest {
 
     @Mock
     private KafkaProducer producer;
+
+    @Mock
+    private IV1Service v1Service;
 
     @InjectMocks
     private PickupDeliveryDetailsService pickupDeliveryDetailsService;
@@ -188,6 +196,122 @@ class PickupDeliveryDetailsServiceTest {
 
         when(pickupDeliveryDetailsDao.findAll(any(), any())).thenReturn(page);
         when(jsonHelper.convertValue(any(), eq(PickupDeliveryDetailsResponse.class))).thenReturn(new PickupDeliveryDetailsResponse());
+
+        ResponseEntity<IRunnerResponse> response = pickupDeliveryDetailsService.list(commonRequestModel);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        verify(pickupDeliveryDetailsDao, times(1)).findAll(any(Specification.class), any(Pageable.class));
+    }
+
+    @Test
+    void testList_Success1() {
+        ListCommonRequest request = constructListCommonRequest("id" , 1 , "=");
+        request.setPopulateRAKC(true);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        PickupDeliveryDetails entity = new PickupDeliveryDetails();
+        entity.setId(1L);
+        entity.setTransporterDetail(Parties.builder().orgId("1L").build());
+        entity.setSourceDetail(Parties.builder().addressId("1L").build());
+        entity.setDestinationDetail(Parties.builder().build());
+        Page<PickupDeliveryDetails> page = new PageImpl<>(Collections.singletonList(entity), PageRequest.of(0, 10), 1);
+
+        when(pickupDeliveryDetailsDao.findAll(any(), any())).thenReturn(page);
+        when(jsonHelper.convertValue(any(), eq(PickupDeliveryDetailsResponse.class))).thenReturn(new PickupDeliveryDetailsResponse());
+
+        ResponseEntity<IRunnerResponse> response = pickupDeliveryDetailsService.list(commonRequestModel);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        verify(pickupDeliveryDetailsDao, times(1)).findAll(any(Specification.class), any(Pageable.class));
+    }
+
+
+    @Test
+    void testList_Success2() {
+        ListCommonRequest request = constructListCommonRequest("id" , 1 , "=");
+        request.setPopulateRAKC(true);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        Parties parties = Parties.builder().orgId("1L").addressId("10").build();
+        PickupDeliveryDetails entity = new PickupDeliveryDetails();
+        entity.setId(1L);
+        entity.setTransporterDetail(parties);
+        entity.setSourceDetail(parties);
+        entity.setDestinationDetail(parties);
+        Page<PickupDeliveryDetails> page = new PageImpl<>(Collections.singletonList(entity), PageRequest.of(0, 10), 1);
+        List<RAKCDetailsResponse> rakcDetailsResponses = new ArrayList<>();
+        rakcDetailsResponses.add(RAKCDetailsResponse.builder().id(10L).build());
+        PartiesResponse partiesResponse = PartiesResponse.builder().orgId("1L").addressId("10").build();
+        PickupDeliveryDetailsResponse pickupDeliveryDetailsResponse = new PickupDeliveryDetailsResponse();
+        pickupDeliveryDetailsResponse.setId(1L);
+        pickupDeliveryDetailsResponse.setTransporterDetail(partiesResponse);
+        pickupDeliveryDetailsResponse.setSourceDetail(partiesResponse);
+        pickupDeliveryDetailsResponse.setDestinationDetail(partiesResponse);
+
+
+        when(pickupDeliveryDetailsDao.findAll(any(), any())).thenReturn(page);
+        when(jsonHelper.convertValue(any(), eq(PickupDeliveryDetailsResponse.class))).thenReturn(pickupDeliveryDetailsResponse);
+        when(v1Service.addressList(any())).thenReturn(V1DataResponse.builder().entities(new Object()).build());
+        when(jsonHelper.convertValueToList(any(), eq(RAKCDetailsResponse.class))).thenReturn(rakcDetailsResponses);
+
+        ResponseEntity<IRunnerResponse> response = pickupDeliveryDetailsService.list(commonRequestModel);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        verify(pickupDeliveryDetailsDao, times(1)).findAll(any(Specification.class), any(Pageable.class));
+    }
+
+    @Test
+    void testList_Success3() {
+        ListCommonRequest request = constructListCommonRequest("id" , 1 , "=");
+        request.setPopulateRAKC(true);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        Parties parties = Parties.builder().orgId("1L").addressId("10").build();
+        PickupDeliveryDetails entity = new PickupDeliveryDetails();
+        entity.setId(1L);
+        entity.setTransporterDetail(parties);
+        entity.setSourceDetail(parties);
+        entity.setIsDirectDelivery(true);
+        Page<PickupDeliveryDetails> page = new PageImpl<>(Collections.singletonList(entity), PageRequest.of(0, 10), 1);
+        List<RAKCDetailsResponse> rakcDetailsResponses = new ArrayList<>();
+        rakcDetailsResponses.add(RAKCDetailsResponse.builder().id(10L).build());
+        PartiesResponse partiesResponse = PartiesResponse.builder().orgId("1L").addressId("10").build();
+        PickupDeliveryDetailsResponse pickupDeliveryDetailsResponse = new PickupDeliveryDetailsResponse();
+        pickupDeliveryDetailsResponse.setId(1L);
+        pickupDeliveryDetailsResponse.setTransporterDetail(partiesResponse);
+        pickupDeliveryDetailsResponse.setSourceDetail(partiesResponse);
+        pickupDeliveryDetailsResponse.setIsDirectDelivery(true);
+
+        when(pickupDeliveryDetailsDao.findAll(any(), any())).thenReturn(page);
+        when(jsonHelper.convertValue(any(), eq(PickupDeliveryDetailsResponse.class))).thenReturn(pickupDeliveryDetailsResponse);
+        when(v1Service.addressList(any())).thenReturn(V1DataResponse.builder().entities(new Object()).build());
+        when(jsonHelper.convertValueToList(any(), eq(RAKCDetailsResponse.class))).thenReturn(rakcDetailsResponses);
+
+        ResponseEntity<IRunnerResponse> response = pickupDeliveryDetailsService.list(commonRequestModel);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        verify(pickupDeliveryDetailsDao, times(1)).findAll(any(Specification.class), any(Pageable.class));
+    }
+
+    @Test
+    void testList_Success4() {
+        ListCommonRequest request = constructListCommonRequest("id" , 1 , "=");
+        request.setPopulateRAKC(true);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        Parties parties = Parties.builder().orgId("1L").addressId("10").build();
+        PickupDeliveryDetails entity = new PickupDeliveryDetails();
+        entity.setId(1L);
+        entity.setTransporterDetail(parties);
+        entity.setSourceDetail(parties);
+        Page<PickupDeliveryDetails> page = new PageImpl<>(Collections.singletonList(entity), PageRequest.of(0, 10), 1);
+        List<RAKCDetailsResponse> rakcDetailsResponses = new ArrayList<>();
+        rakcDetailsResponses.add(RAKCDetailsResponse.builder().id(10L).build());
+        PickupDeliveryDetailsResponse pickupDeliveryDetailsResponse = new PickupDeliveryDetailsResponse();
+        pickupDeliveryDetailsResponse.setId(1L);
+        pickupDeliveryDetailsResponse.setTransporterDetail(PartiesResponse.builder().orgId("1L").build());
+        pickupDeliveryDetailsResponse.setSourceDetail(PartiesResponse.builder().addressId("10").build());
+
+        when(pickupDeliveryDetailsDao.findAll(any(), any())).thenReturn(page);
+        when(jsonHelper.convertValue(any(), eq(PickupDeliveryDetailsResponse.class))).thenReturn(pickupDeliveryDetailsResponse);
+        when(v1Service.addressList(any())).thenReturn(V1DataResponse.builder().entities(new Object()).build());
+        when(jsonHelper.convertValueToList(any(), eq(RAKCDetailsResponse.class))).thenReturn(rakcDetailsResponses);
 
         ResponseEntity<IRunnerResponse> response = pickupDeliveryDetailsService.list(commonRequestModel);
 

@@ -24,4 +24,5 @@ public class ListCommonRequest implements IRunnerRequest{
     private String entityId;
     private List<String> includeColumns;
     private Boolean notificationFlag;
+    private Boolean populateRAKC = false;
 }

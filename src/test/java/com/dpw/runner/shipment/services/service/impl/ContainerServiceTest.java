@@ -22,8 +22,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.dpw.runner.shipment.services.CommonMocks;
-import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
-import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -69,6 +67,8 @@ import com.dpw.runner.shipment.services.exception.exceptions.ValidationException
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
+import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
@@ -1400,6 +1400,52 @@ class ContainerServiceTest extends CommonMocks {
         // Assert
         verify(producer, times(1)).produceToKafka(eq("jsonBody"), any(), anyString());
         verify(sbUtils, times(1)).sendMessagesToTopic(eq(isbProperties), any(), anyList());
+    }
+
+    @Test
+    void getByModuleGuidAndModuleType_ValidShipmentGuid_ShouldReturnSuccessResponse() {
+        UUID validGuid = UUID.randomUUID();
+        // Given
+        String moduleGuid = validGuid.toString();
+        String moduleType = Constants.SHIPMENT;
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setContainersList(List.of(new Containers()));
+
+        List<ContainerResponse> containerResponses = List.of(new ContainerResponse());
+
+        when(shipmentDao.findByGuid(validGuid)).thenReturn(Optional.of(shipmentDetails));
+        when(jsonHelper.convertValueToList(any(), eq(ContainerResponse.class))).thenReturn(containerResponses);
+
+        // When
+        ResponseEntity<IRunnerResponse> response = containerService.getByModuleGuidAndModuleType(moduleGuid, moduleType);
+
+        // Then
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+    }
+
+    @Test
+    void getByModuleGuidAndModuleType_ValidConsolidationGuid_ShouldReturnSuccessResponse() {
+        UUID validGuid = UUID.randomUUID();
+        // Given
+        String moduleGuid = validGuid.toString();
+        String moduleType = Constants.CONSOLIDATION;
+
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setContainersList(List.of(new Containers()));
+
+        List<ContainerResponse> containerResponses = List.of(new ContainerResponse());
+
+        when(consolidationDetailsDao.findByGuid(validGuid)).thenReturn(Optional.of(consolidationDetails));
+        when(jsonHelper.convertValueToList(any(), eq(ContainerResponse.class))).thenReturn(containerResponses);
+
+        // When
+        ResponseEntity<IRunnerResponse> response = containerService.getByModuleGuidAndModuleType(moduleGuid, moduleType);
+
+        // Then
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
     }
 
 }

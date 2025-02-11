@@ -30,7 +30,6 @@ import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.syncing.interfaces.IEventsSync;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.ExcludeTenantFilter;
-import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
@@ -95,7 +94,7 @@ public class EventDao implements IEventDao {
 
     @Override
     public Events save(Events events) {
-        updateUserFieldsInEvent(events);
+        updateUserFieldsInEvent(events, false);
         Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(events), Constants.EVENTS, LifecycleHooks.ON_CREATE, false);
         if (!errors.isEmpty())
             throw new ValidationException(String.join(",", errors));
@@ -532,8 +531,54 @@ public class EventDao implements IEventDao {
             event.setConsolidationId(entityId);
         }
 
-        updateUserFieldsInEvent(event);
+        updateUserFieldsInEvent(event, false);
     }
+
+    @Override
+    public void updateAllEventDetails(List<Events> events) {
+        log.info("event-entity : populating consolidationId, shipmentNumber if available for multiple events...");
+
+        Set<Long> shipmentIds = events.stream()
+                .filter(event -> Constants.SHIPMENT.equals(event.getEntityType()))
+                .map(Events::getEntityId)
+                .collect(Collectors.toSet());
+
+        Map<Long, ShipmentDetails> shipmentDetailsMap = shipmentDao.getShipmentNumberFromId(shipmentIds.stream().toList()).stream()
+                .collect(Collectors.toMap(ShipmentDetails::getId, Function.identity()));
+
+        Map<Long, Long> shipmentToConsolidationMap = consoleShipmentMappingDao.findByShipmentIds(shipmentIds).stream()
+                .collect(Collectors.toMap(
+                        ConsoleShipmentMapping::getShipmentId,
+                        ConsoleShipmentMapping::getConsolidationId,
+                        (existing, replacement) -> existing  // Keep first occurrence
+                ));
+
+        for (Events event : events) {
+            if (Constants.SHIPMENT.equals(event.getEntityType())) {
+                ShipmentDetails shipmentDetails = shipmentDetailsMap.get(event.getEntityId());
+
+                if (shipmentDetails != null) {
+                    event.setShipmentNumber(shipmentDetails.getShipmentId());
+                    event.setEntityId(shipmentDetails.getId());
+
+                    if (event.getDirection() == null) {
+                        event.setDirection(shipmentDetails.getDirection());
+                    }
+
+                    Long consolidationId = shipmentToConsolidationMap.get(event.getEntityId());
+                    if (consolidationId != null &&
+                            shouldSendEventFromShipmentToConsolidation(event, shipmentDetails.getTransportMode())) {
+                        event.setConsolidationId(consolidationId);
+                    }
+                }
+            } else if (Constants.CONSOLIDATION.equals(event.getEntityType())) {
+                event.setConsolidationId(event.getEntityId());
+            }
+
+            updateUserFieldsInEvent(event, false);
+        }
+    }
+
 
     /**
      * Determines if an event should be sent from shipment to consolidation based on the transport mode
@@ -589,23 +634,23 @@ public class EventDao implements IEventDao {
              consolidationId.set(consolidationList.get(0).getId());
         }
         eventsList.stream()
-                .map(this::updateUserFieldsInEvent)
+                .map(vEvent -> updateUserFieldsInEvent(vEvent, false))
                 .filter(event -> shouldSendEventFromShipmentToConsolidation(event, shipmentDetails.getTransportMode()))
                 .forEach(event -> event.setConsolidationId(consolidationId.get()));
     }
 
-
-    private Events updateUserFieldsInEvent(Events event) {
-        if (!StringUtility.isNotEmpty(event.getUserName())) {
+    @Override
+    public Events updateUserFieldsInEvent(Events event, Boolean forceUpdate) {
+        if (forceUpdate || ObjectUtils.isEmpty(event.getUserName())) {
             event.setUserName(Optional.ofNullable(UserContext.getUser()).map(UsersDto::getDisplayName).orElse(null));
         }
-        if (!StringUtility.isNotEmpty(event.getUserEmail())) {
+        if (forceUpdate || ObjectUtils.isEmpty(event.getUserEmail())) {
             event.setUserEmail(Optional.ofNullable(UserContext.getUser()).map(UsersDto::getEmail).orElse(null));
         }
-        if (!StringUtility.isNotEmpty(event.getBranch())) {
+        if (forceUpdate || ObjectUtils.isEmpty(event.getBranch())) {
             event.setBranch(Optional.ofNullable(UserContext.getUser()).map(UsersDto::getCode).orElse(null));
         }
-        if (!StringUtility.isNotEmpty(event.getBranchName())) {
+        if (forceUpdate || ObjectUtils.isEmpty(event.getBranchName())) {
             event.setBranchName(Optional.ofNullable(UserContext.getUser()).map(UsersDto::getTenantDisplayName).orElse(null));
         }
 

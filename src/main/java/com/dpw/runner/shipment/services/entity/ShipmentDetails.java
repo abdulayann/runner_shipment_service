@@ -3,7 +3,12 @@ package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.entity.enums.*;
+import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
+import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
+import com.dpw.runner.shipment.services.entity.enums.FileStatus;
+import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
+import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
 import com.dpw.runner.shipment.services.utils.MasterData;
@@ -590,4 +595,26 @@ public class ShipmentDetails extends MultiTenancy {
 
     @Column(name = "b2b")
     private Boolean b2b;
+
+    @Column(name = "is_co_load_enabled")
+    private Boolean isCoLoadEnabled;
+
+    @Column(name = "co_load_carrier_name")
+    @MasterData(type = MasterDataType.CARRIER)
+    @Size(max = 64)
+    private String coLoadCarrierName;
+
+    @Column(name = "co_load_bl_number")
+    @Size(max = 64)
+    private String coLoadBlNumber;
+
+    @Column(name = "issuing_carrier_name")
+    @MasterData(type = MasterDataType.CARRIER)
+    @Size(max = 64)
+    private String issuingCarrierName;
+
+    @Column(name = "ocean_bl_number")
+    @Size(max = 64)
+    private String oceanBlNumber;
+
 }

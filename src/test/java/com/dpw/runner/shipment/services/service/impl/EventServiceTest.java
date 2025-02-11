@@ -10,15 +10,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -40,11 +31,7 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
-import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IEventDumpDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.request.TrackingEventsRequest;
@@ -161,6 +148,9 @@ class EventServiceTest extends CommonMocks {
 
     @Mock
     private IV1Service v1Service;
+
+    @Mock
+    private IShipmentSettingsDao shipmentSettingsDao;
 
     private static JsonTestUtility jsonTestUtility;
     private static Events testData;
@@ -1001,12 +991,14 @@ class EventServiceTest extends CommonMocks {
 
         ShipmentDetails shipmentDetails1 = new ShipmentDetails();
         ShipmentDetails shipmentDetails2 = new ShipmentDetails();
+        ShipmentSettingsDetails mockTenantSettings = ShipmentSettingsDetails.builder().isAtdAtaAutoPopulateEnabled(true).build();
 
         Events mockEvent = Events.builder().build();
         EventsDump mockEventDump = objectMapperTest.convertValue(mockEvent, EventsDump.class);
 
         when(trackingServiceAdapter.generateEventsFromTrackingResponse(any())).thenReturn(List.of(new Events()));
         when(shipmentDao.findByShipmentId(refNum)).thenReturn(List.of(shipmentDetails1, shipmentDetails2));
+        when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(mockTenantSettings));
         when(modelMapper.map(any(), eq(EventsDump.class))).thenReturn(mockEventDump);
         when(eventDumpDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEventDump)));
         when(eventDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(mockEvent)));

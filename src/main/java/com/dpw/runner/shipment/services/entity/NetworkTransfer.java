@@ -14,6 +14,7 @@ import org.hibernate.annotations.TypeDef;
 import javax.persistence.*;
 import javax.validation.constraints.Size;
 import java.util.Map;
+import java.util.UUID;
 
 @Entity
 @Setter
@@ -37,6 +38,12 @@ public class NetworkTransfer extends MultiTenancy {
 
     @Column(name = "entity_id")
     private Long entityId;
+
+    @Column(name = "entity_guid", updatable = false)
+    private UUID entityGuid;
+
+    @Column(name = "is_hidden")
+    private Boolean isHidden = false;
 
     @Column(name = "created_entity_id")
     private Long createdEntityId;

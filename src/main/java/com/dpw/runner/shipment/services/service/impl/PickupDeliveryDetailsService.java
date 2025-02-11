@@ -15,6 +15,8 @@ import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IPickupDeliveryDetailsDao;
 import com.dpw.runner.shipment.services.dto.request.PickupDeliveryDetailsRequest;
 import com.dpw.runner.shipment.services.dto.response.PickupDeliveryDetailsResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.RAKCDetailsResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.dto.response.TIKafkaEventResponse;
@@ -28,7 +30,9 @@ import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
+import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.interfaces.IPickupDeliveryDetailsService;
+import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataKeyUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
@@ -49,6 +53,8 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
@@ -69,12 +75,14 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
     private ExecutorService executorService;
 
     private KafkaProducer producer;
+    private IV1Service v1Service;
 
     @Value("${tiKafka.queue}")
     private String senderQueue;
 
     @Autowired
-    public PickupDeliveryDetailsService(CommonUtils commonUtils, IPartiesDao partiesDao, IPickupDeliveryDetailsDao pickupDeliveryDetailsDao, JsonHelper jsonHelper, AuditLogService auditLogService, MasterDataUtils masterDataUtils, MasterDataKeyUtils masterDataKeyUtils, ExecutorService executorService, KafkaProducer producer) {
+    public PickupDeliveryDetailsService(CommonUtils commonUtils, IPartiesDao partiesDao, IPickupDeliveryDetailsDao pickupDeliveryDetailsDao, JsonHelper jsonHelper, AuditLogService auditLogService, MasterDataUtils masterDataUtils, MasterDataKeyUtils masterDataKeyUtils, ExecutorService executorService, KafkaProducer producer,
+                                        IV1Service v1Service) {
         this.pickupDeliveryDetailsDao = pickupDeliveryDetailsDao;
         this.jsonHelper = jsonHelper;
         this.auditLogService = auditLogService;
@@ -84,6 +92,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
         this.masterDataKeyUtils = masterDataKeyUtils;
         this.executorService = executorService;
         this.producer = producer;
+        this.v1Service = v1Service;
     }
 
     @Transactional
@@ -217,7 +226,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
             Page<PickupDeliveryDetails> pickupDeliveryDetailsPage = pickupDeliveryDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
             log.info("Pickup Delivery list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildListSuccessResponse(
-                    convertEntityListToDtoList(pickupDeliveryDetailsPage.getContent()),
+                    convertEntityListToDtoList(pickupDeliveryDetailsPage.getContent(), request.getPopulateRAKC()),
                     pickupDeliveryDetailsPage.getTotalPages(),
                     pickupDeliveryDetailsPage.getTotalElements());
         } catch (Exception e) {
@@ -311,11 +320,37 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
         return jsonHelper.convertValue(pickupDeliveryDetails, PickupDeliveryDetailsResponse.class);
     }
 
-    private List<IRunnerResponse> convertEntityListToDtoList(List<PickupDeliveryDetails> lst) {
+    private List<IRunnerResponse> convertEntityListToDtoList(List<PickupDeliveryDetails> lst, Boolean populateRAKC) {
         List<IRunnerResponse> responseList = new ArrayList<>();
-        lst.forEach(pickupDeliveryDetail ->
-                responseList.add(convertEntityToDto(pickupDeliveryDetail))
-        );
+        if (CommonUtils.listIsNullOrEmpty(lst))
+            return responseList;
+        Map<String, RAKCDetailsResponse> rakcDetailsMap;
+        if (Boolean.TRUE.equals(populateRAKC)) {
+            Set<String> addressIds = new HashSet<>();
+            lst.forEach(pickupDeliveryDetails -> {
+                if (CommonUtils.checkAddressNotNull(pickupDeliveryDetails.getTransporterDetail())) {
+                    addressIds.add(pickupDeliveryDetails.getTransporterDetail().getAddressId());
+                }
+
+                if (CommonUtils.checkAddressNotNull(pickupDeliveryDetails.getSourceDetail())) {
+                    addressIds.add(pickupDeliveryDetails.getSourceDetail().getAddressId());
+                }
+
+                if (!Boolean.TRUE.equals(pickupDeliveryDetails.getIsDirectDelivery()) && CommonUtils.checkAddressNotNull(pickupDeliveryDetails.getDestinationDetail())) {
+                    addressIds.add(pickupDeliveryDetails.getDestinationDetail().getAddressId());
+                }
+            });
+            rakcDetailsMap = this.getRAKCDetailsMap(addressIds.stream().toList());
+        } else {
+            rakcDetailsMap = new HashMap<>();
+        }
+        lst.forEach(pickupDeliveryDetail -> {
+            PickupDeliveryDetailsResponse response = convertEntityToDto(pickupDeliveryDetail);
+            if (Boolean.TRUE.equals(populateRAKC) && !rakcDetailsMap.isEmpty()) {
+                this.populateRAKCDetails(response, rakcDetailsMap);
+            }
+            responseList.add(response);
+        });
         return responseList;
     }
 
@@ -328,7 +363,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
         try {
             List<IRunnerResponse> pickupDeliveryDetailsResponses = null;
             if (!CommonUtils.listIsNullOrEmpty(pickupDeliveryDetails)) {
-                pickupDeliveryDetailsResponses = convertEntityListToDtoList(pickupDeliveryDetails);
+                pickupDeliveryDetailsResponses = convertEntityListToDtoList(pickupDeliveryDetails, false);
             }
             TIKafkaEventResponse tiKafkaEventResponse = new TIKafkaEventResponse();
             tiKafkaEventResponse.setShipmentId(shipmentId);
@@ -430,5 +465,44 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
             return CompletableFuture.completedFuture(null);
         }
 
+    }
+
+    private void populateRAKCDetails(PickupDeliveryDetailsResponse pickupDeliveryDetails, Map<String, RAKCDetailsResponse> rakcDetailsMap) {
+        if (CommonUtils.checkAddressNotNull(pickupDeliveryDetails.getTransporterDetail())) {
+            pickupDeliveryDetails.getTransporterDetail().setRAKCDetails(rakcDetailsMap.getOrDefault(pickupDeliveryDetails.getTransporterDetail().getAddressId(), null));
+        }
+
+        if (CommonUtils.checkAddressNotNull(pickupDeliveryDetails.getSourceDetail())) {
+            pickupDeliveryDetails.getSourceDetail().setRAKCDetails(rakcDetailsMap.getOrDefault(pickupDeliveryDetails.getSourceDetail().getAddressId(), null));
+        }
+
+        if (!Boolean.TRUE.equals(pickupDeliveryDetails.getIsDirectDelivery()) && CommonUtils.checkAddressNotNull(pickupDeliveryDetails.getDestinationDetail())) {
+            pickupDeliveryDetails.getDestinationDetail().setRAKCDetails(rakcDetailsMap.getOrDefault(pickupDeliveryDetails.getDestinationDetail().getAddressId(), null));
+        }
+    }
+
+    private Map<String, RAKCDetailsResponse> getRAKCDetailsMap(List<String> addressIds) {
+        if (CommonUtils.listIsNullOrEmpty(addressIds)) {
+            return Collections.emptyMap();
+        }
+
+        CommonV1ListRequest request = convertV1InCriteriaRequest("Id", addressIds);
+        V1DataResponse addressResponse = v1Service.addressList(request);
+
+        List<RAKCDetailsResponse> rakcDetailsList =
+                jsonHelper.convertValueToList(addressResponse.getEntities(), RAKCDetailsResponse.class);
+
+        return CommonUtils.listIsNullOrEmpty(rakcDetailsList)
+                ? Collections.emptyMap()
+                : rakcDetailsList.stream().collect(Collectors.toMap(rakc -> String.valueOf(rakc.getId()), Function.identity()));
+    }
+
+    private CommonV1ListRequest convertV1InCriteriaRequest(String filterValue, List<?> values) {
+        List<String> itemType = new ArrayList<>();
+        itemType.add(filterValue);
+        List<List<?>> param = new ArrayList<>();
+        param.add(values);
+        List<Object> criteria = new ArrayList<>(Arrays.asList(itemType, "in", param));
+        return CommonV1ListRequest.builder().criteriaRequests(criteria).build();
     }
 }

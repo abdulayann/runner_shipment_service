@@ -1,12 +1,27 @@
 package com.dpw.runner.shipment.services.controller;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.when;
+
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
 import com.dpw.runner.shipment.services.commons.requests.BulkUploadRequest;
 import com.dpw.runner.shipment.services.commons.requests.ExportContainerListRequest;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.document.util.BASE64DecodedMultipartFile;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CheckAllocatedDataChangesRequest;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerAssignListRequest;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerPackADInShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
+import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -14,6 +29,9 @@ import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.dpw.runner.shipment.services.syncing.Entity.BulkContainerRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.ContainerRequestV2;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import java.io.IOException;
+import java.util.List;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
@@ -22,16 +40,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.ContextConfiguration;
-
-import java.io.IOException;
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.Mockito.*;
 
 @ContextConfiguration(classes = {MasterDataController.class})
 @ExtendWith(MockitoExtension.class)
@@ -411,6 +422,44 @@ class ContainerControllerTest {
         var responseEntity = containerController.delete(122L);
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void listByModuleGuidAndModuleType_ValidShipment_ShouldReturnSuccess() {
+        // Given
+        String moduleGuid = UUID.randomUUID().toString();
+        String moduleType = Constants.SHIPMENT;
+        List<ContainerResponse> mockResponseList = List.of(new ContainerResponse());
+
+        // Mock service response
+        when(containerService.getByModuleGuidAndModuleType(moduleGuid, moduleType))
+                .thenReturn(ResponseHelper.buildSuccessResponse(mockResponseList));
+
+        // When
+        ResponseEntity<IRunnerResponse> response = containerController.listByModuleGuidAndModuleType(moduleGuid, moduleType);
+
+        // Then
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+    }
+
+    @Test
+    void listByModuleGuidAndModuleType_ValidConsolidation_ShouldReturnSuccess() {
+        // Given
+        String moduleGuid = UUID.randomUUID().toString();
+        String moduleType = Constants.CONSOLIDATION;
+        List<ContainerResponse> mockResponseList = List.of(new ContainerResponse());
+
+        // Mock service response
+        when(containerService.getByModuleGuidAndModuleType(moduleGuid, moduleType))
+                .thenReturn(ResponseHelper.buildSuccessResponse(mockResponseList));
+
+        // When
+        ResponseEntity<IRunnerResponse> response = containerController.listByModuleGuidAndModuleType(moduleGuid, moduleType);
+
+        // Then
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
     }
 
 }

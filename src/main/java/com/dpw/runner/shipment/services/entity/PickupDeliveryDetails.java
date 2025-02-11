@@ -165,4 +165,7 @@ public class PickupDeliveryDetails extends MultiTenancy {
     @JoinColumn(name = "pickup_delivery_details_id", referencedColumnName = "id")
     @BatchSize(size = 50)
     private List<TiLegs> tiLegsList;
+
+    @Column(name = "is_direct_delivery")
+    private Boolean isDirectDelivery;
 }

@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.entity.NetworkTransfer;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import org.springframework.http.ResponseEntity;
 
+import java.util.List;
 import java.util.Map;
 
 public interface INetworkTransferService{
@@ -16,8 +17,10 @@ public interface INetworkTransferService{
                                       ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails,
                                       String jobType, Map<String, Object> entityPayload, Boolean isInterBranchEntity);
     void deleteValidNetworkTransferEntity(Long tenantId, Long entityId, String entityType);
+    void deleteNetworkTransferEntity(NetworkTransfer networkTransfer);
     void updateNetworkTransferTransferred(NetworkTransfer networkTransfer, Map<String, Object> payload);
     ResponseEntity<IRunnerResponse> requestForTransfer(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> requestForReassign(CommonRequestModel commonRequestModel);
     void updateStatusAndCreatedEntityId(Long id, String status, Long createdEntityId);
+    void bulkProcessInterConsoleNte(List<ShipmentDetails> shipmentDetails);
 }

@@ -1625,7 +1625,8 @@ public class MasterDataUtils{
         var userContext = UserContext.getUser();
         return () -> {
             try {
-                MDC.setContextMap(mdc);
+                if(mdc!=null)
+                    MDC.setContextMap(mdc);
                 RequestAuthContext.setAuthToken(token);
                 TenantContext.setCurrentTenant(tenantId);
                 UserContext.setUser(userContext);
