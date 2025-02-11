@@ -978,6 +978,13 @@ public class ReportService implements IReportService {
             dataRetrived.put(ReportConstants.TOTAL_CONSOL_PACKS, reportRequest.getTotalMawbPieces());
         }
 
+        // Custom Air Labels-House dialogue box
+        if(Boolean.TRUE.equals(reportRequest.getPrintCustomLabel()) && !reportRequest.isFromConsolidation()) {
+            dataRetrived.put(ReportConstants.HAWB_NUMBER, reportRequest.getHawbNumber());
+            dataRetrived.put(ReportConstants.POD_AIRPORT_CODE_IN_CAPS, reportRequest.getDestination());
+            dataRetrived.put(ReportConstants.TOTAL_PACKS, reportRequest.getTotalHawbPieces());
+        }
+
         int copies = reportRequest.getCopyCountForAWB() != null ? reportRequest.getCopyCountForAWB() : 0;
         if(copies < 1) throw new ValidationException("Copy count is less than 1");
         Integer noOfPacks = 0;
