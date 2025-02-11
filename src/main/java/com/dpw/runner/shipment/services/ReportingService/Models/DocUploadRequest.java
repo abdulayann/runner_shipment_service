@@ -15,4 +15,21 @@ public class DocUploadRequest implements IDocumentModel{
     private String transportMode;
     private String templateCode;
     private Boolean isTransferEnabled;
+
+    // Copy Constructor
+    public DocUploadRequest(DocUploadRequest other) {
+        this.key = other.key;
+        this.type = other.type;
+        this.entityType = other.entityType;
+        this.opt = other.opt;
+        this.id = other.id;
+        this.reportId = other.reportId;
+        this.transportMode = other.transportMode;
+        this.templateCode = other.templateCode;
+        this.isTransferEnabled = other.isTransferEnabled;
+    }
+
+    public DocUploadRequest(){
+
+    }
 }
