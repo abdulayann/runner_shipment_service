@@ -39,6 +39,7 @@ public class ReportRequest implements IRunnerRequest {
     String transportInstructionId;
     String remarks;
     boolean includeCsdInfo;
+    boolean printCSD;
     boolean combiLabel;
     PartiesRequest fcrShipper;
     List<Long> packIds;

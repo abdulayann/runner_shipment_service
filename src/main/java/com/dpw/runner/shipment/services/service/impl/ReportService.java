@@ -1,7 +1,5 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COMBI_HAWB_COUNT;
-
 import com.dpw.runner.shipment.services.DocumentService.DocumentService;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.DocPages;
@@ -22,10 +20,10 @@ import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.ReportingService.Reports.MawbReport;
 import com.dpw.runner.shipment.services.ReportingService.Reports.PickupOrderReport;
 import com.dpw.runner.shipment.services.ReportingService.Reports.PreAlertReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.SeawayBillReport;
 import com.dpw.runner.shipment.services.ReportingService.Reports.ShipmentCANReport;
 import com.dpw.runner.shipment.services.ReportingService.Reports.ShipmentTagsForExteranlServices;
 import com.dpw.runner.shipment.services.ReportingService.Reports.TransportOrderReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.SeawayBillReport;
 import com.dpw.runner.shipment.services.ReportingService.ReportsFactory;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -125,6 +123,22 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COMBI_HAWB_COUNT;
 
 @Service
 @Slf4j
@@ -466,6 +480,11 @@ public class ReportService implements IReportService {
             } else {
                 dataRetrived.remove(ReportConstants.OTHER_CHARGES_IATA);
             }
+
+            if(!reportRequest.isPrintCSD()){
+                dataRetrived.remove(RA_CSD);
+            }
+
             if(reportRequest.getDisplayFreightAmount()!=null && !reportRequest.getDisplayFreightAmount())
             {
                 dataRetrived.put(ReportConstants.PACKING_LIST, dataRetrived.get(ReportConstants.PACKING_LIST_FAT));
@@ -545,6 +564,9 @@ public class ReportService implements IReportService {
         {
             if (!reportRequest.isPrintIATAChargeCode()) {
                 dataRetrived.remove(ReportConstants.OTHER_CHARGES_IATA);
+            }
+            if(!reportRequest.isPrintCSD()){
+                dataRetrived.remove(RA_CSD);
             }
             if (reportRequest.getDisplayFreightAmount() != null && !reportRequest.getDisplayFreightAmount())
             {
@@ -1751,8 +1773,34 @@ public class ReportService implements IReportService {
             CompletableFuture.runAsync(masterDataUtils.withMdc(
                 () -> addFilesFromReport(new BASE64DecodedMultipartFile(finalPdfByte_Content), filename,
                     docUploadRequest, finalGuid)), executorService);
+
+
+            if(reportRequest.isPrintCSD() && ReportConstants.ORIGINAL.equalsIgnoreCase(reportRequest.getPrintType())){
+                addCSDDocumentToDocumentMaster(reportRequest.getReportId(), docUploadRequest, guid);
+                MDC.put(IS_CSD_DOCUMENT_ADDED, "true");
+            }
         }catch(Exception ex){
             log.error(ex.getMessage());
+        }
+    }
+
+    public void addCSDDocumentToDocumentMaster(String reportId, DocUploadRequest docUploadRequest, String guid)
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+        ReportRequest reportRequest = new ReportRequest();
+        reportRequest.setReportId(reportId);
+        reportRequest.setReportInfo(CSD_REPORT);
+        try{
+        CommonRequestModel commonRequestModel =  CommonRequestModel.buildRequest(reportRequest);
+        docUploadRequest.setType(CSD_REPORT);
+        String filename = CSD_REPORT + "_" + docUploadRequest.getId() + ".pdf";
+
+        byte[] pdfByte_Content = getDocumentData(commonRequestModel);
+      CompletableFuture.runAsync(masterDataUtils.withMdc(
+            () -> addFilesFromReport(new BASE64DecodedMultipartFile(pdfByte_Content), filename,
+                docUploadRequest, guid)), executorService);
+      } catch (Exception e) {
+            MDC.put(IS_CSD_DOCUMENT_ADDED, "false");
+            log.error(e.getMessage());
         }
     }
 
