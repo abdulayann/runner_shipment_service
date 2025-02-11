@@ -1792,7 +1792,6 @@ public class ReportService implements IReportService {
 
             if(reportRequest.isPrintCSD() && ReportConstants.ORIGINAL.equalsIgnoreCase(reportRequest.getPrintType())){
                 addCSDDocumentToDocumentMaster(reportRequest.getReportId(), docUploadRequest, guid);
-                MDC.put(Constants.IS_CSD_DOCUMENT_ADDED, "true");
             }
         }catch(Exception ex){
             log.error(ex.getMessage());
@@ -1814,6 +1813,7 @@ public class ReportService implements IReportService {
       CompletableFuture.runAsync(masterDataUtils.withMdc(
             () -> addFilesFromReport(new BASE64DecodedMultipartFile(pdfByte_Content), filename,
                 csdDocumentUploadRequest, guid)), executorService);
+            MDC.put(Constants.IS_CSD_DOCUMENT_ADDED, "true");
       } catch (Exception e) {
             MDC.put(Constants.IS_CSD_DOCUMENT_ADDED, "false");
             log.error(e.getMessage());
