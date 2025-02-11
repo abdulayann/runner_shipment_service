@@ -127,9 +127,9 @@ public class ShipmentSync implements IShipmentSync {
         mapTruckDriverDetail(cs, sd);
         cs.setRoutings(syncEntityConversionService.routingsV2ToV1(sd.getRoutingsList()));
         mapEvents(cs, sd);
-        cs.setContainersList(syncEntityConversionService.containersV2ToV1(new ArrayList<>(sd.getContainersList())));
+        cs.setContainersList(syncEntityConversionService.containersV2ToV1(sd.getContainersList() != null ? new ArrayList<>(sd.getContainersList()) : null));
         cs.setReferenceNumbers(convertToList(sd.getReferenceNumbersList(), ReferenceNumbersRequestV2.class));
-        cs.setPackings_(syncEntityConversionService.packingsV2ToV1(sd.getPackingList(), new ArrayList<>(sd.getContainersList()), sd.getGuid(), null));
+        cs.setPackings_(syncEntityConversionService.packingsV2ToV1(sd.getPackingList(), sd.getContainersList() != null ? new ArrayList<>(sd.getContainersList()) : null, sd.getGuid(), null));
         cs.setShipmentAddresses(syncEntityConversionService.addressesV2ToV1(sd.getShipmentAddresses()));
         cs.setELDetails(convertToList(sd.getElDetailsList(), ElDetailsRequestV2.class));
         cs.setCustomerBookingNotesList(convertToList(customerBookingNotes, NoteRequestV2.class));

@@ -98,7 +98,7 @@ class ShipmentSyncTest {
         inputShipment.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         inputShipment.setServicesList(List.of(new ServiceDetails()));
         inputShipment.setTruckDriverDetails(List.of(inputTruckDriverDetails1));
-        inputShipment.setContainersList(Set.of(inputContainer1, inputContainer2));
+        inputShipment.setContainersList(new HashSet<>(List.of(inputContainer1, inputContainer2)));
         inputShipment.setConsigner(Parties.builder().addressData(inputAddressMapWithOutRawData).isAddressFreeText(true).build());
         inputShipment.setConsignee(Parties.builder().addressData(inputAddressMapWithOutRawData).isAddressFreeText(true).build());
         inputAdditionalDetails.setNotifyParty(Parties.builder().addressData(inputAddressMapWithOutRawData).isAddressFreeText(true).build());
@@ -155,7 +155,7 @@ class ShipmentSyncTest {
         inputShipment.setGuid(guid);
         inputShipment.setAdditionalDetails(inputAdditionalDetails);
         inputShipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
-        inputShipment.setContainersList(Set.of(inputContainer1, inputContainer2));
+        inputShipment.setContainersList(new HashSet<>(List.of(inputContainer1, inputContainer2)));
         inputShipment.setConsigner(Parties.builder().addressData(inputAddressMapWithOutRawData).isAddressFreeText(true).build());
         inputShipment.setConsignee(Parties.builder().addressData(inputAddressMapWithOutRawData).isAddressFreeText(true).build());
         inputAdditionalDetails.setNotifyParty(Parties.builder().addressData(inputAddressMapWithOutRawData).isAddressFreeText(true).build());
