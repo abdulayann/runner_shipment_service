@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.service.impl;
 import com.dpw.api.quartz.service.QuartzJobExecutorService;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.LoggingConstants;
 import com.dpw.runner.shipment.services.commons.constants.QuartzJobInfoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.dao.impl.ConsolidationDao;
@@ -28,6 +29,7 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.JobExecutionContext;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -71,6 +73,7 @@ public class ShipmentJobExecutorService implements QuartzJobExecutorService {
                 var tenantId = quartzJobInfo.get().getTenantId();
                 v1Service.setAuthContext();
                 TenantContext.setCurrentTenant(tenantId);
+                MDC.put(LoggingConstants.AUTOMATIC_TRANSFER, "true");
                 if (Objects.equals(quartzJobInfo.get().getEntityType(), Constants.SHIPMENT)) {
                     processSendShipment(quartzJobInfo.get());
                 } else if (Objects.equals(quartzJobInfo.get().getEntityType(), Constants.CONSOLIDATION)) {

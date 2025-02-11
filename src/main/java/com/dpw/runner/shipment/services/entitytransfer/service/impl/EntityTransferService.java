@@ -36,6 +36,7 @@ import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.constants.EventConstants;
 import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
+import com.dpw.runner.shipment.services.commons.constants.LoggingConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
@@ -165,6 +166,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.modelmapper.ModelMapper;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -330,7 +332,7 @@ public class EntityTransferService implements IEntityTransferService {
             }
         }
 
-        this.createBulkExportEvent(shipId, EventConstants.PRST, SHIPMENT, successTenantIds);
+        this.createBulkExportEvent(shipId, EventConstants.PRST, SHIPMENT, successTenantIds, shipment.getTenantId());
 
         SendShipmentResponse sendShipmentResponse = SendShipmentResponse.builder().successTenantIds(successTenantIds)
                 .message(String.format("Shipment Sent to branches %s", String.join(", ", tenantName)))
@@ -464,7 +466,7 @@ public class EntityTransferService implements IEntityTransferService {
             successTenantIds.add(tenant);
         }
 
-        this.createAutoEvent(consolidationDetails.get().getId(), EventConstants.COSN, CONSOLIDATION, successTenantIds);
+        this.createAutoEvent(consolidationDetails.get().getId(), EventConstants.COSN, CONSOLIDATION, successTenantIds, consol.getTenantId());
 
         for (var shipment : consolidationDetails.get().getShipmentsList()) {
             // Set TenantId Context for inter branch shipment for Event creation
@@ -1072,16 +1074,27 @@ public class EntityTransferService implements IEntityTransferService {
         }
     }
 
-    public void createBulkExportEvent(Long entityId, String eventCode, String entityType, List<Integer> tenantIds) {
+    public void createBulkExportEvent(Long entityId, String eventCode, String entityType, List<Integer> tenantIds, Integer currentTenant) {
         if (Objects.isNull(entityId) || CommonUtils.listIsNullOrEmpty(tenantIds))
             return;
         var tenantMap = v1ServiceUtil.getTenantDetails(tenantIds);
-        List<EventsRequest> events = prepareEvents(entityId, eventCode, entityType, tenantIds, tenantMap);
+        Map<Integer, Object> branchMap = new HashMap<>();
+        if (isAutomaticTransfer()) {
+            branchMap = v1ServiceUtil.getTenantDetails(Collections.singletonList(currentTenant));
+        }
+        List<EventsRequest> events = prepareEvents(entityId, eventCode, entityType, tenantIds, tenantMap, branchMap);
         eventService.saveAllEvent(events);
     }
 
-    private List<EventsRequest> prepareEvents(Long entityId, String eventCode, String entityType, List<Integer> tenantIds, Map<Integer, Object> tenantMap) {
+    private List<EventsRequest> prepareEvents(Long entityId, String eventCode, String entityType, List<Integer> tenantIds, Map<Integer, Object> tenantMap, Map<Integer, Object> branchMap) {
         List<EventsRequest> events = new ArrayList<>();
+        var currentTenant = TenantContext.getCurrentTenant();
+        if (isAutomaticTransfer() && (branchMap.isEmpty() || !branchMap.containsKey(currentTenant))) {
+            var v1Map = v1ServiceUtil.getTenantDetails(Collections.singletonList(currentTenant));
+            if (!v1Map.isEmpty() && v1Map.containsKey(currentTenant)) {
+                branchMap.put(currentTenant, v1Map.get(currentTenant));
+            }
+        }
         for (Integer tenantId : tenantIds) {
             var tenantDetails = jsonHelper.convertValue(tenantMap.getOrDefault(tenantId, new V1TenantResponse()), V1TenantResponse.class);
             EventsRequest eventsRequest = new EventsRequest();
@@ -1092,9 +1105,28 @@ public class EntityTransferService implements IEntityTransferService {
             if (tenantDetails != null && !CommonUtils.IsStringNullOrEmpty(tenantDetails.getCode()))
                 eventsRequest.setPlaceName(tenantDetails.getCode());
             eventsRequest.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
+            if (isAutomaticTransfer()) {
+                updateUserFieldsInEvent(eventsRequest, branchMap);
+            }
             events.add(eventsRequest);
         }
         return events;
+    }
+
+    private void updateUserFieldsInEvent(EventsRequest event, Map<Integer, Object> branchMap) {
+        event.setUserName(EventConstants.SYSTEM_GENERATED);
+        event.setUserEmail(null);
+        var tenantId = TenantContext.getCurrentTenant();
+        if (!branchMap.isEmpty() && branchMap.containsKey(tenantId)) {
+            var tenantDetails = jsonHelper.convertValue(branchMap.getOrDefault(tenantId, new V1TenantResponse()), V1TenantResponse.class);
+            event.setBranch(tenantDetails.getCode());
+            event.setBranchName(tenantDetails.getTenantName());
+        }
+    }
+
+    private boolean isAutomaticTransfer() {
+        String automaticTransfer = MDC.get(LoggingConstants.AUTOMATIC_TRANSFER);
+        return automaticTransfer != null && automaticTransfer.equals("true");
     }
 
     public void createBulkExportEventForMultipleShipments(ConsolidationDetails consolidationDetails, Map<String, List<Integer>> shipmentGuidBranchMap) {
@@ -1113,7 +1145,15 @@ public class EntityTransferService implements IEntityTransferService {
                 .collect(Collectors.toSet());
 
         var tenantMap = v1ServiceUtil.getTenantDetails(tenantIds.stream().toList());
+        Map<Integer, Object> branchMap = new HashMap<>();
+        if (isAutomaticTransfer()) {
+            Set<Integer> shipmentUniqueTenantIds = consolidationDetails.getShipmentsList().stream()
+                    .map(ShipmentDetails::getTenantId)
+                    .collect(Collectors.toSet());
+            branchMap = v1ServiceUtil.getTenantDetails(shipmentUniqueTenantIds.stream().toList());
+        }
 
+        Map<Integer, Object> finalBranchMap = branchMap;
         shipmentsByTenant.forEach((tenantId, shipments) -> {
             if (!Objects.equals(originalTenant, tenantId)) {
                 TenantContext.setCurrentTenant(tenantId);
@@ -1125,7 +1165,8 @@ public class EntityTransferService implements IEntityTransferService {
                         EventConstants.PRST,
                         SHIPMENT,
                         shipmentGuidBranchMap.getOrDefault(shipment.getGuid().toString(), Collections.emptyList()),
-                        tenantMap
+                        tenantMap,
+                        finalBranchMap
                 );
                 if (!CommonUtils.listIsNullOrEmpty(events)) {
                     eventsList.addAll(events);
@@ -1765,10 +1806,14 @@ public class EntityTransferService implements IEntityTransferService {
         return CommonV1ListRequest.builder().criteriaRequests(List.of(List.of(List.of(criteria1, "and", criteria2), "and", criteria3), "and" , criteria4)).build();
     }
 
-    public void createAutoEvent(Long entityId, String eventCode, String entityType, List<Integer> tenantIds) {
+    public void createAutoEvent(Long entityId, String eventCode, String entityType, List<Integer> tenantIds, Integer currentTenant) {
         if (ObjectUtils.isNotEmpty(entityId) && !CommonUtils.listIsNullOrEmpty(tenantIds)) {
             var tenantMap = v1ServiceUtil.getTenantDetails(tenantIds);
-            List<EventsRequest> events = prepareEvents(entityId, eventCode, entityType, tenantIds, tenantMap);
+            Map<Integer, Object> branchMap = new HashMap<>();
+            if (isAutomaticTransfer()) {
+                branchMap = v1ServiceUtil.getTenantDetails(Collections.singletonList(currentTenant));
+            }
+            List<EventsRequest> events = prepareEvents(entityId, eventCode, entityType, tenantIds, tenantMap, branchMap);
             eventService.saveAllEvent(events);
         }
     }
