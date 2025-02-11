@@ -1210,6 +1210,10 @@ public class ShipmentService implements IShipmentService {
                     containersList(customerBookingRequest.getContainersList()).
                     sourceTenantId(Long.valueOf(UserContext.getUser().TenantId)).
                     build();
+            // Set Department in case single department is available
+            consolidationDetailsRequest.setDepartment(commonUtils.getAutoPopulateDepartment(
+                    consolidationDetailsRequest.getTransportMode(), consolidationDetailsRequest.getShipmentType(), MdmConstants.CONSOLIDATION_MODULE
+            ));
             // Generate default routes based on O-D pairs
             if(Boolean.FALSE.equals(isRouteMasterEnabled)) {
                 var routingList = routingsDao.generateDefaultRouting(jsonHelper.convertValue(consolidationDetailsRequest.getCarrierDetails(), CarrierDetails.class), consolidationDetailsRequest.getTransportMode());
@@ -1306,6 +1310,10 @@ public class ShipmentService implements IShipmentService {
                 currentPartyForQuote(customerBookingRequest.getCurrentPartyForQuote()).
                 autoUpdateWtVol(true).
                 build();
+        // Set Department in case single department is available
+        shipmentRequest.setDepartment(commonUtils.getAutoPopulateDepartment(
+                shipmentRequest.getTransportMode(), shipmentRequest.getDirection(), MdmConstants.SHIPMENT_MODULE
+        ));
         AutoUpdateWtVolResponse autoUpdateWtVolResponse = calculateShipmentWV(jsonHelper.convertValue(shipmentRequest, AutoUpdateWtVolRequest.class));
         shipmentRequest.setNoOfPacks(getIntFromString(autoUpdateWtVolResponse.getNoOfPacks()));
         shipmentRequest.setPacksUnit(autoUpdateWtVolResponse.getPacksUnit());
