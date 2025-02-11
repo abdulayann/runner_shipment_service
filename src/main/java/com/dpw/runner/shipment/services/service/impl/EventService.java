@@ -25,6 +25,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IEventDumpDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.request.TrackingEventsRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
@@ -122,11 +123,13 @@ public class EventService implements IEventService {
     private IV1Service v1Service;
     private CommonUtils commonUtils;
     private ICarrierDetailsDao carrierDetailsDao;
+    private IShipmentSettingsDao shipmentSettingsDao;
 
     @Autowired
     public EventService(IEventDao eventDao, JsonHelper jsonHelper, IAuditLogService auditLogService, ObjectMapper objectMapper, ModelMapper modelMapper, IShipmentDao shipmentDao
             , IShipmentSync shipmentSync, IConsolidationDetailsDao consolidationDao, SyncConfig syncConfig, IDateTimeChangeLogService dateTimeChangeLogService,
-            PartialFetchUtils partialFetchUtils, ITrackingServiceAdapter trackingServiceAdapter, IEventDumpDao eventDumpDao, IV1Service v1Service, CommonUtils commonUtils, ICarrierDetailsDao carrierDetailsDao) {
+            PartialFetchUtils partialFetchUtils, ITrackingServiceAdapter trackingServiceAdapter, IEventDumpDao eventDumpDao, IV1Service v1Service, CommonUtils commonUtils, ICarrierDetailsDao carrierDetailsDao,
+                        IShipmentSettingsDao shipmentSettingsDao) {
         this.eventDao = eventDao;
         this.jsonHelper = jsonHelper;
         this.auditLogService = auditLogService;
@@ -143,6 +146,7 @@ public class EventService implements IEventService {
         this.v1Service = v1Service;
         this.commonUtils = commonUtils;
         this.carrierDetailsDao = carrierDetailsDao;
+        this.shipmentSettingsDao = shipmentSettingsDao;
     }
 
     @Transactional
@@ -970,16 +974,19 @@ public class EventService implements IEventService {
         // Update carrier details with ATA and ATD if present
         CarrierDetails carrierDetails = shipment.getCarrierDetails();
 
-        if (carrierDetails != null) {
-            if (shipmentAta != null) {
-                carrierDetails.setAta(shipmentAta);
-                createDateTimeChangeLog(DateType.ATA, shipmentAta, shipment.getId());
-                carrierDetailsDao.updateAta(carrierDetails.getId(), shipmentAta);
-            }
-            if (shipmentAtd != null) {
-                carrierDetails.setAtd(shipmentAtd);
-                createDateTimeChangeLog(DateType.ATD, shipmentAtd, shipment.getId());
-                carrierDetailsDao.updateAtd(carrierDetails.getId(), shipmentAtd);
+        Optional<ShipmentSettingsDetails> shipmentSettingsDetailsOptional = shipmentSettingsDao.findByTenantId(TenantContext.getCurrentTenant());
+        if (shipmentSettingsDetailsOptional.isPresent() && Boolean.TRUE.equals(shipmentSettingsDetailsOptional.get().getIsAtdAtaAutoPopulateEnabled())) {
+            if (carrierDetails != null) {
+                if (shipmentAta != null) {
+                    carrierDetails.setAta(shipmentAta);
+                    createDateTimeChangeLog(DateType.ATA, shipmentAta, shipment.getId());
+                    carrierDetailsDao.updateAta(carrierDetails.getId(), shipmentAta);
+                }
+                if (shipmentAtd != null) {
+                    carrierDetails.setAtd(shipmentAtd);
+                    createDateTimeChangeLog(DateType.ATD, shipmentAtd, shipment.getId());
+                    carrierDetailsDao.updateAtd(carrierDetails.getId(), shipmentAtd);
+                }
             }
         }
     }
@@ -1083,6 +1090,8 @@ public class EventService implements IEventService {
     public void processUpstreamBillingCommonEventMessage(BillingInvoiceDto billingInvoiceDto) {
         try {
             v1Service.setAuthContext();
+            UsersDto originalUser = UserContext.getUser();
+            Integer originalTenant = TenantContext.getCurrentTenant();
             InvoiceDto invoiceDto = billingInvoiceDto.getPayload();
             AccountReceivableDto accountReceivableDto = invoiceDto.getAccountReceivable();
             List<BillDto> billDtoList = accountReceivableDto.getBills();
@@ -1098,22 +1107,32 @@ public class EventService implements IEventService {
                     (existing, replacement) -> replacement));
 
             billDtoList.forEach(billDto -> {
-                if (Constants.SHIPMENT.equalsIgnoreCase(billDto.getModuleTypeCode())) {
-                    ShipmentDetails shipmentDetails = shipmentMap.get(UUID.fromString(billDto.getModuleId()));
+                try {
+                    if (Constants.SHIPMENT.equalsIgnoreCase(billDto.getModuleTypeCode())) {
+                        ShipmentDetails shipmentDetails = shipmentMap.get(UUID.fromString(billDto.getModuleId()));
 
-                    TenantContext.setCurrentTenant(shipmentDetails.getTenantId());
-                    UserContext.setUser(UsersDto.builder().TenantId(shipmentDetails.getTenantId()).Permissions(new HashMap<>()).build());
+                        TenantContext.setCurrentTenant(shipmentDetails.getTenantId());
 
-                    List<EventsRequest> eventsRequests = prepareEventsFromBillingCommonEvent(billingInvoiceDto, shipmentDetails);
-                    eventsRequests.forEach(this::saveEvent);
+                        UsersDto user = UserContext.getUser();
+                        user.setTenantId(shipmentDetails.getTenantId());
+                        user.setPermissions(new HashMap<>());
+                        UserContext.setUser(user);
 
-                    TenantContext.removeTenant();
-                    UserContext.removeUser();
+                        List<EventsRequest> eventsRequests = prepareEventsFromBillingCommonEvent(billingInvoiceDto, shipmentDetails);
+                        eventsRequests.forEach(this::saveEvent);
+                    }
+                } catch (Exception e) {
+                    throw new BillingException(e.getMessage());
+                } finally {
+                    TenantContext.setCurrentTenant(originalTenant);
+                    UserContext.setUser(originalUser);
                 }
 
             });
         } catch (Exception e) {
             throw new BillingException(e.getMessage());
+        } finally {
+            v1Service.clearAuthContext();
         }
     }
 

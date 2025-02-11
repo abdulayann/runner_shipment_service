@@ -7,6 +7,7 @@ public class ReportConstants {
     public static final String BRANCH_NAME = "BranchName";
     public static final String LEGAL_COMPANY_NAME = "LegalCompanyName";
     public static final String COMPANY_ADDRESS = "CompanyAddress";
+    public static final String HAWB_PACKS_MAP = "hawbPacksMap";
 
     private ReportConstants(){}
     public static final String EXPORT_SHIPMENT_MANIFEST = "ExportShipmentManifest";

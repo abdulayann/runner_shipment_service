@@ -39,9 +39,26 @@ public class ReportRequest implements IRunnerRequest {
     String transportInstructionId;
     String remarks;
     boolean includeCsdInfo;
+    boolean printCSD;
     boolean combiLabel;
     PartiesRequest fcrShipper;
     List<Long> packIds;
     String placeOfIssue;
     LocalDateTime dateOfIssue;
+    String consolAirline;
+    String destination;
+    String mawbNumber;
+    Integer totalMawbPieces;
+    Boolean printCustomLabel;
+    String hawbNumber;
+    Integer totalHawbPieces;
+    List<HawbInfo> hawbInfo;
+
+    @Getter
+    @Setter
+    public static class HawbInfo {
+        private String hawbNumber;
+        private Integer hawbPieceCount;
+    }
+
 }
