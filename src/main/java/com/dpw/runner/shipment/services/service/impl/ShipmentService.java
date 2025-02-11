@@ -3162,17 +3162,20 @@ public class ShipmentService implements IShipmentService {
 
     private void processReceivingBranchChanges(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
         ConsolidationDetails consolidationDetails = shipmentDetails.getConsolidationList().get(0);
-        // check whether it can be null or not
-        List<Long> shipmentIdsList = shipmentDetails.getConsolidationList().get(0).getShipmentsList().stream()
-                .map(ShipmentDetails::getId).toList();
-        Map<Long, NetworkTransfer> shipmentNetworkTransferMap = networkTransferDao.getInterConsoleNTList(shipmentIdsList, SHIPMENT).stream()
-                .collect(Collectors.toMap(NetworkTransfer::getEntityId, transfer -> transfer));
-        NetworkTransfer existingNTE = shipmentNetworkTransferMap!=null? shipmentNetworkTransferMap.get(shipmentDetails.getId()) : null;
+        if(consolidationDetails.getReceivingBranch()!=null) {
+            List<Long> shipmentIdsList = shipmentDetails.getConsolidationList().get(0).getShipmentsList().stream()
+                    .map(ShipmentDetails::getId).toList();
+            Map<Long, NetworkTransfer> shipmentNetworkTransferMap = networkTransferDao.getInterConsoleNTList(shipmentIdsList, SHIPMENT).stream()
+                    .collect(Collectors.toMap(NetworkTransfer::getEntityId, transfer -> transfer));
+            NetworkTransfer existingNTE = shipmentNetworkTransferMap != null ? shipmentNetworkTransferMap.get(shipmentDetails.getId()) : null;
 
-        if (shipmentDetails.getReceivingBranch() != null) {
-            handleReceivingBranchUpdates(shipmentDetails, oldEntity, consolidationDetails, existingNTE, shipmentNetworkTransferMap);
-        } else if (shouldDeleteOldTransfer(oldEntity, existingNTE)) {
-            networkTransferDao.deleteAndLog(existingNTE, ShipmentDetails.class.getSimpleName());
+            if (shipmentDetails.getReceivingBranch() != null) {
+                handleReceivingBranchUpdates(shipmentDetails, oldEntity, consolidationDetails, existingNTE, shipmentNetworkTransferMap);
+            } else if (shouldDeleteOldTransfer(oldEntity, existingNTE)) {
+                networkTransferService.deleteNetworkTransferEntity(existingNTE);
+            }
+        }else{
+            networkTransferService.deleteValidNetworkTransferEntity(Long.valueOf(shipmentDetails.getTenantId()), shipmentDetails.getId(), SHIPMENT);
         }
     }
 
@@ -3211,7 +3214,7 @@ public class ShipmentService implements IShipmentService {
                     Constants.SHIPMENT, shipmentDetails, null, reverseDirection(shipmentDetails.getDirection()), null, true);
         } else {
             if (existingNTE != null && existingNTE.getStatus() != NetworkTransferStatus.ACCEPTED) {
-                networkTransferDao.deleteByIdsAndLog(Collections.singletonList(existingNTE.getId()));
+                networkTransferService.deleteNetworkTransferEntity(existingNTE);
             }
         }
         // empty entity payload here

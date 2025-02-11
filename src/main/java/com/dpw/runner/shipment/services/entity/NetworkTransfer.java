@@ -8,7 +8,6 @@ import com.dpw.runner.shipment.services.utils.TenantIdData;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import lombok.*;
 import lombok.experimental.Accessors;
-import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 
@@ -44,7 +43,7 @@ public class NetworkTransfer extends MultiTenancy {
     private UUID entityGuid;
 
     @Column(name = "is_hidden")
-    private Boolean is_hidden = false;
+    private Boolean isHidden = false;
 
     @Column(name = "created_entity_id")
     private Long createdEntityId;

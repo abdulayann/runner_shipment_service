@@ -9962,6 +9962,7 @@ ShipmentServiceTest extends CommonMocks {
         newShipmentDetails.setDirection(DIRECTION_EXP);
         ConsolidationDetails consolidationDetails1 = testConsol;
         consolidationDetails1.setInterBranchConsole(true);
+        consolidationDetails1.setReceivingBranch(2L);
         consolidationDetails1.setShipmentsList(Collections.singletonList(newShipmentDetails));
         newShipmentDetails.setConsolidationList(Collections.singletonList(consolidationDetails1));
 
@@ -10010,6 +10011,7 @@ ShipmentServiceTest extends CommonMocks {
         ConsolidationDetails consolidationDetails1 = testConsol;
         consolidationDetails1.setInterBranchConsole(true);
         consolidationDetails1.setShipmentsList(Collections.singletonList(newShipmentDetails));
+        consolidationDetails1.setReceivingBranch(1L);
         newShipmentDetails.setConsolidationList(Collections.singletonList(consolidationDetails1));
 
         ShipmentDetails oldEntity = new ShipmentDetails();
@@ -10035,6 +10037,7 @@ ShipmentServiceTest extends CommonMocks {
         ConsolidationDetails consolidationDetails1 = testConsol;
         consolidationDetails1.setInterBranchConsole(true);
         consolidationDetails1.setShipmentsList(Collections.singletonList(newShipmentDetails));
+        consolidationDetails1.setReceivingBranch(1L);
         newShipmentDetails.setConsolidationList(Collections.singletonList(consolidationDetails1));
 
         ShipmentDetails oldEntity = new ShipmentDetails();
@@ -10048,7 +10051,7 @@ ShipmentServiceTest extends CommonMocks {
         shipmentService.createOrUpdateNetworkTransferEntity(newShipmentDetails, oldEntity);
 
         // Verify old tenant IDs processing for removal
-        verify(networkTransferDao, times(1)).deleteAndLog(any(), any());
+        verify(networkTransferService, times(1)).deleteNetworkTransferEntity(any());
     }
 
     @Test
@@ -10079,7 +10082,7 @@ ShipmentServiceTest extends CommonMocks {
         shipmentService.createOrUpdateNetworkTransferEntity(newShipmentDetails, oldEntity);
 
         // Verify old tenant IDs processing for removal
-        verify(networkTransferDao, times(1)).deleteByIdsAndLog(any());
+        verify(networkTransferService, times(1)).deleteNetworkTransferEntity(any());
     }
 
 }
