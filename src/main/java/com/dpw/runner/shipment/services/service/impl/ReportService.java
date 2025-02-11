@@ -1,5 +1,9 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COMBI_HAWB_COUNT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CSD_REPORT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.RA_CSD;
+
 import com.dpw.runner.shipment.services.DocumentService.DocumentService;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.DocPages;
@@ -20,10 +24,10 @@ import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.ReportingService.Reports.MawbReport;
 import com.dpw.runner.shipment.services.ReportingService.Reports.PickupOrderReport;
 import com.dpw.runner.shipment.services.ReportingService.Reports.PreAlertReport;
+import com.dpw.runner.shipment.services.ReportingService.Reports.SeawayBillReport;
 import com.dpw.runner.shipment.services.ReportingService.Reports.ShipmentCANReport;
 import com.dpw.runner.shipment.services.ReportingService.Reports.ShipmentTagsForExteranlServices;
 import com.dpw.runner.shipment.services.ReportingService.Reports.TransportOrderReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.SeawayBillReport;
 import com.dpw.runner.shipment.services.ReportingService.ReportsFactory;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -124,25 +128,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COMBI_HAWB_COUNT;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CSD_REPORT;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.RA_CSD;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.IS_CSD_DOCUMENT_ADDED;
 
 @Service
 @Slf4j
@@ -984,6 +969,15 @@ public class ReportService implements IReportService {
     }
 
     public void generatePdfBytes(ReportRequest reportRequest, DocPages pages, Map<String, Object> dataRetrived, List<byte[]> pdfBytes) {
+
+        // Custom Air Labels-Master dialogue box
+        if(Boolean.TRUE.equals(reportRequest.getPrintCustomLabel()) && reportRequest.isFromConsolidation()) {
+            dataRetrived.put(ReportConstants.AIRLINE_NAME, reportRequest.getConsolAirline());
+            AWBLabelReport.populateMawb(dataRetrived, reportRequest.getMawbNumber());
+            dataRetrived.put(ReportConstants.CONSOL_DESTINATION_AIRPORT_CODE_CAPS, reportRequest.getDestination());
+            dataRetrived.put(ReportConstants.TOTAL_CONSOL_PACKS, reportRequest.getTotalMawbPieces());
+        }
+
         int copies = reportRequest.getCopyCountForAWB() != null ? reportRequest.getCopyCountForAWB() : 0;
         if(copies < 1) throw new ValidationException("Copy count is less than 1");
         Integer noOfPacks = 0;
@@ -1772,7 +1766,7 @@ public class ReportService implements IReportService {
 
             if(reportRequest.isPrintCSD() && ReportConstants.ORIGINAL.equalsIgnoreCase(reportRequest.getPrintType())){
                 addCSDDocumentToDocumentMaster(reportRequest.getReportId(), docUploadRequest, guid);
-                MDC.put(IS_CSD_DOCUMENT_ADDED, "true");
+                MDC.put(Constants.IS_CSD_DOCUMENT_ADDED, "true");
             }
         }catch(Exception ex){
             log.error(ex.getMessage());
@@ -1794,7 +1788,7 @@ public class ReportService implements IReportService {
             () -> addFilesFromReport(new BASE64DecodedMultipartFile(pdfByte_Content), filename,
                 docUploadRequest, guid)), executorService);
       } catch (Exception e) {
-            MDC.put(IS_CSD_DOCUMENT_ADDED, "false");
+            MDC.put(Constants.IS_CSD_DOCUMENT_ADDED, "false");
             log.error(e.getMessage());
         }
     }
