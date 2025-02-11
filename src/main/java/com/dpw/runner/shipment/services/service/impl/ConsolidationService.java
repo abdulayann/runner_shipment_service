@@ -2046,9 +2046,7 @@ public class ConsolidationService implements IConsolidationService {
         if (reverseSyncFromConsolToShipment) {
             shipmentRoutingList.stream()
                     .filter(r -> RoutingCarriage.MAIN_CARRIAGE.equals(r.getCarriage()) && Boolean.FALSE.equals(r.getInheritedFromConsolidation()))
-                    .forEach(shipmentRoute -> {
-                        existingOriginalShipmentMainCarriageRoutings.add(shipmentRoute);
-                    });
+                    .forEach(existingOriginalShipmentMainCarriageRoutings::add);
         }
         consolidationRoutings.stream()
                 .filter(i -> RoutingCarriage.MAIN_CARRIAGE.equals(i.getCarriage()))
