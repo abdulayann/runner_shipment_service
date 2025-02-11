@@ -4783,6 +4783,8 @@ public class ConsolidationService implements IConsolidationService {
         List<NetworkTransfer> nteToUpdate = new ArrayList<>();
         List<NetworkTransfer> nteToDelete = new ArrayList<>();
 
+        Long consolidationReceivingBranch = consolidationDetails.getReceivingBranch();
+
         for (ShipmentDetails shipmentDetails : consolidationDetails.getShipmentsList()) {
             Long receivingBranch = shipmentDetails.getReceivingBranch();
             if (receivingBranch == null) {
@@ -4794,21 +4796,18 @@ public class ConsolidationService implements IConsolidationService {
                     .get(receivingBranch.intValue())
                     : null;
 
-            if (consolidationDetails.getReceivingBranch() == null) {
-                if (existingNTE != null) {
+            // Handle deletion scenario first
+            if (consolidationReceivingBranch == null) {
+                if(existingNTE != null)
                     nteToDelete.add(existingNTE);
-                }
-                continue;
-            }
-
-            processConsoleBranchUpdate(isConsoleBranchUpdate, existingNTE);
-
-            if (!Objects.equals(consolidationDetails.getReceivingBranch(), receivingBranch)) {
-                if (existingNTE == null) {
-                    shipmentsForNte.add(shipmentDetails);
-                }
             } else {
-                if (existingNTE == null) {
+                processConsoleBranchUpdate(isConsoleBranchUpdate, existingNTE);
+
+                if (!Objects.equals(consolidationReceivingBranch, receivingBranch)) {
+                    if (existingNTE == null) {
+                        shipmentsForNte.add(shipmentDetails);
+                    }
+                } else if (existingNTE == null) {
                     shipmentsForHiddenNte.add(shipmentDetails);
                 } else {
                     existingNTE.setIsHidden(Boolean.TRUE);
@@ -4817,6 +4816,13 @@ public class ConsolidationService implements IConsolidationService {
             }
         }
 
+        processShipmentsLists(shipmentsForNte, shipmentsForHiddenNte, nteToUpdate, nteToDelete);
+    }
+
+    private void processShipmentsLists(List<ShipmentDetails> shipmentsForNte,
+                                       List<ShipmentDetails> shipmentsForHiddenNte,
+                                       List<NetworkTransfer> nteToUpdate,
+                                       List<NetworkTransfer> nteToDelete) {
         shipmentsForNte.forEach(shipmentDetails ->
                 networkTransferService.processNetworkTransferEntity(
                         shipmentDetails.getReceivingBranch(), null, SHIPMENT, shipmentDetails,
