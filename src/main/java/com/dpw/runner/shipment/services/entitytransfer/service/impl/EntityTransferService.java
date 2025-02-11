@@ -1086,13 +1086,12 @@ public class EntityTransferService implements IEntityTransferService {
         if (isAutomaticTransfer()) {
             branchMap = v1ServiceUtil.getTenantDetails(Collections.singletonList(currentTenant));
         }
-        List<EventsRequest> events = prepareEvents(entityId, eventCode, entityType, tenantIds, tenantMap, branchMap);
+        List<EventsRequest> events = prepareEvents(entityId, eventCode, entityType, tenantIds, tenantMap, branchMap, currentTenant);
         eventService.saveAllEvent(events);
     }
 
-    private List<EventsRequest> prepareEvents(Long entityId, String eventCode, String entityType, List<Integer> tenantIds, Map<Integer, Object> tenantMap, Map<Integer, Object> branchMap) {
+    private List<EventsRequest> prepareEvents(Long entityId, String eventCode, String entityType, List<Integer> tenantIds, Map<Integer, Object> tenantMap, Map<Integer, Object> branchMap, Integer currentTenant) {
         List<EventsRequest> events = new ArrayList<>();
-        var currentTenant = TenantContext.getCurrentTenant();
         if (isAutomaticTransfer() && (branchMap.isEmpty() || !branchMap.containsKey(currentTenant))) {
             var v1Map = v1ServiceUtil.getTenantDetails(Collections.singletonList(currentTenant));
             if (!v1Map.isEmpty() && v1Map.containsKey(currentTenant)) {
@@ -1110,17 +1109,16 @@ public class EntityTransferService implements IEntityTransferService {
                 eventsRequest.setPlaceName(tenantDetails.getCode());
             eventsRequest.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
             if (isAutomaticTransfer()) {
-                updateUserFieldsInEvent(eventsRequest, branchMap);
+                updateUserFieldsInEvent(eventsRequest, branchMap, currentTenant);
             }
             events.add(eventsRequest);
         }
         return events;
     }
 
-    private void updateUserFieldsInEvent(EventsRequest event, Map<Integer, Object> branchMap) {
+    private void updateUserFieldsInEvent(EventsRequest event, Map<Integer, Object> branchMap, Integer tenantId) {
         event.setUserName(EventConstants.SYSTEM_GENERATED);
         event.setUserEmail(null);
-        var tenantId = TenantContext.getCurrentTenant();
         if (!branchMap.isEmpty() && branchMap.containsKey(tenantId)) {
             var tenantDetails = jsonHelper.convertValue(branchMap.getOrDefault(tenantId, new V1TenantResponse()), V1TenantResponse.class);
             event.setBranch(tenantDetails.getCode());
@@ -1170,7 +1168,8 @@ public class EntityTransferService implements IEntityTransferService {
                         SHIPMENT,
                         shipmentGuidBranchMap.getOrDefault(shipment.getGuid().toString(), Collections.emptyList()),
                         tenantMap,
-                        finalBranchMap
+                        finalBranchMap,
+                        tenantId
                 );
                 if (!CommonUtils.listIsNullOrEmpty(events)) {
                     eventsList.addAll(events);
@@ -1817,7 +1816,7 @@ public class EntityTransferService implements IEntityTransferService {
             if (isAutomaticTransfer()) {
                 branchMap = v1ServiceUtil.getTenantDetails(Collections.singletonList(currentTenant));
             }
-            List<EventsRequest> events = prepareEvents(entityId, eventCode, entityType, tenantIds, tenantMap, branchMap);
+            List<EventsRequest> events = prepareEvents(entityId, eventCode, entityType, tenantIds, tenantMap, branchMap, currentTenant);
             eventService.saveAllEvent(events);
         }
     }
