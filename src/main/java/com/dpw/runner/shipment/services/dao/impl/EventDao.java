@@ -634,13 +634,13 @@ public class EventDao implements IEventDao {
              consolidationId.set(consolidationList.get(0).getId());
         }
         eventsList.stream()
-                .map(vEvent -> updateUserFieldsInEvent(vEvent, true))
+                .map(vEvent -> updateUserFieldsInEvent(vEvent, false))
                 .filter(event -> shouldSendEventFromShipmentToConsolidation(event, shipmentDetails.getTransportMode()))
                 .forEach(event -> event.setConsolidationId(consolidationId.get()));
     }
 
-
-    private Events updateUserFieldsInEvent(Events event, Boolean forceUpdate) {
+    @Override
+    public Events updateUserFieldsInEvent(Events event, Boolean forceUpdate) {
         if (forceUpdate || ObjectUtils.isEmpty(event.getUserName())) {
             event.setUserName(Optional.ofNullable(UserContext.getUser()).map(UsersDto::getDisplayName).orElse(null));
         }

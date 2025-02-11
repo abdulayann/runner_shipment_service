@@ -199,7 +199,12 @@ import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiRe
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Container;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteContainerResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceLiteContainerResponse.LiteContainer;
-import com.dpw.runner.shipment.services.dto.v1.request.*;
+import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.PartiesOrgAddressRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.TaskCreateRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.TaskStatusUpdateRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TaskStatusUpdateRequest.EntityDetails;
 import com.dpw.runner.shipment.services.dto.v1.request.WayBillNumberFilterRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.AddressDataV1;
@@ -263,7 +268,11 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.response.SendShipment
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
-import com.dpw.runner.shipment.services.helpers.*;
+import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
+import com.dpw.runner.shipment.services.helpers.MasterDataHelper;
+import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.mapper.CarrierDetailsMapper;
 import com.dpw.runner.shipment.services.mapper.ShipmentDetailsMapper;
@@ -3324,6 +3333,7 @@ public class ShipmentService implements IShipmentService {
                     List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.BOCO);
                     for (Events event : dbEvents) {
                         event.setActual(LocalDateTime.now());
+                        eventDao.updateUserFieldsInEvent(event, true);
                     }
                 } else {
                     events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.BOCO,
@@ -3339,6 +3349,7 @@ public class ShipmentService implements IShipmentService {
                     List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.CADE);
                     for (Events event : dbEvents) {
                         event.setActual(shipmentDetails.getAdditionalDetails().getCargoDeliveredDate());
+                        eventDao.updateUserFieldsInEvent(event, true);
                     }
                 } else {
                     events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CADE,
@@ -3353,6 +3364,7 @@ public class ShipmentService implements IShipmentService {
                     List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.CACO);
                     for (Events event : dbEvents) {
                         event.setActual(shipmentDetails.getAdditionalDetails().getPickupDate());
+                        eventDao.updateUserFieldsInEvent(event, true);
                     }
                 } else {
                     events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CACO,
@@ -3367,6 +3379,7 @@ public class ShipmentService implements IShipmentService {
                     List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.CURE);
                     for (Events event : dbEvents) {
                         event.setActual(shipmentDetails.getAdditionalDetails().getCustomReleaseDate());
+                        eventDao.updateUserFieldsInEvent(event, true);
                     }
                 } else {
                     events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CURE,
@@ -3382,6 +3395,7 @@ public class ShipmentService implements IShipmentService {
                     List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.DOTP);
                     for (Events event : dbEvents) {
                         event.setActual(LocalDateTime.now());
+                        eventDao.updateUserFieldsInEvent(event, true);
                     }
                 } else {
                     events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.DOTP,
@@ -3396,6 +3410,7 @@ public class ShipmentService implements IShipmentService {
                     List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.PRDE);
                     for (Events event : dbEvents) {
                         event.setActual(shipmentDetails.getAdditionalDetails().getProofOfDeliveryDate());
+                        eventDao.updateUserFieldsInEvent(event, true);
                     }
                 } else {
                 events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.PRDE,
@@ -3411,6 +3426,7 @@ public class ShipmentService implements IShipmentService {
                     List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.SEPU);
                     for(Events event: dbEvents){
                         event.setActual(LocalDateTime.now());
+                        eventDao.updateUserFieldsInEvent(event, true);
                     }
                 }else{
                     events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.SEPU,
@@ -3427,6 +3443,7 @@ public class ShipmentService implements IShipmentService {
                     List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.CAFS);
                     for(Events event: dbEvents){
                         event.setActual(shipmentDetails.getAdditionalDetails().getWarehouseCargoArrivalDate());
+                        eventDao.updateUserFieldsInEvent(event, true);
                     }
                 }else{
                     events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CAFS,
@@ -3444,6 +3461,7 @@ public class ShipmentService implements IShipmentService {
                         }else if (ESTIMATED.equals(shipmentDetails.getDateType() )){
                             event.setEstimated(shipmentDetails.getShipmentGateInDate());
                         }
+                        eventDao.updateUserFieldsInEvent(event, true);
                     }
                 }else{
                     if(shipmentDetails.getDateType() == ACTUAL){
@@ -3465,6 +3483,7 @@ public class ShipmentService implements IShipmentService {
                 List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.EMCR);
                 for(Events event: dbEvents){
                     event.setActual(LocalDateTime.now());
+                    eventDao.updateUserFieldsInEvent(event, true);
                 }
             }else{
                 events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.EMCR,
@@ -3480,6 +3499,7 @@ public class ShipmentService implements IShipmentService {
                 List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.ECCC);
                 for (Events event : dbEvents) {
                     event.setActual(LocalDateTime.now());
+                    eventDao.updateUserFieldsInEvent(event, true);
                 }
             } else {
                 events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.ECCC,
@@ -3495,6 +3515,7 @@ public class ShipmentService implements IShipmentService {
                 List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.BLRS);
                 for (Events event : dbEvents) {
                     event.setActual(shipmentDetails.getAdditionalDetails().getBlInstructionReceived());
+                    eventDao.updateUserFieldsInEvent(event, true);
                 }
             } else {
                 events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.BLRS,
@@ -3509,6 +3530,7 @@ public class ShipmentService implements IShipmentService {
                 List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.FNMU);
                 for (Events event : dbEvents) {
                     event.setContainerNumber(shipmentDetails.getMasterBill());
+                    eventDao.updateUserFieldsInEvent(event, true);
                 }
             }
         }
@@ -3521,6 +3543,7 @@ public class ShipmentService implements IShipmentService {
                 List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.COOD);
                 for (Events event : dbEvents) {
                     event.setActual(shipmentDetails.getAdditionalDetails().getCargoOutForDelivery());
+                    eventDao.updateUserFieldsInEvent(event, true);
                 }
             } else {
                 events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.COOD,
