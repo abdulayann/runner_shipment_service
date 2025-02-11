@@ -3831,7 +3831,7 @@ public class ShipmentService implements IShipmentService {
             ShipmentContainerAssignRequest request = (ShipmentContainerAssignRequest) commonRequestModel.getData();
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
             ShipmentDetails shipmentDetails = shipmentDao.findById(request.getShipmentId()).get();
-            List<Containers> oldContainers = shipmentDetails.getContainersList();
+            Set<Containers> oldContainers = shipmentDetails.getContainersList();
             ListCommonRequest listCommonRequest = constructListCommonRequest("id", request.getContainerIds(), "IN");
             Pair<Specification<Containers>, Pageable> pair = fetchData(listCommonRequest, Containers.class);
             Page<Containers> containers = containerDao.findAll(pair.getLeft(), pair.getRight());
@@ -3902,7 +3902,7 @@ public class ShipmentService implements IShipmentService {
             List<Containers> conts = new ArrayList<>();
             List<Long> containerIds = new ArrayList<>();
             ShipmentDetails shipmentDetails = shipmentDao.findById(containerAssignRequest.getShipmentId()).get();
-            List<Containers> oldContainers = shipmentDetails.getContainersList();
+            Set<Containers> oldContainers = shipmentDetails.getContainersList();
             if(lclAndSeaOrRoadFlag) {
                 for (Containers container : containers.getContent()) {
                     List<ShipmentsContainersMapping> shipmentsContainersMappings = shipmentsContainersMappingDao.findByContainerId(container.getId());
