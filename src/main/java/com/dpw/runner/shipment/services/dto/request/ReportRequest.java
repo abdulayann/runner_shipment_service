@@ -52,4 +52,13 @@ public class ReportRequest implements IRunnerRequest {
     Boolean printCustomLabel;
     String hawbNumber;
     Integer totalHawbPieces;
+    List<HawbInfo> hawbInfo;
+
+    @Getter
+    @Setter
+    public static class HawbInfo {
+        private String hawbNumber;
+        private Integer hawbPieceCount;
+    }
+
 }

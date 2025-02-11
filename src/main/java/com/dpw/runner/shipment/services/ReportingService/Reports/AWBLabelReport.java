@@ -432,7 +432,7 @@ public class AWBLabelReport extends IReport{
                         hawbPacksList.add(Pair.of(shipmentModel.getHouseBill(), noOfPacks));
                 }
             }
-            dictionary.put("hawbPacksMap", hawbPacksList);
+            dictionary.put(ReportConstants.HAWB_PACKS_MAP, hawbPacksList);
         } else {
             dictionary.put(IS_COMBI, false);
             dictionary.put(ReportConstants.IS_MAWB, this.isMawb);

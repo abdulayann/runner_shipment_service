@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COMBI_HAWB_COUNT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CSD_REPORT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.HAWB_PACKS_MAP;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.RA_CSD;
 
 import com.dpw.runner.shipment.services.DocumentService.DocumentService;
@@ -103,6 +104,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -978,6 +980,23 @@ public class ReportService implements IReportService {
             dataRetrived.put(ReportConstants.TOTAL_CONSOL_PACKS, reportRequest.getTotalMawbPieces());
         }
 
+        // Custom Air Labels-Combi dialogue box
+        if (Boolean.TRUE.equals(reportRequest.getPrintCustomLabel()) && reportRequest.isCombiLabel()) {
+            List<Pair<String, Integer>> hawbPackageList = Optional.ofNullable(reportRequest.getHawbInfo())
+                    .orElse(Collections.emptyList()).stream()
+                    .filter(hawb -> hawb != null && (hawb.getHawbNumber() != null || hawb.getHawbPieceCount() != null))
+                    .map(hawb -> Pair.of(
+                            Objects.toString(hawb.getHawbNumber(), ""),
+                            Objects.requireNonNullElse(hawb.getHawbPieceCount(), 0)
+                    )).toList();
+
+            dataRetrived.put(HAWB_PACKS_MAP, hawbPackageList);
+            dataRetrived.put(ReportConstants.AIRLINE_NAME, reportRequest.getConsolAirline());
+            AWBLabelReport.populateMawb(dataRetrived, reportRequest.getMawbNumber());
+            dataRetrived.put(ReportConstants.CONSOL_DESTINATION_AIRPORT_CODE_CAPS, reportRequest.getDestination());
+            dataRetrived.put(ReportConstants.TOTAL_CONSOL_PACKS, reportRequest.getTotalMawbPieces());
+        }
+
         // Custom Air Labels-House dialogue box
         if(Boolean.TRUE.equals(reportRequest.getPrintCustomLabel()) && !reportRequest.isFromConsolidation()) {
             dataRetrived.put(ReportConstants.HAWB_NUMBER, reportRequest.getHawbNumber());
@@ -996,8 +1015,8 @@ public class ReportService implements IReportService {
             noOfPacks = (Integer) dataRetrived.get(ReportConstants.TOTAL_PACKS);
         }
         if(isCombi) {
-            hawbPacksMap = new ArrayList<>((List<Pair<String, Integer>>) dataRetrived.get("hawbPacksMap"));
-            dataRetrived.remove("hawbPacksMap");
+            hawbPacksMap = new ArrayList<>((List<Pair<String, Integer>>) dataRetrived.get(HAWB_PACKS_MAP));
+            dataRetrived.remove(HAWB_PACKS_MAP);
             noOfPacks = (Integer) dataRetrived.get(ReportConstants.TOTAL_CONSOL_PACKS);
         }
         if(noOfPacks == null || noOfPacks == 0) {
