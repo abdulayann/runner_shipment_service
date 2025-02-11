@@ -1786,13 +1786,14 @@ public class ReportService implements IReportService {
         reportRequest.setReportInfo(CSD_REPORT);
         try{
         CommonRequestModel commonRequestModel =  CommonRequestModel.buildRequest(reportRequest);
-        docUploadRequest.setType(CSD_REPORT);
+        DocUploadRequest csdDocumentUploadRequest = new DocUploadRequest(docUploadRequest);
+        csdDocumentUploadRequest.setType(CSD_REPORT);
         String filename = CSD_REPORT + "_" + docUploadRequest.getId() + ".pdf";
 
         byte[] pdfByte_Content = getDocumentData(commonRequestModel);
       CompletableFuture.runAsync(masterDataUtils.withMdc(
             () -> addFilesFromReport(new BASE64DecodedMultipartFile(pdfByte_Content), filename,
-                docUploadRequest, guid)), executorService);
+                csdDocumentUploadRequest, guid)), executorService);
       } catch (Exception e) {
             MDC.put(IS_CSD_DOCUMENT_ADDED, "false");
             log.error(e.getMessage());
