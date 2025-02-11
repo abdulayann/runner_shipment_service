@@ -3189,7 +3189,10 @@ public class ShipmentService implements IShipmentService {
                 networkTransferService.deleteNetworkTransferEntity(existingNTE);
             }
         }else{
-            networkTransferService.deleteValidNetworkTransferEntity(Long.valueOf(shipmentDetails.getTenantId()), shipmentDetails.getId(), SHIPMENT);
+            List<NetworkTransfer> nteList = networkTransferDao.getInterConsoleNTList(Collections.singletonList(shipmentDetails.getId()), SHIPMENT);
+            if(nteList!=null){
+                nteList.forEach(nte -> networkTransferService.deleteNetworkTransferEntity(nte));
+            }
         }
     }
 
