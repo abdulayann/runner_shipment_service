@@ -1,6 +1,8 @@
 package com.dpw.runner.shipment.services.entity.commons;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.entity.Parties;
+import com.google.common.base.Strings;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.*;
@@ -76,6 +78,18 @@ public class BaseEntity implements Serializable {
 
         if (this.guid == null) {
             this.guid = UUID.randomUUID();
+        }
+
+        if(this instanceof Parties) {
+            Parties parties = (Parties) this;
+            if(Strings.isNullOrEmpty(parties.getOrgId()) && parties.getOrgData() != null && !parties.getOrgData().isEmpty() &&
+                    parties.getOrgData().containsKey("Id")) {
+                parties.setOrgId((String) parties.getOrgData().get("Id"));
+            }
+            if(Strings.isNullOrEmpty(parties.getAddressId()) && parties.getAddressData() != null && !parties.getAddressData().isEmpty() &&
+                    parties.getAddressData().containsKey("Id")) {
+                parties.setAddressId((String) parties.getAddressData().get("Id"));
+            }
         }
     }
 }
