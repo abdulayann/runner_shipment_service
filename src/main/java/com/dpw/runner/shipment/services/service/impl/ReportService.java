@@ -1803,6 +1803,9 @@ public class ReportService implements IReportService {
         ReportRequest reportRequest = new ReportRequest();
         reportRequest.setReportId(reportId);
         reportRequest.setReportInfo(CSD_REPORT);
+        if(Constants.Consolidations.equalsIgnoreCase(docUploadRequest.getEntityType())){
+            reportRequest.setFromConsolidation(true);
+        }
         try{
         CommonRequestModel commonRequestModel =  CommonRequestModel.buildRequest(reportRequest);
         DocUploadRequest csdDocumentUploadRequest = new DocUploadRequest(docUploadRequest);
