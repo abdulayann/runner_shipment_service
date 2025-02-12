@@ -8537,4 +8537,145 @@ public class ShipmentService implements IShipmentService {
             }
         }
     }
+
+    @Override
+    @Transactional
+    public ResponseEntity<IRunnerResponse> createV3(CommonRequestModel commonRequestModel) {
+        ShipmentRequest request = (ShipmentRequest) commonRequestModel.getData();
+        this.setColoadingStation(request);
+        ShipmentDetailsResponse shipmentDetailsResponse = this.createShipment(request, false, false);
+
+        return ResponseHelper.buildSuccessResponse(shipmentDetailsResponse);
+    }
+
+    @Override
+    @Transactional
+    public ResponseEntity<IRunnerResponse> completeUpdateV3(CommonRequestModel commonRequestModel) throws RunnerException {
+        ShipmentRequest shipmentRequest = (ShipmentRequest) commonRequestModel.getData();
+        this.setColoadingStation(shipmentRequest);
+        ShipmentDetailsResponse response = completeUpdateShipment(shipmentRequest, false);
+        return ResponseHelper.buildSuccessResponse(response);
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> retrieveByIdV3(CommonRequestModel commonRequestModel, boolean getMasterData) {
+        String responseMsg;
+        try {
+            return ResponseHelper.buildSuccessResponse(retireveShipmentData(commonRequestModel, false, false));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> fullShipmentsListV3(CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        try {
+            // TODO- implement actual logic with filters
+            ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+            if (request == null) {
+                log.error(ShipmentConstants.SHIPMENT_LIST_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
+                throw new ValidationException(ShipmentConstants.SHIPMENT_LIST_REQUEST_NULL_ERROR);
+            }
+//            checkWayBillNumberCriteria(request);
+            Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class, tableNames);
+            Page<ShipmentDetails> shipmentDetailsPage = this.findAllWithOutIncludeColumn(tuple.getLeft(), tuple.getRight());
+            log.info(ShipmentConstants.SHIPMENT_LIST_RESPONSE_SUCCESS, LoggerHelper.getRequestIdFromMDC());
+            if(request.getIncludeColumns()==null || request.getIncludeColumns().isEmpty())
+                return ResponseHelper.buildListSuccessResponse(
+                        convertEntityListToFullShipmentList(shipmentDetailsPage.getContent()),
+                        shipmentDetailsPage.getTotalPages(),
+                        shipmentDetailsPage.getTotalElements());
+            else {
+                List<IRunnerResponse>filteredList=new ArrayList<>();
+                for( var curr: convertEntityListToFullShipmentList(shipmentDetailsPage.getContent())){
+                    RunnerPartialListResponse res=new RunnerPartialListResponse();
+                    res.setData(partialFetchUtils.fetchPartialListData(curr,request.getIncludeColumns()));
+                    filteredList.add( res);
+
+                }
+                return ResponseHelper.buildListSuccessResponse(
+                        filteredList,
+                        shipmentDetailsPage.getTotalPages(),
+                        shipmentDetailsPage.getTotalElements());
+            }
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> listV3(CommonRequestModel commonRequestModel, boolean getMasterData) {
+        String responseMsg;
+        int totalPage = 0;
+        long totalElements = 0;
+        try {
+            ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+            if (request == null) {
+                log.error(ShipmentConstants.SHIPMENT_LIST_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
+                throw new ValidationException(ShipmentConstants.SHIPMENT_LIST_REQUEST_NULL_ERROR);
+            }
+            if(Boolean.TRUE.equals(request.getNotificationFlag())) {
+                Page<Long> eligibleShipmentId = shipmentDao.getIdWithPendingActions(ShipmentRequestedType.SHIPMENT_PULL_REQUESTED,
+                        PageRequest.of(Math.max(0,request.getPageNo()-1), request.getPageSize()));
+
+                List<Long> shipmentIds = notificationDao.findEntityIdsByEntityType(SHIPMENT);
+
+                Set<Long> uniqueShipmentIds = new HashSet<>(eligibleShipmentId.getContent());
+                uniqueShipmentIds.addAll(shipmentIds);
+
+                List<Long> combinedShipmentIds = new ArrayList<>(uniqueShipmentIds);
+
+                andCriteria("id", combinedShipmentIds, "IN", request);
+
+                totalElements = combinedShipmentIds.size();
+                int pageSize = request.getPageSize();
+                totalPage = (int) ((totalElements + pageSize - 1) / pageSize);
+            }
+//            request.setIncludeTbls(Arrays.asList(Constants.ADDITIONAL_DETAILS, Constants.CLIENT, Constants.CONSIGNER, Constants.CONSIGNEE, Constants.CARRIER_DETAILS, Constants.PICKUP_DETAILS, Constants.DELIVERY_DETAILS));
+            checkWayBillNumberCriteria(request);
+            log.info(ShipmentConstants.SHIPMENT_LIST_CRITERIA_PREPARING, LoggerHelper.getRequestIdFromMDC());
+            Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class, tableNames);
+            Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
+            //  Page<ShipmentDetails> shipmentDetailsPage = this.findAllWithOutIncludeColumn(tuple.getLeft(), tuple.getRight());
+
+            log.info(ShipmentConstants.SHIPMENT_LIST_RESPONSE_SUCCESS, LoggerHelper.getRequestIdFromMDC());
+            if(!Boolean.TRUE.equals(request.getNotificationFlag())) {
+                totalPage = shipmentDetailsPage.getTotalPages();
+                totalElements = shipmentDetailsPage.getTotalElements();
+            }
+            if(request.getIncludeColumns()==null || request.getIncludeColumns().isEmpty())
+                return ResponseHelper.buildListSuccessResponse(
+                        convertEntityListToDtoList(shipmentDetailsPage.getContent(), getMasterData),
+                        totalPage,
+                        totalElements);
+            else {
+                List<IRunnerResponse>filtered_list=new ArrayList<>();
+                for( var curr: convertEntityListToDtoList(shipmentDetailsPage.getContent(), getMasterData)){
+                    RunnerPartialListResponse res=new RunnerPartialListResponse();
+                    res.setData(partialFetchUtils.fetchPartialListData(curr,request.getIncludeColumns()));
+                    filtered_list.add( res);
+
+                }
+                return ResponseHelper.buildListSuccessResponse(
+                        filtered_list,
+                        totalPage,
+                        totalElements);
+            }
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+
+    }
+
+
 }
