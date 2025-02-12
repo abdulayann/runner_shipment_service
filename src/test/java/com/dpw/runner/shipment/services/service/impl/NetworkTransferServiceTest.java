@@ -469,4 +469,21 @@ class NetworkTransferServiceTest extends CommonMocks{
         assertDoesNotThrow(() -> networkTransferService.updateStatusAndCreatedEntityId(1L, NetworkTransferStatus.ACCEPTED.name(), 2L));
     }
 
+    @Test
+    void testFetchEntityStatus() {
+        var guid = UUID.randomUUID().toString();
+        when(shipmentDao.findReceivingByGuid(UUID.fromString(guid))).thenReturn(1);
+        when(networkTransferDao.findByEntityGuidAndTenantId(UUID.fromString(guid), 1)).thenReturn(NetworkTransferStatus.SCHEDULED.name());
+        var response = networkTransferService.fetchEntityStatus(CommonGetRequest.builder().guid(guid).build());
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testFetchEntityStatus1() {
+        var guid = UUID.randomUUID().toString();
+        when(shipmentDao.findReceivingByGuid(UUID.fromString(guid))).thenReturn(null);
+        var response = networkTransferService.fetchEntityStatus(CommonGetRequest.builder().guid(guid).build());
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
 }
