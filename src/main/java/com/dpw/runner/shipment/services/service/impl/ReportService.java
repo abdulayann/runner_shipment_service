@@ -980,7 +980,7 @@ public class ReportService implements IReportService {
             dataRetrived.put(ReportConstants.TOTAL_CONSOL_PACKS, reportRequest.getTotalMawbPieces());
         }
 
-        // Custom Air Labels-Combi dialogue box
+        // Custom Air Labels- Combi dialogue box
         if (Boolean.TRUE.equals(reportRequest.getPrintCustomLabel()) && reportRequest.isCombiLabel()) {
             List<Pair<String, Integer>> hawbPackageList = Optional.ofNullable(reportRequest.getHawbInfo())
                     .orElse(Collections.emptyList()).stream()
