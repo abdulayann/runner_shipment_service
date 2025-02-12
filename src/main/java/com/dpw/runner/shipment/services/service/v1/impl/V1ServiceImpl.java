@@ -346,6 +346,8 @@ public class V1ServiceImpl implements IV1Service {
     private String getTenantInfoUrl;
     @Value("${v1service.url.base}${v1service.url.getEmailTemplates}")
     private String getEmailTemplates;
+    @Value("${v1service.url.base}${v1service.url.getEmailTemplatesWithTenantId}")
+    private String getEmailTemplatesWithTenantId;
     @Value("${v1service.url.base}${v1service.url.getMasterDetails}")
     private String getMasterDetails;
     @Value("${v1service.url.base}${v1service.url.getUserDetails}")
@@ -2398,6 +2400,21 @@ public class V1ServiceImpl implements IV1Service {
             HttpEntity<Object> entity = new HttpEntity<>(jsonHelper.convertToJson(request), V1AuthHelper.getHeaders());
              masterDataResponse = this.restTemplate.postForEntity(this.getEmailTemplates, entity, V1DataResponse.class, V1DataResponse.class);
             log.info("Token time taken in getEmailTemplates() function {} ms", (System.currentTimeMillis() - time));
+            return masterDataResponse.getBody();
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+    @Override
+    public V1DataResponse getEmailTemplatesWithTenantId(Object request) {
+        ResponseEntity<V1DataResponse> masterDataResponse = null;
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<Object> entity = new HttpEntity<>(jsonHelper.convertToJson(request), V1AuthHelper.getHeaders());
+            masterDataResponse = this.restTemplate.postForEntity(this.getEmailTemplatesWithTenantId, entity, V1DataResponse.class, V1DataResponse.class);
+            log.info("Token time taken in getEmailTemplatesWithTenantId() function {} ms", (System.currentTimeMillis() - time));
             return masterDataResponse.getBody();
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
             throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());

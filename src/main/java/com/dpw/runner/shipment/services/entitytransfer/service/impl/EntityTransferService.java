@@ -325,12 +325,10 @@ public class EntityTransferService implements IEntityTransferService {
         if(Objects.equals(shipment.getTransportMode(), Constants.TRANSPORT_MODE_SEA) && Objects.equals(shipment.getDirection(), Constants.DIRECTION_EXP))
             shipmentDao.saveEntityTransfer(shipId, Boolean.TRUE);
 
-        if(!Boolean.TRUE.equals(sendShipmentRequest.getIsAutomaticTransfer())) {
-            try {
-                CompletableFuture.runAsync(masterDataUtils.withMdc(() -> sendShipmentEmailNotification(shipment, uniqueDestinationTenants.stream().toList())), executorService);
-            } catch (Exception ex) {
-                log.error(String.format(ErrorConstants.ERROR_WHILE_EMAIL, ex.getMessage()));
-            }
+        try {
+            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> sendShipmentEmailNotification(shipment, uniqueDestinationTenants.stream().toList(), sendShipmentRequest.getIsAutomaticTransfer())), executorService);
+        } catch (Exception ex) {
+            log.error(String.format(ErrorConstants.ERROR_WHILE_EMAIL, ex.getMessage()));
         }
 
         this.createBulkExportEvent(shipId, EventConstants.PRST, SHIPMENT, successTenantIds, shipment.getTenantId());
@@ -479,12 +477,10 @@ public class EntityTransferService implements IEntityTransferService {
                 shipmentDao.saveEntityTransfer(shipment.getId(), Boolean.TRUE);
         }
 
-        if(!Boolean.TRUE.equals(sendConsolidationRequest.getIsAutomaticTransfer())) {
-            try {
-                CompletableFuture.runAsync(masterDataUtils.withMdc(() -> sendConsolidationEmailNotification(consol, sendToBranch, shipmentGuidSendToBranch)), executorService);
-            } catch (Exception ex) {
-                log.error(String.format(ErrorConstants.ERROR_WHILE_EMAIL, ex.getMessage()));
-            }
+        try {
+            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> sendConsolidationEmailNotification(consol, sendToBranch, shipmentGuidSendToBranch, sendConsolidationRequest.getIsAutomaticTransfer())), executorService);
+        } catch (Exception ex) {
+            log.error(String.format(ErrorConstants.ERROR_WHILE_EMAIL, ex.getMessage()));
         }
 
         this.createBulkExportEventForMultipleShipments(consol, shipmentGuidBranchMap);
@@ -2309,7 +2305,7 @@ public class EntityTransferService implements IEntityTransferService {
         tasksService.createTask(CommonRequestModel.buildRequest(taskCreateRequest));
     }
 
-    public void sendConsolidationEmailNotification(ConsolidationDetails consolidationDetails, List<Integer> destinationBranches, Map<String, List<Integer>> shipmentGuidSendToBranch) {
+    public void sendConsolidationEmailNotification(ConsolidationDetails consolidationDetails, List<Integer> destinationBranches, Map<String, List<Integer>> shipmentGuidSendToBranch, Boolean isAutomaticTransfer) {
 
         var emailTemplatesRequests = getEmailTemplates(CONSOLIDATION_IMPORT_EMAIL_TYPE);
         var emailTemplateModel = emailTemplatesRequests.stream().findFirst().orElse(new EmailTemplatesRequest());
@@ -2331,21 +2327,29 @@ public class EntityTransferService implements IEntityTransferService {
 
         for (int i = 0; i < destinationBranches.size(); i++) {
             List<String> emailList = getEmailsListByPermissionKeysAndTenantId(Collections.singletonList(PermissionConstants.SHIPMENT_IN_PIPELINE_MODIFY), destinationBranches.get(i));
-            var template = createConsolidationImportEmailBody(consolidationDetails, emailTemplateModel, shipmentGuidSendToBranch, i, branchIdVsTenantModelMap, destinationBranches);
+            var template = createConsolidationImportEmailBody(consolidationDetails, emailTemplateModel, shipmentGuidSendToBranch, i, branchIdVsTenantModelMap, destinationBranches, isAutomaticTransfer);
             sendEmailNotification(template, emailList, ccEmails);
         }
     }
 
-    public void sendShipmentEmailNotification(ShipmentDetails shipmentDetails, List<Integer> destinationBranches) {
+    public void sendShipmentEmailNotification(ShipmentDetails shipmentDetails, List<Integer> destinationBranches, Boolean isAutomaticTransfer) {
         var emailTemplatesRequests = getEmailTemplates(SHIPMENT_IMPORT_EMAIL_TYPE);
         var emailTemplateModel = emailTemplatesRequests.stream().findFirst().orElse(new EmailTemplatesRequest());
-        createShipmentImportEmailBody(shipmentDetails, emailTemplateModel);
+        createShipmentImportEmailBody(shipmentDetails, emailTemplateModel, isAutomaticTransfer);
 
         // No CC emails are used
         List<String> ccEmails = new ArrayList<>();
         // Current user (the sender) in CC for NTE
         UsersDto user = UserContext.getUser();
-        if(user.Email!=null)
+        if(Boolean.TRUE.equals(isAutomaticTransfer)) {
+            Map<String, String> usernameEmailsMap = new HashMap<>();
+            if(!Strings.isNullOrEmpty(shipmentDetails.getAssignedTo())) {
+                commonUtils.getUserDetails(new HashSet<>(Set.of(shipmentDetails.getAssignedTo())), usernameEmailsMap);
+                if (usernameEmailsMap.containsKey(shipmentDetails.getAssignedTo()))
+                    ccEmails.add(usernameEmailsMap.get(shipmentDetails.getAssignedTo()));
+            }
+        }
+        else if(user.Email!=null)
             ccEmails.add(user.Email);
 
         for(Integer tenantId: destinationBranches) {
@@ -2354,7 +2358,7 @@ public class EntityTransferService implements IEntityTransferService {
         }
     }
 
-    public void createShipmentImportEmailBody(ShipmentDetails shipmentDetails, EmailTemplatesRequest template) {
+    public void createShipmentImportEmailBody(ShipmentDetails shipmentDetails, EmailTemplatesRequest template, Boolean isAutomaticTransfer) {
         UsersDto user = UserContext.getUser();
 
         var branchIdVsTenantModelMap = convertToTenantModel(v1ServiceUtil.getTenantDetails(List.of(TenantContext.getCurrentTenant())));
@@ -2368,7 +2372,7 @@ public class EntityTransferService implements IEntityTransferService {
         String body = (template.getBody() == null) ?
                 Constants.DEFAULT_SHIPMENT_RECEIVED_BODY : template.getBody();
         body = body.replace(SOURCE_BRANCH_PLACEHOLDER, StringUtility.convertToString(branchIdVsTenantModelMap.get(TenantContext.getCurrentTenant()).tenantName));
-        body = body.replace(SENDER_USER_NAME_PLACEHOLDER, StringUtility.convertToString(user.getDisplayName()));
+        body = body.replace(SENDER_USER_NAME_PLACEHOLDER, Boolean.TRUE.equals(isAutomaticTransfer) ? "Automated Transfer" : StringUtility.convertToString(user.getDisplayName()));
         body = body.replace(BL_NUMBER_PLACEHOLDER, StringUtility.convertToString(shipmentDetails.getHouseBill()));
         body = body.replace(MBL_NUMBER_PLACEHOLDER, StringUtility.convertToString(shipmentDetails.getMasterBill()));
         body = body.replace(SENT_DATE_PLACEHOLDER, LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
@@ -2378,7 +2382,7 @@ public class EntityTransferService implements IEntityTransferService {
         template.setBody(body);
     }
 
-    public EmailTemplatesRequest createConsolidationImportEmailBody(ConsolidationDetails consolidationDetails, EmailTemplatesRequest template, Map<String, List<Integer>> shipmentGuidSendToBranch, int index, Map<Integer, TenantModel> tenantMap, List<Integer> destinationBranches) {
+    public EmailTemplatesRequest createConsolidationImportEmailBody(ConsolidationDetails consolidationDetails, EmailTemplatesRequest template, Map<String, List<Integer>> shipmentGuidSendToBranch, int index, Map<Integer, TenantModel> tenantMap, List<Integer> destinationBranches, Boolean isAutomaticTransfer) {
         UsersDto user = UserContext.getUser();
 
         String blNumbers = (consolidationDetails.getShipmentsList() == null) ? "" :
@@ -2406,7 +2410,7 @@ public class EntityTransferService implements IEntityTransferService {
         String body = (template.getBody() == null) ?
                 Constants.DEFAULT_CONSOLIDATION_RECEIVED_BODY : template.getBody();
         body = body.replace(SOURCE_BRANCH_PLACEHOLDER, StringUtility.convertToString(tenantMap.get(TenantContext.getCurrentTenant()).tenantName));
-        body = body.replace(SENDER_USER_NAME_PLACEHOLDER, StringUtility.convertToString(user.getDisplayName()));
+        body = body.replace(SENDER_USER_NAME_PLACEHOLDER, Boolean.TRUE.equals(isAutomaticTransfer) ? "Automated Transfer" : StringUtility.convertToString(user.getDisplayName()));
         body = body.replace(NUMBER_OF_SHIPMENTS_PLACEHOLDER, (consolidationDetails.getShipmentsList() == null) ? "0" : String.valueOf(consolidationDetails.getShipmentsList().size()));
         body = body.replace(BL_NUMBER_PLACEHOLDER, blNumbers);
         body = body.replace(MBL_NUMBER_PLACEHOLDER, TRANSPORT_MODE_SEA.equals(consolidationDetails.getTransportMode()) ? StringUtility.convertToString(consolidationDetails.getBol()) : StringUtility.convertToString(consolidationDetails.getMawb()));
@@ -2567,11 +2571,15 @@ public class EntityTransferService implements IEntityTransferService {
     private List<EmailTemplatesRequest> getEmailTemplates(String templateType) {
         List<String> requests = new ArrayList<>(List.of(templateType));
         CommonV1ListRequest request = new CommonV1ListRequest();
-        List<Object> field = new ArrayList<>(List.of(Constants.TYPE));
-        String operator = Operators.IN.getValue();
-        List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(requests)));
+        List<Object> criteria = new ArrayList<>();
+        List<Object> field1List = new ArrayList<>(List.of(Constants.TYPE));
+        criteria.add(new ArrayList<>(List.of(field1List, Operators.IN.getValue(), List.of(requests))));
+
+        List<Object> field2List = new ArrayList<>(List.of("TenantId"));
+        criteria.add("and");
+        criteria.add(new ArrayList<>(List.of(field2List, Operators.IN.getValue(), List.of(List.of(TenantContext.getCurrentTenant())))));
         request.setCriteriaRequests(criteria);
-        V1DataResponse v1DataResponse = iv1Service.getEmailTemplates(request);
+        V1DataResponse v1DataResponse = iv1Service.getEmailTemplatesWithTenantId(request);
         return jsonHelper.convertValueToList(v1DataResponse.entities, EmailTemplatesRequest.class);
     }
 

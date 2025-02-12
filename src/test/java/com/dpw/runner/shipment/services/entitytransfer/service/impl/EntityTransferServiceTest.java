@@ -2248,7 +2248,7 @@ class EntityTransferServiceTest extends CommonMocks {
         doNothing().when(commonUtils).getToAndCCEmailIdsFromTenantSettings(anySet(), anyMap());
         EmailTemplatesRequest emailTemplatesRequest = mock(EmailTemplatesRequest.class);
         when(jsonHelper.convertValueToList(any(), eq(EmailTemplatesRequest.class))).thenReturn(List.of(emailTemplatesRequest));
-        when(iv1Service.getEmailTemplates(any())).thenReturn(V1DataResponse.builder().build());
+        when(iv1Service.getEmailTemplatesWithTenantId(any())).thenReturn(V1DataResponse.builder().build());
         doAnswer(invocation -> {
             Set<String> toEmailIds = invocation.getArgument(0);
             toEmailIds.add("toEmail@example.com");
@@ -2276,7 +2276,7 @@ class EntityTransferServiceTest extends CommonMocks {
     void testSendConsolidationEmailNotification_Success() {
         List<Integer> destinationBranches = List.of(1,2,3);
 
-        when(iv1Service.getEmailTemplates(any())).thenReturn(V1DataResponse.builder().build());
+        when(iv1Service.getEmailTemplatesWithTenantId(any())).thenReturn(V1DataResponse.builder().build());
         Map<Integer, Object> mockV1Map = new HashMap<>();
         TenantContext.setCurrentTenant(1);
         mockV1Map.put(1, new Object());
@@ -2293,7 +2293,7 @@ class EntityTransferServiceTest extends CommonMocks {
 
         Map<String, List<Integer>> shipmentGuidSendToBranch = new HashMap<>();
         shipmentGuidSendToBranch.put("1", List.of(1,2,3));
-        entityTransferService.sendConsolidationEmailNotification(consolidationDetails, destinationBranches, shipmentGuidSendToBranch);
+        entityTransferService.sendConsolidationEmailNotification(consolidationDetails, destinationBranches, shipmentGuidSendToBranch, false);
 
         verify(v1ServiceUtil, times(1)).getTenantDetails(anyList());
 
@@ -2302,7 +2302,8 @@ class EntityTransferServiceTest extends CommonMocks {
     void testSendConsolidationEmailNotification_Success1() {
         List<Integer> destinationBranches = List.of(1,2,3);
 
-        when(iv1Service.getEmailTemplates(any())).thenReturn(V1DataResponse.builder().build());
+        when(iv1Service.getEmailTemplatesWithTenantId(any())).thenReturn(V1DataResponse.builder().build());
+
         Map<Integer, Object> mockV1Map = new HashMap<>();
         TenantContext.setCurrentTenant(1);
         mockV1Map.put(1, new Object());
@@ -2315,7 +2316,7 @@ class EntityTransferServiceTest extends CommonMocks {
         when(v1Service.getUsersWithGivenPermissions(any())).thenReturn(new ArrayList<>());
 
         Map<String, List<Integer>> shipmentGuidSendToBranch = null;
-        entityTransferService.sendConsolidationEmailNotification(consolidationDetails, destinationBranches, shipmentGuidSendToBranch);
+        entityTransferService.sendConsolidationEmailNotification(consolidationDetails, destinationBranches, shipmentGuidSendToBranch, false);
 
         verify(v1ServiceUtil, times(1)).getTenantDetails(anyList());
 
@@ -2325,7 +2326,7 @@ class EntityTransferServiceTest extends CommonMocks {
     void testSendShipmentEmailNotification_Success() {
         List<Integer> destinationBranches = List.of(1,2,3);
 
-        when(iv1Service.getEmailTemplates(any())).thenReturn(V1DataResponse.builder().build());
+        when(iv1Service.getEmailTemplatesWithTenantId(any())).thenReturn(V1DataResponse.builder().build());
         Map<Integer, Object> mockV1Map = new HashMap<>();
         TenantContext.setCurrentTenant(1);
         mockV1Map.put(1, new Object());
@@ -2339,7 +2340,7 @@ class EntityTransferServiceTest extends CommonMocks {
         when(shipmentDetails.getMasterBill()).thenReturn("mbn");
         when(v1Service.getUsersWithGivenPermissions(any())).thenReturn(List.of(mockUser));
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
-        entityTransferService.sendShipmentEmailNotification(shipmentDetails, destinationBranches);
+        entityTransferService.sendShipmentEmailNotification(shipmentDetails, destinationBranches, false);
 
         verify(v1Service, times(3)).getUsersWithGivenPermissions(any());
 
@@ -2349,7 +2350,7 @@ class EntityTransferServiceTest extends CommonMocks {
     void testSendShipment2EmailNotification_Success() {
         List<Integer> destinationBranches = List.of(1,2,3);
 
-        when(iv1Service.getEmailTemplates(any())).thenReturn(V1DataResponse.builder().build());
+        when(iv1Service.getEmailTemplatesWithTenantId(any())).thenReturn(V1DataResponse.builder().build());
         Map<Integer, Object> mockV1Map = new HashMap<>();
         TenantContext.setCurrentTenant(1);
         mockV1Map.put(1, new Object());
@@ -2360,7 +2361,7 @@ class EntityTransferServiceTest extends CommonMocks {
         when(shipmentDetails.getHouseBill()).thenReturn("hbn");
         when(shipmentDetails.getMasterBill()).thenReturn("mbn");
         when(v1Service.getUsersWithGivenPermissions(any())).thenReturn(new ArrayList<>());
-        entityTransferService.sendShipmentEmailNotification(shipmentDetails, destinationBranches);
+        entityTransferService.sendShipmentEmailNotification(shipmentDetails, destinationBranches, false);
 
         verify(v1Service, times(3)).getUsersWithGivenPermissions(any());
 
