@@ -8588,7 +8588,6 @@ public class ShipmentService implements IShipmentService {
         int totalPage = 0;
         long totalElements = 0;
         try {
-            // TODO- implement actual logic with filters
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
             if (request == null) {
                 log.error(ShipmentConstants.SHIPMENT_LIST_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());

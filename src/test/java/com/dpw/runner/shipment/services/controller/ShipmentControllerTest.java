@@ -1435,4 +1435,125 @@ class ShipmentControllerTest {
         assertEquals(HttpStatus.FORBIDDEN, responseEntity.getStatusCode());
     }
 
+
+    // Runner V3 endpoints
+
+    /**
+     * Method under test: {@link ShipmentController#createV3(ShipmentRequest)}
+     */
+
+    @Test
+    void createV3est() {
+        // Mock
+        when(shipmentService.createV3(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(1));
+        // Test
+        var responseEntity = shipmentController.createV3(new ShipmentRequest());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void createV3Test2() {
+        // Mock
+        when(shipmentService.createV3(any())).thenThrow(new RuntimeException());
+        when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(1));
+        // Test
+        var responseEntity = shipmentController.createV3(new ShipmentRequest());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void createV3Test3() {
+        // Mock
+        when(shipmentService.createV3(any())).thenThrow(new RuntimeException("RuntimeException"));
+        when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(1));
+        // Test
+        var responseEntity = shipmentController.createV3(new ShipmentRequest());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    /**
+     * Method under test: {@link ShipmentController#completeUpdateV3(ShipmentRequest)}
+     */
+
+    @Test
+    void completeUpdateV3Test() throws RunnerException {
+        // Mock
+        when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(10));
+        when(shipmentService.completeUpdateV3(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = shipmentController.completeUpdateV3(new ShipmentRequest());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void completeUpdateV3Test2() throws RunnerException {
+        // Mock
+        when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(10));
+        when(shipmentService.completeUpdateV3(any())).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = shipmentController.completeUpdateV3(new ShipmentRequest());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void completeUpdateV3Test3() throws RunnerException {
+        // Mock
+        when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(10));
+        when(shipmentService.completeUpdateV3(any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = shipmentController.completeUpdateV3(new ShipmentRequest());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void listV3Test() throws RunnerException {
+        // Mock
+        when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(10));
+        when(shipmentService.fullShipmentsListV3(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = shipmentController.listV3(ListCommonRequest.builder().build(), true, true);
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void ListV3Test2() throws RunnerException {
+        // Mock
+        when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(10));
+        when(shipmentService.listV3(any(), anyBoolean())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = shipmentController.listV3(ListCommonRequest.builder().build(), false, true);
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void listV3Test3() throws RunnerException {
+        // Mock
+        when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(10));
+        when(shipmentService.listV3(any(), anyBoolean())).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = shipmentController.listV3(ListCommonRequest.builder().build(), false, true);
+        // Assert
+        assertEquals(HttpStatus.FORBIDDEN, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testRetrieveByIdV3() {
+        // Mock
+        when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(10));
+        when(shipmentService.retrieveByIdV3(any(), anyBoolean())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = shipmentController.retrieveByIdV3(Optional.of(111L), Optional.of(UUID.randomUUID().toString()), true);
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
 }
