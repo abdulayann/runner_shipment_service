@@ -138,4 +138,8 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
 
     @Query(value = "SELECT * FROM shipment_details WHERE guid = ?1", nativeQuery = true)
     Optional<ShipmentDetails> findShipmentByGuidWithQuery(UUID guid);
+
+    @Modifying
+    @Query(value = "Update shipment_details set booking_number = ?2 Where guid IN ?1", nativeQuery = true)
+    int updateShipmentsBookingNumber(List<UUID> guids, String bookingNumber);
 }

@@ -49,5 +49,6 @@ public interface IConsolidationDetailsDao {
     List<IShipmentLiteResponse> findIShipmentsByConsolidationIds(List<Long> consolidationIDs);
     List<IShipmentContainerLiteResponse> findShipmentDetailsWithContainersByConsolidationIds(List<Long> consolidationIDs);
     Page<IConsolidationDetailsResponse> findAllLiteConsol(Specification<ConsolidationDetails> spec, Pageable pageable);
+    Optional<ConsolidationDetails> findConsolidationByGuidWithQuery(UUID guid);
 
 }

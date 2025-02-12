@@ -1962,6 +1962,12 @@ public class ShipmentService implements IShipmentService {
             }
             shipmentDetails.setMasterBill(consolidationDetails1.getBol());
             shipmentDetails.setDirection(consolidationDetails1.getShipmentType());
+            if (consolidationDetails1.getId() != null) {
+                Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationDetails1.getId());
+                if (!consol.isEmpty() && !CommonUtils.IsStringNullOrEmpty(consol.get().getBookingId()) && !CommonUtils.IsStringNullOrEmpty(consol.get().getBookingNumber())) {
+                    shipmentDetails.setBookingNumber(consol.get().getBookingNumber());
+                }
+            }
             if (shipmentDetails.getCarrierDetails() == null) {
                 shipmentDetails.setCarrierDetails(new CarrierDetails());
             }

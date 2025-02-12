@@ -55,4 +55,5 @@ public interface IShipmentDao {
     void updateTransferStatus(List<Long> id, NetworkTransferStatus transferStatus);
     void updateFCRNo(Long id);
     Optional<ShipmentDetails> findShipmentByGuidWithQuery(UUID guid);
+    int updateShipmentsBookingNumber(List<UUID> guids, String bookingNumber);
 }

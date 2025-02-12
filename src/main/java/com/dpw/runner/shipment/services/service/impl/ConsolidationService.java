@@ -1702,6 +1702,7 @@ public class ConsolidationService implements IConsolidationService {
                 !Objects.equals(console.getShipmentType(),oldEntity.getShipmentType()) ||
                 !CollectionUtils.isEmpty(console.getRoutingsList()) ||
                 !Objects.equals(console.getCarrierBookingRef(),oldEntity.getCarrierBookingRef()) ||
+                !Objects.equals(console.getBookingNumber(), oldEntity.getBookingNumber()) ||
                 (console.getCarrierDetails() != null && oldEntity.getCarrierDetails() != null &&
                 (!Objects.equals(console.getCarrierDetails().getVoyage(),oldEntity.getCarrierDetails().getVoyage()) ||
                         !Objects.equals(console.getCarrierDetails().getVessel(),oldEntity.getCarrierDetails().getVessel()) ||
@@ -1731,7 +1732,11 @@ public class ConsolidationService implements IConsolidationService {
                 i.setConsolRef(console.getReferenceNumber());
                 i.setMasterBill(console.getBol());
                 i.setDirection(console.getShipmentType());
-                i.setBookingNumber(console.getCarrierBookingRef());
+                if (!CommonUtils.IsStringNullOrEmpty(console.getBookingId()) && !CommonUtils.IsStringNullOrEmpty(console.getBookingNumber())) {
+                    i.setBookingNumber(console.getBookingNumber());
+                } else {
+                    i.setBookingNumber(console.getCarrierBookingRef());
+                }
                 if (Boolean.TRUE.equals(console.getInterBranchConsole())) {
                     i.setTriangulationPartnerList(console.getTriangulationPartnerList() != null ? new ArrayList<>(console.getTriangulationPartnerList()) : null);
                     i.setTriangulationPartner(console.getTriangulationPartner());
@@ -5738,6 +5743,13 @@ public class ConsolidationService implements IConsolidationService {
         int rowsAffected = consolidationDetailsDao.updateConsoleBookingFields(request);
         if(rowsAffected == 0){
             throw new ValidationException("No Consolidation Exist with given guid: " + request.getGuid());
+        }
+        Optional<ConsolidationDetails> consol = consolidationDetailsDao.findConsolidationByGuidWithQuery(request.getGuid());
+        if (consol.isPresent()) {
+            List<UUID> shipmentGuids = consol.get().getShipmentsList().stream()
+                    .map(ShipmentDetails::getGuid)
+                    .collect(Collectors.toList());
+            shipmentDao.updateShipmentsBookingNumber(shipmentGuids, request.getBookingNumber());
         }
         return ResponseHelper.buildSuccessResponse();
     }
