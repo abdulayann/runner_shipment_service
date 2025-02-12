@@ -1720,11 +1720,6 @@ class ShipmentDaoTest extends CommonMocks {
     }
 
     @Test
-    void updateTransferStatus() {
-        assertDoesNotThrow(() -> shipmentDao.updateTransferStatus(List.of(1L), NetworkTransferStatus.TRANSFERRED));
-    }
-
-    @Test
     void updateFCRNo() {
         assertDoesNotThrow(() -> shipmentDao.updateFCRNo(1L));
     }

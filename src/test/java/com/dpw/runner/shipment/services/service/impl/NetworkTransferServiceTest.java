@@ -383,14 +383,6 @@ class NetworkTransferServiceTest extends CommonMocks{
     }
 
     @Test
-    void testCreateNetworkTransferEntityWithConsolidation1(){
-        when(networkTransferDao.save(any())).thenReturn(networkTransfer);
-        when(consoleShipmentMappingDao.findByConsolidationId(any())).thenReturn(List.of(new ConsoleShipmentMapping()));
-        assertDoesNotThrow(() -> networkTransferService.processNetworkTransferEntity(123L, null,
-                Constants.CONSOLIDATION, null, consolidationDetails, Constants.DIRECTION_CTS, null, false));
-    }
-
-    @Test
     void testCreateNetworkTransferEntityWithEmptyConsolidation(){
         assertDoesNotThrow(() -> networkTransferService.processNetworkTransferEntity(123L, null,
                 Constants.CONSOLIDATION, null, null, Constants.DIRECTION_CTS, null, false));

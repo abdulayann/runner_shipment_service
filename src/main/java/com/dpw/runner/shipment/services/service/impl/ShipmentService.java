@@ -2259,7 +2259,7 @@ public class ShipmentService implements IShipmentService {
 
         if (shipmentDetails.getReceivingBranch() != null && shipmentDetails.getReceivingBranch() == 0) {
             shipmentDetails.setReceivingBranch(null);
-            if(CommonUtils.listIsNullOrEmpty(shipmentDetails.getConsolidationList()) && Boolean.TRUE.equals(shipmentDetails.getConsolidationList().get(0).getInterBranchConsole())) {
+            if(!CommonUtils.listIsNullOrEmpty(shipmentDetails.getConsolidationList()) && Boolean.TRUE.equals(shipmentDetails.getConsolidationList().get(0).getInterBranchConsole())) {
                 shipmentDetails.setReceivingBranch(shipmentDetails.getConsolidationList().get(0).getReceivingBranch());
             }
         }
