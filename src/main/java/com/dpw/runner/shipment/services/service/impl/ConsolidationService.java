@@ -1984,10 +1984,19 @@ public class ConsolidationService implements IConsolidationService {
             Long consoleReceivingBranch = console.getReceivingBranch();
             List<ShipmentDetails> shipmentsForHiddenNte = new ArrayList<>();
             List<NetworkTransfer> nteToUpdate = new ArrayList<>();
+            List<NetworkTransfer> nteToDelete = new ArrayList<>();
+
+            if(consoleReceivingBranch==null){
+                List<NetworkTransfer> allNetworkTransfers = shipmentNetworkTransferMap.values().stream()
+                        .flatMap(innerMap -> innerMap.values().stream())
+                        .collect(Collectors.toList());
+                allNetworkTransfers.forEach(networkTransferService::deleteNetworkTransferEntity);
+                return;
+            }
 
             for (ShipmentDetails shipment : shipments) {
                 processNTEConsoleShipment(consoleReceivingBranch, shipment, shipmentNetworkTransferMap,
-                        shipmentsForHiddenNte, nteToUpdate);
+                        shipmentsForHiddenNte, nteToUpdate, nteToDelete);
             }
 
             if(!shipmentsForHiddenNte.isEmpty())
@@ -2019,12 +2028,20 @@ public class ConsolidationService implements IConsolidationService {
 
     private void processNTEConsoleShipment(Long consoleReceivingBranch, ShipmentDetails shipment,
                                            Map<Long, Map<Integer, NetworkTransfer>> shipmentNetworkTransferMap,
-                                           List<ShipmentDetails> shipmentsForHiddenNte, List<NetworkTransfer> nteToUpdate) {
+                                           List<ShipmentDetails> shipmentsForHiddenNte, List<NetworkTransfer> nteToUpdate,
+                                           List<NetworkTransfer> nteToDelete) {
         Long receivingBranch = shipment.getReceivingBranch();
         if (receivingBranch == null) return;
-
+        NetworkTransfer networkTransfer = null;
         Map<Integer, NetworkTransfer> tenantMap = shipmentNetworkTransferMap.get(shipment.getId());
-        NetworkTransfer networkTransfer = tenantMap != null ? tenantMap.get(receivingBranch.intValue()) : null;
+
+        if(tenantMap!=null){
+            NetworkTransfer dbNte = tenantMap.values().stream().findFirst().orElse(null);
+            if(dbNte!=null && dbNte.getTenantId()!=receivingBranch.intValue()){
+                nteToDelete.add(dbNte);
+            }
+            networkTransfer = tenantMap.get(receivingBranch.intValue());
+        }
 
         if (Objects.equals(receivingBranch, consoleReceivingBranch)) {
             if (networkTransfer == null)
@@ -4791,25 +4808,36 @@ public class ConsolidationService implements IConsolidationService {
         List<ShipmentDetails> shipmentsForHiddenNte = new ArrayList<>();
         List<NetworkTransfer> nteToUpdate = new ArrayList<>();
         List<NetworkTransfer> nteToDelete = new ArrayList<>();
+        NetworkTransfer existingNTE = null;
 
         Long consolidationReceivingBranch = consolidationDetails.getReceivingBranch();
 
-        for (ShipmentDetails shipmentDetails : consolidationDetails.getShipmentsList()) {
-            Long receivingBranch = shipmentDetails.getReceivingBranch();
-            if (receivingBranch == null) {
-                continue;
-            }
+        if (consolidationReceivingBranch == null) {
+            List<NetworkTransfer> allNetworkTransfers = shipmentNetworkTransferMap.values().stream()
+                    .flatMap(innerMap -> innerMap.values().stream()) // Flatten inner maps
+                    .collect(Collectors.toList());
+            nteToDelete.addAll(allNetworkTransfers);
+        }
 
-            NetworkTransfer existingNTE = shipmentNetworkTransferMap != null
-                    ? shipmentNetworkTransferMap.getOrDefault(shipmentDetails.getId(), new HashMap<>())
-                    .get(receivingBranch.intValue())
-                    : null;
+        if(nteToDelete.isEmpty()) {
+            for (ShipmentDetails shipmentDetails : consolidationDetails.getShipmentsList()) {
+                Long receivingBranch = shipmentDetails.getReceivingBranch();
+                if (receivingBranch == null) {
+                    continue;
+                }
 
-            // Handle deletion scenario first
-            if (consolidationReceivingBranch == null) {
-                if(existingNTE != null)
-                    nteToDelete.add(existingNTE);
-            } else {
+                Map<Integer, NetworkTransfer> nteMap = shipmentNetworkTransferMap != null
+                        ? shipmentNetworkTransferMap.getOrDefault(shipmentDetails.getId(), new HashMap<>())
+                        : null;
+
+                if(nteMap!=null){
+                    NetworkTransfer dbNte = nteMap.values().stream().findFirst().orElse(null);
+                    if(dbNte!=null && dbNte.getTenantId()!=receivingBranch.intValue()){
+                        nteToDelete.add(dbNte);
+                    }
+                    existingNTE = nteMap.get(receivingBranch.intValue());
+                }
+
                 processConsoleBranchUpdate(isConsoleBranchUpdate, existingNTE);
 
                 if (!Objects.equals(consolidationReceivingBranch, receivingBranch)) {
@@ -4832,13 +4860,13 @@ public class ConsolidationService implements IConsolidationService {
                                        List<ShipmentDetails> shipmentsForHiddenNte,
                                        List<NetworkTransfer> nteToUpdate,
                                        List<NetworkTransfer> nteToDelete) {
+        nteToDelete.forEach(networkTransferService::deleteNetworkTransferEntity);
+
         shipmentsForNte.forEach(shipmentDetails ->
                 networkTransferService.processNetworkTransferEntity(
                         shipmentDetails.getReceivingBranch(), null, SHIPMENT, shipmentDetails,
                         null, Constants.DIRECTION_IMP, null, true)
         );
-
-        nteToDelete.forEach(networkTransferService::deleteNetworkTransferEntity);
 
         if (!shipmentsForHiddenNte.isEmpty()) {
             networkTransferService.bulkProcessInterConsoleNte(shipmentsForHiddenNte);

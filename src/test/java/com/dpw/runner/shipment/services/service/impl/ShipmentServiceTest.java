@@ -10044,11 +10044,13 @@ ShipmentServiceTest extends CommonMocks {
         oldEntity.setReceivingBranch(1L);
         oldEntity.setConsolidationList(Collections.singletonList(consolidationDetails1));
 
+        when(networkTransferDao.getInterConsoleNTList(any(), any())).thenReturn(Collections.singletonList(NetworkTransfer.builder().build()));
+
         // Act
         shipmentService.createOrUpdateNetworkTransferEntity(newShipmentDetails, oldEntity);
 
         // Verify old tenant IDs processing for removal
-        verify(networkTransferService, times(1)).deleteValidNetworkTransferEntity(any(), any(), any());
+        verify(networkTransferService, times(1)).deleteNetworkTransferEntity(any());
     }
 
     @Test
@@ -10134,7 +10136,8 @@ ShipmentServiceTest extends CommonMocks {
         shipmentService.createOrUpdateNetworkTransferEntity(newShipmentDetails, oldEntity);
 
         // Verify old tenant IDs processing for removal
-        verify(networkTransferDao, times(2)).save(any());
+        verify(networkTransferDao, times(1)).save(any());
+        verify(networkTransferService, times(1)).deleteNetworkTransferEntity(any());
     }
 
     @Test

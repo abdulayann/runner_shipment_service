@@ -6646,11 +6646,13 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(shipmentSettingsDetails);
 
+        ShipmentDetails sDetails = ShipmentDetails.builder().receivingBranch(2L).build();
+        sDetails.setId(1L);
         ConsolidationDetails consoleDetails = jsonTestUtility.getTestConsolidationAir();
         consoleDetails.setId(1L);
         consoleDetails.setInterBranchConsole(true);
         consoleDetails.setReceivingBranch(1L);
-        consoleDetails.setShipmentsList(Collections.singletonList(ShipmentDetails.builder().receivingBranch(2L).build()));
+        consoleDetails.setShipmentsList(Collections.singletonList(sDetails));
 
         ConsolidationDetails oldEntity = jsonTestUtility.getTestConsolidationAir();
         oldEntity.setId(1L);
@@ -6664,7 +6666,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
         spyService.createOrUpdateNetworkTransferEntity(shipmentSettingsDetails, consoleDetails, oldEntity);
 
-        verify(networkTransferService, times(2)).processNetworkTransferEntity(any(), any(),any(),any(),any(),any(),any(),any());
+        verify(networkTransferService, times(1)).processNetworkTransferEntity(any(), any(),any(),any(),any(),any(),any(),any());
     }
 
     @Test
@@ -6725,11 +6727,13 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(shipmentSettingsDetails);
 
+        ShipmentDetails sDetails = ShipmentDetails.builder().receivingBranch(2L).build();
+        sDetails.setId(1L);
         ConsolidationDetails consoleDetails = jsonTestUtility.getTestConsolidationAir();
         consoleDetails.setId(1L);
         consoleDetails.setInterBranchConsole(true);
         consoleDetails.setReceivingBranch(1L);
-        consoleDetails.setShipmentsList(Collections.singletonList(ShipmentDetails.builder().receivingBranch(2L).build()));
+        consoleDetails.setShipmentsList(Collections.singletonList(sDetails));
 
         ConsolidationDetails oldEntity = jsonTestUtility.getTestConsolidationAir();
         oldEntity.setId(1L);
@@ -6742,7 +6746,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
         spyService.createOrUpdateNetworkTransferEntity(shipmentSettingsDetails, consoleDetails, oldEntity);
 
-        verify(networkTransferService, times(2)).processNetworkTransferEntity(any(), any(),any(),any(),any(),any(),any(),any());
+        verify(networkTransferService, times(1)).processNetworkTransferEntity(any(), any(),any(),any(),any(),any(),any(),any());
     }
 
     @Test
@@ -6775,11 +6779,14 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
         shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(shipmentSettingsDetails);
 
+        ShipmentDetails sDetails = ShipmentDetails.builder().receivingBranch(2L).build();
+        sDetails.setId(1L);
+
         ConsolidationDetails consoleDetails = jsonTestUtility.getTestConsolidationAir();
         consoleDetails.setId(1L);
         consoleDetails.setInterBranchConsole(true);
         consoleDetails.setReceivingBranch(2L);
-        consoleDetails.setShipmentsList(Collections.singletonList(ShipmentDetails.builder().receivingBranch(2L).build()));
+        consoleDetails.setShipmentsList(Collections.singletonList(sDetails));
 
         ConsolidationDetails oldEntity = jsonTestUtility.getTestConsolidationAir();
         oldEntity.setId(1L);

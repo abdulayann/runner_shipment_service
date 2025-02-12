@@ -2259,9 +2259,10 @@ public class ShipmentService implements IShipmentService {
 
         if (shipmentDetails.getReceivingBranch() != null && shipmentDetails.getReceivingBranch() == 0) {
             shipmentDetails.setReceivingBranch(null);
-            if(!CommonUtils.listIsNullOrEmpty(shipmentDetails.getConsolidationList()) && Boolean.TRUE.equals(shipmentDetails.getConsolidationList().get(0).getInterBranchConsole())) {
-                shipmentDetails.setReceivingBranch(shipmentDetails.getConsolidationList().get(0).getReceivingBranch());
-            }
+        }
+        if(shipmentDetails.getReceivingBranch() == null && !CommonUtils.listIsNullOrEmpty(shipmentDetails.getConsolidationList()) && Boolean.TRUE.equals(shipmentDetails.getConsolidationList().get(0).getInterBranchConsole())){
+            shipmentDetails.setReceivingBranch(shipmentDetails.getConsolidationList().get(0).getReceivingBranch());
+            shipmentDetails.setIsReceivingBranchAdded(false);
         }
         if (ObjectUtils.isNotEmpty(shipmentDetails.getTriangulationPartnerList())
                 && shipmentDetails.getTriangulationPartnerList().size() == 1) {
@@ -2959,6 +2960,8 @@ public class ShipmentService implements IShipmentService {
 
     public void triggerAutomaticTransfer(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, Boolean isDocAdded) {
         try{
+            if (isInterBranchConsole(shipmentDetails) || oldEntityHasInterBranchConsole(oldEntity))
+                return;
             Optional<QuartzJobInfo> optionalQuartzJobInfo = quartzJobInfoDao.findByJobFilters(
                     shipmentDetails.getTenantId(), shipmentDetails.getId(), SHIPMENT);
 
@@ -3225,8 +3228,9 @@ public class ShipmentService implements IShipmentService {
     }
 
     private boolean isBranchChanged(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
-        return oldEntity != null && oldEntity.getReceivingBranch() != null
-                && !Objects.equals(oldEntity.getReceivingBranch(), shipmentDetails.getReceivingBranch());
+        return oldEntity==null || oldEntity.getReceivingBranch()==null || (
+                oldEntity != null && oldEntity.getReceivingBranch() != null &&
+                        !Objects.equals(oldEntity.getReceivingBranch(), shipmentDetails.getReceivingBranch()));
     }
 
     private boolean shouldDeleteOldTransfer(ShipmentDetails oldEntity, NetworkTransfer existingNTE) {
@@ -3242,12 +3246,13 @@ public class ShipmentService implements IShipmentService {
                                              ConsolidationDetails consolidationDetails, NetworkTransfer existingNTE,
                                              Map<Long, NetworkTransfer> shipmentNetworkTransferMap) {
         if (!Objects.equals(shipmentDetails.getReceivingBranch(), consolidationDetails.getReceivingBranch())) {
-            networkTransferService.processNetworkTransferEntity(shipmentDetails.getReceivingBranch(), oldEntity.getReceivingBranch(),
+            Long oldReceivingBranch = oldEntity!=null? oldEntity.getReceivingBranch(): null;
+            networkTransferService.processNetworkTransferEntity(shipmentDetails.getReceivingBranch(), oldReceivingBranch,
                     Constants.SHIPMENT, shipmentDetails, null, reverseDirection(shipmentDetails.getDirection()), null, true);
         } else {
-            if (existingNTE != null) {
-                existingNTE.setIsHidden(Boolean.TRUE);
-                networkTransferDao.save(existingNTE);
+            if (existingNTE!=null) {
+                networkTransferService.deleteNetworkTransferEntity(existingNTE);
+                networkTransferService.bulkProcessInterConsoleNte(Collections.singletonList(shipmentDetails));
             } else {
                 networkTransferService.bulkProcessInterConsoleNte(Collections.singletonList(shipmentDetails));
             }
@@ -3289,10 +3294,12 @@ public class ShipmentService implements IShipmentService {
     }
 
     private void deleteOldConsolidationTransfers(ShipmentDetails oldEntity, ShipmentDetails shipmentDetails) {
-        oldEntity.getConsolidationList().stream()
-                .filter(consolidation -> Boolean.TRUE.equals(consolidation.getInterBranchConsole()))
-                .forEach(consolidation -> networkTransferService.deleteValidNetworkTransferEntity(
-                        shipmentDetails.getReceivingBranch(), oldEntity.getId(), Constants.SHIPMENT));
+        List<NetworkTransfer> networkTransferList = networkTransferDao.getInterConsoleNTList(Collections.singletonList(oldEntity.getId()), SHIPMENT);
+        if(networkTransferList!=null) {
+            for (NetworkTransfer networkTransfer : networkTransferList) {
+                networkTransferService.deleteNetworkTransferEntity(networkTransfer);
+            }
+        }
     }
 
     private String reverseDirection(String direction) {

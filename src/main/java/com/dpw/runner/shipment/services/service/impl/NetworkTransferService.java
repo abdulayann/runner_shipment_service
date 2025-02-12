@@ -9,7 +9,6 @@ import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.constants.NetworkTransferConstants;
-import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
@@ -108,7 +107,9 @@ public class NetworkTransferService implements INetworkTransferService {
             Map.entry("transportMode", RunnerEntityMapping.builder().tableName(Constants.NETWORK_TRANSFER_ENTITY).dataType(String.class).isContainsText(true).build()),
             Map.entry("jobType", RunnerEntityMapping.builder().tableName(Constants.NETWORK_TRANSFER_ENTITY).dataType(String.class).isContainsText(true).build()),
             Map.entry("sourceBranchId", RunnerEntityMapping.builder().tableName(Constants.NETWORK_TRANSFER_ENTITY).dataType(Integer.class).fieldName("sourceBranchId").build()),
-            Map.entry("entityNumber", RunnerEntityMapping.builder().tableName(Constants.NETWORK_TRANSFER_ENTITY).dataType(String.class).isContainsText(true).build())
+            Map.entry("entityNumber", RunnerEntityMapping.builder().tableName(Constants.NETWORK_TRANSFER_ENTITY).dataType(String.class).isContainsText(true).build()),
+            Map.entry("isHidden", RunnerEntityMapping.builder().tableName(Constants.NETWORK_TRANSFER_ENTITY).dataType(Boolean.class).fieldName("isHidden").build())
+
     );
 
 
@@ -538,6 +539,7 @@ public class NetworkTransferService implements INetworkTransferService {
             var intTenantId = (shipmentDetails.getReceivingBranch() != null) ? Math.toIntExact(shipmentDetails.getReceivingBranch()) : null;
             networkTransfer = getNetworkTransferEntityFromShipment(shipmentDetails, intTenantId, Constants.IMP, true);
             networkTransfer.setIsHidden(true);
+            networkTransfer.setStatus(NetworkTransferStatus.SCHEDULED);
             nteToCreate.add(networkTransfer);
         }
         if(!nteToCreate.isEmpty())
@@ -550,7 +552,7 @@ public class NetworkTransferService implements INetworkTransferService {
         var tenantId = shipmentDao.findReceivingByGuid(UUID.fromString(guid));
         if(tenantId != null) {
             var status = networkTransferDao.findByEntityGuidAndTenantId(UUID.fromString(guid), tenantId);
-            return ResponseHelper.buildSuccessResponse(status);
+            return ResponseHelper.buildSuccessResponse(NetworkTransferResponse.builder().status(NetworkTransferStatus.valueOf(status)).build());
         }
         return ResponseHelper.buildSuccessResponse();
     }
