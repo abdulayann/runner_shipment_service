@@ -15,4 +15,5 @@ public class EntityTransferParties implements IEntityTranferBaseEntity {
     private String addressCode;
     private Map<String, Object> orgData;
     private Map<String, Object> addressData;
+    private String countryCode;
 }

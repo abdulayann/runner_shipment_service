@@ -29,4 +29,5 @@ public class PartiesResponse implements IRunnerResponse {
     private Map<String, Object> addressData;
     private Boolean isAddressFreeText;
     private RAKCDetailsResponse rAKCDetails;
+    private String countryCode;
 }

@@ -1267,11 +1267,11 @@ public class ShipmentService implements IShipmentService {
                 bookingReference(customerBookingRequest.getBookingNumber()).
                 bookingCreatedDate(customerBookingRequest.getBookingDate()).
                 shipmentCreatedOn(LocalDateTime.now()).
-                client(createPartiesRequest(customerBookingRequest.getCustomer())).
-                consignee(createPartiesRequest(customerBookingRequest.getConsignee())).
-                consigner(createPartiesRequest(customerBookingRequest.getConsignor())).
+                client(createPartiesRequest(customerBookingRequest.getCustomer(), customerBookingRequest.getClientCountry())).
+                consignee(createPartiesRequest(customerBookingRequest.getConsignee(), customerBookingRequest.getConsigneeCountry())).
+                consigner(createPartiesRequest(customerBookingRequest.getConsignor(), customerBookingRequest.getConsignorCountry())).
                 additionalDetails(AdditionalDetailRequest.builder().
-                        notifyParty(createPartiesRequest(customerBookingRequest.getNotifyParty())).
+                        notifyParty(createPartiesRequest(customerBookingRequest.getNotifyParty(), customerBookingRequest.getNotifyPartyCountry())).
                         build()
                 ).
                 shipmentType(customerBookingRequest.getCargoType()).
@@ -1487,7 +1487,7 @@ public class ShipmentService implements IShipmentService {
                         .build()).toList();
     }
 
-    private PartiesRequest createPartiesRequest(PartiesRequest party)
+    private PartiesRequest createPartiesRequest(PartiesRequest party, String countryCode)
     {
         if(party == null)
             return null;
@@ -1498,6 +1498,7 @@ public class ShipmentService implements IShipmentService {
                 .orgData(party.getOrgData())
                 .orgId(party.getOrgId())
                 .addressId(party.getAddressId())
+                .countryCode(countryCode)
                 .build();
     }
 
