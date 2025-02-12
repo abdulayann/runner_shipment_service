@@ -10158,8 +10158,8 @@ ShipmentServiceTest extends CommonMocks {
                 .thenReturn(
                         Optional.of(
                                 shipmentDetails
-                                        .setConsolidationList(new ArrayList<>())
-                                        .setContainersList(new ArrayList<>())));
+                                        .setConsolidationList(new HashSet<>())
+                                        .setContainersList(new HashSet<>())));
         when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
 
         when(shipmentDao.update(any(), eq(false))).thenReturn(mockShipment);
