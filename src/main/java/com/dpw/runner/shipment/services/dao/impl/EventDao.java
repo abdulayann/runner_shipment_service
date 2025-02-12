@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.EventConstants;
+import com.dpw.runner.shipment.services.commons.constants.LoggingConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
@@ -32,6 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.hibernate.jpa.TypedParameterValue;
 import org.hibernate.type.StandardBasicTypes;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
@@ -547,6 +549,7 @@ public class EventDao implements IEventDao {
                         (existing, replacement) -> existing  // Keep first occurrence
                 ));
 
+        Boolean automaticTransfer = isAutomaticTransfer();
         for (Events event : events) {
             if (Constants.SHIPMENT.equals(event.getEntityType())) {
                 ShipmentDetails shipmentDetails = shipmentDetailsMap.get(event.getEntityId());
@@ -569,7 +572,9 @@ public class EventDao implements IEventDao {
                 event.setConsolidationId(event.getEntityId());
             }
 
-            updateUserFieldsInEvent(event, false);
+            if (Boolean.FALSE.equals(automaticTransfer)) {
+                updateUserFieldsInEvent(event, false);
+            }
         }
     }
 
@@ -694,6 +699,11 @@ public class EventDao implements IEventDao {
         }).toList());
         filteredEvents.addAll(newEventList);
         return filteredEvents;
+    }
+
+    private boolean isAutomaticTransfer() {
+        String automaticTransfer = MDC.get(LoggingConstants.AUTOMATIC_TRANSFER);
+        return automaticTransfer != null && automaticTransfer.equals("true");
     }
 
 }
