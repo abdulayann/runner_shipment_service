@@ -139,4 +139,7 @@ public interface IConsolidationRepository extends MultiTenancyRepository<Consoli
     """, nativeQuery = true)
     List<IShipmentContainerLiteResponse> findShipmentDetailsWithContainersByConsolidationIds(@Param("consolidationIds") List<Long> consolidationIds);
 
+    @Query(value = "SELECT * FROM consolidation_details WHERE guid = ?1", nativeQuery = true)
+    Optional<ConsolidationDetails> findConsolidationByGuidWithQuery(UUID guid);
+
 }

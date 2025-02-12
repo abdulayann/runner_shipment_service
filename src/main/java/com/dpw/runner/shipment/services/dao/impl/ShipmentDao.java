@@ -753,4 +753,10 @@ public class ShipmentDao implements IShipmentDao {
     public Optional<ShipmentDetails> findShipmentByGuidWithQuery(UUID guid) {
         return shipmentRepository.findShipmentByGuidWithQuery(guid);
     }
+
+    @Override
+    @Transactional
+    public int updateShipmentsBookingNumber(List<UUID> guids, String bookingNumber) {
+        return shipmentRepository.updateShipmentsBookingNumber(guids, bookingNumber);
+    }
 }
