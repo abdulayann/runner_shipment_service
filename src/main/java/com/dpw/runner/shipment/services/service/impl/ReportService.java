@@ -976,7 +976,8 @@ public class ReportService implements IReportService {
         if(Boolean.TRUE.equals(reportRequest.getPrintCustomLabel()) && reportRequest.isFromConsolidation()) {
             dataRetrived.put(ReportConstants.AIRLINE_NAME, reportRequest.getConsolAirline());
             AWBLabelReport.populateMawb(dataRetrived, reportRequest.getMawbNumber());
-            dataRetrived.put(ReportConstants.CONSOL_DESTINATION_AIRPORT_CODE_CAPS, reportRequest.getDestination());
+            dataRetrived.put(ReportConstants.MAWB_CAPS, reportRequest.getMawbNumber());
+            dataRetrived.put(ReportConstants.CONSOL_DESTINATION_AIRPORT_CODE_CAPS, reportRequest.getDestination().toUpperCase());
             dataRetrived.put(ReportConstants.TOTAL_CONSOL_PACKS, reportRequest.getTotalMawbPieces());
         }
 
@@ -994,7 +995,7 @@ public class ReportService implements IReportService {
             dataRetrived.put(ReportConstants.AIRLINE_NAME, reportRequest.getConsolAirline());
             AWBLabelReport.populateMawb(dataRetrived, reportRequest.getMawbNumber());
             dataRetrived.put(ReportConstants.MAWB_CAPS, reportRequest.getMawbNumber());
-            dataRetrived.put(ReportConstants.CONSOL_DESTINATION_AIRPORT_CODE, reportRequest.getDestination());
+            dataRetrived.put(ReportConstants.CONSOL_DESTINATION_AIRPORT_CODE_CAPS, reportRequest.getDestination().toUpperCase());
             dataRetrived.put(ReportConstants.TOTAL_CONSOL_PACKS, reportRequest.getTotalMawbPieces());
         }
 
