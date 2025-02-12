@@ -2,7 +2,6 @@ package com.dpw.runner.shipment.services.helpers;
 
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.config.LocalTimeZoneHelper;
-import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import com.dpw.runner.shipment.services.utils.ObjectUtility;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.nimbusds.jose.util.Pair;
@@ -13,7 +12,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 
 import javax.persistence.criteria.*;
-import java.lang.reflect.Field;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
@@ -392,7 +390,7 @@ public class DbAccessHelper {
                 return criteriaBuilder.in(path.get(fieldName))
                         .value(input.getValue()).not();
             case "CONTAINS":
-                if (dataType.isAssignableFrom(List.class))
+                if (dataType.isAssignableFrom(List.class) || dataType.isAssignableFrom(Set.class))
                     return criteriaBuilder.isMember(input.getValue(), path.get(fieldName));
                 else
                     throw new RuntimeException("Criteria not supported yet");
