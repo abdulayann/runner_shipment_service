@@ -2985,7 +2985,7 @@ public class ShipmentService implements IShipmentService {
                 && oldEntity != null && ObjectUtils.isNotEmpty(oldEntity.getReceivingBranch())) {
                 commonErrorLogsDao.deleteShipmentErrorsLogs(shipmentDetails.getId());
             }
-            if (hasHouseBillChange(shipmentDetails, oldEntity)) {
+            if (hasHouseBillChange(shipmentDetails, oldEntity) || hasMasterBillChange(shipmentDetails, oldEntity)) {
                 triggerConsoleTransfer(shipmentDetails);
             }
         } catch (Exception e) {
@@ -3034,11 +3034,17 @@ public class ShipmentService implements IShipmentService {
                         consolidationDetails.getTenantId(), consolidationDetails.getId(), CONSOLIDATION);
 
                 QuartzJobInfo quartzJobInfo = optionalQuartzJobInfo.orElse(null);
-                if(quartzJobInfo!=null && quartzJobInfo.getJobStatus()==JobState.ERROR
-                        && TRANSPORT_MODE_AIR.equals(consolidationDetails.getTransportMode()) &&
-                        !Objects.equals(shipmentDetails.getJobType(), SHIPMENT_TYPE_DRT) &&
-                        !Objects.equals(shipmentDetails.getJobType(), SHIPMENT_TYPE_STD))
-                    consolidationService.triggerAutomaticTransfer(consolidationDetails, null, true);
+                if(quartzJobInfo!=null && quartzJobInfo.getJobStatus()==JobState.ERROR){
+                    if(TRANSPORT_MODE_AIR.equals(consolidationDetails.getTransportMode()) &&
+                            !Objects.equals(shipmentDetails.getJobType(), SHIPMENT_TYPE_DRT) &&
+                            !Objects.equals(shipmentDetails.getJobType(), SHIPMENT_TYPE_STD)) {
+                        consolidationService.triggerAutomaticTransfer(consolidationDetails, null, true);
+                    }
+                    if(TRANSPORT_MODE_SEA.equals(consolidationDetails.getTransportMode()) &&
+                            !Objects.equals(shipmentDetails.getJobType(), SHIPMENT_TYPE_DRT)) {
+                        consolidationService.triggerAutomaticTransfer(consolidationDetails, null, true);
+                    }
+                }
             }
         }
     }
@@ -3046,6 +3052,11 @@ public class ShipmentService implements IShipmentService {
     private boolean hasHouseBillChange(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
         return (oldEntity == null && shipmentDetails.getHouseBill() != null)
                 || (oldEntity != null && isValueChanged(shipmentDetails.getHouseBill(), oldEntity.getHouseBill()));
+    }
+
+    private boolean hasMasterBillChange(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
+        return (oldEntity == null && shipmentDetails.getMasterBill() != null)
+                || (oldEntity != null && isValueChanged(shipmentDetails.getMasterBill(), oldEntity.getMasterBill()));
     }
 
 
