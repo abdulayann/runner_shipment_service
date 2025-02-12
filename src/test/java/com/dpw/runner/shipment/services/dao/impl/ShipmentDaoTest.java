@@ -1723,4 +1723,12 @@ class ShipmentDaoTest extends CommonMocks {
     void updateFCRNo() {
         assertDoesNotThrow(() -> shipmentDao.updateFCRNo(1L));
     }
+
+    @Test
+    void findReceivingByGuid() {
+        var guid = UUID.randomUUID();
+        when(shipmentRepository.findReceivingByGuid(guid)).thenReturn(1);
+        var res = shipmentDao.findReceivingByGuid(guid);
+        assertEquals(1, res);
+    }
 }
