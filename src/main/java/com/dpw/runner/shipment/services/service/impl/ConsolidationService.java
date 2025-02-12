@@ -1810,10 +1810,9 @@ public class ConsolidationService implements IConsolidationService {
             List<NetworkTransfer> nteToUpdate = new ArrayList<>();
             List<NetworkTransfer> nteToDelete = new ArrayList<>();
 
-            if(consoleReceivingBranch==null){
+            if(consoleReceivingBranch==null && shipmentNetworkTransferMap!=null){
                 List<NetworkTransfer> allNetworkTransfers = shipmentNetworkTransferMap.values().stream()
-                        .flatMap(innerMap -> innerMap.values().stream())
-                        .collect(Collectors.toList());
+                        .flatMap(innerMap -> innerMap.values().stream()).toList();
                 allNetworkTransfers.forEach(networkTransferService::deleteNetworkTransferEntity);
                 return;
             }
@@ -1857,7 +1856,7 @@ public class ConsolidationService implements IConsolidationService {
         Long receivingBranch = shipment.getReceivingBranch();
         if (receivingBranch == null) return;
         NetworkTransfer networkTransfer = null;
-        Map<Integer, NetworkTransfer> tenantMap = shipmentNetworkTransferMap.get(shipment.getId());
+        Map<Integer, NetworkTransfer> tenantMap = shipmentNetworkTransferMap!=null ? shipmentNetworkTransferMap.get(shipment.getId()): null;
 
         if(tenantMap!=null){
             NetworkTransfer dbNte = tenantMap.values().stream().findFirst().orElse(null);
@@ -4636,10 +4635,9 @@ public class ConsolidationService implements IConsolidationService {
 
         Long consolidationReceivingBranch = consolidationDetails.getReceivingBranch();
 
-        if (consolidationReceivingBranch == null) {
+        if (consolidationReceivingBranch == null && shipmentNetworkTransferMap!=null) {
             List<NetworkTransfer> allNetworkTransfers = shipmentNetworkTransferMap.values().stream()
-                    .flatMap(innerMap -> innerMap.values().stream()) // Flatten inner maps
-                    .collect(Collectors.toList());
+                    .flatMap(innerMap -> innerMap.values().stream()).toList();
             nteToDelete.addAll(allNetworkTransfers);
         }
 

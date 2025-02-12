@@ -2990,7 +2990,7 @@ public class ShipmentService implements IShipmentService {
 
     private boolean isBranchChanged(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
         return oldEntity==null || oldEntity.getReceivingBranch()==null || (
-                oldEntity != null && oldEntity.getReceivingBranch() != null &&
+                oldEntity.getReceivingBranch() != null &&
                         !Objects.equals(oldEntity.getReceivingBranch(), shipmentDetails.getReceivingBranch()));
     }
 

@@ -22,6 +22,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.utils.MasterDataKeyUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.netty.handler.codec.http.cookie.Cookie;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -484,6 +485,28 @@ class NetworkTransferServiceTest extends CommonMocks{
         when(shipmentDao.findReceivingByGuid(UUID.fromString(guid))).thenReturn(null);
         var response = networkTransferService.fetchEntityStatus(CommonGetRequest.builder().guid(guid).build());
         assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testBulkProcessInterConsoleNte() {
+        networkTransferService.bulkProcessInterConsoleNte(new ArrayList<>());
+        verify(networkTransferDao, times(0)).saveAll(any());
+    }
+
+    @Test
+    void testBulkProcessInterConsoleNte1() {
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder().build();
+        shipmentDetails1.setReceivingBranch(1L);
+        networkTransferService.bulkProcessInterConsoleNte(Collections.singletonList(shipmentDetails1));
+        verify(networkTransferDao, times(0)).saveAll(any());
+    }
+
+    @Test
+    void testBulkProcessInterConsoleNte2() {
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder().build();
+        shipmentDetails1.setReceivingBranch(2L);
+        networkTransferService.bulkProcessInterConsoleNte(Collections.singletonList(shipmentDetails1));
+        verify(networkTransferDao, times(1)).saveAll(any());
     }
 
 }
