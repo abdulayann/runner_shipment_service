@@ -15,4 +15,7 @@ public class NetworkTransferConstants {
     public static final String UPDATE_NT_TRANSFERRED_STATUS = "Shipment status has been updated successfully";
     public static final String NETWORK_REQUEST_FOR_TRANSFER = "/request-for-transfer";
     public static final String NETWORK_REASSIGNED = "/reassigned";
+    public static final String ENTITY_GUID = "Entity Guid";
+    public static final String SHIPMENT_ENTITY_STATUS = "/shipment-entity-status";
+    public static final String FETCH_ENTITY_STATUS_SUCCESSFUL = "Fetch Entity Status Successful";
 }

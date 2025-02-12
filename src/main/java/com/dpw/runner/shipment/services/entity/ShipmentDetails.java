@@ -583,10 +583,6 @@ public class ShipmentDetails extends MultiTenancy {
     @Column(name = "is_network_file")
     private Boolean isNetworkFile;
 
-    @Column(name = "transfer_status")
-    @Enumerated(EnumType.STRING)
-    private NetworkTransferStatus transferStatus;
-
     @Column(name = "is_receiving_branch_manually")
     private Boolean isReceivingBranchManually;
 

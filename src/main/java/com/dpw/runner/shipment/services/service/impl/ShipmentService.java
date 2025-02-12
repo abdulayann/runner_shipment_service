@@ -2257,8 +2257,12 @@ public class ShipmentService implements IShipmentService {
                 }
         }
 
-        if (shipmentDetails.getReceivingBranch() != null && shipmentDetails.getReceivingBranch() == 0)
+        if (shipmentDetails.getReceivingBranch() != null && shipmentDetails.getReceivingBranch() == 0) {
             shipmentDetails.setReceivingBranch(null);
+            if(CommonUtils.listIsNullOrEmpty(shipmentDetails.getConsolidationList()) && Boolean.TRUE.equals(shipmentDetails.getConsolidationList().get(0).getInterBranchConsole())) {
+                shipmentDetails.setReceivingBranch(shipmentDetails.getConsolidationList().get(0).getReceivingBranch());
+            }
+        }
         if (ObjectUtils.isNotEmpty(shipmentDetails.getTriangulationPartnerList())
                 && shipmentDetails.getTriangulationPartnerList().size() == 1) {
             TriangulationPartner triangulationPartner = shipmentDetails.getTriangulationPartnerList().get(0);
@@ -5322,6 +5326,8 @@ public class ShipmentService implements IShipmentService {
                 shipmentDetailsResponse.setPackSummary(packingService.calculatePackSummary(shipmentDetails.getPackingList(), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType(), new ShipmentMeasurementDetailsDto()));
                 shipmentDetailsResponse.setContainerSummary(containerService.calculateContainerSummary(shipmentDetails.getContainersList(), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType()));
             }
+            // fetch NTE status
+            this.fetchNTEstatusForReceivingBranch(shipmentDetailsResponse);
             try {
                 if(shipmentDetailsResponse.getId() != null) {
                     var awb = awbDao.findByShipmentId(shipmentDetailsResponse.getId());
@@ -5355,6 +5361,22 @@ public class ShipmentService implements IShipmentService {
             log.error(Constants.ERROR_OCCURRED_FOR_EVENT, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_SHIPMENT_RETRIEVE, ex.getLocalizedMessage());
         }
 
+    }
+
+    private void fetchNTEstatusForReceivingBranch(ShipmentDetailsResponse shipmentDetailsResponse) {
+        Boolean isInterBranchShip = false;
+        if(CommonUtils.listIsNullOrEmpty(shipmentDetailsResponse.getConsolidationList())) {
+            isInterBranchShip = shipmentDetailsResponse.getConsolidationList().get(0).getInterBranchConsole();
+        }
+        if(Objects.equals(shipmentDetailsResponse.getTransportMode(), TRANSPORT_MODE_AIR) &&
+                (Objects.equals(shipmentDetailsResponse.getJobType(), SHIPMENT_TYPE_DRT) || isInterBranchShip) && shipmentDetailsResponse.getReceivingBranch() != null) {
+            String transferStatus = networkTransferDao.findStatusByEntityIdAndEntityTypeAndTenantId(shipmentDetailsResponse.getId(), SHIPMENT, shipmentDetailsResponse.getReceivingBranch().intValue());
+            shipmentDetailsResponse.setTransferStatus(transferStatus);
+        } else if (CommonUtils.listIsNullOrEmpty(shipmentDetailsResponse.getConsolidationList())){
+            var console = shipmentDetailsResponse.getConsolidationList().get(0);
+            String transferStatus = networkTransferDao.findStatusByEntityIdAndEntityTypeAndTenantId(console.getId(), CONSOLIDATION, console.getReceivingBranch().intValue());
+            shipmentDetailsResponse.setTransferStatus(transferStatus);
+        }
     }
 
     public ResponseEntity<IRunnerResponse> cloneShipment(CommonRequestModel commonRequestModel) {

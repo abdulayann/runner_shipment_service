@@ -127,10 +127,6 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
     @Query(value = "SELECT * FROM shipment_details WHERE id IN ?1 AND contains_hazardous = ?2", nativeQuery = true)
     List<ShipmentDetails> findByShipmentIdInAndContainsHazardous(List<Long> shipmentIdList, boolean containsHazardous);
     List<ShipmentDetails> findByShipmentIdIn(List<String> shipmentIds);
-
-    @Modifying @Transactional
-    @Query(value = "Update shipment_details set transfer_status = ?2 where id IN ?1", nativeQuery = true)
-    void updateTransferStatus(List<Long> id, String transferStatus);
     
     @Modifying
     @Query(value = "update shipment_additional_details set fcr_number = fcr_number + 1 where id in (select additional_details_id from shipment_details where id = ?1)", nativeQuery = true)
@@ -138,4 +134,8 @@ public interface IShipmentRepository extends MultiTenancyRepository<ShipmentDeta
 
     @Query(value = "SELECT * FROM shipment_details WHERE guid = ?1", nativeQuery = true)
     Optional<ShipmentDetails> findShipmentByGuidWithQuery(UUID guid);
+
+    @ExcludeTenantFilter
+    @Query(value = "SELECT receiving_branch FROM shipment_details WHERE guid = ?1", nativeQuery = true)
+    Integer findReceivingByGuid(UUID guid);
 }

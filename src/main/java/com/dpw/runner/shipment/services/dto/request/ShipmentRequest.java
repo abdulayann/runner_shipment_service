@@ -181,7 +181,6 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private FileStatus fileStatus;
     private Boolean syncRoutingFromConsolidation;
     private Boolean isNetworkFile;
-    private String transferStatus;
     private Boolean isReceivingBranchManually;
     private Boolean isTransferredToReceivingBranch;
     private String shipmentStatus;

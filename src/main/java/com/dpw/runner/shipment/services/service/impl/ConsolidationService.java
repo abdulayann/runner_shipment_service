@@ -3447,10 +3447,19 @@ public class ConsolidationService implements IConsolidationService {
                         consolidationDetailsResponse.setLinkedHawbStatus(awb.get(0).getLinkedHawbAirMessageStatus());
                 }
             }
+            // fetch NTE status
+            this.fetchNTEstatusForReceivingBranch(consolidationDetailsResponse);
             if (Objects.equals(consolidationDetails.getTransportMode(), Constants.TRANSPORT_MODE_ROA))
                 fetchTruckerInfo(consolidationDetails.getId(), consolidationDetailsResponse);
         }  catch (Exception ex) {
             log.error(Constants.ERROR_OCCURRED_FOR_EVENT, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_CONSOLIDATION_RETRIEVE, ex.getLocalizedMessage());
+        }
+    }
+
+    private void fetchNTEstatusForReceivingBranch(ConsolidationDetailsResponse consolidationDetailsResponse) {
+        if(consolidationDetailsResponse.getReceivingBranch() != null) {
+            String transferStatus = networkTransferDao.findStatusByEntityIdAndEntityTypeAndTenantId(consolidationDetailsResponse.getId(), CONSOLIDATION, consolidationDetailsResponse.getReceivingBranch().intValue());
+            consolidationDetailsResponse.setTransferStatus(transferStatus);
         }
     }
 

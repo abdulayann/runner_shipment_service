@@ -55,4 +55,12 @@ public interface INetworkTransferRepository extends MultiTenancyRepository<Netwo
     @ExcludeTenantFilter
     @Query(value = "SELECT * FROM network_transfer WHERE entity_id IN (?1) AND entity_type = ?2 AND is_inter_branch_entity = ?3 AND status IN (?4)", nativeQuery = true)
     List<NetworkTransfer> findByEntityIdAndEntityTypeAndIsInterBranchEntity(List<Long> entityIds, String entityType, Boolean isInterBranchEntity, List<String> status);
+
+    @ExcludeTenantFilter
+    @Query(value = "SELECT status FROM network_transfer WHERE entity_id = ?1 AND entity_type = ?2 AND tenant_id = ?3", nativeQuery = true)
+    String findStatusByEntityIdAndEntityTypeAndTenantId(Long entityId, String entityType, Integer tenantId);
+
+    @ExcludeTenantFilter
+    @Query(value = "SELECT status FROM network_transfer WHERE entity_guid = ?1 AND tenant_id = ?2", nativeQuery = true)
+    String findByEntityGuidAndTenantId(UUID guid, Integer tenantId);
 }

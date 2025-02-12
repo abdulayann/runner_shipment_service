@@ -12,7 +12,6 @@ import com.dpw.runner.shipment.services.dto.request.ConsoleBookingRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
-import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.entity.response.consolidation.IConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.entity.response.consolidation.IShipmentContainerLiteResponse;
@@ -616,12 +615,6 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     @Transactional
     public void updateIsAcceptedTriangulationPartner(Long consolidationId, Long triangulationPartner, Boolean isAccepted) {
         consolidationRepository.updateIsAcceptedTriangulationPartner(consolidationId, triangulationPartner, isAccepted);
-    }
-
-    @Override
-    @Transactional
-    public void updateTransferStatus(Long id, NetworkTransferStatus transferStatus) {
-        consolidationRepository.updateTransferStatus(id, transferStatus.name());
     }
 
 
