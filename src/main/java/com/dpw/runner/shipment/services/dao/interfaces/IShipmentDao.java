@@ -53,5 +53,6 @@ public interface IShipmentDao {
     void updateIsAcceptedTriangulationPartner(Long shipmentId, Long triangulationPartner, Boolean isAccepted);
     void updateFCRNo(Long id);
     Optional<ShipmentDetails> findShipmentByGuidWithQuery(UUID guid);
+    int updateShipmentsBookingNumber(List<UUID> guids, String bookingNumber);
     Integer findReceivingByGuid(UUID guid);
 }

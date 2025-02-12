@@ -1,13 +1,5 @@
 package com.dpw.runner.shipment.services.adapters;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import com.dpw.runner.shipment.services.adapters.config.TrackingServiceConfig;
 import com.dpw.runner.shipment.services.adapters.impl.TrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
@@ -24,17 +16,11 @@ import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiRe
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Events;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
-import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.helper.impl.v1.V1MasterDataImpl;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
@@ -43,11 +29,6 @@ import com.dpw.runner.shipment.services.service_bus.ISBProperties;
 import com.dpw.runner.shipment.services.service_bus.ISBUtils;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -62,6 +43,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
+
+import java.io.IOException;
+import java.util.*;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
@@ -161,7 +148,7 @@ class TrackingServiceAdapterTest {
         when(consoleShipmentMappingDao.findByShipmentId(any())).thenReturn(List.of(new ConsoleShipmentMapping()));
         when(consolidationDao.findById(any())).thenReturn(Optional.of(jsonTestUtility.getTestConsolidation()));
         ShipmentDetails shipmentDetails = jsonTestUtility.getTestShipment();
-        shipmentDetails.setContainersList(List.of(jsonTestUtility.getTestContainer()));
+        shipmentDetails.setContainersList(Set.of(jsonTestUtility.getTestContainer()));
         boolean res = trackingServiceAdapter.checkIfConsolAttached(shipmentDetails);
         assertTrue(res);
     }
@@ -173,7 +160,7 @@ class TrackingServiceAdapterTest {
         consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         when(consolidationDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
         ShipmentDetails shipmentDetails = jsonTestUtility.getTestShipment();
-        shipmentDetails.setContainersList(List.of(jsonTestUtility.getTestContainer()));
+        shipmentDetails.setContainersList(Set.of(jsonTestUtility.getTestContainer()));
         boolean res = trackingServiceAdapter.checkIfConsolAttached(shipmentDetails);
         assertFalse(res);
     }
@@ -185,7 +172,7 @@ class TrackingServiceAdapterTest {
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
         shipmentDetails.setMasterBill("MasterBill");
         shipmentDetails.setHouseBill(null);
-        shipmentDetails.setContainersList(List.of(jsonTestUtility.getTestContainer()));
+        shipmentDetails.setContainersList(Set.of(jsonTestUtility.getTestContainer()));
         boolean res = trackingServiceAdapter.checkIfConsolAttached(shipmentDetails);
         assertTrue(res);
     }
@@ -197,7 +184,7 @@ class TrackingServiceAdapterTest {
         consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         when(consolidationDao.findById(any())).thenThrow(new RuntimeException());
         ShipmentDetails shipmentDetails = jsonTestUtility.getTestShipment();
-        shipmentDetails.setContainersList(List.of(jsonTestUtility.getTestContainer()));
+        shipmentDetails.setContainersList(Set.of(jsonTestUtility.getTestContainer()));
         boolean res = trackingServiceAdapter.checkIfConsolAttached(shipmentDetails);
         assertFalse(res);
     }

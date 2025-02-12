@@ -68,7 +68,7 @@ class MasterDataHelperTest {
         shipmentDetailsResponse.setAdditionalDetails(AdditionalDetailResponse.builder().build());
         shipmentDetailsResponse.setRoutingsList(List.of(RoutingsResponse.builder().build()));
         shipmentDetailsResponse.setReferenceNumbersList(List.of(new ReferenceNumbersResponse()));
-        shipmentDetailsResponse.setContainersList(List.of(new ContainerResponse()));
+        shipmentDetailsResponse.setContainersList(Set.of(new ContainerResponse()));
         shipmentDetailsResponse.setPackingList(List.of(new PackingResponse()));
         shipmentDetailsResponse.setBookingCarriagesList(List.of(new BookingCarriageResponse()));
         shipmentDetailsResponse.setServicesList(List.of(new ServiceDetailsResponse()));
@@ -231,7 +231,7 @@ class MasterDataHelperTest {
         shipmentDetailsResponse.setAdditionalDetails(AdditionalDetailResponse.builder().build());
         shipmentDetailsResponse.setRoutingsList(List.of(RoutingsResponse.builder().build()));
         shipmentDetailsResponse.setBookingCarriagesList(List.of(new BookingCarriageResponse()));
-        shipmentDetailsResponse.setContainersList(List.of(new ContainerResponse()));
+        shipmentDetailsResponse.setContainersList(Set.of(new ContainerResponse()));
         shipmentDetailsResponse.setServicesList(List.of(new ServiceDetailsResponse()));
         shipmentDetailsResponse.setPackingList(List.of(new PackingResponse()));
         // Act
@@ -265,7 +265,7 @@ class MasterDataHelperTest {
         shipmentDetailsResponse.setAdditionalDetails(AdditionalDetailResponse.builder().build());
         shipmentDetailsResponse.setRoutingsList(List.of(RoutingsResponse.builder().build()));
         shipmentDetailsResponse.setBookingCarriagesList(List.of(new BookingCarriageResponse()));
-        shipmentDetailsResponse.setContainersList(List.of(new ContainerResponse()));
+        shipmentDetailsResponse.setContainersList(Set.of(new ContainerResponse()));
         shipmentDetailsResponse.setServicesList(List.of(new ServiceDetailsResponse()));
         shipmentDetailsResponse.setPackingList(List.of(new PackingResponse()));
         // Act
@@ -536,7 +536,7 @@ class MasterDataHelperTest {
         doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any(), Mockito.any());
 
         ShipmentDetailsResponse shipmentDetailsResponse = ShipmentDetailsResponse.builder().build();
-        shipmentDetailsResponse.setContainersList(List.of(new ContainerResponse()));
+        shipmentDetailsResponse.setContainersList(Set.of(new ContainerResponse()));
 
         // Act
         CompletableFuture<ResponseEntity<IRunnerResponse>> actualAddAllCommodityTypesInSingleCallResult = masterDataHelper
@@ -734,7 +734,7 @@ class MasterDataHelperTest {
         doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any(), Mockito.any());
         ShipmentDetailsResponse shipmentDetailsResponse = new ShipmentDetailsResponse();
         shipmentDetailsResponse.setAdditionalDetails(AdditionalDetailResponse.builder().build());
-        shipmentDetailsResponse.setContainersList(List.of(new ContainerResponse()));
+        shipmentDetailsResponse.setContainersList(Set.of(new ContainerResponse()));
         // Act
         CompletableFuture<ResponseEntity<IRunnerResponse>> actualAddAllContainerTypesInSingleCallResult = masterDataHelper
                 .addAllContainerTypesInSingleCall(shipmentDetailsResponse, new HashMap<>());
@@ -763,7 +763,7 @@ class MasterDataHelperTest {
         doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any(), Mockito.any());
         ShipmentDetailsResponse shipmentDetailsResponse = new ShipmentDetailsResponse();
         shipmentDetailsResponse.setAdditionalDetails(AdditionalDetailResponse.builder().build());
-        shipmentDetailsResponse.setContainersList(List.of(new ContainerResponse()));
+        shipmentDetailsResponse.setContainersList(Set.of(new ContainerResponse()));
         // Act
         CompletableFuture<ResponseEntity<IRunnerResponse>> actualAddAllContainerTypesInSingleCallResult = masterDataHelper
                 .addAllContainerTypesInSingleCall(shipmentDetailsResponse, null);
@@ -792,7 +792,7 @@ class MasterDataHelperTest {
         doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any(), Mockito.any());
         ShipmentDetailsResponse shipmentDetailsResponse = new ShipmentDetailsResponse();
         shipmentDetailsResponse.setAdditionalDetails(AdditionalDetailResponse.builder().build());
-        shipmentDetailsResponse.setContainersList(List.of(new ContainerResponse()));
+        shipmentDetailsResponse.setContainersList(Set.of(new ContainerResponse()));
         shipmentDetailsResponse.setRoutingsList(List.of(new RoutingsResponse()));
         shipmentDetailsResponse.setBookingCarriagesList(List.of(new BookingCarriageResponse()));
         // Act
@@ -822,7 +822,7 @@ class MasterDataHelperTest {
         doNothing().when(masterDataUtils).pushToCache(Mockito.<Map<String, Object>>any(), Mockito.<String>any(), Mockito.any(), Mockito.any(), Mockito.any());
         ShipmentDetailsResponse shipmentDetailsResponse = new ShipmentDetailsResponse();
         shipmentDetailsResponse.setAdditionalDetails(AdditionalDetailResponse.builder().build());
-        shipmentDetailsResponse.setContainersList(List.of(new ContainerResponse()));
+        shipmentDetailsResponse.setContainersList(Set.of(new ContainerResponse()));
         shipmentDetailsResponse.setRoutingsList(List.of(new RoutingsResponse()));
         shipmentDetailsResponse.setBookingCarriagesList(List.of(new BookingCarriageResponse()));
         shipmentDetailsResponse.setCarrierDetails(CarrierDetailResponse.builder().build());
@@ -935,7 +935,7 @@ class MasterDataHelperTest {
         packResponse2.setGoodsDescription("def");
         packingResponse.add(packResponse2);
         shipmentDetailsResponse.setPackingList(packingResponse);
-        List<ContainerResponse> containerResponses = new ArrayList<>();
+        Set<ContainerResponse> containerResponses = new HashSet<>();
         ContainerResponse containerResponse = new ContainerResponse();
         containerResponse.setId(1L);
         containerResponses.add(containerResponse);
@@ -954,7 +954,7 @@ class MasterDataHelperTest {
         // Arrange
         ShipmentDetailsResponse shipmentDetailsResponse = mock(ShipmentDetailsResponse.class);
         when(shipmentDetailsResponse.getContainerAutoWeightVolumeUpdate()).thenReturn(false);
-        when(shipmentDetailsResponse.getContainersList()).thenReturn(new ArrayList<>());
+        when(shipmentDetailsResponse.getContainersList()).thenReturn(new HashSet<>());
         when(shipmentDetailsResponse.getPackingList()).thenReturn(new ArrayList<>());
 
         // Act
@@ -1075,7 +1075,7 @@ class MasterDataHelperTest {
         containerResponse.setVolumeUtilization("42");
         containerResponse.setWeightUtilization("42");
 
-        ArrayList<ContainerResponse> containerResponseList = new ArrayList<>();
+        Set<ContainerResponse> containerResponseList = new HashSet<>();
         containerResponseList.add(containerResponse);
         ShipmentDetailsResponse shipmentDetailsResponse = mock(ShipmentDetailsResponse.class);
         when(shipmentDetailsResponse.getContainerAutoWeightVolumeUpdate()).thenReturn(false);
@@ -1165,7 +1165,7 @@ class MasterDataHelperTest {
         packingResponseList.add(packingResponse);
         ShipmentDetailsResponse shipmentDetailsResponse = mock(ShipmentDetailsResponse.class);
         when(shipmentDetailsResponse.getContainerAutoWeightVolumeUpdate()).thenReturn(false);
-        when(shipmentDetailsResponse.getContainersList()).thenReturn(new ArrayList<>());
+        when(shipmentDetailsResponse.getContainersList()).thenReturn(new HashSet<>());
         when(shipmentDetailsResponse.getPackingList()).thenReturn(packingResponseList);
 
         // Act

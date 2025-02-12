@@ -135,4 +135,12 @@ public interface IShipmentService extends ICommonService {
     ResponseEntity<IRunnerResponse> retrieveForNTE(CommonRequestModel commonRequestModel);
      void triggerAutomaticTransfer(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, Boolean isDocAdded);
 
+
+     // Runner V3.0 methods
+    ResponseEntity<IRunnerResponse> createV3(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> completeUpdateV3(CommonRequestModel commonRequestModel) throws RunnerException;
+    ResponseEntity<IRunnerResponse> retrieveByIdV3(CommonRequestModel commonRequestModel, boolean getMasterData);
+    ResponseEntity<IRunnerResponse> fullShipmentsListV3(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> listV3(CommonRequestModel commonRequestModel, boolean getMasterData);
+
 }

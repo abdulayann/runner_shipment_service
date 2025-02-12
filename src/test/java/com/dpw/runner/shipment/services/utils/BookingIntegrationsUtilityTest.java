@@ -359,7 +359,7 @@ class BookingIntegrationsUtilityTest {
         shipment.setBookingType(CustomerBookingConstants.ONLINE);
         shipment.setShipmentType(Constants.CARGO_TYPE_FCL);
         shipment.setBookingReference("1234");
-        shipment.setContainersList(List.of(jsonTestUtility.getTestContainer()));
+        shipment.setContainersList(Set.of(jsonTestUtility.getTestContainer()));
         bookingIntegrationsUtility.updateBookingInPlatform(shipment);
         verify(platformServiceAdapter, times(1)).createAtPlatform(any(CommonRequestModel.class));
     }

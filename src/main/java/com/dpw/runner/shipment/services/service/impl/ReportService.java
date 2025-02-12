@@ -980,7 +980,7 @@ public class ReportService implements IReportService {
             dataRetrived.put(ReportConstants.TOTAL_CONSOL_PACKS, reportRequest.getTotalMawbPieces());
         }
 
-        // Custom Air Labels-Combi dialogue box
+        // Custom Air Labels- Combi dialogue box
         if (Boolean.TRUE.equals(reportRequest.getPrintCustomLabel()) && reportRequest.isCombiLabel()) {
             List<Pair<String, Integer>> hawbPackageList = Optional.ofNullable(reportRequest.getHawbInfo())
                     .orElse(Collections.emptyList()).stream()
@@ -993,7 +993,8 @@ public class ReportService implements IReportService {
             dataRetrived.put(HAWB_PACKS_MAP, hawbPackageList);
             dataRetrived.put(ReportConstants.AIRLINE_NAME, reportRequest.getConsolAirline());
             AWBLabelReport.populateMawb(dataRetrived, reportRequest.getMawbNumber());
-            dataRetrived.put(ReportConstants.CONSOL_DESTINATION_AIRPORT_CODE_CAPS, reportRequest.getDestination());
+            dataRetrived.put(ReportConstants.MAWB_CAPS, reportRequest.getMawbNumber());
+            dataRetrived.put(ReportConstants.CONSOL_DESTINATION_AIRPORT_CODE, reportRequest.getDestination());
             dataRetrived.put(ReportConstants.TOTAL_CONSOL_PACKS, reportRequest.getTotalMawbPieces());
         }
 
@@ -1803,6 +1804,9 @@ public class ReportService implements IReportService {
         ReportRequest reportRequest = new ReportRequest();
         reportRequest.setReportId(reportId);
         reportRequest.setReportInfo(CSD_REPORT);
+        if(Constants.Consolidations.equalsIgnoreCase(docUploadRequest.getEntityType())){
+            reportRequest.setFromConsolidation(true);
+        }
         try{
         CommonRequestModel commonRequestModel =  CommonRequestModel.buildRequest(reportRequest);
         DocUploadRequest csdDocumentUploadRequest = new DocUploadRequest(docUploadRequest);

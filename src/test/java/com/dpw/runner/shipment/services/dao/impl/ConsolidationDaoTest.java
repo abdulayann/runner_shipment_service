@@ -152,7 +152,7 @@ class ConsolidationDaoTest extends CommonMocks {
         consolidationDetails.setConsolidationAddresses(jsonTestUtility.getConsoldiationAddressList());
         ShipmentDetails shipmentDetails = jsonTestUtility.getTestShipment();
         shipmentDetails.setContainsHazardous(true);
-        consolidationDetails.setShipmentsList(List.of(shipmentDetails));
+        consolidationDetails.setShipmentsList(Set.of(shipmentDetails));
         var spyService = Mockito.spy(consolidationsDao);
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
         mockShipmentSettings();
@@ -168,7 +168,7 @@ class ConsolidationDaoTest extends CommonMocks {
         consolidationDetails.setConsolidationAddresses(jsonTestUtility.getConsoldiationAddressList());
         ShipmentDetails shipmentDetails = jsonTestUtility.getTestShipment();
         shipmentDetails.setContainsHazardous(false);
-        consolidationDetails.setShipmentsList(List.of(shipmentDetails));
+        consolidationDetails.setShipmentsList(Set.of(shipmentDetails));
         var spyService = Mockito.spy(consolidationsDao);
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
         Map<String, Boolean> permissions = new HashMap<>();
@@ -200,7 +200,7 @@ class ConsolidationDaoTest extends CommonMocks {
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
         ConsolidationDetails consolidationDetails = jsonTestUtility.getTestConsolidationAir();
         consolidationDetails.setPackingList(null);
-        consolidationDetails.setShipmentsList(List.of(jsonTestUtility.getTestShipment()));
+        consolidationDetails.setShipmentsList(Set.of(jsonTestUtility.getTestShipment()));
         consolidationDetails.setId(null);
         consolidationDetails.setGuid(null);
         consolidationDetails.setConsolidationAddresses(jsonTestUtility.getConsoldiationAddressList());
@@ -216,7 +216,7 @@ class ConsolidationDaoTest extends CommonMocks {
         consolidationDetails.setPackingList(null);
         ShipmentDetails shipmentDetails = jsonTestUtility.getTestShipment();
         shipmentDetails.setContainsHazardous(true);
-        consolidationDetails.setShipmentsList(List.of(shipmentDetails));
+        consolidationDetails.setShipmentsList(Set.of(shipmentDetails));
         consolidationDetails.setId(null);
         consolidationDetails.setGuid(null);
         consolidationDetails.setConsolidationAddresses(jsonTestUtility.getConsoldiationAddressList());

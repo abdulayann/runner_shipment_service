@@ -124,7 +124,7 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
     private void mapReverseShipmentGuids(ShipmentDetails response, CustomShipmentSyncRequest request) {
         if(request == null || request.getConsolidationGuids() == null)
             return;
-        List<ConsolidationDetails> req = new ArrayList<>();
+        Set<ConsolidationDetails> req = new HashSet<>();
         request.getConsolidationGuids().forEach((key, value) -> {
             ConsolidationDetails p = new ConsolidationDetails();
             p.setGuid(key);

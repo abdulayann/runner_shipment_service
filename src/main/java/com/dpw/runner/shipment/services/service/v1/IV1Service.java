@@ -190,6 +190,7 @@ public interface IV1Service {
     V1DataResponse getCoLoadingStations(Object request);
     TenantDetailsByListResponse getTenantDetails(Object request);
     V1DataResponse getEmailTemplates(Object request);
+    V1DataResponse getEmailTemplatesWithTenantId(Object request);
     V1DataResponse getMasterDetails(Object request);
     V1DataResponse getUserDetails(Object request);
     TaskCreateResponse createTask(Object request);

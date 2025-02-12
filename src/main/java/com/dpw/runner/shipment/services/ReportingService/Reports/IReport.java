@@ -1258,7 +1258,7 @@ public abstract class IReport {
         shipmentModel.setVoyage(shipmentDetails.getCarrierDetails().getVoyage());
         try {
             if(shipmentDetails.getContainersList() != null) {
-                ContainerSummaryResponse containerSummaryResponse = containerService.calculateContainerSummary(shipmentDetails.getContainersList(), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType());
+                ContainerSummaryResponse containerSummaryResponse = containerService.calculateContainerSummary(new ArrayList<>(shipmentDetails.getContainersList()), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType());
                 if(containerSummaryResponse != null) {
                     shipmentModel.setSummary(containerSummaryResponse.getSummary());
                 }
@@ -3695,6 +3695,30 @@ public abstract class IReport {
         dictionary.put(TI_PICKUP_GATEOUT, ConvertToDPWDateFormat(ti.getPickupGateOut() , tsDateTimeFormat, true));
         dictionary.put(TI_DELIVERY_GATEIN, ConvertToDPWDateFormat(ti.getDeliveryGateIn() , tsDateTimeFormat, true));
         dictionary.put(TI_DELIVERY_GATEOUT, ConvertToDPWDateFormat(ti.getDeliveryGateOut() , tsDateTimeFormat, true));
+        if (shipmentModel.getAdditionalDetails() != null) {
+            AdditionalDetailModel additionalDetailModel = shipmentModel.getAdditionalDetails();
+            if (additionalDetailModel.getExemptionCodes() != null) {
+                dictionary.put(EXEMPTION_CARGO, additionalDetailModel.getExemptionCodes());
+            }
+            if (additionalDetailModel.getScreeningStatus() != null && !additionalDetailModel.getScreeningStatus().isEmpty()) {
+                Set<String> screeningCodes = new HashSet<>(additionalDetailModel.getScreeningStatus());
+                if (screeningCodes.contains(Constants.AOM)) {
+                    screeningCodes.remove(Constants.AOM);
+                    String aomString = Constants.AOM;
+                    if (additionalDetailModel.getAomFreeText() != null) {
+                        aomString = aomString + " (" + additionalDetailModel.getAomFreeText() + ")";
+                    }
+                    screeningCodes.add(aomString);
+                    dictionary.put(SCREENING_CODES, screeningCodes);
+                } else {
+                    dictionary.put(SCREENING_CODES, screeningCodes);
+                }
+
+            }
+        }
+        if(shipmentModel.getSecurityStatus() != null ) {
+            dictionary.put(CONSIGNMENT_STATUS, shipmentModel.getSecurityStatus());
+        }
     }
 
     public V1TenantSettingsResponse getCurrentTenantSettings() {

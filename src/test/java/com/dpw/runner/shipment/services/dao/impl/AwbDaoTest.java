@@ -383,7 +383,7 @@ class AwbDaoTest {
         String reportType = ReportConstants.MAWB;
         Boolean fromShipment = false;
 
-        testConsol.setShipmentsList(List.of(testShipment));
+        testConsol.setShipmentsList(Set.of(testShipment));
 
         AwbAirMessagingResponse mockAirMessagingResponse = new AwbAirMessagingResponse();
         mockAirMessagingResponse.setMeta(AwbAirMessagingResponse.Meta.builder().build());
@@ -410,7 +410,7 @@ class AwbDaoTest {
         String reportType = ReportConstants.MAWB;
         Boolean fromShipment = false;
 
-        testConsol.setShipmentsList(List.of(testShipment));
+        testConsol.setShipmentsList(Set.of(testShipment));
 
         var mockMap = new HashMap<Integer, Object>();
         mockMap.put(testShipment.getTenantId(), new TenantModel());

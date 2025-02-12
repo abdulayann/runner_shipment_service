@@ -32,7 +32,6 @@ import com.dpw.runner.shipment.services.exception.exceptions.ValidationException
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.dpw.runner.shipment.services.service.interfaces.IHblService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.HblRequestV2;
@@ -195,7 +194,7 @@ class HblServiceTest extends CommonMocks {
 
         // Shipment, Lis<Container>, List<Packing>
         ShipmentDetails inputShipment = testShipment;
-        List<Containers> inputContainers = List.of(new Containers());
+        Set<Containers> inputContainers = Set.of(new Containers());
         List<Packing> inputPacking = null;
         // Test
         Hbl responseHbl = hblService.checkAllContainerAssigned(inputShipment, inputContainers, inputPacking);
@@ -208,7 +207,7 @@ class HblServiceTest extends CommonMocks {
 
         // Shipment, Lis<Container>, List<Packing>
         ShipmentDetails inputShipment = testShipment;
-        List<Containers> inputContainers = List.of(Containers.builder().containerNumber(StringUtility.getEmptyString()).build());
+        Set<Containers> inputContainers = Set.of(Containers.builder().containerNumber(StringUtility.getEmptyString()).build());
         List<Packing> inputPacking = null;
         // Test
         Hbl responseHbl = hblService.checkAllContainerAssigned(inputShipment, inputContainers, inputPacking);
@@ -221,7 +220,7 @@ class HblServiceTest extends CommonMocks {
         // Shipment, Lis<Container>, List<Packing>
         ShipmentDetails inputShipment = testShipment;
         inputShipment.setId(11L);
-        List<Containers> inputContainers = List.of(Containers.builder().containerNumber(StringUtility.getRandomString(1)).build());
+        Set<Containers> inputContainers = Set.of(Containers.builder().containerNumber(StringUtility.getRandomString(1)).build());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().restrictHblGen(false).build());
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.empty());
         when(hblDao.findByShipmentId(anyLong())).thenReturn(List.of());
@@ -238,7 +237,7 @@ class HblServiceTest extends CommonMocks {
         inputShipment.setId(11L);
         Hbl inputHBL = mockHbl;
         inputHBL.setHblContainer(List.of());
-        List<Containers> inputContainers = List.of(Containers.builder().containerNumber(StringUtility.getRandomString(1)).build());
+        Set<Containers> inputContainers = Set.of(Containers.builder().containerNumber(StringUtility.getRandomString(1)).build());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
         when(hblDao.findByShipmentId(anyLong())).thenReturn(List.of(inputHBL));
         when(hblDao.save(any())).thenReturn(inputHBL);
@@ -253,10 +252,10 @@ class HblServiceTest extends CommonMocks {
         ShipmentDetails inputShipment = completeShipment;
         inputShipment.setId(11L);
         inputShipment.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
-        inputShipment.setContainersList(List.of());
+        inputShipment.setContainersList(Set.of());
         Hbl inputHBL = mockHbl;
         inputHBL.setHblContainer(List.of());
-        List<Containers> inputContainers = List.of(Containers.builder().containerNumber(StringUtility.getRandomString(1)).build());
+        Set<Containers> inputContainers = Set.of(Containers.builder().containerNumber(StringUtility.getRandomString(1)).build());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
         when(hblDao.findByShipmentId(anyLong())).thenReturn(List.of(inputHBL));
         when(hblDao.save(any())).thenReturn(inputHBL);
@@ -278,7 +277,7 @@ class HblServiceTest extends CommonMocks {
         Containers container = new Containers();
         container.setId(1L);
         container.setContainerNumber(containerNumber);
-        List<Containers> inputContainers = List.of(container);
+        Set<Containers> inputContainers = Set.of(container);
         Packing packing = new Packing();
         packing.setContainerId(1L);
         List<Packing> inputPacking = List.of(packing);
@@ -310,7 +309,7 @@ class HblServiceTest extends CommonMocks {
         Containers container = new Containers();
         container.setId(1L);
         container.setContainerNumber(containerNumber);
-        List<Containers> inputContainers = List.of(container);
+        Set<Containers> inputContainers = Set.of(container);
         Packing packing = new Packing();
         packing.setContainerId(1L);
         List<Packing> inputPacking = List.of(packing);
@@ -347,7 +346,7 @@ class HblServiceTest extends CommonMocks {
         Containers container = new Containers();
         container.setId(1L);
         container.setContainerNumber(containerNumber);
-        List<Containers> inputContainers = List.of(container);
+        Set<Containers> inputContainers = Set.of(container);
         Packing packing = new Packing();
         packing.setContainerId(1L);
         List<Packing> inputPacking = List.of(packing);
@@ -461,7 +460,7 @@ class HblServiceTest extends CommonMocks {
 
         // Mock
         addDataForAutomaticTransfer(testShipment);
-        testShipment.getConsolidationList().get(0).setConsolidationType(Constants.CONSOLIDATION_TYPE_DRT);
+        testShipment.getConsolidationList().iterator().next().setConsolidationType(Constants.CONSOLIDATION_TYPE_DRT);
         when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(testShipment));
         when(hblDao.findByShipmentId(shipmentId)).thenReturn(List.of());
         when(masterDataUtils.fetchInBulkUnlocations(any(), anyString())).thenReturn(new HashMap<>());
@@ -490,7 +489,7 @@ class HblServiceTest extends CommonMocks {
 
         // Mock
         addDataForAutomaticTransfer(testShipment);
-        testShipment.getConsolidationList().get(0).setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        testShipment.getConsolidationList().iterator().next().setTransportMode(Constants.TRANSPORT_MODE_AIR);
         when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(testShipment));
         when(hblDao.findByShipmentId(shipmentId)).thenReturn(List.of());
         when(masterDataUtils.fetchInBulkUnlocations(any(), anyString())).thenReturn(new HashMap<>());
@@ -575,7 +574,7 @@ class HblServiceTest extends CommonMocks {
 
         String errorMessage = "Please assign container number to all the containers before generating the HBL.";
 
-        List<Containers> containersList = List.of(new Containers());
+        Set<Containers> containersList = Set.of(new Containers());
         testShipment.setContainersList(containersList);
         testShipment.setShipmentType(Constants.CARGO_TYPE_FCL);
         testShipment.setJobType(Constants.SHIPMENT_TYPE_DRT);
@@ -1372,7 +1371,7 @@ class HblServiceTest extends CommonMocks {
         consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
         consolidationDetails.setConsolidationType(Constants.SHIPMENT_TYPE_STD);
 
-        shipment.setConsolidationList(List.of(consolidationDetails));
+        shipment.setConsolidationList(Set.of(consolidationDetails));
     }
 
 }

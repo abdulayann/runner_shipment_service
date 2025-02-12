@@ -131,14 +131,14 @@ public class SyncEntityConversionService {
         return containerRequestV2;
     }
 
-    public List<Containers> containersV1ToV2(List<ContainerRequestV2> containersList) {
+    public Set<Containers> containersV1ToV2(List<ContainerRequestV2> containersList) {
         if(containersList != null) {
-            List<Containers> res = containersList.stream().map(
+            Set<Containers> res = containersList.stream().map(
                     this::containerV1ToV2
-            ).toList();
+            ).collect(Collectors.toSet());
             return res;
         }
-        return new ArrayList<>();
+        return new HashSet<>();
     }
 
     public Containers containerV1ToV2(ContainerRequestV2 containerRequestV2) {
@@ -166,7 +166,7 @@ public class SyncEntityConversionService {
                         sd.setId(shipmentDetails1.getId());
                         shipmentDetails.add(sd);
                     }
-                    containers.setShipmentsList(shipmentDetails);
+                    containers.setShipmentsList(new HashSet<>(shipmentDetails));
                 }
             } catch (Exception ignored) {}
         }

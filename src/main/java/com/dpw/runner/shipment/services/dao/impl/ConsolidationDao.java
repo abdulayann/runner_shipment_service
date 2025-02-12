@@ -635,4 +635,10 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         return consolidationRepository.findAllLiteConsol(spec, pageable);
     }
 
+    @Override
+    @Transactional
+    public Optional<ConsolidationDetails> findConsolidationByGuidWithQuery(UUID guid) {
+        return consolidationRepository.findConsolidationByGuidWithQuery(guid);
+    }
+
 }
