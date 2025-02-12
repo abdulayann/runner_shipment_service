@@ -34,7 +34,6 @@ import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.helper.impl.v1.V1MasterDataImpl;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
-import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
@@ -55,7 +54,6 @@ import org.modelmapper.ModelMapper;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 
-
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -65,6 +63,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -551,7 +550,7 @@ class CargoManifestAirConsolidationReportTest extends CommonMocks {
         consolidationModel.setId(123L);
         consolidationModel.setPlaceOfIssue("Test");
         shipmentModel.setConsolidationList(Arrays.asList(consolidationModel));
-        when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
+        when(modelMapper.map(any(), eq(ShipmentModel.class))).thenReturn(shipmentModel);
 
 
         ShipmentDetails shipmentDetails = new ShipmentDetails();

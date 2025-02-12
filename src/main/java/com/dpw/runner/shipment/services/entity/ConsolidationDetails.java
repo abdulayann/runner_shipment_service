@@ -17,6 +17,7 @@ import javax.persistence.*;
 import javax.validation.constraints.Size;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
@@ -484,4 +485,18 @@ public class ConsolidationDetails extends MultiTenancy {
 
     @Column(name = "is_transferred_to_receiving_branch")
     private Boolean isTransferredToReceivingBranch;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ConsolidationDetails that = (ConsolidationDetails) o;
+        return Objects.equals(getId(), that.getId());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getId());
+    }
+
 }

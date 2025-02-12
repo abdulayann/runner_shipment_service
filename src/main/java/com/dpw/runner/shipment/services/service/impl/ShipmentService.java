@@ -2298,12 +2298,6 @@ public class ShipmentService implements IShipmentService {
 
         if(!Objects.isNull(shipmentDetails.getConsolidationList()) && !shipmentDetails.getConsolidationList().isEmpty()) {
             ConsolidationDetails console = shipmentDetails.getConsolidationList().iterator().next();
-            ConsolidationDetails tempConsole = new ConsolidationDetails();
-            tempConsole.setId(console.getId());
-            if(console.equals(tempConsole)){
-                console = consolidationDetailsDao.findById(console.getId()).get();
-                shipmentDetails.setConsolidationList(new HashSet<>(Arrays.asList(console)));
-            }
             shipmentDetails.setConsolRef(shipmentDetails.getConsolidationList().iterator().next().getReferenceNumber());
         }
 
