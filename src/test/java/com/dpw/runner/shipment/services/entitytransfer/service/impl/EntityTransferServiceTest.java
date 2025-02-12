@@ -2834,10 +2834,10 @@ class EntityTransferServiceTest extends CommonMocks {
     void testCreateBulkExportEvent3() {
         MDC.put(LoggingConstants.AUTOMATIC_TRANSFER, "true");
         List<Integer> tenantIds = List.of(101);
-        Map<Integer, Object> tenantMap = Map.of(101, new Object());
+        Map<Integer, Object> tenantMap = Map.of(101, V1TenantResponse.builder().Code("101").build());
 
         when(v1ServiceUtil.getTenantDetails(tenantIds)).thenReturn(tenantMap);
-        when(jsonHelper.convertValue(tenantMap.get(101), V1TenantResponse.class)).thenReturn(null);
+        when(jsonHelper.convertValue(tenantMap.get(101), V1TenantResponse.class)).thenReturn(V1TenantResponse.builder().Code("101").build());
         doNothing().when(eventService).saveAllEvent(anyList());
 
         entityTransferService.createBulkExportEvent(1L, "EVENT_CODE", "SHIPMENT", tenantIds, 101);
