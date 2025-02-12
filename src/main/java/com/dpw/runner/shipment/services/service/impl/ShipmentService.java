@@ -3284,9 +3284,7 @@ public class ShipmentService implements IShipmentService {
             }
         }
 
-        if (ObjectUtils.isNotEmpty(shipmentDetails.getMasterBill()) &&
-                isEventChanged(shipmentDetails.getMasterBill(), oldEntity.getMasterBill(), isNewShipment)) {
-
+        if (isEventChanged(shipmentDetails.getMasterBill(), oldEntity.getMasterBill(), isNewShipment)) {
             if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.FNMU))) {
                 List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.FNMU);
                 for (Events event : dbEvents) {
