@@ -268,6 +268,9 @@ class TransportOrderReportTest extends CommonMocks {
         TransportOrderModel transportOrderModel = new TransportOrderModel();
         populateModel(transportOrderModel);
         mockTenantSettings();
+        ShipmentModel shipmentModel = transportOrderModel.shipmentDetails;
+        shipmentModel.setPickupDeliveryDetailsInstructions(Collections.singletonList(PickupDeliveryDetailsModel.builder().id(12L).build()));
+        shipmentModel.getAdditionalDetails().setScreeningStatus(Collections.singletonList(Constants.EAW));
         assertNotNull(transportOrderReport.populateDictionary(transportOrderModel));
     }
 
@@ -283,6 +286,7 @@ class TransportOrderReportTest extends CommonMocks {
         truckDriverDetailsModels.add(truckDriverDetailsModel);
         shipmentModel.setTruckDriverDetails(truckDriverDetailsModels);
         mockTenantSettings();
+        shipmentModel.setPickupDeliveryDetailsInstructions(Collections.singletonList(PickupDeliveryDetailsModel.builder().id(12L).build()));
         assertNotNull(transportOrderReport.populateDictionary(transportOrderModel));
     }
 
