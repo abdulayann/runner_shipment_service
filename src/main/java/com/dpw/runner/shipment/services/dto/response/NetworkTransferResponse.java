@@ -32,4 +32,5 @@ public class NetworkTransferResponse implements IRunnerResponse {
     private Integer tenantId;
     private LocalDateTime createdAt;
     private Boolean isInterBranchEntity;
+    private Boolean isHidden;
 }

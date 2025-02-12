@@ -178,4 +178,18 @@ class NetworkTransferDaoTest {
         verify(networkTransferRepository, times(1)).deleteAllById(anyList());
     }
 
+    @Test
+    void findStatusByEntityIdAndEntityTypeAndTenantId() {
+        when(networkTransferRepository.findStatusByEntityIdAndEntityTypeAndTenantId(anyLong(), anyString(), any())).thenReturn(NetworkTransferStatus.SCHEDULED.name());
+        var res = networkTransferDao.findStatusByEntityIdAndEntityTypeAndTenantId(anyLong(), anyString(), any());
+        assertEquals(NetworkTransferStatus.SCHEDULED.name(), res);
+    }
+
+    @Test
+    void findByEntityGuidAndTenantId() {
+        when(networkTransferRepository.findByEntityGuidAndTenantId(any(), any())).thenReturn(NetworkTransferStatus.SCHEDULED.name());
+        var res = networkTransferDao.findByEntityGuidAndTenantId(any(), any());
+        assertEquals(NetworkTransferStatus.SCHEDULED.name(), res);
+    }
+
 }

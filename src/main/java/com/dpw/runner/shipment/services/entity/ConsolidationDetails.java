@@ -2,7 +2,6 @@ package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.*;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -475,10 +474,6 @@ public class ConsolidationDetails extends MultiTenancy {
 
     @Column(name = "is_network_file")
     private Boolean isNetworkFile;
-
-    @Column(name = "transfer_status")
-    @Enumerated(EnumType.STRING)
-    private NetworkTransferStatus transferStatus;
 
     @Column(name = "is_receiving_branch_manually")
     private Boolean isReceivingBranchManually;

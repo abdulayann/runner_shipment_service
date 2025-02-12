@@ -6535,11 +6535,13 @@ import static org.mockito.Mockito.*;
         shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(shipmentSettingsDetails);
 
+        ShipmentDetails sDetails = ShipmentDetails.builder().receivingBranch(2L).build();
+        sDetails.setId(1L);
         ConsolidationDetails consoleDetails = jsonTestUtility.getTestConsolidationAir();
         consoleDetails.setId(1L);
         consoleDetails.setInterBranchConsole(true);
         consoleDetails.setReceivingBranch(1L);
-        consoleDetails.setShipmentsList(new HashSet<>(Collections.singletonList(ShipmentDetails.builder().receivingBranch(2L).build())));
+        consoleDetails.setShipmentsList(new HashSet<>(Collections.singletonList(sDetails)));
 
         ConsolidationDetails oldEntity = jsonTestUtility.getTestConsolidationAir();
         oldEntity.setId(1L);
@@ -6553,7 +6555,7 @@ import static org.mockito.Mockito.*;
 
         spyService.createOrUpdateNetworkTransferEntity(shipmentSettingsDetails, consoleDetails, oldEntity);
 
-        verify(networkTransferService, times(2)).processNetworkTransferEntity(any(), any(),any(),any(),any(),any(),any(),any());
+        verify(networkTransferService, times(1)).processNetworkTransferEntity(any(), any(),any(),any(),any(),any(),any(),any());
     }
 
     @Test
@@ -6614,11 +6616,13 @@ import static org.mockito.Mockito.*;
         shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(shipmentSettingsDetails);
 
+        ShipmentDetails sDetails = ShipmentDetails.builder().receivingBranch(2L).build();
+        sDetails.setId(1L);
         ConsolidationDetails consoleDetails = jsonTestUtility.getTestConsolidationAir();
         consoleDetails.setId(1L);
         consoleDetails.setInterBranchConsole(true);
         consoleDetails.setReceivingBranch(1L);
-        consoleDetails.setShipmentsList(new HashSet<>(Collections.singletonList(ShipmentDetails.builder().receivingBranch(2L).build())));
+        consoleDetails.setShipmentsList(new HashSet<>(Collections.singletonList(sDetails)));
 
         ConsolidationDetails oldEntity = jsonTestUtility.getTestConsolidationAir();
         oldEntity.setId(1L);
@@ -6631,7 +6635,7 @@ import static org.mockito.Mockito.*;
 
         spyService.createOrUpdateNetworkTransferEntity(shipmentSettingsDetails, consoleDetails, oldEntity);
 
-        verify(networkTransferService, times(2)).processNetworkTransferEntity(any(), any(),any(),any(),any(),any(),any(),any());
+        verify(networkTransferService, times(1)).processNetworkTransferEntity(any(), any(),any(),any(),any(),any(),any(),any());
     }
 
     @Test
@@ -6664,11 +6668,14 @@ import static org.mockito.Mockito.*;
         shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(shipmentSettingsDetails);
 
+        ShipmentDetails sDetails = ShipmentDetails.builder().receivingBranch(2L).build();
+        sDetails.setId(1L);
+
         ConsolidationDetails consoleDetails = jsonTestUtility.getTestConsolidationAir();
         consoleDetails.setId(1L);
         consoleDetails.setInterBranchConsole(true);
         consoleDetails.setReceivingBranch(2L);
-        consoleDetails.setShipmentsList(new HashSet<>(Collections.singletonList(ShipmentDetails.builder().receivingBranch(2L).build())));
+        consoleDetails.setShipmentsList(new HashSet<>(Collections.singletonList(sDetails)));
 
         ConsolidationDetails oldEntity = jsonTestUtility.getTestConsolidationAir();
         oldEntity.setId(1L);
@@ -6711,6 +6718,35 @@ import static org.mockito.Mockito.*;
         spyService.createOrUpdateNetworkTransferEntity(shipmentSettingsDetails, consoleDetails, oldEntity);
 
         verify(networkTransferService, times(1)).processNetworkTransferEntity(any(), any(),any(), any(), any(),any(), any(), any());
+    }
+
+    @Test
+    void createOrUpdateNetworkTransferEntityTest_9(){
+        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(shipmentSettingsDetails);
+
+        ConsolidationDetails consoleDetails = jsonTestUtility.getTestConsolidationAir();
+        consoleDetails.setId(1L);
+        consoleDetails.setInterBranchConsole(true);
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder().receivingBranch(2L).build();
+        shipmentDetails1.setId(1L);
+        consoleDetails.setShipmentsList(new HashSet<>(Collections.singletonList(shipmentDetails1)));
+
+        ConsolidationDetails oldEntity = jsonTestUtility.getTestConsolidationAir();
+        oldEntity.setId(1L);
+        oldEntity.setReceivingBranch(2L);
+
+        var spyService = Mockito.spy(consolidationService);
+        Map<String, Object> entityPayload = Map.of("abcd", 1);
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().entityId(1L).entityPayload(entityPayload).status(NetworkTransferStatus.REASSIGNED).isInterBranchEntity(true).build();
+        networkTransfer.setTenantId(2);
+        when(networkTransferDao.getInterConsoleNTList(any(), any())).thenReturn(Collections.singletonList(networkTransfer));
+
+        spyService.createOrUpdateNetworkTransferEntity(shipmentSettingsDetails, consoleDetails, oldEntity);
+
+        verify(networkTransferService, times(1)).processNetworkTransferEntity(any(), any(),any(), any(), any(),any(), any(), any());
+        verify(networkTransferService, times(1)).deleteNetworkTransferEntity(any());
     }
 
 }

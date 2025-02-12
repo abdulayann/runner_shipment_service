@@ -382,14 +382,6 @@ class NetworkTransferServiceTest extends CommonMocks{
     }
 
     @Test
-    void testCreateNetworkTransferEntityWithConsolidation1(){
-        when(networkTransferDao.save(any())).thenReturn(networkTransfer);
-        when(consoleShipmentMappingDao.findByConsolidationId(any())).thenReturn(List.of(new ConsoleShipmentMapping()));
-        assertDoesNotThrow(() -> networkTransferService.processNetworkTransferEntity(123L, null,
-                Constants.CONSOLIDATION, null, consolidationDetails, Constants.DIRECTION_CTS, null, false));
-    }
-
-    @Test
     void testCreateNetworkTransferEntityWithEmptyConsolidation(){
         assertDoesNotThrow(() -> networkTransferService.processNetworkTransferEntity(123L, null,
                 Constants.CONSOLIDATION, null, null, Constants.DIRECTION_CTS, null, false));
@@ -454,9 +446,66 @@ class NetworkTransferServiceTest extends CommonMocks{
     }
 
     @Test
+    void testDeleteNetworkTransferEntity(){
+        assertDoesNotThrow(() -> networkTransferService.deleteNetworkTransferEntity(networkTransfer));
+    }
+
+
+    @Test
+    void testDeleteNetworkTransferEntity2(){
+        networkTransfer.setStatus(NetworkTransferStatus.ACCEPTED);
+        assertDoesNotThrow(() -> networkTransferService.deleteNetworkTransferEntity(networkTransfer));
+    }
+
+    @Test
+    void testDeleteNetworkTransferEntityException(){
+        doThrow(new RuntimeException("Connection Time out")).when(networkTransferDao).deleteAndLog(any(), any());
+        assertDoesNotThrow(() -> networkTransferService.deleteNetworkTransferEntity(networkTransfer));
+    }
+
+    @Test
     void testUpdateStatusAndCreatedEntityId() {
         when(networkTransferDao.findById(1L)).thenReturn(Optional.of(networkTransfer));
         assertDoesNotThrow(() -> networkTransferService.updateStatusAndCreatedEntityId(1L, NetworkTransferStatus.ACCEPTED.name(), 2L));
+    }
+
+    @Test
+    void testFetchEntityStatus() {
+        var guid = UUID.randomUUID().toString();
+        when(shipmentDao.findReceivingByGuid(UUID.fromString(guid))).thenReturn(1);
+        when(networkTransferDao.findByEntityGuidAndTenantId(UUID.fromString(guid), 1)).thenReturn(NetworkTransferStatus.SCHEDULED.name());
+        var response = networkTransferService.fetchEntityStatus(CommonGetRequest.builder().guid(guid).build());
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testFetchEntityStatus1() {
+        var guid = UUID.randomUUID().toString();
+        when(shipmentDao.findReceivingByGuid(UUID.fromString(guid))).thenReturn(null);
+        var response = networkTransferService.fetchEntityStatus(CommonGetRequest.builder().guid(guid).build());
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testBulkProcessInterConsoleNte() {
+        networkTransferService.bulkProcessInterConsoleNte(new ArrayList<>());
+        verify(networkTransferDao, times(0)).saveAll(any());
+    }
+
+    @Test
+    void testBulkProcessInterConsoleNte1() {
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder().build();
+        shipmentDetails1.setReceivingBranch(1L);
+        networkTransferService.bulkProcessInterConsoleNte(Collections.singletonList(shipmentDetails1));
+        verify(networkTransferDao, times(0)).saveAll(any());
+    }
+
+    @Test
+    void testBulkProcessInterConsoleNte2() {
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder().build();
+        shipmentDetails1.setReceivingBranch(2L);
+        networkTransferService.bulkProcessInterConsoleNte(Collections.singletonList(shipmentDetails1));
+        verify(networkTransferDao, times(1)).saveAll(any());
     }
 
 }
