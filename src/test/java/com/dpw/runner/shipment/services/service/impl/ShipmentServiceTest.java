@@ -9840,6 +9840,58 @@ ShipmentServiceTest extends CommonMocks {
     }
 
     @Test
+    void triggerAutomaticTransferTest14() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).isNetworkTransferEntityEnabled(true).isAutomaticTransferEnabled(true).build());
+
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder().build();
+        consolidationDetails1.setTransportMode(TRANSPORT_MODE_SEA);
+
+        ShipmentDetails shipmentDetails2 = ShipmentDetails.builder().shipmentId("AIR-CAN-00001").
+                transportMode(TRANSPORT_MODE_AIR).jobType("FCT").
+                direction(Constants.DIRECTION_EXP).receivingBranch(1L).masterBill("ABCD").
+                consolidationList(Collections.singletonList(consolidationDetails1)).build();
+
+        ShipmentDetails oldEntity = ShipmentDetails.builder().shipmentId("AIR-CAN-00001").
+                transportMode(TRANSPORT_MODE_AIR).jobType("FCT").
+                direction(Constants.DIRECTION_EXP).receivingBranch(2L).build();
+
+        QuartzJobInfo quartzJobInfo = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
+        quartzJobInfo.setId(1L);
+        when(quartzJobInfoDao.findByJobFilters(any(), any(), any())).thenReturn(Optional.of(quartzJobInfo));
+
+        doNothing().when(consolidationService).triggerAutomaticTransfer(any(),any(),any());
+        shipmentService.triggerAutomaticTransfer(shipmentDetails2, oldEntity, false);
+
+        verify(consolidationService, times(1)).triggerAutomaticTransfer(any(), any(), any());
+    }
+
+    @Test
+    void triggerAutomaticTransferTest15() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).isNetworkTransferEntityEnabled(true).isAutomaticTransferEnabled(true).build());
+
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder().build();
+        consolidationDetails1.setTransportMode(TRANSPORT_MODE_AIR);
+
+        ShipmentDetails shipmentDetails2 = ShipmentDetails.builder().shipmentId("AIR-CAN-00001").
+                transportMode(TRANSPORT_MODE_AIR).jobType("FCT").
+                direction(Constants.DIRECTION_EXP).receivingBranch(1L).houseBill("ABCD").
+                consolidationList(Collections.singletonList(consolidationDetails1)).build();
+
+        ShipmentDetails oldEntity = ShipmentDetails.builder().shipmentId("AIR-CAN-00001").
+                transportMode(TRANSPORT_MODE_AIR).jobType("FCT").
+                direction(Constants.DIRECTION_EXP).receivingBranch(2L).build();
+
+        QuartzJobInfo quartzJobInfo = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
+        quartzJobInfo.setId(1L);
+        when(quartzJobInfoDao.findByJobFilters(any(), any(), any())).thenReturn(Optional.of(quartzJobInfo));
+
+        doNothing().when(consolidationService).triggerAutomaticTransfer(any(),any(),any());
+        shipmentService.triggerAutomaticTransfer(shipmentDetails2, oldEntity, false);
+
+        verify(consolidationService, times(1)).triggerAutomaticTransfer(any(), any(), any());
+    }
+
+    @Test
     void testPopulateOriginDestinationAgentDetailsForBookingShipment_NoConsolidationList() {
         ShipmentDetails shipmentDetails1 = new ShipmentDetails();
         shipmentDetails1.setConsolidationList(Collections.emptyList());
