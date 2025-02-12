@@ -1700,7 +1700,7 @@ public class ContainerService implements IContainerService {
             List<ContainerPayloadDetails> payloadDetails = new ArrayList<>();
             for (Containers containers : containersList) {
                 if(!StringUtility.isEmpty(containers.getContainerNumber()) && containers.getShipmentsList()!=null  && !containers.getShipmentsList().isEmpty()) {
-                    List<ShipmentDetails> shipmentDetailsList = containers.getShipmentsList();
+                    Set<ShipmentDetails> shipmentDetailsList = containers.getShipmentsList();
                     for(ShipmentDetails shipmentDetail: shipmentDetailsList) {
                         String platformBookingRef = shipmentDetail.getBookingReference();
                         log.info("Platform Booking reference obtained: {}", platformBookingRef);
