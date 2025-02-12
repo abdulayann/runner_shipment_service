@@ -993,7 +993,8 @@ public class ReportService implements IReportService {
             dataRetrived.put(HAWB_PACKS_MAP, hawbPackageList);
             dataRetrived.put(ReportConstants.AIRLINE_NAME, reportRequest.getConsolAirline());
             AWBLabelReport.populateMawb(dataRetrived, reportRequest.getMawbNumber());
-            dataRetrived.put(ReportConstants.CONSOL_DESTINATION_AIRPORT_CODE_CAPS, reportRequest.getDestination());
+            dataRetrived.put(ReportConstants.MAWB_CAPS, reportRequest.getMawbNumber());
+            dataRetrived.put(ReportConstants.CONSOL_DESTINATION_AIRPORT_CODE, reportRequest.getDestination());
             dataRetrived.put(ReportConstants.TOTAL_CONSOL_PACKS, reportRequest.getTotalMawbPieces());
         }
 
