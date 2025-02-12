@@ -26,4 +26,5 @@ public class PartiesRequest extends CommonRequest implements IRunnerRequest {
     private Map<String, Object> orgData;
     private Map<String, Object> addressData;
     private Boolean isAddressFreeText;
+    private String countryCode;
 }

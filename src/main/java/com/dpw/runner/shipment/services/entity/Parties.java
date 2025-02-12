@@ -65,6 +65,10 @@ public class Parties extends MultiTenancy {
     @Column(name = "is_address_free_text")
     private Boolean isAddressFreeText;
 
+    @Column(name = "country_code")
+    @Size(max=32, message = "max limit is 170 for country_code")
+    private String countryCode;
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
