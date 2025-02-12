@@ -88,13 +88,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import javax.servlet.http.HttpServletResponse;
@@ -1375,6 +1369,7 @@ class ContainerServiceTest extends CommonMocks {
         c1.setId(1L);
         c1.setConsolidationId(1L);
         c1.setContainerNumber("C123");
+        c1.setShipmentsList(Collections.singletonList(ShipmentDetails.builder().bookingReference("DBFC-4317515-934863").build()));
         Containers c2 = new Containers();
         c2.setId(2L);
         c2.setContainerNumber("C456");
@@ -1392,7 +1387,6 @@ class ContainerServiceTest extends CommonMocks {
 
         when(jsonHelper.convertToJson(any(EventMessage.class))).thenReturn("jsonBody");
         when(modelMapper.map(any(), eq(ContainerBoomiUniversalJson.class))).thenReturn(containerBoomiUniversalJson);
-        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(ConsolidationDetails.builder().referenceNumber("ref123").build()));
 
         // Act
         containerService.pushContainersToDependentServices(containersList, oldContainers);
