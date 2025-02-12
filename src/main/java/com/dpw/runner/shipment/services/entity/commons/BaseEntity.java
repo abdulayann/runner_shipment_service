@@ -82,8 +82,7 @@ public class BaseEntity implements Serializable {
             this.guid = UUID.randomUUID();
         }
 
-        if(this instanceof Parties) {
-            Parties parties = (Parties) this;
+        if(this instanceof Parties parties) {
             if(Strings.isNullOrEmpty(parties.getOrgId()) && parties.getOrgData() != null && !parties.getOrgData().isEmpty() &&
                     parties.getOrgData().containsKey("Id")) {
                 parties.setOrgId((String) parties.getOrgData().get("Id"));
