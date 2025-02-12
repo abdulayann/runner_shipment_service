@@ -72,6 +72,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
+import java.math.BigDecimal;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.setIsNullOrEmpty;
+
 @Component
 @Slf4j
 public class AWBLabelReport extends IReport{
@@ -131,16 +138,16 @@ public class AWBLabelReport extends IReport{
             }
             else {
                 ShipmentDetails shipmentDetails = getShipmentDetails(id);
-                if(listIsNullOrEmpty(shipmentDetails.getConsolidationList()))
+                if(setIsNullOrEmpty(shipmentDetails.getConsolidationList()))
                     throw new RunnerException("Please attach the consolidation before printing Combi Labels");
-                consoleId = shipmentDetails.getConsolidationList().get(0).getId();
+                consoleId = shipmentDetails.getConsolidationList().iterator().next().getId();
                 consolidationDetails = getConsolidationsById(consoleId);
             }
             awbLabelModel.setConsolidation(getConsolidationModel(consolidationDetails));
             awbLabelModel.setAwb(getMawb(consoleId, true));
             awbLabelModel.getConsolidation().setConsoleGrossWeightAndUnit(getConsolGrossWeightAndUnit(awbLabelModel.getConsolidation()));
             awbLabelModel.setShipmentModels(new ArrayList<>());
-            if(!listIsNullOrEmpty(consolidationDetails.getShipmentsList())) {
+            if(!setIsNullOrEmpty(consolidationDetails.getShipmentsList())) {
                 for (ShipmentDetails shipmentDetails: consolidationDetails.getShipmentsList()) {
                     awbLabelModel.getShipmentModels().add(getShipment(shipmentDetails));
                 }

@@ -1,10 +1,5 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListRequestFromEntityId;
-
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
@@ -33,23 +28,6 @@ import com.dpw.runner.shipment.services.utils.ExcludeTenantFilter;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
-import java.lang.reflect.InvocationTargetException;
-import java.sql.Timestamp;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-import javax.persistence.Query;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.hibernate.jpa.TypedParameterValue;
@@ -61,6 +39,22 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
+
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+import javax.persistence.Query;
+import java.lang.reflect.InvocationTargetException;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListRequestFromEntityId;
 
 @Repository
 @Slf4j
@@ -628,10 +622,10 @@ public class EventDao implements IEventDao {
     @Override
     public void updateFieldsForShipmentGeneratedEvents(List<Events> eventsList, ShipmentDetails shipmentDetails) {
         // update events with consolidation id with condition
-        List<ConsolidationDetails> consolidationList = shipmentDetails.getConsolidationList();
+        Set<ConsolidationDetails> consolidationList = shipmentDetails.getConsolidationList();
         AtomicReference<Long> consolidationId = new AtomicReference<>(null);
         if(ObjectUtils.isNotEmpty(consolidationList)) {
-             consolidationId.set(consolidationList.get(0).getId());
+             consolidationId.set(consolidationList.iterator().next().getId());
         }
         eventsList.stream()
                 .map(vEvent -> updateUserFieldsInEvent(vEvent, false))

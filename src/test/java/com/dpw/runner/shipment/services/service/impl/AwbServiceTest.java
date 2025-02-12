@@ -44,8 +44,10 @@ import com.dpw.runner.shipment.services.utils.MasterDataKeyUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.logging.log4j.util.Strings;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
@@ -397,7 +399,7 @@ class AwbServiceTest extends CommonMocks {
         shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
         shipmentDetails.setMasterBill("098-2343234");
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().transportMode(Constants.TRANSPORT_MODE_SEA).build();
-        shipmentDetails.setConsolidationList(Collections.singletonList(consolidationDetails));
+        shipmentDetails.setConsolidationList(new HashSet<>(Collections.singletonList(consolidationDetails)));
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
 
         ResponseEntity<IRunnerResponse> httpResponse = awbService.createAwb(commonRequestModel);
@@ -467,7 +469,7 @@ class AwbServiceTest extends CommonMocks {
         shipmentDetails.setMasterBill("098-2343234");
         shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_STD);
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().transportMode(Constants.TRANSPORT_MODE_AIR).build();
-        shipmentDetails.setConsolidationList(Collections.singletonList(consolidationDetails));
+        shipmentDetails.setConsolidationList(new HashSet<>(Collections.singletonList(consolidationDetails)));
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
 
         ResponseEntity<IRunnerResponse> httpResponse = awbService.createAwb(commonRequestModel);
@@ -625,7 +627,7 @@ class AwbServiceTest extends CommonMocks {
         shipmentDetails.setMasterBill("098-2343234");
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().transportMode(Constants.TRANSPORT_MODE_AIR)
                         .consolidationType(Constants.SHIPMENT_TYPE_DRT).build();
-        shipmentDetails.setConsolidationList(Collections.singletonList(consolidationDetails));
+        shipmentDetails.setConsolidationList(new HashSet<>(Collections.singletonList(consolidationDetails)));
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
 
         ResponseEntity<IRunnerResponse> httpResponse = awbService.createAwb(commonRequestModel);
@@ -1084,7 +1086,7 @@ class AwbServiceTest extends CommonMocks {
         Long shipmentId = 1L;
         addConsolDataForMawbGeneration(testConsol);
         testShipment.setId(shipmentId);
-        testConsol.setShipmentsList(List.of(testShipment));
+        testConsol.setShipmentsList(Set.of(testShipment));
         testConsol.setSecurityStatus(Constants.SCO);
         testConsol.setInterBranchConsole(true);
         PackSummaryResponse packSummaryResponse = new PackSummaryResponse();
@@ -1148,7 +1150,7 @@ class AwbServiceTest extends CommonMocks {
         Long shipmentId = 1L;
         addConsolDataForMawbGeneration(testConsol);
         testShipment.setId(shipmentId);
-        testConsol.setShipmentsList(List.of(testShipment));
+        testConsol.setShipmentsList(Set.of(testShipment));
         testConsol.setSecurityStatus(Constants.SCO);
         testConsol.setInterBranchConsole(true);
         testConsol.setConsolidationType(Constants.SHIPMENT_TYPE_DRT);
@@ -1218,7 +1220,7 @@ class AwbServiceTest extends CommonMocks {
         Long shipmentId = 1L;
         addConsolDataForMawbGeneration(testConsol);
         testShipment.setId(shipmentId);
-        testConsol.setShipmentsList(List.of(testShipment));
+        testConsol.setShipmentsList(Set.of(testShipment));
         testConsol.setRoutingsList(null);
         testHawb.getAwbCargoInfo().setSci(AwbConstants.T1);
         PackSummaryResponse packSummaryResponse = new PackSummaryResponse();
@@ -1580,7 +1582,7 @@ class AwbServiceTest extends CommonMocks {
         Long shipmentId = 1L;
         addConsolDataForMawbGeneration(testConsol);
         testShipment.setId(shipmentId);
-        testConsol.setShipmentsList(List.of(testShipment));
+        testConsol.setShipmentsList(Set.of(testShipment));
         PackSummaryResponse packSummaryResponse = new PackSummaryResponse();
         packSummaryResponse.setVolumeUnit("M3");
         packSummaryResponse.setPacksVolume(new BigDecimal("1000.567"));
@@ -1640,7 +1642,7 @@ class AwbServiceTest extends CommonMocks {
         Long shipmentId = 1L;
         addConsolDataForMawbGeneration(testConsol);
         testShipment.setId(shipmentId);
-        testConsol.setShipmentsList(List.of(testShipment));
+        testConsol.setShipmentsList(Set.of(testShipment));
 
         AwbResponse mockMawbResponse = objectMapper.convertValue(testMawb, AwbResponse.class);
 
@@ -1666,7 +1668,7 @@ class AwbServiceTest extends CommonMocks {
         Long shipmentId = 1L;
         addConsolDataForMawbGeneration(testConsol);
         testShipment.setId(shipmentId);
-        testConsol.setShipmentsList(List.of(testShipment));
+        testConsol.setShipmentsList(Set.of(testShipment));
 
         when(awbDao.findById(anyLong())).thenReturn(Optional.of(testMawb));
         when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(testConsol));
@@ -1687,7 +1689,7 @@ class AwbServiceTest extends CommonMocks {
         Long shipmentId = 1L;
         addConsolDataForMawbGeneration(testConsol);
         testShipment.setId(shipmentId);
-        testConsol.setShipmentsList(List.of(testShipment));
+        testConsol.setShipmentsList(Set.of(testShipment));
         when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
         List<AddressDataV1> addressDataV1List = List.of(AddressDataV1.builder().build());
         when(jsonHelper.convertValueToList(any(), eq(AddressDataV1.class))).thenReturn(addressDataV1List);
@@ -1709,7 +1711,7 @@ class AwbServiceTest extends CommonMocks {
         Long shipmentId = 1L;
         addConsolDataForMawbGeneration(testConsol);
         testShipment.setId(shipmentId);
-        testConsol.setShipmentsList(List.of(testShipment));
+        testConsol.setShipmentsList(Set.of(testShipment));
         PackSummaryResponse packSummaryResponse = new PackSummaryResponse();
         packSummaryResponse.setPacksVolumeUnit("M3");
         packSummaryResponse.setPacksVolume(new BigDecimal("1000.567"));
@@ -1741,7 +1743,7 @@ class AwbServiceTest extends CommonMocks {
         Long shipmentId = 1L;
         addConsolDataForMawbGeneration(testConsol);
         testShipment.setId(shipmentId);
-        testConsol.setShipmentsList(List.of(testShipment));
+        testConsol.setShipmentsList(Set.of(testShipment));
 
         when(awbDao.findById(anyLong())).thenReturn(Optional.of(testMawb));
         when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(testConsol));
@@ -1761,7 +1763,7 @@ class AwbServiceTest extends CommonMocks {
         Long shipmentId = 1L;
         addConsolDataForMawbGeneration(testConsol);
         testShipment.setId(shipmentId);
-        testConsol.setShipmentsList(List.of(testShipment));
+        testConsol.setShipmentsList(Set.of(testShipment));
 
         when(awbDao.findById(anyLong())).thenReturn(Optional.of(testMawb));
         when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(testConsol));
@@ -2165,7 +2167,7 @@ class AwbServiceTest extends CommonMocks {
 
         // Reset Mocking
         testShipment.setId(shipmentId);
-        testConsol.setShipmentsList(List.of(testShipment));
+        testConsol.setShipmentsList(Set.of(testShipment));
 
 
         when(awbDao.findById(anyLong())).thenReturn(Optional.of(testMawb));
@@ -2229,7 +2231,7 @@ class AwbServiceTest extends CommonMocks {
         AwbResponse mockAwbResponse = objectMapper.convertValue(mockAwb, AwbResponse.class);
         addConsolDataForMawbGeneration(testConsol);
         testShipment.setId(1L);
-        testConsol.setShipmentsList(List.of(testShipment));
+        testConsol.setShipmentsList(Set.of(testShipment));
 
         var tenantSettings = new ShipmentSettingsDetails();
         tenantSettings.setAutoUpdateShipmentAWB(true);
@@ -3691,7 +3693,7 @@ class AwbServiceTest extends CommonMocks {
         Long shipmentId = 1L;
         addConsolDataForMawbGeneration(testConsol);
         testShipment.setId(shipmentId);
-        testConsol.setShipmentsList(List.of(testShipment));
+        testConsol.setShipmentsList(Set.of(testShipment));
         testConsol.setSecurityStatus(Constants.SCO);
         testConsol.setInterBranchConsole(true);
         PackSummaryResponse packSummaryResponse = new PackSummaryResponse();
@@ -3833,7 +3835,7 @@ class AwbServiceTest extends CommonMocks {
         consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         consolidationDetails.setConsolidationType(Constants.SHIPMENT_TYPE_STD);
 
-        shipment.setConsolidationList(List.of(consolidationDetails));
+        shipment.setConsolidationList(Set.of(consolidationDetails));
     }
 
 }

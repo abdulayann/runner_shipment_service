@@ -1,59 +1,24 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.inWords;
-import static com.dpw.runner.shipment.services.utils.StringUtility.isNotEmpty;
-import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
-
 import com.azure.messaging.servicebus.ServiceBusMessage;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.ContainerConstants;
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
-import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
-import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
-import com.dpw.runner.shipment.services.commons.requests.BulkUploadRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.commons.requests.ExportContainerListRequest;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
-import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CheckAllocatedDataChangeResponse;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CheckAllocatedDataChangesRequest;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerAssignListRequest;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerNumberCheckResponse;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerPackADInShipmentRequest;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
 import com.dpw.runner.shipment.services.dto.request.ContainerEventExcelModel;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.request.ContainersExcelModel;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.Events;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
@@ -81,37 +46,9 @@ import com.dpw.runner.shipment.services.syncing.impl.SyncEntityConversionService
 import com.dpw.runner.shipment.services.syncing.interfaces.IContainerSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IContainersSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IPackingsSync;
-import com.dpw.runner.shipment.services.utils.CSVParsingUtil;
-import com.dpw.runner.shipment.services.utils.CommonUtils;
-import com.dpw.runner.shipment.services.utils.ExcelCell;
-import com.dpw.runner.shipment.services.utils.ExcelUtils;
-import com.dpw.runner.shipment.services.utils.MasterDataUtils;
-import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.dpw.runner.shipment.services.utils.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.lang.reflect.Field;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.text.DecimalFormat;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import javax.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.ss.usermodel.Cell;
@@ -135,6 +72,25 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.ModelAttribute;
+
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.lang.reflect.Field;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.text.DecimalFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
+import static com.dpw.runner.shipment.services.utils.StringUtility.isNotEmpty;
+import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 @Slf4j
 @Service
@@ -1052,7 +1008,7 @@ public class ContainerService implements IContainerService {
                 .orElseThrow(() -> new DataRetrievalFailureException("Data not available for provided shipment request"));
 
         // Convert shipment's container list to List<ContainerResponse>
-        return jsonHelper.convertValueToList(shipmentDetails.getContainersList(), ContainerResponse.class);
+        return jsonHelper.convertValueToList(shipmentDetails.getContainersList().stream().toList(), ContainerResponse.class);
     }
 
     /**
@@ -1744,7 +1700,7 @@ public class ContainerService implements IContainerService {
             List<ContainerPayloadDetails> payloadDetails = new ArrayList<>();
             for (Containers containers : containersList) {
                 if(!StringUtility.isEmpty(containers.getContainerNumber()) && containers.getShipmentsList()!=null  && !containers.getShipmentsList().isEmpty()) {
-                    List<ShipmentDetails> shipmentDetailsList = containers.getShipmentsList();
+                    Set<ShipmentDetails> shipmentDetailsList = containers.getShipmentsList();
                     for(ShipmentDetails shipmentDetail: shipmentDetailsList) {
                         String platformBookingRef = shipmentDetail.getBookingReference();
                         log.info("Platform Booking reference obtained: {}", platformBookingRef);

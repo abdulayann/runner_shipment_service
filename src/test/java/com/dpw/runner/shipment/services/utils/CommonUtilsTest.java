@@ -2314,7 +2314,7 @@ class CommonUtilsTest {
         Map<String,Object> dictionary = new HashMap<>();
         CarrierDetails carrierDetails = CarrierDetails.builder().build();
 
-        List<Containers> containersList = new ArrayList<>();
+        Set<Containers> containersList = new HashSet<>();
         containersList.add(Containers.builder().containerCount(10l).hazardous(true).build());
 
         List<Packing> packingList = new ArrayList<>();
@@ -3248,8 +3248,8 @@ class CommonUtilsTest {
         mockConsolidation.setInterBranchConsole(false);
         mockConsolidation.setReceivingBranch(100L);
         mockConsolidation.setTenantId(100);
-        mockConsolidation.setShipmentsList(Collections.singletonList(mockShipment));
-        mockShipment.setConsolidationList(Collections.singletonList(mockConsolidation));
+        mockConsolidation.setShipmentsList(new HashSet<>(Collections.singletonList(mockShipment)));
+        mockShipment.setConsolidationList(new HashSet<>(Collections.singletonList(mockConsolidation)));
         when(shipmentDao.findShipmentByIdWithQuery(entityId)).thenReturn(Optional.of(mockShipment));
 
         List<Long> result = commonUtils.getTenantIdsFromEntity(entityId, Constants.SHIPMENT, true, true, false);
@@ -3272,8 +3272,8 @@ class CommonUtilsTest {
         mockConsolidation.setReceivingBranch(100L);
         mockConsolidation.setTenantId(100);
 
-        mockConsolidation.setShipmentsList(Collections.singletonList(mockShipment));
-        mockShipment.setConsolidationList(Collections.singletonList(mockConsolidation));
+        mockConsolidation.setShipmentsList(new HashSet<>(Collections.singletonList(mockShipment)));
+        mockShipment.setConsolidationList(new HashSet<>(Collections.singletonList(mockConsolidation)));
         when(shipmentDao.findShipmentByIdWithQuery(entityId)).thenReturn(Optional.of(mockShipment));
 
         List<Long> result = commonUtils.getTenantIdsFromEntity(entityId, Constants.SHIPMENT, true, false, true);
@@ -3299,8 +3299,8 @@ class CommonUtilsTest {
                 TriangulationPartner.builder().triangulationPartner(300L).build(),
                 TriangulationPartner.builder().triangulationPartner(400L).build()
         ));
-        mockConsolidation.setShipmentsList(Collections.singletonList(mockShipment));
-        mockShipment.setConsolidationList(Collections.singletonList(mockConsolidation));
+        mockConsolidation.setShipmentsList(new HashSet<>(Collections.singletonList(mockShipment)));
+        mockShipment.setConsolidationList(new HashSet<>(Collections.singletonList(mockConsolidation)));
         when(shipmentDao.findShipmentByIdWithQuery(entityId)).thenReturn(Optional.of(mockShipment));
 
         List<Long> result = commonUtils.getTenantIdsFromEntity(entityId, Constants.SHIPMENT, true, true, false);
@@ -3326,8 +3326,8 @@ class CommonUtilsTest {
                 TriangulationPartner.builder().triangulationPartner(300L).build(),
                 TriangulationPartner.builder().triangulationPartner(400L).build()
         ));
-        mockConsolidation.setShipmentsList(Collections.singletonList(mockShipment));
-        mockShipment.setConsolidationList(Collections.singletonList(mockConsolidation));
+        mockConsolidation.setShipmentsList(new HashSet<>(Collections.singletonList(mockShipment)));
+        mockShipment.setConsolidationList(new HashSet<>(Collections.singletonList(mockConsolidation)));
         when(shipmentDao.findShipmentByIdWithQuery(entityId)).thenReturn(Optional.of(mockShipment));
 
         List<Long> result = commonUtils.getTenantIdsFromEntity(entityId, Constants.SHIPMENT, false, true, false);
@@ -3362,8 +3362,8 @@ class CommonUtilsTest {
                 TriangulationPartner.builder().triangulationPartner(300L).build(),
                 TriangulationPartner.builder().triangulationPartner(400L).build()
         ));
-        mockConsolidation.setShipmentsList(Arrays.asList(mockShipment, mockShipment2));
-        mockShipment.setConsolidationList(Collections.singletonList(mockConsolidation));
+        mockConsolidation.setShipmentsList(new HashSet<>(Arrays.asList(mockShipment, mockShipment2)));
+        mockShipment.setConsolidationList(new HashSet<>(Collections.singletonList(mockConsolidation)));
         when(shipmentDao.findShipmentByIdWithQuery(entityId)).thenReturn(Optional.of(mockShipment));
 
         List<Long> result = commonUtils.getTenantIdsFromEntity(entityId, Constants.SHIPMENT, true, false, true);
@@ -3441,8 +3441,8 @@ class CommonUtilsTest {
                 TriangulationPartner.builder().triangulationPartner(300L).build(),
                 TriangulationPartner.builder().triangulationPartner(400L).build()
         ));
-        mockConsolidation.setShipmentsList(Collections.singletonList(mockShipment));
-        mockShipment.setConsolidationList(Collections.singletonList(mockConsolidation));
+        mockConsolidation.setShipmentsList(new HashSet<>(Collections.singletonList(mockShipment)));
+        mockShipment.setConsolidationList(new HashSet<>(Collections.singletonList(mockConsolidation)));
         when(consolidationDetailsDao.findConsolidationByIdWithQuery(entityId)).thenReturn(Optional.of(mockConsolidation));
 
         List<Long> result = commonUtils.getTenantIdsFromEntity(entityId, CONSOLIDATION, true, true, false);
@@ -3459,8 +3459,8 @@ class CommonUtilsTest {
         ConsolidationDetails mockConsolidation = new ConsolidationDetails();
         mockConsolidation.setInterBranchConsole(true);
         mockConsolidation.setTenantId(200);
-        mockConsolidation.setShipmentsList(Collections.singletonList(mockShipment));
-        mockShipment.setConsolidationList(Collections.singletonList(mockConsolidation));
+        mockConsolidation.setShipmentsList(new HashSet<>(Collections.singletonList(mockShipment)));
+        mockShipment.setConsolidationList(new HashSet<>(Collections.singletonList(mockConsolidation)));
         when(consolidationDetailsDao.findConsolidationByIdWithQuery(entityId)).thenReturn(Optional.of(mockConsolidation));
 
         List<Long> result = commonUtils.getTenantIdsFromEntity(entityId, CONSOLIDATION, false, true, false);
@@ -3495,8 +3495,8 @@ class CommonUtilsTest {
                 TriangulationPartner.builder().triangulationPartner(300L).build(),
                 TriangulationPartner.builder().triangulationPartner(400L).build()
         ));
-        mockConsolidation.setShipmentsList(Arrays.asList(mockShipment, mockShipment2));
-        mockShipment.setConsolidationList(Collections.singletonList(mockConsolidation));
+        mockConsolidation.setShipmentsList(new HashSet<>(Arrays.asList(mockShipment, mockShipment2)));
+        mockShipment.setConsolidationList(new HashSet<>(Collections.singletonList(mockConsolidation)));
         when(consolidationDetailsDao.findConsolidationByIdWithQuery(entityId)).thenReturn(Optional.of(mockConsolidation));
 
         List<Long> result = commonUtils.getTenantIdsFromEntity(entityId, CONSOLIDATION, true, false, true);

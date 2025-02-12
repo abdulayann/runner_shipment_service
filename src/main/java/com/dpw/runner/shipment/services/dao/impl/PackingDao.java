@@ -452,7 +452,7 @@ public class PackingDao implements IPackingDao {
         saveEntityFromContainer(packings.getContent(), null);
     }
 
-    public List<Packing> updateEntityFromShipment(List<Packing> packingList, Long shipmentId, List<Packing> oldEntityList, List<Packing> oldConsoleEntityList, List<Containers> containers, Map<UUID, String> packMap) throws RunnerException {
+    public List<Packing> updateEntityFromShipment(List<Packing> packingList, Long shipmentId, List<Packing> oldEntityList, List<Packing> oldConsoleEntityList, Set<Containers> containers, Map<UUID, String> packMap) throws RunnerException {
         String responseMsg;
         List<Packing> responsePackings = new ArrayList<>();
         Map<UUID, Packing> packingMap = new HashMap<>();

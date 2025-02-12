@@ -404,7 +404,7 @@ class MasterDataUtilsTest {
         when(cache.get(any())).thenReturn(null);
 
         // Act and Assert
-        var response = masterDataUtils.createInBulkContainerTypeRequest(mockShipmentDetailsResponse.getContainersList().get(0), Containers.class, new HashMap<>(), "Code", new HashMap<>());
+        var response = masterDataUtils.createInBulkContainerTypeRequest(mockShipmentDetailsResponse.getContainersList().iterator().next(), Containers.class, new HashMap<>(), "Code", new HashMap<>());
         assertNotNull(response);
         assertFalse(response.isEmpty());
     }
@@ -420,7 +420,7 @@ class MasterDataUtilsTest {
         when(cache.get(any())).thenReturn(EntityTransferMasterLists::new);
 
         // Act and Assert
-        var response = masterDataUtils.createInBulkContainerTypeRequest(mockShipmentDetailsResponse.getContainersList().get(0), Containers.class, new HashMap<>(), "Code", new HashMap<>());
+        var response = masterDataUtils.createInBulkContainerTypeRequest(mockShipmentDetailsResponse.getContainersList().iterator().next(), Containers.class, new HashMap<>(), "Code", new HashMap<>());
         assertNotNull(response);
         assertTrue(response.isEmpty());
 
@@ -437,7 +437,7 @@ class MasterDataUtilsTest {
         when(cache.get(any())).thenThrow(new RuntimeException("RuntimeException"));
 
         // Act and Assert
-        var t = assertThrows(Throwable.class, () -> masterDataUtils.createInBulkContainerTypeRequest(mockShipmentDetailsResponse.getContainersList().get(0), Containers.class, new HashMap<>(), "Code", new HashMap<>()));
+        var t = assertThrows(Throwable.class, () -> masterDataUtils.createInBulkContainerTypeRequest(mockShipmentDetailsResponse.getContainersList().iterator().next(), Containers.class, new HashMap<>(), "Code", new HashMap<>()));
         assertEquals(RuntimeException.class.getSimpleName(), t.getClass().getSimpleName());
     }
 
@@ -484,7 +484,7 @@ class MasterDataUtilsTest {
         when(cache.get(any())).thenReturn(null);
 
         // Act and Assert
-        var response = masterDataUtils.createInBulkCommodityTypeRequest(mockShipmentDetailsResponse.getContainersList().get(0), Containers.class, new HashMap<>(), "Code", new HashMap<>());
+        var response = masterDataUtils.createInBulkCommodityTypeRequest(mockShipmentDetailsResponse.getContainersList().iterator().next(), Containers.class, new HashMap<>(), "Code", new HashMap<>());
         assertNotNull(response);
         assertFalse(response.isEmpty());
     }
@@ -500,7 +500,7 @@ class MasterDataUtilsTest {
         when(cache.get(any())).thenReturn(EntityTransferMasterLists::new);
 
         // Act and Assert
-        var response = masterDataUtils.createInBulkCommodityTypeRequest(mockShipmentDetailsResponse.getContainersList().get(0), Containers.class, new HashMap<>(), "Code", new HashMap<>());
+        var response = masterDataUtils.createInBulkCommodityTypeRequest(mockShipmentDetailsResponse.getContainersList().iterator().next(), Containers.class, new HashMap<>(), "Code", new HashMap<>());
         assertNotNull(response);
         assertTrue(response.isEmpty());
 
@@ -517,7 +517,7 @@ class MasterDataUtilsTest {
         when(cache.get(any())).thenThrow(new RuntimeException("RuntimeException"));
 
         // Act and Assert
-        var t = assertThrows(Throwable.class, () -> masterDataUtils.createInBulkCommodityTypeRequest(mockShipmentDetailsResponse.getContainersList().get(0), Containers.class, new HashMap<>(), "Code", new HashMap<>()));
+        var t = assertThrows(Throwable.class, () -> masterDataUtils.createInBulkCommodityTypeRequest(mockShipmentDetailsResponse.getContainersList().iterator().next(), Containers.class, new HashMap<>(), "Code", new HashMap<>()));
         assertEquals(RuntimeException.class.getSimpleName(), t.getClass().getSimpleName());
     }
 
@@ -574,7 +574,7 @@ class MasterDataUtilsTest {
     void createInBulkCarriersRequest3() {
         // Arrange
         var mockShipmentDetailsResponse = objectMapper.convertValue(completeShipment, ShipmentDetailsResponse.class);
-        var container = mockShipmentDetailsResponse.getContainersList().get(0);
+        var container = mockShipmentDetailsResponse.getContainersList().iterator().next();
         Cache cache = mock(Cache.class);
 
         when(cacheManager.getCache(anyString())).thenReturn(cache);
@@ -676,7 +676,7 @@ class MasterDataUtilsTest {
     void createInBulkVesselsRequest3() {
         // Arrange
         var mockShipmentDetailsResponse = objectMapper.convertValue(completeShipment, ShipmentDetailsResponse.class);
-        var container = mockShipmentDetailsResponse.getContainersList().get(0);
+        var container = mockShipmentDetailsResponse.getContainersList().iterator().next();
         Cache cache = mock(Cache.class);
 
         when(cacheManager.getCache(anyString())).thenReturn(cache);
@@ -2230,7 +2230,7 @@ class MasterDataUtilsTest {
     void setConsolidationContainerTeuData() {
         boolean isSuccess = true;
         var mockConsolidation = new ConsolidationDetails();
-        mockConsolidation.setContainersList(completeShipment.getContainersList());
+        mockConsolidation.setContainersList(new ArrayList<>(completeShipment.getContainersList()));
         Cache cache = mock(Cache.class);
         when(cacheManager.getCache(anyString())).thenReturn(cache);
         when(keyGenerator.customCacheKeyForMasterData(anyString(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
@@ -2271,29 +2271,29 @@ class MasterDataUtilsTest {
         when(cacheManager.getCache(anyString())).thenReturn(cache);
         when(keyGenerator.customCacheKeyForMasterData(anyString(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
         when(cache.get(any())).thenReturn(() -> EntityTransferContainerType.builder().Teu(11.1).build());
-        assertNotNull(masterDataUtils.setContainerTeuDataWithContainers(completeShipment.getContainersList()));
+        assertNotNull(masterDataUtils.setContainerTeuDataWithContainers(new ArrayList<>(completeShipment.getContainersList())));
     }
 
 
     @Test
     void setContainerTeuData2WithContainerList() {
-        assertNotNull(masterDataUtils.setContainerTeuDataWithContainers(completeShipment.getContainersList()));
+        assertNotNull(masterDataUtils.setContainerTeuDataWithContainers(new ArrayList<>(completeShipment.getContainersList())));
     }
 
     @Test
     void setContainerTeuData3WithContainerList() {
         boolean isSuccess = true;
         var mockShipmentListResponse = objectMapper.convertValue(completeShipment, ShipmentDetails.class);
-        mockShipmentListResponse.getContainersList().get(0).setContainerCode(null);
-        assertNotNull(masterDataUtils.setContainerTeuDataWithContainers(mockShipmentListResponse.getContainersList()));
+        mockShipmentListResponse.getContainersList().iterator().next().setContainerCode(null);
+        assertNotNull(masterDataUtils.setContainerTeuDataWithContainers(new ArrayList<>(mockShipmentListResponse.getContainersList())));
     }
 
     @Test
     void setContainerTeuData4WithContainerList() {
         boolean isSuccess = true;
         var mockShipmentListResponse = objectMapper.convertValue(completeShipment, ShipmentDetails.class);
-        mockShipmentListResponse.getContainersList().get(0).setContainerCount(null);
-        assertNotNull(masterDataUtils.setContainerTeuDataWithContainers(mockShipmentListResponse.getContainersList()));
+        mockShipmentListResponse.getContainersList().iterator().next().setContainerCount(null);
+        assertNotNull(masterDataUtils.setContainerTeuDataWithContainers(new ArrayList<>(mockShipmentListResponse.getContainersList())));
     }
 
     @Test
@@ -2305,7 +2305,7 @@ class MasterDataUtilsTest {
         when(keyGenerator.customCacheKeyForMasterData(anyString(), any())).thenReturn(new StringBuilder(StringUtility.getRandomString(11)));
         when(cache.get(any())).thenReturn(() -> null);
 
-        assertNotNull(masterDataUtils.setContainerTeuDataWithContainers(mockShipmentListResponse.getContainersList()));
+        assertNotNull(masterDataUtils.setContainerTeuDataWithContainers(new ArrayList<>(mockShipmentListResponse.getContainersList())));
     }
 
     @Test

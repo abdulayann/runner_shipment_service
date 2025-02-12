@@ -1,53 +1,15 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
-import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
-import com.dpw.runner.shipment.services.commons.requests.BulkUploadRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.commons.requests.ExportContainerListRequest;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
-import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CheckAllocatedDataChangesRequest;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerAssignListRequest;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerNumberCheckResponse;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerPackADInShipmentRequest;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
 import com.dpw.runner.shipment.services.dto.request.ContainerEventExcelModel;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.request.ContainersExcelModel;
@@ -55,12 +17,7 @@ import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -85,19 +42,8 @@ import com.dpw.runner.shipment.services.utils.CSVParsingUtil;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.math.BigDecimal;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang3.StringUtils;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.mockito.ArgumentCaptor;
@@ -113,6 +59,19 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.math.BigDecimal;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith({MockitoExtension.class, SpringExtension.class})
 @Execution(CONCURRENT)
@@ -659,7 +618,7 @@ class ContainerServiceTest extends CommonMocks {
         testContainer.setAchievedWeightUnit(Constants.WEIGHT_UNIT_KG);
         testContainer.setAchievedVolumeUnit(Constants.VOLUME_UNIT_M3);
         testShipment.setShipmentType(Constants.CARGO_TYPE_FCL);
-        testContainer.setShipmentsList(List.of(testShipment));
+        testContainer.setShipmentsList(Set.of(testShipment));
         when(containerDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testContainer)));
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(objectMapper.convertValue(testContainer, ContainerResponse.class));
         when(masterDataUtils.createInBulkCommodityTypeRequest(any(), any(), any(), any(), any())).thenReturn(new ArrayList<>());
@@ -679,7 +638,7 @@ class ContainerServiceTest extends CommonMocks {
         testContainer.setAchievedWeightUnit(Constants.WEIGHT_UNIT_KG);
         testContainer.setAchievedVolumeUnit(Constants.VOLUME_UNIT_M3);
         testShipment.setShipmentType(Constants.CARGO_TYPE_FCL);
-        testContainer.setShipmentsList(List.of(testShipment));
+        testContainer.setShipmentsList(Set.of(testShipment));
         when(containerDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testContainer)));
         mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = containerService.getContainersForSelection(CommonRequestModel.buildRequest(containerAssignListRequest));
@@ -699,7 +658,7 @@ class ContainerServiceTest extends CommonMocks {
         testContainer.setAchievedWeightUnit(Constants.WEIGHT_UNIT_KG);
         testContainer.setAchievedVolumeUnit(Constants.VOLUME_UNIT_M3);
         testShipment.setShipmentType(Constants.CARGO_TYPE_FCL);
-        testContainer.setShipmentsList(List.of(testShipment));
+        testContainer.setShipmentsList(Set.of(testShipment));
         when(containerDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testContainer)));
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(objectMapper.convertValue(testContainer, ContainerResponse.class));
         when(masterDataUtils.createInBulkCommodityTypeRequest(any(), any(), any(), any(), any())).thenReturn(new ArrayList<>());
@@ -721,7 +680,7 @@ class ContainerServiceTest extends CommonMocks {
         testContainer.setAchievedWeightUnit(Constants.WEIGHT_UNIT_KG);
         testContainer.setAchievedVolumeUnit(Constants.VOLUME_UNIT_M3);
         testShipment.setShipmentType(Constants.CARGO_TYPE_FCL);
-        testContainer.setShipmentsList(List.of(testShipment));
+        testContainer.setShipmentsList(Set.of(testShipment));
         when(containerDao.findAll(any(), any())).thenThrow(new RuntimeException());
         mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = containerService.getContainersForSelection(CommonRequestModel.buildRequest(containerAssignListRequest));
@@ -1369,7 +1328,7 @@ class ContainerServiceTest extends CommonMocks {
         c1.setId(1L);
         c1.setConsolidationId(1L);
         c1.setContainerNumber("C123");
-        c1.setShipmentsList(Collections.singletonList(ShipmentDetails.builder().bookingReference("DBFC-4317515-934863").build()));
+        c1.setShipmentsList(new HashSet<>(Collections.singletonList(ShipmentDetails.builder().bookingReference("DBFC-4317515-934863").build())));
         Containers c2 = new Containers();
         c2.setId(2L);
         c2.setContainerNumber("C456");
@@ -1404,7 +1363,7 @@ class ContainerServiceTest extends CommonMocks {
         String moduleType = Constants.SHIPMENT;
 
         ShipmentDetails shipmentDetails = new ShipmentDetails();
-        shipmentDetails.setContainersList(List.of(new Containers()));
+        shipmentDetails.setContainersList(Set.of(new Containers()));
 
         List<ContainerResponse> containerResponses = List.of(new ContainerResponse());
 

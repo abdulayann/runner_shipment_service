@@ -20,10 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 @Service
 @Slf4j
@@ -80,7 +77,7 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
             response.setPackingList(jsonHelper.convertValueToList(syncEntityConversionService.packingsV1ToV2(request.getPackingList()), PackingRequest.class));
             response.setRoutingsList(jsonHelper.convertValueToList(syncEntityConversionService.routingsV1ToV2(request.getRoutingsList()), RoutingsRequest.class));
             mapReverseJobs(response, request);
-            response.setContainersList(jsonHelper.convertValueToList(syncEntityConversionService.containersV1ToV2(request.getContainersList()), ContainerRequest.class));
+            response.setContainersList(jsonHelper.convertValueToList(syncEntityConversionService.containersV1ToV2(request.getContainersList()).stream().toList(), ContainerRequest.class));
             response.setConsolidationAddresses(jsonHelper.convertValueToList(syncEntityConversionService.addressesV1ToV2(request.getConsolidationAddresses()), PartiesRequest.class));
             response.setFileRepoList(convertToList(request.getDocsList(), FileRepoRequest.class));
 
@@ -99,7 +96,7 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
     private void mapReverseShipmentGuids(ConsolidationDetailsRequest response, CustomConsolidationRequest request) {
         if(request == null || request.getShipmentGuids() == null)
             return;
-        List<ShipmentRequest> req = new ArrayList<>();
+        Set<ShipmentRequest> req = new HashSet<>();
         request.getShipmentGuids().forEach((key, value) -> {
             ShipmentRequest shipmentRequest = new ShipmentRequest();
             shipmentRequest.setGuid(key);

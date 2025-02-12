@@ -1,14 +1,13 @@
 package com.dpw.runner.shipment.services.adapters.impl;
 
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-
 import com.azure.messaging.servicebus.ServiceBusMessage;
 import com.dpw.runner.shipment.services.adapters.config.TrackingServiceConfig;
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.commons.constants.*;
+import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
+import com.dpw.runner.shipment.services.commons.constants.EventConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
@@ -23,13 +22,7 @@ import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiRe
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Details;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.entity.Awb;
-import com.dpw.runner.shipment.services.entity.CarrierDetails;
-import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.Events;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
@@ -43,19 +36,6 @@ import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.CountryListHelper;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.nimbusds.jose.util.Pair;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ForkJoinPool;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,6 +50,15 @@ import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ForkJoinPool;
+
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 
 @Slf4j
@@ -354,7 +343,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
     }
 
     private List<UniversalTrackingPayload.EntityDetail> GetContainerDetailsAttachedForShipment(ShipmentDetails inputShipment) {
-        return getEntityDetailsFromContainers(inputShipment.getContainersList());
+        return getEntityDetailsFromContainers(inputShipment.getContainersList() != null ? new ArrayList<>(inputShipment.getContainersList()) : null);
     }
 
 
