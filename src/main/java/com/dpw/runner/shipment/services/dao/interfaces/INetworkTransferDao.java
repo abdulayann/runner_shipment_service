@@ -39,4 +39,5 @@ public interface INetworkTransferDao {
 
     String findStatusByEntityIdAndEntityTypeAndTenantId(Long entityId, String entityType, Integer tenantId);
     String findByEntityGuidAndTenantId(UUID guid, Integer tenantId);
+    List<NetworkTransfer> findByEntityGuids(List<UUID> guid);
 }
