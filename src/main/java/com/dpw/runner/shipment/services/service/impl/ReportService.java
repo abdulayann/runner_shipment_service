@@ -977,7 +977,7 @@ public class ReportService implements IReportService {
             dataRetrived.put(ReportConstants.AIRLINE_NAME, reportRequest.getConsolAirline());
             AWBLabelReport.populateMawb(dataRetrived, reportRequest.getMawbNumber());
             dataRetrived.put(ReportConstants.MAWB_CAPS, reportRequest.getMawbNumber());
-            dataRetrived.put(ReportConstants.CONSOL_DESTINATION_AIRPORT_CODE_CAPS, reportRequest.getDestination().toUpperCase());
+            dataRetrived.put(ReportConstants.CONSOL_DESTINATION_AIRPORT_CODE_CAPS, StringUtility.toUpperCase(reportRequest.getDestination()));
             dataRetrived.put(ReportConstants.TOTAL_CONSOL_PACKS, reportRequest.getTotalMawbPieces());
         }
 
@@ -995,14 +995,14 @@ public class ReportService implements IReportService {
             dataRetrived.put(ReportConstants.AIRLINE_NAME, reportRequest.getConsolAirline());
             AWBLabelReport.populateMawb(dataRetrived, reportRequest.getMawbNumber());
             dataRetrived.put(ReportConstants.MAWB_CAPS, reportRequest.getMawbNumber());
-            dataRetrived.put(ReportConstants.CONSOL_DESTINATION_AIRPORT_CODE_CAPS, reportRequest.getDestination().toUpperCase());
+            dataRetrived.put(ReportConstants.CONSOL_DESTINATION_AIRPORT_CODE_CAPS, StringUtility.toUpperCase(reportRequest.getDestination()));
             dataRetrived.put(ReportConstants.TOTAL_CONSOL_PACKS, reportRequest.getTotalMawbPieces());
         }
 
         // Custom Air Labels-House dialogue box
         if(Boolean.TRUE.equals(reportRequest.getPrintCustomLabel()) && !reportRequest.isFromConsolidation()) {
             dataRetrived.put(ReportConstants.HAWB_NUMBER, reportRequest.getHawbNumber());
-            dataRetrived.put(ReportConstants.POD_AIRPORT_CODE_IN_CAPS, reportRequest.getDestination());
+            dataRetrived.put(ReportConstants.POD_AIRPORT_CODE_IN_CAPS, StringUtility.toUpperCase(reportRequest.getDestination()));
             dataRetrived.put(ReportConstants.TOTAL_PACKS, reportRequest.getTotalHawbPieces());
         }
 
