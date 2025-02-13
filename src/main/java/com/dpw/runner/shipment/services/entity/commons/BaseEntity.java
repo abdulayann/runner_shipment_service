@@ -85,11 +85,11 @@ public class BaseEntity implements Serializable {
         if(this instanceof Parties parties) {
             if(Strings.isNullOrEmpty(parties.getOrgId()) && parties.getOrgData() != null && !parties.getOrgData().isEmpty() &&
                     parties.getOrgData().containsKey("Id")) {
-                parties.setOrgId((String) parties.getOrgData().get("Id"));
+                parties.setOrgId(String.valueOf(parties.getOrgData().get("Id")));
             }
             if(Strings.isNullOrEmpty(parties.getAddressId()) && parties.getAddressData() != null && !parties.getAddressData().isEmpty() &&
                     parties.getAddressData().containsKey("Id")) {
-                parties.setAddressId((String) parties.getAddressData().get("Id"));
+                parties.setAddressId(String.valueOf(parties.getAddressData().get("Id")));
             }
         }
     }
