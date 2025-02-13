@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
-public class PackingListModel extends ShipmentPrintModel implements  IDocumentModel {
+public class PackingListModel extends ShipmentPrintModel implements IDocumentModel {
     public ConsolidationModel consolidation;
     public HblModel hbl;
     public LocalDateTime shippedOnBoard;

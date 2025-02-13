@@ -4,8 +4,10 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class RequestAuthContext {
-    private RequestAuthContext(){}
-    private static ThreadLocal<String> currentToken = new InheritableThreadLocal<>();
+    private static final ThreadLocal<String> currentToken = new InheritableThreadLocal<>();
+
+    private RequestAuthContext() {
+    }
 
     public static String getAuthToken() {
         return currentToken.get();
@@ -14,7 +16,8 @@ public class RequestAuthContext {
     public static void setAuthToken(String authToken) {
         currentToken.set(authToken);
     }
-    public static void removeToken(){
+
+    public static void removeToken() {
         currentToken.remove();
     }
 

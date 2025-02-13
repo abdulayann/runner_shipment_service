@@ -55,9 +55,6 @@ public class ConsolidationController {
     private final IShipmentService shipmentService;
     private final JsonHelper jsonHelper;
 
-    private static class MyResponseClass extends RunnerResponse<ConsolidationDetailsResponse> {}
-    private static class MyListResponseClass extends RunnerListResponse<ConsolidationDetailsResponse> {}
-    private static class MblCheckResponseClass extends RunnerResponse<MblCheckResponse> {}
     @Autowired
     public ConsolidationController(IConsolidationService consolidationService,
                                    IConsolidationSync consolidationSync,
@@ -109,7 +106,7 @@ public class ConsolidationController {
     public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest, @RequestParam(required = false) Boolean getFullConsolidation, @RequestParam(required = false, defaultValue = "false") boolean getMasterData) {
         log.info("Received Consolidation list request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(listCommonRequest));
         try {
-            if(Boolean.TRUE.equals(getFullConsolidation)) {
+            if (Boolean.TRUE.equals(getFullConsolidation)) {
                 return consolidationService.fullConsolidationsList(CommonRequestModel.buildRequest(listCommonRequest));
             }
             return consolidationService.list(CommonRequestModel.buildRequest(listCommonRequest), getMasterData);
@@ -245,14 +242,13 @@ public class ConsolidationController {
         return consolidationService.detachShipments(request.getId(), request.getShipmentIds(), request.getRemarks());
     }
 
-    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CALCULATION_SUCCESSFUL, response = RunnerResponse.class) })
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CALCULATION_SUCCESSFUL, response = RunnerResponse.class)})
     @PostMapping(ApiConstants.CALCULATE_CONTAINER_SUMMARY)
     public ResponseEntity<IRunnerResponse> calculateContainerSummary(@RequestBody CalculateContainerSummaryRequest calculateContainerSummaryRequest) {
         String responseMsg;
         try {
             return consolidationService.calculateContainerSummary(CommonRequestModel.buildRequest(calculateContainerSummaryRequest));
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_CALCULATION_ERROR;
             log.error(responseMsg, e);
@@ -260,14 +256,13 @@ public class ConsolidationController {
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CALCULATION_SUCCESSFUL, response = RunnerResponse.class) })
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CALCULATION_SUCCESSFUL, response = RunnerResponse.class)})
     @PostMapping(ApiConstants.CALCULATE_PACK_SUMMARY)
     public ResponseEntity<IRunnerResponse> calculatePackSummary(@RequestBody CalculatePackSummaryRequest calculatePackSummaryRequest) {
         String responseMsg;
         try {
             return consolidationService.calculatePackSummary(CommonRequestModel.buildRequest(calculatePackSummaryRequest));
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_CALCULATION_ERROR;
             log.error(responseMsg, e);
@@ -275,29 +270,27 @@ public class ConsolidationController {
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CALCULATION_SUCCESSFUL, response = RunnerResponse.class) })
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CALCULATION_SUCCESSFUL, response = RunnerResponse.class)})
     @PostMapping(ApiConstants.GET_PACK_UTILISATION)
     public ResponseEntity<IRunnerResponse> calculatePackUtilisation(@RequestBody CalculatePackUtilizationRequest calculatePackUtilizationRequest) {
         String responseMsg;
         try {
             return consolidationService.calculatePackUtilisation(CommonRequestModel.buildRequest(calculatePackUtilizationRequest));
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
-                : DaoConstants.DAO_CALCULATION_ERROR;
+                    : DaoConstants.DAO_CALCULATION_ERROR;
             log.error(responseMsg, e);
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @ApiResponses(value = { @ApiResponse(code = 200, message = ConsolidationConstants.LIST_SUCCESSFUL, response = RunnerResponse.class) })
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.LIST_SUCCESSFUL, response = RunnerResponse.class)})
     @PostMapping(ApiConstants.LIST_PACKS_FOR_ASSIGN_DETACH)
     public ResponseEntity<IRunnerResponse> listPacksForAssignDetach(@RequestBody ConsolePacksListRequest request) {
         String responseMsg;
         try {
             return consolidationService.listPacksForAssignDetach(CommonRequestModel.buildRequest(request));
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
             log.error(responseMsg, e);
@@ -305,14 +298,13 @@ public class ConsolidationController {
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @ApiResponses(value = { @ApiResponse(code = 200, message = ConsolidationConstants.ASSIGN_SUCCESSFUL, response = RunnerResponse.class) })
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ConsolidationConstants.ASSIGN_SUCCESSFUL, response = RunnerResponse.class)})
     @PostMapping(ApiConstants.ASSIGN_PACKS_SHIPMENTS)
     public ResponseEntity<IRunnerResponse> assignPacksAndShipments(@RequestBody ContainerShipmentADInConsoleRequest request) {
         String responseMsg;
         try {
             return consolidationService.assignPacksAndShipments(CommonRequestModel.buildRequest(request));
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
             log.error(responseMsg, e);
@@ -320,14 +312,13 @@ public class ConsolidationController {
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @ApiResponses(value = { @ApiResponse(code = 200, response = RunnerResponse.class, message = ConsolidationConstants.DETACH_SUCCESSFUL) })
+    @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ConsolidationConstants.DETACH_SUCCESSFUL)})
     @PostMapping(ApiConstants.DETACH_PACKS_SHIPMENTS)
     public ResponseEntity<IRunnerResponse> detachPacksAndShipments(@RequestBody ContainerShipmentADInConsoleRequest request) {
         String responseMsg;
         try {
             return consolidationService.detachPacksAndShipments(CommonRequestModel.buildRequest(request));
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
             log.error(responseMsg, e);
@@ -399,7 +390,7 @@ public class ConsolidationController {
     @ApiResponses(value = {@ApiResponse(code = 200, response = MblCheckResponseClass.class, message = ConsolidationConstants.MBL_NUMBER_CHECK_SUCCESSFUL)})
     @GetMapping("/mbl-check")
     public ResponseEntity<IRunnerResponse> mblCheck(@ApiParam(value = ConsolidationConstants.MBL_NUMBER, required = true) @RequestParam String mblNumber) {
-            return consolidationService.mblCheck(mblNumber);
+        return consolidationService.mblCheck(mblNumber);
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ShipmentConstants.MASTER_DATA_RETRIEVE_SUCCESS)})
@@ -471,6 +462,7 @@ public class ConsolidationController {
             return ResponseHelper.buildFailedResponse(e.getMessage());
         }
     }
+
     @ApiResponses(value = {@ApiResponse(code = 200, response = ValidateMawbNumberResponse.class, message = "Successful Shipment Details Data List Retrieval")})
     @PostMapping(value = ApiConstants.VALIDATE_MAWB)
     public ResponseEntity<IRunnerResponse> validateMawbNumber(@Valid @RequestBody @NonNull ValidateMawbNumberRequest request) {
@@ -559,6 +551,15 @@ public class ConsolidationController {
             log.error(e.getLocalizedMessage());
             return ResponseHelper.buildFailedResponse(e.getMessage());
         }
+    }
+
+    private static class MyResponseClass extends RunnerResponse<ConsolidationDetailsResponse> {
+    }
+
+    private static class MyListResponseClass extends RunnerListResponse<ConsolidationDetailsResponse> {
+    }
+
+    private static class MblCheckResponseClass extends RunnerResponse<MblCheckResponse> {
     }
 
 }

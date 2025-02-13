@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.utils.Generated;
 
 import java.util.List;
 import java.util.Optional;
+
 @Generated
 public interface IIntegrationRespsonseRepository extends MultiTenancyRepository<IntegrationResponse> {
 

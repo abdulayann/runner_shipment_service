@@ -21,12 +21,10 @@ public class TenantSettingsService {
     private IV1Service v1Service;
 
     @Cacheable(cacheNames = CacheConstants.CACHE_KEY_USER, keyGenerator = "customKeyGenerator")
-    public V1TenantSettingsResponse getV1TenantSettings(Integer tenantId)
-    {
+    public V1TenantSettingsResponse getV1TenantSettings(Integer tenantId) {
         log.info("Request: {} getV1TenantSettings --- for tenant: {}", LoggerHelper.getRequestIdFromMDC(), tenantId);
         V1RetrieveResponse dependentServiceResponse = v1Service.retrieveTenantSettings();
-        if(dependentServiceResponse != null)
-        {
+        if (dependentServiceResponse != null) {
             var tenantSettings = modelMapper.map(dependentServiceResponse.getEntity(), V1TenantSettingsResponse.class);
             return tenantSettings;
         }

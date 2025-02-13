@@ -17,12 +17,11 @@ import java.util.Map;
 @Builder
 public class UsersDto implements Serializable {
     private static final long serialVersionUID = 1L;
-    private Integer Id;
     public String Username;
     public String DisplayName;
     public String Email;
     public String Phone;
-    public Boolean IsAdmin;;
+    public Boolean IsAdmin;
     public Integer TenantId;
     public String Code; //Tenant Code
     public String CompanyCode;
@@ -54,9 +53,7 @@ public class UsersDto implements Serializable {
     public String QuoteFooter;
     public Boolean QuoteNumberLock;
     public String QuotePrefix;
-    public Boolean OrgCodeLock ;
-    @JsonProperty("Permissions")
-    private Map<String, Boolean> Permissions;
+    public Boolean OrgCodeLock;
     public String EmployeeToken;
     public List<String> userAllowedPermissions;
     public HashSet<String> customeTenantCountry;
@@ -75,7 +72,6 @@ public class UsersDto implements Serializable {
     public Boolean EnableSavedFilters;
     public Integer DepartmentId;
     public String DepartmentName;
-
     public String GwEmpCode;
     public String GwDeptCode;
     public String Erp10EmpCode;
@@ -85,5 +81,8 @@ public class UsersDto implements Serializable {
     public String AgentCASSCode;
     public Integer SyncTenantId;
     public String LanguageCode;
+    private Integer Id;
+    @JsonProperty("Permissions")
+    private Map<String, Boolean> Permissions;
 
 }

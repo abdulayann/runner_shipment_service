@@ -12,10 +12,13 @@ import java.util.List;
 import java.util.Optional;
 
 
-@Repository @Generated
+@Repository
+@Generated
 public interface IAllocationsRepository extends MultiTenancyRepository<Allocations> {
     List<Allocations> findAll();
+
     Page<Allocations> findAll(Specification<Allocations> spec, Pageable pageable);
+
     default Optional<Allocations> findById(Long id) {
         Specification<Allocations> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("id"), id);
         return findOne(spec);

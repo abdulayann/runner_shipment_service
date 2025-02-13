@@ -9,5 +9,6 @@ import java.util.List;
 
 public interface IEventDumpDao {
     Page<EventsDump> findAll(Specification<EventsDump> spec, Pageable pageable);
+
     List<EventsDump> saveAll(List<EventsDump> eventsList);
 }

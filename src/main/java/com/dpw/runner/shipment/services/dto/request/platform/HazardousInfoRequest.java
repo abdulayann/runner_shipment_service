@@ -7,7 +7,8 @@ import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 
-@Data @Builder
+@Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class HazardousInfoRequest implements Serializable {

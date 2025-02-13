@@ -11,7 +11,8 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
-@Repository @Generated
+@Repository
+@Generated
 public interface IBookingChargesRepository extends MultiTenancyRepository<BookingCharges> {
     List<BookingCharges> findAll();
 

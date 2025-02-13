@@ -7,7 +7,8 @@ import lombok.Setter;
 import java.io.Serializable;
 
 @Getter
-@Setter @Generated
+@Setter
+@Generated
 public class DocumentRequest<T> implements Serializable {
     private T data;
     private DocumentOption options;

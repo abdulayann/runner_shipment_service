@@ -23,7 +23,7 @@ import javax.persistence.*;
 @ToString(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @AllArgsConstructor
-@TypeDef(name = "jsonb", typeClass = JsonBinaryType.class )
+@TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
 @SQLDelete(sql = "UPDATE integration_responses SET is_deleted = true WHERE id=?")
 @Where(clause = "is_deleted = false")
 public class IntegrationResponse extends MultiTenancy {

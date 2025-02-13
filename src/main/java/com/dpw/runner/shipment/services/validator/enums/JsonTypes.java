@@ -1,4 +1,5 @@
 package com.dpw.runner.shipment.services.validator.enums;
+
 public enum JsonTypes {
     OBJECT("object"),
     ARRAY("array"),
@@ -23,7 +24,7 @@ public enum JsonTypes {
         throw new IllegalArgumentException("Invalid JsonType value: " + value);
     }
 
-    public String  getValue() {
+    public String getValue() {
         return value;
     }
 

@@ -5,7 +5,8 @@ import lombok.*;
 
 @Builder
 @Data
-@Getter @Setter
+@Getter
+@Setter
 @AllArgsConstructor
 @NoArgsConstructor
 public class EventMessage {

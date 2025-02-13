@@ -11,11 +11,16 @@ import java.util.UUID;
 
 public interface ITiLegDao {
     TiLegs save(TiLegs tiLegs);
+
     List<TiLegs> saveAll(List<TiLegs> tiLegsList);
+
     Optional<TiLegs> findByGuid(UUID id);
 
     Page<TiLegs> findAll(Specification<TiLegs> spec, Pageable pageable);
+
     Optional<TiLegs> findById(Long id);
+
     void delete(TiLegs tiLegs);
+
     List<TiLegs> updateTiLegDetails(List<TiLegs> tiLegsList);
 }

@@ -8,5 +8,6 @@ import com.dpw.runner.shipment.services.utils.Generated;
 @Generated
 public interface ISequenceIncrementorRepository extends MultiTenancyRepository<SequenceIncrementor> {
     SequenceIncrementor save(SequenceIncrementor request);
+
     void delete(SequenceIncrementor request);
 }

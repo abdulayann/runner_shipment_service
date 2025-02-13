@@ -19,6 +19,7 @@ public class ShipmentOrderDao implements IShipmentOrderDao {
 
     @Autowired
     private IShipmentOrderRepository shipmentOrderRepository;
+
     @Override
     public ShipmentOrder save(ShipmentOrder shipmentOrder) {
         return shipmentOrderRepository.save(shipmentOrder);
@@ -58,12 +59,11 @@ public class ShipmentOrderDao implements IShipmentOrderDao {
 
         if (!incomingIds.isEmpty()) {
             shipmentOrderRepository.deleteByIdNotInAndShipmentId(incomingIds, shipmentId);
-        }
-        else {
+        } else {
             shipmentOrderRepository.deleteAllByShipmentId(shipmentId);
         }
 
-        for(ShipmentOrder shipmentOrder : shipmentOrders){
+        for (ShipmentOrder shipmentOrder : shipmentOrders) {
             shipmentOrder.setShipmentId(shipmentId);
         }
 

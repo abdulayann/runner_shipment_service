@@ -14,6 +14,12 @@ import java.util.UUID;
 @NoArgsConstructor
 @Data
 public class OrderManagementDTO implements IRunnerResponse {
+    public String shipmentETA;
+    public String shipmentETD;
+    public String shipmentATA;
+    public String shipmentATD;
+    public Boolean isLocked;
+    public String createdBy;
     private String orderId;
     private UUID guid;
     private String orderNumber;
@@ -21,16 +27,13 @@ public class OrderManagementDTO implements IRunnerResponse {
     private String confirmationNumber;
     private String invoiceNumber;
     private String orderType;
-
     private String orderDate;
     private String pickupDate;
     private String expectedDeliveryDate;
     private String confirmationDate;
     private String invoiceDate;
-
     private String goodsDescription;
     private String incoTerm;
-
     private String serviceMode;
     private String countryOfOriginCode;
     private String countryOfOriginName;
@@ -40,7 +43,6 @@ public class OrderManagementDTO implements IRunnerResponse {
     private String orderState;
     private String transportMode;
     private Long tenantId;
-
     private String consolidationId;
     private String origin;
     private String destination;
@@ -54,10 +56,6 @@ public class OrderManagementDTO implements IRunnerResponse {
     private QuantityPair packsAmount;
     private QuantityPair volumeAmount;
     private QuantityPair weightAmount;
-    public String shipmentETA;
-    public String shipmentETD;
-    public String shipmentATA;
-    public String shipmentATD;
     private String terminalCutOffDate;
     private List<OrderLineResponse> orderLines;
     private List<OrderContainerResponse> containers;
@@ -65,9 +63,6 @@ public class OrderManagementDTO implements IRunnerResponse {
     private List<OrderDocumentResponse> documents;
     private List<OrderManagementDTO> splitOrders;
     private List<ReferencesResponse> references;
-    public Boolean isLocked;
-    public String createdBy;
-
     private String originName;
     private String destinationName;
     private String originPortName;
@@ -76,5 +71,5 @@ public class OrderManagementDTO implements IRunnerResponse {
     private String supplierName;
 
     private List<OrderPartiesResponse> parties;
-    
+
 }

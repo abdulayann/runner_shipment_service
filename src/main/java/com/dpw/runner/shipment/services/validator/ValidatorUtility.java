@@ -26,10 +26,10 @@ import java.util.stream.Collectors;
 @Slf4j
 public class ValidatorUtility {
 
+    private static final Map<String, List<Validations>> validationsMap = new HashMap();
     private final ObjectMapper objectMapper;
     private final IValidationsDao validationsDao;
 
-    private static Map<String, List<Validations>> validationsMap = new HashMap();
     @Autowired
     public ValidatorUtility(ObjectMapper objectMapper, IValidationsDao validationsDao) {
         this.objectMapper = objectMapper;
@@ -39,6 +39,7 @@ public class ValidatorUtility {
 
     /**
      * * This method would be called while applying any validation
+     *
      * @param json
      * @param entity
      * @param lifecycleHook
@@ -75,8 +76,7 @@ public class ValidatorUtility {
     private Set<String> validateJson(JsonObject jsonObject, JsonObject schemaObject, Map<String, Object> jsonMap, boolean failOnFirst) {
         try {
             return validateFields(jsonObject, schemaObject.getJsonObject(ValidatorConstants.PROPERTIES), jsonMap, failOnFirst);
-        }
-        catch (Exception ex) {
+        } catch (Exception ex) {
             log.error("Validation failed due to {}", ex.getMessage());
             ex.printStackTrace();
             throw ex;
@@ -156,7 +156,7 @@ public class ValidatorUtility {
                 }
 
                 /** Whenever fails-on-first will be enabled, rest of the validations will not be checked */
-                if (failOnFirst && ! errors.isEmpty())
+                if (failOnFirst && !errors.isEmpty())
                     return errors;
             }
         }
@@ -168,7 +168,7 @@ public class ValidatorUtility {
         Set<String> errors = new LinkedHashSet();
         JsonValue fieldValue = jsonObject.get(at);
         if (jsonSchema.containsKey(ValidatorConstants.REQUIRED) && jsonSchema.getBoolean(ValidatorConstants.REQUIRED)
-                && (fieldValue == null || fieldValue.getValueType() == JsonValue.ValueType.NULL || (fieldValue.getValueType() == JsonValue.ValueType.STRING && StringUtility.isEmpty(jsonObject.getString(at)))) ) {
+                && (fieldValue == null || fieldValue.getValueType() == JsonValue.ValueType.NULL || (fieldValue.getValueType() == JsonValue.ValueType.STRING && StringUtility.isEmpty(jsonObject.getString(at))))) {
             errors.add(String.format(ErrorConstants.INVALID_REQUIRED_FIELD_VALIDATION, at));
         }
         return errors;
@@ -279,7 +279,7 @@ public class ValidatorUtility {
     }
 
 
-    private  Set<String> validateEnum(JsonObject jsonObject, JsonObject jsonSchema, String at) {
+    private Set<String> validateEnum(JsonObject jsonObject, JsonObject jsonSchema, String at) {
         Set<String> errors = new LinkedHashSet();
         JsonValue fieldValue = jsonObject.get(at);
         if (fieldValue != null) {
@@ -333,13 +333,13 @@ public class ValidatorUtility {
                     break;
 
                 case DATE:
-                    if (! isValidaDate(jsonObject.getString(at)))
+                    if (!isValidaDate(jsonObject.getString(at)))
                         errors.add(String.format(ErrorConstants.INVALID_FIELD_TYPE_VALIDATION, at, fieldValue.getValueType(), schemaValue));
                     break;
 
                 case DATE_TIME:
-                   if (! isValidaDateTime(jsonObject.getString(at)))
-                       errors.add(String.format(ErrorConstants.INVALID_FIELD_TYPE_VALIDATION, at, fieldValue.getValueType(), schemaValue));
+                    if (!isValidaDateTime(jsonObject.getString(at)))
+                        errors.add(String.format(ErrorConstants.INVALID_FIELD_TYPE_VALIDATION, at, fieldValue.getValueType(), schemaValue));
                     break;
 
                 case BOOLEAN:
@@ -398,7 +398,7 @@ public class ValidatorUtility {
                             case TRUE:
 
                             case FALSE:
-                                if (! jsonMap.containsKey(compareWith) || ((Boolean) jsonMap.get(compareWith) != jsonObject.getBoolean(at)))
+                                if (!jsonMap.containsKey(compareWith) || ((Boolean) jsonMap.get(compareWith) != jsonObject.getBoolean(at)))
                                     errors.add(String.format(ErrorConstants.INVALID_COMPARISION_VALIDATION, at, compareWith));
                                 break;
                             default:
@@ -555,8 +555,8 @@ public class ValidatorUtility {
     /**
      * Validating conditional-comparison
      * Supported validations:
-     *      1. Data-type supported: String, number & date
-     *      2. Operations supported: Equals, not-equals & in
+     * 1. Data-type supported: String, number & date
+     * 2. Operations supported: Equals, not-equals & in
      */
     private Set<String> validateConditionalCompare(JsonObject jsonObject, JsonObject jsonSchema, String at, Map<String, Object> jsonMap) {
         Set<String> errors = new LinkedHashSet();
@@ -663,8 +663,8 @@ public class ValidatorUtility {
     /**
      * Validating array-properties
      * Supported validations:
-     *      1. Array: Type, Min-size, Max-size, Unique (property) * *
-     *      2. Array properties: All root level field validation*
+     * 1. Array: Type, Min-size, Max-size, Unique (property) * *
+     * 2. Array properties: All root level field validation*
      */
     private Set<String> validateArrayProperties(JsonObject jsonObject, JsonObject jsonSchema, String at, Map jsonMap) {
         Set<String> errors = new LinkedHashSet();
@@ -679,7 +679,7 @@ public class ValidatorUtility {
                     break;
 
                 case ValidatorConstants.UNIQUE:
-                    for (JsonValue value :  jsonSchema.getJsonArray(ValidatorConstants.UNIQUE)) {
+                    for (JsonValue value : jsonSchema.getJsonArray(ValidatorConstants.UNIQUE)) {
                         String uniqueKey = value.toString().replace("\"", "");
                         Set<JsonValue> set = new HashSet<>();
 

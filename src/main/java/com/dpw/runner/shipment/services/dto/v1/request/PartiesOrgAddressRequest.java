@@ -12,11 +12,11 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PartiesOrgAddressRequest {
-  @JsonProperty("Party")
-  PartiesRequest party;
-  @JsonProperty("OrgCode")
-  private String OrgCode;
-  @JsonProperty("AddressCode")
-  private String AddressCode;
+    @JsonProperty("Party")
+    PartiesRequest party;
+    @JsonProperty("OrgCode")
+    private String OrgCode;
+    @JsonProperty("AddressCode")
+    private String AddressCode;
 
 }

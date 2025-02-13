@@ -1,4 +1,5 @@
 package com.dpw.runner.shipment.services.service_bus;
+
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Value;
 

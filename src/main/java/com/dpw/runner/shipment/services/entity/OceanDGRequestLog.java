@@ -1,12 +1,9 @@
 package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
+import lombok.*;
+
 import java.time.LocalDateTime;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 
 @NoArgsConstructor
@@ -16,6 +13,6 @@ import lombok.Setter;
 @Setter
 public class OceanDGRequestLog extends BaseEntity {
 
-  private LocalDateTime time;
-  private String userName;
+    private LocalDateTime time;
+    private String userName;
 }

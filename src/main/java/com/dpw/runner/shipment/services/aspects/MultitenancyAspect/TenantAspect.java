@@ -34,7 +34,7 @@ public class TenantAspect {
     @Before("execution(* com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancyRepository+.*(..))")
     public void beforeFindOfMultiTenancyRepository(JoinPoint joinPoint) {
 
-        if(checkExcludeTenantFilter(joinPoint)) {
+        if (checkExcludeTenantFilter(joinPoint)) {
             return;
         }
 
@@ -50,13 +50,12 @@ public class TenantAspect {
         long tenantId = TenantContext.getCurrentTenant();
 
         Map<String, Boolean> permissions = Optional.ofNullable(UserContext.getUser()).map(UsersDto::getPermissions).orElse(new HashMap<>());
-        
-        
+
+
         InterBranchDto interBranchDto = commonUtils.getInterBranchContext();
-        if(!Objects.isNull(interBranchDto)
-                && !Objects.isNull(clazz.getAnnotation(InterBranchEntity.class)))
-        {
-            var tenantIds = new ArrayList<>(Arrays.asList(TenantContext.getCurrentTenant()));
+        if (!Objects.isNull(interBranchDto)
+                && !Objects.isNull(clazz.getAnnotation(InterBranchEntity.class))) {
+            var tenantIds = new ArrayList<>(Collections.singletonList(TenantContext.getCurrentTenant()));
             if (Boolean.TRUE.equals(interBranchDto.isCoLoadStation()) && !Objects.isNull(interBranchDto.getHubTenantIds()))
                 tenantIds.addAll(interBranchDto.getHubTenantIds());
             if (Boolean.TRUE.equals(interBranchDto.isHub()) && !Objects.isNull(interBranchDto.getColoadStationsTenantIds()))
@@ -65,19 +64,17 @@ public class TenantAspect {
             entityManager.unwrap(Session.class)
                     .enableFilter(MultiTenancy.MULTI_BRANCH_FILTER_NAME)
                     .setParameterList(MultiTenancy.TENANT_PARAMETER_NAME, tenantIds.stream().map(Integer::longValue).toList());
-        }
-
-        else if (!permissions.containsKey(PermissionConstants.tenantSuperAdmin) && !permissions.containsKey(PermissionConstants.crossTenantListPermission) && !permissions.containsKey(PermissionConstants.crossTenantRetrievePermission) && !permissions.containsKey(PermissionConstants.companySuperAdmin)) {
+        } else if (!permissions.containsKey(PermissionConstants.tenantSuperAdmin) && !permissions.containsKey(PermissionConstants.crossTenantListPermission) && !permissions.containsKey(PermissionConstants.crossTenantRetrievePermission) && !permissions.containsKey(PermissionConstants.companySuperAdmin)) {
             entityManager.unwrap(Session.class)
                     .enableFilter(MultiTenancy.TENANT_FILTER_NAME)
                     .setParameter(MultiTenancy.TENANT_PARAMETER_NAME, tenantId);
         }
     }
+
     private boolean checkExcludeTenantFilter(JoinPoint joinPoint) {
-        if(joinPoint != null) {
+        if (joinPoint != null) {
             MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
-            if(!Objects.isNull(methodSignature))
-            {
+            if (!Objects.isNull(methodSignature)) {
                 Method method = methodSignature.getMethod();
                 return method.isAnnotationPresent(ExcludeTenantFilter.class);
             }

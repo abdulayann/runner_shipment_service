@@ -37,7 +37,7 @@ public class EventsSync implements IEventsSync {
         if (!Boolean.TRUE.equals(SyncingContext.getContext()))
             return ResponseHelper.buildSuccessResponse();
         List<EventsRequestV2> eventsRequestV2List;
-        if(eventsList != null && eventsList.size() > 0) {
+        if (eventsList != null && eventsList.size() > 0) {
             eventsRequestV2List = syncEntityConversionService.eventsV2ToV1(eventsList);
             String json = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(eventsRequestV2List).module(SyncingConstants.EVENTS).build());
 

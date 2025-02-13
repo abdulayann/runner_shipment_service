@@ -12,7 +12,8 @@ import org.springframework.kafka.core.KafkaAdmin;
 import java.util.HashMap;
 import java.util.Map;
 
-@Configuration @Generated
+@Configuration
+@Generated
 public class KafkaConfig {
     @Value(value = "${shipmentsKafka.bootstrapServer}")
     private String bootstrapAddress;

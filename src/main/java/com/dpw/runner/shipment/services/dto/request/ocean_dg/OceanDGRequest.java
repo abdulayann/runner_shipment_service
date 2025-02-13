@@ -12,9 +12,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class OceanDGRequest implements IRunnerRequest {
-  private Long shipmentId;
-  private TaskStatus status;
-  private String remarks;
-  private String taskId;
-  private String userEmail;
+    private Long shipmentId;
+    private TaskStatus status;
+    private String remarks;
+    private String taskId;
+    private String userEmail;
 }

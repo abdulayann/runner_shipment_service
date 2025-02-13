@@ -6,7 +6,7 @@ import lombok.Data;
 import java.util.List;
 
 @Data
-public class BookingConfirmationModel implements IDocumentModel{
+public class BookingConfirmationModel implements IDocumentModel {
     public HblModel hblModel;
     private List<ReferenceNumbersModel> referenceNumbersList;
 }

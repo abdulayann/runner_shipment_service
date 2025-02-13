@@ -8,7 +8,7 @@ import lombok.Data;
 import java.util.List;
 
 @Data
-public class AWbLabelModel implements IDocumentModel{
+public class AWbLabelModel implements IDocumentModel {
     public TenantModel tenant;
     public ShipmentModel shipment;
     private ConsolidationModel consolidation;

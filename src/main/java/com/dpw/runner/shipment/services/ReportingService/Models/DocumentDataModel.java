@@ -5,7 +5,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 
 @Data
-public class DocumentDataModel implements IDocumentModel{
+public class DocumentDataModel implements IDocumentModel {
     private BigDecimal totalCGSTAmount;
     private BigDecimal totalSGSTAmount;
     private BigDecimal totalIGSTAmount;

@@ -17,7 +17,7 @@ public enum ChargesDue {
 
     public static ChargesDue getById(int id) {
         for (ChargesDue chargesDue : ChargesDue.values()) {
-            if(chargesDue.id == id) {
+            if (chargesDue.id == id) {
                 return chargesDue;
             }
         }

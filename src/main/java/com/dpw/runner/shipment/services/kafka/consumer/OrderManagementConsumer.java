@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.kafka.consumer;
 
-import com.dpw.runner.shipment.services.kafka.dto.BookingOrderUpdateDTO;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
+import com.dpw.runner.shipment.services.kafka.dto.BookingOrderUpdateDTO;
 import com.dpw.runner.shipment.services.repository.interfaces.IOrderManagementRepository;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -26,22 +26,16 @@ public class OrderManagementConsumer {
             topics = {"#{'${order.management.event.kafka.queue}'}"},
             autoStartup = "#{'${order.management.event.kafka.consumer-auto-startup}'}",
             groupId = "#{'${order.management.event.kafka.subs}'}")
-    public void consume(String message)
-    {
+    public void consume(String message) {
         try {
             log.info("{} | Order Management event message: {}", LoggerEvent.ORDER_MANAGEMENT_EVENT, message);
             BookingOrderUpdateDTO obj = objectMapper.readValue(message, BookingOrderUpdateDTO.class);
-            if(!Objects.isNull(obj) && !Objects.isNull(obj.getData()))
-            {
+            if (!Objects.isNull(obj) && !Objects.isNull(obj.getData())) {
                 BookingOrderUpdateDTO.BookingLinkDelinkOrder bookingLinkDelinkOrder = obj.getData();
-                if(bookingLinkDelinkOrder.getBookingId() != null && bookingLinkDelinkOrder.getTenantId() != null)
-                {
-                    if(Objects.equals(obj.getEvent(), "LINK"))
-                    {
+                if (bookingLinkDelinkOrder.getBookingId() != null && bookingLinkDelinkOrder.getTenantId() != null) {
+                    if (Objects.equals(obj.getEvent(), "LINK")) {
                         orderManagementRepository.saveOrderIdAndOrderManagementNumber(bookingLinkDelinkOrder.getBookingId(), bookingLinkDelinkOrder.getTenantId(), bookingLinkDelinkOrder.getOrderId(), bookingLinkDelinkOrder.getOrderNumber());
-                    }
-                    else if(Objects.equals(obj.getEvent(), "DELINK"))
-                    {
+                    } else if (Objects.equals(obj.getEvent(), "DELINK")) {
                         orderManagementRepository.saveOrderIdAndOrderManagementNumber(bookingLinkDelinkOrder.getBookingId(), bookingLinkDelinkOrder.getTenantId(), null, null);
                     }
                 }

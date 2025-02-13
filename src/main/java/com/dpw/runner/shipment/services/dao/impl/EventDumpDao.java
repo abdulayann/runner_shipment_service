@@ -14,7 +14,7 @@ import java.util.List;
 @Repository
 public class EventDumpDao implements IEventDumpDao {
 
-    private IEventDumpRepository eventDumpRepository;
+    private final IEventDumpRepository eventDumpRepository;
 
     @Autowired
     public EventDumpDao(IEventDumpRepository eventDumpRepository) {

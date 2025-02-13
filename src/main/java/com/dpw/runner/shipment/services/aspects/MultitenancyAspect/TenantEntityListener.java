@@ -7,16 +7,16 @@ import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.entity.NetworkTransfer;
 import com.dpw.runner.shipment.services.entity.Notification;
 import com.dpw.runner.shipment.services.utils.Generated;
-import org.apache.http.auth.AuthenticationException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.Map;
-import java.util.Objects;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.http.auth.AuthenticationException;
+
 import javax.persistence.EntityNotFoundException;
 import javax.persistence.PrePersist;
 import javax.persistence.PreRemove;
 import javax.persistence.PreUpdate;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.http.auth.AuthenticationException;
+import java.util.Map;
+import java.util.Objects;
 
 @Generated
 @Slf4j
@@ -137,10 +137,10 @@ public class TenantEntityListener {
         return (Objects.nonNull(tenantId) && tenantId > 0);
     }
 
-    public Boolean byPassMultiTenancyFilter(Object object){
-        if(object instanceof NetworkTransfer)
+    public Boolean byPassMultiTenancyFilter(Object object) {
+        if (object instanceof NetworkTransfer)
             return Boolean.TRUE;
-        if(object instanceof Notification)
+        if (object instanceof Notification)
             return Boolean.TRUE;
         return Boolean.FALSE;
     }

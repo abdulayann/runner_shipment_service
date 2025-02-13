@@ -64,49 +64,49 @@ public class EnumConstantService implements IEnumConstantService {
         response.put(Constants.CARRIER_BOOKING_STATUS, enumList);
 
         enumList = new ArrayList<>();
-        for(InstructionType instructionType : InstructionType.values()){
+        for (InstructionType instructionType : InstructionType.values()) {
             enumList.add(EnumConstantResponse.builder().id(instructionType.getValue()).description(instructionType.getDescription()).name(instructionType.name()).build());
         }
         response.put(Constants.TRANSPORT_INSTRUCTION_TYPES, enumList);
 
         enumList = new ArrayList<>();
-        for(DateBehaviorType dateBehaviorType : DateBehaviorType.values()){
+        for (DateBehaviorType dateBehaviorType : DateBehaviorType.values()) {
             enumList.add(EnumConstantResponse.builder().id(dateBehaviorType.getValue()).description(dateBehaviorType.getDescription()).name(dateBehaviorType.name()).build());
         }
         response.put(Constants.DATE_BEHAVIOR_TYPE, enumList);
 
         enumList = new ArrayList<>();
-        for(ShipmentPackStatus shipmentPackStatus : ShipmentPackStatus.values()){
+        for (ShipmentPackStatus shipmentPackStatus : ShipmentPackStatus.values()) {
             enumList.add(EnumConstantResponse.builder().id(shipmentPackStatus.getValue()).description(shipmentPackStatus.getDescription()).name(shipmentPackStatus.name()).build());
         }
         response.put(Constants.SHIPMENT_PACK_STATUS, enumList);
 
         enumList = new ArrayList<>();
-        for(FileStatus fileStatus : FileStatus.values()) {
+        for (FileStatus fileStatus : FileStatus.values()) {
             enumList.add(EnumConstantResponse.builder().id(fileStatus.getValue()).description(fileStatus.getDescription()).name(fileStatus.name()).build());
         }
         response.put(Constants.FILE_STATUS, enumList);
 
         enumList = new ArrayList<>();
-        for(TaskType taskType : TaskType.values()) {
+        for (TaskType taskType : TaskType.values()) {
             enumList.add(EnumConstantResponse.builder().id(taskType.getValue()).description(taskType.getDescription()).name(taskType.name()).build());
         }
         response.put(Constants.TASK_TYPE, enumList);
 
         enumList = new ArrayList<>();
-        for(TaskStatus taskStatus : TaskStatus.values()) {
+        for (TaskStatus taskStatus : TaskStatus.values()) {
             enumList.add(EnumConstantResponse.builder().id(taskStatus.getValue()).description(taskStatus.getDescription()).name(taskStatus.name()).build());
         }
         response.put(Constants.TASK_STATUS, enumList);
 
         enumList = new ArrayList<>();
-        for(AirAuthorisingEntity entity : AirAuthorisingEntity.values()) {
+        for (AirAuthorisingEntity entity : AirAuthorisingEntity.values()) {
             enumList.add(EnumConstantResponse.builder().id(entity.getValue()).description(entity.getDescription()).name(entity.name()).build());
         }
         response.put(Constants.AIR_AUTHORISING_ENTITY, enumList);
 
         enumList = new ArrayList<>();
-        for(NetworkTransferStatus entity : NetworkTransferStatus.values()) {
+        for (NetworkTransferStatus entity : NetworkTransferStatus.values()) {
             enumList.add(EnumConstantResponse.builder().id(entity.getValue()).description(entity.getDescription()).name(entity.name()).build());
         }
         response.put(Constants.NETWORK_TRANSFER_ENTITY_STATUS, enumList);
@@ -117,13 +117,13 @@ public class EnumConstantService implements IEnumConstantService {
         response.put(Constants.NETWORK_TRANSFER_ENTITY_TYPES, enumList);
 
         enumList = new ArrayList<>();
-        for(ContainerPraStatus entity : ContainerPraStatus.values()) {
+        for (ContainerPraStatus entity : ContainerPraStatus.values()) {
             enumList.add(EnumConstantResponse.builder().name(entity.name()).build());
         }
         response.put(Constants.CONTAINER_PRA_STATUS_ENTITY, enumList);
 
         enumList = new ArrayList<>();
-        for(NotificationRequestType entity : NotificationRequestType.values()) {
+        for (NotificationRequestType entity : NotificationRequestType.values()) {
             enumList.add(EnumConstantResponse.builder().id(entity.getValue()).name(entity.name()).description(entity.getDescription()).build());
         }
         response.put(Constants.NOTIFICATION_REQUEST_TYPES, enumList);

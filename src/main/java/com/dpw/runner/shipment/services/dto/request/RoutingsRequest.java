@@ -58,6 +58,7 @@ public class RoutingsRequest extends CommonRequest implements IRunnerRequest {
     private String originPortLocCode;
     private String destinationPortLocCode;
     private Boolean inheritedFromConsolidation;
+
     public void setIsDomestic(boolean isDomestic) {
         this.isDomestic = isDomestic;
     }

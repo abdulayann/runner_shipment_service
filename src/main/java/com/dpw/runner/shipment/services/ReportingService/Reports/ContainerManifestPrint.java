@@ -102,11 +102,11 @@ public class ContainerManifestPrint extends IReport {
 
         var exportAgentAddress = ReportHelper.getOrgAddress(consol.getSendingAgent());
         var importAgentAddress = ReportHelper.getOrgAddress(consol.getReceivingAgent());
-        var ctoAddress = consol.getArrivalDetails() == null ? new ArrayList(): ReportHelper.getOrgAddress(consol.getArrivalDetails().getCTOId());
+        var ctoAddress = consol.getArrivalDetails() == null ? new ArrayList() : ReportHelper.getOrgAddress(consol.getArrivalDetails().getCTOId());
         List<String> exportAgentFreeTextAddress;
         List<String> importAgentFreeTextAddress;
 
-        if (consol.getIsSendingAgentFreeTextAddress() != null  && consol.getIsSendingAgentFreeTextAddress()) {
+        if (consol.getIsSendingAgentFreeTextAddress() != null && consol.getIsSendingAgentFreeTextAddress()) {
             exportAgentFreeTextAddress = ReportHelper.getAddressList(consol.getSendingAgentFreeTextAddress());
         } else {
             exportAgentFreeTextAddress = exportAgentAddress;
@@ -133,7 +133,7 @@ public class ContainerManifestPrint extends IReport {
             dictionary.put(ReportConstants.EXPORT_AGENT_FREETEXT, importAgentFreeTextAddress);
             dictionary.put(ReportConstants.IMPORT_AGENT_FREETEXT, exportAgentFreeTextAddress);
             UnlocationsResponse depart = consol.getDepartureDetails() == null ? null : getUNLocRow(consol.getDepartureDetails().getLastForeignPort());
-            if(depart != null) {
+            if (depart != null) {
                 dictionary.put(ReportConstants.LAST_FOREIGN_PORT_NAME, ReportHelper.getCityCountry(depart.getNameWoDiacritics(), depart.getCountry()));
             }
         } else {

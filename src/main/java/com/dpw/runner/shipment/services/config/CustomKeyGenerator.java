@@ -45,7 +45,7 @@ public class CustomKeyGenerator implements KeyGenerator {
             default:
                 keyBuilder.append(method.getName())
                         .append("_");
-                if (params != null && params.length > 0) {
+                if (params != null) {
                     for (Object param : params) {
                         keyBuilder.append("_").append(param.toString());
                     }

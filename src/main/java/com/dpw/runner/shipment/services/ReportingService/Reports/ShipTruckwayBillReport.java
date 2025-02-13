@@ -30,10 +30,9 @@ public class ShipTruckwayBillReport extends IReport {
         TruckDriverModel truckDriverModel = new TruckDriverModel();
         truckDriverModel.shipmentDetails = getShipment(id);
         validateAirAndOceanDGCheck(truckDriverModel.shipmentDetails);
-        if(truckDriverModel.shipmentDetails != null && truckDriverModel.shipmentDetails.getContainersList() != null && truckDriverModel.shipmentDetails.getContainersList().size() > 0) {
+        if (truckDriverModel.shipmentDetails != null && truckDriverModel.shipmentDetails.getContainersList() != null && truckDriverModel.shipmentDetails.getContainersList().size() > 0) {
             List<ShipmentContainers> shipmentContainers = new ArrayList<>();
-            for(var container: truckDriverModel.shipmentDetails.getContainersList())
-            {
+            for (var container : truckDriverModel.shipmentDetails.getContainersList()) {
                 shipmentContainers.add(getShipmentContainer(container));
             }
             truckDriverModel.shipmentDetails.setShipmentContainersList(shipmentContainers);

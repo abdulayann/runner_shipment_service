@@ -15,7 +15,9 @@ import java.util.Optional;
 @Generated
 public interface ITiContainerRepository extends MultiTenancyRepository<TiContainers> {
     List<TiContainers> findAll();
+
     Page<TiContainers> findAll(Specification<TiContainers> spec, Pageable pageable);
+
     default Optional<TiContainers> findById(Long id) {
         Specification<TiContainers> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("id"), id);
         return findOne(spec);

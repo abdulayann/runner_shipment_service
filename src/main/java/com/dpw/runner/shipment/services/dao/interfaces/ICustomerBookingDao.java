@@ -16,14 +16,17 @@ public interface ICustomerBookingDao {
     Page<CustomerBooking> findAll(Specification<CustomerBooking> spec, Pageable pageable);
 
     Optional<CustomerBooking> findById(Long id);
+
     Optional<CustomerBooking> findByGuid(UUID id);
 
     void delete(CustomerBooking customerBooking);
 
     CustomerBooking updateEntityFromShipmentConsole(CustomerBooking customerBooking) throws RunnerException;
+
     Optional<CustomerBooking> findByBookingNumber(String bookingNumber);
 
     int updateIsPlatformBookingCreated(Long id, Boolean isPlatformBookingCreated);
+
     int updateBillStatus(Long id, Boolean isBillCreated);
 
     Optional<CustomerBooking> findByOrderManagementId(String orderManagementId);

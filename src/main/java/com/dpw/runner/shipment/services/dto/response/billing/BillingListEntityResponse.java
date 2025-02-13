@@ -1,11 +1,12 @@
 package com.dpw.runner.shipment.services.dto.response.billing;
 
 import com.dpw.runner.shipment.services.utils.Generated;
-import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+
+import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
 @Data

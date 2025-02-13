@@ -9,7 +9,7 @@ import lombok.Setter;
 
 @Setter
 @Getter
-public class CSDModel implements IDocumentModel{
+public class CSDModel implements IDocumentModel {
     private ConsolidationModel consolidationModel;
     private ShipmentModel shipmentModel;
     private UsersDto usersDto;

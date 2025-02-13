@@ -10,6 +10,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class OceanDGApprovalRequest {
-  private Long shipmentId;
-  private String remarks;
+    private Long shipmentId;
+    private String remarks;
 }

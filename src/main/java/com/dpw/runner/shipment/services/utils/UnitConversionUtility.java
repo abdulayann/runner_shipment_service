@@ -20,13 +20,15 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrE
 @Slf4j
 @Component
 public class UnitConversionUtility {
-    private UnitConversionUtility(){}
+    private UnitConversionUtility() {
+    }
+
     public static Number convertUnit(String type, BigDecimal value, String fromUnit, String toUnit) throws RunnerException {
         String responseMsg;
         try {
-            if(value == null)
+            if (value == null)
                 return 0;
-            if(IsStringNullOrEmpty(fromUnit) || IsStringNullOrEmpty(toUnit)) {
+            if (IsStringNullOrEmpty(fromUnit) || IsStringNullOrEmpty(toUnit)) {
                 return value;
             }
             Unit<?> sourceUnit = getUnitType(type, fromUnit);

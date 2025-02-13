@@ -9,12 +9,12 @@ import lombok.Data;
 import java.util.List;
 
 @Data
-public class PreAlertModel implements IDocumentModel{
+public class PreAlertModel implements IDocumentModel {
     public ShipmentModel shipmentDetails;
     public TenantModel tenantDetails;
     public ConsolidationModel consolidationDetails;
-    private List<ShipmentContainers> shipmentContainers;
     public String noofpackages_word;
     public String userdisplayname;
     public ShipmentSettingsDetails shipmentSettingsDetails;
+    private List<ShipmentContainers> shipmentContainers;
 }

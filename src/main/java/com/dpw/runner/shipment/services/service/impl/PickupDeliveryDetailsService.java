@@ -15,21 +15,19 @@ import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IPickupDeliveryDetailsDao;
 import com.dpw.runner.shipment.services.dto.request.PickupDeliveryDetailsRequest;
 import com.dpw.runner.shipment.services.dto.response.PickupDeliveryDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.TIKafkaEventResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.RAKCDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
-import com.dpw.runner.shipment.services.dto.response.TIKafkaEventResponse;
-import com.dpw.runner.shipment.services.entity.Parties;
-import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
-import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
+import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
+import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.interfaces.IPickupDeliveryDetailsService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
@@ -164,7 +162,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
         return updatePickupDeliveryDetails(commonRequestModel);
     }
 
-    private ResponseEntity<IRunnerResponse> updatePickupDeliveryDetails(CommonRequestModel commonRequestModel) throws RunnerException{
+    private ResponseEntity<IRunnerResponse> updatePickupDeliveryDetails(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         PickupDeliveryDetailsRequest request = (PickupDeliveryDetailsRequest) commonRequestModel.getData();
         if (request == null) {
@@ -271,7 +269,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
             }
             auditLogService.addAuditLog(
                     AuditLogMetaData.builder()
-                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
+                            .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                             .newData(null)
                             .prevData(jsonHelper.readFromJson(oldEntityJsonString, PickupDeliveryDetails.class))
                             .parent(PickupDeliveryDetails.class.getSimpleName())
@@ -371,9 +369,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
 
             KafkaResponse kafkaResponse = producer.getKafkaResponse(tiKafkaEventResponse, isCreate);
             producer.produceToKafka(jsonHelper.convertToJson(kafkaResponse), senderQueue, UUID.randomUUID().toString());
-        }
-        catch (Exception e)
-        {
+        } catch (Exception e) {
             log.error("Error pushing awb to kafka: {}", e.getMessage());
         }
     }
@@ -420,7 +416,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
         return masterDataResponse;
     }
 
-    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllMasterDataInSingleCall (PickupDeliveryDetails pickupDeliveryDetails, PickupDeliveryDetailsResponse pickupDeliveryDetailsResponse, Map<String, Object> masterDataResponse) {
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllMasterDataInSingleCall(PickupDeliveryDetails pickupDeliveryDetails, PickupDeliveryDetailsResponse pickupDeliveryDetailsResponse, Map<String, Object> masterDataResponse) {
         try {
             Map<String, Object> cacheMap = new HashMap<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
@@ -431,13 +427,13 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
                 pickupDeliveryDetailsResponse.getTiLegsList().forEach(leg -> {
                     listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(leg, TiLegs.class, fieldNameKeyMap, TiLegs.class.getSimpleName() + count.incrementAndGet(), cacheMap));
                     // Add master data fields for sub entities
-                    if(!CommonUtils.listIsNullOrEmpty(leg.getTiReferences())) {
+                    if (!CommonUtils.listIsNullOrEmpty(leg.getTiReferences())) {
                         leg.getTiReferences().forEach(i -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(i, TiReferences.class, fieldNameKeyMap, TiReferences.class.getSimpleName() + count.incrementAndGet(), cacheMap)));
                     }
-                    if(!CommonUtils.listIsNullOrEmpty(leg.getTiPackages())) {
+                    if (!CommonUtils.listIsNullOrEmpty(leg.getTiPackages())) {
                         leg.getTiPackages().forEach(i -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(i, TiPackages.class, fieldNameKeyMap, TiPackages.class.getSimpleName() + count.incrementAndGet(), cacheMap)));
                     }
-                    if(!CommonUtils.listIsNullOrEmpty(leg.getTiContainers())) {
+                    if (!CommonUtils.listIsNullOrEmpty(leg.getTiContainers())) {
                         leg.getTiContainers().forEach(i -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(i, TiContainers.class, fieldNameKeyMap, TiContainers.class.getSimpleName() + count.incrementAndGet(), cacheMap)));
                     }
                 });
@@ -452,10 +448,9 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
             commonUtils.createMasterDataKeysList(listRequests, keys);
             masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST, keys, new EntityTransferMasterLists(), cacheMap);
 
-            if(masterDataResponse != null) {
+            if (masterDataResponse != null) {
                 pickupDeliveryDetailsResponse.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(TiContainers.class.getSimpleName() + count.get()), CacheConstants.MASTER_LIST, cacheMap));
-            }
-            else {
+            } else {
                 masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.MASTER_LIST, masterDataResponse, cacheMap);
             }
 

@@ -18,28 +18,48 @@ import java.util.List;
 public interface ShipmentDetailsMapper {
 
     ShipmentDetails map(ShipmentRequest req);
+
     ShipmentDetailsResponse map(ShipmentDetails entity);
+
     ShipmentRequest getRequest(ShipmentDetails shipmentDetails);
 
     // Mappers for nested entities
     Parties map(PartiesRequest req);
+
     AdditionalDetails map(AdditionalDetailRequest req);
+
     PickupDeliveryDetails map(PickupDeliveryDetailsRequest req);
+
     Notes map(NotesRequest req);
+
     TruckDriverDetails map(TruckDriverDetailsRequest req);
+
     ServiceDetails map(ServiceDetailsRequest req);
+
     Routings map(RoutingsRequest req);
+
     ReferenceNumbers map(ReferenceNumbersRequest req);
+
     Packing map(PackingRequest req);
+
     FileRepo map(FileRepoRequest req);
+
     Events map(EventsRequest req);
+
     ELDetails map(ELDetailsRequest req);
+
     BookingCarriage map(BookingCarriageRequest req);
+
     CarrierDetails map(CarrierDetailRequest req);
+
     Jobs map(JobRequest req);
+
     Containers map(ContainerRequest req);
+
     List<TriangulationPartner> map(List<TriangulationPartnerRequest> req);
+
     TriangulationPartner map(TriangulationPartnerRequest req);
+
     TriangulationPartnerResponse map(TriangulationPartner partner);
 
     @InheritConfiguration

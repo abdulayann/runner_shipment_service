@@ -12,8 +12,8 @@ public class AwbRoutingInfoV2 implements IRunnerRequest {
     //TODO- LocCode
     public String originString;
     public String destinationString;
-    public String  byCarrier;
-    public String  flightNumber;
+    public String byCarrier;
+    public String flightNumber;
     public LocalDateTime flightDate;
     public String departureAirport;
     public String destinationAirport;

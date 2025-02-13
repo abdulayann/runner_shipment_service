@@ -72,24 +72,24 @@ public class NotesService implements INotesService {
         String responseMsg;
         try {
             NotesRequest request = (NotesRequest) commonRequestModel.getData();
-            if(request.getEntityId() == null) {
-                if(StringUtility.isEmpty(request.getEntityGuid()) || StringUtility.isEmpty(request.getEntityType())) {
+            if (request.getEntityId() == null) {
+                if (StringUtility.isEmpty(request.getEntityGuid()) || StringUtility.isEmpty(request.getEntityType())) {
                     log.debug("Request Id is null for Notes create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
                     throw new RunnerException("EntityId is not present");
                 }
                 CommonGetRequest commonGetRequest = CommonGetRequest.builder().guid(request.getEntityGuid()).build();
-                if(request.getEntityType().equalsIgnoreCase(Constants.SHIPMENT)) {
+                if (request.getEntityType().equalsIgnoreCase(Constants.SHIPMENT)) {
                     ResponseEntity<IRunnerResponse> response = shipmentService.getIdFromGuid(CommonRequestModel.buildRequest(commonGetRequest));
                     ShipmentDetailsResponse shipmentDetailsResponse = (ShipmentDetailsResponse) ((RunnerResponse<?>) Objects.requireNonNull(response.getBody())).getData();
-                    if(shipmentDetailsResponse == null) {
+                    if (shipmentDetailsResponse == null) {
                         log.debug("Request Id is null for Notes create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
                         throw new RunnerException("EntityId is not present");
                     }
                     request.setEntityId(shipmentDetailsResponse.getId());
-                } else if(request.getEntityType().equalsIgnoreCase(Constants.CONSOLIDATION)) {
+                } else if (request.getEntityType().equalsIgnoreCase(Constants.CONSOLIDATION)) {
                     ResponseEntity<IRunnerResponse> response = consolidationService.getIdFromGuid(CommonRequestModel.buildRequest(commonGetRequest));
                     ConsolidationDetailsResponse consolidationDetailsResponse = (ConsolidationDetailsResponse) ((RunnerResponse<?>) Objects.requireNonNull(response.getBody())).getData();
-                    if(consolidationDetailsResponse == null) {
+                    if (consolidationDetailsResponse == null) {
                         log.debug("Request Id is null for Notes create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
                         throw new RunnerException("EntityId is not present");
                     }
@@ -104,7 +104,7 @@ public class NotesService implements INotesService {
             // audit logs
             auditLogService.addAuditLog(
                     AuditLogMetaData.builder()
-                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
+                            .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                             .newData(notes)
                             .prevData(null)
                             .parent(request.getEntityType())
@@ -128,7 +128,7 @@ public class NotesService implements INotesService {
         String responseMsg;
         NotesRequest request = (NotesRequest) commonRequestModel.getData();
 
-        if(request.getId() == null) {
+        if (request.getId() == null) {
             log.debug("Request Id is null for Notes update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
         Long id = request.getId();
@@ -147,7 +147,7 @@ public class NotesService implements INotesService {
             // audit logs
             auditLogService.addAuditLog(
                     AuditLogMetaData.builder()
-                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
+                            .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                             .newData(notes)
                             .prevData(jsonHelper.readFromJson(oldEntityJsonString, Notes.class))
                             .parent(request.getEntityType())
@@ -210,7 +210,7 @@ public class NotesService implements INotesService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            if(request.getId() == null) {
+            if (request.getId() == null) {
                 log.debug("Request Id is null for Notes delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             Long id = request.getId();
@@ -228,7 +228,7 @@ public class NotesService implements INotesService {
             // audit logs
             auditLogService.addAuditLog(
                     AuditLogMetaData.builder()
-                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
+                            .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                             .newData(null)
                             .prevData(jsonHelper.readFromJson(oldEntityJsonString, Notes.class))
                             .parent(parent)
@@ -250,7 +250,7 @@ public class NotesService implements INotesService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            if(request.getId() == null) {
+            if (request.getId() == null) {
                 log.error("Request Id is null for Notes retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             Long id = request.getId();
@@ -261,9 +261,10 @@ public class NotesService implements INotesService {
             }
             log.info("Notes details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             NotesResponse response = convertEntityToDto(notes.get());
-            if(request.getIncludeColumns()==null || request.getIncludeColumns().isEmpty())
+            if (request.getIncludeColumns() == null || request.getIncludeColumns().isEmpty())
                 return ResponseHelper.buildSuccessResponse(response);
-            else return ResponseHelper.buildSuccessResponse(partialFetchUtils.fetchPartialListData(response,request.getIncludeColumns()));
+            else
+                return ResponseHelper.buildSuccessResponse(partialFetchUtils.fetchPartialListData(response, request.getIncludeColumns()));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;

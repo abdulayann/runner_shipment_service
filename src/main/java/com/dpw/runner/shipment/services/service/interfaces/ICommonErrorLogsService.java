@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 
 public interface ICommonErrorLogsService {
     ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel);
+
     ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel);
 
 }

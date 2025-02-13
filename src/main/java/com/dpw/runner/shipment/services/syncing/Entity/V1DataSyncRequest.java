@@ -8,7 +8,8 @@ import lombok.Setter;
 
 @Data
 @Builder
-@Getter @Setter
+@Getter
+@Setter
 public class V1DataSyncRequest {
     @JsonProperty("Module")
     private String module;

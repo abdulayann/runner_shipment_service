@@ -16,11 +16,11 @@ public class CargoDeliveryDateValidator implements ConstraintValidator<ValidCarg
         LocalDateTime cargoDeliveryDate = shipment.getCargoDeliveryDate();
 
         if (cargoDeliveryDate != null && cargoReadyDate != null && cargoDeliveryDate.isBefore(cargoReadyDate)) {
-                context.disableDefaultConstraintViolation();
-                context.buildConstraintViolationWithTemplate(
+            context.disableDefaultConstraintViolation();
+            context.buildConstraintViolationWithTemplate(
                     "Cargo Delivery Date should not be lesser than Cargo Ready Date."
-                ).addPropertyNode("cargoDeliveryDate").addConstraintViolation();
-                return false;
+            ).addPropertyNode("cargoDeliveryDate").addConstraintViolation();
+            return false;
         }
         return true;
     }

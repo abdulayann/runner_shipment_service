@@ -33,7 +33,7 @@ public class BridgeServiceConfig {
     @Value("${bridgeService.requestUrl}")
     private String requestUrl;
 
-    private String xClientType = "STOS";
+    private final String xClientType = "STOS";
 
 
     @Bean

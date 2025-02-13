@@ -94,7 +94,7 @@ public class QuoteContractsService implements IQuoteContractsService {
 
     public void updateQuoteContracts(ListContractResponse request) {
         try {
-            if(request == null) {
+            if (request == null) {
                 log.error("Request is empty for Quote Contracts update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
                 return;
             }
@@ -104,13 +104,13 @@ public class QuoteContractsService implements IQuoteContractsService {
             } catch (Exception e) {
                 log.error("Contract Id is null for Quote Contracts update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            if(IsStringNullOrEmpty(contractId)) {
+            if (IsStringNullOrEmpty(contractId)) {
                 log.error("Contract Id is null for Quote Contracts update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
                 return;
             }
             QuoteContracts quoteContracts;
             List<QuoteContracts> quoteContractsList = quoteContractsDao.findByContractId(contractId);
-            if(quoteContractsList != null && !quoteContractsList.isEmpty()) {
+            if (quoteContractsList != null && !quoteContractsList.isEmpty()) {
                 quoteContracts = quoteContractsList.get(0);
             } else {
                 quoteContracts = new QuoteContracts();
@@ -130,9 +130,9 @@ public class QuoteContractsService implements IQuoteContractsService {
     private List<String> getContainerTypes(ListContractResponse request, String contractId) {
         List<String> containerTypes = new ArrayList<>();
         try {
-            if(!Objects.isNull(request.getContracts().get(0).getContract_usage())) {
+            if (!Objects.isNull(request.getContracts().get(0).getContract_usage())) {
                 for (ListContractResponse.ContractUsage contractUsage : request.getContracts().get(0).getContract_usage()) {
-                    if(!Objects.isNull(contractUsage) && !Objects.isNull(contractUsage.getFilter_params()) &&
+                    if (!Objects.isNull(contractUsage) && !Objects.isNull(contractUsage.getFilter_params()) &&
                             !Objects.isNull(contractUsage.getFilter_params().getCargo_type()))
                         containerTypes.addAll(contractUsage.getFilter_params().getCargo_type());
                 }
@@ -157,11 +157,11 @@ public class QuoteContractsService implements IQuoteContractsService {
 
     @Override
     public QuoteContracts getQuoteContractsByContractId(String contractId) {
-        if(StringUtils.isEmpty(contractId)) {
+        if (StringUtils.isEmpty(contractId)) {
             return null;
         }
         List<QuoteContracts> quoteContractsList = quoteContractsDao.findByContractId(contractId);
-        if(!CommonUtils.listIsNullOrEmpty(quoteContractsList)) {
+        if (!CommonUtils.listIsNullOrEmpty(quoteContractsList)) {
             return quoteContractsList.get(0);
         }
         return null;

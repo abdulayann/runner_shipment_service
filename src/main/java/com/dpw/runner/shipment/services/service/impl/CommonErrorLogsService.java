@@ -38,6 +38,11 @@ public class CommonErrorLogsService implements ICommonErrorLogsService {
     private final ModelMapper modelMapper;
     private final JsonHelper jsonHelper;
     private final ICommonErrorLogsDao commonErrorLogsDao;
+    private final Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
+            Map.entry("entityId", RunnerEntityMapping.builder().tableName(Constants.COMMON_ERROR_LOGS_ENTITY).dataType(Long.class).fieldName("entityId").build()),
+            Map.entry("entityType", RunnerEntityMapping.builder().tableName(Constants.COMMON_ERROR_LOGS_ENTITY).dataType(String.class).fieldName("entityType").build()),
+            Map.entry("errorType", RunnerEntityMapping.builder().tableName(Constants.COMMON_ERROR_LOGS_ENTITY).dataType(CommonErrorType.class).fieldName("errorType").build())
+    );
 
     @Autowired
     public CommonErrorLogsService(ICommonErrorLogsDao commonErrorLogsDao, ModelMapper modelMapper, JsonHelper jsonHelper) {
@@ -45,12 +50,6 @@ public class CommonErrorLogsService implements ICommonErrorLogsService {
         this.modelMapper = modelMapper;
         this.jsonHelper = jsonHelper;
     }
-
-    private final Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
-            Map.entry("entityId", RunnerEntityMapping.builder().tableName(Constants.COMMON_ERROR_LOGS_ENTITY).dataType(Long.class).fieldName("entityId").build()),
-            Map.entry("entityType", RunnerEntityMapping.builder().tableName(Constants.COMMON_ERROR_LOGS_ENTITY).dataType(String.class).fieldName("entityType").build()),
-            Map.entry("errorType", RunnerEntityMapping.builder().tableName(Constants.COMMON_ERROR_LOGS_ENTITY).dataType(CommonErrorType.class).fieldName("errorType").build())
-    );
 
     @Override
     public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel) {
@@ -93,7 +92,7 @@ public class CommonErrorLogsService implements ICommonErrorLogsService {
             }
             Long id = request.getId();
             Optional<CommonErrorLogs> commonErrorLogs;
-            if(id != null) {
+            if (id != null) {
                 commonErrorLogs = commonErrorLogsDao.findById(id);
             } else {
                 UUID guid = UUID.fromString(request.getGuid());

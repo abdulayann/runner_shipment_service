@@ -17,8 +17,8 @@ public class AwbRoutingInfoResponse implements IRunnerResponse {
     private String entityType;
     private String origin;
     private String destination;
-    private String  byCarrier;
-    private String  flightNumber;
+    private String byCarrier;
+    private String flightNumber;
     @ExcludeTimeZone
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime flightDate;

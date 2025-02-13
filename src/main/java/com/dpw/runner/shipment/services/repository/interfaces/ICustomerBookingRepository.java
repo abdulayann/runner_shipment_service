@@ -14,7 +14,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-@Repository @Generated
+@Repository
+@Generated
 public interface ICustomerBookingRepository extends MultiTenancyRepository<CustomerBooking> {
     List<CustomerBooking> findAll();
 
@@ -31,6 +32,7 @@ public interface ICustomerBookingRepository extends MultiTenancyRepository<Custo
     }
 
     Optional<CustomerBooking> findByBookingNumber(String bookingNumber);
+
     @Modifying
     @Query(value = "Update customer_booking set is_platform_booking_created = ?2 Where id = ?1", nativeQuery = true)
     int updateIsPlatformBookingCreated(Long id, Boolean isPlatformBookingCreated);

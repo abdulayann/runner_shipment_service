@@ -17,17 +17,15 @@ import java.util.Objects;
 @Component
 public class EmailServiceUtility {
 
-    @Autowired
-    private EmailConfig emailConfig;
-
-    @Value("${aws_from}")
-    private String from;
-
-    @Value("${spring.profiles.active}")
-    private String currentEnvironment;
     List<String> emailIds = List.of("chirag.bansal@dpworld.com", "mayank.gupta@dpworld.com",
             "wasim.jafar@dpworld.com", "abhishek.goyal@dpworld.com", "pardeep.malik@dpworld.com",
             "abhimanyu.chauhan@dpworld.com", "tanishq.malhotra@dpworld.com");
+    @Autowired
+    private EmailConfig emailConfig;
+    @Value("${aws_from}")
+    private String from;
+    @Value("${spring.profiles.active}")
+    private String currentEnvironment;
 
     public void sendEmail(String body, String subject, List<String> emailIds, List<String> cc, File file, String fileName) throws MessagingException, IOException {
 

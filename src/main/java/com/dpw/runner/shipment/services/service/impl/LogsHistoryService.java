@@ -29,6 +29,7 @@ public class LogsHistoryService implements ILogsHistoryService {
     private ILogsHistoryDao logsHistoryDao;
     @Autowired
     private JsonHelper jsonHelper;
+
     @Override
     public void createLogHistory(LogHistoryRequest request) {
         try {
@@ -43,7 +44,7 @@ public class LogsHistoryService implements ILogsHistoryService {
             log.info("LogHistory Request: " + jsonHelper.convertToJson(logsHistory));
             logsHistoryDao.save(logsHistory);
             log.info("LogHistory created successfully.");
-        } catch (Exception ex){
+        } catch (Exception ex) {
             log.error("Error occur during Log Entity Creation: " + ex.getMessage());
         }
     }
@@ -51,7 +52,7 @@ public class LogsHistoryService implements ILogsHistoryService {
     @Override
     public LogHistoryResponse findByEntityGuidAndTimeStamp(UUID entityGuid, LocalDateTime timeStamp) throws RunnerException {
         var logsHistory = logsHistoryDao.findByEntityGuidAndTimeStamp(entityGuid, timeStamp);
-        if(logsHistory.isEmpty()){
+        if (logsHistory.isEmpty()) {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
         try {
@@ -72,9 +73,9 @@ public class LogsHistoryService implements ILogsHistoryService {
     public List<LogHistoryResponse> findByEntityGuidsAndTimeStamp(List<UUID> entityGuids, LocalDateTime timeStamp) throws RunnerException {
         var logsHistory = logsHistoryDao.findByEntityGuidsAndTimeStamp(entityGuids, timeStamp);
         List<LogHistoryResponse> logHistoryResponses = new ArrayList<>();
-        if(logsHistory != null && !logsHistory.isEmpty()) {
+        if (logsHistory != null && !logsHistory.isEmpty()) {
             try {
-                for (var log: logsHistory) {
+                for (var log : logsHistory) {
                     String entityPayload = JsonCompression.decompressJson(Base64.getDecoder().decode(log.getEntityPayload()));
                     logHistoryResponses.add(LogHistoryResponse.builder()
                             .entityId(log.getEntityId())

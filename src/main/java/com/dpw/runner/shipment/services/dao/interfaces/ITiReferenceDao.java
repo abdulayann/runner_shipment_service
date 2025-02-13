@@ -10,9 +10,14 @@ import java.util.Optional;
 
 public interface ITiReferenceDao {
     List<TiReferences> saveAll(List<TiReferences> tiReferencesList);
+
     TiReferences save(TiReferences tiReferences);
+
     Page<TiReferences> findAll(Specification<TiReferences> spec, Pageable pageable);
+
     Optional<TiReferences> findById(Long id);
+
     void delete(TiReferences tiReferences);
+
     List<TiReferences> findByIds(List<Long> id);
 }

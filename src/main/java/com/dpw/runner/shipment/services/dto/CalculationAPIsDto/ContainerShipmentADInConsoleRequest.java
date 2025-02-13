@@ -17,7 +17,7 @@ public class ContainerShipmentADInConsoleRequest implements IRunnerRequest {
     private Boolean isConfirmedByUser;
 
     @Data
-    public static class PacksList implements IRunnerRequest{
+    public static class PacksList implements IRunnerRequest {
         private Long id;
         private UUID guid;
         private String packs;

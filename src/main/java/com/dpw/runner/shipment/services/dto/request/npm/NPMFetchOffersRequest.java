@@ -52,7 +52,7 @@ public class NPMFetchOffersRequest extends CommonRequest implements IRunnerReque
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class ExchangeRates implements Serializable{
+    public static class ExchangeRates implements Serializable {
         private String base;
         private Map<String, Double> rate;
     }
@@ -70,7 +70,7 @@ public class NPMFetchOffersRequest extends CommonRequest implements IRunnerReque
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class LoadDetail implements Serializable{
+    public static class LoadDetail implements Serializable {
         private String load_type;
         private String cargo_type;
         private String product_category_code;
@@ -82,7 +82,7 @@ public class NPMFetchOffersRequest extends CommonRequest implements IRunnerReque
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class LoadAttributes implements Serializable{
+    public static class LoadAttributes implements Serializable {
         private BigDecimal weight;
         private String weight_uom;
         private Long quantity;
@@ -98,7 +98,7 @@ public class NPMFetchOffersRequest extends CommonRequest implements IRunnerReque
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class ContractDetails implements Serializable{
+    public static class ContractDetails implements Serializable {
         private List<String> contracts;
         private String company_code;
     }
@@ -107,7 +107,7 @@ public class NPMFetchOffersRequest extends CommonRequest implements IRunnerReque
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class BusinessInfo implements Serializable{
+    public static class BusinessInfo implements Serializable {
         private String product_name;
         private String tenant_id;
     }
@@ -116,7 +116,7 @@ public class NPMFetchOffersRequest extends CommonRequest implements IRunnerReque
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class ContractsInfo implements Serializable{
+    public static class ContractsInfo implements Serializable {
         private String customer_org_id;
         private String contract_id;
     }

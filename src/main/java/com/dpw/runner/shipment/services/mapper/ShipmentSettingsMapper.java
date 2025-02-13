@@ -20,12 +20,16 @@ import org.mapstruct.*;
 )
 public interface ShipmentSettingsMapper {
     ShipmentSettingsDetails map(ShipmentSettingRequest req);
+
     ShipmentSettingsDetailsResponse map(ShipmentSettingsDetails entity);
+
     ShipmentSettingRequest getRequest(ShipmentSettingsDetails shipmentSettingDetails);
 
     // Mappers for nested entities
     HawbLockSettings map(HawbLockSettingsRequest req);
+
     MawbLockSettings map(MawbLockSettingsRequest req);
+
     HblLockSettings map(HblLockSettingsRequest req);
 
     @InheritConfiguration

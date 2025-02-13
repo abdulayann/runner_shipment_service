@@ -7,9 +7,9 @@ import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.*;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Table;
-import javax.persistence.*;
 import javax.validation.constraints.Size;
 import java.util.Map;
 import java.util.Objects;
@@ -45,7 +45,7 @@ public class Parties extends MultiTenancy {
     private String orgCode;
 
     @Column(name = "address_code")
-    @Size(max=170, message = "max limit is 170 for address_code")
+    @Size(max = 170, message = "max limit is 170 for address_code")
     private String addressCode;
 
     @Column(name = "org_id")
@@ -66,7 +66,7 @@ public class Parties extends MultiTenancy {
     private Boolean isAddressFreeText;
 
     @Column(name = "country_code")
-    @Size(max=32, message = "max limit is 170 for country_code")
+    @Size(max = 32, message = "max limit is 170 for country_code")
     private String countryCode;
 
     @Override

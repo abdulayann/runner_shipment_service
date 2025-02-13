@@ -27,19 +27,19 @@ public class TiTruckDriverDetails extends MultiTenancy {
     private Long tiLegId;
 
     @Column(name = "driver_name")
-    @Size(max=30, message = "max size is 30 for driver_name")
+    @Size(max = 30, message = "max size is 30 for driver_name")
     private String driverName;
 
     @Column(name = "driver_mobile_number")
-    @Size(max=18, message = "max size is 18 for driver_mobile_number")
+    @Size(max = 18, message = "max size is 18 for driver_mobile_number")
     private String driverMobileNumber;
 
     @Column(name = "truck_number_plate")
-    @Size(max=20, message = "max size is 20 for truck_number_plate")
+    @Size(max = 20, message = "max size is 20 for truck_number_plate")
     private String truckNumberPlate;
 
     @Column(name = "trailer_number_plate")
-    @Size(max=20, message = "max size is 20 for trailer_number_plate")
+    @Size(max = 20, message = "max size is 20 for trailer_number_plate")
     private String trailerNumberPlate;
 
     @Column(name = "truck_or_trailer_type")

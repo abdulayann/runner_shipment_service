@@ -13,7 +13,8 @@ import java.util.concurrent.*;
 
 @Configuration
 @EnableAsync
-@Slf4j @Generated
+@Slf4j
+@Generated
 public class AsyncConfig implements AsyncConfigurer {
 
 
@@ -74,6 +75,7 @@ public class AsyncConfig implements AsyncConfigurer {
         };
         return new ThreadPoolExecutor(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, handler);
     }
+
     @Bean
     public ExecutorService executorServiceRouting() {
         int corePoolSize = 10; // Min threads

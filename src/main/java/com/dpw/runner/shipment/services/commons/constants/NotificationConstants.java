@@ -1,8 +1,6 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 public class NotificationConstants {
-    private NotificationConstants() {}
-
     public static final String NOTIFICATION_RETRIEVE_BY_ID_ERROR = "Notification is null for Id {} with Request Id {}";
     public static final String NOTIFICATION_API_HANDLE = "/api/v2/notifications";
     public static final String LIST_SUCCESSFUL = "Successful List";
@@ -23,4 +21,6 @@ public class NotificationConstants {
     public static final String RECEIVING_BRANCH_ID_FIELD = "requestedBranchId";
     public static final String REASSIGNED_TO_BRANCH_ID_FIELD = "reassignedToBranchId";
     public static final String NOTIFICATION_CONFIRMATION_SUCCESSFUL = "Notifications confirmation message successful";
+    private NotificationConstants() {
+    }
 }

@@ -5,16 +5,17 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.retry.support.RetryTemplate;
 
-@Configuration @Generated
+@Configuration
+@Generated
 public class RetryConfig {
 
     private RetryTemplate retryTemplate;
 
     @Bean
-    public RetryTemplate getRetryTemplate(){
+    public RetryTemplate getRetryTemplate() {
         retryTemplate = RetryTemplate.builder()
                 .maxAttempts(3)
-                .exponentialBackoff(1000,2, 5000)
+                .exponentialBackoff(1000, 2, 5000)
                 .retryOn(Exception.class)
                 .build();
 

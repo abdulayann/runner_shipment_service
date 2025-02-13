@@ -21,6 +21,7 @@ public class LogsHistoryDao implements ILogsHistoryDao {
 
     @Autowired
     private ILogsHistoryRepository logsHistoryRepository;
+
     @Override
     public LogsHistory save(LogsHistory logsHistory) {
         return logsHistoryRepository.save(logsHistory);
@@ -33,7 +34,7 @@ public class LogsHistoryDao implements ILogsHistoryDao {
 
     @Override
     public Page<LogsHistory> findAll(Specification<LogsHistory> spec, Pageable pageable) {
-        return logsHistoryRepository.findAll(spec,pageable);
+        return logsHistoryRepository.findAll(spec, pageable);
     }
 
     @Override
@@ -47,7 +48,7 @@ public class LogsHistoryDao implements ILogsHistoryDao {
     }
 
     @Override
-    public Optional<LogsHistory> findByEntityGuidAndTimeStamp(UUID entityGuid, LocalDateTime timeStamp){
+    public Optional<LogsHistory> findByEntityGuidAndTimeStamp(UUID entityGuid, LocalDateTime timeStamp) {
         return logsHistoryRepository.findByEntityGuidAndTimeStamp(entityGuid, timeStamp);
     }
 

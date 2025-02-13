@@ -30,13 +30,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
+import org.springframework.util.CollectionUtils;
 
 import java.lang.reflect.InvocationTargetException;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.springframework.util.CollectionUtils;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
@@ -69,13 +69,13 @@ public class ContainerDao implements IContainerDao {
 
     @Override
     public Containers save(Containers containers) {
-        Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(containers) , Constants.CONTAINER, LifecycleHooks.ON_CREATE, false);
-        if(Boolean.TRUE.equals(containers.getHazardous()) && IsStringNullOrEmpty(containers.getDgClass())) {
+        Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(containers), Constants.CONTAINER, LifecycleHooks.ON_CREATE, false);
+        if (Boolean.TRUE.equals(containers.getHazardous()) && IsStringNullOrEmpty(containers.getDgClass())) {
             errors.add("DG class is mandatory for Hazardous Goods Containers");
         }
-        if (! errors.isEmpty())
+        if (!errors.isEmpty())
             throw new ValidationException(String.join(",", errors));
-        if(containers.getId() != null) {
+        if (containers.getId() != null) {
             long id = containers.getId();
             Optional<Containers> oldEntity = findById(id);
             if (!oldEntity.isPresent()) {
@@ -84,26 +84,22 @@ public class ContainerDao implements IContainerDao {
             }
             containers.setCreatedAt(oldEntity.get().getCreatedAt());
             containers.setCreatedBy(oldEntity.get().getCreatedBy());
-            if(containers.getShipmentsList() == null) {
+            if (containers.getShipmentsList() == null) {
                 containers.setShipmentsList(oldEntity.get().getShipmentsList());
             }
-            if(containers.getEventsList() == null) {
+            if (containers.getEventsList() == null) {
                 containers.setEventsList(oldEntity.get().getEventsList());
             }
-            if(containers.getTruckingDetails() == null) {
+            if (containers.getTruckingDetails() == null) {
                 containers.setTruckingDetails(oldEntity.get().getTruckingDetails());
             }
         }
-        if(containers.getEventsList() != null && containers.getEventsList().size() > 0) {
+        if (containers.getEventsList() != null && containers.getEventsList().size() > 0) {
             for (Events events : containers.getEventsList()) {
                 events.setEntityType(Constants.CONTAINER);
             }
         }
-        if(containers.getShipmentsList() != null && !containers.getShipmentsList().isEmpty()){
-            containers.setIsAttached(true);
-        }else{
-            containers.setIsAttached(false);
-        }
+        containers.setIsAttached(containers.getShipmentsList() != null && !containers.getShipmentsList().isEmpty());
         return containerRepository.save(containers);
     }
 
@@ -138,11 +134,12 @@ public class ContainerDao implements IContainerDao {
     }
 
     private void deleteByIds(List<Long> ids) {
-        if(ids != null && ids.size() > 0) {
-            for (Long id: ids)
+        if (ids != null && ids.size() > 0) {
+            for (Long id : ids)
                 deleteById(id);
         }
     }
+
     @Override
     public void deleteById(Long id) {
         containerRepository.deleteById(id);
@@ -224,12 +221,11 @@ public class ContainerDao implements IContainerDao {
             hashMap.values().forEach(container -> {
                 String json = jsonHelper.convertToJson(container);
                 delete(container);
-                if(entity != null)
-                {
+                if (entity != null) {
                     try {
                         auditLogService.addAuditLog(
                                 AuditLogMetaData.builder()
-                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
+                                        .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                         .newData(null)
                                         .prevData(jsonHelper.readFromJson(json, Containers.class))
                                         .parent(entity)
@@ -257,11 +253,11 @@ public class ContainerDao implements IContainerDao {
             // TODO- Handle Transactions here
             if (containersList != null) {
                 List<Containers> containerList = new ArrayList<>(containersList);
-                if(fromConsolidation) {
+                if (fromConsolidation) {
                     List<Containers> containersPage = findByConsolidationId(consolidationId);
                     Map<Long, Containers> hashMap = containersPage.stream()
-                                .collect(Collectors.toMap(Containers::getId, Function.identity()));
-                    for (Containers containers: containerList) {
+                            .collect(Collectors.toMap(Containers::getId, Function.identity()));
+                    for (Containers containers : containerList) {
                         containers.setConsolidationId(consolidationId);
                         Long id = containers.getId();
                         if (Objects.isNull(containers.getAllocationDate()) && !Objects.isNull(containers.getContainerNumber()))
@@ -271,11 +267,11 @@ public class ContainerDao implements IContainerDao {
                         }
                     }
                     deleteContainers(hashMap, null, null);
-                    if(!hashMap.isEmpty()) {
+                    if (!hashMap.isEmpty()) {
                         List<Long> deletedContIds = hashMap.keySet().stream().toList();
-                        if(deletedContIds.size() > 0) {
+                        if (deletedContIds.size() > 0) {
                             List<Packing> packings = packingDao.findByContainerIdIn(deletedContIds);
-                            if(!CollectionUtils.isEmpty(packings)) {
+                            if (!CollectionUtils.isEmpty(packings)) {
                                 for (Packing packing : packings) {
                                     packing.setContainerId(null);
                                 }
@@ -289,19 +285,16 @@ public class ContainerDao implements IContainerDao {
                         }
                     }
                 }
-                if(shipmentId != null)
-                {
-                    for (Containers container: containerList) {
+                if (shipmentId != null) {
+                    for (Containers container : containerList) {
                         container.setConsolidationId(consolidationId);
                         if (Objects.isNull(container.getAllocationDate()) && !Objects.isNull(container.getContainerNumber()))
                             container.setAllocationDate(LocalDateTime.now());
                         String operation = DBOperationType.CREATE.name();
                         Containers oldEntityJson = null;
-                        if(container.getId() != null)
-                        {
+                        if (container.getId() != null) {
                             Optional<Containers> oldEntity = this.findById(container.getId());
-                            if(oldEntity.isPresent())
-                            {
+                            if (oldEntity.isPresent()) {
                                 operation = DBOperationType.UPDATE.name();
                                 oldEntityJson = ContainersMapper.INSTANCE.toContainers(oldEntity.get());
                             }
@@ -309,14 +302,15 @@ public class ContainerDao implements IContainerDao {
                         try {
                             auditLogService.addAuditLog(
                                     AuditLogMetaData.builder()
-                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
+                                            .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                             .newData(container)
                                             .prevData(oldEntityJson)
                                             .parent(ShipmentDetails.class.getSimpleName())
                                             .parentId(shipmentId)
                                             .operation(operation).build()
                             );
-                        } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+                        } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
+                                 InvocationTargetException | NoSuchMethodException e) {
                             log.error(e.getMessage());
                         }
                     }
@@ -346,9 +340,9 @@ public class ContainerDao implements IContainerDao {
         List<Containers> responseContainers = new ArrayList<>();
         Map<UUID, Containers> containersMap = new HashMap<>();
         List<Long> deleteContIds = new ArrayList<>();
-        if(oldEntityList != null && oldEntityList.size() > 0) {
-            for (Containers containers:
-                 oldEntityList) {
+        if (oldEntityList != null && oldEntityList.size() > 0) {
+            for (Containers containers :
+                    oldEntityList) {
                 containersMap.put(containers.getGuid(), containers);
                 deleteContIds.add(containers.getId());
             }
@@ -358,8 +352,8 @@ public class ContainerDao implements IContainerDao {
             // TODO- Handle Transactions here
             if (containersList != null && containersList.size() != 0) {
                 List<Containers> containerList = new ArrayList<>(containersList);
-                for (Containers containers: containerList) {
-                    if(containersMap.containsKey(containers.getGuid())) {
+                for (Containers containers : containerList) {
+                    if (containersMap.containsKey(containers.getGuid())) {
                         oldContainer = containersMap.get(containers.getGuid());
                         containers.setId(oldContainer.getId());
                         deleteContIds.remove(oldContainer.getId());
@@ -370,7 +364,7 @@ public class ContainerDao implements IContainerDao {
                 }
                 responseContainers = saveAll(containerList);
             }
-            if(deleteContIds.size() > 0) {
+            if (deleteContIds.size() > 0) {
                 deleteByIds(deleteContIds);
             }
             return responseContainers;
@@ -387,8 +381,8 @@ public class ContainerDao implements IContainerDao {
         String responseMsg;
         List<Containers> responseContainers = new ArrayList<>();
         Map<UUID, Containers> containersMap = new HashMap<>();
-        if(oldEntityList != null && oldEntityList.size() > 0) {
-            for (Containers containers:
+        if (oldEntityList != null && oldEntityList.size() > 0) {
+            for (Containers containers :
                     oldEntityList) {
                 containersMap.put(containers.getGuid(), containers);
             }
@@ -398,8 +392,8 @@ public class ContainerDao implements IContainerDao {
             // TODO- Handle Transactions here
             if (containersList != null && containersList.size() != 0) {
                 List<Containers> containerList = new ArrayList<>(containersList);
-                for (Containers containers: containerList) {
-                    if(containersMap.containsKey(containers.getGuid())) {
+                for (Containers containers : containerList) {
+                    if (containersMap.containsKey(containers.getGuid())) {
                         oldContainer = containersMap.get(containers.getGuid());
                         containers.setId(oldContainer.getId());
                     } else {
@@ -434,6 +428,7 @@ public class ContainerDao implements IContainerDao {
     public List<Containers> findByConsolidationIdIn(List<Long> consolidationIds) {
         return containerRepository.findByConsolidationIdIn(consolidationIds);
     }
+
     @Override
     public List<Containers> findByIdIn(List<Long> containerIds) {
         return containerRepository.findByIdIn(containerIds);

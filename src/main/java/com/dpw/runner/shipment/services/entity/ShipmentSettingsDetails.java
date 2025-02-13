@@ -96,7 +96,8 @@ public class ShipmentSettingsDetails extends MultiTenancy {
 
     @Column(name = "restricted_locations")
     @ElementCollection(targetClass = String.class, fetch = FetchType.LAZY)
-    @CollectionTable(name = "shipment_settings_details_restricted_locations", joinColumns = @JoinColumn(name = "shipment_settings_details_id"))//    @OneToMany(fetch = FetchType.EAGER)
+    @CollectionTable(name = "shipment_settings_details_restricted_locations", joinColumns = @JoinColumn(name = "shipment_settings_details_id"))
+//    @OneToMany(fetch = FetchType.EAGER)
     @BatchSize(size = 50)
     private List<String> restrictedLocations;
 

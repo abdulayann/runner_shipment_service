@@ -11,7 +11,7 @@ import java.util.List;
 @Repository
 public class DateTimeChangeLogDao implements IDateTimeChangeLogDao {
 
-    private IDateTimeChangeLogRepository dateTimeChangeLogRepository;
+    private final IDateTimeChangeLogRepository dateTimeChangeLogRepository;
 
     @Autowired
     DateTimeChangeLogDao(IDateTimeChangeLogRepository dateTimeChangeLogRepository) {

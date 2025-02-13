@@ -13,14 +13,16 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.constructCriter
  * Creating filter criteria from input list of permission
  */
 public class PermissionUtil {
-    private PermissionUtil(){}
+    private PermissionUtil() {
+    }
 
     /**
      * We receive LIST_PERMISSION set of the user permissions , since the permission structure have been updated now
      * the system only has VIEW permission as far as this method is concerned;
      * Internally we are bifurcating that view permission into List and Retrieve
+     *
      * @param permissionList : VIEW permissions from user token
-     * @param isShipment : boolean value for identifying shipment or consolidation
+     * @param isShipment     : boolean value for identifying shipment or consolidation
      * @return List<FilterCriteria> based upon available view permission
      */
     public static List<FilterCriteria> generateFilterCriteriaFromPermissions(List<String> permissionList, Boolean isShipment) {
@@ -33,7 +35,7 @@ public class PermissionUtil {
         for (String v1MappedPermission : mappedPermission) {
             List<FilterCriteria> innerFilters = new ArrayList();
             HashMap<String, String> criteriaMap = new HashMap<>();
-            if(v1MappedPermission == null)
+            if (v1MappedPermission == null)
                 continue;
 
             // De-construct permission string into individual elements and strip the last element
@@ -45,11 +47,11 @@ public class PermissionUtil {
             String shipmentType = getParameterFromPermission(SHIPMENT_TYPE_INDEX, parameterList);
             String domesticType = getParameterFromPermission(IS_DOMESTIC_INDEX, parameterList);
             criteriaMap.put(TRANSPORT_MODE, transportMode);
-            if(isShipment)
+            if (isShipment)
                 criteriaMap.put(DIRECTION, direction);
             else
                 criteriaMap.put(SHIPMENT_TYPE, direction);
-            if(isShipment)
+            if (isShipment)
                 criteriaMap.put(SHIPMENT_TYPE, shipmentType);
             else
                 criteriaMap.put(CONTAINER_CATEGORY, shipmentType);
@@ -61,25 +63,19 @@ public class PermissionUtil {
                     innerFilters.add(constructCriteria(TRANSPORT_MODE, transportMode, "=", null));
 
                 if (!direction.equals(ALL)) {
-                    if(isShipment)
-                    {
+                    if (isShipment) {
                         if (criteriaAppenderMap.get(DIRECTION))
                             innerFilters.add(constructCriteria(DIRECTION, direction, "=", "and"));
-                    }
-                    else
-                    {
-                        if(criteriaAppenderMap.get(SHIPMENT_TYPE))
+                    } else {
+                        if (criteriaAppenderMap.get(SHIPMENT_TYPE))
                             innerFilters.add(constructCriteria(SHIPMENT_TYPE, direction, "=", "and"));
                     }
 
                     if (!shipmentType.equals(ALL)) {
-                        if(isShipment)
-                        {
+                        if (isShipment) {
                             if (criteriaAppenderMap.get(SHIPMENT_TYPE))
                                 innerFilters.add(constructCriteria(SHIPMENT_TYPE, shipmentType, "=", "and"));
-                        }
-                        else
-                        {
+                        } else {
                             if (criteriaAppenderMap.get(CONTAINER_CATEGORY))
                                 innerFilters.add(constructCriteria(CONTAINER_CATEGORY, shipmentType, "=", "and"));
                         }
@@ -88,30 +84,29 @@ public class PermissionUtil {
                     }
                 } else {
                     if (!shipmentType.equals(ALL)) {
-                        if(isShipment)
+                        if (isShipment)
                             innerFilters.add(constructCriteria(SHIPMENT_TYPE, shipmentType, "=", "and"));
                         else
                             innerFilters.add(constructCriteria(CONTAINER_CATEGORY, shipmentType, "=", "and"));
-                    }
-                    else {
+                    } else {
                         permissionSet.add(transportMode + "*");
                     }
                 }
             } else {
                 // Transport mode : ALL ( example ImportShipmentList || AllShipmentList )
-                if(!direction.equals(ALL)) {
-                    if(isShipment)
+                if (!direction.equals(ALL)) {
+                    if (isShipment)
                         innerFilters.add(constructCriteria(DIRECTION, direction, "=", null));
                     else
                         innerFilters.add(constructCriteria(SHIPMENT_TYPE, direction, "=", null));
-                    if(!shipmentType.equals(ALL)){
-                        if(isShipment)
+                    if (!shipmentType.equals(ALL)) {
+                        if (isShipment)
                             innerFilters.add(constructCriteria(SHIPMENT_TYPE, shipmentType, "=", null));
                         else
                             innerFilters.add(constructCriteria(CONTAINER_CATEGORY, shipmentType, "=", null));
                     }
-                } else if(!shipmentType.equals(ALL)){
-                    if(isShipment)
+                } else if (!shipmentType.equals(ALL)) {
+                    if (isShipment)
                         innerFilters.add(constructCriteria(SHIPMENT_TYPE, shipmentType, "=", null));
                     else
                         innerFilters.add(constructCriteria(CONTAINER_CATEGORY, shipmentType, "=", null));
@@ -120,7 +115,7 @@ public class PermissionUtil {
                 }
             }
             // Appending criteria for Domestic or International shipments
-            if(domesticType.equals(DOMESTIC) || domesticType.equals(INTERNATIONAL)){
+            if (domesticType.equals(DOMESTIC) || domesticType.equals(INTERNATIONAL)) {
                 innerFilters.add(constructCriteria(IS_DOMESTIC, domesticType.equals(DOMESTIC), "=", "and"));
             }
 
@@ -144,12 +139,12 @@ public class PermissionUtil {
 
         String level0 = input.get(TRANSPORT_MODE);
         String level1 = null;
-        if(isShipment)
+        if (isShipment)
             level1 = level0.concat(input.get(DIRECTION));
         else
             level1 = level0.concat(input.get(SHIPMENT_TYPE));
         String level2 = null;
-        if(isShipment)
+        if (isShipment)
             level2 = level1.concat(input.get(SHIPMENT_TYPE));
         else
             level2 = level1.concat(input.get(CONTAINER_CATEGORY));
@@ -159,12 +154,12 @@ public class PermissionUtil {
             if (!permissionSet.contains(level0 + "*") || isDomesticPresent) {
                 criteriaAppenderMap.put(TRANSPORT_MODE, true);
                 if (!permissionSet.contains(level1 + "*") || isDomesticPresent) {
-                    if(isShipment)
+                    if (isShipment)
                         criteriaAppenderMap.put(DIRECTION, true);
                     else
                         criteriaAppenderMap.put(SHIPMENT_TYPE, true);
                     if (!permissionSet.contains(level2 + "*") || isDomesticPresent) {
-                        if(isShipment)
+                        if (isShipment)
                             criteriaAppenderMap.put(SHIPMENT_TYPE, true);
                         else
                             criteriaAppenderMap.put(CONTAINER_CATEGORY, true);

@@ -18,7 +18,7 @@ import java.util.UUID;
 @Slf4j
 public class TiLegDao implements ITiLegDao {
 
-    private ITiLegRepository tiLegRepository;
+    private final ITiLegRepository tiLegRepository;
 
     @Autowired
     public TiLegDao(ITiLegRepository tiLegRepository) {

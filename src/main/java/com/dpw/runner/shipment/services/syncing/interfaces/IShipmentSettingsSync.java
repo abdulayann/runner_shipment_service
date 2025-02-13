@@ -9,6 +9,8 @@ import org.springframework.http.ResponseEntity;
 
 public interface IShipmentSettingsSync {
     ResponseEntity<IRunnerResponse> sync(ShipmentSettingsDetails request);
+
     ResponseEntity<IRunnerResponse> syncProductSequence(ProductSequenceConfig productSequenceConfig, HttpHeaders headers) throws RunnerException;
+
     ResponseEntity<IRunnerResponse> syncSettings();
 }

@@ -16,7 +16,9 @@ import java.util.UUID;
 @Generated
 public interface ITiLegRepository extends MultiTenancyRepository<TiLegs> {
     List<TiLegs> findAll();
+
     Page<TiLegs> findAll(Specification<TiLegs> spec, Pageable pageable);
+
     default Optional<TiLegs> findById(Long id) {
         Specification<TiLegs> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("id"), id);
         return findOne(spec);

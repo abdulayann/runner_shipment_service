@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.dto.request.npm;
 
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
-import com.dpw.runner.shipment.services.dto.request.npm.LoadInfoRequest;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

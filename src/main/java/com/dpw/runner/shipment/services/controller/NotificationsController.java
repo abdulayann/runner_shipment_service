@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 import javax.validation.Valid;
 import java.util.Optional;
 
@@ -30,11 +31,8 @@ import java.util.Optional;
 public class NotificationsController {
     private INotificationService notificationService;
 
-    private class MyResponseClass extends RunnerResponse<NotificationResponse> {}
-    private class MyListResponseClass extends RunnerListResponse<NotificationListResponse> {}
-
     @Autowired
-    public NotificationsController(INotificationService notificationService){
+    public NotificationsController(INotificationService notificationService) {
         this.notificationService = notificationService;
     }
 
@@ -79,5 +77,11 @@ public class NotificationsController {
             log.error(responseMsg, e);
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    private class MyResponseClass extends RunnerResponse<NotificationResponse> {
+    }
+
+    private class MyListResponseClass extends RunnerListResponse<NotificationListResponse> {
     }
 }

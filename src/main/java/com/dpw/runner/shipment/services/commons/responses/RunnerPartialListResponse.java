@@ -8,8 +8,7 @@ import lombok.NoArgsConstructor;
 
 /**
  * /**
- *  * Generic List response.
- *
+ * * Generic List response.
  */
 @SuppressWarnings("rawtypes")
 @Data
@@ -17,7 +16,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class RunnerPartialListResponse implements IRunnerResponse {
-   Object data;
+    Object data;
 }
 
 

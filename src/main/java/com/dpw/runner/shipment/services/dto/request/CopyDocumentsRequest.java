@@ -16,6 +16,7 @@ public class CopyDocumentsRequest extends CommonRequest implements IRunnerReques
 
     private List<DocumentRequest> documents;
     private Boolean deleteExistingDocuments;
+
     @Data
     @ToString
     @NoArgsConstructor

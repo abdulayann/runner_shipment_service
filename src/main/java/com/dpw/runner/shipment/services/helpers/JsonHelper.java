@@ -30,17 +30,12 @@ import java.util.Map;
 @Generated
 public class JsonHelper {
 
+    private final ObjectMapper mapper2 = new ObjectMapper();
     @Autowired
     private ObjectMapper mapper;
-
-
-    private ObjectMapper mapper1 = new ObjectMapper();
-
-    private ObjectMapper createMapper = new ObjectMapper();
-
-    private final ObjectMapper mapper2 = new ObjectMapper();
-
-    private ObjectMapper platformMapper = new ObjectMapper();
+    private final ObjectMapper mapper1 = new ObjectMapper();
+    private final ObjectMapper createMapper = new ObjectMapper();
+    private final ObjectMapper platformMapper = new ObjectMapper();
 
     @PostConstruct
     public void intializeMapper() {
@@ -84,7 +79,7 @@ public class JsonHelper {
         platformMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
         SimpleModule module = new SimpleModule();
-        module.addDeserializer(LocalDateTime.class,  new CustomLocalDateTimeDeserializer());
+        module.addDeserializer(LocalDateTime.class, new CustomLocalDateTimeDeserializer());
         mapper2.registerModule(new JsonNullableModule());
         mapper2.registerModule(new JavaTimeModule());
         mapper2.registerModule(module);
@@ -153,15 +148,15 @@ public class JsonHelper {
         }
     }
 
-    public <T,F> F convertValue(T object, Class<F> clazz) {
+    public <T, F> F convertValue(T object, Class<F> clazz) {
         return mapper.convertValue(object, clazz);
     }
 
-    public <T,F> F convertValueWithJsonNullable(T object, Class<F> clazz) {
+    public <T, F> F convertValueWithJsonNullable(T object, Class<F> clazz) {
         return mapper2.convertValue(object, clazz);
     }
 
-    public <T,F> List<F> convertValueToList(T object, Class<F> clazz) {
+    public <T, F> List<F> convertValueToList(T object, Class<F> clazz) {
         return mapper.convertValue(object, mapper.getTypeFactory().constructCollectionType(List.class, clazz));
     }
 
@@ -179,7 +174,7 @@ public class JsonHelper {
         return mapper.convertValue(fromValue, toValueTypeRef);
     }
 
-    public <T,F> F convertCreateValue(T object, Class<F> clazz) {
+    public <T, F> F convertCreateValue(T object, Class<F> clazz) {
         return createMapper.convertValue(object, clazz);
     }
 

@@ -31,11 +31,9 @@ public class AuditLogController {
     private final IAuditLogService auditLogService;
 
     @Autowired
-    public AuditLogController(IAuditLogService auditLogService){
+    public AuditLogController(IAuditLogService auditLogService) {
         this.auditLogService = auditLogService;
     }
-
-    private class MyListResponseClass extends RunnerListResponse<AllocationsResponse>{}
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = AuditLogConstants.AUDIT_LOG_LIST_SUCCESSFUL,
             response = MyListResponseClass.class, responseContainer = AwbConstants.RESPONSE_CONTAINER_LIST)})
@@ -43,7 +41,6 @@ public class AuditLogController {
     public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest) {
         return auditLogService.list(CommonRequestModel.buildRequest(listCommonRequest));
     }
-
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = AuditLogConstants.AUDIT_LOG_DOWNLOAD_SUCCESSFUL, responseContainer = AwbConstants.RESPONSE_CONTAINER_LIST)})
     @PostMapping(value = "/download-excel", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
@@ -55,5 +52,8 @@ public class AuditLogController {
                 .header(HttpHeaders.CONTENT_DISPOSITION,
                         "attachment; filename=Audit log_" + System.currentTimeMillis() + Constants.XLSX
                 ).body(resource);
+    }
+
+    private class MyListResponseClass extends RunnerListResponse<AllocationsResponse> {
     }
 }

@@ -14,16 +14,16 @@ import java.util.List;
 @NoArgsConstructor
 public class ApprovalPartiesRequest implements IRunnerRequest {
 
+    private List<ApprovalParty> creditDetailsRequests;
+    private String operation;
+
     @Builder
     @Data
-    public static class ApprovalParty implements IRunnerRequest{
+    public static class ApprovalParty implements IRunnerRequest {
         String addressId;
         String entityId;
         String entityType;
         String orgId;
         String orgType;
     }
-
-    private List<ApprovalParty> creditDetailsRequests;
-    private String operation;
 }

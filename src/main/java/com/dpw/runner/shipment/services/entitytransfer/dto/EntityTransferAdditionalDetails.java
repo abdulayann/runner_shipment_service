@@ -19,6 +19,25 @@ import java.util.Map;
 @AllArgsConstructor
 @NoArgsConstructor
 public class EntityTransferAdditionalDetails implements IEntityTranferBaseEntity {
+    public String CHAJobNumber;
+    public String ADCode;
+    public String BEType;
+    public String IGMFileNo;
+    public String IECode;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    public LocalDateTime IGMFileDate;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    public LocalDateTime IGMInwardDate;
+    public String SMTPIGMNumber;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    public LocalDateTime SMTPIGMDate;
+    public BigDecimal CIFValue;
+    public String BLChargesDisplay;
+    public String BLExporterShipment;
+    public String BOENumber;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    public LocalDateTime BOEDate;
+    public Boolean WBLPrinted;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime customsNoIssueDate;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
@@ -32,15 +51,10 @@ public class EntityTransferAdditionalDetails implements IEntityTranferBaseEntity
     private String spotRateType;
     private String efreightStatus;
     private Boolean importExportShipmentLock;
-    public String CHAJobNumber;
-    public String ADCode;
-    public String BEType;
     private String customLocation;
     private String customCity;
     private Boolean isImportClearance;
     private Boolean isExportClearance;
-    public String IGMFileNo;
-    public String IECode;
     private String branchSINumber;
     private AndesStatus andesStatus;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
@@ -55,17 +69,10 @@ public class EntityTransferAdditionalDetails implements IEntityTranferBaseEntity
     private String activityType;
     private Long hsnNumber;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    public LocalDateTime IGMFileDate;
-    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    public LocalDateTime IGMInwardDate;
-    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime inwardDateAndTime;
     private Long lineNumber;
     private Long subLineNumber;
     private Long localLineNumber;
-    public String SMTPIGMNumber;
-    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    public LocalDateTime SMTPIGMDate;
     private Boolean isInland;
     private Ownership ownership;
     private String ownershipName;
@@ -81,7 +88,6 @@ public class EntityTransferAdditionalDetails implements IEntityTranferBaseEntity
     private LocalDateTime supplierInvoiceDate;
     private BigDecimal invoiceValue;
     private BigDecimal assessValue;
-    public BigDecimal CIFValue;
     private BigDecimal totalDuty;
     private String externalNotes;
     private Long bondedWarehouseId;
@@ -93,8 +99,6 @@ public class EntityTransferAdditionalDetails implements IEntityTranferBaseEntity
     private String deliveryMode;
     private Integer original;
     private Integer copy;
-    public String BLChargesDisplay;
-    public String BLExporterShipment;
     private List<String> screeningStatus;
     private String paidPlace;
     private String placeOfIssue;
@@ -104,11 +108,7 @@ public class EntityTransferAdditionalDetails implements IEntityTranferBaseEntity
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime dateOfReceipt;
     private String goodsCO;
-    public String BOENumber;
-    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
-    public LocalDateTime BOEDate;
     private Boolean printedOriginal;
-    public Boolean WBLPrinted;
     private Boolean draftPrinted;
     private Boolean surrenderPrinted;
     private EntityTransferParties notifyParty;

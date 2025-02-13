@@ -8,5 +8,5 @@ import java.util.List;
 
 @Generated
 public interface IQuoteContractsRepository extends MultiTenancyRepository<QuoteContracts> {
-    List<QuoteContracts> findByContractId (String contractId);
+    List<QuoteContracts> findByContractId(String contractId);
 }

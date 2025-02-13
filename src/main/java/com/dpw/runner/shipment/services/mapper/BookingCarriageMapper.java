@@ -14,7 +14,9 @@ import org.mapstruct.*;
 public interface BookingCarriageMapper {
 
     BookingCarriage map(BookingCarriageRequest req);
+
     BookingCarriageResponse map(BookingCarriage entity);
+
     BookingCarriageRequest getRequest(BookingCarriage entity);
 
     @InheritConfiguration

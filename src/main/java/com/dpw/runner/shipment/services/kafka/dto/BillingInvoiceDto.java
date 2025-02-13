@@ -1,9 +1,10 @@
 package com.dpw.runner.shipment.services.kafka.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import lombok.Data;
+
 import java.time.LocalDateTime;
 import java.util.List;
-import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)

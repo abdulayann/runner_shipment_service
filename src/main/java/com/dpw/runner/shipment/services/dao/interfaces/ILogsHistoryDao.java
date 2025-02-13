@@ -12,10 +12,16 @@ import java.util.UUID;
 
 public interface ILogsHistoryDao {
     LogsHistory save(LogsHistory logsHistory);
+
     List<LogsHistory> saveAll(List<LogsHistory> auditLogs);
+
     Page<LogsHistory> findAll(Specification<LogsHistory> spec, Pageable pageable);
+
     Optional<LogsHistory> findById(Long id);
+
     void delete(LogsHistory logsHistory);
+
     Optional<LogsHistory> findByEntityGuidAndTimeStamp(UUID entityGuid, LocalDateTime timeStamp);
+
     List<LogsHistory> findByEntityGuidsAndTimeStamp(List<UUID> entityGuids, LocalDateTime timeStamp);
 }

@@ -40,8 +40,7 @@ import static java.util.stream.Collectors.toMap;
 @Slf4j
 public class ShipmentSync implements IShipmentSync {
 
-    @Value("${v1service.dataSync.username}")
-    private String username;
+    private static final String SHIPMENTS = "Shipments";
     @Autowired
     ModelMapper modelMapper;
     @Autowired
@@ -50,19 +49,16 @@ public class ShipmentSync implements IShipmentSync {
     IConsoleShipmentMappingDao consoleShipmentMappingDao;
     @Autowired
     IConsolidationDetailsDao consolidationDetailsDao;
-
+    @Value("${v1service.dataSync.username}")
+    private String username;
     @Autowired
     private V1AuthHelper v1AuthHelper;
-
     @Autowired
     private SyncEntityConversionService syncEntityConversionService;
-
     @Autowired
     private ISyncService syncService;
     @Autowired
     private IConsolidationSync consolidationSync;
-
-    private static final String SHIPMENTS = "Shipments";
 
     @Override
     public ResponseEntity<IRunnerResponse> sync(ShipmentDetails sd, List<UUID> deletedContGuids, List<NotesRequest> customerBookingNotes, String transactionId, boolean isDirectSync) throws RunnerException {
@@ -75,9 +71,8 @@ public class ShipmentSync implements IShipmentSync {
         if (isDirectSync) { // Not being used as of today so change headers accordingly if used in future
             HttpHeaders httpHeaders = v1AuthHelper.getHeadersForDataSyncFromKafka(sd.getCreatedBy(), sd.getTenantId(), null);
             syncService.callSyncAsync(finalCs, StringUtility.convertToString(sd.getId()), StringUtility.convertToString(sd.getGuid()), SHIPMENTS, httpHeaders);
-        }
-        else {
-            if(!Objects.isNull(sd.getSourceGuid()) && !Objects.equals(sd.getGuid(), sd.getSourceGuid())) // Entity Transfer Shipment
+        } else {
+            if (!Objects.isNull(sd.getSourceGuid()) && !Objects.equals(sd.getGuid(), sd.getSourceGuid())) // Entity Transfer Shipment
                 syncService.pushToKafka(finalCs, StringUtility.convertToString(sd.getId()), StringUtility.convertToString(sd.getGuid()), SHIPMENTS, transactionId, sd.getTenantId(), username, UserContext.getUser().getUsername());
             else
                 syncService.pushToKafka(finalCs, StringUtility.convertToString(sd.getId()), StringUtility.convertToString(sd.getGuid()), SHIPMENTS, transactionId, sd.getTenantId(), sd.getCreatedBy(), null);
@@ -145,46 +140,45 @@ public class ShipmentSync implements IShipmentSync {
         cs.setConsignorCountryFilter(sd.getConsignorCountry());
         cs.setNotifyPartyCountryFilter(sd.getNotifyPartyCountry());
         cs.setCreatedDate(sd.getShipmentCreatedOn());
-        
+
         // Manually mapped fields
         cs.setVolumeWeight(sd.getVolumetricWeight());
         cs.setWeightVolumeUnit(sd.getVolumetricWeightUnit());
-        if(sd.getConsignee() != null && Boolean.TRUE.equals(sd.getConsignee().getIsAddressFreeText())){
+        if (sd.getConsignee() != null && Boolean.TRUE.equals(sd.getConsignee().getIsAddressFreeText())) {
             cs.setIsConsigneeFreeTextAddress(true);
 
-            var rawData = sd.getConsignee().getAddressData() != null ? sd.getConsignee().getAddressData().get(PartiesConstants.RAW_DATA): null;
-            if(rawData!=null)
+            var rawData = sd.getConsignee().getAddressData() != null ? sd.getConsignee().getAddressData().get(PartiesConstants.RAW_DATA) : null;
+            if (rawData != null)
                 cs.setConsigneeFreeTextAddress(rawData.toString());
-        }
-        else cs.setIsConsigneeFreeTextAddress(false);
+        } else cs.setIsConsigneeFreeTextAddress(false);
 
-        if(sd.getConsigner() != null && Boolean.TRUE.equals(sd.getConsigner().getIsAddressFreeText())){
+        if (sd.getConsigner() != null && Boolean.TRUE.equals(sd.getConsigner().getIsAddressFreeText())) {
             cs.setIsConsignerFreeTextAddress(true);
-            var rawData = sd.getConsigner().getAddressData() != null ? sd.getConsigner().getAddressData().get(PartiesConstants.RAW_DATA): null;
-            if(rawData!=null)
+            var rawData = sd.getConsigner().getAddressData() != null ? sd.getConsigner().getAddressData().get(PartiesConstants.RAW_DATA) : null;
+            if (rawData != null)
                 cs.setConsignerFreeTextAddress(rawData.toString());
-        }
-        else  cs.setIsConsignerFreeTextAddress(false);
+        } else cs.setIsConsignerFreeTextAddress(false);
 
-        if(sd.getAdditionalDetails() != null && sd.getAdditionalDetails().getNotifyParty() != null && Boolean.TRUE.equals(sd.getAdditionalDetails().getNotifyParty().getIsAddressFreeText())){
+        if (sd.getAdditionalDetails() != null && sd.getAdditionalDetails().getNotifyParty() != null && Boolean.TRUE.equals(sd.getAdditionalDetails().getNotifyParty().getIsAddressFreeText())) {
             cs.setIsNotifyPartyFreeTextAddress(true);
-            var rawData = sd.getAdditionalDetails().getNotifyParty().getAddressData() != null ? sd.getAdditionalDetails().getNotifyParty().getAddressData().get(PartiesConstants.RAW_DATA): null;
-            if(rawData!=null)
+            var rawData = sd.getAdditionalDetails().getNotifyParty().getAddressData() != null ? sd.getAdditionalDetails().getNotifyParty().getAddressData().get(PartiesConstants.RAW_DATA) : null;
+            if (rawData != null)
                 cs.setNotifyPartyFreeTextAddress(rawData.toString());
-        }
-        else cs.setIsNotifyPartyFreeTextAddress(false);
+        } else cs.setIsNotifyPartyFreeTextAddress(false);
 
         cs.setDeletedContGuids(deletedContGuids);
         cs.setOrderNumber(sd.getOrderManagementId());
         cs.setOrderManagementNumber(sd.getOrderManagementNumber());
         return cs;
     }
+
     @Override
     public void syncLockStatus(ShipmentDetails shipmentDetails) {
         LockSyncRequest lockSyncRequest = LockSyncRequest.builder().guid(shipmentDetails.getGuid()).lockStatus(shipmentDetails.getIsLocked()).build();
         String finalCs = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(lockSyncRequest).module(SyncingConstants.SHIPMENT_LOCK).build());
         syncService.pushToKafka(finalCs, StringUtility.convertToString(shipmentDetails.getId()), StringUtility.convertToString(shipmentDetails.getGuid()), "Shipment Lock Sync", StringUtility.convertToString(shipmentDetails.getGuid()));
     }
+
     @Override
     public ResponseEntity<IRunnerResponse> syncFromBooking(ShipmentDetails sd, List<UUID> deletedContGuids, List<NotesRequest> customerBookingNotes) throws RunnerException {
         CustomShipmentSyncRequest cs = createShipmentSyncReq(sd, deletedContGuids, customerBookingNotes);
@@ -195,12 +189,11 @@ public class ShipmentSync implements IShipmentSync {
             if (console.isPresent()) {
                 CustomConsolidationRequest response = consolidationSync.createConsoleSyncReq(console.get());
                 String consolidationRequest = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(response).module(SyncingConstants.CONSOLIDATION).build());
-                syncService.callSyncAsync(Arrays.asList(shipment, consolidationRequest) ,
+                syncService.callSyncAsync(Arrays.asList(shipment, consolidationRequest),
                         Arrays.asList(StringUtility.convertToString(sd.getId()), StringUtility.convertToString(console.get().getId())),
                         Arrays.asList(StringUtility.convertToString(sd.getGuid()), StringUtility.convertToString(console.get().getGuid())),
                         Arrays.asList(SyncingConstants.SHIPMENT, SyncingConstants.CONSOLIDATION), httpHeaders);
-            }
-            else
+            } else
                 syncService.callSyncAsync(shipment, StringUtility.convertToString(sd.getId()), StringUtility.convertToString(sd.getGuid()), SyncingConstants.SHIPMENT, httpHeaders);
         } else
             syncService.callSyncAsync(shipment, StringUtility.convertToString(sd.getId()), StringUtility.convertToString(sd.getGuid()), SyncingConstants.SHIPMENT, httpHeaders);
@@ -218,19 +211,19 @@ public class ShipmentSync implements IShipmentSync {
     }
 
     private PartyRequestV2 mapPartyObject(Parties sourcePartyObject) {
-        if(sourcePartyObject == null)
+        if (sourcePartyObject == null)
             return null;
         return modelMapper.map(sourcePartyObject, PartyRequestV2.class);
     }
 
     private void mapTruckDriverDetail(CustomShipmentSyncRequest cs, ShipmentDetails sd) {
-        if(sd.getTruckDriverDetails() == null)
+        if (sd.getTruckDriverDetails() == null)
             return;
         UUID consolGuid = null;
         Map<Long, UUID> map = new HashMap<>();
-        if(sd.getContainersList() != null && !sd.getContainersList().isEmpty())
+        if (sd.getContainersList() != null && !sd.getContainersList().isEmpty())
             map = sd.getContainersList().stream().collect(toMap(Containers::getId, Containers::getGuid));
-        if(cs.getConsolidationGuids() != null && !cs.getConsolidationGuids().isEmpty())
+        if (cs.getConsolidationGuids() != null && !cs.getConsolidationGuids().isEmpty())
             consolGuid = cs.getConsolidationGuids().entrySet().iterator().next().getKey();
         UUID finalConsolGuid = consolGuid;
         Map<Long, UUID> finalMap = map;
@@ -238,11 +231,11 @@ public class ShipmentSync implements IShipmentSync {
                 .map(item -> {
                     TruckDriverDetailsRequestV2 t;
                     t = modelMapper.map(item, TruckDriverDetailsRequestV2.class);
-                    if(item.getTransporterType() != null)
+                    if (item.getTransporterType() != null)
                         t.setTransporterTypeString(StringUtility.convertToString(item.getTransporterType()));
                     t.setConsolidationGuid(finalConsolGuid);
                     t.setShipmentGuid(sd.getGuid());
-                    if(item.getContainerId() != null && finalMap.containsKey(item.getContainerId()))
+                    if (item.getContainerId() != null && finalMap.containsKey(item.getContainerId()))
                         t.setContainerGuid(finalMap.get(item.getContainerId()));
                     return t;
                 })
@@ -253,7 +246,7 @@ public class ShipmentSync implements IShipmentSync {
     }
 
     private void mapCarrierDetails(CustomShipmentSyncRequest cs, ShipmentDetails sd) {
-        if(sd.getCarrierDetails() == null)
+        if (sd.getCarrierDetails() == null)
             return;
         modelMapper.map(sd.getCarrierDetails(), cs);
         cs.setDestinationName(sd.getCarrierDetails().getDestination());
@@ -264,10 +257,10 @@ public class ShipmentSync implements IShipmentSync {
     }
 
     private void mapAdditionalDetails(CustomShipmentSyncRequest cs, ShipmentDetails sd) {
-        if(sd.getAdditionalDetails() == null)
+        if (sd.getAdditionalDetails() == null)
             return;
         modelMapper.map(sd.getAdditionalDetails(), cs);
-        if(cs.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR))
+        if (cs.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR))
             cs.setIssueDate(sd.getAdditionalDetails().getDateOfIssue());
         else
             cs.setDateofIssue(sd.getAdditionalDetails().getDateOfIssue());
@@ -275,16 +268,16 @@ public class ShipmentSync implements IShipmentSync {
         cs.setReceivingForwarderParty(mapPartyObject(sd.getAdditionalDetails().getReceivingForwarder()));
         cs.setSendingForwarderParty(mapPartyObject(sd.getAdditionalDetails().getSendingForwarder()));
         cs.setTraderOrSupplierParty(mapPartyObject(sd.getAdditionalDetails().getTraderOrSupplier()));
-        if(sd.getAdditionalDetails().getAndesStatus() != null)
+        if (sd.getAdditionalDetails().getAndesStatus() != null)
             cs.setAndesStatusString(String.valueOf(sd.getAdditionalDetails().getAndesStatus().getValue()));
-        if(sd.getAdditionalDetails().getOwnership() != null) {
+        if (sd.getAdditionalDetails().getOwnership() != null) {
             cs.setOwnershipString(String.valueOf(sd.getAdditionalDetails().getOwnership().getValue()));
-            if(sd.getAdditionalDetails().getOwnership().equals(Ownership.Self))
+            if (sd.getAdditionalDetails().getOwnership().equals(Ownership.Self))
                 cs.setOwnershipName(sd.getAdditionalDetails().getOwnershipName());
             else
                 cs.setOwnershipParty(mapPartyObject(sd.getAdditionalDetails().getOwnershipOrg()));
         }
-        if(sd.getAdditionalDetails().getPassedBy() != null)
+        if (sd.getAdditionalDetails().getPassedBy() != null)
             cs.setPassedByString(String.valueOf(sd.getAdditionalDetails().getPassedBy().getValue()));
         cs.setBoedate(convertDateToUserTimeZone(sd.getAdditionalDetails().getBOEDate(), MDC.get(TimeZoneConstants.BROWSER_TIME_ZONE_NAME), null, false));
         cs.setBoenumber(sd.getAdditionalDetails().getBOENumber());
@@ -304,7 +297,7 @@ public class ShipmentSync implements IShipmentSync {
     }
 
     private void mapShipmentServices(CustomShipmentSyncRequest cs, ShipmentDetails sd) {
-        if(sd.getServicesList() == null)
+        if (sd.getServicesList() == null)
             return;
         List<ShipmentServiceRequestV2> res = sd.getServicesList().stream().map(
                 i -> {
@@ -317,21 +310,22 @@ public class ShipmentSync implements IShipmentSync {
     }
 
     private void mapEvents(CustomShipmentSyncRequest cs, ShipmentDetails sd) {
-        if(sd.getEventsList() == null)
+        if (sd.getEventsList() == null)
             return;
         List<EventsRequestV2> res = sd.getEventsList().stream().filter(Objects::nonNull)
                 .map(i -> modelMapper.map(i, EventsRequestV2.class)).toList();
         cs.setEventsList(res);
     }
 
-    private <T,P> List<P> convertToList(final List<T> lst, Class<P> clazz) {
-        if(lst == null)
+    private <T, P> List<P> convertToList(final List<T> lst, Class<P> clazz) {
+        if (lst == null)
             return null;
-        return  lst.stream()
+        return lst.stream()
                 .map(item -> convertToClass(item, clazz))
                 .toList();
     }
-    private  <T,P> P convertToClass(T obj, Class<P> clazz) {
+
+    private <T, P> P convertToClass(T obj, Class<P> clazz) {
         return modelMapper.map(obj, clazz);
     }
 }

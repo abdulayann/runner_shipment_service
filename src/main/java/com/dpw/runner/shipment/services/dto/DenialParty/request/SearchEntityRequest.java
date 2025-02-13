@@ -12,6 +12,6 @@ import java.util.List;
 public class SearchEntityRequest {
     private String __type;
     private String ssecno;
-    private  String spassword;
+    private String spassword;
     private List<SearchEntity> searches;
 }

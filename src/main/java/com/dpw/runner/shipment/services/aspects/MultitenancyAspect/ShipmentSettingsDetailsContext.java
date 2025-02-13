@@ -5,17 +5,18 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class ShipmentSettingsDetailsContext {
-    private ShipmentSettingsDetailsContext(){}
+    private static final ThreadLocal<ShipmentSettingsDetails> tenantSettingsThreadLocal =
+            new InheritableThreadLocal<>();
 
-    private static ThreadLocal<ShipmentSettingsDetails> tenantSettingsThreadLocal =
-      new InheritableThreadLocal<>();
+    private ShipmentSettingsDetailsContext() {
+    }
 
     public static ShipmentSettingsDetails getCurrentTenantSettings() {
         return tenantSettingsThreadLocal.get();
     }
 
     public static void setCurrentTenantSettings(ShipmentSettingsDetails shipmentSettingsDetails) {
-         tenantSettingsThreadLocal.set(shipmentSettingsDetails);
+        tenantSettingsThreadLocal.set(shipmentSettingsDetails);
     }
 
     public static void remove() {

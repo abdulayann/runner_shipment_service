@@ -53,11 +53,9 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     public static final String CONSUMED = "Consumed";
     public static final String UNUSED = "Unused";
     @Autowired
-    private IConsolidationRepository consolidationRepository;
-
-    @Autowired
     IShipmentRepository shipmentRepository;
-
+    @Autowired
+    private IConsolidationRepository consolidationRepository;
     @Autowired
     private ValidatorUtility validatorUtility;
 
@@ -92,14 +90,14 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     public ConsolidationDetails save(ConsolidationDetails consolidationDetails, boolean fromV1Sync, boolean creatingFromDgShipment) {
         Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(consolidationDetails), Constants.CONSOLIDATION, LifecycleHooks.ON_CREATE, false);
         ConsolidationDetails oldConsole = null;
-        if(consolidationDetails.getId() != null) {
+        if (consolidationDetails.getId() != null) {
             long id = consolidationDetails.getId();
             Optional<ConsolidationDetails> oldEntity = findById(id);
             if (!oldEntity.isPresent()) {
                 log.debug("Container is null for Id {}", consolidationDetails.getId());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-            if(consolidationDetails.getShipmentsList() == null) {
+            if (consolidationDetails.getShipmentsList() == null) {
                 consolidationDetails.setShipmentsList(oldEntity.get().getShipmentsList());
             }
             oldConsole = oldEntity.get();
@@ -115,13 +113,13 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
 
     @Override
     public ConsolidationDetails update(ConsolidationDetails consolidationDetails, boolean fromV1Sync, boolean updatingFromDgShipment) {
-        Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(consolidationDetails) , Constants.CONSOLIDATION, LifecycleHooks.ON_CREATE, false);
+        Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(consolidationDetails), Constants.CONSOLIDATION, LifecycleHooks.ON_CREATE, false);
         validateLockStatus(consolidationDetails);
         ConsolidationDetails oldConsole = null;
-        if(consolidationDetails.getId() != null) {
+        if (consolidationDetails.getId() != null) {
             long id = consolidationDetails.getId();
             ConsolidationDetails oldEntity = findById(id).get();
-            if(consolidationDetails.getShipmentsList() == null) {
+            if (consolidationDetails.getShipmentsList() == null) {
                 consolidationDetails.setShipmentsList(oldEntity.getShipmentsList());
             }
             oldConsole = oldEntity;
@@ -160,7 +158,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
                 && consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR))
             consolidationMAWBCheck(consolidationDetails, oldConsole != null ? oldConsole.getMawb() : null);
 
-        if(!Objects.isNull(oldConsole)) {
+        if (!Objects.isNull(oldConsole)) {
             consolidationDetails.setCreatedAt(oldConsole.getCreatedAt());
             consolidationDetails.setCreatedBy(oldConsole.getCreatedBy());
         }
@@ -197,26 +195,25 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     }
 
     private void validateLockStatus(ConsolidationDetails consolidationDetails) throws ValidationException {
-        if(consolidationDetails.getIsLocked() != null && consolidationDetails.getIsLocked()) {
+        if (consolidationDetails.getIsLocked() != null && consolidationDetails.getIsLocked()) {
             throw new ValidationException(ConsolidationConstants.CONSOLIDATION_LOCKED);
         }
     }
-    
-    public List<ConsolidationDetails> saveAll(List<ConsolidationDetails> consolidationDetails)
-    {
+
+    public List<ConsolidationDetails> saveAll(List<ConsolidationDetails> consolidationDetails) {
         List<ConsolidationDetails> res = new ArrayList<>();
-        for(ConsolidationDetails req : consolidationDetails){
+        for (ConsolidationDetails req : consolidationDetails) {
             req = save(req, false);
             res.add(req);
         }
         return res;
     }
 
-    public Optional<ConsolidationDetails> findByGuid (UUID guid) {
+    public Optional<ConsolidationDetails> findByGuid(UUID guid) {
         return consolidationRepository.findByGuid(guid);
     }
 
-    public List<ConsolidationDetails> findByBol (String bol) {
+    public List<ConsolidationDetails> findByBol(String bol) {
         return consolidationRepository.findByBol(bol, TenantContext.getCurrentTenant());
     }
 
@@ -231,19 +228,19 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     }
 
     private boolean checkForNonAirDGFlag(ConsolidationDetails request, ShipmentSettingsDetails shipmentSettingsDetails) {
-        if(!Constants.TRANSPORT_MODE_AIR.equals(request.getTransportMode()))
+        if (!Constants.TRANSPORT_MODE_AIR.equals(request.getTransportMode()))
             return true;
         return !Boolean.TRUE.equals(shipmentSettingsDetails.getAirDGFlag());
     }
 
     private boolean checkForNonDGConsoleAndAirDGFlag(ConsolidationDetails request, ShipmentSettingsDetails shipmentSettingsDetails) {
-        if(checkForNonAirDGFlag(request, shipmentSettingsDetails))
+        if (checkForNonAirDGFlag(request, shipmentSettingsDetails))
             return false;
         return !Boolean.TRUE.equals(request.getHazardous());
     }
 
     private boolean checkForDGConsoleAndAirDGFlag(ConsolidationDetails request, ShipmentSettingsDetails shipmentSettingsDetails) {
-        if(checkForNonAirDGFlag(request, shipmentSettingsDetails))
+        if (checkForNonAirDGFlag(request, shipmentSettingsDetails))
             return false;
         return Boolean.TRUE.equals(request.getHazardous());
     }
@@ -253,13 +250,13 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
 
         // Non dg consolidation validations
-        if(checkForNonDGConsoleAndAirDGFlag(request, shipmentSettingsDetails)) {
+        if (checkForNonDGConsoleAndAirDGFlag(request, shipmentSettingsDetails)) {
 
             boolean isDGShipmentAttached = false;
             // Non dg Consolidations can not have dg shipments
-            if(request.getShipmentsList() != null) {
-                for (ShipmentDetails shipmentDetails: request.getShipmentsList()) {
-                    if(Boolean.TRUE.equals(shipmentDetails.getContainsHazardous())) {
+            if (request.getShipmentsList() != null) {
+                for (ShipmentDetails shipmentDetails : request.getShipmentsList()) {
+                    if (Boolean.TRUE.equals(shipmentDetails.getContainsHazardous())) {
                         errors.add("The consolidation contains DG shipment. Marking the consolidation as non DG is not allowed");
                         isDGShipmentAttached = true;
                         break;
@@ -268,9 +265,9 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
             }
 
             // Non dg Consolidations can not have dg packs
-            if(request.getPackingList() != null && !isDGShipmentAttached) {
-                for (Packing packing: request.getPackingList()) {
-                    if(Boolean.TRUE.equals(packing.getHazardous())) {
+            if (request.getPackingList() != null && !isDGShipmentAttached) {
+                for (Packing packing : request.getPackingList()) {
+                    if (Boolean.TRUE.equals(packing.getHazardous())) {
                         errors.add("The consolidation contains DG package. Marking the consolidation as non DG is not allowed");
                         break;
                     }
@@ -279,23 +276,23 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         }
 
         // Dg consolidation validations
-        if(!fromV1Sync && checkForDGConsoleAndAirDGFlag(request, shipmentSettingsDetails)) {
+        if (!fromV1Sync && checkForDGConsoleAndAirDGFlag(request, shipmentSettingsDetails)) {
 
             // Non dg user cannot save dg consolidation
-            if(!UserContext.isAirDgUser())
+            if (!UserContext.isAirDgUser())
                 errors.add("You don't have permission to update DG Consolidation");
 
             // Dg consolidation must have at least one dg shipment
             boolean containsDgShipment = false;
-            if(request.getShipmentsList() != null && !creatingFromDgShipment) {
-                for (ShipmentDetails shipmentDetails: request.getShipmentsList()) {
-                    if(Boolean.TRUE.equals(shipmentDetails.getContainsHazardous())) {
+            if (request.getShipmentsList() != null && !creatingFromDgShipment) {
+                for (ShipmentDetails shipmentDetails : request.getShipmentsList()) {
+                    if (Boolean.TRUE.equals(shipmentDetails.getContainsHazardous())) {
                         containsDgShipment = true;
                         break;
                     }
                 }
             }
-            if(!containsDgShipment && !creatingFromDgShipment)
+            if (!containsDgShipment && !creatingFromDgShipment)
                 errors.add("Consolidation cannot be marked as DG. Please attach at least one DG Shipment.");
         }
 
@@ -314,9 +311,9 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         }
 
         // MBL number must be unique
-        if(!IsStringNullOrEmpty(request.getBol())) {
+        if (!IsStringNullOrEmpty(request.getBol())) {
             List<ConsolidationDetails> consolidationDetails = findByBol(request.getBol());
-            if(checkSameMblExists(consolidationDetails, request)) {
+            if (checkSameMblExists(consolidationDetails, request)) {
                 errors.add(String.format("The MBL Number %s is already used. Please use a different MBL Number", request.getBol()));
             }
         }
@@ -365,14 +362,14 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         }
 
         // Reference No can not be repeated
-        if(!IsStringNullOrEmpty(request.getReferenceNumber())) {
+        if (!IsStringNullOrEmpty(request.getReferenceNumber())) {
             List<ConsolidationDetails> consolidationDetails = findByReferenceNumber(request.getReferenceNumber());
-            if(!consolidationDetails.isEmpty() && (request.getId() == null || consolidationDetails.get(0).getId().longValue() != request.getId().longValue())) {
+            if (!consolidationDetails.isEmpty() && (request.getId() == null || consolidationDetails.get(0).getId().longValue() != request.getId().longValue())) {
                 errors.add("Consolidation with ReferenceNo " + request.getReferenceNumber() + " already exists.");
             }
         }
 
-        if((shipmentSettingsDetails.getConsolidationLite() == null || !shipmentSettingsDetails.getConsolidationLite().booleanValue())
+        if ((shipmentSettingsDetails.getConsolidationLite() == null || !shipmentSettingsDetails.getConsolidationLite().booleanValue())
                 && (IsStringNullOrEmpty(request.getCarrierDetails().getOrigin()) || IsStringNullOrEmpty(request.getCarrierDetails().getDestination()))) {
             errors.add("First load or Last Discharge can not be null.");
         }
@@ -381,22 +378,22 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     }
 
     public boolean checkSameMblExists(List<ConsolidationDetails> consolidationDetails, ConsolidationDetails request) {
-        if(consolidationDetails == null)
+        if (consolidationDetails == null)
             return false;
-        if(consolidationDetails.isEmpty())
+        if (consolidationDetails.isEmpty())
             return false;
-        if(request.getId() == null)
+        if (request.getId() == null)
             return true;
-        if(consolidationDetails.size() > 1)
+        if (consolidationDetails.size() > 1)
             return true;
         return request.getId().longValue() != consolidationDetails.get(0).getId().longValue();
     }
 
     private void setMawbStock(ConsolidationDetails consolidationDetails) {
         List<MawbStocksLink> mawbStocksLinks = mawbStocksLinkDao.findByMawbNumber(consolidationDetails.getMawb());
-        if(mawbStocksLinks != null && mawbStocksLinks.size() > 0) {
+        if (mawbStocksLinks != null && mawbStocksLinks.size() > 0) {
             MawbStocksLink res = mawbStocksLinks.get(0);
-            if(!res.getStatus().equalsIgnoreCase(CONSUMED)) {
+            if (!res.getStatus().equalsIgnoreCase(CONSUMED)) {
                 res.setEntityId(consolidationDetails.getId());
                 res.setEntityType(Constants.CONSOLIDATION);
                 res.setShipConsNumber(consolidationDetails.getConsolidationNumber());
@@ -409,7 +406,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
 
     private void setAvaliableCount(Long parentId) {
         Optional<MawbStocks> mawbStocks = mawbStocksDao.findById(parentId);
-        if(!mawbStocks.isEmpty()) {
+        if (!mawbStocks.isEmpty()) {
             MawbStocks res = mawbStocks.get();
             res.setAvailableCount(String.valueOf(Integer.parseInt(res.getAvailableCount() != null ? res.getAvailableCount() : "0") - 1));
             res.setNextMawbNumber(mawbStocksLinkDao.assignNextMawbNumber(parentId));
@@ -433,7 +430,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
 
     private void consolidationMAWBCheck(ConsolidationDetails consolidationRequest, String oldMawb) {
         if (StringUtility.isEmpty(consolidationRequest.getMawb())) {
-            if(!consolidationRequest.getShipmentType().equals(Constants.IMP)) {
+            if (!consolidationRequest.getShipmentType().equals(Constants.IMP)) {
                 mawbStocksLinkDao.deLinkExistingMawbStockLink(oldMawb);
             }
             return;
@@ -446,17 +443,17 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
             throw new ValidationException("Please enter a valid MAWB number.");
 
         CarrierResponse correspondingCarrier = null;
-        if(consolidationRequest.getCarrierDetails() == null || StringUtility.isEmpty(consolidationRequest.getCarrierDetails().getShippingLine()) ||
-            !Objects.equals(consolidationRequest.getMawb(), oldMawb) ) {
+        if (consolidationRequest.getCarrierDetails() == null || StringUtility.isEmpty(consolidationRequest.getCarrierDetails().getShippingLine()) ||
+                !Objects.equals(consolidationRequest.getMawb(), oldMawb)) {
             String mawbAirlineCode = consolidationRequest.getMawb().substring(0, 3);
             V1DataResponse v1DataResponse = fetchCarrierDetailsFromV1(mawbAirlineCode, consolidationRequest.getConsolidationType());
             List<CarrierResponse> carrierDetails = jsonHelper.convertValueToList(v1DataResponse.entities, CarrierResponse.class);
 
-            if (carrierDetails == null || carrierDetails.size()==0)
+            if (carrierDetails == null || carrierDetails.size() == 0)
                 throw new ValidationException("Airline for the entered MAWB Number doesn't exist in Carrier Master");
 
             correspondingCarrier = carrierDetails.get(0);
-            if(consolidationRequest.getCarrierDetails() == null || StringUtility.isEmpty(consolidationRequest.getCarrierDetails().getShippingLine())) {
+            if (consolidationRequest.getCarrierDetails() == null || StringUtility.isEmpty(consolidationRequest.getCarrierDetails().getShippingLine())) {
 
                 if (consolidationRequest.getCarrierDetails() == null)
                     consolidationRequest.setCarrierDetails(new CarrierDetails());
@@ -478,12 +475,12 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
 
         MawbStocksLink mawbStocksLink = null;
 
-        if (!mawbStocksLinkPage.getContent().isEmpty()){
+        if (!mawbStocksLinkPage.getContent().isEmpty()) {
             isMAWBNumberExist = true;
             mawbStocksLink = mawbStocksLinkPage.getContent().get(0);
         }
 
-        if (isMAWBNumberExist){
+        if (isMAWBNumberExist) {
             if (mawbStocksLink.getStatus().equals(CONSUMED) && !Objects.equals(consolidationRequest.getId(), mawbStocksLink.getEntityId())) {
                 throw new ValidationException("The MAWB number entered is already consumed. Please enter another MAWB number.");
             }
@@ -502,9 +499,9 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         mawbStocks.setTo(consolidationRequest.getMawb());
         mawbStocks.setMawbNumber(consolidationRequest.getMawb());
         mawbStocks.setStatus(UNUSED);
-        if(consolidationRequest.getBorrowedFrom()!=null){
+        if (consolidationRequest.getBorrowedFrom() != null) {
             mawbStocks.setBorrowedFrom(consolidationRequest.getBorrowedFrom().getOrgCode());
-            if(consolidationRequest.getBorrowedFrom().getOrgData() != null && consolidationRequest.getBorrowedFrom().getOrgData().containsKey("FullName")) {
+            if (consolidationRequest.getBorrowedFrom().getOrgData() != null && consolidationRequest.getBorrowedFrom().getOrgData().containsKey("FullName")) {
                 String name = (String) consolidationRequest.getBorrowedFrom().getOrgData().get("FullName");
                 mawbStocks.setBorrowedFromFullName(name);
             }
@@ -550,12 +547,14 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     }
 
     @Override
-    public int updateConsoleBookingFields(ConsoleBookingRequest request){
+    public int updateConsoleBookingFields(ConsoleBookingRequest request) {
         return consolidationRepository.updateConsoleBookingFields(request.getGuid(), request.getBookingId(), request.getBookingStatus(), request.getBookingNumber());
     }
 
     @Transactional
-    public void saveCreatedDateAndUser(Long id, String createdBy, LocalDateTime createdDate) {consolidationRepository.saveCreatedDateAndUser(id, createdBy, createdDate);}
+    public void saveCreatedDateAndUser(Long id, String createdBy, LocalDateTime createdDate) {
+        consolidationRepository.saveCreatedDateAndUser(id, createdBy, createdDate);
+    }
 
     public String getConsolidationNumberFromId(Long id) {
         return consolidationRepository.getConsolidationNumberFromId(id);
@@ -594,7 +593,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     @Override
     @Transactional
     public void entityDetach(List<ConsolidationDetails> consolidationDetails) {
-        for(ConsolidationDetails consolidationDetail : consolidationDetails) {
+        for (ConsolidationDetails consolidationDetail : consolidationDetails) {
             entityManager.detach(consolidationDetail);
         }
     }
@@ -620,13 +619,13 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
 
     @Override
     public List<IShipmentLiteResponse> findIShipmentsByConsolidationIds(
-        List<Long> consolidationIDs) {
+            List<Long> consolidationIDs) {
         return consolidationRepository.findIShipmentsByConsolidationIds(consolidationIDs);
     }
 
     @Override
     public List<IShipmentContainerLiteResponse> findShipmentDetailsWithContainersByConsolidationIds(
-        List<Long> consolidationIDs) {
+            List<Long> consolidationIDs) {
         return consolidationRepository.findShipmentDetailsWithContainersByConsolidationIds(consolidationIDs);
     }
 

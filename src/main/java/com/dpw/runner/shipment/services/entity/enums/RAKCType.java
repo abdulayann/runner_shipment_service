@@ -19,7 +19,7 @@ public enum RAKCType {
 
     public static RAKCType getById(int id) {
         for (RAKCType rakcType : RAKCType.values()) {
-            if(rakcType.id == id) {
+            if (rakcType.id == id) {
                 return rakcType;
             }
         }

@@ -11,18 +11,28 @@ import org.springframework.http.ResponseEntity;
 import java.util.List;
 import java.util.Map;
 
-public interface INetworkTransferService{
+public interface INetworkTransferService {
     ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel);
+
     ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel);
+
     void processNetworkTransferEntity(Long tenantId, Long oldTenantId, String entityType,
                                       ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails,
                                       String jobType, Map<String, Object> entityPayload, Boolean isInterBranchEntity);
+
     void deleteValidNetworkTransferEntity(Long tenantId, Long entityId, String entityType);
+
     void deleteNetworkTransferEntity(NetworkTransfer networkTransfer);
+
     void updateNetworkTransferTransferred(NetworkTransfer networkTransfer, Map<String, Object> payload);
+
     ResponseEntity<IRunnerResponse> requestForTransfer(CommonRequestModel commonRequestModel);
+
     ResponseEntity<IRunnerResponse> requestForReassign(CommonRequestModel commonRequestModel);
+
     void updateStatusAndCreatedEntityId(Long id, String status, Long createdEntityId);
+
     void bulkProcessInterConsoleNte(List<ShipmentDetails> shipmentDetails);
+
     ResponseEntity<IRunnerResponse> fetchEntityStatus(CommonGetRequest commonGetRequest);
 }

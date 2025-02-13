@@ -6,7 +6,6 @@ import com.dpw.runner.shipment.services.kafka.dto.DpsDto.DpsDataDto;
 import com.dpw.runner.shipment.services.service.interfaces.IDpsEventService;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.time.Instant;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -16,6 +15,8 @@ import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
+
+import java.time.Instant;
 
 @Service
 @Slf4j
@@ -75,10 +76,10 @@ public class DpsConsumer {
             int partition,
             long offset,
             long receivedTimestamp) {
-        log.info("{} Received message from topic: {}", LoggerEvent.KAFKA_DPS,topic);
-        log.info("{} Partition: {}", LoggerEvent.KAFKA_DPS,partition);
-        log.info("{} Offset: {}", LoggerEvent.KAFKA_DPS,offset);
-        log.info("{} Received Timestamp: {}", LoggerEvent.KAFKA_DPS,Instant.ofEpochMilli(receivedTimestamp));
+        log.info("{} Received message from topic: {}", LoggerEvent.KAFKA_DPS, topic);
+        log.info("{} Partition: {}", LoggerEvent.KAFKA_DPS, partition);
+        log.info("{} Offset: {}", LoggerEvent.KAFKA_DPS, offset);
+        log.info("{} Received Timestamp: {}", LoggerEvent.KAFKA_DPS, Instant.ofEpochMilli(receivedTimestamp));
         log.info("{} Message: {}", LoggerEvent.KAFKA_DPS, kafkaMessage);
     }
 

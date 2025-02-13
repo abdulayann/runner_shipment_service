@@ -57,10 +57,10 @@ public class CacheEvictionService {
         try {
             log.info("clearCacheByName for key {}::{}", prefixKey, baseKey + suffixKey);
             var cache = cacheManager.getCache(prefixKey);
-            if (!Objects.isNull(cache))  cache.evictIfPresent(baseKey + suffixKey);
+            if (!Objects.isNull(cache)) cache.evictIfPresent(baseKey + suffixKey);
         } catch (Exception e) {
-            log.error("Error during evicting cache with key: {}::{} with exception: {}",prefixKey, baseKey + suffixKey, e.getMessage());
+            log.error("Error during evicting cache with key: {}::{} with exception: {}", prefixKey, baseKey + suffixKey, e.getMessage());
         }
     }
-    
+
 }

@@ -51,13 +51,13 @@ public class PackingsSync implements IPackingsSync {
 
         List<PackingRequestV2> packingRequestV2List = new ArrayList<>();
         Set<Containers> containers = new HashSet<>();
-        if(packingList != null && packingList.size() > 0) {
+        if (packingList != null && packingList.size() > 0) {
             List<Long> containerIds = packingList.stream().map(Packing::getContainerId).filter(Objects::nonNull).toList();
-            if(containerIds.size() > 0) {
+            if (containerIds.size() > 0) {
                 ListCommonRequest listCommonRequest = CommonUtils.constructListCommonRequest("id", containerIds, "IN");
                 Pair<Specification<Containers>, Pageable> pair = DbAccessHelper.fetchData(listCommonRequest, Containers.class);
                 Page<Containers> containersPage = containerDao.findAll(pair.getLeft(), pair.getRight());
-                if(containersPage != null && !containersPage.isEmpty()) {
+                if (containersPage != null && !containersPage.isEmpty()) {
                     containers = new HashSet<>(containersPage.getContent());
                 }
             }
@@ -78,8 +78,7 @@ public class PackingsSync implements IPackingsSync {
 
             syncService.pushToKafka(json, idsString, guidsString, "Packings", transactionId);
             return ResponseHelper.buildSuccessResponse(packingRequestV2List);
-        }
-        else {
+        } else {
             return null;
         }
     }

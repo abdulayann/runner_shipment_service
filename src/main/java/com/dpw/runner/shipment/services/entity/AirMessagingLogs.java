@@ -20,7 +20,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 @Accessors(chain = true)
-@TypeDef(name = "jsonb", typeClass = JsonBinaryType.class )
+@TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AirMessagingLogs extends MultiTenancy {
     @Column(name = "entity_guid")

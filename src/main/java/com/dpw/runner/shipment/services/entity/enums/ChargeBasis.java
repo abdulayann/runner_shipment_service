@@ -20,7 +20,7 @@ public enum ChargeBasis {
 
     public static ChargeBasis getById(int id) {
         for (ChargeBasis chargeBasis : ChargeBasis.values()) {
-            if(chargeBasis.id == id) {
+            if (chargeBasis.id == id) {
                 return chargeBasis;
             }
         }

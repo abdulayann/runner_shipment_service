@@ -94,7 +94,7 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
     }
 
     private void mapReverseShipmentGuids(ConsolidationDetailsRequest response, CustomConsolidationRequest request) {
-        if(request == null || request.getShipmentGuids() == null)
+        if (request == null || request.getShipmentGuids() == null)
             return;
         Set<ShipmentRequest> req = new HashSet<>();
         request.getShipmentGuids().forEach((key, value) -> {
@@ -106,14 +106,14 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
     }
 
     private void mapReverseJobs(ConsolidationDetailsRequest response, CustomConsolidationRequest request) {
-        if(request == null || request.getJobsList() == null)
+        if (request == null || request.getJobsList() == null)
             return;
         List<JobRequest> req = request.getJobsList().stream()
                 .map(item -> {
                     JobRequest p;
                     p = modelMapper.map(item, JobRequest.class);
                     p.setEventsList(new ArrayList<>());
-                    if(item.getEvents() != null)
+                    if (item.getEvents() != null)
                         modelMapper.map(item.getEvents(), p.getEventsList());
                     return p;
                 })
@@ -122,7 +122,7 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
     }
 
     private void mapReverseCarrierDetails(ConsolidationDetailsRequest response, CustomConsolidationRequest request) {
-        if(request == null)
+        if (request == null)
             return;
         response.setCarrierDetails(new CarrierDetailRequest());
         modelMapper.map(request, response.getCarrierDetails());
@@ -137,7 +137,7 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
     }
 
     private void mapReverseAchievedQuantities(ConsolidationDetailsRequest response, CustomConsolidationRequest request) {
-        if(request == null)
+        if (request == null)
             return;
         response.setAchievedQuantities(new AchievedQuantitiesRequest());
         modelMapper.map(request, response.getAchievedQuantities());
@@ -148,7 +148,7 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
     }
 
     private void mapReverseAllocations(ConsolidationDetailsRequest response, CustomConsolidationRequest request) {
-        if(request == null)
+        if (request == null)
             return;
         response.setAllocations(new AllocationsRequest());
         modelMapper.map(request, response.getAllocations());
@@ -159,7 +159,7 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
     }
 
     private void mapReverseArrivalDepartureDetails(ConsolidationDetailsRequest response_, CustomConsolidationRequest request_) {
-        if(request_ == null || request_.getArrivalDepartureDetails() == null)
+        if (request_ == null || request_.getArrivalDepartureDetails() == null)
             return;
 
         ArrivalDepartureDetails request = request_.getArrivalDepartureDetails();
@@ -167,21 +167,21 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
         // Arrival Details
         ArrivalDepartureDetailsRequest response1 = new ArrivalDepartureDetailsRequest();
 
-        if(request.getAcontainerYardId() != null)
+        if (request.getAcontainerYardId() != null)
             response1.setContainerYardId(modelMapper.map(request.getAcontainerYardId(), PartiesRequest.class));
         response1.setFirstForeignPortArrivalDate(request.getAfirstArrivalPortArrivalDate());
         response1.setFirstForeignPort(request.getAfirstForeignPort());
-        if(request.getAfirstArrivalPortId() != null)
+        if (request.getAfirstArrivalPortId() != null)
             response1.setFirstForeignPortId(modelMapper.map(request.getAfirstArrivalPortId(), PartiesRequest.class));
         response1.setLastForeignPortDepartureDate(request.getAlastForeignPortDepartureDate());
         response1.setLastForeignPort(request.getAlastForeignPort());
-        if(request.getAlastForeignPortId() != null)
+        if (request.getAlastForeignPortId() != null)
             response1.setLastForeignPortId(modelMapper.map(request.getAlastForeignPortId(), PartiesRequest.class));
-        if(request.getAtransportPortId() != null)
+        if (request.getAtransportPortId() != null)
             response1.setTransportPortId(modelMapper.map(request.getAtransportPortId(), PartiesRequest.class));
-        if(request.getACTOId() != null)
+        if (request.getACTOId() != null)
             response1.setCTOId(modelMapper.map(request.getACTOId(), PartiesRequest.class));
-        if(request.getACFSId() != null)
+        if (request.getACFSId() != null)
             response1.setCFSId(modelMapper.map(request.getACFSId(), PartiesRequest.class));
 
         response_.setArrivalDetails(response1);
@@ -189,48 +189,48 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
         // Departure Details
         ArrivalDepartureDetailsRequest response2 = new ArrivalDepartureDetailsRequest();
 
-        if(request.getDcontainerYardId() != null)
+        if (request.getDcontainerYardId() != null)
             response2.setContainerYardId(modelMapper.map(request.getDcontainerYardId(), PartiesRequest.class));
         response2.setFirstForeignPortArrivalDate(request.getDfirstForeignPortArrivalDate());
         response2.setFirstForeignPort(request.getDfirstForeignPort());
-        if(request.getDfirstForeignPortId() != null)
+        if (request.getDfirstForeignPortId() != null)
             response2.setFirstForeignPortId(modelMapper.map(request.getDfirstForeignPortId(), PartiesRequest.class));
         response2.setLastForeignPortDepartureDate(request.getDlastForeignPortDepartureDate());
         response2.setLastForeignPort(request.getDlastForeignPort());
-        if(request.getDlastForeignPortId() != null)
+        if (request.getDlastForeignPortId() != null)
             response2.setLastForeignPortId(modelMapper.map(request.getDlastForeignPortId(), PartiesRequest.class));
-        if(request.getDtransportPortId() != null)
+        if (request.getDtransportPortId() != null)
             response2.setTransportPortId(modelMapper.map(request.getDtransportPortId(), PartiesRequest.class));
-        if(request.getDCTOId() != null)
+        if (request.getDCTOId() != null)
             response2.setCTOId(modelMapper.map(request.getDCTOId(), PartiesRequest.class));
-        if(request.getDCFSId() != null)
+        if (request.getDCFSId() != null)
             response2.setCFSId(modelMapper.map(request.getDCFSId(), PartiesRequest.class));
 
         response_.setDepartureDetails(response2);
     }
 
     private PartiesRequest mapPartyObjectWithFreetext(PartyRequestV2 sourcePartyObject, Boolean isFreeText, String freeTextAddress) {
-        if(sourcePartyObject == null)
+        if (sourcePartyObject == null)
             return null;
         PartiesRequest parties = modelMapper.map(sourcePartyObject, PartiesRequest.class);
-        if(isFreeText != null && isFreeText) {
+        if (isFreeText != null && isFreeText) {
             parties.setIsAddressFreeText(true);
-            if(parties.getAddressData() == null)
+            if (parties.getAddressData() == null)
                 parties.setAddressData(new HashMap<>());
             parties.getAddressData().put(PartiesConstants.RAW_DATA, freeTextAddress);
         }
         return parties;
     }
 
-    private <T,P> List<P> convertToList(final List<T> lst, Class<P> clazz) {
-        if(lst == null)
+    private <T, P> List<P> convertToList(final List<T> lst, Class<P> clazz) {
+        if (lst == null)
             return null;
-        return  lst.stream()
+        return lst.stream()
                 .map(item -> convertToClass(item, clazz))
                 .toList();
     }
 
-    private  <T,P> P convertToClass(T obj, Class<P> clazz) {
+    private <T, P> P convertToClass(T obj, Class<P> clazz) {
         return modelMapper.map(obj, clazz);
     }
 }

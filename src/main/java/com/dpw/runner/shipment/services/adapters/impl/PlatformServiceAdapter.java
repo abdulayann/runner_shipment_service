@@ -43,7 +43,7 @@ public class PlatformServiceAdapter implements IPlatformServiceAdapter {
         log.info("Platform Create Request for booking reference {}: {}", request.getBooking_ref_code(), request);
         log.info("Payload sent for event: {} with request payload: {}", IntegrationType.PLATFORM_CREATE_BOOKING, jsonHelper.convertToJsonWithNulls(request));
         ResponseEntity<?> responseEntity = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJsonWithNulls(request)), Object.class);
-        return ResponseHelper.buildDependentServiceResponse(responseEntity.getBody(),0,0);
+        return ResponseHelper.buildDependentServiceResponse(responseEntity.getBody(), 0, 0);
     }
 
     @Override
@@ -54,6 +54,6 @@ public class PlatformServiceAdapter implements IPlatformServiceAdapter {
         log.info("Payload sent for event: {} with request payload: {}", IntegrationType.PLATFORM_UPDATE_BOOKING, jsonHelper.convertToJsonWithNulls(request));
         ResponseEntity<?> responseEntity = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJsonWithNulls(request)), Object.class);
         log.info("Endpoint:PLATFOR_UPDATE_SHIPMENT----- ResponsePayload: {}", jsonHelper.convertToJson(responseEntity));
-        return ResponseHelper.buildDependentServiceResponse(responseEntity.getBody(),0,0);
+        return ResponseHelper.buildDependentServiceResponse(responseEntity.getBody(), 0, 0);
     }
 }

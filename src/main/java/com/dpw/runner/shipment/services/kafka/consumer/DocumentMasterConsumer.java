@@ -5,8 +5,6 @@ import com.dpw.runner.shipment.services.kafka.dto.DocumentDto;
 import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.time.Instant;
-import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringEscapeUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,15 +16,18 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
+import java.util.Objects;
+
 
 @Service
 @Slf4j
 @Generated
 public class DocumentMasterConsumer {
 
-    private ObjectMapper objectMapper;
-    private BookingIntegrationsUtility bookingIntegrationsUtility;
     private final RetryTemplate retryTemplate;
+    private final ObjectMapper objectMapper;
+    private final BookingIntegrationsUtility bookingIntegrationsUtility;
 
     @Autowired
     DocumentMasterConsumer(ObjectMapper objectMapper, BookingIntegrationsUtility bookingIntegrationsUtility, RetryTemplate retryTemplate) {
@@ -41,11 +42,11 @@ public class DocumentMasterConsumer {
             autoStartup = "#{'${document.master.kafka.consumer-auto-startup}'}",
             containerFactory = "documentKafkaListenerContainerFactory")
     public void consume(@Payload String message,
-            @Header(KafkaHeaders.RECEIVED_TOPIC) String topic,
-            @Header(KafkaHeaders.RECEIVED_PARTITION_ID) int partition,
-            @Header(KafkaHeaders.OFFSET) long offset,
-            @Header(KafkaHeaders.RECEIVED_TIMESTAMP) long receivedTimestamp,
-            Acknowledgment acknowledgment) {
+                        @Header(KafkaHeaders.RECEIVED_TOPIC) String topic,
+                        @Header(KafkaHeaders.RECEIVED_PARTITION_ID) int partition,
+                        @Header(KafkaHeaders.OFFSET) long offset,
+                        @Header(KafkaHeaders.RECEIVED_TIMESTAMP) long receivedTimestamp,
+                        Acknowledgment acknowledgment) {
 
         logKafkaMessageInfo(message, topic, partition, offset, receivedTimestamp);
         try {

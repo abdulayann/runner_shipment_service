@@ -27,7 +27,7 @@ import java.util.Objects;
 public class TaskController {
 
     private final ITasksService tasksService;
-    private static class MyResponseClass extends RunnerResponse<DependentServiceResponse> {}
+
     @Autowired
     public TaskController(ITasksService tasksService) {
         this.tasksService = tasksService;
@@ -65,5 +65,8 @@ public class TaskController {
             log.error(responseMsg, e);
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    private static class MyResponseClass extends RunnerResponse<DependentServiceResponse> {
     }
 }

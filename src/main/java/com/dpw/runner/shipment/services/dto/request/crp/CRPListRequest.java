@@ -14,7 +14,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-public class CRPListRequest  implements IRunnerRequest {
+public class CRPListRequest implements IRunnerRequest {
     private String searchString;
     @JsonProperty("isBillable")
     private boolean isBillable;

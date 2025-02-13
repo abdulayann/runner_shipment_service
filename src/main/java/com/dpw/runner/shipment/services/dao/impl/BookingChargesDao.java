@@ -51,8 +51,8 @@ public class BookingChargesDao implements IBookingChargesDao {
 
     @Override
     public BookingCharges save(BookingCharges bookingCharges) {
-        Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(bookingCharges) , Constants.BOOKING_CHARGES, LifecycleHooks.ON_CREATE, false);
-        if (! errors.isEmpty())
+        Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(bookingCharges), Constants.BOOKING_CHARGES, LifecycleHooks.ON_CREATE, false);
+        if (!errors.isEmpty())
             throw new ValidationException(String.join(",", errors));
         return bookingChargesRepository.save(bookingCharges);
     }
@@ -99,12 +99,11 @@ public class BookingChargesDao implements IBookingChargesDao {
             hashMap.values().forEach(bookingCharge -> {
                 String json = jsonHelper.convertToJson(bookingCharge);
                 delete(bookingCharge);
-                if(entity != null)
-                {
+                if (entity != null) {
                     try {
                         auditLogService.addAuditLog(
                                 AuditLogMetaData.builder()
-                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
+                                        .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                         .newData(null)
                                         .prevData(jsonHelper.readFromJson(json, BookingCharges.class))
                                         .parent(entity)

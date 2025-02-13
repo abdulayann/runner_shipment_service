@@ -46,6 +46,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
     public ReferenceNumbers save(ReferenceNumbers referenceNumbers) {
         return referenceNumbersRepository.save(referenceNumbers);
     }
+
     @Override
     public List<ReferenceNumbers> saveAll(List<ReferenceNumbers> referenceNumbersList) {
         return referenceNumbersRepository.saveAll(referenceNumbersList);
@@ -74,7 +75,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
             // TODO- Handle Transactions here
             List<ReferenceNumbers> routings = findByShipmentId(shipmentId);
             Map<Long, ReferenceNumbers> hashMap = routings.stream()
-                        .collect(Collectors.toMap(ReferenceNumbers::getId, Function.identity()));
+                    .collect(Collectors.toMap(ReferenceNumbers::getId, Function.identity()));
             Map<Long, ReferenceNumbers> copyHashMap = new HashMap<>(hashMap);
             List<ReferenceNumbers> referenceNumbersRequests = new ArrayList<>();
             if (referenceNumbersList != null && !referenceNumbersList.isEmpty()) {
@@ -104,10 +105,10 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
     @Override
     public List<ReferenceNumbers> saveEntityFromShipment(List<ReferenceNumbers> referenceNumbersRequests, Long shipmentId) {
         List<ReferenceNumbers> res = new ArrayList<>();
-        for(ReferenceNumbers req : referenceNumbersRequests){
+        for (ReferenceNumbers req : referenceNumbersRequests) {
             String oldEntityJsonString = null;
             String operation = DBOperationType.CREATE.name();
-            if(req.getId() != null){
+            if (req.getId() != null) {
                 long id = req.getId();
                 Optional<ReferenceNumbers> oldEntity = findById(id);
                 if (!oldEntity.isPresent()) {
@@ -139,12 +140,13 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
         }
         return res;
     }
+
     @Override
     public List<ReferenceNumbers> saveEntityFromShipment(List<ReferenceNumbers> referenceNumbersRequests, Long shipmentId, Map<Long, ReferenceNumbers> hashMap) {
         List<ReferenceNumbers> res = new ArrayList<>();
         Map<Long, String> oldEntityJsonStringMap = new HashMap<>();
-        for(ReferenceNumbers req : referenceNumbersRequests){
-            if(req.getId() != null){
+        for (ReferenceNumbers req : referenceNumbersRequests) {
+            if (req.getId() != null) {
                 long id = req.getId();
                 if (!hashMap.containsKey(id)) {
                     log.debug(REFERENCE_NUMBER_IS_NULL_FOR_ID_MSG, req.getId());
@@ -192,11 +194,11 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
             // TODO- Handle Transactions here
             Map<Long, ReferenceNumbers> hashMap;
 //            if(!Objects.isNull(referenceNumbersIdList) && !referenceNumbersIdList.isEmpty()) {
-                ListCommonRequest listCommonRequest = constructListCommonRequest("consolidationId", consolidationId, "=");
-                Pair<Specification<ReferenceNumbers>, Pageable> pair = fetchData(listCommonRequest, ReferenceNumbers.class);
-                Page<ReferenceNumbers> routings = findAll(pair.getLeft(), pair.getRight());
-                hashMap = routings.stream()
-                        .collect(Collectors.toMap(ReferenceNumbers::getId, Function.identity()));
+            ListCommonRequest listCommonRequest = constructListCommonRequest("consolidationId", consolidationId, "=");
+            Pair<Specification<ReferenceNumbers>, Pageable> pair = fetchData(listCommonRequest, ReferenceNumbers.class);
+            Page<ReferenceNumbers> routings = findAll(pair.getLeft(), pair.getRight());
+            hashMap = routings.stream()
+                    .collect(Collectors.toMap(ReferenceNumbers::getId, Function.identity()));
 //            }
             Map<Long, ReferenceNumbers> copyHashMap = new HashMap<>(hashMap);
             List<ReferenceNumbers> referenceNumbersRequests = new ArrayList<>();
@@ -224,8 +226,8 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
     public List<ReferenceNumbers> updateEntityFromConsole(List<ReferenceNumbers> referenceNumbersList, Long consolidationId, List<ReferenceNumbers> oldEntityList) throws RunnerException {
         String responseMsg;
         Map<UUID, ReferenceNumbers> referenceNumbersMap = new HashMap<>();
-        if(oldEntityList != null && oldEntityList.size() > 0) {
-            for (ReferenceNumbers entity:
+        if (oldEntityList != null && oldEntityList.size() > 0) {
+            for (ReferenceNumbers entity :
                     oldEntityList) {
                 referenceNumbersMap.put(entity.getGuid(), entity);
             }
@@ -238,7 +240,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
             if (referenceNumbersList != null && !referenceNumbersList.isEmpty()) {
                 for (ReferenceNumbers request : referenceNumbersList) {
                     oldEntity = referenceNumbersMap.get(request.getGuid());
-                    if(oldEntity != null) {
+                    if (oldEntity != null) {
                         referenceNumbersMap.remove(oldEntity.getGuid());
                         request.setId(oldEntity.getId());
                     }
@@ -247,7 +249,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
                 responseReferenceNumbers = saveEntityFromConsole(referenceNumbersRequests, consolidationId);
             }
             Map<Long, ReferenceNumbers> hashMap = new HashMap<>();
-            referenceNumbersMap.forEach((s, referenceNumbers) ->  hashMap.put(referenceNumbers.getId(), referenceNumbers));
+            referenceNumbersMap.forEach((s, referenceNumbers) -> hashMap.put(referenceNumbers.getId(), referenceNumbers));
             deleteReferenceNumbers(hashMap, ConsolidationDetails.class.getSimpleName(), consolidationId);
             return responseReferenceNumbers;
         } catch (Exception e) {
@@ -261,10 +263,10 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
     @Override
     public List<ReferenceNumbers> saveEntityFromConsole(List<ReferenceNumbers> referenceNumbersRequests, Long consolidationId) {
         List<ReferenceNumbers> res = new ArrayList<>();
-        for(ReferenceNumbers req : referenceNumbersRequests){
+        for (ReferenceNumbers req : referenceNumbersRequests) {
             String oldEntityJsonString = null;
             String operation = DBOperationType.CREATE.name();
-            if(req.getId() != null){
+            if (req.getId() != null) {
                 long id = req.getId();
                 Optional<ReferenceNumbers> oldEntity = findById(id);
                 if (!oldEntity.isPresent()) {
@@ -296,12 +298,13 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
         }
         return res;
     }
+
     @Override
     public List<ReferenceNumbers> saveEntityFromConsole(List<ReferenceNumbers> referenceNumbersRequests, Long consolidationId, Map<Long, ReferenceNumbers> hashMap) {
         List<ReferenceNumbers> res = new ArrayList<>();
         Map<Long, String> oldEntityJsonStringMap = new HashMap<>();
-        for(ReferenceNumbers req : referenceNumbersRequests){
-            if(req.getId() != null){
+        for (ReferenceNumbers req : referenceNumbersRequests) {
+            if (req.getId() != null) {
                 long id = req.getId();
                 if (!hashMap.containsKey(id)) {
                     log.debug(REFERENCE_NUMBER_IS_NULL_FOR_ID_MSG, req.getId());
@@ -347,12 +350,11 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
             hashMap.values().forEach(referenceNumber -> {
                 String json = jsonHelper.convertToJson(referenceNumber);
                 delete(referenceNumber);
-                if(entityType != null)
-                {
+                if (entityType != null) {
                     try {
                         auditLogService.addAuditLog(
                                 AuditLogMetaData.builder()
-                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
+                                        .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                         .newData(null)
                                         .prevData(jsonHelper.readFromJson(json, ReferenceNumbers.class))
                                         .parent(entityType)
@@ -376,8 +378,8 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
     public List<ReferenceNumbers> updateEntityFromShipment(List<ReferenceNumbers> referenceNumbersList, Long shipmentId, List<ReferenceNumbers> oldEntityList) throws RunnerException {
         String responseMsg;
         Map<UUID, ReferenceNumbers> referenceNumbersMap = new HashMap<>();
-        if(oldEntityList != null && oldEntityList.size() > 0) {
-            for (ReferenceNumbers entity:
+        if (oldEntityList != null && oldEntityList.size() > 0) {
+            for (ReferenceNumbers entity :
                     oldEntityList) {
                 referenceNumbersMap.put(entity.getGuid(), entity);
             }
@@ -390,7 +392,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
             if (referenceNumbersList != null && !referenceNumbersList.isEmpty()) {
                 for (ReferenceNumbers request : referenceNumbersList) {
                     oldEntity = referenceNumbersMap.get(request.getGuid());
-                    if(oldEntity != null) {
+                    if (oldEntity != null) {
                         referenceNumbersMap.remove(oldEntity.getGuid());
                         request.setId(oldEntity.getId());
                     }
@@ -399,7 +401,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
                 responseReferenceNumbers = saveEntityFromShipment(referenceNumbersRequests, shipmentId);
             }
             Map<Long, ReferenceNumbers> hashMap = new HashMap<>();
-            referenceNumbersMap.forEach((s, referenceNumbers) ->  hashMap.put(referenceNumbers.getId(), referenceNumbers));
+            referenceNumbersMap.forEach((s, referenceNumbers) -> hashMap.put(referenceNumbers.getId(), referenceNumbers));
             deleteReferenceNumbers(hashMap, ShipmentDetails.class.getSimpleName(), shipmentId);
             return responseReferenceNumbers;
         } catch (Exception e) {

@@ -12,25 +12,25 @@ import lombok.NoArgsConstructor;
 @Builder
 public class DGTaskCreateRequest {
 
-  @JsonProperty("TaskStatus")
-  private String taskStatus;
+    @JsonProperty("TaskStatus")
+    private String taskStatus;
 
-  @JsonProperty("RoleId")
-  private String roleId;
+    @JsonProperty("RoleId")
+    private String roleId;
 
-  @JsonProperty("EntityId")
-  private String entityId;
+    @JsonProperty("EntityId")
+    private String entityId;
 
-  @JsonProperty("EntityType")
-  private String entityType;
+    @JsonProperty("EntityType")
+    private String entityType;
 
-  @JsonProperty("TenantId")
-  private String tenantId;
+    @JsonProperty("TenantId")
+    private String tenantId;
 
-  @JsonProperty("TaskType")
-  private String taskType;
+    @JsonProperty("TaskType")
+    private String taskType;
 
-  @JsonProperty("UserId")
-  private Long userId;
+    @JsonProperty("UserId")
+    private Long userId;
 
 }

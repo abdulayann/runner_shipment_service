@@ -4,23 +4,15 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.entity.enums.EventType;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.MasterData;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-import javax.persistence.Table;
-import javax.validation.constraints.Size;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
+
+import javax.persistence.*;
+import javax.validation.constraints.Size;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Entity
 @Setter
@@ -39,11 +31,11 @@ public class Events extends MultiTenancy {
     private Long entityId;
 
     @Column(name = "entity_type")
-    @Size(max=100, message = "max size is 100 for entity_type")
+    @Size(max = 100, message = "max size is 100 for entity_type")
     private String entityType;
 
     @Column(name = "event_code")
-    @Size(max=210, message = "max size is 210 for event_code")
+    @Size(max = 210, message = "max size is 210 for event_code")
     @MasterData(type = MasterDataType.ORDER_EVENTS)
     private String eventCode;
 
@@ -52,7 +44,7 @@ public class Events extends MultiTenancy {
     private EventType eventType;
 
     @Column(name = "description")
-    @Size(max=512, message = "max size is 512 for description")
+    @Size(max = 512, message = "max size is 512 for description")
     private String description;
 
     @Column(name = "estimated")
@@ -65,19 +57,19 @@ public class Events extends MultiTenancy {
     private Boolean isPublicTrackingEvent;
 
     @Column(name = "place_name")
-    @Size(max=100, message = "max size is 100 for place_name")
+    @Size(max = 100, message = "max size is 100 for place_name")
     private String placeName;
 
     @Column(name = "place_description")
-    @Size(max=100, message = "max size is 100 for place_description")
+    @Size(max = 100, message = "max size is 100 for place_description")
     private String placeDescription;
 
     @Column(name = "latitude")
-    @Size(max=100, message = "max size is 100 for latitude")
+    @Size(max = 100, message = "max size is 100 for latitude")
     private String latitude;
 
     @Column(name = "longitude")
-    @Size(max=100, message = "max size is 100 for longitude")
+    @Size(max = 100, message = "max size is 100 for longitude")
     private String longitude;
 
     @Column(name = "source")

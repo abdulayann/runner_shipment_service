@@ -11,11 +11,11 @@ import org.springframework.web.client.RestTemplate;
 @Configuration
 public class TrackingServiceConfig {
 
+    private final RestTemplate restTemplate;
     @Value("${events-message-topic}")
     private String eventsMessageTopic;
     @Value("${runner-flow-topic}")
     private String runnerFlowMessageTopic;
-    private final RestTemplate restTemplate;
 
     public TrackingServiceConfig() {
         HttpComponentsClientHttpRequestFactory requestFactory = new HttpComponentsClientHttpRequestFactory();

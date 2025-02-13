@@ -21,9 +21,9 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 @Component
 public class PickupOrderReport extends IReport {
 
+    public Boolean printWithoutTranslation;
     @Autowired
     private HblReport hblReport;
-    public Boolean printWithoutTranslation;
 
     @Override
     public Map<String, Object> getData(Long id) {
@@ -54,7 +54,7 @@ public class PickupOrderReport extends IReport {
         List<String> orgWithoutTranslation = new ArrayList<>();
         List<String> chargeTypesWithoutTranslation = new ArrayList<>();
         Map<String, Object> dictionary = hblReport.populateDictionary(pickUpOrderReportModel.hblModel);
-        if(pickUpOrderReportModel.pickUpTransportAddress != null && pickUpOrderReportModel.pickUpTransportAddress.getAddressData() != null)
+        if (pickUpOrderReportModel.pickUpTransportAddress != null && pickUpOrderReportModel.pickUpTransportAddress.getAddressData() != null)
             dictionary.put(ReportConstants.PICKUP_TRANSPORT_CONTACT_PERSON, pickUpOrderReportModel.pickUpTransportAddress.getAddressData().get("ContactPerson"));
 
         if (pickUpOrderReportModel.hblModel.shipment != null && pickUpOrderReportModel.hblModel.shipment.getPickupDetails() != null) {
@@ -63,26 +63,26 @@ public class PickupOrderReport extends IReport {
             dictionary.put(ReportConstants.PickupFrom, pickUpFrom);
 
             // P0 tags pickup order doc
-            if(pickupDetails.getTransporterDetail() != null) {
+            if (pickupDetails.getTransporterDetail() != null) {
                 dictionary.put(ReportConstants.PICKUP_TRANSPORT_COMPANY, getValueFromMap(pickupDetails.getTransporterDetail().getOrgData(), ReportConstants.FULL_NAME));
                 dictionary.put(ReportConstants.PICKUP_TRANSPORT_CONTACT_PERSON, getValueFromMap(pickupDetails.getTransporterDetail().getAddressData(), CONTACT_PERSON));
             }
-            if(pickupDetails.getSourceDetail() != null) {
+            if (pickupDetails.getSourceDetail() != null) {
                 dictionary.put(ReportConstants.PICKUP_COMPANY, getValueFromMap(pickupDetails.getSourceDetail().getOrgData(), ReportConstants.FULL_NAME));
             }
 
-            if(pickUpOrderReportModel.hblModel.shipment.getPickupDetails().getDestinationDetail() != null) {
+            if (pickUpOrderReportModel.hblModel.shipment.getPickupDetails().getDestinationDetail() != null) {
                 List<String> cyNameAddress = new ArrayList<>();
-                if(!Boolean.TRUE.equals(pickUpOrderReportModel.hblModel.shipmentSettingsDetails.getDisableBlPartiesName()))
+                if (!Boolean.TRUE.equals(pickUpOrderReportModel.hblModel.shipmentSettingsDetails.getDisableBlPartiesName()))
                     cyNameAddress.add(getValueFromMap(pickUpOrderReportModel.hblModel.shipment.getPickupDetails().getDestinationDetail().getOrgData(), FULL_NAME));
                 cyNameAddress.addAll(getOrgAddress(pickUpOrderReportModel.hblModel.shipment.getPickupDetails().getDestinationDetail()));
                 dictionary.put(CY_NAME_ADDRESS, String.join("\r\n", cyNameAddress));
             }
         }
-        if(!Objects.isNull(pickUpOrderReportModel.hblModel.shipment)) {
+        if (!Objects.isNull(pickUpOrderReportModel.hblModel.shipment)) {
             populateShipmentOrganizationsLL(pickUpOrderReportModel.hblModel.shipment, dictionary, orgWithoutTranslation);
             var shipmentConsigner = pickUpOrderReportModel.hblModel.shipment.getConsigner();
-            if(shipmentConsigner != null && shipmentConsigner.getAddressData() != null){
+            if (shipmentConsigner != null && shipmentConsigner.getAddressData() != null) {
                 Map<String, Object> consignerAddress = shipmentConsigner.getAddressData();
                 var rawData = consignerAddress != null && consignerAddress.containsKey(PartiesConstants.RAW_DATA) ? StringUtility.convertToString(consignerAddress.get(PartiesConstants.RAW_DATA)) : null;
                 var consignorFreeText = ReportHelper.getAddressList(rawData);
@@ -91,11 +91,11 @@ public class PickupOrderReport extends IReport {
                 dictionary.put(ReportConstants.CONSIGNER_NAME_FREETEXT_INCAPS, consignorFreeText == null ? null : consignorFreeText.stream().map(StringUtility::toUpperCase).collect(Collectors.toList()));
             }
         }
-        if(dictionary.containsKey(CHARGES_SMALL) && dictionary.get(CHARGES_SMALL) instanceof List){
-            List<Map<String, Object>> values = (List<Map<String, Object>>)dictionary.get(CHARGES_SMALL);
-            for (Map<String, Object> v: values) {
-                if(v.containsKey(CHARGE_TYPE_CODE) && v.get(CHARGE_TYPE_CODE) != null) {
-                    v.put(CHARGE_TYPE_DESCRIPTION_LL, GetChargeTypeDescriptionLL((String)v.get(CHARGE_TYPE_CODE), chargeTypesWithoutTranslation));
+        if (dictionary.containsKey(CHARGES_SMALL) && dictionary.get(CHARGES_SMALL) instanceof List) {
+            List<Map<String, Object>> values = (List<Map<String, Object>>) dictionary.get(CHARGES_SMALL);
+            for (Map<String, Object> v : values) {
+                if (v.containsKey(CHARGE_TYPE_CODE) && v.get(CHARGE_TYPE_CODE) != null) {
+                    v.put(CHARGE_TYPE_DESCRIPTION_LL, GetChargeTypeDescriptionLL((String) v.get(CHARGE_TYPE_CODE), chargeTypesWithoutTranslation));
                 }
             }
         }

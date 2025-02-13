@@ -33,6 +33,6 @@ public class TiReferences extends MultiTenancy {
     private String type;
 
     @Column(name = "reference")
-    @Size(max=30, message = "max size is 30 for reference")
+    @Size(max = 30, message = "max size is 30 for reference")
     private String reference;
 }

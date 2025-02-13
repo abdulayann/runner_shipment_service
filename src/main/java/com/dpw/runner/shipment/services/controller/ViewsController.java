@@ -29,8 +29,6 @@ import java.util.List;
 public class ViewsController {
     private final IViewsService viewsService;
 
-    private class MyResponseClass extends RunnerResponse<ViewsResponse>{}
-    private class MyListResponseClass extends RunnerListResponse<ViewsResponse>{}
     @Autowired
     public ViewsController(IViewsService viewsService) {
         this.viewsService = viewsService;
@@ -66,13 +64,12 @@ public class ViewsController {
         return viewsService.list(CommonRequestModel.buildRequest(listCommonRequest));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200,response = MyResponseClass.class, message = ViewsConstants.VIEW_RETRIEVE_BY_ID_SUCCESSFUL)})
+    @ApiResponses(value = {@ApiResponse(code = 200, response = MyResponseClass.class, message = ViewsConstants.VIEW_RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
     public ResponseEntity<IRunnerResponse> retrieveById(@ApiParam(value = ViewsConstants.VIEW_ID, required = true) @RequestParam Long id, @RequestParam(name = "includeColumns", required = false) List<String> includeColumns) {
         CommonGetRequest request = CommonGetRequest.builder().id(id).includeColumns(includeColumns).build();
         return viewsService.retrieveById(CommonRequestModel.buildRequest(request));
     }
-
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ViewsConstants.VIEW_UPDATE_SUCCESSFUL, response = MyResponseClass.class)})
     @PutMapping(ApiConstants.API_UPDATE)
@@ -86,5 +83,11 @@ public class ViewsController {
             log.error(responseMsg, e);
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    private class MyResponseClass extends RunnerResponse<ViewsResponse> {
+    }
+
+    private class MyListResponseClass extends RunnerListResponse<ViewsResponse> {
     }
 }

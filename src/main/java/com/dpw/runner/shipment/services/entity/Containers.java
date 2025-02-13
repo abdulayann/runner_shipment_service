@@ -148,7 +148,7 @@ public class Containers extends MultiTenancy {
     private String maxTempUnit;
 
     @Column(name = "hbl_delivery_mode")
-    @Size(max=9, message = "max size is 9 for hbl_delivery_mode")
+    @Size(max = 9, message = "max size is 9 for hbl_delivery_mode")
     @MasterData(type = MasterDataType.HBL_DELIVERY_MODE)
     private String hblDeliveryMode;
 
@@ -173,15 +173,15 @@ public class Containers extends MultiTenancy {
     private String tareWeightUnit;
 
     @Column(name = "serial_number")
-    @Size(max=100, message = "max size is 100 for serial_number")
+    @Size(max = 100, message = "max size is 100 for serial_number")
     private String serialNumber;
 
     @Column(name = "inner_package_number")
-    @Size(max=100, message = "max size is 100 for inner_package_number")
+    @Size(max = 100, message = "max size is 100 for inner_package_number")
     private String innerPackageNumber;
 
     @Column(name = "inner_package_type")
-    @Size(max=50, message = "max size is 50 for inner_package_type")
+    @Size(max = 50, message = "max size is 50 for inner_package_type")
     private String innerPackageType;
 
     @Column(name = "package_length")
@@ -197,19 +197,19 @@ public class Containers extends MultiTenancy {
     private Boolean isTemperatureMaintained;
 
     @Column(name = "packs")
-    @Size(max=50, message = "max size is 50 for packs")
+    @Size(max = 50, message = "max size is 50 for packs")
     private String packs;
 
     @Column(name = "packs_type")
-    @Size(max=50, message = "max size is 50 for packs_type")
+    @Size(max = 50, message = "max size is 50 for packs_type")
     private String packsType;
 
     @Column(name = "marks_n_nums")
-    @Size(max=50, message = "max size is 50 for marks_n_nums")
+    @Size(max = 50, message = "max size is 50 for marks_n_nums")
     private String marksNums;
 
     @Column(name = "inner_package_measurement_unit")
-    @Size(max=50, message = "max size is 50 for inner_package_measurement_unit")
+    @Size(max = 50, message = "max size is 50 for inner_package_measurement_unit")
     @MasterData(type = MasterDataType.DIMENSION_UNIT)
     private String innerPackageMeasurementUnit;
 
@@ -221,7 +221,7 @@ public class Containers extends MultiTenancy {
 
     @Column(name = "chargeable_unit")
     @MasterData(type = MasterDataType.WEIGHT_UNIT)
-    @Size(max=3, message = "max size is 3 for chargeable_unit")
+    @Size(max = 3, message = "max size is 3 for chargeable_unit")
     private String chargeableUnit;
 
     @Column(name = "is_own_container")
@@ -235,11 +235,11 @@ public class Containers extends MultiTenancy {
     private ContainerStatus status;
 
     @Column(name = "extra_params")
-    @Size(max=2000, message = "max size is 2000 for extra_params")
+    @Size(max = 2000, message = "max size is 2000 for extra_params")
     private String extraParams;
 
     @Column(name = "remarks")
-    @Size(max=1000, message = "max size is 1000 for remarks")
+    @Size(max = 1000, message = "max size is 1000 for remarks")
     private String remarks;
 
     @Column(name = "allocated_weight")
@@ -247,7 +247,7 @@ public class Containers extends MultiTenancy {
 
     @Column(name = "allocated_weight_unit")
     @MasterData(type = MasterDataType.WEIGHT_UNIT)
-    @Size(max=4, message = "max size is 4 for allocated_weight_unit")
+    @Size(max = 4, message = "max size is 4 for allocated_weight_unit")
     private String allocatedWeightUnit;
 
     @Column(name = "allocated_volume")
@@ -262,7 +262,7 @@ public class Containers extends MultiTenancy {
 
     @Column(name = "achieved_weight_unit")
     @MasterData(type = MasterDataType.WEIGHT_UNIT)
-    @Size(max=4, message = "max size is 4 for achieved_weight_unit")
+    @Size(max = 4, message = "max size is 4 for achieved_weight_unit")
     private String achievedWeightUnit;
 
     @Column(name = "achieved_volume")
@@ -270,7 +270,7 @@ public class Containers extends MultiTenancy {
 
     @Column(name = "achieved_volume_unit")
     @MasterData(type = MasterDataType.VOLUME_UNIT)
-    @Size(max=4, message = "max size is 4 achieved_volume_unit")
+    @Size(max = 4, message = "max size is 4 achieved_volume_unit")
     private String achievedVolumeUnit;
 
     @Column(name = "weight_utilization")
@@ -325,7 +325,7 @@ public class Containers extends MultiTenancy {
     private String ownType;
 
     @Column(name = "handling_info")
-    @Size(max=2500, message = "max size is 2500 for handling_info")
+    @Size(max = 2500, message = "max size is 2500 for handling_info")
     private String handlingInfo;
 
     @Column(name = "is_part")
@@ -349,15 +349,15 @@ public class Containers extends MultiTenancy {
     private BigDecimal invoiceValue;
 
     @Column(name = "un_number")
-    @Size(max=31, message = "max size is 31 for un_number")
+    @Size(max = 31, message = "max size is 31 for un_number")
     private String unNumber;
 
     @Column(name = "proper_shipping_name")
-    @Size(max=63, message = "max size is 63 for proper_shipping_name")
+    @Size(max = 63, message = "max size is 63 for proper_shipping_name")
     private String properShippingName;
 
     @Column(name = "packing_group")
-    @Size(max=31, message = "max size is 31 for packing_group")
+    @Size(max = 31, message = "max size is 31 for packing_group")
     @MasterData(type = MasterDataType.PACKING_GROUP)
     private String packingGroup;
 

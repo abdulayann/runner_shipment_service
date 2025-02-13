@@ -20,7 +20,9 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
+
 import java.util.concurrent.CompletableFuture;
+
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,9 +47,9 @@ public class DocumentManagerRestClient {
     @Value("${document-manager.multipleEntityFilesWithTenant}")
     private String multipleEntityFilesWithTenantUrl;
 
-    private JsonHelper jsonHelper;
+    private final JsonHelper jsonHelper;
 
-    private RestTemplate restTemplate;
+    private final RestTemplate restTemplate;
 
     @Autowired
     DocumentManagerRestClient(RestTemplate restTemplate, JsonHelper jsonHelper) {
@@ -66,7 +68,8 @@ public class DocumentManagerRestClient {
                 url,
                 HttpMethod.POST,
                 requestEntity,
-                new ParameterizedTypeReference<>() {}
+                new ParameterizedTypeReference<>() {
+                }
         );
 
         return responseEntity.getBody();
@@ -91,7 +94,8 @@ public class DocumentManagerRestClient {
                 url,
                 HttpMethod.POST,
                 requestEntity,
-                new ParameterizedTypeReference<>() {}
+                new ParameterizedTypeReference<>() {
+                }
         );
 
         return responseEntity.getBody();
@@ -107,7 +111,8 @@ public class DocumentManagerRestClient {
                 url,
                 HttpMethod.POST,
                 requestEntity,
-                new ParameterizedTypeReference<>() {}
+                new ParameterizedTypeReference<>() {
+                }
         );
 
         return responseEntity.getBody();
@@ -122,7 +127,8 @@ public class DocumentManagerRestClient {
                 url,
                 HttpMethod.GET,
                 new HttpEntity<>(headers),
-                new ParameterizedTypeReference<>() {}
+                new ParameterizedTypeReference<>() {
+                }
         );
 
         return responseEntity.getBody();
@@ -139,7 +145,8 @@ public class DocumentManagerRestClient {
                 url,
                 HttpMethod.POST,
                 requestEntity,
-                new ParameterizedTypeReference<>() {}
+                new ParameterizedTypeReference<>() {
+                }
         );
 
         return responseEntity.getBody();

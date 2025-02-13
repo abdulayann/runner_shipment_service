@@ -51,11 +51,15 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrE
 @Slf4j
 public class AwbDao implements IAwbDao {
     @Autowired
+    IMawbHawbLinkDao mawbHawbLinkDao;
+    @Autowired
+    IShipmentDao shipmentDao;
+    @Autowired
+    IConsolidationDetailsDao consolidationDetailsDao;
+    @Autowired
     private IAwbRepository awbRepository;
     @Autowired
     private JsonHelper jsonHelper;
-    @Autowired
-    IMawbHawbLinkDao mawbHawbLinkDao;
     @Autowired
     private KafkaProducer producer;
     @Value("${awbKafka.queue}")
@@ -63,10 +67,6 @@ public class AwbDao implements IAwbDao {
     @Autowired
     @Lazy
     private AwbUtility awbUtility;
-    @Autowired
-    IShipmentDao shipmentDao;
-    @Autowired
-    IConsolidationDetailsDao consolidationDetailsDao;
     @Autowired
     private IConsoleShipmentMappingDao consoleShipmentMappingDao;
 
@@ -84,6 +84,7 @@ public class AwbDao implements IAwbDao {
     public void setV1ServiceUtil(V1ServiceUtil v1ServiceUtil) {
         this.v1ServiceUtil = v1ServiceUtil;
     }
+
     @Autowired
     public void setModelMapper(ModelMapper modelMapper) {
         this.modelMapper = modelMapper;
@@ -91,10 +92,7 @@ public class AwbDao implements IAwbDao {
 
     @Override
     public Awb save(Awb awbShipmentInfo) throws RunnerException {
-        boolean isCreate = false; // TODO- handle create/update here
-        if (awbShipmentInfo.getId() == null) {
-            isCreate = true;
-        }
+        boolean isCreate = awbShipmentInfo.getId() == null; // TODO- handle create/update here
         applyValidations(awbShipmentInfo);
         Awb awb = awbRepository.save(awbShipmentInfo);
         pushToKafka(awb, isCreate);
@@ -104,31 +102,28 @@ public class AwbDao implements IAwbDao {
     @Async
     public void pushToKafka(Awb awb, boolean isCreate) {
         try {
-            if(awb.getTenantId() == null)
+            if (awb.getTenantId() == null)
                 awb.setTenantId(TenantContext.getCurrentTenant());
             AwbResponse awbResponse = jsonHelper.convertValue(awb, AwbResponse.class);
-            if(awb.getShipmentId() != null) {
+            if (awb.getShipmentId() != null) {
                 Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(awb.getShipmentId());
-                if(shipmentDetails.isPresent())
+                if (shipmentDetails.isPresent())
                     awbResponse.setAwbKafkaEntity(jsonHelper.convertValue(shipmentDetails.get(), AwbShipConsoleDto.class));
                 else
                     return;
             } else if (awb.getConsolidationId() != null) {
                 Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(awb.getConsolidationId());
-                if(consolidationDetails.isPresent())
+                if (consolidationDetails.isPresent())
                     awbResponse.setAwbKafkaEntity(jsonHelper.convertValue(consolidationDetails.get(), AwbShipConsoleDto.class));
                 else
                     return;
-            }
-            else {
+            } else {
                 return;
             }
 
             KafkaResponse kafkaResponse = producer.getKafkaResponse(awbResponse, isCreate);
             producer.produceToKafka(jsonHelper.convertToJson(kafkaResponse), senderQueue, UUID.randomUUID().toString());
-        }
-        catch (Exception e)
-        {
+        } catch (Exception e) {
             log.error("Error pushing awb to kafka: {}", e.getMessage());
         }
     }
@@ -140,7 +135,7 @@ public class AwbDao implements IAwbDao {
 
     @Override
     public Optional<Awb> findById(Long id) {
-        return awbRepository.findAwbByIds(Arrays.asList(id)).stream().findFirst();
+        return awbRepository.findAwbByIds(Collections.singletonList(id)).stream().findFirst();
     }
 
     @Override
@@ -172,17 +167,21 @@ public class AwbDao implements IAwbDao {
     public List<Awb> findByShipmentIdsByQuery(List<Long> shipmentIds) {
         return awbRepository.findByShipmentIdsByQuery(shipmentIds);
     }
-    
+
     @Override
     public List<Awb> findByConsolidationIdByQuery(Long consolidationId) {
         return awbRepository.findByConsolidationIdByQuery(consolidationId);
     }
 
     @Override
-    public List<Awb> findByIssuingAgent(String issuingAgent) { return awbRepository.findByIssuingAgent(issuingAgent);}
+    public List<Awb> findByIssuingAgent(String issuingAgent) {
+        return awbRepository.findByIssuingAgent(issuingAgent);
+    }
 
     @Override
-    public List<Awb> findByAwbNumber(List<String> awbNumber) { return awbRepository.findByAwbNumber(awbNumber);}
+    public List<Awb> findByAwbNumber(List<String> awbNumber) {
+        return awbRepository.findByAwbNumber(awbNumber);
+    }
 
     @Override
     public List<Awb> findByAwbNumberAndIssuingAgent(List<String> awbNumber, String issuingAgent) {
@@ -192,8 +191,7 @@ public class AwbDao implements IAwbDao {
     @Override
     public List<Awb> saveAll(List<Awb> req) {
         List<Awb> entities = awbRepository.saveAll(req);
-        for (Awb awb: entities)
-        {
+        for (Awb awb : entities) {
             pushToKafka(awb, false);
         }
         return entities;
@@ -202,21 +200,20 @@ public class AwbDao implements IAwbDao {
     private void applyValidations(Awb awb) throws RunnerException {
         Set<String> errors = new HashSet<>();
         // do not allow duplicate pair of Information Identifier and Trade Identification Code
-        if(awb.getAwbOciInfo() != null) {
+        if (awb.getAwbOciInfo() != null) {
             Set<Pair<Integer, Integer>> uniqueOciPair = new HashSet<>();
-            for(var ociInfo : awb.getAwbOciInfo()) {
+            for (var ociInfo : awb.getAwbOciInfo()) {
                 Pair<Integer, Integer> pair = Pair.of(ociInfo.getInformationIdentifier(), ociInfo.getTradeIdentificationCode());
-                if(!uniqueOciPair.contains(pair)) {
+                if (!uniqueOciPair.contains(pair)) {
                     uniqueOciPair.add(pair);
-                }
-                else {
+                } else {
                     errors.add(AwbConstants.DUPLICATE_PAIR_AWB_OCI_INFO_VALIDATION);
                 }
             }
         }
 
 
-        if(!errors.isEmpty())
+        if (!errors.isEmpty())
             throw new RunnerException(errors.toString());
     }
 
@@ -262,8 +259,7 @@ public class AwbDao implements IAwbDao {
                     }
                 }
             }
-        } catch (Exception e)
-        {
+        } catch (Exception e) {
             log.error("Error pushing awb to kafka for entityId: {} with error: {}", id, e.getMessage());
         }
     }
@@ -275,10 +271,10 @@ public class AwbDao implements IAwbDao {
     }
 
     public void pushToKafkaForAirMessaging(Awb awb, ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails, TenantModel tenantModel, boolean overrideData, Awb masterAwb, boolean includeCSD) throws RunnerException {
-        if(awb.getTenantId() == null)
+        if (awb.getTenantId() == null)
             awb.setTenantId(TenantContext.getCurrentTenant());
         AwbAirMessagingResponse awbResponse;
-        if(shipmentDetails != null) {
+        if (shipmentDetails != null) {
             awbResponse = awbUtility.createAirMessagingRequestForShipment(awb, shipmentDetails, tenantModel, masterAwb);
             awbResponse.setAwbKafkaEntity(jsonHelper.convertValue(shipmentDetails, AwbShipConsoleDto.class));
         } else if (consolidationDetails != null) {
@@ -303,17 +299,19 @@ public class AwbDao implements IAwbDao {
 
     public Awb getMawb(Long id) {
         List<Awb> awb = awbRepository.findByConsolidationId(id);
-        if(awb != null && !awb.isEmpty()) {
+        if (awb != null && !awb.isEmpty()) {
             return awb.get(0);
         }
         return null;
     }
+
     public KafkaResponse getKafkaResponseForAirMessaging(Object data) {
         KafkaResponse kafkaResponse = new KafkaResponse();
         kafkaResponse.setEvent(Constants.ORIGINAL_PRINT);
         kafkaResponse.setData(data);
         return kafkaResponse;
     }
+
     @Override
     public int updateAirMessageStatus(UUID guid, String airMessageStatus) {
         return awbRepository.updateAirMessageStatus(guid, airMessageStatus);
@@ -328,10 +326,12 @@ public class AwbDao implements IAwbDao {
     public int updateAirMessageStatusFromShipmentId(Long id, String airMessageStatus) {
         return awbRepository.updateAirMessageStatusFromShipmentId(id, airMessageStatus);
     }
+
     @Override
     public int updateAirMessageStatusFromConsolidationId(Long id, String airMessageStatus) {
         return awbRepository.updateAirMessageStatusFromConsolidationId(id, airMessageStatus);
     }
+
     public int updatePrintTypeFromConsolidationId(Long id, String printType, Boolean isOriginal, LocalDateTime printedAt) {
         var awbList = findByConsolidationId(id);
         if (!awbList.isEmpty() && !Objects.equals(awbList.get(0).getPrintType(), PrintType.ORIGINAL_PRINTED))
@@ -342,6 +342,7 @@ public class AwbDao implements IAwbDao {
         }
         return 0;
     }
+
     public int updatePrintTypeFromShipmentId(Long id, String printType, Boolean isOriginal, LocalDateTime printedAt) {
         var awbList = findByShipmentId(id);
         if (!awbList.isEmpty() && !Objects.equals(awbList.get(0).getPrintType(), PrintType.ORIGINAL_PRINTED))
@@ -358,19 +359,18 @@ public class AwbDao implements IAwbDao {
     public void updateAwbPrintInformation(Long shipmentId, Long consolidationId, PrintType printType, Boolean isOriginal, LocalDateTime printedAt) {
         Awb awb = null;
         List<Awb> awbList;
-        if(shipmentId != null) {
+        if (shipmentId != null) {
             awbList = findByShipmentId(shipmentId);
-        }
-        else {
+        } else {
             awbList = findByConsolidationId(consolidationId);
         }
         awb = !awbList.isEmpty() ? awbList.get(0) : null;
 
-        if(awb != null) {
+        if (awb != null) {
             // if not original printed
-            if(!Objects.equals(awb.getPrintType(), PrintType.ORIGINAL_PRINTED))
+            if (!Objects.equals(awb.getPrintType(), PrintType.ORIGINAL_PRINTED))
                 awb.setPrintType(printType);
-            if(Boolean.TRUE.equals(isOriginal)) {
+            if (Boolean.TRUE.equals(isOriginal)) {
                 awb.setOriginalPrintedAt(printedAt);
                 commonUtils.checkForMandatoryHsCodeForUAE(awb);
             }
@@ -390,25 +390,25 @@ public class AwbDao implements IAwbDao {
     @Override
     public List<Awb> findAllLinkedAwbs(UUID guid) {
         Optional<Awb> awb = Optional.ofNullable(this.findAwbByGuidByQuery(guid));
-        if(awb.isPresent()){
-            if(awb.get().getShipmentId() != null) {
+        if (awb.isPresent()) {
+            if (awb.get().getShipmentId() != null) {
                 var consoleShipMapping = consoleShipmentMappingDao.findByShipmentIdByQuery(awb.get().getShipmentId());
-                if(consoleShipMapping == null || consoleShipMapping.isEmpty()) {
+                if (consoleShipMapping == null || consoleShipMapping.isEmpty()) {
                     return Collections.emptyList();
                 } else {
                     var consoleId = consoleShipMapping.get(0).getConsolidationId();
                     List<Awb> response = new ArrayList<>(findByConsolidationIdByQuery(consoleId));
                     var consoleShipMappingList = consoleShipmentMappingDao.findByConsolidationIdByQuery(consoleId);
-                    if(consoleShipMappingList != null && !consoleShipMappingList.isEmpty()){
+                    if (consoleShipMappingList != null && !consoleShipMappingList.isEmpty()) {
                         response.addAll(findByShipmentIdsByQuery(consoleShipMappingList.stream().map(ConsoleShipmentMapping::getShipmentId).toList()));
                     }
                     return response;
                 }
-            } else if(awb.get().getConsolidationId() != null) {
+            } else if (awb.get().getConsolidationId() != null) {
                 var consoleId = awb.get().getConsolidationId();
                 List<Awb> response = new ArrayList<>(findByConsolidationIdByQuery(consoleId));
                 var consoleShipMappingList = consoleShipmentMappingDao.findByConsolidationIdByQuery(consoleId);
-                if(consoleShipMappingList != null && !consoleShipMappingList.isEmpty()){
+                if (consoleShipMappingList != null && !consoleShipMappingList.isEmpty()) {
                     response.addAll(findByShipmentIdsByQuery(consoleShipMappingList.stream().map(ConsoleShipmentMapping::getShipmentId).toList()));
                 }
                 return response;
@@ -425,7 +425,7 @@ public class AwbDao implements IAwbDao {
     private void getAwbSphEntity(String eFreightStatus, String securityStatus, Long id, Awb awb) {
         awb.setAwbSpecialHandlingCodesMappings(null);
         List<AwbSpecialHandlingCodesMappingInfo> sphs = new ArrayList<>();
-        if(!IsStringNullOrEmpty(eFreightStatus) && !Constants.NON.equals(eFreightStatus)) {
+        if (!IsStringNullOrEmpty(eFreightStatus) && !Constants.NON.equals(eFreightStatus)) {
             AwbSpecialHandlingCodesMappingInfo sph = AwbSpecialHandlingCodesMappingInfo.builder()
                     .shcId(eFreightStatus)
                     .entityId(id)
@@ -434,8 +434,8 @@ public class AwbDao implements IAwbDao {
             sph.setEntityType(awb.getAwbShipmentInfo().getEntityType());
             sphs.add(sph);
         }
-        if(!IsStringNullOrEmpty(securityStatus) && !Constants.INSECURE.equals(securityStatus)) {
-            if(securityStatus.equalsIgnoreCase(EXEMPTION_CARGO) || securityStatus.equalsIgnoreCase(ReportConstants.EXEMPTION_CARGO))
+        if (!IsStringNullOrEmpty(securityStatus) && !Constants.INSECURE.equals(securityStatus)) {
+            if (securityStatus.equalsIgnoreCase(EXEMPTION_CARGO) || securityStatus.equalsIgnoreCase(ReportConstants.EXEMPTION_CARGO))
                 securityStatus = Constants.SPX;
             AwbSpecialHandlingCodesMappingInfo sph = AwbSpecialHandlingCodesMappingInfo.builder()
                     .shcId(securityStatus)
@@ -445,7 +445,7 @@ public class AwbDao implements IAwbDao {
             sph.setEntityType(awb.getAwbShipmentInfo().getEntityType());
             sphs.add(sph);
         }
-        if(!sphs.isEmpty())
+        if (!sphs.isEmpty())
             awb.setAwbSpecialHandlingCodesMappings(sphs);
     }
 
@@ -455,43 +455,42 @@ public class AwbDao implements IAwbDao {
         Awb awb = null;
         AwbSpecialHandlingCodesMappingInfo sph = null;
 
-        if(newEntity instanceof ShipmentDetails shipmentDetails) {
+        if (newEntity instanceof ShipmentDetails shipmentDetails) {
             ShipmentDetails oldShipment = (ShipmentDetails) oldEntity;
             var list = findByShipmentId(shipmentDetails.getId());
             awb = !list.isEmpty() ? list.get(0) : null;
-            if(Objects.isNull(awb))
+            if (Objects.isNull(awb))
                 return;
 
-            if(!Objects.equals(shipmentDetails.getAdditionalDetails().getEfreightStatus(), oldShipment.getAdditionalDetails().getEfreightStatus()) ||
+            if (!Objects.equals(shipmentDetails.getAdditionalDetails().getEfreightStatus(), oldShipment.getAdditionalDetails().getEfreightStatus()) ||
                     !Objects.equals(shipmentDetails.getSecurityStatus(), oldShipment.getSecurityStatus())) {
                 getAwbSphEntity(shipmentDetails.getAdditionalDetails().getEfreightStatus(), shipmentDetails.getSecurityStatus(), shipmentDetails.getId(), awb);
                 awb.setAirMessageResubmitted(false);
             }
-            if(!Objects.equals(shipmentDetails.getAdditionalDetails().getSci(), oldShipment.getAdditionalDetails().getSci())){
+            if (!Objects.equals(shipmentDetails.getAdditionalDetails().getSci(), oldShipment.getAdditionalDetails().getSci())) {
                 awb.getAwbCargoInfo().setSci(shipmentDetails.getAdditionalDetails().getSci());
                 awb.setAirMessageResubmitted(false);
                 updateSciFieldFromHawb(awb, null, false, awb.getId());
             }
-        }
-        else if (newEntity instanceof ConsolidationDetails consolidationDetails) {
+        } else if (newEntity instanceof ConsolidationDetails consolidationDetails) {
             ConsolidationDetails oldConsolidation = (ConsolidationDetails) oldEntity;
             var list = findByConsolidationId(consolidationDetails.getId());
             awb = !list.isEmpty() ? list.get(0) : null;
-            if(Objects.isNull(awb))
+            if (Objects.isNull(awb))
                 return;
 
-            if(!Objects.equals(consolidationDetails.getEfreightStatus(), oldConsolidation.getEfreightStatus()) ||
+            if (!Objects.equals(consolidationDetails.getEfreightStatus(), oldConsolidation.getEfreightStatus()) ||
                     !Objects.equals(consolidationDetails.getSecurityStatus(), oldConsolidation.getSecurityStatus())) {
                 getAwbSphEntity(consolidationDetails.getEfreightStatus(), consolidationDetails.getSecurityStatus(), consolidationDetails.getId(), awb);
                 awb.setAirMessageResubmitted(false);
             }
-            if(!Objects.equals(consolidationDetails.getSci(), oldConsolidation.getSci())){
+            if (!Objects.equals(consolidationDetails.getSci(), oldConsolidation.getSci())) {
                 awb.getAwbCargoInfo().setSci(consolidationDetails.getSci());
                 awb.setAirMessageResubmitted(false);
             }
         }
 
-        if(Objects.isNull(awb))
+        if (Objects.isNull(awb))
             return;
 
         save(awb);
@@ -499,30 +498,30 @@ public class AwbDao implements IAwbDao {
     }
 
     public void updateSciFieldFromHawb(Awb awb, Awb oldEntity, boolean isReset, Long awbId) throws RunnerException {
-        if(awb.getAwbShipmentInfo().getEntityType().equals(Constants.HAWB) && Objects.equals(awb.getAwbCargoInfo().getSci(), AwbConstants.T1)){
+        if (awb.getAwbShipmentInfo().getEntityType().equals(Constants.HAWB) && Objects.equals(awb.getAwbCargoInfo().getSci(), AwbConstants.T1)) {
             List<MawbHawbLink> mawbHawbLinks = mawbHawbLinkDao.findByHawbId(awb.getId());
-            if(mawbHawbLinks != null && !mawbHawbLinks.isEmpty()){
+            if (mawbHawbLinks != null && !mawbHawbLinks.isEmpty()) {
                 Long mawbId = mawbHawbLinks.get(0).getMawbId();
                 Optional<Awb> mawb = findById(mawbId);
-                if(mawb.isPresent() && !Objects.equals(mawb.get().getAirMessageStatus(), AwbStatus.AWB_FSU_LOCKED) && !Objects.equals(mawb.get().getAwbCargoInfo().getSci(), awb.getAwbCargoInfo().getSci())){
+                if (mawb.isPresent() && !Objects.equals(mawb.get().getAirMessageStatus(), AwbStatus.AWB_FSU_LOCKED) && !Objects.equals(mawb.get().getAwbCargoInfo().getSci(), awb.getAwbCargoInfo().getSci())) {
                     mawb.get().getAwbCargoInfo().setSci(awb.getAwbCargoInfo().getSci());
                     mawb.get().setAirMessageResubmitted(false);
                     save(mawb.get());
                 }
             }
-        } else if(awb.getAwbShipmentInfo().getEntityType().equals(Constants.HAWB) && !Objects.equals(awb.getAwbCargoInfo().getSci(), AwbConstants.T1) && ((oldEntity != null && Objects.equals(oldEntity.getAwbCargoInfo().getSci(), AwbConstants.T1)) || isReset || oldEntity == null)){
+        } else if (awb.getAwbShipmentInfo().getEntityType().equals(Constants.HAWB) && !Objects.equals(awb.getAwbCargoInfo().getSci(), AwbConstants.T1) && ((oldEntity != null && Objects.equals(oldEntity.getAwbCargoInfo().getSci(), AwbConstants.T1)) || isReset || oldEntity == null)) {
             List<MawbHawbLink> mawbHawbLinks = mawbHawbLinkDao.findByHawbId(awb.getId());
-            if(mawbHawbLinks != null && !mawbHawbLinks.isEmpty()){
+            if (mawbHawbLinks != null && !mawbHawbLinks.isEmpty()) {
                 Long mawbId = mawbHawbLinks.get(0).getMawbId();
                 List<Awb> hawbsList = getLinkedAwbFromMawb(mawbId);
                 boolean updateSci = false;
-                if(hawbsList != null && !hawbsList.isEmpty()){
+                if (hawbsList != null && !hawbsList.isEmpty()) {
                     Optional<Awb> hawb = hawbsList.stream().filter(x -> Objects.equals(x.getAwbCargoInfo().getSci(), AwbConstants.T1) && !Objects.equals(x.getId(), awbId)).findAny();
-                    if(!hawb.isPresent()){
+                    if (!hawb.isPresent()) {
                         updateSci = true;
                     }
                 }
-                if(updateSci) {
+                if (updateSci) {
                     Optional<Awb> mawb = findById(mawbId);
                     if (mawb.isPresent() && !Objects.equals(mawb.get().getAirMessageStatus(), AwbStatus.AWB_FSU_LOCKED) && Objects.equals(mawb.get().getAwbCargoInfo().getSci(), AwbConstants.T1)) {
                         mawb.get().getAwbCargoInfo().setSci(null);
@@ -533,6 +532,7 @@ public class AwbDao implements IAwbDao {
             }
         }
     }
+
     @Override
     public List<Awb> getLinkedAwbFromMawb(Long mawbId) {
         List<MawbHawbLink> mawbHawbLinks = mawbHawbLinkDao.findByMawbId(mawbId);
@@ -543,7 +543,7 @@ public class AwbDao implements IAwbDao {
         Page<Awb> page = findAll(pair.getLeft(), pair.getRight());
 
         List<Awb> linkedHawb = new ArrayList<>();
-        if(!page.isEmpty())
+        if (!page.isEmpty())
             linkedHawb = page.getContent();
 
         return linkedHawb;
@@ -562,7 +562,7 @@ public class AwbDao implements IAwbDao {
     @Override
     public void validateAirMessaging(Long id) throws RunnerException {
         List<Awb> awb = findByConsolidationId(id);
-        if(awb != null && !awb.isEmpty() && awb.get(0).getAirMessageStatus() != null && (Objects.equals(awb.get(0).getAirMessageStatus(), AwbStatus.AIR_MESSAGE_SENT) ||
+        if (awb != null && !awb.isEmpty() && awb.get(0).getAirMessageStatus() != null && (Objects.equals(awb.get(0).getAirMessageStatus(), AwbStatus.AIR_MESSAGE_SENT) ||
                 Objects.equals(awb.get(0).getAirMessageStatus(), AwbStatus.AIR_MESSAGE_FAILED) || Objects.equals(awb.get(0).getAirMessageStatus(), AwbStatus.AIR_MESSAGE_SUCCESS))) {
             throw new RunnerException("FWB & FZB are already submitted and further modifications are prohibited for given console.");
         }

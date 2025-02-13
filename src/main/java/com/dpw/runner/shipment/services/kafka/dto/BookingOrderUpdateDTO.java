@@ -9,10 +9,10 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class BookingOrderUpdateDTO
-{
+public class BookingOrderUpdateDTO {
     private String event;
     private BookingLinkDelinkOrder data;
+
     @Data
     @Builder
     @AllArgsConstructor

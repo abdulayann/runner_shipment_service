@@ -1,11 +1,12 @@
 package com.dpw.runner.shipment.services.kafka.dto;
 
 import com.dpw.runner.shipment.services.entity.enums.ContainerPraStatus;
-import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.util.UUID;
 
 @Data
 @Builder

@@ -51,7 +51,7 @@ public class ShipmentSettingsSync implements IShipmentSettingsSync {
     @Autowired
     private ISyncService syncService;
 
-    private RetryTemplate retryTemplate = RetryTemplate.builder()
+    private final RetryTemplate retryTemplate = RetryTemplate.builder()
             .maxAttempts(3)
             .fixedBackoff(1000)
             .retryOn(Exception.class)
@@ -80,7 +80,7 @@ public class ShipmentSettingsSync implements IShipmentSettingsSync {
         syncRequest.setSeaExportConsolManifest(req.getSeaExportConsoleManifest());
 
         String payload = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(syncRequest).module(SyncingConstants.TENANT_SETTINGS).build());
-        syncService.pushToKafka(payload,String.valueOf(req.getId()), String.valueOf(req.getGuid()), SyncingConstants.TENANT_SETTINGS, String.valueOf(req.getGuid()));
+        syncService.pushToKafka(payload, String.valueOf(req.getId()), String.valueOf(req.getGuid()), SyncingConstants.TENANT_SETTINGS, String.valueOf(req.getGuid()));
         return ResponseHelper.buildSuccessResponse(modelMapper.map(syncRequest, ShipmentSettingsSyncRequest.class));
     }
 
@@ -106,14 +106,15 @@ public class ShipmentSettingsSync implements IShipmentSettingsSync {
         return res;
     }
 
-    private <T,P> List<P> convertToList(final List<T> lst, Class<P> clazz) {
-        if(lst == null)
+    private <T, P> List<P> convertToList(final List<T> lst, Class<P> clazz) {
+        if (lst == null)
             return null;
-        return  lst.stream()
+        return lst.stream()
                 .map(item -> convertToClass(item, clazz))
                 .toList();
     }
-    private  <T,P> P convertToClass(T obj, Class<P> clazz) {
+
+    private <T, P> P convertToClass(T obj, Class<P> clazz) {
         return modelMapper.map(obj, clazz);
     }
 }

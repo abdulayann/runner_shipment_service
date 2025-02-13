@@ -16,14 +16,16 @@ import java.util.Objects;
 @Component
 @Slf4j
 public class TokenUtility {
-    private static final String BEARER = "Bearer";
     public static final String NAME_FIELD = "nameid";
     public static final String USER_ID_FIELD = "userId";
     public static final String BRANCH_ID_FIELD = "branchId";
+    private static final String BEARER = "Bearer";
+
     public String getUserNameFromToken(String token, HttpServletResponse res) throws ParseException, BadJWTException {
         String[] tokenSplits = token.split(" ");
-        if(tokenSplits.length>2 || !BEARER.equals(tokenSplits[0])) throw new BadJWTException("Expected 'Bearer token'");
-        JWT parse = JWTParser.parse(tokenSplits[tokenSplits.length-1]);
+        if (tokenSplits.length > 2 || !BEARER.equals(tokenSplits[0]))
+            throw new BadJWTException("Expected 'Bearer token'");
+        JWT parse = JWTParser.parse(tokenSplits[tokenSplits.length - 1]);
 
         JWTClaimsSet claimsSet = parse.getJWTClaimsSet();
         validateValidity(claimsSet);
@@ -31,13 +33,13 @@ public class TokenUtility {
     }
 
     public void validateValidity(JWTClaimsSet claimsSet) throws BadJWTException {
-        DefaultJWTClaimsVerifier defaultJWTClaimsVerifier=new DefaultJWTClaimsVerifier(claimsSet,null);
-        defaultJWTClaimsVerifier.verify(claimsSet,null);
+        DefaultJWTClaimsVerifier defaultJWTClaimsVerifier = new DefaultJWTClaimsVerifier(claimsSet, null);
+        defaultJWTClaimsVerifier.verify(claimsSet, null);
     }
 
     public String getUserIdAndBranchId(String token) {
         try {
-            if(token.split(" ").length <= 1 || !Objects.equals(token.split(" ")[0], BEARER))
+            if (token.split(" ").length <= 1 || !Objects.equals(token.split(" ")[0], BEARER))
                 return null;
             token = token.split(" ")[1];
 

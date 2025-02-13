@@ -46,14 +46,15 @@ public class BookingCarriageDao implements IBookingCarriageDao {
 
     @Override
     public BookingCarriage save(BookingCarriage bookingCarriage) {
-        Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(bookingCarriage) , Constants.CARRIAGE, LifecycleHooks.ON_CREATE, false);
-        if (! errors.isEmpty())
+        Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(bookingCarriage), Constants.CARRIAGE, LifecycleHooks.ON_CREATE, false);
+        if (!errors.isEmpty())
             throw new ValidationException(String.join(",", errors));
         return bookingCarriageRepository.save(bookingCarriage);
     }
+
     @Override
     public List<BookingCarriage> saveAll(List<BookingCarriage> bookingCarriageList) {
-        for(var bookingCarriage: bookingCarriageList) {
+        for (var bookingCarriage : bookingCarriageList) {
             Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(bookingCarriage), Constants.CARRIAGE, LifecycleHooks.ON_CREATE, false);
             if (!errors.isEmpty())
                 throw new ValidationException(String.join(",", errors));
@@ -83,7 +84,7 @@ public class BookingCarriageDao implements IBookingCarriageDao {
             // TODO- Handle Transactions here
             List<BookingCarriage> bookingCarriages = findByShipmentId(shipmentId);
             Map<Long, BookingCarriage> hashMap = bookingCarriages.stream()
-                        .collect(Collectors.toMap(BookingCarriage::getId, Function.identity()));
+                    .collect(Collectors.toMap(BookingCarriage::getId, Function.identity()));
             Map<Long, BookingCarriage> copyHashMap = new HashMap<>(hashMap);
             List<BookingCarriage> bookingCarriagesRequestList = new ArrayList<>();
             if (bookingCarriageList != null && bookingCarriageList.size() != 0) {
@@ -112,10 +113,10 @@ public class BookingCarriageDao implements IBookingCarriageDao {
 
     public List<BookingCarriage> saveEntityFromShipment(List<BookingCarriage> bookingCarriages, Long shipmentId) {
         List<BookingCarriage> res = new ArrayList<>();
-        for(BookingCarriage req : bookingCarriages){
+        for (BookingCarriage req : bookingCarriages) {
             String oldEntityJsonString = null;
             String operation = DBOperationType.CREATE.name();
-            if(req.getId() != null){
+            if (req.getId() != null) {
                 long id = req.getId();
                 Optional<BookingCarriage> oldEntity = findById(id);
                 if (!oldEntity.isPresent()) {
@@ -148,12 +149,13 @@ public class BookingCarriageDao implements IBookingCarriageDao {
         }
         return res;
     }
+
     @Override
     public List<BookingCarriage> saveEntityFromShipment(List<BookingCarriage> bookingCarriages, Long shipmentId, Map<Long, BookingCarriage> oldEntityMap) {
         List<BookingCarriage> res = new ArrayList<>();
         Map<Long, String> oldEntityJsonStringMap = new HashMap<>();
-        for(BookingCarriage req : bookingCarriages){
-            if(req.getId() != null){
+        for (BookingCarriage req : bookingCarriages) {
+            if (req.getId() != null) {
                 long id = req.getId();
                 if (!oldEntityMap.containsKey(id)) {
                     log.debug("Booking Carriage is null for Id {}", req.getId());
@@ -199,12 +201,11 @@ public class BookingCarriageDao implements IBookingCarriageDao {
             hashMap.values().forEach(bookingCarriage -> {
                 String json = jsonHelper.convertToJson(bookingCarriage);
                 delete(bookingCarriage);
-                if(entityType != null)
-                {
+                if (entityType != null) {
                     try {
                         auditLogService.addAuditLog(
                                 AuditLogMetaData.builder()
-                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
+                                        .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                         .newData(null)
                                         .prevData(jsonHelper.readFromJson(json, BookingCarriage.class))
                                         .parent(entityType)
@@ -228,8 +229,8 @@ public class BookingCarriageDao implements IBookingCarriageDao {
         String responseMsg;
         List<BookingCarriage> responseBookingCarriage = new ArrayList<>();
         Map<UUID, BookingCarriage> bookingMap = new HashMap<>();
-        if(oldEntityList != null && oldEntityList.size() > 0) {
-            for (BookingCarriage entity:
+        if (oldEntityList != null && oldEntityList.size() > 0) {
+            for (BookingCarriage entity :
                     oldEntityList) {
                 bookingMap.put(entity.getGuid(), entity);
             }
@@ -241,7 +242,7 @@ public class BookingCarriageDao implements IBookingCarriageDao {
             if (bookingCarriageList != null && bookingCarriageList.size() != 0) {
                 for (BookingCarriage request : bookingCarriageList) {
                     oldEntity = bookingMap.get(request.getGuid());
-                    if(oldEntity != null) {
+                    if (oldEntity != null) {
                         bookingMap.remove(oldEntity.getGuid());
                         request.setId(oldEntity.getId());
                     }
@@ -250,7 +251,7 @@ public class BookingCarriageDao implements IBookingCarriageDao {
                 responseBookingCarriage = saveEntityFromShipment(bookingCarriagesRequestList, shipmentId);
             }
             Map<Long, BookingCarriage> hashMap = new HashMap<>();
-            bookingMap.forEach((s, bookingCarriage) ->  hashMap.put(bookingCarriage.getId(), bookingCarriage));
+            bookingMap.forEach((s, bookingCarriage) -> hashMap.put(bookingCarriage.getId(), bookingCarriage));
 
             deleteBookingCarriage(hashMap, ShipmentDetails.class.getSimpleName(), shipmentId);
             return responseBookingCarriage;

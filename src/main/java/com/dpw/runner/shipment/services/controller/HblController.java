@@ -30,10 +30,9 @@ import java.util.List;
 @Slf4j
 public class HblController {
     private final IHblService hblService;
-    private class MyResponseClass extends RunnerResponse<HblResponse> {}
 
     @Autowired
-    public HblController(IHblService hblService){
+    public HblController(IHblService hblService) {
         this.hblService = hblService;
     }
 
@@ -72,14 +71,12 @@ public class HblController {
         return hblService.delete(CommonRequestModel.buildRequest(request));
     }
 
-
     @ApiResponses(value = {@ApiResponse(code = 200, message = HblConstants.HBLS_RETRIEVE_BY_ID_SUCCESSFUL, response = MyResponseClass.class)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
     public ResponseEntity<IRunnerResponse> retrieveById(@ApiParam(value = HblConstants.HBL_ID, required = true) @RequestParam Long id, @RequestParam(name = "includeColumns", required = false) List<String> includeColumns) {
         CommonGetRequest request = CommonGetRequest.builder().id(id).includeColumns(includeColumns).build();
         return hblService.retrieveById(CommonRequestModel.buildRequest(request));
     }
-
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = HblConstants.HBLS_RETRIEVE_BY_ID_SUCCESSFUL, response = MyResponseClass.class)})
     @GetMapping(HblConstants.API_RETRIEVE_BY_SHIPMENT_ID)
@@ -140,6 +137,9 @@ public class HblController {
             log.error(responseMsg, e);
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    private class MyResponseClass extends RunnerResponse<HblResponse> {
     }
 
 }

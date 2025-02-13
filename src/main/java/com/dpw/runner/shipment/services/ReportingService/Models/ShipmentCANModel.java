@@ -5,7 +5,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.Sh
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 
-public class ShipmentCANModel implements IDocumentModel{
+public class ShipmentCANModel implements IDocumentModel {
 
     public ShipmentModel shipmentDetails;
     public TenantModel tenantDetails;

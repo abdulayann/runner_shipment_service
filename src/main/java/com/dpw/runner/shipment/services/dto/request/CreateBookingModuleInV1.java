@@ -135,7 +135,7 @@ public class CreateBookingModuleInV1 {
         @Builder
         @NoArgsConstructor
         @AllArgsConstructor
-        public static class Notes{
+        public static class Notes {
             private String Text;
             private String InsertUserDisplayName;
             private Boolean IsPublic;

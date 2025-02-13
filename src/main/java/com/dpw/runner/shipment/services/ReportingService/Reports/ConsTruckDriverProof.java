@@ -33,11 +33,10 @@ public class ConsTruckDriverProof extends IReport {
     public IDocumentModel getDocumentModel(Long id) {
         TruckDriverModel truckDriverModel = new TruckDriverModel();
         truckDriverModel.consolidationDetails = getConsolidation(id);
-        if(truckDriverModel.consolidationDetails != null && truckDriverModel.consolidationDetails.getTruckDriverDetails() != null && !truckDriverModel.consolidationDetails.getTruckDriverDetails().isEmpty())
-        {
+        if (truckDriverModel.consolidationDetails != null && truckDriverModel.consolidationDetails.getTruckDriverDetails() != null && !truckDriverModel.consolidationDetails.getTruckDriverDetails().isEmpty()) {
             truckDriverModel.setTruckDriverDetails(truckDriverModel.consolidationDetails.getTruckDriverDetails());
         }
-        if(truckDriverModel.consolidationDetails != null) {
+        if (truckDriverModel.consolidationDetails != null) {
             List<ShipmentModel> shipments = truckDriverModel.consolidationDetails.getShipmentsList();
             if (shipments != null && !shipments.isEmpty()) {
                 int sum = shipments.stream().filter(c -> c.getNoOfPacks() != null).mapToInt(ShipmentModel::getNoOfPacks).sum();
@@ -71,13 +70,10 @@ public class ConsTruckDriverProof extends IReport {
         populateConsolidationFields(truckDriverModel.consolidationDetails, dictionary);
         populateUserFields(truckDriverModel.usersDto, dictionary);
         populateTenantFields(dictionary, truckDriverModel.tenant);
-        for(var truckDriver: truckDriverModel.getTruckDriverDetails())
-        {
-            if(StringUtility.isEmpty(truckDriver.getSelfTransporterName()))
-            {
+        for (var truckDriver : truckDriverModel.getTruckDriverDetails()) {
+            if (StringUtility.isEmpty(truckDriver.getSelfTransporterName())) {
                 truckDriver.setTransporterName(""); //TODO - fetch transporter real name
-            }
-            else
+            } else
                 truckDriver.setTransporterName(truckDriver.getSelfTransporterName());
         }
         dictionary.put(ReportConstants.SHIPMENT_TRUCKDRIVERDETAILS, truckDriverModel.getTruckDriverDetails());

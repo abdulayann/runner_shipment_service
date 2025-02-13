@@ -58,20 +58,14 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCo
 @Component
 public class CSVParsingUtil<T> {
 
-    private ConsoleShipmentMappingDao consoleShipmentMappingDao;
-
-    private IShipmentDao shipmentDao;
-
-    private IV1Service v1Service;
-
-    private JsonHelper jsonHelper;
-
-    private IConsolidationDetailsDao consolidationDetailsDao;
-
     private final Set<String> hiddenFields = Set.of("pickupAddress",
             "deliveryAddress", "eventsList", "packsList", "shipmentsList", "bookingCharges");
-
     ExecutorService executorService;
+    private final ConsoleShipmentMappingDao consoleShipmentMappingDao;
+    private final IShipmentDao shipmentDao;
+    private final IV1Service v1Service;
+    private final JsonHelper jsonHelper;
+    private final IConsolidationDetailsDao consolidationDetailsDao;
 
     @Autowired
     public CSVParsingUtil(ConsoleShipmentMappingDao consoleShipmentMappingDao, IShipmentDao shipmentDao, IV1Service v1Service, JsonHelper jsonHelper, IConsolidationDetailsDao consolidationDetailsDao, ExecutorService executorService) {
@@ -91,8 +85,7 @@ public class CSVParsingUtil<T> {
                 "allocatedWeight", "allocatedWeightUnit", Constants.NET_WEIGHT, "netWeightUnit", Constants.GROSS_WEIGHT, "grossWeightUnit", "remarks",
                 "extraParams", "chargeable", "chargeableUnit", "ownType", Constants.PACKS, "packsType", "marksNums", "innerPackageMeasurementUnit", "pacrNumber");
         containerFields = containerFields.stream().filter(field -> {
-            if (requiredFields.contains(field.getName())) return true;
-            else return false;
+            return requiredFields.contains(field.getName());
         }).toList();
 
         for (Field field : containerFields) {
@@ -109,8 +102,7 @@ public class CSVParsingUtil<T> {
                 "allocatedWeight", "allocatedWeightUnit", Constants.NET_WEIGHT, "netWeightUnit", Constants.GROSS_WEIGHT, "grossWeightUnit", "remarks",
                 "extraParams", "chargeable", "chargeableUnit", "ownType", Constants.PACKS, "packsType", "marksNums", "innerPackageMeasurementUnit", "pacrNumber");
         containerFields = containerFields.stream().filter(field -> {
-            if (requiredFields.contains(field.getName())) return true;
-            else return false;
+            return requiredFields.contains(field.getName());
         }).toList();
 
         List<String> lst = new ArrayList<>();
@@ -146,7 +138,7 @@ public class CSVParsingUtil<T> {
     }
 
     public List<T> parseExcelFilePacking(MultipartFile file, BulkUploadRequest request, Map<UUID, T> mapOfEntity, Map<String, Set<String>> masterDataMap,
-                                         Class<T> entityType, Map<Long, Long> undg, Map<Long, String> flashpoint, Map<String, String>locCodeToLocationReferenceGuidMap) throws IOException {
+                                         Class<T> entityType, Map<Long, Long> undg, Map<Long, String> flashpoint, Map<String, String> locCodeToLocationReferenceGuidMap) throws IOException {
 
         Set<String> mandatoryColumns = new HashSet<>();
         mandatoryColumns.add("shipmentNumber");
@@ -174,9 +166,7 @@ public class CSVParsingUtil<T> {
                     throw new ValidationException(ContainerConstants.INVALID_EXCEL_COLUMNS);
                 }
                 header[i] = getCamelCase(headerRow.getCell(i).getStringCellValue());
-                if (mandatoryColumns.contains(header[i])) {
-                    mandatoryColumns.remove(header[i]);
-                }
+                mandatoryColumns.remove(header[i]);
                 headerSet.add(header[i]);
                 if (header[i].equalsIgnoreCase("guid")) {
                     guidPos = i;
@@ -196,7 +186,7 @@ public class CSVParsingUtil<T> {
             }
 
             if (!mandatoryColumns.isEmpty()) {
-                throw new ValidationException(mandatoryColumns.toString() + "column(s) is missing");
+                throw new ValidationException(mandatoryColumns + "column(s) is missing");
             }
 
             if (headerSet.size() < headerRow.getLastCellNum()) {
@@ -225,7 +215,7 @@ public class CSVParsingUtil<T> {
                 if (dgSubstanceIdPos != -1) {
                     try {
                         String dgSubstanceIdCell = getCellValueAsString(row.getCell(dgSubstanceIdPos));
-                        if(!StringUtils.isEmpty(dgSubstanceIdCell)) {
+                        if (!StringUtils.isEmpty(dgSubstanceIdCell)) {
                             Long dgSubstanceIdVal = Long.parseLong(dgSubstanceIdCell);
                             dgSubstanceIdList.add(dgSubstanceIdVal);
                         }
@@ -344,15 +334,15 @@ public class CSVParsingUtil<T> {
             Row headerRow = sheet.getRow(0);
             String[] header = new String[headerRow.getLastCellNum()];
             Field[] fields = modelClass.getDeclaredFields();
-            Map<String, String> renameFieldMap = Arrays.stream(fields).filter(x->x.isAnnotationPresent(ExcelCell.class))
-                    .collect(Collectors.toMap(x->x.getAnnotation(ExcelCell.class).displayName(), Field::getName));
+            Map<String, String> renameFieldMap = Arrays.stream(fields).filter(x -> x.isAnnotationPresent(ExcelCell.class))
+                    .collect(Collectors.toMap(x -> x.getAnnotation(ExcelCell.class).displayName(), Field::getName));
             Set<String> headerSet = new HashSet<>();
             for (int i = 0; i < headerRow.getLastCellNum(); i++) {
                 if (headerRow.getCell(i) == null || StringUtility.isEmpty(headerRow.getCell(i).getStringCellValue())) {
                     throw new ValidationException(ContainerConstants.INVALID_EXCEL_COLUMNS);
                 }
 
-                if(renameFieldMap.containsKey(headerRow.getCell(i).getStringCellValue()))
+                if (renameFieldMap.containsKey(headerRow.getCell(i).getStringCellValue()))
                     header[i] = renameFieldMap.get(headerRow.getCell(i).getStringCellValue());
                 else
                     header[i] = getCamelCase(headerRow.getCell(i).getStringCellValue());
@@ -413,8 +403,8 @@ public class CSVParsingUtil<T> {
                         throw new ValidationException(ContainerConstants.GUID_NOT_VALID + i);
                     }
                 }
-                T entity = guidPos != -1 &&  mapOfEntity != null && row.getCell(guidPos) != null && getCellValueAsString(row.getCell(guidPos)) != null ? mapOfEntity.get(UUID.fromString(getCellValueAsString(row.getCell(guidPos)))) : createEntityInstance(entityType);
-                if (mapOfEntity != null && guidPos != -1 && row.getCell(guidPos) != null && getCellValueAsString(row.getCell(guidPos)) != null&& mapOfEntity.containsKey(UUID.fromString(getCellValueAsString(row.getCell(guidPos))))) {
+                T entity = guidPos != -1 && mapOfEntity != null && row.getCell(guidPos) != null && getCellValueAsString(row.getCell(guidPos)) != null ? mapOfEntity.get(UUID.fromString(getCellValueAsString(row.getCell(guidPos)))) : createEntityInstance(entityType);
+                if (mapOfEntity != null && guidPos != -1 && row.getCell(guidPos) != null && getCellValueAsString(row.getCell(guidPos)) != null && mapOfEntity.containsKey(UUID.fromString(getCellValueAsString(row.getCell(guidPos))))) {
                     isUpdate = true;
                 }
                 for (int j = 0; j < header.length; j++) {
@@ -443,7 +433,7 @@ public class CSVParsingUtil<T> {
     }
 
     public List<T> parseExcelFileEvents(MultipartFile file, BulkUploadRequest request, Map<UUID, T> mapOfEntity,
-                                         Map<String, Set<String>> masterDataMap, Class<T> entityType) throws IOException {
+                                        Map<String, Set<String>> masterDataMap, Class<T> entityType) throws IOException {
         if (request.getConsolidationId() == null) {
             throw new ValidationException("Please save the consolidation and then try again.");
         }
@@ -478,13 +468,11 @@ public class CSVParsingUtil<T> {
                     containerNumberPos = i;
                 }
 
-                if (mandatoryColumns.contains(header[i])) {
-                    mandatoryColumns.remove(header[i]);
-                }
+                mandatoryColumns.remove(header[i]);
             }
 
             if (!mandatoryColumns.isEmpty()) {
-                throw new ValidationException(mandatoryColumns.toString() + "column(s) is missing");
+                throw new ValidationException(mandatoryColumns + "column(s) is missing");
             }
 
 
@@ -708,14 +696,14 @@ public class CSVParsingUtil<T> {
             }
         }
         if (column.toLowerCase().contains("containercode") && !cellValue.isEmpty() && masterListsMap.containsKey(Constants.CONTAINER_TYPES) && !masterListsMap.get(Constants.CONTAINER_TYPES).contains(cellValue)) {
-                throw new ValidationException("Container Type " + cellValue + "is not valid at row " + rowNum);
+            throw new ValidationException("Container Type " + cellValue + "is not valid at row " + rowNum);
         }
         if (column.toLowerCase().contains("volumetricweightunit") && !cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.WEIGHT_UNIT.getDescription()) && !masterListsMap.get(MasterDataType.WEIGHT_UNIT.getDescription()).contains(cellValue)) {
             throw new ValidationException("Volumetric weight unit is invalid at row: " + rowNum);
         }
         if (column.toLowerCase().contains("lengthunit") && !cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.DIMENSION_UNIT.getDescription()) &&
                 !masterListsMap.get(MasterDataType.DIMENSION_UNIT.getDescription()).contains(cellValue)) {
-                throw new ValidationException("Length unit is invalid at row: " + rowNum);
+            throw new ValidationException("Length unit is invalid at row: " + rowNum);
         }
         if (column.toLowerCase().contains("widthunit")) {
             if (!cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.DIMENSION_UNIT.getDescription()) &&
@@ -761,8 +749,7 @@ public class CSVParsingUtil<T> {
         }
     }
 
-    private void validateExcel(Sheet sheet)
-    {
+    private void validateExcel(Sheet sheet) {
 
         if (sheet == null || sheet.getLastRowNum() <= 0) {
             throw new ValidationException(ContainerConstants.EMPTY_EXCEL_SHEET);
@@ -819,7 +806,7 @@ public class CSVParsingUtil<T> {
 
             field.set(entity, parsedValue);
         } catch (Exception ex) {
-            if(fieldType == Long.class || fieldType == long.class) {
+            if (fieldType == Long.class || fieldType == long.class) {
                 throw new ValidationException(attributeName.toUpperCase() + " is invalid at row: " + rowNum + ". Please provide integer value and within the range of integer");
             }
             throw new ValidationException(attributeName + " is invalid at row: " + rowNum + ". Please provide correct value");
@@ -827,9 +814,9 @@ public class CSVParsingUtil<T> {
     }
 
     public void setFieldForEvents(T entity, String attributeName, String attributeValue) throws NoSuchFieldException, IllegalAccessException {
-        if(attributeName.equals("containerNumber"))
+        if (attributeName.equals("containerNumber"))
             return;
-        if(attributeName.equals("publicTrackingEvent"))
+        if (attributeName.equals("publicTrackingEvent"))
             attributeName = "isPublicTrackingEvent";
         Field field = entity.getClass().getDeclaredField(attributeName);
         field.setAccessible(true);

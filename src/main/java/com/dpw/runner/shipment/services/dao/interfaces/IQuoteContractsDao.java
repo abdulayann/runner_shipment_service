@@ -10,6 +10,8 @@ import java.util.List;
 public interface IQuoteContractsDao {
 
     QuoteContracts save(QuoteContracts quoteContracts);
+
     List<QuoteContracts> findByContractId(String contractId);
+
     Page<QuoteContracts> findAll(Specification<QuoteContracts> spec, Pageable pageable);
 }

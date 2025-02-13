@@ -11,10 +11,13 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
-@Repository @Generated
+@Repository
+@Generated
 public interface IMawbHawbLinkRepository extends MultiTenancyRepository<MawbHawbLink> {
     Page<MawbHawbLink> findAll(Specification<MawbHawbLink> spec, Pageable pageable);
+
     @Query(value = "SELECT * FROM mawb_hawb_link WHERE mawb_id = ?1", nativeQuery = true)
     List<MawbHawbLink> findByMawbId(Long mawbId);
+
     List<MawbHawbLink> findByHawbId(Long hawbId);
 }

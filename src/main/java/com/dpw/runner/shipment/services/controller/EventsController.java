@@ -38,8 +38,6 @@ public class EventsController {
     private final IEventService eventService;
     private final ApiKeyAuthenticationService authenticationService;
     private final IEventsSync eventsSync;
-    private class MyResponseClass extends RunnerResponse<EventsResponse> {}
-    private class MyListResponseClass extends RunnerListResponse<EventsResponse> {}
 
     @Autowired
     public EventsController(IEventService eventService, IEventsSync eventsSync, ApiKeyAuthenticationService authenticationService) {
@@ -155,7 +153,7 @@ public class EventsController {
     @PostMapping("/push-tracking-events")
     @ExcludeTimeZone
     public ResponseEntity<IRunnerResponse> pushTrackingEvents(@RequestHeader(ApiConstants.X_API_KEY) String xApiKey,
-            @RequestBody @Valid TrackingServiceApiResponse.Container request) {
+                                                              @RequestBody @Valid TrackingServiceApiResponse.Container request) {
         String responseMsg;
         try {
             authenticationService.authenticate(Constants.TRACKING_PUSH_API, xApiKey);
@@ -196,5 +194,11 @@ public class EventsController {
             log.error(responseMsg, e);
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    private class MyResponseClass extends RunnerResponse<EventsResponse> {
+    }
+
+    private class MyListResponseClass extends RunnerListResponse<EventsResponse> {
     }
 }

@@ -12,6 +12,7 @@ import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 public class V1ServiceConfig {
@@ -23,7 +24,7 @@ public class V1ServiceConfig {
 
         CloseableHttpClient httpClient = HttpClientBuilder.create()
                 .setConnectionManager(connectionManager)
-                .setDefaultHeaders(Arrays.asList(
+                .setDefaultHeaders(List.of(
                         new BasicHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 ))
                 .build();

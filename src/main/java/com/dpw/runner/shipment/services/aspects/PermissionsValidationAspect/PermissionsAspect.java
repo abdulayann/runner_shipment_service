@@ -34,7 +34,7 @@ public class PermissionsAspect {
 
         ListCommonRequest listCommonRequest = (ListCommonRequest) commonRequestModel.getData();
         List<String> permissionList = PermissionsContext.getPermissions(SHIPMENT_LIST_PERMISSION);
-        if(permissionList == null || permissionList.size() == 0)
+        if (permissionList == null || permissionList.size() == 0)
             throw new RunnerException("Unable to list shipments due to insufficient list permissions");
         permissionList.sort(new Comparator<String>() {
             @Override
@@ -45,16 +45,16 @@ public class PermissionsAspect {
         List<FilterCriteria> criterias = PermissionUtil.generateFilterCriteriaFromPermissions(permissionList, true);
 
         FilterCriteria criteria1 = null;
-        if(listCommonRequest.getFilterCriteria() != null && listCommonRequest.getFilterCriteria().size() > 0) {
-           criteria1 = FilterCriteria.builder().innerFilter(listCommonRequest.getFilterCriteria()).build();
+        if (listCommonRequest.getFilterCriteria() != null && listCommonRequest.getFilterCriteria().size() > 0) {
+            criteria1 = FilterCriteria.builder().innerFilter(listCommonRequest.getFilterCriteria()).build();
         }
         FilterCriteria criteria2 = FilterCriteria.builder().innerFilter(criterias).build();
-        if(criteria2 != null && (criteria2.getCriteria() != null || (criteria2.getInnerFilter() != null && criteria2.getInnerFilter().size() > 0))) {
+        if (criteria2 != null && (criteria2.getCriteria() != null || (criteria2.getInnerFilter() != null && criteria2.getInnerFilter().size() > 0))) {
             if (criteria1 != null && criteria1.getInnerFilter().size() > 0) {
                 criteria2.setLogicOperator("AND");
                 listCommonRequest.setFilterCriteria(Arrays.asList(criteria1, criteria2));
             } else
-                listCommonRequest.setFilterCriteria(Arrays.asList(criteria2));
+                listCommonRequest.setFilterCriteria(List.of(criteria2));
         }
     }
 
@@ -65,7 +65,7 @@ public class PermissionsAspect {
         }
         ListCommonRequest listCommonRequest = (ListCommonRequest) commonRequestModel.getData();
         List<String> permissionList = PermissionsContext.getPermissions(CONSOLIDATION_LIST_PERMISSION);
-        if(permissionList == null || permissionList.size() == 0)
+        if (permissionList == null || permissionList.size() == 0)
             throw new RunnerException("Unable to list consolidations due to insufficient list permissions.");
         permissionList.sort(new Comparator<String>() {
             @Override
@@ -76,25 +76,23 @@ public class PermissionsAspect {
         List<FilterCriteria> criterias = PermissionUtil.generateFilterCriteriaFromPermissions(permissionList, false);
 
         FilterCriteria criteria1 = null;
-        if(listCommonRequest.getFilterCriteria() != null && listCommonRequest.getFilterCriteria().size() > 0) {
+        if (listCommonRequest.getFilterCriteria() != null && listCommonRequest.getFilterCriteria().size() > 0) {
             criteria1 = FilterCriteria.builder().innerFilter(listCommonRequest.getFilterCriteria()).build();
         }
         FilterCriteria criteria2 = FilterCriteria.builder().innerFilter(criterias).build();
-        if(criteria2 != null && (criteria2.getCriteria() != null || (criteria2.getInnerFilter() != null && criteria2.getInnerFilter().size() > 0))) {
+        if (criteria2 != null && (criteria2.getCriteria() != null || (criteria2.getInnerFilter() != null && criteria2.getInnerFilter().size() > 0))) {
             if (criteria1 != null && criteria1.getInnerFilter().size() > 0) {
                 criteria2.setLogicOperator("AND");
                 listCommonRequest.setFilterCriteria(Arrays.asList(criteria1, criteria2));
             } else
-                listCommonRequest.setFilterCriteria(Arrays.asList(criteria2));
+                listCommonRequest.setFilterCriteria(List.of(criteria2));
         }
     }
 
     private boolean checkExcludePermissionsFilter(JoinPoint joinPoint) {
-        if(joinPoint != null)
-        {
+        if (joinPoint != null) {
             MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
-            if(!Objects.isNull(methodSignature))
-            {
+            if (!Objects.isNull(methodSignature)) {
                 Method method = methodSignature.getMethod();
                 return method.isAnnotationPresent(ExcludePermissions.class);
             }

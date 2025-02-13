@@ -25,22 +25,24 @@ import static org.springframework.data.jpa.domain.Specification.where;
 @SuppressWarnings("ALL")
 @Slf4j
 public class DbAccessHelper {
-    private DbAccessHelper(){}
     public static final String YYYY_MM_DD = "yyyy-MM-dd";
+
+    private DbAccessHelper() {
+    }
 
     public static <T> Pair<Specification<T>, Pageable> fetchData(ListCommonRequest request, Class className, Map<String, RunnerEntityMapping> tableNames) {
         log.info("RequestId {}, Received Criteria Request from {}", LoggerHelper.getRequestIdFromMDC(), className.getSimpleName());
         Pageable pages;
         globalSearchCriteria(request, tableNames);
         if (request.getSortRequest() != null && request.getFilterCriteria() != null &&
-                (request.getFilterCriteria().size() == 0  || (request.getFilterCriteria().size() == 1 && request.getFilterCriteria().get(0).getInnerFilter() != null && request.getFilterCriteria().get(0).getInnerFilter().size() == 0))) {
+                (request.getFilterCriteria().size() == 0 || (request.getFilterCriteria().size() == 1 && request.getFilterCriteria().get(0).getInnerFilter() != null && request.getFilterCriteria().get(0).getInnerFilter().size() == 0))) {
             String _tableName = !Objects.isNull(tableNames.get(request.getSortRequest().getFieldName())) ? tableNames.get(request.getSortRequest().getFieldName()).getTableName() : null;
             Sort sortRequest = null;
             if (_tableName != null) {
                 if (Objects.equals(_tableName, className.getSimpleName()))
                     sortRequest = Sort.by(getFieldName(request.getSortRequest().getFieldName(), tableNames));
                 else
-                    sortRequest = Sort.by( _tableName + "." + getFieldName(request.getSortRequest().getFieldName(), tableNames));
+                    sortRequest = Sort.by(_tableName + "." + getFieldName(request.getSortRequest().getFieldName(), tableNames));
                 sortRequest = sortRequest.ascending();
                 if (Objects.equals(request.getSortRequest().getOrder(), "DESC"))
                     sortRequest = sortRequest.descending();
@@ -54,7 +56,7 @@ public class DbAccessHelper {
 
         Specification<T> specification = null;
         Map<String, Join<Class, T>> map = new HashMap<>();
-        if(filterCriteria.size() == 0) {
+        if (filterCriteria.size() == 0) {
             specification = where(createSpecificationWithoutFilter(request.getIncludeTbls()));
         }
         for (FilterCriteria filters : filterCriteria) {
@@ -78,18 +80,17 @@ public class DbAccessHelper {
         List<FilterCriteria> criterias = createCriteriaForGlobalSearch(tableName, request.getContainsText());
         FilterCriteria criteria1 = FilterCriteria.builder().innerFilter(request.getFilterCriteria()).build();
         FilterCriteria criteria2 = FilterCriteria.builder().innerFilter(criterias).build();
-        if(criteria1 != null && criteria1.getInnerFilter().size() > 0){
+        if (criteria1 != null && criteria1.getInnerFilter().size() > 0) {
             criteria2.setLogicOperator("AND");
             request.setFilterCriteria(Arrays.asList(criteria1, criteria2));
-        }
-        else
+        } else
             request.setFilterCriteria(Arrays.asList(criteria2));
     }
 
     private static List<FilterCriteria> createCriteriaForGlobalSearch(Map<String, RunnerEntityMapping> tableName, String containsText) {
         List<FilterCriteria> innerFilters = new ArrayList<>();
-        for (String key: tableName.keySet()) {
-            if(tableName.get(key).isContainsText()) {
+        for (String key : tableName.keySet()) {
+            if (tableName.get(key).isContainsText()) {
                 innerFilters.add(FilterCriteria.builder().logicOperator(innerFilters.isEmpty() ? null : "OR")
                         .criteria(Criteria.builder().fieldName(key).value(containsText).operator("LIKE").build()).build());
             }
@@ -106,7 +107,7 @@ public class DbAccessHelper {
 
     public static <T> Pair<Specification<T>, Pageable> fetchData(ListCommonRequest request, Class className) {
         Pageable pages;
-        if (request.getSortRequest() != null && request.getFilterCriteria() != null && (request.getFilterCriteria().size() == 0  || (request.getFilterCriteria().size() == 1 && request.getFilterCriteria().get(0).getInnerFilter() != null))) {
+        if (request.getSortRequest() != null && request.getFilterCriteria() != null && (request.getFilterCriteria().size() == 0 || (request.getFilterCriteria().size() == 1 && request.getFilterCriteria().get(0).getInnerFilter() != null))) {
             Sort sortRequest = Sort.by(request.getSortRequest().getFieldName());
             sortRequest = sortRequest.ascending();
             if (Objects.equals(request.getSortRequest().getOrder(), "DESC"))
@@ -190,7 +191,7 @@ public class DbAccessHelper {
         return (root, query, criteriaBuilder) -> {
             Path path = null;
             Join<Class, T> join;
-            if(!query.getResultType().isAssignableFrom(Long.class) && tableName != null) {
+            if (!query.getResultType().isAssignableFrom(Long.class) && tableName != null) {
                 for (String table : tableName) {
                     join = (Join) root.fetch(table, JoinType.LEFT);
                     map.put(table, join);
@@ -240,17 +241,15 @@ public class DbAccessHelper {
         };
     }
 
-    private static String getFieldName(String key,  Map<String, RunnerEntityMapping> tableNames) {
+    private static String getFieldName(String key, Map<String, RunnerEntityMapping> tableNames) {
         return tableNames.get(key).getFieldName() == null ? key : tableNames.get(key).getFieldName();
     }
 
     static private Enum<?> getEnum(String enumFullName, String enumName) {
-        @SuppressWarnings("unchecked")
-        final Class<Enum> cl;
+        @SuppressWarnings("unchecked") final Class<Enum> cl;
         try {
-            cl = (Class<Enum>)Class.forName(enumFullName);
-            @SuppressWarnings("unchecked")
-            final Enum result = Enum.valueOf(cl, enumName);
+            cl = (Class<Enum>) Class.forName(enumFullName);
+            @SuppressWarnings("unchecked") final Enum result = Enum.valueOf(cl, enumName);
             return result;
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
@@ -263,11 +262,9 @@ public class DbAccessHelper {
             case "=":
                 if (dataType.isAssignableFrom(String.class)) {
                     return criteriaBuilder.equal(criteriaBuilder.lower(path.get(fieldName)), (((String) input.getValue()).toLowerCase()));
-                }
-                else if (dataType.isAssignableFrom(UUID.class) && input.getValue() instanceof String) {
+                } else if (dataType.isAssignableFrom(UUID.class) && input.getValue() instanceof String) {
                     return criteriaBuilder.equal(path.get(fieldName), UUID.fromString((String) input.getValue()));
-                }
-                else if(dataType.isEnum()) {
+                } else if (dataType.isEnum()) {
                     return criteriaBuilder.equal(path.get(fieldName), getEnum(dataType.getName(), (String) input.getValue()));
                 }
                 return criteriaBuilder.equal(path.get(fieldName), input.getValue());
@@ -286,7 +283,7 @@ public class DbAccessHelper {
                     return criteriaBuilder.greaterThan(path.get(fieldName), covertStringToData((String) input.getValue(), YYYY_MM_DD));
                 }
                 if (dataType.isAssignableFrom(LocalDateTime.class)) {
-                    if(input.getValue() instanceof LocalDateTime) {
+                    if (input.getValue() instanceof LocalDateTime) {
                         return criteriaBuilder.greaterThan(path.get(fieldName), convertFromTenantTimeZone(path, fieldName, (LocalDateTime) input.getValue(), input));
                     }
                     return criteriaBuilder.greaterThan(path.get(fieldName), convertFromTenantTimeZone(path, fieldName, covertStringToLocalDate((String) input.getValue(), YYYY_MM_DD), input));
@@ -301,7 +298,7 @@ public class DbAccessHelper {
                     return criteriaBuilder.lessThan(path.get(fieldName), covertStringToData((String) input.getValue(), YYYY_MM_DD));
                 }
                 if (dataType.isAssignableFrom(LocalDateTime.class)) {
-                    if(input.getValue() instanceof LocalDateTime) {
+                    if (input.getValue() instanceof LocalDateTime) {
                         return criteriaBuilder.lessThan(path.get(fieldName), convertFromTenantTimeZone(path, fieldName, (LocalDateTime) input.getValue(), input));
                     }
                     return criteriaBuilder.lessThan(path.get(fieldName), convertFromTenantTimeZone(path, fieldName, covertStringToLocalDate((String) input.getValue(), YYYY_MM_DD), input));
@@ -315,7 +312,7 @@ public class DbAccessHelper {
                     return criteriaBuilder.greaterThanOrEqualTo(path.get(fieldName), covertStringToData((String) input.getValue(), YYYY_MM_DD));
                 }
                 if (dataType.isAssignableFrom(LocalDateTime.class)) {
-                    if(input.getValue() instanceof LocalDateTime) {
+                    if (input.getValue() instanceof LocalDateTime) {
                         return criteriaBuilder.greaterThanOrEqualTo(path.get(fieldName), convertFromTenantTimeZone(path, fieldName, (LocalDateTime) input.getValue(), input));
                     }
                     return criteriaBuilder.greaterThanOrEqualTo(path.get(fieldName), convertFromTenantTimeZone(path, fieldName, covertStringToLocalDate((String) input.getValue(), YYYY_MM_DD), input));
@@ -330,7 +327,7 @@ public class DbAccessHelper {
                     return criteriaBuilder.lessThanOrEqualTo(path.get(fieldName), covertStringToData((String) input.getValue(), YYYY_MM_DD));
                 }
                 if (dataType.isAssignableFrom(LocalDateTime.class)) {
-                    if(input.getValue() instanceof LocalDateTime) {
+                    if (input.getValue() instanceof LocalDateTime) {
                         return criteriaBuilder.lessThanOrEqualTo(path.get(fieldName), convertFromTenantTimeZone(path, fieldName, (LocalDateTime) input.getValue(), input));
                     }
                     return criteriaBuilder.lessThanOrEqualTo(path.get(fieldName), convertFromTenantTimeZone(path, fieldName, covertStringToLocalDate((String) input.getValue(), YYYY_MM_DD), input));
@@ -406,11 +403,10 @@ public class DbAccessHelper {
     private static LocalDateTime convertFromTenantTimeZone(Path path, String fieldName, LocalDateTime localDateTime, Criteria input) {
         LocalDateTime res = localDateTime;
         try {
-            if(Boolean.TRUE.equals(input.getConvertTimeZone())) {
+            if (Boolean.TRUE.equals(input.getConvertTimeZone())) {
                 res = LocalTimeZoneHelper.getDateTimeFromUserTimeZone(res);
             }
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             // do nothing return back the original datetime
         }
         return res;
@@ -472,7 +468,7 @@ public class DbAccessHelper {
         try {
             return LocalDate.parse(date, formatter).atStartOfDay();
         } catch (Exception e) {
-            return LocalDateTime.parse(date,DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            return LocalDateTime.parse(date, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         }
     }
 

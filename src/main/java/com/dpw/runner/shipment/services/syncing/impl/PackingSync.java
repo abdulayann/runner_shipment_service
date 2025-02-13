@@ -46,7 +46,7 @@ public class PackingSync implements IPackingSync {
             return;
         List<PackingRequestV2> requestV2List = null;
         List<Containers> containersList = new ArrayList<>();
-        if(shipmentId != null) {
+        if (shipmentId != null) {
             containersList = containerDao.findByShipmentId(shipmentId);
         }
         requestV2List = syncEntityConversionService.packingsV2ToV1(packings, containersList, null, null);

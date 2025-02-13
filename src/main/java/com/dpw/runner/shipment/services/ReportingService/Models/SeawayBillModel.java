@@ -12,11 +12,11 @@ import lombok.Data;
 
 public class SeawayBillModel implements IDocumentModel {
 
-    private Long id;
     public ShipmentModel shipment;
     public ConsolidationModel consolidation;
     public TenantModel tenant;
     public Hbl blObject;
     public ShipmentSettingsDetails shipmentSettingsDetails;
+    private Long id;
 
 }

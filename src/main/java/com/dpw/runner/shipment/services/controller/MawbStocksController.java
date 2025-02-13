@@ -34,9 +34,6 @@ import java.util.List;
 @Slf4j
 public class MawbStocksController {
     private final IMawbStocksService mawbStocksService;
-    private class MyResponseClass extends RunnerResponse<MawbStocksResponse> {}
-    private class MyListResponseClass extends RunnerListResponse<MawbStocksResponse> {}
-    private class MyNextMawbCarrierResponseClass extends RunnerListResponse<NextMawbCarrierResponse> {}
 
     @Autowired
     public MawbStocksController(IMawbStocksService mawbStocksService) {
@@ -120,5 +117,14 @@ public class MawbStocksController {
             log.error(responseMsg, e);
         }
         return (ResponseEntity<IRunnerResponse>) ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    private class MyResponseClass extends RunnerResponse<MawbStocksResponse> {
+    }
+
+    private class MyListResponseClass extends RunnerListResponse<MawbStocksResponse> {
+    }
+
+    private class MyNextMawbCarrierResponseClass extends RunnerListResponse<NextMawbCarrierResponse> {
     }
 }

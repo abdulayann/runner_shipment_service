@@ -5,8 +5,10 @@ import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import java.util.Objects;
 
 public class InterBranchContext {
-    private InterBranchContext(){}
     private static final ThreadLocal<InterBranchDto> currentContext = new ThreadLocal<>();
+
+    private InterBranchContext() {
+    }
 
     public static InterBranchDto getContext() {
         return Objects.isNull(currentContext.get()) ? null : currentContext.get();

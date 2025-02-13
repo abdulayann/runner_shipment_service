@@ -101,6 +101,8 @@ public class PackingResponse implements IRunnerResponse {
     private String minimumFlashPointUnit;
     private Boolean marinePollutant;
 
-    public boolean getAssigned() {return containerId != null;}
+    public boolean getAssigned() {
+        return containerId != null;
+    }
 }
 

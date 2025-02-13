@@ -14,10 +14,6 @@ public enum MergeClass {
         this.value = value;
     }
 
-    public int getValue() {
-        return value;
-    }
-
     public static MergeClass fromValue(int value) {
         for (MergeClass mergeClass : MergeClass.values()) {
             if (mergeClass.getValue() == value) {
@@ -25,6 +21,10 @@ public enum MergeClass {
             }
         }
         throw new IllegalArgumentException("Invalid MergeClass value: " + value);
+    }
+
+    public int getValue() {
+        return value;
     }
 
     public String getDescription() {

@@ -11,11 +11,7 @@ import com.dpw.runner.shipment.services.entity.DpsEvent.DpsApprovalDetail;
 import com.dpw.runner.shipment.services.entity.DpsEvent.DpsFieldData;
 import com.dpw.runner.shipment.services.entity.DpsEventLog;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.enums.DpsEntityType;
-import com.dpw.runner.shipment.services.entity.enums.DpsExecutionStatus;
-import com.dpw.runner.shipment.services.entity.enums.DpsWorkflowState;
-import com.dpw.runner.shipment.services.entity.enums.DpsWorkflowType;
-import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
+import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.exception.exceptions.DpsException;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.kafka.dto.DpsDto;
@@ -24,14 +20,6 @@ import com.dpw.runner.shipment.services.repository.interfaces.IDpsEventRepositor
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IDpsEventService;
 import com.google.common.base.Strings;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
-import javax.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +27,10 @@ import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
+
+import javax.transaction.Transactional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -102,6 +94,7 @@ public class DpsEventService implements IDpsEventService {
             createAuditLog(dpsEvent, shipmentDetails);
         }
     }
+
     /**
      * Handles DPS event transitions for a given {@link DpsEvent} and {@link ShipmentDetails}. This method validates the state transition according to the current state and the new
      * state from the DPS event. If the transition is valid, it updates the state of the shipment and persists the changes. If an error occurs during processing, a
@@ -134,7 +127,7 @@ public class DpsEventService implements IDpsEventService {
      * for the entity type "SHIPMENT" and status "ACTIVE".
      *
      * @param shipmentGuid the GUID of the entity for which implications are to be fetched.
-     *                 Must not be null or empty.
+     *                     Must not be null or empty.
      * @return a list of implications corresponding to the provided entity ID.
      * @throws DpsException if the entity ID is null, empty, or no implications are found
      *                      for the specified entity ID.
@@ -152,7 +145,7 @@ public class DpsEventService implements IDpsEventService {
         );
 
         if (CollectionUtils.isEmpty(implications)) {
-            log.info("No implications found for the provided entity ID: {}" , shipmentGuid);
+            log.info("No implications found for the provided entity ID: {}", shipmentGuid);
             return Collections.emptyList();
         }
 
@@ -165,7 +158,7 @@ public class DpsEventService implements IDpsEventService {
      * @param shipmentIds the list of shipment IDs to check for implications.
      * @param implication the specific implication to look for.
      * @return {@code true} if the implication is present for any shipment in the list, otherwise {@code false}.
-     * @throws DpsException if the list of shipment IDs is null or empty.
+     * @throws DpsException                  if the list of shipment IDs is null or empty.
      * @throws DataRetrievalFailureException if no shipment details are found for the provided IDs.
      */
     @Override
@@ -192,7 +185,7 @@ public class DpsEventService implements IDpsEventService {
      * Checks if an implication is present for a given set of shipment GUIDs.
      *
      * @param shipmentGuids the set of shipment GUIDs to check for implications.
-     * @param implication the specific implication to look for.
+     * @param implication   the specific implication to look for.
      * @return {@code true} if the implication is present for any GUID in the set, otherwise {@code false}.
      * @throws DpsException if the set of shipment GUIDs is null or empty.
      */
@@ -213,6 +206,7 @@ public class DpsEventService implements IDpsEventService {
 
         return count > 0; // Return true if any GUID has an implication
     }
+
     /**
      * Creates an audit log entry for the given {@link DpsEvent} and {@link ShipmentDetails}. This method captures relevant details about the DPS event and the associated shipment,
      * and persists the audit information for tracking and future reference.
@@ -288,7 +282,7 @@ public class DpsEventService implements IDpsEventService {
         }
         List<DpsEvent> dpsEventList = dpsEventRepository.findDpsEventByGuidAndExecutionState(shipmentGuid, DpsExecutionStatus.ACTIVE.name());
 
-        if(ObjectUtils.isEmpty(dpsEventList)) {
+        if (ObjectUtils.isEmpty(dpsEventList)) {
             log.warn("No DPS Event found with provided entity id {}", shipmentGuid);
             return ResponseHelper.buildSuccessResponse(Collections.emptyList());
         } else {
@@ -332,7 +326,7 @@ public class DpsEventService implements IDpsEventService {
                             .collect(Collectors.toList())
                             : Collections.emptyList();
 
-            return  DpsEventResponse.builder()
+            return DpsEventResponse.builder()
                     .id(dpsEvent.getId())
                     .guid(dpsEvent.getGuid())
                     .executionId(dpsEvent.getExecutionId())
@@ -358,12 +352,12 @@ public class DpsEventService implements IDpsEventService {
                     .dpsFieldData(dpsFieldDataResponseList)
                     .usernameList(
                             ObjectUtils.isNotEmpty(dpsEvent.getUsernameList()) ?
-                            new ArrayList<>(dpsEvent.getUsernameList()) :
-                            new ArrayList<>())
+                                    new ArrayList<>(dpsEvent.getUsernameList()) :
+                                    new ArrayList<>())
                     .eventTimestamp(dpsEvent.getEventTimestamp())
                     .tasks(
                             ObjectUtils.isNotEmpty(dpsEvent.getTasks()) ?
-                            new ArrayList<>(dpsEvent.getTasks()) :
+                                    new ArrayList<>(dpsEvent.getTasks()) :
                                     new ArrayList<>())
                     .dpsApprovalDetailList(dpsApprovalDetailResponseList)
                     .build();

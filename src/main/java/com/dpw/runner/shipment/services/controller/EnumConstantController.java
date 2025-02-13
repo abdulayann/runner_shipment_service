@@ -23,7 +23,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class EnumConstantController {
 
     private final IEnumConstantService enumConstantService;
-    private static class MyListResponseClass extends RunnerListResponse<EnumResponse> {}
 
     @Autowired
     public EnumConstantController(IEnumConstantService enumConstantService) {
@@ -35,5 +34,8 @@ public class EnumConstantController {
     @ExcludeTimeZone
     public ResponseEntity<IRunnerResponse> list() {
         return enumConstantService.list();
+    }
+
+    private static class MyListResponseClass extends RunnerListResponse<EnumResponse> {
     }
 }

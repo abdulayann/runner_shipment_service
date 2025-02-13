@@ -3,7 +3,6 @@ package com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
-import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.utils.V1PermissionMapUtil;
 import org.aspectj.lang.JoinPoint;
@@ -11,7 +10,10 @@ import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.utils.PermissionUtil.getParameterFromPermission;
@@ -26,23 +28,23 @@ public class CreateValidateAspect {
         List<String> userPermissions = PermissionsContext.getPermissions(SHIPMENT_CREATE_PERMISSION);
         int retrieveValidationFields = 4;
         Set<String> validatedFields = new HashSet<>();
-        if(shipment != null){
+        if (shipment != null) {
             String transportMode = null, direction = null, shipmentType = null;
             Boolean domesticType = null;
-            if(shipment.getTransportMode() != null)
+            if (shipment.getTransportMode() != null)
                 transportMode = shipment.getTransportMode().toLowerCase();
-            if(shipment.getDirection() != null)
+            if (shipment.getDirection() != null)
                 direction = shipment.getDirection().toLowerCase();
-            if(shipment.getShipmentType() != null)
+            if (shipment.getShipmentType() != null)
                 shipmentType = shipment.getShipmentType().toLowerCase();
-            if(shipment.getIsDomestic() != null)
+            if (shipment.getIsDomestic() != null)
                 domesticType = shipment.getIsDomestic();
 
             List<String> mappedPermissionList = V1PermissionMapUtil.getPermissionNames(userPermissions);
 
-            for (String v1MappedPermission : mappedPermissionList){
+            for (String v1MappedPermission : mappedPermissionList) {
                 // earlier used this : V1PermissionMapUtil.getPermissionName(permission)
-                if(v1MappedPermission == null)
+                if (v1MappedPermission == null)
                     continue;
                 List<String> parameterList = Arrays.stream(v1MappedPermission.toLowerCase().split(DELIMITER))
                         .filter(e -> !e.contains("create"))
@@ -52,19 +54,19 @@ public class CreateValidateAspect {
                 String validShipmentType = getParameterFromPermission(SHIPMENT_TYPE_INDEX, parameterList);
                 String validDomesticType = getParameterFromPermission(IS_DOMESTIC_INDEX, parameterList);
 
-                if(validTransportMode.equals(ALL) || transportMode == null || transportMode.equals(validTransportMode)){
+                if (validTransportMode.equals(ALL) || transportMode == null || transportMode.equals(validTransportMode)) {
                     validatedFields.add("transportMode");
-                    if(validDirection.equals(ALL) || direction == null || direction.equals(validDirection)){
+                    if (validDirection.equals(ALL) || direction == null || direction.equals(validDirection)) {
                         validatedFields.add("direction");
-                        if(validShipmentType.equals(ALL) || shipmentType == null || shipmentType.equals(validShipmentType)){
+                        if (validShipmentType.equals(ALL) || shipmentType == null || shipmentType.equals(validShipmentType)) {
                             validatedFields.add("shipmentType");
-                            if(validDomesticType.equals(ALL) || domesticType == null || domesticType.equals(validDomesticType.equals(DOMESTIC))){
+                            if (validDomesticType.equals(ALL) || domesticType == null || domesticType.equals(validDomesticType.equals(DOMESTIC))) {
                                 validatedFields.add("domesticType");
                             }
                         }
                     }
                 }
-                if(validatedFields.size() == retrieveValidationFields)
+                if (validatedFields.size() == retrieveValidationFields)
                     return;
             }
 
@@ -79,23 +81,23 @@ public class CreateValidateAspect {
         int retrieveValidationFields = 4;
         Set<String> validatedFields = new HashSet<>();
         ConsolidationDetailsRequest consolidation = (ConsolidationDetailsRequest) commonRequestModel.getData();
-        if(consolidation != null){
+        if (consolidation != null) {
             String transportMode = null, direction = null, shipmentType = null;
             Boolean domesticType = null;
-            if(consolidation.getTransportMode() != null)
+            if (consolidation.getTransportMode() != null)
                 transportMode = consolidation.getTransportMode().toLowerCase();
-            if(consolidation.getShipmentType() != null)
+            if (consolidation.getShipmentType() != null)
                 direction = consolidation.getShipmentType().toLowerCase();
-            if(consolidation.getContainerCategory() != null)
+            if (consolidation.getContainerCategory() != null)
                 shipmentType = consolidation.getContainerCategory().toLowerCase();
-            if(consolidation.getIsDomestic() != null)
+            if (consolidation.getIsDomestic() != null)
                 domesticType = consolidation.getIsDomestic();
 
             List<String> mappedPermissionList = V1PermissionMapUtil.getPermissionNames(userPermissions);
 
-            for (String v1MappedPermission : mappedPermissionList){
+            for (String v1MappedPermission : mappedPermissionList) {
                 // earlier used this : V1PermissionMapUtil.getPermissionName(permission)
-                if(v1MappedPermission == null)
+                if (v1MappedPermission == null)
                     continue;
                 List<String> parameterList = Arrays.stream(v1MappedPermission.toLowerCase().split(DELIMITER))
                         .filter(e -> !e.contains("create"))
@@ -105,19 +107,19 @@ public class CreateValidateAspect {
                 String validShipmentType = getParameterFromPermission(SHIPMENT_TYPE_INDEX, parameterList);
                 String validDomesticType = getParameterFromPermission(IS_DOMESTIC_INDEX, parameterList);
 
-                if(validTransportMode.equals(ALL) || transportMode == null || transportMode.equals(validTransportMode)){
+                if (validTransportMode.equals(ALL) || transportMode == null || transportMode.equals(validTransportMode)) {
                     validatedFields.add("transportMode");
-                    if(validDirection.equals(ALL) || direction == null || direction.equals(validDirection)){
+                    if (validDirection.equals(ALL) || direction == null || direction.equals(validDirection)) {
                         validatedFields.add("direction");
-                        if(validShipmentType.equals(ALL) || shipmentType == null || shipmentType.equals(validShipmentType)){
+                        if (validShipmentType.equals(ALL) || shipmentType == null || shipmentType.equals(validShipmentType)) {
                             validatedFields.add("shipmentType");
-                            if(validDomesticType.equals(ALL) || domesticType == null || domesticType.equals(validDomesticType.equals(DOMESTIC))){
+                            if (validDomesticType.equals(ALL) || domesticType == null || domesticType.equals(validDomesticType.equals(DOMESTIC))) {
                                 validatedFields.add("domesticType");
                             }
                         }
                     }
                 }
-                if(validatedFields.size() == retrieveValidationFields)
+                if (validatedFields.size() == retrieveValidationFields)
                     return;
             }
 

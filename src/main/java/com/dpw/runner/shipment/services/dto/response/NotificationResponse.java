@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.entity.enums.NotificationRequestType;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
+
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.UUID;

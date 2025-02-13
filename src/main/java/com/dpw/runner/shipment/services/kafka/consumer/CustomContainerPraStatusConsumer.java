@@ -6,7 +6,6 @@ import com.dpw.runner.shipment.services.repository.interfaces.IConsolidationRepo
 import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.time.Instant;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +16,8 @@ import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
+
+import java.time.Instant;
 
 @Service
 @Slf4j
@@ -30,7 +31,7 @@ public class CustomContainerPraStatusConsumer {
 
     @Autowired
     public CustomContainerPraStatusConsumer(IConsolidationRepository consolidationRepository,
-            IContainerRepository containerRepository, ObjectMapper objectMapper, RetryTemplate retryTemplate) {
+                                            IContainerRepository containerRepository, ObjectMapper objectMapper, RetryTemplate retryTemplate) {
         this.consolidationRepository = consolidationRepository;
         this.containerRepository = containerRepository;
         this.objectMapper = objectMapper;

@@ -11,5 +11,6 @@ import java.lang.annotation.Target;
 @Target(ElementType.FIELD)
 public @interface MasterData {
     MasterDataType type();
+
     String cascade() default "";
 }

@@ -5,9 +5,10 @@ import com.dpw.runner.shipment.services.dto.response.DpsEventResponse;
 import com.dpw.runner.shipment.services.entity.DpsEvent;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.kafka.dto.DpsDto;
+import org.springframework.http.ResponseEntity;
+
 import java.util.List;
 import java.util.Set;
-import org.springframework.http.ResponseEntity;
 
 public interface IDpsEventService {
 

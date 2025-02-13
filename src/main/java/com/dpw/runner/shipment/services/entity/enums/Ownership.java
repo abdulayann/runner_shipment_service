@@ -16,14 +16,6 @@ public enum Ownership {
         this.description = description;
     }
 
-    public int getValue() {
-        return value;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
     public static Ownership fromValue(int value) {
         for (Ownership ownership : Ownership.values()) {
             if (ownership.getValue() == value) {
@@ -31,6 +23,14 @@ public enum Ownership {
             }
         }
         throw new IllegalArgumentException("Invalid Ownership value: " + value);
+    }
+
+    public int getValue() {
+        return value;
+    }
+
+    public String getDescription() {
+        return description;
     }
 
     public String getDescriptionFormatted() {

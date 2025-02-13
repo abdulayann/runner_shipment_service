@@ -11,10 +11,15 @@ import java.util.UUID;
 
 public interface IShipmentOrderDao {
     ShipmentOrder save(ShipmentOrder shipmentOrder);
+
     Page<ShipmentOrder> findAll(Specification<ShipmentOrder> spec, Pageable pageable);
+
     Optional<ShipmentOrder> findById(Long id);
+
     void delete(ShipmentOrder shipmentOrder);
+
     List<ShipmentOrder> findByShipmentId(Long shipmentId);
+
     Optional<ShipmentOrder> findByShipmentIdAndOrderGuid(Long shipmentId, UUID orderGuid);
 
     List<ShipmentOrder> updateEntityFromShipment(List<ShipmentOrder> shipmentOrders, Long shipmentId);

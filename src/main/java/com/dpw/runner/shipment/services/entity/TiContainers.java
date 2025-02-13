@@ -39,11 +39,11 @@ public class TiContainers extends MultiTenancy {
     private String number;
 
     @Column(name = "description")
-    @Size(max=1024, message = "max size is 1024 for description")
+    @Size(max = 1024, message = "max size is 1024 for description")
     private String description;
 
     @Column(name = "no_of_packages")
-    @Size(max=5, message = "max size is 5 for noOfPackages")
+    @Size(max = 5, message = "max size is 5 for noOfPackages")
     private String noOfPackages;
 
     @Column(name = "gross_weight")
@@ -68,11 +68,11 @@ public class TiContainers extends MultiTenancy {
     private Boolean dangerous;
 
     @Column(name = "substance_name")
-    @Size(max=1024, message = "max size is 1024 for SubstanceName")
+    @Size(max = 1024, message = "max size is 1024 for SubstanceName")
     private String substanceName;
 
     @Column(name = "un_number")
-    @Size(max=10, message = "max size is 10 for un_number")
+    @Size(max = 10, message = "max size is 10 for un_number")
     private String unNumber;
 
     @Column(name = "dg_class")
@@ -80,6 +80,6 @@ public class TiContainers extends MultiTenancy {
     private String dgClass;
 
     @Column(name = "tunnel_restriction_code")
-    @Size(max=10, message = "max size is 10 for tunnel_restriction_code")
+    @Size(max = 10, message = "max size is 10 for tunnel_restriction_code")
     private String tunnelRestrictionCode;
 }

@@ -1,4 +1,5 @@
 package com.dpw.runner.shipment.services.validator.enums;
+
 public enum Operators {
     GREATER_THAN("greater-than"),
     GREATER_THAN_EQUALS("greater-than-equals"),
@@ -22,7 +23,7 @@ public enum Operators {
         throw new IllegalArgumentException("Invalid Operator value: " + value);
     }
 
-    public String  getValue() {
+    public String getValue() {
         return value;
     }
 

@@ -8,8 +8,6 @@ import com.dpw.runner.shipment.services.kafka.dto.BillingInvoiceDto.InvoiceDto.A
 import com.dpw.runner.shipment.services.service.interfaces.IEventService;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.time.Instant;
-import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -19,6 +17,9 @@ import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
+
+import java.time.Instant;
+import java.util.List;
 
 @Service
 @Slf4j
@@ -87,10 +88,10 @@ public class BillingCommonEventConsumer {
             int partition,
             long offset,
             long receivedTimestamp) {
-        log.info("{} Received message from topic: {}", LoggerEvent.KAFKA_BILLING_COMMON_EVENT,topic);
-        log.info("{} Partition: {}", LoggerEvent.KAFKA_BILLING_COMMON_EVENT,partition);
-        log.info("{} Offset: {}", LoggerEvent.KAFKA_BILLING_COMMON_EVENT,offset);
-        log.info("{} Received Timestamp: {}", LoggerEvent.KAFKA_BILLING_COMMON_EVENT,Instant.ofEpochMilli(receivedTimestamp));
+        log.info("{} Received message from topic: {}", LoggerEvent.KAFKA_BILLING_COMMON_EVENT, topic);
+        log.info("{} Partition: {}", LoggerEvent.KAFKA_BILLING_COMMON_EVENT, partition);
+        log.info("{} Offset: {}", LoggerEvent.KAFKA_BILLING_COMMON_EVENT, offset);
+        log.info("{} Received Timestamp: {}", LoggerEvent.KAFKA_BILLING_COMMON_EVENT, Instant.ofEpochMilli(receivedTimestamp));
         log.info("{} Message: {}", LoggerEvent.KAFKA_BILLING_COMMON_EVENT, kafkaMessage);
     }
 

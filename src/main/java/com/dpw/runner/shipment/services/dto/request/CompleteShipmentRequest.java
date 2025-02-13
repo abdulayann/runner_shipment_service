@@ -16,7 +16,7 @@ import java.util.List;
 public class CompleteShipmentRequest extends CommonRequest implements IRunnerRequest {
     private List<PackingRequest> packingRequest;
     private List<AdditionalDetailRequest> additionalDetailRequest;
-    private List<BookingCarriageRequest>  bookingCarriageRequest;
+    private List<BookingCarriageRequest> bookingCarriageRequest;
     private List<ContainerRequest> containerRequest;
     private List<ELDetailsRequest> elDetailsRequest;
     private List<EventsRequest> eventsRequest;

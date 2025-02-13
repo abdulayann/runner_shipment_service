@@ -7,7 +7,7 @@ import org.springframework.data.repository.NoRepositoryBean;
 import java.util.Optional;
 
 @NoRepositoryBean
-public interface PermissionsRepository<T> extends JpaRepository<T, Long> , JpaSpecificationExecutor<T> {
+public interface PermissionsRepository<T> extends JpaRepository<T, Long>, JpaSpecificationExecutor<T> {
 
     Optional<T> findOneById(Long id);
 }

@@ -17,18 +17,26 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-@Repository @Generated @InterBranchEntity
+
+@Repository
+@Generated
+@InterBranchEntity
 public interface IAwbRepository extends MultiTenancyRepository<Awb> {
     Page<Awb> findAll(Specification<Awb> spec, Pageable pageable);
+
     List<Awb> findByShipmentId(Long shipmentId);
+
     List<Awb> findByConsolidationId(Long shipmentId);
 
     @Query(value = "SELECT * FROM awb WHERE shipment_id = ?1", nativeQuery = true)
     List<Awb> findByShipmentIdByQuery(Long shipmentId);
+
     @Query(value = "SELECT * FROM awb WHERE shipment_id IN ?1", nativeQuery = true)
     List<Awb> findByShipmentIdsByQuery(List<Long> shipmentIds);
+
     @Query(value = "SELECT * FROM awb WHERE consolidation_id = ?1", nativeQuery = true)
     List<Awb> findByConsolidationIdByQuery(Long consolidationId);
+
     Optional<Awb> findByGuid(UUID guid);
 
     @Query(value = "SELECT e FROM Awb e WHERE FUNCTION('jsonb_extract_path_text', e.awbShipmentInfo, 'issuingAgentName') = :issuingAgent")
@@ -95,8 +103,8 @@ public interface IAwbRepository extends MultiTenancyRepository<Awb> {
     @Transactional
     @Modifying
     @Query("UPDATE Awb a SET a.airMessageResubmitted = false " +
-        "WHERE (:shipmentId IS NULL OR a.shipmentId = :shipmentId) " +
-        "AND (:consolidationId IS NULL OR a.consolidationId = :consolidationId)")
+            "WHERE (:shipmentId IS NULL OR a.shipmentId = :shipmentId) " +
+            "AND (:consolidationId IS NULL OR a.consolidationId = :consolidationId)")
     int setAirMessagingResubmittedFalse(Long shipmentId, Long consolidationId);
 
     @Query(value = "SELECT * FROM awb WHERE id in ?1", nativeQuery = true)

@@ -9,7 +9,9 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 
 @Data
-@Builder @AllArgsConstructor @NoArgsConstructor
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class CheckAllocatedDataChangesRequest implements IRunnerRequest {
     private BigDecimal allocatedWeight;
     private String allocatedWeightUnit;

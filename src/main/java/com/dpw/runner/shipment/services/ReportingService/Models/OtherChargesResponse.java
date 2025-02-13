@@ -7,7 +7,7 @@ import java.util.List;
 
 @Getter
 @Setter
-public class OtherChargesResponse implements IDocumentModel{
+public class OtherChargesResponse implements IDocumentModel {
     private List<String> otherChargesItems;
     private List<String> newOtherChargesItems;
 }

@@ -65,14 +65,13 @@ public class ConsolidationSync implements IConsolidationSync {
     private IV1Service v1Service;
     @Autowired
     private SyncEntityConversionService syncEntityConversionService;
-    
+
     @Autowired
     private ISyncService syncService;
     @Autowired
     private ITruckDriverDetailsDao truckDriverDetailsDao;
     @Autowired
     private V1AuthHelper v1AuthHelper;
-
 
 
     @Override
@@ -84,13 +83,12 @@ public class ConsolidationSync implements IConsolidationSync {
             return ResponseHelper.buildFailedResponse(DaoConstants.DAO_INVALID_REQUEST_MSG);
         CustomConsolidationRequest response = createConsoleSyncReq(request);
         String consolidationRequest = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(response).module(SyncingConstants.CONSOLIDATION).build());
-       if (isDirectSync) { // Not being used as of today so change headers accordingly if used in future
-           HttpHeaders httpHeaders = v1AuthHelper.getHeadersForDataSyncFromKafka(request.getCreatedBy(), request.getTenantId(), null);
-           syncService.callSyncAsync(consolidationRequest, StringUtility.convertToString(request.getId()), StringUtility.convertToString(request.getGuid()), "Consolidation", httpHeaders);
-       }
-       else
-           syncService.pushToKafka(consolidationRequest, StringUtility.convertToString(request.getId()), StringUtility.convertToString(request.getGuid()), "Consolidation", transactionId, request.getTenantId(), request.getCreatedBy(), null);
-       return ResponseHelper.buildSuccessResponse(response);
+        if (isDirectSync) { // Not being used as of today so change headers accordingly if used in future
+            HttpHeaders httpHeaders = v1AuthHelper.getHeadersForDataSyncFromKafka(request.getCreatedBy(), request.getTenantId(), null);
+            syncService.callSyncAsync(consolidationRequest, StringUtility.convertToString(request.getId()), StringUtility.convertToString(request.getGuid()), "Consolidation", httpHeaders);
+        } else
+            syncService.pushToKafka(consolidationRequest, StringUtility.convertToString(request.getId()), StringUtility.convertToString(request.getGuid()), "Consolidation", transactionId, request.getTenantId(), request.getCreatedBy(), null);
+        return ResponseHelper.buildSuccessResponse(response);
     }
 
     @Override
@@ -130,50 +128,47 @@ public class ConsolidationSync implements IConsolidationSync {
         response.setDocsList(convertToList(request.getFileRepoList(), FileRepoRequestV2.class));
         response.setRoutingsList(syncEntityConversionService.routingsV2ToV1(request.getRoutingsList()));
         response.setConsolidationAddresses(syncEntityConversionService.addressesV2ToV1(request.getConsolidationAddresses()));
-        if(response.getAutoUpdateGoodsDesc() == null)
+        if (response.getAutoUpdateGoodsDesc() == null)
             response.setAutoUpdateGoodsDesc(false);
 
         List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(request.getId());
-        if(!listIsNullOrEmpty(consoleShipmentMappings)) {
+        if (!listIsNullOrEmpty(consoleShipmentMappings)) {
             List<Long> shipmentIds = consoleShipmentMappings.stream().map(ConsoleShipmentMapping::getShipmentId).collect(toList());
             List<ShipmentDetails> shipmentDetailsList = shipmentDao.findShipmentsByIds(new HashSet<>(shipmentIds));
-            if(!listIsNullOrEmpty(shipmentDetailsList)) {
+            if (!listIsNullOrEmpty(shipmentDetailsList)) {
                 var map = shipmentDetailsList.stream().collect(toMap(ShipmentDetails::getId, ShipmentDetails::getGuid));
                 response.setShipmentGuids(shipmentDetailsList.stream().collect(toMap(BaseEntity::getGuid, MultiTenancy::getTenantId)));
                 mapTruckDriverDetail(response, request, shipmentIds, map);
             }
         }
 
-        if(request.getCreditor() != null && Boolean.TRUE.equals(request.getCreditor().getIsAddressFreeText())){
+        if (request.getCreditor() != null && Boolean.TRUE.equals(request.getCreditor().getIsAddressFreeText())) {
             response.setIsCreditorFreeTextAddress(true);
-            var rawData = request.getCreditor().getAddressData() != null ? request.getCreditor().getAddressData().get(PartiesConstants.RAW_DATA): null;
-            if(rawData!=null)
+            var rawData = request.getCreditor().getAddressData() != null ? request.getCreditor().getAddressData().get(PartiesConstants.RAW_DATA) : null;
+            if (rawData != null)
                 response.setCreditorFreeTextAddress(rawData.toString());
-        }
-        else  response.setIsCreditorFreeTextAddress(false);
+        } else response.setIsCreditorFreeTextAddress(false);
 
-        if(request.getReceivingAgent() != null && Boolean.TRUE.equals(request.getReceivingAgent().getIsAddressFreeText())){
+        if (request.getReceivingAgent() != null && Boolean.TRUE.equals(request.getReceivingAgent().getIsAddressFreeText())) {
             response.setIsReceivingAgentFreeTextAddress(true);
-            var rawData = request.getReceivingAgent().getAddressData() != null ? request.getReceivingAgent().getAddressData().get(PartiesConstants.RAW_DATA): null;
-            if(rawData!=null)
+            var rawData = request.getReceivingAgent().getAddressData() != null ? request.getReceivingAgent().getAddressData().get(PartiesConstants.RAW_DATA) : null;
+            if (rawData != null)
                 response.setReceivingAgentFreeTextAddress(rawData.toString());
-        }
-        else response.setIsReceivingAgentFreeTextAddress(false);
+        } else response.setIsReceivingAgentFreeTextAddress(false);
 
-        if(request.getSendingAgent() != null && Boolean.TRUE.equals(request.getSendingAgent().getIsAddressFreeText())){
+        if (request.getSendingAgent() != null && Boolean.TRUE.equals(request.getSendingAgent().getIsAddressFreeText())) {
             response.setIsSendingAgentFreeTextAddress(true);
-            var rawData = request.getSendingAgent().getAddressData() != null ? request.getSendingAgent().getAddressData().get(PartiesConstants.RAW_DATA): null;
-            if(rawData!=null)
+            var rawData = request.getSendingAgent().getAddressData() != null ? request.getSendingAgent().getAddressData().get(PartiesConstants.RAW_DATA) : null;
+            if (rawData != null)
                 response.setSendingAgentFreeTextAddress(rawData.toString());
-        }
-        else response.setIsSendingAgentFreeTextAddress(false);
+        } else response.setIsSendingAgentFreeTextAddress(false);
 
         response.setGuid(request.getGuid());
         return response;
     }
 
     private void mapJobs(CustomConsolidationRequest response, ConsolidationDetails request) {
-        if(request.getJobsList() == null)
+        if (request.getJobsList() == null)
             return;
         List<JobRequestV2> req = request.getJobsList().stream()
                 .map(item -> {
@@ -188,7 +183,7 @@ public class ConsolidationSync implements IConsolidationSync {
     }
 
     private void mapPackings(CustomConsolidationRequest response, ConsolidationDetails request) {
-        if(request.getPackingList() == null)
+        if (request.getPackingList() == null)
             return;
         List<PackingRequestV2> res = syncEntityConversionService.packingsV2ToV1(request.getPackingList(), request.getContainersList(), null, request.getGuid());
         response.setPackingList(res);
@@ -201,7 +196,7 @@ public class ConsolidationSync implements IConsolidationSync {
         Page<TruckDriverDetails> truckDriverDetailsPage = truckDriverDetailsDao.findAll(pair.getLeft(), pair.getRight());
         truckDriverDetails = truckDriverDetailsPage.stream().toList();
         Map<Long, UUID> contMap = new HashMap<>();
-        if(request.getContainersList() != null && !request.getContainersList().isEmpty())
+        if (request.getContainersList() != null && !request.getContainersList().isEmpty())
             contMap = request.getContainersList().stream().collect(toMap(Containers::getId, Containers::getGuid));
         Map<Long, UUID> finalContMap = contMap;
         List<TruckDriverDetailsRequestV2> req = truckDriverDetails.stream()
@@ -210,9 +205,9 @@ public class ConsolidationSync implements IConsolidationSync {
                     t = modelMapper.map(item, TruckDriverDetailsRequestV2.class);
                     t.setTransporterTypeString(StringUtility.convertToString(item.getTransporterType()));
                     t.setConsolidationGuid(request.getGuid());
-                    if(item.getShipmentId() != null && map.containsKey(item.getShipmentId()))
+                    if (item.getShipmentId() != null && map.containsKey(item.getShipmentId()))
                         t.setShipmentGuid(map.get(item.getShipmentId()));
-                    if(item.getContainerId() != null && finalContMap.containsKey(item.getContainerId()))
+                    if (item.getContainerId() != null && finalContMap.containsKey(item.getContainerId()))
                         t.setContainerGuid(finalContMap.get(item.getContainerId()));
                     return t;
                 })
@@ -221,7 +216,7 @@ public class ConsolidationSync implements IConsolidationSync {
     }
 
     private void mapCarrierDetails(CustomConsolidationRequest response, ConsolidationDetails request) {
-        if(request.getCarrierDetails() == null)
+        if (request.getCarrierDetails() == null)
             return;
         modelMapper.map(request.getCarrierDetails(), response);
         response.setLastDischargeString(request.getCarrierDetails().getDestination());
@@ -233,7 +228,7 @@ public class ConsolidationSync implements IConsolidationSync {
     }
 
     private void mapAchievedQuantities(CustomConsolidationRequest response, ConsolidationDetails request) {
-        if(request.getAchievedQuantities() == null)
+        if (request.getAchievedQuantities() == null)
             return;
         modelMapper.map(request.getAchievedQuantities(), response);
         response.setConsolidatedVolume(request.getAchievedQuantities().getConsolidatedVolume());
@@ -241,7 +236,7 @@ public class ConsolidationSync implements IConsolidationSync {
     }
 
     private void mapAllocations(CustomConsolidationRequest response, ConsolidationDetails request) {
-        if(request.getAllocations() == null)
+        if (request.getAllocations() == null)
             return;
         modelMapper.map(request.getAllocations(), response);
         response.setChargeable(request.getAllocations().getChargable());
@@ -256,57 +251,57 @@ public class ConsolidationSync implements IConsolidationSync {
         // Arrival Details
         com.dpw.runner.shipment.services.entity.ArrivalDepartureDetails request1 = request_.getArrivalDetails();
 
-        if(request1 != null) {
-            if(request1.getContainerYardId() != null)
+        if (request1 != null) {
+            if (request1.getContainerYardId() != null)
                 response.setAcontainerYardId(modelMapper.map(request1.getContainerYardId(), PartyRequestV2.class));
             response.setAfirstArrivalPortArrivalDate(request1.getFirstForeignPortArrivalDate());
             response.setAfirstForeignPort(request1.getFirstForeignPort());
-            if(request1.getFirstForeignPortId() != null)
+            if (request1.getFirstForeignPortId() != null)
                 response.setAfirstArrivalPortId(modelMapper.map(request1.getFirstForeignPortId(), PartyRequestV2.class));
             response.setAlastForeignPortDepartureDate(request1.getLastForeignPortDepartureDate());
             response.setAlastForeignPort(request1.getLastForeignPort());
-            if(request1.getLastForeignPortId() != null)
+            if (request1.getLastForeignPortId() != null)
                 response.setAlastForeignPortId(modelMapper.map(request1.getLastForeignPortId(), PartyRequestV2.class));
-            if(request1.getTransportPortId() != null)
+            if (request1.getTransportPortId() != null)
                 response.setAtransportPortId(modelMapper.map(request1.getTransportPortId(), PartyRequestV2.class));
-            if(request1.getCTOId() != null)
+            if (request1.getCTOId() != null)
                 response.setACTOId(modelMapper.map(request1.getCTOId(), PartyRequestV2.class));
-            if(request1.getCFSId() != null)
+            if (request1.getCFSId() != null)
                 response.setACFSId(modelMapper.map(request1.getCFSId(), PartyRequestV2.class));
         }
 
         // Departure Details
         com.dpw.runner.shipment.services.entity.ArrivalDepartureDetails request2 = request_.getDepartureDetails();
 
-        if(request2 != null) {
-            if(request2.getContainerYardId() != null)
+        if (request2 != null) {
+            if (request2.getContainerYardId() != null)
                 response.setDcontainerYardId(modelMapper.map(request2.getContainerYardId(), PartyRequestV2.class));
             response.setDfirstForeignPortArrivalDate(request2.getFirstForeignPortArrivalDate());
             response.setDfirstForeignPort(request2.getFirstForeignPort());
-            if(request2.getFirstForeignPortId() != null)
+            if (request2.getFirstForeignPortId() != null)
                 response.setDfirstForeignPortId(modelMapper.map(request2.getFirstForeignPortId(), PartyRequestV2.class));
             response.setDlastForeignPortDepartureDate(request2.getLastForeignPortDepartureDate());
             response.setDlastForeignPort(request2.getLastForeignPort());
-            if(request2.getLastForeignPortId() != null)
+            if (request2.getLastForeignPortId() != null)
                 response.setDlastForeignPortId(modelMapper.map(request2.getLastForeignPortId(), PartyRequestV2.class));
-            if(request2.getTransportPortId() != null)
+            if (request2.getTransportPortId() != null)
                 response.setDtransportPortId(modelMapper.map(request2.getTransportPortId(), PartyRequestV2.class));
-            if(request2.getCTOId() != null)
+            if (request2.getCTOId() != null)
                 response.setDCTOId(modelMapper.map(request2.getCTOId(), PartyRequestV2.class));
-            if(request2.getCFSId() != null)
+            if (request2.getCFSId() != null)
                 response.setDCFSId(modelMapper.map(request2.getCFSId(), PartyRequestV2.class));
         }
     }
 
-    private <T,P> List<P> convertToList(final List<T> lst, Class<P> clazz) {
-        if(lst == null)
+    private <T, P> List<P> convertToList(final List<T> lst, Class<P> clazz) {
+        if (lst == null)
             return null;
-        return  lst.stream()
+        return lst.stream()
                 .map(item -> convertToClass(item, clazz))
                 .toList();
     }
 
-    private  <T,P> P convertToClass(T obj, Class<P> clazz) {
+    private <T, P> P convertToClass(T obj, Class<P> clazz) {
         return modelMapper.map(obj, clazz);
     }
 }

@@ -7,11 +7,17 @@ import static com.dpw.runner.shipment.services.commons.constants.PermissionConst
 
 @Component
 public class UserContext {
-    private UserContext(){}
-    private static ThreadLocal<UsersDto> user = new InheritableThreadLocal<>();
+    private static final ThreadLocal<UsersDto> user = new InheritableThreadLocal<>();
+
+    private UserContext() {
+    }
 
     public static UsersDto getUser() {
         return user.get();
+    }
+
+    public static void setUser(UsersDto userId) {
+        user.set(userId);
     }
 
     public static boolean isAirDgUser() {
@@ -29,11 +35,7 @@ public class UserContext {
                 && getUser().getPermissions().get(OCEAN_DG_COMMERCIAL_APPROVER);
     }
 
-    public static void setUser(UsersDto userId) {
-        user.set(userId);
-    }
-
-    public static void removeUser(){
+    public static void removeUser() {
         user.remove();
     }
 }

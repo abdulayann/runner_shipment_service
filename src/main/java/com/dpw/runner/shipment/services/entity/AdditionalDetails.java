@@ -40,11 +40,11 @@ public class AdditionalDetails extends MultiTenancy {
     @Column(name = "expiry_date")
     private LocalDateTime expiryDate;
 
-    @Size(max=3, message = "max size is 3 for inspection")
+    @Size(max = 3, message = "max size is 3 for inspection")
     @Column(name = "inspection")
     private String inspection;
 
-    @Size(max=3, message = "max size is 3 for airway_bill_dims")
+    @Size(max = 3, message = "max size is 3 for airway_bill_dims")
     @Column(name = "airway_bill_dims")
     @MasterData(type = MasterDataType.AIRWAY_BILL_DIMS)
     private String airwayBillDims;
@@ -57,7 +57,7 @@ public class AdditionalDetails extends MultiTenancy {
     @MasterData(type = MasterDataType.SHIPPER_COD_TYPE)
     private String shipperCODPM;
 
-    @Size(max=3, message = "max size is 3 for phase")
+    @Size(max = 3, message = "max size is 3 for phase")
     @Column(name = "phase")
     @MasterData(type = MasterDataType.PHASE)
     private String phase;
@@ -65,12 +65,12 @@ public class AdditionalDetails extends MultiTenancy {
     @Column(name = "spot_rate")
     private BigDecimal spotRate;
 
-    @Size(max=3, message = "max size is 3 for spot_rate_type")
+    @Size(max = 3, message = "max size is 3 for spot_rate_type")
     @Column(name = "spot_rate_type")
     @MasterData(type = MasterDataType.SPOT_RATE_TYPE)
     private String spotRateType;
 
-    @Size(max=3, message = "max size is 3 for efreight_status")
+    @Size(max = 3, message = "max size is 3 for efreight_status")
     @Column(name = "efreight_status")
     @MasterData(type = MasterDataType.EFREIGHT_STATUS)
     private String efreightStatus;
@@ -82,11 +82,11 @@ public class AdditionalDetails extends MultiTenancy {
     @Column(name = "import_export_shipment_lock")
     private Boolean importExportShipmentLock;
 
-    @Size(max=20, message = "max size is 20 for cha_job_number")
+    @Size(max = 20, message = "max size is 20 for cha_job_number")
     @Column(name = "cha_job_number")
     private String CHAJobNumber;
 
-    @Size(max=10, message = "max size is 10 for ad_code")
+    @Size(max = 10, message = "max size is 10 for ad_code")
     @Column(name = "ad_code")
     private String ADCode;
 
@@ -180,7 +180,7 @@ public class AdditionalDetails extends MultiTenancy {
     @Column(name = "local_line_number")
     private Long localLineNumber;
 
-    @Size(max=10, message = "max size is 10 for smtp_igm_number")
+    @Size(max = 10, message = "max size is 10 for smtp_igm_number")
     @Column(name = "smtp_igm_number")
     @JsonProperty("SMTPIGMNumber")
     private String SMTPIGMNumber;
@@ -246,7 +246,7 @@ public class AdditionalDetails extends MultiTenancy {
     @Column(name = "total_duty")
     private BigDecimal totalDuty;
 
-    @Size(max=256, message = "max size is 256 for external_notes")
+    @Size(max = 256, message = "max size is 256 for external_notes")
     @Column(name = "external_notes")
     private String externalNotes;
 
@@ -254,18 +254,18 @@ public class AdditionalDetails extends MultiTenancy {
     @DedicatedMasterData(type = Constants.WARE_HOUSE_DATA)
     private Long bondedWarehouseId;
 
-    @Size(max=3, message = "max size is 3 for release_type")
+    @Size(max = 3, message = "max size is 3 for release_type")
     @Column(name = "release_type")
     @MasterData(type = MasterDataType.RELEASE_TYPE)
     private String releaseType;
 
-    @Size(max=3, message = "max size is 3 for house_bill_type")
+    @Size(max = 3, message = "max size is 3 for house_bill_type")
     @Column(name = "house_bill_type")
     @MasterData(type = MasterDataType.HOUSE_BILL_TYPE)
     private String houseBillType;
 
     @Column(name = "on_board")
-    @Size(max=3, message = "max size is 3 for on_board")
+    @Size(max = 3, message = "max size is 3 for on_board")
     @MasterData(type = MasterDataType.ON_BOARD)
     private String onBoard;
 
@@ -291,7 +291,7 @@ public class AdditionalDetails extends MultiTenancy {
     private String BLExporterShipment;
 
     @Column(name = "screening_status")
-    @Size(max=50, message = "max size is 50 for screening_status")
+    @Size(max = 50, message = "max size is 50 for screening_status")
     //@MasterData(type = MasterDataType.SCREENING_STATUS)
     @ElementCollection(targetClass = String.class, fetch = FetchType.LAZY)
     @CollectionTable(name = "screening_status", joinColumns = @JoinColumn(name = "shipment_additional_details_id"))
@@ -408,29 +408,29 @@ public class AdditionalDetails extends MultiTenancy {
 
     @Column(name = "bl_terms_and_conditions_id")
     @MasterData(type = MasterDataType.BL_TERMS_AND_CONDITIONS)
-    @Size(max=16, message = "max size is 16 for bl_terms_and_conditions_id")
+    @Size(max = 16, message = "max size is 16 for bl_terms_and_conditions_id")
     private String bLTermsandConditionsId;
 
     @Column(name = "bl_comments")
-    @Size(max=2500, message = "max size is 2500 for bl_comments")
+    @Size(max = 2500, message = "max size is 2500 for bl_comments")
     private String blComments;
 
     @Column(name = "cargo_terms")
     @MasterData(type = MasterDataType.BL_CARGO_TERMS)
-    @Size(max=16, message = "max size is 16 for cargo_terms")
+    @Size(max = 16, message = "max size is 16 for cargo_terms")
     private String cargoTerms;
 
     @Column(name = "cargo_terms_description")
-    @Size(max=2500, message = "max size is 2500 for cargo_terms_description")
+    @Size(max = 2500, message = "max size is 2500 for cargo_terms_description")
     private String cargoTermsDescription;
 
     @Column(name = "bl_remarks")
     @MasterData(type = MasterDataType.BL_REMARKS)
-    @Size(max=16, message = "max size is 16 for bl_remarks")
+    @Size(max = 16, message = "max size is 16 for bl_remarks")
     private String bLRemarks;
 
     @Column(name = "bl_remarks_description")
-    @Size(max=2500, message = "max size is 2500 for bl_remarks_description")
+    @Size(max = 2500, message = "max size is 2500 for bl_remarks_description")
     private String bLRemarksDescription;
 
     @Column(name = "summary")
@@ -448,11 +448,11 @@ public class AdditionalDetails extends MultiTenancy {
     private String aomFreeText;
 
     @Column(name = "emergency_contact_number")
-    @Size(max=31, message = "max size is 31 for emergency_contact_number")
+    @Size(max = 31, message = "max size is 31 for emergency_contact_number")
     private String emergencyContactNumber;
 
     @Column(name = "emergency_contact_number_code")
-    @Size(max=31, message = "max size is 31 for emergency_contact_number_code")
+    @Size(max = 31, message = "max size is 31 for emergency_contact_number_code")
     private String emergencyContactNumberCode;
 
     @Column(name = "pickup_date")
@@ -488,6 +488,6 @@ public class AdditionalDetails extends MultiTenancy {
     @Column(name = "cargo_out_for_delivery")
     private LocalDateTime cargoOutForDelivery;
 
-   @Column(name = "fcr_number")
-   private Integer fcrNumber = 0;
+    @Column(name = "fcr_number")
+    private Integer fcrNumber = 0;
 }

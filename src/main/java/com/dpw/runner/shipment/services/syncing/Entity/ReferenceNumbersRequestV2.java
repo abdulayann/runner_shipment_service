@@ -8,8 +8,6 @@ import java.util.UUID;
 
 @Data
 public class ReferenceNumbersRequestV2 implements IRunnerRequest {
-    @JsonProperty("Guid")
-    private UUID Guid;
     @JsonProperty("CountryOfIssue")
     public String CountryOfIssue;
     @JsonProperty("Type")
@@ -18,4 +16,6 @@ public class ReferenceNumbersRequestV2 implements IRunnerRequest {
     public String ReferenceNumber;
     @JsonProperty("IsPortalEnable")
     public Boolean IsPortalEnable;
+    @JsonProperty("Guid")
+    private UUID Guid;
 }

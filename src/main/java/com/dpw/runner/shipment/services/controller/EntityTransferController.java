@@ -29,10 +29,6 @@ import javax.validation.Valid;
 public class EntityTransferController {
 
     private final IEntityTransferService entityTransferService;
-    private static class CheckTaskExistResponseClass extends RunnerResponse<CheckTaskExistResponse>{}
-    private static class ValidationResponseClass extends RunnerResponse<ValidationResponse>{}
-    private static class SendConsolidationResponseClass extends RunnerResponse<SendConsolidationResponse>{}
-    private static class SendShipmentResponseClass extends RunnerResponse<SendShipmentResponse>{}
 
     @Autowired
     public EntityTransferController(IEntityTransferService entityTransferService) {
@@ -86,6 +82,7 @@ public class EntityTransferController {
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
+
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = EntityTransferConstants.IMPORT_CONSOLIDATION_SUCCESSFUL, response = ImportConsolidationResponse.class)
     })
@@ -134,7 +131,6 @@ public class EntityTransferController {
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-
     @PostMapping(EntityTransferConstants.CHECK_TASK_EXIST)
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = EntityTransferConstants.CHECK_TASK_SUCCESSFUL, response = CheckTaskExistResponseClass.class)
@@ -182,6 +178,18 @@ public class EntityTransferController {
             log.error(responseMsg, e);
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    private static class CheckTaskExistResponseClass extends RunnerResponse<CheckTaskExistResponse> {
+    }
+
+    private static class ValidationResponseClass extends RunnerResponse<ValidationResponse> {
+    }
+
+    private static class SendConsolidationResponseClass extends RunnerResponse<SendConsolidationResponse> {
+    }
+
+    private static class SendShipmentResponseClass extends RunnerResponse<SendShipmentResponse> {
     }
 
 }

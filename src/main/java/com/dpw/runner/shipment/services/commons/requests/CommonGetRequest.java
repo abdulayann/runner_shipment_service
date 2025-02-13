@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services.commons.requests;
 
-import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import lombok.Builder;
 import lombok.Data;
 
@@ -11,5 +10,5 @@ import java.util.List;
 public class CommonGetRequest implements IRunnerRequest {
     private Long id;
     private String guid;
-    private List<String>includeColumns;
+    private List<String> includeColumns;
 }

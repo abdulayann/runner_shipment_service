@@ -9,7 +9,9 @@ import java.util.zip.GZIPOutputStream;
 
 public class JsonCompression {
 
-    private JsonCompression() {}
+    private JsonCompression() {
+    }
+
     public static byte[] compressJson(String jsonString) throws IOException {
         if (jsonString == null || jsonString.isEmpty()) {
             return new byte[0];

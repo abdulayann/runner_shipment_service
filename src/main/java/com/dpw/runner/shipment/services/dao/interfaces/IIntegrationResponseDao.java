@@ -8,5 +8,6 @@ import java.util.List;
 public interface IIntegrationResponseDao {
 
     IntegrationResponse save(IntegrationResponse integrationResponse);
+
     List<IntegrationResponse> getIntegrationResponses(IntegrationResponseRequest request);
 }

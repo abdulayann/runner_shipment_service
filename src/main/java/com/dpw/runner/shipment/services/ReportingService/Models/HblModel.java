@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 @Data
-public class HblModel implements IDocumentModel{
+public class HblModel implements IDocumentModel {
     //public List<BillChargesRow> billCharges;
     //public BigDecimal prepaidTotalAmount;
     //public BigDecimal collectTotalAmount;
@@ -27,7 +27,6 @@ public class HblModel implements IDocumentModel{
     public Boolean isHbl;
     public UsersDto user;
     public String podCountry;
-    private List<ShipmentContainers> commonContainers;
     public String paymentTerms;
     public String serviceMode;
     public String releaseType;
@@ -38,6 +37,13 @@ public class HblModel implements IDocumentModel{
     public VesselsResponse preCarriageVessel;
     public String paidPlaceCountry;
     public long noofPackages = 0;
+    public ShipmentSettingsDetails shipmentSettingsDetails;
+    public V1TenantSettingsResponse tenantSettingsResponse;
+    public String polName;
+    public String polCountry;
+    public String podName;
+    public Long transportInstructionId;
+    private List<ShipmentContainers> commonContainers;
     @JsonProperty("containerCountGrouped")
     private Map<String, Long> containerCountGrouped;
     @JsonProperty("containerPacksGrouped")
@@ -46,10 +52,4 @@ public class HblModel implements IDocumentModel{
     private Map<String, Double> containerWeightGrouped;
     @JsonProperty("containerVolumeGrouped")
     private Map<String, Double> containerVolumeGrouped;
-    public ShipmentSettingsDetails shipmentSettingsDetails;
-    public V1TenantSettingsResponse tenantSettingsResponse;
-    public String polName;
-    public String polCountry;
-    public String podName;
-    public Long transportInstructionId;
 }

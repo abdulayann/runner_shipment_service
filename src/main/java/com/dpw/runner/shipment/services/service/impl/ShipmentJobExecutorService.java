@@ -53,7 +53,7 @@ public class ShipmentJobExecutorService implements QuartzJobExecutorService {
     private final DocumentManagerRestClient documentManagerRestClient;
 
     @Autowired
-    ShipmentJobExecutorService (IEntityTransferService entityTransferService, IQuartzJobInfoDao quartzJobInfoDao, IV1Service v1Service, ShipmentDao shipmentDao, ConsolidationDao consolidationDao, ICommonErrorLogsDao commonErrorLogsDao, DocumentManagerRestClient documentManagerRestClient) {
+    ShipmentJobExecutorService(IEntityTransferService entityTransferService, IQuartzJobInfoDao quartzJobInfoDao, IV1Service v1Service, ShipmentDao shipmentDao, ConsolidationDao consolidationDao, ICommonErrorLogsDao commonErrorLogsDao, DocumentManagerRestClient documentManagerRestClient) {
         this.entityTransferService = entityTransferService;
         this.quartzJobInfoDao = quartzJobInfoDao;
         this.v1Service = v1Service;
@@ -62,6 +62,7 @@ public class ShipmentJobExecutorService implements QuartzJobExecutorService {
         this.commonErrorLogsDao = commonErrorLogsDao;
         this.documentManagerRestClient = documentManagerRestClient;
     }
+
     @Transactional
     @Override
     public void executeJob(JobExecutionContext jobExecutionContext) {
@@ -108,11 +109,11 @@ public class ShipmentJobExecutorService implements QuartzJobExecutorService {
 
     public void processSendShipment(QuartzJobInfo quartzJobInfo) {
         var shipment = shipmentDao.findById(quartzJobInfo.getEntityId());
-        if(shipment.isPresent()) {
+        if (shipment.isPresent()) {
             List<Long> sendToBranch = new ArrayList<>();
-            if(shipment.get().getReceivingBranch() != null)
+            if (shipment.get().getReceivingBranch() != null)
                 sendToBranch.add(shipment.get().getReceivingBranch());
-            if(!CommonUtils.listIsNullOrEmpty(shipment.get().getTriangulationPartnerList()))
+            if (!CommonUtils.listIsNullOrEmpty(shipment.get().getTriangulationPartnerList()))
                 sendToBranch.addAll(shipment.get().getTriangulationPartnerList().stream().map(TriangulationPartner::getTriangulationPartner).toList());
             SendShipmentRequest sendShipmentRequest = SendShipmentRequest.builder()
                     .shipId(quartzJobInfo.getEntityId())
@@ -124,10 +125,10 @@ public class ShipmentJobExecutorService implements QuartzJobExecutorService {
             try {
                 var validationResponse = entityTransferService.automaticTransferShipmentValidation(CommonRequestModel.buildRequest(request));
                 log.info("Completed Shipment Validation check.");
-                if(!Boolean.TRUE.equals(validationResponse.getIsError())) {
+                if (!Boolean.TRUE.equals(validationResponse.getIsError())) {
                     var etResponse = entityTransferService.sendShipment(CommonRequestModel.buildRequest(sendShipmentRequest));
                     log.info("Completed Shipment transfer");
-                    if(Objects.equals(etResponse.getStatusCode(), HttpStatus.OK)) {
+                    if (Objects.equals(etResponse.getStatusCode(), HttpStatus.OK)) {
                         quartzJobInfo.setJobStatus(JobState.COMPLETED);
                         quartzJobInfo.setErrorMessage("");
                         commonErrorLogsDao.deleteShipmentErrorsLogs(shipment.get().getId());
@@ -156,8 +157,8 @@ public class ShipmentJobExecutorService implements QuartzJobExecutorService {
                 .build();
         multipleEntityFileRequest.setEntities(List.of(documentManagerEntityFileRequest));
         var response = documentManagerRestClient.multipleEntityFilesWithTenant(multipleEntityFileRequest);
-        if(!CommonUtils.listIsNullOrEmpty(response.getData())) {
-            return response.getData().stream().filter(x-> Boolean.TRUE.equals(x.getIsTransferEnabled())).map(DocumentManagerEntityFileResponse::getGuid).toList();
+        if (!CommonUtils.listIsNullOrEmpty(response.getData())) {
+            return response.getData().stream().filter(x -> Boolean.TRUE.equals(x.getIsTransferEnabled())).map(DocumentManagerEntityFileResponse::getGuid).toList();
         }
         return Collections.emptyList();
     }
@@ -180,11 +181,11 @@ public class ShipmentJobExecutorService implements QuartzJobExecutorService {
         });
         multipleEntityFileRequest.setEntities(docListRequest);
         var response = documentManagerRestClient.multipleEntityFilesWithTenant(multipleEntityFileRequest);
-        if(!CommonUtils.listIsNullOrEmpty(response.getData())) {
+        if (!CommonUtils.listIsNullOrEmpty(response.getData())) {
             sendConsolidationRequest.setAdditionalDocs(response.getData().stream()
-                    .filter(x-> Boolean.TRUE.equals(x.getIsTransferEnabled()) && Objects.equals(x.getEntityType(), Constants.Consolidations)).map(DocumentManagerEntityFileResponse::getGuid).toList());
+                    .filter(x -> Boolean.TRUE.equals(x.getIsTransferEnabled()) && Objects.equals(x.getEntityType(), Constants.Consolidations)).map(DocumentManagerEntityFileResponse::getGuid).toList());
             Map<String, List<String>> shipDocs = response.getData().stream()
-                    .filter(x-> Boolean.TRUE.equals(x.getIsTransferEnabled()) && Objects.equals(x.getEntityType(), Constants.Shipments))
+                    .filter(x -> Boolean.TRUE.equals(x.getIsTransferEnabled()) && Objects.equals(x.getEntityType(), Constants.Shipments))
                     .collect(Collectors.groupingBy(DocumentManagerEntityFileResponse::getEntityId, Collectors.mapping(DocumentManagerEntityFileResponse::getGuid, Collectors.toList())));
             sendConsolidationRequest.setShipAdditionalDocs(shipDocs);
         }
@@ -192,11 +193,11 @@ public class ShipmentJobExecutorService implements QuartzJobExecutorService {
 
     public void processSendConsolidation(QuartzJobInfo quartzJobInfo) {
         var consolidation = consolidationDao.findById(quartzJobInfo.getEntityId());
-        if(consolidation.isPresent()) {
+        if (consolidation.isPresent()) {
             List<Long> sendToBranch = new ArrayList<>();
-            if(consolidation.get().getReceivingBranch() != null)
+            if (consolidation.get().getReceivingBranch() != null)
                 sendToBranch.add(consolidation.get().getReceivingBranch());
-            if(!CommonUtils.listIsNullOrEmpty(consolidation.get().getTriangulationPartnerList()))
+            if (!CommonUtils.listIsNullOrEmpty(consolidation.get().getTriangulationPartnerList()))
                 sendToBranch.addAll(consolidation.get().getTriangulationPartnerList().stream().map(TriangulationPartner::getTriangulationPartner).toList());
 
             SendConsolidationRequest sendConsolidationRequest = SendConsolidationRequest.builder()
@@ -210,16 +211,15 @@ public class ShipmentJobExecutorService implements QuartzJobExecutorService {
                 List<Long> shipmentIds = consolidation.get().getShipmentsList().stream().map(BaseEntity::getId).toList();
                 var response = entityTransferService.automaticTransferConsoleValidation(CommonRequestModel.buildRequest(request));
                 log.info("Completed Console Validation check.");
-                if(!Boolean.TRUE.equals(response.getIsError())) {
+                if (!Boolean.TRUE.equals(response.getIsError())) {
                     var etResponse = entityTransferService.sendConsolidation(CommonRequestModel.buildRequest(sendConsolidationRequest));
                     log.info("Completed Console transfer");
-                    if(Objects.equals(etResponse.getStatusCode(), HttpStatus.OK)) {
+                    if (Objects.equals(etResponse.getStatusCode(), HttpStatus.OK)) {
                         quartzJobInfo.setJobStatus(JobState.COMPLETED);
                         quartzJobInfo.setErrorMessage("");
                         commonErrorLogsDao.deleteAllConsoleAndShipmentErrorsLogs(consolidation.get().getId(), shipmentIds);
                     }
-                }
-                else{
+                } else {
                     quartzJobInfo.setJobStatus(JobState.ERROR);
                     quartzJobInfo.setErrorMessage(QuartzJobInfoConstants.AUTOMATIC_TRANSFER_FAILED + response.getConsoleErrorMessage());
                     commonErrorLogsDao.logConsoleAutomaticTransferErrors(response, consolidation.get().getId(), shipmentIds);

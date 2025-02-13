@@ -172,7 +172,7 @@ public class AdditionalDetailResponse implements IRunnerResponse {
     private Integer fcrNumber;
 
     public void addTextData(Map<String, String> dataMap) {
-        if(textData == null) {
+        if (textData == null) {
             textData = new HashMap<>();
         }
         textData.putAll(dataMap);

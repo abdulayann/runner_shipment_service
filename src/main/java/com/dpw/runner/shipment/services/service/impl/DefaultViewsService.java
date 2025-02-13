@@ -60,12 +60,12 @@ public class DefaultViewsService implements IDefaultViewsService {
         String responseMsg;
         DefaultViewsRequest request = (DefaultViewsRequest) commonRequestModel.getData();
 
-        if(request.getId() == null) {
+        if (request.getId() == null) {
             log.debug("Request Id is null for default views update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
         Long id = request.getId();
         Optional<DefaultViews> oldEntity = defaultViewsDao.findById(id);
-        if(!oldEntity.isPresent()) {
+        if (!oldEntity.isPresent()) {
             log.debug(Constants.DEFAULT_VIEW_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
@@ -84,7 +84,7 @@ public class DefaultViewsService implements IDefaultViewsService {
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(view));
     }
 
-    public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel){
+    public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -101,13 +101,13 @@ public class DefaultViewsService implements IDefaultViewsService {
 
     @Override
     @Async
-    public CompletableFuture<ResponseEntity<IRunnerResponse>> listAsync(CommonRequestModel commonRequestModel){
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> listAsync(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
             List<DefaultViews> viewsList = defaultViewsDao.findAll();
             log.info("Default views async list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
-            return CompletableFuture.completedFuture( ResponseHelper.buildListSuccessResponse(convertEntityListToDtoList(viewsList), request.getPageNo(), viewsList.size()));
+            return CompletableFuture.completedFuture(ResponseHelper.buildListSuccessResponse(convertEntityListToDtoList(viewsList), request.getPageNo(), viewsList.size()));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
@@ -116,17 +116,17 @@ public class DefaultViewsService implements IDefaultViewsService {
         }
     }
 
-    public ResponseEntity<IRunnerResponse> delete(CommonRequestModel commonRequestModel){
+    public ResponseEntity<IRunnerResponse> delete(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            if(request.getId() == null) {
+            if (request.getId() == null) {
                 log.debug("Request Id is null for default views delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             Long id = request.getId();
 
             Optional<DefaultViews> view = defaultViewsDao.findById(id);
-            if(!view.isPresent()) {
+            if (!view.isPresent()) {
                 log.debug(Constants.DEFAULT_VIEW_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
@@ -141,16 +141,16 @@ public class DefaultViewsService implements IDefaultViewsService {
         }
     }
 
-    public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel){
+    public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            if(request.getId() == null) {
+            if (request.getId() == null) {
                 log.error("Request Id is null for default view retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             long id = request.getId();
             Optional<DefaultViews> view = defaultViewsDao.findById(id);
-            if(!view.isPresent()) {
+            if (!view.isPresent()) {
                 log.debug(Constants.DEFAULT_VIEW_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }

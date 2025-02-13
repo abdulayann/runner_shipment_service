@@ -55,13 +55,13 @@ public class MawbStocksLinkDao implements IMawbStocksLinkDao {
 
     @Override
     public void deLinkExistingMawbStockLink(String mawbNumber) {
-        if(mawbNumber == null)
+        if (mawbNumber == null)
             return;
         ListCommonRequest listMawbRequest = constructListCommonRequest("mawbNumber", mawbNumber, "=");
         Pair<Specification<MawbStocksLink>, Pageable> mawbStocksLinkPair = fetchData(listMawbRequest, MawbStocksLink.class);
         Page<MawbStocksLink> mawbStocksLinkPage = findAll(mawbStocksLinkPair.getLeft(), mawbStocksLinkPair.getRight());
 
-        if(!mawbStocksLinkPage.isEmpty() && mawbStocksLinkPage.getTotalElements() > 0) {
+        if (!mawbStocksLinkPage.isEmpty() && mawbStocksLinkPage.getTotalElements() > 0) {
             MawbStocksLink oldMawbStocksLink = mawbStocksLinkPage.getContent().get(0);
             oldMawbStocksLink.setStatus(Constants.UNUSED);
             oldMawbStocksLink.setEntityId(null);
@@ -69,13 +69,13 @@ public class MawbStocksLinkDao implements IMawbStocksLinkDao {
             oldMawbStocksLink.setShipConsNumber(null);
             save(oldMawbStocksLink);
 
-             deLinkMawbAvailableCount(oldMawbStocksLink.getParentId());
+            deLinkMawbAvailableCount(oldMawbStocksLink.getParentId());
         }
     }
 
     private void deLinkMawbAvailableCount(Long parentId) {
         Optional<MawbStocks> optional = mawbStocksDao.findById(parentId);
-        if(optional.isPresent()) {
+        if (optional.isPresent()) {
             var mawbStock = optional.get();
             Long nextCount = Long.parseLong(mawbStock.getAvailableCount()) + 1;
             mawbStock.setAvailableCount(nextCount.toString());
@@ -97,7 +97,7 @@ public class MawbStocksLinkDao implements IMawbStocksLinkDao {
                 .build());
         Pair<Specification<MawbStocksLink>, Pageable> pair = fetchData(listCommonRequest, MawbStocksLink.class);
         Page<MawbStocksLink> mawbStocksLinks = findAll(pair.getLeft(), pair.getRight());
-        if(!mawbStocksLinks.isEmpty()) {
+        if (!mawbStocksLinks.isEmpty()) {
             return mawbStocksLinks.get().toList().get(0).getMawbNumber();
         }
         return null;

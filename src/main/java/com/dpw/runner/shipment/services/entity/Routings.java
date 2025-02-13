@@ -7,14 +7,14 @@ import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
 import com.dpw.runner.shipment.services.utils.MasterData;
 import com.dpw.runner.shipment.services.utils.UnlocationData;
-import java.time.LocalDateTime;
-import javax.persistence.*;
-import javax.validation.constraints.Size;
-
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
+
+import javax.persistence.*;
+import javax.validation.constraints.Size;
+import java.time.LocalDateTime;
 
 @Entity
 @Setter
@@ -42,7 +42,7 @@ public class Routings extends MultiTenancy {
     private Long leg;
 
     @Column(name = "mode")
-    @Size(max=4, message = "max size is 4 for mode")
+    @Size(max = 4, message = "max size is 4 for mode")
     @MasterData(type = MasterDataType.MODE)
     private String mode;
 
@@ -51,7 +51,7 @@ public class Routings extends MultiTenancy {
     private String routingStatus;
 
     @Column(name = "vessel_name")
-    @Size(max=2048, message = "max size is 2048 for vessel_name")
+    @Size(max = 2048, message = "max size is 2048 for vessel_name")
     @DedicatedMasterData(type = Constants.VESSEL_MASTER_DATA)
     private String vesselName;
 
@@ -120,11 +120,11 @@ public class Routings extends MultiTenancy {
     @MasterData(type = MasterDataType.COUNTRIES)
     private String carrierCountry;
 
-    @Size(max=64, message = "max size is 64 for origin_port_loc_code")
+    @Size(max = 64, message = "max size is 64 for origin_port_loc_code")
     @Column(name = "origin_port_loc_code")
     private String originPortLocCode;
 
-    @Size(max=64, message = "max size is 64 for destination_port_loc_code")
+    @Size(max = 64, message = "max size is 64 for destination_port_loc_code")
     @Column(name = "destination_port_loc_code")
     private String destinationPortLocCode;
 

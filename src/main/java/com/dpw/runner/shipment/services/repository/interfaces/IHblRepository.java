@@ -9,9 +9,11 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
-@Repository @Generated
+@Repository
+@Generated
 public interface IHblRepository extends MultiTenancyRepository<Hbl> {
     List<Hbl> findByShipmentId(Long shipmentId);
+
     default Optional<Hbl> findById(Long id) {
         Specification<Hbl> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("id"), id);
         return findOne(spec);

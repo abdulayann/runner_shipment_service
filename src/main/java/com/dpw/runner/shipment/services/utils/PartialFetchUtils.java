@@ -27,7 +27,7 @@ public class PartialFetchUtils {
         objectMapper.registerModule(new JavaTimeModule());
         ObjectMapper modified = Squiggly.init(objectMapper, String.join(",", includeColumns));
         String jsonString = SquigglyUtils.stringify(modified, object.getData());
-        return jsonHelper.readFromJson(jsonString,Object.class);
+        return jsonHelper.readFromJson(jsonString, Object.class);
     }
 
     public <T> Object fetchPartialListData(IRunnerResponse object, List<String> includeColumns) {

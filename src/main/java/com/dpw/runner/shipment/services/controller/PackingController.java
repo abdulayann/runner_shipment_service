@@ -41,9 +41,6 @@ public class PackingController {
     private final IPackingService packingService;
     private final JsonHelper jsonHelper;
 
-    private static class MyResponseClass extends RunnerResponse<PackingResponse>{}
-    private static class MyListResponseClass extends RunnerListResponse<PackingResponse>{}
-
     @Autowired
     public PackingController(IPackingService packingService, JsonHelper jsonHelper) {
         this.packingService = packingService;
@@ -209,5 +206,11 @@ public class PackingController {
             log.error(responseMsg, e);
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    private static class MyResponseClass extends RunnerResponse<PackingResponse> {
+    }
+
+    private static class MyListResponseClass extends RunnerListResponse<PackingResponse> {
     }
 }

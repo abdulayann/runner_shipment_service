@@ -6,7 +6,8 @@ public enum AddressTypes {
     LOAD(3),
     UNLOAD(4);
 
-    private int id;
+    private final int id;
+
     AddressTypes(int id) {
         this.id = id;
     }

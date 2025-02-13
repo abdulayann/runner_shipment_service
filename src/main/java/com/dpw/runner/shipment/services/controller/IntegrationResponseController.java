@@ -41,7 +41,7 @@ public class IntegrationResponseController {
     public ResponseEntity<IRunnerResponse> fetchIntegrationResponses(@RequestBody @Valid IntegrationResponseRequest request) {
         String responseMsg;
         try {
-             return  integrationResponseService.fetchIntegrationResponses(CommonRequestModel.buildRequest(request));
+            return integrationResponseService.fetchIntegrationResponses(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : IntegrationResponseConstants.RESPONSE_FETCH_FAILED;

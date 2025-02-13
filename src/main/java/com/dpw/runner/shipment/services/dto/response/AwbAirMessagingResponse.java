@@ -18,6 +18,7 @@ import java.util.Map;
 @NoArgsConstructor
 public class AwbAirMessagingResponse extends AwbResponse implements IRunnerResponse {
     private Meta meta;
+
     @Data
     @Builder
     public static class Meta implements Serializable {
@@ -60,6 +61,7 @@ public class AwbAirMessagingResponse extends AwbResponse implements IRunnerRespo
         private Boolean isRA;
         private Boolean isKC;
     }
+
     @Data
     @Builder
     public static class UnlocDetails implements Serializable {
@@ -94,6 +96,7 @@ public class AwbAirMessagingResponse extends AwbResponse implements IRunnerRespo
         private String destinationPortUnlocName;
         private AirlineInfo airlineInfo;
     }
+
     @Data
     @Builder
     public static class AirlineInfo implements Serializable {

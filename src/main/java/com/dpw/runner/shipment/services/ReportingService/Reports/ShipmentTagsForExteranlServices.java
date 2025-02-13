@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 import java.util.Map;
 
 @Service
-public class ShipmentTagsForExteranlServices extends IReport{
+public class ShipmentTagsForExteranlServices extends IReport {
 
     @Override
     public Map<String, Object> getData(Long id) throws RunnerException {

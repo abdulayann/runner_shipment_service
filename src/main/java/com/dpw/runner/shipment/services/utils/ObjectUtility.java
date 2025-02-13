@@ -6,19 +6,20 @@ import java.util.Map;
 
 @SuppressWarnings("rawtypes")
 public class ObjectUtility {
-    private ObjectUtility(){}
+    private ObjectUtility() {
+    }
 
     public static Map<String, Class> getAllFields(final Class<?> type, Map<String, Class> fields) {
-        if(fields == null) {
+        if (fields == null) {
             fields = new HashMap<>();
         }
-        if(type.getDeclaredFields().length == 0) {
+        if (type.getDeclaredFields().length == 0) {
             return fields;
         }
         for (Field field : type.getDeclaredFields()) {
             fields.put(field.getName(), field.getType());
         }
-        if(type.getSuperclass() != null) {
+        if (type.getSuperclass() != null) {
             getAllFields(type.getSuperclass(), fields);
         }
         return fields;

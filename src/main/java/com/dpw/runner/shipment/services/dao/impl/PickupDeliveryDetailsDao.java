@@ -82,8 +82,8 @@ public class PickupDeliveryDetailsDao implements IPickupDeliveryDetailsDao {
 
     public List<PickupDeliveryDetails> saveEntityFromShipment(List<PickupDeliveryDetails> pickupDeliveryDetailsRequests, Long shipmentId) {
         List<PickupDeliveryDetails> res = new ArrayList<>();
-        for(PickupDeliveryDetails req : pickupDeliveryDetailsRequests){
-            if(req.getId() != null){
+        for (PickupDeliveryDetails req : pickupDeliveryDetailsRequests) {
+            if (req.getId() != null) {
                 long id = req.getId();
                 Optional<PickupDeliveryDetails> oldEntity = findById(id);
                 if (!oldEntity.isPresent()) {

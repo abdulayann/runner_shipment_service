@@ -8,11 +8,11 @@ import lombok.Data;
 import java.util.List;
 
 @Data
-public class FreightCertificationModel implements IDocumentModel{
+public class FreightCertificationModel implements IDocumentModel {
     public ShipmentModel shipmentDetails;
     public TenantModel tenantDetails;
     public String noofpackages_word;
-    private List<ShipmentContainers> allContainersList;
     public String userdisplayname;
     public ShipmentSettingsDetails shipmentSettingsDetails;
+    private List<ShipmentContainers> allContainersList;
 }

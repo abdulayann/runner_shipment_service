@@ -21,11 +21,11 @@ import javax.validation.constraints.Size;
 public class HblTermsConditionTemplate extends MultiTenancy {
 
     @Column(name = "template_code")
-    @Size(max=50, message = "max size is 50 for template_code")
+    @Size(max = 50, message = "max size is 50 for template_code")
     private String templateCode;
 
     @Column(name = "template_file_name")
-    @Size(max=100, message = "max size is 100 for template_file_name")
+    @Size(max = 100, message = "max size is 100 for template_file_name")
     private String templateFileName;
 
     @Column(name = "shipment_settings_id")

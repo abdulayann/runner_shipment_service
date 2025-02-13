@@ -35,7 +35,7 @@ import java.time.LocalDateTime;
 public class CarrierDetails extends MultiTenancy {
 
     private static final long serialVersionUID = 190794279984274725L;
-    @Size(max=64, message = "max size is 64 for shipping line" )
+    @Size(max = 64, message = "max size is 64 for shipping line")
     @Column(name = "shipping_line")
     @DedicatedMasterData(type = Constants.CARRIER_MASTER_DATA)
     private String shippingLine;
@@ -51,32 +51,32 @@ public class CarrierDetails extends MultiTenancy {
     @Column(name = "flight_number")
     private String flightNumber;
 
-    @Size(max=20, message = "max size is 20 for aircraft_type")
+    @Size(max = 20, message = "max size is 20 for aircraft_type")
     @Column(name = "aircraft_type")
     @MasterData(type = MasterDataType.AIRCRAFT_TYPE)
     private String aircraftType;
 
-    @Size(max=20, message = "max size is 20 for aircraft_type")
+    @Size(max = 20, message = "max size is 20 for aircraft_type")
     @Column(name = "aircraft_registration")
     private String aircraftRegistration;
 
     @Column(name = "truck_ref_number")
     private String truckRefNumber;
 
-    @Size(max=10, message = "max size is 10 for journey_number")
+    @Size(max = 10, message = "max size is 10 for journey_number")
     @Column(name = "journey_number")
     private String journeyNumber;
 
-    @Size(max=10, message = "max size is 10 for journey_ref_number")
+    @Size(max = 10, message = "max size is 10 for journey_ref_number")
     @Column(name = "journey_ref_number")
     private String journeyRefNumber;
 
-    @Size(max=100, message = "max size is 100 for origin")
+    @Size(max = 100, message = "max size is 100 for origin")
     @Column(name = "origin")
     @UnlocationData
     private String origin;
 
-    @Size(max=100, message = "max size is 100 for destination")
+    @Size(max = 100, message = "max size is 100 for destination")
     @Column(name = "destination")
     @UnlocationData
     private String destination;
@@ -105,7 +105,7 @@ public class CarrierDetails extends MultiTenancy {
     private LocalDateTime vesselBerthingDate;
 
     @ExcludeAuditLog
-    @Formula( "CONCAT_WS( ' ', voyage, flight_number ) " )
+    @Formula("CONCAT_WS( ' ', voyage, flight_number ) ")
     private String voyageOrFlightNumber;
 
     @Column(name = "carrier_country")
@@ -127,24 +127,24 @@ public class CarrierDetails extends MultiTenancy {
     @Column(name = "is_carrier_changed")
     private Boolean isCarrierChanged;
 
-    @Size(max=100, message = "max size is 100 for cfs")
+    @Size(max = 100, message = "max size is 100 for cfs")
     @Column(name = "cfs")
     @UnlocationData
     private String cfs;
 
-    @Size(max=64, message = "max size is 64 for origin_loc_code")
+    @Size(max = 64, message = "max size is 64 for origin_loc_code")
     @Column(name = "origin_loc_code")
     private String originLocCode;
 
-    @Size(max=64, message = "max size is 64 for destination_loc_code")
+    @Size(max = 64, message = "max size is 64 for destination_loc_code")
     @Column(name = "destination_loc_code")
     private String destinationLocCode;
 
-    @Size(max=64, message = "max size is 64 for origin_port_loc_code")
+    @Size(max = 64, message = "max size is 64 for origin_port_loc_code")
     @Column(name = "origin_port_loc_code")
     private String originPortLocCode;
 
-    @Size(max=64, message = "max size is 64 for destination_port_loc_code")
+    @Size(max = 64, message = "max size is 64 for destination_port_loc_code")
     @Column(name = "destination_port_loc_code")
     private String destinationPortLocCode;
 }

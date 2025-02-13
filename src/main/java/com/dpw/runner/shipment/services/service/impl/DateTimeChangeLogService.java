@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.dao.interfaces.IDateTimeChangeLogDao;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.UpstreamDateUpdateRequest;
@@ -21,9 +20,9 @@ import java.util.Objects;
 @Service
 public class DateTimeChangeLogService implements IDateTimeChangeLogService {
 
-    private IDateTimeChangeLogDao dateTimeChangeLogDao;
+    private final IDateTimeChangeLogDao dateTimeChangeLogDao;
 
-    private CommonUtils commonUtils;
+    private final CommonUtils commonUtils;
 
     @Autowired
     DateTimeChangeLogService(IDateTimeChangeLogDao dateTimeChangeLogDao, CommonUtils commonUtils) {
@@ -37,30 +36,30 @@ public class DateTimeChangeLogService implements IDateTimeChangeLogService {
 
         var tenantSettings = commonUtils.getCurrentTenantSettings();
         // Only process if the feature is enabled
-        if(Boolean.TRUE.equals(tenantSettings.getEnableEstimateAndActualDateTimeUpdates())) {
+        if (Boolean.TRUE.equals(tenantSettings.getEnableEstimateAndActualDateTimeUpdates())) {
             // refresh all logs when carrier or vessel change
-            if(checkIfCarrierOrVesselChanged(entity, oldEntity)) {
+            if (checkIfCarrierOrVesselChanged(entity, oldEntity)) {
                 deleteDateTimeLogs(oldEntity.getId());
                 // generate default logs
             }
 
-            if(entity.getDateUpdateRequest() == null)
+            if (entity.getDateUpdateRequest() == null)
                 entity.setDateUpdateRequest(new UpstreamDateUpdateRequest());
 
             // create a new entry in case of changes in ata/atd/eta/etd
-            if(entity.getDateUpdateRequest().getAta() != null) {
+            if (entity.getDateUpdateRequest().getAta() != null) {
                 var obj = entity.getDateUpdateRequest().getAta();
                 saveDateTimeChangeLog(DateType.ATA, obj.getDateTime(), entity.getId(), obj.getSource());
             }
-            if(entity.getDateUpdateRequest().getAtd() != null) {
+            if (entity.getDateUpdateRequest().getAtd() != null) {
                 var obj = entity.getDateUpdateRequest().getAtd();
                 saveDateTimeChangeLog(DateType.ATD, obj.getDateTime(), entity.getId(), obj.getSource());
             }
-            if(entity.getDateUpdateRequest().getEta() != null) {
+            if (entity.getDateUpdateRequest().getEta() != null) {
                 var obj = entity.getDateUpdateRequest().getEta();
                 saveDateTimeChangeLog(DateType.ETA, obj.getDateTime(), entity.getId(), obj.getSource());
             }
-            if(entity.getDateUpdateRequest().getEtd() != null) {
+            if (entity.getDateUpdateRequest().getEtd() != null) {
                 var obj = entity.getDateUpdateRequest().getEtd();
                 saveDateTimeChangeLog(DateType.ETD, obj.getDateTime(), entity.getId(), obj.getSource());
             }
@@ -76,30 +75,29 @@ public class DateTimeChangeLogService implements IDateTimeChangeLogService {
     @Override
     public void deleteDateTimeLogs(Long shipmentId) {
         var dateTimeChangeLogs = dateTimeChangeLogDao.getLogsForShipmentId(shipmentId);
-        if(dateTimeChangeLogs != null && !dateTimeChangeLogs.isEmpty()) {
+        if (dateTimeChangeLogs != null && !dateTimeChangeLogs.isEmpty()) {
             dateTimeChangeLogDao.deleteAll(dateTimeChangeLogs);
         }
     }
 
     private boolean checkIfCarrierOrVesselChanged(ShipmentRequest entity, ShipmentDetails oldEntity) {
-        if(Objects.isNull(oldEntity))
+        if (Objects.isNull(oldEntity))
             return false;
         return (!Objects.equals(entity.getCarrierDetails().getShippingLine(), oldEntity.getCarrierDetails().getShippingLine()) ||
-            !Objects.equals(entity.getCarrierDetails().getVessel(), oldEntity.getCarrierDetails().getVessel()));
+                !Objects.equals(entity.getCarrierDetails().getVessel(), oldEntity.getCarrierDetails().getVessel()));
 
     }
 
     @Override
     public void saveDateTimeChangeLog(DateType dateType, LocalDateTime dateTime, Long shipmentId, String source) {
         var dateTimeChangeLog = DateTimeChangeLog.builder()
-            .dateType(dateType)
-            .currentValue(dateTime)
-            .sourceOfUpdate(source)
-            .shipmentId(shipmentId)
-            .build();
+                .dateType(dateType)
+                .currentValue(dateTime)
+                .sourceOfUpdate(source)
+                .shipmentId(shipmentId)
+                .build();
         dateTimeChangeLogDao.create(dateTimeChangeLog);
     }
-
 
 
 }

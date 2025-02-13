@@ -1,61 +1,62 @@
 package com.dpw.runner.shipment.services.entity.response.consolidation;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
 public interface IConsolidationDetailsResponse extends IRunnerResponse {
-  Long getId();
+    Long getId();
 
-  String getCreatedBy();
+    String getCreatedBy();
 
-  String getConsolidationNumber();
+    String getConsolidationNumber();
 
-  String getConsolidationType();
+    String getConsolidationType();
 
-  String getTransportMode();
+    String getTransportMode();
 
-  String getShipmentType();
+    String getShipmentType();
 
-  String getVoyage();
+    String getVoyage();
 
-  String getShippingLine();
+    String getShippingLine();
 
-  LocalDateTime getEta();
+    LocalDateTime getEta();
 
-  LocalDateTime getEtd();
+    LocalDateTime getEtd();
 
-  LocalDateTime getAta();
+    LocalDateTime getAta();
 
-  LocalDateTime getAtd();
+    LocalDateTime getAtd();
 
-  List<IContainerLiteResponse> getContainersList();
+    List<IContainerLiteResponse> getContainersList();
 
-  String getReferenceNumber();
+    String getReferenceNumber();
 
-  String getBookingStatus();
+    String getBookingStatus();
 
-  String getBookingNumber();
+    String getBookingNumber();
 
-  String getMawb();
+    String getMawb();
 
-  List<IShipmentLiteResponse> getShipmentsList();
+    List<IShipmentLiteResponse> getShipmentsList();
 
-  Boolean getDomestic();
+    Boolean getDomestic();
 
-  String getPayment();
+    String getPayment();
 
-  LocalDateTime getBookingCutoff();
+    LocalDateTime getBookingCutoff();
 
-  LocalDateTime getShipInstructionCutoff();
+    LocalDateTime getShipInstructionCutoff();
 
-  LocalDateTime getHazardousBookingCutoff();
+    LocalDateTime getHazardousBookingCutoff();
 
-  LocalDateTime getEstimatedTerminalCutoff();
+    LocalDateTime getEstimatedTerminalCutoff();
 
-  LocalDateTime getTerminalCutoff();
+    LocalDateTime getTerminalCutoff();
 
-  LocalDateTime getVerifiedGrossMassCutoff();
+    LocalDateTime getVerifiedGrossMassCutoff();
 
-  LocalDateTime getReeferCutoff();
+    LocalDateTime getReeferCutoff();
 }

@@ -9,7 +9,7 @@ import lombok.Data;
 import java.util.List;
 
 @Data
-public class ManifestShipmentModel implements IDocumentModel{
+public class ManifestShipmentModel implements IDocumentModel {
     public ShipmentModel shipmentDetails;
     public ConsolidationModel consolidationDetails;
     public CarrierMasterData carrier;

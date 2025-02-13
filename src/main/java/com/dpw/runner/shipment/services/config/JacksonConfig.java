@@ -10,17 +10,18 @@ import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
 import java.time.LocalDateTime;
 
-@Configuration @Generated
+@Configuration
+@Generated
 public class JacksonConfig {
 
-  @Bean
-  Jackson2ObjectMapperBuilder objectMapperBuilder() {
-    Jackson2ObjectMapperBuilder builder = new Jackson2ObjectMapperBuilder();
-    builder.serializationInclusion(JsonInclude.Include.ALWAYS)
-            .featuresToDisable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-            .deserializerByType(LocalDateTime.class,  new CustomLocalDateTimeDeserializer())
-            .modulesToInstall(new JsonNullableModule());
-    return builder;
-  }
+    @Bean
+    Jackson2ObjectMapperBuilder objectMapperBuilder() {
+        Jackson2ObjectMapperBuilder builder = new Jackson2ObjectMapperBuilder();
+        builder.serializationInclusion(JsonInclude.Include.ALWAYS)
+                .featuresToDisable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
+                .deserializerByType(LocalDateTime.class, new CustomLocalDateTimeDeserializer())
+                .modulesToInstall(new JsonNullableModule());
+        return builder;
+    }
 
 }

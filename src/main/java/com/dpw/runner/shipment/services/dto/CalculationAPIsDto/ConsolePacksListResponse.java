@@ -19,7 +19,7 @@ public class ConsolePacksListResponse implements IRunnerResponse {
     private Boolean isFCL;
 
     @Data
-    public static class PacksList implements IRunnerResponse{
+    public static class PacksList implements IRunnerResponse {
         private Long id;
         private UUID guid;
         private String packs;

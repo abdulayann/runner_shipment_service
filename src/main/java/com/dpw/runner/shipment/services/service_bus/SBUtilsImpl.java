@@ -53,7 +53,7 @@ public class SBUtilsImpl implements ISBUtils {
         if (messageBatch.getCount() > 0) {
             var messagesList = messages.stream().map(c -> StringUtility.convertToString(c.getBody())).toList();
             senderClient.sendMessages(messageBatch);
-            log.info("Sent a batch of messages to the topic: {} with messages: {}" , topicName, String.join(", ", messagesList));
+            log.info("Sent a batch of messages to the topic: {} with messages: {}", topicName, String.join(", ", messagesList));
         }
     }
 
@@ -69,11 +69,11 @@ public class SBUtilsImpl implements ISBUtils {
 
     public void onServiceBusErrorContext(ServiceBusErrorContext context) {
         log.info("Error when receiving messages from namespace: '{}'. Entity: '{}'",
-                 context.getFullyQualifiedNamespace(), context.getEntityPath());
+                context.getFullyQualifiedNamespace(), context.getEntityPath());
 
         if (context.getException() instanceof ServiceBusException exception) {
             log.info("Error source: {}, reason {}", context.getErrorSource(),
-                     exception.getReason());
+                    exception.getReason());
         } else {
             log.info("Error occurred: %s%n", context.getException());
         }

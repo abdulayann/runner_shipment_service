@@ -16,7 +16,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class FetchOffersResponse implements IRunnerResponse {
- 
+
     @JsonProperty("offer_type")
     private String offer_type;
     @JsonProperty("offers")
@@ -30,7 +30,7 @@ public class FetchOffersResponse implements IRunnerResponse {
     @Builder
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class AssociatedRate implements Serializable{
+    public static class AssociatedRate implements Serializable {
         @JsonProperty("slabs")
         private List<Object> slabs;
         @JsonProperty("calculated_sell")
@@ -99,7 +99,7 @@ public class FetchOffersResponse implements IRunnerResponse {
     @Builder
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class EntityRateCard implements Serializable{
+    public static class EntityRateCard implements Serializable {
         @JsonProperty("loads_rates_info")
         private List<LoadsRatesInfo> loads_rates_info;
         @JsonProperty("aggregated_shipment_load_rates_info")
@@ -112,7 +112,7 @@ public class FetchOffersResponse implements IRunnerResponse {
     @Builder
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class LoadsRatesInfo implements Serializable{
+    public static class LoadsRatesInfo implements Serializable {
         @JsonProperty("associated_rates")
         private List<AssociatedRate> associated_rates;
         @JsonProperty("quantity")
@@ -123,7 +123,7 @@ public class FetchOffersResponse implements IRunnerResponse {
     @Builder
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class Meta implements Serializable{
+    public static class Meta implements Serializable {
         @JsonProperty("route")
         private List<Route> route;
     }
@@ -132,7 +132,7 @@ public class FetchOffersResponse implements IRunnerResponse {
     @Builder
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class Node implements Serializable{
+    public static class Node implements Serializable {
         @JsonProperty("code")
         private String code;
     }
@@ -172,7 +172,7 @@ public class FetchOffersResponse implements IRunnerResponse {
     @Builder
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class Route implements Serializable{
+    public static class Route implements Serializable {
         @JsonProperty("type")
         private String type;
         @JsonProperty("node")

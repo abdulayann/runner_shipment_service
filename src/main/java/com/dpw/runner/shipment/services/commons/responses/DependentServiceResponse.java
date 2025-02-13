@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class DependentServiceResponse implements IRunnerResponse{
+public class DependentServiceResponse implements IRunnerResponse {
     @ApiModelProperty(position = 1, name = "success")
     private boolean success;
 

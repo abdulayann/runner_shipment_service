@@ -44,17 +44,13 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCo
 public class ContainersSync implements IContainersSync {
 
     @Autowired
+    RestTemplate restTemplate;
+    @Autowired
     private IContainerDao containerDao;
-
     @Autowired
     private JsonHelper jsonHelper;
-
     @Autowired
     private ModelMapper modelMapper;
-
-    @Autowired
-    RestTemplate restTemplate;
-
     @Autowired
     private IConsolidationDetailsDao consolidationDetailsDao;
 
@@ -74,7 +70,7 @@ public class ContainersSync implements IContainersSync {
     private SyncEntityConversionService syncEntityConversionService;
     @Autowired
     private ISyncService syncService;
-    private RetryTemplate retryTemplate = RetryTemplate.builder()
+    private final RetryTemplate retryTemplate = RetryTemplate.builder()
             .maxAttempts(3)
             .fixedBackoff(1000)
             .retryOn(Exception.class)
@@ -91,7 +87,7 @@ public class ContainersSync implements IContainersSync {
             return ResponseHelper.buildSuccessResponse();
 
         List<Containers> containers = getContainersFromIds(containerIds);
-        if(containers == null || containers.size() == 0) {
+        if (containers == null || containers.size() == 0) {
             log.error("Error in syncing containers: Not able to get containers for ids: " + containerIds.toString());
         }
         List<ContainerRequestV2> containerRequestV2 = convertEntityToSyncDto(containers, shipmentsContainersMappingPageable);
@@ -110,10 +106,10 @@ public class ContainersSync implements IContainersSync {
 
     public List<ContainerRequestV2> convertEntityToSyncDto(List<Containers> containers, Page<ShipmentsContainersMapping> shipmentsContainersMappingPageable) {
         List<ContainerRequestV2> response = new ArrayList<>();
-        if(containers != null && containers.size() > 0) {
-            for (Containers item: containers) {
+        if (containers != null && containers.size() > 0) {
+            for (Containers item : containers) {
                 ContainerRequestV2 p = syncEntityConversionService.containerV2ToV1(item);
-                if(item.getConsolidationId() != null) {
+                if (item.getConsolidationId() != null) {
                     Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(item.getConsolidationId());
                     consolidationDetails.ifPresent(details -> p.setConsolidationGuid(details.getGuid()));
                 }
@@ -127,7 +123,7 @@ public class ContainersSync implements IContainersSync {
     private void mapShipmentGuids(List<Containers> containersList, List<ContainerRequestV2> containerRequestV2List, Page<ShipmentsContainersMapping> shipmentsContainersMappingPageable) {
         Map<Long, List<Long>> contShipIdsMap = new HashMap<>();
         List<Long> shipmentIds = new ArrayList<>();
-        if(shipmentsContainersMappingPageable != null && !shipmentsContainersMappingPageable.isEmpty()) {
+        if (shipmentsContainersMappingPageable != null && !shipmentsContainersMappingPageable.isEmpty()) {
             contShipIdsMap = shipmentsContainersMappingPageable.getContent().stream()
                     .collect(Collectors.groupingBy(
                             ShipmentsContainersMapping::getContainerId,
@@ -136,23 +132,23 @@ public class ContainersSync implements IContainersSync {
             shipmentIds = shipmentsContainersMappingPageable.getContent().stream().map(ShipmentsContainersMapping::getShipmentId).toList();
         }
         Map<Long, UUID> shipmentIdGuidMap = new HashMap<>();
-        if(shipmentIds.size() > 0) {
+        if (shipmentIds.size() > 0) {
             ListCommonRequest listCommonRequest = constructListCommonRequest("id", shipmentIds, "IN");
             Pair<Specification<ShipmentDetails>, Pageable> pair2 = fetchData(listCommonRequest, ShipmentDetails.class);
             Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(pair2.getLeft(), pair2.getRight());
-            if(shipmentDetailsPage != null && !shipmentDetailsPage.isEmpty()) {
+            if (shipmentDetailsPage != null && !shipmentDetailsPage.isEmpty()) {
                 shipmentIdGuidMap = shipmentDetailsPage.stream().collect(Collectors.toMap(ShipmentDetails::getId, ShipmentDetails::getGuid));
             }
         }
         Map<UUID, Long> contGuidIdMap = containersList.stream().collect(Collectors.toMap(Containers::getGuid, Containers::getId));
-        if(containerRequestV2List != null && containerRequestV2List.size() > 0) {
+        if (containerRequestV2List != null && containerRequestV2List.size() > 0) {
             for (ContainerRequestV2 containerRequestV2 : containerRequestV2List) {
                 Long contId = contGuidIdMap.get(containerRequestV2.getGuid());
-                if(contShipIdsMap.containsKey(contId))
+                if (contShipIdsMap.containsKey(contId))
                     shipmentIds = contShipIdsMap.get(contId);
                 else
                     shipmentIds = new ArrayList<>();
-                if(shipmentIds == null || shipmentIds.size() == 0)
+                if (shipmentIds == null || shipmentIds.size() == 0)
                     containerRequestV2.setShipmentGuids(new ArrayList<>());
                 else {
                     List<UUID> shipmentGuids = shipmentIds.stream()

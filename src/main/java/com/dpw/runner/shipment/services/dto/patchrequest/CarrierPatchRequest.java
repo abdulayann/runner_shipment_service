@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CarrierPatchRequest  extends CommonRequest implements IRunnerRequest {
+public class CarrierPatchRequest extends CommonRequest implements IRunnerRequest {
     private JsonNullable<Long> id;
     private JsonNullable<String> shippingLine;
     private JsonNullable<String> vessel;
