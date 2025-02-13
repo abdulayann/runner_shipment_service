@@ -603,9 +603,10 @@ public class EntityTransferService implements IEntityTransferService {
                     shipmentDetails.setAssignedTo(assignedTo);
             }
         }
+        Map<UUID, Long> oldVsNewShipIds = new HashMap<>();
 
         // Import consolidation implementation
-        ConsolidationDetailsResponse consolidationDetailsResponse = this.createConsolidation(entityTransferConsolidationDetails);
+        ConsolidationDetailsResponse consolidationDetailsResponse = this.createConsolidation(entityTransferConsolidationDetails, oldVsNewShipIds);
         String consolidationNumber = Optional.ofNullable(consolidationDetailsResponse).map(ConsolidationDetailsResponse::getConsolidationNumber).orElse(null);
 
         // Update task status approved
@@ -616,8 +617,11 @@ public class EntityTransferService implements IEntityTransferService {
                 if(nte.isPresent()) {
                     Long consolId = nte.get().getEntityId();
                     Long tenantId = Long.valueOf(TenantContext.getCurrentTenant());
-                    if (tenantId.equals(consolidationDetailsResponse.getReceivingBranch()))
+                    boolean isRecevingBranch = false;
+                    if (tenantId.equals(consolidationDetailsResponse.getReceivingBranch())) {
                         consolidationDetailsDao.saveIsTransferredToReceivingBranch(consolId, Boolean.TRUE);
+                        isRecevingBranch = true;
+                    }
                     if (consolidationDetailsResponse.getTriangulationPartnerList() != null && consolidationDetailsResponse.getTriangulationPartnerList().stream()
                             .filter(Objects::nonNull).anyMatch(tp -> Objects.equals(tenantId, tp.getTriangulationPartner())))
                         consolidationDetailsDao.updateIsAcceptedTriangulationPartner(consolId, tenantId, Boolean.TRUE);
@@ -626,8 +630,12 @@ public class EntityTransferService implements IEntityTransferService {
                         log.debug(CONSOLIDATION_DETAILS_IS_NULL_FOR_ID_WITH_REQUEST_ID, consolId, LoggerHelper.getRequestIdFromMDC());
                         throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                     }
+                    // update status for interBranch shipments
+                    if(Boolean.TRUE.equals(nte.get().getIsInterBranchEntity())) {
+                        this.updateInterBranchShipmentStatus(oldVsNewShipIds);
+                    }
                     for (var shipment : consolidationDetails.get().getShipmentsList()) {
-                        if (tenantId.equals(shipment.getReceivingBranch()))
+                        if (isRecevingBranch)
                             shipmentDao.saveIsTransferredToReceivingBranch(shipment.getId(), Boolean.TRUE);
                         if (shipment.getTriangulationPartnerList() != null && shipment.getTriangulationPartnerList().stream()
                                 .filter(Objects::nonNull)
@@ -650,13 +658,28 @@ public class EntityTransferService implements IEntityTransferService {
         return ResponseHelper.buildSuccessResponse(response);
     }
 
-    private ConsolidationDetailsResponse createConsolidation (EntityTransferConsolidationDetails entityTransferConsolidationDetails) throws RunnerException {
+    private void updateInterBranchShipmentStatus(Map<UUID, Long> oldVsNewShipIds) {
+        var shipGuids = oldVsNewShipIds.keySet();
+        var shipNteList = networkTransferDao.findByEntityGuids(shipGuids.stream().toList());
+        if(!CommonUtils.listIsNullOrEmpty(shipNteList)) {
+            var res = shipNteList.stream().filter(x->!Objects.equals(x.getJobType(), DIRECTION_CTS))
+                    .map(x-> {
+                        if(oldVsNewShipIds.containsKey(x.getEntityGuid())) {
+                            x.setCreatedEntityId(oldVsNewShipIds.get(x.getEntityGuid()));
+                            x.setStatus(NetworkTransferStatus.ACCEPTED);
+                        }
+                        return x;
+                    }).toList();
+            networkTransferDao.saveAll(res);
+        }
+    }
+
+    private ConsolidationDetailsResponse createConsolidation (EntityTransferConsolidationDetails entityTransferConsolidationDetails, Map<UUID, Long> oldVsNewShipIds) throws RunnerException {
         SyncingContext.setContext(false);
         List<ConsolidationDetails> oldConsolidationDetailsList = consolidationDetailsDao.findBySourceGuid(entityTransferConsolidationDetails.getGuid());
         Map<UUID, List<UUID>> oldContVsOldShipGuidMap = entityTransferConsolidationDetails.getContainerVsShipmentGuid();
         Map<UUID, UUID> oldPackVsOldContGuidMap = entityTransferConsolidationDetails.getPackingVsContainerGuid();
 
-        Map<UUID, Long> oldVsNewShipIds = new HashMap<>();
         Map<UUID, UUID> newVsOldPackingGuid = new HashMap<>();
         Map<UUID, UUID> newVsOldContainerGuid = new HashMap<>();
         Map<UUID, Long> oldGuidVsNewContainerId = new HashMap<>();

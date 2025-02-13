@@ -5125,14 +5125,14 @@ public class ShipmentService implements IShipmentService {
 
     private void fetchNTEstatusForReceivingBranch(ShipmentDetailsResponse shipmentDetailsResponse) {
         Boolean isInterBranchShip = false;
-        if(setIsNullOrEmpty(shipmentDetailsResponse.getConsolidationList())) {
+        if(!setIsNullOrEmpty(shipmentDetailsResponse.getConsolidationList())) {
             isInterBranchShip = shipmentDetailsResponse.getConsolidationList().iterator().next().getInterBranchConsole();
         }
         if(Objects.equals(shipmentDetailsResponse.getTransportMode(), TRANSPORT_MODE_AIR) &&
                 (Objects.equals(shipmentDetailsResponse.getJobType(), SHIPMENT_TYPE_DRT) || isInterBranchShip) && shipmentDetailsResponse.getReceivingBranch() != null) {
             String transferStatus = networkTransferDao.findStatusByEntityIdAndEntityTypeAndTenantId(shipmentDetailsResponse.getId(), SHIPMENT, shipmentDetailsResponse.getReceivingBranch().intValue());
             shipmentDetailsResponse.setTransferStatus(transferStatus);
-        } else if (setIsNullOrEmpty(shipmentDetailsResponse.getConsolidationList())){
+        } else if (!setIsNullOrEmpty(shipmentDetailsResponse.getConsolidationList())){
             var console = shipmentDetailsResponse.getConsolidationList().iterator().next();
             String transferStatus = networkTransferDao.findStatusByEntityIdAndEntityTypeAndTenantId(console.getId(), CONSOLIDATION, console.getReceivingBranch().intValue());
             shipmentDetailsResponse.setTransferStatus(transferStatus);

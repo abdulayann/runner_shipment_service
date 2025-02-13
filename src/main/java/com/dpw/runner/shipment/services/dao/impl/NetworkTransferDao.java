@@ -155,4 +155,8 @@ public class NetworkTransferDao implements INetworkTransferDao {
     public String findByEntityGuidAndTenantId(UUID guid, Integer tenantId) {
         return networkTransferRepository.findByEntityGuidAndTenantId(guid, tenantId);
     }
+
+    public List<NetworkTransfer> findByEntityGuids(List<UUID> guid) {
+        return networkTransferRepository.findByEntityGuids(guid);
+    }
 }
