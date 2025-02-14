@@ -4623,18 +4623,21 @@ public class ConsolidationService implements IConsolidationService {
 
     private void processOldEntityInterBranch(ConsolidationDetails consolidationDetails){
         List<NetworkTransfer> networkTransferList = networkTransferDao.getInterConsoleNTList(Collections.singletonList(consolidationDetails.getId()), CONSOLIDATION);
-        if(networkTransferList!=null && !networkTransferList.isEmpty()){
-            NetworkTransfer networkTransfer = networkTransferList.get(0);
-            if(networkTransfer.getStatus()==NetworkTransferStatus.ACCEPTED)
-                return;
-            Map<Long, Map<Integer, NetworkTransfer>> shipmentNetworkTransferMap = getNetworkTransferMap(consolidationDetails);
-            List<NetworkTransfer> nteToDelete = new ArrayList<>();
-            if (shipmentNetworkTransferMap!=null) {
-                List<NetworkTransfer> allNetworkTransfers = shipmentNetworkTransferMap.values().stream()
-                        .flatMap(innerMap -> innerMap.values().stream()).toList();
-                nteToDelete.addAll(allNetworkTransfers);
+        if(networkTransferList!=null && !networkTransferList.isEmpty()) {
+            for (NetworkTransfer networkTransfer : networkTransferList) {
+                if(Objects.equals(networkTransfer.getJobType(), DIRECTION_CTS))
+                    continue;
+                if (networkTransfer.getStatus() == NetworkTransferStatus.ACCEPTED)
+                    return;
+                Map<Long, Map<Integer, NetworkTransfer>> shipmentNetworkTransferMap = getNetworkTransferMap(consolidationDetails);
+                List<NetworkTransfer> nteToDelete = new ArrayList<>();
+                if (shipmentNetworkTransferMap != null) {
+                    List<NetworkTransfer> allNetworkTransfers = shipmentNetworkTransferMap.values().stream()
+                            .flatMap(innerMap -> innerMap.values().stream()).toList();
+                    nteToDelete.addAll(allNetworkTransfers);
+                }
+                nteToDelete.forEach(networkTransferService::deleteNetworkTransferEntity);
             }
-            nteToDelete.forEach(networkTransferService::deleteNetworkTransferEntity);
         }
     }
 
@@ -4645,10 +4648,11 @@ public class ConsolidationService implements IConsolidationService {
         List<NetworkTransfer> networkTransferList = networkTransferDao.getInterConsoleNTList(Collections.singletonList(consolidationDetails.getId()), CONSOLIDATION);
         if(networkTransferList!=null && !networkTransferList.isEmpty()){
             for(NetworkTransfer networkTransfer: networkTransferList) {
-                if(Objects.equals(networkTransfer.getJobType(), DIRECTION_CTS))
-                    continue;
-                if (networkTransfer.getStatus() == NetworkTransferStatus.ACCEPTED)
+                if (networkTransfer.getStatus() == NetworkTransferStatus.ACCEPTED) {
+                    if (Objects.equals(networkTransfer.getJobType(), DIRECTION_CTS))
+                        continue;
                     return;
+                }
                 if (!isConsoleBranchUpdate && oldEntity != null && Boolean.FALSE.equals(oldEntity.getInterBranchConsole())) {
                     networkTransfer.setIsInterBranchEntity(Boolean.TRUE);
                     networkTransferDao.save(networkTransfer);
