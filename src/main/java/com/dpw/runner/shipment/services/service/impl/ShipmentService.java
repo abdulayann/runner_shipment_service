@@ -2948,6 +2948,10 @@ public class ShipmentService implements IShipmentService {
 
     private void processReceivingBranchChanges(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
         ConsolidationDetails consolidationDetails = shipmentDetails.getConsolidationList().iterator().next();
+        List<NetworkTransfer> consoleNteList = networkTransferDao.getInterConsoleNTList(Collections.singletonList(shipmentDetails.getId()), SHIPMENT);
+        if(consoleNteList!=null && !consoleNteList.isEmpty() && consoleNteList.get(0).getStatus()==NetworkTransferStatus.ACCEPTED){
+            return;
+        }
         if(consolidationDetails.getReceivingBranch()!=null) {
             List<Long> shipmentIdsList = shipmentDetails.getConsolidationList().iterator().next().getShipmentsList().stream()
                     .map(ShipmentDetails::getId).toList();
@@ -2955,7 +2959,8 @@ public class ShipmentService implements IShipmentService {
             Map<Long, NetworkTransfer> shipmentNetworkTransferMap = nteList!=null ? nteList.stream()
                     .collect(Collectors.toMap(NetworkTransfer::getEntityId, transfer -> transfer)) : null;
             NetworkTransfer existingNTE = shipmentNetworkTransferMap != null ? shipmentNetworkTransferMap.get(shipmentDetails.getId()) : null;
-
+            if(existingNTE!=null && existingNTE.getStatus() == NetworkTransferStatus.ACCEPTED)
+                return;
             if (shipmentDetails.getReceivingBranch() != null) {
                 handleReceivingBranchUpdates(shipmentDetails, oldEntity, consolidationDetails, existingNTE, shipmentNetworkTransferMap);
             } else if (shouldDeleteOldTransfer(oldEntity, existingNTE)) {
