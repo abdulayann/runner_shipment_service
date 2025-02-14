@@ -4589,22 +4589,22 @@ public class ConsolidationService implements IConsolidationService {
 
                     // Process new tenant IDs for network transfer
                     newTenantIds.forEach(newTenantId -> {
-                        processNetworkTransferEntity(newTenantId, null, consolidationDetails, Constants.DIRECTION_CTS, isInterBranchConsole);
+                        processNetworkTransferEntity(newTenantId, null, consolidationDetails, Constants.DIRECTION_CTS, false);
                     });
 
                     // Process old tenant IDs for removal from network transfer
                     oldTenantIds.forEach(oldTenantId -> {
-                        processNetworkTransferEntity(null, oldTenantId, consolidationDetails, Constants.DIRECTION_CTS, isInterBranchConsole);
+                        processNetworkTransferEntity(null, oldTenantId, consolidationDetails, Constants.DIRECTION_CTS, false);
                     });
                 } else if (consolidationDetails.getTriangulationPartner() != null) {
                     processNetworkTransferEntity(consolidationDetails.getTriangulationPartner(),
-                            oldEntity != null ? oldEntity.getTriangulationPartner() : null, consolidationDetails, Constants.DIRECTION_CTS, isInterBranchConsole);
+                            oldEntity != null ? oldEntity.getTriangulationPartner() : null, consolidationDetails, Constants.DIRECTION_CTS, false);
                 } else if(consolidationDetails.getTriangulationPartnerList() == null) {
                     List<Long> oldPartners = oldEntity != null ? commonUtils.getTriangulationPartnerList(oldEntity.getTriangulationPartnerList())
                             : Collections.emptyList();
                     Set<Long> oldTenantIds = new HashSet<>(oldPartners);
                     oldTenantIds.forEach(oldTenantId ->
-                            processNetworkTransferEntity(null, oldTenantId, consolidationDetails, Constants.DIRECTION_CTS, isInterBranchConsole)
+                            processNetworkTransferEntity(null, oldTenantId, consolidationDetails, Constants.DIRECTION_CTS, false)
                     );
                 }
             }
@@ -4648,9 +4648,9 @@ public class ConsolidationService implements IConsolidationService {
         List<NetworkTransfer> networkTransferList = networkTransferDao.getInterConsoleNTList(Collections.singletonList(consolidationDetails.getId()), CONSOLIDATION);
         if(networkTransferList!=null && !networkTransferList.isEmpty()){
             for(NetworkTransfer networkTransfer: networkTransferList) {
+                if(Objects.equals(networkTransfer.getJobType(), DIRECTION_CTS))
+                    continue;
                 if (networkTransfer.getStatus() == NetworkTransferStatus.ACCEPTED) {
-                    if (Objects.equals(networkTransfer.getJobType(), DIRECTION_CTS))
-                        continue;
                     return;
                 }
                 if (!isConsoleBranchUpdate && oldEntity != null && Boolean.FALSE.equals(oldEntity.getInterBranchConsole())) {
