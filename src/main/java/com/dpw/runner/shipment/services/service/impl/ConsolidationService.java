@@ -1243,7 +1243,7 @@ public class ConsolidationService implements IConsolidationService {
             if(networkTransferList!=null && !networkTransferList.isEmpty() && networkTransferList.get(0).getStatus()==NetworkTransferStatus.ACCEPTED){
                 return;
             }
-            Set<Long> rc = new HashSet<>(shipmentIds);
+            Set<Long> shipmentIdsSet = new HashSet<>(shipmentIds);
             List<ShipmentDetails> shipmentDetailsList = shipmentDao.findShipmentsByIds(shipmentIdsSet);
             for(ShipmentDetails shipmentDetails: shipmentDetailsList) {
                 if(shipmentDetails.getReceivingBranch()!=null)
@@ -4550,7 +4550,7 @@ public class ConsolidationService implements IConsolidationService {
                 return;
             boolean isNetworkTransferEntityEnabled = Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled());
             boolean isInterBranchConsole = Boolean.TRUE.equals(consolidationDetails.getInterBranchConsole());
-            boolean oldIsInterBranchConsole = Boolean.TRUE.equals(consolidationDetails.getInterBranchConsole());
+            boolean oldIsInterBranchConsole = oldEntity!=null && Boolean.TRUE.equals(consolidationDetails.getInterBranchConsole());
             if(isNetworkTransferEntityEnabled && isInterBranchConsole)
                 processInterBranchEntityCase(consolidationDetails, oldEntity);
             if(isNetworkTransferEntityEnabled && !isInterBranchConsole && oldIsInterBranchConsole)
