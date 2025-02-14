@@ -31,7 +31,6 @@ import org.hibernate.annotations.WhereJoinTable;
 @Table(name = "consolidation_details")
 @Getter
 @Setter
-@Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor

@@ -4880,6 +4880,42 @@ public class ConsolidationService implements IConsolidationService {
         }
     }
 
+    @Override
+    public ResponseEntity<IRunnerResponse> fullConsolidationsExternalList(
+        CommonRequestModel commonRequestModel) {
+        String responseMsg;
+        try {
+            ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+            if (request == null) {
+                log.error(ConsolidationConstants.CONSOLIDATION_LIST_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
+                throw new ValidationException(ConsolidationConstants.CONSOLIDATION_LIST_REQUEST_NULL_ERROR);
+            }
+            Pair<Specification<ConsolidationDetails>, Pageable> tuple = fetchData(request, ConsolidationDetails.class, tableNames);
+            var consolidationDetailsPage = consolidationDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
+            if (request.getIncludeColumns() == null || request.getIncludeColumns().isEmpty()) {
+                throw new ValidationException("Include Columns field is mandatory");
+            }
+            List<IRunnerResponse>filteredList=new ArrayList<>();
+
+            for( var curr:consolidationDetailsPage.getContent()){
+                calculateAchievedValuesForRetrieve(curr);
+                ConsolidationDetailsResponse consolidationDetailsResponse = commonUtils.getConsolidationDetailsResponse(curr, request.getIncludeColumns());
+                consolidationDetailsResponse.setPackSummary(packingService.calculatePackSummary(curr.getPackingList(), consolidationDetailsResponse.getTransportMode(), consolidationDetailsResponse.getContainerCategory(), new ShipmentMeasurementDetailsDto()));
+
+                filteredList.add(consolidationDetailsResponse);
+            }
+            return ResponseHelper.buildListSuccessResponse(
+                filteredList,
+                consolidationDetailsPage.getTotalPages(),
+                consolidationDetailsPage.getTotalElements());
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
     private boolean isInvalidForTransfer(ConsolidationDetails consolidationDetails) {
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         return !Boolean.TRUE.equals(shipmentSettingsDetails.getIsAutomaticTransferEnabled())

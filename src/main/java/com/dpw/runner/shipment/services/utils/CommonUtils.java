@@ -2297,4 +2297,94 @@ public class CommonUtils {
         else return !IsStringNullOrEmpty(party.getOrgId());
     }
 
+  public ConsolidationDetailsResponse getConsolidationDetailsResponse(ConsolidationDetails consolidationDetails, List<String> includeColumns) {
+        return setIncludedFields(consolidationDetails, includeColumns);
+  }
+    private ConsolidationDetailsResponse setIncludedFields(ConsolidationDetails consolidationDetails, List<String> includeColumns) {
+        ConsolidationDetailsResponse consolidationDetailsResponse = new ConsolidationDetailsResponse();
+
+        includeColumns.forEach(field -> {
+            try {
+                String capitalizedField = capitalize(field);
+
+                // Reflectively obtain the getter and setter methods once
+                Method getter = ConsolidationDetails.class.getMethod("get" + capitalizedField);
+                Object value = getter.invoke(consolidationDetails);
+
+                Object dtoValue = null;
+                if(value instanceof CarrierDetails) {
+                    dtoValue = modelMapper.map(value, CarrierDetailResponse.class);
+                }
+                else if(value instanceof AchievedQuantities) {
+                    dtoValue = modelMapper.map(value, AchievedQuantitiesResponse.class);
+                }
+                else if(value instanceof Allocations) {
+                    dtoValue = modelMapper.map(value, AllocationsResponse.class);
+                }
+                else if(value instanceof Parties) {
+                    dtoValue = modelMapper.map(value, PartiesResponse.class);
+                }
+                else if(value instanceof ArrivalDepartureDetails) {
+                    dtoValue = modelMapper.map(value, ArrivalDepartureDetailsResponse.class);
+                }
+
+                if(value instanceof List<?>) {
+                    List<?> list = (List<?>) value;
+                    if(!list.isEmpty() && list.get(0) instanceof Containers) {
+                        dtoValue = modelMapper.map(value, new TypeToken<List<ContainerResponse>>() {}.getType());
+                    }
+                    else if(!list.isEmpty() && list.get(0) instanceof BookingCarriage) {
+                        dtoValue = modelMapper.map(value, new TypeToken<List<BookingCarriageResponse>>() {}.getType());
+                    }
+                    else if(!list.isEmpty() && list.get(0) instanceof ELDetails) {
+                        dtoValue = modelMapper.map(value, new TypeToken<List<ELDetailsResponse>>() {}.getType());
+                    }
+                    else if(!list.isEmpty() && list.get(0) instanceof Events) {
+                        dtoValue = modelMapper.map(value, new TypeToken<List<EventsResponse>>() {}.getType());
+                    }
+                    else if(!list.isEmpty() && list.get(0) instanceof ReferenceNumbers) {
+                        dtoValue = modelMapper.map(value, new TypeToken<List<ReferenceNumbersResponse>>() {}.getType());
+                    }
+                    else if(!list.isEmpty() && list.get(0) instanceof Routings) {
+                        dtoValue = modelMapper.map(value, new TypeToken<List<RoutingsResponse>>() {}.getType());
+                    }
+                    else if(!list.isEmpty() && list.get(0) instanceof ServiceDetails) {
+                        dtoValue = modelMapper.map(value, new TypeToken<List<ServiceDetailsResponse>>() {}.getType());
+                    }
+                    else if(!list.isEmpty() && list.get(0) instanceof TruckDriverDetails) {
+                        dtoValue = modelMapper.map(value, new TypeToken<List<TruckDriverDetailsResponse>>() {}.getType());
+                    }
+                    else if(!list.isEmpty() && list.get(0) instanceof Notes) {
+                        dtoValue = modelMapper.map(value, new TypeToken<List<NotesResponse>>() {}.getType());
+                    }
+                    else if(!list.isEmpty() && list.get(0) instanceof Jobs) {
+                        dtoValue = modelMapper.map(value, new TypeToken<List<JobResponse>>() {}.getType());
+                    }
+                    else if(!list.isEmpty() && list.get(0) instanceof ConsolidationDetails) {
+                        dtoValue = modelMapper.map(value, new TypeToken<List<ConsolidationListResponse>>() {}.getType());
+                    }
+                    else if(!list.isEmpty() && list.get(0) instanceof Parties) {
+                        dtoValue = modelMapper.map(value, new TypeToken<List<PartiesResponse>>() {}.getType());
+                    }
+                    else if(!list.isEmpty() && list.get(0) instanceof ShipmentOrder) {
+                        dtoValue = modelMapper.map(value, new TypeToken<List<ShipmentOrderResponse>>() {}.getType());
+                    }
+                }
+                Class<?> paramType;
+                if (dtoValue instanceof List<?> list && !list.isEmpty()) {
+                    paramType = List.class;
+                } else if (dtoValue != null) {
+                    paramType = dtoValue.getClass();
+                } else {
+                    paramType = getter != null ? getter.getReturnType() : Object.class;
+                }
+
+                Method setter = ConsolidationDetailsResponse.class.getMethod("set" + capitalizedField, paramType);
+                setter.invoke(consolidationDetailsResponse, dtoValue != null ? dtoValue : value);
+            } catch (Exception e) {
+                log.error("No such field: {}", field, e);
+            }
+        });
+        return consolidationDetailsResponse;
+    }
 }

@@ -100,4 +100,6 @@ public interface IConsolidationService extends ICommonService{
     ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel, boolean getMasterData);
     ResponseEntity<IRunnerResponse> retrieveForNTE(CommonRequestModel commonRequestModel);
     void triggerAutomaticTransfer(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, Boolean isDocOrHawbNumAdded);
+
+  ResponseEntity<IRunnerResponse> fullConsolidationsExternalList(CommonRequestModel commonRequestModel);
 }

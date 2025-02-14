@@ -279,20 +279,24 @@ public class Containers extends MultiTenancy {
 
     @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "pickup_address_id", referencedColumnName = "id")
+    @JsonIgnore
     private Parties pickupAddress;
 
     @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "delivery_address_id", referencedColumnName = "id")
+    @JsonIgnore
     private Parties deliveryAddress;
 
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "entity_id")
     @Where(clause = "entity_type = 'CONTAINER'")
     @BatchSize(size = 50)
+    @JsonIgnore
     private List<Events> eventsList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "containerId")
     @BatchSize(size = 50)
+    @JsonIgnore
     private List<Packing> packsList;
 
     @ManyToMany(fetch = FetchType.LAZY)
@@ -301,6 +305,7 @@ public class Containers extends MultiTenancy {
             inverseJoinColumns = @JoinColumn(name = "shipment_id"))
     @JsonIgnoreProperties(value = "containersList", allowSetters = true)
     @BatchSize(size = 50)
+    @JsonIgnore
     private List<ShipmentDetails> shipmentsList;
 
     @ManyToMany(fetch = FetchType.LAZY,
@@ -335,6 +340,7 @@ public class Containers extends MultiTenancy {
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "container_id")
     @BatchSize(size = 50)
+    @JsonIgnore
     private List<TruckDriverDetails> truckingDetails;
 
     @Column(name = "invoice_number")

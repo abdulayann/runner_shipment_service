@@ -560,5 +560,15 @@ public class ConsolidationController {
             return ResponseHelper.buildFailedResponse(e.getMessage());
         }
     }
+    @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerListResponse.class, message = ConsolidationConstants.LIST_SUCCESSFUL, responseContainer = ConsolidationConstants.RESPONSE_CONTAINER_LIST)})
+    @PostMapping(ApiConstants.API_LIST_EXTERNAL)
+    public ResponseEntity<IRunnerResponse> listExternal(@RequestBody @Valid ListCommonRequest listCommonRequest) {
+        log.info("Received Consolidations list request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(listCommonRequest));
+        try {
+            return consolidationService.fullConsolidationsExternalList(CommonRequestModel.buildRequest(listCommonRequest));
+        } catch (Exception ex) {
+            return ResponseHelper.buildFailedResponse(ex.getMessage(), HttpStatus.FORBIDDEN);
+        }
+    }
 
 }
