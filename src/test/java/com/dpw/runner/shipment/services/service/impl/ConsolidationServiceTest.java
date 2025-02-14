@@ -7022,8 +7022,10 @@ import static org.mockito.Mockito.*;
         when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails1.getPackingList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consoleDetails));
 
-        NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.ACCEPTED).build();
-        when(networkTransferDao.getInterConsoleNTList(anyList(), any())).thenReturn(Collections.singletonList(networkTransfer));
+        NetworkTransfer networkTransfer1 = NetworkTransfer.builder().jobType(DIRECTION_CTS).status(NetworkTransferStatus.ACCEPTED).build();
+        NetworkTransfer networkTransfer2 = NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build();
+        NetworkTransfer networkTransfer3 = NetworkTransfer.builder().status(NetworkTransferStatus.ACCEPTED).build();
+        when(networkTransferDao.getInterConsoleNTList(anyList(), any())).thenReturn(List.of(networkTransfer1, networkTransfer2, networkTransfer3));
 
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(Boolean.TRUE);
         mockShipmentSettings();
