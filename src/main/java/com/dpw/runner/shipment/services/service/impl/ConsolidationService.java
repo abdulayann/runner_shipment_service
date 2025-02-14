@@ -1230,6 +1230,19 @@ public class ConsolidationService implements IConsolidationService {
         return ResponseHelper.buildFailedResponse("Consol is null");
     }
 
+    private boolean isConsoleAccepted(ConsolidationDetails console){
+        List<NetworkTransfer> networkTransferList = networkTransferDao.getInterConsoleNTList(Collections.singletonList(console.getId()), CONSOLIDATION);
+        if(networkTransferList!=null && !networkTransferList.isEmpty() ){
+            for(NetworkTransfer networkTransfer: networkTransferList) {
+                if(Objects.equals(networkTransfer.getJobType(), DIRECTION_CTS))
+                    continue;
+                if(networkTransfer.getStatus()==NetworkTransferStatus.ACCEPTED)
+                    return true;
+            }
+        }
+        return false;
+    }
+
     private void processInterConsoleDetachShipment(ConsolidationDetails console, List<Long> shipmentIds){
         try {
             if(console.getShipmentType()==null || !Constants.DIRECTION_EXP.equals(console.getShipmentType()))
@@ -1239,8 +1252,8 @@ public class ConsolidationService implements IConsolidationService {
             boolean isNetworkTransferEntityEnabled = Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled());
             if(!isInterBranchConsole || !isNetworkTransferEntityEnabled ||(shipmentIds==null || shipmentIds.isEmpty()))
                 return;
-            List<NetworkTransfer> networkTransferList = networkTransferDao.getInterConsoleNTList(Collections.singletonList(console.getId()), CONSOLIDATION);
-            if(networkTransferList!=null && !networkTransferList.isEmpty() && networkTransferList.get(0).getStatus()==NetworkTransferStatus.ACCEPTED){
+            boolean isConsoleAcceptedCase = isConsoleAccepted(console);
+            if(isConsoleAcceptedCase){
                 return;
             }
             Set<Long> shipmentIdsSet = new HashSet<>(shipmentIds);
@@ -1805,8 +1818,8 @@ public class ConsolidationService implements IConsolidationService {
         try {
             if (!isValidRequest(console, shipments)) return;
 
-            List<NetworkTransfer> networkTransferList = networkTransferDao.getInterConsoleNTList(Collections.singletonList(console.getId()), CONSOLIDATION);
-            if(networkTransferList!=null && !networkTransferList.isEmpty() && networkTransferList.get(0).getStatus()==NetworkTransferStatus.ACCEPTED){
+            boolean isConsoleAcceptedCase = isConsoleAccepted(console);
+            if(isConsoleAcceptedCase){
                 return;
             }
 
@@ -4610,18 +4623,21 @@ public class ConsolidationService implements IConsolidationService {
 
     private void processOldEntityInterBranch(ConsolidationDetails consolidationDetails){
         List<NetworkTransfer> networkTransferList = networkTransferDao.getInterConsoleNTList(Collections.singletonList(consolidationDetails.getId()), CONSOLIDATION);
-        if(networkTransferList!=null && !networkTransferList.isEmpty()){
-            NetworkTransfer networkTransfer = networkTransferList.get(0);
-            if(networkTransfer.getStatus()==NetworkTransferStatus.ACCEPTED)
-                return;
-            Map<Long, Map<Integer, NetworkTransfer>> shipmentNetworkTransferMap = getNetworkTransferMap(consolidationDetails);
-            List<NetworkTransfer> nteToDelete = new ArrayList<>();
-            if (shipmentNetworkTransferMap!=null) {
-                List<NetworkTransfer> allNetworkTransfers = shipmentNetworkTransferMap.values().stream()
-                        .flatMap(innerMap -> innerMap.values().stream()).toList();
-                nteToDelete.addAll(allNetworkTransfers);
+        if(networkTransferList!=null && !networkTransferList.isEmpty()) {
+            for (NetworkTransfer networkTransfer : networkTransferList) {
+                if(Objects.equals(networkTransfer.getJobType(), DIRECTION_CTS))
+                    continue;
+                if (networkTransfer.getStatus() == NetworkTransferStatus.ACCEPTED)
+                    return;
+                Map<Long, Map<Integer, NetworkTransfer>> shipmentNetworkTransferMap = getNetworkTransferMap(consolidationDetails);
+                List<NetworkTransfer> nteToDelete = new ArrayList<>();
+                if (shipmentNetworkTransferMap != null) {
+                    List<NetworkTransfer> allNetworkTransfers = shipmentNetworkTransferMap.values().stream()
+                            .flatMap(innerMap -> innerMap.values().stream()).toList();
+                    nteToDelete.addAll(allNetworkTransfers);
+                }
+                nteToDelete.forEach(networkTransferService::deleteNetworkTransferEntity);
             }
-            nteToDelete.forEach(networkTransferService::deleteNetworkTransferEntity);
         }
     }
 
@@ -4631,12 +4647,16 @@ public class ConsolidationService implements IConsolidationService {
 
         List<NetworkTransfer> networkTransferList = networkTransferDao.getInterConsoleNTList(Collections.singletonList(consolidationDetails.getId()), CONSOLIDATION);
         if(networkTransferList!=null && !networkTransferList.isEmpty()){
-            NetworkTransfer networkTransfer = networkTransferList.get(0);
-            if(networkTransfer.getStatus()==NetworkTransferStatus.ACCEPTED)
-                return;
-            if(!isConsoleBranchUpdate && oldEntity!=null && Boolean.FALSE.equals(oldEntity.getInterBranchConsole())){
-                networkTransfer.setIsInterBranchEntity(Boolean.TRUE);
-                networkTransferDao.save(networkTransfer);
+            for(NetworkTransfer networkTransfer: networkTransferList) {
+                if(Objects.equals(networkTransfer.getJobType(), DIRECTION_CTS))
+                    continue;
+                if (networkTransfer.getStatus() == NetworkTransferStatus.ACCEPTED) {
+                    return;
+                }
+                if (!isConsoleBranchUpdate && oldEntity != null && Boolean.FALSE.equals(oldEntity.getInterBranchConsole())) {
+                    networkTransfer.setIsInterBranchEntity(Boolean.TRUE);
+                    networkTransferDao.save(networkTransfer);
+                }
             }
         }
         if (consolidationDetails.getShipmentsList() != null && !consolidationDetails.getShipmentsList().isEmpty()) {

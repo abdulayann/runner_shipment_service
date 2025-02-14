@@ -6833,7 +6833,9 @@ import static org.mockito.Mockito.*;
         Map<String, Object> entityPayload = Map.of("abcd", 1);
         NetworkTransfer networkTransfer = NetworkTransfer.builder().entityId(1L).entityPayload(entityPayload).isInterBranchEntity(true).build();
         networkTransfer.setTenantId(2);
-        when(networkTransferDao.getInterConsoleNTList(any(), any())).thenReturn(Collections.singletonList(networkTransfer));
+        NetworkTransfer networkTransfer2 = NetworkTransfer.builder().entityId(1L).jobType(DIRECTION_CTS).status(NetworkTransferStatus.ACCEPTED).isInterBranchEntity(true).build();
+        networkTransfer2.setTenantId(2);
+        when(networkTransferDao.getInterConsoleNTList(any(), any())).thenReturn(List.of(networkTransfer2, networkTransfer));
 
         spyService.createOrUpdateNetworkTransferEntity(shipmentSettingsDetails, consoleDetails, oldEntity);
 
@@ -6863,7 +6865,9 @@ import static org.mockito.Mockito.*;
         Map<String, Object> entityPayload = Map.of("abcd", 1);
         NetworkTransfer networkTransfer = NetworkTransfer.builder().entityId(1L).entityPayload(entityPayload).status(NetworkTransferStatus.ACCEPTED).isInterBranchEntity(true).build();
         networkTransfer.setTenantId(2);
-        when(networkTransferDao.getInterConsoleNTList(any(), any())).thenReturn(Collections.singletonList(networkTransfer));
+        NetworkTransfer networkTransfer2 = NetworkTransfer.builder().entityId(1L).jobType(DIRECTION_CTS).status(NetworkTransferStatus.ACCEPTED).isInterBranchEntity(true).build();
+        networkTransfer2.setTenantId(2);
+        when(networkTransferDao.getInterConsoleNTList(any(), any())).thenReturn(List.of(networkTransfer2, networkTransfer));
 
         spyService.createOrUpdateNetworkTransferEntity(shipmentSettingsDetails, consoleDetails, oldEntity);
 
@@ -7022,8 +7026,10 @@ import static org.mockito.Mockito.*;
         when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails1.getPackingList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consoleDetails));
 
-        NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.ACCEPTED).build();
-        when(networkTransferDao.getInterConsoleNTList(anyList(), any())).thenReturn(Collections.singletonList(networkTransfer));
+        NetworkTransfer networkTransfer1 = NetworkTransfer.builder().jobType(DIRECTION_CTS).status(NetworkTransferStatus.ACCEPTED).build();
+        NetworkTransfer networkTransfer2 = NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build();
+        NetworkTransfer networkTransfer3 = NetworkTransfer.builder().status(NetworkTransferStatus.ACCEPTED).build();
+        when(networkTransferDao.getInterConsoleNTList(anyList(), any())).thenReturn(List.of(networkTransfer1, networkTransfer2, networkTransfer3));
 
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(Boolean.TRUE);
         mockShipmentSettings();

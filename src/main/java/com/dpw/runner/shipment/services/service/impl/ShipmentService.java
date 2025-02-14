@@ -2946,10 +2946,23 @@ public class ShipmentService implements IShipmentService {
                 oldEntity.getConsolidationList().stream().anyMatch(consolidation -> Boolean.TRUE.equals(consolidation.getInterBranchConsole()));
     }
 
+    private boolean isConsoleAccepted(ConsolidationDetails console){
+        List<NetworkTransfer> networkTransferList = networkTransferDao.getInterConsoleNTList(Collections.singletonList(console.getId()), CONSOLIDATION);
+        if(networkTransferList!=null && !networkTransferList.isEmpty() ){
+            for(NetworkTransfer networkTransfer: networkTransferList) {
+                if(Objects.equals(networkTransfer.getJobType(), DIRECTION_CTS))
+                    continue;
+                if(networkTransfer.getStatus()==NetworkTransferStatus.ACCEPTED)
+                    return true;
+            }
+        }
+        return false;
+    }
+
     private void processReceivingBranchChanges(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
         ConsolidationDetails consolidationDetails = shipmentDetails.getConsolidationList().iterator().next();
-        List<NetworkTransfer> consoleNteList = networkTransferDao.getInterConsoleNTList(Collections.singletonList(shipmentDetails.getId()), SHIPMENT);
-        if(consoleNteList!=null && !consoleNteList.isEmpty() && consoleNteList.get(0).getStatus()==NetworkTransferStatus.ACCEPTED){
+        boolean isConsoleAcceptedCase = isConsoleAccepted(consolidationDetails);
+        if(isConsoleAcceptedCase){
             return;
         }
         if(consolidationDetails.getReceivingBranch()!=null) {
