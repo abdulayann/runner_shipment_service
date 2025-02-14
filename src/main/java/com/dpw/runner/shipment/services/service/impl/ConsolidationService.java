@@ -4546,19 +4546,17 @@ public class ConsolidationService implements IConsolidationService {
     @Transactional
     public void createOrUpdateNetworkTransferEntity(ShipmentSettingsDetails shipmentSettingsDetails, ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity) {
         try{
-            if(consolidationDetails.getShipmentType()==null || !Constants.DIRECTION_EXP.equals(consolidationDetails.getShipmentType()))
-                return;
             boolean isNetworkTransferEntityEnabled = Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled());
+            if(consolidationDetails.getShipmentType()==null || !Constants.DIRECTION_EXP.equals(consolidationDetails.getShipmentType()) || !isNetworkTransferEntityEnabled)
+                return;
             boolean isInterBranchConsole = Boolean.TRUE.equals(consolidationDetails.getInterBranchConsole());
-            boolean oldIsInterBranchConsole = oldEntity!=null && Boolean.TRUE.equals(consolidationDetails.getInterBranchConsole());
-            if(isNetworkTransferEntityEnabled && isInterBranchConsole)
+            boolean oldIsInterBranchConsole = oldEntity!=null && Boolean.TRUE.equals(oldEntity.getInterBranchConsole());
+            if(isInterBranchConsole)
                 processInterBranchEntityCase(consolidationDetails, oldEntity);
-            if(isNetworkTransferEntityEnabled && !isInterBranchConsole && oldIsInterBranchConsole)
+            if(!isInterBranchConsole && oldIsInterBranchConsole)
                 processOldEntityInterBranch(consolidationDetails);
 
-            if (consolidationDetails.getTransportMode()!=null &&
-                    !Constants.TRANSPORT_MODE_RAI.equals(consolidationDetails.getTransportMode())
-                    && Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled())) {
+            if (consolidationDetails.getTransportMode()!=null && !Constants.TRANSPORT_MODE_RAI.equals(consolidationDetails.getTransportMode())) {
                 processNetworkTransferEntity(consolidationDetails.getReceivingBranch(),
                         oldEntity != null ? oldEntity.getReceivingBranch() : null, consolidationDetails,
                         reverseDirection(consolidationDetails.getShipmentType()), isInterBranchConsole);
