@@ -37,6 +37,7 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private Boolean cargoFinanceBooking;
     private CarrierDetailRequest carrierDetails;
     private BigDecimal chargable;
+    private Boolean isChargableEditable;
     private String chargeableUnit;
     private PartiesRequest client;
     private PartiesRequest consignee;

@@ -1949,6 +1949,9 @@ public class ShipmentService implements IShipmentService {
                 }
             }
         }
+        if(Boolean.TRUE.equals(shipmentRequest.getIsChargableEditable())){
+            shipmentDetails.setChargable(shipmentRequest.getChargable());
+        }
         validateBeforeSave(shipmentDetails);
 
 
