@@ -976,11 +976,12 @@ public class ReportService implements IReportService {
         if(Boolean.TRUE.equals(reportRequest.getPrintCustomLabel()) && reportRequest.isFromConsolidation()) {
             dataRetrived.put(ReportConstants.AIRLINE_NAME, reportRequest.getConsolAirline());
             AWBLabelReport.populateMawb(dataRetrived, reportRequest.getMawbNumber());
-            dataRetrived.put(ReportConstants.CONSOL_DESTINATION_AIRPORT_CODE_CAPS, reportRequest.getDestination());
+            dataRetrived.put(ReportConstants.MAWB_CAPS, reportRequest.getMawbNumber());
+            dataRetrived.put(ReportConstants.CONSOL_DESTINATION_AIRPORT_CODE_CAPS, StringUtility.toUpperCase(reportRequest.getDestination()));
             dataRetrived.put(ReportConstants.TOTAL_CONSOL_PACKS, reportRequest.getTotalMawbPieces());
         }
 
-        // Custom Air Labels-Combi dialogue box
+        // Custom Air Labels- Combi dialogue box
         if (Boolean.TRUE.equals(reportRequest.getPrintCustomLabel()) && reportRequest.isCombiLabel()) {
             List<Pair<String, Integer>> hawbPackageList = Optional.ofNullable(reportRequest.getHawbInfo())
                     .orElse(Collections.emptyList()).stream()
@@ -993,14 +994,15 @@ public class ReportService implements IReportService {
             dataRetrived.put(HAWB_PACKS_MAP, hawbPackageList);
             dataRetrived.put(ReportConstants.AIRLINE_NAME, reportRequest.getConsolAirline());
             AWBLabelReport.populateMawb(dataRetrived, reportRequest.getMawbNumber());
-            dataRetrived.put(ReportConstants.CONSOL_DESTINATION_AIRPORT_CODE_CAPS, reportRequest.getDestination());
+            dataRetrived.put(ReportConstants.MAWB_CAPS, reportRequest.getMawbNumber());
+            dataRetrived.put(ReportConstants.CONSOL_DESTINATION_AIRPORT_CODE_CAPS, StringUtility.toUpperCase(reportRequest.getDestination()));
             dataRetrived.put(ReportConstants.TOTAL_CONSOL_PACKS, reportRequest.getTotalMawbPieces());
         }
 
         // Custom Air Labels-House dialogue box
         if(Boolean.TRUE.equals(reportRequest.getPrintCustomLabel()) && !reportRequest.isFromConsolidation()) {
             dataRetrived.put(ReportConstants.HAWB_NUMBER, reportRequest.getHawbNumber());
-            dataRetrived.put(ReportConstants.POD_AIRPORT_CODE_IN_CAPS, reportRequest.getDestination());
+            dataRetrived.put(ReportConstants.POD_AIRPORT_CODE_IN_CAPS, StringUtility.toUpperCase(reportRequest.getDestination()));
             dataRetrived.put(ReportConstants.TOTAL_PACKS, reportRequest.getTotalHawbPieces());
         }
 

@@ -6782,7 +6782,6 @@ ShipmentServiceTest extends CommonMocks {
         when(shipmentDao.update(any(), eq(false))).thenReturn(mockShipment);
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         when(shipmentDetailsMapper.map((ShipmentDetails) any())).thenReturn(mockShipmentResponse);
-        when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.of(attachedConsol));
         when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
         // Test
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeUpdate(commonRequestModel);
@@ -9838,6 +9837,58 @@ ShipmentServiceTest extends CommonMocks {
     }
 
     @Test
+    void triggerAutomaticTransferTest14() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).isNetworkTransferEntityEnabled(true).isAutomaticTransferEnabled(true).build());
+
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder().build();
+        consolidationDetails1.setTransportMode(TRANSPORT_MODE_SEA);
+
+        ShipmentDetails shipmentDetails2 = ShipmentDetails.builder().shipmentId("AIR-CAN-00001").
+                transportMode(TRANSPORT_MODE_AIR).jobType("FCT").
+                direction(Constants.DIRECTION_EXP).receivingBranch(1L).masterBill("ABCD").
+                consolidationList(new HashSet<>(Collections.singletonList(consolidationDetails1))).build();
+
+        ShipmentDetails oldEntity = ShipmentDetails.builder().shipmentId("AIR-CAN-00001").
+                transportMode(TRANSPORT_MODE_AIR).jobType("FCT").
+                direction(Constants.DIRECTION_EXP).receivingBranch(2L).build();
+
+        QuartzJobInfo quartzJobInfo = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
+        quartzJobInfo.setId(1L);
+        when(quartzJobInfoDao.findByJobFilters(any(), any(), any())).thenReturn(Optional.of(quartzJobInfo));
+
+        doNothing().when(consolidationService).triggerAutomaticTransfer(any(),any(),any());
+        shipmentService.triggerAutomaticTransfer(shipmentDetails2, oldEntity, false);
+
+        verify(consolidationService, times(1)).triggerAutomaticTransfer(any(), any(), any());
+    }
+
+    @Test
+    void triggerAutomaticTransferTest15() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).isNetworkTransferEntityEnabled(true).isAutomaticTransferEnabled(true).build());
+
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder().build();
+        consolidationDetails1.setTransportMode(TRANSPORT_MODE_AIR);
+
+        ShipmentDetails shipmentDetails2 = ShipmentDetails.builder().shipmentId("AIR-CAN-00001").
+                transportMode(TRANSPORT_MODE_AIR).jobType("FCT").
+                direction(Constants.DIRECTION_EXP).receivingBranch(1L).houseBill("ABCD").
+                consolidationList(new HashSet<>(Collections.singletonList(consolidationDetails1))).build();
+
+        ShipmentDetails oldEntity = ShipmentDetails.builder().shipmentId("AIR-CAN-00001").
+                transportMode(TRANSPORT_MODE_AIR).jobType("FCT").
+                direction(Constants.DIRECTION_EXP).receivingBranch(2L).build();
+
+        QuartzJobInfo quartzJobInfo = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
+        quartzJobInfo.setId(1L);
+        when(quartzJobInfoDao.findByJobFilters(any(), any(), any())).thenReturn(Optional.of(quartzJobInfo));
+
+        doNothing().when(consolidationService).triggerAutomaticTransfer(any(),any(),any());
+        shipmentService.triggerAutomaticTransfer(shipmentDetails2, oldEntity, false);
+
+        verify(consolidationService, times(1)).triggerAutomaticTransfer(any(), any(), any());
+    }
+
+    @Test
     void testPopulateOriginDestinationAgentDetailsForBookingShipment_NoConsolidationList() {
         ShipmentDetails shipmentDetails1 = new ShipmentDetails();
         shipmentDetails1.setConsolidationList(Collections.emptySet());
@@ -9960,6 +10011,7 @@ ShipmentServiceTest extends CommonMocks {
         newShipmentDetails.setDirection(DIRECTION_EXP);
         ConsolidationDetails consolidationDetails1 = testConsol;
         consolidationDetails1.setInterBranchConsole(true);
+        consolidationDetails1.setReceivingBranch(2L);
         consolidationDetails1.setShipmentsList(new HashSet<>(Collections.singletonList(newShipmentDetails)));
         newShipmentDetails.setConsolidationList(new HashSet<>(Collections.singletonList(consolidationDetails1)));
 
@@ -9989,11 +10041,13 @@ ShipmentServiceTest extends CommonMocks {
         oldEntity.setReceivingBranch(1L);
         oldEntity.setConsolidationList(new HashSet<>(Collections.singletonList(consolidationDetails1)));
 
+        when(networkTransferDao.getInterConsoleNTList(any(), any())).thenReturn(Collections.singletonList(NetworkTransfer.builder().build()));
+
         // Act
         shipmentService.createOrUpdateNetworkTransferEntity(newShipmentDetails, oldEntity);
 
         // Verify old tenant IDs processing for removal
-        verify(networkTransferService, times(1)).deleteValidNetworkTransferEntity(any(), any(), any());
+        verify(networkTransferService, times(1)).deleteNetworkTransferEntity(any());
     }
 
     @Test
@@ -10008,6 +10062,7 @@ ShipmentServiceTest extends CommonMocks {
         ConsolidationDetails consolidationDetails1 = testConsol;
         consolidationDetails1.setInterBranchConsole(true);
         consolidationDetails1.setShipmentsList(new HashSet<>(Collections.singletonList(newShipmentDetails)));
+        consolidationDetails1.setReceivingBranch(1L);
         newShipmentDetails.setConsolidationList(new HashSet<>(Collections.singletonList(consolidationDetails1)));
 
         ShipmentDetails oldEntity = new ShipmentDetails();
@@ -10033,6 +10088,7 @@ ShipmentServiceTest extends CommonMocks {
         ConsolidationDetails consolidationDetails1 = testConsol;
         consolidationDetails1.setInterBranchConsole(true);
         consolidationDetails1.setShipmentsList(new HashSet<>(Collections.singletonList(newShipmentDetails)));
+        consolidationDetails1.setReceivingBranch(1L);
         newShipmentDetails.setConsolidationList(new HashSet<>(Collections.singletonList(consolidationDetails1)));
 
         ShipmentDetails oldEntity = new ShipmentDetails();
@@ -10046,7 +10102,7 @@ ShipmentServiceTest extends CommonMocks {
         shipmentService.createOrUpdateNetworkTransferEntity(newShipmentDetails, oldEntity);
 
         // Verify old tenant IDs processing for removal
-        verify(networkTransferDao, times(1)).deleteAndLog(any(), any());
+        verify(networkTransferService, times(1)).deleteNetworkTransferEntity(any());
     }
 
     @Test
@@ -10077,7 +10133,38 @@ ShipmentServiceTest extends CommonMocks {
         shipmentService.createOrUpdateNetworkTransferEntity(newShipmentDetails, oldEntity);
 
         // Verify old tenant IDs processing for removal
-        verify(networkTransferDao, times(1)).deleteByIdsAndLog(any());
+        verify(networkTransferDao, times(1)).save(any());
+        verify(networkTransferService, times(1)).deleteNetworkTransferEntity(any());
+    }
+
+    @Test
+    void testCreateOrUpdateNetworkTransferEntity_EligibleForNetworkTransfer_InterConsole4() {
+        // Arrange
+        ShipmentDetails newShipmentDetails = new ShipmentDetails();
+        newShipmentDetails.setId(1L);
+        newShipmentDetails.setReceivingBranch(2L);
+        newShipmentDetails.setDirection("Inbound");
+        newShipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        newShipmentDetails.setJobType(SHIPMENT_TYPE_STD);
+        newShipmentDetails.setDirection(DIRECTION_EXP);
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setInterBranchConsole(true);
+        consolidationDetails1.setReceivingBranch(2L);
+        consolidationDetails1.setShipmentsList(new HashSet<>(Collections.singletonList(newShipmentDetails)));
+        newShipmentDetails.setConsolidationList(new HashSet<>(Collections.singletonList(consolidationDetails1)));
+
+        ShipmentDetails oldEntity = new ShipmentDetails();
+        oldEntity.setId(1L);
+        oldEntity.setReceivingBranch(1L);
+        oldEntity.setConsolidationList(new HashSet<>(Collections.singletonList(consolidationDetails1)));
+
+        when(networkTransferDao.getInterConsoleNTList(any(), any())).thenReturn(null);
+
+        // Act
+        shipmentService.createOrUpdateNetworkTransferEntity(newShipmentDetails, oldEntity);
+
+        // Verify old tenant IDs processing for removal
+        verify(networkTransferService, times(1)).bulkProcessInterConsoleNte(any());
     }
 
 

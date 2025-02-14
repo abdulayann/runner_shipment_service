@@ -95,11 +95,6 @@ public interface IConsolidationRepository extends MultiTenancyRepository<Consoli
     @Query(value = "Update triangulation_partner_consolidation set is_accepted = ?3 where consolidation_id = ?1 AND partner_id = ?2", nativeQuery = true)
     void updateIsAcceptedTriangulationPartner(Long consolidationId, Long triangulationPartner, Boolean isAccepted);
 
-
-    @Modifying @Transactional
-    @Query(value = "Update consolidation_details set transfer_status = ?2 where id = ?1", nativeQuery = true)
-    void updateTransferStatus(Long id, String transferStatus);
-
     @Query(value = "SELECT consol.id as id,consol.createdBy as createdBy, consol.consolidationNumber as consolidationNumber, consol.consolidationType as consolidationType, consol.transportMode as transportMode, consol.shipmentType as shipmentType, consol.isDomestic as isDomestic, consol.createdBy as createdBy, consol.payment as payment, consol.bookingCutoff as bookingCutoff, consol.estimatedTerminalCutoff as estimatedTerminalCutoff, consol.terminalCutoff as terminalCutoff, consol.shipInstructionCutoff as shipInstructionCutoff, consol.hazardousBookingCutoff as hazardousBookingCutoff, consol.verifiedGrossMassCutoff as verifiedGrossMassCutoff,"
         + "consol.reeferCutoff as reeferCutoff, consol.referenceNumber as referenceNumber, consol.bookingStatus as bookingStatus, consol.bookingNumber as bookingNumber, consol.mawb as mawb, carrier.eta as eta,carrier.ata as ata,carrier.etd as etd,carrier.atd as atd,carrier.voyage as voyage,carrier.shippingLine as shippingLine FROM ConsolidationDetails consol "
         + " LEFT JOIN consol.carrierDetails carrier ")
@@ -138,5 +133,8 @@ public interface IConsolidationRepository extends MultiTenancyRepository<Consoli
         AND csm.is_attachment_done = 'True'
     """, nativeQuery = true)
     List<IShipmentContainerLiteResponse> findShipmentDetailsWithContainersByConsolidationIds(@Param("consolidationIds") List<Long> consolidationIds);
+
+    @Query(value = "SELECT * FROM consolidation_details WHERE guid = ?1", nativeQuery = true)
+    Optional<ConsolidationDetails> findConsolidationByGuidWithQuery(UUID guid);
 
 }

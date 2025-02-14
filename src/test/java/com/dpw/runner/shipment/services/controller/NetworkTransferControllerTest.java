@@ -18,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -89,5 +90,10 @@ class NetworkTransferControllerTest {
         var responseEntity = networkTransferController.requestForReassign(ReassignRequest.builder().build());
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
-
+    @Test
+    void fetchEntityStatus() {
+        when(networkTransferService.fetchEntityStatus(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        var responseEntity = networkTransferController.fetchEntityStatus(UUID.randomUUID().toString());
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
 }

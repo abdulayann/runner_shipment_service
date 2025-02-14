@@ -1,0 +1,2 @@
+update validations set schema_validator = '{"properties": {"bookingDate": {"required": true}, "bookingNumber": {"required": true}, "bookingStatus": {"enum": ["PENDING_FOR_KYC", "PENDING_FOR_CREDIT_LIMIT", "READY_FOR_SHIPMENT", "PENDING_FOR_REVIEW", "CANCELLED", "REJECTED"], "required": true}, "transportType": {"required": true}}}'
+where entity = 'BOOKING';

@@ -145,4 +145,18 @@ public class NetworkTransferDao implements INetworkTransferDao {
     public List<NetworkTransfer> findByEntityIdAndEntityTypeAndIsInterBranchEntity(List<Long> entityIds, String entityType, Boolean isInterBranchEntity, List<String> status) {
         return networkTransferRepository.findByEntityIdAndEntityTypeAndIsInterBranchEntity(entityIds, entityType, isInterBranchEntity, status);
     }
+
+    @Override
+    public String findStatusByEntityIdAndEntityTypeAndTenantId(Long entityId, String entityType, Integer tenantId) {
+        return networkTransferRepository.findStatusByEntityIdAndEntityTypeAndTenantId(entityId, entityType, tenantId);
+    }
+
+    @Override
+    public String findByEntityGuidAndTenantId(UUID guid, Integer tenantId) {
+        return networkTransferRepository.findByEntityGuidAndTenantId(guid, tenantId);
+    }
+
+    public List<NetworkTransfer> findByEntityGuids(List<UUID> guid) {
+        return networkTransferRepository.findByEntityGuids(guid);
+    }
 }

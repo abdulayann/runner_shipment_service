@@ -29,6 +29,7 @@ import javax.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
@@ -566,10 +567,6 @@ public class ShipmentDetails extends MultiTenancy {
     @Column(name = "is_network_file")
     private Boolean isNetworkFile;
 
-    @Column(name = "transfer_status")
-    @Enumerated(EnumType.STRING)
-    private NetworkTransferStatus transferStatus;
-
     @Column(name = "is_receiving_branch_manually")
     private Boolean isReceivingBranchManually;
 
@@ -599,5 +596,18 @@ public class ShipmentDetails extends MultiTenancy {
     @Column(name = "ocean_bl_number")
     @Size(max = 64)
     private String oceanBlNumber;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ShipmentDetails that = (ShipmentDetails) o;
+        return Objects.equals(getId(), that.getId());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getId());
+    }
 
 }

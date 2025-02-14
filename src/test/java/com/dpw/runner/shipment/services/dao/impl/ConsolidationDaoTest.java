@@ -653,9 +653,4 @@ class ConsolidationDaoTest extends CommonMocks {
         assertEquals(Optional.of(consolidationDetails), responseEntity);
     }
 
-    @Test
-    void testUpdateTransferStatus() {
-        assertDoesNotThrow(() -> consolidationsDao.updateTransferStatus(1L, NetworkTransferStatus.TRANSFERRED));
-    }
-
 }

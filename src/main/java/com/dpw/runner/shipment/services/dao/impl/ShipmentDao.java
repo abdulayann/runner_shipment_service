@@ -16,7 +16,6 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
-import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -735,12 +734,6 @@ public class ShipmentDao implements IShipmentDao {
     public void updateIsAcceptedTriangulationPartner(Long shipmentId, Long triangulationPartner, Boolean isAccepted) {
         shipmentRepository.updateIsAcceptedTriangulationPartner(shipmentId, triangulationPartner, isAccepted);
     }
-
-    @Override
-    @Transactional
-    public void updateTransferStatus(List<Long> id, NetworkTransferStatus transferStatus) {
-        shipmentRepository.updateTransferStatus(id, transferStatus.name());
-    }
     
     @Override
     @Transactional
@@ -752,5 +745,16 @@ public class ShipmentDao implements IShipmentDao {
     @Transactional
     public Optional<ShipmentDetails> findShipmentByGuidWithQuery(UUID guid) {
         return shipmentRepository.findShipmentByGuidWithQuery(guid);
+    }
+
+    @Override
+    @Transactional
+    public int updateShipmentsBookingNumber(List<UUID> guids, String bookingNumber) {
+        return shipmentRepository.updateShipmentsBookingNumber(guids, bookingNumber);
+    }
+
+    @Override
+    public Integer findReceivingByGuid(UUID guid) {
+        return shipmentRepository.findReceivingByGuid(guid);
     }
 }

@@ -143,7 +143,6 @@ public class ConsolidationDetailsRequest extends CommonRequest implements IRunne
     private LocalDateTime latDate;
     private String department;
     private Boolean isNetworkFile;
-    private String transferStatus;
     private Boolean isReceivingBranchManually;
     private Boolean isTransferredToReceivingBranch;
 }

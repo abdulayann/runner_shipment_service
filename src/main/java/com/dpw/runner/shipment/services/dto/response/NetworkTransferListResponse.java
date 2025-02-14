@@ -32,4 +32,5 @@ public class NetworkTransferListResponse implements IRunnerResponse {
     private Boolean isInterBranchEntity;
     private Map<String, String> tenantMasterData;
     private Map<String, String> masterData;
+    private Boolean isHidden;
 }

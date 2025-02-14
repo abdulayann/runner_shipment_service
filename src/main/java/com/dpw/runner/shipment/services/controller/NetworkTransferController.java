@@ -88,4 +88,11 @@ public class NetworkTransferController {
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, response = NetworkTransferController.MyResponseClass.class, message = NetworkTransferConstants.FETCH_ENTITY_STATUS_SUCCESSFUL)})
+    @GetMapping(NetworkTransferConstants.SHIPMENT_ENTITY_STATUS)
+    public ResponseEntity<IRunnerResponse> fetchEntityStatus(@ApiParam(value = NetworkTransferConstants.ENTITY_GUID) @RequestParam(required = true) String guid) {
+        CommonGetRequest request = CommonGetRequest.builder().guid(guid).build();
+        return networkTransferService.fetchEntityStatus(request);
+    }
 }
