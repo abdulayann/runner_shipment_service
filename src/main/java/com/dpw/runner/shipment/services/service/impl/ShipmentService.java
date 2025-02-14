@@ -19,6 +19,9 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerPartialListRespo
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.config.LocalTimeZoneHelper;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerUpdateFileEntitiesRequest;
+import com.dpw.runner.shipment.services.document.response.DocumentManagerResponse;
+import com.dpw.runner.shipment.services.document.service.IDocumentManagerService;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.mapper.AttachListShipmentMapper;
@@ -83,6 +86,7 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.http.auth.AuthenticationException;
+import org.apache.poi.ss.formula.functions.T;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.jsoup.Jsoup;
@@ -353,6 +357,9 @@ public class ShipmentService implements IShipmentService {
 
     @Autowired
     private INotificationDao notificationDao;
+
+    @Autowired
+    private IDocumentManagerService documentManagerService;
 
     @Value("${include.master.data}")
     private Boolean includeMasterData;
@@ -789,7 +796,34 @@ public class ShipmentService implements IShipmentService {
             throw new ValidationException(e.getMessage());
         }
         createAutomatedEvents(shipmentDetails, EventConstants.BKCR, LocalDateTime.now(), null);
-        return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class));
+        ShipmentDetailsResponse shipmentDetailsResponse = jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class);
+        CompletableFuture.runAsync(masterDataUtils.withMdc(() -> addFilesFromBookingToShipment(shipmentDetailsResponse.getGuid().toString(), shipmentDetailsResponse.getCustomerBookingGuid().toString())), executorService);
+        return ResponseHelper.buildSuccessResponse(shipmentDetailsResponse);
+    }
+
+    public DocumentManagerResponse<T> addFilesFromBookingToShipment(String shipmentGuid, String bookingGuid) {
+        try {
+            List<DocumentManagerUpdateFileEntitiesRequest.UpdateFileRequest> updateFileRequests = new ArrayList<>();
+            updateFileRequests.add(DocumentManagerUpdateFileEntitiesRequest.UpdateFileRequest.builder()
+                    .source(DocumentManagerUpdateFileEntitiesRequest.EntityData.builder()
+                            .entityKey(bookingGuid)
+                            .entityType(Bookings)
+                            .build())
+                    .entitiesToAttach(List.of(DocumentManagerUpdateFileEntitiesRequest.EntityData.builder()
+                            .entityKey(shipmentGuid)
+                            .entityType(Shipments)
+                            .build()))
+                    .build());
+
+            var saveResponse = documentManagerService.updateFileEntities(DocumentManagerUpdateFileEntitiesRequest.builder()
+                    .filesToUpdate(updateFileRequests)
+                    .build());
+            return saveResponse;
+        } catch (Exception ex) {
+            log.error("CR-ID {} || Error in addFilesFromBookingToShipment: {} with Shipment Guid as: {}",
+                    LoggerHelper.getRequestIdFromMDC(), ex.getLocalizedMessage(), shipmentGuid);
+        }
+        return null;
     }
 
     @Override
@@ -1127,6 +1161,7 @@ public class ShipmentService implements IShipmentService {
         }
 
         shipmentRequest.setContainsHazardous(customerBookingRequest.getIsDg());
+        shipmentRequest.setCustomerBookingGuid(customerBookingRequest.getGuid());
         return this.createFromBooking(CommonRequestModel.buildRequest(shipmentRequest));
     }
 
