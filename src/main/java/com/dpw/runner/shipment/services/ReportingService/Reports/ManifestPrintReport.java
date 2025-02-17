@@ -78,12 +78,12 @@ public class ManifestPrintReport extends IReport {
         var containersList = consol.getContainersList();
         long totalPackages = 0L;
         if (containersList != null && !containersList.isEmpty()) {
-          totalPackages =
-              containersList.stream()
-                  .filter(Objects::nonNull) // Filter out null values
-                  .map(c -> IsStringNullOrEmpty(c.getPacks()) ? 0 : Long.parseLong(c.getPacks()))
-                  .reduce(Long::sum)
-                  .orElse(0L); // Default value if the stream is empty
+            totalPackages =
+                    containersList.stream()
+                            .filter(Objects::nonNull) // Filter out null values
+                            .map(c -> IsStringNullOrEmpty(c.getPacks()) ? 0 : Long.parseLong(c.getPacks()))
+                            .reduce(Long::sum)
+                            .orElse(0L); // Default value if the stream is empty
         }
 
         if (totalPackages == 0) {
@@ -131,7 +131,7 @@ public class ManifestPrintReport extends IReport {
             dictionary.put(ReportConstants.EXPORT_AGENT_FREETEXT, importAgentFreeTextAddress);
             dictionary.put(ReportConstants.IMPORT_AGENT_FREETEXT, exportAgentFreeTextAddress);
             UnlocationsResponse depart = consol.getDepartureDetails() == null ? null : getUNLocRow(consol.getDepartureDetails().getLastForeignPort());
-            if(depart != null) {
+            if (depart != null) {
                 dictionary.put(ReportConstants.LAST_FOREIGN_PORT_NAME, ReportHelper.getCityCountry(depart.getNameWoDiacritics(), depart.getCountry()));
             }
         } else {

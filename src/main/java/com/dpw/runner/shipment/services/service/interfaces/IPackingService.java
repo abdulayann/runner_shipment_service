@@ -30,6 +30,8 @@ public interface IPackingService extends ICommonService {
     PackSummaryResponse calculatePackSummary(List<Packing> packingList, String transportMode, String containerCategory, ShipmentMeasurementDetailsDto dto) throws RunnerException;
 
     ResponseEntity<IRunnerResponse> autoCalculatePacksData(CommonRequestModel commonRequestModel);
+
     PackSummaryResponse calculatePacksUtilisationForConsolidation(CalculatePackUtilizationRequest calculatePackUtilizationRequest) throws RunnerException;
+
     void savePackUtilisationCalculationInConsole(CalculatePackUtilizationRequest calculatePackUtilizationRequest);
 }

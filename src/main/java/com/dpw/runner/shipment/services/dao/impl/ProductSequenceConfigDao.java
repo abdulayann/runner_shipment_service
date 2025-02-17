@@ -31,16 +31,16 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCo
 @Slf4j
 public class ProductSequenceConfigDao implements IProductSequenceConfigDao {
 
-    @Autowired
-    private IProductSequenceConfigRepository productSequenceConfigRepository;
     @PersistenceContext
     EntityManager entityManager;
+    @Autowired
+    private IProductSequenceConfigRepository productSequenceConfigRepository;
 
     @Override
     public ProductSequenceConfig save(ProductSequenceConfig productSequenceConfig) {
         long start = System.currentTimeMillis();
-        productSequenceConfig =  productSequenceConfigRepository.save(productSequenceConfig);
-        log.info("CR-ID {} || {} for event {} | Time: {} ms", LoggerHelper.getRequestIdFromMDC(),  LoggerEvent.TIME_TAKEN, LoggerEvent.PRODUCT_SEQ_SAVE, System.currentTimeMillis() - start);
+        productSequenceConfig = productSequenceConfigRepository.save(productSequenceConfig);
+        log.info("CR-ID {} || {} for event {} | Time: {} ms", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.TIME_TAKEN, LoggerEvent.PRODUCT_SEQ_SAVE, System.currentTimeMillis() - start);
         return productSequenceConfig;
     }
 
@@ -53,7 +53,7 @@ public class ProductSequenceConfigDao implements IProductSequenceConfigDao {
     public List<ProductSequenceConfig> saveAll(List<ProductSequenceConfig> productSequenceConfigList) {
         long start = System.currentTimeMillis();
         productSequenceConfigList = productSequenceConfigRepository.saveAll(productSequenceConfigList);
-        log.info("CR-ID {} || {} for event {} | Time: {} ms", LoggerHelper.getRequestIdFromMDC(),  LoggerEvent.TIME_TAKEN, LoggerEvent.PRODUCT_SEQ_SAVE_ALL, System.currentTimeMillis() - start);
+        log.info("CR-ID {} || {} for event {} | Time: {} ms", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.TIME_TAKEN, LoggerEvent.PRODUCT_SEQ_SAVE_ALL, System.currentTimeMillis() - start);
         return productSequenceConfigList;
     }
 
@@ -120,13 +120,13 @@ public class ProductSequenceConfigDao implements IProductSequenceConfigDao {
         List<ProductSequenceConfig> responseProductSequenceConfig = new ArrayList<>();
         try {
             Map<UUID, ProductSequenceConfig> hashMap = new HashMap<>();
-            if(oldProductSequenceConfig != null && oldProductSequenceConfig.size() > 0)
+            if (oldProductSequenceConfig != null && oldProductSequenceConfig.size() > 0)
                 hashMap = oldProductSequenceConfig.stream().collect(Collectors.toMap(ProductSequenceConfig::getGuid, Function.identity()));
             List<ProductSequenceConfig> productSequenceConfigRequestList = new ArrayList<>();
             if (productSequenceConfigList != null && productSequenceConfigList.size() != 0) {
                 for (ProductSequenceConfig request : productSequenceConfigList) {
                     UUID guid = request.getGuid();
-                    if(hashMap.containsKey(guid)) {
+                    if (hashMap.containsKey(guid)) {
                         request.setId(hashMap.get(guid).getId());
                         hashMap.remove(guid);
                     }
@@ -174,11 +174,11 @@ public class ProductSequenceConfigDao implements IProductSequenceConfigDao {
     public ProductSequenceConfig findAndLock(Specification<ProductSequenceConfig> spec, Pageable pageable) {
         Page<ProductSequenceConfig> page = findAll(spec, pageable);
         ProductSequenceConfig result = null;
-        if(!page.isEmpty()) {
+        if (!page.isEmpty()) {
             // Acquire lock on this result row
             result = page.getContent().get(0);
             entityManager.lock(result, LockModeType.PESSIMISTIC_WRITE, Map.ofEntries(
-                Map.entry("javax.persistence.lock.timeout", 2000))
+                    Map.entry("javax.persistence.lock.timeout", 2000))
             );
         }
         return result;

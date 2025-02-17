@@ -9,11 +9,11 @@ import com.dpw.runner.shipment.services.dao.interfaces.IQuartzJobInfoDao;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse.FileTransferConfigurations;
 import com.dpw.runner.shipment.services.entity.QuartzJobInfo;
+import com.dpw.runner.shipment.services.entity.enums.FileTransferCriteriaFields;
 import com.dpw.runner.shipment.services.entity.enums.PrePostTrigger;
 import com.dpw.runner.shipment.services.entity.enums.TimeUnit;
 import com.dpw.runner.shipment.services.service.interfaces.IQuartzJobInfoService;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
-import com.dpw.runner.shipment.services.entity.enums.FileTransferCriteriaFields;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,7 +37,7 @@ public class QuartzJobInfoService implements IQuartzJobInfoService {
     QuartzJobInfoService(QuartzJobService quartzJobService, QuartzJobInfoDao quartzJobInfoDao, CommonUtils commonUtils) {
         this.quartzJobService = quartzJobService;
         this.quartzJobInfoDao = quartzJobInfoDao;
-        this.commonUtils=commonUtils;
+        this.commonUtils = commonUtils;
     }
 
     public QuartzJobResponse createSimpleJob(QuartzJobInfo jobInfo) {
@@ -45,7 +45,7 @@ public class QuartzJobInfoService implements IQuartzJobInfoService {
         long startTimeForQuartz = System.currentTimeMillis();
         QuartzJobResponse quartzJobResponse = quartzJobService.scheduleOneTimeJob(jobInfo.getId().toString(), SimpleJob.class, startDate);
         log.info(QuartzJobInfoConstants.TIME_TAKE_TO_SCHEDULE_JOB, jobInfo.getId().toString(),
-                System.currentTimeMillis()-startTimeForQuartz);
+                System.currentTimeMillis() - startTimeForQuartz);
         return quartzJobResponse;
     }
 
@@ -54,7 +54,7 @@ public class QuartzJobInfoService implements IQuartzJobInfoService {
         long startTimeForQuartz = System.currentTimeMillis();
         QuartzJobResponse quartzJobResponse = quartzJobService.updateOneTimeJob(jobInfo.getId().toString(), startDate);
         log.info(QuartzJobInfoConstants.TIME_TAKE_TO_SCHEDULE_JOB, jobInfo.getId().toString(),
-                System.currentTimeMillis()-startTimeForQuartz);
+                System.currentTimeMillis() - startTimeForQuartz);
         return quartzJobResponse;
     }
 
@@ -64,7 +64,7 @@ public class QuartzJobInfoService implements IQuartzJobInfoService {
         quartzJobInfoDao.deleteById(jobId);
         QuartzJobResponse quartzJobResponse = quartzJobService.deleteJob(jobId.toString());
         log.info(QuartzJobInfoConstants.TIME_TAKE_TO_SCHEDULE_JOB, jobId,
-                System.currentTimeMillis()-startTimeForQuartz);
+                System.currentTimeMillis() - startTimeForQuartz);
         return quartzJobResponse;
     }
 
@@ -82,8 +82,8 @@ public class QuartzJobInfoService implements IQuartzJobInfoService {
         for (var fileTransferConfiguration : fileTransferConfigurations) {
             LocalDateTime newTime = calculateJobTime(fileTransferConfiguration, eta, etd, ata, atd, finalMap);
             if (newTime != null && (jobDateTime == null || newTime.isBefore(jobDateTime))) {
-                    jobDateTime = newTime;
-                }
+                jobDateTime = newTime;
+            }
         }
 
         return jobDateTime;
@@ -104,7 +104,7 @@ public class QuartzJobInfoService implements IQuartzJobInfoService {
                                            LocalDateTime etd, LocalDateTime ata, LocalDateTime atd,
                                            HashMap<String, HashMap<Integer, LocalDateTime>> finalMap) {
         String transportMode = fileTransferConfiguration.getTransportMode();
-        if (finalMap.containsKey(transportMode) && finalMap.get(transportMode).get(fileTransferConfiguration.getCriteriaField())!=null) {
+        if (finalMap.containsKey(transportMode) && finalMap.get(transportMode).get(fileTransferConfiguration.getCriteriaField()) != null) {
             return null;
         }
 
@@ -145,7 +145,7 @@ public class QuartzJobInfoService implements IQuartzJobInfoService {
         return "hour".equalsIgnoreCase(intervalUnit) ? ChronoUnit.HOURS : ChronoUnit.DAYS;
     }
 
-    public boolean isJobWithNamePresent(String jobName){
+    public boolean isJobWithNamePresent(String jobName) {
         return quartzJobService.isJobWithNamePresent(jobName);
     }
 

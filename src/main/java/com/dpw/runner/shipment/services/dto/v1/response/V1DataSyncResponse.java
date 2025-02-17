@@ -12,9 +12,8 @@ import lombok.NoArgsConstructor;
 @Builder
 public class V1DataSyncResponse {
 
-    @JsonProperty("IsSuccess")
-    private Boolean isSuccess;
-
     @JsonProperty("Error")
     public Object error;
+    @JsonProperty("IsSuccess")
+    private Boolean isSuccess;
 }

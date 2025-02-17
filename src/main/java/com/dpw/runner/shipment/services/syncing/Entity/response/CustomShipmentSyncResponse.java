@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.syncing.Entity.response;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.syncing.Entity.*;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -115,7 +116,6 @@ public class CustomShipmentSyncResponse implements IRunnerResponse {
     private LocalDateTime ExpiryDate;
     @JsonProperty("OnBoardDate")
     private LocalDateTime OnBoardDate;
-
 
 
     // %%%%%%%%%%%%%% Custom shipment properties from here %%%%%%%%%%%%%%%%
@@ -397,13 +397,11 @@ public class CustomShipmentSyncResponse implements IRunnerResponse {
     private String DestinationName;
 
 
-
     // private Integer ShipmentCompletedBy;
     @JsonProperty("ShipmentCompletedOn")
     private LocalDateTime ShipmentCompletedOn;
     @JsonProperty("SourceTenantId")
     private Integer SourceTenantId;
-
 
 
     //Jobs

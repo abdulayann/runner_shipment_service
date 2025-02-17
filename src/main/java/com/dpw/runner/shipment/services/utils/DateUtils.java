@@ -10,8 +10,10 @@ import java.time.format.DateTimeFormatter;
 
 
 public class DateUtils {
-    private DateUtils(){}
-    public static String getDateAsString(LocalDateTime dateTime){
+    private DateUtils() {
+    }
+
+    public static String getDateAsString(LocalDateTime dateTime) {
         DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(Constants.DEFAULT_DATE_FORMAT);
         String formattedDateTime = dateTime.format(dateTimeFormatter);
         return formattedDateTime;
@@ -25,7 +27,7 @@ public class DateUtils {
                 && StringUtils.isNotBlank(tenantTZ)) {
             convertedUserDate = RunnerTimeZoneConvertor.convertToUTC(date, tenantTZ);
         } else {
-            if(StringUtils.isNotBlank(browserTZ))
+            if (StringUtils.isNotBlank(browserTZ))
                 convertedUserDate = RunnerTimeZoneConvertor.convertToUTC(date, browserTZ);
             else
                 convertedUserDate = date;
@@ -41,7 +43,7 @@ public class DateUtils {
                 && StringUtils.isNotBlank(tenantTZ)) {
             convertedUserDate = RunnerTimeZoneConvertor.convertFromUTC(date, tenantTZ);
         } else {
-            if(StringUtils.isNotBlank(browserTZ))
+            if (StringUtils.isNotBlank(browserTZ))
                 convertedUserDate = RunnerTimeZoneConvertor.convertFromUTC(date, browserTZ);
             else
                 convertedUserDate = date;

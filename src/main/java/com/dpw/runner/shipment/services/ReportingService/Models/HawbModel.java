@@ -7,7 +7,7 @@ import com.dpw.runner.shipment.services.entity.Awb;
 import lombok.Data;
 
 @Data
-public class HawbModel implements IDocumentModel{
+public class HawbModel implements IDocumentModel {
     public ShipmentModel shipmentDetails;
     public UsersDto usersDto;
     public Awb awb;

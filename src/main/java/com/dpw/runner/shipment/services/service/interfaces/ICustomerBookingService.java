@@ -11,6 +11,7 @@ import java.util.concurrent.CompletableFuture;
 
 public interface ICustomerBookingService {
     ResponseEntity<IRunnerResponse> platformCreateBooking(CommonRequestModel commonRequestModel) throws RunnerException;
+
     ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) throws RunnerException;
 
     ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException;
@@ -24,7 +25,9 @@ public interface ICustomerBookingService {
     ResponseEntity<IRunnerResponse> cancel(CommonRequestModel commonRequestModel) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException;
 
     ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel);
+
     ResponseEntity<IRunnerResponse> checkCreditLimitFromFusion(CommonRequestModel commonRequestModel) throws RunnerException;
+
     ResponseEntity<IRunnerResponse> retryForBilling(CommonRequestModel commonRequestModel);
 
     ResponseEntity<IRunnerResponse> cloneBooking(CommonRequestModel commonRequestModel);

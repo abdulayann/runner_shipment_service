@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.config;
 import com.dpw.runner.shipment.services.utils.Generated;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.stereotype.Component;
+
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -31,7 +32,6 @@ public class MultiFormatLocalDateTimeConverter implements Converter<String, Loca
         formatters.add(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSX"));
         // Add more formats as needed
     }
-
 
 
     @Override

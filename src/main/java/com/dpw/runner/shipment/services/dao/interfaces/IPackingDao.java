@@ -23,6 +23,7 @@ public interface IPackingDao {
     List<Packing> updateEntityFromShipment(List<Packing> packingList, Long shipmentId, List<Long> deleteContIds) throws RunnerException;
 
     List<Packing> saveEntityFromShipment(List<Packing> packings, Long shipmentId);
+
     List<Packing> saveEntityFromShipment(List<Packing> packings, Long shipmentId, Map<Long, Packing> oldEntityMap);
 
     List<Packing> saveEntityFromBooking(List<Packing> packings, Long bookindId);
@@ -30,9 +31,11 @@ public interface IPackingDao {
     List<Packing> updateEntityFromBooking(List<Packing> packings, Long bookingId) throws RunnerException;
 
     List<Packing> updateEntityFromConsole(List<Packing> packingList, Long consolidationId) throws RunnerException;
+
     List<Packing> updateEntityFromConsole(List<Packing> packingList, Long consolidationId, List<Packing> oldEntityList) throws RunnerException;
 
     List<Packing> saveEntityFromConsole(List<Packing> packings, Long consolidationId);
+
     List<Packing> saveEntityFromConsole(List<Packing> packings, Long consolidationId, Map<Long, Packing> oldEntityMap);
 
     List<Packing> getAllPackings();
@@ -46,5 +49,6 @@ public interface IPackingDao {
     List<Packing> updateEntityFromShipment(List<Packing> packingList, Long shipmentId, List<Packing> oldEntityList, List<Packing> oldConsoleEntityList, Set<Containers> containers, Map<UUID, String> map) throws RunnerException;
 
     List<Packing> findByConsolidationId(Long consolidationId);
+
     List<Packing> findByContainerIdIn(List<Long> containerIds);
 }

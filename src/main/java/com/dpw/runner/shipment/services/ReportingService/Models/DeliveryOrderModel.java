@@ -11,9 +11,8 @@ import lombok.Data;
 import java.util.List;
 
 @Data
-public class DeliveryOrderModel implements IDocumentModel{
+public class DeliveryOrderModel implements IDocumentModel {
     public ShipmentModel shipmentDetails;
-    private List<ShipmentContainers> containers;
     public ConsolidationModel consolidationDetails;
     public UsersDto usersDto;
     public String paymentTerms;
@@ -22,4 +21,5 @@ public class DeliveryOrderModel implements IDocumentModel{
     public ShipmentSettingsDetails shipmentSettingsDetails;
     public TenantModel tenantModel;
     public Long transportInstructionId;
+    private List<ShipmentContainers> containers;
 }

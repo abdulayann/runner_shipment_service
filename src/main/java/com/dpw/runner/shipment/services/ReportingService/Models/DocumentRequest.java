@@ -12,11 +12,11 @@ public class DocumentRequest implements IRunnerRequest {
     @Data
     public static class Options {
 
+        private String type = "pdf";
+        private boolean upload = false;
         public Options() {
             type = "pdf";
             upload = false;
         }
-        private String type = "pdf";
-        private boolean upload = false;
     }
 }

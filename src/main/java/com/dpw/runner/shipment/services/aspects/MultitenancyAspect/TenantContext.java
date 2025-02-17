@@ -1,8 +1,10 @@
 package com.dpw.runner.shipment.services.aspects.MultitenancyAspect;
 
 public class TenantContext {
-    private TenantContext(){}
-    private static ThreadLocal<Integer> currentTenant = new InheritableThreadLocal<>();
+    private static final ThreadLocal<Integer> currentTenant = new InheritableThreadLocal<>();
+
+    private TenantContext() {
+    }
 
     public static Integer getCurrentTenant() {
         if (currentTenant.get() == null) {

@@ -32,11 +32,10 @@ public class ConsTruckwayBillReport extends IReport {
     public IDocumentModel getDocumentModel(Long id) {
         TruckDriverModel truckDriverModel = new TruckDriverModel();
         truckDriverModel.consolidationDetails = getConsolidation(id);
-        if(truckDriverModel.consolidationDetails != null && truckDriverModel.consolidationDetails.getContainersList() != null && !truckDriverModel.consolidationDetails.getContainersList().isEmpty())
-        {
+        if (truckDriverModel.consolidationDetails != null && truckDriverModel.consolidationDetails.getContainersList() != null && !truckDriverModel.consolidationDetails.getContainersList().isEmpty()) {
             truckDriverModel.consolidationDetails.setContainersList(getConsolidationContainers(truckDriverModel.consolidationDetails.getContainersList(), 2));
         }
-        if(truckDriverModel.consolidationDetails != null) {
+        if (truckDriverModel.consolidationDetails != null) {
             List<ShipmentModel> shipments = truckDriverModel.consolidationDetails.getShipmentsList();
 
             if (shipments != null && !shipments.isEmpty()) {
@@ -50,20 +49,19 @@ public class ConsTruckwayBillReport extends IReport {
 
     private List<ContainerModel> getConsolidationContainers(List<ContainerModel> containersList, int decimal) {
         List<ContainerModel> containerModelList = new ArrayList<>();
-        for(var container: containersList)
-        {
+        for (var container : containersList) {
             ContainerModel containerModel = new ContainerModel();
             containerModel.setContainerNumber(container.getContainerNumber());
             containerModel.setSealNumber(container.getSealNumber());
-            containerModel.setGrossWeight(getRoundedBigDecimal(container.getGrossWeight(),decimal, RoundingMode.HALF_UP));
+            containerModel.setGrossWeight(getRoundedBigDecimal(container.getGrossWeight(), decimal, RoundingMode.HALF_UP));
             containerModel.setGrossWeightUnit(container.getGrossWeightUnit());
-            containerModel.setGrossVolume(getRoundedBigDecimal(container.getGrossVolume(),decimal, RoundingMode.HALF_UP));
+            containerModel.setGrossVolume(getRoundedBigDecimal(container.getGrossVolume(), decimal, RoundingMode.HALF_UP));
             containerModel.setGrossVolumeUnit(container.getGrossVolumeUnit());
             containerModel.setContainerCode(container.getContainerCode());
             containerModel.setContainerCount(container.getContainerCount());
-            containerModel.setNetWeight(getRoundedBigDecimal(container.getNetWeight(),decimal, RoundingMode.HALF_UP));
+            containerModel.setNetWeight(getRoundedBigDecimal(container.getNetWeight(), decimal, RoundingMode.HALF_UP));
             containerModel.setNetWeightUnit(container.getNetWeightUnit());
-            containerModel.setMinTemp(getRoundedBigDecimal(container.getMinTemp(),decimal, RoundingMode.HALF_UP));
+            containerModel.setMinTemp(getRoundedBigDecimal(container.getMinTemp(), decimal, RoundingMode.HALF_UP));
             containerModel.setMinTempUnit(container.getMinTempUnit());
             containerModel.setDescriptionOfGoods(container.getDescriptionOfGoods());
             containerModel.setCarrierSealNumber(container.getCarrierSealNumber());

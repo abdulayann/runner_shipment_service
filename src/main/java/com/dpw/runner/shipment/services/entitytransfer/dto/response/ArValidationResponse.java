@@ -1,10 +1,12 @@
 package com.dpw.runner.shipment.services.entitytransfer.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
+
 import com.dpw.runner.shipment.services.dto.response.TriangulationPartnerResponse;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

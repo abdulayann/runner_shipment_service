@@ -10,8 +10,10 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 
 @Component
 public class PermissionsContext {
-    private PermissionsContext(){}
-    private static ThreadLocal<Map<String,List<String>>> Permissions = new InheritableThreadLocal<>();
+    private static final ThreadLocal<Map<String, List<String>>> Permissions = new InheritableThreadLocal<>();
+
+    private PermissionsContext() {
+    }
 
     public static List<String> getPermissions(String key) {
         return Permissions.get().get(key);
@@ -33,30 +35,30 @@ public class PermissionsContext {
 
         for (String permission : UserPermissions) {
             // Older permission context setting
-            if(permission.endsWith(SHIPMENT_LIST_PERMISSION))
+            if (permission.endsWith(SHIPMENT_LIST_PERMISSION))
                 shipmentListPermission.add(permission);
-            if(permission.endsWith(SHIPMENT_RETRIEVE_PERMISSION))
+            if (permission.endsWith(SHIPMENT_RETRIEVE_PERMISSION))
                 shipmentRetrievePermission.add(permission);
-            if(permission.endsWith(SHIPMENT_CREATE_PERMISSION))
+            if (permission.endsWith(SHIPMENT_CREATE_PERMISSION))
                 shipmentCreatePermission.add(permission);
-            if(permission.endsWith(SHIPMENT_UPDATE_PERMISSION))
+            if (permission.endsWith(SHIPMENT_UPDATE_PERMISSION))
                 shipmentUpdatePermission.add(permission);
-            if(permission.endsWith(CONSOLIDATION_LIST_PERMISSION))
+            if (permission.endsWith(CONSOLIDATION_LIST_PERMISSION))
                 consolidationListPermission.add(permission);
-            if(permission.endsWith(CONSOLIDATION_RETRIEVE_PERMISSION))
+            if (permission.endsWith(CONSOLIDATION_RETRIEVE_PERMISSION))
                 consolidationRetrievePermission.add(permission);
-            if(permission.endsWith(CONSOLIDATION_CREATE_PERMISSION))
+            if (permission.endsWith(CONSOLIDATION_CREATE_PERMISSION))
                 consolidationCreatePermission.add(permission);
-            if(permission.endsWith(CONSOLIDATION_UPDATE_PERMISSION))
+            if (permission.endsWith(CONSOLIDATION_UPDATE_PERMISSION))
                 consolidationUpdatePermission.add(permission);
-            if(permission.equals(CARRIER_BOOKING_CREATE))
+            if (permission.equals(CARRIER_BOOKING_CREATE))
                 carrierBookingCreate.add(CARRIER_BOOKING_CREATE);
-            if(permission.equals(CARRIER_BOOKING_VIEW))
+            if (permission.equals(CARRIER_BOOKING_VIEW))
                 carrierBookingView.add(CARRIER_BOOKING_VIEW);
 
 
             // context setup for new permissions
-            if(permission.startsWith("Operation")) {
+            if (permission.startsWith("Operation")) {
                 // Shipment permissions grouping
                 populatePermissionList(shipmentListPermission, shipmentRetrievePermission, shipmentCreatePermission, shipmentUpdatePermission, shipmentCancelPermission, permission, SHIPMENTS_PERMISSION_KEY);
                 // Consolidation permissions grouping
@@ -83,31 +85,30 @@ public class PermissionsContext {
     }
 
     /**
-     *
-     * @param listPermissionList : ListPermission Collection
+     * @param listPermissionList     : ListPermission Collection
      * @param retrievePermissionList : RetrievePermission Collection
-     * @param createPermissionList : CreatePermission Collection
-     * @param updatePermissionList : UpdatePermission Collection
-     * @param cancelPermissionList : CancelPermission Collection
-     * @param userPermission : current permission that needs to be evaluated
-     * @param entity : SHIPMENT or CONSOLIDATION
+     * @param createPermissionList   : CreatePermission Collection
+     * @param updatePermissionList   : UpdatePermission Collection
+     * @param cancelPermissionList   : CancelPermission Collection
+     * @param userPermission         : current permission that needs to be evaluated
+     * @param entity                 : SHIPMENT or CONSOLIDATION
      */
     private static void populatePermissionList(List<String> listPermissionList, List<String> retrievePermissionList, List<String> createPermissionList, List<String> updatePermissionList, List<String> cancelPermissionList, String userPermission, String entity) {
-        if(userPermission.endsWith(VIEW_PERMISSION) && userPermission.contains(entity)) {
+        if (userPermission.endsWith(VIEW_PERMISSION) && userPermission.contains(entity)) {
             listPermissionList.add(userPermission);
             retrievePermissionList.add(userPermission);
         }
-        if(userPermission.endsWith(MODIFY_PERMISSION) && userPermission.contains(entity)) {
+        if (userPermission.endsWith(MODIFY_PERMISSION) && userPermission.contains(entity)) {
             updatePermissionList.add(userPermission);
             listPermissionList.add(userPermission);
             retrievePermissionList.add(userPermission);
         }
-        if(userPermission.endsWith(CANCEL_PERMISSION) && userPermission.contains(entity)) {
+        if (userPermission.endsWith(CANCEL_PERMISSION) && userPermission.contains(entity)) {
             cancelPermissionList.add(userPermission);
             listPermissionList.add(userPermission);
             retrievePermissionList.add(userPermission);
         }
-        if(userPermission.endsWith(CREATE_PERMISSION) && userPermission.contains(entity)) {
+        if (userPermission.endsWith(CREATE_PERMISSION) && userPermission.contains(entity)) {
             createPermissionList.add(userPermission);
             updatePermissionList.add(userPermission);
             listPermissionList.add(userPermission);
@@ -115,7 +116,7 @@ public class PermissionsContext {
         }
     }
 
-    public static void removePermissions(){
+    public static void removePermissions() {
         Permissions.remove();
     }
 

@@ -1,8 +1,6 @@
 package com.dpw.runner.shipment.services.validator.constants;
 
 public class ValidatorConstants {
-    private ValidatorConstants(){}
-
     public static final String PROPERTIES = "properties";
     public static final String REQUIRED = "required";
     public static final String COMPARE = "compare";
@@ -20,4 +18,6 @@ public class ValidatorConstants {
     public static final String ARRAY_PROPERTIES = "array-properties";
     public static final String UNIQUE = "unique";
     public static final String ERRORS = "errors";
+    private ValidatorConstants() {
+    }
 }

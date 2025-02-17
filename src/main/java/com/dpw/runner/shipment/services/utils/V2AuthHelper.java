@@ -12,10 +12,9 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.SOURC
 @Component
 public class V2AuthHelper {
 
+    public static final String SHIPMENT = "Shipment";
     @Autowired
     private BillingServiceUrlConfig billingServiceUrlConfig;
-
-    public static final String SHIPMENT = "Shipment";
 
     public HttpHeaders getInvoiceServiceXApiKeyHeader() {
         HttpHeaders headers = new HttpHeaders();

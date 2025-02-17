@@ -11,11 +11,18 @@ import java.util.Optional;
 
 public interface IPickupDeliveryDetailsDao {
     PickupDeliveryDetails save(PickupDeliveryDetails pickupDeliveryDetails);
+
     Page<PickupDeliveryDetails> findAll(Specification<PickupDeliveryDetails> spec, Pageable pageable);
+
     Optional<PickupDeliveryDetails> findById(Long id);
+
     void delete(PickupDeliveryDetails pickupDeliveryDetails);
+
     List<PickupDeliveryDetails> updateEntityFromShipment(List<PickupDeliveryDetails> pickupDeliveryDetailsList, Long shipmentId) throws RunnerException;
+
     List<PickupDeliveryDetails> saveEntityFromShipment(List<PickupDeliveryDetails> pickupDeliveryDetailsRequests, Long shipmentId);
+
     List<PickupDeliveryDetails> findByIdIn(List<Long> ids);
+
     List<PickupDeliveryDetails> findByShipmentId(Long shipmentId);
 }

@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.kafka.consumer;
 
-import com.dpw.runner.shipment.services.kafka.dto.SyncKafkaDto;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
+import com.dpw.runner.shipment.services.kafka.dto.SyncKafkaDto;
 import com.dpw.runner.shipment.services.service.interfaces.ISyncService;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
@@ -27,8 +27,7 @@ public class DataSyncConsumer {
             topics = {"#{'${data.sync.kafka.queue}'}"},
             autoStartup = "#{'${data.sync.kafka.autostart}'}",
             groupId = "#{'${data.sync.kafka.subs}'}")
-    public void consume(String message)
-    {
+    public void consume(String message) {
         try {
             log.info("DataSyncConsumer message :" + message);
             SyncKafkaDto obj = objectMapper.readValue(message, SyncKafkaDto.class);

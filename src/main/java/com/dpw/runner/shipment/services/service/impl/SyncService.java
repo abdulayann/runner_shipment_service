@@ -1,7 +1,5 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import com.dpw.runner.shipment.services.kafka.dto.SyncKafkaDto;
-import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataSyncResponse;
@@ -9,6 +7,8 @@ import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.kafka.dto.SyncKafkaDto;
+import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.service.interfaces.ISyncService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.EmailServiceUtility;
@@ -26,6 +26,7 @@ import java.util.List;
 @Slf4j
 public class SyncService implements ISyncService {
 
+    static Integer maxAttempts = 3;
     @Autowired
     private IV1Service v1Service;
     @Autowired
@@ -36,8 +37,7 @@ public class SyncService implements ISyncService {
     private String senderQueue;
     @Autowired
     private JsonHelper jsonHelper;
-    static Integer maxAttempts = 3;
-    private RetryTemplate retryTemplate = RetryTemplate.builder()
+    private final RetryTemplate retryTemplate = RetryTemplate.builder()
             .maxAttempts(maxAttempts)
             .fixedBackoff(1000)
             .retryOn(Exception.class)
@@ -64,6 +64,7 @@ public class SyncService implements ISyncService {
             return ResponseHelper.buildSuccessResponse(response_);
         });
     }
+
     @Override
     public void callSyncAsync(String json, String id, String guid, String entity, HttpHeaders headers) throws RunnerException {
         callSync(json, id, guid, entity, headers);

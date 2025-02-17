@@ -9,13 +9,17 @@ import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
 import java.util.Optional;
+
 @Generated
 public interface ITruckDriverDetailsRepository extends MultiTenancyRepository<TruckDriverDetails> {
     Page<TruckDriverDetails> findAll(Specification<TruckDriverDetails> spec, Pageable pageable);
+
     default Optional<TruckDriverDetails> findById(Long id) {
         Specification<TruckDriverDetails> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("id"), id);
         return findOne(spec);
     }
+
     List<TruckDriverDetails> findAll();
-  List<TruckDriverDetails> findByShipmentId(Long shipmentId);
+
+    List<TruckDriverDetails> findByShipmentId(Long shipmentId);
 }

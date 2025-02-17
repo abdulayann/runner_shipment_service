@@ -47,7 +47,7 @@ public class NPMController {
     public ResponseEntity<IRunnerResponse> fetchContractFromShipment(@RequestBody @Valid ListContractRequest request) {
         String responseMsg;
         try {
-            return  npmService.fetchContractFromShipment(CommonRequestModel.buildRequest(request));
+            return npmService.fetchContractFromShipment(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : NPMConstants.CONTRACT_LIST_FAILED;
@@ -65,7 +65,7 @@ public class NPMController {
     public ResponseEntity<IRunnerResponse> fetchContracts(@RequestBody @Valid ListContractsWithFilterRequest request) {
         String responseMsg;
         try {
-             return  npmService.fetchContracts(CommonRequestModel.buildRequest(request));
+            return npmService.fetchContracts(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : NPMConstants.CONTRACT_LIST_FAILED;
@@ -83,7 +83,7 @@ public class NPMController {
     public ResponseEntity<IRunnerResponse> fetchContract(@RequestBody @Valid ListContractRequest request) {
         String responseMsg;
         try {
-            return  npmService.fetchContract(CommonRequestModel.buildRequest(request));
+            return npmService.fetchContract(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : NPMConstants.CONTRACT_LIST_FAILED;
@@ -130,7 +130,7 @@ public class NPMController {
 
     @PostMapping("/getAwbAutoSell")
     @ExcludeTimeZone
-    public ResponseEntity <IRunnerResponse> getAwbAutoSell(@RequestBody NPMAutoSellRequest request) {
+    public ResponseEntity<IRunnerResponse> getAwbAutoSell(@RequestBody NPMAutoSellRequest request) {
         String responseMsg;
         try {
             return npmService.awbAutoSell(CommonRequestModel.buildRequest(request));
@@ -144,7 +144,7 @@ public class NPMController {
 
     @PostMapping("/getAwbImportRates")
     @ExcludeTimeZone
-    public ResponseEntity <IRunnerResponse> getAwbImportRates(@RequestBody NPMImportRatesRequest request) {
+    public ResponseEntity<IRunnerResponse> getAwbImportRates(@RequestBody NPMImportRatesRequest request) {
         String responseMsg;
         try {
             return npmService.awbImportRates(CommonRequestModel.buildRequest(request));

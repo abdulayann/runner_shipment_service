@@ -16,12 +16,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.Map;
-import java.util.HashMap;
+
+import java.util.*;
 
 @Repository
 @Slf4j
@@ -44,8 +40,8 @@ public class NotificationDao implements INotificationDao {
 
     @Override
     public Notification save(Notification notification) {
-        Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(notification) , Constants.NOTIFICATION_ENTITY, LifecycleHooks.ON_CREATE, false);
-        if (! errors.isEmpty())
+        Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(notification), Constants.NOTIFICATION_ENTITY, LifecycleHooks.ON_CREATE, false);
+        if (!errors.isEmpty())
             throw new ValidationException(String.join(",", errors));
         if (notification.getId() != null) {
             Optional<Notification> oldEntity = findById(notification.getId());
@@ -84,7 +80,7 @@ public class NotificationDao implements INotificationDao {
     }
 
     public List<Notification> saveAll(List<Notification> notificationEntityList) {
-        for(var notificationEntity : notificationEntityList){
+        for (var notificationEntity : notificationEntityList) {
             Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(notificationEntity), Constants.NOTIFICATION_ENTITY, LifecycleHooks.ON_CREATE, false);
             if (!errors.isEmpty())
                 throw new ValidationException(String.join(",", errors));

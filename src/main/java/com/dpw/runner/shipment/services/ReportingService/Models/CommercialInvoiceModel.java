@@ -12,8 +12,8 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class CommercialInvoiceModel extends ShipmentPrintModel implements IDocumentModel{
-    private List<String> packageSummary;
+public class CommercialInvoiceModel extends ShipmentPrintModel implements IDocumentModel {
     public BigDecimal totalAmount;
     public String commercialInvoiceNumber;
+    private List<String> packageSummary;
 }

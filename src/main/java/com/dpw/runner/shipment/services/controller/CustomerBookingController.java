@@ -46,12 +46,8 @@ public class CustomerBookingController {
     private JsonHelper jsonHelper;
     private ICustomerBookingService customerBookingService;
 
-    private class MyResponseClass extends RunnerResponse<CustomerBookingResponse> {}
-    private class MyListResponseClass extends RunnerListResponse<CustomerBookingResponse> {}
-    private class MyCreditLimitResponseClass extends RunnerResponse<CreditLimitResponse> {}
-
     @Autowired
-    public CustomerBookingController(ICRPServiceAdapter crpService, JsonHelper jsonHelper, ICustomerBookingService customerBookingService){
+    public CustomerBookingController(ICRPServiceAdapter crpService, JsonHelper jsonHelper, ICustomerBookingService customerBookingService) {
         this.crpService = crpService;
         this.jsonHelper = jsonHelper;
         this.customerBookingService = customerBookingService;
@@ -74,7 +70,6 @@ public class CustomerBookingController {
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
-
 
     @PostMapping(CustomerBookingConstants.CRP_LIST)
     @ApiResponses(value = {
@@ -182,7 +177,7 @@ public class CustomerBookingController {
             return customerBookingService.cancel(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
-                : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
@@ -228,5 +223,14 @@ public class CustomerBookingController {
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ORDER_ID)
     public ResponseEntity<IRunnerResponse> retrieveByOrderId(@ApiParam(value = CustomerBookingConstants.ORDER_ID, required = true) @RequestParam String orderId) throws RunnerException {
         return customerBookingService.retrieveByOrderId(orderId);
+    }
+
+    private class MyResponseClass extends RunnerResponse<CustomerBookingResponse> {
+    }
+
+    private class MyListResponseClass extends RunnerListResponse<CustomerBookingResponse> {
+    }
+
+    private class MyCreditLimitResponseClass extends RunnerResponse<CreditLimitResponse> {
     }
 }

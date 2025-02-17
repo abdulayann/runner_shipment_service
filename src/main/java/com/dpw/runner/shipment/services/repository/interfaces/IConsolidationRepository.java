@@ -25,20 +25,26 @@ import java.util.Set;
 import java.util.UUID;
 
 
-@Repository @Generated @InterBranchEntity
+@Repository
+@Generated
+@InterBranchEntity
 public interface IConsolidationRepository extends MultiTenancyRepository<ConsolidationDetails> {
     List<ConsolidationDetails> findAll();
+
     Page<ConsolidationDetails> findAll(Specification<ConsolidationDetails> spec, Pageable pageable);
+
     default Optional<ConsolidationDetails> findById(Long id) {
         Specification<ConsolidationDetails> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("id"), id);
         return findOne(spec);
     }
-    default Optional<ConsolidationDetails> findByGuid (UUID guid) {
+
+    default Optional<ConsolidationDetails> findByGuid(UUID guid) {
         Specification<ConsolidationDetails> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("guid"), guid);
         return findOne(spec);
     }
+
     @Query(value = "SELECT * FROM consolidation_details WHERE bol = ?1 and tenant_id = ?2", nativeQuery = true)
-    List<ConsolidationDetails> findByBol (String bol, Integer tenantId);
+    List<ConsolidationDetails> findByBol(String bol, Integer tenantId);
 
     @Query(value = "SELECT * FROM consolidation_details WHERE reference_number = ?1 and tenant_id = ?2", nativeQuery = true)
     List<ConsolidationDetails> findByReferenceNumber(String ref, Integer tenantId);
@@ -50,7 +56,8 @@ public interface IConsolidationRepository extends MultiTenancyRepository<Consoli
     @Query(value = "Update consolidation_details set booking_id = ?2, booking_status = ?3, booking_number = ?4 Where guid = ?1", nativeQuery = true)
     int updateConsoleBookingFields(UUID guid, String bookingId, String bookingStatus, String bookingNumber);
 
-    @Modifying @Transactional
+    @Modifying
+    @Transactional
     @Query(value = "Update consolidation_details set created_by = ?2, created_at = ?3 Where id = ?1", nativeQuery = true)
     void saveCreatedDateAndUser(Long id, String createdBy, LocalDateTime createdDate);
 
@@ -77,61 +84,63 @@ public interface IConsolidationRepository extends MultiTenancyRepository<Consoli
     List<ConsolidationDetails> findBySourceGuid(UUID guid);
 
     @Query(value = "SELECT distinct c.id from ConsolidationDetails c inner join ConsoleShipmentMapping csm " +
-        "on c.id = csm.consolidationId " +
-        "where csm.isAttachmentDone = false and csm.requestedType = ?1")
+            "on c.id = csm.consolidationId " +
+            "where csm.isAttachmentDone = false and csm.requestedType = ?1")
     Page<Long> getIdWithPendingActions(ShipmentRequestedType shipmentRequestedType, Pageable pageable);
 
     @Query(value = "SELECT * FROM consolidation_details WHERE id = ?1", nativeQuery = true)
     Optional<ConsolidationDetails> findConsolidationByIdWithQuery(Long id);
 
-    @Modifying @Transactional
+    @Modifying
+    @Transactional
     @Query(value = "Update consolidation_details set is_transferred_to_receiving_branch = ?2 Where id = ?1", nativeQuery = true)
     void saveIsTransferredToReceivingBranch(Long id, Boolean entityTransferred);
 
     @Query(value = "SELECT id FROM consolidation_details WHERE guid = ?1", nativeQuery = true)
-    Long findIdByGuid (UUID guid);
+    Long findIdByGuid(UUID guid);
 
-    @Modifying @Transactional
+    @Modifying
+    @Transactional
     @Query(value = "Update triangulation_partner_consolidation set is_accepted = ?3 where consolidation_id = ?1 AND partner_id = ?2", nativeQuery = true)
     void updateIsAcceptedTriangulationPartner(Long consolidationId, Long triangulationPartner, Boolean isAccepted);
 
     @Query(value = "SELECT consol.id as id,consol.createdBy as createdBy, consol.consolidationNumber as consolidationNumber, consol.consolidationType as consolidationType, consol.transportMode as transportMode, consol.shipmentType as shipmentType, consol.isDomestic as isDomestic, consol.createdBy as createdBy, consol.payment as payment, consol.bookingCutoff as bookingCutoff, consol.estimatedTerminalCutoff as estimatedTerminalCutoff, consol.terminalCutoff as terminalCutoff, consol.shipInstructionCutoff as shipInstructionCutoff, consol.hazardousBookingCutoff as hazardousBookingCutoff, consol.verifiedGrossMassCutoff as verifiedGrossMassCutoff,"
-        + "consol.reeferCutoff as reeferCutoff, consol.referenceNumber as referenceNumber, consol.bookingStatus as bookingStatus, consol.bookingNumber as bookingNumber, consol.mawb as mawb, carrier.eta as eta,carrier.ata as ata,carrier.etd as etd,carrier.atd as atd,carrier.voyage as voyage,carrier.shippingLine as shippingLine FROM ConsolidationDetails consol "
-        + " LEFT JOIN consol.carrierDetails carrier ")
+            + "consol.reeferCutoff as reeferCutoff, consol.referenceNumber as referenceNumber, consol.bookingStatus as bookingStatus, consol.bookingNumber as bookingNumber, consol.mawb as mawb, carrier.eta as eta,carrier.ata as ata,carrier.etd as etd,carrier.atd as atd,carrier.voyage as voyage,carrier.shippingLine as shippingLine FROM ConsolidationDetails consol "
+            + " LEFT JOIN consol.carrierDetails carrier ")
     Page<IConsolidationDetailsResponse> findAllLiteConsol(Specification<ConsolidationDetails> spec, Pageable pageable);
 
 
     @Query(value = "SELECT sd.shipment_id AS shipmentId, sd.house_bill AS houseBill, csm.consolidation_id AS consolId " +
-        "FROM shipment_details sd " +
-        "INNER JOIN console_shipment_mapping csm " +
-        "ON sd.id = csm.shipment_id " +
-        "WHERE csm.consolidation_id IN :consolidationIds " +
-        "AND csm.is_attachment_done = 'True'",
-        nativeQuery = true)
+            "FROM shipment_details sd " +
+            "INNER JOIN console_shipment_mapping csm " +
+            "ON sd.id = csm.shipment_id " +
+            "WHERE csm.consolidation_id IN :consolidationIds " +
+            "AND csm.is_attachment_done = 'True'",
+            nativeQuery = true)
     List<IShipmentLiteResponse> findIShipmentsByConsolidationIds(@Param("consolidationIds") List<Long> consolidationIds);
 
     @Query(value = """
-    SELECT 
-        sd.shipment_id AS shipmentId, 
-        sd.house_bill AS houseBill, 
-        csm.consolidation_id AS consolId, 
-        scm.shipment_id AS shipId,
-        c.consolidation_id AS consolidationId, 
-        c.container_code AS containerCode, 
-        c.container_number AS containerNumber, 
-        c.container_count AS containerCount
-    FROM 
-        console_shipment_mapping csm
-    JOIN 
-        shipment_details sd ON csm.shipment_id = sd.id
-    JOIN 
-        shipments_containers_mapping scm ON sd.id = scm.shipment_id
-    JOIN 
-        containers c ON scm.container_id = c.id
-    WHERE 
-        csm.consolidation_id IN (:consolidationIds)
-        AND csm.is_attachment_done = 'True'
-    """, nativeQuery = true)
+            SELECT 
+                sd.shipment_id AS shipmentId, 
+                sd.house_bill AS houseBill, 
+                csm.consolidation_id AS consolId, 
+                scm.shipment_id AS shipId,
+                c.consolidation_id AS consolidationId, 
+                c.container_code AS containerCode, 
+                c.container_number AS containerNumber, 
+                c.container_count AS containerCount
+            FROM 
+                console_shipment_mapping csm
+            JOIN 
+                shipment_details sd ON csm.shipment_id = sd.id
+            JOIN 
+                shipments_containers_mapping scm ON sd.id = scm.shipment_id
+            JOIN 
+                containers c ON scm.container_id = c.id
+            WHERE 
+                csm.consolidation_id IN (:consolidationIds)
+                AND csm.is_attachment_done = 'True'
+            """, nativeQuery = true)
     List<IShipmentContainerLiteResponse> findShipmentDetailsWithContainersByConsolidationIds(@Param("consolidationIds") List<Long> consolidationIds);
 
     @Query(value = "SELECT * FROM consolidation_details WHERE guid = ?1", nativeQuery = true)

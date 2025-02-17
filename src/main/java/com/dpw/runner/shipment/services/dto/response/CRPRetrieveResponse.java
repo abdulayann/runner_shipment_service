@@ -57,10 +57,9 @@ public class CRPRetrieveResponse {
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class CompanyAttributesDetail
-    {
+    public static class CompanyAttributesDetail {
         private StatusCode statusCode;
-        private String  createdBy;
+        private String createdBy;
         private LocalDateTime createdDate;
         private String lastModifiedBy;
         private LocalDateTime lastModifiedDate;

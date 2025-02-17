@@ -8,8 +8,9 @@ import org.mapstruct.factory.Mappers;
 @Mapper
 public interface ContainersMapper {
 
-  ContainersMapper INSTANCE = Mappers.getMapper(ContainersMapper.class);
+    ContainersMapper INSTANCE = Mappers.getMapper(ContainersMapper.class);
 
-  ContainerResponse toContainerResponse(Containers containers);
-  Containers toContainers(Containers containers);
+    ContainerResponse toContainerResponse(Containers containers);
+
+    Containers toContainers(Containers containers);
 }

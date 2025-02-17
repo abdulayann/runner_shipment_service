@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
+
 @Service
 @Slf4j
 public class FusionServiceAdapter implements IFusionServiceAdapter {

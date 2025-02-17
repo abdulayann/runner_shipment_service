@@ -18,14 +18,6 @@ public enum GenerationType {
         this.description = description;
     }
 
-    public int getValue() {
-        return value;
-    }
-    public String getDescription() {
-        return description;
-    }
-
-
     public static GenerationType fromValue(int value) {
         for (GenerationType generationType : GenerationType.values()) {
             if (generationType.getValue() == value) {
@@ -33,5 +25,13 @@ public enum GenerationType {
             }
         }
         throw new IllegalArgumentException("Invalid Generation Type value: " + value);
+    }
+
+    public int getValue() {
+        return value;
+    }
+
+    public String getDescription() {
+        return description;
     }
 }

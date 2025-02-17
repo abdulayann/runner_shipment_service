@@ -11,7 +11,7 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class UpdateConsoleShipmentRequest implements IRunnerRequest{
+public class UpdateConsoleShipmentRequest implements IRunnerRequest {
 
     private boolean isForHub;
     private Long consoleId;

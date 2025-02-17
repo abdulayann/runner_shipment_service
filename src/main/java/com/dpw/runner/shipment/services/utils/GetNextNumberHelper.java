@@ -51,7 +51,7 @@ public class GetNextNumberHelper {
         }
         int startPosition = regexPattern.indexOf("{");
         String prefix =
-            startPosition == -1 ? regexPattern : regexPattern.substring(0, startPosition); // prefix
+                startPosition == -1 ? regexPattern : regexPattern.substring(0, startPosition); // prefix
         String suffix = "";
         //        CompaniesRow companiesRow = null;
         if (sequenceSettings.getGenerationType() == GenerationType.Regex) {
@@ -83,15 +83,14 @@ public class GetNextNumberHelper {
                     if (wordSplit.get(0).equalsIgnoreCase("seq")) {
                         String resetFreq = wordSplit.size() > 2 ? wordSplit.get(2) : "Never";
                         suffix += padLeft(
-                            GetNextRegexSequenceNumber(sequenceSettings, resetFreq),
-                            Integer.parseInt(wordSplit.get(1)),
-                            '0');
-                    }
-                    else {
+                                GetNextRegexSequenceNumber(sequenceSettings, resetFreq),
+                                Integer.parseInt(wordSplit.get(1)),
+                                '0');
+                    } else {
                         suffix += padLeft(
-                            ValueOf.get(wordSplit.get(0).toLowerCase()),
-                            Integer.parseInt(wordSplit.get(1)),
-                            '0');
+                                ValueOf.get(wordSplit.get(0).toLowerCase()),
+                                Integer.parseInt(wordSplit.get(1)),
+                                '0');
                     }
                 }
                 // Ignoring this case for now TODO post clarification
@@ -109,14 +108,11 @@ public class GetNextNumberHelper {
                         ValueOf.put(Constants.BRANCH, user.getCode());
                     }
                     suffix += ValueOf.get(wordSplit.get(0).toLowerCase());
-                }
-                else suffix += ValueOf.get(wordSplit.get(0).toLowerCase());
+                } else suffix += ValueOf.get(wordSplit.get(0).toLowerCase());
             }
-        }
-        else if (sequenceSettings.getGenerationType() == GenerationType.Random) {
+        } else if (sequenceSettings.getGenerationType() == GenerationType.Random) {
             suffix = StringUtility.getRandomString(10);
-        }
-        else if (sequenceSettings.getGenerationType() == GenerationType.Serial) {
+        } else if (sequenceSettings.getGenerationType() == GenerationType.Serial) {
             suffix = sequenceSettings.getSerialCounter().toString();
             sequenceSettings.setSerialCounter(sequenceSettings.getSerialCounter() + 1);
         }
@@ -147,14 +143,14 @@ public class GetNextNumberHelper {
 
             TimeZone localZone = TimeZone.getTimeZone(timeZoneId);
             localTimeNow =
-                (LocalDateTime.now(Clock.systemUTC())).atZone(localZone.toZoneId()).toLocalDateTime();
+                    (LocalDateTime.now(Clock.systemUTC())).atZone(localZone.toZoneId()).toLocalDateTime();
             localTimeStart =
-                sequenceSettings.getSequenceStartTime() != null
-                    ? sequenceSettings
-                          .getSequenceStartTime()
-                          .atZone(localZone.toZoneId())
-                          .toLocalDateTime()
-                    : localTimeNow;
+                    sequenceSettings.getSequenceStartTime() != null
+                            ? sequenceSettings
+                            .getSequenceStartTime()
+                            .atZone(localZone.toZoneId())
+                            .toLocalDateTime()
+                            : localTimeNow;
 
             if (localTimeStart.isBefore(localTimeNow)) resetCounter = true;
         }
@@ -168,51 +164,51 @@ public class GetNextNumberHelper {
 
     public ProductSequenceConfig getProductSequence(Long productId, ProductProcessTypes processType) {
         FilterCriteria entityIdCriteria =
-            FilterCriteria.builder()
-                .innerFilter(
-                    Arrays.asList(
-                        FilterCriteria.builder()
-                            .criteria(
-                                Criteria.builder()
-                                    .fieldName("tenantProductId")
-                                    .operator("=")
-                                    .value(productId)
-                                    .build())
-                            .build(),
-                        FilterCriteria.builder()
-                            .logicOperator("AND")
-                            .criteria(
-                                Criteria.builder()
-                                    .fieldName(Constants.PRODUCT_PROCESS_TYPES)
-                                    .operator("=")
-                                    .value(processType.toString())
-                                    .build())
-                            .build()))
-                .build();
+                FilterCriteria.builder()
+                        .innerFilter(
+                                Arrays.asList(
+                                        FilterCriteria.builder()
+                                                .criteria(
+                                                        Criteria.builder()
+                                                                .fieldName("tenantProductId")
+                                                                .operator("=")
+                                                                .value(productId)
+                                                                .build())
+                                                .build(),
+                                        FilterCriteria.builder()
+                                                .logicOperator("AND")
+                                                .criteria(
+                                                        Criteria.builder()
+                                                                .fieldName(Constants.PRODUCT_PROCESS_TYPES)
+                                                                .operator("=")
+                                                                .value(processType.toString())
+                                                                .build())
+                                                .build()))
+                        .build();
 
         ListCommonRequest listCommonRequest =
-            ListCommonRequest.builder()
-                .pageNo(1)
-                .pageSize(Integer.MAX_VALUE)
-                .filterCriteria(Collections.singletonList(entityIdCriteria))
-                .build();
+                ListCommonRequest.builder()
+                        .pageNo(1)
+                        .pageSize(Integer.MAX_VALUE)
+                        .filterCriteria(Collections.singletonList(entityIdCriteria))
+                        .build();
 
         Map<String, RunnerEntityMapping> tableNames =
-            Map.ofEntries(
-                Map.entry(
-                    "tenantProductId",
-                    RunnerEntityMapping.builder()
-                        .tableName("tenantProducts")
-                        .dataType(Long.class)
-                        .fieldName("id")
-                        .build()),
-                Map.entry(
-                    Constants.PRODUCT_PROCESS_TYPES,
-                    RunnerEntityMapping.builder()
-                        .tableName("ProductSequenceConfig")
-                        .dataType(ProductProcessTypes.class)
-                        .fieldName(Constants.PRODUCT_PROCESS_TYPES)
-                        .build()));
+                Map.ofEntries(
+                        Map.entry(
+                                "tenantProductId",
+                                RunnerEntityMapping.builder()
+                                        .tableName("tenantProducts")
+                                        .dataType(Long.class)
+                                        .fieldName("id")
+                                        .build()),
+                        Map.entry(
+                                Constants.PRODUCT_PROCESS_TYPES,
+                                RunnerEntityMapping.builder()
+                                        .tableName("ProductSequenceConfig")
+                                        .dataType(ProductProcessTypes.class)
+                                        .fieldName(Constants.PRODUCT_PROCESS_TYPES)
+                                        .build()));
 
         Pair<Specification<ProductSequenceConfig>, Pageable> pair = DbAccessHelper.fetchData(listCommonRequest, ProductSequenceConfig.class, tableNames);
         return productSequenceConfigDao.findAndLock(pair.getLeft(), pair.getRight());

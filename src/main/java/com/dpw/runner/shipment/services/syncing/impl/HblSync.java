@@ -26,14 +26,11 @@ import java.util.Optional;
 public class HblSync implements IHblSync {
 
     @Autowired
+    ModelMapper modelMapper;
+    @Autowired
     private JsonHelper jsonHelper;
-
     @Autowired
     private IShipmentDao shipmentDao;
-
-    @Autowired
-    ModelMapper modelMapper;
-
     @Autowired
     private ISyncService syncService;
 
@@ -48,9 +45,9 @@ public class HblSync implements IHblSync {
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(hbl.getShipmentId());
         HblRequestV2 hblRequest = convertEntityToDto(hbl);
         hblRequest.setShipmentGuid(shipmentDetails.get().getGuid());
-        if(hblRequest.getContainers() != null && hblRequest.getContainers().size() > 0) {
-            for (HblContainerRequestV2 hblContainerRequestV2: hblRequest.getContainers()) {
-                if(hblContainerRequestV2.getHazardous() == null)
+        if (hblRequest.getContainers() != null && hblRequest.getContainers().size() > 0) {
+            for (HblContainerRequestV2 hblContainerRequestV2 : hblRequest.getContainers()) {
+                if (hblContainerRequestV2.getHazardous() == null)
                     hblContainerRequestV2.setHazardous(0);
             }
         }
@@ -68,10 +65,10 @@ public class HblSync implements IHblSync {
         return response;
     }
 
-    private <T,P> List<P> convertToList(final List<T> lst, Class<P> clazz) {
-        if(lst == null)
+    private <T, P> List<P> convertToList(final List<T> lst, Class<P> clazz) {
+        if (lst == null)
             return null;
-        return  lst.stream()
+        return lst.stream()
                 .map(item -> commonUtils.convertToClass(item, clazz))
                 .toList();
     }

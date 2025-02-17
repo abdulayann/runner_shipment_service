@@ -60,6 +60,7 @@ public class NPMConfig {
         });
         return restTemplate;
     }
+
     @Bean
     public RestTemplate restTemplateForNpmMultiLangChargeCode() {
         RestTemplate restTemplate = new RestTemplate(new HttpComponentsClientHttpRequestFactory());

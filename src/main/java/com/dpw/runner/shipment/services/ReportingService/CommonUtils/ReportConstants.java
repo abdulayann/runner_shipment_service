@@ -8,8 +8,6 @@ public class ReportConstants {
     public static final String LEGAL_COMPANY_NAME = "LegalCompanyName";
     public static final String COMPANY_ADDRESS = "CompanyAddress";
     public static final String HAWB_PACKS_MAP = "hawbPacksMap";
-
-    private ReportConstants(){}
     public static final String EXPORT_SHIPMENT_MANIFEST = "ExportShipmentManifest";
     public static final String IMPORT_SHIPMENT_MANIFEST = "ImportShipmentManifest";
     public static final String LOADING_PORT_COUNTRY_NAME = "LoadingPortCountryName";
@@ -74,7 +72,6 @@ public class ReportConstants {
     public static final String CARGO_GROSS_QUANTITY_CODE = "CargoGrossQunatityCode";
     public static final String BL_COMMENTS = "BlComments";
     public static final String GROSS_WEIGHT_AND_UNIT = "GrossWeightandUnit";
-
     public static final String ALL_CONTAINERS = "All_Containers";
     public static final String REFERENCE_NUMBER = "ReferenceNumber";
     public static final String REFERENCE_NO = "ReferenceNo";
@@ -99,17 +96,16 @@ public class ReportConstants {
     public static final String CHARGEABLE_UNIT = "ChargableUnit";
     public static final String CHARGEABLE_AND_UNIT = "ChargableAndUnit";
     public static final String CHARGEABLE_AND_UNIT_ = "ChargeableAndUnit";
-
     public static final String TRANSPORT_MODE = "TransportMode";
     public static final String TRANSPORT_MODE_DESCRIPTION = "TransportModeDescription";
     public static final String SHIPMENT_TYPE_DESCRIPTION = "ShipmentTypeDescription";
-    public static final String SHIPMENT_NUMBER ="ShipmentNumber";
+    public static final String SHIPMENT_NUMBER = "ShipmentNumber";
     public static final String SHIPMENT_NO = "ShipmentNo";
     public static final String PACKS = "Packs";
     public static final String PACKS_UNIT = "PacksUnit";
     public static final String COMMODITY_DESC = "CommodityDesc";
     public static final String COMMODITY_DESC_NAME = "CommodityDescName";
-    public static final String IsDG  = "IsDG";
+    public static final String IsDG = "IsDG";
     public static final String AirUNNumber = "AirUNNumber";
     public static final String AirDGClass = "AirDGClass";
     public static final String AirDGClassDescription = "AirDGClassDescription";
@@ -325,10 +321,9 @@ public class ReportConstants {
     public static final String SERVICE_TYPE = "ServiceType";
     public static final String SUMMARY = "Summary";
     public static final String FULL_NAME = "FullName";
-
-        /*
-            AR Object Fields
-        */
+    /*
+        AR Object Fields
+    */
     public static final String INVOICE_NUMBER = "InvoiceNumber";
     public static final String BILL_CHARGES = "BillCharges";
     public static final String OVERSEAS_TAX = "OverseasTax";
@@ -357,10 +352,9 @@ public class ReportConstants {
     public static final String EXCHANGE_RATE_OVERSEA = "ExchangeRateOversea";
     public static final String TOTAL_REVENUE_AMOUNT = "TotalRevenueAmount";
     public static final String TOTAL_LOCAL_SELL_AMOUNT = "TotalLocalSellAmount";
-
-        /*
-            Consolidation Fields
-        */
+    /*
+        Consolidation Fields
+    */
     public static final String BOOKING_NO = "BookingNo";
     public static final String BOOKING_NUMBER = "BookingNumber";
     public static final String CARGO_CLOSING_TIME = "CargoClosingTime";
@@ -405,11 +399,9 @@ public class ReportConstants {
     public static final String CONSOL_AIRCRAFT_TYPE = "ConsolAircraftType";
     public static final String CONSOL_FLIGHT_CARRIER = "ConsolFlightCarrier";
     public static final String CONSOL_NOTIFY_ADDRESS = "ConsolNotifyAddress";
-
-
-        /*
-            Tenant fields
-        */
+    /*
+        Tenant fields
+    */
     public static final String TENANT = "Tenant";
     public static final String TENANT_NAME = "TenantName";
     public static final String TENANT_ADDRESS_1 = "TenantAddress1";
@@ -426,19 +418,16 @@ public class ReportConstants {
     public static final String TENANT_MOBILE = "TenantMobile";
     public static final String TENANT_ZIP_POST_CODE = "TenantZipPostCode";
     public static final String TENANT_CURRENCY = "TenantCurrency";
-    public static final String TENANT_URL = "TenantUrl" ;
-    public static final String TENANT_VATREGNUMBER = "VatRegNumber" ;
-
-        /*
-            User fields
-        */
+    public static final String TENANT_URL = "TenantUrl";
+    public static final String TENANT_VATREGNUMBER = "VatRegNumber";
+    /*
+        User fields
+    */
     public static final String USER_FULLNAME = "UserFullName";
     public static final String USER_NAME = "UserName";
     public static final String USER_EMAIL = "UserEmail";
     public static final String USER_DISPLAY_NAME = "UserDisplayName";
     public static final String USER_PHONE_NUMBER = "UserContactPhone";
-
-
     public static final String CURRENCY_SUMMARY = "CurrencySummary";
     public static final String REVENUE_BILL_CHARGES = "RevenueBillCharges";
     public static final String DESTINATION = "Destination";
@@ -486,7 +475,6 @@ public class ReportConstants {
     public static final String CHARGES_IN_CAPS = "chargesInCaps";
     public static final String COPY_CHARGES = "copyCharges";
     public static final String BILL_REMARK = "BillRemark";
-
     public static final String Cargo_Total_Information = "BillRemark";
     public static final String PP_REVENUE_TOTAL = "PrepaidRevenueTotal";
     public static final String CC_REVENUE_TOTAL = "CollectRevenueTotal";
@@ -498,12 +486,11 @@ public class ReportConstants {
     public static final String BLComments = "Bl_Comments";
     public static final String BL_DELIVERY_AGENT = "BL_DeliveryAgent";
     public static final String ISSUEPLACECOUNTRYNAME = "IssuePlaceCountryName";
+    public static final String TRUCK_NUMBER_PLATE = "TruckNumberPlate";
 
         /*
             Truck Driver Details fields
         */
-
-    public static final String TRUCK_NUMBER_PLATE = "TruckNumberPlate";
     public static final String TRAILER_NUMBER_PLATE = "TrailerNumberPlate";
     public static final String TRUCK_OR_TRAILER_TYPE = "TruckOrTrailerType";
     public static final String CONTAINER_NUMBER = "ContainerContainerNumber";
@@ -511,7 +498,6 @@ public class ReportConstants {
     public static final String DRIVER_NAME = "DriverName";
     public static final String DRIVER_MOBILE_NUMBER = "DriverMobileNumber";
     public static final String TRANSPORTER_NAME = "TransporterName";
-
     /*
         Report Constants
      */
@@ -521,14 +507,11 @@ public class ReportConstants {
     public static final String HBL = "Hbl";
     public static final String HAWB = "Hawb";
     public static final String MAWB = "Mawb";
-
     public static final String BL_NOTIFY_PARTY_CAPS = "BL_NotifyPartyInCaps";
     public static final String CONSIGNER_CAPS = "ConsignerInCaps";
     public static final String CONSIGNEE_CAPS = "ConsigneeInCaps";
     public static final String MARKS_N_NUMS_CAPS = "MarksnNumsInCaps";
-
     public static final String PACKS_UNIT_DESC = "PacksUnitDescription";
-
     public static final String DESCRIPTION_CAPS = "DescriptionInCaps";
     public static final String DESCRIPTION_ORIGINAL = "DescriptionOriginal";
     public static final String POL_CODE = "POLCode";
@@ -536,7 +519,6 @@ public class ReportConstants {
     public static final String BL_DELIVERY_AGENT_ADDRESS = "BL_DeliveryAgentAddress";
     public static final String BL_CARGO_TERMS_DESCRIPTION = "BLCargoTermsDescription";
     public static final String BL_REMARKS_DESCRIPTION = "BLRemarksDescription";
-
     //HAWB
     public static final String AGENT = "Agent";
     public static final String AGENT_REFERENCE = "AgentReference";
@@ -578,7 +560,7 @@ public class ReportConstants {
     public static final String EXECUTED_AT = "ExecutedAt";
     public static final String MAWB_NUMBER = "mawbnumber";
     public static final String OTHER_AMOUNT_TEXT_C = "OtherAmountText_C";
-    public static final String TOTAL_OTHERS_C  = "TotalOthers_C";
+    public static final String TOTAL_OTHERS_C = "TotalOthers_C";
     public static final String CARRIER_DUE_C = "CarrierDue_C";
     public static final String AGENT_DUE_C = "AgentDue_C";
     public static final String OTHERS_C = "OthersC";
@@ -652,7 +634,7 @@ public class ReportConstants {
     public static final String RATE_CLASS = "RateClass";
     public static final String NATURE_QLTY_OF_GOODS = "NatureQltyOfGoods";
     public static final String PACKING_LIST = "PackingList";
-    public static final String OTHER_AMOUNT_TEXT= "OtherAmountText";
+    public static final String OTHER_AMOUNT_TEXT = "OtherAmountText";
     public static final String FREIGHT_AMOUNT_TEXT = "FreightAmountText";
     public static final String DESTINATION_AIRPORT_COUNTRY = "DestinationAirportCountry";
     public static final String DEPARTURE_AIRPORT_COUNTRY = "DepartureAirportCountry";
@@ -678,7 +660,6 @@ public class ReportConstants {
     public static final String OTHER_INFORMATION = "OtherInformation";
     public static final String OPTIONAL_SHIPPING_INFORMATION_OTHER = "AWBOSI2";
     public static final String OPTIONAL_SHIPPING_INFORMATION = "AWBOSI";
-
     public static final String PAYMENTS = "Payments";
     public static final String PORT_OF_DEPARTURE = "PortofDeparture";
     public static final String PORT_OF_DEPARTURE_COUNTRY = "PortofDepartureCountry";
@@ -688,7 +669,6 @@ public class ReportConstants {
     public static final String BOOKING_NO_BASED_ON_TYPE = "BookingNoBasedOnType";
     public static final String MOTHER_REFERENCE_NO = "MotherReferenceNo";
     public static final String FEEDER_REFERENCE_NO = "FeederReferenceNo";
-
     public static final String OBJECT_TYPE = "OBJECT_TYPE";
     public static final String AWB_LABEL = "AwbLabel";
     public static final String COMMERCIAL_INVOICE = "CommercialInvoice";
@@ -742,7 +722,6 @@ public class ReportConstants {
     public static final String SHIPPER_ACCOUNT_NUMBER = "ShippersAccountNumber";
     public static final String CONSIGNEE_ACCOUNT_NUMBER = "ConsigneeAccountNumber";
     public static final String ACCOUNT_NUMBER = "AccountNumber";
-
     public static final String IMPORT_CONSOL_MANIFEST = "ImportConsolManifest";
     public static final String EXPORT_CONSOL_MANIFEST = "ExportConsolManifest";
     public static final String GENERATE_ISF_FILE = "GenerateISFFile";
@@ -759,14 +738,11 @@ public class ReportConstants {
     public static final String SHIPPING_INSTRUCTION = "ShippingInstruction";
     public static final String BOOKING_ORDER = "BookingOrder";
     public static final Set<String> NEW_TEMPLATE_FLOW = Set.of(SHIP_TRUCKWAY_BILL, CONS_TRUCKWAY_BIll, SHIP_TRUCK_DRIVER_PROOF, CONS_TRUCK_DRIVER_PROOF, SHIPPING_REQUEST, SHIPPING_REQUEST_AIR, EXPORT_SHIPMENT_MANIFEST, IMPORT_SHIPMENT_MANIFEST, EXPORT_CONSOL_MANIFEST, IMPORT_CONSOL_MANIFEST);
-
-
     public static final String TRANS_AIR = "AIR";
     public static final String AIR = "AIR";
     public static final String SEA = "SEA";
     public static final String EXP = "EXP";
     public static final String CHAPartyDescription = "CHAPartyDescription";
-
     public static final String ORIGINAL = "ORIGINAL";
     public static final String SURRENDER = "SURRENDER";
     public static final String NEUTRAL = "NEUTRAL";
@@ -798,13 +774,12 @@ public class ReportConstants {
     public static final String LIST_OF_PACKINGS = "ListOfPackings";
     public static final String COMMODITIES = "Commodities";
     public static final String COMMODITY_NAME = "CommodityName";
-    public static final String PRINT_DATE= "PrintDate";
-
+    public static final String PRINT_DATE = "PrintDate";
     public static final String IS_IMPORT = "IsImport";
     public static final String SHIPPED_ON_BOARD = "ShippedOnBoard";
-    public static final String  ENTRY_REF_NUMBER = "EntryReferenceNumber";
-    public static final String  MOBILE = "Mobile";
-    public static final String  FAX = "Fax";
+    public static final String ENTRY_REF_NUMBER = "EntryReferenceNumber";
+    public static final String MOBILE = "Mobile";
+    public static final String FAX = "Fax";
     public static final String IMP = "IMP";
     public static final String RELEASE_TYPE = "ReleaseType";
     public static final String IS_ORIGINAL = "IsOriginal";
@@ -814,7 +789,6 @@ public class ReportConstants {
     public static final String V_WEIGHT_AND_UNIT_AIR = "VWeightAndUnitAir";
     public static final String WEIGHT_AND_UNIT_AIR = "WeightAndUnitAir";
     public static final String VOLUME_AND_UNIT_AIR = "VolumeAndUnitAir";
-
     public static final String STATUS = "Status";
     public static final String PLANNED = "Planned";
     public static final String CONFIRMED = "Confirmed";
@@ -836,17 +810,13 @@ public class ReportConstants {
     public static final String DELIVERY_CONTACT = "DeliveryContact";
     public static final String LOADED_DATE = "LoadedDate";
     public static final String ACTUAL_DELIVERY = "ActualDelivery";
-
     public static final String DELIVERY_INSTRUCTIONS = "DeliveryInstructions";
     public static final String SHIPMENT_DELIVERY_DELIVERYINSTRUCTION = "DeliveryInstruction";
     public static final String SHIPMENT_PICKUP_PICKUPINSTRUCTION = "PickUpInstruction";
-
     public static final String ORG_FULL_NAME = "OrgFullName";
     public static final String CONTACT_PERSON = "ContactPerson";
     public static final String PRE_CARRIAGE_MODE = "Precarriagemode";
     public static final String PRE_CARRIAGE_VESSEL_VOYAGE = "Precarriagevesselvoyage";
-
-
     // APis
     public static final String REPORT_API_HANDLE = "/api/v2/report";
     public static final String REPORT_CREATE_SUCCESSFUL = "Successful Report Creation";
@@ -860,26 +830,20 @@ public class ReportConstants {
     public static final String LAST_FOREIGN_PORT_NAME = "LastForeginPortName";
     public static final String CTO_ADDRESS = "CtoAddress";
     public static final String PCHARGE_UNIT = "PChargeUnit";
-
     public static final String PVOLUME_UNIT = "PVolumeUnit";
-
     public static final String PWEIGHT_UNIT = "PWeightUnit";
-
     public static final String CUSTOMS_ENTRY_NUMBER = "CustomsEntryNumber";
     public static final String ENTRY_NUMBER = "EntryNumber";
     public static final String MoRN = "MoRN";
     public static final String MRN = "MRN";
     public static final String CUSTOMER_REFERENCE = "CustomerReference";
-
     public static final String CONSOL_SHIPMENT_TOTAL_PACKAGES = "TotalPackages";
     public static final String CONTAINER_MANIFEST_PRINT = "ContainerManifestPrint";
+    public static final String SHIPPER = "Shipper";
 //    public static final String SERVICE_MODE = "ServiceMode";
 //    public static final String SHIPMENT_PACKS_UNIT_DESC = "ShipmentPacksUnitDescription";
-
-    public static final String SHIPPER = "Shipper";
     public static final String SHIPPER_WC = "ShipperWC";
     public static final String INVOICE_DATE = "InvoiceDate";
-
     public static final String PAYMENT = "Payment";
     public static final String SHIPMENT_DETAILS_PORTOFARRIVALCOUNTRYINCAPS = "PortofArrivalCountryInCaps";
     public static final String PortofArrivalInCaps = "PortofArrivalInCaps";
@@ -888,23 +852,19 @@ public class ReportConstants {
     public static final String CAN_GEN = "CRGARVNTC";
     public static final String DELIVERY_ORDER_GEN = "DELORD";
     public static final String PICKUP_ORDER_GEN = "PICORDCNF";
-
     // P0 new document keys
     public static final String HAZARDOUS_DETAILS = "HazardousDetails";
     public static final String QUOTE_HAS_CONTAINERS = "HasContainers";
     public static final String SHIPMENT_PACKING_HAS_CONTAINERS = QUOTE_HAS_CONTAINERS;
-
     public static final String DG_SUBSTANCE = "DGSubstance";
     public static final String DG_CLASS = "DGClass";
     public static final String CLASS_DIVISION = "ClassDivision";
     public static final String UNID_NO = "UNIDNo";
     public static final String DANGEROUS_GOODS = "DangerousGoods";
-
     public static final String MIN_TEMP = "MinTemp";
     public static final String MAX_TEMP = "MaxTemp";
     public static final String MIN_TEMP_UNIT = "MinTempUnit";
     public static final String MAX_TEMP_UNIT = "MaxTempUnit";
-
     public static final String SHIPMENT_PACKING_LENGTH = "Length";
     public static final String SHIPMENT_PACKING_LENGTH_UNIT = "LengthUnit";
     public static final String SHIPMENT_PACKING_WIDTH = "Width";
@@ -913,7 +873,6 @@ public class ReportConstants {
     public static final String SHIPMENT_PACKING_HEIGHT_UNIT = "HeightUnit";
     public static final String ChargeableUnit = "ChargeableUnit";
     public static final String DOCUMENT_PRINT_TYPE = "DocumentPrintType";
-
     public static final String CONSIGNEE_PIC = "ConsigneePIC";
     public static final String CONSIGNEE_NAME_FREE_TEXT = "ConsigneeNameFreeText";
     public static final String DO_MESSAGE = "DOMessage";
@@ -936,7 +895,7 @@ public class ReportConstants {
     public static final String PACKS_WITH_COMMA = "PacksWithComma";
     public static final String GROSS_WEIGHT_WITH_COMMA = "GrossWeightWithComma";
     public static final String GROSS_VOLUME_WITH_COMMA = "GrossVolumeWithComma";
-    public static final String VOLUME_WEIGHT_WITH_COMMA= "VolumeWeightWithComma";
+    public static final String VOLUME_WEIGHT_WITH_COMMA = "VolumeWeightWithComma";
     public static final String WEIGHT_UNIT_DESCRIPTION = "WeightUnitDescription";
     public static final String POR_IN_CAPS = "PORInCaps";
     public static final String POL_IN_CAPS = "POLInCaps";
@@ -974,8 +933,6 @@ public class ReportConstants {
     public static final String PICKUP_FROM_ADDRESS_IN_CAPS = "PickupFromAddressInCaps";
     public static final String PICKUP_FROM_IN_CAPS = "PickupFromInCaps";
     public static final String SHIPMENT_PACKING_PACKS_PACKSTYPE = "PacksType";
-
-
     public static final String CHARGE_TYPE_CODE = "ChargeTypeCode";
     // Local Language Tags
     public static final String CLIENT_ADDWO_CONT_LL = "ClientAddwoContLL";
@@ -1005,7 +962,6 @@ public class ReportConstants {
     public static final String POL_CODE_IN_CAPS = "POLCodeInCaps";
     public static final String POD_CODE_IN_CAPS = "PODCodeInCaps";
     public static final String DESTINATION_CODE_IN_CAPS = "DestinationCodeInCaps";
-
     public static final String NetWeight_Unit_Description = "NetWeightUnitDescription";
     public static final String NetWeight = "NetWeight";
     public static final String ContainerSummary = "ContainerSummary";
@@ -1036,7 +992,6 @@ public class ReportConstants {
     public static final String CONSIGNEE_FREETEXTInCaps = "ConsigneeAddressFreeTextInCaps";
     public static final String CONTAINER_NUMBER_WITH_ETC_COUNT = "ContainerNumberwithEtcCount";
     public static final String CONTAINER_COUNT_WITH_ETC_COUNT = "ContainerTypewithEtcCount";
-
     /*
     Tenant Fields
      */
@@ -1053,8 +1008,6 @@ public class ReportConstants {
     public static final String BRANCH_BASIC_INFO_TENANTURL = "TenantURL";
     public static final String BRANCH_BASIC_INFO_LOCALCURRENCY = LOCAL_CURRENCY;
     public static final String TENANT_NAME_AND_ADDRESS = "TenantNameAddress";
-
-
     /*
     Packing
      */
@@ -1086,25 +1039,20 @@ public class ReportConstants {
     public static final String SHIPMENT_DETAILS_SUMMARY = "Summary";
     public static final String SHIPMENT_TRUCKDRIVERDETAILS = "TruckDriverDetails";
     public static final String SHIPMENT_DETAILS_TOTALWEIGHT = "TotalWeight";
-
     public static final String SHIPMENT_PACKING_PACKS_LISTOFPACKINGS = LIST_OF_PACKINGS;
     public static final String SHIPMENT_PACKING_PACKS_COMMODITIES = COMMODITIES;
     public static final String SHIPMENT_PACKING_PACKS_PRINTDATE = PRINT_DATE;
     public static final String REGEX_S_S = "%s %s";
     public static final String FULL_NAME1 = "FullName";
     public static final String CONTACT_PERSON_ALIAS = "ContactPerson";
-
     public static final String SHIPMENT_PACKING_PACKS_UOTNW = "UOTNW";
     public static final String SHIPMENT_PACKING_PACKS_PCKGSUMMARY = "pckgsummary";
     public static final String SHIPMENT_PACKING_PACKS_COMMERCIALINVOICENUMBER = "CommercialInvoiceNumber";
-
     public static final String SHIPMENT_DETAILS_CARGOCONTROLNO = "CargoControlNo";
-
     public static final String SHIPMENT_BILLCHARGES_FREVENUEBILLCHARGES = "FRevenueBillCharges";
     public static final String SHIPMENT_BILLCHARGES_BILLCHARGESLOCALTAXSUMCOMMA = "BillChargesLocalTaxSumComma";
     public static final String SHIPMENT_BILLCHARGES_BILLCHARGESSUM = "BillChargesSum";
     public static final String SHIPMENT_BILLCHARGES_OVERSEASCURRENCY = OVERSEAS_CURRENCY;
-
     public static final String SHIPMENT_BILLCHARGES_FREIGHTOVERSEAS = FREIGHT_OVERSEAS;
     public static final String SHIPMENT_BILLCHARGES_FREIGHTOVERSEASCURRENCY = "FreightOverseasCurrency";
     public static final String TOTAL_VOLUME_MANIFEST = "TotalVolumeManifest";
@@ -1127,31 +1075,25 @@ public class ReportConstants {
     public static final String PACKING_GROUP = "PackingGroup";
     public static final String FLASH_POINT_AND_UNIT = "FlashPointAndUnit";
     public static final String MARINE_POLLUTANT = "MarinePollutant";
-
     //arrival notice report keys
     public static final String VesselsNameFlightName = "VesselsNameFlightName";
     public static final String VoyageOrFlightNo = "VoyageOrFlightNo";
-
     public static final String CONSIGNOR_TYPE = "ConsignorType";
     public static final String CONSIGNMENT_STATUS = "ConsignmentStatus";
     public static final String EXEMPTION_CARGO = "ExemptionCargo";
     public static final String SCREENING_CODES = "ScreeningCodes";
-
     public static final String ORIGIN_AGENT_TYPE = "OriginAgentType";
     public static final String ORIGIN_AGENT_NAME = "OriginAgentName";
     public static final String ORIGIN_AGENT_ADDRESS = "OriginAgentAddress";
     public static final String DESTINATION_AGENT_NAME = "DestinationAgentName";
     public static final String DESTINATION_AGENT_ADDRESS = "DestinationAgentAddress";
     public static final String DESTINATION_AGENT_TYPE = "DestinationAgentType";
-
     public static final String CONSIGNOR_KC_NUMBER = "ConsignorKCNumber";
     public static final String CONSIGNOR_KC_EXPIRY = "ConsignorKCExpiry";
-
     public static final String ORIGIN_AGENT_RN_NUMBER = "OriginAgentRANumber";
     public static final String DESTINATION_AGENT_RN_NUMBER = "DestinationAgentRANumber";
     public static final String ORIGIN_AGENT_RA_EXPIRY = "OriginAgentRAExpiry";
     public static final String DESTINATION_AGENT_RA_EXPIRY = "DestinationAgentRAExpiry";
-
     public static final String RA = "RA";
     public static final String KC = "KC";
     public static final String INSURANCE_VALUE = "InsuranceValue";
@@ -1159,26 +1101,20 @@ public class ReportConstants {
     public static final String INSURANCE_VALUE_CURRENCY = "InsuranceValueCurrency";
     public static final String GOODS_VALUE = "GoodsValue";
     public static final String GOODS_VALUE_CURRENCY = "GoodsValueCurrency";
-
     public static final String REGULATED_AGENT = "RegulatedAgent";
     public static final String KNOWN_CONSIGNOR = "KnownConsignor";
     public static final String KCRA_NUMBER = "KCRANumber";
     public static final String KCRA_EXPIRY = "KCRAExpiry";
-
     public static final String ONE = "1";
     public static final String TWO = "2";
-
     public static final String TYPE = "Type";
     public static final String RA_NUMBER = "RANumber";
     public static final String RA_EXPIRY = "RAExpiry";
-
     public static final String KC_NUMBER = "KCNumber";
     public static final String KC_EXPIRY = "KCExpiry";
-
     public static final String ORIGIN_AGENT = "OriginAgent";
     public static final String DESTINATION_AGENT = "DestinationAgent";
     public static final String CONSIGNOR_AGENT = "Consignor";
-
     public static final String CY_NAME_ADDRESS = "CyNameAddress";
     public static final String CTO_FULL_NAME = "CtoFullName";
     public static final String SI_CUT_OFF_TIME = "SICutOffTime";
@@ -1188,17 +1124,16 @@ public class ReportConstants {
     public static final String AUM = "AUM";
     public static final String SPH = "SPH";
     public static final String ORG_DATA_NOT_AVAILABLE = "Org data not available";
-    public static final String  ISSUING_AGENT_ADDRESS = "IssuingAgentAddress";
-    public static final String  AWB_ISSUING_AGENT_ADDRESS = "AWB_IssuingAgentAddress";
+    public static final String ISSUING_AGENT_ADDRESS = "IssuingAgentAddress";
+    public static final String AWB_ISSUING_AGENT_ADDRESS = "AWB_IssuingAgentAddress";
     public static final String IS_DIRECT_SHIPMENT = "IsDirect";
     public static final String IS_NON_DIRECT_SHIPMENT = "IsNonDirect";
     public static final String IS_CONSOLIDATION = "IsConsolidation";
+    public static final String TI_INSTRUCTIONTYPE = "TI_InstructionType";
 
     /*
     Transport Instruction fields
      */
-
-    public static final String TI_INSTRUCTIONTYPE = "TI_InstructionType";
     public static final String TI_DROPMODE = "TI_DropMode";
     public static final String TI_PARTYNAME = "TI_PartyName";
     public static final String TI_PARTYADDRESS = "TI_PartyAddress";
@@ -1227,7 +1162,6 @@ public class ReportConstants {
     public static final String TI_EXPORT_AGENT = "TI_ExportAgent";
     public static final String TI_EXPORT_AGENT_ADDRESS = "TI_ExportAgentAddress";
     public static final String TI_EXPORT_AGENT_CONTACT = "TI_ExportAgentContact";
-
     public static final String TI_IMPORT_AGENT = "TI_ImportAgent";
     public static final String TI_IMPORT_AGENT_ADDRESS = "TI_ImportAgentAddress";
     public static final String TI_IMPORT_AGENT_CONTACT = "TI_ImportAgentContact";
@@ -1238,15 +1172,12 @@ public class ReportConstants {
     public static final String TI_FLIGHT_NUMBER = "flightNumber";
     public static final String TI_ISSEA = "IsSea";
     public static final String TI_ISAIR = "IsAir";
-
     public static final String CARRIER_HQ = "CarrierHQ";
     public static final String CON = "CarrierContractNumber";
-
     public static final String TARGET_CURRENCY_CODE = "TARGET_CURRENCY_CODE";
     public static final String CONVERSION_RATE = "CONVERSION_RATE";
     public static final String CC_CHARGE_IN_DEST_CURRENCY = "CC_CHARGE_IN_DEST_CURRENCY";
     public static final String CHARGES_AT_DESTINATION = "CHARGES_AT_DESTINATION";
-
     public static final String CSD_INFO = "CSDInfo";
     public static final String ORIGINAL_PRINT_DATE = "OriginalPrintDate";
     public static final String AIRLINE_NAME = "ConsolAirline";
@@ -1276,7 +1207,6 @@ public class ReportConstants {
     public static final String TIME_OF_PRINT = "TimeOfPrint";
     public static final String AWB_NOTIFYPARTY = "AWB_NotifyParty";
     public static final String AWB_NOTIFY_PARTY_NAME = "AWBNotifyPartyName";
-
     public static final String SLAC = "SLAC";
     public static final String SLAC_CODE = "SlaCCode";
     public static final String COMMA_HS_CODE1 = "CommaHsCode1";
@@ -1284,7 +1214,6 @@ public class ReportConstants {
     public static final String HSCODE = "HS Code";
     public static final String COMMA_SLAC1 = "CommaSLAC1";
     public static final int CHARGEABLE_WEIGHT_DECIMAL_PLACES = 1;
-
     public static final String ORDER_MANAGEMENT_NUMBER = "OrderManagementNumber";
     public static final String ADDITIONAL_SECURITY_INFORMATION = "AdditionalSecurityInformation";
     public static final String TRANSIT_AIRPORTS = "TransitAirports";
@@ -1292,14 +1221,12 @@ public class ReportConstants {
     public static final String AOM_FREE_TEXT = "AnyOtherMeans";
     public static final String DEFAULT_RA_NUMBER = "DefaultRANumber";
     public static final String REGULATORY_ENTITY_CATEGORY = "RegulatoryEntityCategory";
-
     public static final String CONSOLIDATION_NUMBER = "ConsolidationNumber";
     public static final String INSERT_DATE = "InsertDate";
     public static final String SERVICE_LEVEL = "ServiceLevel";
     public static final String CARRIER_BOOKING_REF = "CarrierBookingRef";
     public static final String TOTAL_PACKAGES = "TotalPackages";
     public static final String CONTAINER_TYPE_DESCRIPTION = "ContainerTypeDescription";
-
     //Routing Fields
     public static final String ROUTINGS = "Routings";
     public static final String MODE = "Mode";
@@ -1307,8 +1234,6 @@ public class ReportConstants {
     public static final String PODCODE = "PodCode";
     public static final String ETD_FOR_PRINT = "ETDForPrint";
     public static final String ETA_FOR_PRINT = "ETAForPrint";
-
-
     public static final String CM_SENDING_AGENT_NAME = "CM_SendingAgentName";
     public static final String CM_SENDING_AGENT_ADDRESS = "CM_SendingAgentAddress";
     public static final String CM_RECEIVING_AGENT_NAME = "CM_ReceivingAgentName";
@@ -1324,7 +1249,6 @@ public class ReportConstants {
     public static final String CM_PACKS_UNIT = "CM_PacksUnit";
     public static final String CSD_INFO_DATE = "CsdInfoDate";
     public static final String USER_INITIALS = "UserInitials";
-
     public static final String OTHER_INFO_CODE = "OtherInfoCode";
     public static final String ISSUING_AGENT_CITY = "IssuingAgentCity";
     public static final String RA_CSD = "RA_CSD";
@@ -1337,5 +1261,7 @@ public class ReportConstants {
     public static final String PLACE_OF_ISSUE = "PlaceOfIssue";
     public static final String FCR_PLACE_OF_ISSUE = "FCR_Placeofissue";
     public static final String FCR_DATE_OF_ISSUE = "FCR_Dateofissue";
+    private ReportConstants() {
+    }
 
 }

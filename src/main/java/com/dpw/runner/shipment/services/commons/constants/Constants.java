@@ -199,7 +199,7 @@ public class Constants {
     public static final String OCEAN_DG_TASKTYPE = "DG Ocean Approval";
 
     public static final String TI_TEMPLATE_TYPE = "TransportInstructionTemplateType";
-    public static final String  CUSTOMER_CATEGORY_RATES = "CustomerCategoryRates";
+    public static final String CUSTOMER_CATEGORY_RATES = "CustomerCategoryRates";
     public static final String CARRIER_BOOKING_STATUS = "CarrierBookingStatus";
     public static final String DATE_BEHAVIOR_TYPE = "DateBehaviorType";
     public static final String SHIPMENT_PACK_STATUS = "ShipmentPackStatus";
@@ -328,7 +328,7 @@ public class Constants {
     public static final String CARRIER_BOOKING_CREATE = "Operations:CarrierBookings:Create";
     public static final String CARRIER_BOOKING_VIEW = "Operations:CarrierBookings:View";
     public static final String CARRIER_BOOKING_MODIFY = "Operations:CarrierBookings:Modify";
-    public static final String CARRIER_BOOKING_CANCEL= "Operations:CarrierBookings:Cancel";
+    public static final String CARRIER_BOOKING_CANCEL = "Operations:CarrierBookings:Cancel";
 
     public static final String POUNDS = "pounds";
     public static final String KG = "kg";
@@ -423,36 +423,36 @@ public class Constants {
     public static final String AWB_COUNTRY = "country";
 
 
-    public static final List<String> ColumnsToBeDeletedForExport = List.of("sealNumber",DESCRIPTION_OF_GOODS,NET_WEIGHT,"netWeightUnit",
-            GROSS_WEIGHT,"grossWeightUnit","grossVolume", "grossVolumeUnit","tareWeight","tareWeightUnit",
-            "measurement","measurementUnit","hsCode","isShipperOwned","isEmpty","carrierSealNumber",
-            "shipperSealNumber","terminalOperatorSealNumber","veterinarySealNumber","customsSealNumber","customsReleaseCode",
-            "containerComments", CONTAINER_CODE,"isReefer","minTemp","minTempUnit", "hblDeliveryMode","dgClass","hazardous",
-            "hazardousUn","commodityCode", IS_DELETED,"pacrNumber","serialNumber","innerPackageNumber","innerPackageType",
-            "packageLength","packageBreadth","packageHeight","isTemperatureMaintained",
+    public static final List<String> ColumnsToBeDeletedForExport = List.of("sealNumber", DESCRIPTION_OF_GOODS, NET_WEIGHT, "netWeightUnit",
+            GROSS_WEIGHT, "grossWeightUnit", "grossVolume", "grossVolumeUnit", "tareWeight", "tareWeightUnit",
+            "measurement", "measurementUnit", "hsCode", "isShipperOwned", "isEmpty", "carrierSealNumber",
+            "shipperSealNumber", "terminalOperatorSealNumber", "veterinarySealNumber", "customsSealNumber", "customsReleaseCode",
+            "containerComments", CONTAINER_CODE, "isReefer", "minTemp", "minTempUnit", "hblDeliveryMode", "dgClass", "hazardous",
+            "hazardousUn", "commodityCode", IS_DELETED, "pacrNumber", "serialNumber", "innerPackageNumber", "innerPackageType",
+            "packageLength", "packageBreadth", "packageHeight", "isTemperatureMaintained",
             "id", "bookingId", CONSOLIDATION_ID, SHIPMENT_ID, "containerTypeId", "maxTemp", "maxTempUnit", TENANT_ID,
             "containerTypeDescription", "allocationDate", "CommodityGstPercentage", CREATED_BY, CREATED_AT, UPDATED_BY,
-            UPDATED_AT, "guid", "containerStuffingLocation","containerCount", "truckingDetails");
+            UPDATED_AT, "guid", "containerStuffingLocation", "containerCount", "truckingDetails");
 
     public static final List<String> ColumnsToBeDeleted = List.of("id", "bookingId", "ShippingInstructionId", CONSOLIDATION_ID,
             SHIPMENT_ID, CONTAINER_CODE, "commodityCode", "maxTemp", "maxTempUnit", TENANT_ID,
-            "containerTypeTEU", "perContainerCostRate","perContainerSellRate","currentCostRate",
-            "minimumCost",  "totalCostValue","currentSellRate", "minimumSell", "totalSellValue", "pickupAddress",
+            "containerTypeTEU", "perContainerCostRate", "perContainerSellRate", "currentCostRate",
+            "minimumCost", "totalCostValue", "currentSellRate", "minimumSell", "totalSellValue", "pickupAddress",
             "deliveryAddress", "allocationDate", CREATED_BY, CREATED_AT, UPDATED_BY,
             UPDATED_AT, "eventsList", IS_DELETED, "truckingDetails");
 
     public static final List<String> ColumnsToBeDeletedForCargo = List.of("sealNumber", "isOwnContainer", "ownType", IS_DELETED,
-            "measurement","measurementUnit","isShipperOwned","isEmpty","carrierSealNumber",
-            "shipperSealNumber","terminalOperatorSealNumber","veterinarySealNumber","customsSealNumber",
-            CONTAINER_CODE,"isReefer",CONTAINER_NUMBER,
-            "containerStuffingLocation","containerCount", TRANSPORT_MODE,"hazardousCheckBox");
+            "measurement", "measurementUnit", "isShipperOwned", "isEmpty", "carrierSealNumber",
+            "shipperSealNumber", "terminalOperatorSealNumber", "veterinarySealNumber", "customsSealNumber",
+            CONTAINER_CODE, "isReefer", CONTAINER_NUMBER,
+            "containerStuffingLocation", "containerCount", TRANSPORT_MODE, "hazardousCheckBox");
 
-    public static final List<String> ColumnsToBeDeletedForContainer = List.of(IS_DELETED,"serialNumber", "innerPackageNumber", "innerPackageType",
+    public static final List<String> ColumnsToBeDeletedForContainer = List.of(IS_DELETED, "serialNumber", "innerPackageNumber", "innerPackageType",
             "packageLength", "packageBreadth", "packageHeight", "innerPackageMeasurementUnit",
-            "isTemperatureMaintained","chargeable", "chargeableUnit", TRANSPORT_MODE,
+            "isTemperatureMaintained", "chargeable", "chargeableUnit", TRANSPORT_MODE,
             "hazardousCheckBox");
 
-    public static final List<String> ColumnsToBeDeletedForConsolidationCargo = List.of( "id", CONSOLIDATION_ID, "DGGoodsId",
+    public static final List<String> ColumnsToBeDeletedForConsolidationCargo = List.of("id", CONSOLIDATION_ID, "DGGoodsId",
             SHIPMENT_ID, "commodityId", TENANT_ID, CONTAINER_ID, TRANSPORT_MODE,
             CREATED_BY, CREATED_AT, UPDATED_BY, UPDATED_AT, IS_DELETED, "vinNumber");
 

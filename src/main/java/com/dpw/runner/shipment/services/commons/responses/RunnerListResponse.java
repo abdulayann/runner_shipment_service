@@ -1,25 +1,23 @@
 package com.dpw.runner.shipment.services.commons.responses;
 
-import java.util.List;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 /**
  * /**
- *  * Generic List response.
- *
+ * * Generic List response.
  */
 @SuppressWarnings("rawtypes")
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class RunnerListResponse<T extends IRunnerResponse> implements IRunnerResponse{
+public class RunnerListResponse<T extends IRunnerResponse> implements IRunnerResponse {
     private boolean success;
     private String requestId;
     private List<? extends T> data;

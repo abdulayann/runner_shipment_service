@@ -30,7 +30,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 
 @Component
 @Slf4j
-public class CargoManifestAirConsolidationReport extends IReport{
+public class CargoManifestAirConsolidationReport extends IReport {
 
     @Autowired
     private IAwbDao awbDao;
@@ -67,16 +67,16 @@ public class CargoManifestAirConsolidationReport extends IReport{
         cargoManifestAirConsolidationModel.setPackSummaryResponse(packingService.calculatePackSummary(commonUtils.convertToList(cargoManifestAirConsolidationModel.getConsolidationModel().getPackingList(), Packing.class),
                 cargoManifestAirConsolidationModel.getConsolidationModel().getTransportMode(),
                 cargoManifestAirConsolidationModel.getConsolidationModel().getContainerCategory(), new ShipmentMeasurementDetailsDto()));
-        if(shipIds != null && !shipIds.isEmpty()) {
+        if (shipIds != null && !shipIds.isEmpty()) {
             Map<Long, ShipmentModel> shipmentModelMap = getShipments(shipIds);
             List<Awb> awbListPage = awbDao.findByShipmentIdList(shipIds);
             Map<Long, List<Awb>> awbMap = new HashMap<>();
-            if(awbListPage != null && !awbListPage.isEmpty()) {
+            if (awbListPage != null && !awbListPage.isEmpty()) {
                 awbMap = awbListPage.stream().collect(Collectors.groupingBy(Awb::getShipmentId));
             }
-            for(Map.Entry<Long, ShipmentModel> entry: shipmentModelMap.entrySet()) {
+            for (Map.Entry<Long, ShipmentModel> entry : shipmentModelMap.entrySet()) {
                 cargoManifestAirConsolidationModel.getShipmentModelList().add(shipmentModelMap.get(entry.getKey()));
-                if(awbMap.containsKey(entry.getKey()))
+                if (awbMap.containsKey(entry.getKey()))
                     cargoManifestAirConsolidationModel.getAwbList().add(awbMap.get(entry.getKey()).get(0));
                 else
                     cargoManifestAirConsolidationModel.getAwbList().add(null);
@@ -95,9 +95,9 @@ public class CargoManifestAirConsolidationReport extends IReport{
         populateRaKcDataConsolidation(dictionary, cargoManifestAirConsolidationModel.getConsolidationModel());
         boolean airRoutingTagsAdded = getAirRoutingFlightTags(cargoManifestAirConsolidationModel.getConsolidationModel().getRoutingsList(), dictionary, false);
         CarrierDetailModel carrierDetailModel = cargoManifestAirConsolidationModel.getConsolidationModel().getCarrierDetails();
-        if(!airRoutingTagsAdded) {
+        if (!airRoutingTagsAdded) {
             Map<String, CarrierMasterData> carriersMap = new HashMap<>();
-            if(!CommonUtils.IsStringNullOrEmpty(carrierDetailModel.getShippingLine()))
+            if (!CommonUtils.IsStringNullOrEmpty(carrierDetailModel.getShippingLine()))
                 carriersMap = masterDataUtils.getCarriersData(Set.of(carrierDetailModel.getShippingLine()));
             dictionary.put(CONSOL_FIRST_FLIGHT_AND_DAY, getFlightAndDayString(carriersMap, carrierDetailModel.getShippingLine(), carrierDetailModel.getFlightNumber(), carrierDetailModel.getEtd()));
         }
@@ -108,10 +108,26 @@ public class CargoManifestAirConsolidationReport extends IReport{
         dictionary.put(CONSOL_AIRCRAFT_TYPE, cargoManifestAirConsolidationModel.getConsolidationModel().getCarrierDetails().getAircraftType());
         dictionary.put(CURRENT_DATE, ConvertToDPWDateFormat(LocalDateTime.now()));
         ReportHelper.addTenantDetails(dictionary, cargoManifestAirConsolidationModel.getTenantModel());
-        try{ dictionary.put(SENDING_AGENT_NAME, cargoManifestAirConsolidationModel.getConsolidationModel().getSendingAgent().getOrgData().get(FULL_NAME)); }catch (Exception ignored) {log.error(ORG_DATA_NOT_AVAILABLE);}
-        try{ dictionary.put(SENDING_AGENT_ADDRESS, getOrgAddress(cargoManifestAirConsolidationModel.getConsolidationModel().getSendingAgent())); }catch (Exception ignored) {log.error(ORG_DATA_NOT_AVAILABLE);}
-        try{ dictionary.put(RECEIVING_AGENT_NAME, cargoManifestAirConsolidationModel.getConsolidationModel().getReceivingAgent().getOrgData().get(FULL_NAME)); }catch (Exception ignored) {log.error(ORG_DATA_NOT_AVAILABLE);}
-        try{ dictionary.put(RECEIVING_AGENT_ADDRESS, getOrgAddress(cargoManifestAirConsolidationModel.getConsolidationModel().getReceivingAgent())); }catch (Exception ignored) {log.error(ORG_DATA_NOT_AVAILABLE);}
+        try {
+            dictionary.put(SENDING_AGENT_NAME, cargoManifestAirConsolidationModel.getConsolidationModel().getSendingAgent().getOrgData().get(FULL_NAME));
+        } catch (Exception ignored) {
+            log.error(ORG_DATA_NOT_AVAILABLE);
+        }
+        try {
+            dictionary.put(SENDING_AGENT_ADDRESS, getOrgAddress(cargoManifestAirConsolidationModel.getConsolidationModel().getSendingAgent()));
+        } catch (Exception ignored) {
+            log.error(ORG_DATA_NOT_AVAILABLE);
+        }
+        try {
+            dictionary.put(RECEIVING_AGENT_NAME, cargoManifestAirConsolidationModel.getConsolidationModel().getReceivingAgent().getOrgData().get(FULL_NAME));
+        } catch (Exception ignored) {
+            log.error(ORG_DATA_NOT_AVAILABLE);
+        }
+        try {
+            dictionary.put(RECEIVING_AGENT_ADDRESS, getOrgAddress(cargoManifestAirConsolidationModel.getConsolidationModel().getReceivingAgent()));
+        } catch (Exception ignored) {
+            log.error(ORG_DATA_NOT_AVAILABLE);
+        }
         dictionary.put(SCI, cargoManifestAirConsolidationModel.getConsolidationModel().getSci());
         populateConsolidationCargoManifestParty(cargoManifestAirConsolidationModel.getConsolidationModel(), dictionary);
         return dictionary;
@@ -139,8 +155,7 @@ public class CargoManifestAirConsolidationReport extends IReport{
                 totalQuantity += Integer.parseInt(quantityAndType[0]);
             }
             totalPacksAndUnit = totalQuantity + " " + Constants.PIECES;
-        }
-        catch (Exception ignored) {
+        } catch (Exception ignored) {
             // ignored
         }
 

@@ -25,14 +25,15 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TIME_OF_PRINT;
 
 @Component
-public class CSDReport extends IReport{
+public class CSDReport extends IReport {
 
-    private boolean isConsolidation;
-    public void setIsConsolidation(boolean isConsolidation){
-        this.isConsolidation = isConsolidation;
-    }
     private static final String TIME_FORMAT = "HHmm";
     private static final String DATE_FORMAT = "ddMMMyy";
+    private boolean isConsolidation;
+
+    public void setIsConsolidation(boolean isConsolidation) {
+        this.isConsolidation = isConsolidation;
+    }
 
     @Override
     public Map<String, Object> getData(Long id) throws RunnerException {
@@ -44,10 +45,10 @@ public class CSDReport extends IReport{
     IDocumentModel getDocumentModel(Long id) throws RunnerException {
         CSDModel csdModel = new CSDModel();
         csdModel.setUsersDto(UserContext.getUser());
-        if(isConsolidation){
+        if (isConsolidation) {
             csdModel.setConsolidationModel(getConsolidation(id));
             csdModel.setAwb(getMawb(id, true));
-        }else{
+        } else {
             csdModel.setShipmentModel(getShipment(id));
             csdModel.setAwb(getHawb(id));
         }
@@ -62,21 +63,20 @@ public class CSDReport extends IReport{
         CarrierDetailModel carrierModel;
 
         populateUserFields(csdModel.getUsersDto(), dictionary);
-        if(isConsolidation){
+        if (isConsolidation) {
             populateConsolidationFields(csdModel.getConsolidationModel(), dictionary);
             populateRaKcDataConsolidation(dictionary, csdModel.getConsolidationModel());
             dictionary.put(ReportConstants.IS_CONSOLIDATION, true);
             // CarrierDetails
-            if(csdModel.getConsolidationModel().getCarrierDetails() != null) {
+            if (csdModel.getConsolidationModel().getCarrierDetails() != null) {
                 carrierModel = csdModel.getConsolidationModel().getCarrierDetails();
                 dictionary.put(ReportConstants.TRANSIT_AIRPORTS, getMainCarriageAirPorts(
                         csdModel.getConsolidationModel().getRoutingsList(), carrierModel.getOriginPort(), carrierModel.getDestinationPort()
                 ));
             }
-            if(!CollectionUtils.isEmpty(csdModel.getConsolidationModel().getScreeningStatus()))
+            if (!CollectionUtils.isEmpty(csdModel.getConsolidationModel().getScreeningStatus()))
                 dictionary.put(ReportConstants.SCREENING_CODES, new HashSet<>(csdModel.getConsolidationModel().getScreeningStatus()));
-        }
-        else {
+        } else {
             populateShipmentFields(csdModel.getShipmentModel(), dictionary);
             populateRaKcData(dictionary, csdModel.getShipmentModel());
             // Shipment Type tags
@@ -85,7 +85,7 @@ public class CSDReport extends IReport{
             dictionary.put(ReportConstants.IS_DIRECT_SHIPMENT, isDirect);
             dictionary.put(ReportConstants.IS_NON_DIRECT_SHIPMENT, !isDirect);
             // CarrierDetails
-            if(csdModel.getShipmentModel().getCarrierDetails() != null) {
+            if (csdModel.getShipmentModel().getCarrierDetails() != null) {
                 carrierModel = csdModel.getShipmentModel().getCarrierDetails();
                 dictionary.put(ReportConstants.TRANSIT_AIRPORTS, getMainCarriageAirPorts(
                         csdModel.getShipmentModel().getRoutingsList(), carrierModel.getOriginPort(), carrierModel.getDestinationPort()
@@ -93,12 +93,12 @@ public class CSDReport extends IReport{
             }
             AdditionalDetailModel additionalDetailModel = Optional.ofNullable(csdModel.getShipmentModel().getAdditionalDetails()).orElse(new AdditionalDetailModel());
             dictionary.put(ReportConstants.REGULATORY_ENTITY_CATEGORY, additionalDetailModel.getRegulatedEntityCategory());
-            if(!CollectionUtils.isEmpty(additionalDetailModel.getScreeningStatus()))
+            if (!CollectionUtils.isEmpty(additionalDetailModel.getScreeningStatus()))
                 dictionary.put(ReportConstants.SCREENING_CODES, new HashSet<>(additionalDetailModel.getScreeningStatus()));
         }
 
         var securityStatus = dictionary.get(ReportConstants.CONSIGNMENT_STATUS);
-        if(AwbConstants.EXEMPTION_CARGO_SECURITY_STATUS.equalsIgnoreCase(StringUtility.convertToString(securityStatus)))
+        if (AwbConstants.EXEMPTION_CARGO_SECURITY_STATUS.equalsIgnoreCase(StringUtility.convertToString(securityStatus)))
             securityStatus = AwbConstants.SPX;
         dictionary.put(ReportConstants.CONSIGNMENT_STATUS, securityStatus);
         dictionary.put(ReportConstants.DEFAULT_RA_NUMBER, getDefaultRANumber());

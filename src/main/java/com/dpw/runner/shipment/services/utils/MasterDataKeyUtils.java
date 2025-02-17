@@ -1,29 +1,22 @@
 package com.dpw.runner.shipment.services.utils;
 
-import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
-
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dto.v1.response.ActivityMasterResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.SalesAgentResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.WareHouseResponse;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferChargeType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCurrency;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferDGSubstance;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferVessels;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Component;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+
+import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 
 @Slf4j
 @Component
@@ -38,27 +31,28 @@ public class MasterDataKeyUtils {
     public void setMasterDataValue(Map<String, Map<String, String>> fieldNameKeyMap, String masterDataType, Map<String, Object> masterDataResponse, Map<String, Object> cacheMap) {
         Map<String, Object> dataMap = new HashMap<>();
         setKeyValueInResponse(fieldNameKeyMap, masterDataType, dataMap, cacheMap);
-        if(!dataMap.isEmpty()){
-            if(Objects.equals(masterDataType, CacheConstants.UNLOCATIONS_AWB)) {
+        if (!dataMap.isEmpty()) {
+            if (Objects.equals(masterDataType, CacheConstants.UNLOCATIONS_AWB)) {
                 masterDataType = CacheConstants.UNLOCATIONS;
             }
             masterDataResponse.put(masterDataType, dataMap);
         }
     }
+
     private void setKeyValueInResponse(Map<String, Map<String, String>> fieldNameKeyMap, String masterDataType, Map<String, Object> response, Map<String, Object> cacheMap) {
         if (Objects.isNull(fieldNameKeyMap) || fieldNameKeyMap.isEmpty())
             return;
         fieldNameKeyMap.forEach((key1, value1) -> {
-            if(value1 != null && !value1.isEmpty()) {
+            if (value1 != null && !value1.isEmpty()) {
                 value1.forEach((key, value) -> {
                     Object cache = null;
-                    if(Objects.isNull(cacheMap)) {
+                    if (Objects.isNull(cacheMap)) {
                         var resp = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).get(keyGenerator.customCacheKeyForMasterData(masterDataType.equalsIgnoreCase(CacheConstants.UNLOCATIONS_AWB) ? CacheConstants.UNLOCATIONS : masterDataType, value));
-                        if(!Objects.isNull(resp)) cache = resp.get();
+                        if (!Objects.isNull(resp)) cache = resp.get();
                     } else {
                         cache = cacheMap.get(value);
                     }
-                    if(!Objects.isNull(cache)) {
+                    if (!Objects.isNull(cache)) {
                         switch (masterDataType) {
                             case CacheConstants.UNLOCATIONS:
                                 EntityTransferUnLocations object = (EntityTransferUnLocations) cache;
@@ -128,7 +122,7 @@ public class MasterDataKeyUtils {
     }
 
     private void setKeyValueForMasterLists(Map<String, Object> map, String key, Object cacheValue) { //key is SEA#TRANSPORT_MODE
-        if(!IsStringNullOrEmpty(key)) {
+        if (!IsStringNullOrEmpty(key)) {
             EntityTransferMasterLists object3 = null;
             if (Objects.isNull(cacheValue)) {
                 var cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).get(keyGenerator.customCacheKeyForMasterData(CacheConstants.MASTER_LIST, key));
@@ -137,15 +131,15 @@ public class MasterDataKeyUtils {
             boolean isBooking = false;
             String value = null;
 
-            if(!IsStringNullOrEmpty(object3.getValuenDesc()))
+            if (!IsStringNullOrEmpty(object3.getValuenDesc()))
                 value = object3.getValuenDesc();
             else
                 value = object3.getItemDescription();
 
             String[] parts = key.split("#");
-            if(parts.length == 2) {
+            if (parts.length == 2) {
                 Map<String, String> finalValueMap = new HashMap<>();
-                if(map.containsKey(parts[1]))
+                if (map.containsKey(parts[1]))
                     finalValueMap = (Map<String, String>) map.get(parts[1]);
                 finalValueMap.put(parts[0], value);
                 map.put(parts[1], finalValueMap);

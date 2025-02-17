@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Objects;
 import java.util.Optional;
+
 @Service
 @Slf4j
 public class CustomerBookingValidations {
@@ -26,8 +27,8 @@ public class CustomerBookingValidations {
             log.error("Updating Booking number from {} to {} is not allowed.", oldEntity.getBookingNumber(), newEntity.getBookingNumber());
             throw new ValidationException(String.format("Updating Booking number from: %s to: %s is not allowed.", oldEntity.getBookingNumber(), newEntity.getBookingNumber()));
         }
-        if(!Objects.isNull(newEntity.getConsignee()) && !Objects.isNull(newEntity.getConsignor())){
-            if(newEntity.getConsignee().getOrgCode() != null && newEntity.getConsignor().getOrgCode() != null && newEntity.getConsignor().getOrgCode().equals(newEntity.getConsignee().getOrgCode()))
+        if (!Objects.isNull(newEntity.getConsignee()) && !Objects.isNull(newEntity.getConsignor())) {
+            if (newEntity.getConsignee().getOrgCode() != null && newEntity.getConsignor().getOrgCode() != null && newEntity.getConsignor().getOrgCode().equals(newEntity.getConsignee().getOrgCode()))
                 throw new ValidationException("Consignor & Consignee parties can't be selected as same.");
         }
         var tenantSettings = Optional.ofNullable(commonUtils.getCurrentTenantSettings()).orElse(V1TenantSettingsResponse.builder().build());
@@ -37,7 +38,7 @@ public class CustomerBookingValidations {
             // If oldEntity is null (Create) OR transport mode is getting updated (Update)
             if ((Objects.isNull(oldEntity) || !Objects.equals(oldEntity.getTransportType(), newEntity.getTransportType()))
                     && Boolean.FALSE.equals(commonUtils.isTransportModeValid(newEntity.getTransportType(), Constants.CUSTOMER_BOOKING, tenantSettings))) {
-                    throw new ValidationException(String.format(ErrorConstants.INVALID_TRANSPORT_MODE, newEntity.getTransportType()));
+                throw new ValidationException(String.format(ErrorConstants.INVALID_TRANSPORT_MODE, newEntity.getTransportType()));
             }
         }
 
@@ -66,7 +67,7 @@ public class CustomerBookingValidations {
 
     private void validateOnReadyForShipment(CustomerBooking entity) {
 
-        if ((Objects.isNull(entity.getConsignee()) || Objects.isNull(entity.getConsignee().getOrgCode()) || Objects.isNull(entity.getConsignee().getAddressCode())) && !Objects.equals(entity.getDirection(),Constants.DIRECTION_EXP))
+        if ((Objects.isNull(entity.getConsignee()) || Objects.isNull(entity.getConsignee().getOrgCode()) || Objects.isNull(entity.getConsignee().getAddressCode())) && !Objects.equals(entity.getDirection(), Constants.DIRECTION_EXP))
             throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Consignee detail"));
 
         if ((Objects.isNull(entity.getConsignor()) || Objects.isNull(entity.getConsignor().getOrgCode()) || Objects.isNull(entity.getConsignor().getAddressCode())) && !Objects.equals(entity.getDirection(), Constants.DIRECTION_IMP))
@@ -83,8 +84,7 @@ public class CustomerBookingValidations {
 
         V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
 
-        if(Boolean.TRUE.equals(v1TenantSettingsResponse.getFetchRatesMandate()))
-        {
+        if (Boolean.TRUE.equals(v1TenantSettingsResponse.getFetchRatesMandate())) {
             if (Objects.isNull(entity.getBookingCharges()) || entity.getBookingCharges().isEmpty())
                 throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Bill charge"));
         }

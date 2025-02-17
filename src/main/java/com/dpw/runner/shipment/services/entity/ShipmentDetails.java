@@ -3,12 +3,7 @@ package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
-import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
-import com.dpw.runner.shipment.services.entity.enums.FileStatus;
-import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
-import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
-import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
+import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
 import com.dpw.runner.shipment.services.utils.MasterData;
@@ -49,28 +44,32 @@ import java.util.UUID;
 public class ShipmentDetails extends MultiTenancy {
 
     private static final long serialVersionUID = 190794279984274725L;
-
+    @Column(name = "goods_value")
+    public BigDecimal goodsValue;
+    @Column(name = "goods_value_currency")
+    @Size(max = 3, message = "max size is 3 for goods_value_currency")
+    public String goodsValueCurrency;
+    @Column(name = "insurance_value")
+    public BigDecimal insuranceValue;
+    @Column(name = "insurance_value_currency")
+    @Size(max = 3, message = "max size is 3 for insurance_value_currency")
+    public String InsuranceValueCurrency;
     @OneToOne(fetch = FetchType.LAZY, targetEntity = CarrierDetails.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "carrier_detail_id", referencedColumnName = "id")
     private CarrierDetails carrierDetails;
-
     @Column(name = "house_bill")
     private String houseBill;
-
     @Column(name = "transport_mode")
-    @Size(max=4, message = "max size is 4 for transport_mode")
+    @Size(max = 4, message = "max size is 4 for transport_mode")
     @MasterData(type = MasterDataType.TRANSPORT_MODE)
     private String transportMode;
-
     @Column(name = "direction")
     @MasterData(type = MasterDataType.CUSTOM_SHIPMENT_TYPE)
     private String direction;
-
     @Column(name = "shipment_type")
-    @Size(max=3, message = "max size is 3 for shipment_type")
+    @Size(max = 3, message = "max size is 3 for shipment_type")
     @MasterData(type = MasterDataType.CONTAINER_CATEGORY, cascade = Constants.TRANSPORT_MODE)
     private String shipmentType;
-
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "shipments_containers_mapping",
             joinColumns = @JoinColumn(name = "shipment_id"),
@@ -78,254 +77,173 @@ public class ShipmentDetails extends MultiTenancy {
     @JsonIgnoreProperties(value = "shipmentsList", allowSetters = true)
     @BatchSize(size = 50)
     private Set<Containers> containersList;
-
     @Column(name = "status")
     private Integer status;
-
     @Column(name = "source")
     @MasterData(type = MasterDataType.SOURCE_TYPE)
     private String source;
-
     @Column(name = "job_type")
     @MasterData(type = MasterDataType.SHIPMENT_TYPE)
     private String jobType;
-
     @Column(name = "service_type")
-    @Size(max=3, message = "max size is 3 for service Type")
+    @Size(max = 3, message = "max size is 3 for service Type")
     @MasterData(type = MasterDataType.SERVICE_MODE)
     private String serviceType;
-
     @Column(name = "master_bill")
-    @Size(max=50, message = "max size is 50 for master_bill")
+    @Size(max = 50, message = "max size is 50 for master_bill")
     private String masterBill;
-
     @Column(name = "booking_reference")
     private String bookingReference;
-
     @Column(name = "console_ref")
     private String consolRef;
-
     @Column(name = "sales_agent")
     @DedicatedMasterData(type = Constants.SALES_AGENT)
     private Long salesAgent;
-
     @Column(name = "payment_terms")
     @MasterData(type = MasterDataType.PAYMENT)
     private String paymentTerms;
-
     @Column(name = "incoterms")
     @MasterData(type = MasterDataType.INCOTERMS)
     private String incoterms;
-
     @Column(name = "shipment_id")
-    @Size(max=50, message = "max size is 50 for shipment_id")
+    @Size(max = 50, message = "max size is 50 for shipment_id")
     private String shipmentId;
-
     @Column(name = "is_domestic")
     private Boolean isDomestic;
-
     @Column(name = "assigned_to")
     private String assignedTo;
-
     @Column(name = "additional_terms")
-    @Size(max=2048, message = "max size is 2048 for additional_terms")
+    @Size(max = 2048, message = "max size is 2048 for additional_terms")
     private String additionalTerms;
-
     @Column(name = "goods_description")
     private String goodsDescription;
-
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
     @BatchSize(size = 50)
     private List<BookingCarriage> bookingCarriagesList;
-
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
     @BatchSize(size = 50)
     private List<ELDetails> elDetailsList;
-
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
     @Where(clause = "entity_type = 'SHIPMENT'")
     @BatchSize(size = 50)
     private List<Events> eventsList;
-
-
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
     @BatchSize(size = 50)
     private List<Packing> packingList;
-
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
     @BatchSize(size = 50)
     private List<ReferenceNumbers> referenceNumbersList;
-
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
     @OrderBy("leg ASC")
     @BatchSize(size = 50)
     private List<Routings> routingsList;
-
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
     @BatchSize(size = 50)
     private List<ServiceDetails> servicesList;
-
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "shipmentId")
     @BatchSize(size = 50)
     private List<TruckDriverDetails> truckDriverDetails;
-
     @Column(name = "weight")
     private BigDecimal weight;
-
     @Column(name = "weight_unit")
     @MasterData(type = MasterDataType.WEIGHT_UNIT)
     private String weightUnit;
-
     @Column(name = "volume")
     private BigDecimal volume;
-
     @Column(name = "volume_unit")
-    @Size(max=10, message = "max size is 10 for volume_unit")
+    @Size(max = 10, message = "max size is 10 for volume_unit")
     @MasterData(type = MasterDataType.VOLUME_UNIT)
     private String volumeUnit;
-
     @Column(name = "volumetric_weight")
     private BigDecimal volumetricWeight;
-
     @Column(name = "volumetric_weight_unit")
     private String volumetricWeightUnit;
-
     @Column(name = "chargable")
     private BigDecimal chargable;
-
     @Column(name = "chargeable_unit")
     private String chargeableUnit;
-
     @Column(name = "net_weight")
     private BigDecimal netWeight;
-
     @Column(name = "net_weight_unit")
     @MasterData(type = MasterDataType.WEIGHT_UNIT)
     private String netWeightUnit;
-
     @Column(name = "no_of_packs")
     private Integer noOfPacks;
-
     @Column(name = "packs_unit")
     @MasterData(type = MasterDataType.PACKS_UNIT)
     private String packsUnit;
-
     @Column(name = "inner_packs")
     private Integer innerPacks;
-
     @Column(name = "inner_pack_unit")
     @MasterData(type = MasterDataType.PACKS_UNIT)
     private String innerPackUnit;
-
     @Column(name = "freight_local")
     private BigDecimal freightLocal;
-
     @Column(name = "freightLocal_Currency")
     private String freightLocalCurrency;
-
     @Column(name = "freight_overseas")
     private BigDecimal freightOverseas;
-
     @Column(name = "freightOverseas_Currency")
     @DedicatedMasterData(type = Constants.CURRENCY_MASTER_DATA)
     private String freightOverseasCurrency;
-
     @Column(name = "auto_update_wt_vol")
     private Boolean autoUpdateWtVol;
-
     @Column(name = "container_auto_wv_update")
     private Boolean containerAutoWeightVolumeUpdate;
-
     @Column(name = "marks_num")
     private String marksNum;
 
+    //ShipmentOrderId
     @Column(name = "entry_detail")
     @Size(max = 3, message = "max size is 3 for entry_detail")
     @MasterData(type = MasterDataType.ENTRY_DETAILS)
     private String entryDetail;
-
     @Column(name = "is_locked")
     private Boolean isLocked;
-
     @Column(name = "locked_by")
     private String lockedBy;
-
     @Column(name = "is_notify_consignee_equal")
     private Boolean isNotifyConsigneeEqual;
-
-    //ShipmentOrderId
-
     @Column(name = "booking_type")
     private String bookingType;
-
     @Column(name = "cargo_finance_booking")
     private Boolean cargoFinanceBooking;
-
     @Column(name = "booking_number")
     private String bookingNumber;
-
     @Column(name = "route")
     private String route;
-
     @Column(name = "source_tenant_id")
     @TenantIdData
     private Long sourceTenantId;
-
     @Column(name = "documentation_partner")
     @TenantIdData
     private Long documentationPartner;
-
     @ElementCollection(fetch = FetchType.LAZY)
     @CollectionTable(name = "triangulation_partner_shipment", joinColumns = @JoinColumn(name = "shipment_id"))
     @BatchSize(size = 50)
     private List<TriangulationPartner> triangulationPartnerList;
-
     @Column(name = "triangulation_partner")
     @TenantIdData
     private Long triangulationPartner;
-
     @Column(name = "receiving_branch")
     @TenantIdData
     private Long receivingBranch;
-
     @Column(name = "intra_branch")
     private Boolean intraBranch;
-
     @Column(name = "prev_shipment_status")
     private Integer prevShipmentStatus;
-
     @Column(name = "is_shipment_read_only")
     private Boolean isShipmentReadOnly;
-
     @Column(name = "shipment_created_on")
     private LocalDateTime shipmentCreatedOn;
-
     @Column(name = "shipment_completed_by")
     private String shipmentCompletedBy;
-
     @Column(name = "shipment_completed_on")
     private LocalDateTime shipmentCompletedOn;
-
     @Column(name = "finance_closed_by")
     private String financeClosedBy;
-
     @Column(name = "finance_closed_on")
     private LocalDateTime financeClosedOn;
-
-    @Column(name = "goods_value")
-    public BigDecimal goodsValue;
-
-    @Column(name = "goods_value_currency")
-    @Size(max=3, message = "max size is 3 for goods_value_currency")
-    public String goodsValueCurrency;
-
-    @Column(name = "insurance_value")
-    public BigDecimal insuranceValue;
-
-    @Column(name = "insurance_value_currency")
-    @Size(max=3, message = "max size is 3 for insurance_value_currency")
-    public String InsuranceValueCurrency;
-
     @OneToOne(fetch = FetchType.LAZY, targetEntity = AdditionalDetails.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "additional_details_id", referencedColumnName = "id")
     private AdditionalDetails additionalDetails;
@@ -398,7 +316,7 @@ public class ShipmentDetails extends MultiTenancy {
     private List<Parties> shipmentAddresses;
 
     @Column(name = "job_status")
-    @Size(max=3, message = "max size is 3 for job_status")
+    @Size(max = 3, message = "max size is 3 for job_status")
     @MasterData(type = MasterDataType.BILL_JOBS)
     private String jobStatus;
 
@@ -407,7 +325,7 @@ public class ShipmentDetails extends MultiTenancy {
     private FileStatus fileStatus;
 
     @Column(name = "entry_ref_no")
-    @Size(max=250, message = "max size is 250 for entry_ref_no")
+    @Size(max = 250, message = "max size is 250 for entry_ref_no")
     private String entryRefNo;
 
     @Column(name = "flight_status")
@@ -440,11 +358,11 @@ public class ShipmentDetails extends MultiTenancy {
     private CustomerCategoryRates customerCategory;
 
     @Column(name = "contract_id")
-    @Size(max=64, message = "max size is 64 for contract_id")
+    @Size(max = 64, message = "max size is 64 for contract_id")
     private String contractId;
 
     @Column(name = "contract_type")
-    @Size(max=64, message = "max size is 64 for contract_type")
+    @Size(max = 64, message = "max size is 64 for contract_type")
     private String contractType;
 
     @Column(name = "parent_contract_id")
@@ -527,22 +445,22 @@ public class ShipmentDetails extends MultiTenancy {
     @BatchSize(size = 50)
     private List<PickupDeliveryDetails> pickupDeliveryDetailsInstructions;
 
-     @Column(name = "date_type")
-     @Enumerated(EnumType.STRING)
-     private DateBehaviorType dateType;
+    @Column(name = "date_type")
+    @Enumerated(EnumType.STRING)
+    private DateBehaviorType dateType;
 
-     @Column(name = "shipment_gate_in_date")
-     private LocalDateTime shipmentGateInDate;
+    @Column(name = "shipment_gate_in_date")
+    private LocalDateTime shipmentGateInDate;
 
-     @Column(name = "shipment_pack_status")
-     @Enumerated(EnumType.STRING)
-     private ShipmentPackStatus shipmentPackStatus;
+    @Column(name = "shipment_pack_status")
+    @Enumerated(EnumType.STRING)
+    private ShipmentPackStatus shipmentPackStatus;
 
-     @Column(name = "cargo_ready_date")
-     private LocalDateTime cargoReadyDate;
+    @Column(name = "cargo_ready_date")
+    private LocalDateTime cargoReadyDate;
 
-     @Column(name = "cargo_delivery_date")
-     private LocalDateTime cargoDeliveryDate;
+    @Column(name = "cargo_delivery_date")
+    private LocalDateTime cargoDeliveryDate;
 
     @Column(name = "is_receiving_branch_added")
     private Boolean isReceivingBranchAdded;
@@ -553,16 +471,16 @@ public class ShipmentDetails extends MultiTenancy {
     private List<ConsoleShipmentMapping> consoleShipmentMappings;
 
     @Column(name = "department")
-    @Size(max=32, message = "max size is 32 for department")
+    @Size(max = 32, message = "max size is 32 for department")
     @MasterData(type = MasterDataType.DEPARTMENT_MASTER_LIST)
     private String department;
-    
-     @Column(name = "ocean_dg_status")
-     @Enumerated(EnumType.STRING)
-     private OceanDGStatus oceanDGStatus;
 
-     @Column(name = "sync_routing_from_consolidation")
-     private Boolean syncRoutingFromConsolidation;
+    @Column(name = "ocean_dg_status")
+    @Enumerated(EnumType.STRING)
+    private OceanDGStatus oceanDGStatus;
+
+    @Column(name = "sync_routing_from_consolidation")
+    private Boolean syncRoutingFromConsolidation;
 
     @Column(name = "is_network_file")
     private Boolean isNetworkFile;

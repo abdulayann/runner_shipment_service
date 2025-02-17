@@ -30,9 +30,6 @@ import java.util.List;
 public class AirMessagingLogsController {
     private final IAirMessagingLogsService airMessagingLogsService;
 
-    private class MyResponseClass extends RunnerResponse<AirMessagingLogsResponse>{}
-    private class MyListResponseClass extends RunnerListResponse<AirMessagingLogsResponse>{}
-
     @Autowired
     public AirMessagingLogsController(IAirMessagingLogsService airMessagingLogsService) {
         this.airMessagingLogsService = airMessagingLogsService;
@@ -70,10 +67,11 @@ public class AirMessagingLogsController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, response = MyResponseClass.class, message = AirMessagingLogsConstants.AIR_MESSAGING_LOGS_RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
-    public ResponseEntity<IRunnerResponse> retrieveById(@ApiParam(value = AirMessagingLogsConstants.AIR_MESSAGING_LOGS_ID, required = true) @RequestParam Long id,@RequestParam(name = "includeColumns", required = false) List<String> includeColumns) {
+    public ResponseEntity<IRunnerResponse> retrieveById(@ApiParam(value = AirMessagingLogsConstants.AIR_MESSAGING_LOGS_ID, required = true) @RequestParam Long id, @RequestParam(name = "includeColumns", required = false) List<String> includeColumns) {
         CommonGetRequest request = CommonGetRequest.builder().id(id).includeColumns(includeColumns).build();
         return airMessagingLogsService.retrieveById(CommonRequestModel.buildRequest(request));
     }
+
     @ApiResponses(value = {@ApiResponse(code = 200, message = AirMessagingLogsConstants.AIR_MESSAGING_LOGS_UPDATE_SUCCESSFUL, response = MyResponseClass.class)})
     @PutMapping(ApiConstants.API_UPDATE)
     public ResponseEntity<IRunnerResponse> update(@RequestBody @Valid AirMessagingLogsRequest request) {
@@ -86,5 +84,11 @@ public class AirMessagingLogsController {
             log.error(responseMsg, e);
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    private class MyResponseClass extends RunnerResponse<AirMessagingLogsResponse> {
+    }
+
+    private class MyListResponseClass extends RunnerListResponse<AirMessagingLogsResponse> {
     }
 }

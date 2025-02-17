@@ -9,8 +9,8 @@ public enum DateType {
     ETA(3, "ETA"),
     ETD(4, "ETD");
 
-    private int id;
-    private String description;
+    private final int id;
+    private final String description;
 
     DateType(int id, String description) {
         this.id = id;

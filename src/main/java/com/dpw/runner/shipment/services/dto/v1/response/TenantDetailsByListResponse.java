@@ -16,7 +16,8 @@ public class TenantDetailsByListResponse {
     private List<TenantDetails> entities;
 
     @Builder
-    @Data @AllArgsConstructor
+    @Data
+    @AllArgsConstructor
     @NoArgsConstructor
     public static class TenantDetails {
         @JsonProperty("TenantId")

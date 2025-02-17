@@ -12,10 +12,13 @@ import java.util.List;
 import java.util.Optional;
 
 
-@Repository @Generated
+@Repository
+@Generated
 public interface IArrivalDepartureDetailsRepository extends MultiTenancyRepository<ArrivalDepartureDetails> {
     List<ArrivalDepartureDetails> findAll();
+
     Page<ArrivalDepartureDetails> findAll(Specification<ArrivalDepartureDetails> spec, Pageable pageable);
+
     default Optional<ArrivalDepartureDetails> findById(Long id) {
         Specification<ArrivalDepartureDetails> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("id"), id);
         return findOne(spec);

@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 
 @Service
@@ -32,8 +33,8 @@ public class UserServiceV1 implements IUserService {
     public UsersDto getUserByToken(String key, String token) {
         log.info("Request: {} || getUserByToken --- URL: {} ||| Token: {}", LoggerHelper.getRequestIdFromMDC(), url, token);
         HttpHeaders headers = new HttpHeaders();
-        headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
-        if(token.split(" ").length <= 1 || !Objects.equals(token.split(" ")[0], "Bearer"))
+        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+        if (token.split(" ").length <= 1 || !Objects.equals(token.split(" ")[0], "Bearer"))
             return null;
         token = token.split(" ")[1];
         headers.setBearerAuth(token);

@@ -9,7 +9,8 @@ import java.io.Serializable;
 
 @NoArgsConstructor
 @AllArgsConstructor
-@Data @Builder
+@Data
+@Builder
 public class DocumentMetaDTO implements Serializable {
     private String name;
     private String document_type;

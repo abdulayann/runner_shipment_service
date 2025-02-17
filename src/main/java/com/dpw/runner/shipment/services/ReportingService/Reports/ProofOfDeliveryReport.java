@@ -3,8 +3,10 @@ package com.dpw.runner.shipment.services.ReportingService.Reports;
 import com.dpw.runner.shipment.services.ReportingService.Models.HblModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ProofOfDeliveryModel;
+
 import java.util.ArrayList;
 import java.util.Collections;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -25,7 +27,7 @@ public class ProofOfDeliveryReport extends IReport {
     @Override
     IDocumentModel getDocumentModel(Long id) {
         ProofOfDeliveryModel proofOfDeliveryModel = new ProofOfDeliveryModel();
-        proofOfDeliveryModel.hblModel= (HblModel) hblReport.getDocumentModel(id);
+        proofOfDeliveryModel.hblModel = (HblModel) hblReport.getDocumentModel(id);
         return proofOfDeliveryModel;
     }
 
@@ -33,9 +35,9 @@ public class ProofOfDeliveryReport extends IReport {
     Map<String, Object> populateDictionary(IDocumentModel documentModel) {
         ProofOfDeliveryModel proofOfDeliveryModel = (ProofOfDeliveryModel) documentModel;
         Map<String, Object> dictionary = hblReport.populateDictionary(proofOfDeliveryModel.hblModel);
-        if(proofOfDeliveryModel.hblModel.shipment != null) {
+        if (proofOfDeliveryModel.hblModel.shipment != null) {
             populateShipmentOrganizationsLL(proofOfDeliveryModel.hblModel.shipment, dictionary,
-                new ArrayList<>());
+                    new ArrayList<>());
         }
         return dictionary;
     }

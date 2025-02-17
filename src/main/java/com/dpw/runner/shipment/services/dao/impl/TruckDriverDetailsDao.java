@@ -44,10 +44,12 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
     private IAuditLogService auditLogService;
     @Autowired
     private IConsoleShipmentMappingDao consoleShipmentMappingDao;
+
     @Override
     public TruckDriverDetails save(TruckDriverDetails truckDriverDetails) {
         return truckDriverDetailsRepository.save(truckDriverDetails);
     }
+
     @Override
     public List<TruckDriverDetails> saveAll(List<TruckDriverDetails> truckDriverDetailsList) {
         return truckDriverDetailsRepository.saveAll(truckDriverDetailsList);
@@ -74,12 +76,11 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
             hashMap.values().forEach(truckDriverDetails -> {
                 String json = jsonHelper.convertToJson(truckDriverDetails);
                 delete(truckDriverDetails);
-                if(entity != null)
-                {
+                if (entity != null) {
                     try {
                         auditLogService.addAuditLog(
                                 AuditLogMetaData.builder()
-                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
+                                        .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                         .newData(null)
                                         .prevData(truckDriverDetails)
                                         .parent(entity)
@@ -107,7 +108,7 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
             // TODO- Handle Transactions here
             List<TruckDriverDetails> truckDriverDetails = findByShipmentId(shipmentId);
             Map<Long, TruckDriverDetails> hashMap = truckDriverDetails.stream()
-                        .collect(Collectors.toMap(TruckDriverDetails::getId, Function.identity()));
+                    .collect(Collectors.toMap(TruckDriverDetails::getId, Function.identity()));
             Map<Long, TruckDriverDetails> copyHashMap = new HashMap<>(hashMap);
             List<TruckDriverDetails> truckDriverDetailsRequestList = new ArrayList<>();
             if (truckDriverDetailsList != null && truckDriverDetailsList.size() != 0) {
@@ -137,10 +138,10 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
     @Override
     public List<TruckDriverDetails> saveEntityFromShipment(List<TruckDriverDetails> truckDriverDetails, Long shipmentId) {
         List<TruckDriverDetails> res = new ArrayList<>();
-        for(TruckDriverDetails req : truckDriverDetails){
+        for (TruckDriverDetails req : truckDriverDetails) {
             String oldEntityJsonString = null;
             String operation = DBOperationType.CREATE.name();
-            if(req.getId() != null){
+            if (req.getId() != null) {
                 long id = req.getId();
                 Optional<TruckDriverDetails> oldEntity = findById(id);
                 if (!oldEntity.isPresent()) {
@@ -172,12 +173,13 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
         }
         return res;
     }
+
     @Override
     public List<TruckDriverDetails> saveEntityFromShipment(List<TruckDriverDetails> truckDriverDetails, Long shipmentId, Map<Long, TruckDriverDetails> oldEntityMap) {
         List<TruckDriverDetails> res = new ArrayList<>();
         Map<Long, String> oldEntityJsonStringMap = new HashMap<>();
-        for(TruckDriverDetails req : truckDriverDetails){
-            if(req.getId() != null){
+        for (TruckDriverDetails req : truckDriverDetails) {
+            if (req.getId() != null) {
                 long id = req.getId();
                 if (!oldEntityMap.containsKey(id)) {
                     log.debug(TRUCK_DRIVER_DETAIL_IS_NULL_FOR_ID_MSG, req.getId());
@@ -195,7 +197,7 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
         for (TruckDriverDetails req : res) {
             String oldEntityJsonString = null;
             String operation = DBOperationType.CREATE.name();
-            if(oldEntityJsonStringMap.containsKey(req.getId())){
+            if (oldEntityJsonStringMap.containsKey(req.getId())) {
                 oldEntityJsonString = oldEntityJsonStringMap.get(req.getId());
                 operation = DBOperationType.UPDATE.name();
             }
@@ -222,8 +224,8 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
         String responseMsg;
         List<TruckDriverDetails> responseTruckDriverDetails = new ArrayList<>();
         Map<UUID, TruckDriverDetails> truckDriverDetailsMap = new HashMap<>();
-        if(oldEntityList != null && oldEntityList.size() > 0) {
-            for (TruckDriverDetails entity:
+        if (oldEntityList != null && oldEntityList.size() > 0) {
+            for (TruckDriverDetails entity :
                     oldEntityList) {
                 truckDriverDetailsMap.put(entity.getGuid(), entity);
             }
@@ -235,7 +237,7 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
             if (truckDriverDetailsList != null && truckDriverDetailsList.size() != 0) {
                 for (TruckDriverDetails request : truckDriverDetailsList) {
                     oldEntity = truckDriverDetailsMap.get(request.getGuid());
-                    if(oldEntity != null) {
+                    if (oldEntity != null) {
                         truckDriverDetailsMap.remove(oldEntity.getGuid());
                         request.setId(oldEntity.getId());
                     }
@@ -244,7 +246,7 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
                 responseTruckDriverDetails = saveEntityFromShipment(truckDriverDetailsRequestList, shipmentId);
             }
             Map<Long, TruckDriverDetails> hashMap = new HashMap<>();
-            truckDriverDetailsMap.forEach((s, truckDriverDetail) ->  hashMap.put(truckDriverDetail.getId(), truckDriverDetail));
+            truckDriverDetailsMap.forEach((s, truckDriverDetail) -> hashMap.put(truckDriverDetail.getId(), truckDriverDetail));
 
             deleteTruckDriverDetails(hashMap, ShipmentDetails.class.getSimpleName(), shipmentId);
             return responseTruckDriverDetails;
@@ -293,8 +295,8 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
     @Override
     public List<TruckDriverDetails> saveEntityFromConsole(List<TruckDriverDetails> truckDriverDetails, Long consolidationId, Map<Long, TruckDriverDetails> oldEntityMap) {
         List<TruckDriverDetails> res = new ArrayList<>();
-        for(TruckDriverDetails req : truckDriverDetails){
-            if(req.getId() != null){
+        for (TruckDriverDetails req : truckDriverDetails) {
+            if (req.getId() != null) {
                 long id = req.getId();
                 if (!oldEntityMap.containsKey(id)) {
                     log.debug(TRUCK_DRIVER_DETAIL_IS_NULL_FOR_ID_MSG, req.getId());

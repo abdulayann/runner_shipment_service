@@ -1,9 +1,10 @@
 package com.dpw.runner.shipment.services.dto.request.billing;
 
-import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 @Getter
 @Setter

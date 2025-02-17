@@ -14,10 +14,13 @@ import java.util.Set;
 
 public interface IConsoleShipmentMappingDao {
     List<ConsoleShipmentMapping> findByConsolidationId(Long consolidationId);
+
     ConsoleShipmentMapping save(ConsoleShipmentMapping consoleShipmentMapping);
+
     List<ConsoleShipmentMapping> saveAll(List<ConsoleShipmentMapping> consoleShipmentMappingList);
 
     List<ConsoleShipmentMapping> findByShipmentId(Long shipmentId);
+
     List<ConsoleShipmentMapping> findByShipmentIds(Set<Long> shipmentId);
 
     Integer countAllStateMappings(Long shipmentId);
@@ -33,12 +36,20 @@ public interface IConsoleShipmentMappingDao {
     List<ConsoleShipmentMapping> findByConsolidationIdByQuery(Long consolidationId);
 
     List<ConsoleShipmentMapping> findByShipmentIdByQuery(Long shipmentId);
+
     List<ConsoleShipmentMapping> findByConsolidationIdAll(Long consolidationId);
+
     List<ConsoleShipmentMapping> findByShipmentIdAll(Long shipmentId);
+
     void deletePendingStateByConsoleId(Long consoleId);
+
     void deletePendingStateByShipmentId(Long shipmentId);
+
     void deletePendingStateByShipmentIds(List<Long> shipmentIds);
+
     void deletePendingStateByConsoleIdAndShipmentId(Long consoleId, Long shipmentId);
+
     Map<Long, Integer> pendingStateCountBasedOnShipmentId(List<Long> shipmentIds, Integer requestedType);
+
     Map<Long, Integer> pendingStateCountBasedOnConsolidation(List<Long> consoleIds, Integer requestedType);
 }

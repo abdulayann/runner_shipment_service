@@ -12,13 +12,22 @@ import java.util.Optional;
 
 public interface IPartiesDao {
     List<Parties> saveAll(List<Parties> parties);
+
     Parties save(Parties parties);
+
     Page<Parties> findAll(Specification<Parties> spec, Pageable pageable);
+
     Optional<Parties> findById(Long id);
+
     void delete(Parties parties);
+
     List<Parties> updateEntityFromOtherEntity(List<Parties> partiesList, Long entityId, String entityType) throws RunnerException;
+
     List<Parties> saveEntityFromOtherEntity(List<Parties> partiesRequests, Long entityId, String entityType);
+
     List<Parties> saveEntityFromOtherEntity(List<Parties> partiesRequests, Long entityId, String entityType, Map<Long, Parties> oldEntityMap);
+
     List<Parties> updateEntityFromOtherEntity(List<Parties> partiesList, Long entityId, String entityType, List<Parties> oldEntityList) throws RunnerException;
+
     List<Parties> findByIds(List<Long> id);
 }

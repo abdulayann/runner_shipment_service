@@ -1,12 +1,13 @@
 package com.dpw.runner.shipment.services.dto.trackingservice;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.time.LocalDateTime;
-import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Builder
@@ -41,8 +42,7 @@ public class TrackingServiceApiResponse {
     @Builder
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class Journey
-    {
+    public static class Journey {
         private Object lineCode;
         private String serviceType;
         private String carrierName;
@@ -71,8 +71,7 @@ public class TrackingServiceApiResponse {
     @Builder
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class PortOfDepartureEtd
-    {
+    public static class PortOfDepartureEtd {
         private LocalDateTime dateTime;
         private List<Source> sources;
     }
@@ -82,8 +81,7 @@ public class TrackingServiceApiResponse {
     @Builder
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class PortOfArrivalEta
-    {
+    public static class PortOfArrivalEta {
         private LocalDateTime dateTime;
         private List<Source> sources;
     }
@@ -92,8 +90,7 @@ public class TrackingServiceApiResponse {
     @Builder
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class PortOfArrivalAta
-    {
+    public static class PortOfArrivalAta {
         private LocalDateTime dateTime;
         private List<Source> sources;
     }
@@ -102,8 +99,7 @@ public class TrackingServiceApiResponse {
     @Builder
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class PortOfArrivalAtd
-    {
+    public static class PortOfArrivalAtd {
         private LocalDateTime dateTime;
         private List<Source> sources;
     }
@@ -112,8 +108,7 @@ public class TrackingServiceApiResponse {
     @Builder
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class Segment
-    {
+    public static class Segment {
         private Integer source;
         private Integer destination;
         private Integer transport;
@@ -127,8 +122,7 @@ public class TrackingServiceApiResponse {
     @Builder
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class DateAndSources
-    {
+    public static class DateAndSources {
         private LocalDateTime dateTime;
         private List<Source> sources;
     }
@@ -137,8 +131,7 @@ public class TrackingServiceApiResponse {
     @Builder
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class Source
-    {
+    public static class Source {
         private LocalDateTime dateTime;
         private String source;
     }
@@ -147,8 +140,7 @@ public class TrackingServiceApiResponse {
     @Builder
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class Place
-    {
+    public static class Place {
         private Integer id;
         private String type;
         private String locationRole;
@@ -164,8 +156,7 @@ public class TrackingServiceApiResponse {
     }
 
     @Data
-    public static class Transport
-    {
+    public static class Transport {
         private Integer id;
         private String type;
         private Object operatorCode;
@@ -189,8 +180,7 @@ public class TrackingServiceApiResponse {
     @Builder
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class Event
-    {
+    public static class Event {
         private Integer id;
         private String eventCategory;
         private String eventType;
@@ -208,8 +198,7 @@ public class TrackingServiceApiResponse {
     @Builder
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class ProjectedEventTime
-    {
+    public static class ProjectedEventTime {
         private LocalDateTime dateTime;
         private List<Source> sources;
     }
@@ -218,8 +207,7 @@ public class TrackingServiceApiResponse {
     @Builder
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class ActualEventTime
-    {
+    public static class ActualEventTime {
         private LocalDateTime dateTime;
         private List<Source> sources;
     }
@@ -228,8 +216,7 @@ public class TrackingServiceApiResponse {
     @Builder
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class Details
-    {
+    public static class Details {
         private Integer transport;
         private Boolean hasContainer;
         private Boolean hasCargo;

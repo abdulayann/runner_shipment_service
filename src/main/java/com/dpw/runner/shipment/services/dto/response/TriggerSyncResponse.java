@@ -18,7 +18,7 @@ public class TriggerSyncResponse implements IRunnerResponse {
 
     @Data
     @Builder
-    public static class SyncResponse implements IRunnerResponse{
+    public static class SyncResponse implements IRunnerResponse {
         private Long id;
         private String moduleType;
         private String moduleId;

@@ -39,29 +39,23 @@ import java.util.*;
 @Service
 public class OrderManagementAdapter implements IOrderManagementAdapter {
 
+    public static final String X_SOURCE = "x-source";
+    public static final String X_SOURCE_VALUE = "shipment-service";
     @Autowired
     @Qualifier("restTemplateForOrderManagement")
     private RestTemplate restTemplate;
-
     @Value("${order.management.baseUrl}")
     private String baseUrl;
     @Value("${order.management.getOrder}")
     private String getOrderUrl;
     @Value("${order.management.getOrderbyGuid}")
     private String getOrderbyGuidUrl;
-
     @Autowired
     private V2AuthHelper v2AuthHelper;
-
     @Autowired
     private IV1Service v1Service;
-
     @Autowired
     private JsonHelper jsonHelper;
-
-    public static final String X_SOURCE= "x-source";
-    public static final String X_SOURCE_VALUE= "shipment-service";
-
 
     @Override
     public ShipmentDetails getOrder(String orderId) throws RunnerException {
@@ -104,8 +98,7 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
         }
     }
 
-    private CustomerBookingResponse mapOrderToBooking(OrderManagementDTO order)
-    {
+    private CustomerBookingResponse mapOrderToBooking(OrderManagementDTO order) {
         Map<String, OrderPartiesResponse> partyCodeMap = getPartyOrgCodeDataMap(order);
         List<String> partyList = new ArrayList<>(partyCodeMap.keySet());
         var partyMap = getPartyDetails(partyList);
@@ -129,7 +122,7 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
             String partyCode = entry.getKey();
             OrderPartiesResponse partyData = entry.getValue();
 
-            if(partyMap.get(partyCode) == null)
+            if (partyMap.get(partyCode) == null)
                 continue;
 
             if (Objects.equals(partyData.getPartyType(), OrderPartiesPartyType.CONSIGNOR.getDescription())) {
@@ -188,12 +181,11 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
         shipmentDetails.getCarrierDetails().setDestinationPort(order.getDestinationPort());
 
 
-
         for (Map.Entry<String, OrderPartiesResponse> entry : partyCodeMap.entrySet()) {
             String partyCode = entry.getKey();
             OrderPartiesResponse partyData = entry.getValue();
 
-            if(partyMap.get(partyCode) == null)
+            if (partyMap.get(partyCode) == null)
                 continue;
 
             if (Objects.equals(partyData.getPartyType(), OrderPartiesPartyType.CONSIGNOR.getDescription())) {
@@ -230,15 +222,15 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
         }
 
         shipmentDetails.setShipmentType(order.getContainerMode());
-        if(order.getPacksAmount() != null){
+        if (order.getPacksAmount() != null) {
             shipmentDetails.setNoOfPacks(order.getPacksAmount().getAmount() != null ? order.getPacksAmount().getAmount().intValue() : null);
             shipmentDetails.setPacksUnit(order.getPacksAmount().getUnit());
         }
-        if(order.getWeightAmount() != null){
+        if (order.getWeightAmount() != null) {
             shipmentDetails.setWeight(order.getWeightAmount().getAmount());
             shipmentDetails.setWeightUnit(order.getWeightAmount().getUnit());
         }
-        if(order.getVolumeAmount() != null){
+        if (order.getVolumeAmount() != null) {
             shipmentDetails.setVolume(order.getVolumeAmount().getAmount());
             shipmentDetails.setVolumeUnit(order.getVolumeAmount().getUnit());
         }
@@ -253,7 +245,7 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
 
         shipmentDetails.setOrderManagementId(order.getGuid().toString());
         shipmentDetails.setOrderManagementNumber(order.getOrderNumber());
-        shipmentDetails.setShipmentOrders(Arrays.asList(ShipmentOrder.builder().orderGuid(order.getGuid()).orderNumber(order.getOrderNumber()).build()));
+        shipmentDetails.setShipmentOrders(Collections.singletonList(ShipmentOrder.builder().orderGuid(order.getGuid()).orderNumber(order.getOrderNumber()).build()));
 
         shipmentDetails.setServiceType(order.getServiceMode());
 
@@ -282,16 +274,17 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
         return partyCodeMap;
     }
 
-    private Map<String, Map<String, Object>> getPartyDetails (List<String> orgCodes) {
+    private Map<String, Map<String, Object>> getPartyDetails(List<String> orgCodes) {
         CommonV1ListRequest orgRequest = new CommonV1ListRequest();
         List<Object> orgField = new ArrayList<>(List.of("OrganizationCode"));
         String operator = Operators.IN.getValue();
         List<Object> orgCriteria = new ArrayList<>(List.of(orgField, operator, List.of(orgCodes)));
         orgRequest.setCriteriaRequests(orgCriteria);
         V1DataResponse orgResponse = v1Service.fetchOrganization(orgRequest);
-        List<Map<String, Object>> responseMap = jsonHelper.convertValue(orgResponse.entities, new TypeReference<List<Map<String, Object>>>() {});
+        List<Map<String, Object>> responseMap = jsonHelper.convertValue(orgResponse.entities, new TypeReference<List<Map<String, Object>>>() {
+        });
         Map<String, Map<String, Object>> res = new HashMap<>();
-        if(responseMap != null) {
+        if (responseMap != null) {
             for (Map<String, Object> i : responseMap) {
                 res.putIfAbsent((String) i.get("OrganizationCode"), i);
             }

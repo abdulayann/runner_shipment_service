@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class CommonErrorLogsDao implements ICommonErrorLogsDao {
     private final ICommonErrorLogsRepository commonErrorLogsRepository;
+
     @Autowired
     public CommonErrorLogsDao(ICommonErrorLogsRepository commonErrorLogsRepository) {
         this.commonErrorLogsRepository = commonErrorLogsRepository;
@@ -47,6 +48,7 @@ public class CommonErrorLogsDao implements ICommonErrorLogsDao {
     public Optional<CommonErrorLogs> findByGuid(UUID guid) {
         return commonErrorLogsRepository.findByGuid(guid);
     }
+
     @Override
     public Page<CommonErrorLogs> findAll(Specification<CommonErrorLogs> spec, Pageable pageable) {
         return commonErrorLogsRepository.findAll(spec, pageable);
@@ -60,7 +62,7 @@ public class CommonErrorLogsDao implements ICommonErrorLogsDao {
     @Override
     public void logConsoleAutomaticTransferErrors(SendConsoleValidationResponse sendConsoleValidationResponse, Long consoleId, List<Long> shipmentIds) {
 
-        if(Boolean.TRUE.equals(sendConsoleValidationResponse.getIsError())) {
+        if (Boolean.TRUE.equals(sendConsoleValidationResponse.getIsError())) {
             // Console related Errors Handled
             var commonErrors = this.findByEntityIdAndEntityTypeAndErrorType(consoleId, Constants.CONSOLIDATION, CommonErrorType.AUTOMATIC_TRANSFER);
             CommonErrorLogs commonErrorLogs;
@@ -123,16 +125,16 @@ public class CommonErrorLogsDao implements ICommonErrorLogsDao {
     public void deleteAllConsoleAndShipmentErrorsLogs(Long consoleId, List<Long> shipmentIds) {
         var commonErrors = this.findByEntityIdAndEntityTypeAndErrorType(consoleId, Constants.CONSOLIDATION, CommonErrorType.AUTOMATIC_TRANSFER);
         List<CommonErrorLogs> shipCommonErrors = new ArrayList<>();
-        if(!CommonUtils.listIsNullOrEmpty(shipmentIds)) {
+        if (!CommonUtils.listIsNullOrEmpty(shipmentIds)) {
             shipCommonErrors = commonErrorLogsRepository.findByEntityIdListAndEntityTypeAndErrorType(shipmentIds, Constants.SHIPMENT, CommonErrorType.AUTOMATIC_TRANSFER.name());
         }
 
         List<Long> deleteIds = new ArrayList<>();
-        if(!CommonUtils.listIsNullOrEmpty(commonErrors))
+        if (!CommonUtils.listIsNullOrEmpty(commonErrors))
             deleteIds = commonErrors.stream().map(BaseEntity::getId).collect(Collectors.toList());
-        if(!CommonUtils.listIsNullOrEmpty(shipCommonErrors))
+        if (!CommonUtils.listIsNullOrEmpty(shipCommonErrors))
             deleteIds.addAll(shipCommonErrors.stream().map(BaseEntity::getId).toList());
-        if(!deleteIds.isEmpty())
+        if (!deleteIds.isEmpty())
             commonErrorLogsRepository.deleteAllById(deleteIds);
     }
 
@@ -160,7 +162,7 @@ public class CommonErrorLogsDao implements ICommonErrorLogsDao {
     @Override
     public void deleteShipmentErrorsLogs(Long shipmentId) {
         var commonErrors = this.findByEntityIdAndEntityTypeAndErrorType(shipmentId, Constants.SHIPMENT, CommonErrorType.AUTOMATIC_TRANSFER);
-        if(!CommonUtils.listIsNullOrEmpty(commonErrors)) {
+        if (!CommonUtils.listIsNullOrEmpty(commonErrors)) {
             commonErrorLogsRepository.deleteById(commonErrors.get(0).getId());
         }
     }

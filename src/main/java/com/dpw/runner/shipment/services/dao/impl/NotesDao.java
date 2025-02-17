@@ -48,9 +48,10 @@ public class NotesDao implements INotesDao {
             throw new ValidationException(String.join(",", errors));
         return notesRepository.save(notes);
     }
+
     @Override
     public List<Notes> saveAll(List<Notes> notesList) {
-        for(var notes : notesList){
+        for (var notes : notesList) {
             Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(notes), Constants.NOTES, LifecycleHooks.ON_CREATE, false);
             if (!errors.isEmpty())
                 throw new ValidationException(String.join(",", errors));
@@ -85,7 +86,7 @@ public class NotesDao implements INotesDao {
             // TODO- Handle Transactions here
             List<Notes> notes = findByEntityIdAndEntityType(entityId, entityType);
             Map<Long, Notes> hashMap = notes.stream()
-                        .collect(Collectors.toMap(Notes::getId, Function.identity()));
+                    .collect(Collectors.toMap(Notes::getId, Function.identity()));
             Map<Long, Notes> copyHashMap = new HashMap<>(hashMap);
             List<Notes> notesRequestList = new ArrayList<>();
             if (notesList != null && notesList.size() != 0) {
@@ -110,10 +111,10 @@ public class NotesDao implements INotesDao {
 
     public List<Notes> saveEntityFromOtherEntity(List<Notes> notesRequests, Long entityId, String entityType) {
         List<Notes> res = new ArrayList<>();
-        for(Notes req : notesRequests){
+        for (Notes req : notesRequests) {
             String oldEntityJsonString = null;
             String operation = DBOperationType.CREATE.name();
-            if(req.getId() != null){
+            if (req.getId() != null) {
                 long id = req.getId();
                 Optional<Notes> oldEntity = findById(id);
                 if (!oldEntity.isPresent()) {
@@ -146,12 +147,13 @@ public class NotesDao implements INotesDao {
         }
         return res;
     }
+
     @Override
     public List<Notes> saveEntityFromOtherEntity(List<Notes> notesRequests, Long entityId, String entityType, Map<Long, Notes> oldEntityMap) {
         List<Notes> res = new ArrayList<>();
         Map<Long, String> oldEntityJsonStringMap = new HashMap<>();
-        for(Notes req : notesRequests){
-            if(req.getId() != null){
+        for (Notes req : notesRequests) {
+            if (req.getId() != null) {
                 long id = req.getId();
                 if (!oldEntityMap.containsKey(id)) {
                     log.debug("Notes is null for Id {}", req.getId());
@@ -198,12 +200,11 @@ public class NotesDao implements INotesDao {
             hashMap.values().forEach(note -> {
                 String json = jsonHelper.convertToJson(note);
                 delete(note);
-                if(entityType != null)
-                {
+                if (entityType != null) {
                     try {
                         auditLogService.addAuditLog(
                                 AuditLogMetaData.builder()
-                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
+                                        .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                         .newData(null)
                                         .prevData(jsonHelper.readFromJson(json, Notes.class))
                                         .parent(Objects.equals(entityType, Constants.SHIPMENT) ? ShipmentDetails.class.getSimpleName() : entityType)
@@ -227,8 +228,8 @@ public class NotesDao implements INotesDao {
         String responseMsg;
         List<Notes> responseNotes = new ArrayList<>();
         Map<UUID, Notes> notesMap = new HashMap<>();
-        if(oldEntityList != null && oldEntityList.size() > 0) {
-            for (Notes entity:
+        if (oldEntityList != null && oldEntityList.size() > 0) {
+            for (Notes entity :
                     oldEntityList) {
                 notesMap.put(entity.getGuid(), entity);
             }
@@ -239,7 +240,7 @@ public class NotesDao implements INotesDao {
             if (notesList != null && notesList.size() != 0) {
                 for (Notes request : notesList) {
                     oldEntity = notesMap.get(request.getGuid());
-                    if(oldEntity != null) {
+                    if (oldEntity != null) {
                         notesMap.remove(oldEntity.getGuid());
                         request.setId(oldEntity.getId());
                     }
@@ -250,7 +251,7 @@ public class NotesDao implements INotesDao {
                 responseNotes = saveEntityFromOtherEntity(notesRequestList, entityId, entityType);
             }
             Map<Long, Notes> hashMap = new HashMap<>();
-            notesMap.forEach((s, notes) ->  hashMap.put(notes.getId(), notes));
+            notesMap.forEach((s, notes) -> hashMap.put(notes.getId(), notes));
             deleteNotes(hashMap, entityType, entityId);
             return responseNotes;
         } catch (Exception e) {

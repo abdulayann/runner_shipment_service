@@ -13,13 +13,14 @@ import java.math.BigDecimal;
 import java.util.List;
 
 @Data
-public class ArrivalNoticeModel implements IDocumentModel{
+public class ArrivalNoticeModel implements IDocumentModel {
     public ShipmentModel shipmentDetails;
     public UsersDto usersDto;
-    private List<ShipmentContainers> containers;
     public ConsolidationModel consolidationDetails;
     public Hbl hbl;
+    private List<ShipmentContainers> containers;
     private List<ArrivalNoticeBillCharges> arrivalNoticeBillCharges;
+
     @Builder
     @Data
     @NoArgsConstructor

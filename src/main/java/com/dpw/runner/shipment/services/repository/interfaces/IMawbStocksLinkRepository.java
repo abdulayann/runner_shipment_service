@@ -12,9 +12,11 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
-@Repository @Generated
+@Repository
+@Generated
 public interface IMawbStocksLinkRepository extends MultiTenancyRepository<MawbStocksLink> {
     Page<MawbStocksLink> findAll(Specification<MawbStocksLink> spec, Pageable pageable);
+
     List<MawbStocksLink> findByMawbNumber(String mawbNumber);
 
     @Modifying

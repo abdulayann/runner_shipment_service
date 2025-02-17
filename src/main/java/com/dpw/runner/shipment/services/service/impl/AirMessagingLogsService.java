@@ -52,7 +52,7 @@ public class AirMessagingLogsService implements IAirMessagingLogsService {
         AirMessagingLogsRequest request = null;
         request = (AirMessagingLogsRequest) commonRequestModel.getData();
         AirMessagingLogs airMessagingLogs = mapToEntityFromRequest(request);
-        if(request == null) {
+        if (request == null) {
             log.debug("Request is empty for Air Messaging Logs create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
         try {
@@ -71,24 +71,24 @@ public class AirMessagingLogsService implements IAirMessagingLogsService {
     public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         AirMessagingLogsRequest request = (AirMessagingLogsRequest) commonRequestModel.getData();
-        if(request == null) {
+        if (request == null) {
             log.debug("Request is empty for Air Messaging Logs update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             throw new RunnerException("Request is empty for Air Messaging Logs update");
         }
 
-        if(request.getId() == null) {
+        if (request.getId() == null) {
             log.debug("Request Id is null for Air Messaging Logs update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
         long id = request.getId();
         Optional<AirMessagingLogs> oldEntity = airMessagingLogsDao.findById(id);
-        if(!oldEntity.isPresent()) {
+        if (!oldEntity.isPresent()) {
             log.debug(AirMessagingLogsConstants.AIR_MESSAGING_LOGS_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
 
         AirMessagingLogs airMessagingLogs = mapToEntityFromRequest(request);
         airMessagingLogs.setId(oldEntity.get().getId());
-        if(airMessagingLogs.getGuid() != null && !oldEntity.get().getGuid().equals(airMessagingLogs.getGuid())) {
+        if (airMessagingLogs.getGuid() != null && !oldEntity.get().getGuid().equals(airMessagingLogs.getGuid())) {
             throw new RunnerException("Provided GUID doesn't match with the existing one !");
         }
         try {
@@ -109,11 +109,11 @@ public class AirMessagingLogsService implements IAirMessagingLogsService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-            if(request == null) {
+            if (request == null) {
                 log.error("Request is empty for list Air Messaging Logs with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             Pair<Specification<AirMessagingLogs>, Pageable> tuple = fetchData(request, AirMessagingLogs.class);
-            Page<AirMessagingLogs> airMessagingLogsPage  = airMessagingLogsDao.findAll(tuple.getLeft(), tuple.getRight());
+            Page<AirMessagingLogs> airMessagingLogsPage = airMessagingLogsDao.findAll(tuple.getLeft(), tuple.getRight());
             log.info("Air Messaging Logs list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
             return ResponseHelper.buildListSuccessResponse(
                     convertListResponse(airMessagingLogsPage.getContent()),
@@ -133,12 +133,12 @@ public class AirMessagingLogsService implements IAirMessagingLogsService {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-            if(request == null) {
+            if (request == null) {
                 log.error("Request is empty for async list Air Messaging Logs with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             log.info("Retrieving Air Messaging Logs details");
             Pair<Specification<AirMessagingLogs>, Pageable> tuple = fetchData(request, AirMessagingLogs.class);
-            Page<AirMessagingLogs> airMessagingLogsPage  = airMessagingLogsDao.findAll(tuple.getLeft(), tuple.getRight());
+            Page<AirMessagingLogs> airMessagingLogsPage = airMessagingLogsDao.findAll(tuple.getLeft(), tuple.getRight());
             log.info("Air Messaging Logs async list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
             return CompletableFuture.completedFuture(ResponseHelper.buildListSuccessResponse(
                     convertListResponse(airMessagingLogsPage.getContent()),
@@ -157,17 +157,17 @@ public class AirMessagingLogsService implements IAirMessagingLogsService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            if(request == null) {
+            if (request == null) {
                 log.debug("Request is empty with Request Id {}", LoggerHelper.getRequestIdFromMDC());
                 throw new RunnerException("Request is empty");
             }
-            if(request.getId() == null) {
+            if (request.getId() == null) {
                 log.debug("Request Id is null with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             long id = request.getId();
 
             Optional<AirMessagingLogs> airMessagingLogs = airMessagingLogsDao.findById(id);
-            if(!airMessagingLogs.isPresent()) {
+            if (!airMessagingLogs.isPresent()) {
                 log.debug("Air Messaging Logs is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
@@ -188,22 +188,22 @@ public class AirMessagingLogsService implements IAirMessagingLogsService {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            if(request == null) {
+            if (request == null) {
                 log.error("Request is empty for Air Messaging Logs retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
                 throw new RunnerException("Request is empty for Air Messaging Logs retrieve");
             }
-            if(request.getId() == null) {
+            if (request.getId() == null) {
                 log.error("Request Id is null for Air Messaging Logs retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             long id = request.getId();
             Optional<AirMessagingLogs> airMessagingLogs = airMessagingLogsDao.findById(id);
-            if(!airMessagingLogs.isPresent()) {
+            if (!airMessagingLogs.isPresent()) {
                 log.debug("Air Messaging Logs is null for Id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info("Air Messaging Logs details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             AirMessagingLogsResponse response = convertToResponse(airMessagingLogs.get());
-            if(request.getIncludeColumns() == null || request.getIncludeColumns().isEmpty())
+            if (request.getIncludeColumns() == null || request.getIncludeColumns().isEmpty())
                 return ResponseHelper.buildSuccessResponse(response);
             else
                 return ResponseHelper.buildSuccessResponse(partialFetchUtils.fetchPartialListData(response, request.getIncludeColumns()));
@@ -217,7 +217,7 @@ public class AirMessagingLogsService implements IAirMessagingLogsService {
 
     @Override
     public AirMessagingLogs getRecentLogForEntityGuid(UUID guid) {
-        if(Objects.isNull(guid))
+        if (Objects.isNull(guid))
             return null;
 
         List<AirMessagingLogs> logs = airMessagingLogsDao.findByEntityGuidByQuery(guid);
@@ -225,7 +225,7 @@ public class AirMessagingLogsService implements IAirMessagingLogsService {
             return null;
         }
         List<AirMessagingLogs> sortedList = logs.stream()
-                .sorted(Comparator.comparing(AirMessagingLogs :: getId).reversed()).toList();
+                .sorted(Comparator.comparing(AirMessagingLogs::getId).reversed()).toList();
         return sortedList.get(0);
     }
 

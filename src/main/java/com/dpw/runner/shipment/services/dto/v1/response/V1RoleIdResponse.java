@@ -11,6 +11,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Data
 public class V1RoleIdResponse {
-  @JsonProperty("RoleId")
-  private Integer roleId;
+    @JsonProperty("RoleId")
+    private Integer roleId;
 }

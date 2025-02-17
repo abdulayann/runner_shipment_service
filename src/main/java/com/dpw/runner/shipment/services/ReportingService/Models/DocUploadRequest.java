@@ -5,7 +5,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class DocUploadRequest implements IDocumentModel{
+public class DocUploadRequest implements IDocumentModel {
     private String key;
     private String type;
     private String entityType;
@@ -29,7 +29,7 @@ public class DocUploadRequest implements IDocumentModel{
         this.isTransferEnabled = other.isTransferEnabled;
     }
 
-    public DocUploadRequest(){
+    public DocUploadRequest() {
 
     }
 }

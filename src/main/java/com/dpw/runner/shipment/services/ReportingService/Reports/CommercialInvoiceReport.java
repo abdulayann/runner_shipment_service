@@ -14,24 +14,24 @@ import java.util.Map;
 import static com.dpw.runner.shipment.services.utils.StringUtility.getRandomString;
 
 @Component
-public class CommercialInvoiceReport extends IReport{
+public class CommercialInvoiceReport extends IReport {
 
     @Autowired
     JsonHelper jsonHelper;
     @Autowired
     IShipmentRepository shipmentRepository;
 
-/**
-*
-   * @param id
-   * @return dictionary object
-*/
+    /**
+     * @param id
+     * @return dictionary object
+     */
     @Override
     public Map<String, Object> getData(Long id) {
         // Package Count, Total amount pending
         // ShipmentProducts in v1 contains this information
         CommercialInvoiceModel model = (CommercialInvoiceModel) getDocumentModel(id);
-        return jsonHelper.convertValue(model, new TypeReference<Map<String, Object>>() {});
+        return jsonHelper.convertValue(model, new TypeReference<Map<String, Object>>() {
+        });
     }
 
     @Override

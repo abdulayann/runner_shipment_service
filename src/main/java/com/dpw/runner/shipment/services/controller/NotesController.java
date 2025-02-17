@@ -33,9 +33,6 @@ public class NotesController {
         this.notesService = notesService;
     }
 
-    private static class MyResponseClass extends RunnerResponse<NotesResponse> {}
-    private static class MyListResponseClass extends RunnerListResponse<NotesResponse> {}
-
     @PostMapping(ApiConstants.API_CREATE)
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = NotesConstants.NOTES_CREATE_SUCCESSFUL, response = MyResponseClass.class),
@@ -89,6 +86,12 @@ public class NotesController {
     @PostMapping(ApiConstants.API_LIST)
     public ResponseEntity<IRunnerResponse> list(@RequestBody @NonNull @Valid ListCommonRequest listCommonRequest) {
         return notesService.list(CommonRequestModel.buildRequest(listCommonRequest));
+    }
+
+    private static class MyResponseClass extends RunnerResponse<NotesResponse> {
+    }
+
+    private static class MyListResponseClass extends RunnerListResponse<NotesResponse> {
     }
 
 }

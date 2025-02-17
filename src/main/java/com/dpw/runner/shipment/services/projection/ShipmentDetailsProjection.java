@@ -6,10 +6,15 @@ import com.dpw.runner.shipment.services.utils.Generated;
 public interface ShipmentDetailsProjection {
 
     Integer getTenantId();
+
     String getHblNumber();
+
     String getShipmentId();
+
     String getShipmentType(); // shipment_type
+
     String getTransportMode(); // transport_mode
+
     Long getId();
 
     class NullShipmentDetailsProjection implements ShipmentDetailsProjection {

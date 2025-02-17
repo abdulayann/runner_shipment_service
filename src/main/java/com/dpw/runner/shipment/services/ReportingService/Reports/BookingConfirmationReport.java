@@ -16,19 +16,16 @@ import java.util.*;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 
 @Component
-public class BookingConfirmationReport extends IReport{
+public class BookingConfirmationReport extends IReport {
 
+    public Boolean printWithoutTranslation;
     @Autowired
     private JsonHelper jsonHelper;
-
     @Autowired
     private IV1Service v1Service;
-
     @Autowired
     private HblReport hblReport;
-
     private Long id;
-    public Boolean printWithoutTranslation;
 
     @Override
     public Map<String, Object> getData(Long id) {
@@ -56,11 +53,11 @@ public class BookingConfirmationReport extends IReport{
         List<String> chargeTypesWithoutTranslation = new ArrayList<>();
 
         populateShipmentOrganizationsLL(bookingConfirmationModel.hblModel.shipment, dictionary, orgWithoutTranslation);
-        if(dictionary.containsKey(CHARGES_SMALL) && dictionary.get(CHARGES_SMALL) instanceof List){
+        if (dictionary.containsKey(CHARGES_SMALL) && dictionary.get(CHARGES_SMALL) instanceof List) {
             List<Map<String, Object>> values = (List<Map<String, Object>>) dictionary.get(CHARGES_SMALL);
-            for (Map<String, Object> v: values) {
-                if(v.containsKey(CHARGE_TYPE_CODE) && v.get(CHARGE_TYPE_CODE) != null) {
-                    v.put(CHARGE_TYPE_DESCRIPTION_LL, GetChargeTypeDescriptionLL((String)v.get(CHARGE_TYPE_CODE), chargeTypesWithoutTranslation));
+            for (Map<String, Object> v : values) {
+                if (v.containsKey(CHARGE_TYPE_CODE) && v.get(CHARGE_TYPE_CODE) != null) {
+                    v.put(CHARGE_TYPE_DESCRIPTION_LL, GetChargeTypeDescriptionLL((String) v.get(CHARGE_TYPE_CODE), chargeTypesWithoutTranslation));
                 }
             }
         }
@@ -97,7 +94,7 @@ public class BookingConfirmationReport extends IReport{
             for (ReferenceNumbersModel refNo : referenceNumbers) {
                 if (refNo != null && refNo.getType() != null &&
                         (refNo.getType().equalsIgnoreCase(ReferenceNumbersConstants.FEEDER_VESSEL) ||
-                        refNo.getType().equalsIgnoreCase(ReferenceNumbersConstants.MOTHER_VESSEL))) {
+                                refNo.getType().equalsIgnoreCase(ReferenceNumbersConstants.MOTHER_VESSEL))) {
                     if (refNo.getType().equalsIgnoreCase(ReferenceNumbersConstants.MOTHER_VESSEL)) {
                         motherReferenceNo.add(refNo);
                     } else if (refNo.getType().equalsIgnoreCase(ReferenceNumbersConstants.FEEDER_VESSEL)) {

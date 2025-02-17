@@ -9,13 +9,15 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryR
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import org.springframework.http.ResponseEntity;
+
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
-import javax.servlet.http.HttpServletResponse;
-import org.springframework.http.ResponseEntity;
 
 public interface IContainerService extends ICommonService {
     ResponseEntity<IRunnerResponse> calculateAchieved_AllocatedForSameUnit(CommonRequestModel commonRequestModel);
+
     ResponseEntity<IRunnerResponse> calculateAllocatedData(CommonRequestModel commonRequestModel);
 
 //    ResponseEntity<?> calculateAchievedQuantity_onPackAssign(CommonRequestModel commonRequestModel);
@@ -42,6 +44,7 @@ public interface IContainerService extends ICommonService {
     void exportContainers(HttpServletResponse response, ExportContainerListRequest request) throws RunnerException, IOException, IllegalAccessException;
 
     ResponseEntity<IRunnerResponse> V1BulkContainerCreateAndUpdate(CommonRequestModel commonRequestModel);
+
     ResponseEntity<IRunnerResponse> validateContainerNumber(String containerNumber);
 
     ResponseEntity<IRunnerResponse> getContainers(CommonRequestModel commonRequestModel);
@@ -49,10 +52,15 @@ public interface IContainerService extends ICommonService {
     ResponseEntity<IRunnerResponse> checkForDelete(CommonRequestModel commonRequestModel);
 
     ContainerSummaryResponse calculateContainerSummary(List<Containers> containersList, String transportMode, String containerCategory) throws RunnerException;
+
     Containers calculateUtilization(Containers container);
+
     ResponseEntity<IRunnerResponse> containerSync(List<Long> request);
+
     void pushContainersToDependentServices(List<Containers> containersList, List<Containers> oldContainers);
+
     void changeContainerWtVolForSeaFCLDetach(Containers container);
+
     void changeContainerWtVolForSeaLCLDetach(Containers container, Packing packing) throws RunnerException;
 
     ResponseEntity<IRunnerResponse> getByModuleGuidAndModuleType(String moduleGuid, String moduleType);

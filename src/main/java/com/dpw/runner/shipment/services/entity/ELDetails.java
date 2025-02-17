@@ -1,7 +1,5 @@
 package com.dpw.runner.shipment.services.entity;
 
-import javax.persistence.*;
-
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.entity.enums.MergeClass;
 import lombok.*;
@@ -9,6 +7,7 @@ import lombok.experimental.Accessors;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
+import javax.persistence.*;
 import java.math.BigDecimal;
 
 

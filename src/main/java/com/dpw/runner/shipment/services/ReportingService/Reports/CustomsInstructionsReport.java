@@ -22,7 +22,7 @@ import java.util.Map;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.*;
 
 @Component
-public class CustomsInstructionsReport extends IReport{
+public class CustomsInstructionsReport extends IReport {
 
     @Autowired
     private JsonHelper jsonHelper;
@@ -38,13 +38,13 @@ public class CustomsInstructionsReport extends IReport{
         CustomsInstructionsModel customsInstructionsModel = new CustomsInstructionsModel();
         customsInstructionsModel.shipmentDetails = getShipment(id);
         validateAirAndOceanDGCheck(customsInstructionsModel.shipmentDetails);
-        if(customsInstructionsModel.shipmentDetails.getContainersList() != null && customsInstructionsModel.shipmentDetails.getContainersList().size() > 0) {
+        if (customsInstructionsModel.shipmentDetails.getContainersList() != null && customsInstructionsModel.shipmentDetails.getContainersList().size() > 0) {
             List<ShipmentContainers> shipmentContainersList = new ArrayList<>();
-            for (ContainerModel containerModel: customsInstructionsModel.shipmentDetails.getContainersList()) {
+            for (ContainerModel containerModel : customsInstructionsModel.shipmentDetails.getContainersList()) {
                 ShipmentContainers shipmentContainers = getShipmentContainer(containerModel);
                 shipmentContainersList.add(shipmentContainers);
             }
-            if(shipmentContainersList.size() > 0)
+            if (shipmentContainersList.size() > 0)
                 customsInstructionsModel.setShipmentContainers(shipmentContainersList);
         }
         customsInstructionsModel.shipmentDetails.setShipmentContainersList(customsInstructionsModel.getShipmentContainers());
@@ -75,9 +75,9 @@ public class CustomsInstructionsReport extends IReport{
                 customsInstructionsModel.shipmentDetails.getConsignee().getAddressData() : null, ReportConstants.ADDRESS1)));
         dictionary.put(ReportConstants.EXPORT_BROKER, exportBroker);
         dictionary.put(ReportConstants.IMPORT_BROKER, importBroker);
-        if(customsInstructionsModel.shipmentDetails.getCarrierDetails() != null) {
+        if (customsInstructionsModel.shipmentDetails.getCarrierDetails() != null) {
             VesselsResponse vesselsResponse = getVesselsData(customsInstructionsModel.shipmentDetails.getCarrierDetails().getVessel());
-            if(vesselsResponse != null)
+            if (vesselsResponse != null)
                 dictionary.put(ReportConstants.VESSEL_NAME, vesselsResponse.getName());
         }
         // TODO- Logo Path
@@ -96,10 +96,11 @@ public class CustomsInstructionsReport extends IReport{
             dictionary.put(ReportConstants.SHIPMENT_CONTAINERS, customsInstructionsModel.getShipmentContainers());
             List<Map<String, Object>> valuesContainer = new ArrayList<>();
             for (ShipmentContainers shipmentContainers : customsInstructionsModel.getShipmentContainers()) {
-                valuesContainer.add(jsonHelper.convertValue(shipmentContainers, new TypeReference<>() {}));
+                valuesContainer.add(jsonHelper.convertValue(shipmentContainers, new TypeReference<>() {
+                }));
             }
             for (Map<String, Object> v : valuesContainer) {
-                if(v.containsKey(ReportConstants.GROSS_VOLUME) && v.get(ReportConstants.GROSS_VOLUME) != null)
+                if (v.containsKey(ReportConstants.GROSS_VOLUME) && v.get(ReportConstants.GROSS_VOLUME) != null)
                     v.put(ReportConstants.GROSS_VOLUME, ConvertToVolumeNumberFormat(v.get(ReportConstants.GROSS_VOLUME), v1TenantSettingsResponse));
                 if (v.containsKey(ReportConstants.GROSS_WEIGHT) && v.get(ReportConstants.GROSS_WEIGHT) != null)
                     v.put(ReportConstants.GROSS_WEIGHT, ConvertToWeightNumberFormat(v.get(ReportConstants.GROSS_WEIGHT), v1TenantSettingsResponse));

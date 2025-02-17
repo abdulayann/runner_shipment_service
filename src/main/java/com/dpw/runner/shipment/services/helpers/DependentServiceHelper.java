@@ -20,19 +20,20 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 
 import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
+
 @Component
 @Slf4j
 public class DependentServiceHelper {
 
     private final JsonHelper jsonHelper;
     private final KafkaProducer producer;
-    @Value("${shipmentsKafka.queue}")
-    private String senderQueue;
     private final ITrackingServiceAdapter trackingServiceAdapter;
     private final IContainerService containerService;
+    @Value("${shipmentsKafka.queue}")
+    private String senderQueue;
 
     DependentServiceHelper(JsonHelper jsonHelper, KafkaProducer producer, ITrackingServiceAdapter trackingServiceAdapter
-        , IContainerService containerService) {
+            , IContainerService containerService) {
         this.jsonHelper = jsonHelper;
         this.producer = producer;
         this.trackingServiceAdapter = trackingServiceAdapter;
@@ -41,7 +42,7 @@ public class DependentServiceHelper {
 
     public void pushShipmentDataToDependentService(ShipmentDetails shipmentDetails, boolean isCreate, boolean isAutoSellRequired, Set<Containers> oldContainers) {
         try {
-            if(shipmentDetails.getTenantId() == null)
+            if (shipmentDetails.getTenantId() == null)
                 shipmentDetails.setTenantId(TenantContext.getCurrentTenant());
             if (IsStringNullOrEmpty(shipmentDetails.getUpdatedBy()))
                 shipmentDetails.setUpdatedBy(UserContext.getUser().getUsername());
@@ -51,43 +52,40 @@ public class DependentServiceHelper {
                 shipmentRequest.setShipmentStatus(ShipmentStatus.values()[shipmentDetails.getStatus()].toString());
             KafkaResponse kafkaResponse = producer.getKafkaResponse(shipmentRequest, isCreate);
             kafkaResponse.setTransactionId(UUID.randomUUID().toString());
-            log.info("Producing shipment data to kafka with RequestId: {} and payload: {}",LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(kafkaResponse));
+            log.info("Producing shipment data to kafka with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(kafkaResponse));
             producer.produceToKafka(jsonHelper.convertToJson(kafkaResponse), senderQueue, StringUtility.convertToString(shipmentDetails.getGuid()));
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             log.error("Error Producing shipment to kafka, error is due to " + e.getMessage());
         }
         try {
-            if(shipmentDetails.getStatus() != null && !Objects.equals(shipmentDetails.getStatus(), ShipmentStatus.Completed.getValue()) || shipmentDetails.getStatus() != null && !Objects.equals(shipmentDetails.getStatus(), ShipmentStatus.Cancelled.getValue())
-                    && trackingServiceAdapter.checkIfConsolAttached(shipmentDetails)|| (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipmentDetails.getShipmentType().equals(Constants.SHIPMENT_TYPE_DRT) && !Objects.isNull(shipmentDetails.getMasterBill()))) {
+            if (shipmentDetails.getStatus() != null && !Objects.equals(shipmentDetails.getStatus(), ShipmentStatus.Completed.getValue()) || shipmentDetails.getStatus() != null && !Objects.equals(shipmentDetails.getStatus(), ShipmentStatus.Cancelled.getValue())
+                    && trackingServiceAdapter.checkIfConsolAttached(shipmentDetails) || (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipmentDetails.getShipmentType().equals(Constants.SHIPMENT_TYPE_DRT) && !Objects.isNull(shipmentDetails.getMasterBill()))) {
                 UniversalTrackingPayload _utPayload = trackingServiceAdapter.mapShipmentDataToTrackingServiceData(shipmentDetails);
                 List<UniversalTrackingPayload> trackingPayloads = new ArrayList<>();
-                if(_utPayload != null) {
+                if (_utPayload != null) {
                     trackingPayloads.add(_utPayload);
                     var jsonBody = jsonHelper.convertToJson(trackingPayloads);
-                    log.info("Producing tracking service payload from shipment with RequestId: {} and payload: {}",LoggerHelper.getRequestIdFromMDC(), jsonBody);
+                    log.info("Producing tracking service payload from shipment with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonBody);
                     trackingServiceAdapter.publishUpdatesToTrackingServiceQueue(jsonBody, false);
                 }
             }
-            if(shipmentDetails.getSource() != null && shipmentDetails.getSource().equals(Constants.API)) {
-                var events = trackingServiceAdapter.getAllEvents(shipmentDetails,null, shipmentDetails.getBookingReference());
-                var universalEventsPayload = trackingServiceAdapter.mapEventDetailsForTracking(shipmentDetails.getBookingReference(),Constants.SHIPMENT, shipmentDetails.getShipmentId(), events);
-                List<UniversalTrackingPayload.UniversalEventsPayload> trackingPayloads= new ArrayList<>();
-                if(universalEventsPayload != null) {
+            if (shipmentDetails.getSource() != null && shipmentDetails.getSource().equals(Constants.API)) {
+                var events = trackingServiceAdapter.getAllEvents(shipmentDetails, null, shipmentDetails.getBookingReference());
+                var universalEventsPayload = trackingServiceAdapter.mapEventDetailsForTracking(shipmentDetails.getBookingReference(), Constants.SHIPMENT, shipmentDetails.getShipmentId(), events);
+                List<UniversalTrackingPayload.UniversalEventsPayload> trackingPayloads = new ArrayList<>();
+                if (universalEventsPayload != null) {
                     trackingPayloads.add(universalEventsPayload);
                     var jsonBody = jsonHelper.convertToJson(trackingPayloads);
-                    log.info("Producing tracking service payload from shipment with RequestId: {} and payload: {}",LoggerHelper.getRequestIdFromMDC(), jsonBody);
-                    trackingServiceAdapter.publishUpdatesToTrackingServiceQueue(jsonBody,true);
+                    log.info("Producing tracking service payload from shipment with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonBody);
+                    trackingServiceAdapter.publishUpdatesToTrackingServiceQueue(jsonBody, true);
                 }
             }
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             log.error(e.getMessage());
         }
         try {
             containerService.pushContainersToDependentServices(new ArrayList<>(shipmentDetails.getContainersList()), new ArrayList<>(oldContainers));
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             log.error("Error producing message due to " + e.getMessage());
         }
     }

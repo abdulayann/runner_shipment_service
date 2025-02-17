@@ -1,9 +1,9 @@
 package com.dpw.runner.shipment.services.entity.enums;
 
 public enum FileStatus {
-    WRK(0 , "Working"),
-    INV(1 , "Invoiced"),
-    CLS(2 , "Closed");
+    WRK(0, "Working"),
+    INV(1, "Invoiced"),
+    CLS(2, "Closed");
     private final int value;
     private final String description;
 

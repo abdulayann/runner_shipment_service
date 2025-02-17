@@ -12,10 +12,12 @@ import com.dpw.runner.shipment.services.exception.exceptions.ReportException;
 import com.dpw.runner.shipment.services.service.impl.ConsolidationService;
 import com.dpw.runner.shipment.services.service.impl.ShipmentService;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
 import org.apache.commons.lang3.ObjectUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,18 +26,17 @@ import org.springframework.stereotype.Component;
 @Component
 public class MawbReport extends IReport {
 
-    private HawbReport hawbReport;
-    private V1ServiceUtil v1ServiceUtil;
-    private ModelMapper modelMapper;
-    private ShipmentService shipmentService;
-    private ConsolidationService consolidationService;
-
     public boolean isDMawb;
+    private final HawbReport hawbReport;
+    private final V1ServiceUtil v1ServiceUtil;
+    private final ModelMapper modelMapper;
+    private final ShipmentService shipmentService;
+    private final ConsolidationService consolidationService;
     private V1TenantSettingsResponse tenantSettings;
 
     @Autowired
     public MawbReport(HawbReport hawbReport, V1ServiceUtil v1ServiceUtil,
-            ModelMapper modelMapper, ShipmentService shipmentService, ConsolidationService consolidationService) {
+                      ModelMapper modelMapper, ShipmentService shipmentService, ConsolidationService consolidationService) {
         this.hawbReport = hawbReport;
         this.v1ServiceUtil = v1ServiceUtil;
         this.modelMapper = modelMapper;
@@ -121,13 +122,12 @@ public class MawbReport extends IReport {
             hawbModel.shipmentDetails = getShipment(id);
             validateAirDGCheckShipments(hawbModel.shipmentDetails);
             String entityType = "MAWB";
-            if(hawbModel.shipmentDetails != null && hawbModel.shipmentDetails.getConsolidationList() != null && !hawbModel.shipmentDetails.getConsolidationList().isEmpty())
-            {
+            if (hawbModel.shipmentDetails != null && hawbModel.shipmentDetails.getConsolidationList() != null && !hawbModel.shipmentDetails.getConsolidationList().isEmpty()) {
                 hawbModel.setConsolidationDetails(hawbModel.shipmentDetails.getConsolidationList().get(0));
                 hawbModel.setMawb(getMawb(hawbModel.getConsolidationDetails().getId(), true));
                 hawbModel.awb = hawbModel.getMawb();
             }
-            if(hawbModel.getMawb() == null){
+            if (hawbModel.getMawb() == null) {
                 hawbModel.awb = getHawb(id);
                 entityType = "DMAWB";
             }
@@ -140,8 +140,8 @@ public class MawbReport extends IReport {
     @Override
     public Map<String, Object> populateDictionary(IDocumentModel documentModel) {
         HawbModel model = (HawbModel) documentModel;
-        var dictionary =  hawbReport.populateDictionary(documentModel);
-        if(model.getConsolidationDetails() != null) {
+        var dictionary = hawbReport.populateDictionary(documentModel);
+        if (model.getConsolidationDetails() != null) {
             populateRaKcDataConsolidation(dictionary, model.getConsolidationDetails());
         }
         return dictionary;

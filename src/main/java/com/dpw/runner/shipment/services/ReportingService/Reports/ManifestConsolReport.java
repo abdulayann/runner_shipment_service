@@ -40,20 +40,20 @@ public class ManifestConsolReport extends IReport {
     IDocumentModel getDocumentModel(Long id) {
         ConsolidationModel consolidationDetails = getConsolidation(id);
         List<ContainerModel> containersList = new ArrayList<>();
-        if(consolidationDetails.getShipmentsList() != null) {
+        if (consolidationDetails.getShipmentsList() != null) {
             for (var shipment : consolidationDetails.getShipmentsList()) {
                 containersList.addAll(shipment.getContainersList());
             }
         }
 
-        ManifestConsolModel model =  ManifestConsolModel.builder()
-            .consolidation(consolidationDetails)
-            .containersList(jsonHelper.convertValueToList(containersList, ShipmentContainers.class))
-            .containerCount(containersList.size())
-            .shipmentDetailsList(consolidationDetails.getShipmentsList())
-            .shipmentCount(consolidationDetails.getShipmentsList().size())
-            .build();
-        if(model.getConsolidation() != null && model.getConsolidation().getCarrierDetails() != null) {
+        ManifestConsolModel model = ManifestConsolModel.builder()
+                .consolidation(consolidationDetails)
+                .containersList(jsonHelper.convertValueToList(containersList, ShipmentContainers.class))
+                .containerCount(containersList.size())
+                .shipmentDetailsList(consolidationDetails.getShipmentsList())
+                .shipmentCount(consolidationDetails.getShipmentsList().size())
+                .build();
+        if (model.getConsolidation() != null && model.getConsolidation().getCarrierDetails() != null) {
             model.setCarrierMasterData(getCarrier(model.getConsolidation().getCarrierDetails().getShippingLine()));
         }
 
@@ -66,7 +66,7 @@ public class ManifestConsolReport extends IReport {
         Map<String, Object> dictionary = new HashMap<>();
         V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
 
-        populateConsolidationFields(model.getConsolidation() , dictionary);
+        populateConsolidationFields(model.getConsolidation(), dictionary);
         List<PackingModel> packingList = GetAllShipmentsPacks(model.getShipmentDetailsList());
         Pair<BigDecimal, String> weightAndUnit = GetTotalWeight(packingList);
         Pair<BigDecimal, String> volumeAndUnit = GetTotalVolume(packingList);
@@ -79,10 +79,11 @@ public class ManifestConsolReport extends IReport {
         Pair<BigDecimal, String> totalPacksManifest = getTotalPacksManifest(model.getShipmentDetailsList());
 
         List<ShipmentAndContainerResponse> shipmentContainers = getShipmentAndContainerResponse(model.getShipmentDetailsList());
-        if(shipmentContainers != null) {
+        if (shipmentContainers != null) {
             List<Map<String, Object>> values = new ArrayList<>();
             for (ShipmentAndContainerResponse shipmentContainers1 : shipmentContainers) {
-                values.add(jsonHelper.convertValue(shipmentContainers1, new TypeReference<>() {}));
+                values.add(jsonHelper.convertValue(shipmentContainers1, new TypeReference<>() {
+                }));
             }
             if (Objects.isNull(values)) values = new ArrayList<>();
             values.forEach(v -> {
@@ -95,7 +96,7 @@ public class ManifestConsolReport extends IReport {
 
 
         List<ShipmentResponse> shipments = getShipmentResponse(model.getShipmentDetailsList());
-        if(shipments != null) {
+        if (shipments != null) {
             var values = shipments.stream()
                     .map(i -> jsonHelper.convertJsonToMap(jsonHelper.convertToJson(i)))
                     .toList();
@@ -126,15 +127,14 @@ public class ManifestConsolReport extends IReport {
 
         dictionary.put(TOTAL_WEIGHT_UNIT, weightAndUnit.getRight());
 
-        if(packingList != null)
-        {
-            for (var packing : packingList)
-            {
-                try{
-                    totalPacks += Integer.parseInt(packing.getPacks());;
-                } catch (Exception ignored){}
+        if (packingList != null) {
+            for (var packing : packingList) {
+                try {
+                    totalPacks += Integer.parseInt(packing.getPacks());
+                } catch (Exception ignored) {
+                }
 
-                if(!allPacksTypes.contains(packing.getPacksType()))
+                if (!allPacksTypes.contains(packing.getPacksType()))
                     allPacksTypes.add(packing.getPacksType());
             }
         }
@@ -149,19 +149,19 @@ public class ManifestConsolReport extends IReport {
 
         dictionary.put(TOTAL_VOLUME_UNIT, volumeAndUnit.getRight());
 
-        if(totalWeightManifest.getLeft().compareTo(BigDecimal.ZERO) > 0)
+        if (totalWeightManifest.getLeft().compareTo(BigDecimal.ZERO) > 0)
             dictionary.put(TOTAL_WEIGHT_MANIFEST, ConvertToWeightNumberFormat(totalWeightManifest.getLeft(), v1TenantSettingsResponse));
         else
             dictionary.put(TOTAL_WEIGHT_MANIFEST, "-");
         dictionary.put(TOTAL_WEIGHT_UNIT_MANIFEST, totalWeightManifest.getRight());
 
-        if(totalVolumeManifest.getLeft().compareTo(BigDecimal.ZERO) > 0)
+        if (totalVolumeManifest.getLeft().compareTo(BigDecimal.ZERO) > 0)
             dictionary.put(TOTAL_VOLUME_MANIFEST, ConvertToVolumeNumberFormat(totalVolumeManifest.getLeft(), v1TenantSettingsResponse));
         else
             dictionary.put(TOTAL_VOLUME_MANIFEST, "-");
         dictionary.put(TOTAL_VOLUME_UNIT_MANIFEST, totalVolumeManifest.getRight());
 
-        if(totalPacksManifest.getLeft().compareTo(BigDecimal.ZERO) > 0)
+        if (totalPacksManifest.getLeft().compareTo(BigDecimal.ZERO) > 0)
             dictionary.put(TOTAL_PACKS_MANIFEST, AmountNumberFormatter.formatWithoutDecimal(totalPacksManifest.getLeft(), model.getShipmentDetailsList().get(0).getFreightOverseasCurrency(), v1TenantSettingsResponse));
         else
             dictionary.put(TOTAL_PACKS_MANIFEST, "-");

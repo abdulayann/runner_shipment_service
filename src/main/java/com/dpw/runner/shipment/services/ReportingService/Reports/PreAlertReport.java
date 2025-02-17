@@ -31,11 +31,9 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 public class PreAlertReport extends IReport {
 
     public static final String COMMODITY = "Commodity";
+    public Boolean printWithoutTranslation;
     @Autowired
     private JsonHelper jsonHelper;
-
-    public Boolean printWithoutTranslation;
-
     @Autowired
     private CommonUtils commonUtils;
 
@@ -53,13 +51,13 @@ public class PreAlertReport extends IReport {
         preAlertModel.tenantDetails = getTenant();
         preAlertModel.shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         preAlertModel.consolidationDetails = getFirstConsolidationFromShipmentId(id);
-        if(preAlertModel.shipmentDetails.getContainersList() != null && preAlertModel.shipmentDetails.getContainersList().size() > 0) {
+        if (preAlertModel.shipmentDetails.getContainersList() != null && preAlertModel.shipmentDetails.getContainersList().size() > 0) {
             List<ShipmentContainers> shipmentContainersList = new ArrayList<>();
-            for (ContainerModel containerModel: preAlertModel.shipmentDetails.getContainersList()) {
+            for (ContainerModel containerModel : preAlertModel.shipmentDetails.getContainersList()) {
                 ShipmentContainers shipmentContainers = getShipmentContainer(containerModel);
                 shipmentContainersList.add(shipmentContainers);
             }
-            if(shipmentContainersList.size() > 0)
+            if (shipmentContainersList.size() > 0)
                 preAlertModel.setShipmentContainers(shipmentContainersList);
         }
         preAlertModel.shipmentDetails.setShipmentContainersList(preAlertModel.getShipmentContainers());
@@ -81,16 +79,16 @@ public class PreAlertReport extends IReport {
         populateShipmentFields(preAlertModel.shipmentDetails, dictionary);
         populateShipmentOrganizationsLL(preAlertModel.shipmentDetails, dictionary, orgWithoutTranslation);
         List<String> consigner = new ArrayList<>();
-        if(preAlertModel.shipmentDetails.getConsigner() != null) {
+        if (preAlertModel.shipmentDetails.getConsigner() != null) {
             consigner = getOrgAddressWithPhoneEmail(preAlertModel.shipmentDetails.getConsigner());
-            if(preAlertModel.shipmentDetails.getConsigner().getAddressData() != null) {
+            if (preAlertModel.shipmentDetails.getConsigner().getAddressData() != null) {
                 dictionary.put(ReportConstants.ConsignerPhone, preAlertModel.shipmentDetails.getConsigner().getAddressData().get("ContactPhone"));
             }
         }
         List<String> consignee = new ArrayList<>();
-        if(preAlertModel.shipmentDetails.getConsignee() != null) {
+        if (preAlertModel.shipmentDetails.getConsignee() != null) {
             consignee = getOrgAddressWithPhoneEmail(preAlertModel.shipmentDetails.getConsignee());
-            if(preAlertModel.shipmentDetails.getConsignee().getAddressData() != null) {
+            if (preAlertModel.shipmentDetails.getConsignee().getAddressData() != null) {
                 dictionary.put(ReportConstants.CONSIGNEE_PHONE, preAlertModel.shipmentDetails.getConsignee().getAddressData().get("ContactPhone"));
             }
         }
@@ -106,41 +104,43 @@ public class PreAlertReport extends IReport {
                 getValueFromMap(preAlertModel.shipmentDetails.getConsigner().getOrgData(), ReportConstants.FULL_NAME) != null) {
             String consignerFullName = getValueFromMap(preAlertModel.shipmentDetails.getConsigner().getOrgData(), ReportConstants.FULL_NAME);
             dictionary.put(ReportConstants.CONSIGNER, consignerFullName);
-            if(Boolean.TRUE.equals(preAlertModel.shipmentSettingsDetails.getDisableBlPartiesName())) {
+            if (Boolean.TRUE.equals(preAlertModel.shipmentSettingsDetails.getDisableBlPartiesName())) {
                 dictionary.put(ReportConstants.CONSIGNER_AIR, consigner);
             } else {
                 dictionary.put(ReportConstants.CONSIGNER_AIR, getCompleteNameAndAddress(consignerFullName, consigner));
             }
             try {
                 dictionary.put(ReportConstants.ConsignerFullName, consignerFullName);
-            } catch (Exception ignored) { }
+            } catch (Exception ignored) {
+            }
         }
         if (preAlertModel.shipmentDetails.getConsignee() != null &&
                 preAlertModel.shipmentDetails.getConsignee().getOrgData() != null &&
                 getValueFromMap(preAlertModel.shipmentDetails.getConsignee().getOrgData(), ReportConstants.FULL_NAME) != null) {
             String consigneeFullName = getValueFromMap(preAlertModel.shipmentDetails.getConsignee().getOrgData(), ReportConstants.FULL_NAME);
             dictionary.put(ReportConstants.CONSIGNEE, consigneeFullName);
-            if(Boolean.TRUE.equals(preAlertModel.shipmentSettingsDetails.getDisableBlPartiesName())) {
+            if (Boolean.TRUE.equals(preAlertModel.shipmentSettingsDetails.getDisableBlPartiesName())) {
                 dictionary.put(ReportConstants.CONSIGNEE_AIR, consignee);
             } else {
                 dictionary.put(ReportConstants.CONSIGNEE_AIR, getCompleteNameAndAddress(consigneeFullName, consignee));
             }
             try {
                 dictionary.put(ReportConstants.CONSIGNEE_FULL_NAME, consigneeFullName);
-            } catch (Exception ignored) { }
+            } catch (Exception ignored) {
+            }
         }
         if (preAlertModel.shipmentDetails.getAdditionalDetails() != null &&
                 preAlertModel.shipmentDetails.getAdditionalDetails().getNotifyParty() != null &&
                 preAlertModel.shipmentDetails.getAdditionalDetails().getNotifyParty().getOrgData() != null &&
                 getValueFromMap(preAlertModel.shipmentDetails.getAdditionalDetails().getNotifyParty().getOrgData(), ReportConstants.FULL_NAME) != null) {
             String notifyFullName = getValueFromMap(preAlertModel.shipmentDetails.getAdditionalDetails().getNotifyParty().getOrgData(), ReportConstants.FULL_NAME);
-            if(Boolean.TRUE.equals(preAlertModel.shipmentSettingsDetails.getDisableBlPartiesName())) {
+            if (Boolean.TRUE.equals(preAlertModel.shipmentSettingsDetails.getDisableBlPartiesName())) {
                 dictionary.put(ReportConstants.NOTIFY_PARTY_AIR, notify);
             } else {
                 dictionary.put(ReportConstants.NOTIFY_PARTY_AIR, getCompleteNameAndAddress(notifyFullName, notify));
             }
         }
-        if(preAlertModel.shipmentDetails.getAdditionalDetails() != null) {
+        if (preAlertModel.shipmentDetails.getAdditionalDetails() != null) {
             dictionary.put(NOTIFY_PARTY, ReportHelper.getOrgAddressDetails(preAlertModel.shipmentDetails.getAdditionalDetails().getNotifyParty()));
         }
 
@@ -199,15 +199,15 @@ public class PreAlertReport extends IReport {
         dictionary.put(ReportConstants.FLIGHT_NAME, preAlertModel.shipmentDetails.getCarrierDetails().getShippingLine());
         dictionary.put(ReportConstants.MARKS_NO, preAlertModel.shipmentDetails.getMarksNum());
 //        dictionary.put(ReportConstants.CMS_REMARKS, preAlertModel.shipmentDetails.) TODO- Where is Remarks Field in Shipment?
-        if(preAlertModel.shipmentDetails.getVolumetricWeight() != null)
+        if (preAlertModel.shipmentDetails.getVolumetricWeight() != null)
             dictionary.put(ReportConstants.V_WEIGHT_AND_UNIT, String.format(REGEX_S_S, twoDecimalPlacesFormatDecimal(preAlertModel.shipmentDetails.getVolumetricWeight()), preAlertModel.shipmentDetails.getVolumetricWeightUnit()));
-        if(preAlertModel.shipmentDetails.getWeight() != null)
+        if (preAlertModel.shipmentDetails.getWeight() != null)
             dictionary.put(ReportConstants.WEIGHT_AND_UNIT, String.format(REGEX_S_S, ConvertToWeightNumberFormat(preAlertModel.shipmentDetails.getWeight(), v1TenantSettingsResponse), preAlertModel.shipmentDetails.getWeightUnit()));
-        if(preAlertModel.shipmentDetails.getVolume() != null)
+        if (preAlertModel.shipmentDetails.getVolume() != null)
             dictionary.put(ReportConstants.VOLUME_AND_UNIT, String.format(REGEX_S_S, ConvertToVolumeNumberFormat(preAlertModel.shipmentDetails.getVolume(), v1TenantSettingsResponse), preAlertModel.shipmentDetails.getVolumeUnit()));
-        if(preAlertModel.shipmentDetails.getVolume() != null)
+        if (preAlertModel.shipmentDetails.getVolume() != null)
             dictionary.put(ReportConstants.TOTAL_VOLUME_, String.format(REGEX_S_S, ConvertToVolumeNumberFormat(preAlertModel.shipmentDetails.getVolume(), v1TenantSettingsResponse), preAlertModel.shipmentDetails.getVolumeUnit()));
-        if(preAlertModel.shipmentDetails.getWeight() != null)
+        if (preAlertModel.shipmentDetails.getWeight() != null)
             dictionary.put(ReportConstants.TOTAL_WEIGHT_, String.format(REGEX_S_S, ConvertToWeightNumberFormat(preAlertModel.shipmentDetails.getWeight(), v1TenantSettingsResponse), preAlertModel.shipmentDetails.getWeightUnit()));
         dictionary.put(ReportConstants.TOTAL_PCS, preAlertModel.noofpackages_word);
         List<String> unlocoRequests = this.createUnLocoRequestFromShipmentModel(preAlertModel.shipmentDetails);
@@ -236,18 +236,18 @@ public class PreAlertReport extends IReport {
             dictionary.put(ReportConstants.PPCC, preAlertModel.consolidationDetails.getPayment());
         else
             dictionary.put(ReportConstants.PPCC, null);
-        if(preAlertModel.shipmentDetails.getPackingList() != null && preAlertModel.shipmentDetails.getPackingList().size() > 0) {
+        if (preAlertModel.shipmentDetails.getPackingList() != null && preAlertModel.shipmentDetails.getPackingList().size() > 0) {
             List<Map<String, Object>> packDictionary = new ArrayList<>();
             for (PackingModel pack : preAlertModel.shipmentDetails.getPackingList()) {
                 String packJson = jsonHelper.convertToJson(pack);
                 packDictionary.add(jsonHelper.convertJsonToMap(packJson));
             }
-            if(packDictionary.size() > 0) {
-                for(Map<String, Object> v: packDictionary) {
+            if (packDictionary.size() > 0) {
+                for (Map<String, Object> v : packDictionary) {
                     JsonDateFormat(v);
-                    if(v.containsKey(COMMODITY) && v.get(COMMODITY) != null) {
+                    if (v.containsKey(COMMODITY) && v.get(COMMODITY) != null) {
                         CommodityResponse commodityResponse = getCommodity(v.get(COMMODITY).toString());
-                        if(commodityResponse != null)
+                        if (commodityResponse != null)
                             dictionary.put(ReportConstants.COMMODITY_DESC, commodityResponse.getDescription());
                     }
                     //

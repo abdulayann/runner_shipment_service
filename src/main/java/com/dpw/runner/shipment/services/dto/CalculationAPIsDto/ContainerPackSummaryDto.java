@@ -13,8 +13,9 @@ import java.util.Map;
 import java.util.UUID;
 
 @Data
-public class ContainerPackSummaryDto implements IRunnerResponse{
+public class ContainerPackSummaryDto implements IRunnerResponse {
     private List<PacksList> packsList;
+
     @Data
     public static class PacksList implements IRunnerResponse {
         private Long id;

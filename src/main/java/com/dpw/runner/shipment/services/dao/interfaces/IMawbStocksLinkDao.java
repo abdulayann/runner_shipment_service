@@ -9,10 +9,16 @@ import java.util.List;
 
 public interface IMawbStocksLinkDao {
     MawbStocksLink save(MawbStocksLink mawbStocksLink);
+
     Page<MawbStocksLink> findAll(Specification<MawbStocksLink> spec, Pageable pageable);
+
     List<MawbStocksLink> findByMawbNumber(String mawbNumber);
+
     void deleteByParentId(Long parentId);
+
     void deLinkExistingMawbStockLink(String mawbNumber);
+
     String assignNextMawbNumber(Long parentId);
+
     Long validateDuplicateMawbNumber(List<String> mawbNumbers);
 }

@@ -11,9 +11,14 @@ import java.util.Optional;
 public interface ITiContainerDao {
 
     List<TiContainers> saveAll(List<TiContainers> tiContainersList);
+
     TiContainers save(TiContainers tiContainers);
+
     Page<TiContainers> findAll(Specification<TiContainers> spec, Pageable pageable);
+
     Optional<TiContainers> findById(Long id);
+
     void delete(TiContainers tiContainers);
+
     List<TiContainers> findByIds(List<Long> id);
 }

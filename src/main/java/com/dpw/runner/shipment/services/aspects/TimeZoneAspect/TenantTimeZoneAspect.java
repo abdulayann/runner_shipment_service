@@ -50,7 +50,7 @@ public class TenantTimeZoneAspect {
 
         //for handling request
         for (Object arg : args) {
-            if(arg != null && !skipTimeZone)
+            if (arg != null && !skipTimeZone)
                 transformTimeZoneRecursively(arg, browserTimeZone, tenantTimeZone, enableTimeZoneFlag, true);
         }
 
@@ -70,11 +70,12 @@ public class TenantTimeZoneAspect {
 
     /**
      * Recursive Function to transform Date Fields for Nested Fields
-     * @param arg - Request Object
-     * @param browserTimeZone - Browser Time Zone From Request
-     * @param tenantTimeZone - Tenant Time Zone (Consider only when enableTimeZoneFlag is true)
+     *
+     * @param arg                - Request Object
+     * @param browserTimeZone    - Browser Time Zone From Request
+     * @param tenantTimeZone     - Tenant Time Zone (Consider only when enableTimeZoneFlag is true)
      * @param enableTimeZoneFlag - Whether to consider Tenant Time Zone or Not
-     * @param beforeExecution - To check whether timeZone Changes should be for Request(true) Or for Response(false)
+     * @param beforeExecution    - To check whether timeZone Changes should be for Request(true) Or for Response(false)
      */
     private void transformTimeZoneRecursively(Object arg, String browserTimeZone, String tenantTimeZone, boolean enableTimeZoneFlag, boolean beforeExecution) throws IllegalAccessException {
         Class<?> currentFieldClass = arg.getClass();
@@ -83,7 +84,7 @@ public class TenantTimeZoneAspect {
             for (Field field : currentFieldClass.getDeclaredFields()) {
                 if (field.isAnnotationPresent(ExcludeTimeZone.class)) continue;
 
-                if(!field.trySetAccessible()) continue;
+                if (!field.trySetAccessible()) continue;
 
                 field.setAccessible(true);
                 Object fieldValue = field.get(arg);
@@ -135,8 +136,7 @@ public class TenantTimeZoneAspect {
 
     private boolean skipTimeZone() {
         RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
-        if(Objects.nonNull(requestAttributes))
-        {
+        if (Objects.nonNull(requestAttributes)) {
             ServletRequestAttributes attributes = (ServletRequestAttributes) requestAttributes;
             String skipTimeZone = attributes.getRequest().getHeader(TimeZoneConstants.SKIP_TIME_ZONE);
             return Objects.equals(skipTimeZone, "true");

@@ -4,8 +4,8 @@ import lombok.Getter;
 
 @Getter
 public enum OtherPartyType {
-  SHIPPER,
-  CONSIGNEE,
-  ISSUING_AGENT,
-  NOTIFY;
+    SHIPPER,
+    CONSIGNEE,
+    ISSUING_AGENT,
+    NOTIFY
 }

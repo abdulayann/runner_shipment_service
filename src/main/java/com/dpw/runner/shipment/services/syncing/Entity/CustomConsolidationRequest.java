@@ -3,11 +3,13 @@ package com.dpw.runner.shipment.services.syncing.Entity;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
 import lombok.Data;
 
 @Data
@@ -69,7 +71,7 @@ public class CustomConsolidationRequest implements IRunnerResponse, IRunnerReque
     private UUID Guid;
     @JsonProperty("SourceGuid")
     private UUID SourceGuid;
-//    @JsonProperty("Id")
+    //    @JsonProperty("Id")
 //    private Long Id;
     @JsonProperty("IntraBranch")
     private boolean IntraBranch;
@@ -189,7 +191,7 @@ public class CustomConsolidationRequest implements IRunnerResponse, IRunnerReque
     private List<String> shipmentRefNumbers;
     @JsonProperty("Type")
     private String Type;
-   @JsonProperty("ConsolidationNumber")
+    @JsonProperty("ConsolidationNumber")
     private String ConsolidationNumber;
     // @JsonProperty("ConsolidationId
     // private Long ConsolidationId;
@@ -458,7 +460,7 @@ public class CustomConsolidationRequest implements IRunnerResponse, IRunnerReque
     private Integer Bookingstatus;
     @JsonProperty("BookingId")
     private String BookingId;
-//    @JsonProperty("ShipmentOrders
+    //    @JsonProperty("ShipmentOrders
 //    private List<OrdersRow> ShipmentOrders;
 //    @JsonProperty("Docs
 //    private List<FileRepoRow> Docs;

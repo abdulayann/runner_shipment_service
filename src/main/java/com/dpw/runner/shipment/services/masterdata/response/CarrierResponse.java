@@ -11,8 +11,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CarrierResponse {
-    @JsonProperty("Id")
-    private int id;
     @JsonProperty("ItemValue")
     public String itemValue;
     @JsonProperty("ItemDescription")
@@ -43,5 +41,7 @@ public class CarrierResponse {
     public Boolean hasAirPort;
     @JsonProperty("AirLinePrefixValue")
     public String airLinePrefixValue;
+    @JsonProperty("Id")
+    private int id;
 
 }

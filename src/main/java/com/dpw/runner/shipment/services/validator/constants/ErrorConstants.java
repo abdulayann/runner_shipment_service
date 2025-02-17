@@ -1,8 +1,6 @@
 package com.dpw.runner.shipment.services.validator.constants;
 
 public class ErrorConstants {
-    private ErrorConstants(){}
-
     public static final String INVALID_FIELD_TYPE_VALIDATION = "Invalid field type for field: %s, given field type: %s but expected type was: %s.";
     public static final String INVALID_COMPARISION_VALIDATION = "Comparison validation failed between field %s and %s.";
     public static final String INVALID_REQUIRED_FIELD_VALIDATION = "Required field validation failed for field: %s.";
@@ -22,4 +20,6 @@ public class ErrorConstants {
     public static final String VALIDATE_JOB_TYPE_CHANGE = "Pull/ Push request is already in progress, Cannot change Consolidation Type.";
     public static final String INVALID_TRANSPORT_MODE = "Selected Transport Mode %s is not allowed.";
     public static final String ERROR_WHILE_CREATING_EVENT = "Error occurred while creating event: with exception: %s";
+    private ErrorConstants() {
+    }
 }

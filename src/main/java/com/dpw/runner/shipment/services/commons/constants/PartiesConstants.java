@@ -1,19 +1,13 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 public class PartiesConstants {
-    private PartiesConstants(){}
     public static final String PARTIES_API_HANDLE = "/api/v2/parties";
     public static final String PARTIES_CREATE_SUCCESSFUL = "Successful Parties  Creation";
-
     public static final String PARTIES_UPDATE_SUCCESSFUL = "Successful Parties  Update";
-
     public static final String PARTIES_LIST_SUCCESSFUL = "Successful Parties  List Retrieval";
     public static final String PARTIES_VALIDATE_ELNUMBER_SUCCESSFUL = "Successful ELNumber validation";
-
     public static final String PARTIES_DELETE_SUCCESSFUL = "Successful Parties  Delete";
-
     public static final String PARTIES_RETRIEVE_BY_ID_SUCCESSFUL = "Successful Parties Details Retrieval By Id";
-
     /**
      * Party Json Fields
      */
@@ -47,11 +41,8 @@ public class PartiesConstants {
     public static final String FUSION = "FUSION";
     public static final String BILLABLE_FLAG = "BILLABLE_FLAG";
     public static final String RAW_DATA = "RawData";
-
     public static final String AGENT_IATA_CODE = "AgentIATACode";
     public static final String AGENT_CASS_CODE = "AgentCASSCode";
-
-
     public static final String UNLOCO_CODE = "UnlocoCode";
     public static final String CURRENCY_CODE = "CurrencyCode";
     public static final String FAX = "Fax";
@@ -59,8 +50,9 @@ public class PartiesConstants {
     public static final String API = "API";
     public static final String KC_RA_NUMBER = "KCRANumber";
     public static final String KC_RA_EXPIRY = "KCRAExpiry";
-
     public static final String REGULATED_AGENT = "RegulatedAgent";
     public static final String KNOWN_CONSIGNOR = "KnownConsignor";
     public static final String ORG_ID = "OrgId";
+    private PartiesConstants() {
+    }
 }

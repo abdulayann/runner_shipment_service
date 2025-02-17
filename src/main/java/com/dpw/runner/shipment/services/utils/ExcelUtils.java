@@ -36,8 +36,7 @@ public class ExcelUtils {
             cell.setCellValue(strDate);
         } else if (value instanceof BigDecimal) {
             cell.setCellValue(value.toString());
-        } else if (value instanceof ArrayList<?>) {
-            List<?> values = (List<?>) value;
+        } else if (value instanceof ArrayList<?> values) {
             String arrayListAsString = values.stream()
                     .map(Object::toString)
                     .collect(Collectors.joining(", "));

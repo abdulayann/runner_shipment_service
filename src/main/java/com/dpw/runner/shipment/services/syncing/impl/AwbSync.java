@@ -44,20 +44,15 @@ import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 public class AwbSync implements IAwbSync {
 
     @Autowired
-    private JsonHelper jsonHelper;
-
-    @Autowired
     RestTemplate restTemplate;
-
     @Autowired
     ModelMapper modelMapper;
-
     @Autowired
     IShipmentDao shipmentDao;
-
     @Autowired
     IConsolidationDetailsDao consolidationDetailsDao;
-
+    @Autowired
+    private JsonHelper jsonHelper;
     @Autowired
     private IV1Service v1Service;
 
@@ -90,7 +85,7 @@ public class AwbSync implements IAwbSync {
         AwbRequestV2 awbRequest = generateAwbSyncRequest(awb);
         awbRequest.setSaveStatus(saveStatus);
         List<Awb> linkedHawb;
-        if(isMawb) {
+        if (isMawb) {
             linkedHawb = getLinkedAwbFromMawb(awb.getId());
         } else {
             linkedHawb = new ArrayList<>();
@@ -117,25 +112,26 @@ public class AwbSync implements IAwbSync {
         res.setAwbSpecialHandlingCodesMappings(convertToList(awb.getAwbSpecialHandlingCodesMappings(), AwbSpecialHandlingCodesMappingInfoV2.class));
         return res;
     }
-    private <T,P> List<P> convertToList(final List<T> lst, Class<P> clazz) {
-        if(lst == null)
+
+    private <T, P> List<P> convertToList(final List<T> lst, Class<P> clazz) {
+        if (lst == null)
             return null;
-        return  lst.stream()
+        return lst.stream()
                 .map(item -> jsonHelper.convertValue(item, clazz))
                 .toList();
     }
 
     private AwbRequestV2 generateAwbSyncRequest(Awb awb) {
         AwbRequestV2 awbRequest = convertEntityToDto(awb);
-        if(awb.getShipmentId() != null){
+        if (awb.getShipmentId() != null) {
             Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(awb.getShipmentId());
             awbRequest.setShipmentGuid(shipmentDetails.get().getGuid());
         }
-        if(awb.getConsolidationId() != null){
+        if (awb.getConsolidationId() != null) {
             Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(awb.getConsolidationId());
             awbRequest.setConsolidationGuid(consolidationDetails.get().getGuid());
         }
-        return  awbRequest;
+        return awbRequest;
     }
 
     List<Awb> getLinkedAwbFromMawb(Long mawbId) {
@@ -147,7 +143,7 @@ public class AwbSync implements IAwbSync {
         Page<Awb> page = awbDao.findAll(pair.getLeft(), pair.getRight());
 
         List<Awb> linkedHawb = new ArrayList<>();
-        if(!page.isEmpty())
+        if (!page.isEmpty())
             linkedHawb = page.getContent();
 
         return linkedHawb;

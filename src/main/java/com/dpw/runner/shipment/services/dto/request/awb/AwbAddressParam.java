@@ -9,8 +9,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Generated
-public  class AwbAddressParam
-{
+public class AwbAddressParam {
     private String address1;
     private String address2;
     private String state;

@@ -8,7 +8,7 @@ import com.dpw.runner.shipment.services.utils.Generated;
 
 @SuppressWarnings("serial")
 @Generated
-public class InvalidAuthenticationException extends RuntimeException{
+public class InvalidAuthenticationException extends RuntimeException {
 
     public InvalidAuthenticationException(String message) {
         super(message);

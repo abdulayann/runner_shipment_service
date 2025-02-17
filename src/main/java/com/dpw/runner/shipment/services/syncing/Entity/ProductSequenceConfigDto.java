@@ -9,8 +9,6 @@ import java.util.UUID;
 
 @Data
 public class ProductSequenceConfigDto implements IRunnerRequest {
-    @JsonProperty("Guid")
-    private UUID Guid;
     @JsonProperty("TenantProductObj")
     public TenantProductsDto TenantProductObj;
     @JsonProperty("ProductProcessTypes")
@@ -27,4 +25,6 @@ public class ProductSequenceConfigDto implements IRunnerRequest {
     public Integer SerialCounter;
     @JsonProperty("sequenceStartTime")
     public LocalDateTime sequenceStartTime;
+    @JsonProperty("Guid")
+    private UUID Guid;
 }

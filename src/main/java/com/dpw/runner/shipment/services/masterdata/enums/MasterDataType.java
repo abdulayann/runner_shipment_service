@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.masterdata.enums;
 
 import java.util.Objects;
+
 import lombok.Getter;
 
 @Getter
@@ -63,7 +64,7 @@ public enum MasterDataType {
     INSTRUCTION_TYPE(52, "InstructionType"),
     SOURCE_TYPE(53, "SourceType"),
     SERVICE_LEVEL(54, "ServiceLevel"),
-            // MAWBType(55, "MAWBType"),
+    // MAWBType(55, "MAWBType"),
     STOCK_STATUS(56, "StockStatus"),
     QUOTE_TERMS_AND_CONDITIONS(64, "QuoteTemrsAndConditions"),
     FREIGHT_MODE(67, "FreightMode"),
@@ -163,28 +164,24 @@ public enum MasterDataType {
     PACKAGE_TYPE(191, "PackageType"),
     CONTAINER_TYPE(192, "ContainerType");
 
-    private int id;
-    private String description;
+    private final int id;
+    private final String description;
 
     MasterDataType(int id, String description) {
         this.id = id;
         this.description = description;
     }
 
-    public int getId() {
-        return id;
-    }
-
-    public static MasterDataType masterData(int id){
-        for(MasterDataType d : values()){
-            if(d.id == id)
+    public static MasterDataType masterData(int id) {
+        for (MasterDataType d : values()) {
+            if (d.id == id)
                 return d;
         }
         return null;
     }
 
     public static String getNameFromDescription(String description) {
-        if(Objects.isNull(description))
+        if (Objects.isNull(description))
             return "";
         for (MasterDataType masterDataType : MasterDataType.values()) {
             if (masterDataType.getDescription().equalsIgnoreCase(description)) {
@@ -192,5 +189,9 @@ public enum MasterDataType {
             }
         }
         return "";
+    }
+
+    public int getId() {
+        return id;
     }
 }

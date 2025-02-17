@@ -7,7 +7,10 @@ import java.util.List;
 public interface IDateTimeChangeLogDao {
 
     DateTimeChangeLog create(DateTimeChangeLog dateTimeChangeLog);
+
     void delete(DateTimeChangeLog dateTimeChangeLog);
+
     List<DateTimeChangeLog> getLogsForShipmentId(Long shipmentId);
+
     void deleteAll(List<DateTimeChangeLog> dateTimeChangeLogs);
 }

@@ -19,7 +19,7 @@ import java.util.Map;
 @Generated
 public class MapperMasterDataImpl implements IMasterDataService {
 
-    Map<MasterDataType , List<MasterData>> masterDataMap;
+    Map<MasterDataType, List<MasterData>> masterDataMap;
 
     @PostConstruct
     public void fillMasterData() {

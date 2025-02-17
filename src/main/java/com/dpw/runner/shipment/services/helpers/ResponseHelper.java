@@ -19,10 +19,10 @@ import java.util.List;
 @Slf4j
 public class ResponseHelper {
 
-    private ResponseHelper(){}
-
     public static final String RETURN_RESPONSE_WITH_ERROR_MSG = "Return Response with error {}";
     public static final String RETURN_RESPONSE_WITH_DATA_MSG = "Return Response with data {}";
+    private ResponseHelper() {
+    }
 
     public static ResponseEntity<IRunnerResponse> buildSuccessResponse(IRunnerResponse data, int pageNo, long count) {
         log.debug(RETURN_RESPONSE_WITH_DATA_MSG, data);
@@ -80,7 +80,7 @@ public class ResponseHelper {
     }
 
     public static ResponseEntity<IRunnerResponse> buildFailedResponse(String msg, HttpStatus httpStatus) {
-        httpStatus = httpStatus == null  ? HttpStatus.BAD_REQUEST : httpStatus;
+        httpStatus = httpStatus == null ? HttpStatus.BAD_REQUEST : httpStatus;
         log.error(RETURN_RESPONSE_WITH_ERROR_MSG, msg);
         RunnerResponse runnerResponse = buildFailResponse(new ApiError(httpStatus, msg));
         return new ResponseEntity<>(runnerResponse, httpStatus);
@@ -125,9 +125,9 @@ public class ResponseHelper {
         return ResponseEntity.ok()
                 .contentType(contentType)
                 .contentLength(resource.contentLength())
-                .header(HttpHeaders.CONTENT_DISPOSITION,"attachment; filename=" + fileName)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + fileName)
                 .header("X-CSD-Document-Status",
-                    String.valueOf(Boolean.parseBoolean(MDC.get(Constants.IS_CSD_DOCUMENT_ADDED))))
+                        String.valueOf(Boolean.parseBoolean(MDC.get(Constants.IS_CSD_DOCUMENT_ADDED))))
                 .body(resource);
     }
 }

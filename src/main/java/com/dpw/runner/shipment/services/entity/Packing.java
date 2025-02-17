@@ -133,7 +133,7 @@ public class Packing extends MultiTenancy {
     private String countryCode;
 
     @Column(name = "goods_description")
-    @Size(max=255, message = "max size is 255 for goods_description")
+    @Size(max = 255, message = "max size is 255 for goods_description")
     private String goodsDescription;
 
     @Column(name = "reference_number")
@@ -205,22 +205,22 @@ public class Packing extends MultiTenancy {
     private Boolean isContractEnforced;
 
     @Column(name = "handling_info")
-    @Size(max=2500, message = "max size is 2500 for handling_info")
+    @Size(max = 2500, message = "max size is 2500 for handling_info")
     private String handlingInfo;
 
     @Column(name = "contract_enforced_quantity_limit")
     private Long contractEnforcedQuantityLimit;
 
     @Column(name = "un_number_air")
-    @Size(max=31, message = "max size is 31 for un_number_air")
+    @Size(max = 31, message = "max size is 31 for un_number_air")
     private String unNumberAir;
 
     @Column(name = "dg_class_air")
-    @Size(max=31, message = "max size is 31 for dg_class_air")
+    @Size(max = 31, message = "max size is 31 for dg_class_air")
     private String dgClassAir;
 
     @Column(name = "dg_class_air_description")
-    @Size(max=255, message = "max size is 255 for dg_class_air_description")
+    @Size(max = 255, message = "max size is 255 for dg_class_air_description")
     private String dgClassAirDescription;
 
     @Column(name = "date_type")
@@ -231,15 +231,15 @@ public class Packing extends MultiTenancy {
     private LocalDateTime cargoGateInDate;
 
     @Column(name = "un_number")
-    @Size(max=31, message = "max size is 31 for un_number")
+    @Size(max = 31, message = "max size is 31 for un_number")
     private String unNumber;
 
     @Column(name = "proper_shipping_name")
-    @Size(max=63, message = "max size is 63 for proper_shipping_name")
+    @Size(max = 63, message = "max size is 63 for proper_shipping_name")
     private String properShippingName;
 
     @Column(name = "packing_group")
-    @Size(max=31, message = "max size is 31 for packing_group")
+    @Size(max = 31, message = "max size is 31 for packing_group")
     @MasterData(type = MasterDataType.PACKING_GROUP)
     private String packingGroup;
 

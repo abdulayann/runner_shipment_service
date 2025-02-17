@@ -2,13 +2,9 @@ package com.dpw.runner.shipment.services.commons.constants;
 
 
 public class MasterDataConstants {
-    private MasterDataConstants(){}
     public static final String MASTER_DATA_API_HANDLE = "/api/v2/master-data";
-
     public static final String CARRIER = "/carrier";
-
     public static final String CONTAINER_TYPE = "/containerType";
-
     public static final String VESSEL = "/vessel";
     public static final String ROUTING_MASTER = "/routingMaster";
     public static final String CURRENCIES = "/currencies";
@@ -44,11 +40,12 @@ public class MasterDataConstants {
     public static final String LIST_CHARGE_TYPES = "/chargeCode/list";
     public static final String LIST_ORGS = "/list/orgs";
     public static final String DEFAULT_ORG = "/getDefaultOrg";
-    public static final String MULTIPLE_MASTER_DATA= "/multiple-master-data";
-
+    public static final String MULTIPLE_MASTER_DATA = "/multiple-master-data";
     public static final String ITEM_TYPE = "ItemType";
     public static final String ITEM_VALUE = "ItemValue";
     public static final String ITEM_DESCRIPTION = "ItemDescription";
     public static final String VALUE_N_DESC = "ValuenDesc";
     public static final String CASCADE = "Cascade";
+    private MasterDataConstants() {
+    }
 }

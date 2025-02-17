@@ -46,9 +46,10 @@ public class ServiceDetailsDao implements IServiceDetailsDao {
             throw new ValidationException(String.join(",", errors));
         return serviceDetailsRepository.save(serviceDetails);
     }
+
     @Override
     public List<ServiceDetails> saveAll(List<ServiceDetails> serviceDetailsList) {
-        for(var serviceDetails : serviceDetailsList){
+        for (var serviceDetails : serviceDetailsList) {
             Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(serviceDetails), Constants.SERVICE_DETAILS, LifecycleHooks.ON_CREATE, false);
             if (!errors.isEmpty())
                 throw new ValidationException(String.join(",", errors));
@@ -78,7 +79,7 @@ public class ServiceDetailsDao implements IServiceDetailsDao {
             // TODO- Handle Transactions here
             List<ServiceDetails> serviceDetailsPage = findByShipmentId(shipmentId);
             Map<Long, ServiceDetails> hashMap = serviceDetailsPage.stream()
-                        .collect(Collectors.toMap(ServiceDetails::getId, Function.identity()));
+                    .collect(Collectors.toMap(ServiceDetails::getId, Function.identity()));
             Map<Long, ServiceDetails> copyHashMap = new HashMap<>(hashMap);
             List<ServiceDetails> serviceDetailsRequests = new ArrayList<>();
             if (serviceDetailsList != null && serviceDetailsList.size() != 0) {
@@ -107,10 +108,10 @@ public class ServiceDetailsDao implements IServiceDetailsDao {
 
     public List<ServiceDetails> saveEntityFromShipment(List<ServiceDetails> serviceDetailsRequests, Long shipmentId) {
         List<ServiceDetails> res = new ArrayList<>();
-        for(ServiceDetails req : serviceDetailsRequests){
+        for (ServiceDetails req : serviceDetailsRequests) {
             String oldEntityJsonString = null;
             String operation = DBOperationType.CREATE.name();
-            if(req.getId() != null){
+            if (req.getId() != null) {
                 long id = req.getId();
                 Optional<ServiceDetails> oldEntity = findById(id);
                 if (!oldEntity.isPresent()) {
@@ -141,12 +142,13 @@ public class ServiceDetailsDao implements IServiceDetailsDao {
         }
         return res;
     }
+
     @Override
     public List<ServiceDetails> saveEntityFromShipment(List<ServiceDetails> serviceDetailsRequests, Long shipmentId, Map<Long, ServiceDetails> oldEntityMap) {
         List<ServiceDetails> res = new ArrayList<>();
         Map<Long, String> oldEntityJsonStringMap = new HashMap<>();
-        for(ServiceDetails req : serviceDetailsRequests){
-            if(req.getId() != null){
+        for (ServiceDetails req : serviceDetailsRequests) {
+            if (req.getId() != null) {
                 long id = req.getId();
                 if (!oldEntityMap.containsKey(id)) {
                     log.debug("ServiceDetails is null for Id {}", req.getId());
@@ -164,7 +166,7 @@ public class ServiceDetailsDao implements IServiceDetailsDao {
         for (ServiceDetails req : res) {
             String oldEntityJsonString = null;
             String operation = DBOperationType.CREATE.name();
-            if(oldEntityJsonStringMap.containsKey(req.getId())){
+            if (oldEntityJsonStringMap.containsKey(req.getId())) {
                 oldEntityJsonString = oldEntityJsonStringMap.get(req.getId());
                 operation = DBOperationType.UPDATE.name();
             }
@@ -191,12 +193,11 @@ public class ServiceDetailsDao implements IServiceDetailsDao {
             hashMap.values().forEach(serviceDetail -> {
                 String json = jsonHelper.convertToJson(serviceDetail);
                 delete(serviceDetail);
-                if(entity != null)
-                {
+                if (entity != null) {
                     try {
                         auditLogService.addAuditLog(
                                 AuditLogMetaData.builder()
-                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
+                                        .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                         .newData(null)
                                         .prevData(jsonHelper.readFromJson(json, ServiceDetails.class))
                                         .parent(entity)
@@ -219,8 +220,8 @@ public class ServiceDetailsDao implements IServiceDetailsDao {
         String responseMsg;
         List<ServiceDetails> responseServiceDetails = new ArrayList<>();
         Map<UUID, ServiceDetails> serviceDetailsMap = new HashMap<>();
-        if(oldEntityList != null && oldEntityList.size() > 0) {
-            for (ServiceDetails entity:
+        if (oldEntityList != null && oldEntityList.size() > 0) {
+            for (ServiceDetails entity :
                     oldEntityList) {
                 serviceDetailsMap.put(entity.getGuid(), entity);
             }
@@ -232,7 +233,7 @@ public class ServiceDetailsDao implements IServiceDetailsDao {
             if (serviceDetailsList != null && serviceDetailsList.size() != 0) {
                 for (ServiceDetails request : serviceDetailsList) {
                     oldEntity = serviceDetailsMap.get(request.getGuid());
-                    if(oldEntity != null) {
+                    if (oldEntity != null) {
                         serviceDetailsMap.remove(oldEntity.getGuid());
                         request.setId(oldEntity.getId());
                     }
@@ -241,7 +242,7 @@ public class ServiceDetailsDao implements IServiceDetailsDao {
                 responseServiceDetails = saveEntityFromShipment(serviceDetailsRequests, shipmentId);
             }
             Map<Long, ServiceDetails> hashMap = new HashMap<>();
-            serviceDetailsMap.forEach((s, serviceDetails) ->  hashMap.put(serviceDetails.getId(), serviceDetails));
+            serviceDetailsMap.forEach((s, serviceDetails) -> hashMap.put(serviceDetails.getId(), serviceDetails));
             deleteServiceDetails(hashMap, ShipmentDetails.class.getSimpleName(), shipmentId);
             return responseServiceDetails;
         } catch (Exception e) {

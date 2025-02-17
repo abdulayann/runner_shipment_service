@@ -81,7 +81,7 @@ public class TasksService implements ITasksService {
         var request = (CommonGetRequest) commonRequestModel.getData();
         V1RetrieveResponse v1RetrieveResponse = iv1Service.retrieveTask(V1RetrieveRequest.builder().EntityId(StringUtility.convertToString(request.getId())).build());
         TaskResponse taskResponse = jsonHelper.convertValue(v1RetrieveResponse.getEntity(), TaskResponse.class);
-        if(Objects.equals(taskResponse.getEntityType(), Constants.Consolidations) && Objects.equals(taskResponse.getTaskType(), String.valueOf(TaskType.CONSOLIDATION_IMPORTER.getValue()))) {
+        if (Objects.equals(taskResponse.getEntityType(), Constants.Consolidations) && Objects.equals(taskResponse.getTaskType(), String.valueOf(TaskType.CONSOLIDATION_IMPORTER.getValue()))) {
             EntityTransferConsolidationDetails entityTransferConsolidationDetails = jsonHelper.readFromJson(taskResponse.getTaskJson(), EntityTransferConsolidationDetails.class);
             taskResponse.setConsoleJson(entityTransferConsolidationDetails);
             taskResponse.setTaskJson(null);

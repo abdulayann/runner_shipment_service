@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.entitytransfer.common.request.IEntityTra
 import lombok.*;
 
 import java.time.LocalDateTime;
+
 @Data
 @ToString
 @Builder
@@ -17,7 +18,7 @@ public class EntityTransferUser implements IEntityTranferBaseEntity {
     private String PasswordSalt;
     private String DisplayName;
     private String Email;
-    private String  UserImage;
+    private String UserImage;
     private String ImpersonateToken;
     private LocalDateTime LastDirectoryUpdate;
     private String CompanyCurrency;

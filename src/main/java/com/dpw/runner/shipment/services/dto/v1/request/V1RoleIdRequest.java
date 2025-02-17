@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Data
 public class V1RoleIdRequest {
-  Integer tenantId;
-  String roleName;
+    Integer tenantId;
+    String roleName;
 
 }

@@ -16,7 +16,8 @@ import static com.dpw.runner.shipment.services.ReportingService.Reports.IReport.
 
 
 public class AmountNumberFormatter {
-    private AmountNumberFormatter(){}
+    private AmountNumberFormatter() {
+    }
 
     public static String Format(BigDecimal amount, String localCurrency, V1TenantSettingsResponse tenantSettings) {
         String formattedAmount = null;
@@ -51,20 +52,17 @@ public class AmountNumberFormatter {
         }
         return null;
     }
-    public static String formatWithoutDecimal(Object amount, String localCurrency, V1TenantSettingsResponse tenantSettings)
-    {
-        if (amount == null)
-        {
+
+    public static String formatWithoutDecimal(Object amount, String localCurrency, V1TenantSettingsResponse tenantSettings) {
+        if (amount == null) {
             return null;
         }
 
-        if (amount instanceof BigDecimal)
-        {
+        if (amount instanceof BigDecimal) {
             return formatWithoutDecimal((BigDecimal) amount, localCurrency, tenantSettings);
         }
         amount = amount.toString();
-        if (amount != null)
-        {
+        if (amount != null) {
             try {
                 BigDecimal parsedDecimal = new BigDecimal((String) amount);
                 return formatWithoutDecimal(parsedDecimal, localCurrency, tenantSettings);
@@ -75,17 +73,14 @@ public class AmountNumberFormatter {
 
         return String.format("%,.0f", amount);
     }
-    private static String formatWithoutDecimal(BigDecimal amount, String localCurrency, V1TenantSettingsResponse tenantSettings)
-    {
+
+    private static String formatWithoutDecimal(BigDecimal amount, String localCurrency, V1TenantSettingsResponse tenantSettings) {
 
         var user = UserContext.getUser();
         if (tenantSettings.getIsGroupingOverseas() != null && !tenantSettings.getIsGroupingOverseas() &&
-                !Objects.equals(localCurrency, user.CompanyCurrency))
-        {
+                !Objects.equals(localCurrency, user.CompanyCurrency)) {
             return ReportHelper.addCommasWithPrecision(amount, 0);
-        }
-        else
-        {
+        } else {
             return displayFormat(amount, 0, tenantSettings);
         }
     }
@@ -102,10 +97,10 @@ public class AmountNumberFormatter {
                 && !Objects.equals(localCurrency, UserContext.getUser().CompanyCurrency)) {
             return customFormat.format(amount);
         }
-        if(tenantSettings.getCurrencyDigitGrouping() != null && tenantSettings.getCurrencyGroupingNumber() != null) {
+        if (tenantSettings.getCurrencyDigitGrouping() != null && tenantSettings.getCurrencyGroupingNumber() != null) {
             char customThousandsSeparator = ',';
             char customDecimalSeparator = '.';
-            if(tenantSettings.getCurrencyGroupingNumber() != null && tenantSettings.getCurrencyGroupingNumber() == GroupingNumber.DotAndComma.getValue()) {
+            if (tenantSettings.getCurrencyGroupingNumber() != null && tenantSettings.getCurrencyGroupingNumber() == GroupingNumber.DotAndComma.getValue()) {
                 customThousandsSeparator = '.';
                 customDecimalSeparator = ',';
             }

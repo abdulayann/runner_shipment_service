@@ -30,11 +30,13 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.impl.ShipmentService;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
+
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
 import lombok.NoArgsConstructor;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -79,7 +81,7 @@ public class SeawayBillReport extends IReport {
         if (Boolean.TRUE.equals(tenantSettings.getIsModuleValidationEnabled())) {
             List<ModuleValidationFieldType> missingFields = new ArrayList<>();
             ShipmentDetails shipment = getShipmentDetails(shipmentId);
-            if(shipment==null){
+            if (shipment == null) {
                 throw new ReportException("No shipment found with id: " + shipmentId);
             }
 
@@ -127,11 +129,11 @@ public class SeawayBillReport extends IReport {
         dict.put(DATE_OF_RECEIPT_MDY, dict.get(DATE_OF_RECEIPT));
 
         dict.put(SHIPPER, dict.get(CONSIGNER));
-        if(model.shipment.getConsigner() != null) {
+        if (model.shipment.getConsigner() != null) {
             processConsigner(model, dict);
         }
 
-        if(model.blObject != null && model.blObject.getHblData() != null){
+        if (model.blObject != null && model.blObject.getHblData() != null) {
             processHblData(model, dict);
         }
 

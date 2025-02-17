@@ -11,13 +11,13 @@ import java.math.BigDecimal;
 import java.util.List;
 
 @Data
-public class TruckDriverModel implements IDocumentModel{
+public class TruckDriverModel implements IDocumentModel {
     public ShipmentModel shipmentDetails;
     public UsersDto usersDto;
-    private List<ShipmentContainers> containers;
     public ConsolidationModel consolidationDetails;
     public TenantModel tenant;
     public long totalPacks;
     public BigDecimal totalWeight;
+    private List<ShipmentContainers> containers;
     private List<TruckDriverDetailsModel> truckDriverDetails;
 }

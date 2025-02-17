@@ -59,11 +59,10 @@ public class ViewsService implements IViewsService {
         ViewsRequest request = null;
         request = (ViewsRequest) commonRequestModel.getData();
         List<String> viewsNamesList = viewsDao.findAllByUsername(UserContext.getUser().getUsername());
-        if(viewsNamesList != null && viewsNamesList.contains(request.getName()))
-        {
+        if (viewsNamesList != null && viewsNamesList.contains(request.getName())) {
             throw new ValidationException("A view with this name already exists, please change the view name!");
         }
-        if(Boolean.TRUE.equals(request.getIsDefault())) {
+        if (Boolean.TRUE.equals(request.getIsDefault())) {
             Optional<Views> view = viewsDao.findByCreatedByAndEntityAndIsDefault(UserContext.getUser().getUsername(), request.getEntity());
             if (view.isPresent()) {
                 Views viewUpdate = view.get();
@@ -89,32 +88,28 @@ public class ViewsService implements IViewsService {
         String responseMsg;
         ViewsRequest request = (ViewsRequest) commonRequestModel.getData();
 
-        if(request.getId() == null) {
+        if (request.getId() == null) {
             log.error("Request Id is null for Views create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
         Long id = request.getId();
         Optional<Views> oldEntity = viewsDao.findById(id);
-        if(!oldEntity.isPresent()) {
+        if (!oldEntity.isPresent()) {
             log.debug(ViewsConstants.VIEWS_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
-        if(!Objects.equals(oldEntity.get().getCreatedBy(), UserContext.getUser().getUsername()))
-        {
+        if (!Objects.equals(oldEntity.get().getCreatedBy(), UserContext.getUser().getUsername())) {
             throw new ValidationException("This view does not belongs to this user");
         }
-        if(!Objects.equals(oldEntity.get().getEntity(), request.getEntity()))
-        {
+        if (!Objects.equals(oldEntity.get().getEntity(), request.getEntity())) {
             throw new ValidationException("Entity of the view cannot be changed.");
         }
-        if(!Objects.equals(oldEntity.get().getName(), request.getName()))
-        {
+        if (!Objects.equals(oldEntity.get().getName(), request.getName())) {
             List<String> viewsNamesList = viewsDao.findAllByUsername(UserContext.getUser().getUsername());
-            if(viewsNamesList != null && viewsNamesList.contains(request.getName()))
-            {
+            if (viewsNamesList != null && viewsNamesList.contains(request.getName())) {
                 throw new ValidationException("A view with this name already exists, please change the view name!");
             }
         }
-        if(!Boolean.TRUE.equals(oldEntity.get().getIsDefault()) && Boolean.TRUE.equals(request.getIsDefault())) {
+        if (!Boolean.TRUE.equals(oldEntity.get().getIsDefault()) && Boolean.TRUE.equals(request.getIsDefault())) {
             Optional<Views> view = viewsDao.findByCreatedByAndEntityAndIsDefault(UserContext.getUser().getUsername(), request.getEntity());
             if (view.isPresent()) {
                 Views viewUpdate = view.get();
@@ -135,16 +130,14 @@ public class ViewsService implements IViewsService {
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(view));
     }
 
-    public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel){
+    public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
             var criteria = request.getFilterCriteria();
-            if(criteria != null && !criteria.isEmpty())
-            {
+            if (criteria != null && !criteria.isEmpty()) {
                 var filterCriteria = criteria.get(0);
-                if(filterCriteria != null && filterCriteria.getInnerFilter() != null && !filterCriteria.getInnerFilter().isEmpty())
-                {
+                if (filterCriteria != null && filterCriteria.getInnerFilter() != null && !filterCriteria.getInnerFilter().isEmpty()) {
                     filterCriteria.getInnerFilter().add(FilterCriteria.builder().
                             logicOperator("AND").
                             criteria(Criteria.builder()
@@ -153,9 +146,7 @@ public class ViewsService implements IViewsService {
                                     .value(UserContext.getUser().Username)
                                     .build()).
                             build());
-                }
-                else
-                {
+                } else {
                     filterCriteria = new FilterCriteria();
                     filterCriteria.setInnerFilter(List.of(FilterCriteria.builder().
                             criteria(Criteria.builder()
@@ -166,9 +157,7 @@ public class ViewsService implements IViewsService {
                             build()));
                 }
                 criteria.set(0, filterCriteria);
-            }
-            else
-            {
+            } else {
                 criteria = new ArrayList<>();
                 criteria.add(FilterCriteria.builder().
                         criteria(Criteria.builder()
@@ -193,7 +182,7 @@ public class ViewsService implements IViewsService {
 
     @Override
     @Async
-    public CompletableFuture<ResponseEntity<IRunnerResponse>> listAsync(CommonRequestModel commonRequestModel){
+    public CompletableFuture<ResponseEntity<IRunnerResponse>> listAsync(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -209,16 +198,16 @@ public class ViewsService implements IViewsService {
         }
     }
 
-    public ResponseEntity<IRunnerResponse> delete(CommonRequestModel commonRequestModel){
+    public ResponseEntity<IRunnerResponse> delete(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            if(request.getId() == null) {
+            if (request.getId() == null) {
                 log.debug("Request Id is null for Views delete with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             Long id = request.getId();
             Optional<Views> view = viewsDao.findById(id);
-            if(!view.isPresent()) {
+            if (!view.isPresent()) {
                 log.debug(ViewsConstants.VIEWS_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
@@ -233,25 +222,26 @@ public class ViewsService implements IViewsService {
         }
     }
 
-    public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel){
+    public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
-            if(request.getId() == null) {
+            if (request.getId() == null) {
                 log.error("Request Id is null for Views retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
                 throw new ValidationException("Views Retrieve failed because Id is null.");
             }
             long id = request.getId();
             Optional<Views> view = viewsDao.findById(id);
-            if(!view.isPresent()) {
+            if (!view.isPresent()) {
                 log.debug(ViewsConstants.VIEWS_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info("Views Details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             ViewsResponse response = convertEntityToDto(view.get());
-            if(request.getIncludeColumns()==null || request.getIncludeColumns().isEmpty())
+            if (request.getIncludeColumns() == null || request.getIncludeColumns().isEmpty())
                 return ResponseHelper.buildSuccessResponse(response);
-            else return ResponseHelper.buildSuccessResponse(partialFetchUtils.fetchPartialListData(response, request.getIncludeColumns()));
+            else
+                return ResponseHelper.buildSuccessResponse(partialFetchUtils.fetchPartialListData(response, request.getIncludeColumns()));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;

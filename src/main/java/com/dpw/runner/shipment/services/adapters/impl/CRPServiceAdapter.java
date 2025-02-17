@@ -38,15 +38,15 @@ public class CRPServiceAdapter implements com.dpw.runner.shipment.services.adapt
     public ResponseEntity<IRunnerResponse> retrieveCRPService(CommonRequestModel requestModel) throws RunnerException {
         CRPRetrieveRequest request = (CRPRetrieveRequest) requestModel.getData();
         String url = crpServiceRetrieveUrl + (Objects.isNull(request.getSearchString()) ? StringUtility.getEmptyString() : request.getSearchString().replace(" ", ""));
-        log.info("Retrieve CRP: with request: {}", request.toString());
+        log.info("Retrieve CRP: with request: {}", request);
         ResponseEntity<?> responseEntity;
         try {
             responseEntity = restTemplate.exchange(RequestEntity.get(URI.create(url)).build(), Object.class);
-        }  catch (HttpClientErrorException ex) {
+        } catch (HttpClientErrorException ex) {
             responseEntity = ResponseHelper.buildSuccessResponse();
         }
         log.info("Retrieve CRP: with response: {}", responseEntity);
-        return ResponseHelper.buildDependentServiceResponse(responseEntity.getBody(),0,0);
+        return ResponseHelper.buildDependentServiceResponse(responseEntity.getBody(), 0, 0);
     }
 
     public ResponseEntity<IRunnerResponse> listCRPService(CommonRequestModel requestModel) throws RunnerException {
@@ -61,6 +61,6 @@ public class CRPServiceAdapter implements com.dpw.runner.shipment.services.adapt
             responseEntity = ResponseHelper.buildSuccessResponse();
         }
         log.info("List CRP: with response: {}", responseEntity);
-        return ResponseHelper.buildDependentServiceResponse(responseEntity.getBody(),0,0);
+        return ResponseHelper.buildDependentServiceResponse(responseEntity.getBody(), 0, 0);
     }
 }

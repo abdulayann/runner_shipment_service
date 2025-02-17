@@ -18,6 +18,7 @@ import java.util.UUID;
 
 public interface IV1Service {
     ResponseEntity<V1ShipmentCreationResponse> createBooking(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled, UUID shipmentGuid, HttpHeaders headers);
+
     ResponseEntity<UpdateOrgCreditLimitBookingResponse> updateOrgCreditLimitFromBooking(CheckCreditLimitResponse request);
 
     void setAuthContext();
@@ -45,6 +46,7 @@ public interface IV1Service {
     V1DataResponse fetchOrganization(Object request);
 
     V1DataResponse fetchUnlocation(Object request);
+
     V1DataResponse stateBasedList(Object request);
 
 
@@ -139,8 +141,11 @@ public interface IV1Service {
     SendEntityResponse sendConsolidationTask(CreateConsolidationTaskRequest request);
 
     SendEntityResponse sendShipmentTask(CreateShipmentTaskRequest request);
+
     SendEntityResponse sendV1ConsolidationTask(CreateV1ConsolidationTaskFromV2Request request);
+
     SendEntityResponse sendV1ShipmentTask(CreateV1ShipmentTaskFromV2Request request);
+
     CheckTaskExistResponse checkTaskExist(CheckTaskExistV1Request request);
 
     V1DataResponse addressList(Object request);
@@ -148,55 +153,99 @@ public interface IV1Service {
     V1DataResponse addressList(Object request, HttpHeaders headers);
 
     List<String> getTenantName(List<Integer> tenantIds);
+
     V1DataResponse tenantNameByTenantId(Object request);
+
     V1DataResponse fetchChargeCodeData(Object request);
+
     V1RetrieveResponse retrieveChargeCodeData(Object request);
+
     V1DataResponse fetchUnlocationOriginAndDestinationList(Object request);
+
     V1DataResponse fetchListUnlocationTransportModeBased(Object request);
+
     V1DataResponse fetchActivityMaster(Object request);
+
     V1RetrieveResponse retrieveTenantSettings();
+
     CompanySettingsResponse retrieveCompanySettings();
+
     V1RetrieveResponse retrieveTenant();
+
     V1RetrieveResponse retrieveTenant(HttpHeaders headers);
+
     PartyRequestV2 getDefaultOrg();
 
     V1DataResponse fetchOwnType(Object request);
 
     V1DataResponse fetchCarrierFilterList(Object request);
+
     V1DataResponse fetchTransportInstructionList(Object request);
+
     V1DataResponse fetchContainersListForTI(Object request);
+
     ConsoleBookingListResponse fetchConsolidationBookingData(Object request);
+
     GuidsListResponse fetchWayBillNumberFilterGuids(Object request);
+
     GuidsListResponse fetchBookingIdFilterGuids(Object request);
+
     V1DataResponse fetchGetTemplateMainPage(Object request);
+
     HblTaskCreationResponse createTaskforHBL(Object request);
+
     ShipmentBillingListResponse fetchShipmentBillingData(ShipmentBillingListRequest request);
+
     V1DataResponse fetchRolesList(Object request);
+
     V1DataResponse fetchBillingList(Object request);
+
     V1DataResponse fetchBillChargesList(Object request);
+
     V1DataResponse fetchArObjectList(Object request);
+
     V1DataSyncResponse v1DataSync(Object request, HttpHeaders headers);
 
     String getMaxShipmentId();
+
     String getShipmentSerialNumber();
+
     String getMaxConsolidationId();
+
     V1RetrieveResponse getShipment(V1RetrieveRequest request);
+
     CreditLimitValidateResponse checkCreditLimit(CreditLimitValidateRequest request);
+
     AddressTranslationListResponse getAddressTranslation(AddressTranslationRequest request);
+
     CheckActiveInvoiceResponse getActiveInvoices(CheckActiveInvoiceRequest request);
+
     V1DataResponse fetchCreditLimit(Object request);
+
     OrgAddressResponse fetchOrgAddresses(Object request);
+
     EntityTransferAddress fetchAddress(String entityId);
+
     V1DataResponse getCoLoadingStations(Object request);
+
     TenantDetailsByListResponse getTenantDetails(Object request);
+
     V1DataResponse getEmailTemplates(Object request);
+
     V1DataResponse getEmailTemplatesWithTenantId(Object request);
+
     V1DataResponse getMasterDetails(Object request);
+
     V1DataResponse getUserDetails(Object request);
+
     TaskCreateResponse createTask(Object request);
+
     V1DataResponse updateTask(Object request);
+
     V1RetrieveResponse retrieveTask(Object request);
+
     V1DataResponse listTask(Object request);
+
     List<UsersRoleListResponse> getUserEmailsByRoleId(V1UsersEmailRequest request);
 
     Integer getRoleIdsByRoleName(V1RoleIdRequest roleIdRequest);
@@ -204,6 +253,8 @@ public interface IV1Service {
     V1DataResponse getCompaniesDetails(Object request);
 
     V1DataResponse listOrgs(Object request);
+
     V1DataResponse listBranchesByDefaultOrgAndAddress(Object request);
+
     List<UsersDto> getUsersWithGivenPermissions(UserWithPermissionRequestV1 request);
 }

@@ -9,5 +9,5 @@ public enum AwbStatus {
     AIR_MESSAGE_FAILED,
     AIR_MESSAGE_SUCCESS,
     AWB_ORIGINAL_PRINTED,
-    AWB_FSU_LOCKED;
+    AWB_FSU_LOCKED
 }

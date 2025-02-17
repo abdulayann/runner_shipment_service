@@ -10,9 +10,14 @@ import java.util.Optional;
 
 public interface ITiTruckDriverDetailDao {
     List<TiTruckDriverDetails> saveAll(List<TiTruckDriverDetails> tiTruckDriverDetailsList);
+
     TiTruckDriverDetails save(TiTruckDriverDetails tiTruckDriverDetails);
+
     Page<TiTruckDriverDetails> findAll(Specification<TiTruckDriverDetails> spec, Pageable pageable);
+
     Optional<TiTruckDriverDetails> findById(Long id);
+
     void delete(TiTruckDriverDetails tiTruckDriverDetails);
+
     List<TiTruckDriverDetails> findByIds(List<Long> id);
 }

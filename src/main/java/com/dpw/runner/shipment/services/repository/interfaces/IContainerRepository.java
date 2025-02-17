@@ -20,17 +20,23 @@ import java.util.UUID;
 @Generated
 public interface IContainerRepository extends MultiTenancyRepository<Containers> {
     List<Containers> findAll();
+
     Page<Containers> findAll(Specification<Containers> spec, Pageable pageable);
+
     List<Containers> findByGuid(UUID guid);
+
     default Optional<Containers> findById(Long id) {
         Specification<Containers> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("id"), id);
         return findOne(spec);
     }
+
     List<Containers> findByConsolidationId(Long consolidationId);
+
     void deleteById(Long id);
 
     @Modifying
-    @Transactional @ExcludeTenantFilter
+    @Transactional
+    @ExcludeTenantFilter
     @Query(value = "Update containers set pra_status = ?1 where guid = ?2 and consolidation_id = ?3", nativeQuery = true)
     void savePraStatus(String praStatus, UUID guid, Long consolidationId);
 

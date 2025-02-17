@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 public class ShipmentSettingsConstants {
-    private ShipmentSettingsConstants(){}
     public static final String SHIPMENT_SETTINGS_API_HANDLE = "/api/v2/shipment-settings";
     public static final String SHIPMENT_SETTINGS_SUCCESSFUL = "Successful Shipment Settings Data Creation";
     public static final String SHIPMENT_SETTINGS_UPDATE_SUCCESSFUL = "Successful Shipment Settings Data Update";
@@ -23,4 +22,6 @@ public class ShipmentSettingsConstants {
     public static final String SHIPMENT_SETTINGS_RETRIEVE_BY_ID_ERROR = "Shipment Setting is null for Id {} with Request Id {}";
     public static final String GET_CUSTOM_PRODUCT_SEQUENCE_SUCCESSFUL = "Get Custom Product Sequence Successful";
     public static final String SHIPMENT_SETTINGS_PARTIAL_UPDATE_SUCCESSFUL = "Successful Shipment Settings Data Partial Update";
+    private ShipmentSettingsConstants() {
+    }
 }

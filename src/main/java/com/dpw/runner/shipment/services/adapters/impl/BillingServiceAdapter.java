@@ -51,6 +51,7 @@ import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import com.dpw.runner.shipment.services.utils.V2AuthHelper;
+
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -67,6 +68,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -87,18 +89,21 @@ import org.springframework.web.client.RestTemplate;
 @Slf4j
 public class BillingServiceAdapter implements IBillingServiceAdapter {
 
+    public static final String LOG_TIME_CONSUMED = "Request ID: {} | BILLING_API_CALL | API {} | Time taken: {} ms";
+    private static final String NULL_RESPONSE_ERROR = "Received null/empty response from billing service or response data is null/empty";
+    private static final String NO_ORG_FOUND_FOR = "No OrganizationsRow found for ";
+    private static final String REQUEST_PAYLOAD = "Request payload: {}";
+    private static final String EXECUTING_POST_REQUEST = "Executing POST request...";
+    private static final String RESPONSE_CONTAINS_ERROR = "Response contains errors: ";
+    private static final String BILLING_SUMMARY = "billingSummary";
     @Autowired
     private RestTemplate restTemplate;
-
     @Autowired
     private ModelMapper modelMapper;
-
     @Value("${billing.baseUrl}")
     private String billingBaseUrl;
-
     @Value("${billing.getInvoiceData}")
     private String getInvoiceData;
-
     @Autowired
     private BillingServiceUrlConfig billingServiceUrlConfig;
     @Autowired
@@ -111,14 +116,6 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
     private JsonHelper jsonHelper;
     @Autowired
     private CommonUtils commonUtils;
-
-    private static final String NULL_RESPONSE_ERROR = "Received null/empty response from billing service or response data is null/empty";
-    private static final String NO_ORG_FOUND_FOR = "No OrganizationsRow found for ";
-    private static final String REQUEST_PAYLOAD = "Request payload: {}";
-    private static final String EXECUTING_POST_REQUEST = "Executing POST request...";
-    private static final String RESPONSE_CONTAINS_ERROR = "Response contains errors: ";
-    private static final String BILLING_SUMMARY = "billingSummary";
-    public static final String LOG_TIME_CONSUMED = "Request ID: {} | BILLING_API_CALL | API {} | Time taken: {} ms";
 
     @NotNull
     private static List<String> getClientCodeListForBillCreationRequest(BookingEntity entity) {
@@ -135,6 +132,46 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
             clientCodeList.addAll(creditorAndDebtorCodes);
         }
         return clientCodeList;
+    }
+
+    @NotNull
+    private static MeasurementBasisRecord getMeasurementBasisRecord(BillCharge billCharge, String revenueMeasurementBasisV2, String measurementBasisUnit) {
+        try {
+            MeasurementBasis revenueMeasurementBasis = MeasurementBasis.valueOf(billCharge.getPerMeasurementBasis());
+            revenueMeasurementBasisV2 = switch (revenueMeasurementBasis) {
+                case ContainerCount, Container_Count -> MeasurementBasis.ContainerCount.getBillingValue();
+                case Weight -> MeasurementBasis.Weight.getBillingValue();
+                case Volume -> MeasurementBasis.Volume.getBillingValue();
+                case Chargeable -> MeasurementBasis.Chargeable.getBillingValue();
+                case LowestBill -> MeasurementBasis.LowestBill.getBillingValue();
+                case Package -> MeasurementBasis.Package.getBillingValue();
+                case Shipment -> MeasurementBasis.Shipment.getBillingValue();
+                case TEU -> MeasurementBasis.TEU.getBillingValue();
+                case ChargePercentage -> MeasurementBasis.ChargePercentage.getBillingValue();
+                case Custom -> MeasurementBasis.Custom.getBillingValue();
+                case ContainerType -> MeasurementBasis.ContainerType.getBillingValue();
+            };
+
+            if (ObjectUtils.isEmpty(measurementBasisUnit)) {
+                measurementBasisUnit = switch (revenueMeasurementBasis) {
+                    case ContainerCount -> "Containers";
+                    case Weight -> "KG";
+                    case Volume -> "M3";
+                    case Chargeable -> "KG";
+                    case LowestBill -> "LB";
+                    case Package -> "Packages";
+                    case Shipment -> "SHIPMENT";
+                    case TEU -> "TEU";
+                    case ChargePercentage -> "%";
+                    case Custom -> "Custom";
+                    case ContainerType -> "Containers";
+                    default -> "";
+                };
+            }
+        } catch (Exception e) {
+            log.error(e.getMessage());
+        }
+        return new MeasurementBasisRecord(revenueMeasurementBasisV2, measurementBasisUnit);
     }
 
     @Override
@@ -164,7 +201,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
      * POST request to the specified URL. It then processes the response, logging the status and any errors encountered.
      *
      * @param externalBillPayloadRequest The request payload containing the bill details. This should not be {@code null}.
-     * @param headers   V1 headers for bearer token
+     * @param headers                    V1 headers for bearer token
      * @return {@link ResponseEntity} containing the response from the billing service.
      * @throws BillingException if the response contains errors or if an exception occurs during the request process.
      */
@@ -253,17 +290,19 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
                 return Collections.emptyList();
             }
         } catch (Exception e) {
-            throw new BillingException("Error occurred while fetching billing summary. "+ e.getMessage());
+            throw new BillingException("Error occurred while fetching billing summary. " + e.getMessage());
         }
     }
 
     private <T> List<BillingDueSummary> fetchBillingDueSummary(String url, HttpEntity<T> httpEntity) {
-        BillingEntityResponse response = executePostRequest(url, httpEntity, new ParameterizedTypeReference<BillingEntityResponse>() {});
+        BillingEntityResponse response = executePostRequest(url, httpEntity, new ParameterizedTypeReference<BillingEntityResponse>() {
+        });
 
         if (response != null && ObjectUtils.isNotEmpty(response.getData())
                 && ObjectUtils.isNotEmpty(response.getData().get(BILLING_SUMMARY))) {
             List<Map<String, Object>> billingDueSummaryListMap = (List<Map<String, Object>>) response.getData().get(BILLING_SUMMARY);
-            return modelMapper.map(billingDueSummaryListMap, new TypeToken<List<BillingDueSummary>>() {}.getType());
+            return modelMapper.map(billingDueSummaryListMap, new TypeToken<List<BillingDueSummary>>() {
+            }.getType());
         } else {
             log.warn("Billing due summary data not found in response.");
             return Collections.emptyList();
@@ -293,7 +332,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
 
             return response;
         } catch (Exception e) {
-            throw new BillingException("Error occurred while making a request to the billing service: "+ e.getMessage());
+            throw new BillingException("Error occurred while making a request to the billing service: " + e.getMessage());
         }
     }
 
@@ -384,7 +423,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
 
     @Override
     public ResponseEntity<BillingEntityResponse> createBillV2(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled,
-            ShipmentDetailsResponse shipmentDetailsResponse, HttpHeaders headers) {
+                                                              ShipmentDetailsResponse shipmentDetailsResponse, HttpHeaders headers) {
 
         CreateBookingModuleInV1 bookingRequestForV1 = v1ServiceUtil.createBookingRequestForV1(customerBooking, isShipmentEnabled, isBillingEnabled,
                 shipmentDetailsResponse.getGuid());
@@ -424,8 +463,8 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
     }
 
     private void processExternalBillRequest(UUID shipmentGuid, BookingEntity entity, List<ExternalBillRequest> externalBillRequests,
-            List<ExternalBillChargeRequest> externalBillChargeRequests,
-            Long clientId, EntityTransferAddress clientAddressDetails) {
+                                            List<ExternalBillChargeRequest> externalBillChargeRequests,
+                                            Long clientId, EntityTransferAddress clientAddressDetails) {
         ExternalBillRequest externalBillRequest = ExternalBillRequest.builder()
                 .externalBill(BillRequest.builder()
                         .jobStatus(Constants.WRK)
@@ -461,57 +500,17 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
     }
 
     private void processExternalBillChargeRequest(BookingEntity entity, TenantModel tenantModel,
-            List<ExternalBillChargeRequest> externalBillChargeRequests, List<EntityTransferOrganizations> organizationList,
-            List<EntityTransferAddress> addressList, Long clientId, EntityTransferAddress clientAddressDetails) {
+                                                  List<ExternalBillChargeRequest> externalBillChargeRequests, List<EntityTransferOrganizations> organizationList,
+                                                  List<EntityTransferAddress> addressList, Long clientId, EntityTransferAddress clientAddressDetails) {
         for (BillCharge billCharge : entity.getBillCharges()) {
             populateExternalBillChargeRequest(tenantModel, externalBillChargeRequests, organizationList, addressList, clientId, clientAddressDetails, billCharge);
         }
 
     }
 
-    @NotNull
-    private static MeasurementBasisRecord getMeasurementBasisRecord(BillCharge billCharge, String revenueMeasurementBasisV2, String measurementBasisUnit) {
-        try {
-            MeasurementBasis revenueMeasurementBasis = MeasurementBasis.valueOf(billCharge.getPerMeasurementBasis());
-            revenueMeasurementBasisV2 = switch (revenueMeasurementBasis) {
-                case ContainerCount, Container_Count -> MeasurementBasis.ContainerCount.getBillingValue();
-                case Weight -> MeasurementBasis.Weight.getBillingValue();
-                case Volume -> MeasurementBasis.Volume.getBillingValue();
-                case Chargeable -> MeasurementBasis.Chargeable.getBillingValue();
-                case LowestBill -> MeasurementBasis.LowestBill.getBillingValue();
-                case Package -> MeasurementBasis.Package.getBillingValue();
-                case Shipment -> MeasurementBasis.Shipment.getBillingValue();
-                case TEU -> MeasurementBasis.TEU.getBillingValue();
-                case ChargePercentage -> MeasurementBasis.ChargePercentage.getBillingValue();
-                case Custom -> MeasurementBasis.Custom.getBillingValue();
-                case ContainerType -> MeasurementBasis.ContainerType.getBillingValue();
-            };
-
-            if (ObjectUtils.isEmpty(measurementBasisUnit)) {
-                measurementBasisUnit = switch (revenueMeasurementBasis) {
-                    case ContainerCount -> "Containers";
-                    case Weight -> "KG";
-                    case Volume -> "M3";
-                    case Chargeable -> "KG";
-                    case LowestBill -> "LB";
-                    case Package -> "Packages";
-                    case Shipment -> "SHIPMENT";
-                    case TEU -> "TEU";
-                    case ChargePercentage -> "%";
-                    case Custom -> "Custom";
-                    case ContainerType -> "Containers";
-                    default -> "";
-                };
-            }
-        } catch (Exception e) {
-            log.error(e.getMessage());
-        }
-        return new MeasurementBasisRecord(revenueMeasurementBasisV2, measurementBasisUnit);
-    }
-
     private void populateExternalBillChargeRequest(TenantModel tenantModel, List<ExternalBillChargeRequest> externalBillChargeRequests,
-            List<EntityTransferOrganizations> organizationList,
-            List<EntityTransferAddress> addressList, Long clientId, EntityTransferAddress clientAddressDetails, BillCharge billCharge) {
+                                                   List<EntityTransferOrganizations> organizationList,
+                                                   List<EntityTransferAddress> addressList, Long clientId, EntityTransferAddress clientAddressDetails, BillCharge billCharge) {
         try {
             EntityTransferOrganizations creditorDetails = organizationList.stream().filter(org -> org.getOrganizationCode().equalsIgnoreCase(billCharge.getCreditorCode()))
                     .filter(ObjectUtils::isNotEmpty).findFirst().orElse(null);
@@ -630,10 +629,6 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
         }
     }
 
-    private record MeasurementBasisRecord(String revenueMeasurementBasisV2, String measurementBasisUnit) {
-
-    }
-
     private TenantModel getTenantModel(HttpHeaders headers) {
         TenantModel tenantModel = new TenantModel();
         try {
@@ -695,41 +690,43 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
         return addressList;
     }
 
-
-
     @Override
     public ShipmentBillingListResponse fetchShipmentBillingData(ShipmentBillingListRequest request) {
-            ShipmentBillingListResponse shipmentBillingListResponse = new ShipmentBillingListResponse();
+        ShipmentBillingListResponse shipmentBillingListResponse = new ShipmentBillingListResponse();
 
-            List<BillingSummary> billingSummaries = fetchBillingBulkSummary(BillingBulkSummaryRequest.builder()
-                    .moduleGuids(request.getGuidsList().stream().map(UUID::toString).toList())
-                    .moduleType(Constants.SHIPMENT).build());
+        List<BillingSummary> billingSummaries = fetchBillingBulkSummary(BillingBulkSummaryRequest.builder()
+                .moduleGuids(request.getGuidsList().stream().map(UUID::toString).toList())
+                .moduleType(Constants.SHIPMENT).build());
 
-            Map<String, BillingSummary> billingSummaryMap = billingSummaries.stream()
-                    .collect(Collectors.toMap(BillingSummary::getModuleGuid, summary -> summary));
+        Map<String, BillingSummary> billingSummaryMap = billingSummaries.stream()
+                .collect(Collectors.toMap(BillingSummary::getModuleGuid, summary -> summary));
 
-            billingSummaryMap.forEach((shipmentGuid, v2BillingData) -> {
-                BillingData v1BillingData = new BillingData();
-                v1BillingData.setTotalEstimatedCost(v2BillingData.getTotalEstimatedCost());
-                v1BillingData.setTotalEstimatedRevenue(v2BillingData.getTotalEstimatedRevenue());
-                v1BillingData.setTotalEstimatedProfit(v2BillingData.getTotalEstimatedProfit());
-                v1BillingData.setTotalEstimatedProfitPercent(v2BillingData.getTotalEstimatedProfitPercent());
-                v1BillingData.setTotalCost(BigDecimal.valueOf(v2BillingData.getTotalCost()));
-                v1BillingData.setTotalRevenue(BigDecimal.valueOf(v2BillingData.getTotalRevenue()));
-                v1BillingData.setTotalProfit(v2BillingData.getTotalProfit());
-                v1BillingData.setTotalProfitPercent(v2BillingData.getTotalProfitPercent());
-                v1BillingData.setTotalPostedCost(v2BillingData.getTotalPostedCost());
-                v1BillingData.setTotalPostedRevenue(v2BillingData.getTotalPostedRevenue());
-                v1BillingData.setTotalPostedProfit(v2BillingData.getTotalPostedProfit());
-                v1BillingData.setTotalPostedProfitPercent(v2BillingData.getTotalPostedProfitPercent());
-                v1BillingData.setId(null); // TODO: SUBHAM fetch id of Shipment
+        billingSummaryMap.forEach((shipmentGuid, v2BillingData) -> {
+            BillingData v1BillingData = new BillingData();
+            v1BillingData.setTotalEstimatedCost(v2BillingData.getTotalEstimatedCost());
+            v1BillingData.setTotalEstimatedRevenue(v2BillingData.getTotalEstimatedRevenue());
+            v1BillingData.setTotalEstimatedProfit(v2BillingData.getTotalEstimatedProfit());
+            v1BillingData.setTotalEstimatedProfitPercent(v2BillingData.getTotalEstimatedProfitPercent());
+            v1BillingData.setTotalCost(BigDecimal.valueOf(v2BillingData.getTotalCost()));
+            v1BillingData.setTotalRevenue(BigDecimal.valueOf(v2BillingData.getTotalRevenue()));
+            v1BillingData.setTotalProfit(v2BillingData.getTotalProfit());
+            v1BillingData.setTotalProfitPercent(v2BillingData.getTotalProfitPercent());
+            v1BillingData.setTotalPostedCost(v2BillingData.getTotalPostedCost());
+            v1BillingData.setTotalPostedRevenue(v2BillingData.getTotalPostedRevenue());
+            v1BillingData.setTotalPostedProfit(v2BillingData.getTotalPostedProfit());
+            v1BillingData.setTotalPostedProfitPercent(v2BillingData.getTotalPostedProfitPercent());
+            v1BillingData.setId(null); // TODO: SUBHAM fetch id of Shipment
 
-                Map<String, BillingData> data = Optional.ofNullable(shipmentBillingListResponse.getData()).orElseGet(HashMap::new);
-                data.put(shipmentGuid, v1BillingData);
-                shipmentBillingListResponse.setData(data);
-            });
-            return shipmentBillingListResponse;
+            Map<String, BillingData> data = Optional.ofNullable(shipmentBillingListResponse.getData()).orElseGet(HashMap::new);
+            data.put(shipmentGuid, v1BillingData);
+            shipmentBillingListResponse.setData(data);
+        });
+        return shipmentBillingListResponse;
 
+
+    }
+
+    private record MeasurementBasisRecord(String revenueMeasurementBasisV2, String measurementBasisUnit) {
 
     }
 }

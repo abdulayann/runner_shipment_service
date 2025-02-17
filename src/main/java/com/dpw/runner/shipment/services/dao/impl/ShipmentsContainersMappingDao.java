@@ -7,8 +7,6 @@ import com.dpw.runner.shipment.services.repository.interfaces.IShipmentsContaine
 import com.dpw.runner.shipment.services.syncing.interfaces.IContainersSync;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.nimbusds.jose.util.Pair;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -17,6 +15,8 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
@@ -25,17 +25,15 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCo
 @Slf4j
 public class ShipmentsContainersMappingDao implements IShipmentsContainersMappingDao {
 
+    private final IContainersSync containersSync;
+    private final ExecutorService executorService;
+    private final MasterDataUtils masterDataUtils;
     @Autowired
     private IShipmentsContainersMappingRepository shipmentsContainersMappingRepository;
 
-    private final IContainersSync containersSync;
-
-    private final ExecutorService executorService;
-    private final MasterDataUtils masterDataUtils;
-
     @Autowired
     public ShipmentsContainersMappingDao(IContainersSync containersSync, ExecutorService executorService,
-        MasterDataUtils masterDataUtils) {
+                                         MasterDataUtils masterDataUtils) {
         this.containersSync = containersSync;
         this.executorService = executorService;
         this.masterDataUtils = masterDataUtils;
@@ -58,7 +56,7 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
 
     @Override
     public Page<ShipmentsContainersMapping> findAllByContainerIds(List<Long> containerIds) {
-        if(containerIds != null && containerIds.size() > 0) {
+        if (containerIds != null && containerIds.size() > 0) {
             ListCommonRequest listCommonRequest = constructListCommonRequest("containerId", containerIds, "IN");
             Pair<Specification<ShipmentsContainersMapping>, Pageable> pair = fetchData(listCommonRequest, ShipmentsContainersMapping.class);
             return findAll(pair.getLeft(), pair.getRight());
@@ -73,9 +71,11 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
     private void delete(ShipmentsContainersMapping shipmentsContainersMapping) {
         shipmentsContainersMappingRepository.delete(shipmentsContainersMapping);
     }
+
     private void deleteList(List<ShipmentsContainersMapping> shipmentsContainersMappings) {
         shipmentsContainersMappingRepository.deleteAll(shipmentsContainersMappings);
     }
+
     @Override
     public void assignContainers(Long shipmentId, List<Long> containerIds, String transactionId) {
         List<ShipmentsContainersMapping> mappings = findByShipmentId(shipmentId);
@@ -96,8 +96,7 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
         try {
             log.info("Call sync containers from assignContainers with ids: " + containerIds);
             containersSync.sync(containerIds, findAllByContainerIds(containerIds), transactionId);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             log.error("Error syncing shipment containers");
         }
     }
@@ -119,12 +118,11 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
                 save(entity);
             }
         }
-        if(!fromV1) {
+        if (!fromV1) {
             try {
                 log.info("Call sync containers from assignShipments with ids: " + containerId.toString());
                 containersSync.sync(List.of(containerId), findAllByContainerIds(List.of(containerId)));
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 log.error("Error syncing containers");
             }
         }
@@ -147,16 +145,16 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
                 delete(shipmentsContainersMapping);
             }
         }
-        if(!fromV1) {
+        if (!fromV1) {
             try {
                 log.info("Call sync containers from detachShipments with ids: " + containerId.toString());
                 containersSync.sync(List.of(containerId), findAllByContainerIds(List.of(containerId)));
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
                 log.error("Error syncing containers");
             }
         }
     }
+
     public void detachListShipments(List<Long> containerIds, List<Long> shipIds, boolean fromV1) {
         List<ShipmentsContainersMapping> mappings = findByContainerIdIn(containerIds);
         HashSet<Long> shipmentIds = new HashSet<>(shipIds);
@@ -171,12 +169,11 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
         if (!deleteMappings.isEmpty()) {
             deleteList(deleteMappings);
         }
-        if(!fromV1) {
+        if (!fromV1) {
             try {
                 log.info("Call sync containers from detachShipments with ids: " + containerIds.toString());
-                CompletableFuture.runAsync(masterDataUtils.withMdc(()-> containersSync.sync(containerIds, findAllByContainerIds(containerIds))), executorService);
-            }
-            catch (Exception e) {
+                CompletableFuture.runAsync(masterDataUtils.withMdc(() -> containersSync.sync(containerIds, findAllByContainerIds(containerIds))), executorService);
+            } catch (Exception e) {
                 log.error("Error syncing containers");
             }
         }

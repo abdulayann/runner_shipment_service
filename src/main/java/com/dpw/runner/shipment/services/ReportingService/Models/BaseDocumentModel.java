@@ -5,7 +5,7 @@ import com.dpw.runner.shipment.services.entity.Hbl;
 import lombok.Data;
 
 @Data
-public class BaseDocumentModel implements IDocumentModel{
+public class BaseDocumentModel implements IDocumentModel {
     private Hbl hbl;
     private HblPartyDto hblNotifyParty;
 }

@@ -39,6 +39,7 @@ public class ELDetailsDao implements IELDetailsDao {
     public ELDetails save(ELDetails elDetails) {
         return elDetailsRepository.save(elDetails);
     }
+
     @Override
     public List<ELDetails> saveAll(List<ELDetails> elDetailsList) {
         return elDetailsRepository.saveAll(elDetailsList);
@@ -76,7 +77,7 @@ public class ELDetailsDao implements IELDetailsDao {
             // TODO- Handle Transactions here
             List<ELDetails> elDetails = findByShipmentId(shipmentId);
             Map<Long, ELDetails> hashMap = elDetails.stream()
-                        .collect(Collectors.toMap(ELDetails::getId, Function.identity()));
+                    .collect(Collectors.toMap(ELDetails::getId, Function.identity()));
             Map<Long, ELDetails> copyHashMap = new HashMap<>(hashMap);
             List<ELDetails> elDetailsRequestList = new ArrayList<>();
             if (elDetailsList != null && elDetailsList.size() != 0) {
@@ -140,6 +141,7 @@ public class ELDetailsDao implements IELDetailsDao {
         }
         return res;
     }
+
     @Override
     public List<ELDetails> saveEntityFromShipment(List<ELDetails> elDetails, Long shipmentId, Map<Long, ELDetails> oldEntityMap) {
         List<ELDetails> res = new ArrayList<>();
@@ -163,7 +165,7 @@ public class ELDetailsDao implements IELDetailsDao {
         for (ELDetails req : res) {
             String oldEntityJsonString = null;
             String operation = DBOperationType.CREATE.name();
-            if(oldEntityJsonStringMap.containsKey(req.getId())){
+            if (oldEntityJsonStringMap.containsKey(req.getId())) {
                 oldEntityJsonString = oldEntityJsonStringMap.get(req.getId());
                 operation = DBOperationType.UPDATE.name();
             }
@@ -191,12 +193,11 @@ public class ELDetailsDao implements IELDetailsDao {
             hashMap.values().forEach(elDetail -> {
                 String json = jsonHelper.convertToJson(elDetail);
                 delete(elDetail);
-                if(entity != null)
-                {
+                if (entity != null) {
                     try {
                         auditLogService.addAuditLog(
                                 AuditLogMetaData.builder()
-                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
+                                        .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                         .newData(null)
                                         .prevData(jsonHelper.readFromJson(json, ELDetails.class))
                                         .parent(entity)

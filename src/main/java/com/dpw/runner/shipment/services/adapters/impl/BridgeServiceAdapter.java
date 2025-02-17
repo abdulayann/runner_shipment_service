@@ -24,9 +24,9 @@ import org.springframework.web.client.RestTemplate;
 @Slf4j
 public class BridgeServiceAdapter implements IBridgeServiceAdapter {
 
-    private RestTemplate restTemplate;
-    private BridgeServiceConfig bridgeServiceConfig;
-    private JsonHelper jsonHelper;
+    private final RestTemplate restTemplate;
+    private final BridgeServiceConfig bridgeServiceConfig;
+    private final JsonHelper jsonHelper;
 
     @Autowired
     public BridgeServiceAdapter(@Qualifier("restTemplateForBridgeService") RestTemplate restTemplate, BridgeServiceConfig bridgeServiceConfig, JsonHelper jsonHelper) {
@@ -45,7 +45,7 @@ public class BridgeServiceAdapter implements IBridgeServiceAdapter {
 
         TactBridgePayload tactBridgePayload = (TactBridgePayload) commonRequestModel.getData();
         BridgeRequest request = BridgeRequest.builder().requestCode(bridgeServiceConfig.getTactIntegrationRequestCode())
-            .payload(tactBridgePayload).build();
+                .payload(tactBridgePayload).build();
 
         HttpEntity httpEntity = new HttpEntity(jsonHelper.convertToJson(request), headers);
 
@@ -53,8 +53,7 @@ public class BridgeServiceAdapter implements IBridgeServiceAdapter {
             var bridgeResponse = restTemplate.postForEntity(url, httpEntity, BridgeServiceResponse.class);
             log.info("Received data from bridge service for tact integration: " + jsonHelper.convertToJson(bridgeResponse));
             return bridgeResponse.getBody();
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             log.error("Error while hitting bridge service request endpoint", e);
             throw new RunnerException(e.getMessage());
         }
@@ -63,17 +62,16 @@ public class BridgeServiceAdapter implements IBridgeServiceAdapter {
 
     private String generateToken() throws RunnerException {
         AuthLoginRequest authLoginRequest = AuthLoginRequest.builder()
-            .tenantCode(bridgeServiceConfig.getTenantCode())
-            .username(bridgeServiceConfig.getUserName())
-            .password(bridgeServiceConfig.getPassword())
-            .build();
+                .tenantCode(bridgeServiceConfig.getTenantCode())
+                .username(bridgeServiceConfig.getUserName())
+                .password(bridgeServiceConfig.getPassword())
+                .build();
         var url = bridgeServiceConfig.getBaseUrl() + bridgeServiceConfig.getAuthLoginUrl();
         try {
             var response = restTemplate.exchange(RequestEntity.post(url).body(jsonHelper.convertToJson(authLoginRequest)), AuthLoginResponse.class);
             log.info("Received token from bridge service");
             return response.getBody().getAccessToken();
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             log.error("Error while generating token for bridge service", e);
             throw new RunnerException(e.getMessage());
         }

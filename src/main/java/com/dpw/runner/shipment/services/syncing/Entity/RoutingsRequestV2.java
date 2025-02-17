@@ -9,8 +9,6 @@ import java.util.UUID;
 
 @Data
 public class RoutingsRequestV2 implements IRunnerRequest {
-    @JsonProperty("Guid")
-    private UUID Guid;
     @JsonProperty("AircraftRegistration")
     public String AircraftRegistration;
     @JsonProperty("AircraftType")
@@ -55,4 +53,6 @@ public class RoutingsRequestV2 implements IRunnerRequest {
     public UUID ConsolidationGuid;
     @JsonProperty("ByCarrier")
     public String ByCarrier;
+    @JsonProperty("Guid")
+    private UUID Guid;
 }

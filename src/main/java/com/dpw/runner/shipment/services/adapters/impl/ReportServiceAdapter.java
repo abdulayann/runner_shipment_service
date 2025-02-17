@@ -55,10 +55,10 @@ public class ReportServiceAdapter implements IReportService {
     public ResponseEntity<IRunnerResponse> postRequest(MailAuditLogRequest body, Map<String, String> parameters) throws RunnerException, URISyntaxException {
         URI uri = new URI(baseUrl);
         if (parameters != null && !parameters.isEmpty()) {
-            uri = new URI(uri.toString() + "?" + getQueryString(parameters));
+            uri = new URI(uri + "?" + getQueryString(parameters));
         }
 
-        log.info("Calling Report Service uri {} : with request: {}", uri.toString(), body.toString());
+        log.info("Calling Report Service uri {} : with request: {}", uri, body.toString());
         ResponseEntity<?> responseEntity;
         try {
             responseEntity = restTemplate.exchange(RequestEntity.post(uri).body(body), Object.class);

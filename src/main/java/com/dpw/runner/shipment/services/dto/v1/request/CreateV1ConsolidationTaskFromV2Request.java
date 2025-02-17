@@ -13,6 +13,10 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class CreateV1ConsolidationTaskFromV2Request {
+    @JsonProperty("shipId")
+    public List<String> shipId;
+    @JsonProperty("docList")
+    public List<List<String>> docList;
     @JsonProperty("consoleId")
     private String consoleId;
     @JsonProperty("sendToBranch")
@@ -21,8 +25,4 @@ public class CreateV1ConsolidationTaskFromV2Request {
     private List<String> sendToOrg;
     @JsonProperty("additionalDocs")
     private List<String> additionalDocs;
-    @JsonProperty("shipId")
-    public List<String> shipId;
-    @JsonProperty("docList")
-    public List<List<String>> docList;
 }

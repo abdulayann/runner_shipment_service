@@ -27,11 +27,11 @@ import java.util.Optional;
 public class CommonErrorLogsController {
     private ICommonErrorLogsService commonErrorLogsService;
 
-    private class MyResponseClass extends RunnerResponse<CommonErrorLogsResponse> {}
     @Autowired
     public CommonErrorLogsController(ICommonErrorLogsService commonErrorLogsService) {
         this.commonErrorLogsService = commonErrorLogsService;
     }
+
     @ApiResponses(value = {@ApiResponse(code = 200, response = CommonErrorLogsController.MyResponseClass.class, message = CommonErrorLogsConstants.LIST_SUCCESSFUL, responseContainer = CommonErrorLogsConstants.RESPONSE_LIST)})
     @PostMapping(ApiConstants.API_LIST)
     public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest) {
@@ -45,6 +45,9 @@ public class CommonErrorLogsController {
         id.ifPresent(request::setId);
         guid.ifPresent(request::setGuid);
         return commonErrorLogsService.retrieveById(CommonRequestModel.buildRequest(request));
+    }
+
+    private class MyResponseClass extends RunnerResponse<CommonErrorLogsResponse> {
     }
 
 }

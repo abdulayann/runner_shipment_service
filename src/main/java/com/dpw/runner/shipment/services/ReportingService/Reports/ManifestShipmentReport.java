@@ -18,9 +18,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 @Component
-public class ManifestShipmentReport extends IReport{
+public class ManifestShipmentReport extends IReport {
     @Autowired
     private JsonHelper jsonHelper;
+
     @Override
     public Map<String, Object> getData(Long id) {
         ManifestShipmentModel manifestShipmentModel = (ManifestShipmentModel) getDocumentModel(id);
@@ -33,17 +34,15 @@ public class ManifestShipmentReport extends IReport{
         ManifestShipmentModel manifestShipmentModel = new ManifestShipmentModel();
         manifestShipmentModel.shipmentDetails = getShipment(id);
         validateAirAndOceanDGCheck(manifestShipmentModel.shipmentDetails);
-        if(manifestShipmentModel.shipmentDetails != null && manifestShipmentModel.shipmentDetails.getConsolidationList() != null && !manifestShipmentModel.shipmentDetails.getConsolidationList().isEmpty())
-        {
+        if (manifestShipmentModel.shipmentDetails != null && manifestShipmentModel.shipmentDetails.getConsolidationList() != null && !manifestShipmentModel.shipmentDetails.getConsolidationList().isEmpty()) {
             manifestShipmentModel.consolidationDetails = manifestShipmentModel.shipmentDetails.getConsolidationList().get(0);
         }
         manifestShipmentModel.setContainers(new ArrayList<>());
-        if(manifestShipmentModel.shipmentDetails != null && manifestShipmentModel.shipmentDetails.getContainersList() != null)
-        {
-            for(ContainerModel container : manifestShipmentModel.shipmentDetails.getContainersList())
+        if (manifestShipmentModel.shipmentDetails != null && manifestShipmentModel.shipmentDetails.getContainersList() != null) {
+            for (ContainerModel container : manifestShipmentModel.shipmentDetails.getContainersList())
                 manifestShipmentModel.getContainers().add(getShipmentContainer(container));
         }
-        if(manifestShipmentModel.shipmentDetails != null && manifestShipmentModel.shipmentDetails.getCarrierDetails() != null) {
+        if (manifestShipmentModel.shipmentDetails != null && manifestShipmentModel.shipmentDetails.getCarrierDetails() != null) {
             manifestShipmentModel.carrier = getCarrier(manifestShipmentModel.shipmentDetails.getCarrierDetails().getShippingLine());
         }
         return manifestShipmentModel;
@@ -71,7 +70,8 @@ public class ManifestShipmentReport extends IReport{
         dictionary.put(ReportConstants.SHIPMENTS, listShipmentReponse);
 
         if (listShipmentReponse != null) {
-            List<Map<String, Object>> values = jsonHelper.convertValue(listShipmentReponse, new TypeReference<>() {});
+            List<Map<String, Object>> values = jsonHelper.convertValue(listShipmentReponse, new TypeReference<>() {
+            });
             values.forEach(v -> {
                 if (v.containsKey(ReportConstants.WEIGHT))
                     v.put(ReportConstants.WEIGHT, ConvertToWeightNumberFormat(v.get(ReportConstants.WEIGHT), v1TenantSettingsResponse));

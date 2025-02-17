@@ -13,7 +13,7 @@ public class CustomLocalTimeSerializer extends JsonSerializer<LocalTime> {
 
     @Override
     public void serialize(LocalTime value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
-        if(value == null) {
+        if (value == null) {
             return;
         }
         gen.writeStartObject();

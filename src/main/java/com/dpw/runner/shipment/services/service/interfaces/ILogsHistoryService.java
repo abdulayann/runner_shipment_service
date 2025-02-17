@@ -10,6 +10,8 @@ import java.util.UUID;
 
 public interface ILogsHistoryService {
     void createLogHistory(LogHistoryRequest request);
+
     LogHistoryResponse findByEntityGuidAndTimeStamp(UUID entityGuid, LocalDateTime timeStamp) throws RunnerException;
+
     List<LogHistoryResponse> findByEntityGuidsAndTimeStamp(List<UUID> entityGuids, LocalDateTime timeStamp) throws RunnerException;
 }

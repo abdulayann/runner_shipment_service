@@ -26,16 +26,16 @@ public class HblContainerDto implements Serializable {
     private String containerGrossWeightUnit;
     private BigDecimal containerGrossVolume;
     private String containerGrossVolumeUnit;
-    private String  containerDesc;
-    private Integer  dGClass;
-    private Boolean  hazardousCheckBox;
-    private Integer  hazardous;
-    private String  hazardousMasterListDropDown;
-    private String  hazardousUn;
-    private String  containerTypeName;
-    private String  packageUnit;
-    private Long  quantity;
-    private String  quantityCode;
+    private String containerDesc;
+    private Integer dGClass;
+    private Boolean hazardousCheckBox;
+    private Integer hazardous;
+    private String hazardousMasterListDropDown;
+    private String hazardousUn;
+    private String containerTypeName;
+    private String packageUnit;
+    private Long quantity;
+    private String quantityCode;
     private String packsType;
     private Long containerCount;
 }

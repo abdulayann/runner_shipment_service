@@ -76,7 +76,6 @@ public class EntityTransferOrganizations implements IEntityTranferBaseEntity {
     public String TaxGoods;
     public String TaxKind;
     public String TaxRep;
-    private List<Long> OrgServices;
     public Boolean AirCarrier;
     public Boolean RoadCarrier;
     public Boolean RailCarrier;
@@ -86,4 +85,5 @@ public class EntityTransferOrganizations implements IEntityTranferBaseEntity {
     public String IECode;
     public String PartyName;
     public String BranchSINumber;
+    private List<Long> OrgServices;
 }

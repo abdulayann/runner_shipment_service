@@ -8,8 +8,11 @@ import java.util.Optional;
 
 public interface IAdditionalDetailDao {
     AdditionalDetails save(AdditionalDetails additionalDetails);
+
     Optional<AdditionalDetails> findById(Long id);
+
     AdditionalDetails updateEntityFromShipment(AdditionalDetails additionalDetail) throws RunnerException;
+
     List<AdditionalDetails> findByIds(List<Long> id);
 
 }

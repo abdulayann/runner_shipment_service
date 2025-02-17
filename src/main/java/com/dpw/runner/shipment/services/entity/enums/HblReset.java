@@ -5,5 +5,5 @@ public enum HblReset {
     HBL_DATA,
     HBL_CONTAINERS,
     HBL_CARGOES,
-    HBL_PARTIES;
+    HBL_PARTIES
 }

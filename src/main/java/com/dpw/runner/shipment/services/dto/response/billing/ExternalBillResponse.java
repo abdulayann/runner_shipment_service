@@ -2,13 +2,14 @@ package com.dpw.runner.shipment.services.dto.response.billing;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.io.Serializable;
-import java.util.List;
-import java.util.Map;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+
+import java.io.Serializable;
+import java.util.List;
+import java.util.Map;
 
 @Getter
 @Setter

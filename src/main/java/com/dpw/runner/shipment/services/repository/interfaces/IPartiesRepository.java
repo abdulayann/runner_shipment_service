@@ -12,14 +12,18 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
-@Repository @Generated
+@Repository
+@Generated
 public interface IPartiesRepository extends MultiTenancyRepository<Parties> {
     Page<Parties> findAll(Specification<Parties> spec, Pageable pageable);
+
     List<Parties> findByEntityIdAndEntityType(Long entityId, String entityType);
+
     default Optional<Parties> findById(Long id) {
         Specification<Parties> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("id"), id);
         return findOne(spec);
     }
+
     List<Parties> findAll();
 
     List<Parties> findByIdIn(List<Long> ids);

@@ -4,7 +4,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.Sh
 import lombok.Data;
 
 @Data
-public class ShipmentPrintModel implements IDocumentModel{
+public class ShipmentPrintModel implements IDocumentModel {
 
     private final String basePath = "Upload/";
 

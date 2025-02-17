@@ -30,7 +30,7 @@ public class TiPackages extends MultiTenancy {
     private Long tiLegId;
 
     @Column(name = "no_of_packages")
-    @Size(max=5, message = "max size is 5 for noOfPackages")
+    @Size(max = 5, message = "max size is 5 for noOfPackages")
     private String noOfPackages;
 
     @Column(name = "package_type")
@@ -38,11 +38,11 @@ public class TiPackages extends MultiTenancy {
     private String packageType;
 
     @Column(name = "description")
-    @Size(max=1024, message = "max size is 1024 for description")
+    @Size(max = 1024, message = "max size is 1024 for description")
     private String description;
 
     @Column(name = "dimensions")
-    @Size(max=1024, message = "max size is 1024 for description")
+    @Size(max = 1024, message = "max size is 1024 for description")
     private String dimensions;
 
     @Column(name = "gross_weight")
@@ -67,11 +67,11 @@ public class TiPackages extends MultiTenancy {
     private Boolean dangerous;
 
     @Column(name = "substance_name")
-    @Size(max=1024, message = "max size is 1024 for substance_name")
+    @Size(max = 1024, message = "max size is 1024 for substance_name")
     private String substanceName;
 
     @Column(name = "un_number")
-    @Size(max=10, message = "max size is 10 for un_Number")
+    @Size(max = 10, message = "max size is 10 for un_Number")
     private String unNumber;
 
     @Column(name = "hazard_label")
@@ -79,6 +79,6 @@ public class TiPackages extends MultiTenancy {
     private String hazardLabel;
 
     @Column(name = "tunnel_restriction_code")
-    @Size(max=10, message = "max size is 10 for tunnel_restriction_code")
+    @Size(max = 10, message = "max size is 10 for tunnel_restriction_code")
     private String tunnelRestrictionCode;
 }

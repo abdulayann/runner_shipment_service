@@ -6,7 +6,8 @@ import lombok.Data;
 import java.util.List;
 import java.util.UUID;
 
-@Data @Builder
+@Data
+@Builder
 public class ShipmentBillingListRequest {
     private List<UUID> guidsList;
 }

@@ -27,15 +27,15 @@ public class FileRepo extends MultiTenancy {
     private Long entityId;
 
     @Column(name = "entity_type")
-    @Size(max=100, message = "max size is 100 for entity_type")
+    @Size(max = 100, message = "max size is 100 for entity_type")
     private String entityType;
 
     @Column(name = "file_name")
-    @Size(max=512, message = "max size is 512 for file_name")
+    @Size(max = 512, message = "max size is 512 for file_name")
     private String fileName;
 
     @Column(name = "path")
-    @Size(max=1024, message = "max size is 1024 for path")
+    @Size(max = 1024, message = "max size is 1024 for path")
     private String path;
 
     @Column(name = "doc_type")

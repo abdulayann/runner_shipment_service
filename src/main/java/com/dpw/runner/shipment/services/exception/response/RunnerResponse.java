@@ -10,13 +10,13 @@ import lombok.NoArgsConstructor;
 
 /**
  * /** * Generic response.
- *
  */
 @Builder
 @Data
 @AllArgsConstructor
-@NoArgsConstructor @Generated
-@ApiModel(description= "Runner Response Model")
+@NoArgsConstructor
+@Generated
+@ApiModel(description = "Runner Response Model")
 public class RunnerResponse {
     @ApiModelProperty(position = 1, name = "success")
     private boolean success;

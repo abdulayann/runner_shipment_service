@@ -19,34 +19,63 @@ import java.util.UUID;
 
 public interface IConsolidationDetailsDao {
     ConsolidationDetails save(ConsolidationDetails consolidationDetails, boolean fromV1Sync);
+
     ConsolidationDetails save(ConsolidationDetails consolidationDetails, boolean fromV1Sync, boolean creatingFromDgShipment);
+
     ConsolidationDetails update(ConsolidationDetails consolidationDetails, boolean fromV1Sync);
+
     ConsolidationDetails update(ConsolidationDetails consolidationDetails, boolean fromV1Sync, boolean updatingFromDgShipment);
+
     Page<ConsolidationDetails> findAll(Specification<ConsolidationDetails> spec, Pageable pageable);
+
     Optional<ConsolidationDetails> findById(Long id);
+
     void delete(ConsolidationDetails consolidationDetails);
+
     List<ConsolidationDetails> saveAll(List<ConsolidationDetails> consolidationDetails);
-    Optional<ConsolidationDetails> findByGuid (UUID guid);
-    List<ConsolidationDetails> findByBol (String bol);
+
+    Optional<ConsolidationDetails> findByGuid(UUID guid);
+
+    List<ConsolidationDetails> findByBol(String bol);
+
     List<ConsolidationDetails> findByReferenceNumber(String ref);
+
     Long findMaxId();
+
     Boolean isMAWBNumberValid(String masterBill);
+
     int updateConsoleBookingFields(ConsoleBookingRequest request);
+
     void saveCreatedDateAndUser(Long id, String createdBy, LocalDateTime createdDate);
+
     String getConsolidationNumberFromId(Long id);
+
     List<ConsolidationDetails> findConsolidationsByGuids(Set<UUID> guids);
+
     List<ConsolidationDetails> findConsolidationsByIds(Set<Long> ids);
+
     ConsolidationDetails findConsolidationsById(Long id);
+
     List<ConsolidationDetailsProjection> findMblNumberInDifferentTenant(String mblNumber);
+
     Page<Long> getIdWithPendingActions(ShipmentRequestedType shipmentRequestedType, Pageable pageable);
+
     List<ConsolidationDetails> findBySourceGuid(UUID guid);
+
     void entityDetach(List<ConsolidationDetails> consolidationDetails);
+
     Optional<ConsolidationDetails> findConsolidationByIdWithQuery(Long id);
+
     void saveIsTransferredToReceivingBranch(Long id, Boolean entityTransferred);
+
     void updateIsAcceptedTriangulationPartner(Long consolidationId, Long triangulationPartner, Boolean isAccepted);
+
     List<IShipmentLiteResponse> findIShipmentsByConsolidationIds(List<Long> consolidationIDs);
+
     List<IShipmentContainerLiteResponse> findShipmentDetailsWithContainersByConsolidationIds(List<Long> consolidationIDs);
+
     Page<IConsolidationDetailsResponse> findAllLiteConsol(Specification<ConsolidationDetails> spec, Pageable pageable);
+
     Optional<ConsolidationDetails> findConsolidationByGuidWithQuery(UUID guid);
 
 }

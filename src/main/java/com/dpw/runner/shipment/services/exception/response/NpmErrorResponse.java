@@ -6,8 +6,12 @@ import lombok.*;
 
 @SuppressWarnings("unused")
 @ApiModel(description = "NPM Error Model")
-@Builder @Data @AllArgsConstructor
-@NoArgsConstructor @Getter @Generated
+@Builder
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Getter
+@Generated
 public class NpmErrorResponse {
     private Boolean success;
     private String errorMessage;

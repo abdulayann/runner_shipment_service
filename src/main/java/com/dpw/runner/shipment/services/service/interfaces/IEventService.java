@@ -11,18 +11,27 @@ import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.kafka.dto.BillingInvoiceDto;
-import java.util.List;
-import javax.validation.Valid;
 import org.springframework.http.ResponseEntity;
+
+import javax.validation.Valid;
+import java.util.List;
 
 public interface IEventService extends ICommonService {
     ResponseEntity<IRunnerResponse> V1EventsCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws RunnerException;
+
     ResponseEntity<IRunnerResponse> trackEvents(TrackingEventsRequest request) throws RunnerException;
+
     void updateAtaAtdInShipment(List<Events> events, ShipmentDetails shipmentDetails, ShipmentSettingsDetails tenantSettings);
+
     boolean processUpstreamTrackingMessage(Container container, String messageId);
+
     ResponseEntity<IRunnerResponse> listV2(CommonRequestModel commonRequestModel);
+
     void processUpstreamBillingCommonEventMessage(BillingInvoiceDto billingInvoiceDto);
+
     void saveEvent(EventsRequest eventsRequest);
+
     ResponseEntity<IRunnerResponse> pushTrackingEvents(@Valid Container request);
+
     void saveAllEvent(List<EventsRequest> eventsRequests);
 }

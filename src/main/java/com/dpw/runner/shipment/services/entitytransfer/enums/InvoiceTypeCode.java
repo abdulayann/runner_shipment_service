@@ -8,7 +8,8 @@ public enum InvoiceTypeCode {
     EXPWP(4),
     EXPWOP(5),
     NA(11);
-    private int id;
+    private final int id;
+
     InvoiceTypeCode(int id) {
         this.id = id;
     }

@@ -10,6 +10,7 @@ import org.springframework.data.jpa.domain.Specification;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+
 @Generated
 public interface IELDetailsRepository extends MultiTenancyRepository<ELDetails> {
     Page<ELDetails> findAll(Specification<ELDetails> spec, Pageable pageable);

@@ -25,6 +25,14 @@ import java.util.Arrays;
 @Component
 @Generated
 public class DocumentService {
+    public static final String X_API_KEY = "x-api-key";
+    public static final String X_DPW_APPLICATION_ID = "X-DPW-ApplicationId";
+    public static final String ORGANIZATION_ID = "organizationId";
+    public static final String FILE = "file";
+    public static final String PATH = "path";
+    public static final String APPLICATION_ID = "applicationId";
+    public static final String TEMPLATE_NAME = "templateName";
+    public static final String META_DATA = "metadata";
     @Value("${DocumentService.BaseUrl}")
     private String baseUrl;
     @Value("${DocumentService.UploadFileUrl}")
@@ -48,19 +56,9 @@ public class DocumentService {
     @Autowired
     private RestTemplate restTemplate;
 
-    public static final String X_API_KEY= "x-api-key";
-    public static final String X_DPW_APPLICATION_ID = "X-DPW-ApplicationId";
-    public static final String ORGANIZATION_ID= "organizationId";
-    public static final String FILE = "file";
-    public static final String PATH = "path";
-    public static final String APPLICATION_ID = "applicationId";
-    public static final String TEMPLATE_NAME = "templateName";
-    public static final String META_DATA = "metadata";
+    public ResponseEntity<UploadDocumentResponse> postDocument(MultipartFile file, String path) {
 
-
-    public ResponseEntity<UploadDocumentResponse> postDocument(MultipartFile file, String path){
-
-        String url = baseUrl+uploadFileUrl;
+        String url = baseUrl + uploadFileUrl;
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
@@ -77,9 +75,9 @@ public class DocumentService {
         return restTemplate.postForEntity(url, request, UploadDocumentResponse.class);
     }
 
-    public ResponseEntity<byte[]> downloadDocument(String path){
+    public ResponseEntity<byte[]> downloadDocument(String path) {
 
-        String url = baseUrl+downloadFileUrl;
+        String url = baseUrl + downloadFileUrl;
 
         URI urlTemplate = UriComponentsBuilder.fromUriString(url)
                 .queryParam(ORGANIZATION_ID, organizationId)
@@ -96,7 +94,7 @@ public class DocumentService {
         return restTemplate.exchange(urlTemplate, HttpMethod.GET, request, byte[].class);
     }
 
-    public ResponseEntity<TemplateUploadResponse> createDocumentTemplate(TemplateUploadRequest templateRequest){
+    public ResponseEntity<TemplateUploadResponse> createDocumentTemplate(TemplateUploadRequest templateRequest) {
         String url = templateBaseUrl;
 
         HttpHeaders headers = new HttpHeaders();
@@ -107,15 +105,16 @@ public class DocumentService {
         body.set(FILE, templateRequest.getFile().getResource());
         body.set(ORGANIZATION_ID, templateOrganizationId);
         body.set(APPLICATION_ID, templateApplicationId);
-        body.set(TEMPLATE_NAME , templateRequest.getFile().getOriginalFilename());
+        body.set(TEMPLATE_NAME, templateRequest.getFile().getOriginalFilename());
         body.set(META_DATA, "{\"exporterName\": \"Honda-UK\",\"bookingNumber\": \"DPW897890\"}");
 
         HttpEntity<Object> request = new HttpEntity<>(body, headers);
 
         return restTemplate.exchange(url, HttpMethod.POST, request, TemplateUploadResponse.class);
     }
-    public ResponseEntity<String> updateDocumentTemplate(TemplateUploadRequest templateRequest){
-        String url = templateBaseUrl+templateRequest.getPreviousFileId();
+
+    public ResponseEntity<String> updateDocumentTemplate(TemplateUploadRequest templateRequest) {
+        String url = templateBaseUrl + templateRequest.getPreviousFileId();
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
@@ -132,22 +131,23 @@ public class DocumentService {
 
         return restTemplate.exchange(url, HttpMethod.PUT, request, String.class);
     }
-    public ResponseEntity<byte[]> downloadDocumentTemplate(Object json, String templateId){
+
+    public ResponseEntity<byte[]> downloadDocumentTemplate(Object json, String templateId) {
         // TODO Provide json object with proper format
-        String url = templateBaseUrl+templateId+"/document";
+        String url = templateBaseUrl + templateId + "/document";
 
         HttpHeaders headers = new HttpHeaders();
         headers.add(X_API_KEY, templatexApiKey);
         headers.add(LoggingConstants.REQUEST_ID, LoggerHelper.getRequestIdFromMDC());
         headers.setContentType(MediaType.APPLICATION_JSON);
 
-        HttpEntity<Object> request = new HttpEntity<>(json,headers);
+        HttpEntity<Object> request = new HttpEntity<>(json, headers);
 
         return restTemplate.exchange(url, HttpMethod.POST, request, byte[].class);
     }
 
     public byte[] downloadTemplate(String templateId) throws RunnerException {
-        String url = templateBaseUrl+templateId+"/download";
+        String url = templateBaseUrl + templateId + "/download";
 
         HttpHeaders headers = new HttpHeaders();
         headers.add(X_API_KEY, templatexApiKey);
@@ -156,7 +156,7 @@ public class DocumentService {
         HttpEntity<Object> request = new HttpEntity<>(headers);
 
         ResponseEntity<byte[]> response = restTemplate.exchange(url, HttpMethod.GET, request, byte[].class);
-        if(response.getStatusCode() != HttpStatus.OK){
+        if (response.getStatusCode() != HttpStatus.OK) {
             LoggerHelper.error("Error While Downloading Template From Document Service");
             String responseMsg = ShipmentSettingsConstants.DOWNLOAD_TEMPLATE_FAILED + " : " + Arrays.toString(response.getBody());
             throw new RunnerException(responseMsg);
@@ -164,9 +164,9 @@ public class DocumentService {
         return response.getBody();
     }
 
-    public ResponseEntity<UploadDocumentResponse> postDocument(ByteArrayResource file, String path){
+    public ResponseEntity<UploadDocumentResponse> postDocument(ByteArrayResource file, String path) {
 
-        String url = baseUrl+uploadFileUrl;
+        String url = baseUrl + uploadFileUrl;
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);

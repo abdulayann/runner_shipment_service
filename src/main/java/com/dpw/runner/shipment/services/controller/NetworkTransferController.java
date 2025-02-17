@@ -24,6 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
 import javax.validation.Valid;
 import java.util.Optional;
 
@@ -34,11 +35,8 @@ import java.util.Optional;
 public class NetworkTransferController {
     private INetworkTransferService networkTransferService;
 
-    private class MyResponseClass extends RunnerResponse<NetworkTransferResponse> {}
-    private class MyListResponseClass extends RunnerListResponse<NetworkTransferListResponse> {}
-
     @Autowired
-    public NetworkTransferController(INetworkTransferService networkTransferService){
+    public NetworkTransferController(INetworkTransferService networkTransferService) {
         this.networkTransferService = networkTransferService;
     }
 
@@ -94,5 +92,11 @@ public class NetworkTransferController {
     public ResponseEntity<IRunnerResponse> fetchEntityStatus(@ApiParam(value = NetworkTransferConstants.ENTITY_GUID) @RequestParam(required = true) String guid) {
         CommonGetRequest request = CommonGetRequest.builder().guid(guid).build();
         return networkTransferService.fetchEntityStatus(request);
+    }
+
+    private class MyResponseClass extends RunnerResponse<NetworkTransferResponse> {
+    }
+
+    private class MyListResponseClass extends RunnerListResponse<NetworkTransferListResponse> {
     }
 }

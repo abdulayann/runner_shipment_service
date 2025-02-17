@@ -20,5 +20,4 @@ public class SearchEntity {
     private String saddress3;
 
 
-
 }

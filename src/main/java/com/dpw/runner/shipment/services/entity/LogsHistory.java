@@ -29,7 +29,7 @@ public class LogsHistory extends MultiTenancy {
     private Long entityId;
 
     @Column(name = "entity_type")
-    @Size(max=100, message = "max size is 100 for entity_type")
+    @Size(max = 100, message = "max size is 100 for entity_type")
     private String entityType;
 
     @Column(name = "entity_guid")
@@ -45,6 +45,7 @@ public class LogsHistory extends MultiTenancy {
         LogsHistory that = (LogsHistory) o;
         return Objects.equals(this, that);
     }
+
     @Override
     public int hashCode() {
         return Objects.hash(entityId, entityType);

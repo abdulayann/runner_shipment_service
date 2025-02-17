@@ -9,7 +9,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
-@org.springframework.stereotype.Repository @Generated
+@org.springframework.stereotype.Repository
+@Generated
 public interface IOrderManagementRepository extends JpaRepository<SyncQueue, Long> {
     @Modifying
     @Transactional

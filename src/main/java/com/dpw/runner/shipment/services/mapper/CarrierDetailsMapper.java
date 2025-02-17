@@ -13,7 +13,9 @@ import org.mapstruct.*;
 )
 public interface CarrierDetailsMapper {
     CarrierDetails map(CarrierDetailRequest req);
+
     CarrierDetailResponse map(CarrierDetails entity);
+
     CarrierDetailRequest getRequest(CarrierDetails entity);
 
     @InheritConfiguration

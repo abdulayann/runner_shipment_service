@@ -65,7 +65,7 @@ public class NPMFetchOffersRequestFromUI extends CommonRequest implements IRunne
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    public static class Pack implements Serializable{
+    public static class Pack implements Serializable {
         private Long id;
         private Long quantity;
         private BigDecimal length;
@@ -88,7 +88,7 @@ public class NPMFetchOffersRequestFromUI extends CommonRequest implements IRunne
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class ContractsInfo implements Serializable{
+    public static class ContractsInfo implements Serializable {
         @JsonProperty("customer_org_id")
         private String customerOrgId;
         @JsonProperty("contract_id")

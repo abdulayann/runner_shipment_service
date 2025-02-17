@@ -18,7 +18,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-@Repository @Generated
+@Repository
+@Generated
 @InterBranchEntity
 public interface IEventRepository extends MultiTenancyRepository<Events> {
     Page<Events> findAll(Specification<Events> spec, Pageable pageable);
@@ -40,7 +41,8 @@ public interface IEventRepository extends MultiTenancyRepository<Events> {
     @Query(value = "insert into events (guid, entity_id, entity_type, event_code, description, estimated, actual, source, tenant_id, status, created_at, updated_at, consolidation_id, shipment_number) values (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)", nativeQuery = true)
     void createEventForAirMessagingStatus(UUID guid, Long entityId, String entityType, String eventCode, String description, LocalDateTime estimated, LocalDateTime actual, String source, Integer tenantId, String status, LocalDateTime createdAt, LocalDateTime updatedAt, Long consolidationId, String shipmentNumber);
 
-    @Modifying @Transactional
+    @Modifying
+    @Transactional
     @Query(value = "insert into events (guid, entity_id, entity_type, event_code, description, source, tenant_id, pieces, total_pieces, weight, total_weight, is_partial, received_date, scheduled_date, created_at, updated_at) values (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16)", nativeQuery = true)
     void createEventForAirMessagingEvent(UUID guid, Long entityId, String entityType, String eventCode, String description, String source, Integer tenantId, Integer pieces, Integer totalPieces, BigDecimal weight, BigDecimal totalWeight, Boolean isPartial, LocalDateTime receivedDate, LocalDateTime scheduledDate, LocalDateTime createdAt, LocalDateTime updatedAt);
 }

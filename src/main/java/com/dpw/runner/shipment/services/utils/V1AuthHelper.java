@@ -15,10 +15,9 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.SOURC
 @Component
 public class V1AuthHelper {
 
+    public static final String SHIPMENT = "Shipment";
     @Value("${v1service.dataSync.xApiKey}")
     private String xApiKey;
-
-    public static final String SHIPMENT = "Shipment";
 
     public static HttpHeaders getHeaders() {
         HttpHeaders headers = new HttpHeaders();
@@ -40,7 +39,7 @@ public class V1AuthHelper {
         headers.add(LoggingConstants.REQUEST_ID, LoggerHelper.getRequestIdFromMDC());
         return headers;
     }
-    
+
     public HttpHeaders getHeadersForDataSyncFromKafka(String userName, Integer tenantId, String updateUsername) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);

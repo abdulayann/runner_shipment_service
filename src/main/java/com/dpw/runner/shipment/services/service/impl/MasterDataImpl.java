@@ -30,7 +30,7 @@ public class MasterDataImpl implements IMasterDataService {
     private final CommonUtils commonUtils;
 
     @Autowired
-    public MasterDataImpl (MasterDataFactory masterDataFactory, IV1Service v1Service, MasterDataUtils masterDataUtils, CommonUtils commonUtils) {
+    public MasterDataImpl(MasterDataFactory masterDataFactory, IV1Service v1Service, MasterDataUtils masterDataUtils, CommonUtils commonUtils) {
         this.masterDataFactory = masterDataFactory;
         this.v1Service = v1Service;
         this.masterDataUtils = masterDataUtils;
@@ -231,6 +231,7 @@ public class MasterDataImpl implements IMasterDataService {
     public ResponseEntity<IRunnerResponse> listUnlocation(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().fetchUnlocationData(commonRequestModel.getDependentData()));
     }
+
     @Override
     public ResponseEntity<IRunnerResponse> stateBasedList(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().stateBasedList(commonRequestModel.getDependentData()));
@@ -351,6 +352,7 @@ public class MasterDataImpl implements IMasterDataService {
     public ResponseEntity<IRunnerResponse> fetchGetTemplateMainPage(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().fetchGetTemplateMainPage(commonRequestModel.getDependentData()));
     }
+
     @Override
     public ResponseEntity<IRunnerResponse> listRoles(CommonRequestModel commonRequestModel) {
         V1DataResponse v1DataResponse = v1Service.fetchRolesList(commonRequestModel.getDependentData());
@@ -397,10 +399,10 @@ public class MasterDataImpl implements IMasterDataService {
 
     @Override
     public ResponseEntity<IRunnerResponse> listCousinBranchForEt(ListCousinBranchesForEtRequest request) {
-        List<Object> criteria = request.getCriteria() ;
+        List<Object> criteria = request.getCriteria();
         List<Long> tenantIds = commonUtils.getTenantIdsFromEntity(request.getEntityId(), request.getEntityType(), request.getIsReassign(), request.getIsReceivingBranch(), request.getIsTriangulationBranch());
-        if(tenantIds!=null) {
-            List<Long> existingTenantIds = criteria!=null && !criteria.isEmpty() && criteria.size() > 2 ? (List<Long>) criteria.get(2): null;
+        if (tenantIds != null) {
+            List<Long> existingTenantIds = criteria != null && !criteria.isEmpty() && criteria.size() > 2 ? (List<Long>) criteria.get(2) : null;
             criteria = convertToV1NotInCriteria("TenantId", tenantIds, existingTenantIds);
         }
         CommonV1ListRequest v1ListRequest = CommonV1ListRequest.builder()
@@ -420,7 +422,7 @@ public class MasterDataImpl implements IMasterDataService {
         List<String> itemType = new ArrayList<>();
         itemType.add(filterValue);
         List<Object> param = new ArrayList<>();
-        if(values!=null)
+        if (values != null)
             param.addAll(values);
         if (existingTenantIds != null) {
             for (Object obj : existingTenantIds) {

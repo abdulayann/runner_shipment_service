@@ -30,11 +30,13 @@ import com.dpw.runner.shipment.services.syncing.Entity.ContainerRequestV2;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+
 import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
 import javax.servlet.http.HttpServletResponse;
 import javax.validation.Valid;
+
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -57,12 +59,6 @@ public class ContainerController {
 
     private final IContainerService containerService;
     private final JsonHelper jsonHelper;
-
-    private class MyResponseClass extends RunnerResponse<ContainerResponse> {}
-    private class MyListResponseClass extends RunnerListResponse<ContainerResponse> {}
-    private class CheckAllocatedDataChangeResponseClass extends RunnerResponse<CheckAllocatedDataChangeResponse> {}
-    private class ContainerNumberCheckResponseClass extends RunnerResponse<ContainerNumberCheckResponse>{}
-
 
     @Autowired
     public ContainerController(IContainerService containerService, JsonHelper jsonHelper) {
@@ -166,32 +162,31 @@ public class ContainerController {
         return containerService.list(CommonRequestModel.buildRequest(request));
     }
 
-    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CONTAINER_LIST_SUCCESSFUL, response = MyListResponseClass.class) })
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_LIST_SUCCESSFUL, response = MyListResponseClass.class)})
     @PostMapping(ApiConstants.API_LIST_CONTAINERS_TO_ASSIGN)
     public ResponseEntity<IRunnerResponse> getContainersForSelection(@RequestBody ContainerAssignListRequest containerAssignRequest) {
         return containerService.getContainersForSelection(CommonRequestModel.buildRequest(containerAssignRequest));
     }
 
-    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CALCULATION_SUCCESSFUL, response = MyListResponseClass.class) })
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CALCULATION_SUCCESSFUL, response = MyListResponseClass.class)})
     @PostMapping(ApiConstants.API_CHANGE_UNIT_ALLOCATED_ACHIEVED)
     public ResponseEntity<IRunnerResponse> calculateAchieved_AllocatedForSameUnit(@RequestBody ContainerRequest containerRequest) {
         return containerService.calculateAchieved_AllocatedForSameUnit(CommonRequestModel.buildRequest(containerRequest));
     }
 
-    @ApiResponses(value = { @ApiResponse(code = 200, response = CheckAllocatedDataChangeResponseClass.class ,message = ContainerConstants.CALCULATION_SUCCESSFUL) })
+    @ApiResponses(value = {@ApiResponse(code = 200, response = CheckAllocatedDataChangeResponseClass.class, message = ContainerConstants.CALCULATION_SUCCESSFUL)})
     @PostMapping(ApiConstants.API_CHECK_ALLOCATED_DATA_CHANGE)
     public ResponseEntity<IRunnerResponse> calculateAllocatedData(@RequestBody CheckAllocatedDataChangesRequest containerRequest) {
         return (ResponseEntity<IRunnerResponse>) containerService.calculateAllocatedData(CommonRequestModel.buildRequest(containerRequest));
     }
 
-
-    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CONTAINER_DETACH_SUCCESSFUL, response = RunnerListResponse.class) })
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_DETACH_SUCCESSFUL, response = RunnerListResponse.class)})
     @PostMapping(ApiConstants.API_CALCULATE_ACHIEVED_PACK_DETACH)
     public ResponseEntity<IRunnerResponse> calculateAchievedOnPackDetach(@RequestBody ContainerPackADInShipmentRequest containerPackAssignDetachRequest) {
         return containerService.calculateAchievedQuantity_onPackDetach(CommonRequestModel.buildRequest(containerPackAssignDetachRequest));
     }
 
-    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CONTAINER_VALIDATED, response = ContainerNumberCheckResponseClass.class) })
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_VALIDATED, response = ContainerNumberCheckResponseClass.class)})
     @PostMapping(ApiConstants.API_VALIDATE_CONTAINER_NUMBER)
     public ResponseEntity<IRunnerResponse> validateContainerNumber(@RequestParam String containerNumber) {
         return containerService.validateContainerNumber(containerNumber);
@@ -227,7 +222,7 @@ public class ContainerController {
     })
     @PostMapping(ApiConstants.SYNC)
     @ExcludeTimeZone
-    public ResponseEntity<IRunnerResponse> syncContainerToService(@RequestBody @Valid ContainerRequestV2 request, @RequestParam(required = false, defaultValue = "true") boolean checkForSync){
+    public ResponseEntity<IRunnerResponse> syncContainerToService(@RequestBody @Valid ContainerRequestV2 request, @RequestParam(required = false, defaultValue = "true") boolean checkForSync) {
         String responseMsg = "failure executing :(";
         try {
             return containerService.V1ContainerCreateAndUpdate(CommonRequestModel.buildRequest(request), checkForSync);
@@ -269,7 +264,6 @@ public class ContainerController {
         return containerService.getByModuleGuidAndModuleType(moduleGuid, moduleType);
     }
 
-
     @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.SUCCESS, response = RunnerListResponse.class)})
     @GetMapping(ContainerConstants.CHECK_CONTAINERS_DELETE)
     public ResponseEntity<IRunnerResponse> checkForDelete(@RequestParam Long containerId) {
@@ -287,5 +281,17 @@ public class ContainerController {
             log.error(responseMsg, e);
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    private class MyResponseClass extends RunnerResponse<ContainerResponse> {
+    }
+
+    private class MyListResponseClass extends RunnerListResponse<ContainerResponse> {
+    }
+
+    private class CheckAllocatedDataChangeResponseClass extends RunnerResponse<CheckAllocatedDataChangeResponse> {
+    }
+
+    private class ContainerNumberCheckResponseClass extends RunnerResponse<ContainerNumberCheckResponse> {
     }
 }

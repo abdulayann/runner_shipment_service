@@ -1,8 +1,6 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 public class NetworkTransferConstants {
-    private NetworkTransferConstants() {}
-
     public static final String NETWORK_TRANSFER_RETRIEVE_BY_ID_ERROR = "Network Transfer is null for Id {} with Request Id {}";
     public static final String REQUEST_FOR_TRANSFER_SUCCESSFUL = "Request for transfer successful";
     public static final String REQUEST_FOR_REASSIGNED_SUCCESSFUL = "Request for assigned successful";
@@ -18,4 +16,6 @@ public class NetworkTransferConstants {
     public static final String ENTITY_GUID = "Entity Guid";
     public static final String SHIPMENT_ENTITY_STATUS = "/shipment-entity-status";
     public static final String FETCH_ENTITY_STATUS_SUCCESSFUL = "Fetch Entity Status Successful";
+    private NetworkTransferConstants() {
+    }
 }

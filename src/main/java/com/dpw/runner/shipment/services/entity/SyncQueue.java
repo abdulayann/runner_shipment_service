@@ -20,7 +20,7 @@ import javax.persistence.Table;
 @AllArgsConstructor
 @Builder
 @Accessors(chain = true)
-@TypeDef(name = "jsonb", typeClass = JsonBinaryType.class )
+@TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
 public class SyncQueue extends MultiTenancy {
 
     @Column(name = "module_type")

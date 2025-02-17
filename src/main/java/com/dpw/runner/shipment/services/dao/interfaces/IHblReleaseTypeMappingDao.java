@@ -6,5 +6,6 @@ import java.util.List;
 
 public interface IHblReleaseTypeMappingDao {
     HblReleaseTypeMapping save(HblReleaseTypeMapping hblReleaseTypeMapping);
+
     List<HblReleaseTypeMapping> findByReleaseTypeAndHblId(Long hblId, String releaseType);
 }

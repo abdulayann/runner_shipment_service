@@ -1,11 +1,7 @@
 package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.springframework.stereotype.Component;
 
 @Component

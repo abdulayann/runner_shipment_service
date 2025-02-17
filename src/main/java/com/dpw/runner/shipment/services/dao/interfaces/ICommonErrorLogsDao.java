@@ -14,12 +14,20 @@ import java.util.UUID;
 
 public interface ICommonErrorLogsDao {
     CommonErrorLogs save(CommonErrorLogs commonErrorLogs);
+
     Optional<CommonErrorLogs> findById(Long id);
+
     Optional<CommonErrorLogs> findByGuid(UUID guid);
+
     Page<CommonErrorLogs> findAll(Specification<CommonErrorLogs> spec, Pageable pageable);
+
     List<CommonErrorLogs> findByEntityIdAndEntityTypeAndErrorType(Long entityId, String entityType, CommonErrorType errorType);
+
     void logConsoleAutomaticTransferErrors(SendConsoleValidationResponse sendConsoleValidationResponse, Long consoleId, List<Long> shipmentIds);
+
     void deleteAllConsoleAndShipmentErrorsLogs(Long consoleId, List<Long> shipmentIds);
+
     void logShipmentAutomaticTransferErrors(SendShipmentValidationResponse sendShipmentValidationResponse, Long shipmentId);
+
     void deleteShipmentErrorsLogs(Long shipmentId);
 }

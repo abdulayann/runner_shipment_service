@@ -162,18 +162,10 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private BigDecimal teuCount;
     private Integer packCount;
     private String department;
-
-    public void addTextData(Map<String, String> dataMap) {
-        if(textData == null) {
-            textData = new HashMap<>();
-        }
-        textData.putAll(dataMap);
-    }
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime createdAt;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime updatedAt;
-
     private CustomerCategoryRates customerCategory;
     private String contractId;
     private String parentContractId;
@@ -196,7 +188,6 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private LocalDateTime bookingCreatedDate;
     private String securityStatus;
     private AwbStatus awbStatus;
-
     private String currentPartyForQuote;
     private Map<String, Object> masterDataMap;
     private Boolean entityTransfer;
@@ -221,11 +212,16 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private Boolean isReceivingBranchManually;
     private Boolean isTransferredToReceivingBranch;
     private Boolean b2b;
-
     private Boolean isCoLoadEnabled;
     private String coLoadCarrierName;
     private String coLoadBlNumber;
-
     private String issuingCarrierName;
     private String oceanBlNumber;
+
+    public void addTextData(Map<String, String> dataMap) {
+        if (textData == null) {
+            textData = new HashMap<>();
+        }
+        textData.putAll(dataMap);
+    }
 }

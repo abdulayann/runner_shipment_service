@@ -7,14 +7,21 @@ import lombok.*;
 
 @SuppressWarnings("unused")
 @ApiModel(description = "V1 Error Model")
-@Builder @Data @AllArgsConstructor
-@NoArgsConstructor @Getter @Generated
+@Builder
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@Getter
+@Generated
 public class V1ErrorResponse {
     @JsonProperty("Error")
     private V1Error error;
 
-    @Builder @Data @AllArgsConstructor
-    @NoArgsConstructor @Getter
+    @Builder
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    @Getter
     public static class V1Error {
         @JsonProperty("Message")
         private String message;

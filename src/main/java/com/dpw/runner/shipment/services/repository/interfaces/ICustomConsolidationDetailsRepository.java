@@ -9,5 +9,5 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
 public interface ICustomConsolidationDetailsRepository {
-  Page<ConsolidationLiteResponse> findAllLiteConsol(Specification<ConsolidationDetails> spec, Pageable pageable);
+    Page<ConsolidationLiteResponse> findAllLiteConsol(Specification<ConsolidationDetails> spec, Pageable pageable);
 }

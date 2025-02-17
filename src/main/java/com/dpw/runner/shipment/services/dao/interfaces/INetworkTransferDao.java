@@ -11,6 +11,7 @@ import java.util.UUID;
 
 public interface INetworkTransferDao {
     NetworkTransfer save(NetworkTransfer networkTransfer);
+
     List<NetworkTransfer> saveAll(List<NetworkTransfer> networkTransferEntityList);
 
     Page<NetworkTransfer> findAll(Specification<NetworkTransfer> spec, Pageable pageable);
@@ -38,6 +39,7 @@ public interface INetworkTransferDao {
     List<NetworkTransfer> findByEntityIdAndEntityTypeAndIsInterBranchEntity(List<Long> entityIds, String entityType, Boolean isInterBranchEntity, List<String> status);
 
     String findStatusByEntityIdAndEntityTypeAndTenantId(Long entityId, String entityType, Integer tenantId);
+
     String findByEntityGuidAndTenantId(UUID guid, Integer tenantId);
     List<NetworkTransfer> findByEntityGuids(List<UUID> guid);
 }

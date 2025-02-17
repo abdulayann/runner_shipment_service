@@ -11,7 +11,9 @@ import org.springframework.data.jpa.domain.Specification;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-@Generated @InterBranchEntity
+
+@Generated
+@InterBranchEntity
 public interface IPackingRepository extends MultiTenancyRepository<Packing> {
 
     List<Packing> findByShipmentId(Long shipmentId);

@@ -58,7 +58,7 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
             .build();
 
     public MDMServiceAdapter(@Qualifier("restTemplateForMDM") RestTemplate restTemplate,
-                                @Value("${mdm.baseUrl}") String baseUrl) {
+                             @Value("${mdm.baseUrl}") String baseUrl) {
         this.restTemplate = restTemplate;
         this.baseUrl = baseUrl;
     }
@@ -72,7 +72,7 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
             ResponseEntity<?> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(request)), Object.class);
             log.info("Request id {} MDM Response {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(response));
             return ResponseHelper.buildDependentServiceResponse(response.getBody(), 0, 0);
-        }catch (Exception ex){
+        } catch (Exception ex) {
             log.error("Request id {} MDM Credit Details Failed due to : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(ex.getMessage()));
             throw new RunnerException("Error from MDM while fetching credit limit: " + ex.getMessage());
         }
@@ -81,10 +81,10 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
     @Override
     public String getApprovalStausForParties(CommonRequestModel commonRequestModel) throws RunnerException {
         ResponseEntity<?> response = this.getCreditInfo(commonRequestModel);
-        if(response.getStatusCode().equals(HttpStatus.OK)) {
+        if (response.getStatusCode().equals(HttpStatus.OK)) {
             try {
                 DependentServiceResponse responseBody = objectMapper.convertValue(response.getBody(), DependentServiceResponse.class);
-                LinkedHashMap<String,Object> dataList = (LinkedHashMap<String, Object>) responseBody.getData();
+                LinkedHashMap<String, Object> dataList = (LinkedHashMap<String, Object>) responseBody.getData();
                 String finalStatus = null;
                 if (dataList != null && !dataList.isEmpty()) {
                     Map<String, Object> firstDataObject = ((List<Map<String, Object>>) dataList.get("data")).get(0);
@@ -94,7 +94,7 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
                 }
                 log.info("Request id {} MDM Response {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(responseBody));
                 return finalStatus;
-            }catch (Exception ex){
+            } catch (Exception ex) {
                 log.error("Error getting the approval status for the parties : {}", commonRequestModel.getData());
                 log.error("ERROR : {}", ex.getMessage());
             }
@@ -128,18 +128,18 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
         String url = baseUrl + departmentListUrl;
         try {
             MdmListCriteriaRequest listCriteriaRequest = MdmListCriteriaRequest.builder().pageNo(0).pageSize(100).searchCriteriaList(
-            List.of(
-                    MdmListCriteriaRequest.SearchCriteria.builder().field(MdmConstants.MODULES_FIELD).operator(MdmConstants.LIKE_OPERATOR).value(module).build(),
-                    MdmListCriteriaRequest.SearchCriteria.builder().field(MdmConstants.TRANSPORT_MODE_FIELD).operator(MdmConstants.LIKE_OPERATOR).value(transportMode).build(),
-                    MdmListCriteriaRequest.SearchCriteria.builder().field(MdmConstants.SHIPMENT_TYPE_FIELD).operator(MdmConstants.LIKE_OPERATOR).value(shipmentType).build()
-            )).build();
+                    List.of(
+                            MdmListCriteriaRequest.SearchCriteria.builder().field(MdmConstants.MODULES_FIELD).operator(MdmConstants.LIKE_OPERATOR).value(module).build(),
+                            MdmListCriteriaRequest.SearchCriteria.builder().field(MdmConstants.TRANSPORT_MODE_FIELD).operator(MdmConstants.LIKE_OPERATOR).value(transportMode).build(),
+                            MdmListCriteriaRequest.SearchCriteria.builder().field(MdmConstants.SHIPMENT_TYPE_FIELD).operator(MdmConstants.LIKE_OPERATOR).value(shipmentType).build()
+                    )).build();
 
             ResponseEntity<DependentServiceResponse> responseEntity = restTemplate.postForEntity(url, jsonHelper.convertToJson(listCriteriaRequest), DependentServiceResponse.class);
             DependentServiceResponse dependentServiceResponse = Optional.ofNullable(responseEntity.getBody()).orElse(new DependentServiceResponse());
             log.info("MDM getDepartmentList response for requestId - {} : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(jsonHelper.convertToJson(responseEntity)));
-            return jsonHelper.convertValue(dependentServiceResponse.getData(), new TypeReference<List<Map<String, Object>>>() {});
-        }
-        catch (Exception e) {
+            return jsonHelper.convertValue(dependentServiceResponse.getData(), new TypeReference<List<Map<String, Object>>>() {
+            });
+        } catch (Exception e) {
             log.error("MDM Service - error while fetching departments list", e);
         }
         return Collections.emptyList();

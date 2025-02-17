@@ -7,7 +7,7 @@ import lombok.Data;
 import java.util.List;
 
 @Data
-public class CustomsInstructionsModel implements IDocumentModel{
+public class CustomsInstructionsModel implements IDocumentModel {
     public ShipmentModel shipmentDetails;
     private List<ShipmentContainers> shipmentContainers;
 }

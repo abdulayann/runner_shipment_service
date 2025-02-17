@@ -106,7 +106,7 @@ public class ShippingRequestOutReport extends IReport {
             //setting serviceMode master data
             var masterData = getMasterListData(MasterDataType.SERVICE_MODE, model.getShipment().getServiceType());
             model.setServiceMode(masterData != null ? masterData.getItemDescription() : null);
-            if(model.getShipment().getCarrierDetails() != null) {
+            if (model.getShipment().getCarrierDetails() != null) {
                 model.setLoadingPort(getUNLocRow(model.getShipment().getCarrierDetails().getOriginPort()));
                 model.setDischargePort(getUNLocRow(model.getShipment().getCarrierDetails().getDestinationPort()));
                 //setting carrier master data
@@ -147,7 +147,7 @@ public class ShippingRequestOutReport extends IReport {
         if (bookingCarriage != null) {
             String vessel = bookingCarriage.getVessel();
             List<Object> vesselCriteria = Arrays.asList(
-                    Arrays.asList(Constants.VESSEL_GUID_V1),
+                    List.of(Constants.VESSEL_GUID_V1),
                     "=",
                     vessel
             );
@@ -230,7 +230,8 @@ public class ShippingRequestOutReport extends IReport {
             dictionary.put(ReportConstants.SHIPMENT_HASCONTAINERS, false);
         }
 
-        List<Map<String, Object>> valuesContainer = jsonHelper.convertValue(dictionary.get(ReportConstants.SHIPMENT_AND_CONTAINER), new TypeReference<>() {});
+        List<Map<String, Object>> valuesContainer = jsonHelper.convertValue(dictionary.get(ReportConstants.SHIPMENT_AND_CONTAINER), new TypeReference<>() {
+        });
 
         V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         valuesContainer.forEach(v -> {

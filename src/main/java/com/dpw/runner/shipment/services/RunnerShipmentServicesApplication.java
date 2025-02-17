@@ -22,7 +22,7 @@ import java.util.TimeZone;
 @EnableCaching(proxyTargetClass = true)
 @EnableKafka
 @Generated
-@ComponentScan(value={"com.dpw.runner.shipment.services", "com.dpw.api"})
+@ComponentScan(value = {"com.dpw.runner.shipment.services", "com.dpw.api"})
 public class RunnerShipmentServicesApplication {
 
     public static void main(String[] args) {

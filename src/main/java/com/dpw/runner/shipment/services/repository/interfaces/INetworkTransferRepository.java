@@ -17,7 +17,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 
-
 @Repository
 @Generated
 public interface INetworkTransferRepository extends MultiTenancyRepository<NetworkTransfer> {

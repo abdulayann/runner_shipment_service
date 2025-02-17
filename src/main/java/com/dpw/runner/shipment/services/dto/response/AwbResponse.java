@@ -1,9 +1,9 @@
 package com.dpw.runner.shipment.services.dto.response;
 
-import com.dpw.runner.shipment.services.kafka.dto.AwbShipConsoleDto;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.awb.*;
 import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
+import com.dpw.runner.shipment.services.kafka.dto.AwbShipConsoleDto;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import lombok.Data;
 

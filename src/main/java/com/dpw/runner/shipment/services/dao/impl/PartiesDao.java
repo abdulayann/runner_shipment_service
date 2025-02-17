@@ -43,7 +43,9 @@ public class PartiesDao implements IPartiesDao {
     }
 
     @Override
-    public Parties save(Parties parties) {return partiesRepository.save(parties);}
+    public Parties save(Parties parties) {
+        return partiesRepository.save(parties);
+    }
 
     @Override
     public Page<Parties> findAll(Specification<Parties> spec, Pageable pageable) {
@@ -89,7 +91,7 @@ public class PartiesDao implements IPartiesDao {
             // TODO- Handle Transactions here
             List<Parties> parties = findByEntityIdAndEntityType(entityId, entityType);
             Map<Long, Parties> hashMap = parties.stream()
-                        .collect(Collectors.toMap(Parties::getId, Function.identity()));
+                    .collect(Collectors.toMap(Parties::getId, Function.identity()));
             Map<Long, Parties> copyHashMap = new HashMap<>(hashMap);
             List<Parties> partiesRequestList = new ArrayList<>();
             if (partiesList != null && partiesList.size() != 0) {
@@ -118,10 +120,10 @@ public class PartiesDao implements IPartiesDao {
 
     public List<Parties> saveEntityFromOtherEntity(List<Parties> partiesRequests, Long entityId, String entityType) {
         List<Parties> res = new ArrayList<>();
-        for(Parties req : partiesRequests){
+        for (Parties req : partiesRequests) {
             String oldEntityJsonString = null;
             String operation = DBOperationType.CREATE.name();
-            if(req.getId() != null){
+            if (req.getId() != null) {
                 long id = req.getId();
                 Optional<Parties> oldEntity = findById(id);
                 if (!oldEntity.isPresent()) {
@@ -154,12 +156,13 @@ public class PartiesDao implements IPartiesDao {
         }
         return res;
     }
+
     @Override
     public List<Parties> saveEntityFromOtherEntity(List<Parties> partiesRequests, Long entityId, String entityType, Map<Long, Parties> oldEntityMap) {
         List<Parties> res = new ArrayList<>();
         Map<Long, String> oldEntityJsonStringMap = new HashMap<>();
-        for(Parties req : partiesRequests){
-            if(req.getId() != null){
+        for (Parties req : partiesRequests) {
+            if (req.getId() != null) {
                 long id = req.getId();
                 if (!oldEntityMap.containsKey(id)) {
                     log.debug(PARTIES_IS_NULL_FOR_ID_MSG, req.getId());
@@ -206,12 +209,11 @@ public class PartiesDao implements IPartiesDao {
             hashMap.values().forEach(parties -> {
                 String json = jsonHelper.convertToJson(parties);
                 delete(parties);
-                if(entityType != null)
-                {
+                if (entityType != null) {
                     try {
                         auditLogService.addAuditLog(
                                 AuditLogMetaData.builder()
-                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
+                                        .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                         .newData(null)
                                         .prevData(jsonHelper.readFromJson(json, Parties.class))
                                         .parent(Objects.equals(entityType, Constants.SHIPMENT_ADDRESSES) ? ShipmentDetails.class.getSimpleName() : entityType)
@@ -235,8 +237,8 @@ public class PartiesDao implements IPartiesDao {
         String responseMsg;
         List<Parties> responseParties = new ArrayList<>();
         Map<UUID, Parties> partiesMap = new HashMap<>();
-        if(oldEntityList != null && oldEntityList.size() > 0) {
-            for (Parties entity:
+        if (oldEntityList != null && oldEntityList.size() > 0) {
+            for (Parties entity :
                     oldEntityList) {
                 partiesMap.put(entity.getGuid(), entity);
             }
@@ -247,7 +249,7 @@ public class PartiesDao implements IPartiesDao {
             if (partiesList != null && partiesList.size() != 0) {
                 for (Parties request : partiesList) {
                     oldEntity = partiesMap.get(request.getGuid());
-                    if(oldEntity != null) {
+                    if (oldEntity != null) {
                         partiesMap.remove(oldEntity.getGuid());
                         request.setId(oldEntity.getId());
                     }
@@ -258,7 +260,7 @@ public class PartiesDao implements IPartiesDao {
                 responseParties = saveEntityFromOtherEntity(partiesRequestList, entityId, entityType);
             }
             Map<Long, Parties> hashMap = new HashMap<>();
-            partiesMap.forEach((s, parties) ->  hashMap.put(parties.getId(), parties));
+            partiesMap.forEach((s, parties) -> hashMap.put(parties.getId(), parties));
             deleteParties(hashMap, entityType, entityId);
             return responseParties;
         } catch (Exception e) {

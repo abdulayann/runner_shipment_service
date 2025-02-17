@@ -27,13 +27,9 @@ public enum ChargeTypeCode {
     Expense_VAT_GL_Code(19);
 
     int id;
+
     ChargeTypeCode(int id) {
         this.id = id;
-    }
-
-    @JsonValue
-    public int getId() {
-        return id;
     }
 
     @JsonCreator
@@ -44,5 +40,10 @@ public enum ChargeTypeCode {
             }
         }
         throw new IllegalArgumentException("Invalid ChargeTypeCode id: " + id);
+    }
+
+    @JsonValue
+    public int getId() {
+        return id;
     }
 }

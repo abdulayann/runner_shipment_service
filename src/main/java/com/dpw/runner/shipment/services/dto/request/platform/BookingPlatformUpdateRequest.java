@@ -6,5 +6,5 @@ import com.dpw.runner.shipment.services.utils.Generated;
 
 @Generated
 public class BookingPlatformUpdateRequest extends CommonRequest implements IRunnerRequest {
-    
+
 }

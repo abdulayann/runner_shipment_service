@@ -8,7 +8,9 @@ import java.io.IOException;
 
 @Generated
 public class FileUtils {
-    private FileUtils(){}
+    private FileUtils() {
+    }
+
     public static String convertMultipartFileToBase64(MultipartFile file) throws IOException {
         byte[] bytes = file.getBytes();
         byte[] encodedBytes = Base64.encodeBase64(bytes);

@@ -7,7 +7,7 @@ import lombok.Data;
 import java.util.List;
 
 @Data
-public class ShippingRequestAirModel implements IDocumentModel{
+public class ShippingRequestAirModel implements IDocumentModel {
     public ShipmentModel shipment;
     private List<PackingModel> shipmentPacking;
 }

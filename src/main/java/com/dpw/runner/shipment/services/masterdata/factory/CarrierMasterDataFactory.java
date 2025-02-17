@@ -16,10 +16,9 @@ public class CarrierMasterDataFactory {
     private String source;
 
     public ICarrierMasterData getCarrierMasterDataService() {
-        if(StringUtility.isEmpty(source))
+        if (StringUtility.isEmpty(source))
             return carrierMasterData;  // TODO- throw exception?
-        switch (source)
-        {
+        switch (source) {
             case MAPPER_MASTER_DATA:
                 return carrierMasterData;
             default:

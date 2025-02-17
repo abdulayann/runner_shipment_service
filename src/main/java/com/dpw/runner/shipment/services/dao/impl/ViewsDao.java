@@ -43,13 +43,12 @@ public class ViewsDao implements IViewsDao {
     }
 
     @Override
-    public List<String> findAllByUsername(String username){
+    public List<String> findAllByUsername(String username) {
         return viewsRepository.findAllByUsername(username);
     }
 
     @Override
-    public Optional<Views> findByCreatedByAndEntityAndIsDefault(String createdBy, String entity)
-    {
+    public Optional<Views> findByCreatedByAndEntityAndIsDefault(String createdBy, String entity) {
         return Optional.ofNullable(viewsRepository.findByCreatedByAndIsDefault(createdBy, entity));
     }
 }

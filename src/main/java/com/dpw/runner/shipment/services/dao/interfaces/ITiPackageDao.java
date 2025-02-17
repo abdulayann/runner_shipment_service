@@ -10,9 +10,14 @@ import java.util.Optional;
 
 public interface ITiPackageDao {
     List<TiPackages> saveAll(List<TiPackages> tiPackagesList);
+
     TiPackages save(TiPackages tiPackages);
+
     Page<TiPackages> findAll(Specification<TiPackages> spec, Pageable pageable);
+
     Optional<TiPackages> findById(Long id);
+
     void delete(TiPackages tiPackages);
+
     List<TiPackages> findByIds(List<Long> id);
 }

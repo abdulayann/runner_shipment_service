@@ -32,6 +32,7 @@ import com.dpw.runner.shipment.services.masterdata.response.BillChargesResponse;
 import com.dpw.runner.shipment.services.masterdata.response.BillingResponse;
 import com.dpw.runner.shipment.services.masterdata.response.ChargeTypesResponse;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -39,12 +40,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class FreightCertificationReport extends IReport{
+public class FreightCertificationReport extends IReport {
 
     @Autowired
     private JsonHelper jsonHelper;
@@ -77,8 +79,8 @@ public class FreightCertificationReport extends IReport{
         validateAirAndOceanDGCheck(freightCertificationModel.shipmentDetails);
         freightCertificationModel.tenantDetails = getTenant();
         freightCertificationModel.setAllContainersList(new ArrayList<>());
-        if(freightCertificationModel.shipmentDetails.getContainersList() != null && freightCertificationModel.shipmentDetails.getContainersList().size() > 0) {
-            for (ContainerModel containers: freightCertificationModel.shipmentDetails.getContainersList()) {
+        if (freightCertificationModel.shipmentDetails.getContainersList() != null && freightCertificationModel.shipmentDetails.getContainersList().size() > 0) {
+            for (ContainerModel containers : freightCertificationModel.shipmentDetails.getContainersList()) {
                 ShipmentContainers shipmentContainers = jsonHelper.convertValue(containers, ShipmentContainers.class);
                 freightCertificationModel.getAllContainersList().add(shipmentContainers);
             }
@@ -98,33 +100,33 @@ public class FreightCertificationReport extends IReport{
         addTenantDetails(dictionary, freightCertificationModel.tenantDetails);
 
         List<String> consigner = null;
-        if(freightCertificationModel.shipmentDetails.getConsigner() != null) {
+        if (freightCertificationModel.shipmentDetails.getConsigner() != null) {
             consigner = getOrgAddress(freightCertificationModel.shipmentDetails.getConsigner());
-            if(freightCertificationModel.shipmentDetails.getConsigner().getOrgData() != null) {
+            if (freightCertificationModel.shipmentDetails.getConsigner().getOrgData() != null) {
                 Map<String, Object> partyOrg = freightCertificationModel.shipmentDetails.getConsigner().getOrgData();
-                if(!Boolean.TRUE.equals(freightCertificationModel.shipmentSettingsDetails.getDisableBlPartiesName()) && getValueFromMap(partyOrg, FULL_NAME1) != null) {
+                if (!Boolean.TRUE.equals(freightCertificationModel.shipmentSettingsDetails.getDisableBlPartiesName()) && getValueFromMap(partyOrg, FULL_NAME1) != null) {
                     consigner.add(0, getValueFromMap(partyOrg, FULL_NAME1));
                 }
             }
         }
 
         List<String> consignee = null;
-        if(freightCertificationModel.shipmentDetails.getConsignee() != null) {
+        if (freightCertificationModel.shipmentDetails.getConsignee() != null) {
             consignee = getOrgAddress(freightCertificationModel.shipmentDetails.getConsignee());
-            if(freightCertificationModel.shipmentDetails.getConsignee().getOrgData() != null) {
+            if (freightCertificationModel.shipmentDetails.getConsignee().getOrgData() != null) {
                 Map<String, Object> partyOrg = freightCertificationModel.shipmentDetails.getConsignee().getOrgData();
-                if(!Boolean.TRUE.equals(freightCertificationModel.shipmentSettingsDetails.getDisableBlPartiesName()) && getValueFromMap(partyOrg, FULL_NAME1) != null) {
+                if (!Boolean.TRUE.equals(freightCertificationModel.shipmentSettingsDetails.getDisableBlPartiesName()) && getValueFromMap(partyOrg, FULL_NAME1) != null) {
                     consignee.add(0, getValueFromMap(partyOrg, FULL_NAME1));
                 }
             }
         }
 
         List<String> notify = null;
-        if(freightCertificationModel.shipmentDetails.getAdditionalDetails().getNotifyParty() != null) {
+        if (freightCertificationModel.shipmentDetails.getAdditionalDetails().getNotifyParty() != null) {
             notify = getOrgAddress(freightCertificationModel.shipmentDetails.getAdditionalDetails().getNotifyParty());
-            if(freightCertificationModel.shipmentDetails.getAdditionalDetails().getNotifyParty().getOrgData() != null) {
+            if (freightCertificationModel.shipmentDetails.getAdditionalDetails().getNotifyParty().getOrgData() != null) {
                 Map<String, Object> partyOrg = freightCertificationModel.shipmentDetails.getAdditionalDetails().getNotifyParty().getOrgData();
-                if(!Boolean.TRUE.equals(freightCertificationModel.shipmentSettingsDetails.getDisableBlPartiesName()) && getValueFromMap(partyOrg, FULL_NAME1) != null) {
+                if (!Boolean.TRUE.equals(freightCertificationModel.shipmentSettingsDetails.getDisableBlPartiesName()) && getValueFromMap(partyOrg, FULL_NAME1) != null) {
                     notify.add(0, getValueFromMap(partyOrg, FULL_NAME1));
                 }
             }
@@ -134,7 +136,7 @@ public class FreightCertificationReport extends IReport{
         List<String> tenantsDataList = getListOfStrings(freightCertificationModel.tenantDetails.tenantName, freightCertificationModel.tenantDetails.address1, freightCertificationModel.tenantDetails.address2,
                 freightCertificationModel.tenantDetails.city, freightCertificationModel.tenantDetails.state, freightCertificationModel.tenantDetails.zipPostCode, freightCertificationModel.tenantDetails.country,
                 freightCertificationModel.tenantDetails.email, freightCertificationModel.tenantDetails.websiteUrl, freightCertificationModel.tenantDetails.phone);
-        if(tenantsDataList != null)
+        if (tenantsDataList != null)
             dictionary.put(ReportConstants.TENANT, tenantsDataList);
         dictionary.put(ReportConstants.CONTAINER_COUNT_BY_CODE, getCountByContainerTypeCode(freightCertificationModel.getAllContainersList()));
         dictionary.put(ReportConstants.CLIENT_NAME, getValueFromMap(freightCertificationModel.shipmentDetails.getClient().getOrgData(), FULL_NAME1));
@@ -149,13 +151,13 @@ public class FreightCertificationReport extends IReport{
         dictionary.put(ReportConstants.NO_OF_PACKAGES_WORD, freightCertificationModel.noofpackages_word);
         dictionary.put(ReportConstants.USER_DISPLAY_NAME, freightCertificationModel.userdisplayname);
         dictionary.put(ReportConstants.CURRENT_DATE, ConvertToDPWDateFormat(LocalDateTime.now()));
-        if(freightCertificationModel.shipmentDetails != null && freightCertificationModel.shipmentDetails.getFreightLocal() != null)
+        if (freightCertificationModel.shipmentDetails != null && freightCertificationModel.shipmentDetails.getFreightLocal() != null)
             dictionary.put(ReportConstants.FREIGHT_LOCAL, freightCertificationModel.shipmentDetails.getFreightLocal());
-        if(freightCertificationModel.shipmentDetails != null && freightCertificationModel.shipmentDetails.getFreightLocalCurrency() != null && !freightCertificationModel.shipmentDetails.getFreightLocalCurrency().isEmpty())
+        if (freightCertificationModel.shipmentDetails != null && freightCertificationModel.shipmentDetails.getFreightLocalCurrency() != null && !freightCertificationModel.shipmentDetails.getFreightLocalCurrency().isEmpty())
             dictionary.put(ReportConstants.FREIGHT_LOCAL_CURRENCY, freightCertificationModel.shipmentDetails.getFreightLocalCurrency());
-        if(freightCertificationModel.shipmentDetails != null && freightCertificationModel.shipmentDetails.getFreightOverseas() != null)
+        if (freightCertificationModel.shipmentDetails != null && freightCertificationModel.shipmentDetails.getFreightOverseas() != null)
             dictionary.put(ReportConstants.FREIGHT_OVERSEAS, AmountNumberFormatter.Format(freightCertificationModel.shipmentDetails.getFreightOverseas(), freightCertificationModel.shipmentDetails.getFreightOverseasCurrency(), tenantSettingsRow));
-        if(freightCertificationModel.shipmentDetails != null && freightCertificationModel.shipmentDetails.getFreightOverseasCurrency() != null && !freightCertificationModel.shipmentDetails.getFreightOverseasCurrency().isEmpty())
+        if (freightCertificationModel.shipmentDetails != null && freightCertificationModel.shipmentDetails.getFreightOverseasCurrency() != null && !freightCertificationModel.shipmentDetails.getFreightOverseasCurrency().isEmpty())
             dictionary.put(ReportConstants.FREIGHT_OVERSEAS_CURRENCY, freightCertificationModel.shipmentDetails.getFreightOverseasCurrency());
         if (freightCertificationModel.shipmentDetails.getShipmentAddresses() != null && freightCertificationModel.shipmentDetails.getShipmentAddresses().size() > 0) {
             for (PartiesModel shipmentAddress : freightCertificationModel.shipmentDetails.getShipmentAddresses()) {
@@ -196,16 +198,15 @@ public class FreightCertificationReport extends IReport{
                 if (billChargesList != null && billChargesList.size() > 0) {
                     for (BillChargesResponse billCharge : billChargesList) {
                         ChargeTypesResponse chargeTypesResponse = getChargeTypesData(billCharge);
-                        if(chargeTypesResponse != null && Objects.equals(chargeTypesResponse.getServices(), "Freight")) {
-                            if(billCharge.getOverseasSellAmount() != null) {
+                        if (chargeTypesResponse != null && Objects.equals(chargeTypesResponse.getServices(), "Freight")) {
+                            if (billCharge.getOverseasSellAmount() != null) {
                                 if (currency == null) {
                                     currency = billCharge.getOverseasSellCurrency();
                                     totalAmount = totalAmount + billCharge.getOverseasSellAmount().doubleValue();
                                 } else if (!billCharge.getOverseasSellCurrency().equals(currency)) {
                                     currencyFlag = true;
                                     break;
-                                }
-                                else
+                                } else
                                     totalAmount = totalAmount + billCharge.getOverseasSellAmount().doubleValue();
                             }
                         }
@@ -213,10 +214,10 @@ public class FreightCertificationReport extends IReport{
                     if (currencyFlag) {
                         totalAmount = 0;
                         currency = null;
-                        for (BillChargesResponse billCharge: billChargesList) {
+                        for (BillChargesResponse billCharge : billChargesList) {
                             ChargeTypesResponse chargeTypesResponse = getChargeTypesData(billCharge);
-                            if(chargeTypesResponse != null && chargeTypesResponse.getServices().equals("Freight")) {
-                                if(billCharge.getLocalSellAmount() != null) {
+                            if (chargeTypesResponse != null && chargeTypesResponse.getServices().equals("Freight")) {
+                                if (billCharge.getLocalSellAmount() != null) {
                                     if (currency == null) {
                                         currency = billCharge.getLocalSellCurrency();
                                     }
@@ -229,16 +230,15 @@ public class FreightCertificationReport extends IReport{
             }
         }
         DecimalFormat decimalFormat = new DecimalFormat("0.00");
-        if(!lastDate.equals(LocalDateTime.MIN))
+        if (!lastDate.equals(LocalDateTime.MIN))
             dictionary.put(INVOICE_DATE, lastDate.format(DateTimeFormatter.ofPattern("dd MMM yyyy")));
         else
             dictionary.put(INVOICE_DATE, null);
-        if(totalAmount != 0) {
+        if (totalAmount != 0) {
             String strTotalAmount = decimalFormat.format(totalAmount);
             dictionary.put(TOTAL_AMOUNT, strTotalAmount);
             dictionary.put(TOTAL_AMOUNT_CURRENCY, currency);
-        }
-        else {
+        } else {
             dictionary.put(TOTAL_AMOUNT, null);
             dictionary.put(TOTAL_AMOUNT_CURRENCY, null);
         }

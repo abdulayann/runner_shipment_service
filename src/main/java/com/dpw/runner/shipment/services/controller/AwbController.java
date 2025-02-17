@@ -39,12 +39,6 @@ import java.util.Optional;
 public class AwbController {
     private final IAwbService awbService;
 
-    private class MyResponseClass extends RunnerResponse<AwbResponse>{}
-    private class MyListResponseClass extends RunnerListResponse<AwbResponse>{}
-    private class AwbCalculationResponseClass extends RunnerResponse<AwbCalculationResponse>{}
-    private class FnmStatusMessageResponseClass extends RunnerResponse<FnmStatusMessageResponse>{}
-
-
     @Autowired
     public AwbController(IAwbService awbService) {
         this.awbService = awbService;
@@ -196,6 +190,7 @@ public class AwbController {
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
+
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = AwbConstants.AWB_UPDATE_SUCCESSFUL, response = RunnerResponse.class),
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
@@ -218,9 +213,9 @@ public class AwbController {
     public ResponseEntity<IRunnerResponse> getAllMasterData(@RequestParam(required = false) Long shipmentId, @RequestParam(required = false) Long consolidationId) {
         String responseMsg = Constants.FAILURE_EXECUTING;
         try {
-            if(shipmentId != null)
+            if (shipmentId != null)
                 return awbService.getAllMasterData(CommonRequestModel.buildRequest(shipmentId), true);
-            else if(consolidationId != null)
+            else if (consolidationId != null)
                 return awbService.getAllMasterData(CommonRequestModel.buildRequest(consolidationId), false);
             return ResponseHelper.buildFailedResponse(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         } catch (Exception e) {
@@ -244,7 +239,6 @@ public class AwbController {
             return ResponseHelper.buildFailedResponse(e.getMessage());
         }
     }
-
 
     @ApiResponses(value = {@ApiResponse(code = 200, response = MyListResponseClass.class, message = AwbConstants.AWB_RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.RETIEVE_BY_MAWB_ID)
@@ -323,6 +317,18 @@ public class AwbController {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(e.getMessage());
         }
+    }
+
+    private class MyResponseClass extends RunnerResponse<AwbResponse> {
+    }
+
+    private class MyListResponseClass extends RunnerListResponse<AwbResponse> {
+    }
+
+    private class AwbCalculationResponseClass extends RunnerResponse<AwbCalculationResponse> {
+    }
+
+    private class FnmStatusMessageResponseClass extends RunnerResponse<FnmStatusMessageResponse> {
     }
 
 }

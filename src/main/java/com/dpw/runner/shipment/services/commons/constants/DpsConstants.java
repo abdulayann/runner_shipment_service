@@ -10,5 +10,6 @@ public class DpsConstants {
     public static final String CONCR = "CONCR";
     public static final String MAWBPR = "MAWBPR";
 
-    private DpsConstants(){}
+    private DpsConstants() {
+    }
 }

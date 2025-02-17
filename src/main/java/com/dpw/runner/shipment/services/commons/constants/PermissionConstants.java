@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 public final class PermissionConstants {
-    private PermissionConstants(){}
     public static final String customerBookingView = "Operations:CustomerBookings:View";
     public static final String customerBookingCreate = "Operations:CustomerBookings:Create";
     public static final String customerBookingUpdate = "Operations:CustomerBookings:Modify";
@@ -18,4 +17,6 @@ public final class PermissionConstants {
     public static final String CONSOLIDATIONS_AIR_INTER_BRANCH = "Consolidations:Air:Interbranch Consolidation";
     public static final String SHIPMENT_IN_PIPELINE_MODIFY = "Operations:ShipmentInPipeline:Modify";
     public static final String SHIPMENT_IN_PIPELINE_VIEW = "Operations:ShipmentInPipeline:View";
+    private PermissionConstants() {
+    }
 }

@@ -21,9 +21,9 @@ public class SBConfiguration {
     Map<String, ServiceBusSenderClient> senderMap = new HashMap<>();
 
     public ServiceBusSenderClient getSenderTopicClient(ISBProperties sbProperties, String topicName) {
-        String key = sbProperties.getConnectionString()+"_"+topicName;
+        String key = sbProperties.getConnectionString() + "_" + topicName;
         ServiceBusSenderClient senderClient = senderMap.get(key);
-        if(senderClient != null) {
+        if (senderClient != null) {
             return senderClient;
         }
         ServiceBusSenderClient serviceBusSenderClient = new ServiceBusClientBuilder()
@@ -69,10 +69,10 @@ public class SBConfiguration {
         String connectionString = isbProperties.getConnectionString();
         return new ServiceBusAdministrationClientBuilder()
                 .connectionString(connectionString)
-                .buildClient().getSubscriptionRuntimeProperties(topicName,subscriptionName);
+                .buildClient().getSubscriptionRuntimeProperties(topicName, subscriptionName);
     }
 
-    public ServiceBusProcessorClient getTopicReceiverClient(ISBProperties isbProperties,String topicName, String subscriptionName, Consumer<ServiceBusReceivedMessageContext> onMessage, Consumer<ServiceBusErrorContext> onError){
+    public ServiceBusProcessorClient getTopicReceiverClient(ISBProperties isbProperties, String topicName, String subscriptionName, Consumer<ServiceBusReceivedMessageContext> onMessage, Consumer<ServiceBusErrorContext> onError) {
 
         String connectionString = isbProperties.getConnectionString();
 

@@ -6,8 +6,10 @@ import java.security.SecureRandom;
  * this helper is used to implement all common methods in all projects like utils function
  */
 public class StringUtility {
-    private StringUtility(){}
     public static final SecureRandom random = new SecureRandom();
+
+    private StringUtility() {
+    }
 
     public static boolean isEmpty(String value) {
         return value == null || value.isEmpty();
@@ -18,7 +20,7 @@ public class StringUtility {
     }
 
     public static String toUpperCase(String value) {
-        if(isEmpty(value)){
+        if (isEmpty(value)) {
             return null;
         }
         return value.toUpperCase();

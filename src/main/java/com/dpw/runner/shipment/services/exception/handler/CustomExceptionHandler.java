@@ -11,7 +11,9 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.utils.Generated;
+
 import java.util.List;
+
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpHeaders;
@@ -41,7 +43,7 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler({DpsException.class})
     private ResponseEntity<IRunnerResponse> handleDpsExceptions(final RuntimeException ex) {
-        return ResponseHelper.buildFailedResponse("DPS ERROR -- "+ex.getMessage(), HttpStatus.BAD_REQUEST);
+        return ResponseHelper.buildFailedResponse("DPS ERROR -- " + ex.getMessage(), HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(AccessDeniedException.class)

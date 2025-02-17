@@ -17,11 +17,12 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 @Component
-public class ShippingRequestAirReport extends IReport{
+public class ShippingRequestAirReport extends IReport {
     @Autowired
     private JsonHelper jsonHelper;
     @Autowired
     private IV1Service v1Service;
+
     @Override
     public Map<String, Object> getData(Long id) {
         ShippingRequestAirModel shippingRequestAirModel = (ShippingRequestAirModel) getDocumentModel(id);
@@ -48,7 +49,7 @@ public class ShippingRequestAirReport extends IReport{
         List<PackingModel> listOfPacks = shippingRequestAirModel.getShipmentPacking();
 
         StringBuilder commodities = new StringBuilder();
-        for (var pack: listOfPacks) {
+        for (var pack : listOfPacks) {
             Map<String, Object> dict = new HashMap<>();
             dict.put(ReportConstants.LENGTH, pack.getLength());
             dict.put(ReportConstants.WIDTH, pack.getWidth());
@@ -59,10 +60,10 @@ public class ShippingRequestAirReport extends IReport{
 
             packDictionary.add(dict);
 
-            if(pack.getCommodity() != null) {
+            if (pack.getCommodity() != null) {
 
                 List<Object> criteria = Arrays.asList(
-                        Arrays.asList("Code"),
+                        List.of("Code"),
                         "=",
                         pack.getCommodity()
                 );
@@ -72,8 +73,8 @@ public class ShippingRequestAirReport extends IReport{
                 List<EntityTransferCommodityType> commodityTypeList = jsonHelper.convertValueToList(response.entities, EntityTransferCommodityType.class);
 
                 if (commodityTypeList != null && !commodityTypeList.isEmpty() &&
-                        commodityTypeList.get(0).getDescription() != null && !commodityTypeList.get(0).getDescription().isEmpty()){
-                    if(!commodities.toString().equals(""))
+                        commodityTypeList.get(0).getDescription() != null && !commodityTypeList.get(0).getDescription().isEmpty()) {
+                    if (!commodities.toString().equals(""))
                         commodities.append(",");
                     commodities.append(commodityTypeList.get(0).getDescription());
                 }

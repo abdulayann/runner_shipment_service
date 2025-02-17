@@ -11,9 +11,14 @@ import java.util.Optional;
 
 public interface IValidationsDao {
     Validations save(Validations views);
+
     Page<Validations> findAll(Specification<Validations> spec, Pageable pageable);
+
     Optional<Validations> findById(Long id);
+
     void delete(Validations views);
+
     List<Validations> findAll();
+
     Optional<List<Validations>> findByLifecycleHookAndEntity(LifecycleHooks lifecycleHook, String entity);
 }

@@ -18,11 +18,11 @@ public class CustomLocalTimeDeserializer extends JsonDeserializer<LocalTime> {
     @Override
     public LocalTime deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
         JsonNode node = jsonParser.getCodec().readTree(jsonParser);
-        if(node == null || (node.isObject() && node.isEmpty())) {
+        if (node == null || (node.isObject() && node.isEmpty())) {
             return null;
         }
         try {
-            if((node.get(Constants.HOUR) == null || node.get(Constants.HOUR).isNull()) &&
+            if ((node.get(Constants.HOUR) == null || node.get(Constants.HOUR).isNull()) &&
                     (node.get(Constants.MINUTE) == null || node.get(Constants.MINUTE).isNull()) &&
                     (node.get(Constants.SECOND) == null || node.get(Constants.SECOND).isNull()))
                 return null;
@@ -32,7 +32,7 @@ public class CustomLocalTimeDeserializer extends JsonDeserializer<LocalTime> {
             return LocalTime.of(hour, minute, second);
         } catch (Exception e) {
             try {
-                return LocalTime.parse(((TextNode) node).textValue());
+                return LocalTime.parse(node.textValue());
             } catch (Exception e1) {
                 throw new IllegalArgumentException("Invalid duration format");
             }

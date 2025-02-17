@@ -5,7 +5,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.ListCousinBranchesForEtRequest;
 import org.springframework.http.ResponseEntity;
 
-public interface IMasterDataService extends ICommonService{
+public interface IMasterDataService extends ICommonService {
     ResponseEntity<IRunnerResponse> createCarrier(CommonRequestModel commonRequestModel);
 
     ResponseEntity<IRunnerResponse> updateCarrier(CommonRequestModel commonRequestModel);
@@ -77,6 +77,7 @@ public interface IMasterDataService extends ICommonService{
     ResponseEntity<IRunnerResponse> updateUnlocation(CommonRequestModel commonRequestModel);
 
     ResponseEntity<IRunnerResponse> listUnlocation(CommonRequestModel commonRequestModel);
+
     ResponseEntity<IRunnerResponse> stateBasedList(CommonRequestModel commonRequestModel);
 
 
@@ -89,6 +90,7 @@ public interface IMasterDataService extends ICommonService{
     ResponseEntity<IRunnerResponse> listGridColorCode(CommonRequestModel commonRequestModel);
 
     ResponseEntity<IRunnerResponse> listCousinBranches(CommonRequestModel commonRequestModel);
+
     ResponseEntity<IRunnerResponse> listCousinBranchesWithoutCurrent(CommonRequestModel commonRequestModel);
 
     ResponseEntity<IRunnerResponse> importFlightSchedules(CommonRequestModel commonRequestModel);
@@ -116,12 +118,20 @@ public interface IMasterDataService extends ICommonService{
     ResponseEntity<IRunnerResponse> listOwnType(CommonRequestModel commonRequestModel);
 
     ResponseEntity<IRunnerResponse> listCarrierFilter(CommonRequestModel commonRequestModel);
+
     ResponseEntity<IRunnerResponse> fetchGetTemplateMainPage(CommonRequestModel commonRequestModel);
+
     ResponseEntity<IRunnerResponse> listRoles(CommonRequestModel commonRequestModel);
+
     ResponseEntity<IRunnerResponse> fetchChargeTypes(CommonRequestModel commonRequestModel);
+
     ResponseEntity<IRunnerResponse> getDefaultOrg(CommonRequestModel commonRequestModel);
+
     ResponseEntity<IRunnerResponse> listOrgs(CommonRequestModel commonRequestModel);
+
     ResponseEntity<IRunnerResponse> fetchMultipleMasterData(CommonRequestModel commonRequestModel);
+
     ResponseEntity<IRunnerResponse> listBranchesByDefaultOrgAndAddress(CommonRequestModel commonRequestModel);
+
     ResponseEntity<IRunnerResponse> listCousinBranchForEt(ListCousinBranchesForEtRequest request);
 }

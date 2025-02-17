@@ -18,25 +18,42 @@ import java.util.List;
 public interface ConsolidationDetailsMapper {
 
     ConsolidationDetails map(ConsolidationDetailsRequest req);
+
     ConsolidationDetailsResponse map(ConsolidationDetails entity);
+
     ConsolidationDetailsRequest getRequest(ConsolidationDetails consolidationDetails);
 
     //Child entities
     Parties map(PartiesRequest req);
+
     Allocations map(AllocationsRequest req);
+
     AchievedQuantities map(AchievedQuantitiesRequest req);
+
     ArrivalDepartureDetails map(ArrivalDepartureDetailsRequest req);
+
     TruckDriverDetails map(TruckDriverDetailsRequest req);
+
     Routings map(RoutingsRequest req);
+
     ReferenceNumbers map(ReferenceNumbersRequest req);
+
     Packing map(PackingRequest req);
+
     FileRepo map(FileRepoRequest req);
+
     Events map(EventsRequest req);
+
     CarrierDetails map(CarrierDetailRequest req);
+
     Jobs map(JobRequest req);
+
     Containers map(ContainerRequest req);
+
     List<TriangulationPartner> map(List<TriangulationPartnerRequest> req);
+
     TriangulationPartner map(TriangulationPartnerRequest req);
+
     TriangulationPartnerResponse map(TriangulationPartner partner);
 
     @InheritConfiguration

@@ -1,8 +1,10 @@
 package com.dpw.runner.shipment.services.dto.v1.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.io.Serializable;
 import java.util.List;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -102,5 +104,5 @@ public class V1TenantSettingsResponse implements Serializable {
         @JsonProperty("IsActive")
         private int isActive;
     }
-    
+
 }

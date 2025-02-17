@@ -26,7 +26,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 @Component
 @Data
 @Slf4j
-public class CargoManifestAirShipmentReport extends IReport{
+public class CargoManifestAirShipmentReport extends IReport {
 
     @Autowired
     private IAwbDao awbDao;
@@ -49,7 +49,7 @@ public class CargoManifestAirShipmentReport extends IReport{
         validateAirAndOceanDGCheck(cargoManifestAirShipmentModel.getShipmentDetails()); // check if for consolidation required
         cargoManifestAirShipmentModel.setTenantModel(getTenant());
         List<Awb> awbList = awbDao.findByShipmentId(id);
-        if(awbList != null && !awbList.isEmpty())
+        if (awbList != null && !awbList.isEmpty())
             cargoManifestAirShipmentModel.setAwb(awbList.get(0));
         return cargoManifestAirShipmentModel;
     }
@@ -66,9 +66,9 @@ public class CargoManifestAirShipmentReport extends IReport{
         dictionary = populateHAWBAndSecurityData(List.of(cargoManifestAirShipmentModel.getShipmentDetails()), awbList, dictionary, isSecurityData, isShipperAndConsignee, false);
         boolean airRoutingTagsAdded = getAirRoutingFlightTags(cargoManifestAirShipmentModel.getShipmentDetails().getRoutingsList(), dictionary, true);
         CarrierDetailModel carrierDetailModel = cargoManifestAirShipmentModel.getShipmentDetails().getCarrierDetails();
-        if(!airRoutingTagsAdded) {
+        if (!airRoutingTagsAdded) {
             Map<String, CarrierMasterData> carriersMap = new HashMap<>();
-            if(!CommonUtils.IsStringNullOrEmpty(carrierDetailModel.getShippingLine()))
+            if (!CommonUtils.IsStringNullOrEmpty(carrierDetailModel.getShippingLine()))
                 carriersMap = masterDataUtils.getCarriersData(Set.of(carrierDetailModel.getShippingLine()));
             dictionary.put(SHIPMENT_FIRST_FLIGHT_AND_DAY, getFlightAndDayString(carriersMap, carrierDetailModel.getShippingLine(), carrierDetailModel.getFlightNumber(), carrierDetailModel.getEtd()));
         }
@@ -76,15 +76,31 @@ public class CargoManifestAirShipmentReport extends IReport{
         ReportHelper.addTenantDetails(dictionary, cargoManifestAirShipmentModel.getTenantModel());
         PartiesModel originAgent = cargoManifestAirShipmentModel.getShipmentDetails().getAdditionalDetails().getExportBroker();
         PartiesModel destinationAgent = cargoManifestAirShipmentModel.getShipmentDetails().getAdditionalDetails().getImportBroker();
-        try{ dictionary.put(ORIGIN_AGENT_NAME, originAgent.getOrgData().get(FULL_NAME)); }catch (Exception ignored) {log.error(ORG_DATA_NOT_AVAILABLE);}
-        try{ dictionary.put(ORIGIN_AGENT_ADDRESS, getOrgAddress(originAgent)); }catch (Exception ignored) {log.error(ORG_DATA_NOT_AVAILABLE);}
-        try{ dictionary.put(DESTINATION_AGENT_NAME, destinationAgent.getOrgData().get(FULL_NAME)); }catch (Exception ignored) {log.error(ORG_DATA_NOT_AVAILABLE);}
-        try{ dictionary.put(DESTINATION_AGENT_ADDRESS, getOrgAddress(destinationAgent)); }catch (Exception ignored) {log.error(ORG_DATA_NOT_AVAILABLE);}
+        try {
+            dictionary.put(ORIGIN_AGENT_NAME, originAgent.getOrgData().get(FULL_NAME));
+        } catch (Exception ignored) {
+            log.error(ORG_DATA_NOT_AVAILABLE);
+        }
+        try {
+            dictionary.put(ORIGIN_AGENT_ADDRESS, getOrgAddress(originAgent));
+        } catch (Exception ignored) {
+            log.error(ORG_DATA_NOT_AVAILABLE);
+        }
+        try {
+            dictionary.put(DESTINATION_AGENT_NAME, destinationAgent.getOrgData().get(FULL_NAME));
+        } catch (Exception ignored) {
+            log.error(ORG_DATA_NOT_AVAILABLE);
+        }
+        try {
+            dictionary.put(DESTINATION_AGENT_ADDRESS, getOrgAddress(destinationAgent));
+        } catch (Exception ignored) {
+            log.error(ORG_DATA_NOT_AVAILABLE);
+        }
         dictionary.put(CM_ORIGIN_AGENT_NAME, dictionary.get(ORIGIN_AGENT_NAME));
         dictionary.put(CM_DESTINATION_AGENT_NAME, dictionary.get(DESTINATION_AGENT_NAME));
         dictionary.put(ReportConstants.WITH_CONSIGNOR, isShipperAndConsignee);
         dictionary.put(SCI, cargoManifestAirShipmentModel.getShipmentDetails().getAdditionalDetails().getSci());
-        if(cargoManifestAirShipmentModel.getShipmentDetails().getAdditionalDetails() != null) {
+        if (cargoManifestAirShipmentModel.getShipmentDetails().getAdditionalDetails() != null) {
             dictionary.put(NOTIFY_PARTY, ReportHelper.getOrgAddressDetails(cargoManifestAirShipmentModel.getShipmentDetails().getAdditionalDetails().getNotifyParty()));
         }
         dictionary.put(CM_NO_OF_PACKAGES, cargoManifestAirShipmentModel.getShipmentDetails().getNoOfPacks());

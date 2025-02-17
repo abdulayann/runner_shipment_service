@@ -85,6 +85,7 @@ public interface IMasterDataService {
     DependentServiceResponse updateOrganizationData(Object request);
 
     DependentServiceResponse fetchUnlocationData(Object request);
+
     DependentServiceResponse stateBasedList(Object request);
 
 
@@ -95,37 +96,60 @@ public interface IMasterDataService {
     DependentServiceResponse fetchUserData(Object request);
 
     DependentServiceResponse fetchGridColorCodeData(Object request);
+
     DependentServiceResponse createGridColorCodeData(Object request);
+
     DependentServiceResponse updateGridColorCodeData(Object request);
 
     DependentServiceResponse listCousinBranches(Object request);
+
     DependentServiceResponse listCousinBranchesWithoutCurrent(Object request);
+
     DependentServiceResponse tenantByGuid(Object request);
+
     DependentServiceResponse importFlightSchedules(Object request);
+
     DependentServiceResponse fetchFlightStatus(Object request);
+
     DependentServiceResponse importSailingSchedules(Object request);
+
     DependentServiceResponse listSailingSchedule(Object request);
+
     DependentServiceResponse sendConsolidationTask(CreateConsolidationTaskRequest request);
+
     DependentServiceResponse sendShipmentTask(CreateShipmentTaskRequest request);
+
     DependentServiceResponse addressList(Object request);
+
     DependentServiceResponse tenantNameByTenantId(Object request);
+
     DependentServiceResponse retrieveTenantSettings();
 
 
     DependentServiceResponse fetchUnlocationOriginAndDestinationList(Object request);
+
     DependentServiceResponse fetchListUnlocationTransportModeBased(Object request);
+
     DependentServiceResponse fetchActivityMaster(Object request);
+
     DependentServiceResponse retrieveTenant();
+
     DependentServiceResponse fetchMultipleMasterData(Object request);
 
     DependentServiceResponse fetchOwnType(Object request);
 
     DependentServiceResponse fetchCarrierFilterList(Object request);
+
     DependentServiceResponse fetchGetTemplateMainPage(Object request);
+
     DependentServiceResponse fetchBillingList(Object request);
+
     DependentServiceResponse fetchBillChargesList(Object request);
+
     DependentServiceResponse fetchArObjectList(Object request);
+
     DependentServiceResponse fetchChargeType(Object request);
+
     DependentServiceResponse getDefaultOrg(Object request);
 
 }

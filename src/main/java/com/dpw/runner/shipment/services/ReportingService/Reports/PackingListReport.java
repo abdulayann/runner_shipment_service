@@ -48,7 +48,7 @@ public class PackingListReport extends IReport {
         var shipment = getShipment(id);
         validateAirAndOceanDGCheck(shipment);
         packingListModel.setShipmentDetails(shipment);
-        if(shipment.getConsolidationList() != null && shipment.getConsolidationList().size() > 0) {
+        if (shipment.getConsolidationList() != null && shipment.getConsolidationList().size() > 0) {
             packingListModel.setConsolidation(getConsolidation(shipment.getConsolidationList().get(0).getId()));
         }
         packingListModel.setTenant(getTenant());
@@ -98,13 +98,13 @@ public class PackingListReport extends IReport {
             }
         }
 
-        if(shipment.getWeight() != null) {
+        if (shipment.getWeight() != null) {
             dictionary.put(ReportConstants.WEIGHT, ConvertToWeightNumberFormat(shipment.getWeight()));
         }
-        if(shipment.getVolume() != null) {
+        if (shipment.getVolume() != null) {
             dictionary.put(ReportConstants.VOLUME, ConvertToVolumeNumberFormat(shipment.getVolume()));
         }
-        if(shipment.getChargable() != null) {
+        if (shipment.getChargable() != null) {
             dictionary.put(ReportConstants.CHARGEABLE, ConvertToWeightNumberFormat(shipment.getChargable()));
         }
 
@@ -175,13 +175,14 @@ public class PackingListReport extends IReport {
         String unitOfTotalNetWeight = null;
         boolean breakFlagNetWeight = false;
 
-        if(shipment.getPackingList() != null && shipment.getPackingList().size() > 0) {
+        if (shipment.getPackingList() != null && shipment.getPackingList().size() > 0) {
             List<Map<String, Object>> values = new ArrayList<>();
             shipment.getPackingList().forEach(i ->
-                values.add(jsonHelper.convertValue(i, new TypeReference<>() {}))
+                    values.add(jsonHelper.convertValue(i, new TypeReference<>() {
+                    }))
             );
 
-            for(var v : values) {
+            for (var v : values) {
                 JsonDateFormat(v);
                 totalPacks += Long.parseLong(stringValueOf(v.get("Packs")));
 
@@ -200,15 +201,15 @@ public class PackingListReport extends IReport {
 
                 if (v.containsKey(ReportConstants.NET_WEIGHT) && v.get(ReportConstants.NET_WEIGHT) != null) {
                     v.put(ReportConstants.NET_WEIGHT, ConvertToWeightNumberFormat(
-                                    new BigDecimal(ReportHelper.twoDecimalPlacesFormat(stringValueOf(v.get(ReportConstants.NET_WEIGHT))))));
+                            new BigDecimal(ReportHelper.twoDecimalPlacesFormat(stringValueOf(v.get(ReportConstants.NET_WEIGHT))))));
                 }
 
-                if(v.get(ReportConstants.WEIGHT) != null)
+                if (v.get(ReportConstants.WEIGHT) != null)
                     v.put(ReportConstants.WEIGHT, ConvertToWeightNumberFormat(new BigDecimal(stringValueOf(v.get(ReportConstants.WEIGHT)))));
-                if(v.get(PACKS) != null)
+                if (v.get(PACKS) != null)
                     v.put(ReportConstants.PACKS, GetDPWWeightVolumeFormat(new BigDecimal(stringValueOf(v.get(PACKS))), 0, v1TenantSettingsResponse));
 
-                if(v.get(ReportConstants.SHIPMENT_PACKING_PACKS_PACKSTYPE) != null) {
+                if (v.get(ReportConstants.SHIPMENT_PACKING_PACKS_PACKSTYPE) != null) {
                     var packsMasterData = getMasterListData(MasterDataType.PACKS_UNIT, stringValueOf(v.get(ReportConstants.SHIPMENT_PACKING_PACKS_PACKSTYPE)).toUpperCase());
                     v.put(ReportConstants.SHIPMENT_PACKING_PACKS_PACKSTYPEDESCRIPTION, packsMasterData != null ? packsMasterData.getItemDescription() : null);
                 }
@@ -233,17 +234,17 @@ public class PackingListReport extends IReport {
             dictionary.put(ReportConstants.SHIPMENT_PACKING_PACKS_UOTNW, unitOfTotalNetWeight);
         }
 
-        if(shipment.getPaymentTerms() != null) {
+        if (shipment.getPaymentTerms() != null) {
             var packsMasterData = getMasterListData(MasterDataType.PAYMENT, shipment.getPaymentTerms());
             dictionary.put(ReportConstants.PACKS_UNIT_DESC, packsMasterData != null ? packsMasterData.getItemDescription() : null);
         }
 
-        if(shipment.getPacksUnit() != null) {
+        if (shipment.getPacksUnit() != null) {
             var packsMasterData = getMasterListData(MasterDataType.PACKS_UNIT, shipment.getPacksUnit());
             dictionary.put(ReportConstants.PACKS_UNIT_DESC, packsMasterData != null ? packsMasterData.getItemDescription() : null);
         }
 
-        if(shipment.getAdditionalDetails() != null && shipment.getAdditionalDetails().getGoodsCO() != null) {
+        if (shipment.getAdditionalDetails() != null && shipment.getAdditionalDetails().getGoodsCO() != null) {
             var masterData = getMasterListData(MasterDataType.COUNTRIES, shipment.getAdditionalDetails().getGoodsCO());
             dictionary.put(ReportConstants.COUNTRY_OF_GOODS_ORIGIN, masterData != null ? masterData.getItemDescription() : null);
         }

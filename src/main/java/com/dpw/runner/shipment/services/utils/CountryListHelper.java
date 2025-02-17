@@ -17,14 +17,14 @@ public class CountryListHelper {
     public static class ISO3166 {
 
         public static String getAlpha3FromAlpha2(String alpha2) {
-            if(IsStringNullOrEmpty(alpha2))
+            if (IsStringNullOrEmpty(alpha2))
                 return null;
             ISO3166Country iso3166Country = fromAlpha2(alpha2);
             return iso3166Country.getAlpha3();
         }
 
         public static String getAlpha2FromAlpha3(String alpha3) {
-            if(IsStringNullOrEmpty(alpha3))
+            if (IsStringNullOrEmpty(alpha3))
                 return null;
             ISO3166Country iso3166Country = fromAlpha3(alpha3);
             return iso3166Country.getAlpha2();
@@ -39,22 +39,19 @@ public class CountryListHelper {
             return country;
         }
 
-        public static ISO3166Country fromAlpha3(String alpha3)
-        {
+        public static ISO3166Country fromAlpha3(String alpha3) {
             List<ISO3166Country> collection = buildCollection();
             var collect = collection.stream().filter(p -> Objects.equals(p.getAlpha3(), alpha3)).findFirst();
             return collect.orElse(new ISO3166Country());
         }
 
-        public static ISO3166Country fromAlpha2(String alpha2)
-        {
+        public static ISO3166Country fromAlpha2(String alpha2) {
             List<ISO3166Country> collection = buildCollection();
             var collect = collection.stream().filter(p -> Objects.equals(p.getAlpha2(), alpha2)).findFirst();
             return collect.orElse(new ISO3166Country());
         }
 
-        public static String getCountryNameByCode(String countryCode)
-        {
+        public static String getCountryNameByCode(String countryCode) {
             if (countryCode.length() == 2)
                 return fromAlpha2(countryCode.toUpperCase()).getName();
             if (countryCode.length() == 3)
@@ -62,8 +59,7 @@ public class CountryListHelper {
             return StringUtility.getEmptyString();
         }
 
-        private static List<ISO3166Country> buildCollection()
-        {
+        private static List<ISO3166Country> buildCollection() {
             List<ISO3166Country> collection = new ArrayList<>();
 
             // This collection built from Wikipedia entry on ISO3166-1 on 9th Feb 2016
@@ -323,25 +319,20 @@ public class CountryListHelper {
     }
 
 
-
     @Data
     @NoArgsConstructor
     public static class ISO3166Country {
-        public ISO3166Country(String name, String alpha2, String alpha3, int numericCode)
-        {
+        private String name;
+        private String alpha2;
+        private String alpha3;
+        private int numericCode;
+
+        public ISO3166Country(String name, String alpha2, String alpha3, int numericCode) {
             this.name = name;
             this.alpha2 = alpha2;
             this.alpha3 = alpha3;
             this.numericCode = numericCode;
         }
-
-        private String name;
-
-        private String alpha2;
-
-        private String alpha3;
-
-        private int numericCode;
     }
 
 }

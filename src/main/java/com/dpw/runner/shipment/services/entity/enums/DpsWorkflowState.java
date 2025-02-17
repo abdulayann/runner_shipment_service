@@ -4,5 +4,5 @@ import lombok.Getter;
 
 @Getter
 public enum DpsWorkflowState {
-    HOLD, UN_HOLD, TEMP_BLOCKED, PER_BLOCKED, UN_HOLD_WITH_CONDITION;
+    HOLD, UN_HOLD, TEMP_BLOCKED, PER_BLOCKED, UN_HOLD_WITH_CONDITION
 }

@@ -12,15 +12,15 @@ public class AwbRequestV2 implements IRunnerRequest {
     public UUID shipmentGuid;
     public UUID consolidationGuid;
     public AwbShipmentInfoV2 awbShipmentInfo;
-    private List<AwbNotifyPartyInfoV2> awbNotifyPartyInfo;
-    private List<AwbRoutingInfoV2> awbRoutingInfo;
     public AwbCargoInfoV2 awbCargoInfo;
     public AwbPaymentInfoV2 awbPaymentInfo;
-    private List<AwbOtherChargesInfoV2> awbOtherChargesInfo;
     public AwbOtherInfoV2 awbOtherInfo;
+    public SaveStatus saveStatus;
+    private List<AwbNotifyPartyInfoV2> awbNotifyPartyInfo;
+    private List<AwbRoutingInfoV2> awbRoutingInfo;
+    private List<AwbOtherChargesInfoV2> awbOtherChargesInfo;
     private List<AwbOCIInfoV2> awbOciInfo;
     private List<AwbGoodsDescriptionInfoV2> awbGoodsDescriptionInfo;
     private List<AwbPackingInfoV2> awbPackingInfo;
     private List<AwbSpecialHandlingCodesMappingInfoV2> awbSpecialHandlingCodesMappings;
-    public SaveStatus saveStatus;
 }

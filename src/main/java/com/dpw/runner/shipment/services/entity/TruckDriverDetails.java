@@ -46,29 +46,29 @@ public class TruckDriverDetails extends MultiTenancy {
     private String driverName;
 
     @Column(name = "driver_mobile_number")
-    @Size(max=25, message = "max size is 25 for driver_mobile_number")
+    @Size(max = 25, message = "max size is 25 for driver_mobile_number")
     private String driverMobileNumber;
 
     @Column(name = "truck_number_plate")
-    @Size(max=20, message = "max size is 20 for truck_number_plate")
+    @Size(max = 20, message = "max size is 20 for truck_number_plate")
     private String truckNumberPlate;
 
     @Column(name = "trailer_number_plate")
-    @Size(max=20, message = "max size is 20 for trailer_number_plate")
+    @Size(max = 20, message = "max size is 20 for trailer_number_plate")
     private String trailerNumberPlate;
 
     @Column(name = "truck_or_trailer_type_id")
-    @Size(max=50, message = "max size is 50 for truck_or_trailer_type_id")
+    @Size(max = 50, message = "max size is 50 for truck_or_trailer_type_id")
     @MasterData(type = MasterDataType.TRUCK_TYPE)
     private String truckOrTrailerType;
 
     @Column(name = "container_type_code")
-    @Size(max=20, message = "max size is 20 for container_type_code")
+    @Size(max = 20, message = "max size is 20 for container_type_code")
     private String containerTypeCode;
 
     @Column(name = "container_id")
     private Long containerId;
-    
+
     @Column(name = "consolidation_id")
     private Long consolidationId;
 

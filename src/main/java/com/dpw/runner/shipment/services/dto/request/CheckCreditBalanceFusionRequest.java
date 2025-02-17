@@ -19,7 +19,7 @@ public class CheckCreditBalanceFusionRequest implements IRunnerRequest {
     @Builder
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class ReqParams implements IRunnerRequest{
+    public static class ReqParams implements IRunnerRequest {
         @JsonProperty("Calling_System")
         private String Calling_System;
         @JsonProperty("Site_number")

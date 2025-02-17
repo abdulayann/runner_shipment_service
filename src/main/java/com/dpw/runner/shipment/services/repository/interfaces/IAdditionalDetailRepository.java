@@ -10,10 +10,13 @@ import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
 import java.util.Optional;
+
 @Generated
 public interface IAdditionalDetailRepository extends MultiTenancyRepository<AdditionalDetails> {
     List<AdditionalDetails> findAll();
+
     Page<AdditionalDetails> findAll(Specification<AdditionalDetails> spec, Pageable pageable);
+
     default Optional<AdditionalDetails> findById(Long id) {
         Specification<AdditionalDetails> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("id"), id);
         return findOne(spec);

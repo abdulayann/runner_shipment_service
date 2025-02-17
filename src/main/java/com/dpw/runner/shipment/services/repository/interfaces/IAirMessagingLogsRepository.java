@@ -15,10 +15,13 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
-@Repository @Generated
+@Repository
+@Generated
 public interface IAirMessagingLogsRepository extends MultiTenancyRepository<AirMessagingLogs> {
     List<AirMessagingLogs> findAll();
+
     Page<AirMessagingLogs> findAll(Specification<AirMessagingLogs> spec, Pageable pageable);
+
     List<AirMessagingLogs> findByEntityGuid(UUID guid);
 
     @Modifying

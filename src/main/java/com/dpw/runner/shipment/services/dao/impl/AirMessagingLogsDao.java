@@ -18,12 +18,13 @@ import java.util.UUID;
 @Repository
 @Slf4j
 public class AirMessagingLogsDao implements IAirMessagingLogsDao {
-    private IAirMessagingLogsRepository airMessagingLogsRepository;
+    private final IAirMessagingLogsRepository airMessagingLogsRepository;
 
     @Autowired
     public AirMessagingLogsDao(IAirMessagingLogsRepository airMessagingLogsRepository) {
         this.airMessagingLogsRepository = airMessagingLogsRepository;
     }
+
     @Override
     public AirMessagingLogs save(AirMessagingLogs airMessagingLogs) {
         return airMessagingLogsRepository.save(airMessagingLogs);
@@ -33,6 +34,7 @@ public class AirMessagingLogsDao implements IAirMessagingLogsDao {
     public Page<AirMessagingLogs> findAll(Specification<AirMessagingLogs> spec, Pageable pageable) {
         return airMessagingLogsRepository.findAll(spec, pageable);
     }
+
     @Override
     public Optional<AirMessagingLogs> findById(Long id) {
         return airMessagingLogsRepository.findById(id);
@@ -44,7 +46,9 @@ public class AirMessagingLogsDao implements IAirMessagingLogsDao {
     }
 
     @Override
-    public List<AirMessagingLogs> findByEntityGuid(UUID guid) { return airMessagingLogsRepository.findByEntityGuid(guid); }
+    public List<AirMessagingLogs> findByEntityGuid(UUID guid) {
+        return airMessagingLogsRepository.findByEntityGuid(guid);
+    }
 
     @Override
     public List<AirMessagingLogs> findByEntityGuidByQuery(UUID guid) {

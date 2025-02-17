@@ -13,19 +13,19 @@ import lombok.NoArgsConstructor;
 @Builder
 public class TaskStatusUpdateRequest implements IRunnerRequest {
 
-  @JsonProperty("EntityId")
-  public String entityId;
+    @JsonProperty("EntityId")
+    public String entityId;
 
-  @JsonProperty("Entity")
-  public EntityDetails entity;
+    @JsonProperty("Entity")
+    public EntityDetails entity;
 
-  @Builder
-  public static class EntityDetails {
+    @Builder
+    public static class EntityDetails {
 
-    @JsonProperty("Status")
-    public int status;
+        @JsonProperty("Status")
+        public int status;
 
-    @JsonProperty("RejectionRemarks")
-    public String rejectionRemarks;
-  }
+        @JsonProperty("RejectionRemarks")
+        public String rejectionRemarks;
+    }
 }

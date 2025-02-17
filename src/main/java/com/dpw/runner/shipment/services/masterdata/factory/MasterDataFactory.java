@@ -23,10 +23,9 @@ public class MasterDataFactory {
     private String source;
 
     public IMasterDataService getMasterDataService() {
-        if(StringUtility.isEmpty(source))
+        if (StringUtility.isEmpty(source))
             return mapperMasterData;  // TODO- throw exception?
-        switch (source)
-        {
+        switch (source) {
             case MAPPER_MASTER_DATA:
                 return mapperMasterData;
             case V1_MASTER_DATA:
@@ -36,7 +35,7 @@ public class MasterDataFactory {
         }
     }
 
-    public IMasterDataService getMDMServiceBean(){
+    public IMasterDataService getMDMServiceBean() {
         return mapperMasterData;
     }
 

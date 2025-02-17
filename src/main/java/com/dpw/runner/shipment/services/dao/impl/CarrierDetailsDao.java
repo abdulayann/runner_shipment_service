@@ -3,10 +3,11 @@ package com.dpw.runner.shipment.services.dao.impl;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.repository.interfaces.ICarrierRepository;
-import java.time.LocalDateTime;
-import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
+
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Repository
 public class CarrierDetailsDao implements ICarrierDetailsDao {

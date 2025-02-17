@@ -10,8 +10,12 @@ import java.util.UUID;
 
 public interface IMawbStocksDao {
     MawbStocks save(MawbStocks mawbStocks);
+
     Page<MawbStocks> findAll(Specification<MawbStocks> spec, Pageable pageable);
+
     Optional<MawbStocks> findById(Long id);
+
     Optional<MawbStocks> findByGuid(UUID guid);
+
     void delete(MawbStocks carrierDetails);
 }

@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.kafka.producer;
 
-import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -26,9 +26,9 @@ public class KafkaProducer {
     public <T> void produceToKafka(T payload, String senderQueue, String transactionId) {
         log.info("Processing result to kafka queue - " + senderQueue);
         try {
-            log.info("request payload to kafka: with transactionId {} and payload {}" , transactionId,  objectMapper.writeValueAsString(payload));
+            log.info("request payload to kafka: with transactionId {} and payload {}", transactionId, objectMapper.writeValueAsString(payload));
         } catch (JsonProcessingException e) {
-            log.error("Error while converting data, unable to convert object to json due to: "+ e.getMessage());
+            log.error("Error while converting data, unable to convert object to json due to: " + e.getMessage());
         }
         try {
             kafkaTemplate.send(senderQueue, transactionId, payload);
@@ -42,10 +42,9 @@ public class KafkaProducer {
 
     public KafkaResponse getKafkaResponse(Object data, boolean isCreate) {
         KafkaResponse kafkaResponse = new KafkaResponse();
-        if(isCreate) {
+        if (isCreate) {
             kafkaResponse.setEvent(Constants.KAFKA_EVENT_CREATE);
-        }
-        else {
+        } else {
             kafkaResponse.setEvent(Constants.KAFKA_EVENT_UPDATE);
         }
         kafkaResponse.setData(data);

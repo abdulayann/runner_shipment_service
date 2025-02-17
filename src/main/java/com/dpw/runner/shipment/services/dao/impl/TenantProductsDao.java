@@ -105,13 +105,13 @@ public class TenantProductsDao implements ITenantProductsDao {
         List<TenantProducts> responseTenantProducts = new ArrayList<>();
         try {
             Map<UUID, TenantProducts> hashMap = new HashMap<>();
-            if(oldTenantProducts != null && oldTenantProducts.size() > 0)
+            if (oldTenantProducts != null && oldTenantProducts.size() > 0)
                 hashMap = oldTenantProducts.stream().collect(Collectors.toMap(TenantProducts::getGuid, Function.identity()));
             List<TenantProducts> tenantProductsRequestList = new ArrayList<>();
             if (tenantProductsList != null && tenantProductsList.size() != 0) {
                 for (TenantProducts request : tenantProductsList) {
                     UUID guid = request.getGuid();
-                    if(hashMap.containsKey(guid)) {
+                    if (hashMap.containsKey(guid)) {
                         request.setId(hashMap.get(guid).getId());
                         hashMap.remove(guid);
                     }

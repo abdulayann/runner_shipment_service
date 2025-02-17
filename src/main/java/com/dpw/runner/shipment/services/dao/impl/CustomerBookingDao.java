@@ -42,8 +42,8 @@ public class CustomerBookingDao implements ICustomerBookingDao {
 
     @Override
     public CustomerBooking save(CustomerBooking customerBooking) {
-        Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(customerBooking) , Constants.BOOKING, LifecycleHooks.ON_CREATE, false);
-        if (! errors.isEmpty())
+        Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(customerBooking), Constants.BOOKING, LifecycleHooks.ON_CREATE, false);
+        if (!errors.isEmpty())
             throw new ValidationException(String.join(",", errors));
         CustomerBooking old = null;
         if (customerBooking.getId() != null) {
@@ -117,13 +117,13 @@ public class CustomerBookingDao implements ICustomerBookingDao {
 
     @Override
     @Transactional
-    public int updateIsPlatformBookingCreated(Long id, Boolean isPlatformBookingCreated){
+    public int updateIsPlatformBookingCreated(Long id, Boolean isPlatformBookingCreated) {
         return customerBookingRepository.updateIsPlatformBookingCreated(id, isPlatformBookingCreated);
     }
 
     @Override
     @Transactional
-    public int updateBillStatus(Long id, Boolean isBillCreated){
+    public int updateBillStatus(Long id, Boolean isBillCreated) {
         return customerBookingRepository.updateBillingStatus(id, isBillCreated);
     }
 }

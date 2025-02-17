@@ -25,6 +25,11 @@ import java.util.UUID;
 @AllArgsConstructor
 @ValidCargoDeliveryDate
 public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
+    public BigDecimal goodsValue;
+    public String goodsValueCurrency;
+    public BigDecimal insuranceValue;
+    public String InsuranceValueCurrency;
+    public String entryRefNo;
     private AdditionalDetailRequest additionalDetails;
     private String additionalTerms;
     private String assignedTo;
@@ -112,11 +117,6 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private String weightUnit;
     private Set<ConsolidationDetailsRequest> consolidationList;
     private String jobStatus;
-    public BigDecimal goodsValue;
-    public String goodsValueCurrency;
-    public BigDecimal insuranceValue;
-    public String InsuranceValueCurrency;
-    public String entryRefNo;
     private List<PartiesRequest> shipmentAddresses;
     private String flightStatus;
     private Boolean containsHazardous;
