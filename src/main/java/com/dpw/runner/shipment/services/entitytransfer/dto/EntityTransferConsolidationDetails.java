@@ -64,8 +64,6 @@ public class EntityTransferConsolidationDetails implements IEntityTranferBaseEnt
     private String shipmentType;
     private String bol;
     private Boolean isCargoOnly;
-    private Boolean isLocked;
-    private String lockedBy;
     private String specialInstructions;
     private String description;
     private String marksnNums;

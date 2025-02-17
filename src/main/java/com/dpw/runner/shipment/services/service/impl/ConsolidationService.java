@@ -1351,6 +1351,9 @@ public class ConsolidationService implements IConsolidationService {
                 packingList = packingDao.saveAll(packingList);
             shipmentDetailsToSave = shipmentDetailsMap.values().stream().toList();
             shipmentDao.saveAll(shipmentDetailsToSave);
+            if(shipmentDetailsToSave!=null){
+                CompletableFuture.runAsync(masterDataUtils.withMdc(() -> updateShipmentDataInPlatform(shipmentIds)), executorService);
+            }
         }
         if(checkAttachDgAirShipments(consol)){
             consol.setHazardous(false);
@@ -1381,6 +1384,22 @@ public class ConsolidationService implements IConsolidationService {
         }
         processInterConsoleDetachShipment(consol, shipmentIds);
         return ResponseHelper.buildSuccessResponseWithWarning(warning);
+    }
+
+    private void updateShipmentDataInPlatform(List<Long> shipmentIds){
+        try {
+            List<ShipmentDetails> shipmentDetailsList = Optional.ofNullable(shipmentIds)
+                    .filter(ObjectUtils::isNotEmpty).map(ids -> shipmentDao.findShipmentsByIds(ids.stream().collect(Collectors.toSet())))
+                    .orElse(Collections.emptyList());
+            if (shipmentDetailsList == null || shipmentDetailsList.isEmpty())
+                return;
+            for (ShipmentDetails shipmentDetail : shipmentDetailsList) {
+                if (commonUtils.getCurrentTenantSettings().getP100Branch() != null && commonUtils.getCurrentTenantSettings().getP100Branch())
+                    bookingIntegrationsUtility.updateBookingInPlatformEmptyContainer(shipmentDetail);
+            }
+        } catch (Exception e) {
+            log.error("Error while updating data in platform service for shipmentIds: {} Error: {}", shipmentIds.toString(), e.getMessage());
+        }
     }
 
     private void validateShipmentDetachment(List<ShipmentDetails> shipmentDetails) {

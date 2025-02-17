@@ -336,7 +336,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
                     addressIds.add(pickupDeliveryDetails.getSourceDetail().getAddressId());
                 }
 
-                if (!Boolean.TRUE.equals(pickupDeliveryDetails.getIsDirectDelivery()) && CommonUtils.checkAddressNotNull(pickupDeliveryDetails.getDestinationDetail())) {
+                if (CommonUtils.checkAddressNotNull(pickupDeliveryDetails.getDestinationDetail())) {
                     addressIds.add(pickupDeliveryDetails.getDestinationDetail().getAddressId());
                 }
             });
@@ -476,7 +476,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
             pickupDeliveryDetails.getSourceDetail().setRAKCDetails(rakcDetailsMap.getOrDefault(pickupDeliveryDetails.getSourceDetail().getAddressId(), null));
         }
 
-        if (!Boolean.TRUE.equals(pickupDeliveryDetails.getIsDirectDelivery()) && CommonUtils.checkAddressNotNull(pickupDeliveryDetails.getDestinationDetail())) {
+        if (CommonUtils.checkAddressNotNull(pickupDeliveryDetails.getDestinationDetail())) {
             pickupDeliveryDetails.getDestinationDetail().setRAKCDetails(rakcDetailsMap.getOrDefault(pickupDeliveryDetails.getDestinationDetail().getAddressId(), null));
         }
     }

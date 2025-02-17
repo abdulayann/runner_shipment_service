@@ -199,6 +199,30 @@ public class BookingIntegrationsUtility {
         }
     }
 
+    private CommonRequestModel createPlatformContainerRequest(String bookingReference) {
+        List<LoadRequest> loadRequests = new ArrayList<>();
+        PlatformUpdateRequest platformUpdateRequest = PlatformUpdateRequest.builder()
+                .booking_reference_code(bookingReference)
+                .load(loadRequests)
+                .build();
+
+        return CommonRequestModel.buildRequest(platformUpdateRequest);
+    }
+
+    public void updateBookingInPlatformEmptyContainer(ShipmentDetails shipmentDetails) {
+        if (Objects.equals(shipmentDetails.getBookingType(), CustomerBookingConstants.ONLINE) && !Objects.isNull(shipmentDetails.getBookingReference())) {
+            var request = createPlatformContainerRequest(shipmentDetails.getBookingReference());
+            try {
+                if(!Objects.equals(shipmentDetails.getTransportMode(), Constants.TRANSPORT_MODE_ROA) && !Objects.equals(shipmentDetails.getTransportMode(), Constants.TRANSPORT_MODE_RAI))
+                    platformServiceAdapter.updateAtPlaform(request);
+            } catch (Exception e) {
+                this.saveErrorResponse(shipmentDetails.getId(), Constants.SHIPMENT, IntegrationType.PLATFORM_UPDATE_BOOKING, Status.FAILED, e.getLocalizedMessage());
+                log.error("Empty Container update error from Platform from Shipment for booking number: {} with error message: {}", shipmentDetails.getBookingReference(), e.getMessage());
+                sendFailureAlerts(jsonHelper.convertToJson(request), jsonHelper.convertToJson(e.getLocalizedMessage()), shipmentDetails.getBookingReference(), shipmentDetails.getShipmentId());
+            }
+        }
+    }
+
     public void updateBookingInPlatform(ShipmentDetails shipmentDetails) {
         if (Objects.equals(shipmentDetails.getBookingType(), CustomerBookingConstants.ONLINE) && !Objects.isNull(shipmentDetails.getBookingReference())) {
             var request = createPlatformUpdateRequestFromShipment(shipmentDetails);
