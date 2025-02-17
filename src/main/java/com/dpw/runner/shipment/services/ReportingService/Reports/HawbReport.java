@@ -499,6 +499,8 @@ public class HawbReport extends IReport{
                 String commaSlacCode = SLAC + ": ";
                 commaSlacCode += String.join(", ", slacCodeSet);
                 dictionary.put(COMMA_SLAC1, commaSlacCode);
+                List<String> slacCodesList = slacCodeSet.stream().map(x-> x + " " + SLAC).toList();
+                dictionary.put(SLAC_NEW, slacCodesList);
             }
 
             List<AwbRoutingInfo> routingInfoRows = hawbModel.awb.getAwbRoutingInfo();
