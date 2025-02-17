@@ -2228,7 +2228,7 @@ public class CommonUtils {
         if (!CommonUtils.listIsNullOrEmpty(otherIds)) {
             tenantIds.addAll(otherIds);
         }
-        return tenantIds.stream().filter(Objects::nonNull).collect(Collectors.toCollection(ArrayList::new));
+        return tenantIds.stream().filter(Objects::nonNull).toList();
     }
 
     private void processConsolidationDetails(ShipmentDetails shipmentDetails, Boolean isReceivingBranch, Boolean isTriangulationBranch, List<Long> otherIds) {
