@@ -1,0 +1,1 @@
+ALTER TABLE IF EXISTS shipment_details ADD COLUMN IF NOT EXISTS customer_booking_guid uuid;
