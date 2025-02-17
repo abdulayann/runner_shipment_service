@@ -3476,6 +3476,7 @@ public class ShipmentService implements IShipmentService {
                 consolidationDetails.setSendingAgent(commonUtils.removeIdFromParty(shipmentDetails.getAdditionalDetails().getExportBroker()));
                 consolidationDetails.setReceivingAgent(commonUtils.removeIdFromParty(shipmentDetails.getAdditionalDetails().getImportBroker()));
             }
+            this.populateReceivingBranch(consolidationDetails);
             if(!commonUtils.checkIfPartyExists(consolidationDetails.getSendingAgent())) {
                 consolidationDetails.setSendingAgentCountry(commonUtils.getCountryFromUnLocCode(consolidationDetails.getCarrierDetails().getOriginPortLocCode()));
             }
@@ -8498,6 +8499,19 @@ public class ShipmentService implements IShipmentService {
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
 
+    }
+
+    private void populateReceivingBranch(ConsolidationDetails consolidationDetails) {
+        if (Objects.equals(consolidationDetails.getShipmentType(), DIRECTION_EXP) && CommonUtils.checkAddressNotNull(consolidationDetails.getReceivingAgent())) {
+            Long orgId = Long.valueOf(consolidationDetails.getReceivingAgent().getOrgId());
+            Long addressId = Long.valueOf(consolidationDetails.getReceivingAgent().getAddressId());
+            TenantFilterRequest request = TenantFilterRequest.builder().orgId(orgId).addressId(addressId).build();
+            V1DataResponse response = v1Service.listBranchesByDefaultOrgAndAddress(request);
+            if (Objects.nonNull(response.getEntities())) {
+                List<V1TenantResponse> tenantResponses = jsonHelper.convertValueToList(response.getEntities(), V1TenantResponse.class);
+                consolidationDetails.setReceivingBranch(tenantResponses.get(0).getTenantId());
+            }
+        }
     }
 
 
