@@ -293,7 +293,7 @@ public class NotificationService implements INotificationService {
                     NotificationConstants.REASSIGNED_TO_BRANCH_ID_FIELD,
                     notificationResponse.getReassignedToBranchId().toString()
             );
-            String confirmationMsg = getConfirmationMessage(notificationResponse.getRequestedBranchId(),
+            String confirmationMsg = getConfirmationMessage(Long.valueOf(notificationResponse.getReassignedFromBranchId()),
                     receivingBranch, triangulationPartners,
                     oldBranchName, newBranchName
             );
@@ -358,13 +358,15 @@ public class NotificationService implements INotificationService {
                 .orElse(Collections.emptyList())
                 .stream()
                 .map(TriangulationPartnerResponse::getTriangulationPartner).toList();
-        String branchType = getReassignType(notification.getRequestedBranchId().longValue(), shipmentDetailsResponse.getReceivingBranch(), triangulationPartners);
+        String branchType = getReassignType(notification.getReassignedFromBranchId().longValue(), shipmentDetailsResponse.getReceivingBranch(), triangulationPartners);
 
         ShipmentRequest shipmentRequest = jsonHelper.convertValue(shipmentDetailsResponse, ShipmentRequest.class);
-        Long requestedBranchId = notification.getRequestedBranchId() != null ? notification.getRequestedBranchId().longValue() : null;
+        Long requestedBranchId = notification.getReassignedFromBranchId() != null ? notification.getReassignedFromBranchId().longValue() : null;
         Long reassignedToBranchId = notification.getReassignedToBranchId() != null ? notification.getReassignedToBranchId().longValue() : null;
         if (Objects.equals(branchType, NotificationConstants.RECEIVING_BRANCH)) {
             shipmentRequest.setReceivingBranch(reassignedToBranchId);
+            if(!shipmentDetailsResponse.getConsolidationList().isEmpty())
+                shipmentRequest.setIsReceivingBranchAdded(true);
             if (!Boolean.TRUE.equals(shipmentDetailsResponse.getIsReceivingBranchManually())) {
                 PartiesRequest partiesRequest = getPartiesRequestFromTenantDefaultOrg(notification.getReassignedToBranchId());
                 Optional.ofNullable(partiesRequest).ifPresent(importBroker -> shipmentRequest.getAdditionalDetails().setImportBroker(importBroker));
@@ -390,10 +392,10 @@ public class NotificationService implements INotificationService {
                 .orElse(Collections.emptyList())
                 .stream()
                 .map(TriangulationPartner::getTriangulationPartner).toList();
-        String branchType = getReassignType(notification.getRequestedBranchId().longValue(), consolidationDetails.get().getReceivingBranch(), triangulationPartners);
+        String branchType = getReassignType(notification.getReassignedFromBranchId().longValue(), consolidationDetails.get().getReceivingBranch(), triangulationPartners);
 
         ConsolidationDetailsRequest consolidationRequest = jsonHelper.convertValue(consolidationDetails.get(), ConsolidationDetailsRequest.class);
-        Long requestedBranchId = notification.getRequestedBranchId() != null ? notification.getRequestedBranchId().longValue() : null;
+        Long requestedBranchId = notification.getReassignedFromBranchId() != null ? notification.getReassignedFromBranchId().longValue() : null;
         Long reassignedToBranchId = notification.getReassignedToBranchId() != null ? notification.getReassignedToBranchId().longValue() : null;
         if (Objects.equals(branchType, NotificationConstants.RECEIVING_BRANCH)) {
             consolidationRequest.setReceivingBranch(reassignedToBranchId);

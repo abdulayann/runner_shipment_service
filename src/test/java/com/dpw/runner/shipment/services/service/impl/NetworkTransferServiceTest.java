@@ -122,7 +122,7 @@ class NetworkTransferServiceTest extends CommonMocks{
         when(notificationDao.save(any(Notification.class))).thenReturn(new Notification());
         when(consoleShipmentMappingDao.findByShipmentId(any())).thenReturn(Collections.singletonList(ConsoleShipmentMapping.builder().consolidationId(1L).build()));
         when(consoleShipmentMappingDao.findByConsolidationId(any())).thenReturn(Collections.singletonList(ConsoleShipmentMapping.builder().consolidationId(1L).build()));
-        when(networkTransferDao.findByEntityIdAndEntityTypeAndIsInterBranchEntity(any(), any(), any(), any())).thenReturn(Collections.singletonList(NetworkTransfer.builder().build()));
+        when(networkTransferDao.findByEntityIdAndEntityTypeAndIsInterBranchEntity(any(), any(), any(), any(), any())).thenReturn(Collections.singletonList(NetworkTransfer.builder().build()));
         var response = networkTransferService.requestForTransfer(request);
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
