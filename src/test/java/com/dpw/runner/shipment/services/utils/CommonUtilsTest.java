@@ -3563,4 +3563,23 @@ class CommonUtilsTest {
         assertEquals(4, result.size());
     }
 
+    @Test
+    void testGetTenantIdsFromEntity_Consolidation_WithInterConsoleFalse_AndReceivingBranch() {
+        String entityGuid = "6511f2e4-6234-452d-8abe-3685106317c2";
+
+        ConsolidationDetails mockConsolidation = new ConsolidationDetails();
+        mockConsolidation.setInterBranchConsole(false);
+        mockConsolidation.setReceivingBranch(100L);
+        mockConsolidation.setTenantId(200);
+        mockConsolidation.setTriangulationPartnerList(List.of(
+                TriangulationPartner.builder().triangulationPartner(300L).build(),
+                TriangulationPartner.builder().triangulationPartner(400L).build()
+        ));
+        when(consolidationDetailsDao.findConsolidationByGuidWithQuery(UUID.fromString(entityGuid))).thenReturn(Optional.of(mockConsolidation));
+        ListCousinBranchesForEtRequest request = ListCousinBranchesForEtRequest.builder().entityGuid(entityGuid).entityType(CONSOLIDATION).isReassign(true).isReceivingBranch(true).isTriangulationBranch(false).build();
+        List<Long> result = commonUtils.getTenantIdsFromEntity(request);
+
+        assertEquals(4, result.size());
+    }
+
 }
