@@ -3311,7 +3311,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     private void processNetworkTransferEntity(ShipmentDetails shipmentDetails, NetworkTransfer existingNTE) {
-        Long oldTenantId = (existingNTE != null && Objects.equals(existingNTE.getTenantId(), shipmentDetails.getReceivingBranch()))
+        Long oldTenantId = (existingNTE != null && Objects.equals(existingNTE.getTenantId(), shipmentDetails.getReceivingBranch().intValue()))
                 ? Long.valueOf(existingNTE.getTenantId()) : null;
         networkTransferService.processNetworkTransferEntity(shipmentDetails.getReceivingBranch(), oldTenantId, Constants.SHIPMENT,
                 shipmentDetails, null, reverseDirection(shipmentDetails.getDirection()), null, true);
