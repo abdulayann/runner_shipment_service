@@ -51,8 +51,8 @@ public class PlatformServiceAdapter implements IPlatformServiceAdapter {
         PlatformUpdateRequest request = (PlatformUpdateRequest) requestModel.getData();
         String url = baseUrl + "/notifications/booking/" + request.getBooking_reference_code();
         log.info("Endpoint:PLATFOR_UPDATE_SHIPMENT----- RequestPayload: {}", jsonHelper.convertToJson(request));
-        log.info("Payload sent for event: {} with request payload: {}", IntegrationType.PLATFORM_UPDATE_BOOKING, jsonHelper.convertToJsonWithNulls(request));
-        ResponseEntity<?> responseEntity = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJsonWithNulls(request)), Object.class);
+        log.info("Payload sent for event: {} with request payload: {}", IntegrationType.PLATFORM_UPDATE_BOOKING, jsonHelper.convertToJson(request));
+        ResponseEntity<?> responseEntity = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(request)), Object.class);
         log.info("Endpoint:PLATFOR_UPDATE_SHIPMENT----- ResponsePayload: {}", jsonHelper.convertToJson(responseEntity));
         return ResponseHelper.buildDependentServiceResponse(responseEntity.getBody(),0,0);
     }

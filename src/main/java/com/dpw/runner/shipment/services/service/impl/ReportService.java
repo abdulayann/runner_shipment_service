@@ -971,39 +971,42 @@ public class ReportService implements IReportService {
     }
 
     public void generatePdfBytes(ReportRequest reportRequest, DocPages pages, Map<String, Object> dataRetrived, List<byte[]> pdfBytes) {
+        // Custom Air Labels
+        if (Boolean.TRUE.equals(reportRequest.getPrintCustomLabel())) {
+            if (reportRequest.isFromConsolidation() || reportRequest.getMawbNumber() != null) {
+                // Master dialogue box
+                dataRetrived.put(ReportConstants.AIRLINE_NAME, reportRequest.getConsolAirline());
+                AWBLabelReport.populateMawb(dataRetrived, reportRequest.getMawbNumber());
+                dataRetrived.put(ReportConstants.MAWB_CAPS, reportRequest.getMawbNumber());
+                dataRetrived.put(ReportConstants.CONSOL_DESTINATION_AIRPORT_CODE_CAPS, StringUtility.toUpperCase(reportRequest.getDestination()));
+                dataRetrived.put(ReportConstants.TOTAL_CONSOL_PACKS, reportRequest.getTotalMawbPieces());
+                if (reportRequest.getMawbNumber() != null) {
+                    dataRetrived.put(ReportConstants.TOTAL_PACKS, reportRequest.getTotalMawbPieces());
+                }
+            } else {
+                // House dialogue box
+                dataRetrived.put(ReportConstants.HAWB_NUMBER, reportRequest.getHawbNumber());
+                dataRetrived.put(ReportConstants.POD_AIRPORT_CODE_IN_CAPS, StringUtility.toUpperCase(reportRequest.getDestination()));
+                dataRetrived.put(ReportConstants.TOTAL_PACKS, reportRequest.getTotalHawbPieces());
+            }
 
-        // Custom Air Labels-Master dialogue box
-        if(Boolean.TRUE.equals(reportRequest.getPrintCustomLabel()) && reportRequest.isFromConsolidation()) {
-            dataRetrived.put(ReportConstants.AIRLINE_NAME, reportRequest.getConsolAirline());
-            AWBLabelReport.populateMawb(dataRetrived, reportRequest.getMawbNumber());
-            dataRetrived.put(ReportConstants.MAWB_CAPS, reportRequest.getMawbNumber());
-            dataRetrived.put(ReportConstants.CONSOL_DESTINATION_AIRPORT_CODE_CAPS, StringUtility.toUpperCase(reportRequest.getDestination()));
-            dataRetrived.put(ReportConstants.TOTAL_CONSOL_PACKS, reportRequest.getTotalMawbPieces());
-        }
+            if (reportRequest.isCombiLabel()) {
+                // Combi dialogue box
+                List<Pair<String, Integer>> hawbPackageList = Optional.ofNullable(reportRequest.getHawbInfo())
+                        .orElse(Collections.emptyList()).stream()
+                        .filter(hawb -> hawb != null && (hawb.getHawbNumber() != null || hawb.getHawbPieceCount() != null))
+                        .map(hawb -> Pair.of(
+                                Objects.toString(hawb.getHawbNumber(), ""),
+                                Objects.requireNonNullElse(hawb.getHawbPieceCount(), 0)
+                        )).toList();
 
-        // Custom Air Labels- Combi dialogue box
-        if (Boolean.TRUE.equals(reportRequest.getPrintCustomLabel()) && reportRequest.isCombiLabel()) {
-            List<Pair<String, Integer>> hawbPackageList = Optional.ofNullable(reportRequest.getHawbInfo())
-                    .orElse(Collections.emptyList()).stream()
-                    .filter(hawb -> hawb != null && (hawb.getHawbNumber() != null || hawb.getHawbPieceCount() != null))
-                    .map(hawb -> Pair.of(
-                            Objects.toString(hawb.getHawbNumber(), ""),
-                            Objects.requireNonNullElse(hawb.getHawbPieceCount(), 0)
-                    )).toList();
-
-            dataRetrived.put(HAWB_PACKS_MAP, hawbPackageList);
-            dataRetrived.put(ReportConstants.AIRLINE_NAME, reportRequest.getConsolAirline());
-            AWBLabelReport.populateMawb(dataRetrived, reportRequest.getMawbNumber());
-            dataRetrived.put(ReportConstants.MAWB_CAPS, reportRequest.getMawbNumber());
-            dataRetrived.put(ReportConstants.CONSOL_DESTINATION_AIRPORT_CODE_CAPS, StringUtility.toUpperCase(reportRequest.getDestination()));
-            dataRetrived.put(ReportConstants.TOTAL_CONSOL_PACKS, reportRequest.getTotalMawbPieces());
-        }
-
-        // Custom Air Labels-House dialogue box
-        if(Boolean.TRUE.equals(reportRequest.getPrintCustomLabel()) && !reportRequest.isFromConsolidation()) {
-            dataRetrived.put(ReportConstants.HAWB_NUMBER, reportRequest.getHawbNumber());
-            dataRetrived.put(ReportConstants.POD_AIRPORT_CODE_IN_CAPS, StringUtility.toUpperCase(reportRequest.getDestination()));
-            dataRetrived.put(ReportConstants.TOTAL_PACKS, reportRequest.getTotalHawbPieces());
+                dataRetrived.put(HAWB_PACKS_MAP, hawbPackageList);
+                dataRetrived.put(ReportConstants.AIRLINE_NAME, reportRequest.getConsolAirline());
+                AWBLabelReport.populateMawb(dataRetrived, reportRequest.getMawbNumber());
+                dataRetrived.put(ReportConstants.MAWB_CAPS, reportRequest.getMawbNumber());
+                dataRetrived.put(ReportConstants.CONSOL_DESTINATION_AIRPORT_CODE_CAPS, StringUtility.toUpperCase(reportRequest.getDestination()));
+                dataRetrived.put(ReportConstants.TOTAL_CONSOL_PACKS, reportRequest.getTotalMawbPieces());
+            }
         }
 
         int copies = reportRequest.getCopyCountForAWB() != null ? reportRequest.getCopyCountForAWB() : 0;

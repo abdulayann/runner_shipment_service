@@ -760,7 +760,8 @@ class MasterDataImplTest {
         commonRequestModel.setIsTriangulationBranch(false);
         Mockito.when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
         Mockito.when(masterDataFactory.getMasterDataService().listCousinBranches(Mockito.any())).thenReturn(new DependentServiceResponse());
-        Mockito.when(commonUtils.getTenantIdsFromEntity(Mockito.any(), Mockito.any(), eq(true), eq(false), eq(false))).thenReturn(new ArrayList<>());
+
+        Mockito.when(commonUtils.getTenantIdsFromEntity(commonRequestModel)).thenReturn(new ArrayList<>());
         ResponseEntity<IRunnerResponse> responseEntity = masterData.listCousinBranchForEt(commonRequestModel);
         Assertions.assertNotNull(responseEntity);
         Assertions.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
@@ -771,7 +772,7 @@ class MasterDataImplTest {
         ListCousinBranchesForEtRequest commonRequestModel = ListCousinBranchesForEtRequest.builder().build();
         Mockito.when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
         Mockito.when(masterDataFactory.getMasterDataService().listCousinBranches(Mockito.any())).thenReturn(new DependentServiceResponse());
-        Mockito.when(commonUtils.getTenantIdsFromEntity(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(null);
+        Mockito.when(commonUtils.getTenantIdsFromEntity(commonRequestModel)).thenReturn(null);
         ResponseEntity<IRunnerResponse> responseEntity = masterData.listCousinBranchForEt(commonRequestModel);
         Assertions.assertNotNull(responseEntity);
         Assertions.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
@@ -784,7 +785,7 @@ class MasterDataImplTest {
         commonRequestModel.setCriteria(criteria);
         Mockito.when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
         Mockito.when(masterDataFactory.getMasterDataService().listCousinBranches(Mockito.any())).thenReturn(new DependentServiceResponse());
-        Mockito.when(commonUtils.getTenantIdsFromEntity(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(new ArrayList<>());
+        Mockito.when(commonUtils.getTenantIdsFromEntity(commonRequestModel)).thenReturn(new ArrayList<>());
         ResponseEntity<IRunnerResponse> responseEntity = masterData.listCousinBranchForEt(commonRequestModel);
         Assertions.assertNotNull(responseEntity);
         Assertions.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
@@ -797,7 +798,7 @@ class MasterDataImplTest {
         commonRequestModel.setCriteria(criteria);
         Mockito.when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
         Mockito.when(masterDataFactory.getMasterDataService().listCousinBranches(Mockito.any())).thenReturn(new DependentServiceResponse());
-        Mockito.when(commonUtils.getTenantIdsFromEntity(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any())).thenReturn(new ArrayList<>());
+        Mockito.when(commonUtils.getTenantIdsFromEntity(commonRequestModel)).thenReturn(new ArrayList<>());
         ResponseEntity<IRunnerResponse> responseEntity = masterData.listCousinBranchForEt(commonRequestModel);
         Assertions.assertNotNull(responseEntity);
         Assertions.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
