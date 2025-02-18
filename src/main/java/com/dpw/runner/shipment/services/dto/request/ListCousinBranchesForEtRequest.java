@@ -13,6 +13,7 @@ public class ListCousinBranchesForEtRequest implements IRunnerRequest {
     private String containsText;
     private List<String> includeColumns;
     private Long entityId;
+    private String entityGuid;
     private String entityType;
     private List<String> sort;
     private int take = 500;
