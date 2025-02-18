@@ -980,6 +980,9 @@ public class ReportService implements IReportService {
                 dataRetrived.put(ReportConstants.MAWB_CAPS, reportRequest.getMawbNumber());
                 dataRetrived.put(ReportConstants.CONSOL_DESTINATION_AIRPORT_CODE_CAPS, StringUtility.toUpperCase(reportRequest.getDestination()));
                 dataRetrived.put(ReportConstants.TOTAL_CONSOL_PACKS, reportRequest.getTotalMawbPieces());
+                if (reportRequest.getMawbNumber() != null) {
+                    dataRetrived.put(ReportConstants.TOTAL_PACKS, reportRequest.getTotalMawbPieces());
+                }
             } else {
                 // House dialogue box
                 dataRetrived.put(ReportConstants.HAWB_NUMBER, reportRequest.getHawbNumber());
