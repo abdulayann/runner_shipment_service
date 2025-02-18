@@ -398,8 +398,8 @@ public class MasterDataImpl implements IMasterDataService {
     @Override
     public ResponseEntity<IRunnerResponse> listCousinBranchForEt(ListCousinBranchesForEtRequest request) {
         List<Object> criteria = request.getCriteria() ;
-        List<Long> tenantIds = commonUtils.getTenantIdsFromEntity(request.getEntityId(), request.getEntityType(), request.getIsReassign(), request.getIsReceivingBranch(), request.getIsTriangulationBranch());
-        if(tenantIds!=null) {
+        List<Long> tenantIds = commonUtils.getTenantIdsFromEntity(request);
+        if(tenantIds!=null && !tenantIds.isEmpty()) {
             List<Long> existingTenantIds = criteria!=null && !criteria.isEmpty() && criteria.size() > 2 ? (List<Long>) criteria.get(2): null;
             criteria = convertToV1NotInCriteria("TenantId", tenantIds, existingTenantIds);
         }

@@ -20,10 +20,7 @@ import com.dpw.runner.shipment.services.dao.impl.ShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IAuditLogDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
-import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
-import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
-import com.dpw.runner.shipment.services.dto.request.PackingRequest;
-import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
@@ -3228,8 +3225,8 @@ class CommonUtilsTest {
         ));
 
         when(shipmentDao.findShipmentByIdWithQuery(entityId)).thenReturn(Optional.of(mockShipment));
-
-        List<Long> result = commonUtils.getTenantIdsFromEntity(entityId, Constants.SHIPMENT, true, true, false);
+        ListCousinBranchesForEtRequest request = ListCousinBranchesForEtRequest.builder().entityId(entityId).entityType(SHIPMENT).isReassign(true).isReceivingBranch(true).isTriangulationBranch(false).build();
+        List<Long> result = commonUtils.getTenantIdsFromEntity(request);
 
         assertEquals(4, result.size());
     }
@@ -3251,8 +3248,8 @@ class CommonUtilsTest {
         mockConsolidation.setShipmentsList(new HashSet<>(Collections.singletonList(mockShipment)));
         mockShipment.setConsolidationList(new HashSet<>(Collections.singletonList(mockConsolidation)));
         when(shipmentDao.findShipmentByIdWithQuery(entityId)).thenReturn(Optional.of(mockShipment));
-
-        List<Long> result = commonUtils.getTenantIdsFromEntity(entityId, Constants.SHIPMENT, true, true, false);
+        ListCousinBranchesForEtRequest request = ListCousinBranchesForEtRequest.builder().entityId(entityId).entityType(SHIPMENT).isReassign(true).isReceivingBranch(true).isTriangulationBranch(false).build();
+        List<Long> result = commonUtils.getTenantIdsFromEntity(request);
 
         assertEquals(4, result.size());
     }
@@ -3275,8 +3272,8 @@ class CommonUtilsTest {
         mockConsolidation.setShipmentsList(new HashSet<>(Collections.singletonList(mockShipment)));
         mockShipment.setConsolidationList(new HashSet<>(Collections.singletonList(mockConsolidation)));
         when(shipmentDao.findShipmentByIdWithQuery(entityId)).thenReturn(Optional.of(mockShipment));
-
-        List<Long> result = commonUtils.getTenantIdsFromEntity(entityId, Constants.SHIPMENT, true, false, true);
+        ListCousinBranchesForEtRequest request = ListCousinBranchesForEtRequest.builder().entityId(entityId).entityType(SHIPMENT).isReassign(true).isReceivingBranch(false).isTriangulationBranch(true).build();
+        List<Long> result = commonUtils.getTenantIdsFromEntity(request);
 
         assertEquals(4, result.size());
     }
@@ -3302,8 +3299,8 @@ class CommonUtilsTest {
         mockConsolidation.setShipmentsList(new HashSet<>(Collections.singletonList(mockShipment)));
         mockShipment.setConsolidationList(new HashSet<>(Collections.singletonList(mockConsolidation)));
         when(shipmentDao.findShipmentByIdWithQuery(entityId)).thenReturn(Optional.of(mockShipment));
-
-        List<Long> result = commonUtils.getTenantIdsFromEntity(entityId, Constants.SHIPMENT, true, true, false);
+        ListCousinBranchesForEtRequest request = ListCousinBranchesForEtRequest.builder().entityId(entityId).entityType(SHIPMENT).isReassign(true).isReceivingBranch(true).isTriangulationBranch(false).build();
+        List<Long> result = commonUtils.getTenantIdsFromEntity(request);
 
         assertEquals(4, result.size());
     }
@@ -3329,8 +3326,8 @@ class CommonUtilsTest {
         mockConsolidation.setShipmentsList(new HashSet<>(Collections.singletonList(mockShipment)));
         mockShipment.setConsolidationList(new HashSet<>(Collections.singletonList(mockConsolidation)));
         when(shipmentDao.findShipmentByIdWithQuery(entityId)).thenReturn(Optional.of(mockShipment));
-
-        List<Long> result = commonUtils.getTenantIdsFromEntity(entityId, Constants.SHIPMENT, false, true, false);
+        ListCousinBranchesForEtRequest request = ListCousinBranchesForEtRequest.builder().entityId(entityId).entityType(SHIPMENT).isReassign(false).isReceivingBranch(true).isTriangulationBranch(false).build();
+        List<Long> result = commonUtils.getTenantIdsFromEntity(request);
 
         assertEquals(3, result.size());
     }
@@ -3365,8 +3362,8 @@ class CommonUtilsTest {
         mockConsolidation.setShipmentsList(new HashSet<>(Arrays.asList(mockShipment, mockShipment2)));
         mockShipment.setConsolidationList(new HashSet<>(Collections.singletonList(mockConsolidation)));
         when(shipmentDao.findShipmentByIdWithQuery(entityId)).thenReturn(Optional.of(mockShipment));
-
-        List<Long> result = commonUtils.getTenantIdsFromEntity(entityId, Constants.SHIPMENT, true, false, true);
+        ListCousinBranchesForEtRequest request = ListCousinBranchesForEtRequest.builder().entityId(entityId).entityType(SHIPMENT).isReassign(true).isReceivingBranch(false).isTriangulationBranch(true).build();
+        List<Long> result = commonUtils.getTenantIdsFromEntity(request);
 
         assertEquals(4, result.size());
     }
@@ -3382,8 +3379,8 @@ class CommonUtilsTest {
         ));
 
         when(consolidationDetailsDao.findConsolidationByIdWithQuery(entityId)).thenReturn(Optional.of(mockConsolidation));
-
-        List<Long> result = commonUtils.getTenantIdsFromEntity(entityId, Constants.CONSOLIDATION, true, false, false);
+        ListCousinBranchesForEtRequest request = ListCousinBranchesForEtRequest.builder().entityId(entityId).entityType(CONSOLIDATION).isReassign(true).isReceivingBranch(false).isTriangulationBranch(false).build();
+        List<Long> result = commonUtils.getTenantIdsFromEntity(request);
 
         assertEquals(3, result.size());
     }
@@ -3401,8 +3398,8 @@ class CommonUtilsTest {
                 TriangulationPartner.builder().triangulationPartner(400L).build()
         ));
         when(consolidationDetailsDao.findConsolidationByIdWithQuery(entityId)).thenReturn(Optional.of(mockConsolidation));
-
-        List<Long> result = commonUtils.getTenantIdsFromEntity(entityId, Constants.CONSOLIDATION, true, true, false);
+        ListCousinBranchesForEtRequest request = ListCousinBranchesForEtRequest.builder().entityId(entityId).entityType(CONSOLIDATION).isReassign(true).isReceivingBranch(true).isTriangulationBranch(false).build();
+        List<Long> result = commonUtils.getTenantIdsFromEntity(request);
 
         assertEquals(4, result.size());
     }
@@ -3421,8 +3418,8 @@ class CommonUtilsTest {
         ));
 
         when(consolidationDetailsDao.findConsolidationByIdWithQuery(entityId)).thenReturn(Optional.of(mockConsolidation));
-
-        List<Long> result = commonUtils.getTenantIdsFromEntity(entityId, Constants.CONSOLIDATION, true, false, true);
+        ListCousinBranchesForEtRequest request = ListCousinBranchesForEtRequest.builder().entityId(entityId).entityType(CONSOLIDATION).isReassign(true).isReceivingBranch(false).isTriangulationBranch(true).build();
+        List<Long> result = commonUtils.getTenantIdsFromEntity(request);
 
         assertEquals(4, result.size());
     }
@@ -3444,8 +3441,8 @@ class CommonUtilsTest {
         mockConsolidation.setShipmentsList(new HashSet<>(Collections.singletonList(mockShipment)));
         mockShipment.setConsolidationList(new HashSet<>(Collections.singletonList(mockConsolidation)));
         when(consolidationDetailsDao.findConsolidationByIdWithQuery(entityId)).thenReturn(Optional.of(mockConsolidation));
-
-        List<Long> result = commonUtils.getTenantIdsFromEntity(entityId, CONSOLIDATION, true, true, false);
+        ListCousinBranchesForEtRequest request = ListCousinBranchesForEtRequest.builder().entityId(entityId).entityType(CONSOLIDATION).isReassign(true).isReceivingBranch(true).isTriangulationBranch(false).build();
+        List<Long> result = commonUtils.getTenantIdsFromEntity(request);
 
         assertEquals(4, result.size());
     }
@@ -3462,8 +3459,8 @@ class CommonUtilsTest {
         mockConsolidation.setShipmentsList(new HashSet<>(Collections.singletonList(mockShipment)));
         mockShipment.setConsolidationList(new HashSet<>(Collections.singletonList(mockConsolidation)));
         when(consolidationDetailsDao.findConsolidationByIdWithQuery(entityId)).thenReturn(Optional.of(mockConsolidation));
-
-        List<Long> result = commonUtils.getTenantIdsFromEntity(entityId, CONSOLIDATION, false, true, false);
+        ListCousinBranchesForEtRequest request = ListCousinBranchesForEtRequest.builder().entityId(entityId).entityType(CONSOLIDATION).isReassign(false).isReceivingBranch(true).isTriangulationBranch(false).build();
+        List<Long> result = commonUtils.getTenantIdsFromEntity(request);
 
         assertEquals(2, result.size());
     }
@@ -3498,8 +3495,8 @@ class CommonUtilsTest {
         mockConsolidation.setShipmentsList(new HashSet<>(Arrays.asList(mockShipment, mockShipment2)));
         mockShipment.setConsolidationList(new HashSet<>(Collections.singletonList(mockConsolidation)));
         when(consolidationDetailsDao.findConsolidationByIdWithQuery(entityId)).thenReturn(Optional.of(mockConsolidation));
-
-        List<Long> result = commonUtils.getTenantIdsFromEntity(entityId, CONSOLIDATION, true, false, true);
+        ListCousinBranchesForEtRequest request = ListCousinBranchesForEtRequest.builder().entityId(entityId).entityType(CONSOLIDATION).isReassign(true).isReceivingBranch(false).isTriangulationBranch(true).build();
+        List<Long> result = commonUtils.getTenantIdsFromEntity(request);
 
         assertEquals(4, result.size());
     }
@@ -3509,8 +3506,8 @@ class CommonUtilsTest {
         Long entityId = 1L;
 
         when(shipmentDao.findShipmentByIdWithQuery(entityId)).thenReturn(Optional.empty());
-
-        List<Long> result = commonUtils.getTenantIdsFromEntity(entityId, Constants.SHIPMENT, true, true, false);
+        ListCousinBranchesForEtRequest request = ListCousinBranchesForEtRequest.builder().entityId(entityId).entityType(SHIPMENT).isReassign(true).isReceivingBranch(true).isTriangulationBranch(false).build();
+        List<Long> result = commonUtils.getTenantIdsFromEntity(request);
 
         assertTrue(result.isEmpty());
     }
@@ -3520,8 +3517,8 @@ class CommonUtilsTest {
         Long entityId = 2L;
 
         when(consolidationDetailsDao.findConsolidationByIdWithQuery(entityId)).thenReturn(Optional.empty());
-
-        List<Long> result = commonUtils.getTenantIdsFromEntity(entityId, Constants.CONSOLIDATION, true, true, false);
+        ListCousinBranchesForEtRequest request = ListCousinBranchesForEtRequest.builder().entityId(entityId).entityType(CONSOLIDATION).isReassign(true).isReceivingBranch(true).isTriangulationBranch(false).build();
+        List<Long> result = commonUtils.getTenantIdsFromEntity(request);
 
         assertTrue(result.isEmpty());
     }
@@ -3536,9 +3533,53 @@ class CommonUtilsTest {
 
         when(shipmentDao.findShipmentByIdWithQuery(entityId)).thenReturn(Optional.of(mockShipment));
 
-        List<Long> result = commonUtils.getTenantIdsFromEntity(entityId, Constants.SHIPMENT, true, true, false);
+        ListCousinBranchesForEtRequest request = ListCousinBranchesForEtRequest.builder().entityId(entityId).entityType(SHIPMENT).isReassign(true).isReceivingBranch(true).isTriangulationBranch(false).build();
+
+        List<Long> result = commonUtils.getTenantIdsFromEntity(request);
 
         assertEquals(2, result.size());
+    }
+
+    @Test
+    void testGetTenantIdsFromEntity_Shipment_WithInterConsoleFalse_AndReceivingBranch() {
+        String entityGuid = "6511f2e4-6234-452d-8abe-3685106317c2";
+        ShipmentDetails mockShipment = new ShipmentDetails();
+        mockShipment.setTenantId(100);
+        mockShipment.setReceivingBranch(200L);
+        mockShipment.setTriangulationPartnerList(List.of(
+                TriangulationPartner.builder().triangulationPartner(300L).build(),
+                TriangulationPartner.builder().triangulationPartner(400L).build()
+        ));
+        ConsolidationDetails mockConsolidation = new ConsolidationDetails();
+        mockConsolidation.setInterBranchConsole(false);
+        mockConsolidation.setReceivingBranch(100L);
+        mockConsolidation.setTenantId(100);
+        mockConsolidation.setShipmentsList(new HashSet<>(Collections.singletonList(mockShipment)));
+        mockShipment.setConsolidationList(new HashSet<>(Collections.singletonList(mockConsolidation)));
+        when(shipmentDao.findShipmentByGuidWithQuery(UUID.fromString(entityGuid))).thenReturn(Optional.of(mockShipment));
+        ListCousinBranchesForEtRequest request = ListCousinBranchesForEtRequest.builder().entityGuid(entityGuid).entityType(SHIPMENT).isReassign(true).isReceivingBranch(true).isTriangulationBranch(false).build();
+        List<Long> result = commonUtils.getTenantIdsFromEntity(request);
+
+        assertEquals(4, result.size());
+    }
+
+    @Test
+    void testGetTenantIdsFromEntity_Consolidation_WithInterConsoleFalse_AndReceivingBranch() {
+        String entityGuid = "6511f2e4-6234-452d-8abe-3685106317c2";
+
+        ConsolidationDetails mockConsolidation = new ConsolidationDetails();
+        mockConsolidation.setInterBranchConsole(false);
+        mockConsolidation.setReceivingBranch(100L);
+        mockConsolidation.setTenantId(200);
+        mockConsolidation.setTriangulationPartnerList(List.of(
+                TriangulationPartner.builder().triangulationPartner(300L).build(),
+                TriangulationPartner.builder().triangulationPartner(400L).build()
+        ));
+        when(consolidationDetailsDao.findConsolidationByGuidWithQuery(UUID.fromString(entityGuid))).thenReturn(Optional.of(mockConsolidation));
+        ListCousinBranchesForEtRequest request = ListCousinBranchesForEtRequest.builder().entityGuid(entityGuid).entityType(CONSOLIDATION).isReassign(true).isReceivingBranch(true).isTriangulationBranch(false).build();
+        List<Long> result = commonUtils.getTenantIdsFromEntity(request);
+
+        assertEquals(4, result.size());
     }
 
 }
