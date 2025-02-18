@@ -1870,16 +1870,17 @@ public class EntityTransferService implements IEntityTransferService {
                 if(shipmentDetails.getSourceGuid() != null) {
                     if(originShipmentsMap.containsKey(shipmentDetails.getSourceGuid())){
                         ShipmentDetails originShipment = originShipmentsMap.get(shipmentDetails.getSourceGuid());
-                        ConsolidationDetails consolidationDetails;
-                        if(originShipment.getConsolidationList() != null && !originShipment.getConsolidationList().isEmpty() &&
-                                originConsoleMap.containsKey(originShipment.getConsolidationList().iterator().next().getGuid())){
-                            consolidationDetails = originConsoleMap.get(originShipment.getConsolidationList().iterator().next().getGuid());
-                            var receivingAgent = consolidationDetails.getReceivingBranch();
+                        ConsolidationDetails consolidationDetails = null;
+                        if((originShipment.getConsolidationList() != null && !originShipment.getConsolidationList().isEmpty() &&
+                                originConsoleMap.containsKey(originShipment.getConsolidationList().iterator().next().getGuid())) || Objects.equals(originShipment.getJobType(), SHIPMENT_TYPE_DRT)){
+                            if (!Objects.equals(shipmentDetails.getJobType(), Constants.SHIPMENT_TYPE_DRT))
+                                consolidationDetails = originConsoleMap.get(originShipment.getConsolidationList().iterator().next().getGuid());
+                            var receivingAgent = consolidationDetails != null ? consolidationDetails.getReceivingBranch() : null;
                             if (Objects.isNull(receivingAgent) && Objects.equals(shipmentDetails.getJobType(), Constants.SHIPMENT_TYPE_DRT)) {
                                 receivingAgent = shipmentDetails.getReceivingBranch();
                             }
-                            List<TriangulationPartner> triangulationPartnerList = consolidationDetails.getTriangulationPartnerList();
-                            var triangulationPartner = consolidationDetails.getTriangulationPartner();
+                            List<TriangulationPartner> triangulationPartnerList = consolidationDetails != null ? consolidationDetails.getTriangulationPartnerList() : originShipment.getTriangulationPartnerList();
+                            var triangulationPartner = consolidationDetails != null ? consolidationDetails.getTriangulationPartner() : shipmentDetails.getTriangulationPartner();
                             ArValidationResponse.ProfitShareShipmentData originShipmentData = mapShipmentDataToProfitShare(originShipment);
                             arValidationResponse.setOrigin(originShipment.getTenantId());
                             arValidationResponse.setSalesBranch(originShipment.getSalesBranch());
@@ -2054,7 +2055,11 @@ public class EntityTransferService implements IEntityTransferService {
         if(!logHistoryResponses.isEmpty())
             logHistoryResponses.forEach(
                     log -> {
-                        shipmentDetailsList.add(jsonHelper.readFromJson(log.getEntityPayload(), ShipmentDetails.class));
+                        UUID guid = log.getEntityGuid();
+                        ShipmentDetails entityPayload = jsonHelper.readFromJson(log.getEntityPayload(), ShipmentDetails.class);
+                        if(Objects.isNull(entityPayload.getSourceGuid()))
+                            entityPayload.setSourceGuid(guid);
+                        shipmentDetailsList.add(entityPayload);
                         remainingGuids.remove(log.getEntityGuid());
                     });
 
