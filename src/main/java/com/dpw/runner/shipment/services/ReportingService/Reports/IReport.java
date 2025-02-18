@@ -1071,6 +1071,9 @@ public abstract class IReport {
             getPackingDetails(shipmentModel, dict);
             dict.put(VOLUME_WEIGHT, ConvertToWeightNumberFormat(shipmentModel.getVolumetricWeight()));
             dict.put(VOLUME_WEIGHT_UNIT, shipmentModel.getVolumetricWeightUnit());
+            dict.put(ReportConstants.CHARGEABLE_WT, ConvertToWeightNumberFormat(shipmentModel.getChargable(), CHARGEABLE_WEIGHT_DECIMAL_PLACES, getCurrentTenantSettings()));
+            dict.put(ReportConstants.CHARGEABLE_UNIT, shipmentModel.getChargeableUnit());
+
             if(isSecurity)
                 dict.put(IS_SECURITY, true);
             else
