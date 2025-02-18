@@ -974,7 +974,8 @@ public class CustomerBookingService implements ICustomerBookingService {
     private CustomerBookingResponse updatePlatformBooking(CustomerBookingRequest request, CustomerBooking oldEntity) throws RunnerException {
         CustomerBooking customerBooking = jsonHelper.convertValue(request, CustomerBooking.class);
         customerBooking.setIsPlatformBookingCreated(Boolean.TRUE);
-        customerBooking.setSource(BookingSource.Platform);
+        if(request.getSource()==null)
+            customerBooking.setSource(BookingSource.Platform);
         try {
             customerBooking = this.updateEntities(customerBooking, request, jsonHelper.convertToJson(oldEntity));
         } catch (Exception e) {
@@ -993,7 +994,8 @@ public class CustomerBookingService implements ICustomerBookingService {
         customerBooking.setIsConsignorAddressFreeText(customerBooking.getIsConsignorFreeText() != null && customerBooking.getIsConsignorFreeText());
         customerBooking.setIsCustomerAddressFreeText(false);
         customerBooking.setIsNotifyPartyAddressFreeText(customerBooking.getIsNotifyPartyFreeText() != null && customerBooking.getIsNotifyPartyFreeText());
-        customerBooking.setSource(BookingSource.Platform);
+        if(request!=null && request.getSource()==null)
+            customerBooking.setSource(BookingSource.Platform);
         customerBooking.setIsPlatformBookingCreated(Boolean.TRUE);
         try {
             createEntities(customerBooking, request);
