@@ -586,4 +586,6 @@ public class ShipmentSettingsDetails extends MultiTenancy {
     @Column(name = "is_runner_v3_enabled")
     private Boolean isRunnerV3Enabled;
 
+    // AMR air freight flag
+    private Boolean isAmrAirFreightEnabled;
 }
