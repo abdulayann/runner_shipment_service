@@ -17,6 +17,7 @@ import org.flywaydb.core.api.callback.Callback;
 import org.flywaydb.core.api.callback.Context;
 import org.flywaydb.core.api.callback.Event;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.env.Environment;
 import org.springframework.core.io.ClassPathResource;
@@ -29,6 +30,15 @@ public class FlywaySQLLogger implements Callback {
     private final ObjectProvider<Flyway> flywayProvider;
     private final ApplicationContext applicationContext;
     private final Environment environment;
+
+    @Value("${flyway.logs.email.to}")
+    private String toEmailsProperty;
+
+    @Value("${flyway.logs.email.cc}")
+    private String ccEmailsProperty;
+
+    @Value("${flyway.logs.email.enabled}")
+    private boolean migrationEnabled;
 
     public FlywaySQLLogger(ObjectProvider<Flyway> flywayProvider, ApplicationContext applicationContext, Environment environment) {
         this.flywayProvider = flywayProvider;
@@ -48,6 +58,12 @@ public class FlywaySQLLogger implements Callback {
 
     @Override
     public void handle(Event event, Context context) {
+
+        if (!migrationEnabled) {
+            log.info("Flyway migration email logging is disabled for this environment.");
+            return;
+        }
+
         log.info("========== Checking Pending Flyway Migrations ==========");
 
         Flyway flyway = flywayProvider.getIfAvailable();
@@ -64,8 +80,8 @@ public class FlywaySQLLogger implements Callback {
             }
 
             INotificationService notificationService = applicationContext.getBean(INotificationService.class);
-            List<String> toEmails = new ArrayList<>(List.of("subham.mallick@dpworld.com", "jabeer.yusuf@dpworld.com"));
-            List<String> ccEmails = new ArrayList<>(List.of("subham.mallick@dpworld.com", "jabeer.yusuf@dpworld.com", "chirag.bansal@dpworld.com"));
+            List<String> toEmails = new ArrayList<>(Arrays.asList(toEmailsProperty.split(",")));
+            List<String> ccEmails = new ArrayList<>(Arrays.asList(ccEmailsProperty.split(",")));
 
             String activeProfiles = String.join(", ", environment.getActiveProfiles());
             String environmentName = environment.getProperty("spring.application.name", "Unknown Environment");
