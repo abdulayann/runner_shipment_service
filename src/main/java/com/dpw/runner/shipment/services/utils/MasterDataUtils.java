@@ -278,7 +278,7 @@ public class MasterDataUtils{
                 if (response instanceof NetworkTransferListResponse networkTransferListResponse && (networkTransferListResponse.getSourceBranchId() != null)) {
                     tenantIdList.addAll(createInBulkTenantsRequest(networkTransferListResponse, NetworkTransfer.class, fieldNameKeyMap, NetworkTransfer.class.getSimpleName() + networkTransferListResponse.getId(), cacheMap));
                 }
-                if (response instanceof NotificationListResponse notificationListResponse && (notificationListResponse.getRequestedBranchId() != null || notificationListResponse.getReassignedToBranchId() != null)) {
+                if (response instanceof NotificationListResponse notificationListResponse && (notificationListResponse.getRequestedBranchId() != null || notificationListResponse.getReassignedToBranchId() != null || notificationListResponse.getReassignedFromBranchId() != null)) {
                     tenantIdList.addAll(createInBulkTenantsRequest(notificationListResponse, Notification.class, fieldNameKeyMap, Notification.class.getSimpleName() + notificationListResponse.getId(), cacheMap));
                 }
             }

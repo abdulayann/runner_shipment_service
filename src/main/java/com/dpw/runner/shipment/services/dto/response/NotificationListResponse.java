@@ -30,4 +30,5 @@ public class NotificationListResponse implements IRunnerResponse {
     private Long reassignedToBranchId;
     private Map<String, String> tenantMasterData;
     private Integer tenantId;
+    private Integer reassignedFromBranchId;
 }
