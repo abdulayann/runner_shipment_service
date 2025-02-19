@@ -3610,7 +3610,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     private boolean isEventChanged(Object newValue, Object oldValue, Boolean isNewShipment) {
-        return Boolean.TRUE.equals(isNewShipment) || !Objects.equals(newValue, oldValue);
+        return Boolean.TRUE.equals(isNewShipment) ? ObjectUtils.isNotEmpty(newValue) : !Objects.equals(newValue, oldValue);
     }
 
     private boolean isEventBooleanChanged(Boolean newValue, Boolean oldValue, Boolean isNewShipment) {
