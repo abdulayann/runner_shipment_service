@@ -5279,6 +5279,11 @@ public class ConsolidationService implements IConsolidationService {
             consol.setReceivingAgentCountry(commonUtils.getCountryFromUnLocCode(shipmentCarrierDetails.getDestinationPortLocCode()));
         }
 
+        if (consol.getReceivingBranch() == null && Objects.equals(consol.getShipmentType(), DIRECTION_EXP) && CommonUtils.checkAddressNotNull(consol.getReceivingAgent())) {
+            Long receivingBranchId = commonUtils.getReceivingBranch(consol.getReceivingAgent().getOrgId(), consol.getReceivingAgent().getAddressId());
+            consol.setReceivingBranch(receivingBranchId);
+        }
+
         createConsolidationPayload(modelMapper.map(consol, ConsolidationDetails.class), consol);
 
         return ResponseHelper.buildSuccessResponse(consol);

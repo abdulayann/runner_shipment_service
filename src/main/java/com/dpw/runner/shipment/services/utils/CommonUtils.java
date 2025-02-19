@@ -25,6 +25,7 @@ import com.dpw.runner.shipment.services.dto.v1.request.DGTaskCreateRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TenantDetailsByListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.V1RoleIdRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.V1UsersEmailRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.TenantFilterRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
@@ -2309,6 +2310,18 @@ public class CommonUtils {
         if (party == null) return false;
         else if (IsStringNullOrEmpty(party.getOrgId())) return false;
         else return !IsStringNullOrEmpty(party.getAddressId());
+    }
+
+    public Long getReceivingBranch(String orgIdString, String addressIdString) {
+        Long orgId = Long.valueOf(orgIdString);
+        Long addressId = Long.valueOf(addressIdString);
+        TenantFilterRequest request = TenantFilterRequest.builder().orgId(orgId).addressId(addressId).build();
+        V1DataResponse response = iv1Service.listBranchesByDefaultOrgAndAddress(request);
+        if (Objects.nonNull(response.getEntities())) {
+            List<V1TenantResponse> tenantResponses = jsonHelper.convertValueToList(response.getEntities(), V1TenantResponse.class);
+            return tenantResponses.get(0).getTenantId();
+        }
+        return null;
     }
 
 }
