@@ -1280,6 +1280,7 @@ public class ReportConstants {
     public static final String SLAC = "SLAC";
     public static final String SLAC_CODE = "SlaCCode";
     public static final String COMMA_HS_CODE1 = "CommaHsCode1";
+    public static final String SLAC_NEW = "SLACNew";
     public static final String GOOD_DESC_HS_CODE_COMMA_SEPARATED = "GD_HsCode";
     public static final String HSCODE = "HS Code";
     public static final String COMMA_SLAC1 = "CommaSLAC1";
