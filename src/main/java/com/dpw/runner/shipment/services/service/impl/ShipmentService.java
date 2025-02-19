@@ -3727,7 +3727,10 @@ public class ShipmentService implements IShipmentService {
                 consolidationDetails.setSendingAgent(commonUtils.removeIdFromParty(shipmentDetails.getAdditionalDetails().getExportBroker()));
                 consolidationDetails.setReceivingAgent(commonUtils.removeIdFromParty(shipmentDetails.getAdditionalDetails().getImportBroker()));
             }
-            this.populateReceivingBranch(consolidationDetails);
+            if (Objects.equals(consolidationDetails.getShipmentType(), DIRECTION_EXP) && CommonUtils.checkAddressNotNull(consolidationDetails.getReceivingAgent())) {
+                Long receivingBranchId = commonUtils.getReceivingBranch(consolidationDetails.getReceivingAgent().getOrgId(), consolidationDetails.getReceivingAgent().getAddressId());
+                consolidationDetails.setReceivingBranch(receivingBranchId);
+            }
             if(!commonUtils.checkIfPartyExists(consolidationDetails.getSendingAgent())) {
                 consolidationDetails.setSendingAgentCountry(commonUtils.getCountryFromUnLocCode(consolidationDetails.getCarrierDetails().getOriginPortLocCode()));
             }
@@ -5741,6 +5744,12 @@ public class ShipmentService implements IShipmentService {
         }
         if(!commonUtils.checkIfPartyExists(shipment.getAdditionalDetails().getExportBroker())) {
             shipment.getAdditionalDetails().setExportBrokerCountry(commonUtils.getCountryFromUnLocCode(consolidation.getCarrierDetails().getOriginLocCode()));
+        }
+
+        if (shipment.getReceivingBranch() == null && Objects.equals(shipment.getDirection(), DIRECTION_EXP) &&
+                shipment.getAdditionalDetails() != null && CommonUtils.checkAddressNotNull(shipment.getAdditionalDetails().getImportBroker())) {
+            Long receivingBranchId = commonUtils.getReceivingBranch(shipment.getAdditionalDetails().getImportBroker().getOrgId(), shipment.getAdditionalDetails().getImportBroker().getAddressId());
+            shipment.setReceivingBranch(receivingBranchId);
         }
 
         //Generate HBL
