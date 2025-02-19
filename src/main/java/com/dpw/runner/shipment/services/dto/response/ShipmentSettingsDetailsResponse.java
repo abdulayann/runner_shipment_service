@@ -2,10 +2,9 @@ package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.entity.enums.GenerationType;
-import lombok.Data;
-
 import java.time.LocalDateTime;
 import java.util.List;
+import lombok.Data;
 
 @Data
 public class ShipmentSettingsDetailsResponse implements IRunnerResponse {
@@ -181,4 +180,7 @@ public class ShipmentSettingsDetailsResponse implements IRunnerResponse {
     private Boolean isAwbRevampEnabled;
     private String fcrDocument;
     private Boolean isRunnerV3Enabled;
+
+    private Boolean isRAEnabled;
+    private Boolean isKCEnabled;
 }
