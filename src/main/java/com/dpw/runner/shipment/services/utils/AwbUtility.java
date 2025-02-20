@@ -954,7 +954,6 @@ public class AwbUtility {
             if(consoleShipmentMappings != null && !consoleShipmentMappings.isEmpty()){
                 var shipmentList = shipmentDao.findShipmentsByIds(consoleShipmentMappings.stream().map(ConsoleShipmentMapping::getShipmentId).collect(Collectors.toSet()));
                 shipmentList.forEach(shipment -> eventDao.createEventForAirMessagingEvent(prepareEventPayload(airMessageEvent, shipment.getId(), Constants.SHIPMENT, shipment.getTenantId())));
-//                consoleShipmentMappings.forEach(x -> eventDao.createEventForAirMessagingEvent(prepareEventPayload(airMessageEvent, x.getShipmentId(), Constants.SHIPMENT, tenantId)));
             }
         } else if (awb.get().getShipmentId() != null) {
             eventDao.createEventForAirMessagingEvent(prepareEventPayload(airMessageEvent, awb.get().getShipmentId(), Constants.SHIPMENT, tenantId));
