@@ -143,8 +143,8 @@ class V1ServiceImplTest {
 
         V1DataResponse tenantNameResponse = new V1DataResponse();
         tenantNameResponse.entities = List.of(
-                new V1TenantResponse("Tenant 1", "T1"),
-                new V1TenantResponse("Tenant 2", "T2")
+                new V1TenantResponse("Tenant 1", "T1", 1L),
+                new V1TenantResponse("Tenant 2", "T2", 2L)
         );
 
         HttpHeaders headers = new HttpHeaders();
@@ -155,7 +155,7 @@ class V1ServiceImplTest {
 
 
         when(jsonHelper.convertValueToList(tenantNameResponse.entities, V1TenantResponse.class))
-                .thenReturn(List.of(new V1TenantResponse("Tenant 1", "T1"), new V1TenantResponse("Tenant 2", "T2")));
+                .thenReturn(List.of(new V1TenantResponse("Tenant 1", "T1", 1L), new V1TenantResponse("Tenant 2", "T2", 2L)));
 
         // Act
         List<String> tenantNames = v1ServiceImpl.getTenantName(tenantIds);
@@ -181,8 +181,8 @@ class V1ServiceImplTest {
 
         V1DataResponse tenantNameResponse = new V1DataResponse();
         tenantNameResponse.entities = List.of(
-                new V1TenantResponse("Tenant 1", "T1"),
-                new V1TenantResponse("Tenant 2", "T2")
+                new V1TenantResponse("Tenant 1", "T1", 1L),
+                new V1TenantResponse("Tenant 2", "T2", 2L)
         );
 
         HttpHeaders headers = new HttpHeaders();

@@ -20,7 +20,7 @@ public class NotificationConstants {
     public static final String RECEIVING_BRANCH = "ReceivingBranch";
     public static final String TRAINGULATION_BRANCH = "TriangulationBranch";
     public static final String REASSIGN_BRANCH_ERROR = "Branch Reassignment failed.";
-    public static final String RECEIVING_BRANCH_ID_FIELD = "requestedBranchId";
+    public static final String RECEIVING_BRANCH_ID_FIELD = "reassignedFromBranchId";
     public static final String REASSIGNED_TO_BRANCH_ID_FIELD = "reassignedToBranchId";
     public static final String NOTIFICATION_CONFIRMATION_SUCCESSFUL = "Notifications confirmation message successful";
 }

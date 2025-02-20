@@ -25,6 +25,7 @@ import com.dpw.runner.shipment.services.dto.v1.request.DGTaskCreateRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TenantDetailsByListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.V1RoleIdRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.V1UsersEmailRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.TenantFilterRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
@@ -2181,41 +2182,51 @@ public class CommonUtils {
                 .toList() : Collections.emptyList();
     }
 
-    public List<Long> getTenantIdsFromEntity(Long entityId, String entityType, Boolean isReassign, Boolean isReceivingBranch, Boolean isTriangulationBranch) {
+    public List<Long> getTenantIdsFromEntity(ListCousinBranchesForEtRequest request) {
+
         Set<Long> tenantIds = new HashSet<>();
         Long sourceTenantId = TenantContext.getCurrentTenant().longValue();
         Long receivingBranch = null;
         List<Long> triangulationPartners = null;
         List<Long> otherIds = new ArrayList<>();
+        Optional<ShipmentDetails> optionalShipmentDetails;
+        Optional<ConsolidationDetails> optionalConsolidationDetails;
 
-        if (Objects.equals(entityType, Constants.SHIPMENT) && entityId != null) {
-            Optional<ShipmentDetails> optionalShipmentDetails = shipmentDao.findShipmentByIdWithQuery(entityId);
+        if (Objects.equals(request.getEntityType(), Constants.SHIPMENT) && (request.getEntityId() != null || request.getEntityGuid()!=null)) {
+            if(request.getEntityId() != null)
+                optionalShipmentDetails = shipmentDao.findShipmentByIdWithQuery(request.getEntityId());
+            else
+                optionalShipmentDetails = shipmentDao.findShipmentByGuidWithQuery(UUID.fromString(request.getEntityGuid()));
+
             if (optionalShipmentDetails.isEmpty()) {
                 return new ArrayList<>();
             }
             ShipmentDetails shipmentDetails = optionalShipmentDetails.get();
             sourceTenantId = Long.valueOf(shipmentDetails.getTenantId());
 
-            if (Boolean.TRUE.equals(isReassign)) {
+            if (Boolean.TRUE.equals(request.getIsReassign())) {
                 receivingBranch = shipmentDetails.getReceivingBranch();
                 triangulationPartners = extractTriangulationPartners(shipmentDetails.getTriangulationPartnerList());
             }
 
-            processConsolidationDetails(shipmentDetails, isReceivingBranch, isTriangulationBranch, otherIds);
-        } else if (Objects.equals(entityType, Constants.CONSOLIDATION) && entityId != null) {
-            Optional<ConsolidationDetails> optionalConsolidationDetails = consolidationDetailsDao.findConsolidationByIdWithQuery(entityId);
+            processConsolidationDetails(shipmentDetails, request.getIsReceivingBranch(), request.getIsTriangulationBranch(), otherIds);
+        } else if (Objects.equals(request.getEntityType(), Constants.CONSOLIDATION) && (request.getEntityId() != null || request.getEntityGuid()!=null)) {
+            if(request.getEntityId() != null)
+                optionalConsolidationDetails = consolidationDetailsDao.findConsolidationByIdWithQuery(request.getEntityId());
+            else
+                optionalConsolidationDetails = consolidationDetailsDao.findConsolidationByGuidWithQuery(UUID.fromString(request.getEntityGuid()));
             if (optionalConsolidationDetails.isEmpty()) {
                 return new ArrayList<>();
             }
             ConsolidationDetails consolidationDetails = optionalConsolidationDetails.get();
             sourceTenantId = Long.valueOf(consolidationDetails.getTenantId());
 
-            if (Boolean.TRUE.equals(isReassign)) {
+            if (Boolean.TRUE.equals(request.getIsReassign())) {
                 receivingBranch = consolidationDetails.getReceivingBranch();
                 triangulationPartners = extractTriangulationPartners(consolidationDetails.getTriangulationPartnerList());
             }
 
-            processConsolidationShipments(consolidationDetails, isReceivingBranch, isTriangulationBranch, otherIds);
+            processConsolidationShipments(consolidationDetails, request.getIsReceivingBranch(), request.getIsTriangulationBranch(), otherIds);
         }
 
         tenantIds.add(sourceTenantId);
@@ -2228,7 +2239,7 @@ public class CommonUtils {
         if (!CommonUtils.listIsNullOrEmpty(otherIds)) {
             tenantIds.addAll(otherIds);
         }
-        return new ArrayList<>(tenantIds);
+        return tenantIds.stream().filter(Objects::nonNull).toList();
     }
 
     private void processConsolidationDetails(ShipmentDetails shipmentDetails, Boolean isReceivingBranch, Boolean isTriangulationBranch, List<Long> otherIds) {
@@ -2309,6 +2320,19 @@ public class CommonUtils {
         if (party == null) return false;
         else if (IsStringNullOrEmpty(party.getOrgId())) return false;
         else return !IsStringNullOrEmpty(party.getAddressId());
+    }
+
+    public Long getReceivingBranch(String orgIdString, String addressIdString) {
+        Long orgId = Long.valueOf(orgIdString);
+        Long addressId = Long.valueOf(addressIdString);
+        TenantFilterRequest request = TenantFilterRequest.builder().orgId(orgId).addressId(addressId).build();
+        V1DataResponse response = iv1Service.listBranchesByDefaultOrgAndAddress(request);
+        if (Objects.nonNull(response.getEntities())) {
+            List<V1TenantResponse> tenantResponses = jsonHelper.convertValueToList(response.getEntities(), V1TenantResponse.class);
+            if(!tenantResponses.isEmpty())
+                return tenantResponses.get(0).getTenantId();
+        }
+        return null;
     }
 
 }

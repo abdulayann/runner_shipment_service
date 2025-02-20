@@ -15,4 +15,6 @@ public class V1TenantResponse {
     private String TenantName;
     @JsonProperty("Code")
     private String Code;
+    @JsonProperty("TenantId")
+    private Long TenantId;
 }

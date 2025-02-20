@@ -73,8 +73,6 @@ public class EntityTransferShipmentDetails implements IEntityTranferBaseEntity, 
     private Boolean containerAutoWeightVolumeUpdate;
     private String marksNum;
     private String entryDetail;
-    private Boolean isLocked;
-    private String lockedBy;
     private Boolean isNotifyConsigneeEqual;
     private boolean cargoFinanceBooking;
     private String bookingNumber;
@@ -136,7 +134,6 @@ public class EntityTransferShipmentDetails implements IEntityTranferBaseEntity, 
     private String salesBranch;
     private String primarySalesAgentEmail;
     private String secondarySalesAgentEmail;
-    private UUID clonedGuid;
     private Long consigneeDpsAddressId;
     private Long clientDpsAddressId;
     private Long consignorDpsAddressId;

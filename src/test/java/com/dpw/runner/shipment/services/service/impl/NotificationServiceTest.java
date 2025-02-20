@@ -251,6 +251,7 @@ class NotificationServiceTest {
         mockResponse.setEntityType(Constants.SHIPMENT);
         mockResponse.setEntityId(10L);
         mockResponse.setRequestedBranchId(1L);
+        mockResponse.setReassignedFromBranchId(1);
         mockResponse.setReassignedToBranchId(2L);
         CommonGetRequest request = CommonGetRequest.builder().id(mockResponse.getEntityId()).build();
         CommonRequestModel requestModel = CommonRequestModel.buildRequest(request);
@@ -279,6 +280,7 @@ class NotificationServiceTest {
         mockResponse.setEntityType(Constants.CONSOLIDATION);
         mockResponse.setEntityId(10L);
         mockResponse.setRequestedBranchId(1L);
+        mockResponse.setReassignedFromBranchId(1);
         mockResponse.setReassignedToBranchId(2L);
 
         when(notificationDao.findById(anyLong())).thenReturn(Optional.of(notification));
@@ -305,6 +307,7 @@ class NotificationServiceTest {
         mockResponse.setEntityType(Constants.SHIPMENT);
         mockResponse.setEntityId(10L);
         mockResponse.setRequestedBranchId(3L);
+        mockResponse.setReassignedFromBranchId(3);
         mockResponse.setReassignedToBranchId(2L);
         CommonGetRequest request = CommonGetRequest.builder().id(mockResponse.getEntityId()).build();
         CommonRequestModel requestModel = CommonRequestModel.buildRequest(request);
@@ -338,6 +341,7 @@ class NotificationServiceTest {
         mockResponse.setEntityType(Constants.CONSOLIDATION);
         mockResponse.setEntityId(10L);
         mockResponse.setRequestedBranchId(3L);
+        mockResponse.setReassignedFromBranchId(3);
         mockResponse.setReassignedToBranchId(2L);
         consolidationDetails.setTriangulationPartnerList(
                 triangulationPartners.stream().map(partner ->
@@ -414,6 +418,7 @@ class NotificationServiceTest {
         notification.setEntityType(Constants.SHIPMENT);
         notification.setEntityId(10L);
         notification.setRequestedBranchId(1);
+        notification.setReassignedFromBranchId(1);
         notification.setReassignedToBranchId(2);
         Integer tenantId = 2;
         TenantModel tenantModel = new TenantModel();
@@ -450,6 +455,7 @@ class NotificationServiceTest {
         notification.setEntityType(Constants.SHIPMENT);
         notification.setEntityId(10L);
         notification.setRequestedBranchId(1);
+        notification.setReassignedFromBranchId(1);
         notification.setReassignedToBranchId(2);
         Integer tenantId = 2;
         TenantModel tenantModel = new TenantModel();
@@ -484,6 +490,7 @@ class NotificationServiceTest {
         notification.setEntityType(Constants.SHIPMENT);
         notification.setEntityId(10L);
         notification.setRequestedBranchId(1);
+        notification.setReassignedFromBranchId(1);
         notification.setReassignedToBranchId(2);
         Integer tenantId = 2;
         TenantModel tenantModel = new TenantModel();
@@ -518,6 +525,7 @@ class NotificationServiceTest {
         notification.setEntityType(Constants.CONSOLIDATION);
         notification.setEntityId(10L);
         notification.setRequestedBranchId(1);
+        notification.setReassignedFromBranchId(1);
         notification.setReassignedToBranchId(2);
         Integer tenantId = 2;
         TenantModel tenantModel = new TenantModel();
@@ -553,6 +561,7 @@ class NotificationServiceTest {
         notification.setEntityType(Constants.SHIPMENT);
         notification.setEntityId(10L);
         notification.setRequestedBranchId(3);
+        notification.setReassignedFromBranchId(3);
         notification.setReassignedToBranchId(2);
 
         CommonGetRequest request = CommonGetRequest.builder().id(notification.getEntityId()).build();
@@ -586,6 +595,7 @@ class NotificationServiceTest {
         notification.setEntityType(Constants.CONSOLIDATION);
         notification.setEntityId(10L);
         notification.setRequestedBranchId(3);
+        notification.setReassignedFromBranchId(3);
         notification.setReassignedToBranchId(2);
 
         consolidationDetails.setTriangulationPartnerList(

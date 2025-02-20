@@ -162,8 +162,8 @@ class NetworkTransferDaoTest {
 
     @Test
     void findByEntityIdAndEntityTypeAndIsInterBranchEntityTest(){
-        networkTransferDao.findByEntityIdAndEntityTypeAndIsInterBranchEntity(anyList(), anyString(), anyBoolean(), anyList());
-        verify(networkTransferRepository, times(1)).findByEntityIdAndEntityTypeAndIsInterBranchEntity(anyList(), anyString(), anyBoolean(), anyList());
+        networkTransferDao.findByEntityIdAndEntityTypeAndIsInterBranchEntity(anyList(), anyString(), anyBoolean(), anyList(), any());
+        verify(networkTransferRepository, times(1)).findByEntityIdAndEntityTypeAndIsInterBranchEntity(anyList(), anyString(), anyBoolean(), anyList(), any());
     }
 
     @Test

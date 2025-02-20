@@ -1411,13 +1411,9 @@ class EntityTransferServiceTest extends CommonMocks {
         LogHistoryResponse consoleLogHistoryResponse = LogHistoryResponse.builder().entityGuid(shipmentDetails1.getConsolidationList().iterator().next().getGuid()).entityPayload(jsonTestUtility.convertToJson(shipmentDetails1.getConsolidationList().iterator().next())).build();
 
         when(shipmentDao.findShipmentsByGuids(shipGuidSet1)).thenReturn(List.of(shipmentDetailsDrt, shipmentDetailsImp, shipmentDetailsImp1, shipmentDetailsExp, shipmentDetailsImp2, shipmentDetailsImp3));
-        when(shipmentDao.findShipmentsBySourceGuids(Set.of(shipmentDetails1.getGuid(), originShipment.getGuid(), originShipment1.getGuid(), originShipment2.getGuid(), originShipment3.getGuid()))).thenReturn(List.of(destShipment, destShipmentForTriangulation, shipmentDetailsImp, shipmentDetailsImp1, shipmentDetailsImp2, triangulationShipment, receivingShipment));
-        when(shipmentDao.findShipmentsByGuids(Set.of(shipmentDetailsImp.getSourceGuid(), shipmentDetailsImp1.getSourceGuid(), shipmentDetailsImp2.getSourceGuid(), shipmentDetailsImp3.getSourceGuid()))).thenReturn(List.of(originShipment, originShipment1, originShipment2, originShipment3));
         when(masterDataUtils.getLocationData(Set.of(locationRefGuid))).thenReturn(unlocationsResponseMap);
         when(consolidationDetailsDao.findConsolidationsByGuids(consoleGuids1))
                 .thenReturn(List.of(shipmentDetailsDrt.getConsolidationList().iterator().next(), shipmentDetailsImp.getConsolidationList().iterator().next(), shipmentDetailsImp1.getConsolidationList().iterator().next(), shipmentDetailsExp.getConsolidationList().iterator().next()));
-        when(consolidationDetailsDao.findConsolidationsByGuids(Set.of(originShipment.getConsolidationList().iterator().next().getGuid(), originShipment1.getConsolidationList().iterator().next().getGuid(), originShipment2.getConsolidationList().iterator().next().getGuid(), originShipment3.getConsolidationList().iterator().next().getGuid())))
-                .thenReturn(List.of(originShipment.getConsolidationList().iterator().next(), originShipment1.getConsolidationList().iterator().next(), originShipment2.getConsolidationList().iterator().next(), originShipment3.getConsolidationList().iterator().next()));
         when(logsHistoryService.findByEntityGuidsAndTimeStamp(shipGuidSet.stream().toList(), timeStamp)).thenReturn(List.of(logHistoryResponse));
         when(jsonHelper.readFromJson(logHistoryResponse.getEntityPayload(), ShipmentDetails.class)).thenReturn(shipmentDetails1);
         when(logsHistoryService.findByEntityGuidsAndTimeStamp(consoleGuids.stream().toList(), timeStamp)).thenReturn(List.of(consoleLogHistoryResponse));

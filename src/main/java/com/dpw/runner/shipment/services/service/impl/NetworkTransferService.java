@@ -410,40 +410,40 @@ public class NetworkTransferService implements INetworkTransferService {
         networkTransfer.get().setStatus(NetworkTransferStatus.REQUESTED_TO_TRANSFER);
         var entityId = networkTransfer.get().getEntityId();
         var entityType = networkTransfer.get().getEntityType();
+        Integer tenantId = networkTransfer.get().getSourceBranchId();
 
         List<NetworkTransfer> networkTransferList = new ArrayList<>();
-        MutableBoolean updateStatus = new MutableBoolean(true);
         // For Overarching Shipment
         if(Boolean.TRUE.equals(networkTransfer.get().getIsInterBranchEntity()) && Objects.equals(networkTransfer.get().getEntityType(), Constants.SHIPMENT)) {
             var consoleShipmentMapping = consoleShipmentMappingDao.findByShipmentId(networkTransfer.get().getEntityId());
             if(!CommonUtils.listIsNullOrEmpty(consoleShipmentMapping)) {
                 entityId = consoleShipmentMapping.get(0).getConsolidationId();
                 entityType = Constants.CONSOLIDATION;
-                this.fetchOverarchingConsoleAndShipmentNTE(networkTransferList, entityId, networkTransfer.get().getEntityId(), updateStatus);
-
+                var consoleNTE = networkTransferDao.findByEntityIdAndEntityTypeAndIsInterBranchEntity(List.of(entityId), Constants.CONSOLIDATION, true, List.of(NetworkTransferStatus.SCHEDULED.name()), Constants.DIRECTION_CTS);
+                if (!CommonUtils.listIsNullOrEmpty(consoleNTE)) {
+                    consoleNTE.get(0).setStatus(NetworkTransferStatus.REQUESTED_TO_TRANSFER);
+                    networkTransferList.add(consoleNTE.get(0));
+                    tenantId = consoleNTE.get(0).getSourceBranchId();
+                }
+                this.fetchOverarchingConsoleAndShipmentNTE(networkTransferList, entityId, networkTransfer.get().getEntityId());
             }
+        } else if(Boolean.TRUE.equals(networkTransfer.get().getIsInterBranchEntity()) && Objects.equals(networkTransfer.get().getEntityType(), Constants.CONSOLIDATION)) {
+            this.fetchOverarchingConsoleAndShipmentNTE(networkTransferList, entityId, null);
         }
-        Notification notification = getNotificationEntity(networkTransfer.get().getSourceBranchId(), NotificationRequestType.REQUEST_TRANSFER, requestForTransferRequest.getRemarks(), null, entityType, entityId);
+        Notification notification = getNotificationEntity(tenantId, NotificationRequestType.REQUEST_TRANSFER, requestForTransferRequest.getRemarks(), null, entityType, entityId, null);
         notificationDao.save(notification);
         networkTransferList.add(networkTransfer.get());
         networkTransferDao.saveAll(networkTransferList);
         return ResponseHelper.buildSuccessResponse();
     }
 
-    void fetchOverarchingConsoleAndShipmentNTE(List<NetworkTransfer> networkTransferList, Long consoleId, Long shipId, MutableBoolean updateStatus) {
-        var consoleNTE = networkTransferDao.findByEntityIdAndEntityTypeAndIsInterBranchEntity(List.of(consoleId), Constants.CONSOLIDATION, true, List.of(NetworkTransferStatus.SCHEDULED.name()));
-        if (!CommonUtils.listIsNullOrEmpty(consoleNTE)) {
-            consoleNTE.get(0).setStatus(NetworkTransferStatus.REQUESTED_TO_TRANSFER);
-            networkTransferList.add(consoleNTE.get(0));
-        } else {
-            updateStatus.setFalse();
-        }
+    void fetchOverarchingConsoleAndShipmentNTE(List<NetworkTransfer> networkTransferList, Long consoleId, Long shipId) {
         var consoleShipMappingList = consoleShipmentMappingDao.findByConsolidationId(consoleId);
         if(!consoleShipMappingList.isEmpty()){
             List<Long> shipmentIds = consoleShipMappingList.stream().map(ConsoleShipmentMapping::getShipmentId).filter(shipmentId ->!Objects.equals(shipmentId, shipId)).toList();
             List<NetworkTransfer> shipmentsNte = new ArrayList<>();
             if(!CommonUtils.listIsNullOrEmpty(shipmentIds))
-                shipmentsNte = networkTransferDao.findByEntityIdAndEntityTypeAndIsInterBranchEntity(shipmentIds, Constants.SHIPMENT, true, List.of(NetworkTransferStatus.SCHEDULED.name()));
+                shipmentsNte = networkTransferDao.findByEntityIdAndEntityTypeAndIsInterBranchEntity(shipmentIds, Constants.SHIPMENT, true, List.of(NetworkTransferStatus.SCHEDULED.name()), Constants.DIRECTION_CTS);
 
             if(!CommonUtils.listIsNullOrEmpty(shipmentsNte)){
                 shipmentsNte.forEach(nte -> {
@@ -471,6 +471,7 @@ public class NetworkTransferService implements INetworkTransferService {
             throw new DataRetrievalFailureException("Network Transfer is already in Reassigned state.");
         }
         List<NetworkTransfer> networkTransferList = new ArrayList<>();
+        Integer receivingBranch = TenantContext.getCurrentTenant();
         if(Objects.equals(networkTransfer.get().getEntityType(), Constants.CONSOLIDATION) && shipmentGuidReassignBranch != null && !shipmentGuidReassignBranch.isEmpty() &&
                 !Objects.equals(networkTransfer.get().getJobType(), Constants.DIRECTION_CTS)) {
             var consolidation = consolidationDao.findConsolidationByIdWithQuery(networkTransfer.get().getEntityId());
@@ -484,7 +485,7 @@ public class NetworkTransferService implements INetworkTransferService {
         }
         if(reassignRequest.getBranchId() != null) {
             networkTransfer.get().setStatus(NetworkTransferStatus.REASSIGNED);
-            Notification notification = getNotificationEntity(networkTransfer.get().getSourceBranchId(), NotificationRequestType.REASSIGN, reassignRequest.getRemarks(), reassignRequest.getBranchId(), networkTransfer.get().getEntityType(), networkTransfer.get().getEntityId());
+            Notification notification = getNotificationEntity(networkTransfer.get().getSourceBranchId(), NotificationRequestType.REASSIGN, reassignRequest.getRemarks(), reassignRequest.getBranchId(), networkTransfer.get().getEntityType(), networkTransfer.get().getEntityId(), receivingBranch);
             notificationDao.save(notification);
             networkTransferList.add(networkTransfer.get());
         }
@@ -495,7 +496,7 @@ public class NetworkTransferService implements INetworkTransferService {
     }
 
     private void createShipmentNotification(ReassignRequest reassignRequest, Long entityId, Integer reassignBranchId, Integer sourceBranchId, Integer receivingBranchId, List<NetworkTransfer> networkTransferList) {
-        Notification notification = getNotificationEntity(sourceBranchId, NotificationRequestType.REASSIGN, reassignRequest.getRemarks(), reassignBranchId, Constants.SHIPMENT, entityId);
+        Notification notification = getNotificationEntity(sourceBranchId, NotificationRequestType.REASSIGN, reassignRequest.getRemarks(), reassignBranchId, Constants.SHIPMENT, entityId, receivingBranchId);
         var networkTransfer  = networkTransferDao.findByTenantAndEntity(receivingBranchId, entityId, Constants.SHIPMENT);
         if(networkTransfer.isPresent()) {
             networkTransfer.get().setStatus(NetworkTransferStatus.REASSIGNED);
@@ -504,7 +505,7 @@ public class NetworkTransferService implements INetworkTransferService {
         notificationDao.save(notification);
     }
 
-    public Notification getNotificationEntity(Integer sourceBranchId, NotificationRequestType notificationRequestType, String reason, Integer reassignBranchId, String entityType, Long entityId) {
+    public Notification getNotificationEntity(Integer sourceBranchId, NotificationRequestType notificationRequestType, String reason, Integer reassignBranchId, String entityType, Long entityId, Integer reassignFromBranchId) {
         Notification notification = new Notification();
         notification.setEntityId(entityId);
         notification.setEntityType(entityType);
@@ -515,6 +516,7 @@ public class NetworkTransferService implements INetworkTransferService {
         notification.setReason(reason);
         if (Objects.equals(notificationRequestType, NotificationRequestType.REASSIGN)) {
             notification.setReassignedToBranchId(reassignBranchId);
+            notification.setReassignedFromBranchId(reassignFromBranchId);
         }
         notification.setTenantId(sourceBranchId);
         return notification;

@@ -6749,4 +6749,292 @@ import static org.mockito.Mockito.*;
         verify(networkTransferService, times(1)).deleteNetworkTransferEntity(any());
     }
 
+    @Test
+    void createOrUpdateNetworkTransferEntityTest10(){
+        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(shipmentSettingsDetails);
+
+        ShipmentDetails sDetails = ShipmentDetails.builder().receivingBranch(2L).build();
+        sDetails.setId(1L);
+        ConsolidationDetails consoleDetails = jsonTestUtility.getTestConsolidationAir();
+        consoleDetails.setId(1L);
+        consoleDetails.setInterBranchConsole(false);
+        consoleDetails.setReceivingBranch(1L);
+        consoleDetails.setShipmentsList(new HashSet<>(Collections.singletonList(sDetails)));
+
+        ConsolidationDetails oldEntity = jsonTestUtility.getTestConsolidationAir();
+        oldEntity.setId(1L);
+        oldEntity.setReceivingBranch(2L);
+        oldEntity.setInterBranchConsole(true);
+
+        var spyService = Mockito.spy(consolidationService);
+        Map<String, Object> entityPayload = Map.of("abcd", 1);
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().entityId(1L).status(NetworkTransferStatus.ACCEPTED).entityPayload(entityPayload).isInterBranchEntity(true).build();
+        networkTransfer.setTenantId(2);
+        when(networkTransferDao.getInterConsoleNTList(any(), any())).thenReturn(Collections.singletonList(networkTransfer));
+
+        spyService.createOrUpdateNetworkTransferEntity(shipmentSettingsDetails, consoleDetails, oldEntity);
+
+        verify(networkTransferDao, times(1)).getInterConsoleNTList(any(), any());
+    }
+
+    @Test
+    void createOrUpdateNetworkTransferEntityTest11(){
+        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(shipmentSettingsDetails);
+
+        ShipmentDetails sDetails = ShipmentDetails.builder().receivingBranch(2L).build();
+        sDetails.setId(1L);
+        ConsolidationDetails consoleDetails = jsonTestUtility.getTestConsolidationAir();
+        consoleDetails.setId(1L);
+        consoleDetails.setInterBranchConsole(false);
+        consoleDetails.setReceivingBranch(1L);
+        consoleDetails.setShipmentsList(new HashSet<>(Collections.singletonList(sDetails)));
+
+        ConsolidationDetails oldEntity = jsonTestUtility.getTestConsolidationAir();
+        oldEntity.setId(1L);
+        oldEntity.setReceivingBranch(2L);
+        oldEntity.setInterBranchConsole(true);
+
+        var spyService = Mockito.spy(consolidationService);
+        Map<String, Object> entityPayload = Map.of("abcd", 1);
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().entityId(1L).entityPayload(entityPayload).isInterBranchEntity(true).build();
+        networkTransfer.setTenantId(2);
+        when(networkTransferDao.getInterConsoleNTList(any(), any())).thenReturn(Collections.singletonList(networkTransfer));
+
+        spyService.createOrUpdateNetworkTransferEntity(shipmentSettingsDetails, consoleDetails, oldEntity);
+
+        verify(networkTransferDao, times(2)).getInterConsoleNTList(any(), any());
+        verify(networkTransferService, times(1)).deleteNetworkTransferEntity(any());
+    }
+
+    @Test
+    void createOrUpdateNetworkTransferEntityTest12(){
+        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(shipmentSettingsDetails);
+
+        ShipmentDetails sDetails = ShipmentDetails.builder().receivingBranch(2L).build();
+        sDetails.setId(1L);
+        ConsolidationDetails consoleDetails = jsonTestUtility.getTestConsolidationAir();
+        consoleDetails.setId(1L);
+        consoleDetails.setInterBranchConsole(true);
+        consoleDetails.setReceivingBranch(2L);
+        consoleDetails.setShipmentsList(new HashSet<>(Collections.singletonList(sDetails)));
+
+        ConsolidationDetails oldEntity = jsonTestUtility.getTestConsolidationAir();
+        oldEntity.setId(1L);
+        oldEntity.setReceivingBranch(2L);
+        oldEntity.setInterBranchConsole(false);
+
+        var spyService = Mockito.spy(consolidationService);
+        Map<String, Object> entityPayload = Map.of("abcd", 1);
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().entityId(1L).entityPayload(entityPayload).isInterBranchEntity(true).build();
+        networkTransfer.setTenantId(2);
+        NetworkTransfer networkTransfer2 = NetworkTransfer.builder().entityId(1L).jobType(DIRECTION_CTS).status(NetworkTransferStatus.ACCEPTED).isInterBranchEntity(true).build();
+        networkTransfer2.setTenantId(2);
+        when(networkTransferDao.getInterConsoleNTList(any(), any())).thenReturn(List.of(networkTransfer2, networkTransfer));
+
+        spyService.createOrUpdateNetworkTransferEntity(shipmentSettingsDetails, consoleDetails, oldEntity);
+
+        verify(networkTransferDao, times(1)).save(any());
+    }
+
+    @Test
+    void createOrUpdateNetworkTransferEntityTest13(){
+        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        shipmentSettingsDetails.setIsNetworkTransferEntityEnabled(true);
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(shipmentSettingsDetails);
+
+        ShipmentDetails sDetails = ShipmentDetails.builder().receivingBranch(2L).build();
+        sDetails.setId(1L);
+        ConsolidationDetails consoleDetails = jsonTestUtility.getTestConsolidationAir();
+        consoleDetails.setId(1L);
+        consoleDetails.setInterBranchConsole(true);
+        consoleDetails.setReceivingBranch(2L);
+        consoleDetails.setShipmentsList(new HashSet<>(Collections.singletonList(sDetails)));
+
+        ConsolidationDetails oldEntity = jsonTestUtility.getTestConsolidationAir();
+        oldEntity.setId(1L);
+        oldEntity.setReceivingBranch(2L);
+        oldEntity.setInterBranchConsole(false);
+
+        var spyService = Mockito.spy(consolidationService);
+        Map<String, Object> entityPayload = Map.of("abcd", 1);
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().entityId(1L).entityPayload(entityPayload).status(NetworkTransferStatus.ACCEPTED).isInterBranchEntity(true).build();
+        networkTransfer.setTenantId(2);
+        NetworkTransfer networkTransfer2 = NetworkTransfer.builder().entityId(1L).jobType(DIRECTION_CTS).status(NetworkTransferStatus.ACCEPTED).isInterBranchEntity(true).build();
+        networkTransfer2.setTenantId(2);
+        when(networkTransferDao.getInterConsoleNTList(any(), any())).thenReturn(List.of(networkTransfer2, networkTransfer));
+
+        spyService.createOrUpdateNetworkTransferEntity(shipmentSettingsDetails, consoleDetails, oldEntity);
+
+        verify(networkTransferDao, times(1)).getInterConsoleNTList(any(), any());
+    }
+
+    @Test
+    void processInterConsoleAttachShipmentTest() throws RunnerException {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
+        List<Long> shipmentIds = List.of(1L, 2L);
+        ConsoleShipmentMapping consoleShipmentMapping = new ConsoleShipmentMapping();
+        consoleShipmentMapping.setConsolidationId(1L);
+        consoleShipmentMapping.setShipmentId(1L);
+
+        ShipmentDetails newShipmentDetails = new ShipmentDetails();
+        Packing packing = new Packing();
+        packing.setId(1L);
+        newShipmentDetails.setPackingList(List.of(packing));
+        newShipmentDetails.setId(2L);
+        newShipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        newShipmentDetails.setCarrierDetails(new CarrierDetails());
+        newShipmentDetails.setTenantId(UserContext.getUser().TenantId);
+        newShipmentDetails.setGuid(UUID.randomUUID());
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setExportBroker(Parties.builder().orgId("export").build());
+        newShipmentDetails.setAdditionalDetails(additionalDetails);
+        ConsolidationDetails consoleDetails = new ConsolidationDetails();
+        consoleDetails.setId(1L);
+        consoleDetails.setCarrierDetails(new CarrierDetails());
+        consoleDetails.setInterBranchConsole(true);
+        consoleDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        consoleDetails.setShipmentType(Constants.DIRECTION_EXP);
+        consoleDetails.setReceivingBranch(3L);
+        consoleDetails.setReceivingAgent(Parties.builder().orgId("receiving").build());
+
+        ConsoleShipmentMapping consoleShipmentMapping1 = new ConsoleShipmentMapping();
+        consoleShipmentMapping1.setShipmentId(2L);
+        consoleShipmentMapping1.setConsolidationId(1L);
+
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        shipmentDetails1.setId(1L);
+        shipmentDetails1.setCarrierDetails(new CarrierDetails());
+        shipmentDetails1.setTenantId(UserContext.getUser().TenantId);
+        shipmentDetails1.setReceivingBranch(1L);
+        shipmentDetails1.setGuid(UUID.randomUUID());
+
+        when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(newShipmentDetails, shipmentDetails1));
+        when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
+        when(consoleShipmentMappingDao.assignShipments(any(), anyLong(), any(), any(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
+        when(packingDao.saveAll(anyList())).thenReturn(newShipmentDetails.getPackingList());
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consoleDetails));
+        when(consoleShipmentMappingDao.findByConsolidationId(anyLong())).thenReturn(List.of(consoleShipmentMapping, consoleShipmentMapping1));
+        when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(newShipmentDetails, shipmentDetails1)));
+        when(shipmentDao.saveAll(anyList())).thenReturn(List.of(newShipmentDetails, shipmentDetails1));
+        NetworkTransfer networkTransfer = NetworkTransfer.builder().status(NetworkTransferStatus.ACCEPTED).build();
+        when(networkTransferDao.getInterConsoleNTList(anyList(), any())).thenReturn(Collections.singletonList(networkTransfer));
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(Boolean.TRUE);
+        mockShipmentSettings();
+        mockTenantSettings();
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.attachShipments(ShipmentRequestedType.APPROVE, 1L, shipmentIds, true);
+
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+
+    }
+
+    @Test
+    void processInterConsoleAttachShipmentTest2() throws RunnerException {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
+        List<Long> shipmentIds = List.of(1L, 2L);
+        ConsoleShipmentMapping consoleShipmentMapping = new ConsoleShipmentMapping();
+        consoleShipmentMapping.setConsolidationId(1L);
+        consoleShipmentMapping.setShipmentId(1L);
+
+        ShipmentDetails newShipmentDetails = new ShipmentDetails();
+        Packing packing = new Packing();
+        packing.setId(1L);
+        newShipmentDetails.setPackingList(List.of(packing));
+        newShipmentDetails.setId(2L);
+        newShipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        newShipmentDetails.setCarrierDetails(new CarrierDetails());
+        newShipmentDetails.setTenantId(UserContext.getUser().TenantId);
+        newShipmentDetails.setGuid(UUID.randomUUID());
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setExportBroker(Parties.builder().orgId("export").build());
+        newShipmentDetails.setAdditionalDetails(additionalDetails);
+        ConsolidationDetails consoleDetails = new ConsolidationDetails();
+        consoleDetails.setId(1L);
+        consoleDetails.setCarrierDetails(new CarrierDetails());
+        consoleDetails.setInterBranchConsole(true);
+        consoleDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        consoleDetails.setShipmentType(Constants.DIRECTION_EXP);
+        consoleDetails.setReceivingAgent(Parties.builder().orgId("receiving").build());
+
+        ConsoleShipmentMapping consoleShipmentMapping1 = new ConsoleShipmentMapping();
+        consoleShipmentMapping1.setShipmentId(2L);
+        consoleShipmentMapping1.setConsolidationId(1L);
+
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        shipmentDetails1.setId(1L);
+        shipmentDetails1.setCarrierDetails(new CarrierDetails());
+        shipmentDetails1.setTenantId(UserContext.getUser().TenantId);
+        shipmentDetails1.setReceivingBranch(1L);
+        shipmentDetails1.setGuid(UUID.randomUUID());
+
+        when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(newShipmentDetails, shipmentDetails1));
+        when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
+        when(consoleShipmentMappingDao.assignShipments(any(), anyLong(), any(), any(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
+        when(packingDao.saveAll(anyList())).thenReturn(newShipmentDetails.getPackingList());
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consoleDetails));
+        when(consoleShipmentMappingDao.findByConsolidationId(anyLong())).thenReturn(List.of(consoleShipmentMapping, consoleShipmentMapping1));
+        when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(newShipmentDetails, shipmentDetails1)));
+        when(shipmentDao.saveAll(anyList())).thenReturn(List.of(newShipmentDetails, shipmentDetails1));
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(Boolean.TRUE);
+        mockShipmentSettings();
+        mockTenantSettings();
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.attachShipments(ShipmentRequestedType.APPROVE, 1L, shipmentIds, true);
+
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testDetachShipments_Success_InterConsole_Nte2() throws RunnerException {
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+            Runnable argument = invocation.getArgument(0);
+            argument.run();
+            return mockRunnable;
+        });
+        List<Long> shipmentIds = List.of(1L);
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        Packing packing = new Packing();
+        packing.setId(1L);
+        shipmentDetails1.setId(1L);
+        shipmentDetails1.setTransportMode(TRANSPORT_MODE_AIR);
+        shipmentDetails1.setPackingList(List.of(packing));
+        shipmentDetails1.setGuid(UUID.randomUUID());
+        shipmentDetails1.setDirection(Constants.DIRECTION_EXP);
+        shipmentDetails1.setTenantId(1);
+        shipmentDetails1.setReceivingBranch(1L);
+
+        TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder()
+                .enableConsolSplitBillCharge(true).build());
+        mockTenantSettings();
+
+        when(billingServiceAdapter.fetchBillingDueSummary(any())).thenReturn(List.of(createBillingDueSummary()));
+
+        ConsolidationDetails consoleDetails = new ConsolidationDetails();
+        consoleDetails.setId(1L);
+        consoleDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        consoleDetails.setGuid(UUID.randomUUID());
+        consoleDetails.setInterBranchConsole(true);
+        consoleDetails.setShipmentType(DIRECTION_EXP);
+
+        when(consoleShipmentMappingDao.detachShipments(anyLong(), any())).thenReturn(shipmentIds);
+        when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails1));
+        when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails1.getPackingList());
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consoleDetails));
+
+        NetworkTransfer networkTransfer1 = NetworkTransfer.builder().jobType(DIRECTION_CTS).status(NetworkTransferStatus.ACCEPTED).build();
+        NetworkTransfer networkTransfer2 = NetworkTransfer.builder().status(NetworkTransferStatus.SCHEDULED).build();
+        NetworkTransfer networkTransfer3 = NetworkTransfer.builder().status(NetworkTransferStatus.ACCEPTED).build();
+        when(networkTransferDao.getInterConsoleNTList(anyList(), any())).thenReturn(List.of(networkTransfer1, networkTransfer2, networkTransfer3));
+
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(Boolean.TRUE);
+        mockShipmentSettings();
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.detachShipments(1L, shipmentIds, null);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
 }

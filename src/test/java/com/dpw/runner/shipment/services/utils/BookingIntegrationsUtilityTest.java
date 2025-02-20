@@ -787,4 +787,41 @@ class BookingIntegrationsUtilityTest {
         when(masterDataFactory.getMasterDataService().addressList(any())).thenReturn(v1OrgResponse2);
         assertThrows(DataRetrievalFailureException.class, () -> bookingIntegrationsUtility.transformOrgAndAddressPayloadToGivenParties(requestMap));
     }
+
+    @Test
+    void updateBookingInPlatformEmptyContainer_fromShipment_throwsException() throws RunnerException {
+        var shipment = jsonTestUtility.getTestShipment();
+        shipment.setBookingType(CustomerBookingConstants.ONLINE);
+        shipment.setBookingReference("12345");
+        bookingIntegrationsUtility.updateBookingInPlatformEmptyContainer(shipment);
+        verify(platformServiceAdapter, times((1))).updateAtPlaform(any());
+    }
+
+    @Test
+    void updateBookingInPlatformEmptyContainer_fromShipment() throws RunnerException {
+        var shipment = jsonTestUtility.getTestShipment();
+        shipment.setBookingType(CustomerBookingConstants.ONLINE);
+        shipment.setBookingReference(null);
+        bookingIntegrationsUtility.updateBookingInPlatformEmptyContainer(shipment);
+        verify(platformServiceAdapter, times((0))).updateAtPlaform(any());
+    }
+
+    @Test
+    void updateBookingInPlatformEmptyContainer2_fromShipment() throws RunnerException {
+        var shipment = jsonTestUtility.getTestShipment();
+        shipment.setBookingType(CustomerBookingConstants.RUNNER);
+        shipment.setBookingReference(null);
+        bookingIntegrationsUtility.updateBookingInPlatformEmptyContainer(shipment);
+        verify(platformServiceAdapter, times((0))).updateAtPlaform(any());
+    }
+
+    @Test
+    void updateBookingInPlatformEmptyContainer_fromShipment_InvalidCase() throws RunnerException {
+        var shipment = jsonTestUtility.getTestShipment();
+        shipment.setBookingType(CustomerBookingConstants.ONLINE);
+        shipment.setBookingReference("12345");
+        shipment.setTransportMode(Constants.TRANSPORT_MODE_ROA);
+        bookingIntegrationsUtility.updateBookingInPlatformEmptyContainer(shipment);
+        verify(platformServiceAdapter, times((0))).updateAtPlaform(any());
+    }
 }
