@@ -207,8 +207,8 @@ public class ShipmentSettingsController {
 
     @ApiResponses(value = { @ApiResponse(code = 200, response = MyResponseClass.class, message = ShipmentSettingsConstants.SHIPMENT_SETTINGS_RETRIEVE_BY_ID_SUCCESSFUL) })
     @GetMapping(ApiConstants.API_RETRIEVE_BY_TENANT_ID)
-    public ResponseEntity<IRunnerResponse> retrieveByTenantId(@RequestParam Optional<Long> tenantId) {
-        CommonGetRequest request = CommonGetRequest.builder().id(tenantId.get()).build();
+    public ResponseEntity<IRunnerResponse> retrieveByTenantId(@RequestParam Optional<Long> tenantId, @RequestParam(required = false, defaultValue = "false") Boolean sectionRule) {
+        CommonGetRequest request = CommonGetRequest.builder().id(tenantId.get()).sectionRule(sectionRule).build();
         String responseMsg;
         try {
             return shipmentSettingsService.retrieveByTenantId(CommonRequestModel.buildRequest(request));
