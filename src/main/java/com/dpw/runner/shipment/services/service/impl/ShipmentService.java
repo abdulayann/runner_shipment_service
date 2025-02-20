@@ -5746,12 +5746,6 @@ public class ShipmentService implements IShipmentService {
             shipment.getAdditionalDetails().setExportBrokerCountry(commonUtils.getCountryFromUnLocCode(consolidation.getCarrierDetails().getOriginLocCode()));
         }
 
-        if (shipment.getReceivingBranch() == null && Objects.equals(shipment.getDirection(), DIRECTION_EXP) &&
-                shipment.getAdditionalDetails() != null && CommonUtils.checkAddressNotNull(shipment.getAdditionalDetails().getImportBroker())) {
-            Long receivingBranchId = commonUtils.getReceivingBranch(shipment.getAdditionalDetails().getImportBroker().getOrgId(), shipment.getAdditionalDetails().getImportBroker().getAddressId());
-            shipment.setReceivingBranch(receivingBranchId);
-        }
-
         //Generate HBL
         if(Constants.TRANSPORT_MODE_SEA.equals(shipment.getTransportMode()) && Constants.DIRECTION_EXP.equals(shipment.getDirection()))
             shipment.setHouseBill(generateCustomHouseBL(null));
