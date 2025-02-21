@@ -3575,7 +3575,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     private boolean isEventChanged(Object newValue, Object oldValue, Boolean isNewShipment) {
-        return Boolean.TRUE.equals(isNewShipment) || !Objects.equals(newValue, oldValue);
+        return Boolean.TRUE.equals(isNewShipment) ? ObjectUtils.isNotEmpty(newValue) : !Objects.equals(newValue, oldValue);
     }
 
     private boolean isEventBooleanChanged(Boolean newValue, Boolean oldValue, Boolean isNewShipment) {
@@ -5709,12 +5709,6 @@ public class ShipmentService implements IShipmentService {
         }
         if(!commonUtils.checkIfPartyExists(shipment.getAdditionalDetails().getExportBroker())) {
             shipment.getAdditionalDetails().setExportBrokerCountry(commonUtils.getCountryFromUnLocCode(consolidation.getCarrierDetails().getOriginLocCode()));
-        }
-
-        if (shipment.getReceivingBranch() == null && Objects.equals(shipment.getDirection(), DIRECTION_EXP) &&
-                shipment.getAdditionalDetails() != null && CommonUtils.checkAddressNotNull(shipment.getAdditionalDetails().getImportBroker())) {
-            Long receivingBranchId = commonUtils.getReceivingBranch(shipment.getAdditionalDetails().getImportBroker().getOrgId(), shipment.getAdditionalDetails().getImportBroker().getAddressId());
-            shipment.setReceivingBranch(receivingBranchId);
         }
 
         //Generate HBL
