@@ -300,19 +300,6 @@ public class HblService implements IHblService {
         try {
             hblSync.sync(hbl, UUID.randomUUID().toString());
 
-            ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
-            if(Boolean.TRUE.equals(shipmentSettingsDetails.getIsAutomaticTransferEnabled())){
-                Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(request.getShipmentId());
-                if(shipmentDetails.isPresent() && !CommonUtils.setIsNullOrEmpty(shipmentDetails.get().getConsolidationList())){
-                    for(ConsolidationDetails consolidationDetails: shipmentDetails.get().getConsolidationList()){
-                        if (consolidationDetails!=null  &&
-                                (Objects.equals(Constants.TRANSPORT_MODE_SEA, consolidationDetails.getTransportMode()) &&
-                                        !Objects.equals(Constants.CONSOLIDATION_TYPE_DRT, consolidationDetails.getConsolidationType())))
-                            consolidationService.triggerAutomaticTransfer(consolidationDetails, null, true);
-                    }
-                }
-            }
-
         }
         catch (Exception e) {
             log.error(SyncingConstants.ERROR_PERFORMING_HBL_SYNC, e);

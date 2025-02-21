@@ -380,7 +380,6 @@ class HblServiceTest extends CommonMocks {
         when(v1Service.retrieveCompanySettings()).thenReturn(new CompanySettingsResponse());
         when(hblDao.save(any())).thenReturn(mockHbl);
         when(jsonHelper.convertValue(any(), eq(HblResponse.class))).thenReturn(objectMapper.convertValue(mockHbl.getHblData() , HblResponse.class));
-        mockShipmentSettings();
 
         // Test
         ResponseEntity<IRunnerResponse> httpResponse = hblService.generateHBL(commonRequestModel);
@@ -408,8 +407,6 @@ class HblServiceTest extends CommonMocks {
         when(v1Service.retrieveCompanySettings()).thenReturn(new CompanySettingsResponse());
         when(hblDao.save(any())).thenReturn(mockHbl);
         when(jsonHelper.convertValue(any(), eq(HblResponse.class))).thenReturn(objectMapper.convertValue(mockHbl.getHblData() , HblResponse.class));
-        mockShipmentSettings();
-        doNothing().when(consolidationService).triggerAutomaticTransfer(any(), any(), anyBoolean());
 
         // Test
         ResponseEntity<IRunnerResponse> httpResponse = hblService.generateHBL(commonRequestModel);
@@ -438,7 +435,6 @@ class HblServiceTest extends CommonMocks {
         when(v1Service.retrieveCompanySettings()).thenReturn(new CompanySettingsResponse());
         when(hblDao.save(any())).thenReturn(mockHbl);
         when(jsonHelper.convertValue(any(), eq(HblResponse.class))).thenReturn(objectMapper.convertValue(mockHbl.getHblData() , HblResponse.class));
-        mockShipmentSettings();
 
         // Test
         ResponseEntity<IRunnerResponse> httpResponse = hblService.generateHBL(commonRequestModel);
@@ -467,7 +463,6 @@ class HblServiceTest extends CommonMocks {
         when(v1Service.retrieveCompanySettings()).thenReturn(new CompanySettingsResponse());
         when(hblDao.save(any())).thenReturn(mockHbl);
         when(jsonHelper.convertValue(any(), eq(HblResponse.class))).thenReturn(objectMapper.convertValue(mockHbl.getHblData() , HblResponse.class));
-        mockShipmentSettings();
 
         // Test
         ResponseEntity<IRunnerResponse> httpResponse = hblService.generateHBL(commonRequestModel);
@@ -496,7 +491,6 @@ class HblServiceTest extends CommonMocks {
         when(v1Service.retrieveCompanySettings()).thenReturn(new CompanySettingsResponse());
         when(hblDao.save(any())).thenReturn(mockHbl);
         when(jsonHelper.convertValue(any(), eq(HblResponse.class))).thenReturn(objectMapper.convertValue(mockHbl.getHblData() , HblResponse.class));
-        mockShipmentSettings();
 
         // Test
         ResponseEntity<IRunnerResponse> httpResponse = hblService.generateHBL(commonRequestModel);

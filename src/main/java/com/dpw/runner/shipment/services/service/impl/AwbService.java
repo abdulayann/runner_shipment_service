@@ -53,7 +53,6 @@ import com.dpw.runner.shipment.services.validator.enums.Operators;
 import com.google.common.base.Strings;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.ObjectUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -207,24 +206,6 @@ public class AwbService implements IAwbService {
                 callV1Sync(awb, SaveStatus.CREATE);
             } catch (Exception e) {
                 log.error(SyncingConstants.ERROR_PERFORMING_AWB_SYNC, e);
-            }
-
-            ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
-            
-            if(Boolean.TRUE.equals(shipmentSettingsDetails.getIsAutomaticTransferEnabled())){
-                ShipmentDetails shipmentDetails = shipmentDao.findById(request.getShipmentId()).get();
-                if (Objects.equals(Constants.SHIPMENT_TYPE_DRT, shipmentDetails.getJobType())
-                        && Objects.equals(Constants.TRANSPORT_MODE_AIR, shipmentDetails.getTransportMode()))
-                    shipmentService.triggerAutomaticTransfer(shipmentDetails, null, true);
-
-                if(ObjectUtils.isNotEmpty(shipmentDetails.getConsolidationList())){
-                    for(ConsolidationDetails consolidationDetails: shipmentDetails.getConsolidationList()){
-                        if (consolidationDetails!=null &&
-                                (Objects.equals(Constants.TRANSPORT_MODE_AIR, consolidationDetails.getTransportMode()) &&
-                                        Objects.equals(Constants.SHIPMENT_TYPE_STD, shipmentDetails.getJobType())))
-                            consolidationService.triggerAutomaticTransfer(consolidationDetails, null, true);
-                    }
-                }
             }
 
             // audit logs
@@ -566,13 +547,6 @@ public class AwbService implements IAwbService {
 
             // map mawb and hawb affter suuccessful save
             linkHawbMawb(awb, awbList, consolidationDetails.getInterBranchConsole());
-
-            ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
-            
-            if(Boolean.TRUE.equals(shipmentSettingsDetails.getIsAutomaticTransferEnabled()) &&
-                    Objects.equals(Constants.TRANSPORT_MODE_AIR, consolidationDetails.getTransportMode()) &&
-                        Objects.equals(Constants.SHIPMENT_TYPE_STD, consolidationDetails.getConsolidationType()))
-                    consolidationService.triggerAutomaticTransfer(consolidationDetails, null, true);
 
             log.info("MAWB created successfully for Id {} with Request Id {}", awb.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {

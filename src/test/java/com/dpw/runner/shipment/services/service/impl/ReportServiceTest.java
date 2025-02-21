@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.DocumentService.DocumentService;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.DocPages;
@@ -20,8 +21,10 @@ import com.dpw.runner.shipment.services.ReportingService.Reports.ShipmentTagsFor
 import com.dpw.runner.shipment.services.ReportingService.Reports.TransportOrderReport;
 import com.dpw.runner.shipment.services.ReportingService.Reports.*;
 import com.dpw.runner.shipment.services.ReportingService.ReportsFactory;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
@@ -49,6 +52,7 @@ import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.itextpdf.text.DocumentException;
 import org.apache.commons.lang3.tuple.Pair;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -77,7 +81,7 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
-class ReportServiceTest {
+class ReportServiceTest extends CommonMocks {
 
     @InjectMocks
     private ReportService reportService;
@@ -187,7 +191,13 @@ class ReportServiceTest {
     private HblReport hblReport;
 
     @Mock
+    private HawbReport hawbreport;
+
+    @Mock
     private CSDReport csdReport;
+
+    @Mock
+    private ConsolidationService consolidationService;
 
     @Mock
     private DependentServiceHelper dependentServiceHelper;
@@ -215,6 +225,12 @@ class ReportServiceTest {
                 V1TenantSettingsResponse.builder().P100Branch(false).build());
         dataRetrived = new HashMap<>();
         reportService.executorService = executorService;
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
+    }
+
+    @AfterEach
+    void tearDown() {
+        reportService.executorService.shutdown();
     }
 
 
@@ -238,7 +254,7 @@ class ReportServiceTest {
         when(jsonHelper.convertToJson(any())).thenReturn("");
         when(shipmentDao.findById(any())).thenReturn(Optional.of(new ShipmentDetails()));
         // Mockito.doNothing().when(eventDao).generateEvents(any());
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -344,7 +360,7 @@ class ReportServiceTest {
         when(reportsFactory.getReport(any())).thenReturn(seawayBillReport);
         when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(ResponseEntity.ok(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))));
         when(jsonHelper.convertToJson(any())).thenReturn("");
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -369,7 +385,7 @@ class ReportServiceTest {
         when(reportsFactory.getReport(any())).thenReturn(seawayBillReport);
         when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(ResponseEntity.ok(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))));
         when(jsonHelper.convertToJson(any())).thenReturn("");
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -394,7 +410,7 @@ class ReportServiceTest {
         when(reportsFactory.getReport(any())).thenReturn(seawayBillReport);
         when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(ResponseEntity.ok(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))));
         when(jsonHelper.convertToJson(any())).thenReturn("");
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -419,7 +435,7 @@ class ReportServiceTest {
         when(reportsFactory.getReport(any())).thenReturn(seawayBillReport);
         when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(ResponseEntity.ok(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))));
         when(jsonHelper.convertToJson(any())).thenReturn("");
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -455,6 +471,15 @@ class ReportServiceTest {
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
 
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+            // Get the argument passed to the withMdc method
+            Runnable argument = invocation.getArgument(0);
+            // Call the run method of the argument
+            argument.run();
+            // Add any additional behavior or return value as needed
+            return mockRunnable;
+        });
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -489,7 +514,15 @@ class ReportServiceTest {
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         dataRetrived.put(ReportConstants.SPECIAL_HANDLING_CODE, "EAW");
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
-
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+            // Get the argument passed to the withMdc method
+            Runnable argument = invocation.getArgument(0);
+            // Call the run method of the argument
+            argument.run();
+            // Add any additional behavior or return value as needed
+            return mockRunnable;
+        });
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -523,7 +556,15 @@ class ReportServiceTest {
         Map<String, Object> dataRetrived = new HashMap<>();
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
-
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+            // Get the argument passed to the withMdc method
+            Runnable argument = invocation.getArgument(0);
+            // Call the run method of the argument
+            argument.run();
+            // Add any additional behavior or return value as needed
+            return mockRunnable;
+        });
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -558,6 +599,15 @@ class ReportServiceTest {
         Map<String, Object> dataRetrived = new HashMap<>();
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+            // Get the argument passed to the withMdc method
+            Runnable argument = invocation.getArgument(0);
+            // Call the run method of the argument
+            argument.run();
+            // Add any additional behavior or return value as needed
+            return mockRunnable;
+        });
 
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
@@ -595,6 +645,17 @@ class ReportServiceTest {
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.AIR);
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         Mockito.doNothing().when(shipmentService).updateDateAndStatus(any(), any(), any());
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isAutomaticTransferEnabled(true).build());
+        mockShipmentSettings();
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+            // Get the argument passed to the withMdc method
+            Runnable argument = invocation.getArgument(0);
+            // Call the run method of the argument
+            argument.run();
+            // Add any additional behavior or return value as needed
+            return mockRunnable;
+        });
 
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
@@ -632,7 +693,17 @@ class ReportServiceTest {
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.AIR);
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         Mockito.doNothing().when(shipmentService).updateDateAndStatus(any(), any(), any());
-
+        Runnable mockRunnable = mock(Runnable.class);
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isAutomaticTransferEnabled(true).build());
+        mockShipmentSettings();
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+            // Get the argument passed to the withMdc method
+            Runnable argument = invocation.getArgument(0);
+            // Call the run method of the argument
+            argument.run();
+            // Add any additional behavior or return value as needed
+            return mockRunnable;
+        });
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -667,6 +738,16 @@ class ReportServiceTest {
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.AIR);
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
+
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+            // Get the argument passed to the withMdc method
+            Runnable argument = invocation.getArgument(0);
+            // Call the run method of the argument
+            argument.run();
+            // Add any additional behavior or return value as needed
+            return mockRunnable;
+        });
 
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
@@ -778,8 +859,8 @@ class ReportServiceTest {
             // Add any additional behavior or return value as needed
             return mockRunnable;
         });
-
-
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isAutomaticTransferEnabled(true).build());
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -854,7 +935,8 @@ class ReportServiceTest {
             return mockRunnable;
         });
 
-
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isAutomaticTransferEnabled(true).build());
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -927,8 +1009,8 @@ class ReportServiceTest {
             // Add any additional behavior or return value as needed
             return mockRunnable;
         });
-
-
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isAutomaticTransferEnabled(true).build());
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -976,7 +1058,7 @@ class ReportServiceTest {
         hbl.getHblData().setOriginalSeq(1);
         hbl.getHblData().setVersion(1);
         when(hblDao.findByShipmentId(Long.parseLong(reportRequest.getReportId()))).thenReturn(Arrays.asList(hbl));
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -1016,7 +1098,7 @@ class ReportServiceTest {
         shipmentDetails.setAdditionalDetails(new AdditionalDetails());
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
 //        Mockito.doNothing().when(eventService).saveEvent(any());
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -1055,7 +1137,7 @@ class ReportServiceTest {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         shipmentDetails.setAdditionalDetails(new AdditionalDetails());
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -1095,7 +1177,7 @@ class ReportServiceTest {
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         shipmentDetails.setAdditionalDetails(new AdditionalDetails());
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -1126,7 +1208,7 @@ class ReportServiceTest {
         shipmentDetails.setId(4415L);
         consolidationDetails.setShipmentsList(new HashSet<>(Arrays.asList(shipmentDetails)));
         when(consolidationDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -1160,7 +1242,7 @@ class ReportServiceTest {
         shipmentDetails.setCarrierDetails(carrierDetails);
         consolidationDetails.setShipmentsList(new HashSet<>(Arrays.asList(shipmentDetails)));
         when(consolidationDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -1195,7 +1277,7 @@ class ReportServiceTest {
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.AIR);
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -1230,7 +1312,7 @@ class ReportServiceTest {
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.SEA);
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -1264,7 +1346,7 @@ class ReportServiceTest {
         Map<String, Object> dataRetrived = new HashMap<>();
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.SEA);
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -1299,7 +1381,7 @@ class ReportServiceTest {
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.AIR);
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -1334,7 +1416,7 @@ class ReportServiceTest {
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.AIR);
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -1369,7 +1451,7 @@ class ReportServiceTest {
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.SEA);
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -1404,7 +1486,7 @@ class ReportServiceTest {
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.AIR);
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -1438,6 +1520,7 @@ class ReportServiceTest {
         Map<String, Object> dataRetrived = new HashMap<>();
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.SEA);
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -1472,7 +1555,7 @@ class ReportServiceTest {
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.AIR);
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -1507,7 +1590,7 @@ class ReportServiceTest {
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.SEA);
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -1542,7 +1625,7 @@ class ReportServiceTest {
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.AIR);
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -1577,7 +1660,7 @@ class ReportServiceTest {
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.SEA);
         Mockito.doNothing().when(eventService).saveEvent(any());
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -1612,7 +1695,7 @@ class ReportServiceTest {
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.AIR);
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -1647,7 +1730,7 @@ class ReportServiceTest {
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.AIR);
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -1681,7 +1764,7 @@ class ReportServiceTest {
         Map<String, Object> dataRetrived = new HashMap<>();
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.SEA);
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -1716,7 +1799,7 @@ class ReportServiceTest {
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.AIR);
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -1750,7 +1833,7 @@ class ReportServiceTest {
         Map<String, Object> dataRetrived = new HashMap<>();
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.SEA);
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -1785,7 +1868,7 @@ class ReportServiceTest {
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.AIR);
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -1819,7 +1902,7 @@ class ReportServiceTest {
         Map<String, Object> dataRetrived = new HashMap<>();
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.SEA);
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         verify(eventService, times(0)).saveEvent(any());
@@ -1855,7 +1938,7 @@ class ReportServiceTest {
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.AIR);
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -1891,7 +1974,7 @@ class ReportServiceTest {
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.AIR);
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -1926,7 +2009,7 @@ class ReportServiceTest {
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.AIR);
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -1961,7 +2044,7 @@ class ReportServiceTest {
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.AIR);
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -1996,7 +2079,7 @@ class ReportServiceTest {
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.SEA);
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -2031,7 +2114,7 @@ class ReportServiceTest {
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.TRANS_AIR);
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -2066,7 +2149,7 @@ class ReportServiceTest {
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.SEA);
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -2101,7 +2184,7 @@ class ReportServiceTest {
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.TRANS_AIR);
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -2135,7 +2218,7 @@ class ReportServiceTest {
         Map<String, Object> dataRetrived = new HashMap<>();
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.TRANS_AIR);
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -2175,7 +2258,7 @@ class ReportServiceTest {
         mockAwb.setPrintType(PrintType.ORIGINAL_PRINTED);
 
         when(awbDao.findByShipmentId(anyLong())).thenReturn(List.of(mockAwb));
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -2284,7 +2367,7 @@ class ReportServiceTest {
         when(awbDao.findByConsolidationId(anyLong())).thenReturn(List.of(mockMawb));
         when(awbDao.getLinkedAwbFromMawb(any())).thenReturn(Arrays.asList(mockHawb, mockHawb1));
 
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -2320,7 +2403,7 @@ class ReportServiceTest {
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.SEA);
         dataRetrived.put(ReportConstants.OBJECT_TYPE, ReportConstants.SEA);
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -2355,7 +2438,7 @@ class ReportServiceTest {
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.TRANS_AIR);
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -2390,7 +2473,7 @@ class ReportServiceTest {
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.SEA);
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -2425,7 +2508,7 @@ class ReportServiceTest {
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.TRANS_AIR);
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -2460,7 +2543,7 @@ class ReportServiceTest {
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.TRANS_AIR);
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -2495,7 +2578,7 @@ class ReportServiceTest {
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.SEA);
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -2530,7 +2613,7 @@ class ReportServiceTest {
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.TRANS_AIR);
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -2565,7 +2648,7 @@ class ReportServiceTest {
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.TRANS_AIR);
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -2600,7 +2683,7 @@ class ReportServiceTest {
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.TRANS_AIR);
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -2635,7 +2718,7 @@ class ReportServiceTest {
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.TRANS_AIR);
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -2669,7 +2752,7 @@ class ReportServiceTest {
         Map<String, Object> dataRetrived = new HashMap<>();
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -2745,7 +2828,7 @@ class ReportServiceTest {
         Map<String, Object> dataRetrived = new HashMap<>();
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.SEA);
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -2783,7 +2866,7 @@ class ReportServiceTest {
         Map<String, Object> dataRetrived = new HashMap<>();
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.SEA);
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -2819,14 +2902,14 @@ class ReportServiceTest {
         Map<String, Object> dataRetrived = new HashMap<>();
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123334");
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.ROAD);
-
+        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
 
     @Test
-    void getHblReportocumentData()
+    void getHblReportDocumentData()
         throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setDeliveryOrder("122456789");
@@ -2855,7 +2938,17 @@ class ReportServiceTest {
         Map<String, Object> dataRetrived = new HashMap<>();
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123334");
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.ROAD);
-
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isAutomaticTransferEnabled(true).build());
+        mockShipmentSettings();
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+            // Get the argument passed to the withMdc method
+            Runnable argument = invocation.getArgument(0);
+            // Call the run method of the argument
+            argument.run();
+            // Add any additional behavior or return value as needed
+            return mockRunnable;
+        });
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -3279,6 +3372,191 @@ class ReportServiceTest {
         byte[] pdfByte_Content = new byte[1];
         reportService.addDocumentToDocumentMaster(reportRequest, pdfByte_Content);
         assertNotNull(shipmentDetails);
+    }
+
+    @Test
+    void triggerAutomaticTransferWithHblReport_Success(){
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isAutomaticTransferEnabled(true).build());
+        mockShipmentSettings();
+        reportRequest.setPrintType("ORIGINAL");
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().transportMode(Constants.TRANSPORT_MODE_SEA).build();
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().consolidationList(Set.of(consolidationDetails)).build();
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        doNothing().when(consolidationService).triggerAutomaticTransfer(any(), any(), any());
+        reportService.triggerAutomaticTransfer(hblReport, reportRequest);
+        verify(shipmentDao, times(1)).findById(any());
+        verify(consolidationService, times(1)).triggerAutomaticTransfer(any(), any(), any());
+    }
+
+    @Test
+    void triggerAutomaticTransferWithHblReport_InvalidCase(){
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isAutomaticTransferEnabled(true).build());
+        mockShipmentSettings();
+        reportRequest.setPrintType("ORIGINAL");
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().transportMode(Constants.TRANSPORT_MODE_SEA).consolidationType(Constants.CONSOLIDATION_TYPE_DRT).build();
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().consolidationList(Set.of(consolidationDetails)).build();
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        reportService.triggerAutomaticTransfer(hblReport, reportRequest);
+        verify(shipmentDao, times(1)).findById(any());
+        verify(consolidationService, times(0)).triggerAutomaticTransfer(any(), any(), any());
+    }
+
+    @Test
+    void triggerAutomaticTransferWithHblReport_InvalidCase2(){
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isAutomaticTransferEnabled(true).build());
+        mockShipmentSettings();
+        reportRequest.setPrintType("ORIGINAL");
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().transportMode(Constants.TRANSPORT_MODE_AIR).consolidationType(Constants.CONSOLIDATION_TYPE_DRT).build();
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().consolidationList(Set.of(consolidationDetails)).build();
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        reportService.triggerAutomaticTransfer(hblReport, reportRequest);
+        verify(shipmentDao, times(1)).findById(any());
+        verify(consolidationService, times(0)).triggerAutomaticTransfer(any(), any(), any());
+    }
+
+    @Test
+    void triggerAutomaticTransferWithHblReport_InvalidCase_EmptyConsole(){
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isAutomaticTransferEnabled(true).build());
+        mockShipmentSettings();
+        reportRequest.setPrintType("ORIGINAL");
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        reportService.triggerAutomaticTransfer(hblReport, reportRequest);
+        verify(shipmentDao, times(1)).findById(any());
+        verify(consolidationService, times(0)).triggerAutomaticTransfer(any(), any(), any());
+    }
+
+    @Test
+    void triggerAutomaticTransferWithHAWBReport_Success(){
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isAutomaticTransferEnabled(true).build());
+        mockShipmentSettings();
+        reportRequest.setPrintType("ORIGINAL");
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().transportMode(Constants.TRANSPORT_MODE_AIR).consolidationType(Constants.SHIPMENT_TYPE_STD).build();
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().jobType(Constants.SHIPMENT_TYPE_STD).consolidationList(Set.of(consolidationDetails)).build();
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        doNothing().when(consolidationService).triggerAutomaticTransfer(any(), any(), any());
+        reportService.triggerAutomaticTransfer(hawbreport, reportRequest);
+        verify(shipmentDao, times(1)).findById(any());
+        verify(consolidationService, times(1)).triggerAutomaticTransfer(any(), any(), any());
+    }
+
+    @Test
+    void triggerAutomaticTransferWithHAWBReport_InvalidCase(){
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isAutomaticTransferEnabled(true).build());
+        mockShipmentSettings();
+        reportRequest.setPrintType("ORIGINAL");
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().transportMode(Constants.TRANSPORT_MODE_AIR).consolidationType(Constants.CONSOLIDATION_TYPE_DRT).build();
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().consolidationList(Set.of(consolidationDetails)).build();
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        reportService.triggerAutomaticTransfer(hawbreport, reportRequest);
+        verify(shipmentDao, times(1)).findById(any());
+        verify(consolidationService, times(0)).triggerAutomaticTransfer(any(), any(), any());
+    }
+
+    @Test
+    void triggerAutomaticTransferWithHAWBReport_InvalidCase2(){
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isAutomaticTransferEnabled(true).build());
+        mockShipmentSettings();
+        reportRequest.setPrintType("ORIGINAL");
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().transportMode(Constants.TRANSPORT_MODE_SEA).consolidationType(Constants.CONSOLIDATION_TYPE_DRT).build();
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().consolidationList(Set.of(consolidationDetails)).build();
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        reportService.triggerAutomaticTransfer(hawbreport, reportRequest);
+        verify(shipmentDao, times(1)).findById(any());
+        verify(consolidationService, times(0)).triggerAutomaticTransfer(any(), any(), any());
+    }
+
+    @Test
+    void triggerAutomaticTransferWithHAWBReport_InvalidCase_EmptyConsole(){
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isAutomaticTransferEnabled(true).build());
+        mockShipmentSettings();
+        reportRequest.setPrintType("ORIGINAL");
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        reportService.triggerAutomaticTransfer(hawbreport, reportRequest);
+        verify(shipmentDao, times(1)).findById(any());
+        verify(consolidationService, times(0)).triggerAutomaticTransfer(any(), any(), any());
+    }
+
+    @Test
+    void triggerAutomaticTransferWithMAWB_ConsolidationReport_Success(){
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isAutomaticTransferEnabled(true).build());
+        mockShipmentSettings();
+        reportRequest.setPrintType("ORIGINAL");
+        reportRequest.setFromShipment(false);
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().transportMode(Constants.TRANSPORT_MODE_AIR).consolidationType(Constants.SHIPMENT_TYPE_STD).build();
+        when(consolidationDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
+        doNothing().when(consolidationService).triggerAutomaticTransfer(any(), any(), any());
+        reportService.triggerAutomaticTransfer(mawbReport, reportRequest);
+        verify(consolidationDao, times(1)).findById(any());
+        verify(consolidationService, times(1)).triggerAutomaticTransfer(any(), any(), any());
+    }
+
+    @Test
+    void triggerAutomaticTransferWithMAWB_ConsolidationReport_InvalidCase(){
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isAutomaticTransferEnabled(true).build());
+        mockShipmentSettings();
+        reportRequest.setPrintType("ORIGINAL");
+        reportRequest.setFromShipment(false);
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().transportMode(Constants.TRANSPORT_MODE_AIR).consolidationType(Constants.CONSOLIDATION_TYPE_DRT).build();
+        when(consolidationDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
+        reportService.triggerAutomaticTransfer(mawbReport, reportRequest);
+        verify(consolidationDao, times(1)).findById(any());
+        verify(consolidationService, times(0)).triggerAutomaticTransfer(any(), any(), any());
+    }
+
+    @Test
+    void triggerAutomaticTransferWithMAWB_ConsolidationReport_InvalidCase2(){
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isAutomaticTransferEnabled(true).build());
+        mockShipmentSettings();
+        reportRequest.setPrintType("ORIGINAL");
+        reportRequest.setFromShipment(false);
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().transportMode(Constants.TRANSPORT_MODE_SEA).consolidationType(Constants.SHIPMENT_TYPE_STD).build();
+        when(consolidationDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
+        reportService.triggerAutomaticTransfer(mawbReport, reportRequest);
+        verify(consolidationDao, times(1)).findById(any());
+        verify(consolidationService, times(0)).triggerAutomaticTransfer(any(), any(), any());
+    }
+
+    @Test
+    void triggerAutomaticTransferWithMAWB_ShipmentReport_Success(){
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isAutomaticTransferEnabled(true).build());
+        mockShipmentSettings();
+        reportRequest.setPrintType("ORIGINAL");
+        reportRequest.setFromShipment(true);
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().jobType(Constants.SHIPMENT_TYPE_DRT).transportMode(Constants.TRANSPORT_MODE_AIR).build();
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        doNothing().when(shipmentService).triggerAutomaticTransfer(any(), any(), any());
+        reportService.triggerAutomaticTransfer(mawbReport, reportRequest);
+        verify(shipmentDao, times(1)).findById(any());
+        verify(shipmentService, times(1)).triggerAutomaticTransfer(any(), any(), any());
+    }
+
+    @Test
+    void triggerAutomaticTransferWithMAWB_ShipmentReport_InvalidCase(){
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isAutomaticTransferEnabled(true).build());
+        mockShipmentSettings();
+        reportRequest.setPrintType("ORIGINAL");
+        reportRequest.setFromShipment(true);
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().jobType(Constants.SHIPMENT_TYPE_STD).transportMode(Constants.TRANSPORT_MODE_AIR).build();
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        reportService.triggerAutomaticTransfer(mawbReport, reportRequest);
+        verify(shipmentDao, times(1)).findById(any());
+        verify(consolidationService, times(0)).triggerAutomaticTransfer(any(), any(), any());
+    }
+
+    @Test
+    void triggerAutomaticTransferWithMAWB_ShipmentReport_InvalidCase2(){
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isAutomaticTransferEnabled(true).build());
+        mockShipmentSettings();
+        reportRequest.setPrintType("ORIGINAL");
+        reportRequest.setFromShipment(true);
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().jobType(Constants.SHIPMENT_TYPE_DRT).transportMode(Constants.TRANSPORT_MODE_SEA).build();
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        reportService.triggerAutomaticTransfer(hawbreport, reportRequest);
+        verify(shipmentDao, times(1)).findById(any());
+        verify(consolidationService, times(0)).triggerAutomaticTransfer(any(), any(), any());
     }
 
 }
