@@ -330,4 +330,6 @@ public class ShipmentSettingsSyncRequest implements IRunnerRequest {
     private Boolean hideManifest;
     @JsonProperty("FcrDocument")
     private String fcrDocument;
+    @JsonProperty("CountryAirCargoSecurity")
+    private Boolean countryAirCargoSecurity;
 }

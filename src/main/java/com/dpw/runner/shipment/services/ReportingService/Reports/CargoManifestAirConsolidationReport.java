@@ -12,6 +12,7 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryRespon
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentMeasurementDetailsDto;
 import com.dpw.runner.shipment.services.entity.Awb;
 import com.dpw.runner.shipment.services.entity.Packing;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
@@ -60,7 +61,13 @@ public class CargoManifestAirConsolidationReport extends IReport{
     IDocumentModel getDocumentModel(Long id) throws RunnerException {
         CargoManifestAirConsolidationModel cargoManifestAirConsolidationModel = new CargoManifestAirConsolidationModel();
         cargoManifestAirConsolidationModel.setConsolidationModel(getConsolidation(id));
-        validateAirDGCheckConsolidations(cargoManifestAirConsolidationModel.getConsolidationModel());
+        ShipmentSettingsDetails shipmentSettingsDetails = getCurrentShipmentSettings();
+        Boolean countryAirCargoSecurity = shipmentSettingsDetails.getCountryAirCargoSecurity();
+        if (Boolean.TRUE.equals(countryAirCargoSecurity)) {
+            validateAirDGAndAirSecurityCheckConsolidations(cargoManifestAirConsolidationModel.getConsolidationModel());
+        } else {
+            validateAirDGCheckConsolidations(cargoManifestAirConsolidationModel.getConsolidationModel());
+        }
         cargoManifestAirConsolidationModel.setTenantModel(getTenant());
         cargoManifestAirConsolidationModel.setShipmentModelList(new ArrayList<>());
         cargoManifestAirConsolidationModel.setAwbList(new ArrayList<>());

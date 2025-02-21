@@ -1339,4 +1339,7 @@ public class ReportConstants {
     public static final String FCR_PLACE_OF_ISSUE = "FCR_Placeofissue";
     public static final String FCR_DATE_OF_ISSUE = "FCR_Dateofissue";
 
+    // ValidationExceptions
+    public static final String FREIGHT_DOCUMENT_PERMISSION_EXCEPTION = "You do not have permission to print the freight documents.";
+
 }

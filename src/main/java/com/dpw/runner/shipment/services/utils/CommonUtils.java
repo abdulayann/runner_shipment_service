@@ -2334,4 +2334,31 @@ public class CommonUtils {
         return null;
     }
 
+    public static boolean checkAirSecurityForShipment(ShipmentDetails shipmentDetails) {
+        if (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipmentDetails.getDirection().equals(DIRECTION_EXP)) {
+            return UserContext.isAirSecurityUser();
+        }
+        return true;
+    }
+
+    public static boolean checkAirSecurityForConsolidation(ConsolidationDetails consolidationDetails) {
+        if (consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && consolidationDetails.getShipmentType().equals(DIRECTION_EXP)) {
+            return UserContext.isAirSecurityUser();
+        }
+        return true;
+    }
+
+    public static boolean checkAirSecurityForBooking(CustomerBooking customerBooking) {
+        if (customerBooking.getTransportType().equals(Constants.TRANSPORT_MODE_AIR) && customerBooking.getDirection().equals(DIRECTION_EXP)) {
+            return UserContext.isAirSecurityUser();
+        }
+        return true;
+    }
+
+    public static boolean checkAirSecurityForBookingRequest(CustomerBookingRequest customerBooking) {
+        if (customerBooking.getTransportType().equals(Constants.TRANSPORT_MODE_AIR) && customerBooking.getDirection().equals(DIRECTION_EXP)) {
+            return UserContext.isAirSecurityUser();
+        }
+        return true;
+    }
 }
