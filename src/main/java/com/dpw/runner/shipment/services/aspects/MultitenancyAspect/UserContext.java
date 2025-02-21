@@ -29,6 +29,11 @@ public class UserContext {
                 && getUser().getPermissions().get(OCEAN_DG_COMMERCIAL_APPROVER);
     }
 
+    public static boolean isAirSecurityUser() {
+        return getUser().getPermissions().containsKey(AIR_SECURITY_PERMISSION)
+                && getUser().getPermissions().get(AIR_SECURITY_PERMISSION);
+    }
+
     public static void setUser(UsersDto userId) {
         user.set(userId);
     }

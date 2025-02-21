@@ -184,4 +184,5 @@ public class ShipmentSettingsDetailsResponse implements IRunnerResponse {
     private Boolean isRAEnabled;
     private Boolean isKCEnabled;
     private List<SectionVisibilityResponse> sectionVisibilityResponses;
+    private Boolean countryAirCargoSecurity;
 }

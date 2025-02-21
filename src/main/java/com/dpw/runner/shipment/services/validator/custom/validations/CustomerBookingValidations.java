@@ -41,6 +41,11 @@ public class CustomerBookingValidations {
             }
         }
 
+        Boolean countryAirCargoSecurity = tenantSettings.getCountryAirCargoSecurity();
+        if (Boolean.TRUE.equals(countryAirCargoSecurity) && !CommonUtils.checkAirSecurityForBooking(newEntity)) {
+            throw new ValidationException("You don't have permission to update AIR EXP Booking.");
+        }
+
         // FCL
         switch (newEntity.getBookingStatus()) {
             case PENDING_FOR_KYC:

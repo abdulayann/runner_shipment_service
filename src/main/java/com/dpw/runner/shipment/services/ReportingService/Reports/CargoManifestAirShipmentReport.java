@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.Pa
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
 import com.dpw.runner.shipment.services.entity.Awb;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
@@ -45,7 +46,13 @@ public class CargoManifestAirShipmentReport extends IReport{
     IDocumentModel getDocumentModel(Long id) throws RunnerException {
         CargoManifestAirShipmentModel cargoManifestAirShipmentModel = new CargoManifestAirShipmentModel();
         cargoManifestAirShipmentModel.setShipmentDetails(getShipment(id));
-        validateAirDGCheckShipments(cargoManifestAirShipmentModel.getShipmentDetails());
+        ShipmentSettingsDetails shipmentSettingsDetails = getCurrentShipmentSettings();
+        Boolean countryAirCargoSecurity = shipmentSettingsDetails.getCountryAirCargoSecurity();
+        if (Boolean.TRUE.equals(countryAirCargoSecurity)) {
+            validateAirDGAndAirSecurityCheckShipments(cargoManifestAirShipmentModel.getShipmentDetails());
+        } else {
+            validateAirDGCheckShipments(cargoManifestAirShipmentModel.getShipmentDetails());
+        }
         validateAirAndOceanDGCheck(cargoManifestAirShipmentModel.getShipmentDetails()); // check if for consolidation required
         cargoManifestAirShipmentModel.setTenantModel(getTenant());
         List<Awb> awbList = awbDao.findByShipmentId(id);

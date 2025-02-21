@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSetting
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
+import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
@@ -26,6 +27,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
@@ -62,6 +64,7 @@ import java.util.*;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
@@ -126,6 +129,7 @@ class CargoManifestAirConsolidationReportTest extends CommonMocks {
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
         mockUser.setEnableTimeZone(false);
+        mockUser.setPermissions(new HashMap<>());
         UserContext.setUser(mockUser);
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().disableBlPartiesName(false).build());
     }
@@ -541,6 +545,7 @@ class CargoManifestAirConsolidationReportTest extends CommonMocks {
 
     @Test
     void getDocumentModel() throws RunnerException {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setCountryAirCargoSecurity(false);
         ShipmentModel shipmentModel = new ShipmentModel();
         shipmentModel.setId(1L);
         shipmentModel.setTransportMode(SEA);
@@ -593,6 +598,7 @@ class CargoManifestAirConsolidationReportTest extends CommonMocks {
 
     @Test
     void getDocumentModelWithShipmentNull() throws RunnerException {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setCountryAirCargoSecurity(false);
         ShipmentModel shipmentModel = new ShipmentModel();
         shipmentModel.setId(1L);
         shipmentModel.setTransportMode(SEA);
@@ -627,6 +633,48 @@ class CargoManifestAirConsolidationReportTest extends CommonMocks {
         cargoManifestAirConsolidationReport.setShipperAndConsignee(true);
         mockShipmentSettings();
         assertNotNull(cargoManifestAirConsolidationReport.getDocumentModel(123L));
+    }
+
+    @Test
+    void getDocumentModel_CountryAirCargoSecurity() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setCountryAirCargoSecurity(true);
+        ConsolidationModel consolidationModel = new ConsolidationModel();
+        consolidationModel.setId(123L);
+        consolidationModel.setPlaceOfIssue("Test");
+        consolidationModel.setTransportMode(AIR);
+        consolidationModel.setShipmentType(EXP);
+
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(123L);
+        when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(consolidationDetails);
+        consolidationModel.setContainersList(Arrays.asList(new ContainerModel()));
+        when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(consolidationModel);
+
+        cargoManifestAirConsolidationReport.setShipIds(Arrays.asList(1L,2L));
+        mockShipmentSettings();
+        assertThrows(ValidationException.class, () -> cargoManifestAirConsolidationReport.getDocumentModel(123L));
+    }
+
+    @Test
+    void getDocumentModel_CountryAirCargoSecurity2() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setCountryAirCargoSecurity(true);
+        UserContext.getUser().getPermissions().put(PermissionConstants.AIR_SECURITY_PERMISSION, true);
+        ConsolidationModel consolidationModel = new ConsolidationModel();
+        consolidationModel.setId(123L);
+        consolidationModel.setPlaceOfIssue("Test");
+        consolidationModel.setTransportMode(AIR);
+        consolidationModel.setShipmentType(EXP);
+        consolidationModel.setHazardous(true);
+
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setId(123L);
+        when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(consolidationDetails);
+        consolidationModel.setContainersList(Arrays.asList(new ContainerModel()));
+        when(modelMapper.map(consolidationDetails, ConsolidationModel.class)).thenReturn(consolidationModel);
+
+        cargoManifestAirConsolidationReport.setShipIds(Arrays.asList(1L,2L));
+        mockShipmentSettings();
+        assertThrows(ValidationException.class, () -> cargoManifestAirConsolidationReport.getDocumentModel(123L));
     }
 
     @ParameterizedTest

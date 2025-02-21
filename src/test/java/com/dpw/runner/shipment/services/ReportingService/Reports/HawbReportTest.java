@@ -1722,4 +1722,62 @@ class HawbReportTest extends CommonMocks {
         mockShipmentSettings();
         assertThrows(ValidationException.class, () -> hawbReport.getDocumentModel(123L));
     }
+
+    @Test
+    void getDocumentModel_CountryAirCargoSecurity() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setCountryAirCargoSecurity(true);
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        ShipmentModel shipmentModel = new ShipmentModel();
+        PackingModel packingModel = new PackingModel();
+        packingModel.setHazardous(true);
+        shipmentModel.setPackingList(List.of(packingModel));
+        shipmentModel.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentModel.setDirection(Constants.DIRECTION_EXP);
+        shipmentModel.setConsolidationList(Arrays.asList(new ConsolidationModel()));
+        when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
+
+        mockShipmentSettings();
+
+        hawbReport.printType = ORIGINAL;
+        assertThrows(ValidationException.class, () -> hawbReport.getDocumentModel(123L));
+    }
+
+    @Test
+    void getDocumentModel_CountryAirCargoSecurity2() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setCountryAirCargoSecurity(true);
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        ShipmentModel shipmentModel = new ShipmentModel();
+        PackingModel packingModel = new PackingModel();
+        packingModel.setHazardous(true);
+        shipmentModel.setPackingList(List.of(packingModel));
+        shipmentModel.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentModel.setDirection(Constants.DIRECTION_EXP);
+        shipmentModel.setConsolidationList(Arrays.asList(new ConsolidationModel()));
+        when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
+
+        mockShipmentSettings();
+
+        hawbReport.printType = DRAFT;
+        assertThrows(ValidationException.class, () -> hawbReport.getDocumentModel(123L));
+    }
+
+    @Test
+    void getDocumentModel_CountryAirCargoSecurity3() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setCountryAirCargoSecurity(true);
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        ShipmentModel shipmentModel = new ShipmentModel();
+        PackingModel packingModel = new PackingModel();
+        packingModel.setHazardous(true);
+        shipmentModel.setPackingList(List.of(packingModel));
+        shipmentModel.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentModel.setDirection(Constants.DIRECTION_EXP);
+        shipmentModel.setContainsHazardous(true);
+        shipmentModel.setConsolidationList(Arrays.asList(new ConsolidationModel()));
+        when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
+
+        mockShipmentSettings();
+
+        hawbReport.printType = ORIGINAL;
+        assertThrows(ValidationException.class, () -> hawbReport.getDocumentModel(123L));
+    }
 }

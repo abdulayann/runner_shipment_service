@@ -3568,18 +3568,22 @@ public abstract class IReport {
     }
 
     private void validateAirDGCheck(ShipmentModel shipmentModel) {
-        if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getAirDGFlag()) && shipmentModel.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
-            boolean dgPack = false;
-            if(shipmentModel.getPackingList() != null && !shipmentModel.getPackingList().isEmpty()) {
-                for (PackingModel packingModel: shipmentModel.getPackingList()) {
-                    if(Boolean.TRUE.equals(packingModel.getHazardous())) {
-                        dgPack = true;
-                        break;
+        ShipmentSettingsDetails shipmentSettingsDetails = getCurrentShipmentSettings();
+        Boolean countryAirCargoSecurity = shipmentSettingsDetails.getCountryAirCargoSecurity();
+        if (!Boolean.TRUE.equals(countryAirCargoSecurity)) {
+            if (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getAirDGFlag()) && shipmentModel.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
+                boolean dgPack = false;
+                if(shipmentModel.getPackingList() != null && !shipmentModel.getPackingList().isEmpty()) {
+                    for (PackingModel packingModel: shipmentModel.getPackingList()) {
+                        if(Boolean.TRUE.equals(packingModel.getHazardous())) {
+                            dgPack = true;
+                            break;
+                        }
                     }
                 }
-            }
-            if(!dgPack) {
-                throw new ValidationException("The shipment is marked as DG but does not contain any DG packages. Please add DG packs before printing.");
+                if(!dgPack) {
+                    throw new ValidationException("The shipment is marked as DG but does not contain any DG packages. Please add DG packs before printing.");
+                }
             }
         }
     }
@@ -3616,17 +3620,21 @@ public abstract class IReport {
         return UserContext.isAirDgUser();
     }
 
+    private static boolean isAirSecurityUser() {
+        return UserContext.isAirSecurityUser();
+    }
+
     public void validateAirDGCheckConsolidations(ConsolidationModel consolidationModel) {
         if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getAirDGFlag()) &&
                 Boolean.TRUE.equals(consolidationModel.getHazardous()) && consolidationModel.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && !isAirDgUser()) {
-            throw new ValidationException("You do not have permission to print the freight documents.");
+            throw new ValidationException(ReportConstants.FREIGHT_DOCUMENT_PERMISSION_EXCEPTION);
         }
     }
 
     public void validateAirDGCheckShipments(ShipmentModel shipmentModel) {
         if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getAirDGFlag()) &&
                 Boolean.TRUE.equals(shipmentModel.getContainsHazardous()) && shipmentModel.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && !isAirDgUser()) {
-            throw new ValidationException("You do not have permission to print the freight documents.");
+            throw new ValidationException(ReportConstants.FREIGHT_DOCUMENT_PERMISSION_EXCEPTION);
         }
     }
 
@@ -3725,6 +3733,10 @@ public abstract class IReport {
         return commonUtils.getCurrentTenantSettings();
     }
 
+    public ShipmentSettingsDetails getCurrentShipmentSettings() {
+        return commonUtils.getShipmentSettingFromContext();
+    }
+
     public String getDefaultRANumber() {
         String defaultRANumber = null;
         try {
@@ -3775,5 +3787,39 @@ public abstract class IReport {
         else if (Objects.nonNull(awb.getOriginalPrintedAt()))
             return (StringUtility.toUpperCase(ConvertToDPWDateFormat(awb.getOriginalPrintedAt(), "ddMMMyy HHmm", true)));
         return StringUtility.getEmptyString();
+    }
+
+    public void validateAirDGAndAirSecurityCheckShipments(ShipmentModel shipmentModel) {
+        if (shipmentModel.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipmentModel.getDirection().equals(Constants.DIRECTION_EXP)) {
+            if (!isAirSecurityUser()) {
+                throw new ValidationException(FREIGHT_DOCUMENT_PERMISSION_EXCEPTION);
+            }
+            if (Boolean.TRUE.equals(shipmentModel.getContainsHazardous()) && !isAirDgUser()) {
+                throw new ValidationException(FREIGHT_DOCUMENT_PERMISSION_EXCEPTION);
+            }
+        }
+    }
+
+    public void validateAirSecurityCheckShipments(ShipmentModel shipmentModel) {
+        if (shipmentModel.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipmentModel.getDirection().equals(Constants.DIRECTION_EXP) && !isAirSecurityUser()) {
+            throw new ValidationException(FREIGHT_DOCUMENT_PERMISSION_EXCEPTION);
+        }
+    }
+
+    public void validateAirDGAndAirSecurityCheckConsolidations(ConsolidationModel consolidationModel) {
+        if (consolidationModel.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && consolidationModel.getShipmentType().equals(Constants.DIRECTION_EXP)) {
+            if (!isAirSecurityUser()) {
+                throw new ValidationException(FREIGHT_DOCUMENT_PERMISSION_EXCEPTION);
+            }
+            if (Boolean.TRUE.equals(consolidationModel.getHazardous()) && !isAirDgUser()) {
+                throw new ValidationException(FREIGHT_DOCUMENT_PERMISSION_EXCEPTION);
+            }
+        }
+    }
+
+    public void validateAirSecurityCheckConsolidations(ConsolidationModel consolidationModel) {
+        if (consolidationModel.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && consolidationModel.getShipmentType().equals(Constants.DIRECTION_EXP) && !isAirSecurityUser()) {
+            throw new ValidationException(FREIGHT_DOCUMENT_PERMISSION_EXCEPTION);
+        }
     }
 }

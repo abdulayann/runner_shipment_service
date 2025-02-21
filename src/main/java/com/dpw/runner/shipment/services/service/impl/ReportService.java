@@ -289,6 +289,7 @@ public class ReportService implements IReportService {
         IReport report = reportsFactory.getReport(reportRequest.getReportInfo());
         if (report instanceof MawbReport mawbReport) {
             mawbReport.isDMawb = reportRequest.isFromShipment(); // Set isDMawb based on isFromShipment flag
+            mawbReport.printType = reportRequest.getPrintType();
 
             if (!reportRequest.isFromShipment()) { // Case: Request came from consolidation
                 long consolidationId = Long.parseLong(reportRequest.getReportId());
@@ -433,6 +434,7 @@ public class ReportService implements IReportService {
             if (Boolean.TRUE.equals(dpsEventService.isImplicationPresent(List.of(Long.parseLong(reportRequest.getReportId())), DpsConstants.HAWBPR))) {
                 throw new ReportException(DpsConstants.DPS_ERROR_1);
             }
+            vHawbReport.printType = reportRequest.getPrintType();
 
             dataRetrived = vHawbReport.getData(Long.parseLong(reportRequest.getReportId()));
             createEvent(reportRequest, EventConstants.HAWB);
@@ -441,6 +443,9 @@ public class ReportService implements IReportService {
         } else if (report instanceof SeawayBillReport vSeawayBillReport) {
             dataRetrived = vSeawayBillReport.getData(Long.parseLong(reportRequest.getReportId()));
             createEvent(reportRequest, EventConstants.FHBL);
+        } else if (report instanceof HawbReport vHawbReport) {
+            vHawbReport.printType = reportRequest.getPrintType();
+            dataRetrived = vHawbReport.getData(Long.parseLong(reportRequest.getReportId()));
         } else {
             dataRetrived = report.getData(Long.parseLong(reportRequest.getReportId()));
         }
