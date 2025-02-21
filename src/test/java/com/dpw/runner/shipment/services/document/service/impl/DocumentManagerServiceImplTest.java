@@ -1,29 +1,15 @@
 package com.dpw.runner.shipment.services.document.service.impl;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import com.dpw.runner.shipment.services.document.config.DocumentManagerRestClient;
-import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerBulkDownloadRequest;
-import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerFileAndRulesRequest;
-import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerSaveFileRequest;
-import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerTempFileUploadRequest;
+import com.dpw.runner.shipment.services.document.request.documentmanager.*;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerBulkDownloadResponse;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerDataResponse;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerResponse;
 import com.dpw.runner.shipment.services.document.util.BASE64DecodedMultipartFile;
-
-import java.io.UnsupportedEncodingException;
-import javax.servlet.http.HttpServletRequest;
-
+import org.apache.poi.ss.formula.functions.T;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.api.parallel.Execution;
-import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.Mockito;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -31,6 +17,15 @@ import org.springframework.context.annotation.PropertySource;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.web.multipart.MultipartFile;
+
+import javax.servlet.http.HttpServletRequest;
+import java.io.UnsupportedEncodingException;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.isA;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ContextConfiguration(classes = {DocumentManagerServiceImpl.class})
 @ExtendWith(SpringExtension.class)
@@ -227,7 +222,13 @@ class DocumentManagerServiceImplTest {
         assertEquals(mockResponse, responseEntity);
     }
 
-
-
+    @Test
+    void updateFileEntities() {
+        var mockResponse = new DocumentManagerResponse<T>();
+        when(documentManagerRestClient.updateFileEntities(any())).thenReturn(mockResponse);
+        var responseEntity = documentManagerServiceImpl.updateFileEntities(new DocumentManagerUpdateFileEntitiesRequest());
+        assertNotNull(responseEntity);
+        assertEquals(mockResponse, responseEntity);
+    }
 
 }

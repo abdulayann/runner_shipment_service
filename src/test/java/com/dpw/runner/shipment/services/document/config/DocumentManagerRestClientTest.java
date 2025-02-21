@@ -1,19 +1,11 @@
 package com.dpw.runner.shipment.services.document.config;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerBulkDownloadRequest;
-import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerFileAndRulesRequest;
-import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerSaveFileRequest;
-import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerTempFileUploadRequest;
-import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerMultipleEntityFileRequest;
-import com.dpw.runner.shipment.services.document.response.DocumentManagerBulkDownloadResponse;
-import com.dpw.runner.shipment.services.document.response.DocumentManagerDataResponse;
-import com.dpw.runner.shipment.services.document.response.DocumentManagerResponse;
-import com.dpw.runner.shipment.services.document.response.DocumentManagerListResponse;
-import com.dpw.runner.shipment.services.document.response.DocumentManagerEntityFileResponse;
+import com.dpw.runner.shipment.services.document.request.documentmanager.*;
+import com.dpw.runner.shipment.services.document.response.*;
 import com.dpw.runner.shipment.services.dto.request.CopyDocumentsRequest;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
-import java.util.concurrent.CompletableFuture;
+import org.apache.poi.ss.formula.functions.T;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,6 +19,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
+
+import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -197,6 +191,46 @@ class DocumentManagerRestClientTest {
         )).thenThrow(new RuntimeException());
 
         assertThrows(RuntimeException.class, () -> documentManagerRestClient.multipleEntityFilesWithTenant(request));
+    }
+
+    @Test
+    void testUpdateFileEntities() {
+        DocumentManagerUpdateFileEntitiesRequest request = new DocumentManagerUpdateFileEntitiesRequest();
+        DocumentManagerResponse<T> expectedResponse = new DocumentManagerResponse<>();
+        ResponseEntity<DocumentManagerResponse<T>> responseEntity =
+                new ResponseEntity<>(expectedResponse, HttpStatus.OK);
+
+        when(restTemplate.exchange(
+                anyString(),
+                eq(HttpMethod.PUT),
+                any(HttpEntity.class),
+                any(ParameterizedTypeReference.class)
+        )).thenReturn(responseEntity);
+
+        DocumentManagerResponse<T> actualResponse =
+                documentManagerRestClient.updateFileEntities(request);
+
+        assertEquals(expectedResponse, actualResponse);
+        verify(restTemplate, times(1)).exchange(
+                anyString(),
+                eq(HttpMethod.PUT),
+                any(HttpEntity.class),
+                any(ParameterizedTypeReference.class)
+        );
+    }
+
+    @Test
+    void testUpdateFileEntities_Failure() {
+        DocumentManagerUpdateFileEntitiesRequest request = new DocumentManagerUpdateFileEntitiesRequest();
+
+        when(restTemplate.exchange(
+                anyString(),
+                eq(HttpMethod.PUT),
+                any(HttpEntity.class),
+                any(ParameterizedTypeReference.class)
+        )).thenThrow(new RuntimeException());
+
+        assertThrows(RuntimeException.class, () -> documentManagerRestClient.updateFileEntities(request));
     }
 
 }

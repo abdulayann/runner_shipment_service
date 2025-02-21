@@ -21,6 +21,8 @@ import com.dpw.runner.shipment.services.config.SpringContext;
 import com.dpw.runner.shipment.services.dao.impl.NetworkTransferDao;
 import com.dpw.runner.shipment.services.dao.impl.QuartzJobInfoDao;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.document.response.DocumentManagerResponse;
+import com.dpw.runner.shipment.services.document.service.IDocumentManagerService;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.mapper.AttachListShipmentMapper;
@@ -51,6 +53,7 @@ import com.dpw.runner.shipment.services.dto.v1.request.TaskCreateRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.*;
+import com.dpw.runner.shipment.services.exception.exceptions.DocumentClientException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -82,6 +85,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.http.auth.AuthenticationException;
+import org.apache.poi.ss.formula.functions.T;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -291,6 +295,9 @@ ShipmentServiceTest extends CommonMocks {
 
     @Mock
     private INotificationDao notificationDao;
+
+    @Mock
+    private IDocumentManagerService documentManagerService;
 
 
     private static JsonTestUtility jsonTestUtility;
@@ -10331,6 +10338,24 @@ ShipmentServiceTest extends CommonMocks {
 
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.listV3(commonRequestModel, false);
         assertEquals(expectedResponse, httpResponse);
+    }
+
+    @Test
+    void addFilesFromBookingToShipment() {
+        var response = new DocumentManagerResponse<T>();
+        response.setSuccess(true);
+        when(documentManagerService.updateFileEntities(any())).thenReturn(response);
+        DocumentManagerResponse<T> responseEntity = shipmentService.addFilesFromBookingToShipment("123", "456");
+        assertTrue(responseEntity.getSuccess());
+    }
+
+    @Test
+    void addFilesFromBookingToShipment_Failure() {
+        var response = new DocumentManagerResponse<T>();
+        response.setSuccess(false);
+        when(documentManagerService.updateFileEntities(any())).thenThrow(new DocumentClientException());
+        DocumentManagerResponse<T> responseEntity = shipmentService.addFilesFromBookingToShipment("123", "456");
+        assertNull(responseEntity);
     }
 
 }

@@ -4,24 +4,16 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthCo
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.LoggingConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerBulkDownloadRequest;
-import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerFileAndRulesRequest;
-import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerSaveFileRequest;
-import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerTempFileUploadRequest;
-import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerMultipleEntityFileRequest;
-import com.dpw.runner.shipment.services.document.response.DocumentManagerBulkDownloadResponse;
-import com.dpw.runner.shipment.services.document.response.DocumentManagerDataResponse;
-import com.dpw.runner.shipment.services.document.response.DocumentManagerResponse;
-import com.dpw.runner.shipment.services.document.response.DocumentManagerListResponse;
-import com.dpw.runner.shipment.services.document.response.DocumentManagerEntityFileResponse;
+import com.dpw.runner.shipment.services.document.request.documentmanager.*;
+import com.dpw.runner.shipment.services.document.response.*;
 import com.dpw.runner.shipment.services.dto.request.CopyDocumentsRequest;
 import com.dpw.runner.shipment.services.exception.exceptions.DocumentClientException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
-import java.util.concurrent.CompletableFuture;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.ss.formula.functions.T;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,6 +22,8 @@ import org.springframework.http.*;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
+
+import java.util.concurrent.CompletableFuture;
 
 @Component
 @Generated
@@ -44,6 +38,9 @@ public class DocumentManagerRestClient {
 
     @Value("${document-manager.multipleEntityFilesWithTenant}")
     private String multipleEntityFilesWithTenantUrl;
+
+    @Value("${document-manager.updateFileEntities}")
+    private String updateFileEntitiesUrl;
 
     private JsonHelper jsonHelper;
 
@@ -182,6 +179,28 @@ public class DocumentManagerRestClient {
             return responseEntity.getBody();
         } catch (Exception ex) {
             log.error("Error in MultipleEntityFilesWithTenant Api from Document Service: {}", ex.getMessage());
+            throw new DocumentClientException(ex.getMessage());
+        }
+    }
+
+    public DocumentManagerResponse<T> updateFileEntities(DocumentManagerUpdateFileEntitiesRequest request) {
+        try {
+            HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
+            HttpEntity<DocumentManagerUpdateFileEntitiesRequest> requestEntity = new HttpEntity<>(request, headers);
+            String url = baseUrl + updateFileEntitiesUrl;
+
+            ResponseEntity<DocumentManagerResponse<T>> responseEntity = restTemplate.exchange(
+                    url,
+                    HttpMethod.PUT,
+                    requestEntity,
+                    new ParameterizedTypeReference<>() {
+                    }
+            );
+
+            return responseEntity.getBody();
+        } catch (Exception ex) {
+            log.error("CR-ID {} || Error in updateFileEntities Api from Document Service: {} and request sent is: {}",
+                    LoggerHelper.getRequestIdFromMDC(), ex.getMessage(), request);
             throw new DocumentClientException(ex.getMessage());
         }
     }

@@ -3,19 +3,13 @@ package com.dpw.runner.shipment.services.document.service.impl;
 
 import com.dpw.runner.shipment.services.document.config.DocumentManagerRestClient;
 import com.dpw.runner.shipment.services.document.exception.BadRequestException;
-import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerBulkDownloadRequest;
-import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerFileAndRulesRequest;
-import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerSaveFileRequest;
-import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerTempFileUploadRequest;
-import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerMultipleEntityFileRequest;
-import com.dpw.runner.shipment.services.document.response.DocumentManagerBulkDownloadResponse;
-import com.dpw.runner.shipment.services.document.response.DocumentManagerDataResponse;
-import com.dpw.runner.shipment.services.document.response.DocumentManagerResponse;
-import com.dpw.runner.shipment.services.document.response.DocumentManagerEntityFileResponse;
-import com.dpw.runner.shipment.services.document.response.DocumentManagerListResponse;
+import com.dpw.runner.shipment.services.document.request.documentmanager.*;
+import com.dpw.runner.shipment.services.document.response.*;
 import com.dpw.runner.shipment.services.document.service.IDocumentManagerService;
 import com.dpw.runner.shipment.services.document.util.FileUtils;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.ss.formula.functions.T;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
@@ -93,6 +87,12 @@ public class DocumentManagerServiceImpl implements IDocumentManagerService {
     public DocumentManagerListResponse<DocumentManagerEntityFileResponse> fetchMultipleFilesWithTenant(DocumentManagerMultipleEntityFileRequest request) {
         log.info("multipleEntityFilesWithTenantRequest: {}", request);
         return restClient.multipleEntityFilesWithTenant(request);
+    }
+
+    @Override
+    public DocumentManagerResponse<T> updateFileEntities(DocumentManagerUpdateFileEntitiesRequest request) {
+        log.info("CR-ID {} || updateFileEntities: {}", LoggerHelper.getRequestIdFromMDC(), request);
+        return restClient.updateFileEntities(request);
     }
 
 }
