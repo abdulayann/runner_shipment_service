@@ -1335,14 +1335,14 @@ public class EntityTransferService implements IEntityTransferService {
         List<String> missingField = this.airConsoleFieldValidations(consolidationDetails, isAutomaticTransfer);
         if(Objects.equals(consolidationDetails.getConsolidationType(), Constants.SHIPMENT_TYPE_STD)) {
             List<Awb> mawbs = awbDao.findByConsolidationId(consolidationDetails.getId());
-            if (mawbs.isEmpty())
+            if (mawbs.isEmpty() || !Objects.equals(mawbs.get(0).getPrintType(), PrintType.ORIGINAL_PRINTED))
                 isPrintMawbError = true;
         }
 
         for (var shipment : consolidationDetails.getShipmentsList()) {
             if(Objects.equals(shipment.getJobType(), SHIPMENT_TYPE_STD)) {
                 List<Awb> awbs = awbDao.findByShipmentId(shipment.getId());
-                if (awbs.isEmpty()) {
+                if (awbs.isEmpty() || !Objects.equals(awbs.get(0).getPrintType(), PrintType.ORIGINAL_PRINTED)) {
                     isPrintHawbError = true;
                     errorShipments.add(shipment.getShipmentId());
                     errorShipIds.add(shipment.getId());
@@ -1443,7 +1443,7 @@ public class EntityTransferService implements IEntityTransferService {
         for (var shipment : consolidationDetails.getShipmentsList()) {
             if(!Objects.equals(shipment.getJobType(), Constants.SHIPMENT_TYPE_DRT)) {
                 List<Hbl> hbls = hblDao.findByShipmentId(shipment.getId());
-                if (hbls.isEmpty()) {
+                if (hbls.isEmpty() || !Boolean.TRUE.equals(shipment.getAdditionalDetails().getPrintedOriginal())) {
                     isPrintHblError = true;
                     errorShipments.add(shipment.getShipmentId());
                     errorShipIds.add(shipment.getId());
@@ -1662,7 +1662,7 @@ public class EntityTransferService implements IEntityTransferService {
             // Shipment Fields Validations
             List<String> missingField = this.airShipmentFieldValidations(shipmentDetails, isAutomaticTransfer);
 
-            if (awbs.isEmpty()) {
+            if (awbs.isEmpty() || !Objects.equals(awbs.get(0).getPrintType(), PrintType.ORIGINAL_PRINTED)) {
                 isAwbPrintError = true;
             }
 
