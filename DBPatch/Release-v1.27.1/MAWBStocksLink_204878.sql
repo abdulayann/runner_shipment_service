@@ -1,1 +1,1 @@
-update mawb_stocks_link set status = 'Unused' where mawb_number = '235-23590674';
+update mawb_stocks_link set status = 'Unused' where mawb_number = '235-23590674' and tenant_id = 504;
