@@ -4473,7 +4473,7 @@ import static org.mockito.Mockito.*;
     @Test
     void testCreate_SuccessRa() throws RunnerException {
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().EnableAirMessaging(true).build());
-
+        mockShipmentSettings();
 
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
         ConsolidationDetailsRequest copy = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetailsRequest.class);
@@ -4549,6 +4549,7 @@ import static org.mockito.Mockito.*;
     @Test
     void testCreate_SuccessIdNullSendingAgent() throws RunnerException {
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().EnableAirMessaging(true).build());
+        mockShipmentSettings();
 
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
         ConsolidationDetailsRequest copy = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetailsRequest.class);
@@ -4589,7 +4590,7 @@ import static org.mockito.Mockito.*;
     @Test
     void testCreate_SuccessRaScreeningStatusNotNull() throws RunnerException {
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().EnableAirMessaging(true).build());
-
+        mockShipmentSettings();
 
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
         ConsolidationDetailsRequest copy = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetailsRequest.class);
@@ -4629,6 +4630,7 @@ import static org.mockito.Mockito.*;
     @Test
     void testCreate_SuccessIdNullScreeningStatusNotNull() throws RunnerException {
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().EnableAirMessaging(true).build());
+        mockShipmentSettings();
 
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
         ConsolidationDetailsRequest copy = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetailsRequest.class);
@@ -4665,6 +4667,7 @@ import static org.mockito.Mockito.*;
     @Test
     void testCreate_SuccessIdNullSendingAgentScreeningStatusNotNull() throws RunnerException {
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().EnableAirMessaging(true).build());
+        mockShipmentSettings();
 
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
         ConsolidationDetailsRequest copy = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetailsRequest.class);
@@ -4705,6 +4708,7 @@ import static org.mockito.Mockito.*;
     @Test
     void testCreate_SuccessRaSecurityStatusNull() throws RunnerException {
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().EnableAirMessaging(true).build());
+        mockShipmentSettings();
 
 
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
@@ -4747,6 +4751,7 @@ import static org.mockito.Mockito.*;
     @Test
     void testCreate_SuccessIdNullSecurityStatusNull() throws RunnerException {
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().EnableAirMessaging(true).build());
+        mockShipmentSettings();
 
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
         ConsolidationDetailsRequest copy = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetailsRequest.class);
@@ -4785,6 +4790,7 @@ import static org.mockito.Mockito.*;
     @Test
     void testCreate_SuccessIdNullSendingAgentSecurityStatusNull() throws RunnerException {
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().EnableAirMessaging(true).build());
+        mockShipmentSettings();
 
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
         ConsolidationDetailsRequest copy = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetailsRequest.class);

@@ -4380,6 +4380,10 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     public void validateRaKcForConsol(ConsolidationDetails consolidationDetails, V1TenantSettingsResponse tenantSettingsResponse) throws RunnerException {
+        // bypass all RA/KC validations in case of AMR air freight
+        if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsAmrAirFreightEnabled()))
+            return;
+
         Parties sendingAgent = consolidationDetails.getSendingAgent();
         if(Boolean.TRUE.equals(tenantSettingsResponse.getEnableAirMessaging()) && Objects.equals(consolidationDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR)) {
             List<Parties> orgList = new ArrayList<>();
