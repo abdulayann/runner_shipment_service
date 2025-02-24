@@ -1,0 +1,1 @@
+update mawb_stocks_link set status = 'Unused' where mawb_number = '235-23590674';
