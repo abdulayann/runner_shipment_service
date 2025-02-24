@@ -2329,7 +2329,8 @@ public class CommonUtils {
         V1DataResponse response = iv1Service.listBranchesByDefaultOrgAndAddress(request);
         if (Objects.nonNull(response.getEntities())) {
             List<V1TenantResponse> tenantResponses = jsonHelper.convertValueToList(response.getEntities(), V1TenantResponse.class);
-            return tenantResponses.get(0).getTenantId();
+            if(!tenantResponses.isEmpty())
+                return tenantResponses.get(0).getTenantId();
         }
         return null;
     }
