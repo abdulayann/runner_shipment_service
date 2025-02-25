@@ -193,6 +193,11 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
     }
 
     @Override
+    public Integer pendingStateCountBasedOnRequestType(Integer requestType, Integer tenantId) {
+        return consoleShipmentsMappingRepository.pendingStateCountBasedOnRequestType(requestType, tenantId);
+    }
+
+    @Override
     public Map<Long, Integer> pendingStateCountBasedOnConsolidation(List<Long> consoleIds, Integer requestedType) {
         List<Object[]> results = consoleShipmentsMappingRepository.pendingStateCountBasedOnConsolidation(consoleIds, requestedType);
         return this.convertResponseToMap(results);
