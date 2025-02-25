@@ -130,12 +130,12 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
     @Override
     public ResponseEntity<IRunnerResponse> createNonBillableCustomer(CommonRequestModel commonRequestModel) throws RunnerException {
         String url = baseUrl + createNonBillableCustomer;
-        CompanyDetailsRequest request = (CompanyDetailsRequest) commonRequestModel.getData();
+        CompanyDetailsRequest request =  jsonHelper.convertValueWithJsonNullable(commonRequestModel.getDependentData(), CompanyDetailsRequest.class);
         try {
             log.info("Calling MDM createNonBillableCustomer api for requestId : {} Request for {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
             var resp = retryTemplate.execute((RetryCallback<ResponseEntity<IRunnerResponse>, Exception>) context -> {
                 ResponseEntity<DependentServiceResponse> response = restTemplate.exchange(
-                    RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(request)),
+                    RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJsonWithNulls(request)),
                     DependentServiceResponse.class
                 );
                 return ResponseHelper.buildDependentServiceResponse(response.getBody(), 0, 0);
