@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.commons.responses.DependentServiceRespon
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.mdm.MdmListCriteriaRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.ApprovalPartiesRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.CompanyDetailsRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.CreateShipmentTaskFromBookingTaskRequest;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -47,6 +48,9 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
 
     @Value("${mdm.createShipmentTaskFromBooking}")
     String createShipmentTaskFromBookingUrl;
+
+    @Value("${mdm.createNonBillableCustomer}")
+    String createNonBillableCustomer;
 
     @Value("${mdm.departmentListUrl}")
     String departmentListUrl;
@@ -119,6 +123,27 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
             return resp;
         } catch (Exception ex) {
             log.error("MDM Credit Details Failed due to: {}", jsonHelper.convertToJson(ex.getMessage()));
+            return ResponseHelper.buildFailedResponse(ex.getMessage());
+        }
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> createNonBillableCustomer(CommonRequestModel commonRequestModel) throws RunnerException {
+        String url = baseUrl + createNonBillableCustomer;
+        CompanyDetailsRequest request = (CompanyDetailsRequest) commonRequestModel.getData();
+        try {
+            log.info("Calling MDM createNonBillableCustomer api for requestId : {} Request for {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
+            var resp = retryTemplate.execute((RetryCallback<ResponseEntity<IRunnerResponse>, Exception>) context -> {
+                ResponseEntity<DependentServiceResponse> response = restTemplate.exchange(
+                    RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(request)),
+                    DependentServiceResponse.class
+                );
+                return ResponseHelper.buildDependentServiceResponse(response.getBody(), 0, 0);
+            });
+            log.info("MDM createNonBillableCustomer api response for requestId - {} : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(jsonHelper.convertToJson(resp)));
+            return resp;
+        } catch (Exception ex) {
+            log.error("MDM createNonBillableCustomer Failed due to: {}", jsonHelper.convertToJson(ex.getMessage()));
             return ResponseHelper.buildFailedResponse(ex.getMessage());
         }
     }

@@ -15,5 +15,7 @@ public interface IMDMServiceAdapter {
 
     ResponseEntity<IRunnerResponse> createShipmentTaskFromBooking(CommonRequestModel commonRequestModel) throws RunnerException;
 
+    ResponseEntity<IRunnerResponse> createNonBillableCustomer(CommonRequestModel commonRequestModel) throws RunnerException;
+
     List<Map<String, Object>> getDepartmentList(String transportMode, String shipmentType, String module);
 }
