@@ -1,6 +1,9 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 
+import com.dpw.runner.shipment.services.utils.Generated;
+
+@Generated
 public class DocumentConstants {
 
     private DocumentConstants(){}
