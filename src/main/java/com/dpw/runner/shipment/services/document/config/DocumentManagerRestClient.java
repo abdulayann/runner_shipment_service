@@ -21,8 +21,11 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 @Component
@@ -46,6 +49,9 @@ public class DocumentManagerRestClient {
 
     private RestTemplate restTemplate;
 
+    @Value("${document-manager.baseUrl}${document-manager.delete}")
+    private String DOCUMENT_DELETE;
+
     @Autowired
     DocumentManagerRestClient(RestTemplate restTemplate, JsonHelper jsonHelper) {
         this.jsonHelper = jsonHelper;
@@ -63,7 +69,8 @@ public class DocumentManagerRestClient {
                 url,
                 HttpMethod.POST,
                 requestEntity,
-                new ParameterizedTypeReference<>() {}
+                new ParameterizedTypeReference<>() {
+                }
         );
 
         return responseEntity.getBody();
@@ -88,7 +95,8 @@ public class DocumentManagerRestClient {
                 url,
                 HttpMethod.POST,
                 requestEntity,
-                new ParameterizedTypeReference<>() {}
+                new ParameterizedTypeReference<>() {
+                }
         );
 
         return responseEntity.getBody();
@@ -104,7 +112,8 @@ public class DocumentManagerRestClient {
                 url,
                 HttpMethod.POST,
                 requestEntity,
-                new ParameterizedTypeReference<>() {}
+                new ParameterizedTypeReference<>() {
+                }
         );
 
         return responseEntity.getBody();
@@ -119,7 +128,8 @@ public class DocumentManagerRestClient {
                 url,
                 HttpMethod.GET,
                 new HttpEntity<>(headers),
-                new ParameterizedTypeReference<>() {}
+                new ParameterizedTypeReference<>() {
+                }
         );
 
         return responseEntity.getBody();
@@ -136,7 +146,8 @@ public class DocumentManagerRestClient {
                 url,
                 HttpMethod.POST,
                 requestEntity,
-                new ParameterizedTypeReference<>() {}
+                new ParameterizedTypeReference<>() {
+                }
         );
 
         return responseEntity.getBody();
@@ -203,5 +214,25 @@ public class DocumentManagerRestClient {
                     LoggerHelper.getRequestIdFromMDC(), ex.getMessage(), request);
             throw new DocumentClientException(ex.getMessage());
         }
+    }
+
+    public DocumentManagerResponse<T> deleteFile(Object object) {
+        try {
+            HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
+            HttpEntity<Object> httpEntity = new HttpEntity<>(object, headers);
+            log.info("{} | deleteFile request: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(object));
+            var response  = restTemplate.exchange(
+                    this.DOCUMENT_DELETE,
+                    HttpMethod.PUT,
+                    httpEntity,
+                    new ParameterizedTypeReference<>() {}
+            );
+            return jsonHelper.convertValue(response.getBody(), DocumentManagerResponse.class);
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new DocumentClientException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), DocumentManagerResponse.class).getErrorMessage());
+        } catch (Exception var7) {
+            throw new DocumentClientException(var7.getMessage());
+        }
+
     }
 }
