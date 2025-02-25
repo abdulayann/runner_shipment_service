@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -232,5 +233,28 @@ class DocumentManagerRestClientTest {
 
         assertThrows(RuntimeException.class, () -> documentManagerRestClient.updateFileEntities(request));
     }
+
+
+    @Test
+    void testDeleteFiles() {
+        DocumentManagerResponse<T> expectedResponse = new DocumentManagerResponse<>();
+        ResponseEntity<DocumentManagerResponse<T>> responseEntity = new ResponseEntity<>(expectedResponse, HttpStatus.OK);
+
+        ArgumentCaptor<HttpEntity> httpEntityCaptor = ArgumentCaptor.forClass(HttpEntity.class);
+        ArgumentCaptor<String> urlCaptor = ArgumentCaptor.forClass(String.class);
+        boolean isSuccess = true;
+        when(restTemplate.exchange(
+                urlCaptor.capture(),
+                eq(HttpMethod.PUT),
+                httpEntityCaptor.capture(),
+                any(ParameterizedTypeReference.class)
+        )).thenReturn(responseEntity);
+
+        DocumentManagerResponse<T> actualResponse =
+                documentManagerRestClient.deleteFile(new Object());
+
+        assertTrue(isSuccess);
+    }
+
 
 }
