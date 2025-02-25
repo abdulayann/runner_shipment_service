@@ -1,11 +1,13 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.ListCousinBranchesForEtRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
@@ -39,6 +41,9 @@ class MasterDataImplTest {
 
     @Mock
     private MasterDataFactory masterDataFactory;
+
+    @Mock
+    private IMDMServiceAdapter mdmServiceAdapter;
 
     @Mock
     private IV1Service v1Service;
@@ -804,4 +809,12 @@ class MasterDataImplTest {
         Assertions.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
+    @Test
+    void createNonBillableCustomerTest() throws RunnerException {
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest();
+        ResponseEntity<IRunnerResponse> responseEntity = new ResponseEntity<>(HttpStatus.OK);
+        Mockito.when(mdmServiceAdapter.createNonBillableCustomer(commonRequestModel)).thenReturn(responseEntity);
+        ResponseEntity<IRunnerResponse> response = masterData.createNonBillableCustomer(commonRequestModel);
+        Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
 }
