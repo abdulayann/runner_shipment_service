@@ -91,6 +91,10 @@ public class ShipmentConstants {
     public static final String API_RETRIEVE_MEASUREMENT_DATA = "/retrieve/measurement/data";
     public static final String API_SHIPMENT_RETRIEVE_FOR_NTE_SCREEN = "/retrieve/nte";
 
+    // Shipment V3.0 API Endpoints
+    public static final String SHIPMENT_API_HANDLE_V3 = "/api/v3/shipment";
+    public static final String COUNT_PENDING_NOTIFICATION_API = "/count/pending/notification";
+
 
     public static final String SHIPMENT_CREATION = "SHPCR";
 
