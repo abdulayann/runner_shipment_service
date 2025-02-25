@@ -2164,8 +2164,14 @@ public class EntityTransferService implements IEntityTransferService {
         shipDestinationBranchIds.add(TenantContext.getCurrentTenant());
         var branchIdVsTenantModelMap = convertToTenantModel(v1ServiceUtil.getTenantDetails(shipDestinationBranchIds));
 
+        var shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         for (int i = 0; i < destinationBranches.size(); i++) {
-            List<String> emailList = getEmailsListByPermissionKeysAndTenantId(Collections.singletonList(PermissionConstants.SHIPMENT_IN_PIPELINE_MODIFY), destinationBranches.get(i));
+            List<String> emailList;
+            if (Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled())) {
+                emailList = getEmailsListByPermissionKeysAndTenantId(Collections.singletonList(PermissionConstants.SHIPMENT_IN_PIPELINE_MODIFY), destinationBranches.get(i));
+            } else {
+                emailList = getRoleListByRoleId(getShipmentConsoleImportApprovalRole(destinationBranches.get(i)));
+            }
             var template = createConsolidationImportEmailBody(consolidationDetails, emailTemplateModel, shipmentGuidSendToBranch, i, branchIdVsTenantModelMap, destinationBranches);
             sendEmailNotification(template, emailList, ccEmails);
         }
@@ -2183,8 +2189,14 @@ public class EntityTransferService implements IEntityTransferService {
         if(user.Email!=null)
             ccEmails.add(user.Email);
 
+        var shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         for(Integer tenantId: destinationBranches) {
-            List<String> emailList = getEmailsListByPermissionKeysAndTenantId(Collections.singletonList(PermissionConstants.SHIPMENT_IN_PIPELINE_MODIFY), tenantId);
+            List<String> emailList;
+            if (Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled())) {
+                emailList = getEmailsListByPermissionKeysAndTenantId(Collections.singletonList(PermissionConstants.SHIPMENT_IN_PIPELINE_MODIFY), tenantId);
+            } else {
+                emailList = getRoleListByRoleId(getShipmentConsoleImportApprovalRole(tenantId));
+            }
             sendEmailNotification(emailTemplateModel, emailList, ccEmails);
         }
     }
@@ -2288,9 +2300,15 @@ public class EntityTransferService implements IEntityTransferService {
         var emailTemplatesRequests = getEmailTemplates(GROUPED_SHIPMENT_IMPORT_EMAIL_TYPE);
         var emailTemplateModel = emailTemplatesRequests.stream().findFirst().orElse(new EmailTemplatesRequest());
         var tenantMap = getTenantMap(sourceTenantIds.stream().toList());
+        var shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         for(Integer tenantId: tenantIds) {
             commonUtils.getToAndCcEmailMasterLists(toEmailIds, ccEmailIds, v1TenantSettingsMap, tenantId, false);
-            List<String> importerEmailIds = getEmailsListByPermissionKeysAndTenantId(Collections.singletonList(PermissionConstants.SHIPMENT_IN_PIPELINE_MODIFY), tenantId);
+            List<String> importerEmailIds;
+            if (Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled())) {
+                importerEmailIds = getEmailsListByPermissionKeysAndTenantId(Collections.singletonList(PermissionConstants.SHIPMENT_IN_PIPELINE_MODIFY), tenantId);
+            } else {
+                importerEmailIds = getRoleListByRoleId(getShipmentConsoleImportApprovalRole(tenantId));
+            }
             List<ShipmentDetails> shipmentDetailsForTenant = tenantShipmentMapping.get(tenantId);
 
             List<String> toEmailIdsList = new ArrayList<>(toEmailIds);
