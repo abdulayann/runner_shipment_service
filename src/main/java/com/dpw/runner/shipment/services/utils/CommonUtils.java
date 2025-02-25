@@ -2362,4 +2362,17 @@ public class CommonUtils {
         }
         return true;
     }
+
+    public EventsRequest prepareEventRequest(Long entityId, String eventCode, String entityType, String referenceNumber) {
+        EventsRequest eventsRequest = new EventsRequest();
+        eventsRequest.setActual(LocalDateTime.now());
+        eventsRequest.setEntityId(entityId);
+        eventsRequest.setEntityType(entityType);
+        eventsRequest.setEventCode(eventCode);
+        if (!CommonUtils.IsStringNullOrEmpty(referenceNumber))
+            eventsRequest.setContainerNumber(referenceNumber);
+        eventsRequest.setIsPublicTrackingEvent(true);
+        eventsRequest.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
+        return eventsRequest;
+    }
 }
