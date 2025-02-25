@@ -5838,7 +5838,6 @@ import static org.mockito.Mockito.*;
 
         when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.empty());
         when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
-        doNothing().when(commonErrorLogsDao).logConsoleAutomaticTransferErrors(any(), anyLong(), anyList());
         mockShipmentSettings();
         List<V1TenantSettingsResponse.FileTransferConfigurations> fileTransferConfigurationsList = Collections.singletonList(V1TenantSettingsResponse.FileTransferConfigurations.builder().build());
         when(quartzJobInfoService.getActiveFileTransferConfigurations(any())).thenReturn(fileTransferConfigurationsList);
@@ -5847,7 +5846,6 @@ import static org.mockito.Mockito.*;
 
         verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
         verify(networkTransferDao, times(1)).findByTenantAndEntity(any(), anyLong(), anyString());
-        verify(commonErrorLogsDao, times(1)).logConsoleAutomaticTransferErrors(any(), anyLong(), anyList());
     }
 
     @Test
@@ -6009,13 +6007,11 @@ import static org.mockito.Mockito.*;
 
         QuartzJobInfo existingJob = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
         when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.of(existingJob));
-        doNothing().when(commonErrorLogsDao).logConsoleAutomaticTransferErrors(any(), anyLong(), anyList());
         mockShipmentSettings();
 
         consolidationService.triggerAutomaticTransfer(consolidationDetails1, consolidationDetails, false);
 
         verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
-        verify(commonErrorLogsDao, times(1)).logConsoleAutomaticTransferErrors(any(), anyLong(), anyList());
     }
 
     @Test

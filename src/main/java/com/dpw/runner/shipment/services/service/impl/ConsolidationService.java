@@ -4831,9 +4831,6 @@ public class ConsolidationService implements IConsolidationService {
                     ObjectUtils.isEmpty(carrierDetails.getAta()) && ObjectUtils.isEmpty(carrierDetails.getAtd()))) {
                 if(quartzJobInfo!=null && quartzJobInfo.getJobStatus() == JobState.QUEUED)
                     quartzJobInfoService.deleteJobById(quartzJobInfo.getId());
-                String errorMessage = "Please enter the Eta, Etd, Ata and Atd to retrigger the transfer";
-                SendConsoleValidationResponse sendConsoleValidationResponse = SendConsoleValidationResponse.builder().isError(true).consoleErrorMessage(errorMessage).build();
-                commonErrorLogsDao.logConsoleAutomaticTransferErrors(sendConsoleValidationResponse, consolidationDetails.getId(), new ArrayList<>());
                 return;
             }
 

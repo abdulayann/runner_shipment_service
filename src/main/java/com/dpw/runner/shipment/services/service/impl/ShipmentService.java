@@ -2996,12 +2996,6 @@ public class ShipmentService implements IShipmentService {
         if (quartzJobInfo != null && quartzJobInfo.getJobStatus() == JobState.QUEUED) {
             quartzJobInfoService.deleteJobById(quartzJobInfo.getId());
         }
-        String errorMessage = "Please enter the Eta, Etd, Ata and Atd to retrigger the transfer";
-        SendShipmentValidationResponse response = SendShipmentValidationResponse.builder()
-                .isError(true)
-                .shipmentErrorMessage(errorMessage)
-                .build();
-        commonErrorLogsDao.logShipmentAutomaticTransferErrors(response, shipmentDetails.getId());
     }
 
     private boolean shouldCreateOrUpdateQuartzJob(QuartzJobInfo quartzJobInfo, ShipmentDetails oldEntity, ShipmentDetails shipmentDetails, Boolean isDocAdded) {
