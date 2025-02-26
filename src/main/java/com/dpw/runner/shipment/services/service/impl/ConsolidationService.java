@@ -5914,26 +5914,24 @@ public class ConsolidationService implements IConsolidationService {
             List<UUID> shipmentGuids = consol.get().getShipmentsList().stream()
                     .map(ShipmentDetails::getGuid)
                     .collect(Collectors.toList());
-            if (!CommonUtils.listIsNullOrEmpty(shipmentGuids)) {
-                shipmentDao.updateShipmentsBookingNumber(shipmentGuids, request.getBookingNumber());
-                Set<Integer> tenantIds = consol.get().getShipmentsList().stream()
-                        .map(ShipmentDetails::getTenantId)
-                        .collect(Collectors.toSet());
-                var tenantMap = v1ServiceUtil.getTenantDetails(tenantIds.stream().toList());
-                List<EventsRequest> events = new ArrayList<>();
-                consol.get().getShipmentsList().stream().forEach(shipmentDetails -> {
-                    if (!Objects.equals(shipmentDetails.getBookingNumber(), request.getBookingNumber())
-                            && shipmentDetails.getDirection().equals(Constants.DIRECTION_EXP)) {
-                        EventsRequest event = commonUtils.prepareEventRequest(shipmentDetails.getId(), EventConstants.BOCO, SHIPMENT, request.getBookingNumber());
-                        event.setUserName(SYSTEM_GENERATED);
-                        var tenantDetails = jsonHelper.convertValue(tenantMap.getOrDefault(shipmentDetails.getTenantId(), new V1TenantResponse()), V1TenantResponse.class);
-                        event.setBranch(tenantDetails.getCode());
-                        event.setBranchName(tenantDetails.getTenantName());
-                        events.add(event);
-                    }
-                });
-                eventService.saveAllEvent(events);
-            }
+            shipmentDao.updateShipmentsBookingNumber(shipmentGuids, request.getBookingNumber());
+            Set<Integer> tenantIds = consol.get().getShipmentsList().stream()
+                    .map(ShipmentDetails::getTenantId)
+                    .collect(Collectors.toSet());
+            var tenantMap = v1ServiceUtil.getTenantDetails(tenantIds.stream().toList());
+            List<EventsRequest> events = new ArrayList<>();
+            consol.get().getShipmentsList().stream().forEach(shipmentDetails -> {
+                if (!Objects.equals(shipmentDetails.getBookingNumber(), request.getBookingNumber())
+                        && shipmentDetails.getDirection().equals(Constants.DIRECTION_EXP)) {
+                    EventsRequest event = commonUtils.prepareEventRequest(shipmentDetails.getId(), EventConstants.BOCO, SHIPMENT, request.getBookingNumber());
+                    event.setUserName(SYSTEM_GENERATED);
+                    var tenantDetails = jsonHelper.convertValue(tenantMap.getOrDefault(shipmentDetails.getTenantId(), new V1TenantResponse()), V1TenantResponse.class);
+                    event.setBranch(tenantDetails.getCode());
+                    event.setBranchName(tenantDetails.getTenantName());
+                    events.add(event);
+                }
+            });
+            eventService.saveAllEvent(events);
         }
         return ResponseHelper.buildSuccessResponse();
     }

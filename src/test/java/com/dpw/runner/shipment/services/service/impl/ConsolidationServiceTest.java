@@ -861,7 +861,7 @@ import static org.mockito.Mockito.*;
     }
 
     @Test
-    public void testUpdateConsoleBookingFields_Success2() {
+    void testUpdateConsoleBookingFields_Success2() {
         ConsoleBookingRequest request = new ConsoleBookingRequest();
         request.setGuid(UUID.randomUUID());
         request.setBookingNumber("BookingNumber");

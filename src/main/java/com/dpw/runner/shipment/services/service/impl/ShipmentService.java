@@ -2178,7 +2178,6 @@ public class ShipmentService implements IShipmentService {
             }
             shipmentDetails.setMasterBill(consolidationDetails1.getBol());
             shipmentDetails.setDirection(consolidationDetails1.getShipmentType());
-            String oldBookingNumber = shipmentDetails.getBookingNumber();
             if (consolidationDetails1.getId() != null) {
                 Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationDetails1.getId());
                 if (!consol.isEmpty() && !CommonUtils.IsStringNullOrEmpty(consol.get().getBookingNumber())) {
@@ -3353,7 +3352,6 @@ public class ShipmentService implements IShipmentService {
         if (isLclOrFclOrAir(shipmentDetails)) {
 
             if (isEventChanged(shipmentDetails.getBookingNumber(), oldEntity.getBookingNumber(), isNewShipment) && Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP)) {
-                // TODO: need to handle create/update both
                 boolean shouldCreateBOCO = true;
                 if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.BOCO))) {
                     List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.BOCO);

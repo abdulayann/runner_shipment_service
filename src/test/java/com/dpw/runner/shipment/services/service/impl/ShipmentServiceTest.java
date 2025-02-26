@@ -10358,4 +10358,42 @@ ShipmentServiceTest extends CommonMocks {
         assertNull(responseEntity);
     }
 
+    @Test
+    void createOrUpdateEvents() {
+        ShipmentDetails mockShipment = shipmentDetails;
+        mockShipment.setShipmentId("AIR-CAN-00001");
+        mockShipment.setTransportMode(TRANSPORT_MODE_AIR);
+        mockShipment.setDirection(DIRECTION_EXP);
+        mockShipment.setBookingNumber("BOCO");
+
+        List<Events> events = new ArrayList<>();
+        events.add(Events.builder().eventCode(EventConstants.BOCO).source(MASTER_DATA_SOURCE_CARGOES_RUNNER).build());
+        events.add(Events.builder().eventCode(EventConstants.BOCO).source(MASTER_DATA_SOURCE_CARGOES_RUNNER).containerNumber("BOCO").build());
+        events.add(Events.builder().eventCode(EventConstants.PRST).source(MASTER_DATA_SOURCE_CARGOES_RUNNER).build());
+
+        mockShipmentSettings();
+        doNothing().when(eventDao).updateFieldsForShipmentGeneratedEvents(anyList(), any());
+
+        var eventsResponse = shipmentService.createOrUpdateEvents(mockShipment, null, events, true);
+        assertNotNull(eventsResponse);
+    }
+
+    @Test
+    void createOrUpdateEvents2() {
+        ShipmentDetails mockShipment = shipmentDetails;
+        mockShipment.setShipmentId("AIR-CAN-00001");
+        mockShipment.setTransportMode(TRANSPORT_MODE_AIR);
+        mockShipment.setDirection(DIRECTION_EXP);
+        mockShipment.setBookingNumber("BOCO");
+
+        List<Events> events = new ArrayList<>();
+        events.add(Events.builder().eventCode(EventConstants.PRST).source(MASTER_DATA_SOURCE_CARGOES_RUNNER).build());
+
+        mockShipmentSettings();
+        doNothing().when(eventDao).updateFieldsForShipmentGeneratedEvents(anyList(), any());
+
+        var eventsResponse = shipmentService.createOrUpdateEvents(mockShipment, null, events, true);
+        assertNotNull(eventsResponse);
+    }
+
 }
