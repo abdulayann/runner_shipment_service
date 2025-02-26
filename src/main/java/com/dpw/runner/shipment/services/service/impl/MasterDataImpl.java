@@ -1,11 +1,13 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.ListCousinBranchesForEtRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
@@ -28,13 +30,16 @@ public class MasterDataImpl implements IMasterDataService {
     private final IV1Service v1Service;
     private final MasterDataUtils masterDataUtils;
     private final CommonUtils commonUtils;
+    private final IMDMServiceAdapter mdmServiceAdapter;
 
     @Autowired
-    public MasterDataImpl (MasterDataFactory masterDataFactory, IV1Service v1Service, MasterDataUtils masterDataUtils, CommonUtils commonUtils) {
+    public MasterDataImpl (MasterDataFactory masterDataFactory, IV1Service v1Service, MasterDataUtils masterDataUtils, CommonUtils commonUtils
+    ,IMDMServiceAdapter mdmServiceAdapter) {
         this.masterDataFactory = masterDataFactory;
         this.v1Service = v1Service;
         this.masterDataUtils = masterDataUtils;
         this.commonUtils = commonUtils;
+        this.mdmServiceAdapter = mdmServiceAdapter;
     }
 
     @Override
@@ -260,6 +265,12 @@ public class MasterDataImpl implements IMasterDataService {
     @Override
     public ResponseEntity<IRunnerResponse> listOwnType(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().fetchOwnType(commonRequestModel.getDependentData()));
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> createNonBillableCustomer(CommonRequestModel commonRequestModel)
+        throws RunnerException {
+        return mdmServiceAdapter.createNonBillableCustomer(commonRequestModel);
     }
 
     @Override
