@@ -50,7 +50,7 @@ public class DocumentManagerRestClient {
     private RestTemplate restTemplate;
 
     @Value("${document-manager.baseUrl}${document-manager.delete}")
-    private String DOCUMENT_DELETE;
+    private String documentDelete;
 
     @Autowired
     DocumentManagerRestClient(RestTemplate restTemplate, JsonHelper jsonHelper) {
@@ -222,7 +222,7 @@ public class DocumentManagerRestClient {
             HttpEntity<Object> httpEntity = new HttpEntity<>(object, headers);
             log.info("{} | deleteFile request: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(object));
             var response  = restTemplate.exchange(
-                    this.DOCUMENT_DELETE,
+                    this.documentDelete,
                     HttpMethod.PUT,
                     httpEntity,
                     new ParameterizedTypeReference<>() {}

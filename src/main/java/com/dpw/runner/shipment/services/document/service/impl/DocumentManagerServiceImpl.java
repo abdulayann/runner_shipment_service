@@ -33,8 +33,7 @@ public class DocumentManagerServiceImpl implements IDocumentManagerService {
 
     @Autowired
     private HttpServletRequest httpServletRequest;
-    @Autowired
-    private JsonHelper jsonHelper;
+
 
     @Override
     public DocumentManagerResponse<DocumentManagerDataResponse> temporaryFileUpload(MultipartFile file, String filename) {

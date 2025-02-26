@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.document.request.documentmanager.*;
 import com.dpw.runner.shipment.services.document.response.*;
 import com.dpw.runner.shipment.services.dto.request.CopyDocumentsRequest;
+import com.dpw.runner.shipment.services.exception.exceptions.DocumentClientException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import org.apache.poi.ss.formula.functions.T;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,6 +20,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
+import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.concurrent.CompletableFuture;
@@ -252,9 +254,22 @@ class DocumentManagerRestClientTest {
 
         DocumentManagerResponse<T> actualResponse =
                 documentManagerRestClient.deleteFile(new Object());
-
+        assertNull(actualResponse);
         assertTrue(isSuccess);
     }
 
 
+    @Test
+    void testDeleteFiles2() {
+        ArgumentCaptor<HttpEntity> httpEntityCaptor = ArgumentCaptor.forClass(HttpEntity.class);
+        ArgumentCaptor<String> urlCaptor = ArgumentCaptor.forClass(String.class);
+        when(restTemplate.exchange(
+                urlCaptor.capture(),
+                eq(HttpMethod.PUT),
+                httpEntityCaptor.capture(),
+                any(ParameterizedTypeReference.class)
+        )).thenThrow(new RuntimeException());
+
+        assertThrows(DocumentClientException.class, () -> documentManagerRestClient.deleteFile(new Object()));
+    }
 }
