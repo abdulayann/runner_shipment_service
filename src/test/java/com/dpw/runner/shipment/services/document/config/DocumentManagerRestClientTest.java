@@ -218,7 +218,7 @@ class DocumentManagerRestClientTest {
         ArgumentCaptor<HttpEntity> httpEntityCaptor = ArgumentCaptor.forClass(HttpEntity.class);
         ArgumentCaptor<String> urlCaptor = ArgumentCaptor.forClass(String.class);
         when(restTemplate.exchange(urlCaptor.capture(), eq(HttpMethod.PUT), httpEntityCaptor.capture(), any(ParameterizedTypeReference.class))).thenThrow(new RuntimeException());
-
-        assertThrows(DocumentClientException.class, () -> documentManagerRestClient.deleteFile(new Object()));
+        Throwable throwable = assertThrows(Throwable.class, () -> documentManagerRestClient.deleteFile(new Object()));
+        assertEquals(DocumentClientException.class.getSimpleName(), throwable.getClass().getSimpleName());
     }
 }
