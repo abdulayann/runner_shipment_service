@@ -1,7 +1,9 @@
 package com.dpw.runner.shipment.services.controller;
 
+import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -13,8 +15,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import javax.validation.Valid;
 
 
 @RestController
@@ -23,22 +30,32 @@ import org.springframework.web.bind.annotation.RestController;
 public class ShipmentControllerV3 {
 
     @Autowired
-    IShipmentServiceV3 ShipmentServiceV3;
+    IShipmentServiceV3 shipmentService;
 
 
-    @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ShipmentConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, response = RunnerResponse.class, message = ShipmentConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ShipmentConstants.COUNT_PENDING_NOTIFICATION_API)
     public ResponseEntity<IRunnerResponse> retrieveById() {
         String responseMsg;
         try {
             log.info("Received shipment notification pending count request with RequestId: {}", LoggerHelper.getRequestIdFromMDC());
-            return ShipmentServiceV3.getPendingNotificationCount();
-        }
-        catch (Exception e) {
+            return shipmentService.getPendingNotificationCount();
+        } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
+
+    }
+
+    @PostMapping(ApiConstants.API_LIST)
+    public ResponseEntity<IRunnerResponse> list(
+            @RequestBody @Valid ListCommonRequest listCommonRequest,
+            @RequestParam(required = false, defaultValue = "false") boolean getMasterData) {
+        log.info("Received shipment list v3 request with RequestId: {}",
+                LoggerHelper.getRequestIdFromMDC());
+        return shipmentService.listShipment(listCommonRequest, getMasterData);
     }
 }
