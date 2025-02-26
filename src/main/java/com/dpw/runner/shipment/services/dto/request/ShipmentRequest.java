@@ -170,6 +170,7 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private ShipmentPackStatus shipmentPackStatus;
     private String department;
     private OceanDGStatus oceanDGStatus;
+    private Boolean isRefeer;
 
     // Consolidation achieved values
     private AchievedQuantitiesRequest consolidationAchievedQuantities;
