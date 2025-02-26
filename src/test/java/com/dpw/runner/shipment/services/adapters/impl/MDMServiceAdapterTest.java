@@ -218,7 +218,6 @@ class MDMServiceAdapterTest {
         ResponseEntity<DependentServiceResponse> responseEntity = new ResponseEntity<>(dependentServiceResponse, HttpStatus.OK);
         when(restTemplate.exchange(any(RequestEntity.class), eq(DependentServiceResponse.class)))
             .thenReturn(responseEntity);
-        IRunnerResponse runnerResponse = mock(IRunnerResponse.class);
 
         // Act
         ResponseEntity<IRunnerResponse> response = mdmServiceAdapter.createNonBillableCustomer(commonRequestModel);

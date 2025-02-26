@@ -1,8 +1,14 @@
 package com.dpw.runner.shipment.services.dto.v1.request;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.GLOBAL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.GLOBALFF;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SUBMITTED;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 import java.util.List;
 
 @Data
+@JsonInclude(JsonInclude.Include.ALWAYS)
 public class CompanyDetailsRequest {
   private StatusCodeDTO statusCode;
   private TenantDTO tenant;
@@ -25,14 +31,15 @@ public class CompanyDetailsRequest {
 
 @Data
 class StatusCodeDTO {
-  private String name = "Submitted";
-  private String description = "Submitted";
+  private String name = SUBMITTED;
+  private String description = SUBMITTED;
 }
 
 @Data
 class TenantDTO {
-  private String name;
-  private String description;
+  private String name = "FR";
+  @JsonInclude(JsonInclude.Include.ALWAYS)
+  private String description = null;
 }
 
 @Data
@@ -46,20 +53,20 @@ class CompanyClientTypeDTO {
 @Data
 class CompanyServiceProviderDetailDTO {
   private StatusCodeDTO statusCode = new StatusCodeDTO();
-  private String locationCode = "GLOBAL";
-  private String serviceProviderCode = "GLOBALFF";
+  private String locationCode = GLOBAL;
+  private String serviceProviderCode = GLOBALFF;
 }
 
 @Data
 class CompanyCodeIssuerDetailDTO {
   private StatusCodeDTO statusCode = new StatusCodeDTO();
   private String clientTypeCode = "BCO";
-  private String locationCode = "GLOBAL";
-  private String serviceProviderCode = "GLOBALFF";
+  private String locationCode = GLOBAL;
+  private String serviceProviderCode = GLOBALFF;
   private String issuerCategory = "COMPANY_ROLE";
   private String issuerCategoryValue = "BCO";
   private String correspondingCategory = "Service Provider";
-  private String correspondingCategoryValue = "GLOBALFF";
+  private String correspondingCategoryValue = GLOBALFF;
   private String identifierIssuedBy = "FUSION";
   private String identifierCodeType = "BILLABLE_FLAG";
   private String identifierCode = "NO";
