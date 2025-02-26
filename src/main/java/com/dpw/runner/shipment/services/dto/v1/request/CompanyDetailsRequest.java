@@ -10,8 +10,8 @@ import java.util.List;
 @Data
 @JsonInclude(JsonInclude.Include.ALWAYS)
 public class CompanyDetailsRequest {
-  private StatusCodeDTO statusCode;
-  private TenantDTO tenant;
+  private StatusCodeDTO statusCode = new StatusCodeDTO();
+  private TenantDTO tenant = new TenantDTO();
   private String companyName;
   private String countryCode;
   private String stateName;
@@ -25,8 +25,8 @@ public class CompanyDetailsRequest {
   private List<String> companyRegisteredUnder;
   private String tradersCode;
   private String companyType = "ORG";
-  private List<CompanyClientTypeDTO> companyClientTypes;
-  private List<CompanyCodeIssuerDetailDTO> companyCodeIssuerDetails;
+  private List<CompanyClientTypeDTO> companyClientTypes = List.of(new CompanyClientTypeDTO());
+  private List<CompanyCodeIssuerDetailDTO> companyCodeIssuerDetails = List.of(new CompanyCodeIssuerDetailDTO());
 }
 
 @Data
@@ -47,7 +47,7 @@ class CompanyClientTypeDTO {
   private StatusCodeDTO statusCode = new StatusCodeDTO();
   private String clientTypeCode = "BCO";
   private String clientTypeName = "BCO (Importer / Exporter)";
-  private List<CompanyServiceProviderDetailDTO> companyServiceProviderDetails;
+  private List<CompanyServiceProviderDetailDTO> companyServiceProviderDetails = List.of(new CompanyServiceProviderDetailDTO());
 }
 
 @Data
