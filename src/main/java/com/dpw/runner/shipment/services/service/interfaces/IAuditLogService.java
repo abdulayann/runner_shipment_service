@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.service.interfaces;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.AuditLogCreateRequest;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.core.io.Resource;
@@ -15,4 +16,5 @@ public interface IAuditLogService {
     ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel);
 
     void addAuditLog(AuditLogMetaData auditLogMetaData) throws IllegalAccessException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, NoSuchMethodException, RunnerException;
+    ResponseEntity<IRunnerResponse> createAuditLog(AuditLogCreateRequest request) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException;
 }

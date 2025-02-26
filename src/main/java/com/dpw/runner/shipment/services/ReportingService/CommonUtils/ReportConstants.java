@@ -850,6 +850,7 @@ public class ReportConstants {
     // APis
     public static final String REPORT_API_HANDLE = "/api/v2/report";
     public static final String REPORT_CREATE_SUCCESSFUL = "Successful Report Creation";
+    public static final String PRE_ALERT_EMAIL_TEMPLATE_DATA = "/getPreAlertEmailTemplateData";
     public static final String SERVICE_MODE = "ServiceMode";
     public static final String SHIPMENT_PACKS_UNIT_DESC = "ShipmentPacksUnitDescription";
     public static final String UN = "UN";
@@ -1338,6 +1339,13 @@ public class ReportConstants {
     public static final String PLACE_OF_ISSUE = "PlaceOfIssue";
     public static final String FCR_PLACE_OF_ISSUE = "FCR_Placeofissue";
     public static final String FCR_DATE_OF_ISSUE = "FCR_Dateofissue";
+    public static final String LOAD = "Load";
+    public static final String CNEES = "Cnees";
+    public static final String DSTN = "Dstn";
+    public static final String CONT_NO = "ContNo";
+    public static final String CBR = "CBR";
+    public static final String COMMODITY = "Commodity";
+    public static final String CBN_NUMBER = "CBN Number";
 
     // ValidationExceptions
     public static final String FREIGHT_DOCUMENT_PERMISSION_EXCEPTION = "You do not have permission to print the freight documents.";

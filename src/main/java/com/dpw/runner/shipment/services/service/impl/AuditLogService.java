@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.AuditLogConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
@@ -12,19 +11,9 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IAuditLogDao;
+import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.AuditLogCreateRequest;
 import com.dpw.runner.shipment.services.dto.response.AuditLogResponse;
-import com.dpw.runner.shipment.services.entity.AuditLog;
-import com.dpw.runner.shipment.services.entity.BookingCarriage;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.Events;
-import com.dpw.runner.shipment.services.entity.Notes;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.Parties;
-import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
-import com.dpw.runner.shipment.services.entity.Routings;
-import com.dpw.runner.shipment.services.entity.ServiceDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -38,31 +27,6 @@ import com.dpw.runner.shipment.services.utils.ExcludeAuditLog;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.nimbusds.jose.util.Pair;
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Modifier;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
-import javax.persistence.Id;
-import javax.persistence.ManyToMany;
-import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
-import javax.persistence.OneToOne;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.apache.commons.lang3.ObjectUtils;
@@ -79,6 +43,18 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.persistence.*;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Modifier;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+
 @Slf4j
 @Service
 public class AuditLogService implements IAuditLogService {
@@ -93,7 +69,8 @@ public class AuditLogService implements IAuditLogService {
         DBOperationType.DG_REJECT,
         DBOperationType.COMMERCIAL_REQUEST,
         DBOperationType.COMMERCIAL_APPROVE,
-        DBOperationType.COMMERCIAL_REJECT
+        DBOperationType.COMMERCIAL_REJECT,
+        DBOperationType.PRE_ALERT_EMAIL_SENT
     );
 
     static {
@@ -518,6 +495,27 @@ public class AuditLogService implements IAuditLogService {
         }
 
         return fieldValueMap;
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> createAuditLog(AuditLogCreateRequest request) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        if(!AuditLogConstants.PRE_ALERT_DOC_EMAIL_SENT.equals(request.getType())) {
+            throw new RunnerException("Audit Log creation for this type is not allowed.");
+        }
+        addAuditLog(
+                AuditLogMetaData.builder()
+                        .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
+                        .newData(OceanDGRequestLog.builder()
+                                .time(LocalDateTime.now())
+                                .userName(UserContext.getUser().getUsername())
+                                .build())
+                        .prevData(null)
+                        .parent(ShipmentDetails.class.getSimpleName())
+                        .parentId(request.getEntityId())
+                        .entityType(request.getType())
+                        .operation(String.valueOf(DBOperationType.PRE_ALERT_EMAIL_SENT)).build()
+        );
+        return ResponseHelper.buildSuccessResponse();
     }
 
     public List<Field> getListOfAllFields(BaseEntity newEntity) {

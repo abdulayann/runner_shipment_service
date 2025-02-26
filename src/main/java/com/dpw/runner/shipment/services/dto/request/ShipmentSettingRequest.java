@@ -4,14 +4,10 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.entity.enums.GenerationType;
 import io.swagger.annotations.ApiModel;
+import lombok.*;
+
 import java.time.LocalDateTime;
 import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.ToString;
 
 @Getter
 @Setter
@@ -198,4 +194,5 @@ public class ShipmentSettingRequest extends CommonRequest implements IRunnerRequ
     private Boolean isRAEnabled;
     private Boolean isKCEnabled;
     private Boolean countryAirCargoSecurity;
+    private Boolean preAlertEmailAndLogs;
 }
