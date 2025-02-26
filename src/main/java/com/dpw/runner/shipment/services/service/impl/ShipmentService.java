@@ -2180,8 +2180,10 @@ public class ShipmentService implements IShipmentService {
             shipmentDetails.setDirection(consolidationDetails1.getShipmentType());
             if (consolidationDetails1.getId() != null) {
                 Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationDetails1.getId());
-                if (!consol.isEmpty() && !CommonUtils.IsStringNullOrEmpty(consol.get().getBookingId()) && !CommonUtils.IsStringNullOrEmpty(consol.get().getBookingNumber())) {
+                if (!consol.isEmpty() && !CommonUtils.IsStringNullOrEmpty(consol.get().getBookingNumber())) {
                     shipmentDetails.setBookingNumber(consol.get().getBookingNumber());
+                } else if(!consol.isEmpty()) {
+                    shipmentDetails.setBookingNumber(consol.get().getCarrierBookingRef());
                 }
             }
             if (shipmentDetails.getCarrierDetails() == null) {
@@ -3350,15 +3352,22 @@ public class ShipmentService implements IShipmentService {
         if (isLclOrFclOrAir(shipmentDetails)) {
 
             if (isEventChanged(shipmentDetails.getBookingNumber(), oldEntity.getBookingNumber(), isNewShipment) && Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP)) {
+                boolean shouldCreateBOCO = true;
                 if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.BOCO))) {
                     List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.BOCO);
                     for (Events event : dbEvents) {
-                        event.setActual(LocalDateTime.now());
-                        eventDao.updateUserFieldsInEvent(event, true);
+                        if (Objects.equals(shipmentDetails.getBookingNumber(), event.getContainerNumber())) {
+                            event.setActual(LocalDateTime.now());
+                            eventDao.updateUserFieldsInEvent(event, true);
+                            shouldCreateBOCO = false;
+                        }
                     }
-                } else {
-                    events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.BOCO,
-                            LocalDateTime.now(), null));
+                }
+                if(Boolean.TRUE.equals(shouldCreateBOCO)) {
+                    Events bocoEvent = initializeAutomatedEvents(shipmentDetails, EventConstants.BOCO, LocalDateTime.now(), null);
+                    if (!CommonUtils.IsStringNullOrEmpty(shipmentDetails.getBookingNumber()))
+                        bocoEvent.setContainerNumber(shipmentDetails.getBookingNumber());
+                    events.add(bocoEvent);
                 }
             }
 

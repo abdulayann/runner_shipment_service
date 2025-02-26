@@ -572,7 +572,7 @@ public class EventDao implements IEventDao {
                 event.setConsolidationId(event.getEntityId());
             }
 
-            if (Boolean.FALSE.equals(automaticTransfer)) {
+            if (Boolean.FALSE.equals(automaticTransfer) && !Objects.equals(event.getUserName(), Constants.SYSTEM_GENERATED)) {
                 updateUserFieldsInEvent(event, false);
             }
         }

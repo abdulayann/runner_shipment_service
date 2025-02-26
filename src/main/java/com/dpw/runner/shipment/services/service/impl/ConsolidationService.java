@@ -297,6 +297,8 @@ public class ConsolidationService implements IConsolidationService {
     private INotificationDao notificationDao;
     @Autowired
     private DependentServiceHelper dependentServiceHelper;
+    @Autowired
+    private IEventService eventService;
 
     @Value("${consolidationsKafka.queue}")
     private String senderQueue;
@@ -1764,14 +1766,19 @@ public class ConsolidationService implements IConsolidationService {
                 !CommonUtils.checkSameParties(console.getReceivingAgent(), oldEntity.getReceivingAgent()))) {
             if(shipments == null)
                 shipments = getShipmentsList(console.getId());
+            List<EventsRequest> events = new ArrayList<>();
             for(ShipmentDetails i: shipments) {
                 i.setConsolRef(console.getReferenceNumber());
                 i.setMasterBill(console.getBol());
                 i.setDirection(console.getShipmentType());
-                if (!CommonUtils.IsStringNullOrEmpty(console.getBookingId()) && !CommonUtils.IsStringNullOrEmpty(console.getBookingNumber())) {
+                String oldBookingNumber = i.getBookingNumber();
+                if (!CommonUtils.IsStringNullOrEmpty(console.getBookingNumber())) {
                     i.setBookingNumber(console.getBookingNumber());
                 } else {
                     i.setBookingNumber(console.getCarrierBookingRef());
+                }
+                if (!Objects.equals(oldBookingNumber, i.getBookingNumber()) && Objects.equals(i.getDirection(), Constants.DIRECTION_EXP)) {
+                    events.add(commonUtils.prepareEventRequest(i.getId(), EventConstants.BOCO, SHIPMENT, i.getBookingNumber()));
                 }
                 if (Boolean.TRUE.equals(console.getInterBranchConsole())) {
                     i.setTriangulationPartnerList(console.getTriangulationPartnerList() != null ? new ArrayList<>(console.getTriangulationPartnerList()) : null);
@@ -1826,6 +1833,7 @@ public class ConsolidationService implements IConsolidationService {
             }
 
             shipmentDao.saveAll(shipments);
+            eventService.saveAllEvent(events);
             if(fromAttachShipment != null && fromAttachShipment) {
                 syncShipmentsList(shipments, StringUtility.convertToString(console.getGuid()));
             }
@@ -5902,11 +5910,28 @@ public class ConsolidationService implements IConsolidationService {
             throw new ValidationException("No Consolidation Exist with given guid: " + request.getGuid());
         }
         Optional<ConsolidationDetails> consol = consolidationDetailsDao.findConsolidationByGuidWithQuery(request.getGuid());
-        if (consol.isPresent()) {
+        if (consol.isPresent() && !CommonUtils.setIsNullOrEmpty(consol.get().getShipmentsList())) {
             List<UUID> shipmentGuids = consol.get().getShipmentsList().stream()
                     .map(ShipmentDetails::getGuid)
                     .collect(Collectors.toList());
             shipmentDao.updateShipmentsBookingNumber(shipmentGuids, request.getBookingNumber());
+            Set<Integer> tenantIds = consol.get().getShipmentsList().stream()
+                    .map(ShipmentDetails::getTenantId)
+                    .collect(Collectors.toSet());
+            var tenantMap = v1ServiceUtil.getTenantDetails(tenantIds.stream().toList());
+            List<EventsRequest> events = new ArrayList<>();
+            consol.get().getShipmentsList().stream().forEach(shipmentDetails -> {
+                if (!Objects.equals(shipmentDetails.getBookingNumber(), request.getBookingNumber())
+                        && shipmentDetails.getDirection().equals(Constants.DIRECTION_EXP)) {
+                    EventsRequest event = commonUtils.prepareEventRequest(shipmentDetails.getId(), EventConstants.BOCO, SHIPMENT, request.getBookingNumber());
+                    event.setUserName(SYSTEM_GENERATED);
+                    var tenantDetails = jsonHelper.convertValue(tenantMap.getOrDefault(shipmentDetails.getTenantId(), new V1TenantResponse()), V1TenantResponse.class);
+                    event.setBranch(tenantDetails.getCode());
+                    event.setBranchName(tenantDetails.getTenantName());
+                    events.add(event);
+                }
+            });
+            eventService.saveAllEvent(events);
         }
         return ResponseHelper.buildSuccessResponse();
     }
