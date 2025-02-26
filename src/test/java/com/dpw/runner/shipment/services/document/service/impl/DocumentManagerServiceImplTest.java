@@ -9,13 +9,12 @@ import com.dpw.runner.shipment.services.document.util.BASE64DecodedMultipartFile
 import org.apache.poi.ss.formula.functions.T;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.PropertySource;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
@@ -27,18 +26,16 @@ import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@ContextConfiguration(classes = {DocumentManagerServiceImpl.class})
-@ExtendWith(SpringExtension.class)
-@PropertySource("classpath:application-test.properties")
-@EnableConfigurationProperties
+@ExtendWith(MockitoExtension.class)
+@Execution(ExecutionMode.CONCURRENT)
 class DocumentManagerServiceImplTest {
-    @MockBean
+    @Mock
     private DocumentManagerRestClient documentManagerRestClient;
 
-    @Autowired
+    @InjectMocks
     private DocumentManagerServiceImpl documentManagerServiceImpl;
 
-    @MockBean
+    @Mock
     private HttpServletRequest httpServletRequest;
 
     /**
