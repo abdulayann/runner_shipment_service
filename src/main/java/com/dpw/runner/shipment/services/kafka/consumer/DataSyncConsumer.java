@@ -23,10 +23,10 @@ public class DataSyncConsumer {
     @Autowired
     private ObjectMapper objectMapper;
 
-    // @KafkaListener(
-    //         topics = {"#{'${data.sync.kafka.queue}'}"},
-    //         autoStartup = "#{'${data.sync.kafka.autostart}'}",
-    //         groupId = "#{'${data.sync.kafka.subs}'}")
+    @KafkaListener(
+            topics = {"#{'${data.sync.kafka.queue}'}"},
+            autoStartup = "#{'${data.sync.kafka.autostart}'}",
+            groupId = "#{'${data.sync.kafka.subs}'}")
     public void consume(String message)
     {
         try {
