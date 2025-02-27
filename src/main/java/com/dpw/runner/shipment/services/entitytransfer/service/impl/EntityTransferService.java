@@ -2180,14 +2180,14 @@ public class EntityTransferService implements IEntityTransferService {
                 .jobType(shipmentDetails.getJobType())
                 .orderNumber(shipmentDetails.getOrderNumber())
                 .branchId(shipmentDetails.getTenantId())
-                .status(TransferStatus.ACCEPTED.name())
+                .transferStatus(TransferStatus.ACCEPTED)
                 .build();
     }
 
     private ArValidationResponse.ProfitShareShipmentData mapShipmentDataToProfitShare(TransferStatus transferStatus, int branchId) {
         return  ArValidationResponse.ProfitShareShipmentData.builder()
                 .branchId(branchId)
-                .status(transferStatus.toString())
+                .transferStatus(transferStatus)
                 .build();
     }
 
