@@ -71,6 +71,7 @@ import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.kafka.dto.DocumentDto;
 import com.dpw.runner.shipment.services.kafka.dto.DocumentDto.Document;
+import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
@@ -140,6 +141,8 @@ public class BookingIntegrationsUtility {
     private IEventDao eventDao;
     @Autowired
     private IEventService eventService;
+    @Autowired
+    private KafkaProducer producer;
 
     @Value("${platform.failure.notification.enabled}")
     private Boolean isFailureNotificationEnabled;
@@ -941,17 +944,26 @@ public class BookingIntegrationsUtility {
 
         Document payloadData = payload.getData();
         String payloadAction = payload.getAction();
+
+        var shipments = shipmentDao.findShipmentsByGuids(Set.of(UUID.fromString(payload.getData().getEntityId())));
+        var shipment = shipments.stream().findFirst().orElse(new ShipmentDetails());
+
         if (Constants.KAFKA_EVENT_CREATE.equalsIgnoreCase(payloadAction)
                 && Objects.equals(payloadData.getEntityType(), Constants.SHIPMENTS_CAPS)
                 && Boolean.TRUE.equals(payloadData.getCustomerPortalVisibility())) {
-
-            var shipments = shipmentDao.findShipmentsByGuids(Set.of(UUID.fromString(payload.getData().getEntityId())));
-            var shipment = shipments.stream().findFirst().orElse(new ShipmentDetails());
 
             // Sending document to Logistics Platform in case of online booking
             if (Objects.equals(shipment.getBookingType(), CustomerBookingConstants.ONLINE) && !Objects.isNull(shipment.getBookingReference())) {
                 this.sendDocumentsToPlatform(shipment, payload);
             }
+        }
+        if(Constants.KAFKA_EVENT_CREATE.equalsIgnoreCase(payloadAction) && payloadData.getDocType().equalsIgnoreCase("HBL") || payloadData.getDocType().equalsIgnoreCase("Proof of Delivery")) {
+            Map<String, Object> bridgePayload = new HashMap<>();
+            bridgePayload.put("ShipmentId", shipment.getShipmentId());
+            bridgePayload.put("BookingNumber", shipment.getBookingNumber());
+            bridgePayload.put("data", payload);
+            //todo: add integration logs and persist event that we have uploaded pod doc
+            //this.sendDocumentsToBridge(bridgePayload);
         }
 
         handleEventCreation(payloadAction, payloadData);
