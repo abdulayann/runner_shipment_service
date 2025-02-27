@@ -599,11 +599,9 @@ public class CSVParsingUtil<T> {
 
     private void checkForUnitValidations(Map<String, Set<String>> masterListsMap, String column, String cellValue, int rowNum, String transportMode)
             throws ValidationException {
-        if (column.toLowerCase().contains("dgsubstanceid")) {
-            if (!StringUtils.isEmpty(cellValue) && masterListsMap.containsKey("DGSubstanceUNDGContact") &&
-                    !masterListsMap.get("DGSubstanceUNDGContact").contains(cellValue)) {
-                throw new ValidationException("DG Substance Id is invalid at row: " + rowNum);
-            }
+        if (column.toLowerCase().contains("dgsubstanceid") && !StringUtils.isEmpty(cellValue) &&
+                masterListsMap.containsKey("DGSubstanceUNDGContact") && !masterListsMap.get("DGSubstanceUNDGContact").contains(cellValue)) {
+            throw new ValidationException("DG Substance Id is invalid at row: " + rowNum);
         }
         if (column.toLowerCase().contains(Constants.FLASH_POINT) && !StringUtils.isEmpty(cellValue) && masterListsMap.containsKey(Constants.FLASH_POINT) &&
                 !masterListsMap.get(Constants.FLASH_POINT).contains(cellValue)) {
@@ -635,18 +633,16 @@ public class CSVParsingUtil<T> {
                 default:
             }
         }
-        if (column.toLowerCase().contains("tempunit")) {
-            if (!cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.TEMPERATURE_UNIT.getDescription()) &&
+        if (column.toLowerCase().contains("tempunit") && !cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.TEMPERATURE_UNIT.getDescription()) &&
                     !masterListsMap.get(MasterDataType.TEMPERATURE_UNIT.getDescription()).contains(cellValue)) {
-                throw new ValidationException("Temp Unit is invalid at row: " + rowNum);
-            }
+            throw new ValidationException("Temp Unit is invalid at row: " + rowNum);
         }
-        if (column.toLowerCase().contains("packstype")) {
-            if (!cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.PACKS_UNIT.getDescription())
+
+        if (column.toLowerCase().contains("packstype") && !cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.PACKS_UNIT.getDescription())
                     && !masterListsMap.get(MasterDataType.PACKS_UNIT.getDescription()).contains(cellValue)) {
-                throw new ValidationException("Packs Type is invalid at row: " + rowNum);
-            }
+            throw new ValidationException("Packs Type is invalid at row: " + rowNum);
         }
+
         if (column.equalsIgnoreCase("innerpackagetype") && !cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.PACKS_UNIT.getDescription()) && !masterListsMap.get(MasterDataType.PACKS_UNIT.getDescription()).contains(cellValue)) {
             throw new ValidationException("Inner package type is invalid at row: " + rowNum);
         }
@@ -688,25 +684,27 @@ public class CSVParsingUtil<T> {
                             !masterListsMap.get(MasterDataType.VOLUME_UNIT.getDescription()).contains(cellValue)) {
                         throw new ValidationException("Volume unit is null or invalid at row: " + rowNum);
                     }
+                    break;
                 }
+                default:
+                    log.debug(Constants.SWITCH_DEFAULT_CASE_MSG, column.toLowerCase());
+                    break;
             }
         }
-        if (column.toLowerCase().contains("hbldeliverymode")) {
-            if (!cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.HBL_DELIVERY_MODE.getDescription()) &&
+        if (column.toLowerCase().contains("hbldeliverymode") && !cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.HBL_DELIVERY_MODE.getDescription()) &&
                     !masterListsMap.get(MasterDataType.HBL_DELIVERY_MODE.getDescription()).contains(cellValue)) {
-                throw new ValidationException("Container Mode is invalid at row: " + rowNum);
-            }
+            throw new ValidationException("Container Mode is invalid at row: " + rowNum);
         }
-        if (column.toLowerCase().contains("containercode")) {
-            if (cellValue.isEmpty() && !transportMode.equals(Constants.TRANSPORT_MODE_AIR)) {
-                throw new ValidationException("Container Type Code cannot be null at row " + rowNum);
-            }
+
+        if (column.toLowerCase().contains("containercode") && cellValue.isEmpty() && !transportMode.equals(Constants.TRANSPORT_MODE_AIR)) {
+            throw new ValidationException("Container Type Code cannot be null at row " + rowNum);
         }
-        if (column.toLowerCase().contains("chargeableunit")) {
-            if (!cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.WEIGHT_UNIT.getDescription()) && !masterListsMap.get(MasterDataType.WEIGHT_UNIT.getDescription()).contains(cellValue)) {
-                throw new ValidationException("Chargeable unit is invalid at row: " + rowNum);
-            }
+
+        if (column.toLowerCase().contains("chargeableunit") && !cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.WEIGHT_UNIT.getDescription())
+                && !masterListsMap.get(MasterDataType.WEIGHT_UNIT.getDescription()).contains(cellValue)) {
+            throw new ValidationException("Chargeable unit is invalid at row: " + rowNum);
         }
+
         if (column.toLowerCase().contains("containercode") && !cellValue.isEmpty() && masterListsMap.containsKey(Constants.CONTAINER_TYPES) && !masterListsMap.get(Constants.CONTAINER_TYPES).contains(cellValue)) {
                 throw new ValidationException("Container Type " + cellValue + "is not valid at row " + rowNum);
         }
@@ -717,23 +715,19 @@ public class CSVParsingUtil<T> {
                 !masterListsMap.get(MasterDataType.DIMENSION_UNIT.getDescription()).contains(cellValue)) {
                 throw new ValidationException("Length unit is invalid at row: " + rowNum);
         }
-        if (column.toLowerCase().contains("widthunit")) {
-            if (!cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.DIMENSION_UNIT.getDescription()) &&
+        if (column.toLowerCase().contains("widthunit") && !cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.DIMENSION_UNIT.getDescription()) &&
                     !masterListsMap.get(MasterDataType.DIMENSION_UNIT.getDescription()).contains(cellValue)) {
-                throw new ValidationException("Width unit is invalid at row: " + rowNum);
-            }
+            throw new ValidationException("Width unit is invalid at row: " + rowNum);
         }
-        if (column.toLowerCase().contains("heightunit")) {
-            if (!cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.DIMENSION_UNIT.getDescription()) &&
+
+        if (column.toLowerCase().contains("heightunit") && !cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.DIMENSION_UNIT.getDescription()) &&
                     !masterListsMap.get(MasterDataType.DIMENSION_UNIT.getDescription()).contains(cellValue)) {
-                throw new ValidationException("Height unit is invalid at row: " + rowNum);
-            }
+            throw new ValidationException("Height unit is invalid at row: " + rowNum);
         }
-        if (column.toLowerCase().contains("countrycode")) {
-            if (!cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.COUNTRIES.getDescription()) &&
+
+        if (column.toLowerCase().contains("countrycode") && !cellValue.isEmpty() && masterListsMap.containsKey(MasterDataType.COUNTRIES.getDescription()) &&
                     !masterListsMap.get(MasterDataType.COUNTRIES.getDescription()).contains(cellValue)) {
-                throw new ValidationException(String.format("Country Code %s is invalid at row: %d", cellValue, rowNum));
-            }
+            throw new ValidationException(String.format("Country Code %s is invalid at row: %d", cellValue, rowNum));
         }
     }
 

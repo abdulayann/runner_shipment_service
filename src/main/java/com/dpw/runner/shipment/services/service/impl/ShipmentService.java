@@ -207,7 +207,6 @@ import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.entity.enums.TaskStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
-import com.dpw.runner.shipment.services.entitytransfer.dto.response.SendShipmentValidationResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
@@ -4854,16 +4853,20 @@ public class ShipmentService implements IShipmentService {
     public ResponseEntity<IRunnerResponse> toggleLock(CommonRequestModel commonRequestModel) throws RunnerException {
         CommonGetRequest commonGetRequest = (CommonGetRequest) commonRequestModel.getData();
         Long id = commonGetRequest.getId();
-        ShipmentDetails shipmentDetails = shipmentDao.findById(id).get();
+        Optional<ShipmentDetails> optionalShipmentDetails = shipmentDao.findById(id);
+        if (optionalShipmentDetails.isEmpty()) {
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+        ShipmentDetails shipmentDetails = optionalShipmentDetails.get();
         String lockingUser = shipmentDetails.getLockedBy();
-        String currentUser = userContext.getUser().getUsername();
+        String currentUser = UserContext.getUser().getUsername();
 
         if (shipmentDetails.getIsLocked() != null && shipmentDetails.getIsLocked()) {
             if (lockingUser != null && (Objects.equals(lockingUser, currentUser) ||
                     (!Objects.isNull(PermissionsContext.getPermissions(PermissionConstants.tenantSuperAdmin)) && !PermissionsContext.getPermissions(PermissionConstants.tenantSuperAdmin).isEmpty()) ))
                 shipmentDetails.setIsLocked(false);
             else
-                throw new RunnerException(String.format(ErrorConstants.LOCK_UNLOCK_ERROR, Constants.Shipment, lockingUser));
+                throw new RunnerException(String.format(ErrorConstants.LOCK_UNLOCK_ERROR, Constants.SHIPMENT_CAMELCASE, lockingUser));
         } else {
             shipmentDetails.setIsLocked(true);
             shipmentDetails.setLockedBy(currentUser);

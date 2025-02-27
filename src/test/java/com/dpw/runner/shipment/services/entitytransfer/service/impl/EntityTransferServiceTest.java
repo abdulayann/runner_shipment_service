@@ -1440,7 +1440,7 @@ class EntityTransferServiceTest extends CommonMocks {
 
     @Test
     void testCheckEntityExists() {
-        var request = CheckEntityExistRequest.builder().entityId(UUID.randomUUID().toString()).entityType(Constants.Shipment).build();
+        var request = CheckEntityExistRequest.builder().entityId(UUID.randomUUID().toString()).entityType(Constants.SHIPMENT_CAMELCASE).build();
         when(shipmentDao.findBySourceGuid(any())).thenReturn(List.of(new ShipmentDetails()));
         var responseEntity = entityTransferService.checkEntityExists(CommonRequestModel.buildRequest(request));
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
@@ -1448,7 +1448,7 @@ class EntityTransferServiceTest extends CommonMocks {
 
     @Test
     void testCheckEntityExists2() {
-        var request = CheckEntityExistRequest.builder().entityId(UUID.randomUUID().toString()).entityType(Constants.Consolidation).build();
+        var request = CheckEntityExistRequest.builder().entityId(UUID.randomUUID().toString()).entityType(Constants.CONSOLIDATION_CAMELCASE).build();
         when(consolidationDetailsDao.findBySourceGuid(any())).thenReturn(List.of(new ConsolidationDetails()));
         var responseEntity = entityTransferService.checkEntityExists(CommonRequestModel.buildRequest(request));
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
@@ -1456,7 +1456,7 @@ class EntityTransferServiceTest extends CommonMocks {
 
     @Test
     void testCheckEntityExists3() {
-        var request = CheckEntityExistRequest.builder().entityId(UUID.randomUUID().toString()).entityType(Constants.Consolidation).build();
+        var request = CheckEntityExistRequest.builder().entityId(UUID.randomUUID().toString()).entityType(Constants.CONSOLIDATION_CAMELCASE).build();
         when(consolidationDetailsDao.findBySourceGuid(any())).thenThrow(new RuntimeException(""));
         var responseEntity = entityTransferService.checkEntityExists(CommonRequestModel.buildRequest(request));
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());

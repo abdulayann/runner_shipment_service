@@ -1091,6 +1091,7 @@ public class CommonUtils {
             case SHIPMENT_DETACH -> sendEmailShipmentDetach(sendEmailDto);
             case SHIPMENT_PULL_WITHDRAW -> sendEmailShipmentPullWithdraw(sendEmailDto);
             case SHIPMENT_PUSH_WITHDRAW -> sendEmailShipmentPushWithdraw(sendEmailDto);
+            default -> log.debug(Constants.SWITCH_DEFAULT_CASE_MSG, sendEmailDto.getType());
         }
     }
 

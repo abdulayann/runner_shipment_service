@@ -4,6 +4,8 @@ import java.util.Arrays;
 import java.util.List;
 
 public class ShipmentConstants {
+    public static final String HBL_NUMBER = "HBL Number";
+    @SuppressWarnings("java:S2386")
     public static final List<String> SHIPMENT_HEADERS = Arrays.asList(
             "Shipment Clone", "Shipment Number", "Order Number", "Status", "Transport Mode",
             "Bill Status", "MBL Number", "Incoterm", "Service Type", "Release Type", "House Bill Type",
@@ -11,7 +13,7 @@ public class ShipmentConstants {
             "Vessel Name/Flight", "Flight Number", "Voyage/Flight No.", "Paid Place Name",
             "Issued Place Name", "Source1", "Date of Issue", "Date of Receipt", "Country of Origin",
             "Notify Party Name", "Cargo Type", "Origin", "Destination", "Domestic", "Route",
-            "Client Name", "Consignor Name", "Consignee Name", "HBL Number", "BOE Number",
+            "Client Name", "Consignor Name", "Consignee Name", HBL_NUMBER, "BOE Number",
             "Screening Status", "BOE Date", "ETD", "ETA", "ATD", "ATA", "Estimated Delivery",
             "Actual Delivery", "Goods Description", "Gross Weight", "Gross Weight Unit", "Volume",
             "Volume Unit", "Chargeable Weight", "Volumetric Weight", "No. Of Packages", "Package Type",
@@ -30,7 +32,6 @@ public class ShipmentConstants {
     public static final String SHIPMENT_API_HANDLE = "/api/v2/shipment";
 
     public static final String HBL_NUMBER_CHECK_SUCCESSFUL = "HBL Number check successful";
-    public static final String HBL_NUMBER = "HBL Number";
 
     public static final String CREATE_SUCCESSFUL = "Successful Shipment Data Creation";
     public static final String FETCH_SUCCESSFUL = "Fetch Successful";

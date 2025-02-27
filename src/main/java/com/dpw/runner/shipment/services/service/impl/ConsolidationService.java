@@ -45,7 +45,6 @@ import com.dpw.runner.shipment.services.entity.response.consolidation.IContainer
 import com.dpw.runner.shipment.services.entity.response.consolidation.IShipmentContainerLiteResponse;
 import com.dpw.runner.shipment.services.entity.response.consolidation.IShipmentLiteResponse;
 import com.dpw.runner.shipment.services.entitytransfer.dto.*;
-import com.dpw.runner.shipment.services.entitytransfer.dto.response.SendConsoleValidationResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
@@ -3841,7 +3840,7 @@ public class ConsolidationService implements IConsolidationService {
                     (!Objects.isNull(PermissionsContext.getPermissions(PermissionConstants.tenantSuperAdmin)) && !PermissionsContext.getPermissions(PermissionConstants.tenantSuperAdmin).isEmpty()) ))
                 consolidationDetails.setIsLocked(false);
             else
-                throw new RunnerException(String.format(ErrorConstants.LOCK_UNLOCK_ERROR, Constants.Consolidation, lockingUser));
+                throw new RunnerException(String.format(ErrorConstants.LOCK_UNLOCK_ERROR, Constants.CONSOLIDATION_CAMELCASE, lockingUser));
         } else {
             consolidationDetails.setIsLocked(true);
             consolidationDetails.setLockedBy(currentUser);

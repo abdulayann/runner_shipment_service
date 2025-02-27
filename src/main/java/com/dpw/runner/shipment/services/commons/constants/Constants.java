@@ -51,8 +51,8 @@ public class Constants {
     public static final String USER_SERVICE_MAVANI = "mavani";
     public static final String NO_DATA = "Not Found!";
     public static final String SHIPMENT = "SHIPMENT";
-    public static final String Shipment = "Shipment";
-    public static final String Consolidation = "Consolidation";
+    public static final String SHIPMENT_CAMELCASE = "Shipment";
+    public static final String CONSOLIDATION_CAMELCASE = "Consolidation";
     public static final String CUSTOMER_BOOKING = "CustomerBooking";
     public static final String BOOKING = "BOOKING";
     public static final String BOOKING_CHARGES = "BOOKING_CHARGES";
@@ -618,6 +618,8 @@ public class Constants {
     public static final String ADDRESS_SHORT_CODE = "AddressShortCode";
     public static final String ORG_ADDRESS = "orgAddress";
     public static final String IS_CSD_DOCUMENT_ADDED = "isCSDDocumentAdded";
+    public static final String SWITCH_DEFAULT_CASE_MSG = "Unhandled case in switch: {}";
+    public static final String SEND_EMAIL_AIR_MESSAGING_FAILURE = "Send Email for Air Messaging Failure : {}";
 
     private Constants() {
     }

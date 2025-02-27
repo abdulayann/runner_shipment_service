@@ -820,9 +820,9 @@ public class AwbService implements IAwbService {
     }
 
     private Awb generateMawb(CreateAwbRequest request, ConsolidationDetails consolidationDetails, List<AwbPackingInfo> awbPackingInfo) throws RunnerException {
-        if(request.getIsReset() == null || request.getIsReset() == false) {
+        if(request.getIsReset() == null || !request.getIsReset()) {
             List<Awb> existingAwbs = awbDao.findByConsolidationId(request.getConsolidationId());
-            if(existingAwbs.size() > 0)
+            if(!existingAwbs.isEmpty())
                 throw new RunnerException("MAWB already created for current Consolidation !");
         }
 
@@ -846,9 +846,7 @@ public class AwbService implements IAwbService {
             }
         }
 
-        //var awbPackingInfo = generateMawbPackingInfo(consolidationDetails);
         // generate Awb Entity
-
         List<AwbSpecialHandlingCodesMappingInfo> sph = new ArrayList<>();
         V1TenantSettingsResponse tenantSettingsResponse = commonUtils.getCurrentTenantSettings();
         if(Boolean.TRUE.equals(tenantSettingsResponse.getEnableAirMessaging()) && !Strings.isNullOrEmpty(consolidationDetails.getEfreightStatus())
@@ -875,7 +873,7 @@ public class AwbService implements IAwbService {
         }catch (ValidationException ex){
             throw new RunnerException(ex.getMessage());
         }catch (Exception e) {
-            throw new RunnerException(String.format(RA_KC_VALIDATION_MESSAGE, Constants.Consolidation));
+            throw new RunnerException(String.format(RA_KC_VALIDATION_MESSAGE, Constants.CONSOLIDATION_CAMELCASE));
         }
         V1RetrieveResponse tenantResponse = v1Service.retrieveTenant();
         TenantModel tenantModel = jsonHelper.convertValue(tenantResponse.getEntity(), TenantModel.class);
@@ -1373,9 +1371,9 @@ public class AwbService implements IAwbService {
 
     private Awb generateAwb(CreateAwbRequest request) throws RunnerException {
 
-        if(request.getIsReset() == null || request.getIsReset() == false) {
+        if(request.getIsReset() == null || !request.getIsReset()) {
             List<Awb> existingAwbs = awbDao.findByShipmentId(request.getShipmentId());
-            if(existingAwbs.size() > 0)
+            if(!existingAwbs.isEmpty())
                 throw new RunnerException("AWB already created for current Shipment !");
         }
 
@@ -1383,17 +1381,15 @@ public class AwbService implements IAwbService {
         ShipmentDetails shipmentDetails = shipmentDao.findById(request.getShipmentId()).get();
         boolean syncShipment = false;
         if(StringUtility.isEmpty(shipmentDetails.getHouseBill())) {
-            if(!(Objects.equals(Constants.SHIPMENT_TYPE_DRT, shipmentDetails.getJobType()) && Objects.equals(Constants.TRANSPORT_MODE_AIR, shipmentDetails.getTransportMode())))
-            shipmentDetails.setHouseBill(shipmentService.generateCustomHouseBL(shipmentDetails));
+            if(!(Objects.equals(Constants.SHIPMENT_TYPE_DRT, shipmentDetails.getJobType()) && Objects.equals(Constants.TRANSPORT_MODE_AIR, shipmentDetails.getTransportMode()))) {
+                shipmentDetails.setHouseBill(shipmentService.generateCustomHouseBL(shipmentDetails));
+            }
             shipmentDao.save(shipmentDetails, false);
             syncShipment = true;
         }
 
         // fetch all packings
         List<Packing> packings = shipmentDetails.getPackingList();
-
-        // Generate HAWB Number if restrictHBlGeneration && numberSequencing
-        // shipmentDetails.setHouseBill(generateCustomizedBLNumber(shipmentDetails)); //TODO - implement logic to generate house bill
 
         // validate the request
         AwbUtility.validateShipmentInfoBeforeGeneratingAwb(shipmentDetails);
@@ -3808,8 +3804,6 @@ public class AwbService implements IAwbService {
         Awb masterAwb = null;
         String entityType = "";
         List<Awb> awbList = null;
-        StringBuilder responseStatusMessage = new StringBuilder();
-        Boolean fnMstatus = false;
         if(shipmentId.isPresent()) {
             awbList = awbDao.findByShipmentId(shipmentId.get());
         }
@@ -3834,6 +3828,7 @@ public class AwbService implements IAwbService {
             case Constants.HAWB -> fnmAcknowledgementHawb(masterAwb, fnmStatusMessageResponse);
             case Constants.DMAWB -> fnmAcknowledgementMawb(masterAwb, fnmStatusMessageResponse);
             case Constants.MAWB -> fnmAcknowledgementMawb(masterAwb, fnmStatusMessageResponse);
+            default -> log.debug(Constants.SWITCH_DEFAULT_CASE_MSG, entityType);
         }
 
         return ResponseHelper.buildSuccessResponse(fnmStatusMessageResponse);

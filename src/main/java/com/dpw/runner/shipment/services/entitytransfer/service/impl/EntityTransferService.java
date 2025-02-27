@@ -2117,9 +2117,9 @@ public class EntityTransferService implements IEntityTransferService {
             }
             boolean isPresent = false;
             switch (request.getEntityType()) {
-                case Constants.Shipment -> isPresent = !shipmentDao.findBySourceGuid(UUID.fromString(request.getEntityId())).isEmpty();
-                case Constants.Consolidation -> isPresent = !consolidationDetailsDao.findBySourceGuid(UUID.fromString(request.getEntityId())).isEmpty();
-                default -> {}
+                case Constants.SHIPMENT_CAMELCASE -> isPresent = !shipmentDao.findBySourceGuid(UUID.fromString(request.getEntityId())).isEmpty();
+                case Constants.CONSOLIDATION_CAMELCASE -> isPresent = !consolidationDetailsDao.findBySourceGuid(UUID.fromString(request.getEntityId())).isEmpty();
+                default -> log.debug(Constants.SWITCH_DEFAULT_CASE_MSG, request.getEntityType());
             }
 
             return ResponseHelper.buildSuccessResponse(CheckEntityExistResponse.builder().isEntityExists(isPresent).message(isPresent ? String.format(EntityTransferConstants.TRANSFERRED_ENTITY_ALREADY_PRESENT, request.getEntityType()) : null).build());

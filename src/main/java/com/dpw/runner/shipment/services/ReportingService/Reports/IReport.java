@@ -190,7 +190,7 @@ public abstract class IReport {
         ship.CustomsSealNumber = row.getCustomsSealNumber();
         ship.ShipperSealNumber = row.getShipperSealNumber();
         ship.HazardousUn = row.getHazardousUn();
-        ship.CargoGrossWeightUnit = String.format("%s %s", ConvertToWeightNumberFormat(row.getGrossWeight(), getCurrentTenantSettings()), row.getGrossWeightUnit());
+        ship.CargoGrossWeightUnit = String.format(REGEX_S_S, ConvertToWeightNumberFormat(row.getGrossWeight(), getCurrentTenantSettings()), row.getGrossWeightUnit());
         ship.OceanUNNumber = row.getUnNumber();
         ship.OceanDGPSN = row.getProperShippingName();
         if(!Objects.isNull(row.getMinimumFlashPoint()))

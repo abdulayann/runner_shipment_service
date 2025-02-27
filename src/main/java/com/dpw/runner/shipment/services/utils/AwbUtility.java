@@ -34,6 +34,7 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base64;
+import org.jetbrains.annotations.NotNull;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -810,19 +811,7 @@ public class AwbUtility {
         }
         var tenantId = awb.get().getTenantId();
 
-        AirMessagingStatus status;
-        if(Objects.equals(airMessageStatus.getStatus(), "INTERNAL_VALIDATION_ERROR") || Objects.equals(airMessageStatus.getStatus(), "EXTERNAL_VALIDATION_ERROR")
-        || Objects.equals(airMessageStatus.getStatus(), "INTERNAL_ERROR") || Objects.equals(airMessageStatus.getStatus(), "REJECTED")) {
-            status = AirMessagingStatus.FAILED;
-        } else if (Objects.equals(airMessageStatus.getStatus(), "INITIATED") || Objects.equals(airMessageStatus.getStatus(), "SUBMITTED")) {
-            status = AirMessagingStatus.SUBMITTED;
-        } else if (Objects.equals(airMessageStatus.getStatus(), "RECEIVED")){
-            status = AirMessagingStatus.SUCCESS;
-        } else if (Objects.equals(airMessageStatus.getStatus(), AirMessagingLogsConstants.PROCESSED)) {
-            status = AirMessagingStatus.SUCCESS_BY_CARRIER;
-        } else {
-            throw new RunnerException("This status is not accepted by runner");
-        }
+        AirMessagingStatus status = getAirMessagingStatus(airMessageStatus);
 
         String xmlPayload = airMessageStatus.getXmlPayload() != null ? new String(Base64.decodeBase64(airMessageStatus.getXmlPayload()), StandardCharsets.UTF_8) : null;
 
@@ -831,6 +820,7 @@ public class AwbUtility {
             case FAILED -> awbDao.updateAirMessageStatus(guid, AwbStatus.AIR_MESSAGE_FAILED.name());
             case SUBMITTED -> awbDao.updateAirMessageStatus(guid, AwbStatus.AIR_MESSAGE_SENT.name());
             case SUCCESS -> awbDao.updateAirMessageStatus(guid, AwbStatus.AIR_MESSAGE_SUCCESS.name());
+            default -> log.debug(Constants.SWITCH_DEFAULT_CASE_MSG, status);
         }
         Awb masterAwb = null;
         if(awb.get().getConsolidationId() != null) {
@@ -845,7 +835,7 @@ public class AwbUtility {
             List<Awb> awbsList = awbDao.findAllLinkedAwbs(guid);
 
             AwbStatus hawbsStatus = null;
-            Boolean allStatusReceived = true;
+            boolean allStatusReceived = true;
             if(awbsList != null && !awbsList.isEmpty()){
                 for (var x: awbsList) {
                     if(x.getShipmentId() != null){
@@ -869,7 +859,7 @@ public class AwbUtility {
                 try {
                     this.sendAirMessagingFailureEmail(masterAwb, awbsList);
                 } catch (Exception e) {
-                    log.error("Send Email for Air Messaging Failure : " + e.getMessage());
+                    log.error(Constants.SEND_EMAIL_AIR_MESSAGING_FAILURE, e.getMessage());
                 }
             }
 
@@ -895,7 +885,7 @@ public class AwbUtility {
 
             AwbStatus hawbsStatus = null;
             UUID consoleGuid = null;
-            Boolean allStatusReceived = true;
+            boolean allStatusReceived = true;
             AwbStatus consoleStatus = null;
 
             if(awbsList != null && !awbsList.isEmpty()){
@@ -932,11 +922,28 @@ public class AwbUtility {
                 try {
                     this.sendAirMessagingFailureEmail(masterAwb, awbsList);
                 } catch (Exception e) {
-                    log.error("Send Email for Air Messaging Failure : " + e.getMessage());
+                    log.error(Constants.SEND_EMAIL_AIR_MESSAGING_FAILURE, e.getMessage());
                 }
             }
 
         }
+    }
+
+    private AirMessagingStatus getAirMessagingStatus(AirMessagingStatusDto airMessageStatus) throws RunnerException {
+        AirMessagingStatus status;
+        if(Objects.equals(airMessageStatus.getStatus(), "INTERNAL_VALIDATION_ERROR") || Objects.equals(airMessageStatus.getStatus(), "EXTERNAL_VALIDATION_ERROR")
+        || Objects.equals(airMessageStatus.getStatus(), "INTERNAL_ERROR") || Objects.equals(airMessageStatus.getStatus(), "REJECTED")) {
+            status = AirMessagingStatus.FAILED;
+        } else if (Objects.equals(airMessageStatus.getStatus(), "INITIATED") || Objects.equals(airMessageStatus.getStatus(), "SUBMITTED")) {
+            status = AirMessagingStatus.SUBMITTED;
+        } else if (Objects.equals(airMessageStatus.getStatus(), "RECEIVED")){
+            status = AirMessagingStatus.SUCCESS;
+        } else if (Objects.equals(airMessageStatus.getStatus(), AirMessagingLogsConstants.PROCESSED)) {
+            status = AirMessagingStatus.SUCCESS_BY_CARRIER;
+        } else {
+            throw new RunnerException("This status is not accepted by runner");
+        }
+        return status;
     }
 
     public void createEventUpdateForAirMessaging(AirMessagingEventDto airMessageEvent) throws RunnerException {

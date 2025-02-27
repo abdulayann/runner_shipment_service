@@ -14,6 +14,7 @@ import com.dpw.runner.shipment.services.syncing.Entity.*;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
+import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -28,6 +29,7 @@ import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.andCriteria;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
+@Slf4j
 @Component
 public class SyncEntityConversionService {
 
@@ -389,6 +391,7 @@ public class SyncEntityConversionService {
                     case "ConsolidationAddressRow" -> auditLog.setEntity(Parties.class.getSimpleName());
                     case "ShipmentServicesRow" -> auditLog.setEntity(ServiceDetails.class.getSimpleName());
                     case "TruckDriverDetailsRow" -> auditLog.setEntity(TruckDriverDetails.class.getSimpleName());
+                    default -> log.debug(Constants.SWITCH_DEFAULT_CASE_MSG, request.getModule());
                 }
 
                 response.add(auditLog);
