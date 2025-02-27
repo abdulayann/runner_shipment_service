@@ -224,10 +224,10 @@ public abstract class IReport {
             if(Objects.isNull(value5))
                 requests.add(MasterListRequest.builder().ItemType(MasterDataType.PACKING_GROUP.getDescription()).ItemValue(row.getPackingGroup()).Cascade(null).build());
 
-            if(requests.size() > 0) {
+            if(!requests.isEmpty()) {
                 MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
                 masterListRequestV2.setMasterListRequests(requests.stream().toList());
-                masterListRequestV2.setIncludeCols(Arrays.asList("ItemType", "ItemValue", "ItemDescription", "ValuenDesc", "Cascade"));
+                masterListRequestV2.setIncludeCols(Arrays.asList("ItemType", MasterDataConstants.ITEM_VALUE, "ItemDescription", "ValuenDesc", "Cascade"));
                 Set<String> keys = new HashSet<>();
                 Map<String, EntityTransferMasterLists> keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(masterListRequestV2);
                 commonUtils.createMasterDataKeysList(requests, keys);
@@ -1928,7 +1928,7 @@ public abstract class IReport {
     public CarrierMasterData getCarrier(String carrier) {
         if(StringUtility.isEmpty(carrier)) return null;
         List<Object> carrierCriteria = Arrays.asList(
-                List.of("ItemValue"),
+                List.of(MasterDataConstants.ITEM_VALUE),
                 "=",
                 carrier
         );
@@ -2869,7 +2869,7 @@ public abstract class IReport {
                 if(requests.size() > 0) {
                     MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
                     masterListRequestV2.setMasterListRequests(requests.stream().toList());
-                    masterListRequestV2.setIncludeCols(Arrays.asList("ItemType", "ItemValue", "ItemDescription", "ValuenDesc", "Cascade"));
+                    masterListRequestV2.setIncludeCols(Arrays.asList("ItemType", MasterDataConstants.ITEM_VALUE, "ItemDescription", "ValuenDesc", "Cascade"));
                     Map<String, EntityTransferMasterLists> keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(masterListRequestV2);
                     Set<String> keys = new HashSet<>();
                     commonUtils.createMasterDataKeysList(requests, keys);

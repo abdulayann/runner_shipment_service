@@ -205,6 +205,9 @@ public class ReportService implements IReportService {
 
     private static final int MAX_BUFFER_SIZE = 10 * 1024;
 
+    @Autowired
+    private ReportService self;
+
     @Override
     @Transactional
     public byte[] getDocumentData(CommonRequestModel request)
@@ -221,7 +224,7 @@ public class ReportService implements IReportService {
                 for(ShipmentDetails shipmentDetails : consolidationDetails.getShipmentsList()) {
                     reportRequest.setFromConsolidation(false);
                     reportRequest.setReportId(shipmentDetails.getId().toString());
-                    dataByte = getDocumentData(CommonRequestModel.buildRequest(reportRequest));
+                    dataByte = self.getDocumentData(CommonRequestModel.buildRequest(reportRequest));
                     if(dataByte != null) {
                         dataByteList.add(dataByte);
                     }
@@ -267,7 +270,7 @@ public class ReportService implements IReportService {
                         for (Map.Entry<String, List<Long>> entry: groupedShipments.entrySet()) {
                             reportRequest.setFromConsolidation(false);
                             reportRequest.setShipmentIds(entry.getValue());
-                            dataByte = getDocumentData(CommonRequestModel.buildRequest(reportRequest));
+                            dataByte = self.getDocumentData(CommonRequestModel.buildRequest(reportRequest));
                             if(dataByte != null) {
                                 dataByteList.add(dataByte);
                             }
@@ -1833,9 +1836,9 @@ public class ReportService implements IReportService {
         csdDocumentUploadRequest.setType(CSD_REPORT);
         String filename = CSD_REPORT + "_" + docUploadRequest.getId() + ".pdf";
 
-        byte[] pdfByte_Content = getDocumentData(commonRequestModel);
+        byte[] pdfByteContent = self.getDocumentData(commonRequestModel);
       CompletableFuture.runAsync(masterDataUtils.withMdc(
-            () -> addFilesFromReport(new BASE64DecodedMultipartFile(pdfByte_Content), filename,
+            () -> addFilesFromReport(new BASE64DecodedMultipartFile(pdfByteContent), filename,
                 csdDocumentUploadRequest, guid)), executorService);
             MDC.put(Constants.IS_CSD_DOCUMENT_ADDED, "true");
       } catch (Exception e) {

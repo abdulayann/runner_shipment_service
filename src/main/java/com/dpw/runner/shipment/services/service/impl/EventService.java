@@ -1067,6 +1067,10 @@ public class EventService implements IEventService {
     @Override
     @Transactional
     public boolean processUpstreamTrackingMessage(Container container, String messageId) {
+        return processUpstreamTrackingMessageUtil(container, messageId);
+    }
+
+    private boolean processUpstreamTrackingMessageUtil(Container container, String messageId){
         log.info("Starting processUpstreamTrackingMessage with container: {} messageId {}", container, messageId);
 
         if (ObjectUtils.isEmpty(container)) {
@@ -1328,6 +1332,7 @@ public class EventService implements IEventService {
     }
 
     @Override
+    @Transactional
     public ResponseEntity<IRunnerResponse> pushTrackingEvents(Container container) {
 
         String messageId = UUID.randomUUID().toString();
@@ -1337,7 +1342,7 @@ public class EventService implements IEventService {
         IgnoreAutoTenantPopulationContext.setContext(Boolean.TRUE);
         boolean processSuccess = false;
         try {
-            processSuccess = processUpstreamTrackingMessage(container, messageId);
+            processSuccess = processUpstreamTrackingMessageUtil(container, messageId);
         } finally {
             v1Service.clearAuthContext();
             IgnoreAutoTenantPopulationContext.clearContext();

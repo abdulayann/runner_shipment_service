@@ -204,6 +204,9 @@ class ReportServiceTest extends CommonMocks {
     @Mock
     private DependentServiceHelper dependentServiceHelper;
 
+    @Mock
+    private ReportService self;
+
     private final String path = "src/test/java/com/dpw/runner/shipment/services/files/";
 
     @BeforeAll
@@ -1191,18 +1194,13 @@ class ReportServiceTest extends CommonMocks {
         reportRequest.setReportInfo(ReportConstants.CARGO_MANIFEST);
         reportRequest.setFromConsolidation(true);
         // Mock
-        when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(shipmentSettingsDetails));
-        when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(Arrays.asList(shipmentSettingsDetails, shipmentSettingsDetails2));
-        when(reportsFactory.getReport(any())).thenReturn(seawayBillReport);
-        when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(ResponseEntity.ok(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))));
-        when(jsonHelper.convertToJson(any())).thenReturn("");
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         shipmentDetails.setId(4415L);
         consolidationDetails.setShipmentsList(new HashSet<>(List.of(shipmentDetails)));
         when(consolidationDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
-        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
+        when(self.getDocumentData(any())).thenReturn(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf")));
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
@@ -1222,11 +1220,6 @@ class ReportServiceTest extends CommonMocks {
         reportRequest.setReportInfo(ReportConstants.CARGO_MANIFEST_AIR_IMPORT_CONSOLIDATION);
         reportRequest.setFromConsolidation(true);
         // Mock
-        when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(shipmentSettingsDetails));
-        when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(Arrays.asList(shipmentSettingsDetails, shipmentSettingsDetails2));
-        when(reportsFactory.getReport(any())).thenReturn(seawayBillReport);
-        when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(ResponseEntity.ok(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))));
-        when(jsonHelper.convertToJson(any())).thenReturn("");
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         shipmentDetails.setId(4415L);
@@ -1235,8 +1228,8 @@ class ReportServiceTest extends CommonMocks {
         shipmentDetails.setCarrierDetails(carrierDetails);
         consolidationDetails.setShipmentsList(new HashSet<>(List.of(shipmentDetails)));
         when(consolidationDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
-        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
+        when(self.getDocumentData(any())).thenReturn(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf")));
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }

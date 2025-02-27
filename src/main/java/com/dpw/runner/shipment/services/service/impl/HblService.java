@@ -97,6 +97,9 @@ public class HblService implements IHblService {
     @Autowired
     private ConsolidationService consolidationService;
 
+    @Autowired
+    private HblService self;
+
     private RetryTemplate retryTemplate = RetryTemplate.builder()
             .maxAttempts(3)
             .fixedBackoff(1000)
@@ -307,7 +310,6 @@ public class HblService implements IHblService {
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(hbl));
     }
     @Override
-    @Transactional
     public ResponseEntity<IRunnerResponse> partialUpdateHBL(CommonRequestModel commonRequestModel) throws RunnerException {
         HblGenerateRequest request = (HblGenerateRequest) commonRequestModel.getData();
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(request.getShipmentId());
@@ -322,7 +324,7 @@ public class HblService implements IHblService {
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         if(shipmentSettingsDetails.getRestrictBLEdit() != null && shipmentSettingsDetails.getRestrictBLEdit()) {
             HblResetRequest resetRequest = HblResetRequest.builder().id(hbl.getId()).resetType(HblReset.ALL).build();
-            return resetHblUtil(CommonRequestModel.buildRequest(resetRequest));
+            return self.resetHbl(CommonRequestModel.buildRequest(resetRequest));
         } else if (shipmentSettingsDetails.getAutoUpdateShipmentBL() != null && shipmentSettingsDetails.getAutoUpdateShipmentBL()){
             updateHblFromShipment(shipmentDetails.get(), hbl, shipmentSettingsDetails);
             hbl = hblDao.save(hbl);
@@ -363,7 +365,9 @@ public class HblService implements IHblService {
         return ResponseHelper.buildSuccessResponse(hbls.isEmpty() ? null : convertEntityToDto(hbls.get(0)));
     }
 
-    public ResponseEntity<IRunnerResponse> resetHblUtil(CommonRequestModel commonRequestModel) throws RunnerException {
+    @Override
+    @Transactional
+    public ResponseEntity<IRunnerResponse> resetHbl(CommonRequestModel commonRequestModel) throws RunnerException {
         HblResetRequest request = (HblResetRequest) commonRequestModel.getData();
         Optional<Hbl> hblOptional = hblDao.findById(request.getId());
         if (hblOptional.isEmpty()) {
@@ -404,12 +408,6 @@ public class HblService implements IHblService {
         }
         hbl = hblDao.save(hbl);
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(hbl));
-    }
-
-    @Override
-    @Transactional
-    public ResponseEntity<IRunnerResponse> resetHbl(CommonRequestModel commonRequestModel) throws RunnerException {
-        return resetHblUtil(commonRequestModel);
     }
 
     private Hbl getDefaultHblFromShipment(ShipmentDetails shipmentDetails) throws RunnerException {

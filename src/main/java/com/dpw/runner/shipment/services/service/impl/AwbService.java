@@ -2586,6 +2586,7 @@ public class AwbService implements IAwbService {
     }
 
     @Override
+    @Transactional
     public ResponseEntity<IRunnerResponse> partialAutoUpdateMawb(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         CreateAwbRequest request = (CreateAwbRequest) commonRequestModel.getData();
