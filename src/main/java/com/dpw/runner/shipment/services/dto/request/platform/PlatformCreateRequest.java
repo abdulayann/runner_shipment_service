@@ -19,8 +19,6 @@ import java.util.Map;
 public class PlatformCreateRequest extends CommonRequest implements IRunnerRequest {
     @JsonProperty(value = "booking_reference_code")
     private String booking_ref_code;
-    @JsonProperty(value = "branch_id")
-    private Integer branchId;
     private String business_code;
     private String origin_code;
     private String destination_code;

@@ -348,7 +348,6 @@ public class BookingIntegrationsUtility {
                 .status(platformStatusMap.get(customerBooking.getBookingStatus()))
                 .referenceNumbers(new ArrayList<>())
                 .addresses(getPartyAddresses(customerBooking.getCustomer(), customerBooking.getConsignor(), customerBooking.getConsignee(), customerBooking.getNotifyParty()))
-                .branchId(UserContext.getUser().getTenantId())
                 .build();
         return CommonRequestModel.builder().data(platformCreateRequest).build();
     }
@@ -658,7 +657,6 @@ public class BookingIntegrationsUtility {
                 .load(createLoad(customerBooking))
                 .route(createRoute(customerBooking))
                 .source("RUNNER")
-                .branchId(UserContext.getUser().getTenantId())
                 .build();
         return CommonRequestModel.builder().data(platformUpdateRequest).build();
     }

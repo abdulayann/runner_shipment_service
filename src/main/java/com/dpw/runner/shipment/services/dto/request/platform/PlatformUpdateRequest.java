@@ -55,6 +55,4 @@ public class PlatformUpdateRequest extends CommonRequest implements IRunnerReque
     @JsonProperty(value = "parent_contract_id")
     private String parentContractId;
     private String source;
-    @JsonProperty(value = "branch_id")
-    private Integer branchId;
 }
