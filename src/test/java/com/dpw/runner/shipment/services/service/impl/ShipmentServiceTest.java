@@ -5341,19 +5341,19 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     void createShipmentPayloadTest() {
-        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        ShipmentDetails shipmentData = new ShipmentDetails();
         Containers containers = Containers.builder().build();
         containers.setId(1L);
         PackingResponse packing = new PackingResponse();
         packing.setContainerId(1L);
         ShipmentDetailsResponse shipmentDetailsResponse = ShipmentDetailsResponse.builder()
                 .containersList(new HashSet<>(List.of()))
-                .packingList(Arrays.asList(packing))
-                .truckDriverDetails(Arrays.asList(TruckDriverDetailsResponse.builder().containerId(1L).build()))
+                .packingList(List.of(packing))
+                .truckDriverDetails(Collections.singletonList(TruckDriverDetailsResponse.builder().containerId(1L).build()))
                 .build();
 
-        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
-        shipmentService.createShipmentPayload(shipmentDetails, shipmentDetailsResponse, true);
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
+        assertDoesNotThrow(()->shipmentService.createShipmentPayload(shipmentData, shipmentDetailsResponse, true));
     }
 
     @Test
@@ -6413,8 +6413,7 @@ ShipmentServiceTest extends CommonMocks {
         assertEquals(ResponseHelper.buildSuccessResponse(mockShipmentResponse), httpResponse);
     }
 
-    private Runnable mockRunnable() {
-        return null;
+    private void mockRunnable() {
     }
 
     private List<IRunnerResponse> convertEntityListToFullShipmentList(List<ShipmentDetails> lst) {
@@ -9143,7 +9142,7 @@ ShipmentServiceTest extends CommonMocks {
         shipmentDetails.setReceivingBranch(TenantContext.getCurrentTenant().longValue());
         when(shipmentDao.findShipmentByIdWithQuery(any())).thenReturn(Optional.of(shipmentDetails));
         CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
-        shipmentService.retrieveForNTE(CommonRequestModel.buildRequest(commonGetRequest));
+        assertDoesNotThrow(()->shipmentService.retrieveForNTE(CommonRequestModel.buildRequest(commonGetRequest)));
     }
 
     @Test

@@ -4227,10 +4227,10 @@ import static org.mockito.Mockito.*;
 
     @Test
     void testGenerateEvents() {
-        ConsolidationDetails consolidationDetails = testConsol;
-        consolidationDetails.setEventsList(null);
-        consolidationService.generateEvents(consolidationDetails);
-        //verify(eventDao, times(1)).save(any());
+        ConsolidationDetails consolidationDetails1 = testConsol;
+        consolidationDetails1.setEventsList(null);
+        consolidationService.generateEvents(consolidationDetails1);
+        verify(eventDao, times(1)).save(any());
     }
 
     @Test

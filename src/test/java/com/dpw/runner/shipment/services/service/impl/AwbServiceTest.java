@@ -123,6 +123,8 @@ class AwbServiceTest extends CommonMocks {
     private V1ServiceUtil v1ServiceUtil;
     @InjectMocks
     private AwbService awbService;
+    @Mock
+    private AwbService self;
 
     private static JsonTestUtility jsonTestUtility;
     private static ShipmentDetails testShipment;
@@ -1842,49 +1844,14 @@ class AwbServiceTest extends CommonMocks {
 
         // Mocking
         when(awbDao.findByShipmentId(shipmentId)).thenReturn(List.of(mockAwb));
-//        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(testShipment));
-//        when(awbDao.save(mockAwb)).thenReturn(mockAwb);
-//        when(jsonHelper.convertValue(anyString(), eq(LocalDateTime.class))).thenReturn(LocalDateTime.now());
-//        when(jsonHelper.convertValue(any(Awb.class), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
 
         // Reset Mocking
 
         testShipment.setHouseBill("custom-house-bill");
 
-        when(awbDao.findById(anyLong())).thenReturn(Optional.of(mockAwb));
-        when(shipmentDao.findById(any())).thenReturn(Optional.of(testShipment));
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.empty());
-        when(awbDao.save(any())).thenReturn(mockAwb);
-
-        // UnLocation response mocking
-        when(v1Service.fetchUnlocation(any())).thenReturn(new V1DataResponse());
-        when(jsonHelper.convertValueToList(any(), eq(EntityTransferUnLocations.class))).thenReturn(List.of(
-                EntityTransferUnLocations.builder().LocationsReferenceGUID("8F39C4F8-158E-4A10-A9B6-4E8FDF52C3BA").Name("Chennai (ex Madras)").build(),
-                EntityTransferUnLocations.builder().LocationsReferenceGUID("428A59C1-1B6C-4764-9834-4CC81912DAC0").Name("John F. Kennedy Apt/New York, NY").build()
-        ));
-
-        V1DataResponse mockV1DataResponse = V1DataResponse.builder().entities("").build();
-
-        // TenantModel Response mocking
-        when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity("").build());
-        when(jsonHelper.convertValue(eq(""), eq(TenantModel.class))).thenReturn(new TenantModel());
-
-        // OtherInfo Master data mocking
-        when(jsonHelper.convertValue(any(), eq(LocalDateTime.class))).thenReturn(
-                objectMapper.convertValue(DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_T_HH_MM_SS).format(LocalDateTime.now()), LocalDateTime.class)
-        );
-        when(v1Service.fetchMasterData(any())).thenReturn(new V1DataResponse());
-//        when(jsonHelper.convertValue(any(), eq(EntityTransferMasterLists.class))).thenReturn(null);
-        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
-        List<AddressDataV1> addressDataV1List = List.of(AddressDataV1.builder().build());
-        when(jsonHelper.convertValueToList(any(), eq(AddressDataV1.class))).thenReturn(addressDataV1List);
-
-        when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(
-                mockAwbResponse
-        );
-
         mockShipmentSettings();
-        mockTenantSettings();
+
+        when(self.reset(any())).thenReturn(ResponseHelper.buildSuccessResponse(mockAwbResponse));
 
         var httpResponse = awbService.partialAutoUpdateAwb(commonRequestModel);
 
@@ -2143,7 +2110,6 @@ class AwbServiceTest extends CommonMocks {
         PackSummaryResponse packSummaryResponse = new PackSummaryResponse();
         packSummaryResponse.setVolumeUnit("M3");
         packSummaryResponse.setPacksVolume(new BigDecimal("1000.567"));
-        Mockito.when(packingService.calculatePackSummary(any(),any(),any(),any())).thenReturn(packSummaryResponse);
 
         MawbLockSettings mawbLockSettings = jsonTestUtility.getJson("MAWB_LOCK_SETTINGS_ALL_TRUE", MawbLockSettings.class);
 
@@ -2160,56 +2126,22 @@ class AwbServiceTest extends CommonMocks {
 
         // Mocking
         when(awbDao.findByConsolidationId(consolidationId)).thenReturn(List.of(mockAwb));
-        when(v1Service.fetchMasterData(any())).thenReturn(new V1DataResponse());
-//        when(jsonHelper.convertValue(anyString(), eq(LocalDateTime.class))).thenReturn(LocalDateTime.now());
 
 
         // Reset Mocking
         testShipment.setId(shipmentId);
         testConsol.setShipmentsList(Set.of(testShipment));
 
-
-        when(awbDao.findById(anyLong())).thenReturn(Optional.of(testMawb));
         Mockito.when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(testConsol));
-        when(awbDao.findByShipmentIdList(anyList())).thenReturn(List.of(testHawb));
-        V1DataResponse mockV1DataResponse = V1DataResponse.builder().entities("").build();
 
         // TenantModel Response mocking
         TenantModel mockTenantModel = new TenantModel();
         mockTenantModel.DefaultOrgId = 1L;
         mockTenantModel.setDefaultAddressId(2L);
-        when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
-        when(jsonHelper.convertValue(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
-        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
-        List<AddressDataV1> addressDataV1List = List.of(AddressDataV1.builder().build());
-        when(jsonHelper.convertValueToList(any(), eq(AddressDataV1.class))).thenReturn(addressDataV1List);
-        when(jsonHelper.convertValueToList(any(), eq(EntityTransferAddress.class))).thenReturn(new ArrayList<>());
-
-        List<EntityTransferOrganizations> mockOrgList = List.of(EntityTransferOrganizations.builder().build());
-        when(v1Service.fetchOrganization(any())).thenReturn(mockV1DataResponse);
-        when(jsonHelper.convertValueToList(any(), eq(EntityTransferOrganizations.class))).thenReturn(mockOrgList);
-        when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
-
-        when(awbDao.save(any())).thenReturn(testMawb);
-
-        // UnLocation response mocking
-        when(v1Service.fetchUnlocation(any())).thenReturn(new V1DataResponse());
-        when(jsonHelper.convertValueToList(any(), eq(EntityTransferUnLocations.class))).thenReturn(List.of(
-                EntityTransferUnLocations.builder().LocationsReferenceGUID("8F39C4F8-158E-4A10-A9B6-4E8FDF52C3BA").Name("Chennai (ex Madras)").build(),
-                EntityTransferUnLocations.builder().LocationsReferenceGUID("428A59C1-1B6C-4764-9834-4CC81912DAC0").Name("John F. Kennedy Apt/New York, NY").build()
-        ));
-
-
-        // OtherInfo Master data mocking
-        when(jsonHelper.convertValue(any(), eq(LocalDateTime.class))).thenReturn(
-                objectMapper.convertValue(DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_T_HH_MM_SS).format(LocalDateTime.now()), LocalDateTime.class)
-        );
-        when(v1Service.fetchMasterData(any())).thenReturn(new V1DataResponse());
-
-        when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
 
         mockShipmentSettings();
-        mockTenantSettings();
+
+        when(self.reset(any())).thenReturn(ResponseHelper.buildSuccessResponse(mockAwbResponse));
 
         var httpResponse = awbService.partialAutoUpdateMawb(commonRequestModel);
 

@@ -203,6 +203,12 @@ public class ReportService implements IReportService {
     @Lazy
     private ShipmentTagsForExteranlServices shipmentTagsForExteranlServices;
 
+    private final ReportService self;
+
+    public ReportService(ReportService self) {
+        this.self = self;
+    }
+
     private static final int MAX_BUFFER_SIZE = 10 * 1024;
 
     @Override
@@ -1833,7 +1839,7 @@ public class ReportService implements IReportService {
         csdDocumentUploadRequest.setType(CSD_REPORT);
         String filename = CSD_REPORT + "_" + docUploadRequest.getId() + ".pdf";
 
-        byte[] pdfByte_Content = getDocumentData(commonRequestModel);
+        byte[] pdfByte_Content = self.getDocumentData(commonRequestModel);
       CompletableFuture.runAsync(masterDataUtils.withMdc(
             () -> addFilesFromReport(new BASE64DecodedMultipartFile(pdfByte_Content), filename,
                 csdDocumentUploadRequest, guid)), executorService);

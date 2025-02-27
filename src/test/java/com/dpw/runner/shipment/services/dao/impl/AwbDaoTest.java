@@ -34,10 +34,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
+import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
@@ -147,7 +144,7 @@ class AwbDaoTest {
             AwbOCIInfo awbOCIInfo = AwbOCIInfo.builder().informationIdentifier(1).tradeIdentificationCode(1).build();
             AwbOCIInfo duplicateAwbOciInfo = AwbOCIInfo.builder().informationIdentifier(1).tradeIdentificationCode(1).build();
             awb.setAwbOciInfo(List.of(awbOCIInfo, duplicateAwbOciInfo));
-            Awb savedAwb = awbDao.save(awb);
+            awbDao.save(awb);
 
         } catch (RunnerException e) {
             // Handle the exception if necessary
@@ -164,7 +161,7 @@ class AwbDaoTest {
             Awb awb = mockAwb;
             AwbOtherChargesInfo awbOtherChargesInfo = AwbOtherChargesInfo.builder().iataDescription("ABCD").build();
             awb.setAwbOtherChargesInfo(List.of(awbOtherChargesInfo));
-            Awb savedAwb = awbDao.save(awb);
+            awbDao.save(awb);
 
         } catch (RunnerException e) {
             // Handle the exception if necessary
@@ -192,8 +189,8 @@ class AwbDaoTest {
 
         awbDao.pushToKafka(awb, true);
 
-//        verify(producer, atLeast(1)).getKafkaResponse(any(), anyBoolean());
-//        verify(producer, times(1)).produceToKafka(any(), any(), any());
+        verify(producer, atLeast(1)).getKafkaResponse(any(), anyBoolean());
+        verify(producer, times(1)).produceToKafka(any(), any(), any());
     }
 
     @Test
@@ -206,9 +203,9 @@ class AwbDaoTest {
 
         awbDao.pushToKafka(awb, false);
 
-//        verify(jsonHelper).convertValue(any(), eq(AwbResponse.class));
-//        verify(producer).getKafkaResponse(any(), eq(false));
-//        verify(producer).produceToKafka(any(), any(), any());
+        verify(jsonHelper).convertValue(any(), eq(AwbResponse.class));
+        verify(producer).getKafkaResponse(any(), eq(false));
+        verify(producer).produceToKafka(any(), any(), any());
     }
 
     @Test
@@ -238,13 +235,10 @@ class AwbDaoTest {
         Awb awb = new Awb();
         awb.setTenantId(null);
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(new AwbResponse());
-//        when(producer.getKafkaResponse(any(), anyBoolean())).thenReturn(new KafkaResponse());
 
         awbDao.pushToKafka(awb, false);
 
-//        verify(jsonHelper).convertValue(any(), eq(AwbResponse.class));
-//        verify(producer).getKafkaResponse(any(), eq(false));
-//        verify(producer).produceToKafka(any(), any(), any());
+        verify(jsonHelper).convertValue(any(), eq(AwbResponse.class));
     }
 
     @Test
@@ -277,7 +271,7 @@ class AwbDaoTest {
     void testFindById() {
         Long id = 1L;
         boolean isSuccess = true;
-        when(awbRepository.findAwbByIds(any())).thenReturn(Arrays.asList(mockAwb));
+        when(awbRepository.findAwbByIds(any())).thenReturn(Collections.singletonList(mockAwb));
 
         // Call the method from the service
         var result = awbDao.findById(id);
@@ -565,7 +559,7 @@ class AwbDaoTest {
         when(awbRepository.findAwbByGuidByQuery(inputGuid)).thenReturn(mockAwb);
         when(consoleShipmentMappingDao.findByShipmentIdByQuery(any())).thenReturn(List.of(consoleShipmentMapping));
         // Test
-        awbDao.findAllLinkedAwbs(inputGuid);
+        assertDoesNotThrow(() ->awbDao.findAllLinkedAwbs(inputGuid));
 
     }
 
@@ -605,7 +599,7 @@ class AwbDaoTest {
         when(awbRepository.findByShipmentIdsByQuery(anyList())).thenReturn(List.of(mockAwb));
 
         // Test
-        awbDao.findAllLinkedAwbs(inputGuid);
+        assertDoesNotThrow(() ->awbDao.findAllLinkedAwbs(inputGuid));
 
     }
 
@@ -722,94 +716,93 @@ class AwbDaoTest {
 
     @Test
     void updateSciFieldFromHawbFrom_Success_Sci_T1() throws RunnerException {
-        Awb mockAwb = jsonTestUtility.getTestHawb();
+        Awb testAwb = jsonTestUtility.getTestHawb();
         Awb mawb = jsonTestUtility.getTestMawb();
-        mockAwb.getAwbCargoInfo().setSci("T1");
+        testAwb.getAwbCargoInfo().setSci("T1");
         var mock = Mockito.spy(awbDao);
-        when(mawbHawbLinkDao.findByHawbId(mockAwb.getId())).thenReturn(List.of(MawbHawbLink.builder().hawbId(mockAwb.getId()).mawbId(mawb.getId()).build()));
-        when(awbRepository.findAwbByIds(any())).thenReturn(Arrays.asList(mawb));
+        when(mawbHawbLinkDao.findByHawbId(testAwb.getId())).thenReturn(List.of(MawbHawbLink.builder().hawbId(testAwb.getId()).mawbId(mawb.getId()).build()));
+        when(awbRepository.findAwbByIds(any())).thenReturn(List.of(mawb));
 
-        mock.updateSciFieldFromHawb(mockAwb, null, false, mockAwb.getId());
+        mock.updateSciFieldFromHawb(testAwb, null, false, testAwb.getId());
         verify(mock, times(1)).save(any());
     }
 
     @Test
     void updateSciFieldFromHawbFrom_Success_Sci_T1_mawbLinkNull() throws RunnerException {
-        Awb mockAwb = jsonTestUtility.getTestHawb();
-        Awb mawb = jsonTestUtility.getTestMawb();
-        mockAwb.getAwbCargoInfo().setSci("T1");
+        Awb testAwb = jsonTestUtility.getTestHawb();
+        testAwb.getAwbCargoInfo().setSci("T1");
         var mock = Mockito.spy(awbDao);
-        when(mawbHawbLinkDao.findByHawbId(mockAwb.getId())).thenReturn(null);
+        when(mawbHawbLinkDao.findByHawbId(testAwb.getId())).thenReturn(null);
 
-        mock.updateSciFieldFromHawb(mockAwb, null, false, mockAwb.getId());
+        mock.updateSciFieldFromHawb(testAwb, null, false, testAwb.getId());
         verify(mock, times(0)).save(any());
     }
     @Test
     void updateSciFieldFromHawbFrom_Success_Sci_T1_mawbLinkEmpty() throws RunnerException {
-        Awb mockAwb = jsonTestUtility.getTestHawb();
-        Awb mawb = jsonTestUtility.getTestMawb();
-        mockAwb.getAwbCargoInfo().setSci("T1");
+        Awb testAwb = jsonTestUtility.getTestHawb();
+        testAwb.getAwbCargoInfo().setSci("T1");
         var mock = Mockito.spy(awbDao);
-        when(mawbHawbLinkDao.findByHawbId(mockAwb.getId())).thenReturn(List.of());
+        when(mawbHawbLinkDao.findByHawbId(testAwb.getId())).thenReturn(List.of());
 
-        mock.updateSciFieldFromHawb(mockAwb, null, false, mockAwb.getId());
+        mock.updateSciFieldFromHawb(testAwb, null, false, testAwb.getId());
         verify(mock, times(0)).save(any());
     }
 
     @Test
     void updateSciFieldFromHawbFrom_Success_Sci_T1_MawbEmpty() throws RunnerException {
-        Awb mockAwb = jsonTestUtility.getTestHawb();
+        Awb testAwb = jsonTestUtility.getTestHawb();
         Awb mawb = jsonTestUtility.getTestMawb();
-        mockAwb.getAwbCargoInfo().setSci("T1");
+        testAwb.getAwbCargoInfo().setSci("T1");
         var mock = Mockito.spy(awbDao);
-        when(mawbHawbLinkDao.findByHawbId(mockAwb.getId())).thenReturn(List.of(MawbHawbLink.builder().hawbId(mockAwb.getId()).mawbId(mawb.getId()).build()));
-        when(awbRepository.findAwbByIds(any())).thenReturn(Arrays.asList());
+        when(mawbHawbLinkDao.findByHawbId(testAwb.getId())).thenReturn(List.of(MawbHawbLink.builder().hawbId(testAwb.getId()).mawbId(mawb.getId()).build()));
+        when(awbRepository.findAwbByIds(any())).thenReturn(List.of());
 
-        mock.updateSciFieldFromHawb(mockAwb, null, false, mockAwb.getId());
+        mock.updateSciFieldFromHawb(testAwb, null, false, testAwb.getId());
         verify(mock, times(0)).save(any());
     }
     @Test
     void updateSciFieldFromHawbFrom_Success_Sci_T1_mawb_FSUlocked() throws RunnerException {
-        Awb mockAwb = jsonTestUtility.getTestHawb();
+        Awb testAwb = jsonTestUtility.getTestHawb();
         Awb mawb = jsonTestUtility.getTestMawb();
-        mockAwb.getAwbCargoInfo().setSci("T1");
+        testAwb.getAwbCargoInfo().setSci("T1");
         mawb.setAirMessageStatus(AwbStatus.AWB_FSU_LOCKED);
         var mock = Mockito.spy(awbDao);
-        when(mawbHawbLinkDao.findByHawbId(mockAwb.getId())).thenReturn(List.of(MawbHawbLink.builder().hawbId(mockAwb.getId()).mawbId(mawb.getId()).build()));
-        when(awbRepository.findAwbByIds(any())).thenReturn(Arrays.asList(mawb));
+        when(mawbHawbLinkDao.findByHawbId(testAwb.getId())).thenReturn(List.of(MawbHawbLink.builder().hawbId(testAwb.getId()).mawbId(mawb.getId()).build()));
+        when(awbRepository.findAwbByIds(any())).thenReturn(List.of(mawb));
 
-        mock.updateSciFieldFromHawb(mockAwb, null, false, mockAwb.getId());
+        mock.updateSciFieldFromHawb(testAwb, null, false, testAwb.getId());
         verify(mock, times(0)).save(any());
     }
 
     @Test
     void updateSciFieldFromHawbFrom_Success_SciT1_mawb_awb_sciT1() throws RunnerException {
-        Awb mockAwb = jsonTestUtility.getTestHawb();
-        mockAwb.getAwbCargoInfo().setSci("T1");
+        Awb testAwb = jsonTestUtility.getTestHawb();
+        testAwb.getAwbCargoInfo().setSci("T1");
         Awb mawb = jsonTestUtility.getTestMawb();
         mawb.getAwbCargoInfo().setSci("T1");
         var mock = Mockito.spy(awbDao);
-        when(mawbHawbLinkDao.findByHawbId(mockAwb.getId())).thenReturn(List.of(MawbHawbLink.builder().hawbId(mockAwb.getId()).mawbId(mawb.getId()).build()));
-        when(awbRepository.findAwbByIds(any())).thenReturn(Arrays.asList(mawb));
+        when(mawbHawbLinkDao.findByHawbId(testAwb.getId())).thenReturn(List.of(MawbHawbLink.builder().hawbId(testAwb.getId()).mawbId(mawb.getId()).build()));
+        when(awbRepository.findAwbByIds(any())).thenReturn(List.of(mawb));
 
-        mock.updateSciFieldFromHawb(mockAwb, null, false, mockAwb.getId());
+        mock.updateSciFieldFromHawb(testAwb, null, false, testAwb.getId());
         verify(mock, times(0)).save(any());
     }
 
     @Test
     void updateSciFieldFromHawbFrom_Success_Sci_T2() throws RunnerException {
-        Awb mockAwb = jsonTestUtility.getTestHawb();
+        Awb testAwb = jsonTestUtility.getTestHawb();
         Awb mawb = jsonTestUtility.getTestMawb();
         mawb.getAwbCargoInfo().setSci("T1");
-        mockAwb.getAwbCargoInfo().setSci("T2");
+        testAwb.getAwbCargoInfo().setSci("T2");
         var mock = Mockito.spy(awbDao);
-        Page<Awb> awbs = new PageImpl<Awb>(List.of(mockAwb));
-        when(mawbHawbLinkDao.findByHawbId(mockAwb.getId())).thenReturn(List.of(MawbHawbLink.builder().hawbId(mockAwb.getId()).mawbId(mawb.getId()).build()));
-        when(awbRepository.findAwbByIds(any())).thenReturn(Arrays.asList(mawb));
-        when(mawbHawbLinkDao.findByMawbId(mawb.getId())).thenReturn(List.of(MawbHawbLink.builder().hawbId(mockAwb.getId()).mawbId(mawb.getId()).build()));
-        when(awbRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(awbs);
+        Page<Awb> awbs = new PageImpl<>(List.of(testAwb));
+        when(mawbHawbLinkDao.findByHawbId(testAwb.getId())).thenReturn(List.of(MawbHawbLink.builder().hawbId(testAwb.getId()).mawbId(mawb.getId()).build()));
+        when(awbRepository.findAwbByIds(any())).thenReturn(List.of(mawb));
+        when(mawbHawbLinkDao.findByMawbId(mawb.getId())).thenReturn(List.of(MawbHawbLink.builder().hawbId(testAwb.getId()).mawbId(mawb.getId()).build()));
+        when(awbRepository.findAll(ArgumentMatchers.<Specification<Awb>>any(), any(Pageable.class))).thenReturn(awbs);
 
-        mock.updateSciFieldFromHawb(mockAwb, null, false, mockAwb.getId());
+
+        mock.updateSciFieldFromHawb(testAwb, null, false, testAwb.getId());
         verify(mock, times(1)).save(any());
     }
 

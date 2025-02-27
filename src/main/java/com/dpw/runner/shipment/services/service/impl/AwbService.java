@@ -185,6 +185,12 @@ public class AwbService implements IAwbService {
     private String iataCode;
     private String executedAt;
 
+    private final AwbService self;
+
+    public AwbService(AwbService self) {
+        this.self = self;
+    }
+
     @Transactional
     public ResponseEntity<IRunnerResponse> createAwb(CommonRequestModel commonRequestModel) {
         String responseMsg;
@@ -2066,7 +2072,7 @@ public class AwbService implements IAwbService {
                     .awbType(request.getAwbType())
                     .resetType(AwbReset.ALL)
                     .build();
-            return this.reset(CommonRequestModel.buildRequest(resetAwbRequest));
+            return self.reset(CommonRequestModel.buildRequest(resetAwbRequest));
         }
         else if(shipmentSettingsDetails.getAutoUpdateShipmentAWB() != null && shipmentSettingsDetails.getAutoUpdateShipmentAWB()) {
             updateAwbFromShipment(awb, request, shipmentSettingsDetails);
@@ -2614,8 +2620,8 @@ public class AwbService implements IAwbService {
                     .awbType(request.getAwbType())
                     .resetType(AwbReset.ALL)
                     .build();
-            return this.reset(CommonRequestModel.buildRequest(resetAwbRequest));
-        } else if(shipmentSettingsDetails.getAutoUpdateShipmentAWB()) {
+            return self.reset(CommonRequestModel.buildRequest(resetAwbRequest));
+        } else if(Boolean.TRUE.equals(shipmentSettingsDetails.getAutoUpdateShipmentAWB())) {
             updateMawbFromShipment(request, consolidationDetails, awb, shipmentSettingsDetails);
             awb = awbDao.save(awb);
         }

@@ -16,6 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -43,6 +44,6 @@ class ContainerSyncTest {
         when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(100));
         when(syncEntityConversionService.containersV2ToV1(any())).thenReturn(List.of(new ContainerRequestV2()));
 
-        containerSync.sync(List.of(input), 11L, 22L);
+        assertDoesNotThrow(() ->containerSync.sync(List.of(input), 11L, 22L));
     }
 }

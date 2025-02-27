@@ -31,7 +31,6 @@ import com.dpw.runner.shipment.services.syncing.Entity.PackingRequestV2;
 import com.dpw.runner.shipment.services.syncing.interfaces.IPackingSync;
 import com.dpw.runner.shipment.services.utils.CSVParsingUtil;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -53,11 +52,10 @@ import org.springframework.http.ResponseEntity;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -167,11 +165,12 @@ class PackingServiceTest extends CommonMocks {
     }
 
     @Test
-    void create() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+    void create() {
 
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(packingRequest);
 
         ResponseEntity<IRunnerResponse> httpResponse = packingService.create(commonRequestModel);
+        assertNull(httpResponse);
 
     }
 
@@ -972,7 +971,7 @@ class PackingServiceTest extends CommonMocks {
     }
 
     @Test
-    void uploadPacking_NullConsolidation() throws Exception{
+    void uploadPacking_NullConsolidation(){
         BulkUploadRequest bulkUploadRequest = new BulkUploadRequest();
         bulkUploadRequest.setShipmentId(2L);
         bulkUploadRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
@@ -1059,7 +1058,6 @@ class PackingServiceTest extends CommonMocks {
         PackSummaryResponse packSummaryResponse = new PackSummaryResponse();
         AchievedQuantitiesResponse achievedResponse = new AchievedQuantitiesResponse();
         achievedResponse.setWeightUtilization("100.0");
-//        achievedResponse.setVolumeUtilization("100.0");
         packSummaryResponse.setConsolidationAchievedQuantities(achievedResponse);
 
         when(parser.parseExcelFile(any(), any(), any(), anyMap(), any(), any(), anyMap(), anyMap(), anyMap())).thenReturn(packingList);
@@ -1208,7 +1206,7 @@ class PackingServiceTest extends CommonMocks {
     }
 
     @Test
-    void listAsync() throws ExecutionException, InterruptedException {
+    void listAsync() {
         ListCommonRequest listCommonRequest = ListCommonRequest.builder().build();
         CommonRequestModel request = CommonRequestModel.buildRequest(listCommonRequest);
 
@@ -1218,11 +1216,11 @@ class PackingServiceTest extends CommonMocks {
     }
 
     @Test
-    void delete() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+    void delete() {
         Long id = 1L;
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(id);
-
-        packingService.delete(commonRequestModel);
+        ResponseEntity<IRunnerResponse> responseEntity = packingService.delete(commonRequestModel);
+        assertNull(responseEntity);
     }
 
     @Test
@@ -1272,7 +1270,7 @@ class PackingServiceTest extends CommonMocks {
     }
 
     @Test
-    void calculateWeightVolumne_PacksNull() throws RunnerException {
+    void calculateWeightVolumne_PacksNull() {
         ContainerRequest containerRequest = objectMapperTest.convertValue(testContainer, ContainerRequest.class);
         packingRequest.setShipmentId(1L);
         PackContainerNumberChangeRequest request = PackContainerNumberChangeRequest.builder()
@@ -1288,7 +1286,7 @@ class PackingServiceTest extends CommonMocks {
     }
 
     @Test
-    void calculateWeightVolumne_PackNull_Failure() throws RunnerException {
+    void calculateWeightVolumne_PackNull_Failure() {
         ContainerRequest containerRequest = objectMapperTest.convertValue(testContainer, ContainerRequest.class);
         packingRequest.setShipmentId(1L);
         PackContainerNumberChangeRequest request = PackContainerNumberChangeRequest.builder()
@@ -1360,20 +1358,10 @@ class PackingServiceTest extends CommonMocks {
     }
 
     @Test
-    void testCalculateVolume_calculation_CM() throws RunnerException {
-        testAutoCalculatePackingRequest.setLength(new BigDecimal(1));
-        testAutoCalculatePackingRequest.setWidth(new BigDecimal(2));
-        testAutoCalculatePackingRequest.setHeight(new BigDecimal(3));
-        mockShipmentSettings();
-        packingService.calculateVolume(testAutoCalculatePackingRequest, testAutoCalculatePackingResponse);
-        assertNotNull(testAutoCalculatePackingRequest);
-    }
-
-    @Test
     void testCalculateVolume_calculation_FT() throws RunnerException {
-        testAutoCalculatePackingRequest.setLength(new BigDecimal(1));
-        testAutoCalculatePackingRequest.setWidth(new BigDecimal(2));
-        testAutoCalculatePackingRequest.setHeight(new BigDecimal(3));
+        testAutoCalculatePackingRequest.setLength(new BigDecimal(6));
+        testAutoCalculatePackingRequest.setWidth(new BigDecimal(7));
+        testAutoCalculatePackingRequest.setHeight(new BigDecimal(8));
         testAutoCalculatePackingRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         mockShipmentSettings();
         packingService.calculateVolume(testAutoCalculatePackingRequest, testAutoCalculatePackingResponse);
@@ -1392,40 +1380,10 @@ class PackingServiceTest extends CommonMocks {
     }
 
     @Test
-    void testCalculateVolume_calculation_MTR() throws RunnerException {
-        testAutoCalculatePackingRequest.setLength(new BigDecimal(1));
-        testAutoCalculatePackingRequest.setWidth(new BigDecimal(2));
-        testAutoCalculatePackingRequest.setHeight(new BigDecimal(3));
-        mockShipmentSettings();
-        packingService.calculateVolume(testAutoCalculatePackingRequest, testAutoCalculatePackingResponse);
-        assertNotNull(testAutoCalculatePackingRequest);
-    }
-
-    @Test
-    void testCalculateVolume_calculation_M() throws RunnerException {
-        testAutoCalculatePackingRequest.setLength(new BigDecimal(1));
-        testAutoCalculatePackingRequest.setWidth(new BigDecimal(2));
-        testAutoCalculatePackingRequest.setHeight(new BigDecimal(3));
-        mockShipmentSettings();
-        packingService.calculateVolume(testAutoCalculatePackingRequest, testAutoCalculatePackingResponse);
-        assertNotNull(testAutoCalculatePackingRequest);
-    }
-
-    @Test
-    void testCalculateVolume_calculation_MM() throws RunnerException {
-        testAutoCalculatePackingRequest.setLength(new BigDecimal(1));
-        testAutoCalculatePackingRequest.setWidth(new BigDecimal(2));
-        testAutoCalculatePackingRequest.setHeight(new BigDecimal(3));
-        mockShipmentSettings();
-        packingService.calculateVolume(testAutoCalculatePackingRequest, testAutoCalculatePackingResponse);
-        assertNotNull(testAutoCalculatePackingRequest);
-    }
-
-    @Test
     void testAutoCalculateVolumetricWeight_Success() {
         CommonRequestModel commonRequest = CommonRequestModel.buildRequest(testAutoCalculatePackingRequest);
-        ResponseEntity<IRunnerResponse> response = packingService.autoCalculatePacksData(commonRequest);
-        assertNotNull(response);
+        ResponseEntity<IRunnerResponse> responseEntity = packingService.autoCalculatePacksData(commonRequest);
+        assertNotNull(responseEntity);
     }
 
     @Test
@@ -1433,8 +1391,8 @@ class PackingServiceTest extends CommonMocks {
         testAutoCalculatePackingRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         CommonRequestModel commonRequest = CommonRequestModel.buildRequest(testAutoCalculatePackingRequest);
         when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(jsonTestUtility.getVolumeWeightChargeable());
-        ResponseEntity<IRunnerResponse> response = packingService.autoCalculatePacksData(commonRequest);
-        assertNotNull(response);
+        ResponseEntity<IRunnerResponse> responseEntity = packingService.autoCalculatePacksData(commonRequest);
+        assertNotNull(responseEntity);
     }
 
     @Test
@@ -1443,18 +1401,16 @@ class PackingServiceTest extends CommonMocks {
         testAutoCalculatePackingRequest.setContainerCategory(Constants.SHIPMENT_TYPE_LCL);
         CommonRequestModel commonRequest = CommonRequestModel.buildRequest(testAutoCalculatePackingRequest);
         when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(jsonTestUtility.getVolumeWeightChargeable());
-        ResponseEntity<IRunnerResponse> response = packingService.autoCalculatePacksData(commonRequest);
-        assertNotNull(response);
+        ResponseEntity<IRunnerResponse> responseEntity = packingService.autoCalculatePacksData(commonRequest);
+        assertNotNull(responseEntity);
     }
 
     @Test
     void testListPacksToDetach_Success() throws RunnerException {
         DetachPacksListDto request = DetachPacksListDto.builder().containerId(1L).pageSize(1).shipmentId(1L).pageNo(1).build();
-        Page<Packing> page = new PageImpl<>(List.of(testPacking) , PageRequest.of(1 , 1) , 1);
         when(packingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testPacking)));
         ResponseEntity<IRunnerResponse> responseEntity = packingService.listPacksToDetach(CommonRequestModel.buildRequest(request));
         assertNotNull(responseEntity);
-//        assertEquals(ResponseHelper.buildListSuccessResponse(List.of(packingResponse), page.getTotalPages(), page.getTotalElements()), responseEntity);
     }
 
     @Test
@@ -1471,9 +1427,8 @@ class PackingServiceTest extends CommonMocks {
         Field field = SyncConfig.class.getField("IS_REVERSE_SYNC_ACTIVE");
         field.setAccessible(true);
         field.set(syncConfig, false);
-        ResponseEntity<IRunnerResponse> responseEntity = new ResponseEntity<>(HttpStatus.OK);
-        ResponseEntity<IRunnerResponse> response = packingService.V1PackingCreateAndUpdate(CommonRequestModel.buildRequest(testPackingRequestV2), true);
-        assertEquals(HttpStatus.OK, response.getStatusCode());
+        ResponseEntity<IRunnerResponse> responseEntity = packingService.V1PackingCreateAndUpdate(CommonRequestModel.buildRequest(testPackingRequestV2), true);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
     @Test
@@ -1489,7 +1444,7 @@ class PackingServiceTest extends CommonMocks {
     }
 
     @Test
-    void testV1PackingCreateAndUpdate_Failure() throws RunnerException {
+    void testV1PackingCreateAndUpdate_Failure() {
         when(packingDao.findByGuid(any())).thenReturn(Optional.empty());
         when(modelMapper.map(any(), any())).thenReturn(testPacking);
         when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(testShipment));
@@ -1530,7 +1485,6 @@ class PackingServiceTest extends CommonMocks {
         var packingList = jsonTestUtility.getTestPackingList();
         Long consolidationId = 1L;
         ConsolidationDetails consolidationDetails = jsonTestUtility.getTestConsolidationAir();
-        ShipmentRequest shipmentRequest = ShipmentRequest.builder().id(1L).build();
         Allocations allocations = jsonTestUtility.getJson("CONSOLIDATION_ALLOCATION", Allocations.class);
         consolidationDetails.setAllocations(allocations);
         setFeatureFlagForInterBranch();
@@ -1544,8 +1498,8 @@ class PackingServiceTest extends CommonMocks {
         BigDecimal consolidatedVolume = BigDecimal.valueOf(packingList.stream().mapToDouble(i -> i.getVolume().doubleValue()).sum());
         achievedQuantities.setConsolidatedWeight(consolidatedWeight);
         achievedQuantities.setConsolidatedVolume(consolidatedVolume);
-        achievedQuantities.setWeightUtilization(String.valueOf(consolidatedWeight.divide(allocations.getWeight())));
-        achievedQuantities.setVolumeUtilization(String.valueOf(consolidatedVolume.divide(allocations.getVolume())));
+        achievedQuantities.setWeightUtilization(String.valueOf(consolidatedWeight.divide(allocations.getWeight(), RoundingMode.HALF_UP)));
+        achievedQuantities.setVolumeUtilization(String.valueOf(consolidatedVolume.divide(allocations.getVolume(), RoundingMode.HALF_UP)));
 
         AchievedQuantitiesResponse achievedQuantitiesResponse = objectMapperTest.convertValue(achievedQuantities, AchievedQuantitiesResponse.class);
 
@@ -1559,8 +1513,8 @@ class PackingServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(AchievedQuantitiesResponse.class))).thenReturn(achievedQuantitiesResponse);
 
         try{
-            var response = packingService.calculatePacksUtilisationForConsolidation(request);
-            assertNotNull(response);
+            var responseEntity = packingService.calculatePacksUtilisationForConsolidation(request);
+            assertNotNull(responseEntity);
         }
         catch (Exception e) {
             fail(e);
@@ -1572,7 +1526,6 @@ class PackingServiceTest extends CommonMocks {
         var packingList = jsonTestUtility.getTestPackingList();
         Long consolidationId = 1L;
         ConsolidationDetails consolidationDetails = jsonTestUtility.getTestConsolidationAir();
-        ShipmentRequest shipmentRequest = ShipmentRequest.builder().id(1L).build();
         Allocations allocations = jsonTestUtility.getJson("CONSOLIDATION_ALLOCATION", Allocations.class);
 
         //Invalid consol conditions
@@ -1590,10 +1543,10 @@ class PackingServiceTest extends CommonMocks {
         BigDecimal consolidatedVolume = BigDecimal.valueOf(packingList.stream().mapToDouble(i -> i.getVolume().doubleValue()).sum());
         achievedQuantities.setConsolidatedWeight(consolidatedWeight);
         achievedQuantities.setConsolidatedVolume(consolidatedVolume);
-        achievedQuantities.setWeightUtilization(String.valueOf(consolidatedWeight.divide(allocations.getWeight())));
-        achievedQuantities.setVolumeUtilization(String.valueOf(consolidatedVolume.divide(allocations.getVolume())));
+        achievedQuantities.setWeightUtilization(String.valueOf(consolidatedWeight.divide(allocations.getWeight(), RoundingMode.HALF_UP)));
+        achievedQuantities.setVolumeUtilization(String.valueOf(consolidatedVolume.divide(allocations.getVolume(), RoundingMode.HALF_UP)));
 
-        AchievedQuantitiesResponse achievedQuantitiesResponse = objectMapperTest.convertValue(achievedQuantities, AchievedQuantitiesResponse.class);
+        objectMapperTest.convertValue(achievedQuantities, AchievedQuantitiesResponse.class);
         var packingServiceSpy = Mockito.spy(packingService);
 
         // Mocking
@@ -1604,9 +1557,9 @@ class PackingServiceTest extends CommonMocks {
         doReturn(new PackSummaryResponse()).when(packingServiceSpy).calculatePackSummary(anyList(), any(), any(), any());
 
         try{
-            var response = packingServiceSpy.calculatePacksUtilisationForConsolidation(request);
-            assertNull(response.getAchievedVolume());
-            assertNull(response.getAchievedWeight());
+            var packSummaryResponse = packingServiceSpy.calculatePacksUtilisationForConsolidation(request);
+            assertNull(packSummaryResponse.getAchievedVolume());
+            assertNull(packSummaryResponse.getAchievedWeight());
         }
         catch (Exception e) {
             fail(e);
@@ -1634,8 +1587,8 @@ class PackingServiceTest extends CommonMocks {
         BigDecimal consolidatedVolume = BigDecimal.valueOf(packingList.stream().mapToDouble(i -> i.getVolume().doubleValue()).sum());
         achievedQuantities.setConsolidatedWeight(consolidatedWeight);
         achievedQuantities.setConsolidatedVolume(consolidatedVolume);
-        achievedQuantities.setWeightUtilization(String.valueOf(consolidatedWeight.divide(allocations.getWeight())));
-        achievedQuantities.setVolumeUtilization(String.valueOf(consolidatedVolume.divide(allocations.getVolume())));
+        achievedQuantities.setWeightUtilization(String.valueOf(consolidatedWeight.divide(allocations.getWeight(), RoundingMode.HALF_UP)));
+        achievedQuantities.setVolumeUtilization(String.valueOf(consolidatedVolume.divide(allocations.getVolume(), RoundingMode.HALF_UP)));
 
         AchievedQuantitiesResponse achievedQuantitiesResponse = objectMapperTest.convertValue(achievedQuantities, AchievedQuantitiesResponse.class);
 
@@ -1649,8 +1602,8 @@ class PackingServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(AchievedQuantitiesResponse.class))).thenReturn(achievedQuantitiesResponse);
 
         try{
-            var response = packingService.calculatePacksUtilisationForConsolidation(request);
-            assertNotNull(response);
+            var responseEntity = packingService.calculatePacksUtilisationForConsolidation(request);
+            assertNotNull(responseEntity);
         }
         catch (Exception e) {
             fail(e);
@@ -1659,7 +1612,7 @@ class PackingServiceTest extends CommonMocks {
 
     @Test
     void testCalculatePacksUtilisationForAttachedShipmentEmptyRequest() throws RunnerException{
-        var packingList = Collections.EMPTY_LIST;
+        List<Packing> packingList = Collections.emptyList();
         Long consolidationId = 1L;
         ConsolidationDetails consolidationDetails = jsonTestUtility.getTestConsolidationAir();
         consolidationDetails.setPackingList(packingList);
@@ -1673,18 +1626,14 @@ class PackingServiceTest extends CommonMocks {
         request.setShipmentRequest(shipmentRequest);
         request.setConsolidationId(consolidationId);
 
-        AchievedQuantities achievedQuantities = new AchievedQuantities();
-
-        AchievedQuantitiesResponse achievedQuantitiesResponse = objectMapperTest.convertValue(achievedQuantities, AchievedQuantitiesResponse.class);
-
         // Mocking
         when(jsonHelper.convertValueToList(any(), eq(Packing.class))).thenReturn(packingList);
         when(jsonHelper.convertValue(any(), eq(Allocations.class))).thenReturn(allocations);
         when(consolidationDao.findById(consolidationId)).thenReturn(Optional.of(consolidationDetails));
 
         try{
-            var response = packingService.calculatePacksUtilisationForConsolidation(request);
-            assertNull(response);
+            var responseEntity = packingService.calculatePacksUtilisationForConsolidation(request);
+            assertNull(responseEntity);
         }
         catch (Exception e) {
             fail(e);
@@ -1694,15 +1643,10 @@ class PackingServiceTest extends CommonMocks {
     @Test
     void testCalculatePacksUtilisationForAttachingShipments() throws RunnerException{
         var packingList = jsonTestUtility.getTestPackingList();
-        packingList.stream().map(i -> {
-            i.setConsolidationId(1L);
-            i.setShipmentId(1L);
-            return i;
-        }).toList();
+
         Long consolidationId = 1L;
         List<Long> shipmentIds = List.of(1L);
         ConsolidationDetails consolidationDetails = jsonTestUtility.getTestConsolidationAir();
-        ShipmentRequest shipmentRequest = ShipmentRequest.builder().id(1L).build();
         Allocations allocations = jsonTestUtility.getJson("CONSOLIDATION_ALLOCATION", Allocations.class);
         consolidationDetails.setAllocations(allocations);
         consolidationDetails.setPackingList(packingList);
@@ -1717,12 +1661,12 @@ class PackingServiceTest extends CommonMocks {
         BigDecimal consolidatedVolume = BigDecimal.valueOf(packingList.stream().mapToDouble(i -> i.getVolume().doubleValue()).sum());
         achievedQuantities.setConsolidatedWeight(consolidatedWeight);
         achievedQuantities.setConsolidatedVolume(consolidatedVolume);
-        achievedQuantities.setWeightUtilization(String.valueOf(consolidatedWeight.divide(allocations.getWeight())));
-        achievedQuantities.setVolumeUtilization(String.valueOf(consolidatedVolume.divide(allocations.getVolume())));
+        achievedQuantities.setWeightUtilization(String.valueOf(consolidatedWeight.divide(allocations.getWeight(), RoundingMode.HALF_UP)));
+        achievedQuantities.setVolumeUtilization(String.valueOf(consolidatedVolume.divide(allocations.getVolume(), RoundingMode.HALF_UP)));
 
         AchievedQuantitiesResponse achievedQuantitiesResponse = objectMapperTest.convertValue(achievedQuantities, AchievedQuantitiesResponse.class);
 
-        Page<ShipmentDetails> shipmentDetailsPage = new PageImpl(List.of(ShipmentDetails.builder()
+        Page<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(List.of(ShipmentDetails.builder()
             .packingList(packingList).build()
         ));
 
@@ -1737,8 +1681,8 @@ class PackingServiceTest extends CommonMocks {
         when(shipmentDao.findAll(any(), any())).thenReturn(shipmentDetailsPage);
 
         try{
-            var response = packingService.calculatePacksUtilisationForConsolidation(request);
-            assertNotNull(response);
+            var responseEntity = packingService.calculatePacksUtilisationForConsolidation(request);
+            assertNotNull(responseEntity);
             verify(commonUtils, times(0)).setInterBranchContextForHub();
         }
         catch (Exception e) {
@@ -1769,8 +1713,8 @@ class PackingServiceTest extends CommonMocks {
         BigDecimal consolidatedVolume = BigDecimal.valueOf(packingList.stream().mapToDouble(i -> i.getVolume().doubleValue()).sum());
         achievedQuantities.setConsolidatedWeight(consolidatedWeight);
         achievedQuantities.setConsolidatedVolume(consolidatedVolume);
-        achievedQuantities.setWeightUtilization(String.valueOf(consolidatedWeight.divide(allocations.getWeight())));
-        achievedQuantities.setVolumeUtilization(String.valueOf(consolidatedVolume.divide(allocations.getVolume())));
+        achievedQuantities.setWeightUtilization(String.valueOf(consolidatedWeight.divide(allocations.getWeight(), RoundingMode.HALF_UP)));
+        achievedQuantities.setVolumeUtilization(String.valueOf(consolidatedVolume.divide(allocations.getVolume(), RoundingMode.HALF_UP)));
 
         AchievedQuantitiesResponse achievedQuantitiesResponse = objectMapperTest.convertValue(achievedQuantities, AchievedQuantitiesResponse.class);
 
@@ -1815,8 +1759,8 @@ class PackingServiceTest extends CommonMocks {
         BigDecimal consolidatedVolume = BigDecimal.valueOf(packingList.stream().mapToDouble(i -> i.getVolume().doubleValue()).sum());
         achievedQuantities.setConsolidatedWeight(consolidatedWeight);
         achievedQuantities.setConsolidatedVolume(consolidatedVolume);
-        achievedQuantities.setWeightUtilization(String.valueOf(consolidatedWeight.divide(allocations.getWeight())));
-        achievedQuantities.setVolumeUtilization(String.valueOf(consolidatedVolume.divide(allocations.getVolume())));
+        achievedQuantities.setWeightUtilization(String.valueOf(consolidatedWeight.divide(allocations.getWeight(), RoundingMode.HALF_UP)));
+        achievedQuantities.setVolumeUtilization(String.valueOf(consolidatedVolume.divide(allocations.getVolume(), RoundingMode.HALF_UP)));
 
         // Mocking
         when(consolidationDao.findById(consolidationId)).thenReturn(Optional.empty());
@@ -1853,8 +1797,8 @@ class PackingServiceTest extends CommonMocks {
         BigDecimal consolidatedVolume = BigDecimal.valueOf(packingList.stream().mapToDouble(i -> i.getVolume().doubleValue()).sum());
         achievedQuantities.setConsolidatedWeight(consolidatedWeight);
         achievedQuantities.setConsolidatedVolume(consolidatedVolume);
-        achievedQuantities.setWeightUtilization(String.valueOf(consolidatedWeight.divide(allocations.getWeight())));
-        achievedQuantities.setVolumeUtilization(String.valueOf(consolidatedVolume.divide(allocations.getVolume())));
+        achievedQuantities.setWeightUtilization(String.valueOf(consolidatedWeight.divide(allocations.getWeight(), RoundingMode.HALF_UP)));
+        achievedQuantities.setVolumeUtilization(String.valueOf(consolidatedVolume.divide(allocations.getVolume(), RoundingMode.HALF_UP)));
 
         // Mocking
         when(consolidationDao.findById(consolidationId)).thenThrow(new RuntimeException());
@@ -1892,8 +1836,8 @@ class PackingServiceTest extends CommonMocks {
         BigDecimal consolidatedVolume = BigDecimal.valueOf(packingList.stream().mapToDouble(i -> i.getVolume().doubleValue()).sum());
         achievedQuantities.setConsolidatedWeight(consolidatedWeight);
         achievedQuantities.setConsolidatedVolume(consolidatedVolume);
-        achievedQuantities.setWeightUtilization(String.valueOf(consolidatedWeight.divide(allocations.getWeight())));
-        achievedQuantities.setVolumeUtilization(String.valueOf(consolidatedVolume.divide(allocations.getVolume())));
+        achievedQuantities.setWeightUtilization(String.valueOf(consolidatedWeight.divide(allocations.getWeight(), RoundingMode.HALF_UP)));
+        achievedQuantities.setVolumeUtilization(String.valueOf(consolidatedVolume.divide(allocations.getVolume(), RoundingMode.HALF_UP)));
 
         // Mocking
         when(consolidationDao.findById(consolidationId)).thenThrow(new RuntimeException());

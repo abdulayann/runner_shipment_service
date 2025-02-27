@@ -30,9 +30,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -95,8 +95,6 @@ class NotesServiceTest {
         NotesRequest request = new NotesRequest(); // Provide necessary data for request
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
         commonRequestModel.setData(request);
-        Notes notes = new Notes(); // Provide necessary data for notes
-        NotesResponse notesResponse = new NotesResponse();
 
         ResponseEntity<IRunnerResponse> responseEntity = notesService.create(commonRequestModel);
 
@@ -111,8 +109,6 @@ class NotesServiceTest {
         request.setEntityGuid(UUID.randomUUID().toString());
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
         commonRequestModel.setData(request);
-        Notes notes = new Notes(); // Provide necessary data for notes
-        NotesResponse notesResponse = new NotesResponse();
 
         ResponseEntity<IRunnerResponse> responseEntity = notesService.create(commonRequestModel);
 
@@ -129,8 +125,6 @@ class NotesServiceTest {
         request.setEntityType(entityType);
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
         commonRequestModel.setData(request);
-        Notes notes = new Notes(); // Provide necessary data for notes
-        NotesResponse notesResponse = new NotesResponse();
         if(entityType.equalsIgnoreCase(Constants.SHIPMENT)) {
             when(shipmentService.getIdFromGuid(any())).thenReturn(ResponseHelper.buildSuccessResponse(ShipmentDetailsResponse.builder().build()));
         } else {
@@ -189,7 +183,7 @@ class NotesServiceTest {
         commonRequestModel.setData(request);
         when(notesDao.findById(any())).thenReturn(Optional.empty());
 
-        var e = assertThrows(DataRetrievalFailureException.class, () -> notesService.update(commonRequestModel));
+        assertThrows(DataRetrievalFailureException.class, () -> notesService.update(commonRequestModel));
 
     }
 
@@ -205,6 +199,7 @@ class NotesServiceTest {
         when(jsonHelper.convertValue(any(NotesRequest.class), eq(Notes.class))).thenReturn(notes);
 
         ResponseEntity<IRunnerResponse> responseEntity = notesService.update(commonRequestModel);
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
 
     }
 
@@ -333,7 +328,7 @@ class NotesServiceTest {
     void testRetrieveByIdWithIncludeColumns() {
 
         CommonGetRequest request = CommonGetRequest.builder().id(10L).build(); // Provide necessary data for request
-        request.setIncludeColumns(Arrays.asList("a"));
+        request.setIncludeColumns(List.of("a"));
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
         commonRequestModel.setData(request);
         Notes notes = new Notes(); // Provide necessary data for notes

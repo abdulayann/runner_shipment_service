@@ -19,10 +19,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -49,7 +50,7 @@ class TenantTimeZoneAspectTest {
         mockUser.setPermissions(new HashMap<>());
         UserContext.setUser(mockUser);
         ShipmentRequest shipmentRequest = new ShipmentRequest();
-        shipmentRequest.setContainersList(new HashSet<>(Arrays.asList(new ContainerRequest())));
+        shipmentRequest.setContainersList(new HashSet<>(List.of(new ContainerRequest())));
         shipmentRequest.setCarrierDetails(CarrierDetailRequest.builder().build());
         shipmentRequest.setShipmentCreatedOn(LocalDateTime.now());
         CommonRequestModel request = CommonRequestModel.builder().data(shipmentRequest).build();
@@ -59,7 +60,6 @@ class TenantTimeZoneAspectTest {
         ResponseEntity<?> responseEntity = new ResponseEntity<>(shipmentDetailsResponse, HttpStatus.OK);
         when(proceedingJoinPoint.proceed(any())).thenReturn(responseEntity);
         tenantTimeZoneAspect = new TenantTimeZoneAspect();
-        tenantTimeZoneAspect.changeTimeZone(proceedingJoinPoint);
-        assert (true);
+        assertDoesNotThrow(() ->tenantTimeZoneAspect.changeTimeZone(proceedingJoinPoint));
     }
 }

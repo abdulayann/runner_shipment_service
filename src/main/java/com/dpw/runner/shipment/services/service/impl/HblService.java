@@ -97,6 +97,12 @@ public class HblService implements IHblService {
     @Autowired
     private ConsolidationService consolidationService;
 
+    private final HblService self;
+
+    public HblService(HblService self) {
+        this.self = self;
+    }
+
 
     private RetryTemplate retryTemplate = RetryTemplate.builder()
             .maxAttempts(3)
@@ -322,7 +328,7 @@ public class HblService implements IHblService {
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         if(shipmentSettingsDetails.getRestrictBLEdit() != null && shipmentSettingsDetails.getRestrictBLEdit()) {
             HblResetRequest resetRequest = HblResetRequest.builder().id(hbl.getId()).resetType(HblReset.ALL).build();
-            return resetHbl(CommonRequestModel.buildRequest(resetRequest));
+            return self.resetHbl(CommonRequestModel.buildRequest(resetRequest));
         } else if (shipmentSettingsDetails.getAutoUpdateShipmentBL() != null && shipmentSettingsDetails.getAutoUpdateShipmentBL()){
             updateHblFromShipment(shipmentDetails.get(), hbl, shipmentSettingsDetails);
             hbl = hblDao.save(hbl);
