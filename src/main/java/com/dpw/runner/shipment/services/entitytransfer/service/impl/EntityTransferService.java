@@ -1958,8 +1958,19 @@ public class EntityTransferService implements IEntityTransferService {
                                         arValidationResponse.setTriangulationShipmentList(triangulationShipmentDataList);
                                     }
                                 }
-                                triangulationList.addAll(triangulationPartnerList.stream().filter(partner -> arValidationResponse.getTriangulationShipmentList().stream()
-                                        .filter(Objects::nonNull).anyMatch(partnerList -> !Objects.equals(partnerList.getBranchId(), partner.getTriangulationPartner()))).map(TriangulationPartner::getTriangulationPartner).toList());
+                                Set<Integer> branchIds = new HashSet<>();
+                                if(arValidationResponse.getTriangulationShipmentList() != null) {
+                                    branchIds = arValidationResponse.getTriangulationShipmentList().stream()
+                                            .filter(Objects::nonNull)
+                                            .map(ArValidationResponse.ProfitShareShipmentData::getBranchId)
+                                            .collect(Collectors.toSet());
+                                }
+
+                                for(TriangulationPartner triangulation : triangulationPartnerList) {
+                                    if(!branchIds.contains(triangulation.getTriangulationPartner().intValue())) {
+                                        triangulationList.add(triangulation.getTriangulationPartner());
+                                    }
+                                }
                             } else if (triangulationPartnerList == null && triangulationPartner != null) {
                                 if (shipmentDetails.getTenantId().equals(triangulationPartner.intValue())) {
                                     ArValidationResponse.ProfitShareShipmentData triangulationShipmentData = mapShipmentDataToProfitShare(shipmentDetails);
@@ -2055,8 +2066,19 @@ public class EntityTransferService implements IEntityTransferService {
                                     arValidationResponse.setTriangulationShipmentList(triangulationShipmentDataList);
                                 }
                             }
-                            triangulationList.addAll(triangulationPartnerList.stream().filter(partner -> arValidationResponse.getTriangulationShipmentList().stream()
-                                    .filter(Objects::nonNull).anyMatch(partnerList -> !Objects.equals(partnerList.getBranchId(), partner.getTriangulationPartner()))).map(TriangulationPartner::getTriangulationPartner).toList());
+                            Set<Integer> branchIds = new HashSet<>();
+                            if(arValidationResponse.getTriangulationShipmentList() != null) {
+                                branchIds = arValidationResponse.getTriangulationShipmentList().stream()
+                                        .filter(Objects::nonNull)
+                                        .map(ArValidationResponse.ProfitShareShipmentData::getBranchId)
+                                        .collect(Collectors.toSet());
+                            }
+
+                            for(TriangulationPartner triangulation : triangulationPartnerList) {
+                                if(!branchIds.contains(triangulation.getTriangulationPartner().intValue())) {
+                                    triangulationList.add(triangulation.getTriangulationPartner());
+                                }
+                            }
                         } else if (triangulationPartnerList == null && triangulationPartner != null) {
                             if (Objects.equals(triangulationPartner, receivingAgent)) {
                                 arValidationResponse.setTransferToTriangulationPartner(arValidationResponse.getTransferToReceivingAgent());
@@ -2089,33 +2111,36 @@ public class EntityTransferService implements IEntityTransferService {
     }
 
     private void populateNonAcceptedShipment(Long receivingAgent, List<Long> triangulationPartnerList, Long entityId, String entityType, ArValidationResponse response) {
+        List<Long> partnerList = new ArrayList<>();
         if(receivingAgent != null) {
-            triangulationPartnerList.add(receivingAgent);
+            partnerList.add(receivingAgent);
         }
-        if(!CollectionUtils.isEmpty(triangulationPartnerList)) {
+        partnerList.addAll(triangulationPartnerList);
+        if(!CollectionUtils.isEmpty(partnerList)) {
             try {
-                List<TaskCreateRequest> taskCreateRequests = retireveTaskFromV1(String.valueOf(entityId), entityType, triangulationPartnerList);
-                if(!CollectionUtils.isEmpty(taskCreateRequests)) {
+                List<TaskCreateRequest> taskCreateRequests = retireveTaskFromV1(String.valueOf(entityId), entityType, partnerList);
+                if(CollectionUtils.isEmpty(taskCreateRequests)) {
                     if(receivingAgent != null) {
                         response.setReceivingShipment(mapShipmentDataToProfitShare(TransferStatus.NOT_TRANSFERRED, receivingAgent.intValue()));
                     }
                     for(Long triangulationId : triangulationPartnerList) {
                         response.addTriangulationShipmentList(mapShipmentDataToProfitShare(TransferStatus.NOT_TRANSFERRED, triangulationId.intValue()));
                     }
-                }
-                Set<Integer> tenantIds = taskCreateRequests.stream().map(x -> Integer.parseInt(x.getTenantId())).collect(Collectors.toSet());
-                if(receivingAgent != null) {
-                    if(tenantIds.contains(receivingAgent.intValue())) {
-                        response.setReceivingShipment(mapShipmentDataToProfitShare(TransferStatus.TRANSFERRED, receivingAgent.intValue()));
-                    } else {
-                        response.setReceivingShipment(mapShipmentDataToProfitShare(TransferStatus.NOT_TRANSFERRED, receivingAgent.intValue()));
+                } else {
+                    Set<Integer> tenantIds = taskCreateRequests.stream().map(x -> Integer.parseInt(x.getTenantId())).collect(Collectors.toSet());
+                    if (receivingAgent != null) {
+                        if (tenantIds.contains(receivingAgent.intValue())) {
+                            response.setReceivingShipment(mapShipmentDataToProfitShare(TransferStatus.TRANSFERRED, receivingAgent.intValue()));
+                        } else {
+                            response.setReceivingShipment(mapShipmentDataToProfitShare(TransferStatus.NOT_TRANSFERRED, receivingAgent.intValue()));
+                        }
                     }
-                }
-                for(Long triangulationId : triangulationPartnerList) {
-                    if(tenantIds.contains(triangulationId.intValue())) {
-                        response.addTriangulationShipmentList(mapShipmentDataToProfitShare(TransferStatus.TRANSFERRED, triangulationId.intValue()));
-                    } else {
-                        response.addTriangulationShipmentList(mapShipmentDataToProfitShare(TransferStatus.NOT_TRANSFERRED, triangulationId.intValue()));
+                    for (Long triangulationId : triangulationPartnerList) {
+                        if (tenantIds.contains(triangulationId.intValue())) {
+                            response.addTriangulationShipmentList(mapShipmentDataToProfitShare(TransferStatus.TRANSFERRED, triangulationId.intValue()));
+                        } else {
+                            response.addTriangulationShipmentList(mapShipmentDataToProfitShare(TransferStatus.NOT_TRANSFERRED, triangulationId.intValue()));
+                        }
                     }
                 }
             } catch (Exception e) {
