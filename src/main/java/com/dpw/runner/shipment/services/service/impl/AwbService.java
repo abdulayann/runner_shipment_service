@@ -185,12 +185,6 @@ public class AwbService implements IAwbService {
     private String iataCode;
     private String executedAt;
 
-    private final AwbService self;
-
-    public AwbService(AwbService self) {
-        this.self = self;
-    }
-
     @Transactional
     public ResponseEntity<IRunnerResponse> createAwb(CommonRequestModel commonRequestModel) {
         String responseMsg;
@@ -1914,9 +1908,7 @@ public class AwbService implements IAwbService {
         }
     }
 
-    @Override
-    @Transactional
-    public ResponseEntity<IRunnerResponse> reset(CommonRequestModel commonRequestModel) throws RunnerException {
+    private ResponseEntity<IRunnerResponse> resetAwb(CommonRequestModel commonRequestModel) throws RunnerException {
         ResetAwbRequest resetAwbRequest = (ResetAwbRequest) commonRequestModel.getData();
         Optional<Awb> awbOptional = awbDao.findById(resetAwbRequest.getId());
 
@@ -2041,6 +2033,13 @@ public class AwbService implements IAwbService {
     }
 
     @Override
+    @Transactional
+    public ResponseEntity<IRunnerResponse> reset(CommonRequestModel commonRequestModel) throws RunnerException {
+        return resetAwb(commonRequestModel);
+    }
+
+    @Override
+    @Transactional
     public ResponseEntity<IRunnerResponse> partialAutoUpdateAwb(CommonRequestModel commonRequestModel) throws RunnerException {
         String responseMsg;
         CreateAwbRequest request = (CreateAwbRequest) commonRequestModel.getData();
@@ -2072,7 +2071,7 @@ public class AwbService implements IAwbService {
                     .awbType(request.getAwbType())
                     .resetType(AwbReset.ALL)
                     .build();
-            return self.reset(CommonRequestModel.buildRequest(resetAwbRequest));
+            return resetAwb(CommonRequestModel.buildRequest(resetAwbRequest));
         }
         else if(shipmentSettingsDetails.getAutoUpdateShipmentAWB() != null && shipmentSettingsDetails.getAutoUpdateShipmentAWB()) {
             updateAwbFromShipment(awb, request, shipmentSettingsDetails);
@@ -2620,7 +2619,7 @@ public class AwbService implements IAwbService {
                     .awbType(request.getAwbType())
                     .resetType(AwbReset.ALL)
                     .build();
-            return self.reset(CommonRequestModel.buildRequest(resetAwbRequest));
+            return resetAwb(CommonRequestModel.buildRequest(resetAwbRequest));
         } else if(Boolean.TRUE.equals(shipmentSettingsDetails.getAutoUpdateShipmentAWB())) {
             updateMawbFromShipment(request, consolidationDetails, awb, shipmentSettingsDetails);
             awb = awbDao.save(awb);

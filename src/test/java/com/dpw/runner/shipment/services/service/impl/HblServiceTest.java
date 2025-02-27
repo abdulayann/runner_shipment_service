@@ -96,8 +96,6 @@ class HblServiceTest extends CommonMocks {
     private PartialFetchUtils partialFetchUtils;
     @Mock
     private ConsolidationService consolidationService;
-    @Mock
-    private HblService self;
 
 
     @BeforeAll
@@ -947,7 +945,6 @@ class HblServiceTest extends CommonMocks {
         when(shipmentDao.findById(10L)).thenReturn(Optional.of(ShipmentDetails.builder().build()));
         when(hblDao.findByShipmentId(10L)).thenReturn(List.of(mockHbl));
         mockShipmentSettings();
-        doThrow(new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE)).when(self).resetHbl(any());
         Exception e = assertThrows(DataRetrievalFailureException.class, () -> hblService.partialUpdateHBL(commonRequestModel));
         // Assert
         assertEquals(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, e.getMessage());

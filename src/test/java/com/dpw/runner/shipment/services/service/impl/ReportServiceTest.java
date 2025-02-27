@@ -2937,7 +2937,7 @@ class ReportServiceTest extends CommonMocks {
     @Test
     void testGeneratePdfBytes_ValidInput() {
 
-        ReportService reportService1 = spy(new ReportService(reportService));
+        ReportService reportService1 = spy(new ReportService());
         ReportRequest reportRequest1 = mock(ReportRequest.class);
         when(reportRequest1.getCopyCountForAWB()).thenReturn(2);
         when(reportRequest1.isFromConsolidation()).thenReturn(true);
@@ -2962,7 +2962,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void testGeneratePdfBytes_CopyCountNull() {
-        ReportService reportService1 = spy(new ReportService(reportService));
+        ReportService reportService1 = spy(new ReportService());
         ReportRequest reportRequest1 = mock(ReportRequest.class);
         when(reportRequest1.getCopyCountForAWB()).thenReturn(null); // Simulate null copy count
 
@@ -2978,7 +2978,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void testGeneratePdfBytes_MawbOrHawbNotNull() {
-        ReportService reportService1 = spy(new ReportService(reportService));
+        ReportService reportService1 = spy(new ReportService());
         ReportRequest reportRequest1 = mock(ReportRequest.class);
         when(reportRequest1.getCopyCountForAWB()).thenReturn(1);
         when(reportRequest1.isFromConsolidation()).thenReturn(false);
@@ -3003,7 +3003,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void testGeneratePdfBytes_FromConsolidation_MawbNotNull() {
-        ReportService reportService1 = spy(new ReportService(reportService));
+        ReportService reportService1 = spy(new ReportService());
         ReportRequest reportRequest1 = mock(ReportRequest.class);
         when(reportRequest1.getCopyCountForAWB()).thenReturn(1);
         when(reportRequest1.isFromConsolidation()).thenReturn(true);
@@ -3030,7 +3030,7 @@ class ReportServiceTest extends CommonMocks {
     @Test
     void testGeneratePdfBytes_ConsolidationTrue() {
         // Test case where reportRequest.isFromConsolidation() returns true
-        ReportService reportService1 = spy(new ReportService(reportService));
+        ReportService reportService1 = spy(new ReportService());
         ReportRequest reportRequest1 = mock(ReportRequest.class);
         when(reportRequest1.getCopyCountForAWB()).thenReturn(2);
         when(reportRequest1.isFromConsolidation()).thenReturn(true);
@@ -3056,7 +3056,7 @@ class ReportServiceTest extends CommonMocks {
     @Test
     void testGeneratePdfBytes_HAWB_NotPresent() {
         // Test case where HAWB_NUMBER is null
-        ReportService reportService1 = spy(new ReportService(reportService));
+        ReportService reportService1 = spy(new ReportService());
         ReportRequest reportRequest1 = mock(ReportRequest.class);
         when(reportRequest1.getCopyCountForAWB()).thenReturn(1);
         when(reportRequest1.isFromConsolidation()).thenReturn(false);
@@ -3083,7 +3083,7 @@ class ReportServiceTest extends CommonMocks {
     @Test
     void testGeneratePdfBytes_MAWB_NotPresent() {
         // Test case where MAWB_NUMBER is null
-        ReportService reportService1 = spy(new ReportService(reportService));
+        ReportService reportService1 = spy(new ReportService());
         ReportRequest reportRequest1 = mock(ReportRequest.class);
         when(reportRequest1.getCopyCountForAWB()).thenReturn(1);
         when(reportRequest1.isFromConsolidation()).thenReturn(false);
@@ -3111,7 +3111,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void testGeneratePdfBytes_CopyCountLessThanOne() {
-        ReportService reportService1 = spy(new ReportService(reportService));
+        ReportService reportService1 = spy(new ReportService());
         ReportRequest reportRequest1 = mock(ReportRequest.class);
         when(reportRequest1.getCopyCountForAWB()).thenReturn(0);
 
@@ -3126,7 +3126,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void testGeneratePdfBytes_NullMainDocPage() {
-        ReportService reportService1 = spy(new ReportService(reportService));
+        ReportService reportService1 = spy(new ReportService());
         ReportRequest reportRequest1 = mock(ReportRequest.class);
         when(reportRequest1.getCopyCountForAWB()).thenReturn(1);
         when(reportRequest1.isFromConsolidation()).thenReturn(false);
@@ -3150,7 +3150,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void testGeneratePdfBytes_EmptyDataRetrived() {
-        ReportService reportService1 = spy(new ReportService(reportService));
+        ReportService reportService1 = spy(new ReportService());
         ReportRequest reportRequest1 = mock(ReportRequest.class);
         when(reportRequest1.getCopyCountForAWB()).thenReturn(1);
         when(reportRequest1.isFromConsolidation()).thenReturn(false);
@@ -3169,7 +3169,7 @@ class ReportServiceTest extends CommonMocks {
     @Test
     void testGeneratePdfBytes_MAWBNumberPresent() {
         // Test case where MAWB_NUMBER is present
-        ReportService reportService1 = spy(new ReportService(reportService));
+        ReportService reportService1 = spy(new ReportService());
         ReportRequest reportRequest1 = mock(ReportRequest.class);
         when(reportRequest1.getCopyCountForAWB()).thenReturn(1);
         when(reportRequest1.isFromConsolidation()).thenReturn(true); // Consolidation is true, so MAWB is relevant
@@ -3197,7 +3197,7 @@ class ReportServiceTest extends CommonMocks {
     @Test
     void testGeneratePdfBytes_MAWBNumberAbsent() {
         // Test case where MAWB_NUMBER is absent (null)
-        ReportService reportService1 = spy(new ReportService(reportService));
+        ReportService reportService1 = spy(new ReportService());
         ReportRequest reportRequest1 = mock(ReportRequest.class);
         when(reportRequest1.getCopyCountForAWB()).thenReturn(1);
         when(reportRequest1.isFromConsolidation()).thenReturn(true); // Consolidation is true, so MAWB is relevant
@@ -3223,7 +3223,7 @@ class ReportServiceTest extends CommonMocks {
     @Test
     void testGeneratePdfBytes_Combi() {
         // Test case where reportRequest.isFromConsolidation() returns true
-        ReportService reportService1 = spy(new ReportService(reportService));
+        ReportService reportService1 = spy(new ReportService());
         ReportRequest reportRequest1 = mock(ReportRequest.class);
         when(reportRequest1.getCopyCountForAWB()).thenReturn(2);
         when(reportRequest1.isFromConsolidation()).thenReturn(true);

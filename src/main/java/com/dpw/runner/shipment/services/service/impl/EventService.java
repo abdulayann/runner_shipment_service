@@ -124,13 +124,12 @@ public class EventService implements IEventService {
     private CommonUtils commonUtils;
     private ICarrierDetailsDao carrierDetailsDao;
     private IShipmentSettingsDao shipmentSettingsDao;
-    private final EventService self;
 
     @Autowired
     public EventService(IEventDao eventDao, JsonHelper jsonHelper, IAuditLogService auditLogService, ObjectMapper objectMapper, ModelMapper modelMapper, IShipmentDao shipmentDao
             , IShipmentSync shipmentSync, IConsolidationDetailsDao consolidationDao, SyncConfig syncConfig, IDateTimeChangeLogService dateTimeChangeLogService,
             PartialFetchUtils partialFetchUtils, ITrackingServiceAdapter trackingServiceAdapter, IEventDumpDao eventDumpDao, IV1Service v1Service, CommonUtils commonUtils, ICarrierDetailsDao carrierDetailsDao,
-                        IShipmentSettingsDao shipmentSettingsDao, EventService self) {
+                        IShipmentSettingsDao shipmentSettingsDao) {
         this.eventDao = eventDao;
         this.jsonHelper = jsonHelper;
         this.auditLogService = auditLogService;
@@ -148,7 +147,6 @@ public class EventService implements IEventService {
         this.commonUtils = commonUtils;
         this.carrierDetailsDao = carrierDetailsDao;
         this.shipmentSettingsDao = shipmentSettingsDao;
-        this.self = self;
     }
 
     @Transactional
@@ -1339,7 +1337,7 @@ public class EventService implements IEventService {
         IgnoreAutoTenantPopulationContext.setContext(Boolean.TRUE);
         boolean processSuccess = false;
         try {
-            processSuccess = self.processUpstreamTrackingMessage(container, messageId);
+            processSuccess = processUpstreamTrackingMessage(container, messageId);
         } finally {
             v1Service.clearAuthContext();
             IgnoreAutoTenantPopulationContext.clearContext();
