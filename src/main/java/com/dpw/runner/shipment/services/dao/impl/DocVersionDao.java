@@ -10,7 +10,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public class DaoVersionDao implements IDocVersionDao {
+public class DocVersionDao implements IDocVersionDao {
 
     @Autowired
     private IDocVersionRepository docVersionRepository;

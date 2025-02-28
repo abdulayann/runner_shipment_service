@@ -146,7 +146,7 @@ public class NotificationRestClient {
         return emailsList;
     }
 
-    public Object getTags(GetLogsRequest request) {
+    public Object getLogs(GetLogsRequest request) {
         HttpHeaders headers = new HttpHeaders();
         headers.set(notificationConfig.getNotificationApiKeyHeader(), notificationConfig.getNotificationApiKeyValue());
         headers.set(notificationConfig.getApiKeyVersionHeader(), notificationConfig.getApiKeyVersion());
