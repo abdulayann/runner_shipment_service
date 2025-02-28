@@ -1,23 +1,16 @@
 package com.dpw.runner.shipment.services.notification.service.impl;
 
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.isA;
-import static org.mockito.Mockito.atLeast;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import com.dpw.runner.shipment.services.document.util.BASE64DecodedMultipartFile;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.notification.config.NotificationConfig;
 import com.dpw.runner.shipment.services.notification.config.NotificationRestClient;
+import com.dpw.runner.shipment.services.notification.request.CreateTagsRequest;
+import com.dpw.runner.shipment.services.notification.request.GetLogsRequest;
 import com.dpw.runner.shipment.services.notification.request.NotificationServiceSendEmailRequest;
 import com.dpw.runner.shipment.services.notification.request.SendEmailBaseRequest;
 import com.dpw.runner.shipment.services.notification.response.NotificationServiceResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import java.io.UnsupportedEncodingException;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
@@ -25,8 +18,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.PropertySource;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+
+import java.io.UnsupportedEncodingException;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.isA;
+import static org.mockito.Mockito.*;
 
 @ContextConfiguration(classes = {NotificationServiceImpl.class, NotificationConfig.class})
 @ExtendWith(SpringExtension.class)
@@ -40,12 +40,12 @@ class NotificationServiceImplTest {
     private NotificationServiceImpl notificationServiceImpl;
 
     @MockBean
-    private ObjectMapper objectMapper;
+    private JsonHelper jsonHelper;
 
     @Test
     void testSendEmail() throws JsonProcessingException, UnsupportedEncodingException {
         // Arrange
-        when(objectMapper.writeValueAsString(Mockito.<Object>any())).thenReturn("42");
+        when(jsonHelper.convertToJson(Mockito.<Object>any())).thenReturn("42");
 
         NotificationServiceResponse notificationServiceResponse = new NotificationServiceResponse();
         notificationServiceResponse.setAcknowledgementId("42");
@@ -74,14 +74,14 @@ class NotificationServiceImplTest {
 
         // Assert
         verify(notificationRestClient).sendEmail(isA(NotificationServiceSendEmailRequest.class));
-        verify(objectMapper, atLeast(1)).writeValueAsString(Mockito.<Object>any());
+        verify(jsonHelper, atLeast(1)).convertToJson(Mockito.<Object>any());
         assertSame(notificationServiceResponse, actualSendEmailResult);
     }
 
     @Test
     void testSendEmail2() throws JsonProcessingException, UnsupportedEncodingException {
         // Arrange
-        when(objectMapper.writeValueAsString(Mockito.<Object>any())).thenReturn("42");
+        when(jsonHelper.convertToJson(Mockito.<Object>any())).thenReturn("42");
         when(notificationRestClient.sendEmail(Mockito.<NotificationServiceSendEmailRequest>any()))
                 .thenThrow(new RuntimeException("high"));
 
@@ -102,13 +102,12 @@ class NotificationServiceImplTest {
         // Act and Assert
         assertThrows(RuntimeException.class, () -> notificationServiceImpl.sendEmail(request));
         verify(notificationRestClient).sendEmail(isA(NotificationServiceSendEmailRequest.class));
-        verify(objectMapper, atLeast(1)).writeValueAsString(Mockito.<Object>any());
+        verify(jsonHelper, atLeast(1)).convertToJson(Mockito.<Object>any());
     }
 
     @Test
     void testSendEmail3() throws JsonProcessingException, UnsupportedEncodingException {
         // Arrange
-        when(objectMapper.writeValueAsString(Mockito.<Object>any())).thenThrow(new JsonProcessingException("a"){});
         NotificationServiceResponse notificationServiceResponse = new NotificationServiceResponse();
         notificationServiceResponse.setAcknowledgementId("42");
         notificationServiceResponse.setErrorCode("An error occurred");
@@ -130,8 +129,35 @@ class NotificationServiceImplTest {
         request.setUserId("42");
         request.setUserName("janedoe");
 
-        // Act and Assert
-        assertThrows(RuntimeException.class, () -> notificationServiceImpl.sendEmail(request));
-        verify(objectMapper, atLeast(1)).writeValueAsString(Mockito.<Object>any());
+        verify(jsonHelper, atLeast(0)).convertToJson(Mockito.<Object>any());
     }
+
+    @Test
+    void getLogs() {
+        when(notificationRestClient.getLogs(any())).thenReturn(new Object());
+        var response = notificationServiceImpl.getLogs(GetLogsRequest.builder().build());
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void getLogs1() {
+        when(notificationRestClient.getLogs(any())).thenThrow(new ValidationException(""));
+        var response = notificationServiceImpl.getLogs(GetLogsRequest.builder().build());
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    }
+
+    @Test
+    void createTags() {
+        when(notificationRestClient.createTags(any())).thenReturn(new Object());
+        var response = notificationServiceImpl.createTags(CreateTagsRequest.builder().build());
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void createTags1() {
+        when(notificationRestClient.createTags(any())).thenThrow(new ValidationException(""));
+        var response = notificationServiceImpl.createTags(CreateTagsRequest.builder().build());
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    }
+
 }

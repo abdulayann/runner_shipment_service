@@ -103,7 +103,7 @@ public class NotificationServiceImpl implements INotificationService {
     public ResponseEntity<IRunnerResponse> getLogs(GetLogsRequest request) {
         String responseMsg;
         try {
-            return ResponseHelper.buildSuccessResponse(restClient.getTags(request));
+            return ResponseHelper.buildSuccessResponse(restClient.getLogs(request));
         } catch (Exception e) {
             log.error("Error while fetching logs from notification service with exception e {}", e.getMessage());
             responseMsg = e.getMessage() != null ? e.getMessage() : "Error fetching logs from notification service";

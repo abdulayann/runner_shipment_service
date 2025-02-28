@@ -1,21 +1,15 @@
 package com.dpw.runner.shipment.services.notification.config;
 
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isA;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import com.dpw.runner.shipment.services.adapters.impl.ReportServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.document.util.BASE64DecodedMultipartFile;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.notification.request.CreateTagsRequest;
+import com.dpw.runner.shipment.services.notification.request.GetLogsRequest;
 import com.dpw.runner.shipment.services.notification.request.NotificationServiceSendEmailRequest;
+import com.dpw.runner.shipment.services.notification.request.TagsData;
 import com.dpw.runner.shipment.services.notification.response.NotificationServiceResponse;
-
-import java.io.UnsupportedEncodingException;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
@@ -23,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.PropertySource;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -31,6 +26,14 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+
+import java.io.UnsupportedEncodingException;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isA;
+import static org.mockito.Mockito.*;
 
 @ContextConfiguration(classes = {NotificationRestClient.class, NotificationConfig.class})
 @ExtendWith(SpringExtension.class)
@@ -45,6 +48,9 @@ class NotificationRestClientTest {
 
     @MockBean
     private RestTemplate restTemplate;
+
+    @MockBean
+    private JsonHelper jsonHelper;
 
     @Test
     void testSendEmail() throws UnsupportedEncodingException, RestClientException {
@@ -108,6 +114,26 @@ class NotificationRestClientTest {
                 eq("http://staging-notification-service-api.private-cargoes.com/emailTemplates/sendEmail"), eq(HttpMethod.POST),
                 isA(HttpEntity.class), isA(Class.class), (Object[]) any());
         assertNull(actualSendEmailResult);
+    }
+
+    @Test
+    void getTags() {
+        when(jsonHelper.convertToJson(any())).thenReturn("");
+        when(restTemplate.exchange(any(), any(), any(), any(ParameterizedTypeReference.class))).thenReturn(new ResponseEntity(HttpStatus.OK));
+        notificationRestClient.getLogs(GetLogsRequest.builder().tagsDataList(List.of(TagsData.builder().tagName("a").tagName("b").build())).build());
+        verify(restTemplate).exchange(
+                any(), eq(HttpMethod.GET), any(), any(ParameterizedTypeReference.class)
+        );
+    }
+
+    @Test
+    void createTags() {
+        when(jsonHelper.convertToJson(any())).thenReturn("");
+        when(restTemplate.exchange(anyString(), any(), any(), any(ParameterizedTypeReference.class))).thenReturn(new ResponseEntity(HttpStatus.OK));
+        notificationRestClient.createTags(CreateTagsRequest.builder().build());
+        verify(restTemplate).exchange(
+                anyString(), eq(HttpMethod.POST), any(), any(ParameterizedTypeReference.class)
+        );
     }
 
 }
