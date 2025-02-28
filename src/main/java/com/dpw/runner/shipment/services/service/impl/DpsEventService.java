@@ -122,7 +122,7 @@ public class DpsEventService implements IDpsEventService {
 
             // Update the non movement state if permanent blocked state
             if (DpsWorkflowState.PER_BLOCKED.equals(newState)) {
-                shipmentDao.saveStatus(shipmentDetails.getId(), ShipmentStatus.NonMovement.getValue());
+                shipmentDao.saveStatus(shipmentDetails.getId(), ShipmentStatus.NON_MOVEMENT.getValue());
             }
         } catch (Exception e) {
             throw new DpsException(e.getMessage(), e);

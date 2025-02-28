@@ -143,7 +143,7 @@ public class UnitConversionUtility {
                 return MetricPrefix.KILO(Units.GRAM).multiply(0.02834952);
             case Constants.WEIGHT_UNIT_OT:
                 return MetricPrefix.KILO(Units.GRAM).multiply(0.03110348);
-            case Constants.WEIGHT_UNIT_Slug:
+            case Constants.WEIGHT_UNIT_SLUG:
                 return MetricPrefix.KILO(Units.GRAM).multiply(14.5939);
             case Constants.WEIGHT_UNIT_TA:
                 return MetricPrefix.KILO(Units.GRAM).multiply(0.02916667);
@@ -168,7 +168,7 @@ public class UnitConversionUtility {
     static Unit<Volume> getVolumeUnitForSymbol(String unitSymbol) {
         switch (unitSymbol) {
             case Constants.VOLUME_UNIT_M3:
-            case Constants.VOLUME_UNIT_Stere:
+            case Constants.VOLUME_UNIT_STERE:
             case Constants.VOLUME_UNIT_CBM:
                 return Units.CUBIC_METRE;
             case Constants.VOLUME_UNIT_LITRE:
@@ -179,16 +179,16 @@ public class UnitConversionUtility {
                 return Units.CUBIC_METRE.multiply(0.000000001);
             case Constants.VOLUME_UNIT_AF:
                 return Units.CUBIC_METRE.multiply(1233.482);
-            case Constants.VOLUME_UNIT_Barrel_OIL:
+            case Constants.VOLUME_UNIT_BARREL_OIL:
                 return Units.CUBIC_METRE.multiply(0.1589873);
-            case Constants.VOLUME_UNIT_Board_foot:
+            case Constants.VOLUME_UNIT_BOARD_FOOT:
                 return Units.CUBIC_METRE.multiply(0.002359737);
-            case Constants.VOLUME_UNIT_Bushel_US:
+            case Constants.VOLUME_UNIT_BUSHEL_US:
                 return Units.CUBIC_METRE.multiply(0.03523907);
-            case Constants.VOLUME_UNIT_Cup:
+            case Constants.VOLUME_UNIT_CUP:
                 return Units.CUBIC_METRE.multiply(0.0002365882);
-            case Constants.VOLUME_UNIT_Fluid_OUNCE_US:
-            case Constants.VOLUME_UNIT_Ounce_US_FLD:
+            case Constants.VOLUME_UNIT_FLUID_OUNCE_US:
+            case Constants.VOLUME_UNIT_OUNCE_US_FLD:
                 return Units.CUBIC_METRE.multiply(0.00002957353);
             case Constants.VOLUME_UNIT_CF:
                 return Units.CUBIC_METRE.multiply(0.02831685);
@@ -196,31 +196,31 @@ public class UnitConversionUtility {
                 return Units.CUBIC_METRE.multiply(0.004546087);
             case Constants.VOLUME_UNIT_GA:
                 return Units.CUBIC_METRE.multiply(0.004404884);
-            case Constants.VOLUME_UNIT_Gallon_US_LIQ:
+            case Constants.VOLUME_UNIT_GALLON_US_LIQ:
                 return Units.CUBIC_METRE.multiply(.003785412);
-            case Constants.VOLUME_UNIT_Gill_UK:
+            case Constants.VOLUME_UNIT_GILL_UK:
                 return Units.CUBIC_METRE.multiply(0.0001420652);
-            case Constants.VOLUME_UNIT_Gill_US:
+            case Constants.VOLUME_UNIT_GILL_US:
                 return Units.CUBIC_METRE.multiply(0.0001182941);
             case Constants.VOLUME_UNIT_CI:
                 return Units.CUBIC_METRE.multiply(0.00001638706);
-            case Constants.VOLUME_UNIT_Liter_OLD:
+            case Constants.VOLUME_UNIT_LITER_OLD:
                 return Units.CUBIC_METRE.multiply(0.001000028);
-            case Constants.VOLUME_UNIT_Ounce_UK_FLD:
+            case Constants.VOLUME_UNIT_OUNCE_UK_FLD:
                 return Units.CUBIC_METRE.multiply(0.00002841305);
-            case Constants.VOLUME_UNIT_Peck_US:
+            case Constants.VOLUME_UNIT_PECK_US:
                 return Units.CUBIC_METRE.multiply(8.8097680E-03);
-            case Constants.VOLUME_UNIT_Pint_US_DRY:
+            case Constants.VOLUME_UNIT_PINT_US_DRY:
                 return Units.CUBIC_METRE.multiply(0.0005506105);
-            case Constants.VOLUME_UNIT_Pint_US_LIQ:
+            case Constants.VOLUME_UNIT_PINT_US_LIQ:
                 return Units.CUBIC_METRE.multiply(4.7317650E-04);
-            case Constants.VOLUME_UNIT_Quart_US_DRY:
+            case Constants.VOLUME_UNIT_QUART_US_DRY:
                 return Units.CUBIC_METRE.multiply(0.001101221);
-            case Constants.VOLUME_UNIT_Quart_US_LIQ:
+            case Constants.VOLUME_UNIT_QUART_US_LIQ:
                 return Units.CUBIC_METRE.multiply(9.46353E-04);
-            case Constants.VOLUME_UNIT_Tablespoon:
+            case Constants.VOLUME_UNIT_TABLESPOON:
                 return Units.CUBIC_METRE.multiply(0.00001478676);
-            case Constants.VOLUME_UNIT_Teaspoon:
+            case Constants.VOLUME_UNIT_TEASPOON:
                 return Units.CUBIC_METRE.multiply(0.000004928922);
             case Constants.VOLUME_UNIT_TON_REGISTER:
                 return Units.CUBIC_METRE.multiply(2.831685);

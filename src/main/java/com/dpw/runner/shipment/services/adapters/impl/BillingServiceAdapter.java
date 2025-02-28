@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.adapters.impl;
 
-import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.reportingservice.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.interfaces.IBillingServiceAdapter;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -442,7 +442,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
                         .build())
                 .configuration(ExternalBillConfiguration.builder()
                         .autoCalculate(List.of(
-                                Constants.LocalReferenceNumber,
+                                Constants.LOCAL_REFERENCE_NUMBER,
                                 "Tax",
                                 "SequenceNumber",
                                 "OverseasExchangeRate",
@@ -474,32 +474,32 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
         try {
             MeasurementBasis revenueMeasurementBasis = MeasurementBasis.valueOf(billCharge.getPerMeasurementBasis());
             revenueMeasurementBasisV2 = switch (revenueMeasurementBasis) {
-                case ContainerCount, Container_Count -> MeasurementBasis.ContainerCount.getBillingValue();
-                case Weight -> MeasurementBasis.Weight.getBillingValue();
-                case Volume -> MeasurementBasis.Volume.getBillingValue();
-                case Chargeable -> MeasurementBasis.Chargeable.getBillingValue();
-                case LowestBill -> MeasurementBasis.LowestBill.getBillingValue();
-                case Package -> MeasurementBasis.Package.getBillingValue();
-                case Shipment -> MeasurementBasis.Shipment.getBillingValue();
+                case CONTAINER_COUNT, Container_Count -> MeasurementBasis.CONTAINER_COUNT.getBillingValue();
+                case WEIGHT -> MeasurementBasis.WEIGHT.getBillingValue();
+                case VOLUME -> MeasurementBasis.VOLUME.getBillingValue();
+                case CHARGEABLE -> MeasurementBasis.CHARGEABLE.getBillingValue();
+                case LOWEST_BILL -> MeasurementBasis.LOWEST_BILL.getBillingValue();
+                case PACKAGE -> MeasurementBasis.PACKAGE.getBillingValue();
+                case SHIPMENT -> MeasurementBasis.SHIPMENT.getBillingValue();
                 case TEU -> MeasurementBasis.TEU.getBillingValue();
-                case ChargePercentage -> MeasurementBasis.ChargePercentage.getBillingValue();
-                case Custom -> MeasurementBasis.Custom.getBillingValue();
-                case ContainerType -> MeasurementBasis.ContainerType.getBillingValue();
+                case CHARGE_PERCENTAGE -> MeasurementBasis.CHARGE_PERCENTAGE.getBillingValue();
+                case CUSTOM -> MeasurementBasis.CUSTOM.getBillingValue();
+                case CONTAINER_TYPE -> MeasurementBasis.CONTAINER_TYPE.getBillingValue();
             };
 
             if (ObjectUtils.isEmpty(measurementBasisUnit)) {
                 measurementBasisUnit = switch (revenueMeasurementBasis) {
-                    case ContainerCount -> "Containers";
-                    case Weight -> "KG";
-                    case Volume -> "M3";
-                    case Chargeable -> "KG";
-                    case LowestBill -> "LB";
-                    case Package -> "Packages";
-                    case Shipment -> "SHIPMENT";
+                    case CONTAINER_COUNT -> "Containers";
+                    case WEIGHT -> "KG";
+                    case VOLUME -> "M3";
+                    case CHARGEABLE -> "KG";
+                    case LOWEST_BILL -> "LB";
+                    case PACKAGE -> "Packages";
+                    case SHIPMENT -> "SHIPMENT";
                     case TEU -> "TEU";
-                    case ChargePercentage -> "%";
-                    case Custom -> "Custom";
-                    case ContainerType -> "Containers";
+                    case CHARGE_PERCENTAGE -> "%";
+                    case CUSTOM -> "Custom";
+                    case CONTAINER_TYPE -> "Containers";
                     default -> "";
                 };
             }
@@ -676,14 +676,14 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
             List<Object> finalCriteria = new ArrayList<>();
             CommonV1ListRequest addressRequest = new CommonV1ListRequest();
 
-            List<Object> orgIdField = new ArrayList<>(List.of(Constants.OrgId));
+            List<Object> orgIdField = new ArrayList<>(List.of(Constants.ORG_ID));
             List<Long> orgIdList = organizations.stream().filter(ObjectUtils::isNotEmpty).map(EntityTransferOrganizations::getId).toList();
             List<Object> orgIdCriteria = new ArrayList<>(List.of(orgIdField, Constants.IN, List.of(orgIdList)));
             finalCriteria.add(orgIdCriteria);
 
             finalCriteria.add("and");
 
-            List<Object> activeClient = new ArrayList<>(List.of(Constants.Active));
+            List<Object> activeClient = new ArrayList<>(List.of(Constants.ACTIVE));
             List<Object> activeClientCriteria = new ArrayList<>(List.of(activeClient, Constants.EQ, 1));
             finalCriteria.add(activeClientCriteria);
 

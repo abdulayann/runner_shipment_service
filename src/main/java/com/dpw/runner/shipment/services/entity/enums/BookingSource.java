@@ -1,9 +1,9 @@
 package com.dpw.runner.shipment.services.entity.enums;
 
 public enum BookingSource {
-    Runner(1, "Runner"),
-    Platform(2, "Platform"),
-    External(3, "External"),
+    RUNNER(1, "Runner"),
+    PLATFORM(2, "Platform"),
+    EXTERNAL(3, "External"),
     B2B(4, "B2b");
 
     private final int value;

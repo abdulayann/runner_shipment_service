@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.entitytransfer.service.impl;
 
 import com.dpw.runner.shipment.services.CommonMocks;
-import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.reportingservice.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
@@ -1221,7 +1221,7 @@ class EntityTransferServiceTest extends CommonMocks {
         try {
             CheckTaskExistRequest request = CheckTaskExistRequest.builder()
                 .entityId(123L)
-                .entityType(Constants.Shipments)
+                .entityType(Constants.SHIPMENTS)
                 .sendToBranch(List.of(66))
                 .build();
             CheckTaskExistResponse response = CheckTaskExistResponse.builder().sendToBranch(Set.of(66)).build();
@@ -1246,7 +1246,7 @@ class EntityTransferServiceTest extends CommonMocks {
         try {
             CheckTaskExistRequest request = CheckTaskExistRequest.builder()
                     .entityId(123L)
-                    .entityType(Constants.Shipments)
+                    .entityType(Constants.SHIPMENTS)
                     .sendToBranch(List.of())
                     .build();
             ResponseEntity<IRunnerResponse> responseEntity = entityTransferService.checkTaskExist(CommonRequestModel.buildRequest(request));
@@ -1260,7 +1260,7 @@ class EntityTransferServiceTest extends CommonMocks {
     void testCheckTaskExist_V1Error_Shipment() {
         CheckTaskExistRequest request = CheckTaskExistRequest.builder()
                 .entityId(123L)
-                .entityType(Constants.Shipments)
+                .entityType(Constants.SHIPMENTS)
                 .sendToBranch(List.of(66))
                 .build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
@@ -1440,7 +1440,7 @@ class EntityTransferServiceTest extends CommonMocks {
 
     @Test
     void testCheckEntityExists() {
-        var request = CheckEntityExistRequest.builder().entityId(UUID.randomUUID().toString()).entityType(Constants.Shipment).build();
+        var request = CheckEntityExistRequest.builder().entityId(UUID.randomUUID().toString()).entityType(Constants.SHIPMENT_CAMEL).build();
         when(shipmentDao.findBySourceGuid(any())).thenReturn(List.of(new ShipmentDetails()));
         var responseEntity = entityTransferService.checkEntityExists(CommonRequestModel.buildRequest(request));
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
@@ -1448,7 +1448,7 @@ class EntityTransferServiceTest extends CommonMocks {
 
     @Test
     void testCheckEntityExists2() {
-        var request = CheckEntityExistRequest.builder().entityId(UUID.randomUUID().toString()).entityType(Constants.Consolidation).build();
+        var request = CheckEntityExistRequest.builder().entityId(UUID.randomUUID().toString()).entityType(Constants.CONSOLIDATION_CAMEL).build();
         when(consolidationDetailsDao.findBySourceGuid(any())).thenReturn(List.of(new ConsolidationDetails()));
         var responseEntity = entityTransferService.checkEntityExists(CommonRequestModel.buildRequest(request));
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
@@ -1456,7 +1456,7 @@ class EntityTransferServiceTest extends CommonMocks {
 
     @Test
     void testCheckEntityExists3() {
-        var request = CheckEntityExistRequest.builder().entityId(UUID.randomUUID().toString()).entityType(Constants.Consolidation).build();
+        var request = CheckEntityExistRequest.builder().entityId(UUID.randomUUID().toString()).entityType(Constants.CONSOLIDATION_CAMEL).build();
         when(consolidationDetailsDao.findBySourceGuid(any())).thenThrow(new RuntimeException(""));
         var responseEntity = entityTransferService.checkEntityExists(CommonRequestModel.buildRequest(request));
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());

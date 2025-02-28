@@ -175,7 +175,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         }
 
         CustomerBooking customerBooking = jsonHelper.convertValue(request, CustomerBooking.class);
-        customerBooking.setSource(BookingSource.Runner);
+        customerBooking.setSource(BookingSource.RUNNER);
         // Update NPM for contract utilization
         if(checkNPMContractUtilization(customerBooking)) {
             _npmContractUpdate(customerBooking, null, false, CustomerBookingConstants.REMOVE, false);
@@ -981,7 +981,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         CustomerBooking customerBooking = jsonHelper.convertValue(request, CustomerBooking.class);
         customerBooking.setIsPlatformBookingCreated(Boolean.TRUE);
         if(request.getSource()==null)
-            customerBooking.setSource(BookingSource.Platform);
+            customerBooking.setSource(BookingSource.PLATFORM);
         try {
             customerBooking = this.updateEntities(customerBooking, request, jsonHelper.convertToJson(oldEntity));
         } catch (Exception e) {
@@ -1001,7 +1001,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         customerBooking.setIsCustomerAddressFreeText(false);
         customerBooking.setIsNotifyPartyAddressFreeText(customerBooking.getIsNotifyPartyFreeText() != null && customerBooking.getIsNotifyPartyFreeText());
         if(request!=null && request.getSource()==null)
-            customerBooking.setSource(BookingSource.Platform);
+            customerBooking.setSource(BookingSource.PLATFORM);
         customerBooking.setIsPlatformBookingCreated(Boolean.TRUE);
         try {
             createEntities(customerBooking, request);

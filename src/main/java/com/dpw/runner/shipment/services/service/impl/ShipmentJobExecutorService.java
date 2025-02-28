@@ -117,7 +117,7 @@ public class ShipmentJobExecutorService implements QuartzJobExecutorService {
             SendShipmentRequest sendShipmentRequest = SendShipmentRequest.builder()
                     .shipId(quartzJobInfo.getEntityId())
                     .sendToBranch(sendToBranch.stream().map(Long::intValue).toList())
-                    .additionalDocs(fetchDocs(shipment.get().getGuid(), shipment.get().getTenantId(), Constants.Shipments))
+                    .additionalDocs(fetchDocs(shipment.get().getGuid(), shipment.get().getTenantId(), Constants.SHIPMENTS))
                     .isAutomaticTransfer(Boolean.TRUE)
                     .build();
             ValidateSendShipmentRequest request = ValidateSendShipmentRequest.builder().shipId(quartzJobInfo.getEntityId()).build();
@@ -166,14 +166,14 @@ public class ShipmentJobExecutorService implements QuartzJobExecutorService {
         DocumentManagerMultipleEntityFileRequest multipleEntityFileRequest = new DocumentManagerMultipleEntityFileRequest();
         DocumentManagerEntityFileRequest documentManagerEntityFileRequest = DocumentManagerEntityFileRequest.builder()
                 .entityKey(consolidationDetails.getGuid().toString())
-                .entityType(Constants.Consolidations)
+                .entityType(Constants.CONSOLIDATIONS)
                 .tenantId((long) consolidationDetails.getTenantId())
                 .build();
         List<DocumentManagerEntityFileRequest> docListRequest = new ArrayList<>(Collections.singletonList(documentManagerEntityFileRequest));
         consolidationDetails.getShipmentsList().forEach(ship -> {
             DocumentManagerEntityFileRequest documentShipRequest = DocumentManagerEntityFileRequest.builder()
                     .entityKey(ship.getGuid().toString())
-                    .entityType(Constants.Shipments)
+                    .entityType(Constants.SHIPMENTS)
                     .tenantId((long) ship.getTenantId())
                     .build();
             docListRequest.add(documentShipRequest);
@@ -182,9 +182,9 @@ public class ShipmentJobExecutorService implements QuartzJobExecutorService {
         var response = documentManagerRestClient.multipleEntityFilesWithTenant(multipleEntityFileRequest);
         if(!CommonUtils.listIsNullOrEmpty(response.getData())) {
             sendConsolidationRequest.setAdditionalDocs(response.getData().stream()
-                    .filter(x-> Boolean.TRUE.equals(x.getIsTransferEnabled()) && Objects.equals(x.getEntityType(), Constants.Consolidations)).map(DocumentManagerEntityFileResponse::getGuid).toList());
+                    .filter(x-> Boolean.TRUE.equals(x.getIsTransferEnabled()) && Objects.equals(x.getEntityType(), Constants.CONSOLIDATIONS)).map(DocumentManagerEntityFileResponse::getGuid).toList());
             Map<String, List<String>> shipDocs = response.getData().stream()
-                    .filter(x-> Boolean.TRUE.equals(x.getIsTransferEnabled()) && Objects.equals(x.getEntityType(), Constants.Shipments))
+                    .filter(x-> Boolean.TRUE.equals(x.getIsTransferEnabled()) && Objects.equals(x.getEntityType(), Constants.SHIPMENTS))
                     .collect(Collectors.groupingBy(DocumentManagerEntityFileResponse::getEntityId, Collectors.mapping(DocumentManagerEntityFileResponse::getGuid, Collectors.toList())));
             sendConsolidationRequest.setShipAdditionalDocs(shipDocs);
         }

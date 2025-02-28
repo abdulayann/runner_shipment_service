@@ -1,8 +1,8 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.azure.messaging.servicebus.ServiceBusMessage;
-import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
-import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
+import com.dpw.runner.shipment.services.reportingservice.CommonUtils.ReportHelper;
+import com.dpw.runner.shipment.services.reportingservice.Reports.IReport;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.*;

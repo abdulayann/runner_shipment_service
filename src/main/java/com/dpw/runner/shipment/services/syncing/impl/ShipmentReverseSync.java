@@ -171,7 +171,7 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
             additionalDetails.setAndesStatus(AndesStatus.valueOf(cs.getAndesStatusString()));
         if(!IsStringNullOrEmpty(cs.getOwnershipString())) {
             additionalDetails.setOwnership(Ownership.valueOf(cs.getOwnershipString()));
-            if(additionalDetails.getOwnership().equals(Ownership.Self))
+            if(additionalDetails.getOwnership().equals(Ownership.SELF))
                 additionalDetails.setOwnershipName(cs.getOwnershipName());
             else
                 additionalDetails.setOwnershipOrg(mapPartyObject(cs.getOwnershipParty()));

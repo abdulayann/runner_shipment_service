@@ -16,7 +16,6 @@ import javax.persistence.PrePersist;
 import javax.persistence.PreRemove;
 import javax.persistence.PreUpdate;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.http.auth.AuthenticationException;
 
 @Generated
 @Slf4j
@@ -37,7 +36,7 @@ public class TenantEntityListener {
             Map<String, Boolean> permissions = UserContext.getUser().getPermissions();
             var interBranchData = InterBranchContext.getContext();
 
-            if ((permissions.containsKey(PermissionConstants.tenantSuperAdmin) || permissions.containsKey(PermissionConstants.crossTenantCreatePermission)) && isValidTenantId(tenantId)) {
+            if ((permissions.containsKey(PermissionConstants.ADMINISTRATION_TENANT_SUPER_ADMIN) || permissions.containsKey(PermissionConstants.CROSS_TENANT_CREATE)) && isValidTenantId(tenantId)) {
                 multiTenancy.setTenantId(tenantId);
             } else if (Objects.nonNull(interBranchData)
                     && (Boolean.TRUE.equals(interBranchData.isHub()) || Boolean.TRUE.equals(interBranchData.isCoLoadStation()))
@@ -48,7 +47,7 @@ public class TenantEntityListener {
                 multiTenancy.setTenantId(tenantId);
             }
 
-            if (permissions.containsKey(PermissionConstants.tenantSuperAdmin) && UserContext.getUser().getSyncTenantId() != null) {
+            if (permissions.containsKey(PermissionConstants.ADMINISTRATION_TENANT_SUPER_ADMIN) && UserContext.getUser().getSyncTenantId() != null) {
                 Integer syncTenantId = UserContext.getUser().getSyncTenantId();
                 multiTenancy.setTenantId(syncTenantId);
             }
@@ -70,7 +69,7 @@ public class TenantEntityListener {
             Integer tenantId = multiTenancy.getTenantId();
             Map<String, Boolean> permissions = UserContext.getUser().getPermissions();
 
-            if ((permissions.containsKey(PermissionConstants.tenantSuperAdmin) || permissions.containsKey(PermissionConstants.crossTenantUpdatePermission)) && isValidTenantId(tenantId)) {
+            if ((permissions.containsKey(PermissionConstants.ADMINISTRATION_TENANT_SUPER_ADMIN) || permissions.containsKey(PermissionConstants.CROSS_TENANT_UPDATE)) && isValidTenantId(tenantId)) {
                 multiTenancy.setTenantId(tenantId);
             } else if (!isValidTenantId(tenantId)) {
                 tenantId = TenantContext.getCurrentTenant();
@@ -85,8 +84,8 @@ public class TenantEntityListener {
                         || (Boolean.TRUE.equals(interBranchDto.isCoLoadStation()) && !interBranchDto.getHubTenantIds().contains(tenantId))) {
                     throw new AuthenticationException(AUTH_DENIED);
                 }
-            } else if (!permissions.containsKey(PermissionConstants.tenantSuperAdmin)
-                    && !permissions.containsKey(PermissionConstants.crossTenantUpdatePermission)
+            } else if (!permissions.containsKey(PermissionConstants.ADMINISTRATION_TENANT_SUPER_ADMIN)
+                    && !permissions.containsKey(PermissionConstants.CROSS_TENANT_UPDATE)
                     && !Objects.equals(TenantContext.getCurrentTenant(), tenantId)) {
                 log.error("Unauthorized TenantId update attempt. Current Tenant Id: {} TenantId: {}", TenantContext.getCurrentTenant(), tenantId);
                 throw new AuthenticationException(AUTH_DENIED);
@@ -108,7 +107,7 @@ public class TenantEntityListener {
             Integer tenantId = multiTenancy.getTenantId();
             Map<String, Boolean> permissions = UserContext.getUser().getPermissions();
 
-            if (permissions.containsKey(PermissionConstants.tenantSuperAdmin) && isValidTenantId(tenantId)) {
+            if (permissions.containsKey(PermissionConstants.ADMINISTRATION_TENANT_SUPER_ADMIN) && isValidTenantId(tenantId)) {
                 multiTenancy.setTenantId(tenantId);
             } else if (Objects.isNull(tenantId)) {
                 tenantId = TenantContext.getCurrentTenant();
@@ -123,7 +122,7 @@ public class TenantEntityListener {
                         || (Boolean.TRUE.equals(interBranchDto.isCoLoadStation()) && !interBranchDto.getHubTenantIds().contains(tenantId))) {
                     throw new AuthenticationException(AUTH_DENIED);
                 }
-            } else if (!permissions.containsKey(PermissionConstants.tenantSuperAdmin)
+            } else if (!permissions.containsKey(PermissionConstants.ADMINISTRATION_TENANT_SUPER_ADMIN)
                     && !Objects.equals(TenantContext.getCurrentTenant(), tenantId)) {
                 log.error("Unauthorized TenantId update attempt. Current Tenant Id: {} TenantId: {}", TenantContext.getCurrentTenant(), tenantId);
                 throw new EntityNotFoundException();

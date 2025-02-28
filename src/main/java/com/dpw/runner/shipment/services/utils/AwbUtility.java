@@ -8,7 +8,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.kafka.dto.AirMessagingEventDto;
 import com.dpw.runner.shipment.services.kafka.dto.AirMessagingStatusDto;
-import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.reportingservice.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.dao.impl.ShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
@@ -48,7 +48,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.dpw.runner.shipment.services.ReportingService.Reports.IReport.convertToDPWDateFormatWithTime;
+import static com.dpw.runner.shipment.services.reportingservice.Reports.IReport.convertToDPWDateFormatWithTime;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 @SuppressWarnings("rawtypes")

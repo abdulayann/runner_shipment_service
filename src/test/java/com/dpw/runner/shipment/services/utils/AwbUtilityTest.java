@@ -11,7 +11,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse
 import com.dpw.runner.shipment.services.dto.response.AwbShipmentInfoResponse;
 import com.dpw.runner.shipment.services.kafka.dto.AirMessagingEventDto;
 import com.dpw.runner.shipment.services.kafka.dto.AirMessagingStatusDto;
-import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.reportingservice.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.dao.impl.ShipmentSettingsDao;

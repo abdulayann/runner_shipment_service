@@ -125,14 +125,14 @@ public class HblTermsConditionTemplateDao implements IHblTermsConditionTemplateD
                                 .criteria(Criteria.builder()
                                         .fieldName("typeOfHblPrint")
                                         .operator("=")
-                                        .value(StringUtils.isEmpty(printType) ? TypeOfHblPrint.All.name() : printType)
+                                        .value(StringUtils.isEmpty(printType) ? TypeOfHblPrint.ALL.name() : printType)
                                         .build()).build(),
                         FilterCriteria.builder()
                                 .logicOperator("OR")
                                 .criteria(Criteria.builder()
                                         .fieldName("typeOfHblPrint")
                                         .operator("=")
-                                        .value(TypeOfHblPrint.All.name())
+                                        .value(TypeOfHblPrint.ALL.name())
                                         .build())
                                 .build()))
                 .build();

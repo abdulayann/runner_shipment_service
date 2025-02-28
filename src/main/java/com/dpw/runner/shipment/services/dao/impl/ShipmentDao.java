@@ -166,7 +166,7 @@ public class ShipmentDao implements IShipmentDao {
 
     private void onSave(ShipmentDetails shipmentDetails, Set<String> errors, ShipmentDetails oldShipment, boolean fromV1Sync) {
         if (!StringUtility.isEmpty(shipmentDetails.getHouseBill()) && (oldShipment != null && !Objects.equals(oldShipment.getStatus(), shipmentDetails.getStatus())) &&
-                Objects.equals(shipmentDetails.getStatus(), ShipmentStatus.Cancelled.getValue())) {
+                Objects.equals(shipmentDetails.getStatus(), ShipmentStatus.CANCELLED.getValue())) {
             ShipmentSettingsDetails tenantSettings = commonUtils.getShipmentSettingFromContext();
             if (tenantSettings != null) {
                 String suffix = tenantSettings.getCancelledBLSuffix();
@@ -426,7 +426,7 @@ public class ShipmentDao implements IShipmentDao {
         if(!IsStringNullOrEmpty(request.getHouseBill())) {
             List<ShipmentDetails> shipmentDetails = findByHouseBill(request.getHouseBill(), TenantContext.getCurrentTenant());
             if(shipmentDetails != null && shipmentDetails.size() > 0 && (request.getId() == null || shipmentDetails.get(0).getId().longValue() != request.getId().longValue())) {
-                if (Objects.equals(request.getStatus(), ShipmentStatus.Cancelled.getValue()))
+                if (Objects.equals(request.getStatus(), ShipmentStatus.CANCELLED.getValue()))
                     errors.add("Canceled HBL is already available in the application. Please remove/ modify the HBL number to proceed further");
                 else
                     errors.add("Shipment with BL# " + request.getHouseBill() + " already exists.");

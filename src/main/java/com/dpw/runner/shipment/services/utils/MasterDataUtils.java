@@ -2,7 +2,7 @@ package com.dpw.runner.shipment.services.utils;
 
 import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 
-import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.reportingservice.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
@@ -18,7 +18,6 @@ import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
-import com.dpw.runner.shipment.services.dto.mapper.AttachListShipmentMapper;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.request.ShipmentBillingListRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.ActivityMasterResponse;
@@ -402,18 +401,18 @@ public class MasterDataUtils{
         if (shipmentDetail.getContainersList() != null) {
             for (Containers container : shipmentDetail.getContainersList()) {
                 if(container.getContainerCode() != null) {
-                    if (container.getContainerCode().contains(Constants.Cont20)) {
+                    if (container.getContainerCode().contains(Constants.CONT_20)) {
                         ++container20Count;
-                    } else if (container.getContainerCode().contains(Constants.Cont40)) {
+                    } else if (container.getContainerCode().contains(Constants.CONT_40)) {
                         ++container40Count;
                     }
-                    if (container.getContainerCode().equals(Constants.Cont20GP)) {
+                    if (container.getContainerCode().equals(Constants.CONT_20_GP)) {
                         ++container20GPCount;
-                    } else if (container.getContainerCode().equals(Constants.Cont20RE)) {
+                    } else if (container.getContainerCode().equals(Constants.CONT_20_RE)) {
                         ++container20RECount;
-                    } else if (container.getContainerCode().equals(Constants.Cont40GP)) {
+                    } else if (container.getContainerCode().equals(Constants.CONT_40_GP)) {
                         ++container40GPCount;
-                    } else if (container.getContainerCode().equals(Constants.Cont40RE)) {
+                    } else if (container.getContainerCode().equals(Constants.CONT_40_RE)) {
                         ++container40RECount;
                     }
                 }

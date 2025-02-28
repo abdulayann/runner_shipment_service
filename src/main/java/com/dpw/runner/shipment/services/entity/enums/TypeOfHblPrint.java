@@ -5,11 +5,11 @@ import com.dpw.runner.shipment.services.utils.Generated;
 @Generated
 public enum TypeOfHblPrint {
 
-    Draft(0, "Draft"),
-    eHBL(1, "eHBL"),
-    Original(2, "Original"),
-    Surrender(3, "Surrender"),
-    All(10, "All");
+    DRAFT(0, "Draft"),
+    E_HBL(1, "eHBL"),
+    ORIGINAL(2, "Original"),
+    SURRENDER(3, "Surrender"),
+    ALL(10, "All");
 
     private final int value;
     private final String description;

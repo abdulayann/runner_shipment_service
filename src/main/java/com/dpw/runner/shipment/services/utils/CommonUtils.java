@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.utils;
 
-import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
-import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.reportingservice.CommonUtils.ReportConstants;
+import com.dpw.runner.shipment.services.reportingservice.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
@@ -89,7 +89,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static com.dpw.runner.shipment.services.commons.constants.CacheConstants.CARRIER;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CARRIER_NAME;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.DESTINATION_PORT;
@@ -1762,7 +1761,7 @@ public class CommonUtils {
         throws RunnerException {
         DGTaskCreateRequest taskRequest = DGTaskCreateRequest
             .builder()
-            .entityType(Shipments)
+            .entityType(Constants.SHIPMENTS)
             .entityId(shipmentDetails.getId().toString())
             .roleId(roleId.toString())
             .taskType(OCEAN_DG_TASKTYPE)

@@ -279,7 +279,7 @@ public class ShipmentSync implements IShipmentSync {
             cs.setAndesStatusString(String.valueOf(sd.getAdditionalDetails().getAndesStatus().getValue()));
         if(sd.getAdditionalDetails().getOwnership() != null) {
             cs.setOwnershipString(String.valueOf(sd.getAdditionalDetails().getOwnership().getValue()));
-            if(sd.getAdditionalDetails().getOwnership().equals(Ownership.Self))
+            if(sd.getAdditionalDetails().getOwnership().equals(Ownership.SELF))
                 cs.setOwnershipName(sd.getAdditionalDetails().getOwnershipName());
             else
                 cs.setOwnershipParty(mapPartyObject(sd.getAdditionalDetails().getOwnershipOrg()));

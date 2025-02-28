@@ -154,7 +154,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
 
         CustomerBooking mockCustomerBooking = CustomerBooking.builder()
-                .source(BookingSource.Runner)
+                .source(BookingSource.RUNNER)
                 .isPlatformBookingCreated(false)
                 .bookingNumber("DBAR-random-string")
                 .build();
@@ -189,7 +189,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         CustomerBooking mockCustomerBooking = CustomerBooking.builder()
                 .transportType(Constants.TRANSPORT_MODE_SEA)
                 .contractId("contract 1")
-                .source(BookingSource.Runner)
+                .source(BookingSource.RUNNER)
                 .isPlatformBookingCreated(false)
                 .bookingNumber("DBAR-random-string")
                 .build();
@@ -227,7 +227,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         CustomerBooking mockCustomerBooking = CustomerBooking.builder()
                 .transportType(Constants.TRANSPORT_MODE_SEA)
                 .cargoType("FCL")
-                .source(BookingSource.Runner)
+                .source(BookingSource.RUNNER)
                 .isPlatformBookingCreated(false)
                 .bookingNumber("DBFC-random-string")
                 .build();
@@ -265,7 +265,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         CustomerBooking mockCustomerBooking = CustomerBooking.builder()
                 .transportType(Constants.TRANSPORT_MODE_SEA)
                 .cargoType("FTL")
-                .source(BookingSource.Runner)
+                .source(BookingSource.RUNNER)
                 .isPlatformBookingCreated(false)
                 .bookingNumber("DBFC-random-string")
                 .build();
@@ -304,7 +304,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         CustomerBooking mockCustomerBooking = CustomerBooking.builder()
                 .transportType(Constants.TRANSPORT_MODE_SEA)
                 .cargoType("LCL")
-                .source(BookingSource.Runner)
+                .source(BookingSource.RUNNER)
                 .isPlatformBookingCreated(false)
                 .bookingNumber("DBLC-random-string")
                 .build();
@@ -344,7 +344,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         CustomerBooking mockCustomerBooking = CustomerBooking.builder()
                 .transportType(Constants.TRANSPORT_MODE_SEA)
                 .cargoType("BBK")
-                .source(BookingSource.Runner)
+                .source(BookingSource.RUNNER)
                 .isPlatformBookingCreated(false)
                 .bookingNumber("DBLC-random-string")
                 .build();
@@ -379,7 +379,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         CustomerBooking mockCustomerBooking = CustomerBooking.builder()
                 .transportType(Constants.TRANSPORT_MODE_SEA)
                 .cargoType("ROR")
-                .source(BookingSource.Runner)
+                .source(BookingSource.RUNNER)
                 .isPlatformBookingCreated(false)
                 .bookingNumber("DBLC-random-string")
                 .build();
@@ -414,7 +414,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         CustomerBooking mockCustomerBooking = CustomerBooking.builder()
                 .transportType(Constants.TRANSPORT_MODE_SEA)
                 .cargoType("LTL")
-                .source(BookingSource.Runner)
+                .source(BookingSource.RUNNER)
                 .isPlatformBookingCreated(false)
                 .bookingNumber("DBLC-random-string")
                 .build();
@@ -496,7 +496,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         customerBooking.setIsConsignorAddressFreeText(customerBooking.getIsConsignorFreeText() != null && customerBooking.getIsConsignorFreeText());
         customerBooking.setIsCustomerAddressFreeText(false);
         customerBooking.setIsNotifyPartyAddressFreeText(customerBooking.getIsNotifyPartyFreeText() != null && customerBooking.getIsNotifyPartyFreeText());
-        customerBooking.setSource(BookingSource.Platform);
+        customerBooking.setSource(BookingSource.PLATFORM);
         customerBooking.setIsPlatformBookingCreated(Boolean.TRUE);
 
         CustomerBookingResponse customerBookingResponse = objectMapper.convertValue(customerBooking, CustomerBookingResponse.class);
@@ -541,7 +541,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         customerBooking.setIsConsignorAddressFreeText(customerBooking.getIsConsignorFreeText() != null && customerBooking.getIsConsignorFreeText());
         customerBooking.setIsCustomerAddressFreeText(false);
         customerBooking.setIsNotifyPartyAddressFreeText(customerBooking.getIsNotifyPartyFreeText() != null && customerBooking.getIsNotifyPartyFreeText());
-        customerBooking.setSource(BookingSource.Platform);
+        customerBooking.setSource(BookingSource.PLATFORM);
         customerBooking.setIsPlatformBookingCreated(Boolean.TRUE);
         customerBooking.setCarrierDetails(CarrierDetails.builder().build());
 
@@ -1313,7 +1313,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         CustomerBookingRequest request = objectMapper.convertValue(inputCustomerBooking, CustomerBookingRequest.class);
         request.setTransportType("AIR");
         request.setIsDg(true);
-        UserContext.getUser().setPermissions(Map.of(PermissionConstants.airDG, true));
+        UserContext.getUser().setPermissions(Map.of(PermissionConstants.AIR_DG, true));
         request.setBookingStatus(BookingStatus.READY_FOR_SHIPMENT);
         CustomerBookingResponse customerBookingResponse = objectMapper.convertValue(inputCustomerBooking, CustomerBookingResponse.class);
         // Mock
@@ -1346,7 +1346,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         inputCustomerBooking.setBookingStatus(BookingStatus.PENDING_FOR_CREDIT_LIMIT);
         CustomerBookingRequest request = objectMapper.convertValue(inputCustomerBooking, CustomerBookingRequest.class);
         request.setTransportType("AIR");
-        UserContext.getUser().setPermissions(Map.of(PermissionConstants.airDG, false));
+        UserContext.getUser().setPermissions(Map.of(PermissionConstants.AIR_DG, false));
         request.setIsDg(true);
         request.setBookingStatus(BookingStatus.READY_FOR_SHIPMENT);
         CustomerBookingResponse customerBookingResponse = objectMapper.convertValue(inputCustomerBooking, CustomerBookingResponse.class);
@@ -1378,7 +1378,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         CustomerBookingRequest request = objectMapper.convertValue(inputCustomerBooking, CustomerBookingRequest.class);
         request.setTransportType("AIR");
         request.setIsDg(false);
-        UserContext.getUser().setPermissions(Map.of(PermissionConstants.airDG, true));
+        UserContext.getUser().setPermissions(Map.of(PermissionConstants.AIR_DG, true));
         request.setBookingStatus(BookingStatus.READY_FOR_SHIPMENT);
         CustomerBookingResponse customerBookingResponse = objectMapper.convertValue(inputCustomerBooking, CustomerBookingResponse.class);
         // Mock
@@ -1409,7 +1409,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         CustomerBookingRequest request = objectMapper.convertValue(inputCustomerBooking, CustomerBookingRequest.class);
         request.setTransportType("AIR");
         request.setIsDg(false);
-        UserContext.getUser().setPermissions(Map.of(PermissionConstants.airDG, false));
+        UserContext.getUser().setPermissions(Map.of(PermissionConstants.AIR_DG, false));
         request.setBookingStatus(BookingStatus.READY_FOR_SHIPMENT);
         CustomerBookingResponse customerBookingResponse = objectMapper.convertValue(inputCustomerBooking, CustomerBookingResponse.class);
         // Mock
@@ -1634,7 +1634,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         customerBooking.setIsConsignorAddressFreeText(customerBooking.getIsConsignorFreeText() != null && customerBooking.getIsConsignorFreeText());
         customerBooking.setIsCustomerAddressFreeText(false);
         customerBooking.setIsNotifyPartyAddressFreeText(customerBooking.getIsNotifyPartyFreeText() != null && customerBooking.getIsNotifyPartyFreeText());
-        customerBooking.setSource(BookingSource.Platform);
+        customerBooking.setSource(BookingSource.PLATFORM);
         customerBooking.setIsPlatformBookingCreated(Boolean.TRUE);
 
 
@@ -1736,7 +1736,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
 
         CustomerBooking mockCustomerBooking = CustomerBooking.builder()
-                .source(BookingSource.Runner)
+                .source(BookingSource.RUNNER)
                 .isPlatformBookingCreated(false)
                 .bookingNumber("DBAR-random-string")
                 .build();
@@ -1761,7 +1761,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
 
         CustomerBooking mockCustomerBooking = CustomerBooking.builder()
-                .source(BookingSource.Runner)
+                .source(BookingSource.RUNNER)
                 .isPlatformBookingCreated(false)
                 .bookingNumber("DBAR-random-string")
                 .build();

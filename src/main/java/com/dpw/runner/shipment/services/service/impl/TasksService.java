@@ -81,11 +81,11 @@ public class TasksService implements ITasksService {
         var request = (CommonGetRequest) commonRequestModel.getData();
         V1RetrieveResponse v1RetrieveResponse = iv1Service.retrieveTask(V1RetrieveRequest.builder().EntityId(StringUtility.convertToString(request.getId())).build());
         TaskResponse taskResponse = jsonHelper.convertValue(v1RetrieveResponse.getEntity(), TaskResponse.class);
-        if(Objects.equals(taskResponse.getEntityType(), Constants.Consolidations) && Objects.equals(taskResponse.getTaskType(), String.valueOf(TaskType.CONSOLIDATION_IMPORTER.getValue()))) {
+        if(Objects.equals(taskResponse.getEntityType(), Constants.CONSOLIDATIONS) && Objects.equals(taskResponse.getTaskType(), String.valueOf(TaskType.CONSOLIDATION_IMPORTER.getValue()))) {
             EntityTransferConsolidationDetails entityTransferConsolidationDetails = jsonHelper.readFromJson(taskResponse.getTaskJson(), EntityTransferConsolidationDetails.class);
             taskResponse.setConsoleJson(entityTransferConsolidationDetails);
             taskResponse.setTaskJson(null);
-        } else if (Objects.equals(taskResponse.getEntityType(), Constants.Shipments) && Objects.equals(taskResponse.getTaskType(), String.valueOf(TaskType.SHIPMENT_IMPORTER.getValue()))) {
+        } else if (Objects.equals(taskResponse.getEntityType(), Constants.SHIPMENTS) && Objects.equals(taskResponse.getTaskType(), String.valueOf(TaskType.SHIPMENT_IMPORTER.getValue()))) {
             EntityTransferShipmentDetails entityTransferShipmentDetails = jsonHelper.readFromJson(taskResponse.getTaskJson(), EntityTransferShipmentDetails.class);
             taskResponse.setShipmentJson(entityTransferShipmentDetails);
             taskResponse.setTaskJson(null);

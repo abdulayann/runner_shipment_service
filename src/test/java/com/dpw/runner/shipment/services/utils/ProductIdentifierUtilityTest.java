@@ -68,13 +68,13 @@ class ProductIdentifierUtilityTest {
         List<TenantProducts> tenantProductsList = new ArrayList<>();
         TenantProducts tenantProduct = new TenantProducts();
         tenantProduct.setTenantId(1);
-        tenantProduct.setProductType(ProductType.Shipment_Air_IMP);
+        tenantProduct.setProductType(ProductType.SHIPMENT_AIR_IMP);
         tenantProductsList.add(tenantProduct);
         PageImpl<TenantProducts> tenantProductsPage = new PageImpl<>(tenantProductsList);
 
         when(tenantProductsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(tenantProductsPage);
         List<TenantProducts> tenantProducts = productIdentifierUtility.populateEnabledTenantProducts();
-        assertEquals(ProductType.Shipment_Air_IMP, tenantProducts.get(0).getProductType());
+        assertEquals(ProductType.SHIPMENT_AIR_IMP, tenantProducts.get(0).getProductType());
     }
 
     @Test
@@ -82,7 +82,7 @@ class ProductIdentifierUtilityTest {
         List<TenantProducts> tenantProductsList = new ArrayList<>();
         TenantProducts tenantProduct = new TenantProducts();
         tenantProduct.setTenantId(1);
-        tenantProduct.setProductType(ProductType.Shipment_Air_IMP);
+        tenantProduct.setProductType(ProductType.SHIPMENT_AIR_IMP);
         tenantProduct.setTransportModes(Arrays.asList(Constants.TRANSPORT_MODE_SEA));
         tenantProductsList.add(tenantProduct);
         PageImpl<TenantProducts> tenantProductsPage = new PageImpl<>(tenantProductsList);
@@ -112,7 +112,7 @@ class ProductIdentifierUtilityTest {
         List<TenantProducts> tenantProductsList = new ArrayList<>();
         TenantProducts tenantProduct = new TenantProducts();
         tenantProduct.setTenantId(1);
-        tenantProduct.setProductType(ProductType.Shipment_Air_IMP);
+        tenantProduct.setProductType(ProductType.SHIPMENT_AIR_IMP);
         tenantProduct.setTransportModes(Arrays.asList(Constants.TRANSPORT_MODE_SEA));
         tenantProductsList.add(tenantProduct);
 
@@ -133,7 +133,7 @@ class ProductIdentifierUtilityTest {
         List<TenantProducts> tenantProductsList = new ArrayList<>();
         TenantProducts tenantProduct = new TenantProducts();
         tenantProduct.setTenantId(1);
-        tenantProduct.setProductType(ProductType.Shipment_Air_IMP);
+        tenantProduct.setProductType(ProductType.SHIPMENT_AIR_IMP);
         tenantProduct.setTransportModes(Arrays.asList(Constants.TRANSPORT_MODE_SEA));
         tenantProductsList.add(tenantProduct);
 
@@ -154,7 +154,7 @@ class ProductIdentifierUtilityTest {
         List<TenantProducts> tenantProductsList = new ArrayList<>();
         TenantProducts tenantProduct = new TenantProducts();
         tenantProduct.setTenantId(1);
-        tenantProduct.setProductType(ProductType.Shipment_Air_EXP);
+        tenantProduct.setProductType(ProductType.SHIPMENT_AIR_EXP);
         tenantProduct.setTransportModes(Arrays.asList(Constants.TRANSPORT_MODE_AIR));
         tenantProductsList.add(tenantProduct);
 
@@ -175,7 +175,7 @@ class ProductIdentifierUtilityTest {
         List<TenantProducts> tenantProductsList = new ArrayList<>();
         TenantProducts tenantProduct = new TenantProducts();
         tenantProduct.setTenantId(1);
-        tenantProduct.setProductType(ProductType.Shipment_Air_CrossTrade);
+        tenantProduct.setProductType(ProductType.SHIPMENT_AIR_CROSS_TRADE);
         tenantProduct.setTransportModes(Arrays.asList(Constants.TRANSPORT_MODE_AIR));
         tenantProductsList.add(tenantProduct);
 
@@ -196,7 +196,7 @@ class ProductIdentifierUtilityTest {
         List<TenantProducts> tenantProductsList = new ArrayList<>();
         TenantProducts tenantProduct = new TenantProducts();
         tenantProduct.setTenantId(1);
-        tenantProduct.setProductType(ProductType.Shipment_Air_TransShip);
+        tenantProduct.setProductType(ProductType.SHIPMENT_AIR_TRANS_SHIP);
         tenantProduct.setTransportModes(Arrays.asList(Constants.TRANSPORT_MODE_AIR));
         tenantProductsList.add(tenantProduct);
 
@@ -217,7 +217,7 @@ class ProductIdentifierUtilityTest {
         List<TenantProducts> tenantProductsList = new ArrayList<>();
         TenantProducts tenantProduct = new TenantProducts();
         tenantProduct.setTenantId(1);
-        tenantProduct.setProductType(ProductType.Shipment_Air_CrossTrade);
+        tenantProduct.setProductType(ProductType.SHIPMENT_AIR_CROSS_TRADE);
         tenantProduct.setTransportModes(Arrays.asList(Constants.TRANSPORT_MODE_AIR));
         tenantProductsList.add(tenantProduct);
 
@@ -238,7 +238,7 @@ class ProductIdentifierUtilityTest {
         List<TenantProducts> tenantProductsList = new ArrayList<>();
         TenantProducts tenantProduct = new TenantProducts();
         tenantProduct.setTenantId(1);
-        tenantProduct.setProductType(ProductType.Shipment_Sea_IMP);
+        tenantProduct.setProductType(ProductType.SHIPMENT_SEA_IMP);
         tenantProduct.setTransportModes(Arrays.asList(Constants.TRANSPORT_MODE_SEA));
         tenantProductsList.add(tenantProduct);
 
@@ -259,7 +259,7 @@ class ProductIdentifierUtilityTest {
         List<TenantProducts> tenantProductsList = new ArrayList<>();
         TenantProducts tenantProduct = new TenantProducts();
         tenantProduct.setTenantId(1);
-        tenantProduct.setProductType(ProductType.Shipment_Sea_EXP);
+        tenantProduct.setProductType(ProductType.SHIPMENT_SEA_EXP);
         tenantProduct.setTransportModes(Arrays.asList(Constants.TRANSPORT_MODE_SEA));
         tenantProductsList.add(tenantProduct);
 
@@ -280,7 +280,7 @@ class ProductIdentifierUtilityTest {
         List<TenantProducts> tenantProductsList = new ArrayList<>();
         TenantProducts tenantProduct = new TenantProducts();
         tenantProduct.setTenantId(1);
-        tenantProduct.setProductType(ProductType.Shipment_Sea_CrossTrade);
+        tenantProduct.setProductType(ProductType.SHIPMENT_SEA_CROSS_TRADE);
         tenantProduct.setTransportModes(Arrays.asList(Constants.TRANSPORT_MODE_SEA));
         tenantProductsList.add(tenantProduct);
 
@@ -301,7 +301,7 @@ class ProductIdentifierUtilityTest {
         List<TenantProducts> tenantProductsList = new ArrayList<>();
         TenantProducts tenantProduct = new TenantProducts();
         tenantProduct.setTenantId(1);
-        tenantProduct.setProductType(ProductType.Shipment_Sea_TransShip);
+        tenantProduct.setProductType(ProductType.SHIPMENT_SEA_TRANS_SHIP);
         tenantProduct.setTransportModes(Arrays.asList(Constants.TRANSPORT_MODE_SEA));
         tenantProductsList.add(tenantProduct);
 
@@ -342,7 +342,7 @@ class ProductIdentifierUtilityTest {
         List<TenantProducts> tenantProductsList = new ArrayList<>();
         TenantProducts tenantProduct = new TenantProducts();
         tenantProduct.setTenantId(1);
-        tenantProduct.setProductType(ProductType.Shipment_Road_EXP);
+        tenantProduct.setProductType(ProductType.SHIPMENT_ROAD_EXP);
         tenantProduct.setTransportModes(Arrays.asList(Constants.TRANSPORT_MODE_ROA));
         tenantProductsList.add(tenantProduct);
 
@@ -363,7 +363,7 @@ class ProductIdentifierUtilityTest {
         List<TenantProducts> tenantProductsList = new ArrayList<>();
         TenantProducts tenantProduct = new TenantProducts();
         tenantProduct.setTenantId(1);
-        tenantProduct.setProductType(ProductType.Shipment_Road_CrossTrade);
+        tenantProduct.setProductType(ProductType.SHIPMENT_ROAD_CROSS_TRADE);
         tenantProduct.setTransportModes(Arrays.asList(Constants.TRANSPORT_MODE_ROA));
         tenantProductsList.add(tenantProduct);
 
@@ -384,7 +384,7 @@ class ProductIdentifierUtilityTest {
         List<TenantProducts> tenantProductsList = new ArrayList<>();
         TenantProducts tenantProduct = new TenantProducts();
         tenantProduct.setTenantId(1);
-        tenantProduct.setProductType(ProductType.Shipment_Road_TransShip);
+        tenantProduct.setProductType(ProductType.SHIPMENT_ROAD_TRANS_SHIP);
         tenantProduct.setTransportModes(Arrays.asList(Constants.TRANSPORT_MODE_ROA));
         tenantProductsList.add(tenantProduct);
 
@@ -405,7 +405,7 @@ class ProductIdentifierUtilityTest {
         List<TenantProducts> tenantProductsList = new ArrayList<>();
         TenantProducts tenantProduct = new TenantProducts();
         tenantProduct.setTenantId(1);
-        tenantProduct.setProductType(ProductType.Shipment_Rail_CrossTrade);
+        tenantProduct.setProductType(ProductType.SHIPMENT_RAIL_CROSS_TRADE);
         tenantProduct.setTransportModes(Arrays.asList(Constants.TRANSPORT_MODE_RAI));
         tenantProductsList.add(tenantProduct);
 
@@ -426,7 +426,7 @@ class ProductIdentifierUtilityTest {
         List<TenantProducts> tenantProductsList = new ArrayList<>();
         TenantProducts tenantProduct = new TenantProducts();
         tenantProduct.setTenantId(1);
-        tenantProduct.setProductType(ProductType.Shipment_Rail_TransShip);
+        tenantProduct.setProductType(ProductType.SHIPMENT_RAIL_TRANS_SHIP);
         tenantProduct.setTransportModes(Arrays.asList(Constants.TRANSPORT_MODE_RAI));
         tenantProductsList.add(tenantProduct);
 
@@ -453,7 +453,7 @@ class ProductIdentifierUtilityTest {
         List<TenantProducts> tenantProductsList = new ArrayList<>();
         TenantProducts tenantProduct = new TenantProducts();
         tenantProduct.setTenantId(1);
-        tenantProduct.setProductType(ProductType.Shipment_Air_IMP);
+        tenantProduct.setProductType(ProductType.SHIPMENT_AIR_IMP);
         tenantProduct.setTransportModes(Arrays.asList(Constants.TRANSPORT_MODE_SEA));
         tenantProductsList.add(tenantProduct);
         PageImpl<TenantProducts> tenantProductsPage = new PageImpl<>(tenantProductsList);
@@ -462,7 +462,7 @@ class ProductIdentifierUtilityTest {
         ProductSequenceConfig productSequenceConfig = new ProductSequenceConfig();
         productSequenceConfig.setTenantId(1);
         productSequenceConfig.setSerialCounter(1);
-        productSequenceConfig.setProductProcessTypes(ProductProcessTypes.HBLNumber);
+        productSequenceConfig.setProductProcessTypes(ProductProcessTypes.HBL_NUMBER);
         productSequenceConfig.setTenantProducts(tenantProduct);
         productSequenceConfig.setPrefix("Aa");
         productSequenceConfigList.add(productSequenceConfig);
@@ -483,7 +483,7 @@ class ProductIdentifierUtilityTest {
         List<TenantProducts> tenantProductsList = new ArrayList<>();
         TenantProducts tenantProduct = new TenantProducts();
         tenantProduct.setTenantId(1);
-        tenantProduct.setProductType(ProductType.Consolidation_Sea_EXIM);
+        tenantProduct.setProductType(ProductType.CONSOLIDATION_SEA_EXIM);
         tenantProduct.setTransportModes(Arrays.asList(Constants.TRANSPORT_MODE_SEA));
         tenantProductsList.add(tenantProduct);
 
@@ -499,7 +499,7 @@ class ProductIdentifierUtilityTest {
         List<TenantProducts> tenantProductsList = new ArrayList<>();
         TenantProducts tenantProduct = new TenantProducts();
         tenantProduct.setTenantId(1);
-        tenantProduct.setProductType(ProductType.Consolidation_Air_EXIM);
+        tenantProduct.setProductType(ProductType.CONSOLIDATION_AIR_EXIM);
         tenantProduct.setTransportModes(Arrays.asList(Constants.TRANSPORT_MODE_AIR));
         tenantProductsList.add(tenantProduct);
 
@@ -515,7 +515,7 @@ class ProductIdentifierUtilityTest {
         List<TenantProducts> tenantProductsList = new ArrayList<>();
         TenantProducts tenantProduct = new TenantProducts();
         tenantProduct.setTenantId(1);
-        tenantProduct.setProductType(ProductType.Consolidation_All);
+        tenantProduct.setProductType(ProductType.CONSOLIDATION_ALL);
         tenantProduct.setTransportModes(Arrays.asList(Constants.TRANSPORT_MODE_AIR));
         tenantProductsList.add(tenantProduct);
 
@@ -528,7 +528,7 @@ class ProductIdentifierUtilityTest {
         List<TenantProducts> tenantProductsList = new ArrayList<>();
         TenantProducts tenantProduct = new TenantProducts();
         tenantProduct.setTenantId(1);
-        tenantProduct.setProductType(ProductType.Shipment_Air_IMP);
+        tenantProduct.setProductType(ProductType.SHIPMENT_AIR_IMP);
         tenantProduct.setTransportModes(Arrays.asList(Constants.TRANSPORT_MODE_SEA));
         tenantProductsList.add(tenantProduct);
         PageImpl<TenantProducts> tenantProductsPage = new PageImpl<>(tenantProductsList);
@@ -558,7 +558,7 @@ class ProductIdentifierUtilityTest {
         List<TenantProducts> tenantProductsList = new ArrayList<>();
         TenantProducts tenantProduct = new TenantProducts();
         tenantProduct.setTenantId(1);
-        tenantProduct.setProductType(ProductType.Shipment_Air_IMP);
+        tenantProduct.setProductType(ProductType.SHIPMENT_AIR_IMP);
         tenantProduct.setTransportModes(Arrays.asList(Constants.TRANSPORT_MODE_SEA));
         tenantProductsList.add(tenantProduct);
         PageImpl<TenantProducts> tenantProductsPage = new PageImpl<>(tenantProductsList);
@@ -588,7 +588,7 @@ class ProductIdentifierUtilityTest {
         List<TenantProducts> tenantProductsList = new ArrayList<>();
         TenantProducts tenantProduct = new TenantProducts();
         tenantProduct.setTenantId(1);
-        tenantProduct.setProductType(ProductType.Shipment_Air_IMP);
+        tenantProduct.setProductType(ProductType.SHIPMENT_AIR_IMP);
         tenantProduct.setTransportModes(Arrays.asList(Constants.TRANSPORT_MODE_SEA));
         tenantProductsList.add(tenantProduct);
         PageImpl<TenantProducts> tenantProductsPage = new PageImpl<>(tenantProductsList);
@@ -618,7 +618,7 @@ class ProductIdentifierUtilityTest {
         List<TenantProducts> tenantProductsList = new ArrayList<>();
         TenantProducts tenantProduct = new TenantProducts();
         tenantProduct.setTenantId(1);
-        tenantProduct.setProductType(ProductType.Shipment_Air_IMP);
+        tenantProduct.setProductType(ProductType.SHIPMENT_AIR_IMP);
         tenantProduct.setTransportModes(Arrays.asList(Constants.TRANSPORT_MODE_SEA));
         tenantProductsList.add(tenantProduct);
         PageImpl<TenantProducts> tenantProductsPage = new PageImpl<>(tenantProductsList);
@@ -655,7 +655,7 @@ class ProductIdentifierUtilityTest {
         List<TenantProducts> tenantProductsList = new ArrayList<>();
         TenantProducts tenantProduct = new TenantProducts();
         tenantProduct.setTenantId(1);
-        tenantProduct.setProductType(ProductType.Shipment_Air_IMP);
+        tenantProduct.setProductType(ProductType.SHIPMENT_AIR_IMP);
         tenantProduct.setTransportModes(Arrays.asList(Constants.TRANSPORT_MODE_SEA));
         tenantProductsList.add(tenantProduct);
         PageImpl<TenantProducts> tenantProductsPage = new PageImpl<>(tenantProductsList);
@@ -664,7 +664,7 @@ class ProductIdentifierUtilityTest {
         ProductSequenceConfig productSequenceConfig = new ProductSequenceConfig();
         productSequenceConfig.setTenantId(1);
         productSequenceConfig.setSerialCounter(1);
-        productSequenceConfig.setProductProcessTypes(ProductProcessTypes.HBLNumber);
+        productSequenceConfig.setProductProcessTypes(ProductProcessTypes.HBL_NUMBER);
         productSequenceConfig.setTenantProducts(tenantProduct);
         productSequenceConfig.setPrefix("Aa");
         productSequenceConfigList.add(productSequenceConfig);
@@ -690,7 +690,7 @@ class ProductIdentifierUtilityTest {
         List<TenantProducts> tenantProductsList = new ArrayList<>();
         TenantProducts tenantProduct = new TenantProducts();
         tenantProduct.setTenantId(1);
-        tenantProduct.setProductType(ProductType.Shipment_Air_IMP);
+        tenantProduct.setProductType(ProductType.SHIPMENT_AIR_IMP);
         tenantProduct.setTransportModes(Arrays.asList(Constants.TRANSPORT_MODE_SEA));
         tenantProductsList.add(tenantProduct);
         PageImpl<TenantProducts> tenantProductsPage = new PageImpl<>(tenantProductsList);
@@ -699,7 +699,7 @@ class ProductIdentifierUtilityTest {
         ProductSequenceConfig productSequenceConfig = new ProductSequenceConfig();
         productSequenceConfig.setTenantId(1);
         productSequenceConfig.setSerialCounter(1);
-        productSequenceConfig.setProductProcessTypes(ProductProcessTypes.BOLNumber);
+        productSequenceConfig.setProductProcessTypes(ProductProcessTypes.BOL_NUMBER);
         productSequenceConfig.setTenantProducts(tenantProduct);
         productSequenceConfig.setPrefix("Aa");
         productSequenceConfigList.add(productSequenceConfig);
@@ -724,7 +724,7 @@ class ProductIdentifierUtilityTest {
         List<TenantProducts> tenantProductsList = new ArrayList<>();
         TenantProducts tenantProduct = new TenantProducts();
         tenantProduct.setTenantId(1);
-        tenantProduct.setProductType(ProductType.Shipment_Air_IMP);
+        tenantProduct.setProductType(ProductType.SHIPMENT_AIR_IMP);
         tenantProduct.setTransportModes(Arrays.asList(Constants.TRANSPORT_MODE_AIR));
         tenantProductsList.add(tenantProduct);
         PageImpl<TenantProducts> tenantProductsPage = new PageImpl<>(tenantProductsList);
@@ -733,7 +733,7 @@ class ProductIdentifierUtilityTest {
         ProductSequenceConfig productSequenceConfig = new ProductSequenceConfig();
         productSequenceConfig.setTenantId(1);
         productSequenceConfig.setSerialCounter(1);
-        productSequenceConfig.setProductProcessTypes(ProductProcessTypes.HBLNumber);
+        productSequenceConfig.setProductProcessTypes(ProductProcessTypes.HBL_NUMBER);
         productSequenceConfig.setTenantProducts(tenantProduct);
         productSequenceConfig.setPrefix("Aa");
         productSequenceConfigList.add(productSequenceConfig);
@@ -758,7 +758,7 @@ class ProductIdentifierUtilityTest {
         List<TenantProducts> tenantProductsList = new ArrayList<>();
         TenantProducts tenantProduct = new TenantProducts();
         tenantProduct.setTenantId(1);
-        tenantProduct.setProductType(ProductType.Shipment_Air_IMP);
+        tenantProduct.setProductType(ProductType.SHIPMENT_AIR_IMP);
         tenantProduct.setTransportModes(Arrays.asList(Constants.TRANSPORT_MODE_AIR));
         tenantProductsList.add(tenantProduct);
         PageImpl<TenantProducts> tenantProductsPage = new PageImpl<>(tenantProductsList);
@@ -792,7 +792,7 @@ class ProductIdentifierUtilityTest {
         List<TenantProducts> tenantProductsList = new ArrayList<>();
         TenantProducts tenantProduct = new TenantProducts();
         tenantProduct.setTenantId(1);
-        tenantProduct.setProductType(ProductType.Transport_All);
+        tenantProduct.setProductType(ProductType.TRANSPORT_ALL);
         tenantProduct.setTransportModes(Arrays.asList(Constants.TRANSPORT_MODE_AIR));
         tenantProductsList.add(tenantProduct);
         PageImpl<TenantProducts> tenantProductsPage = new PageImpl<>(tenantProductsList);
@@ -821,7 +821,7 @@ class ProductIdentifierUtilityTest {
         List<TenantProducts> tenantProductsList = new ArrayList<>();
         TenantProducts tenantProduct = new TenantProducts();
         tenantProduct.setTenantId(1);
-        tenantProduct.setProductType(ProductType.Transport_All);
+        tenantProduct.setProductType(ProductType.TRANSPORT_ALL);
         tenantProduct.setTransportModes(Arrays.asList(Constants.TRANSPORT_MODE_AIR));
         tenantProductsList.add(tenantProduct);
         PageImpl<TenantProducts> tenantProductsPage = new PageImpl<>(tenantProductsList);
@@ -845,7 +845,7 @@ class ProductIdentifierUtilityTest {
         List<TenantProducts> tenantProductsList = new ArrayList<>();
         TenantProducts tenantProduct = new TenantProducts();
         tenantProduct.setTenantId(1);
-        tenantProduct.setProductType(ProductType.Shipment_Air_IMP);
+        tenantProduct.setProductType(ProductType.SHIPMENT_AIR_IMP);
         tenantProduct.setTransportModes(Arrays.asList(Constants.TRANSPORT_MODE_SEA));
         tenantProductsList.add(tenantProduct);
         PageImpl<TenantProducts> tenantProductsPage = new PageImpl<>(tenantProductsList);
@@ -875,7 +875,7 @@ class ProductIdentifierUtilityTest {
         List<TenantProducts> tenantProductsList = new ArrayList<>();
         TenantProducts tenantProduct = new TenantProducts();
         tenantProduct.setTenantId(1);
-        tenantProduct.setProductType(ProductType.Shipment_Air_IMP);
+        tenantProduct.setProductType(ProductType.SHIPMENT_AIR_IMP);
         tenantProduct.setTransportModes(Arrays.asList(Constants.TRANSPORT_MODE_SEA));
         tenantProductsList.add(tenantProduct);
         PageImpl<TenantProducts> tenantProductsPage = new PageImpl<>(tenantProductsList);
@@ -905,7 +905,7 @@ class ProductIdentifierUtilityTest {
         List<TenantProducts> tenantProductsList = new ArrayList<>();
         TenantProducts tenantProduct = new TenantProducts();
         tenantProduct.setTenantId(1);
-        tenantProduct.setProductType(ProductType.Shipment_Air_IMP);
+        tenantProduct.setProductType(ProductType.SHIPMENT_AIR_IMP);
         tenantProduct.setTransportModes(Arrays.asList(Constants.TRANSPORT_MODE_SEA));
         tenantProductsList.add(tenantProduct);
         PageImpl<TenantProducts> tenantProductsPage = new PageImpl<>(tenantProductsList);
@@ -934,7 +934,7 @@ class ProductIdentifierUtilityTest {
         List<TenantProducts> tenantProductsList = new ArrayList<>();
         TenantProducts tenantProduct = new TenantProducts();
         tenantProduct.setTenantId(1);
-        tenantProduct.setProductType(ProductType.Transport_All);
+        tenantProduct.setProductType(ProductType.TRANSPORT_ALL);
         tenantProduct.setTransportModes(Arrays.asList(Constants.TRANSPORT_MODE_SEA));
         tenantProductsList.add(tenantProduct);
 
@@ -954,7 +954,7 @@ class ProductIdentifierUtilityTest {
         List<TenantProducts> tenantProductsList = new ArrayList<>();
         TenantProducts tenantProduct = new TenantProducts();
         tenantProduct.setTenantId(1);
-        tenantProduct.setProductType(ProductType.Shipment_Air_IMP);
+        tenantProduct.setProductType(ProductType.SHIPMENT_AIR_IMP);
         tenantProduct.setTransportModes(Arrays.asList(Constants.TRANSPORT_MODE_AIR));
         tenantProductsList.add(tenantProduct);
         PageImpl<TenantProducts> tenantProductsPage = new PageImpl<>(tenantProductsList);
@@ -963,7 +963,7 @@ class ProductIdentifierUtilityTest {
         ProductSequenceConfig productSequenceConfig = new ProductSequenceConfig();
         productSequenceConfig.setTenantId(1);
         productSequenceConfig.setSerialCounter(1);
-        productSequenceConfig.setProductProcessTypes(ProductProcessTypes.BOLNumber);
+        productSequenceConfig.setProductProcessTypes(ProductProcessTypes.BOL_NUMBER);
         productSequenceConfig.setTenantProducts(tenantProduct);
         productSequenceConfig.setPrefix("Aa");
         productSequenceConfigList.add(productSequenceConfig);
@@ -988,7 +988,7 @@ class ProductIdentifierUtilityTest {
         List<TenantProducts> tenantProductsList = new ArrayList<>();
         TenantProducts tenantProduct = new TenantProducts();
         tenantProduct.setTenantId(1);
-        tenantProduct.setProductType(ProductType.Transport_All);
+        tenantProduct.setProductType(ProductType.TRANSPORT_ALL);
         tenantProduct.setTransportModes(Arrays.asList(Constants.TRANSPORT_MODE_AIR));
         tenantProductsList.add(tenantProduct);
         PageImpl<TenantProducts> tenantProductsPage = new PageImpl<>(tenantProductsList);
@@ -1019,14 +1019,14 @@ class ProductIdentifierUtilityTest {
         List<TenantProducts> tenantProductsList = new ArrayList<>();
         TenantProducts tenantProduct = new TenantProducts();
         tenantProduct.setTenantId(1);
-        tenantProduct.setProductType(ProductType.Transport_All);
+        tenantProduct.setProductType(ProductType.TRANSPORT_ALL);
         tenantProduct.setTransportModes(Arrays.asList(Constants.TRANSPORT_MODE_SEA));
         tenantProductsList.add(tenantProduct);
         PageImpl<TenantProducts> tenantProductsPage = new PageImpl<>(tenantProductsList);
 
         List<ProductSequenceConfig> productSequenceConfigList = new ArrayList<>();
         ProductSequenceConfig productSequenceConfig = new ProductSequenceConfig();
-        productSequenceConfig.setProductProcessTypes(ProductProcessTypes.HBLNumber);
+        productSequenceConfig.setProductProcessTypes(ProductProcessTypes.HBL_NUMBER);
         productSequenceConfig.setTenantProducts(tenantProduct);
         productSequenceConfigList.add(productSequenceConfig);
         PageImpl<ProductSequenceConfig> productSequenceConfigPage = new PageImpl<>(productSequenceConfigList);
@@ -1050,14 +1050,14 @@ class ProductIdentifierUtilityTest {
         List<TenantProducts> tenantProductsList = new ArrayList<>();
         TenantProducts tenantProduct = new TenantProducts();
         tenantProduct.setTenantId(1);
-        tenantProduct.setProductType(ProductType.Transport_All);
+        tenantProduct.setProductType(ProductType.TRANSPORT_ALL);
         tenantProduct.setTransportModes(Arrays.asList(Constants.TRANSPORT_MODE_AIR));
         tenantProductsList.add(tenantProduct);
         PageImpl<TenantProducts> tenantProductsPage = new PageImpl<>(tenantProductsList);
 
         List<ProductSequenceConfig> productSequenceConfigList = new ArrayList<>();
         ProductSequenceConfig productSequenceConfig = new ProductSequenceConfig();
-        productSequenceConfig.setProductProcessTypes(ProductProcessTypes.HBLNumber);
+        productSequenceConfig.setProductProcessTypes(ProductProcessTypes.HBL_NUMBER);
         productSequenceConfig.setTenantProducts(tenantProduct);
         productSequenceConfigList.add(productSequenceConfig);
         PageImpl<ProductSequenceConfig> productSequenceConfigPage = new PageImpl<>(productSequenceConfigList);
@@ -1081,14 +1081,14 @@ class ProductIdentifierUtilityTest {
         List<TenantProducts> tenantProductsList = new ArrayList<>();
         TenantProducts tenantProduct = new TenantProducts();
         tenantProduct.setTenantId(1);
-        tenantProduct.setProductType(ProductType.Shipment_Sea_EXP_BBK);
+        tenantProduct.setProductType(ProductType.SHIPMENT_SEA_EXP_BBK);
         tenantProduct.setTransportModes(Arrays.asList(Constants.TRANSPORT_MODE_AIR));
         tenantProductsList.add(tenantProduct);
         PageImpl<TenantProducts> tenantProductsPage = new PageImpl<>(tenantProductsList);
 
         List<ProductSequenceConfig> productSequenceConfigList = new ArrayList<>();
         ProductSequenceConfig productSequenceConfig = new ProductSequenceConfig();
-        productSequenceConfig.setProductProcessTypes(ProductProcessTypes.HBLNumber);
+        productSequenceConfig.setProductProcessTypes(ProductProcessTypes.HBL_NUMBER);
         productSequenceConfig.setTenantProducts(tenantProduct);
         productSequenceConfigList.add(productSequenceConfig);
         PageImpl<ProductSequenceConfig> productSequenceConfigPage = new PageImpl<>(productSequenceConfigList);
@@ -1109,14 +1109,14 @@ class ProductIdentifierUtilityTest {
         List<TenantProducts> tenantProductsList = new ArrayList<>();
         TenantProducts tenantProduct = new TenantProducts();
         tenantProduct.setTenantId(1);
-        tenantProduct.setProductType(ProductType.Shipment_Air_CrossTrade_LSE);
+        tenantProduct.setProductType(ProductType.SHIPMENT_AIR_CROSS_TRADE_LSE);
         tenantProduct.setTransportModes(Arrays.asList(Constants.TRANSPORT_MODE_AIR));
         tenantProductsList.add(tenantProduct);
         PageImpl<TenantProducts> tenantProductsPage = new PageImpl<>(tenantProductsList);
 
         List<ProductSequenceConfig> productSequenceConfigList = new ArrayList<>();
         ProductSequenceConfig productSequenceConfig = new ProductSequenceConfig();
-        productSequenceConfig.setProductProcessTypes(ProductProcessTypes.HBLNumber);
+        productSequenceConfig.setProductProcessTypes(ProductProcessTypes.HBL_NUMBER);
         productSequenceConfig.setTenantProducts(tenantProduct);
         productSequenceConfigList.add(productSequenceConfig);
         PageImpl<ProductSequenceConfig> productSequenceConfigPage = new PageImpl<>(productSequenceConfigList);

@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.utils;
 
-import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.reportingservice.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
@@ -74,8 +74,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Stream;
 
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETA_CAPS;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETD_CAPS;
+import static com.dpw.runner.shipment.services.reportingservice.CommonUtils.ReportConstants.ETA_CAPS;
+import static com.dpw.runner.shipment.services.reportingservice.CommonUtils.ReportConstants.ETD_CAPS;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.commons.constants.PermissionConstants.OCEAN_DG_APPROVER;
 import static com.dpw.runner.shipment.services.commons.constants.PermissionConstants.OCEAN_DG_COMMERCIAL_APPROVER;

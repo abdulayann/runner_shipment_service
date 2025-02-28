@@ -6,25 +6,25 @@ import com.fasterxml.jackson.annotation.JsonValue;
 
 @Generated
 public enum ChargeTypeCode {
-    Client_Charge_Code(1),
-    Fusion_Memo_Line(2),
-    Vendor_Integration_Code(3),
-    B2B_LCc(4),
-    B2B_LCc_Name(5),
-    B2B_Sub_Lcc(6),
-    B2B_Sub_Lcc_Name(7),
-    Pantos_Tax_Code(8),
-    Revenue_Tax_Account_Code(9),
-    Expense_Tax_Account_Code(10),
-    IATA_Charge_Code(11),
-    Due_To_Party(12),
-    B2B_Tax_Code(13),
-    Tax_Classification_Code(14),
-    Fusion_Distribution_Set(15),
-    Revenue_GL_Code(16),
-    Revenue_VAT_GL_Code(17),
-    Expense_GL_Code(18),
-    Expense_VAT_GL_Code(19);
+    CHARGE_TYPE_CODE(1),
+    FUSION_MEMO_LINE(2),
+    VENDOR_INTEGRATION_CODE(3),
+    B2B_LCC(4),
+    B2B_LCC_NAME(5),
+    B2B_SUB_LCC(6),
+    B2B_SUB_LCC_NAME(7),
+    PANTOS_TAX_CODE(8),
+    REVENUE_TAX_ACCOUNT_CODE(9),
+    EXPENSE_TAX_ACCOUNT_CODE(10),
+    IATA_CHARGE_CODE(11),
+    DUE_TO_PARTY(12),
+    B2B_TAX_CODE(13),
+    TAX_CLASSIFICATION_CODE(14),
+    FUSION_DISTRIBUTION_SET(15),
+    REVENUE_GL_CODE(16),
+    REVENUE_VAT_GL_CODE(17),
+    EXPENSE_GL_CODE(18),
+    EXPENSE_VAT_GL_CODE(19);
 
     int id;
     ChargeTypeCode(int id) {

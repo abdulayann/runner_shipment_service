@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.adapters.impl;
 
-import com.dpw.runner.shipment.services.ReportingService.Models.DocumentRequest;
+import com.dpw.runner.shipment.services.reportingservice.Models.DocumentRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;

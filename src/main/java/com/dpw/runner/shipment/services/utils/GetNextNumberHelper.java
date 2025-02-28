@@ -54,7 +54,7 @@ public class GetNextNumberHelper {
             startPosition == -1 ? regexPattern : regexPattern.substring(0, startPosition); // prefix
         String suffix = "";
         //        CompaniesRow companiesRow = null;
-        if (sequenceSettings.getGenerationType() == GenerationType.Regex) {
+        if (sequenceSettings.getGenerationType() == GenerationType.REGEX) {
             Pattern p = Pattern.compile("\\{([^}]*)\\}"); // original v1 regex @"(?<={)[\w;]{1,}(?=})"
             Matcher matches = p.matcher(regexPattern);
             var ValueOf = new HashMap<String, String>();
@@ -113,10 +113,10 @@ public class GetNextNumberHelper {
                 else suffix += ValueOf.get(wordSplit.get(0).toLowerCase());
             }
         }
-        else if (sequenceSettings.getGenerationType() == GenerationType.Random) {
+        else if (sequenceSettings.getGenerationType() == GenerationType.RANDOM) {
             suffix = StringUtility.getRandomString(10);
         }
-        else if (sequenceSettings.getGenerationType() == GenerationType.Serial) {
+        else if (sequenceSettings.getGenerationType() == GenerationType.SERIAL) {
             suffix = sequenceSettings.getSerialCounter().toString();
             sequenceSettings.setSerialCounter(sequenceSettings.getSerialCounter() + 1);
         }

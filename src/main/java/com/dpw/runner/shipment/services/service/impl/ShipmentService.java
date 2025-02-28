@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.KCRA_EXPIRY;
+import static com.dpw.runner.shipment.services.reportingservice.CommonUtils.ReportConstants.KCRA_EXPIRY;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.PADDING_10_PX;
 import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.STYLE;
@@ -36,8 +36,8 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.setIsNullOrEmpt
 import static com.dpw.runner.shipment.services.utils.StringUtility.isNotEmpty;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
-import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
-import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
+import com.dpw.runner.shipment.services.reportingservice.Models.TenantModel;
+import com.dpw.runner.shipment.services.reportingservice.Reports.IReport;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IOrderManagementAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
@@ -207,7 +207,6 @@ import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.entity.enums.TaskStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
-import com.dpw.runner.shipment.services.entitytransfer.dto.response.SendShipmentValidationResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
@@ -814,18 +813,18 @@ public class ShipmentService implements IShipmentService {
         if (shipmentDetail.getContainersList() != null) {
             for (Containers container : shipmentDetail.getContainersList()) {
                 if(container.getContainerCode() != null) {
-                    if (container.getContainerCode().contains(Constants.Cont20)) {
+                    if (container.getContainerCode().contains(Constants.CONT_20)) {
                         ++container20Count;
-                    } else if (container.getContainerCode().contains(Constants.Cont40)) {
+                    } else if (container.getContainerCode().contains(Constants.CONT_40)) {
                         ++container40Count;
                     }
-                    if (container.getContainerCode().equals(Constants.Cont20GP)) {
+                    if (container.getContainerCode().equals(Constants.CONT_20_GP)) {
                         ++container20GPCount;
-                    } else if (container.getContainerCode().equals(Constants.Cont20RE)) {
+                    } else if (container.getContainerCode().equals(Constants.CONT_20_RE)) {
                         ++container20RECount;
-                    } else if (container.getContainerCode().equals(Constants.Cont40GP)) {
+                    } else if (container.getContainerCode().equals(Constants.CONT_40_GP)) {
                         ++container40GPCount;
-                    } else if (container.getContainerCode().equals(Constants.Cont40RE)) {
+                    } else if (container.getContainerCode().equals(Constants.CONT_40_RE)) {
                         ++container40RECount;
                     }
                 }
@@ -988,11 +987,11 @@ public class ShipmentService implements IShipmentService {
             updateFileRequests.add(DocumentManagerUpdateFileEntitiesRequest.UpdateFileRequest.builder()
                     .source(DocumentManagerUpdateFileEntitiesRequest.EntityData.builder()
                             .entityKey(bookingGuid)
-                            .entityType(Bookings)
+                            .entityType(BOOKINGS)
                             .build())
                     .entitiesToAttach(List.of(DocumentManagerUpdateFileEntitiesRequest.EntityData.builder()
                             .entityKey(shipmentGuid)
-                            .entityType(Shipments)
+                            .entityType(SHIPMENTS)
                             .build()))
                     .build());
 
@@ -2830,7 +2829,7 @@ public class ShipmentService implements IShipmentService {
 
         // Delete the shipment pending pull/push request tasks when the shipment got cancelled
         if (Boolean.TRUE.equals(commonUtils.getCurrentTenantSettings().getIsMAWBColoadingEnabled()) && Objects.nonNull(oldEntity)
-                && !Objects.equals(oldEntity.getStatus(), shipmentDetails.getStatus()) && Objects.equals(shipmentDetails.getStatus(), ShipmentStatus.Cancelled.getValue())) {
+                && !Objects.equals(oldEntity.getStatus(), shipmentDetails.getStatus()) && Objects.equals(shipmentDetails.getStatus(), ShipmentStatus.CANCELLED.getValue())) {
             log.info("Request: {} | Deleting console_shipment_mapping due to shipment cancelled for shipment: {}", LoggerHelper.getRequestIdFromMDC(), shipmentDetails.getShipmentId());
             consoleShipmentMappingDao.deletePendingStateByShipmentId(shipmentDetails.getId());
         }
@@ -4036,8 +4035,8 @@ public class ShipmentService implements IShipmentService {
     }
 
     private void addCriteriaToExclude(ListCommonRequest request, ShipmentDetails shipmentDetails) {
-        CommonUtils.andCriteria(Constants.STATUS, ShipmentStatus.NonMovement.getValue(), "!=", request);
-        CommonUtils.andCriteria(Constants.STATUS, ShipmentStatus.Cancelled.getValue(), "!=", request);
+        CommonUtils.andCriteria(Constants.STATUS, ShipmentStatus.NON_MOVEMENT.getValue(), "!=", request);
+        CommonUtils.andCriteria(Constants.STATUS, ShipmentStatus.CANCELLED.getValue(), "!=", request);
         CommonUtils.andCriteria(Constants.GUID, shipmentDetails.getGuid(), "!=", request);
     }
 
@@ -4860,10 +4859,10 @@ public class ShipmentService implements IShipmentService {
 
         if (shipmentDetails.getIsLocked() != null && shipmentDetails.getIsLocked()) {
             if (lockingUser != null && (Objects.equals(lockingUser, currentUser) ||
-                    (!Objects.isNull(PermissionsContext.getPermissions(PermissionConstants.tenantSuperAdmin)) && !PermissionsContext.getPermissions(PermissionConstants.tenantSuperAdmin).isEmpty()) ))
+                    (!Objects.isNull(PermissionsContext.getPermissions(PermissionConstants.ADMINISTRATION_TENANT_SUPER_ADMIN)) && !PermissionsContext.getPermissions(PermissionConstants.ADMINISTRATION_TENANT_SUPER_ADMIN).isEmpty()) ))
                 shipmentDetails.setIsLocked(false);
             else
-                throw new RunnerException(String.format(ErrorConstants.LOCK_UNLOCK_ERROR, Constants.Shipment, lockingUser));
+                throw new RunnerException(String.format(ErrorConstants.LOCK_UNLOCK_ERROR, Constants.SHIPMENT_CAMEL, lockingUser));
         } else {
             shipmentDetails.setIsLocked(true);
             shipmentDetails.setLockedBy(currentUser);
@@ -4890,7 +4889,7 @@ public class ShipmentService implements IShipmentService {
                 log.info("CR-ID {} || Inside generateShipmentId: with shipmentID: {} | counter: {}", LoggerHelper.getRequestIdFromMDC(), shipmentId, counter++);
                 if(shipmentSettingsOptional != null && shipmentSettingsOptional.isPresent() && shipmentSettingsOptional.get().getCustomisedSequence()) {
                     try{
-                        shipmentId = getCustomizedShipmentProcessNumber(ProductProcessTypes.ShipmentNumber, shipmentDetails);
+                        shipmentId = getCustomizedShipmentProcessNumber(ProductProcessTypes.SHIPMENT_NUMBER, shipmentDetails);
                     } catch (Exception ignored) {
                         log.error("Execption during common sequence {}", ignored.getMessage());
                         log.error("Execption occurred for common sequence {}", ignored.getStackTrace());
@@ -4917,7 +4916,7 @@ public class ShipmentService implements IShipmentService {
     private String getCustomizedShipmentProcessNumber(ProductProcessTypes productProcessType, ShipmentDetails currentShipment) throws RunnerException {
         List<TenantProducts> tenantProducts = productEngine.populateEnabledTenantProducts();
         // to check the commmon sequence
-        var sequenceNumber = productEngine.GetCommonSequenceNumber(currentShipment.getTransportMode(), ProductProcessTypes.Consol_Shipment_TI);
+        var sequenceNumber = productEngine.GetCommonSequenceNumber(currentShipment.getTransportMode(), ProductProcessTypes.CONSOL_SHIPMENT_TI);
         if (sequenceNumber != null && !sequenceNumber.isEmpty()) {
             return sequenceNumber;
         }
@@ -5403,7 +5402,7 @@ public class ShipmentService implements IShipmentService {
             cloneShipmentDetails.setShipmentId(null);
             cloneShipmentDetails.setMasterBill(null);
             cloneShipmentDetails.setConsolidationList(null);
-            cloneShipmentDetails.setStatus(ShipmentStatus.Created.getValue());
+            cloneShipmentDetails.setStatus(ShipmentStatus.CREATED.getValue());
             cloneShipmentDetails.setConsolRef(null);
             cloneShipmentDetails.setEventsList(null);
             cloneShipmentDetails.setBookingReference(null);
@@ -7890,7 +7889,8 @@ public class ShipmentService implements IShipmentService {
     }
 
     private void fetchDgUserTask(OceanDGRequest request) throws RunnerException {
-        CommonV1ListRequest commonV1ListRequest = createCriteriaTaskListRequest(request.getShipmentId().toString(), Shipments);
+        CommonV1ListRequest commonV1ListRequest = createCriteriaTaskListRequest(request.getShipmentId().toString(),
+            SHIPMENTS);
         log.info("V1 task list request: {}" , jsonHelper.convertToJson(commonV1ListRequest));
 
         V1DataResponse v1Response;
@@ -8509,7 +8509,7 @@ public class ShipmentService implements IShipmentService {
         ShipmentDetails shipment = shipmentOptional.get();
 
         // update shipment status by calling a dao method
-        shipment.setStatus(ShipmentStatus.Cancelled.getValue());
+        shipment.setStatus(ShipmentStatus.CANCELLED.getValue());
         shipmentDao.update(shipment, false);
 
         // Delete the shipment pending pull/push request tasks when the shipment got cancelled

@@ -67,7 +67,7 @@ public class TenantAspect {
                     .setParameterList(MultiTenancy.TENANT_PARAMETER_NAME, tenantIds.stream().map(Integer::longValue).toList());
         }
 
-        else if (!permissions.containsKey(PermissionConstants.tenantSuperAdmin) && !permissions.containsKey(PermissionConstants.crossTenantListPermission) && !permissions.containsKey(PermissionConstants.crossTenantRetrievePermission) && !permissions.containsKey(PermissionConstants.companySuperAdmin)) {
+        else if (!permissions.containsKey(PermissionConstants.ADMINISTRATION_TENANT_SUPER_ADMIN) && !permissions.containsKey(PermissionConstants.CROSS_TENANT_LIST) && !permissions.containsKey(PermissionConstants.CROSS_TENANT_RETRIEVE) && !permissions.containsKey(PermissionConstants.ADMINISTRATION_COMPANY_SUPER_ADMIN)) {
             entityManager.unwrap(Session.class)
                     .enableFilter(MultiTenancy.TENANT_FILTER_NAME)
                     .setParameter(MultiTenancy.TENANT_PARAMETER_NAME, tenantId);

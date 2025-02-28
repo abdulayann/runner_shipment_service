@@ -1,17 +1,17 @@
 package com.dpw.runner.shipment.services.entity.enums;
 
 public enum ShipmentStatus {
-    Created (0, "Created"),
-    Booked (1, "Booked"),
-    Completed (2, "Completed"),
-    Cancelled (3, "Cancelled"),
-    Confirmed (4, "Confirmed"),
-    InTransit (5, "In Transit"),
-    GenerateHBL (6, "HBL Generated"),
-    GenerateHAWB (7, "HAWB Generated"),
-    Arrived (8, "Arrived"),
-    FinanceClosure (9 , "Finance Closure"),
-    NonMovement (10, "Non-Movement");
+    CREATED(0, "Created"),
+    BOOKED(1, "Booked"),
+    COMPLETED(2, "Completed"),
+    CANCELLED(3, "Cancelled"),
+    CONFIRMED(4, "Confirmed"),
+    IN_TRANSIT(5, "In Transit"),
+    GENERATE_HBL(6, "HBL Generated"),
+    GENERATE_HAWB(7, "HAWB Generated"),
+    ARRIVED(8, "Arrived"),
+    FINANCE_CLOSURE(9 , "Finance Closure"),
+    NON_MOVEMENT(10, "Non-Movement");
 
     private final int value;
     private final String description;

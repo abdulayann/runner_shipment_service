@@ -5,8 +5,8 @@ import org.springframework.util.StringUtils;
 
 @Generated
 public enum Ownership {
-    Self(1, "Self"),
-    ThirdParty(2, "3rd Party");
+    SELF(1, "Self"),
+    THIRD_PARTY(2, "3rd Party");
 
     private final int value;
     private final String description;

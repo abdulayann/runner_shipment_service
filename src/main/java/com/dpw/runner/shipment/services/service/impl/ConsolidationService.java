@@ -1,8 +1,8 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 
-import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
-import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
+import com.dpw.runner.shipment.services.reportingservice.Models.TenantModel;
+import com.dpw.runner.shipment.services.reportingservice.Reports.IReport;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
@@ -45,7 +45,6 @@ import com.dpw.runner.shipment.services.entity.response.consolidation.IContainer
 import com.dpw.runner.shipment.services.entity.response.consolidation.IShipmentContainerLiteResponse;
 import com.dpw.runner.shipment.services.entity.response.consolidation.IShipmentLiteResponse;
 import com.dpw.runner.shipment.services.entitytransfer.dto.*;
-import com.dpw.runner.shipment.services.entitytransfer.dto.response.SendConsoleValidationResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
@@ -125,7 +124,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.KCRA_EXPIRY;
+import static com.dpw.runner.shipment.services.reportingservice.CommonUtils.ReportConstants.KCRA_EXPIRY;
 import static com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants.*;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.*;
@@ -499,19 +498,19 @@ public class ConsolidationService implements IConsolidationService {
         if (containersList != null && containersList.size() > 0) {
             for (Containers container : containersList) {
                 if(container.getContainerCode() != null) {
-                    if (container.getContainerCode().contains(Constants.Cont20)) {
+                    if (container.getContainerCode().contains(Constants.CONT_20)) {
                         ++container20Count;
-                    } else if (container.getContainerCode().contains(Constants.Cont40)) {
+                    } else if (container.getContainerCode().contains(Constants.CONT_40)) {
                         ++container40Count;
                     }
 
-                    if (container.getContainerCode().equals(Constants.Cont20GP)) {
+                    if (container.getContainerCode().equals(Constants.CONT_20_GP)) {
                         ++container20GPCount;
-                    } else if (container.getContainerCode().equals(Constants.Cont20RE)) {
+                    } else if (container.getContainerCode().equals(Constants.CONT_20_RE)) {
                         ++container20RECount;
-                    } else if (container.getContainerCode().equals(Constants.Cont40GP)) {
+                    } else if (container.getContainerCode().equals(Constants.CONT_40_GP)) {
                         ++container40GPCount;
-                    } else if (container.getContainerCode().equals(Constants.Cont40RE)) {
+                    } else if (container.getContainerCode().equals(Constants.CONT_40_RE)) {
                         ++container40RECount;
                     }
                 }
@@ -558,19 +557,19 @@ public class ConsolidationService implements IConsolidationService {
         if (containersList != null && containersList.size() > 0) {
             for (Containers container : containersList) {
                 if(container.getContainerCode() != null) {
-                    if (container.getContainerCode().contains(Constants.Cont20)) {
+                    if (container.getContainerCode().contains(Constants.CONT_20)) {
                         ++container20Count;
-                    } else if (container.getContainerCode().contains(Constants.Cont40)) {
+                    } else if (container.getContainerCode().contains(Constants.CONT_40)) {
                         ++container40Count;
                     }
 
-                    if (container.getContainerCode().equals(Constants.Cont20GP)) {
+                    if (container.getContainerCode().equals(Constants.CONT_20_GP)) {
                         ++container20GPCount;
-                    } else if (container.getContainerCode().equals(Constants.Cont20RE)) {
+                    } else if (container.getContainerCode().equals(Constants.CONT_20_RE)) {
                         ++container20RECount;
-                    } else if (container.getContainerCode().equals(Constants.Cont40GP)) {
+                    } else if (container.getContainerCode().equals(Constants.CONT_40_GP)) {
                         ++container40GPCount;
-                    } else if (container.getContainerCode().equals(Constants.Cont40RE)) {
+                    } else if (container.getContainerCode().equals(Constants.CONT_40_RE)) {
                         ++container40RECount;
                     }
                 }
@@ -716,7 +715,7 @@ public class ConsolidationService implements IConsolidationService {
 
         if(consolidationDetails.getConsolidationNumber() == null) {
             if(Boolean.TRUE.equals(customisedSequence)) {
-                String consoleNumber = getCustomizedConsolidationProcessNumber(consolidationDetails, ProductProcessTypes.ReferenceNumber);
+                String consoleNumber = getCustomizedConsolidationProcessNumber(consolidationDetails, ProductProcessTypes.REFERENCE_NUMBER);
                 if(consoleNumber != null && !consoleNumber.isEmpty())
                     consolidationDetails.setConsolidationNumber(consoleNumber);
                 if (consolidationDetails.getConsolidationNumber() == null || consolidationDetails.getConsolidationNumber().isEmpty())
@@ -732,7 +731,7 @@ public class ConsolidationService implements IConsolidationService {
         }
 
         if (StringUtility.isEmpty(consolidationDetails.getBol()) && Objects.equals(commonUtils.getShipmentSettingFromContext().getConsolidationLite(), false)) {
-            String bol = getCustomizedConsolidationProcessNumber(consolidationDetails, ProductProcessTypes.BOLNumber);
+            String bol = getCustomizedConsolidationProcessNumber(consolidationDetails, ProductProcessTypes.BOL_NUMBER);
             if (StringUtility.isEmpty(bol)) {
                 bol = generateCustomBolNumber();
             }
@@ -753,9 +752,9 @@ public class ConsolidationService implements IConsolidationService {
 
     private String getCustomizedConsolidationProcessNumber(ConsolidationDetails consolidationDetails, ProductProcessTypes productProcessTypes) throws RunnerException {
         List<TenantProducts> enabledTenantProducts = productEngine.populateEnabledTenantProducts();
-        if (productProcessTypes == ProductProcessTypes.ReferenceNumber) {
+        if (productProcessTypes == ProductProcessTypes.REFERENCE_NUMBER) {
             // to check the commmon sequence
-            var sequenceNumber = productEngine.GetCommonSequenceNumber(consolidationDetails.getTransportMode(), ProductProcessTypes.Consol_Shipment_TI);
+            var sequenceNumber = productEngine.GetCommonSequenceNumber(consolidationDetails.getTransportMode(), ProductProcessTypes.CONSOL_SHIPMENT_TI);
             if (sequenceNumber != null && !sequenceNumber.isEmpty()) {
                 return sequenceNumber;
             }
@@ -3838,10 +3837,10 @@ public class ConsolidationService implements IConsolidationService {
 
         if (consolidationDetails.getIsLocked() != null && consolidationDetails.getIsLocked()) {
             if (lockingUser != null && (Objects.equals(lockingUser, currentUser) ||
-                    (!Objects.isNull(PermissionsContext.getPermissions(PermissionConstants.tenantSuperAdmin)) && !PermissionsContext.getPermissions(PermissionConstants.tenantSuperAdmin).isEmpty()) ))
+                    (!Objects.isNull(PermissionsContext.getPermissions(PermissionConstants.ADMINISTRATION_TENANT_SUPER_ADMIN)) && !PermissionsContext.getPermissions(PermissionConstants.ADMINISTRATION_TENANT_SUPER_ADMIN).isEmpty()) ))
                 consolidationDetails.setIsLocked(false);
             else
-                throw new RunnerException(String.format(ErrorConstants.LOCK_UNLOCK_ERROR, Constants.Consolidation, lockingUser));
+                throw new RunnerException(String.format(ErrorConstants.LOCK_UNLOCK_ERROR, Constants.CONSOLIDATION_CAMEL, lockingUser));
         } else {
             consolidationDetails.setIsLocked(true);
             consolidationDetails.setLockedBy(currentUser);
@@ -5818,7 +5817,7 @@ public class ConsolidationService implements IConsolidationService {
         if(tenantSetting.getBolNumberGeneration() != null) {
             res = tenantSetting.getBolNumberPrefix() != null ? tenantSetting.getBolNumberPrefix() : "";
             switch(tenantSetting.getBolNumberGeneration()) {
-                case Random :
+                case RANDOM:
                     res += StringUtility.getRandomString(10);
                     break;
                 default :

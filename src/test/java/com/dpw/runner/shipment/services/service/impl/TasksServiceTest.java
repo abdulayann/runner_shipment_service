@@ -92,7 +92,7 @@ class TasksServiceTest {
     @Test
     void testRetrieveTask_Console() {
         var mockInput = CommonGetRequest.builder().id(11L).build();
-        TaskResponse taskResponse = TaskResponse.builder().entityType(Constants.Consolidations).taskType("9").build();
+        TaskResponse taskResponse = TaskResponse.builder().entityType(Constants.CONSOLIDATIONS).taskType("9").build();
         when(iv1Service.retrieveTask(any())).thenReturn(V1RetrieveResponse.builder().build());
         when(jsonHelper.convertValue(any(), eq(TaskResponse.class))).thenReturn(taskResponse);
         ResponseEntity<IRunnerResponse> responseEntity = tasksService.retrieveTask(CommonRequestModel.buildRequest(mockInput));
@@ -101,7 +101,7 @@ class TasksServiceTest {
     @Test
     void testRetrieveTask_Shipment() {
         var mockInput = CommonGetRequest.builder().id(11L).build();
-        TaskResponse taskResponse = TaskResponse.builder().entityType(Constants.Shipments).taskType("1").build();
+        TaskResponse taskResponse = TaskResponse.builder().entityType(Constants.SHIPMENTS).taskType("1").build();
         when(iv1Service.retrieveTask(any())).thenReturn(V1RetrieveResponse.builder().build());
         when(jsonHelper.convertValue(any(), eq(TaskResponse.class))).thenReturn(taskResponse);
         ResponseEntity<IRunnerResponse> responseEntity = tasksService.retrieveTask(CommonRequestModel.buildRequest(mockInput));

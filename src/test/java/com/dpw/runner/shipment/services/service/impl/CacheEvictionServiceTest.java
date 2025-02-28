@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import com.dpw.runner.shipment.services.ReportingService.Models.DocumentRequest;
+import com.dpw.runner.shipment.services.reportingservice.Models.DocumentRequest;
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;

@@ -1,8 +1,8 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.CommonMocks;
-import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
-import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.reportingservice.CommonUtils.ReportConstants;
+import com.dpw.runner.shipment.services.reportingservice.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.impl.BridgeServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
@@ -74,7 +74,6 @@ import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.stream.Stream;
 
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -2522,10 +2521,10 @@ class AwbServiceTest extends CommonMocks {
         CommonGetRequest getRequest = CommonGetRequest.builder().id(1L).build();
 
         ChargeTypeIntegrations c1 = new ChargeTypeIntegrations();
-        c1.setIntegrationType(ChargeTypeCode.IATA_Charge_Code);
+        c1.setIntegrationType(ChargeTypeCode.IATA_CHARGE_CODE);
         c1.setIntegrationCode("ER");
         ChargeTypeIntegrations c2 = new ChargeTypeIntegrations();
-        c2.setIntegrationType(ChargeTypeCode.Due_To_Party);
+        c2.setIntegrationType(ChargeTypeCode.DUE_TO_PARTY);
         c2.setChargeDue(2);
 
         // Mocking

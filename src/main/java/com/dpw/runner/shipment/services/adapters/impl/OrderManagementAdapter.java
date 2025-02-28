@@ -257,7 +257,7 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
 
         shipmentDetails.setServiceType(order.getServiceMode());
 
-        shipmentDetails.setStatus(ShipmentStatus.Created.getValue());
+        shipmentDetails.setStatus(ShipmentStatus.CREATED.getValue());
         shipmentDetails.setSource(Constants.SYSTEM);
         shipmentDetails.setCreatedBy(UserContext.getUser().getUsername());
         shipmentDetails.setShipmentCreatedOn(LocalDateTime.now());

@@ -73,7 +73,7 @@ class GetNextNumberHelperTest {
     void generateCustomSequenceRegexGenerationThrowsExceptionOnMisconfiguredRegex() {
         ProductSequenceConfig sequenceSettings = new ProductSequenceConfig();
         sequenceSettings.setSerialCounter(0);
-        sequenceSettings.setGenerationType(GenerationType.Regex);
+        sequenceSettings.setGenerationType(GenerationType.REGEX);
         String regexPattern = "{unspoortedString;seq}{TransportMode;1}{Date;yyMM}{seq;4}";
         int tenantId = 1;
         boolean updateCounter = true;
@@ -89,7 +89,7 @@ class GetNextNumberHelperTest {
     void generateCustomSequenceGenerationTypeRegex() {
         ProductSequenceConfig sequenceSettings = new ProductSequenceConfig();
         sequenceSettings.setSerialCounter(0);
-        sequenceSettings.setGenerationType(GenerationType.Regex);
+        sequenceSettings.setGenerationType(GenerationType.REGEX);
         String regexPattern = "{branch}{cc}{Month;1}{seq;4}";
         int tenantId = 1;
         boolean updateCounter = true;
@@ -115,7 +115,7 @@ class GetNextNumberHelperTest {
     void generateCustomSequenceGenerationTypeRandom() {
         ProductSequenceConfig sequenceSettings = new ProductSequenceConfig();
         sequenceSettings.setSerialCounter(0);
-        sequenceSettings.setGenerationType(GenerationType.Random);
+        sequenceSettings.setGenerationType(GenerationType.RANDOM);
         String regexPattern = "{TransportMode;1}{Date;yyMM}{seq;4}";
         int tenantId = 1;
         boolean updateCounter = true;
@@ -139,7 +139,7 @@ class GetNextNumberHelperTest {
     void generateCustomSequenceGenerationTypeSerial() {
         ProductSequenceConfig sequenceSettings = new ProductSequenceConfig();
         sequenceSettings.setSerialCounter(0);
-        sequenceSettings.setGenerationType(GenerationType.Serial);
+        sequenceSettings.setGenerationType(GenerationType.SERIAL);
         String regexPattern = "{TransportMode;1}{Date;yyMM}{seq;4}";
         int tenantId = 1;
         boolean updateCounter = true;
@@ -163,7 +163,7 @@ class GetNextNumberHelperTest {
     void generateCustomSequenceThrowsExceptionWhenResultExceeds50Length() {
         ProductSequenceConfig sequenceSettings = new ProductSequenceConfig();
         sequenceSettings.setSerialCounter(0);
-        sequenceSettings.setGenerationType(GenerationType.Serial);
+        sequenceSettings.setGenerationType(GenerationType.SERIAL);
         String prefix = StringUtility.getRandomString(50);
         String regexPattern = prefix + "{TransportMode;1}{Date;yyMM}{seq;4}";
         int tenantId = 1;
@@ -180,7 +180,7 @@ class GetNextNumberHelperTest {
     void generateCustomSequenceGenerationTypeSerialShipmentSettingSyncFails() {
         ProductSequenceConfig sequenceSettings = new ProductSequenceConfig();
         sequenceSettings.setSerialCounter(0);
-        sequenceSettings.setGenerationType(GenerationType.Serial);
+        sequenceSettings.setGenerationType(GenerationType.SERIAL);
         String regexPattern = "{TransportMode;1}{Date;yyMM}{seq;4}";
         int tenantId = 1;
         boolean updateCounter = true;
@@ -254,7 +254,7 @@ class GetNextNumberHelperTest {
     @Test
     void getProductSequence(){
         Long productId = 1L;
-        ProductProcessTypes productProcessTypes = ProductProcessTypes.All;
+        ProductProcessTypes productProcessTypes = ProductProcessTypes.ALL;
 
         ProductSequenceConfig config = new ProductSequenceConfig();
         Page<ProductSequenceConfig> responsePage = new PageImpl<>(List.of(config));
@@ -268,7 +268,7 @@ class GetNextNumberHelperTest {
     @Test
     void getProductSequenceReturnsNull(){
         Long productId = 1L;
-        ProductProcessTypes productProcessTypes = ProductProcessTypes.All;
+        ProductProcessTypes productProcessTypes = ProductProcessTypes.ALL;
 
         ProductSequenceConfig config = new ProductSequenceConfig();
         Page<ProductSequenceConfig> responsePage = new PageImpl<>(Collections.emptyList());

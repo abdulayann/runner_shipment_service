@@ -1,35 +1,35 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COMBI_HAWB_COUNT;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CSD_REPORT;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.HAWB_PACKS_MAP;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.RA_CSD;
+import static com.dpw.runner.shipment.services.reportingservice.CommonUtils.ReportConstants.COMBI_HAWB_COUNT;
+import static com.dpw.runner.shipment.services.reportingservice.CommonUtils.ReportConstants.CSD_REPORT;
+import static com.dpw.runner.shipment.services.reportingservice.CommonUtils.ReportConstants.HAWB_PACKS_MAP;
+import static com.dpw.runner.shipment.services.reportingservice.CommonUtils.ReportConstants.RA_CSD;
 
 import com.dpw.runner.shipment.services.DocumentService.DocumentService;
-import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
-import com.dpw.runner.shipment.services.ReportingService.Models.DocPages;
-import com.dpw.runner.shipment.services.ReportingService.Models.DocUploadRequest;
-import com.dpw.runner.shipment.services.ReportingService.Models.DocumentRequest;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
-import com.dpw.runner.shipment.services.ReportingService.Reports.AWBLabelReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.ArrivalNoticeReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.BookingConfirmationReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.CSDReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.CargoManifestAirConsolidationReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.CargoManifestAirShipmentReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.DeliveryOrderReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.FCRDocumentReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.HawbReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.HblReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.MawbReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.PickupOrderReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.PreAlertReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.SeawayBillReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.ShipmentCANReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.ShipmentTagsForExteranlServices;
-import com.dpw.runner.shipment.services.ReportingService.Reports.TransportOrderReport;
-import com.dpw.runner.shipment.services.ReportingService.ReportsFactory;
+import com.dpw.runner.shipment.services.reportingservice.CommonUtils.ReportConstants;
+import com.dpw.runner.shipment.services.reportingservice.Models.DocPages;
+import com.dpw.runner.shipment.services.reportingservice.Models.DocUploadRequest;
+import com.dpw.runner.shipment.services.reportingservice.Models.DocumentRequest;
+import com.dpw.runner.shipment.services.reportingservice.Models.ShipmentModel.ShipmentModel;
+import com.dpw.runner.shipment.services.reportingservice.Reports.AWBLabelReport;
+import com.dpw.runner.shipment.services.reportingservice.Reports.ArrivalNoticeReport;
+import com.dpw.runner.shipment.services.reportingservice.Reports.BookingConfirmationReport;
+import com.dpw.runner.shipment.services.reportingservice.Reports.CSDReport;
+import com.dpw.runner.shipment.services.reportingservice.Reports.CargoManifestAirConsolidationReport;
+import com.dpw.runner.shipment.services.reportingservice.Reports.CargoManifestAirShipmentReport;
+import com.dpw.runner.shipment.services.reportingservice.Reports.DeliveryOrderReport;
+import com.dpw.runner.shipment.services.reportingservice.Reports.FCRDocumentReport;
+import com.dpw.runner.shipment.services.reportingservice.Reports.HawbReport;
+import com.dpw.runner.shipment.services.reportingservice.Reports.HblReport;
+import com.dpw.runner.shipment.services.reportingservice.Reports.IReport;
+import com.dpw.runner.shipment.services.reportingservice.Reports.MawbReport;
+import com.dpw.runner.shipment.services.reportingservice.Reports.PickupOrderReport;
+import com.dpw.runner.shipment.services.reportingservice.Reports.PreAlertReport;
+import com.dpw.runner.shipment.services.reportingservice.Reports.SeawayBillReport;
+import com.dpw.runner.shipment.services.reportingservice.Reports.ShipmentCANReport;
+import com.dpw.runner.shipment.services.reportingservice.Reports.ShipmentTagsForExteranlServices;
+import com.dpw.runner.shipment.services.reportingservice.Reports.TransportOrderReport;
+import com.dpw.runner.shipment.services.reportingservice.ReportsFactory;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -542,7 +542,7 @@ public class ReportService implements IReportService {
                     addWaterMarkForEaw = true;
                 }
             }
-            if(addWaterMarkForEaw && reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.Draft.name())) {
+            if(addWaterMarkForEaw && reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.DRAFT.name())) {
                 pdfByte_Content = CommonUtils.addWatermarkToPdfBytes(pdfByte_Content, BaseFont.createFont(BaseFont.TIMES_BOLD, BaseFont.WINANSI, BaseFont.EMBEDDED), ReportConstants.DRAFT_EAW_WATERMARK);
             }
             else if(reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.DRAFT)){
@@ -613,7 +613,7 @@ public class ReportService implements IReportService {
                 ShipmentStatus status = null;
                 if (ReportConstants.AIR.equalsIgnoreCase(dataRetrived.get(ReportConstants.TRANSPORT_MODE).toString()) && (isOriginalPrint || isNeutralPrint))
                 {
-                    status = ShipmentStatus.GenerateHAWB;
+                    status = ShipmentStatus.GENERATE_HAWB;
                     if (isOriginalPrint || isSurrenderPrint)
                     {
                         issueDate = LocalDate.now().atStartOfDay();
@@ -621,7 +621,7 @@ public class ReportService implements IReportService {
                 }
                 else if (ReportConstants.SEA.equalsIgnoreCase(dataRetrived.get(ReportConstants.TRANSPORT_MODE).toString()) && (isOriginalPrint || isSurrenderPrint))
                 {
-                    status = ShipmentStatus.GenerateHBL;
+                    status = ShipmentStatus.GENERATE_HBL;
 
                 }
                 shipmentService.updateDateAndStatus(Long.parseLong(reportRequest.getReportId()), issueDate, status.getValue());
@@ -677,10 +677,10 @@ public class ReportService implements IReportService {
                     addWaterMarkForEaw = true;
                 }
             }
-            if(addWaterMarkForEaw && reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.Draft.name())) {
+            if(addWaterMarkForEaw && reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.DRAFT.name())) {
                 pdfByte_Content = CommonUtils.addWatermarkToPdfBytes(pdfByte_Content, BaseFont.createFont(BaseFont.TIMES_BOLD, BaseFont.WINANSI, BaseFont.EMBEDDED), ReportConstants.DRAFT_EAW_WATERMARK);
             }
-            else if (reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.Draft.name()))
+            else if (reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.DRAFT.name()))
             {
                 pdfByte_Content = CommonUtils.addWatermarkToPdfBytes(pdfByte_Content, BaseFont.createFont(BaseFont.TIMES_BOLD, BaseFont.WINANSI, BaseFont.EMBEDDED), ReportConstants.DRAFT_WATERMARK);
             } else if(addWaterMarkForEaw && Boolean.TRUE.equals(isOriginalPrint)) {
@@ -809,7 +809,7 @@ public class ReportService implements IReportService {
                 }
                 shipmentDetails.getAdditionalDetails().setDraftPrinted(true);
             }
-            if (reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.eHBL.name()))
+            if (reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.E_HBL.name()))
             {
                 if (waterMarkRequired)
                 {
@@ -817,7 +817,7 @@ public class ReportService implements IReportService {
                 }
                 shipmentDetails.getAdditionalDetails().setWBLPrinted(true);
             }
-            if (reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.Surrender.name()))
+            if (reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.SURRENDER.name()))
             {
                 if (waterMarkRequired)
                 {
@@ -825,7 +825,7 @@ public class ReportService implements IReportService {
                 }
                 shipmentDetails.getAdditionalDetails().setSurrenderPrinted(true);
             }
-            if (reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.Original.name()))
+            if (reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.ORIGINAL.name()))
             {
                 shipmentDetails.getAdditionalDetails().setPrintedOriginal(true);
             }
@@ -844,9 +844,9 @@ public class ReportService implements IReportService {
                     shipmentDetails.getAdditionalDetails().setPrintedOriginal(true);
                 }
                 if(ReportConstants.AIR.equalsIgnoreCase(dataRetrived.get(ReportConstants.TRANSPORT_MODE).toString()) && (isOriginalPrint || isNeutralPrint)){
-                    shipmentDetails.setStatus(ShipmentStatus.GenerateHAWB.getValue());
+                    shipmentDetails.setStatus(ShipmentStatus.GENERATE_HAWB.getValue());
                 }else if(ReportConstants.SEA.equalsIgnoreCase(dataRetrived.get(ReportConstants.TRANSPORT_MODE).toString()) && (isOriginalPrint || isSurrenderPrint)){
-                    shipmentDetails.setStatus(ShipmentStatus.GenerateHBL.getValue());
+                    shipmentDetails.setStatus(ShipmentStatus.GENERATE_HBL.getValue());
                 }
             }
 
@@ -873,7 +873,7 @@ public class ReportService implements IReportService {
                     documentType = ReportConstants.DRAFT_HOUSE_BILL;
                 }
                 DocUploadRequest docUploadRequest = new DocUploadRequest();
-                docUploadRequest.setEntityType(Constants.Shipments);
+                docUploadRequest.setEntityType(Constants.SHIPMENTS);
                 docUploadRequest.setId(Long.parseLong(reportRequest.getReportId()));
                 docUploadRequest.setType(documentType);
                 docUploadRequest.setReportId(reportRequest.getReportId());
@@ -886,7 +886,7 @@ public class ReportService implements IReportService {
                 }
             }
 
-            if(reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.Original.name()) || reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.Surrender.name())){
+            if(reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.ORIGINAL.name()) || reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.SURRENDER.name())){
                 try
                 {
                     //TODO - CMS Booking
@@ -908,12 +908,12 @@ public class ReportService implements IReportService {
             if(shipmentsRow.isPresent())
                 shipmentDetails = shipmentsRow.get();
             DocUploadRequest docUploadRequest = new DocUploadRequest();
-            docUploadRequest.setEntityType(Constants.Shipments);
+            docUploadRequest.setEntityType(Constants.SHIPMENTS);
             docUploadRequest.setId(Long.parseLong(reportRequest.getReportId()));
             docUploadRequest.setType(ReportConstants.SEAWAY_BILL);
             docUploadRequest.setReportId(reportRequest.getReportId());
             try {
-                AddHouseBillToRepo(docUploadRequest, TypeOfHblPrint.Draft.name().toUpperCase(), pdfByteContent, tenantSettingsRow, null, StringUtility.convertToString(shipmentDetails.getGuid()));
+                AddHouseBillToRepo(docUploadRequest, TypeOfHblPrint.DRAFT.name().toUpperCase(), pdfByteContent, tenantSettingsRow, null, StringUtility.convertToString(shipmentDetails.getGuid()));
             } catch (Exception e) {
                 log.error(e.getMessage());
                 // TODO Abhimanyu doc upload failing
@@ -1139,7 +1139,7 @@ public class ReportService implements IReportService {
             case ReportConstants.SHIP_TRUCKWAY_BILL:
                 return setDocPages(null,
                         row.getShipTruckWayBillMainPage() == null ? adminRow.getShipTruckWayBillMainPage() : row.getShipTruckWayBillMainPage(), null, row.getShipTruckWayBillMainPage() != null, null, null, null);
-            case ReportConstants.CONS_TRUCKWAY_BIll:
+            case ReportConstants.CONS_TRUCKWAY_BILL:
                 return setDocPages(null,
                         row.getConsTruckWayBillMainPage() == null ? adminRow.getConsTruckWayBillMainPage() : row.getConsTruckWayBillMainPage(), null, row.getConsTruckWayBillMainPage() != null, null, null, null);
             case ReportConstants.SHIP_TRUCK_DRIVER_PROOF:
@@ -1731,7 +1731,7 @@ public class ReportService implements IReportService {
             return;
         Hbl blObject = blObjectList.get(0);
         String fileVersion = null;
-        if (printType.equalsIgnoreCase(TypeOfHblPrint.Original.name()) && blObject != null && blObject.getHblData() != null) {
+        if (printType.equalsIgnoreCase(TypeOfHblPrint.ORIGINAL.name()) && blObject != null && blObject.getHblData() != null) {
             fileVersion = blObject.getHblData().getOriginalSeq() != null ? StringUtility.convertToString(blObject.getHblData().getOriginalSeq()) : null;
             blObject.getHblData().setOriginalSeq(blObject.getHblData().getOriginalSeq() != null ? blObject.getHblData().getOriginalSeq() + 1 : 1);
             updateInReleaseMappingTable(blObject, releaseType, shipmentSettingsDetails);
@@ -1798,7 +1798,7 @@ public class ReportService implements IReportService {
             String documentType = documentTypeFinder(reportRequest);
 
             DocUploadRequest docUploadRequest = new DocUploadRequest();
-            docUploadRequest.setEntityType(isShipment ? Constants.Shipments : Constants.Consolidations);
+            docUploadRequest.setEntityType(isShipment ? Constants.SHIPMENTS : Constants.CONSOLIDATIONS);
             docUploadRequest.setId(Long.parseLong(reportRequest.getReportId()));
             docUploadRequest.setType(documentType);
             docUploadRequest.setReportId(reportRequest.getReportId());
@@ -1824,7 +1824,7 @@ public class ReportService implements IReportService {
         ReportRequest reportRequest = new ReportRequest();
         reportRequest.setReportId(reportId);
         reportRequest.setReportInfo(CSD_REPORT);
-        if(Constants.Consolidations.equalsIgnoreCase(docUploadRequest.getEntityType())){
+        if(Constants.CONSOLIDATIONS.equalsIgnoreCase(docUploadRequest.getEntityType())){
             reportRequest.setFromConsolidation(true);
         }
         try{

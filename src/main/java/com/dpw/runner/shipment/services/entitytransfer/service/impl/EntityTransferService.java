@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.entitytransfer.service.impl;
 
-import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.reportingservice.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -233,7 +233,7 @@ public class EntityTransferService implements IEntityTransferService {
                 List<Notification> notificationList = notificationDao.findNotificationForEntityTransfer(shipId, SHIPMENT, tenant, List.of(NotificationRequestType.REQUEST_TRANSFER.name(), NotificationRequestType.REASSIGN.name()));
                 notificationDao.deleteAll(notificationList);
             } else {
-                createTask(taskPayload, shipment.getId(), Constants.Shipments, tenant);
+                createTask(taskPayload, shipment.getId(), Constants.SHIPMENTS, tenant);
             }
             successTenantIds.add(tenant);
         }
@@ -376,7 +376,7 @@ public class EntityTransferService implements IEntityTransferService {
                 List<Notification> notificationList = notificationDao.findNotificationForEntityTransfer(consolId, CONSOLIDATION, tenant, List.of(NotificationRequestType.REQUEST_TRANSFER.name(), NotificationRequestType.REASSIGN.name()));
                 notificationDao.deleteAll(notificationList);
             }else{
-                createTask(consolidationPayload, consol.getId(), Constants.Consolidations, tenant);
+                createTask(consolidationPayload, consol.getId(), Constants.CONSOLIDATIONS, tenant);
             }
 
             successTenantIds.add(tenant);
@@ -745,7 +745,8 @@ public class EntityTransferService implements IEntityTransferService {
             this.createImportEvent(entityTransferConsolidationDetails.getSourceBranchTenantName(), consolidationDetailsResponse.getId(), EventConstants.TCOA, CONSOLIDATION);
 
             // Prepare copy docs request for doc service
-            this.prepareCopyDocumentRequest(copyDocumentsRequest, consolidationDetailsResponse.getGuid().toString(), Consolidations, entityTransferConsolidationDetails.getSendToBranch(), entityTransferConsolidationDetails.getAdditionalDocs());
+            this.prepareCopyDocumentRequest(copyDocumentsRequest, consolidationDetailsResponse.getGuid().toString(),
+                CONSOLIDATIONS, entityTransferConsolidationDetails.getSendToBranch(), entityTransferConsolidationDetails.getAdditionalDocs());
 
             // Call document service api for copy docs
             String authToken = RequestAuthContext.getAuthToken();
@@ -920,7 +921,8 @@ public class EntityTransferService implements IEntityTransferService {
         this.createImportEvent(entityTransferShipmentDetails.getSourceBranchTenantName(), shipmentDetailsResponse.getId(), EventConstants.TSHA, Constants.SHIPMENT);
 
         // Prepare copy docs request for doc service
-        this.prepareCopyDocumentRequest(copyDocumentsRequest, shipmentDetailsResponse.getGuid().toString(), Shipments, shipmentDetailsResponse.getTenantId(), entityTransferShipmentDetails.getAdditionalDocs());
+        this.prepareCopyDocumentRequest(copyDocumentsRequest, shipmentDetailsResponse.getGuid().toString(),
+            SHIPMENTS, shipmentDetailsResponse.getTenantId(), entityTransferShipmentDetails.getAdditionalDocs());
 
         // Clean Inter Branch TenantId from TenantContext for this shipment
         TenantContext.setCurrentTenant(UserContext.getUser().getTenantId());
@@ -2117,8 +2119,8 @@ public class EntityTransferService implements IEntityTransferService {
             }
             boolean isPresent = false;
             switch (request.getEntityType()) {
-                case Constants.Shipment -> isPresent = !shipmentDao.findBySourceGuid(UUID.fromString(request.getEntityId())).isEmpty();
-                case Constants.Consolidation -> isPresent = !consolidationDetailsDao.findBySourceGuid(UUID.fromString(request.getEntityId())).isEmpty();
+                case Constants.SHIPMENT_CAMEL -> isPresent = !shipmentDao.findBySourceGuid(UUID.fromString(request.getEntityId())).isEmpty();
+                case Constants.CONSOLIDATION_CAMEL -> isPresent = !consolidationDetailsDao.findBySourceGuid(UUID.fromString(request.getEntityId())).isEmpty();
                 default -> {}
             }
 
@@ -2242,7 +2244,7 @@ public class EntityTransferService implements IEntityTransferService {
         taskCreateRequest.setTenantId(StringUtility.convertToString(tenantId));
         taskCreateRequest.setUserId(UserContext.getUser().getUserId());
         // can be moved as background task
-        if(Constants.Consolidations.equalsIgnoreCase(entityType))
+        if(Constants.CONSOLIDATIONS.equalsIgnoreCase(entityType))
             taskCreateRequest.setTaskType(TaskType.CONSOLIDATION_IMPORTER.getDescription());
         else
             taskCreateRequest.setTaskType(TaskType.SHIPMENT_IMPORTER.getDescription());

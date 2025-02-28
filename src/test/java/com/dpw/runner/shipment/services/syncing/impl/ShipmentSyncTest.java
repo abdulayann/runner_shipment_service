@@ -75,14 +75,14 @@ class ShipmentSyncTest {
         ShipmentDetails inputShipment = new ShipmentDetails();
 
         AdditionalDetails inputAdditionalDetails = new AdditionalDetails();
-        inputAdditionalDetails.setAndesStatus(AndesStatus.SendToAndes);
-        inputAdditionalDetails.setOwnership(Ownership.Self);
-        inputAdditionalDetails.setPassedBy(Ownership.Self);
+        inputAdditionalDetails.setAndesStatus(AndesStatus.SEND_TO_ANDES);
+        inputAdditionalDetails.setOwnership(Ownership.SELF);
+        inputAdditionalDetails.setPassedBy(Ownership.SELF);
         inputAdditionalDetails.setBOEDate(LocalDateTime.now());
         inputAdditionalDetails.setIGMFileNo(StringUtility.getRandomString(10));
 
         TruckDriverDetails inputTruckDriverDetails1 = new TruckDriverDetails();
-        inputTruckDriverDetails1.setTransporterType(Ownership.Self);
+        inputTruckDriverDetails1.setTransporterType(Ownership.SELF);
 
         Containers inputContainer1 = new Containers();
         inputContainer1.setId(22L);
@@ -134,13 +134,13 @@ class ShipmentSyncTest {
         ShipmentDetails inputShipment = new ShipmentDetails();
 
         AdditionalDetails inputAdditionalDetails = new AdditionalDetails();
-        inputAdditionalDetails.setAndesStatus(AndesStatus.SendToAndes);
-        inputAdditionalDetails.setOwnership(Ownership.ThirdParty);
+        inputAdditionalDetails.setAndesStatus(AndesStatus.SEND_TO_ANDES);
+        inputAdditionalDetails.setOwnership(Ownership.THIRD_PARTY);
         inputAdditionalDetails.setBOEDate(LocalDateTime.now());
         inputAdditionalDetails.setIGMFileNo(StringUtility.getRandomString(10));
 
         TruckDriverDetails inputTruckDriverDetails1 = new TruckDriverDetails();
-        inputTruckDriverDetails1.setTransporterType(Ownership.Self);
+        inputTruckDriverDetails1.setTransporterType(Ownership.SELF);
 
 
         Containers inputContainer1 = new Containers();
@@ -191,7 +191,7 @@ class ShipmentSyncTest {
         inputAdditionalDetails.setIGMFileNo(StringUtility.getRandomString(10));
 
         TruckDriverDetails inputTruckDriverDetails1 = new TruckDriverDetails();
-        inputTruckDriverDetails1.setTransporterType(Ownership.Self);
+        inputTruckDriverDetails1.setTransporterType(Ownership.SELF);
 
 
         inputShipment.setId(1L);
@@ -247,7 +247,7 @@ class ShipmentSyncTest {
         inputAdditionalDetails.setIGMFileNo(StringUtility.getRandomString(10));
 
         TruckDriverDetails inputTruckDriverDetails1 = new TruckDriverDetails();
-        inputTruckDriverDetails1.setTransporterType(Ownership.Self);
+        inputTruckDriverDetails1.setTransporterType(Ownership.SELF);
 
 
         inputShipment.setId(1L);

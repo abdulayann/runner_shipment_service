@@ -186,7 +186,8 @@ class UnitConversionUtilityTest {
         assertEquals(MetricPrefix.KILO(Units.GRAM).multiply(0.3732417), UnitConversionUtility.getWeightUnitForSymbol(WEIGHT_UNIT_LT));
         assertEquals(MetricPrefix.KILO(Units.GRAM).multiply(0.02834952), UnitConversionUtility.getWeightUnitForSymbol(WEIGHT_UNIT_OZ));
         assertEquals(MetricPrefix.KILO(Units.GRAM).multiply(0.03110348), UnitConversionUtility.getWeightUnitForSymbol(WEIGHT_UNIT_OT));
-        assertEquals(MetricPrefix.KILO(Units.GRAM).multiply(14.5939), UnitConversionUtility.getWeightUnitForSymbol(WEIGHT_UNIT_Slug));
+        assertEquals(MetricPrefix.KILO(Units.GRAM).multiply(14.5939), UnitConversionUtility.getWeightUnitForSymbol(
+            WEIGHT_UNIT_SLUG));
         assertEquals(MetricPrefix.KILO(Units.GRAM).multiply(0.02916667), UnitConversionUtility.getWeightUnitForSymbol(WEIGHT_UNIT_TA));
         assertEquals(MetricPrefix.KILO(Units.GRAM).multiply(1016.047), UnitConversionUtility.getWeightUnitForSymbol(WEIGHT_UNIT_TL));
         assertEquals(MetricPrefix.KILO(Units.GRAM).multiply(907.1847), UnitConversionUtility.getWeightUnitForSymbol(WEIGHT_UNIT_TN));
@@ -200,37 +201,55 @@ class UnitConversionUtilityTest {
     @Test
     void testGetVolumeUnitForSymbol() {
         assertEquals(Units.CUBIC_METRE, UnitConversionUtility.getVolumeUnitForSymbol(VOLUME_UNIT_M3));
-        assertEquals(Units.CUBIC_METRE, UnitConversionUtility.getVolumeUnitForSymbol(VOLUME_UNIT_Stere));
+        assertEquals(Units.CUBIC_METRE, UnitConversionUtility.getVolumeUnitForSymbol(
+            VOLUME_UNIT_STERE));
         assertEquals(Units.CUBIC_METRE, UnitConversionUtility.getVolumeUnitForSymbol(VOLUME_UNIT_CBM));
         assertEquals(Units.LITRE, UnitConversionUtility.getVolumeUnitForSymbol(VOLUME_UNIT_LITRE));
         assertEquals(Units.CUBIC_METRE.multiply(0.000001), UnitConversionUtility.getVolumeUnitForSymbol(VOLUME_UNIT_CC));
         assertEquals(Units.CUBIC_METRE.multiply(0.000000001), UnitConversionUtility.getVolumeUnitForSymbol(VOLUME_UNIT_CM));
         assertEquals(Units.CUBIC_METRE.multiply(1233.482), UnitConversionUtility.getVolumeUnitForSymbol(VOLUME_UNIT_AF));
-        assertEquals(Units.CUBIC_METRE.multiply(0.1589873), UnitConversionUtility.getVolumeUnitForSymbol(VOLUME_UNIT_Barrel_OIL));
-        assertEquals(Units.CUBIC_METRE.multiply(0.002359737), UnitConversionUtility.getVolumeUnitForSymbol(VOLUME_UNIT_Board_foot));
-        assertEquals(Units.CUBIC_METRE.multiply(0.03523907), UnitConversionUtility.getVolumeUnitForSymbol(VOLUME_UNIT_Bushel_US));
-        assertEquals(Units.CUBIC_METRE.multiply(0.0002365882), UnitConversionUtility.getVolumeUnitForSymbol(VOLUME_UNIT_Cup));
-        assertEquals(Units.CUBIC_METRE.multiply(0.00002957353), UnitConversionUtility.getVolumeUnitForSymbol(VOLUME_UNIT_Fluid_OUNCE_US));
+        assertEquals(Units.CUBIC_METRE.multiply(0.1589873), UnitConversionUtility.getVolumeUnitForSymbol(
+            VOLUME_UNIT_BARREL_OIL));
+        assertEquals(Units.CUBIC_METRE.multiply(0.002359737), UnitConversionUtility.getVolumeUnitForSymbol(
+            VOLUME_UNIT_BOARD_FOOT));
+        assertEquals(Units.CUBIC_METRE.multiply(0.03523907), UnitConversionUtility.getVolumeUnitForSymbol(
+            VOLUME_UNIT_BUSHEL_US));
+        assertEquals(Units.CUBIC_METRE.multiply(0.0002365882), UnitConversionUtility.getVolumeUnitForSymbol(
+            VOLUME_UNIT_CUP));
+        assertEquals(Units.CUBIC_METRE.multiply(0.00002957353), UnitConversionUtility.getVolumeUnitForSymbol(
+            VOLUME_UNIT_FLUID_OUNCE_US));
         assertEquals(Units.CUBIC_METRE.multiply(0.02831685), UnitConversionUtility.getVolumeUnitForSymbol(VOLUME_UNIT_CF));
         assertEquals(Units.CUBIC_METRE.multiply(0.004546087), UnitConversionUtility.getVolumeUnitForSymbol(VOLUME_UNIT_GI));
         assertEquals(Units.CUBIC_METRE.multiply(0.004404884), UnitConversionUtility.getVolumeUnitForSymbol(VOLUME_UNIT_GA));
-        assertEquals(Units.CUBIC_METRE.multiply(.003785412), UnitConversionUtility.getVolumeUnitForSymbol(VOLUME_UNIT_Gallon_US_LIQ));
-        assertEquals(Units.CUBIC_METRE.multiply(0.0001420652), UnitConversionUtility.getVolumeUnitForSymbol(VOLUME_UNIT_Gill_UK));
-        assertEquals(Units.CUBIC_METRE.multiply(0.0001182941), UnitConversionUtility.getVolumeUnitForSymbol(VOLUME_UNIT_Gill_US));
+        assertEquals(Units.CUBIC_METRE.multiply(.003785412), UnitConversionUtility.getVolumeUnitForSymbol(
+            VOLUME_UNIT_GALLON_US_LIQ));
+        assertEquals(Units.CUBIC_METRE.multiply(0.0001420652), UnitConversionUtility.getVolumeUnitForSymbol(
+            VOLUME_UNIT_GILL_UK));
+        assertEquals(Units.CUBIC_METRE.multiply(0.0001182941), UnitConversionUtility.getVolumeUnitForSymbol(
+            VOLUME_UNIT_GILL_US));
         assertEquals(Units.CUBIC_METRE.multiply(0.00001638706), UnitConversionUtility.getVolumeUnitForSymbol(VOLUME_UNIT_CI));
     }
 
     @Test
     void testGetVolumeUnitForSymbol2() {
-        assertEquals(Units.CUBIC_METRE.multiply(0.001000028), UnitConversionUtility.getVolumeUnitForSymbol(VOLUME_UNIT_Liter_OLD));
-        assertEquals(Units.CUBIC_METRE.multiply(0.00002841305), UnitConversionUtility.getVolumeUnitForSymbol(VOLUME_UNIT_Ounce_UK_FLD));
-        assertEquals(Units.CUBIC_METRE.multiply(8.8097680E-03), UnitConversionUtility.getVolumeUnitForSymbol(VOLUME_UNIT_Peck_US));
-        assertEquals(Units.CUBIC_METRE.multiply(0.0005506105), UnitConversionUtility.getVolumeUnitForSymbol(VOLUME_UNIT_Pint_US_DRY));
-        assertEquals(Units.CUBIC_METRE.multiply(4.7317650E-04), UnitConversionUtility.getVolumeUnitForSymbol(VOLUME_UNIT_Pint_US_LIQ));
-        assertEquals(Units.CUBIC_METRE.multiply(0.001101221), UnitConversionUtility.getVolumeUnitForSymbol(VOLUME_UNIT_Quart_US_DRY));
-        assertEquals(Units.CUBIC_METRE.multiply(9.46353E-04), UnitConversionUtility.getVolumeUnitForSymbol(VOLUME_UNIT_Quart_US_LIQ));
-        assertEquals(Units.CUBIC_METRE.multiply(0.00001478676), UnitConversionUtility.getVolumeUnitForSymbol(VOLUME_UNIT_Tablespoon));
-        assertEquals(Units.CUBIC_METRE.multiply(0.000004928922), UnitConversionUtility.getVolumeUnitForSymbol(VOLUME_UNIT_Teaspoon));
+        assertEquals(Units.CUBIC_METRE.multiply(0.001000028), UnitConversionUtility.getVolumeUnitForSymbol(
+            VOLUME_UNIT_LITER_OLD));
+        assertEquals(Units.CUBIC_METRE.multiply(0.00002841305), UnitConversionUtility.getVolumeUnitForSymbol(
+            VOLUME_UNIT_OUNCE_UK_FLD));
+        assertEquals(Units.CUBIC_METRE.multiply(8.8097680E-03), UnitConversionUtility.getVolumeUnitForSymbol(
+            VOLUME_UNIT_PECK_US));
+        assertEquals(Units.CUBIC_METRE.multiply(0.0005506105), UnitConversionUtility.getVolumeUnitForSymbol(
+            VOLUME_UNIT_PINT_US_DRY));
+        assertEquals(Units.CUBIC_METRE.multiply(4.7317650E-04), UnitConversionUtility.getVolumeUnitForSymbol(
+            VOLUME_UNIT_PINT_US_LIQ));
+        assertEquals(Units.CUBIC_METRE.multiply(0.001101221), UnitConversionUtility.getVolumeUnitForSymbol(
+            VOLUME_UNIT_QUART_US_DRY));
+        assertEquals(Units.CUBIC_METRE.multiply(9.46353E-04), UnitConversionUtility.getVolumeUnitForSymbol(
+            VOLUME_UNIT_QUART_US_LIQ));
+        assertEquals(Units.CUBIC_METRE.multiply(0.00001478676), UnitConversionUtility.getVolumeUnitForSymbol(
+            VOLUME_UNIT_TABLESPOON));
+        assertEquals(Units.CUBIC_METRE.multiply(0.000004928922), UnitConversionUtility.getVolumeUnitForSymbol(
+            VOLUME_UNIT_TEASPOON));
         assertEquals(Units.CUBIC_METRE.multiply(2.831685), UnitConversionUtility.getVolumeUnitForSymbol(VOLUME_UNIT_TON_REGISTER));
         assertEquals(Units.CUBIC_METRE.multiply(0.7645549), UnitConversionUtility.getVolumeUnitForSymbol(VOLUME_UNIT_CY));
         assertEquals(Units.CUBIC_METRE.multiply(1000), UnitConversionUtility.getVolumeUnitForSymbol(VOLUME_UNIT_ML));

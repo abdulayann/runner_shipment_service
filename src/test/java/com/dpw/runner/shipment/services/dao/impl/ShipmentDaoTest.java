@@ -203,7 +203,7 @@ class ShipmentDaoTest extends CommonMocks {
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
         shipmentDetails.setCarrierDetails(CarrierDetails.builder().origin("origin").destination("destination").originPort("originPort").destinationPort("destinationPort").build());
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
-        shipmentDetails.setStatus(ShipmentStatus.GenerateHAWB.getValue());
+        shipmentDetails.setStatus(ShipmentStatus.GENERATE_HAWB.getValue());
         shipmentDetails.setId(1L);
         when(shipmentRepository.findById(any())).thenReturn(Optional.of(new ShipmentDetails()));
         when(shipmentRepository.save(any(ShipmentDetails.class))).thenReturn(shipmentDetails);
@@ -329,7 +329,7 @@ class ShipmentDaoTest extends CommonMocks {
 
         UsersDto usersDto = new UsersDto();
         Map<String, Boolean> permissions = new HashMap<>();
-        permissions.put(PermissionConstants.airDG, true);
+        permissions.put(PermissionConstants.AIR_DG, true);
         usersDto.setPermissions(permissions);
         UserContext.setUser(usersDto);
         mockShipmentSettings();
@@ -375,7 +375,7 @@ class ShipmentDaoTest extends CommonMocks {
 
         UsersDto usersDto = new UsersDto();
         Map<String, Boolean> permissions = new HashMap<>();
-        permissions.put(PermissionConstants.airDG, true);
+        permissions.put(PermissionConstants.AIR_DG, true);
         usersDto.setPermissions(permissions);
         UserContext.setUser(usersDto);
         mockShipmentSettings();
@@ -1456,7 +1456,7 @@ class ShipmentDaoTest extends CommonMocks {
         shipmentDetails.setCarrierDetails(CarrierDetails.builder().origin("origin").destination("destination").originPort("originPort").destinationPort("destinationPort").build());
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
         shipmentDetails.setId(1L);
-        shipmentDetails.setStatus(ShipmentStatus.Cancelled.getValue());
+        shipmentDetails.setStatus(ShipmentStatus.CANCELLED.getValue());
 //        when(commonUtils.getCurrentTenantSettings()).thenReturn(V1TenantSettingsResponse.builder().IsMAWBColoadingEnabled(true).build());
         when(shipmentRepository.findById(any())).thenReturn(Optional.of(ShipmentDetails.builder().build()));
         when(shipmentRepository.save(any(ShipmentDetails.class))).thenReturn(shipmentDetails);
@@ -1557,7 +1557,7 @@ class ShipmentDaoTest extends CommonMocks {
 
         UsersDto usersDto = new UsersDto();
         Map<String, Boolean> permissions = new HashMap<>();
-        permissions.put(PermissionConstants.airDG, true);
+        permissions.put(PermissionConstants.AIR_DG, true);
         usersDto.setPermissions(permissions);
         UserContext.setUser(usersDto);
         mockShipmentSettings();
@@ -1605,7 +1605,7 @@ class ShipmentDaoTest extends CommonMocks {
 
         UsersDto usersDto = new UsersDto();
         Map<String, Boolean> permissions = new HashMap<>();
-        permissions.put(PermissionConstants.airDG, true);
+        permissions.put(PermissionConstants.AIR_DG, true);
         usersDto.setPermissions(permissions);
         UserContext.setUser(usersDto);
         mockShipmentSettings();
@@ -1653,7 +1653,7 @@ class ShipmentDaoTest extends CommonMocks {
 
         UsersDto usersDto = new UsersDto();
         Map<String, Boolean> permissions = new HashMap<>();
-        permissions.put(PermissionConstants.airDG, true);
+        permissions.put(PermissionConstants.AIR_DG, true);
         usersDto.setPermissions(permissions);
         UserContext.setUser(usersDto);
         mockShipmentSettings();
@@ -1701,7 +1701,7 @@ class ShipmentDaoTest extends CommonMocks {
 
         UsersDto usersDto = new UsersDto();
         Map<String, Boolean> permissions = new HashMap<>();
-        permissions.put(PermissionConstants.airDG, true);
+        permissions.put(PermissionConstants.AIR_DG, true);
         usersDto.setPermissions(permissions);
         UserContext.setUser(usersDto);
         mockShipmentSettings();

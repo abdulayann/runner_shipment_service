@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.reportingservice.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.impl.BridgeServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
@@ -78,7 +78,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.stringValueOf;
@@ -875,7 +874,7 @@ public class AwbService implements IAwbService {
         }catch (ValidationException ex){
             throw new RunnerException(ex.getMessage());
         }catch (Exception e) {
-            throw new RunnerException(String.format(RA_KC_VALIDATION_MESSAGE, Constants.Consolidation));
+            throw new RunnerException(String.format(RA_KC_VALIDATION_MESSAGE, Constants.CONSOLIDATION_CAMEL));
         }
         V1RetrieveResponse tenantResponse = v1Service.retrieveTenant();
         TenantModel tenantModel = jsonHelper.convertValue(tenantResponse.getEntity(), TenantModel.class);
@@ -3393,10 +3392,10 @@ public class AwbService implements IAwbService {
         var chargeType = jsonHelper.convertValue(v1DataResponse.getEntity(), EntityTransferChargeType.class);
         var res = new AwbChargeTypeMasterDataResponse();
         for(var i : chargeType.getChargeTypeIntegrations()) {
-            if(i.getIntegrationType().equals(ChargeTypeCode.IATA_Charge_Code)) {
+            if(i.getIntegrationType().equals(ChargeTypeCode.IATA_CHARGE_CODE)) {
                 res.setIataDescription(i.getIntegrationCode());
             }
-            if(i.getIntegrationType().equals(ChargeTypeCode.Due_To_Party)) {
+            if(i.getIntegrationType().equals(ChargeTypeCode.DUE_TO_PARTY)) {
                 res.setChargeDue(i.getChargeDue());
             }
         }

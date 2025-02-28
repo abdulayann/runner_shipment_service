@@ -15,8 +15,8 @@ public class UserContext {
     }
 
     public static boolean isAirDgUser() {
-        return getUser().getPermissions().containsKey(airDG)
-                && getUser().getPermissions().get(airDG);
+        return getUser().getPermissions().containsKey(AIR_DG)
+                && getUser().getPermissions().get(AIR_DG);
     }
 
     public static boolean isOceanDgUser() {

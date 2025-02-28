@@ -361,7 +361,7 @@ class NetworkTransferServiceTest extends CommonMocks{
         shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
         shipmentDetails.setId(1L);
         assertDoesNotThrow(() -> networkTransferService.processNetworkTransferEntity(null, 132L,
-                Constants.Shipment, shipmentDetails, null, Constants.DIRECTION_EXP, null, false));
+                Constants.SHIPMENT_CAMEL, shipmentDetails, null, Constants.DIRECTION_EXP, null, false));
     }
 
     @Test
