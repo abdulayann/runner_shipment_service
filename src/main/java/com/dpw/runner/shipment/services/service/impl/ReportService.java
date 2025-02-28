@@ -317,9 +317,6 @@ public class ReportService implements IReportService {
             }
         }
 
-        // Awb print status set for Hawb and Mawb
-        this.setPrintTypeForAwb(reportRequest, isOriginalPrint);
-
         if(Boolean.TRUE.equals(reportRequest.getPushAwbEvent()) && reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB) && Boolean.TRUE.equals(isOriginalPrint)) {
             awbDao.airMessagingIntegration(Long.parseLong(reportRequest.getReportId()), reportRequest.getReportInfo(), reportRequest.isFromShipment(), reportRequest.isIncludeCsdInfo());
         } else if((reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB) || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.HAWB)) && Boolean.TRUE.equals(isOriginalPrint)) {
@@ -328,6 +325,9 @@ public class ReportService implements IReportService {
             else
                 awbDao.updateAirMessageStatusFromShipmentId(Long.parseLong(reportRequest.getReportId()), AwbStatus.AWB_ORIGINAL_PRINTED.name());
         }
+
+        // Awb print status set for Hawb and Mawb
+        this.setPrintTypeForAwb(reportRequest, isOriginalPrint);
 
         boolean reportingNewFlow = false;
         Map<String, Object> dataRetrived = new HashMap<>();
