@@ -1332,6 +1332,7 @@ ShipmentServiceTest extends CommonMocks {
 
         ShipmentDetailsResponse mockShipResponse = objectMapper.convertValue(mockShip, ShipmentDetailsResponse.class);
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(mockShipResponse);
+        mockShipmentSettings();
 
         //Test
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.cloneShipment(commonRequestModel);
@@ -1345,6 +1346,8 @@ ShipmentServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(commonGetRequest);
 
         // Mock
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        shipmentDetails.setDirection(DIRECTION_EXP);
         when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
         shipmentDetails.setPackingList(null);
         when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(
@@ -1366,6 +1369,10 @@ ShipmentServiceTest extends CommonMocks {
 
         ShipmentDetailsResponse mockShipResponse = objectMapper.convertValue(mockShip, ShipmentDetailsResponse.class);
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(mockShipResponse);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setCountryAirCargoSecurity(true);
+        UserContext.getUser().setPermissions(new HashMap<>());
+        UserContext.getUser().getPermissions().put(PermissionConstants.AIR_SECURITY_PERMISSION, true);
+        mockShipmentSettings();
 
         //Test
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.cloneShipment(commonRequestModel);

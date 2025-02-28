@@ -1440,9 +1440,14 @@ public class CustomerBookingService implements ICustomerBookingService {
             }
             long id = request.getId();
             Optional<CustomerBooking> customerBooking = customerBookingDao.findById(id);
-            if(!customerBooking.isPresent())
+            if(customerBooking.isEmpty())
             {
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+            ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+            Boolean countryAirCargoSecurity = shipmentSettingsDetails.getCountryAirCargoSecurity();
+            if (Boolean.TRUE.equals(countryAirCargoSecurity) && !CommonUtils.checkAirSecurityForBooking(customerBooking.get())) {
+                throw new ValidationException(Constants.AIR_SECURITY_PERMISSION_MSG);
             }
             CustomerBookingResponse customerBookingResponse = jsonHelper.convertValue(customerBooking.get(), CustomerBookingResponse.class);
             customerBookingResponse.setId(null);

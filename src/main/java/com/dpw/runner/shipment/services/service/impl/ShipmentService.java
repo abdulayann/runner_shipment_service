@@ -5403,8 +5403,7 @@ public class ShipmentService implements IShipmentService {
                 log.debug(ShipmentConstants.SHIPMENT_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-            if(checkForDGShipmentAndAirDgFlag(shipmentDetails.get()) && !isAirDgUser())
-                throw new ValidationException("You do not have necessary permissions for this.");
+            checkPermissionsForCloning(shipmentDetails.get());
             ShipmentRequest cloneShipmentDetails = jsonHelper.convertValue(shipmentDetails.get(), ShipmentRequest.class);
             cloneShipmentDetails.setId(null);
             cloneShipmentDetails.setGuid(null);
@@ -8740,6 +8739,19 @@ public class ShipmentService implements IShipmentService {
                 List<V1TenantResponse> tenantResponses = jsonHelper.convertValueToList(response.getEntities(), V1TenantResponse.class);
                 consolidationDetails.setReceivingBranch(tenantResponses.get(0).getTenantId());
             }
+        }
+    }
+
+    private void checkPermissionsForCloning(ShipmentDetails shipmentDetails) {
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+        Boolean countryAirCargoSecurity = shipmentSettingsDetails.getCountryAirCargoSecurity();
+        if (Boolean.TRUE.equals(countryAirCargoSecurity)) {
+            if (!CommonUtils.checkAirSecurityForShipment(shipmentDetails)) {
+                throw new ValidationException(Constants.AIR_SECURITY_PERMISSION_MSG);
+            }
+        } else {
+            if (checkForDGShipmentAndAirDgFlag(shipmentDetails) && !isAirDgUser())
+                throw new ValidationException("You do not have necessary permissions for this.");
         }
     }
 
