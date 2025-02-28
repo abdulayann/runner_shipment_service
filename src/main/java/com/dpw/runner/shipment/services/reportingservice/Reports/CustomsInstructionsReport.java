@@ -1,5 +1,7 @@
 package com.dpw.runner.shipment.services.reportingservice.Reports;
 
+import static com.dpw.runner.shipment.services.reportingservice.CommonUtils.ReportHelper.*;
+
 import com.dpw.runner.shipment.services.reportingservice.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.reportingservice.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.reportingservice.Models.Commons.ShipmentContainers;

@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.dpw.runner.shipment.services.reportingservice.CommonUtils.ReportConstants.*;
 import static com.dpw.runner.shipment.services.reportingservice.CommonUtils.ReportHelper.getOrgAddress;
 
 @Component

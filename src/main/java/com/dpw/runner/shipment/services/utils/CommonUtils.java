@@ -104,6 +104,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.VOYAG
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.*;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.*;
+import static com.dpw.runner.shipment.services.reportingservice.CommonUtils.ReportConstants.*;
 import static com.dpw.runner.shipment.services.utils.CountryListHelper.ISO3166.getAlpha3FromAlpha2;
 import static com.dpw.runner.shipment.services.utils.DateUtils.convertDateToUserTimeZone;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;

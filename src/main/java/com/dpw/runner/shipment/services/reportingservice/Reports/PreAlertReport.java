@@ -25,6 +25,7 @@ import java.util.Map;
 import static com.dpw.runner.shipment.services.reportingservice.CommonUtils.ReportConstants.AIRLINE;
 import static com.dpw.runner.shipment.services.reportingservice.CommonUtils.ReportConstants.JOB_NO;
 import static com.dpw.runner.shipment.services.reportingservice.CommonUtils.ReportConstants.NOTIFY_PARTY;
+import static com.dpw.runner.shipment.services.reportingservice.CommonUtils.ReportHelper.*;
 
 @Component
 public class PreAlertReport extends IReport {

@@ -50,6 +50,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 
+import static com.dpw.runner.shipment.services.reportingservice.CommonUtils.ReportConstants.*;
 import static com.dpw.runner.shipment.services.reportingservice.CommonUtils.ReportHelper.numberToWords;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;

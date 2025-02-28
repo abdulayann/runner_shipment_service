@@ -21,6 +21,7 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 import java.util.*;
 
+import static com.dpw.runner.shipment.services.reportingservice.CommonUtils.ReportConstants.*;
 import static com.dpw.runner.shipment.services.reportingservice.CommonUtils.ReportHelper.getOrgAddress;
 
 @Component

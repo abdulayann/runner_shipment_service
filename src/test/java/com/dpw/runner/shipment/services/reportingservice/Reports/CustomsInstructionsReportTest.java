@@ -48,6 +48,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 
+import static com.dpw.runner.shipment.services.reportingservice.CommonUtils.ReportConstants.*;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
@@ -125,7 +126,7 @@ class CustomsInstructionsReportTest extends CommonMocks {
         ShipmentModel shipmentModel = new ShipmentModel();
         shipmentModel.setId(123L);
         shipmentModel.setTransportMode(ReportConstants.SEA);
-        shipmentModel.setDirection(ReportConstants.EXP);
+        shipmentModel.setDirection(EXP);
         shipmentModel.setFreightLocal(BigDecimal.TEN);
         shipmentModel.setFreightLocalCurrency("INR");
         shipmentModel.setFreightOverseas(BigDecimal.TEN);

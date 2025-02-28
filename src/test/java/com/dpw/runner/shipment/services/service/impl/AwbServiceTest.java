@@ -74,6 +74,7 @@ import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.stream.Stream;
 
+import static com.dpw.runner.shipment.services.reportingservice.CommonUtils.ReportConstants.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;

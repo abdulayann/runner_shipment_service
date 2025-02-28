@@ -26,7 +26,8 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.dpw.runner.shipment.services.reportingservice.CommonUtils.ReportHelper.getOrgAddress;
+import static com.dpw.runner.shipment.services.reportingservice.CommonUtils.ReportConstants.*;
+import static com.dpw.runner.shipment.services.reportingservice.CommonUtils.ReportHelper.*;
 
 @Component
 @Slf4j
