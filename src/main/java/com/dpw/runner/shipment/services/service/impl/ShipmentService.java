@@ -4405,14 +4405,6 @@ public class ShipmentService implements IShipmentService {
         shipmentList.forEach(c -> c.setConsignee(partyMap.get(c.getConsigneeId())));
         shipmentList.forEach(c -> c.setConsigner(partyMap.get(c.getConsignerId())));
 
-        List<Long> carrierIds = shipmentList.stream().map(ShipmentDetails::getCarrierDetailId).collect(Collectors.toList());
-        Map<Long, CarrierDetails> carrierMap = carrierDetailsDao.findByIds(carrierIds).stream().collect(Collectors.toMap(CarrierDetails::getId, Function.identity()));
-        shipmentList.forEach(c -> c.setCarrierDetails(carrierMap.get(c.getCarrierDetailId())));
-
-        List<Long> additionalDetails = shipmentList.stream().map(ShipmentDetails::getAdditionalDetailId).collect(Collectors.toList());
-        Map<Long, AdditionalDetails> additionalDetailsMap = additionalDetailDao.findByIds(additionalDetails).stream().collect(Collectors.toMap(AdditionalDetails::getId, Function.identity()));
-        shipmentList.forEach(c -> c.setAdditionalDetails(additionalDetailsMap.get(c.getAdditionalDetailId())));
-
         List<Long> pickupDetailsId = new ArrayList<>();
         pickupDetailsId.addAll(shipmentList.stream().map(ShipmentDetails::getPickupDetailsId).collect(Collectors.toList()));
         pickupDetailsId.addAll(shipmentList.stream().map(ShipmentDetails::getDeliveryDetailsId).collect(Collectors.toList()));
