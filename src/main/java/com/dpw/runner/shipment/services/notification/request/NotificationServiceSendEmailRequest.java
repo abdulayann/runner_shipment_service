@@ -23,4 +23,5 @@ public class NotificationServiceSendEmailRequest implements Serializable {
     private String item;
     private String moduleName;
     private String subject;
+    private String tags;
 }

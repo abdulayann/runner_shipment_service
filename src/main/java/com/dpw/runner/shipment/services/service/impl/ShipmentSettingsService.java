@@ -389,6 +389,9 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         try {
             request.setId(oldEntity.get().getId());
             request.setGuid(oldEntity.get().getGuid());
+            if(request.getPreAlertEmailAndLogs() == null) {
+                request.setPreAlertEmailAndLogs(oldEntity.get().getPreAlertEmailAndLogs());
+            }
             if(request.getHideManifest() == null) {
                 request.setHideManifest(oldEntity.get().getHideManifest());
             }

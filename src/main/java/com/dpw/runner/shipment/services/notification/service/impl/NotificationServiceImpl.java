@@ -1,18 +1,18 @@
 package com.dpw.runner.shipment.services.notification.service.impl;
 
 
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.notification.config.NotificationConfig;
 import com.dpw.runner.shipment.services.notification.config.NotificationRestClient;
-import com.dpw.runner.shipment.services.notification.request.NotificationMetadata;
-import com.dpw.runner.shipment.services.notification.request.NotificationServiceData;
-import com.dpw.runner.shipment.services.notification.request.NotificationServiceSendEmailRequest;
-import com.dpw.runner.shipment.services.notification.request.SendEmailBaseRequest;
+import com.dpw.runner.shipment.services.notification.request.*;
 import com.dpw.runner.shipment.services.notification.response.NotificationServiceResponse;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -26,7 +26,7 @@ public class NotificationServiceImpl implements INotificationService {
     private NotificationConfig notificationConfig;
 
     @Autowired
-    private ObjectMapper objectMapper;
+    private JsonHelper jsonHelper;
 
     @Autowired
     private NotificationRestClient restClient;
@@ -57,8 +57,8 @@ public class NotificationServiceImpl implements INotificationService {
         NotificationServiceResponse response = restClient.sendEmail(notificationServiceSendEmailRequest);
 
         try {
-            log.info("Notification Service Response: {}", objectMapper.writeValueAsString(response));
-        } catch (JsonProcessingException e) {
+            log.info("Notification Service Response: {}", jsonHelper.convertToJson(response));
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
         log.info("Total time taken from notification service to send email is {} ms", (System.currentTimeMillis() - startTime));
@@ -77,6 +77,7 @@ public class NotificationServiceImpl implements INotificationService {
         notificationServiceSendEmailRequest.setRecipientEmails(request.getTo());
         notificationServiceSendEmailRequest.setApplicationId(notificationConfig.getApplicationId());
         notificationServiceSendEmailRequest.setOrganizationId(notificationConfig.getOrganizationId());
+        notificationServiceSendEmailRequest.setTags(jsonHelper.convertToJson(request.getTags()));
 
         NotificationMetadata metadata = new NotificationMetadata();
         metadata.setFrom(notificationConfig.getEmailFrom());
@@ -87,12 +88,36 @@ public class NotificationServiceImpl implements INotificationService {
 
         metadata.setData(data);
 
-        notificationServiceSendEmailRequest.setMetadata(objectMapper.writeValueAsString(metadata));
+        notificationServiceSendEmailRequest.setMetadata(jsonHelper.convertToJson(metadata));
         notificationServiceSendEmailRequest.setTemplateName(request.getTemplateName());
         notificationServiceSendEmailRequest.setFiles(request.getFile());
 
-        log.info("Notification Service Request: {}", objectMapper.writeValueAsString(notificationServiceSendEmailRequest));
+        log.info("Notification Service Request: {}", jsonHelper.convertToJson(notificationServiceSendEmailRequest));
 
         return notificationServiceSendEmailRequest;
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> getLogs(GetLogsRequest request) {
+        String responseMsg;
+        try {
+            return ResponseHelper.buildSuccessResponse(restClient.getTags(request));
+        } catch (Exception e) {
+            log.error("Error while fetching logs from notification service with exception e {}", e.getMessage());
+            responseMsg = e.getMessage() != null ? e.getMessage() : "Error fetching logs from notification service";
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> createTags(CreateTagsRequest request) {
+        String responseMsg;
+        try {
+            return ResponseHelper.buildSuccessResponse(restClient.createTags(request));
+        } catch (Exception e) {
+            log.error("Error while creating tags from notification service with exception e {}", e.getMessage());
+            responseMsg = e.getMessage() != null ? e.getMessage() : "Error creating tags from notification service";
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
     }
 }
