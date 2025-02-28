@@ -1110,6 +1110,10 @@ public abstract class IReport {
             if(shipmentModel.getAdditionalDetails() != null) {
                 dict.put(NOTIFY_PARTY, ReportHelper.getOrgAddressDetails(shipmentModel.getAdditionalDetails().getNotifyParty()));
             }
+            String chargeableString = GetDPWWeightVolumeFormat(shipmentModel.getChargable(), CHARGEABLE_WEIGHT_DECIMAL_PLACES, getCurrentTenantSettings(), true);
+            dict.put(CHARGEABLE, chargeableString);
+            dict.put(CHARGEABLE_AND_UNIT, String.format(REGEX_S_S, chargeableString, shipmentModel.getChargeableUnit()));
+            dict.put(CHARGEABLE_AND_UNIT_, dict.get(CHARGEABLE_AND_UNIT));
             shipAwbDataList.add(dict);
         }
         if(dictionary == null)
@@ -2355,7 +2359,7 @@ public abstract class IReport {
         return null;
     }
 
-    public static String GetDPWWeightVolumeFormat(BigDecimal value, int numberDecimalDigits, V1TenantSettingsResponse v1TenantSettingsResponse) {
+    public static String GetDPWWeightVolumeFormat(BigDecimal value, int numberDecimalDigits, V1TenantSettingsResponse v1TenantSettingsResponse, boolean strictPrecision) {
         if(value != null && v1TenantSettingsResponse != null) {
             if(v1TenantSettingsResponse.getWVDigitGrouping() != null) {
                 char customThousandsSeparator = ',';
@@ -2367,12 +2371,16 @@ public abstract class IReport {
                 return formatValue(value, customDecimalSeparator, customThousandsSeparator, numberDecimalDigits, v1TenantSettingsResponse.getWVDigitGrouping());
             }
             else {
-                return addCommasWithPrecision(value, numberDecimalDigits, false);
+                return addCommasWithPrecision(value, numberDecimalDigits, strictPrecision);
             }
         }
         if(value != null)
             return value.toString();
         return null;
+    }
+
+    public static String GetDPWWeightVolumeFormat(BigDecimal value, int numberDecimalDigits, V1TenantSettingsResponse v1TenantSettingsResponse) {
+        return GetDPWWeightVolumeFormat(value, numberDecimalDigits, v1TenantSettingsResponse, false);
     }
 
     public static String formatValue(BigDecimal value, char customDecimalSeparator, char customThousandsSeparator, int numberDecimalDigits, Integer digitGrouping) {
