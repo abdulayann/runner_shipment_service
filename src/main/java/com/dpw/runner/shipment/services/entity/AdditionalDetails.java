@@ -32,6 +32,7 @@ import java.util.List;
 @Accessors(chain = true)
 @SQLDelete(sql = "UPDATE shipment_additional_details SET is_deleted = true WHERE id=?")
 @Where(clause = "is_deleted = false")
+@BatchSize(size = 50)
 public class AdditionalDetails extends MultiTenancy {
 
     @Column(name = "customs_no_issue_date")
