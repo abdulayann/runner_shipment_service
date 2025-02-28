@@ -62,7 +62,8 @@ public class NotificationRestClient {
         body.add("trackEmailEvents", params.getTrackEmailEvents().toString());
         body.add("metadata", params.getMetadata());
         body.add("file", params.getFiles());
-        body.add("tags", params.getTags());
+        if(params.getTags() != null)
+            body.add("tags", params.getTags());
 
         HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
 
