@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.notification.config.NotificationRestClie
 import com.dpw.runner.shipment.services.notification.request.*;
 import com.dpw.runner.shipment.services.notification.response.NotificationServiceResponse;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -77,7 +78,8 @@ public class NotificationServiceImpl implements INotificationService {
         notificationServiceSendEmailRequest.setRecipientEmails(request.getTo());
         notificationServiceSendEmailRequest.setApplicationId(notificationConfig.getApplicationId());
         notificationServiceSendEmailRequest.setOrganizationId(notificationConfig.getOrganizationId());
-        notificationServiceSendEmailRequest.setTags(jsonHelper.convertToJson(request.getTags()));
+        if(!CommonUtils.listIsNullOrEmpty(request.getTags()))
+            notificationServiceSendEmailRequest.setTags(jsonHelper.convertToJson(request.getTags()));
 
         NotificationMetadata metadata = new NotificationMetadata();
         metadata.setFrom(notificationConfig.getEmailFrom());
