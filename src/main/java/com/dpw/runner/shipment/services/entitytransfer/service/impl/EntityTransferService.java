@@ -1399,7 +1399,7 @@ public class EntityTransferService implements IEntityTransferService {
     }
     private String errorMsgPreparationForAirConsole(List<String> missingField, boolean isPrintMawbError, boolean isPrintHawbError, List<String> errorShipments, boolean isHawbNumberError, StringBuilder shipErrorMsg, boolean isAutomaticTransfer) {
         String errorMsg = "";
-        String msgSuffix = (isAutomaticTransfer? " to retrigger the transfer." : " to transfer the files.");
+        String msgSuffix = (isAutomaticTransfer? EntityTransferConstants.TO_RE_TRIGGER_THE_TRANSFER : EntityTransferConstants.TO_TRANSFER_THE_FILES);
         if(!missingField.isEmpty()) {
             String missingFieldString = String.join(", ", missingField);
             if(isPrintMawbError)
@@ -1451,7 +1451,7 @@ public class EntityTransferService implements IEntityTransferService {
             }
         }
         String errorMsg = "";
-        String msgSuffix = (isAutomaticTransfer? " to retrigger the transfer." : " to transfer the files.");
+        String msgSuffix = (isAutomaticTransfer? EntityTransferConstants.TO_RE_TRIGGER_THE_TRANSFER : EntityTransferConstants.TO_TRANSFER_THE_FILES);
         if(!missingField.isEmpty()) {
             String missingFieldString = String.join(", ", missingField);
             errorMsg = EntityTransferConstants.PLEASE_ENTER_THE + missingFieldString + EntityTransferConstants.FOR_THE_CONSOLIDATION;
@@ -1528,7 +1528,7 @@ public class EntityTransferService implements IEntityTransferService {
         }
 
         String errorMsg = "";
-        String msgSuffix = (isAutomaticTransfer? " to retrigger the transfer." : " to transfer the files.");
+        String msgSuffix = (isAutomaticTransfer? EntityTransferConstants.TO_RE_TRIGGER_THE_TRANSFER : EntityTransferConstants.TO_TRANSFER_THE_FILES);
         if(!missingField.isEmpty()) {
             String missingFieldString = String.join(", ", missingField);
             errorMsg = EntityTransferConstants.PLEASE_ENTER_THE + missingFieldString + EntityTransferConstants.FOR_THE_CONSOLIDATION;
@@ -1667,7 +1667,7 @@ public class EntityTransferService implements IEntityTransferService {
             }
 
             String responseErrorMsg = "";
-            String msgSuffix = (isAutomaticTransfer? " to retrigger the transfer." : " to transfer the shipment.");
+            String msgSuffix = (isAutomaticTransfer? EntityTransferConstants.TO_RE_TRIGGER_THE_TRANSFER : " to transfer the shipment.");
             if(!missingField.isEmpty()) {
                 String missingFieldString = String.join(",", missingField);
                 if(isAwbPrintError)

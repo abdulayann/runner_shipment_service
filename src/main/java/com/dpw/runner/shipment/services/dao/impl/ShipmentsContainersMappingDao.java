@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import com.dpw.runner.shipment.services.commons.constants.ContainerConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
@@ -125,7 +126,7 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
                 containersSync.sync(List.of(containerId), findAllByContainerIds(List.of(containerId)));
             }
             catch (Exception e) {
-                log.error("Error syncing containers");
+                log.error(ContainerConstants.ERROR_SYNCING_CONTAINERS);
             }
         }
     }
@@ -153,7 +154,7 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
                 containersSync.sync(List.of(containerId), findAllByContainerIds(List.of(containerId)));
             }
             catch (Exception e) {
-                log.error("Error syncing containers");
+                log.error(ContainerConstants.ERROR_SYNCING_CONTAINERS);
             }
         }
     }
@@ -177,7 +178,7 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
                 CompletableFuture.runAsync(masterDataUtils.withMdc(()-> containersSync.sync(containerIds, findAllByContainerIds(containerIds))), executorService);
             }
             catch (Exception e) {
-                log.error("Error syncing containers");
+                log.error(ContainerConstants.ERROR_SYNCING_CONTAINERS);
             }
         }
     }

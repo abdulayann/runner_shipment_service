@@ -418,13 +418,13 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         switch(uom)
         {
             case "perctr":
-                return "ContainerCount";
+                return NPMConstants.CONTAINER_COUNT;
             case "percbm":
                 return "Volume";
             case "perkg":
                 return "Weight";
             case "pership":
-                return "Shipment";
+                return NPMConstants.SHIPMENT_CAMEL_CASE;
             default:
                 return uom;
         }
@@ -464,7 +464,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                                     if(associatedRate != null)
                                     {
                                         associatedRate.setRates_uom(mapMeasurementBasis(associatedRate.getRates_uom()));
-                                        if(Objects.equals(associatedRate.getRates_uom(), "ContainerCount"))
+                                        if(Objects.equals(associatedRate.getRates_uom(), NPMConstants.CONTAINER_COUNT))
                                         {
                                             if(loadsRatesInfo.getQuantity() != null)
                                             {
@@ -472,10 +472,10 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                                                 associatedRate.setMeasurement_unit("Containers");
                                             }
                                         }
-                                        else if(Objects.equals(associatedRate.getRates_uom(), "Shipment"))
+                                        else if(Objects.equals(associatedRate.getRates_uom(), NPMConstants.SHIPMENT_CAMEL_CASE))
                                         {
                                             associatedRate.setTotal_unit_count(BigDecimal.ONE);
-                                            associatedRate.setMeasurement_unit("SHIPMENT");
+                                            associatedRate.setMeasurement_unit(NPMConstants.SHIPMENT);
                                         }
                                         else
                                         {
@@ -497,7 +497,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                                 {
                                     if(associatedRate != null) {
                                         associatedRate.setRates_uom(mapMeasurementBasis(associatedRate.getRates_uom()));
-                                        if(Objects.equals(associatedRate.getRates_uom(), "ContainerCount"))
+                                        if(Objects.equals(associatedRate.getRates_uom(), NPMConstants.CONTAINER_COUNT))
                                         {
                                             if(loadsRatesInfo.getQuantity() != null)
                                             {
@@ -505,10 +505,10 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                                                 associatedRate.setMeasurement_unit("Containers");
                                             }
                                         }
-                                        else if(Objects.equals(associatedRate.getRates_uom(), "Shipment"))
+                                        else if(Objects.equals(associatedRate.getRates_uom(), NPMConstants.SHIPMENT_CAMEL_CASE))
                                         {
                                             associatedRate.setTotal_unit_count(BigDecimal.ONE);
-                                            associatedRate.setMeasurement_unit("SHIPMENT");
+                                            associatedRate.setMeasurement_unit(NPMConstants.SHIPMENT);
                                         }
                                         else
                                         {
@@ -529,7 +529,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                     if(associatedRate != null) {
                         associatedRate.setRates_uom(mapMeasurementBasis(associatedRate.getRates_uom()));
                         associatedRate.setTotal_unit_count(BigDecimal.ONE);
-                        associatedRate.setMeasurement_unit("SHIPMENT");
+                        associatedRate.setMeasurement_unit(NPMConstants.SHIPMENT);
                     }
                 }
             }

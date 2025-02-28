@@ -344,7 +344,7 @@ public class BookingIntegrationsUtility {
                 .voyage(carrierDetails.getVoyage())
                 .load(createLoad(customerBooking))
                 .route(createRoute(customerBooking))
-                .source("RUNNER")
+                .source(CustomerBookingConstants.RUNNER)
                 .status(platformStatusMap.get(customerBooking.getBookingStatus()))
                 .referenceNumbers(new ArrayList<>())
                 .addresses(getPartyAddresses(customerBooking.getCustomer(), customerBooking.getConsignor(), customerBooking.getConsignee(), customerBooking.getNotifyParty()))
@@ -657,7 +657,7 @@ public class BookingIntegrationsUtility {
                 .isDg(customerBooking.getIsDg())
                 .load(createLoad(customerBooking))
                 .route(createRoute(customerBooking))
-                .source("RUNNER")
+                .source(CustomerBookingConstants.RUNNER)
                 .branchId(UserContext.getUser().getTenantId())
                 .build();
         return CommonRequestModel.builder().data(platformUpdateRequest).build();
@@ -688,7 +688,7 @@ public class BookingIntegrationsUtility {
                 .shipmentMovement(shipmentDetails.getDirection())
                 .route(createRoute(shipmentDetails))
                 .referenceNumbers(createReferenceNumbers(shipmentDetails))
-                .source("RUNNER")
+                .source(CustomerBookingConstants.RUNNER)
                 .business_code(getBusinessCode(shipmentDetails.getShipmentType()))
                 .customer_org_id(shipmentDetails.getClient().getOrgCode())
                 .bill_to_party(Collections.singletonList(createOrgRequest(shipmentDetails.getClient())))

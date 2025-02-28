@@ -506,8 +506,8 @@ public class EventService implements IEventService {
         ListCommonRequest listRequest = jsonHelper.convertValue(request, ListCommonRequest.class);
 
         if (entityType.equalsIgnoreCase(Constants.SHIPMENT)) {
-            listRequest = CommonUtils.andCriteria("entityId", entityId, "=", listRequest);
-            listRequest = CommonUtils.andCriteria("entityType", entityType, "=", listRequest);
+            listRequest = CommonUtils.andCriteria(EventConstants.ENTITY_ID, entityId, "=", listRequest);
+            listRequest = CommonUtils.andCriteria(EventConstants.ENTITY_TYPE, entityType, "=", listRequest);
             Pair<Specification<Events>, Pageable> pair = fetchData(listRequest, Events.class);
             List<Events> allEvents = eventDao.findAll(pair.getLeft(), pair.getRight()).getContent();
             allEventResponses = jsonHelper.convertValueToList(allEvents, EventsResponse.class);
@@ -735,12 +735,12 @@ public class EventService implements IEventService {
         log.info("Evaluating event with code: {}, shipmentType: {}, transportMode: {} messageId {}", eventCode, shipmentType, transportMode, messageId);
 
         if (EventConstants.ECPK.equalsIgnoreCase(eventCode) && isFclShipment(shipmentType)) {
-            log.info("Event code {} matches FCL shipment criteria. messageId {}", eventCode, messageId);
+            log.info(EventConstants.EVENT_CODE_MATCHES_FCL, eventCode, messageId);
             return true;
         }
 
         if (EventConstants.FCGI.equalsIgnoreCase(eventCode) && isFclShipment(shipmentType)) {
-            log.info("Event code {} matches FCL shipment criteria. messageId {}", eventCode, messageId);
+            log.info(EventConstants.EVENT_CODE_MATCHES_FCL, eventCode, messageId);
             return true;
         }
 
@@ -757,12 +757,12 @@ public class EventService implements IEventService {
         }
 
         if (EventConstants.FUGO.equalsIgnoreCase(eventCode) && isFclShipment(shipmentType)) {
-            log.info("Event code {} matches FCL shipment criteria. messageId {}", eventCode, messageId);
+            log.info(EventConstants.EVENT_CODE_MATCHES_FCL, eventCode, messageId);
             return true;
         }
 
         if (EventConstants.EMCR.equalsIgnoreCase(eventCode) && isFclShipment(shipmentType)) {
-            log.info("Event code {} matches FCL shipment criteria. messageId {}", eventCode, messageId);
+            log.info(EventConstants.EVENT_CODE_MATCHES_FCL, eventCode, messageId);
             return true;
         }
 
@@ -1352,8 +1352,8 @@ public class EventService implements IEventService {
 
     private List<Events> getEventsListForCriteria(Long id, boolean isShipment, ListCommonRequest listRequest) {
         if(isShipment) {
-            listRequest = CommonUtils.andCriteria("entityId", id, "=", listRequest);
-            listRequest = CommonUtils.andCriteria("entityType", Constants.SHIPMENT, "=", listRequest);
+            listRequest = CommonUtils.andCriteria(EventConstants.ENTITY_ID, id, "=", listRequest);
+            listRequest = CommonUtils.andCriteria(EventConstants.ENTITY_TYPE, Constants.SHIPMENT, "=", listRequest);
         }
         else {
             listRequest = CommonUtils.andCriteria("consolidationId", id, "=", listRequest);
@@ -1435,15 +1435,15 @@ public class EventService implements IEventService {
             }
 
             if (event.getEntityId() != null) {
-                predicate = cb.and(predicate, cb.equal(root.get("entityId"), event.getEntityId()));
+                predicate = cb.and(predicate, cb.equal(root.get(EventConstants.ENTITY_ID), event.getEntityId()));
             } else {
-                predicate = cb.and(predicate, cb.isNull(root.get("entityId")));
+                predicate = cb.and(predicate, cb.isNull(root.get(EventConstants.ENTITY_ID)));
             }
 
             if (event.getEntityType() != null) {
-                predicate = cb.and(predicate, cb.equal(root.get("entityType"), event.getEntityType()));
+                predicate = cb.and(predicate, cb.equal(root.get(EventConstants.ENTITY_TYPE), event.getEntityType()));
             } else {
-                predicate = cb.and(predicate, cb.isNull(root.get("entityType")));
+                predicate = cb.and(predicate, cb.isNull(root.get(EventConstants.ENTITY_TYPE)));
             }
 
             predicate = cb.and(predicate, cb.equal(root.get("isDeleted"), false));

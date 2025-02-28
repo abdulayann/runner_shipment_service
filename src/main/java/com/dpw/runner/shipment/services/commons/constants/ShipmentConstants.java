@@ -132,5 +132,15 @@ public class ShipmentConstants {
     public static final String SHIPMENT_RETRIEVE_NULL_REQUEST =  "Request Id is null for Shipment retrieve with Request Id {}";
 
     public static final String FETCH_MATCHING_RULES_SUCCESS = "Matching Rules Fetched Successfully";
+    public static final String PAID_PLACE = "paidPlace";
+    public static final String PLACE_OF_ISSUE = "placeOfIssue";
+    public static final String ORIGIN = "origin";
+    public static final String DESTINATION = "destination";
+    public static final String ORIGIN_PORT_LOC_CODE = "originPortLocCode";
+    public static final String DESTINATION_PORT_LOC_CODE = "destinationPortLocCode";
+    public static final String FULL_NAME = "FullName";
+    public static final String SHIPMENT_ID_GUID_NULL_FOR_RETRIEVE_NTE = "Request Id and Guid are null for Shipment retrieve with Request Id {}";
+    public static final String ID_GUID_NULL_ERROR = "Id and GUID can't be null. Please provide any one !";
+    public static final String SHIPMENT_DETAILS_NULL_FOR_GUID_ERROR = "Shipment Details is null for Guid {} with Request Id {}";
 
 }

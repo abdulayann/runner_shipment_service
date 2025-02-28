@@ -552,7 +552,7 @@ public class MasterDataUtils{
         if (!fetchMasterListFromV1.isEmpty()) {
             MasterListRequestV2 missingRequestV2 = new MasterListRequestV2();
             missingRequestV2.setMasterListRequests(fetchMasterListFromV1);
-            missingRequestV2.setIncludeCols(Arrays.asList("ItemType", "ItemValue", "ItemDescription"));
+            missingRequestV2.setIncludeCols(Arrays.asList("ItemType", "ItemValue", MasterDataConstants.ITEM_DESCRIPTION));
             List<EntityTransferMasterLists> masterLists = fetchMultipleMasterData(missingRequestV2);
             Map<String, EntityTransferMasterLists> v1Datamap = new HashMap<>();
             masterLists.forEach(masterData -> {
@@ -666,7 +666,7 @@ public class MasterDataUtils{
         masterListRequestV2.setIncludeCols(List.of(
                 MasterDataConstants.ITEM_TYPE,
                 MasterDataConstants.ITEM_VALUE,
-                "ItemDescription",
+                MasterDataConstants.ITEM_DESCRIPTION,
                 "ValuenDesc",
                 "Cascade"
         ));
@@ -1677,7 +1677,7 @@ public class MasterDataUtils{
             List<MasterListRequest> masterListRequestV2s = new ArrayList<>();
             commodityGroupCodesFetchFromV1.forEach(e -> masterListRequestV2s.add(MasterListRequest.builder().ItemType(MasterDataType.COMMODITY_GROUP.getDescription()).ItemValue(e).build()));
             masterListRequestV2.setMasterListRequests(masterListRequestV2s);
-            masterListRequestV2.setIncludeCols(Arrays.asList("ItemType", "ItemValue", "ItemDescription"));
+            masterListRequestV2.setIncludeCols(Arrays.asList("ItemType", "ItemValue", MasterDataConstants.ITEM_DESCRIPTION));
             Map<String, EntityTransferMasterLists> masterListsMap = fetchInBulkMasterList(masterListRequestV2);
             responseMap.putAll(masterListsMap);
             commodityGroupCodesFetchFromV1 = new HashSet<>();

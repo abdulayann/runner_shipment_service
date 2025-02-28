@@ -719,7 +719,7 @@ public class ReportService implements IReportService {
         if (StringUtility.isNotEmpty(reportRequest.getPrintType()))
         {
             String documentPrintType = "ZERO (0)"; //Draft
-            if (reportRequest.getPrintType().equalsIgnoreCase("ORIGINAL"))
+            if (reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.ORIGINAL))
             {
                 documentPrintType = "THREE (3)"; //Original
             }
@@ -870,9 +870,9 @@ public class ReportService implements IReportService {
             if (pdfByteContent != null)
             {
                 String documentType = ReportConstants.SHIPMENT_HOUSE_BILL;
-                if(reportRequest.getPrintType().equalsIgnoreCase("ORIGINAL")) {
+                if(reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.ORIGINAL)) {
                     documentType = ReportConstants.ORIGINAL_HOUSE_BILL;
-                } else if(reportRequest.getPrintType().equalsIgnoreCase("DRAFT")) {
+                } else if(reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.DRAFT)) {
                     documentType = ReportConstants.DRAFT_HOUSE_BILL;
                 }
                 DocUploadRequest docUploadRequest = new DocUploadRequest();
@@ -1851,16 +1851,16 @@ public class ReportService implements IReportService {
         String documentType = ReportConstants.HAWB;
 
         if(reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.HAWB)) {
-            if (reportRequest.getPrintType().equalsIgnoreCase("ORIGINAL")) {
+            if (reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.ORIGINAL)) {
                 documentType = ReportConstants.ORIGINAL_HAWB;
-            } else if (reportRequest.getPrintType().equalsIgnoreCase("DRAFT")) {
+            } else if (reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.DRAFT)) {
                 documentType = ReportConstants.DRAFT_HAWB;
             }
         }else if(reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB)){
             documentType = ReportConstants.MAWB;
-            if (reportRequest.getPrintType().equalsIgnoreCase("ORIGINAL")) {
+            if (reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.ORIGINAL)) {
                 documentType = ReportConstants.ORIGINAL_MAWB;
-            } else if (reportRequest.getPrintType().equalsIgnoreCase("DRAFT")) {
+            } else if (reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.DRAFT)) {
                 documentType = ReportConstants.DRAFT_MAWB;
             }
         }

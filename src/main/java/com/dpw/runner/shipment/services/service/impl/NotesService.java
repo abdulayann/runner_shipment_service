@@ -74,29 +74,29 @@ public class NotesService implements INotesService {
             NotesRequest request = (NotesRequest) commonRequestModel.getData();
             if(request.getEntityId() == null) {
                 if(StringUtility.isEmpty(request.getEntityGuid()) || StringUtility.isEmpty(request.getEntityType())) {
-                    log.debug("Request Id is null for Notes create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-                    throw new RunnerException("EntityId is not present");
+                    log.debug(NotesConstants.NOTES_REQUEST_ID_NULL, LoggerHelper.getRequestIdFromMDC());
+                    throw new RunnerException(NotesConstants.NOTES_ENTITY_ID_NOT_PRESENT);
                 }
                 CommonGetRequest commonGetRequest = CommonGetRequest.builder().guid(request.getEntityGuid()).build();
                 if(request.getEntityType().equalsIgnoreCase(Constants.SHIPMENT)) {
                     ResponseEntity<IRunnerResponse> response = shipmentService.getIdFromGuid(CommonRequestModel.buildRequest(commonGetRequest));
                     ShipmentDetailsResponse shipmentDetailsResponse = (ShipmentDetailsResponse) ((RunnerResponse<?>) Objects.requireNonNull(response.getBody())).getData();
                     if(shipmentDetailsResponse == null) {
-                        log.debug("Request Id is null for Notes create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-                        throw new RunnerException("EntityId is not present");
+                        log.debug(NotesConstants.NOTES_REQUEST_ID_NULL, LoggerHelper.getRequestIdFromMDC());
+                        throw new RunnerException(NotesConstants.NOTES_ENTITY_ID_NOT_PRESENT);
                     }
                     request.setEntityId(shipmentDetailsResponse.getId());
                 } else if(request.getEntityType().equalsIgnoreCase(Constants.CONSOLIDATION)) {
                     ResponseEntity<IRunnerResponse> response = consolidationService.getIdFromGuid(CommonRequestModel.buildRequest(commonGetRequest));
                     ConsolidationDetailsResponse consolidationDetailsResponse = (ConsolidationDetailsResponse) ((RunnerResponse<?>) Objects.requireNonNull(response.getBody())).getData();
                     if(consolidationDetailsResponse == null) {
-                        log.debug("Request Id is null for Notes create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-                        throw new RunnerException("EntityId is not present");
+                        log.debug(NotesConstants.NOTES_REQUEST_ID_NULL, LoggerHelper.getRequestIdFromMDC());
+                        throw new RunnerException(NotesConstants.NOTES_ENTITY_ID_NOT_PRESENT);
                     }
                     request.setEntityId(consolidationDetailsResponse.getId());
                 } else {
-                    log.debug("Request Id is null for Notes create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-                    throw new RunnerException("EntityId is not present");
+                    log.debug(NotesConstants.NOTES_REQUEST_ID_NULL, LoggerHelper.getRequestIdFromMDC());
+                    throw new RunnerException(NotesConstants.NOTES_ENTITY_ID_NOT_PRESENT);
                 }
             }
             Notes notes = convertRequestToNotesEntity(request);
