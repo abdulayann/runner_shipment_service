@@ -1040,7 +1040,7 @@ public class EntityTransferService implements IEntityTransferService {
         for (Integer tenantId : tenantIds) {
             var tenantDetails = jsonHelper.convertValue(tenantMap.getOrDefault(tenantId, new V1TenantResponse()), V1TenantResponse.class);
             EventsRequest eventsRequest = new EventsRequest();
-            eventsRequest.setActual(LocalDateTime.now());
+            eventsRequest.setActual(commonUtils.getUserZoneTime(LocalDateTime.now()));
             eventsRequest.setEntityId(entityId);
             eventsRequest.setEntityType(entityType);
             eventsRequest.setEventCode(eventCode);
@@ -1125,7 +1125,7 @@ public class EntityTransferService implements IEntityTransferService {
     private void createImportEvent(String tenantName, Long entityId, String eventCode, String entityType) {
         if (ObjectUtils.isNotEmpty(entityId)) {
             EventsRequest eventsRequest = new EventsRequest();
-            eventsRequest.setActual(LocalDateTime.now());
+            eventsRequest.setActual(commonUtils.getUserZoneTime(LocalDateTime.now()));
             eventsRequest.setEntityId(entityId);
             eventsRequest.setEntityType(entityType);
             eventsRequest.setEventCode(eventCode);
