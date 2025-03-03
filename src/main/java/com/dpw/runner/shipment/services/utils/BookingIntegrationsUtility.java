@@ -993,8 +993,8 @@ public class BookingIntegrationsUtility {
                 List<Events> eventListFromDb = shipmentDetails.getEventsList();
                 RequestAuthContext.setAuthToken("Bearer " + StringUtils.defaultString(v1Service.generateToken()));
                 TenantContext.setCurrentTenant(shipmentDetails.getTenantId());
-                commonUtils.impersonateUser(shipmentDetails.getTenantId());
                 UserContext.setUser(UsersDto.builder().TenantId(shipmentDetails.getTenantId()).Permissions(new HashMap<>()).build());
+                commonUtils.impersonateUser(shipmentDetails.getTenantId());
                 boolean updatedExistingEvent = false;
 
                 // If existing events are found, iterate through them for potential updates
