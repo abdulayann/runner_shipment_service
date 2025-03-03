@@ -121,4 +121,9 @@ public class DocumentManagerServiceImpl implements IDocumentManagerService {
         return response.getBody();
     }
 
+    @Override
+    public ResponseEntity<IRunnerResponse> bulkSave(CommonRequestModel request) {
+        var response = restClient.bulkSaveFiles(request.getDependentData());
+        return ResponseHelper.buildDependentServiceResponse(response.getData(), response.getPageNo(), response.getPageSize());
+    }
 }

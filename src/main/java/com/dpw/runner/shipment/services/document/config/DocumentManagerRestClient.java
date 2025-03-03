@@ -57,6 +57,9 @@ public class DocumentManagerRestClient {
     @Value("${document-manager.baseUrl}${document-manager.download}")
     private String documentDownload;
 
+    @Value("${document-manager.baseUrl}${document-manager.bulk-save}")
+    private String documentBulkSave;
+
     @Autowired
     DocumentManagerRestClient(RestTemplate restTemplate, JsonHelper jsonHelper) {
         this.jsonHelper = jsonHelper;
@@ -225,7 +228,7 @@ public class DocumentManagerRestClient {
         try {
             HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
             HttpEntity<Object> httpEntity = new HttpEntity<>(object, headers);
-            log.info("{} | deleteFile request: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(object));
+            log.info("{} | URL: {} | deleteFile request: {}", this.documentDelete, LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(object));
             var response  = restTemplate.exchange(
                     this.documentDelete,
                     HttpMethod.PUT,
@@ -245,7 +248,7 @@ public class DocumentManagerRestClient {
         try {
             HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
             HttpEntity<Object> httpEntity = new HttpEntity<>(object, headers);
-            log.info("{} | getFileHistory request: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(object));
+            log.info("{} | URL: {} | getFileHistory request: {}", this.documentHistory + "/" + object, LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(object));
             var response  = restTemplate.exchange(
                     this.documentHistory + "/" + object,
                     HttpMethod.GET,
@@ -266,7 +269,7 @@ public class DocumentManagerRestClient {
             HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
             HttpEntity<Object> httpEntity = new HttpEntity<>(object, headers);
 
-            log.info("{} | downloadDocument request: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(object));
+            log.info("{} | URL: {} | downloadDocument request: {}", this.documentDownload + "?id=" + object, LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(object));
             var response  = restTemplate.exchange(
                     this.documentDownload + "?id=" + object,
                     HttpMethod.GET,
@@ -274,6 +277,26 @@ public class DocumentManagerRestClient {
                     byte[].class
             );
             return ResponseEntity.ok(response.getBody());
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new DocumentClientException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), DocumentManagerResponse.class).getErrorMessage());
+        } catch (Exception var7) {
+            throw new DocumentClientException(var7.getMessage());
+        }
+
+    }
+
+    public DocumentManagerResponse<T> bulkSaveFiles(Object object) {
+        try {
+            HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
+            HttpEntity<Object> httpEntity = new HttpEntity<>(object, headers);
+            log.info("{} | URL: {} | bulkSaveFiles request: {}", this.documentDownload + "?id=" + object, LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(object));
+            var response  = restTemplate.exchange(
+                    this.documentBulkSave,
+                    HttpMethod.POST,
+                    httpEntity,
+                    new ParameterizedTypeReference<>() {}
+            );
+            return jsonHelper.convertValue(response.getBody(), DocumentManagerResponse.class);
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
             throw new DocumentClientException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), DocumentManagerResponse.class).getErrorMessage());
         } catch (Exception var7) {
