@@ -40,4 +40,7 @@ public interface ICustomerBookingRepository extends MultiTenancyRepository<Custo
     int updateBillingStatus(Long id, Boolean isBillCreated);
 
     Optional<CustomerBooking> findByOrderManagementId(String orderId);
+
+    @Query(value = "SELECT * from customer_booking where booking_number = ?1", nativeQuery = true)
+    Optional<CustomerBooking> findByBookingNumberQuery(String bookingNumber);
 }

@@ -272,6 +272,9 @@ public class CustomerBookingService implements ICustomerBookingService {
                             .prevData(null)
                             .parent(CustomerBooking.class.getSimpleName())
                             .parentId(customerBooking.getId())
+                            .isIntegrationLog(Objects.equals(customerBooking.getBookingStatus(), BookingStatus.PENDING_FOR_REVIEW))
+                            .flow("Inbound")
+                            .dataType("Transactional")
                             .operation(DBOperationType.CREATE.name()).build()
             );
         } catch (Exception e) {
@@ -421,6 +424,9 @@ public class CustomerBookingService implements ICustomerBookingService {
                             .prevData(jsonHelper.readFromJson(oldEntity, CustomerBooking.class))
                             .parent(CustomerBooking.class.getSimpleName())
                             .parentId(customerBooking.getId())
+                            .isIntegrationLog(Objects.equals(customerBooking.getBookingStatus(), BookingStatus.PENDING_FOR_REVIEW))
+                            .flow("Inbound")
+                            .dataType("Transactional")
                             .operation(DBOperationType.UPDATE.name()).build()
             );
         } catch (Exception e) {
