@@ -1,0 +1,4 @@
+ALTER TABLE IF EXISTS audit_log
+ADD COLUMN IF NOT EXISTS data_type varchar,
+ADD COLUMN IF NOT EXISTS flow varchar,
+ADD COLUMN IF NOT EXISTS is_integration_log BOOLEAN DEFAULT FALSE;

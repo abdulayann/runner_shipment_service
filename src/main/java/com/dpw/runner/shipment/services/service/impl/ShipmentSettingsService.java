@@ -22,7 +22,9 @@ import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.mapper.ShipmentSettingsMapper;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentSettingsRepository;
+import com.dpw.runner.shipment.services.service.interfaces.ISectionVisibilityService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentSettingsService;
+import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service_bus.AzureServiceBusTopic;
 import com.dpw.runner.shipment.services.service_bus.ISBProperties;
 import com.dpw.runner.shipment.services.service_bus.ISBUtils;
@@ -98,6 +100,12 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
     ModelMapper modelMapper;
     @Autowired
     private ShipmentSettingsMapper shipmentSettingsMapper;
+
+    @Autowired
+    private ISectionVisibilityService sectionVisibilityService;
+
+    @Autowired
+    private IV1Service iv1Service;
 
     @Transactional
     public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
@@ -640,6 +648,10 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             }
             log.info("Shipment Settings details fetched successfully for tenant id {} with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
             ShipmentSettingsDetailsResponse response = convertEntityToDto(shipmentSettingsDetails.get());
+            if (request.getSectionRule() != null && request.getSectionRule()) {
+                TenantModel tenantModel = modelMapper.map(iv1Service.retrieveTenant().getEntity(), TenantModel.class);
+                response.setSectionVisibilityResponses(sectionVisibilityService.getByBranchCode(tenantModel.getCode()));
+            }
             return ResponseHelper.buildSuccessResponse(response);
         }  catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()

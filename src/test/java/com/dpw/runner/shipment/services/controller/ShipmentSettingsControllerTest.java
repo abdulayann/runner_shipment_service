@@ -83,7 +83,7 @@ class ShipmentSettingsControllerTest {
         // Mock
         when(shipmentSettingsService.retrieveByTenantId(any())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
-        var responseEntity = shipmentSettingsController.retrieveByTenantId(Optional.of(111L));
+        var responseEntity = shipmentSettingsController.retrieveByTenantId(Optional.of(111L), false);
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -93,7 +93,7 @@ class ShipmentSettingsControllerTest {
         // Mock
         when(shipmentSettingsService.retrieveByTenantId(any())).thenThrow(new RuntimeException());
         // Test
-        var responseEntity = shipmentSettingsController.retrieveByTenantId(Optional.of(111L));
+        var responseEntity = shipmentSettingsController.retrieveByTenantId(Optional.of(111L), false);
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
@@ -103,7 +103,7 @@ class ShipmentSettingsControllerTest {
         // Mock
         when(shipmentSettingsService.retrieveByTenantId(any())).thenThrow(new RuntimeException("RuntimeException"));
         // Test
-        var responseEntity = shipmentSettingsController.retrieveByTenantId(Optional.of(111L));
+        var responseEntity = shipmentSettingsController.retrieveByTenantId(Optional.of(111L), false);
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }

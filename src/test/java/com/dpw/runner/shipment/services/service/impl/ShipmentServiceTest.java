@@ -21,6 +21,8 @@ import com.dpw.runner.shipment.services.config.SpringContext;
 import com.dpw.runner.shipment.services.dao.impl.NetworkTransferDao;
 import com.dpw.runner.shipment.services.dao.impl.QuartzJobInfoDao;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.document.response.DocumentManagerResponse;
+import com.dpw.runner.shipment.services.document.service.IDocumentManagerService;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.mapper.AttachListShipmentMapper;
@@ -51,6 +53,7 @@ import com.dpw.runner.shipment.services.dto.v1.request.TaskCreateRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.*;
+import com.dpw.runner.shipment.services.exception.exceptions.DocumentClientException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -82,6 +85,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.http.auth.AuthenticationException;
+import org.apache.poi.ss.formula.functions.T;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -291,6 +295,9 @@ ShipmentServiceTest extends CommonMocks {
 
     @Mock
     private INotificationDao notificationDao;
+
+    @Mock
+    private IDocumentManagerService documentManagerService;
 
 
     private static JsonTestUtility jsonTestUtility;
@@ -1325,6 +1332,7 @@ ShipmentServiceTest extends CommonMocks {
 
         ShipmentDetailsResponse mockShipResponse = objectMapper.convertValue(mockShip, ShipmentDetailsResponse.class);
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(mockShipResponse);
+        mockShipmentSettings();
 
         //Test
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.cloneShipment(commonRequestModel);
@@ -1338,6 +1346,8 @@ ShipmentServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(commonGetRequest);
 
         // Mock
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        shipmentDetails.setDirection(DIRECTION_EXP);
         when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
         shipmentDetails.setPackingList(null);
         when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(
@@ -1359,6 +1369,10 @@ ShipmentServiceTest extends CommonMocks {
 
         ShipmentDetailsResponse mockShipResponse = objectMapper.convertValue(mockShip, ShipmentDetailsResponse.class);
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(mockShipResponse);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setCountryAirCargoSecurity(true);
+        UserContext.getUser().setPermissions(new HashMap<>());
+        UserContext.getUser().getPermissions().put(PermissionConstants.AIR_SECURITY_PERMISSION, true);
+        mockShipmentSettings();
 
         //Test
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.cloneShipment(commonRequestModel);
@@ -10331,6 +10345,62 @@ ShipmentServiceTest extends CommonMocks {
 
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.listV3(commonRequestModel, false);
         assertEquals(expectedResponse, httpResponse);
+    }
+
+    @Test
+    void addFilesFromBookingToShipment() {
+        var response = new DocumentManagerResponse<T>();
+        response.setSuccess(true);
+        when(documentManagerService.updateFileEntities(any())).thenReturn(response);
+        DocumentManagerResponse<T> responseEntity = shipmentService.addFilesFromBookingToShipment("123", "456");
+        assertTrue(responseEntity.getSuccess());
+    }
+
+    @Test
+    void addFilesFromBookingToShipment_Failure() {
+        var response = new DocumentManagerResponse<T>();
+        response.setSuccess(false);
+        when(documentManagerService.updateFileEntities(any())).thenThrow(new DocumentClientException());
+        DocumentManagerResponse<T> responseEntity = shipmentService.addFilesFromBookingToShipment("123", "456");
+        assertNull(responseEntity);
+    }
+
+    @Test
+    void createOrUpdateEvents() {
+        ShipmentDetails mockShipment = shipmentDetails;
+        mockShipment.setShipmentId("AIR-CAN-00001");
+        mockShipment.setTransportMode(TRANSPORT_MODE_AIR);
+        mockShipment.setDirection(DIRECTION_EXP);
+        mockShipment.setBookingNumber("BOCO");
+
+        List<Events> events = new ArrayList<>();
+        events.add(Events.builder().eventCode(EventConstants.BOCO).source(MASTER_DATA_SOURCE_CARGOES_RUNNER).build());
+        events.add(Events.builder().eventCode(EventConstants.BOCO).source(MASTER_DATA_SOURCE_CARGOES_RUNNER).containerNumber("BOCO").build());
+        events.add(Events.builder().eventCode(EventConstants.PRST).source(MASTER_DATA_SOURCE_CARGOES_RUNNER).build());
+
+        mockShipmentSettings();
+        doNothing().when(eventDao).updateFieldsForShipmentGeneratedEvents(anyList(), any());
+
+        var eventsResponse = shipmentService.createOrUpdateEvents(mockShipment, null, events, true);
+        assertNotNull(eventsResponse);
+    }
+
+    @Test
+    void createOrUpdateEvents2() {
+        ShipmentDetails mockShipment = shipmentDetails;
+        mockShipment.setShipmentId("AIR-CAN-00001");
+        mockShipment.setTransportMode(TRANSPORT_MODE_AIR);
+        mockShipment.setDirection(DIRECTION_EXP);
+        mockShipment.setBookingNumber("BOCO");
+
+        List<Events> events = new ArrayList<>();
+        events.add(Events.builder().eventCode(EventConstants.PRST).source(MASTER_DATA_SOURCE_CARGOES_RUNNER).build());
+
+        mockShipmentSettings();
+        doNothing().when(eventDao).updateFieldsForShipmentGeneratedEvents(anyList(), any());
+
+        var eventsResponse = shipmentService.createOrUpdateEvents(mockShipment, null, events, true);
+        assertNotNull(eventsResponse);
     }
 
 }

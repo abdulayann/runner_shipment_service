@@ -169,6 +169,36 @@ class MasterDataControllerTest {
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
+    @Test
+    void testCreateNonBillableCustomer1() throws RunnerException {
+        // Mock
+        when(iMasterDataService.createNonBillableCustomer(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = masterDataController.createNonBillableCustomer(new Object());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testCreateNonBillableCustomer2() throws RunnerException {
+        // Mock
+        when(iMasterDataService.createNonBillableCustomer(any())).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = masterDataController.createNonBillableCustomer(new Object());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testCreateNonBillableCustomer3() throws RunnerException {
+        // Mock
+        when(iMasterDataService.createNonBillableCustomer(any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = masterDataController.createNonBillableCustomer(new Object());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
     /**
      * Method under test: {@link MasterDataController#updateCarrier(Object)}
      */

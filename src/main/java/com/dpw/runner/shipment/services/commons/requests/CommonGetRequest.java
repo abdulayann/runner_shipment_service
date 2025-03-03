@@ -11,5 +11,6 @@ import java.util.List;
 public class CommonGetRequest implements IRunnerRequest {
     private Long id;
     private String guid;
+    private Boolean sectionRule;
     private List<String>includeColumns;
 }

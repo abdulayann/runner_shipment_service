@@ -378,11 +378,11 @@ public class EventDao implements IEventDao {
         try {
             Events eventsRow = new Events();
             if (isActualRequired) {
-                eventsRow.setActual(LocalDateTime.now());
+                eventsRow.setActual(commonUtils.getUserZoneTime(LocalDateTime.now()));
             }
 
             if (isEstimatedRequired) {
-                eventsRow.setEstimated(LocalDateTime.now());
+                eventsRow.setEstimated(commonUtils.getUserZoneTime(LocalDateTime.now()));
             }
 
             eventsRow.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
@@ -577,7 +577,7 @@ public class EventDao implements IEventDao {
                 event.setConsolidationId(event.getEntityId());
             }
 
-            if (Boolean.FALSE.equals(automaticTransfer)) {
+            if (Boolean.FALSE.equals(automaticTransfer) && !Objects.equals(event.getUserName(), Constants.SYSTEM_GENERATED)) {
                 updateUserFieldsInEvent(event, false);
             }
         }

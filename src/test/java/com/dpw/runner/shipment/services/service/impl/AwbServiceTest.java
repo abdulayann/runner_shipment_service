@@ -263,7 +263,6 @@ class AwbServiceTest extends CommonMocks {
         ShipmentDetails shipmentDetails = testShipment;
         addDataForAutomaticTransfer(shipmentDetails);
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
-        doNothing().when(shipmentService).triggerAutomaticTransfer(any(), any(), anyBoolean());
 
         ResponseEntity<IRunnerResponse> httpResponse = awbService.createAwb(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());

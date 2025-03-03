@@ -21,4 +21,6 @@ public class AuditLogResponse implements IRunnerResponse {
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime createdAt;
     private String createdBy;
+    private String flow;
+    private String dataType;
 }

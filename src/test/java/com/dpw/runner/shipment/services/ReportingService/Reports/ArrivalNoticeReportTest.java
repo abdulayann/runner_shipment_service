@@ -685,6 +685,7 @@ class ArrivalNoticeReportTest extends CommonMocks {
         shipmentModel.setConsolidationList(Arrays.asList(consolidationModel));
         when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
         when(hblDao.findByShipmentId(any())).thenReturn(new ArrayList<>());
+        mockTenantSettings();
         assertNotNull(arrivalNoticeReport.getDocumentModel(123L));
     }
 

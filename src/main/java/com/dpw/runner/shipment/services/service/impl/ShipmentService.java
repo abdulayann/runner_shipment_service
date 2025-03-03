@@ -2,33 +2,7 @@ package com.dpw.runner.shipment.services.service.impl;
 
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.KCRA_EXPIRY;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.AIR_DG_CONSOLIDATION_NOT_ALLOWED_WITH_INTER_BRANCH_SHIPMENT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.AIR_DG_SHIPMENT_NOT_ALLOWED_WITH_INTER_BRANCH_CONSOLIDATION;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.AUTO_REJECTION_REMARK;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CAN_NOT_ATTACH_MORE_SHIPMENTS_IN_DG_CONSOL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CAN_NOT_UPDATE_DG_SHIPMENTS_CONSOLE_CONSISTS_MULTIPLE_SHIPMENTS;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_FCL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CONTAINS_HAZARDOUS;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CREATED_AT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_CTS;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.ERROR_WHILE_SENDING_EMAIL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.ID;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.IMPORT_SHIPMENT_PUSH_ATTACHMENT_EMAIL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.MPK;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_CONTAINER_FIELDS_VALIDATION;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_BCN;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_DRT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_HSE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_LCL;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_SCN;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_TYPE_STD;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.Shipments;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.PADDING_10_PX;
 import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.STYLE;
 import static com.dpw.runner.shipment.services.commons.enums.DBOperationType.COMMERCIAL_REQUEST;
@@ -96,47 +70,11 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerPartialListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.config.LocalTimeZoneHelper;
-import com.dpw.runner.shipment.services.dao.interfaces.IAdditionalDetailDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IBookingCarriageDao;
-import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.ICommonErrorLogsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IELDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IHblDao;
-import com.dpw.runner.shipment.services.dao.interfaces.INetworkTransferDao;
-import com.dpw.runner.shipment.services.dao.interfaces.INotesDao;
-import com.dpw.runner.shipment.services.dao.interfaces.INotificationDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IPartiesDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IPickupDeliveryDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IQuartzJobInfoDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IReferenceNumbersDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IRoutingsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.ISequenceIncrementorDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IServiceDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentOrderDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
-import com.dpw.runner.shipment.services.dao.interfaces.ITruckDriverDetailsDao;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.AssignAllDialogDto;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.AutoUpdateWtVolRequest;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.AutoUpdateWtVolResponse;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculateContainerSummaryRequest;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackSummaryRequest;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackUtilizationRequest;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculateShipmentSummaryRequest;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculateShipmentSummaryResponse;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerAssignListRequest;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentConsoleIdDto;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentContainerAssignRequest;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentMeasurementDetailsDto;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerUpdateFileEntitiesRequest;
+import com.dpw.runner.shipment.services.document.response.DocumentManagerResponse;
+import com.dpw.runner.shipment.services.document.service.IDocumentManagerService;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.mapper.AttachListShipmentMapper;
 import com.dpw.runner.shipment.services.dto.mapper.ShipmentMapper;
@@ -364,12 +302,8 @@ import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.http.auth.AuthenticationException;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.CellStyle;
-import org.apache.poi.ss.usermodel.Font;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.formula.functions.T;
+import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -604,6 +538,9 @@ public class ShipmentService implements IShipmentService {
 
     @Autowired
     private INotificationDao notificationDao;
+
+    @Autowired
+    private IDocumentManagerService documentManagerService;
 
     @Value("${include.master.data}")
     private Boolean includeMasterData;
@@ -1039,7 +976,34 @@ public class ShipmentService implements IShipmentService {
             log.error(e.getMessage());
             throw new ValidationException(e.getMessage());
         }
-        return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class));
+        ShipmentDetailsResponse shipmentDetailsResponse = jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class);
+        CompletableFuture.runAsync(masterDataUtils.withMdc(() -> addFilesFromBookingToShipment(shipmentDetailsResponse.getGuid().toString(), shipmentDetailsResponse.getCustomerBookingGuid().toString())), executorService);
+        return ResponseHelper.buildSuccessResponse(shipmentDetailsResponse);
+    }
+
+    public DocumentManagerResponse<T> addFilesFromBookingToShipment(String shipmentGuid, String bookingGuid) {
+        try {
+            List<DocumentManagerUpdateFileEntitiesRequest.UpdateFileRequest> updateFileRequests = new ArrayList<>();
+            updateFileRequests.add(DocumentManagerUpdateFileEntitiesRequest.UpdateFileRequest.builder()
+                    .source(DocumentManagerUpdateFileEntitiesRequest.EntityData.builder()
+                            .entityKey(bookingGuid)
+                            .entityType(Bookings)
+                            .build())
+                    .entitiesToAttach(List.of(DocumentManagerUpdateFileEntitiesRequest.EntityData.builder()
+                            .entityKey(shipmentGuid)
+                            .entityType(Shipments)
+                            .build()))
+                    .build());
+
+            var saveResponse = documentManagerService.updateFileEntities(DocumentManagerUpdateFileEntitiesRequest.builder()
+                    .filesToUpdate(updateFileRequests)
+                    .build());
+            return saveResponse;
+        } catch (Exception ex) {
+            log.error("CR-ID {} || Error in addFilesFromBookingToShipment: {} with Shipment Guid as: {}",
+                    LoggerHelper.getRequestIdFromMDC(), ex.getLocalizedMessage(), shipmentGuid);
+        }
+        return null;
     }
 
     @Override
@@ -1377,6 +1341,7 @@ public class ShipmentService implements IShipmentService {
         }
 
         shipmentRequest.setContainsHazardous(customerBookingRequest.getIsDg());
+        shipmentRequest.setCustomerBookingGuid(customerBookingRequest.getGuid());
         return this.createFromBooking(CommonRequestModel.buildRequest(shipmentRequest));
     }
 
@@ -2199,6 +2164,9 @@ public class ShipmentService implements IShipmentService {
                 }
             }
         }
+        if(Boolean.TRUE.equals(shipmentRequest.getIsChargableEditable())){
+            shipmentDetails.setChargable(shipmentRequest.getChargable());
+        }
         validateBeforeSave(shipmentDetails);
 
 
@@ -2214,8 +2182,10 @@ public class ShipmentService implements IShipmentService {
             shipmentDetails.setDirection(consolidationDetails1.getShipmentType());
             if (consolidationDetails1.getId() != null) {
                 Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationDetails1.getId());
-                if (!consol.isEmpty() && !CommonUtils.IsStringNullOrEmpty(consol.get().getBookingId()) && !CommonUtils.IsStringNullOrEmpty(consol.get().getBookingNumber())) {
+                if (!consol.isEmpty() && !CommonUtils.IsStringNullOrEmpty(consol.get().getBookingNumber())) {
                     shipmentDetails.setBookingNumber(consol.get().getBookingNumber());
+                } else if(!consol.isEmpty()) {
+                    shipmentDetails.setBookingNumber(consol.get().getCarrierBookingRef());
                 }
             }
             if (shipmentDetails.getCarrierDetails() == null) {
@@ -2559,6 +2529,10 @@ public class ShipmentService implements IShipmentService {
     }
 
     public void validateRaKcDetails(ShipmentDetails shipmentDetails, V1TenantSettingsResponse tenantSettingsResponse) throws RunnerException {
+        // bypass all RA/KC validations in case of AMR air freight
+        if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsAmrAirFreightEnabled()))
+            return;
+
         Parties consignor = shipmentDetails.getConsigner();
         if(Boolean.TRUE.equals(tenantSettingsResponse.getEnableAirMessaging()) && Objects.equals(shipmentDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR)) {
             List<Parties> orgList = new ArrayList<>();
@@ -3026,12 +3000,6 @@ public class ShipmentService implements IShipmentService {
         if (quartzJobInfo != null && quartzJobInfo.getJobStatus() == JobState.QUEUED) {
             quartzJobInfoService.deleteJobById(quartzJobInfo.getId());
         }
-        String errorMessage = "Please enter the Eta, Etd, Ata and Atd to retrigger the transfer";
-        SendShipmentValidationResponse response = SendShipmentValidationResponse.builder()
-                .isError(true)
-                .shipmentErrorMessage(errorMessage)
-                .build();
-        commonErrorLogsDao.logShipmentAutomaticTransferErrors(response, shipmentDetails.getId());
     }
 
     private boolean shouldCreateOrUpdateQuartzJob(QuartzJobInfo quartzJobInfo, ShipmentDetails oldEntity, ShipmentDetails shipmentDetails, Boolean isDocAdded) {
@@ -3386,15 +3354,22 @@ public class ShipmentService implements IShipmentService {
         if (isLclOrFclOrAir(shipmentDetails)) {
 
             if (isEventChanged(shipmentDetails.getBookingNumber(), oldEntity.getBookingNumber(), isNewShipment) && Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP)) {
+                boolean shouldCreateBOCO = true;
                 if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.BOCO))) {
                     List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.BOCO);
                     for (Events event : dbEvents) {
-                        event.setActual(LocalDateTime.now());
-                        eventDao.updateUserFieldsInEvent(event, true);
+                        if (Objects.equals(shipmentDetails.getBookingNumber(), event.getContainerNumber())) {
+                            event.setActual(commonUtils.getUserZoneTime(LocalDateTime.now()));
+                            eventDao.updateUserFieldsInEvent(event, true);
+                            shouldCreateBOCO = false;
+                        }
                     }
-                } else {
-                    events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.BOCO,
-                            LocalDateTime.now(), null));
+                }
+                if(Boolean.TRUE.equals(shouldCreateBOCO)) {
+                    Events bocoEvent = initializeAutomatedEvents(shipmentDetails, EventConstants.BOCO, commonUtils.getUserZoneTime(LocalDateTime.now()), null);
+                    if (!CommonUtils.IsStringNullOrEmpty(shipmentDetails.getBookingNumber()))
+                        bocoEvent.setContainerNumber(shipmentDetails.getBookingNumber());
+                    events.add(bocoEvent);
                 }
             }
 
@@ -3405,12 +3380,12 @@ public class ShipmentService implements IShipmentService {
                 if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.CADE))) {
                     List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.CADE);
                     for (Events event : dbEvents) {
-                        event.setActual(shipmentDetails.getAdditionalDetails().getCargoDeliveredDate());
+                        event.setActual(commonUtils.getUserZoneTime(shipmentDetails.getAdditionalDetails().getCargoDeliveredDate()));
                         eventDao.updateUserFieldsInEvent(event, true);
                     }
                 } else {
                     events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CADE,
-                            shipmentDetails.getAdditionalDetails().getCargoDeliveredDate(), null));
+                            commonUtils.getUserZoneTime(shipmentDetails.getAdditionalDetails().getCargoDeliveredDate()), null));
                 }
             }
 
@@ -3420,12 +3395,12 @@ public class ShipmentService implements IShipmentService {
                 if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.CACO))) {
                     List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.CACO);
                     for (Events event : dbEvents) {
-                        event.setActual(shipmentDetails.getAdditionalDetails().getPickupDate());
+                        event.setActual(commonUtils.getUserZoneTime(shipmentDetails.getAdditionalDetails().getPickupDate()));
                         eventDao.updateUserFieldsInEvent(event, true);
                     }
                 } else {
                     events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CACO,
-                            shipmentDetails.getAdditionalDetails().getPickupDate(), null));
+                            commonUtils.getUserZoneTime(shipmentDetails.getAdditionalDetails().getPickupDate()), null));
                 }
             }
 
@@ -3435,12 +3410,12 @@ public class ShipmentService implements IShipmentService {
                 if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.CURE))) {
                     List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.CURE);
                     for (Events event : dbEvents) {
-                        event.setActual(shipmentDetails.getAdditionalDetails().getCustomReleaseDate());
+                        event.setActual(commonUtils.getUserZoneTime(shipmentDetails.getAdditionalDetails().getCustomReleaseDate()));
                         eventDao.updateUserFieldsInEvent(event, true);
                     }
                 } else {
                     events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CURE,
-                            shipmentDetails.getAdditionalDetails().getCustomReleaseDate(), null));
+                            commonUtils.getUserZoneTime(shipmentDetails.getAdditionalDetails().getCustomReleaseDate()), null));
                 }
             }
 
@@ -3451,12 +3426,12 @@ public class ShipmentService implements IShipmentService {
                 if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.DOTP))) {
                     List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.DOTP);
                     for (Events event : dbEvents) {
-                        event.setActual(LocalDateTime.now());
+                        event.setActual(commonUtils.getUserZoneTime(LocalDateTime.now()));
                         eventDao.updateUserFieldsInEvent(event, true);
                     }
                 } else {
                     events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.DOTP,
-                            LocalDateTime.now(), null));
+                            commonUtils.getUserZoneTime(LocalDateTime.now()), null));
                 }
             }
 
@@ -3466,12 +3441,12 @@ public class ShipmentService implements IShipmentService {
                 if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.PRDE))) {
                     List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.PRDE);
                     for (Events event : dbEvents) {
-                        event.setActual(shipmentDetails.getAdditionalDetails().getProofOfDeliveryDate());
+                        event.setActual(commonUtils.getUserZoneTime(shipmentDetails.getAdditionalDetails().getProofOfDeliveryDate()));
                         eventDao.updateUserFieldsInEvent(event, true);
                     }
                 } else {
                 events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.PRDE,
-                        shipmentDetails.getAdditionalDetails().getProofOfDeliveryDate(), null));
+                        commonUtils.getUserZoneTime(shipmentDetails.getAdditionalDetails().getProofOfDeliveryDate()), null));
                 }
             }
 
@@ -3482,12 +3457,12 @@ public class ShipmentService implements IShipmentService {
                 if(ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.SEPU))){
                     List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.SEPU);
                     for(Events event: dbEvents){
-                        event.setActual(LocalDateTime.now());
+                        event.setActual(commonUtils.getUserZoneTime(LocalDateTime.now()));
                         eventDao.updateUserFieldsInEvent(event, true);
                     }
                 }else{
                     events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.SEPU,
-                            LocalDateTime.now(), null));
+                            commonUtils.getUserZoneTime(LocalDateTime.now()), null));
                 }
             }
         }
@@ -3499,12 +3474,12 @@ public class ShipmentService implements IShipmentService {
                 if(ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.CAFS))){
                     List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.CAFS);
                     for(Events event: dbEvents){
-                        event.setActual(shipmentDetails.getAdditionalDetails().getWarehouseCargoArrivalDate());
+                        event.setActual(commonUtils.getUserZoneTime(shipmentDetails.getAdditionalDetails().getWarehouseCargoArrivalDate()));
                         eventDao.updateUserFieldsInEvent(event, true);
                     }
                 }else{
                     events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CAFS,
-                            shipmentDetails.getAdditionalDetails().getWarehouseCargoArrivalDate(), null));
+                            commonUtils.getUserZoneTime(shipmentDetails.getAdditionalDetails().getWarehouseCargoArrivalDate()), null));
                 }
             }
 
@@ -3514,19 +3489,19 @@ public class ShipmentService implements IShipmentService {
                     List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.CAAW);
                     for(Events event: dbEvents){
                         if(ACTUAL.equals(shipmentDetails.getDateType())) {
-                            event.setActual(shipmentDetails.getShipmentGateInDate());
+                            event.setActual(commonUtils.getUserZoneTime(shipmentDetails.getShipmentGateInDate()));
                         }else if (ESTIMATED.equals(shipmentDetails.getDateType() )){
-                            event.setEstimated(shipmentDetails.getShipmentGateInDate());
+                            event.setEstimated(commonUtils.getUserZoneTime(shipmentDetails.getShipmentGateInDate()));
                         }
                         eventDao.updateUserFieldsInEvent(event, true);
                     }
                 }else{
                     if(shipmentDetails.getDateType() == ACTUAL){
                         events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CAAW,
-                                shipmentDetails.getShipmentGateInDate(), null));
+                                commonUtils.getUserZoneTime(shipmentDetails.getShipmentGateInDate()), null));
                     } else if (shipmentDetails.getDateType() == ESTIMATED) {
                         events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CAAW, null,
-                                shipmentDetails.getShipmentGateInDate()));
+                                commonUtils.getUserZoneTime(shipmentDetails.getShipmentGateInDate())));
                     }
                 }
             }
@@ -3539,12 +3514,12 @@ public class ShipmentService implements IShipmentService {
             if(ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.EMCR))){
                 List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.EMCR);
                 for(Events event: dbEvents){
-                    event.setActual(LocalDateTime.now());
+                    event.setActual(commonUtils.getUserZoneTime(LocalDateTime.now()));
                     eventDao.updateUserFieldsInEvent(event, true);
                 }
             }else{
                 events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.EMCR,
-                        LocalDateTime.now(), null));
+                        commonUtils.getUserZoneTime(LocalDateTime.now()), null));
             }
         }
 
@@ -3555,12 +3530,12 @@ public class ShipmentService implements IShipmentService {
             if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.ECCC))) {
                 List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.ECCC);
                 for (Events event : dbEvents) {
-                    event.setActual(LocalDateTime.now());
+                    event.setActual(commonUtils.getUserZoneTime(LocalDateTime.now()));
                     eventDao.updateUserFieldsInEvent(event, true);
                 }
             } else {
                 events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.ECCC,
-                        LocalDateTime.now(), null));
+                        commonUtils.getUserZoneTime(LocalDateTime.now()), null));
             }
         }
 
@@ -3571,12 +3546,12 @@ public class ShipmentService implements IShipmentService {
             if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.BLRS))) {
                 List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.BLRS);
                 for (Events event : dbEvents) {
-                    event.setActual(shipmentDetails.getAdditionalDetails().getBlInstructionReceived());
+                    event.setActual(commonUtils.getUserZoneTime(shipmentDetails.getAdditionalDetails().getBlInstructionReceived()));
                     eventDao.updateUserFieldsInEvent(event, true);
                 }
             } else {
                 events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.BLRS,
-                        shipmentDetails.getAdditionalDetails().getBlInstructionReceived(), null));
+                        commonUtils.getUserZoneTime(shipmentDetails.getAdditionalDetails().getBlInstructionReceived()), null));
             }
         }
 
@@ -3597,12 +3572,12 @@ public class ShipmentService implements IShipmentService {
             if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.COOD))) {
                 List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.COOD);
                 for (Events event : dbEvents) {
-                    event.setActual(shipmentDetails.getAdditionalDetails().getCargoOutForDelivery());
+                    event.setActual(commonUtils.getUserZoneTime(shipmentDetails.getAdditionalDetails().getCargoOutForDelivery()));
                     eventDao.updateUserFieldsInEvent(event, true);
                 }
             } else {
                 events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.COOD,
-                        shipmentDetails.getAdditionalDetails().getCargoOutForDelivery(), null));
+                        commonUtils.getUserZoneTime(shipmentDetails.getAdditionalDetails().getCargoOutForDelivery()), null));
             }
         }
 
@@ -5427,8 +5402,7 @@ public class ShipmentService implements IShipmentService {
                 log.debug(ShipmentConstants.SHIPMENT_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-            if(checkForDGShipmentAndAirDgFlag(shipmentDetails.get()) && !isAirDgUser())
-                throw new ValidationException("You do not have necessary permissions for this.");
+            checkPermissionsForCloning(shipmentDetails.get());
             ShipmentRequest cloneShipmentDetails = jsonHelper.convertValue(shipmentDetails.get(), ShipmentRequest.class);
             cloneShipmentDetails.setId(null);
             cloneShipmentDetails.setGuid(null);
@@ -6416,7 +6390,7 @@ public class ShipmentService implements IShipmentService {
 
     private void autoGenerateCreateEvent(ShipmentDetails shipmentDetails) {
         Events response = null;
-        response = createAutomatedEvents(shipmentDetails, EventConstants.SHCR, LocalDateTime.now(), null);
+        response = createAutomatedEvents(shipmentDetails, EventConstants.SHCR, commonUtils.getUserZoneTime(LocalDateTime.now()), null);
 
         if (shipmentDetails.getEventsList() == null) {
             shipmentDetails.setEventsList(new ArrayList<>());
@@ -8465,7 +8439,7 @@ public class ShipmentService implements IShipmentService {
             if(shipmentSettingsDetails.getAutoEventCreate() != null && shipmentSettingsDetails.getAutoEventCreate())
                 autoGenerateCreateEvent(shipmentDetails);
             autoGenerateEvents(shipmentDetails, null);
-            createAutomatedEvents(shipmentDetails, EventConstants.BKCR, LocalDateTime.now(), null);
+            createAutomatedEvents(shipmentDetails, EventConstants.BKCR, commonUtils.getUserZoneTime(LocalDateTime.now()), null);
             Long shipmentId = shipmentDetails.getId();
             List<Packing> updatedPackings = new ArrayList<>();
             if (request.getPackingList() != null) {
@@ -8764,6 +8738,19 @@ public class ShipmentService implements IShipmentService {
                 List<V1TenantResponse> tenantResponses = jsonHelper.convertValueToList(response.getEntities(), V1TenantResponse.class);
                 consolidationDetails.setReceivingBranch(tenantResponses.get(0).getTenantId());
             }
+        }
+    }
+
+    private void checkPermissionsForCloning(ShipmentDetails shipmentDetails) {
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+        Boolean countryAirCargoSecurity = shipmentSettingsDetails.getCountryAirCargoSecurity();
+        if (Boolean.TRUE.equals(countryAirCargoSecurity)) {
+            if (!CommonUtils.checkAirSecurityForShipment(shipmentDetails)) {
+                throw new ValidationException(Constants.AIR_SECURITY_PERMISSION_MSG);
+            }
+        } else {
+            if (checkForDGShipmentAndAirDgFlag(shipmentDetails) && !isAirDgUser())
+                throw new ValidationException("You do not have necessary permissions for this.");
         }
     }
 

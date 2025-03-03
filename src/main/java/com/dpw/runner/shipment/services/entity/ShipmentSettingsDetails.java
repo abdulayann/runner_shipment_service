@@ -586,4 +586,15 @@ public class ShipmentSettingsDetails extends MultiTenancy {
     @Column(name = "is_runner_v3_enabled")
     private Boolean isRunnerV3Enabled;
 
+    @Column(name = "is_ra_enabled")
+    private Boolean isRAEnabled;
+
+    @Column(name = "is_kc_enabled")
+    private Boolean isKCEnabled;
+
+    @Column(name = "country_air_cargo_security")
+    private Boolean countryAirCargoSecurity;
+
+    @Column(name = "is_amr_freight_enabled")
+    private Boolean isAmrAirFreightEnabled;
 }

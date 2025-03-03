@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
+import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.HawbModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -8,6 +9,7 @@ import com.dpw.runner.shipment.services.commons.enums.ModuleValidationFieldType;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.ReportException;
 import com.dpw.runner.shipment.services.service.impl.ConsolidationService;
 import com.dpw.runner.shipment.services.service.impl.ShipmentService;
@@ -32,6 +34,8 @@ public class MawbReport extends IReport {
 
     public boolean isDMawb;
     private V1TenantSettingsResponse tenantSettings;
+
+    public String printType;
 
     @Autowired
     public MawbReport(HawbReport hawbReport, V1ServiceUtil v1ServiceUtil,
@@ -108,10 +112,20 @@ public class MawbReport extends IReport {
     @Override
     public IDocumentModel getDocumentModel(Long id) {
         HawbModel hawbModel = new HawbModel();
+        ShipmentSettingsDetails shipmentSettingsDetails = getCurrentShipmentSettings();
+        Boolean countryAirCargoSecurity = shipmentSettingsDetails.getCountryAirCargoSecurity();
         if (!isDMawb) {
             hawbModel.usersDto = UserContext.getUser();
             hawbModel.setConsolidationDetails(getConsolidation(id));
-            validateAirDGCheckConsolidations(hawbModel.getConsolidationDetails());
+            if (Boolean.TRUE.equals(countryAirCargoSecurity)) {
+                if (ReportConstants.ORIGINAL.equalsIgnoreCase(printType)) {
+                    validateAirDGAndAirSecurityCheckConsolidations(hawbModel.getConsolidationDetails());
+                } else {
+                    validateAirSecurityCheckConsolidations(hawbModel.getConsolidationDetails());
+                }
+            } else {
+                validateAirDGCheckConsolidations(hawbModel.getConsolidationDetails());
+            }
             String entityType = "MAWB";
             hawbModel.setMawb(getMawb(hawbModel.getConsolidationDetails().getId(), true));
             hawbModel.awb = hawbModel.getMawb();
@@ -119,7 +133,15 @@ public class MawbReport extends IReport {
         } else {
             hawbModel.usersDto = UserContext.getUser();
             hawbModel.shipmentDetails = getShipment(id);
-            validateAirDGCheckShipments(hawbModel.shipmentDetails);
+            if (Boolean.TRUE.equals(countryAirCargoSecurity)) {
+                if (ReportConstants.ORIGINAL.equalsIgnoreCase(printType)) {
+                    validateAirDGAndAirSecurityCheckShipments(hawbModel.shipmentDetails);
+                } else {
+                    validateAirSecurityCheckShipments(hawbModel.shipmentDetails);
+                }
+            } else {
+                validateAirDGCheckShipments(hawbModel.shipmentDetails);
+            }
             String entityType = "MAWB";
             if(hawbModel.shipmentDetails != null && hawbModel.shipmentDetails.getConsolidationList() != null && !hawbModel.shipmentDetails.getConsolidationList().isEmpty())
             {
