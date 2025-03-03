@@ -27,5 +27,6 @@ public interface IDocumentManagerService {
     DocumentManagerResponse<T> updateFileEntities(DocumentManagerUpdateFileEntitiesRequest request);
 
     ResponseEntity<IRunnerResponse> deleteFile(CommonRequestModel request);
-
+    ResponseEntity<IRunnerResponse> getFileHistory(CommonRequestModel request);
+    byte[] downloadDocument(CommonRequestModel request);
 }

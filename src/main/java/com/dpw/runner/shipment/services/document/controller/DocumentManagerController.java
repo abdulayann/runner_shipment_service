@@ -1,14 +1,19 @@
 package com.dpw.runner.shipment.services.document.controller;
 
+import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.commons.constants.*;
+import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerSaveFileRequest;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerDataResponse;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerResponse;
 import com.dpw.runner.shipment.services.document.service.IDocumentManagerService;
+import com.dpw.runner.shipment.services.dto.response.ByteArrayResourceResponse;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
@@ -52,6 +57,38 @@ public class DocumentManagerController {
         String responseMsg;
         try {
             return documentManagerService.deleteFile(CommonRequestModel.buildDependentDataRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @GetMapping(DocumentConstants.FILE_HISTORY)
+    public ResponseEntity<IRunnerResponse> getFileHistory(@ApiParam(value = DocumentConstants.DOCUMENT_ID) @RequestParam Long docId) {
+        String responseMsg;
+        try {
+            CommonGetRequest request = CommonGetRequest.builder().id(docId).build();
+            return documentManagerService.getFileHistory(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @GetMapping(DocumentConstants.FILE_DOWNLOAD)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = DocumentConstants.FETCH_SUCCESSFUL, response = ByteArrayResourceResponse.class),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    public ResponseEntity<IRunnerResponse> downloadDocument(@ApiParam(value = DocumentConstants.DOCUMENT_ID) @RequestParam Long docId) {
+        String responseMsg;
+        try {
+            CommonGetRequest request = CommonGetRequest.builder().id(docId).build();
+            return ResponseHelper.buildFileResponse(documentManagerService.downloadDocument(CommonRequestModel.buildRequest(request)), MediaType.APPLICATION_OCTET_STREAM, "Document-" + docId);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
