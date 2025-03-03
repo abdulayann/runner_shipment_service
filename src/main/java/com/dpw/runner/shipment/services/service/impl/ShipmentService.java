@@ -976,7 +976,7 @@ public class ShipmentService implements IShipmentService {
             log.error(e.getMessage());
             throw new ValidationException(e.getMessage());
         }
-        createAutomatedEvents(shipmentDetails, EventConstants.BKCR, LocalDateTime.now(), null);
+        createAutomatedEvents(shipmentDetails, EventConstants.BKCR, commonUtils.getUserZoneTime(LocalDateTime.now()), null);
         ShipmentDetailsResponse shipmentDetailsResponse = jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class);
         CompletableFuture.runAsync(masterDataUtils.withMdc(() -> addFilesFromBookingToShipment(shipmentDetailsResponse.getGuid().toString(), shipmentDetailsResponse.getCustomerBookingGuid().toString())), executorService);
         return ResponseHelper.buildSuccessResponse(shipmentDetailsResponse);
@@ -6391,7 +6391,7 @@ public class ShipmentService implements IShipmentService {
 
     private void autoGenerateCreateEvent(ShipmentDetails shipmentDetails) {
         Events response = null;
-        response = createAutomatedEvents(shipmentDetails, EventConstants.SHCR, LocalDateTime.now(), null);
+        response = createAutomatedEvents(shipmentDetails, EventConstants.SHCR, commonUtils.getUserZoneTime(LocalDateTime.now()), null);
 
         if (shipmentDetails.getEventsList() == null) {
             shipmentDetails.setEventsList(new ArrayList<>());
@@ -8440,7 +8440,7 @@ public class ShipmentService implements IShipmentService {
             if(shipmentSettingsDetails.getAutoEventCreate() != null && shipmentSettingsDetails.getAutoEventCreate())
                 autoGenerateCreateEvent(shipmentDetails);
             autoGenerateEvents(shipmentDetails, null);
-            createAutomatedEvents(shipmentDetails, EventConstants.BKCR, LocalDateTime.now(), null);
+            createAutomatedEvents(shipmentDetails, EventConstants.BKCR, commonUtils.getUserZoneTime(LocalDateTime.now()), null);
             Long shipmentId = shipmentDetails.getId();
             List<Packing> updatedPackings = new ArrayList<>();
             if (request.getPackingList() != null) {
