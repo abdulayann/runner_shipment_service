@@ -968,7 +968,7 @@ public class ReportService implements IReportService {
 
         // Create EventsRequest
         EventsRequest eventsRequest = new EventsRequest();
-        eventsRequest.setActual(LocalDateTime.now());
+        eventsRequest.setActual(commonUtils.getUserZoneTime(LocalDateTime.now()));
         eventsRequest.setEntityId(reportId);
         eventsRequest.setEntityType(Constants.SHIPMENT);
         eventsRequest.setEventCode(eventCode);

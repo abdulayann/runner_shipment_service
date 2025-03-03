@@ -45,4 +45,6 @@ public class TenantModel implements Serializable {
     public String UnlocoLocationGuid;
     public Integer Unloco;
     public String displayName;
+    public Boolean enableTimeZone;
+    public String timeZoneId;
 }
