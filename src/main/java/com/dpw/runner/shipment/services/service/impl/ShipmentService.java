@@ -1039,7 +1039,6 @@ public class ShipmentService implements IShipmentService {
             log.error(e.getMessage());
             throw new ValidationException(e.getMessage());
         }
-        createAutomatedEvents(shipmentDetails, EventConstants.BKCR, LocalDateTime.now(), null);
         return ResponseHelper.buildSuccessResponse(jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class));
     }
 

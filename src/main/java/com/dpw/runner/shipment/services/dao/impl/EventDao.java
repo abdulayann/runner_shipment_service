@@ -118,6 +118,11 @@ public class EventDao implements IEventDao {
     }
 
     @Override
+    public Optional<Events> findByEntityIdAndEntityType(Long id, String entityType) {
+        return eventRepository.findByEntityIdAndEntityType(id, entityType);
+    }
+
+    @Override
     public Optional<Events> findByGuid(UUID id) {
         return eventRepository.findByGuid(id);
     }
