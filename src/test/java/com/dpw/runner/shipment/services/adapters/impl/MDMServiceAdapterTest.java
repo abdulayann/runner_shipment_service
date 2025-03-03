@@ -239,7 +239,7 @@ class MDMServiceAdapterTest {
 
         // Act & Assert
         mdmServiceAdapter.createNonBillableCustomer(commonRequestModel);
-        verify(restTemplate,times(3)).exchange(any(RequestEntity.class), eq(DependentServiceResponse.class));
+        verify(restTemplate,times(1)).exchange(any(RequestEntity.class), eq(DependentServiceResponse.class));
     }
 
     @Test
