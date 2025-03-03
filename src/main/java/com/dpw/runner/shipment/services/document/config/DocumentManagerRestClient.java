@@ -25,7 +25,6 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 @Component
@@ -51,6 +50,12 @@ public class DocumentManagerRestClient {
 
     @Value("${document-manager.baseUrl}${document-manager.delete}")
     private String documentDelete;
+
+    @Value("${document-manager.baseUrl}${document-manager.file-history}")
+    private String documentHistory;
+
+    @Value("${document-manager.baseUrl}${document-manager.download}")
+    private String documentDownload;
 
     @Autowired
     DocumentManagerRestClient(RestTemplate restTemplate, JsonHelper jsonHelper) {
@@ -228,6 +233,47 @@ public class DocumentManagerRestClient {
                     new ParameterizedTypeReference<>() {}
             );
             return jsonHelper.convertValue(response.getBody(), DocumentManagerResponse.class);
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new DocumentClientException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), DocumentManagerResponse.class).getErrorMessage());
+        } catch (Exception var7) {
+            throw new DocumentClientException(var7.getMessage());
+        }
+
+    }
+
+    public DocumentManagerResponse<T> getFileHistory(Object object) {
+        try {
+            HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
+            HttpEntity<Object> httpEntity = new HttpEntity<>(object, headers);
+            log.info("{} | getFileHistory request: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(object));
+            var response  = restTemplate.exchange(
+                    this.documentHistory + "/" + object,
+                    HttpMethod.GET,
+                    httpEntity,
+                    new ParameterizedTypeReference<>() {}
+            );
+            return jsonHelper.convertValue(response.getBody(), DocumentManagerResponse.class);
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new DocumentClientException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), DocumentManagerResponse.class).getErrorMessage());
+        } catch (Exception var7) {
+            throw new DocumentClientException(var7.getMessage());
+        }
+
+    }
+
+    public ResponseEntity<byte[]> downloadDocument(Object object) {
+        try {
+            HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
+            HttpEntity<Object> httpEntity = new HttpEntity<>(object, headers);
+
+            log.info("{} | downloadDocument request: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(object));
+            var response  = restTemplate.exchange(
+                    this.documentDownload + "?id=" + object,
+                    HttpMethod.GET,
+                    httpEntity,
+                    byte[].class
+            );
+            return ResponseEntity.ok(response.getBody());
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
             throw new DocumentClientException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), DocumentManagerResponse.class).getErrorMessage());
         } catch (Exception var7) {

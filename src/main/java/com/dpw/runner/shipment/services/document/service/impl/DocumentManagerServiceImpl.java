@@ -1,16 +1,15 @@
 package com.dpw.runner.shipment.services.document.service.impl;
 
 
+import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.document.config.DocumentManagerRestClient;
 import com.dpw.runner.shipment.services.document.exception.BadRequestException;
 import com.dpw.runner.shipment.services.document.request.documentmanager.*;
 import com.dpw.runner.shipment.services.document.response.*;
 import com.dpw.runner.shipment.services.document.service.IDocumentManagerService;
 import com.dpw.runner.shipment.services.document.util.FileUtils;
-import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import lombok.extern.slf4j.Slf4j;
@@ -106,6 +105,20 @@ public class DocumentManagerServiceImpl implements IDocumentManagerService {
     public ResponseEntity<IRunnerResponse> deleteFile(CommonRequestModel request) {
         var response = restClient.deleteFile(request.getDependentData());
         return ResponseHelper.buildDependentServiceResponse(response.getData(), response.getPageNo(), response.getPageSize());
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> getFileHistory(CommonRequestModel commonRequestModel) {
+        CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+        var response = restClient.getFileHistory(request.getId());
+        return ResponseHelper.buildDependentServiceResponse(response.getData(), response.getPageNo(), response.getPageSize());
+    }
+
+    @Override
+    public byte[] downloadDocument(CommonRequestModel commonRequestModel) {
+        CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+        var response = restClient.downloadDocument(request.getId());
+        return response.getBody();
     }
 
 }
