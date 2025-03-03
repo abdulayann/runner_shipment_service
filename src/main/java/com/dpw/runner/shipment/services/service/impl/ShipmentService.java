@@ -5382,8 +5382,10 @@ public class ShipmentService implements IShipmentService {
             shipmentDetailsResponse.setTransferStatus(transferStatus);
         } else if (!setIsNullOrEmpty(shipmentDetailsResponse.getConsolidationList())){
             var console = shipmentDetailsResponse.getConsolidationList().iterator().next();
-            String transferStatus = networkTransferDao.findStatusByEntityIdAndEntityTypeAndTenantId(console.getId(), CONSOLIDATION, console.getReceivingBranch().intValue());
-            shipmentDetailsResponse.setTransferStatus(transferStatus);
+            if(console.getReceivingBranch() != null) {
+                String transferStatus = networkTransferDao.findStatusByEntityIdAndEntityTypeAndTenantId(console.getId(), CONSOLIDATION, console.getReceivingBranch().intValue());
+                shipmentDetailsResponse.setTransferStatus(transferStatus);
+            }
         }
     }
 
