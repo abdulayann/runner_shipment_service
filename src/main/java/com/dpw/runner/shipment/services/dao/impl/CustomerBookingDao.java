@@ -126,4 +126,8 @@ public class CustomerBookingDao implements ICustomerBookingDao {
     public int updateBillStatus(Long id, Boolean isBillCreated){
         return customerBookingRepository.updateBillingStatus(id, isBillCreated);
     }
+
+    public Optional<CustomerBooking> findByBookingNumberQuery(String bookingNumber) {
+        return customerBookingRepository.findByBookingNumberQuery(bookingNumber);
+    }
 }

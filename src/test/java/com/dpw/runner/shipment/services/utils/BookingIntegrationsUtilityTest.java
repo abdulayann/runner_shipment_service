@@ -639,7 +639,7 @@ class BookingIntegrationsUtilityTest {
 
         bookingIntegrationsUtility.documentUploadEvent(documentDto);
 
-        verify(shipmentDao, times(1)).findShipmentsByGuids(Set.of(entityId));
+        verify(shipmentDao, times(2)).findShipmentsByGuids(Set.of(entityId));
     }
 
     @Test
@@ -651,7 +651,7 @@ class BookingIntegrationsUtilityTest {
 
         bookingIntegrationsUtility.documentUploadEvent(documentDto);
 
-        verify(shipmentDao, times(0)).findShipmentsByGuids(Set.of(entityId));
+        verify(shipmentDao, times(1)).findShipmentsByGuids(Set.of(entityId));
     }
 
     @Test
@@ -663,7 +663,7 @@ class BookingIntegrationsUtilityTest {
 
         bookingIntegrationsUtility.documentUploadEvent(documentDto);
 
-        verify(shipmentDao, times(0)).findShipmentsByGuids(Set.of(entityId));
+        verify(shipmentDao, times(1)).findShipmentsByGuids(Set.of(entityId));
     }
 
     @Test
