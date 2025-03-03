@@ -6,7 +6,7 @@ import org.springframework.data.domain.Pageable;
 
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.response.consolidation.ConsolidationLiteResponse;;
+import com.dpw.runner.shipment.services.entity.response.consolidation.ConsolidationLiteResponse;
 import com.dpw.runner.shipment.services.repository.interfaces.ICustomConsolidationDetailsRepository;
 import java.util.List;
 import javax.persistence.EntityManager;
