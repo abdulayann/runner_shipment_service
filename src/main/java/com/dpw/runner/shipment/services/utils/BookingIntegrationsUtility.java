@@ -994,6 +994,7 @@ public class BookingIntegrationsUtility {
                 RequestAuthContext.setAuthToken("Bearer " + StringUtils.defaultString(v1Service.generateToken()));
                 TenantContext.setCurrentTenant(shipmentDetails.getTenantId());
                 UserContext.setUser(UsersDto.builder().TenantId(shipmentDetails.getTenantId()).Permissions(new HashMap<>()).build());
+                commonUtils.impersonateUser(shipmentDetails.getTenantId());
                 boolean updatedExistingEvent = false;
 
                 // If existing events are found, iterate through them for potential updates
@@ -1005,7 +1006,7 @@ public class BookingIntegrationsUtility {
                                 Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER.equals(event.getSource())) {
 
                             log.info("Updating event: {} with new actual time and entity type.", event.getEventCode());
-                            event.setActual(LocalDateTime.now());
+                            event.setActual(commonUtils.getUserZoneTime(LocalDateTime.now()));
                             event.setEntityType(Constants.SHIPMENT);
                             event.setUserName(payloadData.getUserDisplayName());
                             event.setUserEmail(payloadData.getUserEmail());
@@ -1032,7 +1033,7 @@ public class BookingIntegrationsUtility {
                     }
 
                     EventsRequest eventsRequest = new EventsRequest();
-                    eventsRequest.setActual(LocalDateTime.now());
+                    eventsRequest.setActual(commonUtils.getUserZoneTime(LocalDateTime.now()));
                     eventsRequest.setEntityId(shipmentDetails.getId());
                     eventsRequest.setEntityType(Constants.SHIPMENT);
                     eventsRequest.setEventCode(payloadData.getEventCode());

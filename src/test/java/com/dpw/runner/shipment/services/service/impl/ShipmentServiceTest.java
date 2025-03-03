@@ -1332,6 +1332,7 @@ ShipmentServiceTest extends CommonMocks {
 
         ShipmentDetailsResponse mockShipResponse = objectMapper.convertValue(mockShip, ShipmentDetailsResponse.class);
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(mockShipResponse);
+        mockShipmentSettings();
 
         //Test
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.cloneShipment(commonRequestModel);
@@ -1345,6 +1346,8 @@ ShipmentServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(commonGetRequest);
 
         // Mock
+        shipmentDetails.setTransportMode(TRANSPORT_MODE_AIR);
+        shipmentDetails.setDirection(DIRECTION_EXP);
         when(shipmentDao.findById(1L)).thenReturn(Optional.of(shipmentDetails));
         shipmentDetails.setPackingList(null);
         when(jsonHelper.convertValue(any(), eq(ShipmentRequest.class))).thenReturn(
@@ -1366,6 +1369,10 @@ ShipmentServiceTest extends CommonMocks {
 
         ShipmentDetailsResponse mockShipResponse = objectMapper.convertValue(mockShip, ShipmentDetailsResponse.class);
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(mockShipResponse);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setCountryAirCargoSecurity(true);
+        UserContext.getUser().setPermissions(new HashMap<>());
+        UserContext.getUser().getPermissions().put(PermissionConstants.AIR_SECURITY_PERMISSION, true);
+        mockShipmentSettings();
 
         //Test
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.cloneShipment(commonRequestModel);
@@ -10355,6 +10362,44 @@ ShipmentServiceTest extends CommonMocks {
         when(documentManagerService.updateFileEntities(any())).thenThrow(new DocumentClientException());
         DocumentManagerResponse<T> responseEntity = shipmentService.addFilesFromBookingToShipment("123", "456");
         assertNull(responseEntity);
+    }
+
+    @Test
+    void createOrUpdateEvents() {
+        ShipmentDetails mockShipment = shipmentDetails;
+        mockShipment.setShipmentId("AIR-CAN-00001");
+        mockShipment.setTransportMode(TRANSPORT_MODE_AIR);
+        mockShipment.setDirection(DIRECTION_EXP);
+        mockShipment.setBookingNumber("BOCO");
+
+        List<Events> events = new ArrayList<>();
+        events.add(Events.builder().eventCode(EventConstants.BOCO).source(MASTER_DATA_SOURCE_CARGOES_RUNNER).build());
+        events.add(Events.builder().eventCode(EventConstants.BOCO).source(MASTER_DATA_SOURCE_CARGOES_RUNNER).containerNumber("BOCO").build());
+        events.add(Events.builder().eventCode(EventConstants.PRST).source(MASTER_DATA_SOURCE_CARGOES_RUNNER).build());
+
+        mockShipmentSettings();
+        doNothing().when(eventDao).updateFieldsForShipmentGeneratedEvents(anyList(), any());
+
+        var eventsResponse = shipmentService.createOrUpdateEvents(mockShipment, null, events, true);
+        assertNotNull(eventsResponse);
+    }
+
+    @Test
+    void createOrUpdateEvents2() {
+        ShipmentDetails mockShipment = shipmentDetails;
+        mockShipment.setShipmentId("AIR-CAN-00001");
+        mockShipment.setTransportMode(TRANSPORT_MODE_AIR);
+        mockShipment.setDirection(DIRECTION_EXP);
+        mockShipment.setBookingNumber("BOCO");
+
+        List<Events> events = new ArrayList<>();
+        events.add(Events.builder().eventCode(EventConstants.PRST).source(MASTER_DATA_SOURCE_CARGOES_RUNNER).build());
+
+        mockShipmentSettings();
+        doNothing().when(eventDao).updateFieldsForShipmentGeneratedEvents(anyList(), any());
+
+        var eventsResponse = shipmentService.createOrUpdateEvents(mockShipment, null, events, true);
+        assertNotNull(eventsResponse);
     }
 
 }

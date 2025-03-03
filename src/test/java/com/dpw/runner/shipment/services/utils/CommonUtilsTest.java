@@ -3582,4 +3582,42 @@ class CommonUtilsTest {
         assertEquals(4, result.size());
     }
 
+    @Test
+    void testPrepareEventRequest_Success_WithReferenceNumber() {
+        Long entityId = 1001L;
+        String eventCode = "EVENT_CODE";
+        String entityType = "SHIPMENT";
+        String referenceNumber = "REF123";
+
+        EventsRequest eventsRequest = commonUtils.prepareEventRequest(entityId, eventCode, entityType, referenceNumber);
+
+        assertNotNull(eventsRequest.getActual());
+    }
+
+    @Test
+    void testPrepareEventRequest_Success_WithoutReferenceNumber() {
+        Long entityId = 1001L;
+        String eventCode = "EVENT_CODE";
+        String entityType = "SHIPMENT";
+
+        EventsRequest eventsRequest = commonUtils.prepareEventRequest(entityId, eventCode, entityType, null);
+
+        assertNotNull(eventsRequest);
+        assertNotNull(eventsRequest.getActual());
+    }
+
+    @Test
+    void testPrepareEventRequest_Success_WithEmptyReferenceNumber() {
+        Long entityId = 1001L;
+        String eventCode = "EVENT_CODE";
+        String entityType = "SHIPMENT";
+        String referenceNumber = "";
+
+        EventsRequest eventsRequest = commonUtils.prepareEventRequest(entityId, eventCode, entityType, referenceNumber);
+
+        assertNotNull(eventsRequest);
+        assertNull(eventsRequest.getContainerNumber());
+        assertNotNull(eventsRequest.getActual());
+    }
+
 }

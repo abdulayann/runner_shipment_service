@@ -39,6 +39,11 @@ public class FlywaySQLLogger implements Callback {
 
     @Value("${flyway.logs.email.enabled}")
     private boolean migrationEnabled;
+    @Value("${flyway.logs.email.subject}")
+    private String mailSubject;
+
+    @Value("${current.sprint.name}")
+    private String currentSprint;
 
     public FlywaySQLLogger(ObjectProvider<Flyway> flywayProvider, ApplicationContext applicationContext, Environment environment) {
         this.flywayProvider = flywayProvider;
@@ -88,9 +93,10 @@ public class FlywaySQLLogger implements Callback {
 
             // Build subject line with key details
             String emailSubject = String.join(" | ",
-                    "Flyway Migration Alert",
+                    mailSubject,
                     activeProfiles.toUpperCase(),
-                    environmentName
+                    environmentName,
+                    currentSprint
             );
 
             StringBuilder emailContent = new StringBuilder();

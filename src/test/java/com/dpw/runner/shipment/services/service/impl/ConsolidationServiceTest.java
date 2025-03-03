@@ -65,6 +65,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.dpw.runner.shipment.services.service.interfaces.IDpsEventService;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
+import com.dpw.runner.shipment.services.service.interfaces.IEventService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.service_bus.AzureServiceBusTopic;
@@ -276,6 +277,9 @@ import static org.mockito.Mockito.*;
 
     @Mock
     private NetworkTransferService networkTransferService;
+
+    @Mock
+    private IEventService eventService;
 
     private static JsonTestUtility jsonTestUtility;
     private static ShipmentDetails testShipment;
@@ -851,6 +855,35 @@ import static org.mockito.Mockito.*;
         request.setGuid(UUID.randomUUID());
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
         when(consolidationDetailsDao.updateConsoleBookingFields(request)).thenReturn(1);
+        when(consolidationDetailsDao.findConsolidationByGuidWithQuery(request.getGuid())).thenReturn(Optional.of(consolidationDetails));
+        ResponseEntity<IRunnerResponse> response = consolidationService.updateConsoleBookingFields(commonRequestModel);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testUpdateConsoleBookingFields_Success2() {
+        ConsoleBookingRequest request = new ConsoleBookingRequest();
+        request.setGuid(UUID.randomUUID());
+        request.setBookingNumber("BookingNumber");
+        Map<Integer, Object> tenantDetailsMap = Map.of(
+                1, new Object(),
+                2, new Object()
+        );
+
+        V1TenantResponse tenantResponse1 = new V1TenantResponse();
+        tenantResponse1.setCode("Tenant1");
+
+        consolidationDetails = testConsol;
+        shipmentDetails.setTenantId(1);
+        consolidationDetails.setShipmentsList(Set.of(shipmentDetails));
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
+        when(consolidationDetailsDao.updateConsoleBookingFields(request)).thenReturn(1);
+        when(consolidationDetailsDao.findConsolidationByGuidWithQuery(request.getGuid())).thenReturn(Optional.of(consolidationDetails));
+        when(shipmentDao.updateShipmentsBookingNumber(anyList(), anyString())).thenReturn(1);
+        when(v1ServiceUtil.getTenantDetails(any())).thenReturn(tenantDetailsMap);
+        when(commonUtils.prepareEventRequest(anyLong(), anyString(), anyString(), anyString())).thenReturn(new EventsRequest());
+        when(jsonHelper.convertValue(tenantDetailsMap.get(1), V1TenantResponse.class)).thenReturn(tenantResponse1);
+        doNothing().when(eventService).saveAllEvent(anyList());
         ResponseEntity<IRunnerResponse> response = consolidationService.updateConsoleBookingFields(commonRequestModel);
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
@@ -1440,6 +1473,7 @@ import static org.mockito.Mockito.*;
         consolidationDetails.setCarrierDetails(new CarrierDetails());
         consolidationDetails.setInterBranchConsole(false);
         consolidationDetails.setSendingAgent(Parties.builder().orgId("sending").build());
+        consolidationDetails.setBookingNumber("BookingNumber");
 
         ConsoleShipmentMapping consoleShipmentMapping1 = new ConsoleShipmentMapping();
         consoleShipmentMapping1.setShipmentId(2L);
@@ -1450,6 +1484,7 @@ import static org.mockito.Mockito.*;
         shipmentDetails1.setCarrierDetails(new CarrierDetails());
         shipmentDetails1.setTenantId(UserContext.getUser().TenantId);
         shipmentDetails1.setGuid(UUID.randomUUID());
+        shipmentDetails1.setDirection(DIRECTION_IMP);
 
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails, shipmentDetails1));
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
@@ -1608,6 +1643,7 @@ import static org.mockito.Mockito.*;
         consolidationDetails.setInterBranchConsole(false);
         consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
         consolidationDetails.setShipmentType(Constants.DIRECTION_EXP);
+        consolidationDetails.setBookingNumber("BookingNumber");
 
         ConsoleShipmentMapping consoleShipmentMapping1 = new ConsoleShipmentMapping();
         consoleShipmentMapping1.setShipmentId(2L);

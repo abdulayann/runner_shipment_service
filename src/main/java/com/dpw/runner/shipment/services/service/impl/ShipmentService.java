@@ -975,7 +975,7 @@ public class ShipmentService implements IShipmentService {
             log.error(e.getMessage());
             throw new ValidationException(e.getMessage());
         }
-        createAutomatedEvents(shipmentDetails, EventConstants.BKCR, LocalDateTime.now(), null);
+        createAutomatedEvents(shipmentDetails, EventConstants.BKCR, commonUtils.getUserZoneTime(LocalDateTime.now()), null);
         ShipmentDetailsResponse shipmentDetailsResponse = jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class);
         CompletableFuture.runAsync(masterDataUtils.withMdc(() -> addFilesFromBookingToShipment(shipmentDetailsResponse.getGuid().toString(), shipmentDetailsResponse.getCustomerBookingGuid().toString())), executorService);
         return ResponseHelper.buildSuccessResponse(shipmentDetailsResponse);
@@ -2164,6 +2164,9 @@ public class ShipmentService implements IShipmentService {
                 }
             }
         }
+        if(Boolean.TRUE.equals(shipmentRequest.getIsChargableEditable())){
+            shipmentDetails.setChargable(shipmentRequest.getChargable());
+        }
         validateBeforeSave(shipmentDetails);
 
 
@@ -2179,8 +2182,10 @@ public class ShipmentService implements IShipmentService {
             shipmentDetails.setDirection(consolidationDetails1.getShipmentType());
             if (consolidationDetails1.getId() != null) {
                 Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationDetails1.getId());
-                if (!consol.isEmpty() && !CommonUtils.IsStringNullOrEmpty(consol.get().getBookingId()) && !CommonUtils.IsStringNullOrEmpty(consol.get().getBookingNumber())) {
+                if (!consol.isEmpty() && !CommonUtils.IsStringNullOrEmpty(consol.get().getBookingNumber())) {
                     shipmentDetails.setBookingNumber(consol.get().getBookingNumber());
+                } else if(!consol.isEmpty()) {
+                    shipmentDetails.setBookingNumber(consol.get().getCarrierBookingRef());
                 }
             }
             if (shipmentDetails.getCarrierDetails() == null) {
@@ -3349,15 +3354,22 @@ public class ShipmentService implements IShipmentService {
         if (isLclOrFclOrAir(shipmentDetails)) {
 
             if (isEventChanged(shipmentDetails.getBookingNumber(), oldEntity.getBookingNumber(), isNewShipment) && Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP)) {
+                boolean shouldCreateBOCO = true;
                 if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.BOCO))) {
                     List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.BOCO);
                     for (Events event : dbEvents) {
-                        event.setActual(LocalDateTime.now());
-                        eventDao.updateUserFieldsInEvent(event, true);
+                        if (Objects.equals(shipmentDetails.getBookingNumber(), event.getContainerNumber())) {
+                            event.setActual(commonUtils.getUserZoneTime(LocalDateTime.now()));
+                            eventDao.updateUserFieldsInEvent(event, true);
+                            shouldCreateBOCO = false;
+                        }
                     }
-                } else {
-                    events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.BOCO,
-                            LocalDateTime.now(), null));
+                }
+                if(Boolean.TRUE.equals(shouldCreateBOCO)) {
+                    Events bocoEvent = initializeAutomatedEvents(shipmentDetails, EventConstants.BOCO, commonUtils.getUserZoneTime(LocalDateTime.now()), null);
+                    if (!CommonUtils.IsStringNullOrEmpty(shipmentDetails.getBookingNumber()))
+                        bocoEvent.setContainerNumber(shipmentDetails.getBookingNumber());
+                    events.add(bocoEvent);
                 }
             }
 
@@ -3368,12 +3380,12 @@ public class ShipmentService implements IShipmentService {
                 if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.CADE))) {
                     List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.CADE);
                     for (Events event : dbEvents) {
-                        event.setActual(shipmentDetails.getAdditionalDetails().getCargoDeliveredDate());
+                        event.setActual(commonUtils.getUserZoneTime(shipmentDetails.getAdditionalDetails().getCargoDeliveredDate()));
                         eventDao.updateUserFieldsInEvent(event, true);
                     }
                 } else {
                     events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CADE,
-                            shipmentDetails.getAdditionalDetails().getCargoDeliveredDate(), null));
+                            commonUtils.getUserZoneTime(shipmentDetails.getAdditionalDetails().getCargoDeliveredDate()), null));
                 }
             }
 
@@ -3383,12 +3395,12 @@ public class ShipmentService implements IShipmentService {
                 if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.CACO))) {
                     List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.CACO);
                     for (Events event : dbEvents) {
-                        event.setActual(shipmentDetails.getAdditionalDetails().getPickupDate());
+                        event.setActual(commonUtils.getUserZoneTime(shipmentDetails.getAdditionalDetails().getPickupDate()));
                         eventDao.updateUserFieldsInEvent(event, true);
                     }
                 } else {
                     events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CACO,
-                            shipmentDetails.getAdditionalDetails().getPickupDate(), null));
+                            commonUtils.getUserZoneTime(shipmentDetails.getAdditionalDetails().getPickupDate()), null));
                 }
             }
 
@@ -3398,12 +3410,12 @@ public class ShipmentService implements IShipmentService {
                 if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.CURE))) {
                     List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.CURE);
                     for (Events event : dbEvents) {
-                        event.setActual(shipmentDetails.getAdditionalDetails().getCustomReleaseDate());
+                        event.setActual(commonUtils.getUserZoneTime(shipmentDetails.getAdditionalDetails().getCustomReleaseDate()));
                         eventDao.updateUserFieldsInEvent(event, true);
                     }
                 } else {
                     events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CURE,
-                            shipmentDetails.getAdditionalDetails().getCustomReleaseDate(), null));
+                            commonUtils.getUserZoneTime(shipmentDetails.getAdditionalDetails().getCustomReleaseDate()), null));
                 }
             }
 
@@ -3414,12 +3426,12 @@ public class ShipmentService implements IShipmentService {
                 if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.DOTP))) {
                     List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.DOTP);
                     for (Events event : dbEvents) {
-                        event.setActual(LocalDateTime.now());
+                        event.setActual(commonUtils.getUserZoneTime(LocalDateTime.now()));
                         eventDao.updateUserFieldsInEvent(event, true);
                     }
                 } else {
                     events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.DOTP,
-                            LocalDateTime.now(), null));
+                            commonUtils.getUserZoneTime(LocalDateTime.now()), null));
                 }
             }
 
@@ -3429,12 +3441,12 @@ public class ShipmentService implements IShipmentService {
                 if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.PRDE))) {
                     List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.PRDE);
                     for (Events event : dbEvents) {
-                        event.setActual(shipmentDetails.getAdditionalDetails().getProofOfDeliveryDate());
+                        event.setActual(commonUtils.getUserZoneTime(shipmentDetails.getAdditionalDetails().getProofOfDeliveryDate()));
                         eventDao.updateUserFieldsInEvent(event, true);
                     }
                 } else {
                 events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.PRDE,
-                        shipmentDetails.getAdditionalDetails().getProofOfDeliveryDate(), null));
+                        commonUtils.getUserZoneTime(shipmentDetails.getAdditionalDetails().getProofOfDeliveryDate()), null));
                 }
             }
 
@@ -3445,12 +3457,12 @@ public class ShipmentService implements IShipmentService {
                 if(ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.SEPU))){
                     List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.SEPU);
                     for(Events event: dbEvents){
-                        event.setActual(LocalDateTime.now());
+                        event.setActual(commonUtils.getUserZoneTime(LocalDateTime.now()));
                         eventDao.updateUserFieldsInEvent(event, true);
                     }
                 }else{
                     events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.SEPU,
-                            LocalDateTime.now(), null));
+                            commonUtils.getUserZoneTime(LocalDateTime.now()), null));
                 }
             }
         }
@@ -3462,12 +3474,12 @@ public class ShipmentService implements IShipmentService {
                 if(ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.CAFS))){
                     List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.CAFS);
                     for(Events event: dbEvents){
-                        event.setActual(shipmentDetails.getAdditionalDetails().getWarehouseCargoArrivalDate());
+                        event.setActual(commonUtils.getUserZoneTime(shipmentDetails.getAdditionalDetails().getWarehouseCargoArrivalDate()));
                         eventDao.updateUserFieldsInEvent(event, true);
                     }
                 }else{
                     events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CAFS,
-                            shipmentDetails.getAdditionalDetails().getWarehouseCargoArrivalDate(), null));
+                            commonUtils.getUserZoneTime(shipmentDetails.getAdditionalDetails().getWarehouseCargoArrivalDate()), null));
                 }
             }
 
@@ -3477,19 +3489,19 @@ public class ShipmentService implements IShipmentService {
                     List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.CAAW);
                     for(Events event: dbEvents){
                         if(ACTUAL.equals(shipmentDetails.getDateType())) {
-                            event.setActual(shipmentDetails.getShipmentGateInDate());
+                            event.setActual(commonUtils.getUserZoneTime(shipmentDetails.getShipmentGateInDate()));
                         }else if (ESTIMATED.equals(shipmentDetails.getDateType() )){
-                            event.setEstimated(shipmentDetails.getShipmentGateInDate());
+                            event.setEstimated(commonUtils.getUserZoneTime(shipmentDetails.getShipmentGateInDate()));
                         }
                         eventDao.updateUserFieldsInEvent(event, true);
                     }
                 }else{
                     if(shipmentDetails.getDateType() == ACTUAL){
                         events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CAAW,
-                                shipmentDetails.getShipmentGateInDate(), null));
+                                commonUtils.getUserZoneTime(shipmentDetails.getShipmentGateInDate()), null));
                     } else if (shipmentDetails.getDateType() == ESTIMATED) {
                         events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.CAAW, null,
-                                shipmentDetails.getShipmentGateInDate()));
+                                commonUtils.getUserZoneTime(shipmentDetails.getShipmentGateInDate())));
                     }
                 }
             }
@@ -3502,12 +3514,12 @@ public class ShipmentService implements IShipmentService {
             if(ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.EMCR))){
                 List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.EMCR);
                 for(Events event: dbEvents){
-                    event.setActual(LocalDateTime.now());
+                    event.setActual(commonUtils.getUserZoneTime(LocalDateTime.now()));
                     eventDao.updateUserFieldsInEvent(event, true);
                 }
             }else{
                 events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.EMCR,
-                        LocalDateTime.now(), null));
+                        commonUtils.getUserZoneTime(LocalDateTime.now()), null));
             }
         }
 
@@ -3518,12 +3530,12 @@ public class ShipmentService implements IShipmentService {
             if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.ECCC))) {
                 List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.ECCC);
                 for (Events event : dbEvents) {
-                    event.setActual(LocalDateTime.now());
+                    event.setActual(commonUtils.getUserZoneTime(LocalDateTime.now()));
                     eventDao.updateUserFieldsInEvent(event, true);
                 }
             } else {
                 events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.ECCC,
-                        LocalDateTime.now(), null));
+                        commonUtils.getUserZoneTime(LocalDateTime.now()), null));
             }
         }
 
@@ -3534,12 +3546,12 @@ public class ShipmentService implements IShipmentService {
             if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.BLRS))) {
                 List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.BLRS);
                 for (Events event : dbEvents) {
-                    event.setActual(shipmentDetails.getAdditionalDetails().getBlInstructionReceived());
+                    event.setActual(commonUtils.getUserZoneTime(shipmentDetails.getAdditionalDetails().getBlInstructionReceived()));
                     eventDao.updateUserFieldsInEvent(event, true);
                 }
             } else {
                 events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.BLRS,
-                        shipmentDetails.getAdditionalDetails().getBlInstructionReceived(), null));
+                        commonUtils.getUserZoneTime(shipmentDetails.getAdditionalDetails().getBlInstructionReceived()), null));
             }
         }
 
@@ -3560,12 +3572,12 @@ public class ShipmentService implements IShipmentService {
             if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.COOD))) {
                 List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.COOD);
                 for (Events event : dbEvents) {
-                    event.setActual(shipmentDetails.getAdditionalDetails().getCargoOutForDelivery());
+                    event.setActual(commonUtils.getUserZoneTime(shipmentDetails.getAdditionalDetails().getCargoOutForDelivery()));
                     eventDao.updateUserFieldsInEvent(event, true);
                 }
             } else {
                 events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.COOD,
-                        shipmentDetails.getAdditionalDetails().getCargoOutForDelivery(), null));
+                        commonUtils.getUserZoneTime(shipmentDetails.getAdditionalDetails().getCargoOutForDelivery()), null));
             }
         }
 
@@ -5394,8 +5406,7 @@ public class ShipmentService implements IShipmentService {
                 log.debug(ShipmentConstants.SHIPMENT_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
-            if(checkForDGShipmentAndAirDgFlag(shipmentDetails.get()) && !isAirDgUser())
-                throw new ValidationException("You do not have necessary permissions for this.");
+            checkPermissionsForCloning(shipmentDetails.get());
             ShipmentRequest cloneShipmentDetails = jsonHelper.convertValue(shipmentDetails.get(), ShipmentRequest.class);
             cloneShipmentDetails.setId(null);
             cloneShipmentDetails.setGuid(null);
@@ -6383,7 +6394,7 @@ public class ShipmentService implements IShipmentService {
 
     private void autoGenerateCreateEvent(ShipmentDetails shipmentDetails) {
         Events response = null;
-        response = createAutomatedEvents(shipmentDetails, EventConstants.SHCR, LocalDateTime.now(), null);
+        response = createAutomatedEvents(shipmentDetails, EventConstants.SHCR, commonUtils.getUserZoneTime(LocalDateTime.now()), null);
 
         if (shipmentDetails.getEventsList() == null) {
             shipmentDetails.setEventsList(new ArrayList<>());
@@ -8432,7 +8443,7 @@ public class ShipmentService implements IShipmentService {
             if(shipmentSettingsDetails.getAutoEventCreate() != null && shipmentSettingsDetails.getAutoEventCreate())
                 autoGenerateCreateEvent(shipmentDetails);
             autoGenerateEvents(shipmentDetails, null);
-            createAutomatedEvents(shipmentDetails, EventConstants.BKCR, LocalDateTime.now(), null);
+            createAutomatedEvents(shipmentDetails, EventConstants.BKCR, commonUtils.getUserZoneTime(LocalDateTime.now()), null);
             Long shipmentId = shipmentDetails.getId();
             List<Packing> updatedPackings = new ArrayList<>();
             if (request.getPackingList() != null) {
@@ -8731,6 +8742,19 @@ public class ShipmentService implements IShipmentService {
                 List<V1TenantResponse> tenantResponses = jsonHelper.convertValueToList(response.getEntities(), V1TenantResponse.class);
                 consolidationDetails.setReceivingBranch(tenantResponses.get(0).getTenantId());
             }
+        }
+    }
+
+    private void checkPermissionsForCloning(ShipmentDetails shipmentDetails) {
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+        Boolean countryAirCargoSecurity = shipmentSettingsDetails.getCountryAirCargoSecurity();
+        if (Boolean.TRUE.equals(countryAirCargoSecurity)) {
+            if (!CommonUtils.checkAirSecurityForShipment(shipmentDetails)) {
+                throw new ValidationException(Constants.AIR_SECURITY_PERMISSION_MSG);
+            }
+        } else {
+            if (checkForDGShipmentAndAirDgFlag(shipmentDetails) && !isAirDgUser())
+                throw new ValidationException("You do not have necessary permissions for this.");
         }
     }
 

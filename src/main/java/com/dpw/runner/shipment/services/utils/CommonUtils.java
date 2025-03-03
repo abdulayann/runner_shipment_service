@@ -36,6 +36,7 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocat
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
@@ -2363,4 +2364,43 @@ public class CommonUtils {
         }
         return true;
     }
+
+    public EventsRequest prepareEventRequest(Long entityId, String eventCode, String entityType, String referenceNumber) {
+        EventsRequest eventsRequest = new EventsRequest();
+        eventsRequest.setActual(getUserZoneTime(LocalDateTime.now()));
+        eventsRequest.setEntityId(entityId);
+        eventsRequest.setEntityType(entityType);
+        eventsRequest.setEventCode(eventCode);
+        if (!CommonUtils.IsStringNullOrEmpty(referenceNumber))
+            eventsRequest.setContainerNumber(referenceNumber);
+        eventsRequest.setIsPublicTrackingEvent(true);
+        eventsRequest.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
+        return eventsRequest;
+    }
+
+    public LocalDateTime getUserZoneTime(LocalDateTime inputDateTime) {
+        UsersDto userDetails = UserContext.getUser();
+        Boolean enableTimeZoneFlag = Optional.ofNullable(userDetails.getEnableTimeZone()).orElse(false);
+        String tenantTimeZone = userDetails.getTimeZoneId();
+        return DateUtils.convertDateToUserTimeZone(inputDateTime, null, tenantTimeZone, enableTimeZoneFlag);
+    }
+
+    public void impersonateUser(Integer tenantId) {
+        try {
+            Map<Integer, Object> responseMap = getTenantSettingsAndTenantsData(Set.of(tenantId));
+            TenantDetailsByListResponse.TenantDetails response = modelMapper.map(responseMap.get(tenantId), TenantDetailsByListResponse.TenantDetails.class);
+            TenantModel tenantModel = modelMapper.map(response.getTenant(), TenantModel.class);
+            UserContext.getUser().setEnableTimeZone(tenantModel.getEnableTimeZone());
+            UserContext.getUser().setTimeZoneId(tenantModel.getTimeZoneId());
+            log.info("User impersonated successfully");
+        }
+        catch (Exception e) {
+            // in case of any failure set Enable Time zone and time zone id as null to avoid wrong transformations
+            // UTC will be the fallback value
+            UserContext.getUser().setEnableTimeZone(null);
+            UserContext.getUser().setTimeZoneId(null);
+            log.warn("Error while impersonating user with tenant Id {}", tenantId, e);
+        }
+    }
+
 }

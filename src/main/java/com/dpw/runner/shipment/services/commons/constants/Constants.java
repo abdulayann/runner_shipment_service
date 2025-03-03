@@ -618,9 +618,10 @@ public class Constants {
     public static final String ADDRESS_SHORT_CODE = "AddressShortCode";
     public static final String ORG_ADDRESS = "orgAddress";
     public static final String IS_CSD_DOCUMENT_ADDED = "isCSDDocumentAdded";
+    public static final String AIR_SECURITY_PERMISSION_MSG = "You do not have Air Security permissions for this.";
     public static final String SWITCH_DEFAULT_CASE_MSG = "Unhandled case in switch: {}";
     public static final String SEND_EMAIL_AIR_MESSAGING_FAILURE = "Send Email for Air Messaging Failure : {}";
-    public static final String  AUTO_OFFSET_RESET_CONFIG_LATEST = "latest";
+    public static final String AUTO_OFFSET_RESET_CONFIG_LATEST = "latest";
 
     private Constants() {
     }
