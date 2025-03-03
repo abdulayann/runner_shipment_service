@@ -29,4 +29,5 @@ public interface IDocumentManagerService {
     ResponseEntity<IRunnerResponse> deleteFile(CommonRequestModel request);
     ResponseEntity<IRunnerResponse> getFileHistory(CommonRequestModel request);
     byte[] downloadDocument(CommonRequestModel request);
+    ResponseEntity<IRunnerResponse> bulkSave(CommonRequestModel request);
 }
