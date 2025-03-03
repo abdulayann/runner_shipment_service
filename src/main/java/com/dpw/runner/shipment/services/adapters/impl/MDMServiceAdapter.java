@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.commons.constants.MdmConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.commons.responses.MDMServiceResponse;
 import com.dpw.runner.shipment.services.dto.request.mdm.MdmListCriteriaRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.ApprovalPartiesRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.CompanyDetailsRequest;
@@ -23,12 +24,15 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.retry.RetryCallback;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 @Slf4j
@@ -133,18 +137,22 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
         CompanyDetailsRequest request =  jsonHelper.convertValueWithJsonNullable(commonRequestModel.getDependentData(), CompanyDetailsRequest.class);
         try {
             log.info("Calling MDM createNonBillableCustomer api for requestId : {} Request for {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
-            var resp = retryTemplate.execute((RetryCallback<ResponseEntity<IRunnerResponse>, Exception>) context -> {
-                ResponseEntity<DependentServiceResponse> response = restTemplate.exchange(
+            restTemplate.getMessageConverters().add(0, new StringHttpMessageConverter(StandardCharsets.UTF_8));
+            ResponseEntity<DependentServiceResponse> response = restTemplate.exchange(
                     RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJsonWithNulls(request)),
                     DependentServiceResponse.class
                 );
-                return ResponseHelper.buildDependentServiceResponse(response.getBody(), 0, 0);
-            });
-            log.info("MDM createNonBillableCustomer api response for requestId - {} : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(jsonHelper.convertToJson(resp)));
-            return resp;
+            log.info("MDM createNonBillableCustomer api response for requestId - {} : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(jsonHelper.convertToJson(response.getBody())));
+            return ResponseHelper.buildSuccessResponse(response.getBody());
         } catch (Exception ex) {
-            log.error("MDM createNonBillableCustomer Failed due to: {}", jsonHelper.convertToJson(ex.getMessage()));
-            return ResponseHelper.buildFailedResponse(ex.getMessage());
+            String errorMessage = ex.getMessage();
+            if(ex instanceof HttpClientErrorException) {
+                String json = ((HttpClientErrorException) ex).getResponseBodyAsString();
+                String msg = jsonHelper.readFromJson(json, MDMServiceResponse.class).getMessage();
+                errorMessage = msg != null ? msg : errorMessage;
+            }
+            log.error("MDM createNonBillableCustomer Failed due to: {}", jsonHelper.convertToJson(errorMessage));
+            return ResponseHelper.buildFailedResponse(errorMessage);
         }
     }
 
