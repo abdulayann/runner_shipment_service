@@ -913,9 +913,9 @@ class MasterDataHelperTest {
         // Act
         masterDataHelper.setContainersPacksAutoUpdateData(shipmentDetailsResponse, new HashMap<>());
 
-        assertFalse(shipmentDetailsResponse.isCargoFinanceBooking());
-        assertFalse(shipmentDetailsResponse.isIntraBranch());
-        assertFalse(shipmentDetailsResponse.isShipmentReadOnly());
+        assertFalse(shipmentDetailsResponse.getCargoFinanceBooking());
+        assertFalse(shipmentDetailsResponse.getIntraBranch());
+        assertFalse(shipmentDetailsResponse.getIsShipmentReadOnly());
     }
 
     @Test
