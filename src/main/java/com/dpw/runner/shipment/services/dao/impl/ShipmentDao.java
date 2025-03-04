@@ -300,7 +300,7 @@ public class ShipmentDao implements IShipmentDao {
         Boolean countryAirCargoSecurity = shipmentSettingsDetails.getCountryAirCargoSecurity();
         if (Boolean.TRUE.equals(countryAirCargoSecurity)) {
             if (!fromV1Sync && !CommonUtils.checkAirSecurityForShipment(request)) {
-                errors.add("You don't have permission to update AIR EXP Shipment.");
+                errors.add("You don't have Air Security permission to create or update AIR EXP Shipment.");
             }
             // Non dg Shipments can not have dg packs
             if (!Boolean.TRUE.equals(request.getContainsHazardous()) && checkContainsDGPackage(request)) {

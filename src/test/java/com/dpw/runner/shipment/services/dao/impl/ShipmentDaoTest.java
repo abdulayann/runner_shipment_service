@@ -1767,7 +1767,7 @@ class ShipmentDaoTest extends CommonMocks {
 
         mockShipmentSettings();
         Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
-        assertTrue(errors.contains("You don't have permission to update AIR EXP Shipment."));
+        assertTrue(errors.contains("You don't have Air Security permission to create or update AIR EXP Shipment."));
     }
 
     @Test
@@ -1789,7 +1789,7 @@ class ShipmentDaoTest extends CommonMocks {
 
         mockShipmentSettings();
         Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
-        assertFalse(errors.contains("You don't have permission to update AIR EXP Shipment."));
+        assertFalse(errors.contains("You don't have Air Security permission to create or update AIR EXP Shipment."));
     }
 
     @Test
@@ -1808,6 +1808,6 @@ class ShipmentDaoTest extends CommonMocks {
 
         mockShipmentSettings();
         Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, true);
-        assertFalse(errors.contains("You don't have permission to update AIR EXP Shipment."));
+        assertFalse(errors.contains("You don't have Air Security permission to create or update AIR EXP Shipment."));
     }
 }
