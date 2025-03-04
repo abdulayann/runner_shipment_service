@@ -96,8 +96,6 @@ public class BridgeConsumer {
         }
 
         Integer tenantId = customerBooking.get().getTenantId();
-        setTenantContext(tenantId);
-
         if (StringUtility.isEmpty(bookingNumber)) {
             log.warn("Booking number is empty.");
             return;
@@ -106,6 +104,7 @@ public class BridgeConsumer {
         try {
             Optional<CustomerBooking> booking = customerBookingDao.findByBookingNumberQuery(bookingNumber);
             if (booking.isPresent()) {
+                setTenantContext(tenantId, booking.get());
                 auditLogService.addAuditLog(createAuditLog(tenantId, booking.get().getId(),
                         type.equalsIgnoreCase("HBL") ? "Doc: HBL" : "Doc: POD"));
             }
@@ -129,15 +128,23 @@ public class BridgeConsumer {
             return;
         }
 
-        for (Event event : events) {
-            Optional<CustomerBooking> booking = customerBookingDao.findByBookingNumberQuery(event.getBookingNumber());
-            if (booking.isPresent()) {
-                auditLogService.addAuditLog(createAuditLog(
-                        booking.get().getTenantId(), booking.get().getId(), "Event: " + event.getEventCode()
-                ));
+        try {
+            Optional<CustomerBooking> booking = customerBookingDao.findByBookingNumberQuery(events.get(0).getBookingNumber());
+            if(booking.isPresent()) {
+                setTenantContext(booking.get().getTenantId(), booking.get());
+                for (Event event : events) {
+                    auditLogService.addAuditLog(createAuditLog(
+                            booking.get().getTenantId(), booking.get().getId(), "Event: " + event.getEventCode()
+                    ));
+                }
             } else {
-                log.warn("No booking found for event: {}", event);
+                log.warn("No booking found!!");
             }
+
+        } catch (Exception e) {
+            log.error("Error processing HBL/POD request: {}", e.getMessage(), e);
+        } finally {
+            clearTenantContext();
         }
     }
 
@@ -156,10 +163,10 @@ public class BridgeConsumer {
                 .build();
     }
 
-    private void setTenantContext(Integer tenantId) {
+    private void setTenantContext(Integer tenantId, CustomerBooking booking) {
         RequestAuthContext.setAuthToken("Bearer " + StringUtils.defaultString(v1Service.generateToken()));
         TenantContext.setCurrentTenant(tenantId);
-        UserContext.setUser(UsersDto.builder().TenantId(tenantId).Permissions(new HashMap<>()).build());
+        UserContext.setUser(UsersDto.builder().TenantId(tenantId).Username(booking.getCreatedBy()).Permissions(new HashMap<>()).build());
     }
 
     private void clearTenantContext() {

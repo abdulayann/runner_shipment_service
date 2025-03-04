@@ -37,8 +37,8 @@ public interface IEventRepository extends MultiTenancyRepository<Events> {
 
     default Optional<Events> findByEntityIdAndEntityType(Long entityId, String entityType) {
         Specification<Events> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.and(
-                criteriaBuilder.equal(root.get("entity_id"), entityId),
-                criteriaBuilder.equal(root.get("entity_type"), entityType)
+                criteriaBuilder.equal(root.get("entityId"), entityId.intValue()),
+                criteriaBuilder.equal(root.get("entityType"), entityType)
         );
         return findOne(spec);
     }
