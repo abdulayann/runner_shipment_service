@@ -255,7 +255,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         Boolean countryAirCargoSecurity = shipmentSettingsDetails.getCountryAirCargoSecurity();
         if (Boolean.TRUE.equals(countryAirCargoSecurity)) {
             if (!fromV1Sync && !CommonUtils.checkAirSecurityForConsolidation(request)) {
-                errors.add("You don't have permission to update AIR EXP Consolidation.");
+                errors.add("You don't have Air Security permission to create or update AIR EXP Consolidation.");
             }
             // Non dg consolidation validations
             if (!Boolean.TRUE.equals(request.getHazardous())) {

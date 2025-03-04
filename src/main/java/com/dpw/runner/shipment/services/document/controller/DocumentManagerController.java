@@ -131,4 +131,20 @@ public class DocumentManagerController {
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = DocumentConstants.ADDED_SUCCESSFUL, response = DependentServiceResponse.class),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+    })
+    @PostMapping(ApiConstants.API_LIST)
+    public ResponseEntity<IRunnerResponse> listDocuments(@RequestBody @Valid Object request) {
+        String responseMsg;
+        try {
+            return documentManagerService.list(CommonRequestModel.buildDependentDataRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
 }

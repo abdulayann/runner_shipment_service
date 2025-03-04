@@ -5308,7 +5308,7 @@ public class ShipmentService implements IShipmentService {
      */
     public void createShipmentPayload(ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, boolean getMasterData) {
         try {
-            double _start = System.currentTimeMillis();
+            double start = System.currentTimeMillis();
             if(getMasterData) {
                 var masterListFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllMasterDataInSingleCall(shipmentDetailsResponse, null)), executorServiceMasterData);
                 var unLocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllUnlocationDataInSingleCall(shipmentDetailsResponse, null)), executorServiceMasterData);
@@ -5323,19 +5323,27 @@ public class ShipmentService implements IShipmentService {
                 CompletableFuture.allOf(masterListFuture, unLocationsFuture, carrierFuture, currencyFuture, commodityTypesFuture, tenantDataFuture, wareHouseDataFuture,
                         activityDataFuture, salesAgentFuture,
                         containerTypeFuture).join();
+                log.info("{} | createShipmentPayload Time taken for V1 Masterdata: {} ms", LoggerHelper.getRequestIdFromMDC(), (System.currentTimeMillis() - start));
             }
+            double mid = System.currentTimeMillis();
             Map<Long, ContainerResponse> map = new HashMap<>();
             Set<ContainerResponse> containers = shipmentDetailsResponse.getContainersList();
             if(containers != null)
                 map = containers.stream().collect(Collectors.toMap(ContainerResponse::getId, Function.identity()));
             masterDataHelper.setContainersPacksAutoUpdateData(shipmentDetailsResponse, map);
             masterDataHelper.setTruckDriverDetailsData(shipmentDetailsResponse, map);
+            log.info("{} | createShipmentPayload Time taken for setContainersPacksAutoUpdateData & setTruckDriverDetailsData: {} ms", LoggerHelper.getRequestIdFromMDC(), (System.currentTimeMillis() - mid));
+            mid = System.currentTimeMillis();
             if(!Objects.isNull(shipmentDetails)) {
                 shipmentDetailsResponse.setPackSummary(packingService.calculatePackSummary(shipmentDetails.getPackingList(), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType(), new ShipmentMeasurementDetailsDto()));
                 shipmentDetailsResponse.setContainerSummary(containerService.calculateContainerSummary(new ArrayList<>(shipmentDetails.getContainersList()), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType()));
+                log.info("{} | createShipmentPayload Time taken for setPackSummary & setContainerSummary: {} ms", LoggerHelper.getRequestIdFromMDC(), (System.currentTimeMillis() - mid));
+                mid = System.currentTimeMillis();
             }
             // fetch NTE status
             this.fetchNTEstatusForReceivingBranch(shipmentDetailsResponse);
+            log.info("{} | createShipmentPayload Time taken for setPackSummary & fetchNTEstatusForReceivingBranch: {} ms", LoggerHelper.getRequestIdFromMDC(), (System.currentTimeMillis() - mid));
+            mid = System.currentTimeMillis();
             try {
                 if(shipmentDetailsResponse.getId() != null) {
                     var awb = awbDao.findByShipmentId(shipmentDetailsResponse.getId());
@@ -5348,6 +5356,8 @@ public class ShipmentService implements IShipmentService {
                 }
                 if(!shipmentDetailsResponse.getAdditionalDetails().getIsSummaryUpdated())
                     shipmentDetailsResponse.getAdditionalDetails().setSummary(shipmentDetailsResponse.getContainerSummary().getSummary());
+                log.info("{} | createShipmentPayload Time taken for setAwbStatus & getIsSummaryUpdated: {} ms", LoggerHelper.getRequestIdFromMDC(), (System.currentTimeMillis() - mid));
+                mid = System.currentTimeMillis();
             } catch (Exception e) {}
             if(!Objects.isNull(shipmentDetails)) {
                 Set<ConsolidationDetails> consolidationList = shipmentDetails.getConsolidationList();
@@ -5360,10 +5370,11 @@ public class ShipmentService implements IShipmentService {
                 } else {
                     shipmentDetailsResponse.setShipmentCount(0L);
                 }
+                log.info("{} | createShipmentPayload Time taken for setting Notification Count: {} ms", LoggerHelper.getRequestIdFromMDC(), (System.currentTimeMillis() - mid));
             } else {
                 shipmentDetailsResponse.setShipmentCount(0L);
             }
-            log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.SHIPMENT_RETRIEVE_COMPLETE_MASTER_DATA, (System.currentTimeMillis() - _start) , LoggerHelper.getRequestIdFromMDC());
+            log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.SHIPMENT_RETRIEVE_COMPLETE_MASTER_DATA, (System.currentTimeMillis() - start) , LoggerHelper.getRequestIdFromMDC());
         }
         catch (Exception ex) {
             log.error(Constants.ERROR_OCCURRED_FOR_EVENT, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_SHIPMENT_RETRIEVE, ex.getLocalizedMessage());

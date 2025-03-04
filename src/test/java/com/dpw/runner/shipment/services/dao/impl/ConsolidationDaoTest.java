@@ -706,7 +706,7 @@ class ConsolidationDaoTest extends CommonMocks {
 
         mockShipmentSettings();
         Set<String> errors = consolidationsDao.applyConsolidationValidations(consolidationDetails, false, false);
-        assertTrue(errors.contains("You don't have permission to update AIR EXP Consolidation."));
+        assertTrue(errors.contains("You don't have Air Security permission to create or update AIR EXP Consolidation."));
     }
 
     @Test
@@ -761,7 +761,7 @@ class ConsolidationDaoTest extends CommonMocks {
 
         mockShipmentSettings();
         Set<String> errors = consolidationsDao.applyConsolidationValidations(consolidationDetails, false, true);
-        assertFalse(errors.contains("You don't have permission to update AIR EXP Consolidation."));
+        assertFalse(errors.contains("You don't have Air Security permission to create or update AIR EXP Consolidation."));
     }
 
 }
