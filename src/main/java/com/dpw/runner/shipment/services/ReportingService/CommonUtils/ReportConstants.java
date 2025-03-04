@@ -1347,6 +1347,17 @@ public class ReportConstants {
     public static final String COMMODITY = "Commodity";
     public static final String CBN_NUMBER = "CBN Number";
     public static final String SHIPMENT_PRE_ALERT_DOC = "shipment_pre_alert_doc";
+    public static final String OA_BRANCH = "OABranch";
+    public static final String OA_BRANCH_ADD = "OABranchAdd";
+    public static final String OA_NAME = "OAName";
+    public static final String OA_PHONE = "OAPhone";
+    public static final String OA_EMAIL = "OAemail";
+    public static final String DA_BRANCH = "DABranch";
+    public static final String DA_BRANCH_ADD = "DABranchAdd";
+    public static final String DA_NAME = "DAName";
+    public static final String DA_PHONE = "DAPhone";
+    public static final String DA_EMAIL = "DAemail";
+    public static final String PHONE = "Phone";
 
     // ValidationExceptions
     public static final String FREIGHT_DOCUMENT_PERMISSION_EXCEPTION = "You do not have permission to print the freight documents.";

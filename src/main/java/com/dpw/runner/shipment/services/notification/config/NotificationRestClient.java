@@ -26,6 +26,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -64,6 +65,8 @@ public class NotificationRestClient {
         body.add("file", params.getFiles());
         if(params.getTags() != null)
             body.add("tags", params.getTags());
+        if(!Objects.isNull(params.getAttachments()))
+            body.add("attachments", params.getAttachments());
 
         HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
 

@@ -2444,7 +2444,7 @@ public abstract class IReport {
         return value.setScale(scale, roundingMode);
     }
 
-    public String getValueFromMap(Map<String, Object> dataMap, String key) {
+    public static String getValueFromMap(Map<String, Object> dataMap, String key) {
         if (Objects.isNull(dataMap))
             return null;
 
@@ -2675,7 +2675,7 @@ public abstract class IReport {
     }
 
 
-    private List<String> getPartyAddress(PartiesModel party) {
+    public static List<String> getPartyAddress(PartiesModel party) {
         if(party != null && party.getAddressData() != null) {
             return ReportHelper.getOrgAddress(
                     getValueFromMap(party.getAddressData(),COMPANY_NAME),

@@ -18,6 +18,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @Slf4j
@@ -80,6 +81,8 @@ public class NotificationServiceImpl implements INotificationService {
         notificationServiceSendEmailRequest.setOrganizationId(notificationConfig.getOrganizationId());
         if(!CommonUtils.listIsNullOrEmpty(request.getTags()))
             notificationServiceSendEmailRequest.setTags(jsonHelper.convertToJson(request.getTags()));
+        if(!Objects.isNull(request.getAttachments()))
+            notificationServiceSendEmailRequest.setAttachments(request.getAttachments());
 
         NotificationMetadata metadata = new NotificationMetadata();
         metadata.setFrom(notificationConfig.getEmailFrom());
