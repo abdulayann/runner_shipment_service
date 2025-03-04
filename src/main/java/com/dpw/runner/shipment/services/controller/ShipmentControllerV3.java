@@ -34,9 +34,9 @@ public class ShipmentControllerV3 {
 
 
     @ApiResponses(value = {
-            @ApiResponse(code = 200, response = RunnerResponse.class, message = ShipmentConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
+            @ApiResponse(code = 200, response = RunnerResponse.class, message = ShipmentConstants.PENDING_NOTIFICATION_COUNT_SUCCESSFUL)})
     @GetMapping(ShipmentConstants.COUNT_PENDING_NOTIFICATION_API)
-    public ResponseEntity<IRunnerResponse> retrieveById() {
+    public ResponseEntity<IRunnerResponse> getPendingNotificationCount() {
         String responseMsg;
         try {
             log.info("Received shipment notification pending count request with RequestId: {}", LoggerHelper.getRequestIdFromMDC());

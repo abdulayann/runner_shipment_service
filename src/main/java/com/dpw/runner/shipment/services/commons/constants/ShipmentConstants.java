@@ -166,6 +166,7 @@ public class ShipmentConstants {
 
     public static final String RETRIEVE_BY_ID_SUCCESSFUL = "Successful Shipment Data Retrieval By Id";
     public static final String REQUESTED_INTER_BRANCH_CONSOLE = "Requested inter branch console";
+    public static final String PENDING_NOTIFICATION_COUNT_SUCCESSFUL = "Pending Notification Count successful";
 
     public static final String SHIPMENT_ID = "Shipment Id";
     public static final String SHIPMENT_GUID = "Shipment Guid";
