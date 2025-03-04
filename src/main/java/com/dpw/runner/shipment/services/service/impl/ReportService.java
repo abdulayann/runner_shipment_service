@@ -1823,9 +1823,8 @@ public class ReportService implements IReportService {
             log.debug("Shipment Details is null for the input with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
-        ShipmentModel shipmentModel = modelMapper.map(shipmentDetails.get(), ShipmentModel.class);
         Map<String, Object> dataRetrived = new HashMap<>();
-        shipmentTagsForExteranlServices.populateRaKcData(dataRetrived, shipmentModel);
+        shipmentTagsForExteranlServices.populateRaKcData(dataRetrived, shipmentDetails.get());
         return ResponseHelper.buildSuccessResponse(dataRetrived);
     }
 

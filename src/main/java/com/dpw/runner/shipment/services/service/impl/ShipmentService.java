@@ -1097,7 +1097,8 @@ public class ShipmentService implements IShipmentService {
             );
 
             ShipmentDetails finalShipmentDetails1 = shipmentDetails;
-            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForShipment(finalShipmentDetails1)), executorService);
+            String entityPayload = jsonHelper.convertToJson(finalShipmentDetails1);
+            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForShipment(entityPayload, finalShipmentDetails1.getId(), finalShipmentDetails1.getGuid())), executorService);
             ShipmentDetails finalShipmentDetails = shipmentDetails;
 
         } catch (Exception e) {
@@ -1972,7 +1973,8 @@ public class ShipmentService implements IShipmentService {
             afterSave(entity, oldConvertedShipment, false, shipmentRequest, shipmentSettingsDetails, syncConsole, removedConsolIds, isNewConsolAttached, false, isFromET);
             log.info("{} | completeUpdateShipment after save.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
             ShipmentDetails finalEntity1 = entity;
-            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForShipment(finalEntity1)), executorService);
+            String entityPayload = jsonHelper.convertToJson(finalEntity1);
+            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForShipment(entityPayload, finalEntity1.getId(), finalEntity1.getGuid())), executorServiceMasterData);
             ShipmentDetails finalEntity = entity;
             log.info("end completeUpdateShipment.... {} ms", System.currentTimeMillis() - start);
             return shipmentDetailsMapper.map(entity);
@@ -2006,11 +2008,10 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    public void createLogHistoryForShipment(ShipmentDetails shipmentDetails){
+    public void createLogHistoryForShipment(String entityPayload, Long id, UUID guid){
         try {
-            String entityPayload = jsonHelper.convertToJson(shipmentDetails);
-            logsHistoryService.createLogHistory(LogHistoryRequest.builder().entityId(shipmentDetails.getId())
-                    .entityType(Constants.SHIPMENT).entityGuid(shipmentDetails.getGuid()).entityPayload(entityPayload).build());
+            logsHistoryService.createLogHistory(LogHistoryRequest.builder().entityId(id)
+                    .entityType(Constants.SHIPMENT).entityGuid(guid).entityPayload(entityPayload).build());
         } catch (Exception ex) {
             log.error("Error while creating LogsHistory for Shipment: " + ex.getMessage());
         }
@@ -5141,8 +5142,12 @@ public class ShipmentService implements IShipmentService {
             masterDataHelper.setContainersPacksAutoUpdateData(shipmentDetailsResponse, map);
             masterDataHelper.setTruckDriverDetailsData(shipmentDetailsResponse, map);
             if(!Objects.isNull(shipmentDetails)) {
+                double _start1 = System.currentTimeMillis();
                 shipmentDetailsResponse.setPackSummary(packingService.calculatePackSummary(shipmentDetails.getPackingList(), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType(), new ShipmentMeasurementDetailsDto()));
+                log.info("Time taken to calculate pack summary for event:{} | Time: {} ms. || RequestId: {},  pack size: {}", LoggerEvent.SHIPMENT_RETRIEVE_COMPLETE_MASTER_DATA, (System.currentTimeMillis() - _start1) , LoggerHelper.getRequestIdFromMDC(), CollectionUtils.isEmpty(shipmentDetails.getPackingList()) ? 0 : shipmentDetails.getPackingList().size());
+                _start1 = System.currentTimeMillis();
                 shipmentDetailsResponse.setContainerSummary(containerService.calculateContainerSummary(shipmentDetails.getContainersList(), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType()));
+                log.info("Time taken to calculate container summary for event:{} | Time: {} ms. || RequestId: {}, container size: {}", LoggerEvent.SHIPMENT_RETRIEVE_COMPLETE_MASTER_DATA, (System.currentTimeMillis() - _start1) , LoggerHelper.getRequestIdFromMDC(), CollectionUtils.isEmpty(shipmentDetails.getContainersList()) ? 0 : shipmentDetails.getContainersList().size());
             }
             try {
                 if(shipmentDetailsResponse.getId() != null) {
