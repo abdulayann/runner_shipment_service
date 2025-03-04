@@ -147,5 +147,4 @@ public class DocumentManagerController {
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
-
 }
