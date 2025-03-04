@@ -46,4 +46,14 @@ public class AuditLog extends MultiTenancy {
 
     @Column(name = "parent_id")
     private Long parentId;
+
+    @Column(name = "flow")
+    private String flow;
+
+    @Column(name = "is_integration_log")
+    private Boolean isIntegrationLog;
+
+    @Column(name = "data_type")
+    private String dataType;
+
 }

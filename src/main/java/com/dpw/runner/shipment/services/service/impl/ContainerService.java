@@ -1710,6 +1710,8 @@ public class ContainerService implements IContainerService {
                     }
                 }
             }
+            if(CommonUtils.listIsNullOrEmpty(payloadDetails))
+                return;
             ContainerUpdateRequest updateRequest = new ContainerUpdateRequest();
             updateRequest.setContainers(payloadDetails);
             updateRequest.setTenantCode(UserContext.getUser().getCode());

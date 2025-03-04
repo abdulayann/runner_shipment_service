@@ -850,12 +850,11 @@ import static org.mockito.Mockito.*;
     }
 
     @Test
-    public void testUpdateConsoleBookingFields_Success() {
+    void testUpdateConsoleBookingFields_Success() {
         ConsoleBookingRequest request = new ConsoleBookingRequest();
         request.setGuid(UUID.randomUUID());
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
         when(consolidationDetailsDao.updateConsoleBookingFields(request)).thenReturn(1);
-        when(consolidationDetailsDao.findConsolidationByGuidWithQuery(request.getGuid())).thenReturn(Optional.of(consolidationDetails));
         ResponseEntity<IRunnerResponse> response = consolidationService.updateConsoleBookingFields(commonRequestModel);
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
@@ -883,7 +882,7 @@ import static org.mockito.Mockito.*;
         when(v1ServiceUtil.getTenantDetails(any())).thenReturn(tenantDetailsMap);
         when(commonUtils.prepareEventRequest(anyLong(), anyString(), anyString(), anyString())).thenReturn(new EventsRequest());
         when(jsonHelper.convertValue(tenantDetailsMap.get(1), V1TenantResponse.class)).thenReturn(tenantResponse1);
-        doNothing().when(eventService).saveAllEvent(anyList());
+        doNothing().when(eventService).saveEvent(any());
         ResponseEntity<IRunnerResponse> response = consolidationService.updateConsoleBookingFields(commonRequestModel);
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
