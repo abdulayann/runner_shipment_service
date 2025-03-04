@@ -620,6 +620,8 @@ public class Constants {
     public static final String IS_CSD_DOCUMENT_ADDED = "isCSDDocumentAdded";
     public static final String AIR_SECURITY_PERMISSION_MSG = "You do not have Air Security permissions for this.";
 
+    public static final String OUTBOUND = "Outbound";
+
     private Constants() {
     }
 
