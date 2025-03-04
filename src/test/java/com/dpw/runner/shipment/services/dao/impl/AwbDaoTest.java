@@ -11,19 +11,16 @@ import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbOCIInfo;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbOtherChargesInfo;
-import com.dpw.runner.shipment.services.dto.request.awb.AwbShipmentInfo;
 import com.dpw.runner.shipment.services.dto.response.AwbAirMessagingResponse;
-import com.dpw.runner.shipment.services.dto.response.AwbResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.entity.enums.PrintType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
-import com.dpw.runner.shipment.services.kafka.dto.AwbShipConsoleDto;
-import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.repository.interfaces.IAwbRepository;
+import com.dpw.runner.shipment.services.service.interfaces.IKafkaAsyncService;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.AwbUtility;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
@@ -41,7 +38,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-
 import javax.persistence.EntityManager;
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -85,6 +81,8 @@ class AwbDaoTest {
     private ModelMapper modelMapper;
     @Mock
     private CommonUtils commonUtils;
+    @Mock
+    private IKafkaAsyncService kafkaAsyncService;
 
     private static JsonTestUtility jsonTestUtility;
     private static ObjectMapper objectMapperTest;
@@ -123,6 +121,7 @@ class AwbDaoTest {
             Awb savedAwb = objectMapperTest.convertValue(mockAwb, Awb.class);
             savedAwb.setId(1L);
             when(awbRepository.save(any(Awb.class))).thenReturn(savedAwb);
+            doNothing().when(kafkaAsyncService).pushToKafkaAwb(any(), anyBoolean());
 
             mockAwb.setId(null);
             Awb response = awbDao.save(mockAwb);
@@ -161,6 +160,7 @@ class AwbDaoTest {
             Awb awb = mockAwb;
             AwbOtherChargesInfo awbOtherChargesInfo = AwbOtherChargesInfo.builder().iataDescription("ABCD").build();
             awb.setAwbOtherChargesInfo(List.of(awbOtherChargesInfo));
+            doNothing().when(kafkaAsyncService).pushToKafkaAwb(any(), anyBoolean());
             awbDao.save(awb);
 
         } catch (RunnerException e) {
@@ -170,85 +170,6 @@ class AwbDaoTest {
             String errorMessage = errors.toString();
             assertEquals(errorMessage, e.getMessage());
         }
-    }
-
-    @Test
-    void testPushToKafka_WithShipmentId() {
-        Awb awb = new Awb();
-        awb.setShipmentId(1L);
-        awb.setAwbShipmentInfo(AwbShipmentInfo.builder().entityType(Constants.DMAWB).build());
-
-        AwbResponse awbResponse = new AwbResponse();
-        AwbShipConsoleDto awbShipConsoleDto = new AwbShipConsoleDto();
-        awbResponse.setAwbKafkaEntity(awbShipConsoleDto);
-
-        when(shipmentDao.findById(any())).thenReturn(Optional.of(new ShipmentDetails()));
-        when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(awbResponse);
-        when(jsonHelper.convertValue(any(), eq(AwbShipConsoleDto.class))).thenReturn(awbShipConsoleDto);
-        when(producer.getKafkaResponse(eq(awbResponse), anyBoolean())).thenReturn(new KafkaResponse());
-
-        awbDao.pushToKafka(awb, true);
-
-        verify(producer, atLeast(1)).getKafkaResponse(any(), anyBoolean());
-        verify(producer, times(1)).produceToKafka(any(), any(), any());
-    }
-
-    @Test
-    void testPushToKafka_WithConsolidationId() {
-        Awb awb = new Awb();
-        awb.setConsolidationId(1L);
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(new ConsolidationDetails()));
-        when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(new AwbResponse());
-        when(producer.getKafkaResponse(any(), anyBoolean())).thenReturn(new KafkaResponse());
-
-        awbDao.pushToKafka(awb, false);
-
-        verify(jsonHelper).convertValue(any(), eq(AwbResponse.class));
-        verify(producer).getKafkaResponse(any(), eq(false));
-        verify(producer).produceToKafka(any(), any(), any());
-    }
-
-    @Test
-    void testPushToKafka_WithInvalidShipmentId() {
-        Awb awb = new Awb();
-        awb.setShipmentId(1L);
-        when(shipmentDao.findById(any())).thenReturn(Optional.empty());
-
-        awbDao.pushToKafka(awb, true);
-
-        verifyNoInteractions(producer);
-    }
-
-    @Test
-    void testPushToKafka_WithInvalidConsolidationId() {
-        Awb awb = new Awb();
-        awb.setConsolidationId(1L);
-        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.empty());
-
-        awbDao.pushToKafka(awb, false);
-
-        verifyNoInteractions(producer);
-    }
-
-    @Test
-    void testPushToKafka_WithNullTenantId() {
-        Awb awb = new Awb();
-        awb.setTenantId(null);
-        when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(new AwbResponse());
-
-        awbDao.pushToKafka(awb, false);
-
-        verify(jsonHelper).convertValue(any(), eq(AwbResponse.class));
-    }
-
-    @Test
-    void testPushToKafka_WithException() {
-        Awb awb = new Awb();
-        when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenThrow(new RuntimeException());
-
-        awbDao.pushToKafka(awb, false);
-
-        verifyNoInteractions(producer);
     }
 
     @Test
@@ -364,6 +285,7 @@ class AwbDaoTest {
     void testSaveAll() {
         List<Awb> inputAwbList = List.of(mockAwb, testMawb);
         when(awbRepository.saveAll(inputAwbList)).thenReturn(inputAwbList);
+        doNothing().when(kafkaAsyncService).pushToKafkaAwb(any(), anyBoolean());
 
         // Test
         var res = awbDao.saveAll(inputAwbList);
@@ -625,6 +547,7 @@ class AwbDaoTest {
 
         when(mock.findByShipmentId(shipmentDetails.getId())).thenReturn(List.of(mockAwb));
         when(mawbHawbLinkDao.findByHawbId(mockAwb.getId())).thenReturn(new ArrayList<>());
+        doNothing().when(kafkaAsyncService).pushToKafkaAwb(any(), anyBoolean());
 
         try {
             mock.updatedAwbInformationEvent(shipmentDetails, oldEntity);
@@ -640,6 +563,7 @@ class AwbDaoTest {
         ShipmentDetails oldEntity = jsonTestUtility.getTestShipment();
 
         when(mock.findByShipmentId(shipmentDetails.getId())).thenReturn(List.of(mockAwb));
+        doNothing().when(kafkaAsyncService).pushToKafkaAwb(any(), anyBoolean());
 
         try {
             mock.updatedAwbInformationEvent(shipmentDetails, oldEntity);
@@ -659,6 +583,7 @@ class AwbDaoTest {
         var mock = Mockito.spy(awbDao);
 
         when(mock.findByConsolidationId(consolidationDetails.getId())).thenReturn(List.of(testMawb));
+        doNothing().when(kafkaAsyncService).pushToKafkaAwb(any(), anyBoolean());
 
         try {
             mock.updatedAwbInformationEvent(consolidationDetails, oldEntity);
@@ -675,6 +600,7 @@ class AwbDaoTest {
         var mock = Mockito.spy(awbDao);
 
         when(mock.findByConsolidationId(consolidationDetails.getId())).thenReturn(List.of(testMawb));
+        doNothing().when(kafkaAsyncService).pushToKafkaAwb(any(), anyBoolean());
 
         try {
             mock.updatedAwbInformationEvent(consolidationDetails, oldEntity);
@@ -720,8 +646,9 @@ class AwbDaoTest {
         Awb mawb = jsonTestUtility.getTestMawb();
         testAwb.getAwbCargoInfo().setSci("T1");
         var mock = Mockito.spy(awbDao);
-        when(mawbHawbLinkDao.findByHawbId(testAwb.getId())).thenReturn(List.of(MawbHawbLink.builder().hawbId(testAwb.getId()).mawbId(mawb.getId()).build()));
+        when(mawbHawbLinkDao.findByHawbId(mockAwb.getId())).thenReturn(List.of(MawbHawbLink.builder().hawbId(mockAwb.getId()).mawbId(mawb.getId()).build()));
         when(awbRepository.findAwbByIds(any())).thenReturn(List.of(mawb));
+        doNothing().when(kafkaAsyncService).pushToKafkaAwb(any(), anyBoolean());
 
         mock.updateSciFieldFromHawb(testAwb, null, false, testAwb.getId());
         verify(mock, times(1)).save(any());

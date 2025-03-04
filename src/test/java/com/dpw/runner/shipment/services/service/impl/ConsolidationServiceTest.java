@@ -717,10 +717,10 @@ import static org.mockito.Mockito.*;
         CommonGetRequest getRequest = CommonGetRequest.builder().build();
         getRequest.setId(1L);
         requestModel.setData(getRequest);
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(testConsol));
+        when(jsonHelper.convertValue(testConsol, ConsolidationDetailsResponse.class)).thenReturn(testConsolResponse);
+        mockShipmentSettings();
         var spyService = Mockito.spy(consolidationService);
-        CompletableFuture<ResponseEntity<IRunnerResponse>> future = CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(testConsolResponse));
-//        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(testConsol));
-        Mockito.doReturn(future).when(spyService).retrieveByIdAsync(requestModel);
 
         ResponseEntity<IRunnerResponse> responseEntity = spyService.completeRetrieveById(requestModel);
 
@@ -737,9 +737,9 @@ import static org.mockito.Mockito.*;
         getRequest.setId(1L);
         getRequest.setIncludeColumns(List.of("guid", "id"));
         requestModel.setData(getRequest);
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(testConsol));
+        mockShipmentSettings();
         var spyService = Mockito.spy(consolidationService);
-        CompletableFuture<ResponseEntity<IRunnerResponse>> future = CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(testConsolResponse));
-        Mockito.doReturn(future).when(spyService).retrieveByIdAsync(requestModel);
         when(partialFetchUtils.fetchPartialListData(any(), any())).thenReturn(testConsolResponse);
         ResponseEntity<IRunnerResponse> responseEntity = spyService.completeRetrieveById(requestModel);
 
@@ -780,11 +780,8 @@ import static org.mockito.Mockito.*;
         CommonGetRequest getRequest = CommonGetRequest.builder().build();
         getRequest.setId(1L);
         requestModel.setData(getRequest);
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.empty());
         var spyService = Mockito.spy(consolidationService);
-        CompletableFuture<ResponseEntity<IRunnerResponse>> future = CompletableFuture.failedFuture(new RuntimeException());
-        Mockito.doReturn(future).when(spyService).retrieveByIdAsync(requestModel);
-
-
         ResponseEntity<IRunnerResponse> responseEntity = spyService.completeRetrieveById(requestModel);
 
 

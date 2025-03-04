@@ -4634,8 +4634,7 @@ public class ShipmentService implements IShipmentService {
         return response;
     }
 
-    @Async
-    public CompletableFuture<ResponseEntity<IRunnerResponse>> retrieveByIdAsync(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> retrieveByIdWithBookingNotes(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -4646,7 +4645,7 @@ public class ShipmentService implements IShipmentService {
                 log.error("Request Id is null for Shipment async retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
             Long id = request.getId();
-            Optional<ShipmentDetails> shipmentDetails = Optional.ofNullable(null);
+            Optional<ShipmentDetails> shipmentDetails;
             if(request.getId() != null ){
                 shipmentDetails = shipmentDao.findById(id);
             } else {
@@ -4661,13 +4660,12 @@ public class ShipmentService implements IShipmentService {
             log.info("Shipment details async fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             ShipmentDetailsResponse response = jsonHelper.convertValue(shipmentDetails.get(), ShipmentDetailsResponse.class);
             response.setCustomerBookingNotesList(commonUtils.convertToDtoList(notesDao.findByEntityIdAndEntityType(request.getId(), Constants.CUSTOMER_BOOKING),NotesResponse.class));
-            //containerCountUpdate(shipmentDetails.get(), response);
-            return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(response));
+            return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            return CompletableFuture.completedFuture(ResponseHelper.buildFailedResponse(responseMsg));
+            return ResponseHelper.buildFailedResponse(responseMsg);
         }
     }
 
@@ -4678,9 +4676,9 @@ public class ShipmentService implements IShipmentService {
                 log.error(ShipmentConstants.SHIPMENT_ID_GUID_NULL_FOR_RETRIEVE_NTE, LoggerHelper.getRequestIdFromMDC());
                 throw new RunnerException(ShipmentConstants.ID_GUID_NULL_ERROR);
             }
-            CompletableFuture<ResponseEntity<IRunnerResponse>> shipmentsFuture = retrieveByIdAsync(commonRequestModel);
-            RunnerResponse<ShipmentDetailsResponse> res = (RunnerResponse<ShipmentDetailsResponse>) shipmentsFuture.get().getBody();
-            if(request.getIncludeColumns()==null||request.getIncludeColumns().size()==0)
+            ResponseEntity<IRunnerResponse> shipmentsRespone = retrieveByIdWithBookingNotes(commonRequestModel);
+            RunnerResponse<ShipmentDetailsResponse> res = (RunnerResponse<ShipmentDetailsResponse>) shipmentsRespone.getBody();
+            if(request.getIncludeColumns() == null || request.getIncludeColumns().isEmpty())
                 return ResponseHelper.buildSuccessResponse(res.getData());
             else
                 return ResponseHelper.buildSuccessResponse(partialFetchUtils.fetchPartialData(res, request.getIncludeColumns()));

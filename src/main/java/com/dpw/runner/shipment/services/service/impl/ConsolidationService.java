@@ -2907,14 +2907,12 @@ public class ConsolidationService implements IConsolidationService {
             if (request.getId() == null) {
                 log.error("Request Id is null for Consolidation complete retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            long id = request.getId();
 
-            CompletableFuture<ResponseEntity<IRunnerResponse>> consolidationsFuture = retrieveByIdAsync(commonRequestModel);
-            RunnerResponse<ConsolidationDetailsResponse> res = (RunnerResponse<ConsolidationDetailsResponse>) consolidationsFuture.get().getBody();
-            if(request.getIncludeColumns()==null||request.getIncludeColumns().size()==0)
-                return ResponseHelper.buildSuccessResponse(res.getData());
+            ConsolidationDetailsResponse res = retrieveConsolidationData(commonRequestModel, true);
+            if(request.getIncludeColumns() == null || request.getIncludeColumns().isEmpty())
+                return ResponseHelper.buildSuccessResponse(res);
             else{
-                return ResponseHelper.buildSuccessResponse(partialFetchUtils.fetchPartialListData(res.getData(), request.getIncludeColumns()));
+                return ResponseHelper.buildSuccessResponse(partialFetchUtils.fetchPartialListData(res, request.getIncludeColumns()));
             }
         } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage()

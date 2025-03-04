@@ -179,9 +179,6 @@ public class AwbService implements IAwbService {
     private List<String> attachedShipmentDescriptions = new ArrayList<>();
     private BigDecimal totalVolumetricWeightOfAwbPacks = new BigDecimal(0);
 
-    @Value("${v1service.url.base}${v1service.url.awbSync}")
-    private String AWB_V1_SYNC_URL;
-
     private String iataCode;
     private String executedAt;
 
@@ -203,7 +200,7 @@ public class AwbService implements IAwbService {
         try {
             awb = awbDao.save(generateAwb(request));
             try {
-                callV1Sync(awb, SaveStatus.CREATE);
+                awbSync.sync(awb, SaveStatus.CREATE);
             } catch (Exception e) {
                 log.error(SyncingConstants.ERROR_PERFORMING_AWB_SYNC, e);
             }
@@ -270,7 +267,7 @@ public class AwbService implements IAwbService {
             awb = awbDao.save(awb);
 
             try {
-                callV1Sync(awb, SaveStatus.UPDATE);
+                awbSync.sync(awb, SaveStatus.UPDATE);
             } catch (Exception e) {
                 log.error(SyncingConstants.ERROR_PERFORMING_AWB_SYNC, e);
             }
@@ -540,7 +537,7 @@ public class AwbService implements IAwbService {
                 updateSciFieldFromMawb(awb, awbList);
             awb = awbDao.save(awb);
             try {
-                callV1Sync(awb, SaveStatus.CREATE);
+                awbSync.sync(awb, SaveStatus.CREATE);
             } catch (Exception e) {
                 log.error(SyncingConstants.ERROR_PERFORMING_AWB_SYNC, e);
             }
@@ -633,18 +630,16 @@ public class AwbService implements IAwbService {
     }
 
     private Pair<BigDecimal, AwbGoodsDescriptionInfo> calculateGoodsDescription(AwbGoodsDescriptionInfo mawbGoodsDescriptionInfo, List<AwbPackingInfo> allHawbPacks, ShipmentSettingsDetails tenantSettings, Map<String, List<AwbPackingInfo>> hawbPacksMap, boolean isPackUpdate) throws RunnerException {
-        Long mawbGoodsDescId = null; //mawbGoodsDescriptionInfo.getId();  // TODO goodsDescId where to get this
-        UUID mawbGoodsDescGuid = mawbGoodsDescriptionInfo.getGuid();
         Integer noOfPacks = 0;
         BigDecimal totalGrossVolumeOfMawbGood = BigDecimal.ZERO;
         BigDecimal totalGrossWeightOfMawbGood = BigDecimal.ZERO;
         BigDecimal chargeableWeightOfMawbGood = BigDecimal.ZERO;
-        BigDecimal totalAmountOfMawbGood = BigDecimal.ZERO;
+        BigDecimal totalAmountOfMawbGood;
         String grossWeightUnit = "";
 
         BigDecimal totalVolumetricWeight = BigDecimal.ZERO;
 
-        if(allHawbPacks != null && allHawbPacks.size() > 0) {
+        if(allHawbPacks != null && !allHawbPacks.isEmpty()) {
             for (var i : allHawbPacks) {
                 noOfPacks += Integer.parseInt(Objects.isNull(i.getPacks()) ? "0" : i.getPacks());
                 try {
@@ -709,8 +704,6 @@ public class AwbService implements IAwbService {
 
     private void saveHawbPacks(Awb mawb, Map<String, List<AwbPackingInfo>> hawbPacksMap) {
         List<String> awbNumbers = hawbPacksMap.keySet().stream().toList();
-        ListCommonRequest listCommonRequest = CommonUtils.constructListCommonRequest("awbNumber", awbNumbers, "IN");
-        Pair<Specification<Awb>, Pageable> pair = fetchData(listCommonRequest, Awb.class);
 
         commonUtils.setInterBranchContextForHub();
         List<Awb> hawbList = awbDao.findAwbByAwbNumbers(awbNumbers);
@@ -733,7 +726,7 @@ public class AwbService implements IAwbService {
     private AwbResponse convertEntityToDto(Awb awbShipmentInfo) {
         var awbResponse = jsonHelper.convertValue(awbShipmentInfo, AwbResponse.class);
         awbResponse.setUserDisplayName(UserContext.getUser().DisplayName);
-        if(awbShipmentInfo.getAwbSpecialHandlingCodesMappings() != null && awbShipmentInfo.getAwbSpecialHandlingCodesMappings().size() > 0) {
+        if(awbShipmentInfo.getAwbSpecialHandlingCodesMappings() != null && !awbShipmentInfo.getAwbSpecialHandlingCodesMappings().isEmpty()) {
             awbResponse.setShcIdList(awbShipmentInfo.getAwbSpecialHandlingCodesMappings().stream()
                     .map(i -> i.getShcId())
                     .toList()
@@ -1106,7 +1099,7 @@ public class AwbService implements IAwbService {
 
     private List<AwbNotifyPartyInfo> generateMawbNotifyPartyinfo(ConsolidationDetails consolidationDetails, CreateAwbRequest request) {
         if (consolidationDetails.getConsolidationAddresses() != null &&
-                consolidationDetails.getConsolidationAddresses().size() > 0) {
+                !consolidationDetails.getConsolidationAddresses().isEmpty()) {
             Map<String, String> alpha2DigitToCountry = masterDataUtils.consolidationAddressCountryMasterData(consolidationDetails);
             List<AwbNotifyPartyInfo> notifyPartyList = new ArrayList<>();
             ArrayList<String> notifyAddressIdList = new ArrayList<>();
@@ -1160,7 +1153,7 @@ public class AwbService implements IAwbService {
     }
 
     private List<AwbRoutingInfo> generateMawbRoutingInfo(ConsolidationDetails consolidationDetails, CreateAwbRequest request) {
-        if (consolidationDetails.getRoutingsList() != null && consolidationDetails.getRoutingsList().size() > 0) {
+        if (consolidationDetails.getRoutingsList() != null && !consolidationDetails.getRoutingsList().isEmpty()) {
             var sortedRoutingList = consolidationDetails.getRoutingsList().stream().filter(route -> Objects.equals(route.getMode(), Constants.TRANSPORT_MODE_AIR)).collect(Collectors.toList());
             if(sortedRoutingList != null && !sortedRoutingList.isEmpty()) {
                 List<AwbRoutingInfo> res = new ArrayList<>();
@@ -1210,8 +1203,6 @@ public class AwbService implements IAwbService {
             awbCargoInfo = new AwbCargoInfo();
         }
 
-        String defaultTextForQuantAndGoods = Constants.DEFAULT_NATURE_AND_QUANTITY_GOODS_TEXT_MAWB;
-        String newLine = "\r\n";
         GenerateAwbPaymentInfoRequest generateAwbPaymentInfoRequest = new GenerateAwbPaymentInfoRequest();
         generateAwbPaymentInfoRequest.setAwbCargoInfo(awbCargoInfo);
         generateAwbPaymentInfoRequest.setAwbPackingInfo(awbPackingList);
@@ -1222,25 +1213,13 @@ public class AwbService implements IAwbService {
         awbCargoInfo.setEntityType(request.getAwbType());
 //        awbCargoInfo.setCarriageValue(shipmentDetails.getGoodsValue() != null ? shipmentDetails.getGoodsValue() : new BigDecimal(0.0)); // field missing
 //        awbCargoInfo.setCarriageValue(shipmentDetails.getInsuranceValue() != null ? shipmentDetailsgetInsuranceValue() : new BigDecimal(0.0)); // field missing
-        awbCargoInfo.setCustomsValue(new BigDecimal(0.0));
-        awbCargoInfo.setCurrency(userContext.getUser().getCompanyCurrency());
+        awbCargoInfo.setCustomsValue(BigDecimal.valueOf(0.0));
+        awbCargoInfo.setCurrency(UserContext.getUser().getCompanyCurrency());
         awbCargoInfo.setHandlingInfo(getHandlingInfo(MasterDataType.MAWB_GENERATION, awbPackingList, consolidationDetails.getHazardous()));
         awbCargoInfo.setAccountingInfo(awbCargoInfo.getAccountingInfo() == null ? null : awbCargoInfo.getAccountingInfo().toUpperCase());
         awbCargoInfo.setOtherInfo(awbCargoInfo.getOtherInfo() == null ? null : awbCargoInfo.getOtherInfo().toUpperCase());
         awbCargoInfo.setShippingInformation(awbCargoInfo.getShippingInformation() == null ? null : awbCargoInfo.getShippingInformation().toUpperCase());
         awbCargoInfo.setShippingInformationOther(awbCargoInfo.getShippingInformationOther() == null ? null : awbCargoInfo.getShippingInformationOther().toUpperCase());
-//        var consolOptional = consolidationDetailsDao.findById(request.getConsolidationId());
-//        if (consolOptional.isPresent()) {
-//            var consol = consolOptional.get();
-//            for (var consolAddressRow : consol.getConsolidationAddresses()) {
-//                if (consolAddressRow.getType() != null && consolAddressRow.getType().equals(Constants.FORWARDING_AGENT)) {
-//                    String country = consolAddressRow.getAddressData() != null ?
-//                            (String) consolAddressRow.getAddressData().get(COUNTRY) : null;
-//                    if (country != null)
-//                        awbCargoInfo.setCustomOriginCode(getCountryCode(country));
-//                }
-//            }
-//        }
         awbCargoInfo.setChargeCode(fetchChargeCodes(consolidationDetails.getPayment()));
         populateCsdInfo(awbCargoInfo, tenantModel);
         // Set Screening Status, Other info (in case of AOM), security Status, screening status, exemption code
@@ -1834,29 +1813,6 @@ public class AwbService implements IAwbService {
         return ResponseHelper.buildSuccessResponse();
     }
 
-//    private void setEntityId(Awb request, Long entityId){
-//        if(request.getAwbShipmentInfo() != null)
-//            request.getAwbShipmentInfo().setEntityId(entityId);
-//        if(request.getAwbNotifyPartyInfo() != null)
-//            request.getAwbNotifyPartyInfo().forEach(i -> i.setEntityId(entityId) );
-//        if(request.getAwbRoutingInfo() != null)
-//            request.getAwbRoutingInfo().forEach(i -> i.setEntityId(entityId) );
-//        if(request.getAwbCargoInfo() != null)
-//            request.getAwbCargoInfo().setEntityId(entityId);
-//        if(request.getAwbPaymentInfo() != null)
-//            request.getAwbPaymentInfo().setEntityId(entityId);
-//        if(request.getAwbOtherChargesInfo() != null)
-//            request.getAwbOtherChargesInfo().forEach(i -> i.setEntityId(entityId) );
-//        if(request.getAwbOtherInfo() != null)
-//            request.getAwbOtherInfo().setEntityId(entityId);
-//        if(request.getAwbOciInfo() != null)
-//            request.getAwbOciInfo().forEach(i -> i.setEntityId(entityId) );
-//        if(request.getAwbGoodsDescriptionInfo() != null)
-//            request.getAwbGoodsDescriptionInfo().forEach(i -> i.setEntityId(entityId) );
-//        if(request.getAwbSpecialHandlingCodesMappings() != null)
-//            request.getAwbSpecialHandlingCodesMappings().forEach(i -> i.setEntityId(entityId) );
-//    }
-
     private void updateAwbOtherChargesInfo(List<AwbOtherChargesInfo> otherChargesInfos) {
         if(otherChargesInfos != null && otherChargesInfos.size() > 0) {
             otherChargesInfos.stream().map(i -> {
@@ -1872,12 +1828,6 @@ public class AwbService implements IAwbService {
 
         // Fetch all the awb records with the mapped hawbId
         return awbDao.findByIds(mawbHawbLinks.stream().map(MawbHawbLink::getHawbId).toList());
-    }
-
-
-    @Async
-    private void callV1Sync(Awb entity, SaveStatus saveStatus){
-        awbSync.sync(entity, saveStatus);
     }
 
     public ResponseEntity<IRunnerResponse> customAwbRetrieve(CommonRequestModel commonRequestModel) {
@@ -1919,7 +1869,6 @@ public class AwbService implements IAwbService {
         AwbStatus linkedHawbAirMessageStatus = awb.getLinkedHawbAirMessageStatus();
         PrintType printType = awb.getPrintType();
         LocalDateTime originalPrintedAt = awb.getOriginalPrintedAt();
-        var isAirMessagingSent = false; //awb.getIsAirMessagingSent();
 
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(awb.getShipmentId());
         Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(awb.getConsolidationId());
@@ -2020,7 +1969,7 @@ public class AwbService implements IAwbService {
         awb.setOriginalPrintedAt(originalPrintedAt);
         awb = awbDao.save(awb);
         try {
-            callV1Sync(awb, SaveStatus.RESET);
+            awbSync.sync(awb, SaveStatus.RESET);
         } catch (Exception e) {
             log.error(SyncingConstants.ERROR_PERFORMING_AWB_SYNC, e);
         }
@@ -2037,7 +1986,6 @@ public class AwbService implements IAwbService {
     @Override
     @Transactional
     public ResponseEntity<IRunnerResponse> partialAutoUpdateAwb(CommonRequestModel commonRequestModel) throws RunnerException {
-        String responseMsg;
         CreateAwbRequest request = (CreateAwbRequest) commonRequestModel.getData();
         if (request == null) {
             log.debug("Request is empty for AWB Create for Request Id {}", LoggerHelper.getRequestIdFromMDC());
@@ -2078,7 +2026,11 @@ public class AwbService implements IAwbService {
     }
 
     private void updateAwbFromShipment(Awb awb, CreateAwbRequest request, ShipmentSettingsDetails shipmentSettingsDetails) {
-        ShipmentDetails shipmentDetails = shipmentDao.findById(request.getShipmentId()).get();
+        Optional<ShipmentDetails> optionalShipmentDetails = shipmentDao.findById(request.getShipmentId());
+        if (optionalShipmentDetails.isEmpty()) {
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+        ShipmentDetails shipmentDetails = optionalShipmentDetails.get();
 
         // fetch all packings
         List<Packing> packings = shipmentDetails.getPackingList();

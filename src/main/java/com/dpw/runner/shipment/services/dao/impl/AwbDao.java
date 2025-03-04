@@ -11,7 +11,6 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbSpecialHandlingCodesMappingInfo;
 import com.dpw.runner.shipment.services.dto.response.AwbAirMessagingResponse;
-import com.dpw.runner.shipment.services.dto.response.AwbResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
@@ -23,6 +22,7 @@ import com.dpw.runner.shipment.services.kafka.dto.AwbShipConsoleDto;
 import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.repository.interfaces.IAwbRepository;
+import com.dpw.runner.shipment.services.service.interfaces.IKafkaAsyncService;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.AwbUtility;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
@@ -35,10 +35,8 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
-
 import javax.persistence.EntityManager;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -81,6 +79,9 @@ public class AwbDao implements IAwbDao {
     private CommonUtils commonUtils;
 
     @Autowired
+    private IKafkaAsyncService kafkaAsyncService;
+
+    @Autowired
     public void setV1ServiceUtil(V1ServiceUtil v1ServiceUtil) {
         this.v1ServiceUtil = v1ServiceUtil;
     }
@@ -91,46 +92,11 @@ public class AwbDao implements IAwbDao {
 
     @Override
     public Awb save(Awb awbShipmentInfo) throws RunnerException {
-        boolean isCreate = false; // TODO- handle create/update here
-        if (awbShipmentInfo.getId() == null) {
-            isCreate = true;
-        }
+        boolean isCreate = awbShipmentInfo.getId() == null;
         applyValidations(awbShipmentInfo);
         Awb awb = awbRepository.save(awbShipmentInfo);
-        pushToKafka(awb, isCreate);
+        kafkaAsyncService.pushToKafkaAwb(awb, isCreate);
         return awb;
-    }
-
-    @Async
-    public void pushToKafka(Awb awb, boolean isCreate) {
-        try {
-            if(awb.getTenantId() == null)
-                awb.setTenantId(TenantContext.getCurrentTenant());
-            AwbResponse awbResponse = jsonHelper.convertValue(awb, AwbResponse.class);
-            if(awb.getShipmentId() != null) {
-                Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(awb.getShipmentId());
-                if(shipmentDetails.isPresent())
-                    awbResponse.setAwbKafkaEntity(jsonHelper.convertValue(shipmentDetails.get(), AwbShipConsoleDto.class));
-                else
-                    return;
-            } else if (awb.getConsolidationId() != null) {
-                Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(awb.getConsolidationId());
-                if(consolidationDetails.isPresent())
-                    awbResponse.setAwbKafkaEntity(jsonHelper.convertValue(consolidationDetails.get(), AwbShipConsoleDto.class));
-                else
-                    return;
-            }
-            else {
-                return;
-            }
-
-            KafkaResponse kafkaResponse = producer.getKafkaResponse(awbResponse, isCreate);
-            producer.produceToKafka(jsonHelper.convertToJson(kafkaResponse), senderQueue, UUID.randomUUID().toString());
-        }
-        catch (Exception e)
-        {
-            log.error("Error pushing awb to kafka: {}", e.getMessage());
-        }
     }
 
     @Override
@@ -194,7 +160,7 @@ public class AwbDao implements IAwbDao {
         List<Awb> entities = awbRepository.saveAll(req);
         for (Awb awb: entities)
         {
-            pushToKafka(awb, false);
+            kafkaAsyncService.pushToKafkaAwb(awb, false);
         }
         return entities;
     }

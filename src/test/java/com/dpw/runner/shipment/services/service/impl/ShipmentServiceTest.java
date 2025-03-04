@@ -4701,43 +4701,34 @@ ShipmentServiceTest extends CommonMocks {
     }
 
     @Test
-    void retrieveByIdAsycNullRequest() {
+    void retrieveByIdWithBookingNotesNullRequest() {
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(null).build();
-        CompletableFuture<ResponseEntity<IRunnerResponse>> httpResponse = shipmentService.retrieveByIdAsync(commonRequestModel);
-        httpResponse.whenComplete((responseEntity, throwable) -> {
-            assertTrue(throwable instanceof CompletionException);
-            assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-        });
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.retrieveByIdWithBookingNotes(commonRequestModel);
+        assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
     }
 
     @Test
-    void retrieveByIdAsycNullRequestIdNull() {
+    void retrieveByIdWithBookingNotesNullRequestIdNull() {
         CommonGetRequest commonGetRequest = CommonGetRequest.builder().build();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(commonGetRequest).build();
-        CompletableFuture<ResponseEntity<IRunnerResponse>> httpResponse = shipmentService.retrieveByIdAsync(commonRequestModel);
-        httpResponse.whenComplete((responseEntity, throwable) -> {
-            assertTrue(throwable instanceof CompletionException);
-            assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-        });
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.retrieveByIdWithBookingNotes(commonRequestModel);
+        assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
     }
 
     @Test
-    void retrieveByIdAsycTest() {
+    void retrieveByIdWithBookingNotesTest() {
         CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(commonGetRequest).build();
-        ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
 
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
-        when(notesDao.findByEntityIdAndEntityType(anyLong(), eq(Constants.CUSTOMER_BOOKING))).thenReturn(Arrays.asList(Notes.builder().entityId(1L).build()));
+        when(notesDao.findByEntityIdAndEntityType(anyLong(), eq(SHIPMENT))).thenReturn(null);
+        when(notesDao.findByEntityIdAndEntityType(anyLong(), eq(Constants.CUSTOMER_BOOKING))).thenReturn(Collections.singletonList(Notes.builder().entityId(1L).build()));
 
-        when(jsonHelper.convertValueToList(anyList(), eq(NotesResponse.class))).thenReturn(Arrays.asList(NotesResponse.builder().build()));
-        when(modelMapper.map(any(), any())).thenReturn(ShipmentDetailsResponse.builder().build());
+        when(commonUtils.convertToDtoList(anyList(), eq(NotesResponse.class))).thenReturn(Collections.singletonList(NotesResponse.builder().build()));
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(ShipmentDetailsResponse.builder().build());
 
-        CompletableFuture<ResponseEntity<IRunnerResponse>> httpResponse = shipmentService.retrieveByIdAsync(commonRequestModel);
-        httpResponse.whenComplete((responseEntity, throwable) -> {
-            assertTrue(throwable instanceof CompletionException);
-            assertEquals(ResponseHelper.buildSuccessResponse(ShipmentDetailsResponse.builder().customerBookingNotesList(Arrays.asList(NotesResponse.builder().build())).build()), responseEntity);
-        });
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.retrieveByIdWithBookingNotes(commonRequestModel);
+        assertEquals(ResponseHelper.buildSuccessResponse(ShipmentDetailsResponse.builder().customerBookingNotesList(Collections.singletonList(NotesResponse.builder().build())).build()), httpResponse);
     }
 
     @Test
@@ -5669,9 +5660,11 @@ ShipmentServiceTest extends CommonMocks {
     void completeRetrieveById() throws ExecutionException, InterruptedException {
         CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(1L).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(commonGetRequest).build();
-        when(shipmentDao.findById(any())).thenReturn(Optional.empty());
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        when(notesDao.findByEntityIdAndEntityType(anyLong(), anyString())).thenReturn(Collections.singletonList(Notes.builder().build()));
+        when(commonUtils.convertToDtoList(any(), any())).thenReturn(Collections.singletonList(NotesResponse.builder().build()));
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.completeRetrieveById(commonRequestModel);
-        assertEquals(ResponseHelper.buildSuccessResponse(), httpResponse);
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
 
     @Test
@@ -5954,27 +5947,21 @@ ShipmentServiceTest extends CommonMocks {
     }
 
     @Test
-    void retrieveByIdAsycEmptyShipment() {
+    void retrieveByIdWithBookingNotesEmptyShipment() {
         CommonGetRequest commonGetRequest = CommonGetRequest.builder().guid(UUID.randomUUID().toString()).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(commonGetRequest).build();
-        CompletableFuture<ResponseEntity<IRunnerResponse>> httpResponse = shipmentService.retrieveByIdAsync(commonRequestModel);
-        httpResponse.whenComplete((responseEntity, throwable) -> {
-            assertTrue(throwable instanceof CompletionException);
-            assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-        });
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.retrieveByIdWithBookingNotes(commonRequestModel);
+        assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
     }
 
     @Test
-    void retrieveByIdAsycShipment() {
+    void retrieveByIdWithBookingNotesShipment() {
         CommonGetRequest commonGetRequest = CommonGetRequest.builder().guid(UUID.randomUUID().toString()).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(commonGetRequest).build();
         when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(ShipmentDetails.builder().build()));
         when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(ShipmentDetailsResponse.builder().build());
-        CompletableFuture<ResponseEntity<IRunnerResponse>> httpResponse = shipmentService.retrieveByIdAsync(commonRequestModel);
-        httpResponse.whenComplete((responseEntity, throwable) -> {
-            assertTrue(throwable instanceof CompletionException);
-            assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-        });
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.retrieveByIdWithBookingNotes(commonRequestModel);
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
 
     @Test

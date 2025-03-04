@@ -29,9 +29,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -81,6 +81,7 @@ public class AwbSync implements IAwbSync {
     @Autowired
     private ISyncService syncService;
 
+    @Async
     @Override
     public ResponseEntity<?> sync(Awb awb, SaveStatus saveStatus) {
         if (!Boolean.TRUE.equals(SyncingContext.getContext()))
