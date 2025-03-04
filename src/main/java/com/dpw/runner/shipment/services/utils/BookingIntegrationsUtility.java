@@ -960,36 +960,6 @@ public class BookingIntegrationsUtility {
                 this.sendDocumentsToPlatform(shipment, payload);
             }
         }
-        if(Constants.KAFKA_EVENT_CREATE.equalsIgnoreCase(payloadAction) && (payloadData.getDocType() != null && (payloadData.getDocType().equalsIgnoreCase("HBL") || payloadData.getDocType().equalsIgnoreCase("Proof of Delivery")))) {
-            try {
-                RequestAuthContext.setAuthToken("Bearer " + StringUtils.defaultString(v1Service.generateToken()));
-                TenantContext.setCurrentTenant(shipment.getTenantId());
-                UserContext.setUser(UsersDto.builder().TenantId(shipment.getTenantId()).Permissions(new HashMap<>()).build());
-                if(!StringUtility.isEmpty(shipment.getBookingNumber())) {
-                    var booking = customerBookingDao.findByBookingNumberQuery(shipment.getBookingNumber());
-                    if (booking.isPresent()) {
-                        auditLogService.addAuditLog(
-                                AuditLogMetaData.builder()
-                                        .tenantId(shipment.getTenantId()).userName(shipment.getCreatedBy())
-                                        .newData(new BaseEntity())
-                                        .prevData(null)
-                                        .parent(CustomerBooking.class.getSimpleName())
-                                        .parentId(booking.get().getId())
-                                        .isIntegrationLog(true)
-                                        .flow("Outbound")
-                                        .dataType(payloadData.getDocType().equalsIgnoreCase("HBL") ? "Doc: HBL" : "Doc: POD")
-                                        .operation(DBOperationType.CREATE.name()).build()
-                        );
-                    }
-                }
-            } catch (Exception e) {
-                log.error(e.getMessage());
-            } finally {
-                TenantContext.removeTenant();
-                UserContext.removeUser();
-                RequestAuthContext.removeToken();
-            }
-        }
 
         handleEventCreation(payloadAction, payloadData);
 

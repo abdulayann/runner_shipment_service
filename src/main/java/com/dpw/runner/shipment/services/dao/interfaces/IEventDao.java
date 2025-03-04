@@ -24,6 +24,8 @@ public interface IEventDao {
 
     Optional<Events> findById(Long id);
 
+    Optional<Events> findByEntityIdAndEntityType(Long id, String entityType);
+
     void delete(Events events);
 
     List<Events> updateEntityFromOtherEntity(List<Events> eventsList, Long entityId, String entityType) throws RunnerException;

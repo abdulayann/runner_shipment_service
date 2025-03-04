@@ -174,6 +174,8 @@ public class AuditLogService implements IAuditLogService {
         auditLog.setCreatedAt(LocalDateTime.now());
         auditLog.setUpdatedAt(LocalDateTime.now());
         auditLog.setIsIntegrationLog(auditLogMetaData.getIsIntegrationLog());
+        auditLog.setFlow(auditLogMetaData.getFlow());
+        auditLog.setDataType(auditLogMetaData.getDataType());
         String ops = auditLogMetaData.getOperation();
 
         if (ops.equals(DBOperationType.CREATE.name())) {
@@ -281,6 +283,9 @@ public class AuditLogService implements IAuditLogService {
     }
 
     public Long getEntityId(BaseEntity entity) throws NoSuchFieldException, IllegalAccessException {
+        if(Objects.isNull(entity.getClass().getSuperclass().getSuperclass())) {
+            return null;
+        }
         Field f = entity.getClass().getSuperclass().getSuperclass().getDeclaredField("id");
         f.setAccessible(true);
 
