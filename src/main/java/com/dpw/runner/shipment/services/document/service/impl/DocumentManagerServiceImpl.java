@@ -126,4 +126,10 @@ public class DocumentManagerServiceImpl implements IDocumentManagerService {
         var response = restClient.bulkSaveFiles(request.getDependentData());
         return ResponseHelper.buildDependentServiceResponse(response.getData(), response.getPageNo(), response.getPageSize());
     }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> temporaryUpload(CommonRequestModel request) {
+        var response = restClient.temporaryUpload(request.getDependentData());
+        return ResponseHelper.buildDependentServiceResponse(response.getData(), response.getPageNo(), response.getPageSize());
+    }
 }
