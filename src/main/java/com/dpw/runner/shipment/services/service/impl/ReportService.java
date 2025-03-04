@@ -32,10 +32,7 @@ import com.dpw.runner.shipment.services.ReportingService.Reports.TransportOrderR
 import com.dpw.runner.shipment.services.ReportingService.ReportsFactory;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.constants.DpsConstants;
-import com.dpw.runner.shipment.services.commons.constants.EventConstants;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.enums.MawbPrintFor;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
@@ -102,15 +99,7 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -558,7 +547,7 @@ public class ReportService implements IReportService {
 
             addDocumentToDocumentMaster(reportRequest, pdfByte_Content);
 
-            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> triggerAutomaticTransfer(report, reportRequest)), executorService);
+            triggerAutomaticTransfer(report, reportRequest);
 
             return pdfByte_Content;
         }
@@ -689,7 +678,7 @@ public class ReportService implements IReportService {
 
             addDocumentToDocumentMaster(reportRequest, pdfByte_Content);
 
-            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> triggerAutomaticTransfer(report, reportRequest)), executorService);
+            triggerAutomaticTransfer(report, reportRequest);
 
             //Update shipment issue date
             return pdfByte_Content;
@@ -948,9 +937,7 @@ public class ReportService implements IReportService {
             shipmentDao.updateFCRNo(Long.valueOf(reportRequest.getReportId()));
         }
 
-        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
-        if(Boolean.TRUE.equals(shipmentSettingsDetails.getIsAutomaticTransferEnabled()))
-            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> triggerAutomaticTransfer(report, reportRequest)), executorService);
+        triggerAutomaticTransfer(report, reportRequest);
         return pdfByteContent;
     }
 
@@ -1967,24 +1954,33 @@ public class ReportService implements IReportService {
 
     public void triggerAutomaticTransfer(IReport report, ReportRequest reportRequest){
         try {
-            if (!reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.ORIGINAL)) {
-                return;
-            }
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
             if (!Boolean.TRUE.equals(shipmentSettingsDetails.getIsAutomaticTransferEnabled())) {
+                return;
+            }
+            if (reportRequest.getPrintType()!=null && !reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.ORIGINAL)) {
                 return;
             }
             Long reportId = Long.parseLong(reportRequest.getReportId());
 
             if (report instanceof HblReport) {
-                triggerBlAutomaticTransfer(reportId);
+                ShipmentDetails shipmentDetails = getShipmentDetails(reportRequest);
+                if(shipmentDetails!=null) {
+                    CompletableFuture.runAsync(masterDataUtils.withMdc(() -> triggerBlAutomaticTransfer(shipmentDetails)), executorService);
+                }
             } else if (report instanceof HawbReport) {
-                triggerHAWBAutomaticTransfer(reportId);
+                ShipmentDetails shipmentDetails = getShipmentDetails(reportRequest);
+                if(shipmentDetails!=null) {
+                    CompletableFuture.runAsync(masterDataUtils.withMdc(() -> triggerHAWBAutomaticTransfer(shipmentDetails)), executorService);
+                }
             } else if (report instanceof MawbReport) {
                 if (!reportRequest.isFromShipment()) { // Case: Request came from consolidation
-                    triggerConsoleMAWBAutomaticTransfer(reportId);
+                    CompletableFuture.runAsync(masterDataUtils.withMdc(() -> triggerConsoleMAWBAutomaticTransfer(reportId)), executorService);
                 } else {
-                    triggerShipmentMAWBAutomaticTransfer(reportId);
+                    ShipmentDetails shipmentDetails = getShipmentDetails(reportRequest);
+                    if(shipmentDetails!=null) {
+                        CompletableFuture.runAsync(masterDataUtils.withMdc(() -> triggerShipmentMAWBAutomaticTransfer(shipmentDetails)), executorService);
+                    }
                 }
             }
         } catch (Exception e) {
@@ -1992,10 +1988,21 @@ public class ReportService implements IReportService {
         }
     }
 
-    public void triggerBlAutomaticTransfer(Long shipmentId){
-        Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(shipmentId);
-        if(shipmentDetails.isPresent() && !CommonUtils.setIsNullOrEmpty(shipmentDetails.get().getConsolidationList())){
-            for(ConsolidationDetails consolidationDetails: shipmentDetails.get().getConsolidationList()){
+    private ShipmentDetails getShipmentDetails(ReportRequest reportRequest){
+        Long shipmentId = Long.parseLong(reportRequest.getReportId());
+        long startTimeForShipment = System.currentTimeMillis();
+        ShipmentDetails shipmentDetails = shipmentDao.findById(shipmentId).orElse(null);
+        if(shipmentDetails!=null) {
+            if(shipmentDetails.getConsolidationList()!=null)
+                log.info(String.valueOf(shipmentDetails.getConsolidationList().size()));
+            log.info(ReportConstants.TIME_TAKE_TO_GET_SHIPMENT_CONSOLE_DATA, shipmentId, System.currentTimeMillis() - startTimeForShipment);
+        }
+        return shipmentDetails;
+    }
+
+    public void triggerBlAutomaticTransfer(ShipmentDetails shipmentDetails){
+        if(!CommonUtils.setIsNullOrEmpty(shipmentDetails.getConsolidationList())){
+            for(ConsolidationDetails consolidationDetails: shipmentDetails.getConsolidationList()){
                 if (consolidationDetails!=null  &&
                         (Objects.equals(Constants.TRANSPORT_MODE_SEA, consolidationDetails.getTransportMode()) &&
                                 !Objects.equals(Constants.CONSOLIDATION_TYPE_DRT, consolidationDetails.getConsolidationType())))
@@ -2004,11 +2011,7 @@ public class ReportService implements IReportService {
         }
     }
 
-    public void triggerHAWBAutomaticTransfer(Long shipmentId){
-        ShipmentDetails shipmentDetails = shipmentDao.findById(shipmentId).orElse(null);
-        if(shipmentDetails==null)
-            return;
-
+    public void triggerHAWBAutomaticTransfer(ShipmentDetails shipmentDetails){
         if(ObjectUtils.isNotEmpty(shipmentDetails.getConsolidationList())){
             for(ConsolidationDetails consolidationDetails: shipmentDetails.getConsolidationList()){
                 if (consolidationDetails!=null &&
@@ -2029,10 +2032,7 @@ public class ReportService implements IReportService {
         }
     }
 
-    public void triggerShipmentMAWBAutomaticTransfer(Long shipmentId){
-        ShipmentDetails shipmentDetails = shipmentDao.findById(shipmentId).orElse(null);
-        if(shipmentDetails==null)
-            return;
+    public void triggerShipmentMAWBAutomaticTransfer(ShipmentDetails shipmentDetails){
         if(Objects.equals(Constants.TRANSPORT_MODE_AIR, shipmentDetails.getTransportMode()) &&
                 Objects.equals(Constants.SHIPMENT_TYPE_DRT, shipmentDetails.getJobType())) {
             shipmentService.triggerAutomaticTransfer(shipmentDetails, null, true);

@@ -470,16 +470,6 @@ class ReportServiceTest extends CommonMocks {
         Map<String, Object> dataRetrived = new HashMap<>();
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
-
-        Runnable mockRunnable = mock(Runnable.class);
-        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
-            // Get the argument passed to the withMdc method
-            Runnable argument = invocation.getArgument(0);
-            // Call the run method of the argument
-            argument.run();
-            // Add any additional behavior or return value as needed
-            return mockRunnable;
-        });
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -514,15 +504,6 @@ class ReportServiceTest extends CommonMocks {
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         dataRetrived.put(ReportConstants.SPECIAL_HANDLING_CODE, "EAW");
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
-        Runnable mockRunnable = mock(Runnable.class);
-        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
-            // Get the argument passed to the withMdc method
-            Runnable argument = invocation.getArgument(0);
-            // Call the run method of the argument
-            argument.run();
-            // Add any additional behavior or return value as needed
-            return mockRunnable;
-        });
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -556,15 +537,6 @@ class ReportServiceTest extends CommonMocks {
         Map<String, Object> dataRetrived = new HashMap<>();
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
-        Runnable mockRunnable = mock(Runnable.class);
-        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
-            // Get the argument passed to the withMdc method
-            Runnable argument = invocation.getArgument(0);
-            // Call the run method of the argument
-            argument.run();
-            // Add any additional behavior or return value as needed
-            return mockRunnable;
-        });
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -599,15 +571,6 @@ class ReportServiceTest extends CommonMocks {
         Map<String, Object> dataRetrived = new HashMap<>();
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
-        Runnable mockRunnable = mock(Runnable.class);
-        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
-            // Get the argument passed to the withMdc method
-            Runnable argument = invocation.getArgument(0);
-            // Call the run method of the argument
-            argument.run();
-            // Add any additional behavior or return value as needed
-            return mockRunnable;
-        });
 
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
@@ -738,17 +701,6 @@ class ReportServiceTest extends CommonMocks {
         dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.AIR);
         when(mawbReport.getData(any())).thenReturn(dataRetrived);
-
-        Runnable mockRunnable = mock(Runnable.class);
-        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
-            // Get the argument passed to the withMdc method
-            Runnable argument = invocation.getArgument(0);
-            // Call the run method of the argument
-            argument.run();
-            // Add any additional behavior or return value as needed
-            return mockRunnable;
-        });
-
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -2940,15 +2892,6 @@ class ReportServiceTest extends CommonMocks {
         dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.ROAD);
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isAutomaticTransferEnabled(true).build());
         mockShipmentSettings();
-        Runnable mockRunnable = mock(Runnable.class);
-        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
-            // Get the argument passed to the withMdc method
-            Runnable argument = invocation.getArgument(0);
-            // Call the run method of the argument
-            argument.run();
-            // Add any additional behavior or return value as needed
-            return mockRunnable;
-        });
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -3383,6 +3326,15 @@ class ReportServiceTest extends CommonMocks {
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().consolidationList(Set.of(consolidationDetails)).build();
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
         doNothing().when(consolidationService).triggerAutomaticTransfer(any(), any(), any());
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+            // Get the argument passed to the withMdc method
+            Runnable argument = invocation.getArgument(0);
+            // Call the run method of the argument
+            argument.run();
+            // Add any additional behavior or return value as needed
+            return mockRunnable;
+        });
         reportService.triggerAutomaticTransfer(hblReport, reportRequest);
         verify(shipmentDao, times(1)).findById(any());
         verify(consolidationService, times(1)).triggerAutomaticTransfer(any(), any(), any());
@@ -3434,6 +3386,15 @@ class ReportServiceTest extends CommonMocks {
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().transportMode(Constants.TRANSPORT_MODE_AIR).consolidationType(Constants.SHIPMENT_TYPE_STD).build();
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().jobType(Constants.SHIPMENT_TYPE_STD).consolidationList(Set.of(consolidationDetails)).build();
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+            // Get the argument passed to the withMdc method
+            Runnable argument = invocation.getArgument(0);
+            // Call the run method of the argument
+            argument.run();
+            // Add any additional behavior or return value as needed
+            return mockRunnable;
+        });
         doNothing().when(consolidationService).triggerAutomaticTransfer(any(), any(), any());
         reportService.triggerAutomaticTransfer(hawbreport, reportRequest);
         verify(shipmentDao, times(1)).findById(any());
@@ -3486,6 +3447,15 @@ class ReportServiceTest extends CommonMocks {
         reportRequest.setFromShipment(false);
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().transportMode(Constants.TRANSPORT_MODE_AIR).consolidationType(Constants.SHIPMENT_TYPE_STD).build();
         when(consolidationDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+            // Get the argument passed to the withMdc method
+            Runnable argument = invocation.getArgument(0);
+            // Call the run method of the argument
+            argument.run();
+            // Add any additional behavior or return value as needed
+            return mockRunnable;
+        });
         doNothing().when(consolidationService).triggerAutomaticTransfer(any(), any(), any());
         reportService.triggerAutomaticTransfer(mawbReport, reportRequest);
         verify(consolidationDao, times(1)).findById(any());
@@ -3500,6 +3470,15 @@ class ReportServiceTest extends CommonMocks {
         reportRequest.setFromShipment(false);
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().transportMode(Constants.TRANSPORT_MODE_AIR).consolidationType(Constants.CONSOLIDATION_TYPE_DRT).build();
         when(consolidationDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+            // Get the argument passed to the withMdc method
+            Runnable argument = invocation.getArgument(0);
+            // Call the run method of the argument
+            argument.run();
+            // Add any additional behavior or return value as needed
+            return mockRunnable;
+        });
         reportService.triggerAutomaticTransfer(mawbReport, reportRequest);
         verify(consolidationDao, times(1)).findById(any());
         verify(consolidationService, times(0)).triggerAutomaticTransfer(any(), any(), any());
@@ -3513,6 +3492,15 @@ class ReportServiceTest extends CommonMocks {
         reportRequest.setFromShipment(false);
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().transportMode(Constants.TRANSPORT_MODE_SEA).consolidationType(Constants.SHIPMENT_TYPE_STD).build();
         when(consolidationDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+            // Get the argument passed to the withMdc method
+            Runnable argument = invocation.getArgument(0);
+            // Call the run method of the argument
+            argument.run();
+            // Add any additional behavior or return value as needed
+            return mockRunnable;
+        });
         reportService.triggerAutomaticTransfer(mawbReport, reportRequest);
         verify(consolidationDao, times(1)).findById(any());
         verify(consolidationService, times(0)).triggerAutomaticTransfer(any(), any(), any());
@@ -3527,6 +3515,15 @@ class ReportServiceTest extends CommonMocks {
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().jobType(Constants.SHIPMENT_TYPE_DRT).transportMode(Constants.TRANSPORT_MODE_AIR).build();
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
         doNothing().when(shipmentService).triggerAutomaticTransfer(any(), any(), any());
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+            // Get the argument passed to the withMdc method
+            Runnable argument = invocation.getArgument(0);
+            // Call the run method of the argument
+            argument.run();
+            // Add any additional behavior or return value as needed
+            return mockRunnable;
+        });
         reportService.triggerAutomaticTransfer(mawbReport, reportRequest);
         verify(shipmentDao, times(1)).findById(any());
         verify(shipmentService, times(1)).triggerAutomaticTransfer(any(), any(), any());
@@ -3541,6 +3538,15 @@ class ReportServiceTest extends CommonMocks {
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().jobType(Constants.SHIPMENT_TYPE_STD).transportMode(Constants.TRANSPORT_MODE_AIR).build();
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+            // Get the argument passed to the withMdc method
+            Runnable argument = invocation.getArgument(0);
+            // Call the run method of the argument
+            argument.run();
+            // Add any additional behavior or return value as needed
+            return mockRunnable;
+        });
         reportService.triggerAutomaticTransfer(mawbReport, reportRequest);
         verify(shipmentDao, times(1)).findById(any());
         verify(consolidationService, times(0)).triggerAutomaticTransfer(any(), any(), any());
