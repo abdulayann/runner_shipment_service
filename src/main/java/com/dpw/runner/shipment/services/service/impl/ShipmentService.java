@@ -5371,7 +5371,6 @@ public class ShipmentService implements IShipmentService {
                     shipmentDetailsResponse.setShipmentCount(0L);
                 }
                 log.info("{} | createShipmentPayload Time taken for setting Notification Count: {} ms", LoggerHelper.getRequestIdFromMDC(), (System.currentTimeMillis() - mid));
-                mid = System.currentTimeMillis();
             } else {
                 shipmentDetailsResponse.setShipmentCount(0L);
             }
