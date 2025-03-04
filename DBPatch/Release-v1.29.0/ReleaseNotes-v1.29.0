@@ -1,0 +1,3 @@
+POST Deployment
+----------------
+1. RUN update_shipment_cb_guids.sql in PROD env
