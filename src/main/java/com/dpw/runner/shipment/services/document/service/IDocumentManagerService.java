@@ -30,4 +30,5 @@ public interface IDocumentManagerService {
     ResponseEntity<IRunnerResponse> getFileHistory(CommonRequestModel request);
     byte[] downloadDocument(CommonRequestModel request);
     ResponseEntity<IRunnerResponse> bulkSave(CommonRequestModel request);
+    ResponseEntity<IRunnerResponse> temporaryUpload(CommonRequestModel request);
 }
