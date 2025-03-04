@@ -60,6 +60,9 @@ public class DocumentManagerRestClient {
     @Value("${document-manager.baseUrl}${document-manager.bulk-save}")
     private String documentBulkSave;
 
+    @Value("${document-manager.baseUrl}${document-manager.temporary-upload}")
+    private String documentTemporaryUpload;
+
     @Autowired
     DocumentManagerRestClient(RestTemplate restTemplate, JsonHelper jsonHelper) {
         this.jsonHelper = jsonHelper;
@@ -289,9 +292,29 @@ public class DocumentManagerRestClient {
         try {
             HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
             HttpEntity<Object> httpEntity = new HttpEntity<>(object, headers);
-            log.info("{} | URL: {} | bulkSaveFiles request: {}", this.documentDownload + "?id=" + object, LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(object));
+            log.info("{} | URL: {} | bulkSaveFiles request: {}", this.documentBulkSave, LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(object));
             var response  = restTemplate.exchange(
                     this.documentBulkSave,
+                    HttpMethod.POST,
+                    httpEntity,
+                    new ParameterizedTypeReference<>() {}
+            );
+            return jsonHelper.convertValue(response.getBody(), DocumentManagerResponse.class);
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new DocumentClientException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), DocumentManagerResponse.class).getErrorMessage());
+        } catch (Exception var7) {
+            throw new DocumentClientException(var7.getMessage());
+        }
+
+    }
+
+    public DocumentManagerResponse<T> temporaryUpload(Object object) {
+        try {
+            HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
+            HttpEntity<Object> httpEntity = new HttpEntity<>(object, headers);
+            log.info("{} | URL: {} | temporaryUpload request: {}", this.documentDownload + "?id=" + object, LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(object));
+            var response  = restTemplate.exchange(
+                    this.documentTemporaryUpload,
                     HttpMethod.POST,
                     httpEntity,
                     new ParameterizedTypeReference<>() {}
