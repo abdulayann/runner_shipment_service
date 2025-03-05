@@ -221,4 +221,104 @@ class DocumentManagerRestClientTest {
         Throwable throwable = assertThrows(Throwable.class, () -> documentManagerRestClient.deleteFile(new Object()));
         assertEquals(DocumentClientException.class.getSimpleName(), throwable.getClass().getSimpleName());
     }
+
+    @Test
+    void testGetFileHistory() {
+        DocumentManagerResponse<T> expectedResponse = new DocumentManagerResponse<>();
+        ResponseEntity<DocumentManagerResponse<T>> responseEntity = new ResponseEntity<>(expectedResponse, HttpStatus.OK);
+
+        ArgumentCaptor<HttpEntity> httpEntityCaptor = ArgumentCaptor.forClass(HttpEntity.class);
+        ArgumentCaptor<String> urlCaptor = ArgumentCaptor.forClass(String.class);
+        boolean isSuccess = true;
+        when(restTemplate.exchange(urlCaptor.capture(), eq(HttpMethod.GET), httpEntityCaptor.capture(), any(ParameterizedTypeReference.class))).thenReturn(responseEntity);
+
+        DocumentManagerResponse<T> actualResponse = documentManagerRestClient.getFileHistory(new Object());
+        assertNull(actualResponse);
+        assertTrue(isSuccess);
+    }
+
+
+    @Test
+    void testGetFileHistoryException() {
+        ArgumentCaptor<HttpEntity> httpEntityCaptor = ArgumentCaptor.forClass(HttpEntity.class);
+        ArgumentCaptor<String> urlCaptor = ArgumentCaptor.forClass(String.class);
+        when(restTemplate.exchange(urlCaptor.capture(), eq(HttpMethod.GET), httpEntityCaptor.capture(), any(ParameterizedTypeReference.class))).thenThrow(new RuntimeException());
+        Throwable throwable = assertThrows(Throwable.class, () -> documentManagerRestClient.getFileHistory(new Object()));
+        assertEquals(DocumentClientException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    @Test
+    void testBulkSaveFiles() {
+        DocumentManagerResponse<T> expectedResponse = new DocumentManagerResponse<>();
+        ResponseEntity<DocumentManagerResponse<T>> responseEntity = new ResponseEntity<>(expectedResponse, HttpStatus.OK);
+
+        ArgumentCaptor<HttpEntity> httpEntityCaptor = ArgumentCaptor.forClass(HttpEntity.class);
+        ArgumentCaptor<String> urlCaptor = ArgumentCaptor.forClass(String.class);
+        boolean isSuccess = true;
+        when(restTemplate.exchange(urlCaptor.capture(), eq(HttpMethod.POST), httpEntityCaptor.capture(), any(ParameterizedTypeReference.class))).thenReturn(responseEntity);
+
+        DocumentManagerResponse<T> actualResponse = documentManagerRestClient.bulkSaveFiles(new Object());
+        assertNull(actualResponse);
+        assertTrue(isSuccess);
+    }
+
+
+    @Test
+    void testBulkSaveFilesException() {
+        ArgumentCaptor<HttpEntity> httpEntityCaptor = ArgumentCaptor.forClass(HttpEntity.class);
+        ArgumentCaptor<String> urlCaptor = ArgumentCaptor.forClass(String.class);
+        when(restTemplate.exchange(urlCaptor.capture(), eq(HttpMethod.POST), httpEntityCaptor.capture(), any(ParameterizedTypeReference.class))).thenThrow(new RuntimeException());
+        Throwable throwable = assertThrows(Throwable.class, () -> documentManagerRestClient.bulkSaveFiles(new Object()));
+        assertEquals(DocumentClientException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    @Test
+    void testTemporaryUpload() {
+        DocumentManagerResponse<T> expectedResponse = new DocumentManagerResponse<>();
+        ResponseEntity<DocumentManagerResponse<T>> responseEntity = new ResponseEntity<>(expectedResponse, HttpStatus.OK);
+
+        ArgumentCaptor<HttpEntity> httpEntityCaptor = ArgumentCaptor.forClass(HttpEntity.class);
+        ArgumentCaptor<String> urlCaptor = ArgumentCaptor.forClass(String.class);
+        boolean isSuccess = true;
+        when(restTemplate.exchange(urlCaptor.capture(), eq(HttpMethod.POST), httpEntityCaptor.capture(), any(ParameterizedTypeReference.class))).thenReturn(responseEntity);
+
+        DocumentManagerResponse<T> actualResponse = documentManagerRestClient.temporaryUpload(new Object());
+        assertNull(actualResponse);
+        assertTrue(isSuccess);
+    }
+
+
+    @Test
+    void testTemporaryUploadException() {
+        ArgumentCaptor<HttpEntity> httpEntityCaptor = ArgumentCaptor.forClass(HttpEntity.class);
+        ArgumentCaptor<String> urlCaptor = ArgumentCaptor.forClass(String.class);
+        when(restTemplate.exchange(urlCaptor.capture(), eq(HttpMethod.POST), httpEntityCaptor.capture(), any(ParameterizedTypeReference.class))).thenThrow(new RuntimeException());
+        Throwable throwable = assertThrows(Throwable.class, () -> documentManagerRestClient.temporaryUpload(new Object()));
+        assertEquals(DocumentClientException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    @Test
+    void testList() {
+        DocumentManagerResponse<T> expectedResponse = new DocumentManagerResponse<>();
+        ResponseEntity<DocumentManagerResponse<T>> responseEntity = new ResponseEntity<>(expectedResponse, HttpStatus.OK);
+
+        ArgumentCaptor<HttpEntity> httpEntityCaptor = ArgumentCaptor.forClass(HttpEntity.class);
+        ArgumentCaptor<String> urlCaptor = ArgumentCaptor.forClass(String.class);
+        boolean isSuccess = true;
+        when(restTemplate.exchange(urlCaptor.capture(), eq(HttpMethod.POST), httpEntityCaptor.capture(), any(ParameterizedTypeReference.class))).thenReturn(responseEntity);
+
+        DocumentManagerResponse<T> actualResponse = documentManagerRestClient.list(new Object());
+        assertNull(actualResponse);
+        assertTrue(isSuccess);
+    }
+
+
+    @Test
+    void testListException() {
+        ArgumentCaptor<HttpEntity> httpEntityCaptor = ArgumentCaptor.forClass(HttpEntity.class);
+        ArgumentCaptor<String> urlCaptor = ArgumentCaptor.forClass(String.class);
+        when(restTemplate.exchange(urlCaptor.capture(), eq(HttpMethod.POST), httpEntityCaptor.capture(), any(ParameterizedTypeReference.class))).thenThrow(new RuntimeException());
+        Throwable throwable = assertThrows(Throwable.class, () -> documentManagerRestClient.list(new Object()));
+        assertEquals(DocumentClientException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
 }
