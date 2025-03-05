@@ -1082,7 +1082,7 @@ public class BookingIntegrationsUtility {
                         DocumentMetaDTO.builder()
                                 .name(document.getFileName())
                                 .document_type(document.getDocType())
-                                .document_link(document.getSecureDownloadLink())
+                                .document_link(document.getPath())
                                 .uploaded_by_user_id(document.getUploadedBy())
                                 .build()))
                 .build();
