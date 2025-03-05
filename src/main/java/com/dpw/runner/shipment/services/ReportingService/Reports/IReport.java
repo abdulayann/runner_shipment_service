@@ -1258,7 +1258,7 @@ public abstract class IReport {
         shipmentModel.setVoyage(shipmentDetails.getCarrierDetails().getVoyage());
         try {
             if(shipmentDetails.getContainersList() != null) {
-                ContainerSummaryResponse containerSummaryResponse = containerService.calculateContainerSummary(shipmentDetails.getContainersList(), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType());
+                ContainerSummaryResponse containerSummaryResponse = containerService.calculateContainerSummary(jsonHelper.convertValueToList(shipmentDetails.getContainersList(), Containers.class), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType());
                 if(containerSummaryResponse != null) {
                     shipmentModel.setSummary(containerSummaryResponse.getSummary());
                 }
