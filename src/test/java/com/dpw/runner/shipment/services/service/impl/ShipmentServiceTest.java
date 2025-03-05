@@ -6289,6 +6289,45 @@ ShipmentServiceTest extends CommonMocks {
     }
 
     @Test
+    void createShipmentInV2TestForAirShipment() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
+        PackingRequest packingRequest = PackingRequest.builder().build();
+        CustomerBookingRequest customerBookingRequest = CustomerBookingRequest.builder().id(1L).transportType(Constants.TRANSPORT_MODE_AIR)
+                .cargoType(Constants.CARGO_TYPE_LSE)
+                .carrierDetails(CarrierDetailRequest.builder().build())
+                .build();
+        customerBookingRequest.setPackingList(Collections.singletonList(packingRequest));
+        customerBookingRequest.setCustomer(PartiesRequest.builder().addressCode("code").orgCode("org").addressData(new HashMap<>()).orgData(new HashMap<>()).build());
+
+        when(notesDao.findByEntityIdAndEntityType(any(), any())).thenReturn(Arrays.asList(Notes.builder().build()));
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().shipmentId("AIR-CAN-00001")
+                .additionalDetails(new AdditionalDetails())
+                .carrierDetails(CarrierDetails.builder().build())
+                .build();
+        shipmentDetails.setGuid(UUID.randomUUID());
+
+        when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolRequest.class))).thenReturn(new AutoUpdateWtVolRequest());
+        when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolResponse.class))).thenReturn(new AutoUpdateWtVolResponse());
+
+        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
+        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+        when(shipmentDao.save(any(), eq(false))).thenReturn(shipmentDetails);
+        when(notesDao.findByEntityIdAndEntityType(any(), any())).thenReturn(Arrays.asList(Notes.builder().build()));
+
+        when(jsonHelper.convertValue(any(), eq(Notes.class))).thenReturn(Notes.builder().build());
+        when(notesDao.save(any())).thenReturn(Notes.builder().build());
+
+        ShipmentDetailsResponse shipmentDetailsResponse = jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class);
+        when(jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class)).thenReturn(shipmentDetailsResponse);
+        mockShipmentSettings();
+        mockTenantSettings();
+        commonUtils.getShipmentSettingFromContext().setEnableRouteMaster(false);
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.createShipmentInV2(customerBookingRequest);
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+    }
+
+    @Test
     void partialUpdateTestFromV1() throws RunnerException {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
         ShipmentPatchRequest shipmentPatchRequest = ShipmentPatchRequest.builder().id(JsonNullable.of(1L)).build();
