@@ -30,8 +30,6 @@ import com.dpw.runner.shipment.services.dto.patchrequest.ShipmentPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.billing.InvoicePostingValidationRequest;
-import com.dpw.runner.shipment.services.dto.request.hbl.HblCargoDto;
-import com.dpw.runner.shipment.services.dto.request.hbl.HblContainerDto;
 import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
@@ -264,6 +262,8 @@ ShipmentServiceTest extends CommonMocks {
 
     private ExecutorService executorService;
 
+    private ExecutorService executorServiceMasterData;
+
     @Mock
     private ApplicationContext applicationContext;
 
@@ -316,6 +316,7 @@ ShipmentServiceTest extends CommonMocks {
     @AfterEach
     void tearDown() {
         shipmentService.executorService.shutdown();
+        shipmentService.executorServiceMasterData.shutdown();
     }
 
     @BeforeEach
@@ -326,6 +327,7 @@ ShipmentServiceTest extends CommonMocks {
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder().P100Branch(false).build());
         shipmentService.executorService = Executors.newFixedThreadPool(2);
+        shipmentService.executorServiceMasterData = Executors.newFixedThreadPool(2);
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().airDGFlag(false).build());
         updateConsoleShipmentRequest = new UpdateConsoleShipmentRequest();
     }

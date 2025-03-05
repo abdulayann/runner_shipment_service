@@ -3753,7 +3753,7 @@ public abstract class IReport {
         return StringUtility.getEmptyString();
     }
 
-    public void populateRaKcData(Map<String, Object> dictionary, ShipmentDetails shipmentDetails) {
+    public void populateRaKcDataWithShipmentDetails(Map<String, Object> dictionary, ShipmentDetails shipmentDetails) {
         Parties partiesModelSendingAgent = shipmentDetails.getAdditionalDetails().getExportBroker() != null ? modelMapper.map(shipmentDetails.getAdditionalDetails().getExportBroker(), Parties.class) : null;
         Parties partiesModelReceivingAgent = shipmentDetails.getAdditionalDetails().getImportBroker() != null ? modelMapper.map(shipmentDetails.getAdditionalDetails().getImportBroker(), Parties.class) : null;
         Parties consignor = shipmentDetails.getConsigner() != null ? modelMapper.map(shipmentDetails.getConsigner(), Parties.class) : null;

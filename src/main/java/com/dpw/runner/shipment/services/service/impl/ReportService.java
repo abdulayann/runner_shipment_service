@@ -5,7 +5,6 @@ import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConst
 import com.dpw.runner.shipment.services.ReportingService.Models.DocPages;
 import com.dpw.runner.shipment.services.ReportingService.Models.DocUploadRequest;
 import com.dpw.runner.shipment.services.ReportingService.Models.DocumentRequest;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
 import com.dpw.runner.shipment.services.ReportingService.Reports.AWBLabelReport;
 import com.dpw.runner.shipment.services.ReportingService.Reports.ArrivalNoticeReport;
 import com.dpw.runner.shipment.services.ReportingService.Reports.BookingConfirmationReport;
@@ -122,20 +121,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COMBI_HAWB_COUNT;
 
@@ -1824,7 +1809,7 @@ public class ReportService implements IReportService {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
         Map<String, Object> dataRetrived = new HashMap<>();
-        shipmentTagsForExteranlServices.populateRaKcData(dataRetrived, shipmentDetails.get());
+        shipmentTagsForExteranlServices.populateRaKcDataWithShipmentDetails(dataRetrived, shipmentDetails.get());
         return ResponseHelper.buildSuccessResponse(dataRetrived);
     }
 
