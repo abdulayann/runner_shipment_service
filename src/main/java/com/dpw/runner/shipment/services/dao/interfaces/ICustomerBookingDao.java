@@ -27,4 +27,5 @@ public interface ICustomerBookingDao {
     int updateBillStatus(Long id, Boolean isBillCreated);
 
     Optional<CustomerBooking> findByOrderManagementId(String orderManagementId);
+    Optional<CustomerBooking> findByBookingNumberQuery(String bookingNumber);
 }

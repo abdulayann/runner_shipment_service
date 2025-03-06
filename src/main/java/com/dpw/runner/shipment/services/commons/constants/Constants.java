@@ -623,6 +623,8 @@ public class Constants {
     public static final String SEND_EMAIL_AIR_MESSAGING_FAILURE = "Send Email for Air Messaging Failure : {}";
     public static final String AUTO_OFFSET_RESET_CONFIG_LATEST = "latest";
 
+    public static final String OUTBOUND = "Outbound";
+
     private Constants() {
     }
 

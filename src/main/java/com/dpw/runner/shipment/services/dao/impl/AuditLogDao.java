@@ -38,8 +38,8 @@ public class AuditLogDao implements IAuditLogDao {
         log.info("AuditLog Save : preparing event save native query");
 
         Query query = entityManager.createNativeQuery(
-                "INSERT INTO audit_log (operation, entity, parent_type, parent_id, tenant_id, is_deleted, updated_by, updated_at, changes, created_at, created_by) " +
-                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, CAST(? AS jsonb), ?, ?)")
+                "INSERT INTO audit_log (operation, entity, parent_type, parent_id, tenant_id, is_deleted, updated_by, updated_at, changes, created_at, created_by, flow, data_type, is_integration_log) " +
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, CAST(? AS jsonb), ?, ?, ?, ?, ?)")
             .setParameter(1, auditLog.getOperation())
             .setParameter(2, auditLog.getEntity())
             .setParameter(3, auditLog.getParentType())
@@ -50,7 +50,10 @@ public class AuditLogDao implements IAuditLogDao {
             .setParameter(8, new TypedParameterValue(StandardBasicTypes.TIMESTAMP, Timestamp.valueOf(auditLog.getUpdatedAt())))
             .setParameter(9, jsonHelper.convertToJson(auditLog.getChanges()))
             .setParameter(10, new TypedParameterValue(StandardBasicTypes.TIMESTAMP, Timestamp.valueOf(auditLog.getCreatedAt())))
-            .setParameter(11, auditLog.getCreatedBy());
+            .setParameter(11, auditLog.getCreatedBy())
+            .setParameter(12, auditLog.getFlow())
+            .setParameter(13, auditLog.getDataType())
+            .setParameter(14, auditLog.getIsIntegrationLog());
 
         log.info("Executing native query for AuditLog save");
         query.executeUpdate();

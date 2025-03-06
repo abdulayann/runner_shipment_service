@@ -1419,8 +1419,8 @@ class EntityTransferServiceTest extends CommonMocks {
 
         LogHistoryResponse consoleLogHistoryResponse = LogHistoryResponse.builder().entityGuid(shipmentDetails1.getConsolidationList().iterator().next().getGuid()).entityPayload(jsonTestUtility.convertToJson(shipmentDetails1.getConsolidationList().iterator().next())).build();
 
+        mockShipmentSettings();
         when(shipmentDao.findShipmentsByGuids(shipGuidSet1)).thenReturn(List.of(shipmentDetailsDrt, shipmentDetailsImp, shipmentDetailsImp1, shipmentDetailsExp, shipmentDetailsImp2, shipmentDetailsImp3));
-        when(masterDataUtils.getLocationData(Set.of(locationRefGuid))).thenReturn(unlocationsResponseMap);
         when(consolidationDetailsDao.findConsolidationsByGuids(consoleGuids1))
                 .thenReturn(List.of(shipmentDetailsDrt.getConsolidationList().iterator().next(), shipmentDetailsImp.getConsolidationList().iterator().next(), shipmentDetailsImp1.getConsolidationList().iterator().next(), shipmentDetailsExp.getConsolidationList().iterator().next()));
         when(logsHistoryService.findByEntityGuidsAndTimeStamp(shipGuidSet.stream().toList(), timeStamp)).thenReturn(List.of(logHistoryResponse));

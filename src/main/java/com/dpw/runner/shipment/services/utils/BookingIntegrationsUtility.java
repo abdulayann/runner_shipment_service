@@ -21,6 +21,8 @@ import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstan
 import com.dpw.runner.shipment.services.commons.constants.EventConstants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
+import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
+import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -58,6 +60,7 @@ import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
@@ -74,6 +77,7 @@ import com.dpw.runner.shipment.services.kafka.dto.DocumentDto.Document;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
+import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IEventService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
@@ -140,6 +144,8 @@ public class BookingIntegrationsUtility {
     private IEventDao eventDao;
     @Autowired
     private IEventService eventService;
+    @Autowired
+    private IAuditLogService auditLogService;
 
     @Value("${platform.failure.notification.enabled}")
     private Boolean isFailureNotificationEnabled;
@@ -943,12 +949,11 @@ public class BookingIntegrationsUtility {
 
         Document payloadData = payload.getData();
         String payloadAction = payload.getAction();
+        var shipments = shipmentDao.findShipmentsByGuids(Set.of(UUID.fromString(payload.getData().getEntityId())));
+        var shipment = shipments.stream().findFirst().orElse(new ShipmentDetails());
         if (Constants.KAFKA_EVENT_CREATE.equalsIgnoreCase(payloadAction)
                 && Objects.equals(payloadData.getEntityType(), Constants.SHIPMENTS_CAPS)
                 && Boolean.TRUE.equals(payloadData.getCustomerPortalVisibility())) {
-
-            var shipments = shipmentDao.findShipmentsByGuids(Set.of(UUID.fromString(payload.getData().getEntityId())));
-            var shipment = shipments.stream().findFirst().orElse(new ShipmentDetails());
 
             // Sending document to Logistics Platform in case of online booking
             if (Objects.equals(shipment.getBookingType(), CustomerBookingConstants.ONLINE) && !Objects.isNull(shipment.getBookingReference())) {

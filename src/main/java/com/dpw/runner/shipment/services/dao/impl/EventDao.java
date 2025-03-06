@@ -118,6 +118,11 @@ public class EventDao implements IEventDao {
     }
 
     @Override
+    public Optional<Events> findByEntityIdAndEntityType(Long id, String entityType) {
+        return eventRepository.findByEntityIdAndEntityType(id, entityType);
+    }
+
+    @Override
     public Optional<Events> findByGuid(UUID id) {
         return eventRepository.findByGuid(id);
     }
@@ -651,6 +656,10 @@ public class EventDao implements IEventDao {
         }
         if (forceUpdate || ObjectUtils.isEmpty(event.getBranchName())) {
             event.setBranchName(Optional.ofNullable(UserContext.getUser()).map(UsersDto::getTenantDisplayName).orElse(null));
+        }
+
+        if (Constants.SYSTEM_GENERATED.equals(event.getSource())) {
+            event.setUserEmail(null);
         }
 
         if(Constants.MASTER_DATA_SOURCE_CARGOES_TRACKING.equals(event.getSource())) {

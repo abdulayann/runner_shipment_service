@@ -109,6 +109,8 @@ class CustomerBookingServiceTest extends CommonMocks {
     private IV1Service v1Service;
     @Mock
     private MasterDataUtils masterDataUtils;
+    @Mock
+    private IEventDao eventDao;
 
     @Mock
     private IMDMServiceAdapter mdmServiceAdapter;
