@@ -1900,7 +1900,24 @@ public class EntityTransferService implements IEntityTransferService {
                             }
                             var receivingAgent = consolidationDetails != null ? consolidationDetails.getReceivingBranch() : null;
                             if (Objects.isNull(receivingAgent) && Objects.equals(shipmentDetails.getJobType(), Constants.SHIPMENT_TYPE_DRT)) {
-                                receivingAgent = shipmentDetails.getReceivingBranch();
+                                Long receiving_agent = shipmentDetails.getReceivingBranch();
+                                if (destinationShipmentsMap.containsKey(originShipment.getGuid())) {
+                                    var ships = destinationShipmentsMap.get(originShipment.getGuid());
+                                    var isShips = ships.stream()
+                                            .filter(x -> !x.getTenantId().equals(receiving_agent != null ? receiving_agent.intValue() : 0))
+                                            .toList();
+
+                                    if (!isShips.isEmpty()) {
+                                        List<ArValidationResponse.ProfitShareShipmentData> triangulationShipmentDataList = new ArrayList<>();
+                                        for(var ship: isShips) {
+                                            ArValidationResponse.ProfitShareShipmentData triangulationShipment = mapShipmentDataToProfitShare(ship);
+                                            triangulationShipmentDataList.add(triangulationShipment);
+                                        }
+                                        arValidationResponse.setTransferToTriangulationPartner(true);
+                                        arValidationResponse.setTriangulationShipment(triangulationShipmentDataList.get(0));
+                                        arValidationResponse.setTriangulationShipmentList(triangulationShipmentDataList);
+                                    }
+                                }
                             }
                             List<TriangulationPartner> triangulationPartnerList = consolidationDetails != null ? consolidationDetails.getTriangulationPartnerList() : originShipment.getTriangulationPartnerList();
                             var triangulationPartner = consolidationDetails != null ? consolidationDetails.getTriangulationPartner() : shipmentDetails.getTriangulationPartner();
