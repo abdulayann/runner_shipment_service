@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
 import com.dpw.runner.shipment.services.aspects.sync.SyncingContext;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.entity.Hbl;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
@@ -41,14 +42,17 @@ public class HblSync implements IHblSync {
     private CommonUtils commonUtils;
 
     @Override
-    public ResponseEntity<?> sync(Hbl hbl, String transactionId) {
+    public ResponseEntity<IRunnerResponse> sync(Hbl hbl, String transactionId) {
         if (!Boolean.TRUE.equals(SyncingContext.getContext()))
             return ResponseHelper.buildSuccessResponse();
 
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(hbl.getShipmentId());
+        if (shipmentDetails.isEmpty()) {
+            return ResponseHelper.buildSuccessResponse();
+        }
         HblRequestV2 hblRequest = convertEntityToDto(hbl);
         hblRequest.setShipmentGuid(shipmentDetails.get().getGuid());
-        if(hblRequest.getContainers() != null && hblRequest.getContainers().size() > 0) {
+        if(hblRequest.getContainers() != null && !hblRequest.getContainers().isEmpty()) {
             for (HblContainerRequestV2 hblContainerRequestV2: hblRequest.getContainers()) {
                 if(hblContainerRequestV2.getHazardous() == null)
                     hblContainerRequestV2.setHazardous(0);

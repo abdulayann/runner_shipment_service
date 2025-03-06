@@ -26,6 +26,7 @@ public class NetworkTransferResponse implements IRunnerResponse {
     private Long sourceBranchId;
     private NetworkTransferStatus status;
     private String jobType;
+    @SuppressWarnings("java:S1948")
     private Map<String, Object> entityPayload;
     private Map<String, String> masterData;
     private Map<String, String> tenantIdsData;

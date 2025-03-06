@@ -12,6 +12,7 @@ import java.util.Map;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@SuppressWarnings("java:S1948")
 public class BridgeServiceResponse implements IRunnerResponse {
     private String tenantCode;
     private String transactionId;

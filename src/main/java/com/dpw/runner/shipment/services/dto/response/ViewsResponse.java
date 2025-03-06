@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.UUID;
 
 @Data
+@SuppressWarnings("java:S1948")
 public class ViewsResponse implements IRunnerResponse {
     private Long id;
     private UUID guid;

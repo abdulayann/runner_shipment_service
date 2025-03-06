@@ -12,6 +12,7 @@ import java.util.Map;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
+@SuppressWarnings("java:S1948")
 public class OrderPartiesResponse implements IRunnerResponse {
     private String id;
     private String partyType;

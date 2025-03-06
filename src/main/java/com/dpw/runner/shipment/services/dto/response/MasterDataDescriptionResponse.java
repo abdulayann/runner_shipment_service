@@ -6,6 +6,7 @@ import lombok.Data;
 
 @Data
 @Builder
+@SuppressWarnings("java:S1948")
 public class MasterDataDescriptionResponse implements IRunnerResponse {
     private String fieldName;
     private Object fieldValue;

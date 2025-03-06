@@ -41,6 +41,7 @@ public class UnitConversionUtility {
         }
     }
 
+    @SuppressWarnings("java:S1452")
     static Unit<?> getUnitType(String type, String unitSymbol) {
         switch (type) {
             case Constants.MASS:

@@ -68,6 +68,7 @@ public class NetworkTransfer extends MultiTenancy {
 
     @Type(type = "jsonb")
     @Column(name = "entity_payload", columnDefinition = "jsonb")
+    @SuppressWarnings("java:S1948")
     private Map<String, Object> entityPayload;
 
     @Column(name = "is_inter_branch_entity")

@@ -13,6 +13,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@SuppressWarnings("java:S1948")
 public class ShipmentOrderAttachDetachRequest implements IRunnerRequest {
     private UUID shipmentGuid;
     private String event;

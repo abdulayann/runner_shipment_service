@@ -11,7 +11,6 @@ import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.MawbHawbLink;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
-import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ISyncService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.*;
@@ -27,7 +26,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
@@ -83,9 +81,9 @@ public class AwbSync implements IAwbSync {
 
     @Async
     @Override
-    public ResponseEntity<?> sync(Awb awb, SaveStatus saveStatus) {
+    public void sync(Awb awb, SaveStatus saveStatus) {
         if (!Boolean.TRUE.equals(SyncingContext.getContext()))
-            return ResponseHelper.buildSuccessResponse();
+            return;
 
         boolean isMawb = awb.getAwbShipmentInfo().getEntityType().equalsIgnoreCase("mawb");
         AwbRequestV2 awbRequest = generateAwbSyncRequest(awb);
@@ -104,7 +102,7 @@ public class AwbSync implements IAwbSync {
             String finalHawb = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(hawbSyncRequest).module(SyncingConstants.AWB).build());
             syncService.pushToKafka(finalHawb, String.valueOf(i.getId()), String.valueOf(i.getGuid()), SyncingConstants.AWB, transactionId);
         });
-        return ResponseHelper.buildSuccessResponse(modelMapper.map(finalAwb, HblDataRequestV2.class));
+        log.info("Completed AWB Sync with data: {}", modelMapper.map(finalAwb, HblDataRequestV2.class));
     }
 
     private AwbRequestV2 convertEntityToDto(Awb awb) {

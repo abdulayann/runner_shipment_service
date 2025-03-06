@@ -14,6 +14,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
+@SuppressWarnings("java:S1948")
 public class CheckCreditBalanceFusionResponse implements IRunnerResponse {
     @JsonProperty("Data")
     private FusionData data;

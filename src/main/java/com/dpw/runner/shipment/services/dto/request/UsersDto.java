@@ -15,6 +15,7 @@ import java.util.Map;
 @AllArgsConstructor
 @Data
 @Builder
+@SuppressWarnings("java:S1948")
 public class UsersDto implements Serializable {
     private static final long serialVersionUID = 1L;
     private Integer Id;
