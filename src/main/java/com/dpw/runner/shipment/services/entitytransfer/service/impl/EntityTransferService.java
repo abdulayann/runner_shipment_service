@@ -1818,7 +1818,7 @@ public class EntityTransferService implements IEntityTransferService {
             Set<UUID> shipmentGuids = new HashSet<>();
             Set<String> locationRefGuids = new HashSet<>();
             for (var shipmentDetails: shipmentDetailsList) {
-                if(shipmentDetails.getSourceGuid() != null){
+                if(!Objects.equals(shipmentDetails.getSourceGuid(), shipmentDetails.getGuid())){
                     sourceGuids.add(shipmentDetails.getSourceGuid());
                 }
                 else if(shipmentDetails.getConsolidationList() != null && !shipmentDetails.getConsolidationList().isEmpty()){
@@ -1878,7 +1878,7 @@ public class EntityTransferService implements IEntityTransferService {
                 List<Long> triangulationList = new ArrayList<>();
                 Long entityId = null;
                 String entityType;
-                if(shipmentDetails.getSourceGuid() != null) {
+                if(!Objects.equals(shipmentDetails.getSourceGuid(), shipmentDetails.getGuid())) {
                     if(originShipmentsMap.containsKey(shipmentDetails.getSourceGuid())){
                         ShipmentDetails originShipment = originShipmentsMap.get(shipmentDetails.getSourceGuid());
                         ConsolidationDetails consolidationDetails = null;
