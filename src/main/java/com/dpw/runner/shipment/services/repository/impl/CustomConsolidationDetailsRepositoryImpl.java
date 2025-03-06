@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.repository.impl;
 
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -46,7 +47,7 @@ public class CustomConsolidationDetailsRepositoryImpl implements ICustomConsolid
     } else {
       cq.where(cb.conjunction());
     }
-
+    cq.where(cb.equal(root.get("tenantId"), TenantContext.getCurrentTenant()));
     // Add your selects (mapping all fields to ConsolidationLiteResponse)
     cq.select(cb.construct(ConsolidationLiteResponse.class,
         root.get("id"),
