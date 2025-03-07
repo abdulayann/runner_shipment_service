@@ -14,6 +14,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.AIR_S
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CAN_NOT_ATTACH_MORE_SHIPMENTS_IN_DG_CONSOL;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_FCL;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_LIST_PERMISSION;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_TYPE_DRT;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_IMP;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.IMPORT_SHIPMENT_PULL_ATTACHMENT_EMAIL;
@@ -250,6 +251,7 @@ import com.dpw.runner.shipment.services.utils.GetNextNumberHelper;
 import com.dpw.runner.shipment.services.utils.MasterDataKeyUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
+import com.dpw.runner.shipment.services.utils.PermissionUtil;
 import com.dpw.runner.shipment.services.utils.ProductIdentifierUtility;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.validator.constants.ErrorConstants;
@@ -268,6 +270,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -4173,13 +4176,18 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     @Override
-    public void exportExcel(HttpServletResponse response, CommonRequestModel commonRequestModel) throws IOException, IllegalAccessException {
+    public void exportExcel(HttpServletResponse response, CommonRequestModel commonRequestModel) throws IOException, IllegalAccessException, RunnerException {
         String responseMsg;
 
         ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
         if (request == null) {
             log.error(CONSOLIDATION_LIST_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
         }
+        if (commonRequestModel.getData() == null || !commonRequestModel.getData().getClass().isAssignableFrom(ListCommonRequest.class)) {
+            return;
+        }
+
+        applyPermissionFilter(commonRequestModel);
         Pair<Specification<ConsolidationDetails>, Pageable> tuple = fetchData(request, ConsolidationDetails.class, tableNames);
         Page<ConsolidationLiteResponse> consolidationDetailsPageLite = customConsolidationDetailsRepository.findAllLiteConsol(tuple.getLeft(), tuple.getRight());
 
@@ -4253,6 +4261,33 @@ public class ConsolidationService implements IConsolidationService {
             }
         }
 
+    }
+
+    private void applyPermissionFilter(CommonRequestModel commonRequestModel) throws RunnerException {
+        ListCommonRequest listCommonRequest = (ListCommonRequest) commonRequestModel.getData();
+        List<String> permissionList = PermissionsContext.getPermissions(CONSOLIDATION_LIST_PERMISSION);
+        if(permissionList == null || permissionList.size() == 0)
+            throw new RunnerException("Unable to list consolidations due to insufficient list permissions.");
+        permissionList.sort(new Comparator<String>() {
+            @Override
+            public int compare(String o1, String o2) {
+                return Integer.compare(o1.length(), o2.length());
+            }
+        });
+        List<FilterCriteria> criterias = PermissionUtil.generateFilterCriteriaFromPermissions(permissionList, false);
+
+        FilterCriteria criteria1 = null;
+        if(listCommonRequest.getFilterCriteria() != null && listCommonRequest.getFilterCriteria().size() > 0) {
+            criteria1 = FilterCriteria.builder().innerFilter(listCommonRequest.getFilterCriteria()).build();
+        }
+        FilterCriteria criteria2 = FilterCriteria.builder().innerFilter(criterias).build();
+        if(criteria2 != null && (criteria2.getCriteria() != null || (criteria2.getInnerFilter() != null && criteria2.getInnerFilter().size() > 0))) {
+            if (criteria1 != null && criteria1.getInnerFilter().size() > 0) {
+                criteria2.setLogicOperator("AND");
+                listCommonRequest.setFilterCriteria(Arrays.asList(criteria1, criteria2));
+            } else
+                listCommonRequest.setFilterCriteria(Arrays.asList(criteria2));
+        }
     }
 
     private boolean checkConsolidationTypeValidation(ConsolidationDetails consolidationDetails) {
