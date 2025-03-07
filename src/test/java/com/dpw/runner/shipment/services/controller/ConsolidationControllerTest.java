@@ -489,7 +489,7 @@ class ConsolidationControllerTest {
     }
 
     @Test
-    void exportConsolidationList() throws IOException, IllegalAccessException {
+    void exportConsolidationList() throws IOException, IllegalAccessException, RunnerException {
         // Mock
         doNothing().when(consolidationService).exportExcel(any(), any());
         // Test
@@ -499,7 +499,7 @@ class ConsolidationControllerTest {
     }
 
     @Test
-    void exportConsolidationList2() throws IOException, IllegalAccessException {
+    void exportConsolidationList2() throws IOException, IllegalAccessException, RunnerException {
         // Mock
         doThrow(new RuntimeException()).when(consolidationService).exportExcel(any(), any());
         // Test
@@ -509,7 +509,7 @@ class ConsolidationControllerTest {
     }
 
     @Test
-    void exportConsolidationList3() throws IOException, IllegalAccessException {
+    void exportConsolidationList3() throws IOException, IllegalAccessException, RunnerException {
         // Mock
         doThrow(new RuntimeException("RuntimeException")).when(consolidationService).exportExcel(any(), any());
         // Test
