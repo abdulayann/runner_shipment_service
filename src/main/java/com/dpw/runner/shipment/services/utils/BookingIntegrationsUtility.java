@@ -159,6 +159,8 @@ public class BookingIntegrationsUtility {
     private String lclBusinessCode;
     @Value("${platform.business.code.LSE}")
     private String lseBusinessCode;
+    @Value("${platform.document.path.update}")
+    private Boolean updateDocumentPath;
     @Autowired
     private BillingServiceAdapter billingServiceAdapter;
     @Autowired
@@ -1082,7 +1084,7 @@ public class BookingIntegrationsUtility {
                         DocumentMetaDTO.builder()
                                 .name(document.getFileName())
                                 .document_type(document.getDocType())
-                                .document_link(document.getPath())
+                                .document_link(Boolean.TRUE.equals(updateDocumentPath) ? document.getPath(): document.getSecureDownloadLink())
                                 .uploaded_by_user_id(document.getUploadedBy())
                                 .build()))
                 .build();
