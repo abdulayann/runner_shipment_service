@@ -1834,7 +1834,7 @@ public class EntityTransferService implements IEntityTransferService {
                             if (destination != null)
                                 locationRefGuids.add(destination);
                         }
-                        if (receivingAgent != null && Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP) &&
+                        if (receivingAgent != null &&
                                 !shipmentDetails.getTenantId().equals(receivingAgent.intValue())) {
                             shipmentGuids.add(shipmentDetails.getGuid());
                         }
