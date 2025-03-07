@@ -2051,7 +2051,7 @@ public class EntityTransferService implements IEntityTransferService {
                         arValidationResponse.setSalesBranch(shipmentDetails.getSalesBranch());
                         ArValidationResponse.ProfitShareShipmentData originShipmentData = mapShipmentDataToProfitShare(shipmentDetails);
                         arValidationResponse.setOriginShipment(originShipmentData);
-                        if (receivingAgent != null && Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP) &&
+                        if (receivingAgent != null &&
                                 !shipmentDetails.getTenantId().equals(receivingAgent.intValue()) && destinationShipmentsMap.containsKey(shipmentDetails.getGuid())) {
                             var ships = destinationShipmentsMap.get(shipmentDetails.getGuid());
                             var isShip = ships.stream().filter(x -> x.getTenantId().equals(receivingAgent.intValue())).findAny();
