@@ -1263,7 +1263,7 @@ public abstract class IReport {
         shipmentModel.setVoyage(shipmentDetails.getCarrierDetails().getVoyage());
         try {
             if(shipmentDetails.getContainersList() != null) {
-                ContainerSummaryResponse containerSummaryResponse = containerService.calculateContainerSummary(new ArrayList<>(shipmentDetails.getContainersList()), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType());
+                ContainerSummaryResponse containerSummaryResponse = containerService.calculateContainerSummary(jsonHelper.convertValueToList(shipmentDetails.getContainersList(), Containers.class), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType());
                 if(containerSummaryResponse != null) {
                     shipmentModel.setSummary(containerSummaryResponse.getSummary());
                 }
@@ -3796,6 +3796,58 @@ public abstract class IReport {
         else if (Objects.nonNull(awb.getOriginalPrintedAt()))
             return (StringUtility.toUpperCase(ConvertToDPWDateFormat(awb.getOriginalPrintedAt(), "ddMMMyy HHmm", true)));
         return StringUtility.getEmptyString();
+    }
+
+    public void populateRaKcDataWithShipmentDetails(Map<String, Object> dictionary, ShipmentDetails shipmentDetails) {
+        Parties partiesModelSendingAgent = shipmentDetails.getAdditionalDetails().getExportBroker() != null ? modelMapper.map(shipmentDetails.getAdditionalDetails().getExportBroker(), Parties.class) : null;
+        Parties partiesModelReceivingAgent = shipmentDetails.getAdditionalDetails().getImportBroker() != null ? modelMapper.map(shipmentDetails.getAdditionalDetails().getImportBroker(), Parties.class) : null;
+        Parties consignor = shipmentDetails.getConsigner() != null ? modelMapper.map(shipmentDetails.getConsigner(), Parties.class) : null;
+
+        List<Parties> parties = Arrays.asList(
+                partiesModelSendingAgent,
+                partiesModelReceivingAgent,
+                consignor
+        );
+        Map<String, Object> partiesOrgInfoFromCache = masterDataUtils.getPartiesOrgInfoFromCache(parties);
+
+        Map<String, Object> addressSendingAgent = getAddressForParty(partiesModelSendingAgent, partiesOrgInfoFromCache);
+        Map<String, Object> addressReceivingAgent = getAddressForParty(partiesModelReceivingAgent, partiesOrgInfoFromCache);
+        Map<String, Object> addressConsignorAgent = getAddressForParty(consignor, partiesOrgInfoFromCache);
+
+        processAgent(addressSendingAgent, dictionary, ONE, ORIGIN_AGENT);
+        processAgent(addressReceivingAgent, dictionary, ONE, DESTINATION_AGENT);
+        processAgent(addressConsignorAgent, dictionary, TWO, CONSIGNOR_AGENT);
+
+        if (shipmentDetails.getAdditionalDetails() != null) {
+            AdditionalDetails additionalDetailModel = shipmentDetails.getAdditionalDetails();
+            if(additionalDetailModel.getExemptionCodes() != null) {
+                dictionary.put(EXEMPTION_CARGO, additionalDetailModel.getExemptionCodes());
+            }
+            if(additionalDetailModel.getScreeningStatus() != null && !additionalDetailModel.getScreeningStatus().isEmpty()) {
+                Set<String> screeningCodes = additionalDetailModel.getScreeningStatus().stream().collect(Collectors.toSet());
+                if(screeningCodes.contains(Constants.AOM)){
+                    screeningCodes.remove(Constants.AOM);
+                    String aomString = Constants.AOM;
+                    if(additionalDetailModel.getAomFreeText() != null) {
+                        aomString =  aomString + " (" + additionalDetailModel.getAomFreeText() + ")";
+                    }
+                    screeningCodes.add(aomString);
+                    dictionary.put(SCREENING_CODES, screeningCodes);
+                    dictionary.put(AOM_FREE_TEXT, additionalDetailModel.getAomFreeText());
+                } else {
+                    dictionary.put(SCREENING_CODES, screeningCodes);
+                }
+
+            }
+
+            dictionary.put(RA_NUMBER, additionalDetailModel.getRegulatedEntityCategory());
+            dictionary.put(SECURITY_STATUS_RECEIVED_FROM, additionalDetailModel.getSecurityStatusReceivedFrom());
+            dictionary.put(ADDITIONAL_SECURITY_INFORMATION, StringUtility.getNullIfEmpty(additionalDetailModel.getAdditionalSecurityInformation()));
+        }
+
+        if(shipmentDetails.getSecurityStatus() != null ) {
+            dictionary.put(CONSIGNMENT_STATUS, shipmentDetails.getSecurityStatus());
+        }
     }
 
     public void validateAirDGAndAirSecurityCheckShipments(ShipmentModel shipmentModel) {
