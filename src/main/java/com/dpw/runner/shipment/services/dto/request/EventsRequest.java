@@ -40,7 +40,9 @@ public class EventsRequest extends CommonRequest implements IRunnerRequest {
     private BigDecimal weight;
     private BigDecimal totalWeight;
     private Boolean isPartial;
+    @ExcludeTimeZone
     private LocalDateTime receivedDate;
+    @ExcludeTimeZone
     private LocalDateTime scheduledDate;
     private String containerNumber;
     private String locationRole;
