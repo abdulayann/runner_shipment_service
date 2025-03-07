@@ -26,18 +26,10 @@ public class CustomerBookingValidations {
             log.error("Updating Booking number from {} to {} is not allowed.", oldEntity.getBookingNumber(), newEntity.getBookingNumber());
             throw new ValidationException(String.format("Updating Booking number from: %s to: %s is not allowed.", oldEntity.getBookingNumber(), newEntity.getBookingNumber()));
         }
-        if(!Objects.isNull(newEntity.getConsignee()) && !Objects.isNull(newEntity.getConsignor()) && newEntity.getConsignee().getOrgCode() != null
-                && newEntity.getConsignor().getOrgCode() != null && newEntity.getConsignor().getOrgCode().equals(newEntity.getConsignee().getOrgCode())) {
-            throw new ValidationException("Consignor & Consignee parties can't be selected as same.");
-        }
+        validateConsigneeConsignor(newEntity);
         var tenantSettings = Optional.ofNullable(commonUtils.getCurrentTenantSettings()).orElse(V1TenantSettingsResponse.builder().build());
 
-        // If TransportModeConfig flag is ON, this block will check for the valid transport mode
-        // If oldEntity is null (Create) OR transport mode is getting updated (Update)
-        if (Boolean.TRUE.equals(tenantSettings.getTransportModeConfig()) && (Objects.isNull(oldEntity) || !Objects.equals(oldEntity.getTransportType(), newEntity.getTransportType()))
-                    && Boolean.FALSE.equals(commonUtils.isTransportModeValid(newEntity.getTransportType(), Constants.CUSTOMER_BOOKING, tenantSettings))) {
-                throw new ValidationException(String.format(ErrorConstants.INVALID_TRANSPORT_MODE, newEntity.getTransportType()));
-        }
+        validateBookingTransportMode(oldEntity, newEntity, tenantSettings);
 
         Boolean countryAirCargoSecurity = tenantSettings.getCountryAirCargoSecurity();
         if (Boolean.TRUE.equals(countryAirCargoSecurity) && !CommonUtils.checkAirSecurityForBooking(newEntity)) {
@@ -67,6 +59,22 @@ public class CustomerBookingValidations {
             default :
                 log.debug(Constants.SWITCH_DEFAULT_CASE_MSG, newEntity.getBookingStatus());
                 break;
+        }
+    }
+
+    private void validateConsigneeConsignor(CustomerBooking newEntity) {
+        if(!Objects.isNull(newEntity.getConsignee()) && !Objects.isNull(newEntity.getConsignor()) && newEntity.getConsignee().getOrgCode() != null
+                && newEntity.getConsignor().getOrgCode() != null && newEntity.getConsignor().getOrgCode().equals(newEntity.getConsignee().getOrgCode())) {
+            throw new ValidationException("Consignor & Consignee parties can't be selected as same.");
+        }
+    }
+
+    private void validateBookingTransportMode(CustomerBooking oldEntity, CustomerBooking newEntity, V1TenantSettingsResponse tenantSettings) {
+        // If TransportModeConfig flag is ON, this block will check for the valid transport mode
+        // If oldEntity is null (Create) OR transport mode is getting updated (Update)
+        if (Boolean.TRUE.equals(tenantSettings.getTransportModeConfig()) && (Objects.isNull(oldEntity) || !Objects.equals(oldEntity.getTransportType(), newEntity.getTransportType()))
+                    && Boolean.FALSE.equals(commonUtils.isTransportModeValid(newEntity.getTransportType(), Constants.CUSTOMER_BOOKING, tenantSettings))) {
+                throw new ValidationException(String.format(ErrorConstants.INVALID_TRANSPORT_MODE, newEntity.getTransportType()));
         }
     }
 
