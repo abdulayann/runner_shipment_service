@@ -2128,6 +2128,104 @@ public class EntityTransferService implements IEntityTransferService {
 
                         populateNonAcceptedShipment(receivingBranch, triangulationList, entityId, entityType, arValidationResponse);
                     }
+                } else if(Objects.equals(shipmentDetails.getTransportMode(), TRANSPORT_MODE_AIR) && Objects.equals(shipmentDetails.getJobType(), SHIPMENT_TYPE_DRT)) {
+                    entityId = shipmentDetails.getId();
+                    entityType = SHIPMENT_IMPORT;
+                    if(Boolean.TRUE.equals(getIsNetworkTransferFeatureEnabled())) {
+                        entityType = SHIPMENT;
+                    }
+                    var receivingAgent = shipmentDetails.getReceivingBranch();
+                    var triangulationPartnerList = shipmentDetails.getTriangulationPartnerList();
+                    var triangulationPartner = shipmentDetails.getTriangulationPartner();
+                    if (receivingAgent == null && Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP)) {
+                        var destination = shipmentDetails.getCarrierDetails().getDestination();
+                        if (destination != null && unlocationsResponseMap.containsKey(destination)) {
+                            arValidationResponse.setDestinationCountry(unlocationsResponseMap.get(destination).getCountry());
+                        }
+                    }
+                    arValidationResponse.setReceivingAgent(receivingAgent);
+                    arValidationResponse.setTriangulationPartner(triangulationPartner);
+                    arValidationResponse.setOrigin(shipmentDetails.getTenantId());
+                    arValidationResponse.setSalesBranch(shipmentDetails.getSalesBranch());
+                    ArValidationResponse.ProfitShareShipmentData originShipmentData = mapShipmentDataToProfitShare(shipmentDetails);
+                    arValidationResponse.setOriginShipment(originShipmentData);
+                    if (receivingAgent != null && Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP) &&
+                            !shipmentDetails.getTenantId().equals(receivingAgent.intValue()) && destinationShipmentsMap.containsKey(shipmentDetails.getGuid())) {
+                        var ships = destinationShipmentsMap.get(shipmentDetails.getGuid());
+                        var isShip = ships.stream().filter(x -> x.getTenantId().equals(receivingAgent.intValue())).findAny();
+                        if (isShip.isPresent()) {
+                            arValidationResponse.setTransferToReceivingAgent(true);
+                            ArValidationResponse.ProfitShareShipmentData receivingShipmentData = mapShipmentDataToProfitShare(isShip.get());
+                            arValidationResponse.setReceivingShipment(receivingShipmentData);
+                        } else {
+                            receivingBranch = receivingAgent;
+                        }
+                    } else {
+                        receivingBranch = receivingAgent;
+                    }
+                    if (ObjectUtils.isNotEmpty(triangulationPartnerList)) {
+                        if (triangulationPartnerList.stream().filter(Objects::nonNull).anyMatch(tp -> Objects.equals(tp.getTriangulationPartner(), receivingAgent))) {
+                            arValidationResponse.setTransferToTriangulationPartner(arValidationResponse.getTransferToReceivingAgent());
+                            arValidationResponse.setTriangulationShipment(arValidationResponse.getReceivingShipment());
+                            arValidationResponse.setTriangulationShipmentList(List.of(arValidationResponse.getReceivingShipment()));
+                        } else if (triangulationPartnerList.stream()
+                                .filter(Objects::nonNull)
+                                .noneMatch(tp -> Objects.equals(tp.getTriangulationPartner(), shipmentDetails.getTenantId().longValue()))
+                                && destinationShipmentsMap.containsKey(shipmentDetails.getGuid())
+                        ) {
+                            var ships = destinationShipmentsMap.get(shipmentDetails.getGuid());
+                            var isShips = ships.stream()
+                                    .filter(shp -> triangulationPartnerList.stream().filter(Objects::nonNull)
+                                            .anyMatch(partner -> Objects.equals(partner.getTriangulationPartner(), shp.getTenantId().longValue())))
+                                    .toList();
+
+                            if (!isShips.isEmpty()) {
+                                List<ArValidationResponse.ProfitShareShipmentData> triangulationShipmentDataList = new ArrayList<>();
+                                for(var ship: isShips) {
+                                    ArValidationResponse.ProfitShareShipmentData triangulationShipment = mapShipmentDataToProfitShare(ship);
+                                    triangulationShipmentDataList.add(triangulationShipment);
+                                }
+                                arValidationResponse.setTransferToTriangulationPartner(true);
+                                arValidationResponse.setTriangulationShipment(triangulationShipmentDataList.get(0));
+                                arValidationResponse.setTriangulationShipmentList(triangulationShipmentDataList);
+                            }
+                        }
+                        Set<Integer> branchIds = new HashSet<>();
+                        if(arValidationResponse.getTriangulationShipmentList() != null) {
+                            branchIds = arValidationResponse.getTriangulationShipmentList().stream()
+                                    .filter(Objects::nonNull)
+                                    .map(ArValidationResponse.ProfitShareShipmentData::getBranchId)
+                                    .collect(Collectors.toSet());
+                        }
+
+                        for(TriangulationPartner triangulation : triangulationPartnerList) {
+                            if(!branchIds.contains(triangulation.getTriangulationPartner().intValue())) {
+                                triangulationList.add(triangulation.getTriangulationPartner());
+                            }
+                        }
+                    } else if (triangulationPartnerList == null && triangulationPartner != null) {
+                        if (Objects.equals(triangulationPartner, receivingAgent)) {
+                            arValidationResponse.setTransferToTriangulationPartner(arValidationResponse.getTransferToReceivingAgent());
+                            arValidationResponse.setTriangulationShipment(arValidationResponse.getReceivingShipment());
+                            arValidationResponse.setTriangulationShipmentList(List.of(arValidationResponse.getReceivingShipment()));
+                        } else if (!shipmentDetails.getTenantId().equals(triangulationPartner.intValue()) && destinationShipmentsMap.containsKey(shipmentDetails.getGuid())) {
+                            var ships = destinationShipmentsMap.get(shipmentDetails.getGuid());
+                            var isShip = ships.stream().filter(x -> x.getTenantId().equals(triangulationPartner.intValue())).findAny();
+                            if (isShip.isPresent()) {
+                                arValidationResponse.setTransferToTriangulationPartner(true);
+                                ArValidationResponse.ProfitShareShipmentData triangulationData = mapShipmentDataToProfitShare(isShip.get());
+                                arValidationResponse.setTriangulationShipment(triangulationData);
+                                arValidationResponse.setTriangulationShipmentList(List.of(triangulationData));
+                            } else {
+                                triangulationList.add(triangulationPartner);
+                            }
+                        } else {
+                            triangulationList.add(triangulationPartner);
+                        }
+                    }
+
+                    populateNonAcceptedShipment(receivingBranch, triangulationList, entityId, entityType, arValidationResponse);
+
                 }
                 responseList.add(arValidationResponse);
             }
