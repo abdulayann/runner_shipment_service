@@ -10,7 +10,6 @@ import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConst
 import com.dpw.runner.shipment.services.ReportingService.Models.DocPages;
 import com.dpw.runner.shipment.services.ReportingService.Models.DocUploadRequest;
 import com.dpw.runner.shipment.services.ReportingService.Models.DocumentRequest;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
 import com.dpw.runner.shipment.services.ReportingService.Reports.AWBLabelReport;
 import com.dpw.runner.shipment.services.ReportingService.Reports.ArrivalNoticeReport;
 import com.dpw.runner.shipment.services.ReportingService.Reports.BookingConfirmationReport;
@@ -130,6 +129,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COMBI_HAWB_COUNT;
 
 @Service
 @Slf4j
@@ -1894,9 +1895,8 @@ public class ReportService implements IReportService {
             log.debug("Shipment Details is null for the input with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
-        ShipmentModel shipmentModel = modelMapper.map(shipmentDetails.get(), ShipmentModel.class);
         Map<String, Object> dataRetrived = new HashMap<>();
-        shipmentTagsForExteranlServices.populateRaKcData(dataRetrived, shipmentModel);
+        shipmentTagsForExteranlServices.populateRaKcDataWithShipmentDetails(dataRetrived, shipmentDetails.get());
         return ResponseHelper.buildSuccessResponse(dataRetrived);
     }
 
