@@ -266,6 +266,8 @@ ShipmentServiceTest extends CommonMocks {
 
     private ExecutorService executorService;
 
+    private ExecutorService executorServiceMasterData;
+
     @Mock
     private ApplicationContext applicationContext;
 
@@ -321,6 +323,7 @@ ShipmentServiceTest extends CommonMocks {
     @AfterEach
     void tearDown() {
         shipmentService.executorService.shutdown();
+        shipmentService.executorServiceMasterData.shutdown();
     }
 
     @BeforeEach
@@ -331,6 +334,7 @@ ShipmentServiceTest extends CommonMocks {
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder().P100Branch(false).build());
         shipmentService.executorService = Executors.newFixedThreadPool(2);
+        shipmentService.executorServiceMasterData = Executors.newFixedThreadPool(2);
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().airDGFlag(false).build());
         updateConsoleShipmentRequest = new UpdateConsoleShipmentRequest();
     }

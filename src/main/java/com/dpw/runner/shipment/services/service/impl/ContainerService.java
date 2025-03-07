@@ -1371,7 +1371,7 @@ public class ContainerService implements IContainerService {
             if(response.getSummary() == null)
                 response.setSummary("");
             try {
-                response.setSummary(calculateContainerSummary(jsonHelper.convertValueToList(containersList, Containers.class)));
+                response.setSummary(calculateContainerSummary(containersList));
             }
             catch (Exception e) {
                 log.error("Error calculating summary");
