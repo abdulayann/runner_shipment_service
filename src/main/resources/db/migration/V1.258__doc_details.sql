@@ -10,7 +10,7 @@ create table if not exists doc_details (
     version_number varchar(64),
     "type" varchar(64),
     entity_id bigint
-)
+);
 
 
 ALTER TABLE IF EXISTS shipment_setting
