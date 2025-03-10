@@ -14,11 +14,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
-public class DocVersionDaoTest {
+class DocVersionDaoTest {
 
     @InjectMocks
     private DocVersionDao docVersionDao;
@@ -31,7 +32,7 @@ public class DocVersionDaoTest {
         DocVersion docVersion = new DocVersion();
         Mockito.when(docVersionRepository.save(any())).thenReturn(docVersion);
         DocVersion docVersion_ = docVersionDao.save(any());
-        assert(docVersion_ == docVersion);
+        assertEquals(docVersion, docVersion_);
     }
 
     @Test
@@ -39,7 +40,7 @@ public class DocVersionDaoTest {
         DocVersion docVersion = new DocVersion();
         Mockito.when(docVersionRepository.findByEntityIdAndType(any(), any())).thenReturn(List.of(docVersion));
         List<DocVersion> docVersion_ = docVersionDao.findByEntityIdAndType(1L, DocVersionTypes.PRE_ALERT);
-        assert(docVersion_.size() == 1);
+        assertEquals(1, docVersion_.size());
     }
 
 }
