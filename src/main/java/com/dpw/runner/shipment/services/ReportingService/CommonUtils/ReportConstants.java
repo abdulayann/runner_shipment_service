@@ -850,6 +850,7 @@ public class ReportConstants {
     // APis
     public static final String REPORT_API_HANDLE = "/api/v2/report";
     public static final String REPORT_CREATE_SUCCESSFUL = "Successful Report Creation";
+    public static final String PRE_ALERT_EMAIL_TEMPLATE_DATA = "/getPreAlertEmailTemplateData";
     public static final String SERVICE_MODE = "ServiceMode";
     public static final String SHIPMENT_PACKS_UNIT_DESC = "ShipmentPacksUnitDescription";
     public static final String UN = "UN";
@@ -1338,6 +1339,25 @@ public class ReportConstants {
     public static final String PLACE_OF_ISSUE = "PlaceOfIssue";
     public static final String FCR_PLACE_OF_ISSUE = "FCR_Placeofissue";
     public static final String FCR_DATE_OF_ISSUE = "FCR_Dateofissue";
+    public static final String LOAD = "Load";
+    public static final String CNEES = "Cnees";
+    public static final String DSTN = "Dstn";
+    public static final String CONT_NO = "ContNo";
+    public static final String CBR = "CBR";
+    public static final String COMMODITY = "Commodity";
+    public static final String CBN_NUMBER = "CBN Number";
+    public static final String SHIPMENT_PRE_ALERT_DOC = "shipment_pre_alert_doc";
+    public static final String OA_BRANCH = "OABranch";
+    public static final String OA_BRANCH_ADD = "OABranchAdd";
+    public static final String OA_NAME = "OAName";
+    public static final String OA_PHONE = "OAPhone";
+    public static final String OA_EMAIL = "OAemail";
+    public static final String DA_BRANCH = "DABranch";
+    public static final String DA_BRANCH_ADD = "DABranchAdd";
+    public static final String DA_NAME = "DAName";
+    public static final String DA_PHONE = "DAPhone";
+    public static final String DA_EMAIL = "DAemail";
+    public static final String PHONE = "Phone";
 
     // ValidationExceptions
     public static final String FREIGHT_DOCUMENT_PERMISSION_EXCEPTION = "You do not have permission to print the freight documents.";
