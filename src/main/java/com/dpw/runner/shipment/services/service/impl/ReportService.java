@@ -159,7 +159,7 @@ public class ReportService implements IReportService {
     private IV1Service iv1Service;
 
     @Autowired
-    private IDocVersionDao docVersionDao;
+    private IDocDetailsDao docDetailsDao;
 
     @Autowired
     @Lazy
@@ -945,21 +945,21 @@ public class ReportService implements IReportService {
         eventsRequest.setEventType(EventType.REPORT.name());
         eventsRequest.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
         if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getPreAlertEmailAndLogs()) && EventConstants.PRST.equals(eventCode)) {
-            List<DocVersion> docVersions = docVersionDao.findByEntityIdAndType(reportId, DocVersionTypes.PRE_ALERT);
+            List<DocDetails> docDetails = docDetailsDao.findByEntityIdAndType(reportId, DocDetailsTypes.PRE_ALERT);
             String refNum;
-            DocVersion docVersion;
-            if(CommonUtils.listIsNullOrEmpty(docVersions)) {
-                docVersion = DocVersion.builder()
-                        .type(DocVersionTypes.PRE_ALERT)
+            DocDetails docDetail;
+            if(CommonUtils.listIsNullOrEmpty(docDetails)) {
+                docDetail = DocDetails.builder()
+                        .type(DocDetailsTypes.PRE_ALERT)
                         .entityId(reportId)
                         .build();
                 refNum = "1";
             } else {
-                docVersion = docVersions.get(0);
-                refNum = String.valueOf(Integer.parseInt(docVersion.getVersionNumber()) + 1);
+                docDetail = docDetails.get(0);
+                refNum = String.valueOf(Integer.parseInt(docDetail.getVersionNumber()) + 1);
             }
-            docVersion.setVersionNumber(refNum);
-            docVersionDao.save(docVersion);
+            docDetail.setVersionNumber(refNum);
+            docDetailsDao.save(docDetail);
             eventsRequest.setReferenceNumber(refNum);
         }
 

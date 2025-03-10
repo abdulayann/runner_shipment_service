@@ -16,7 +16,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.dao.impl.*;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IDocVersionDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IDocDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerDataResponse;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerResponse;
@@ -83,7 +83,7 @@ class ReportServiceTest extends CommonMocks {
     private IShipmentSettingsDao shipmentSettingsDao;
 
     @Mock
-    private IDocVersionDao docVersionDao;
+    private IDocDetailsDao docDetailsDao;
 
     @Mock
     private IV1Service iv1Service;
@@ -1607,7 +1607,7 @@ class ReportServiceTest extends CommonMocks {
         when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(shipmentSettingsDetails));
         when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(Arrays.asList(shipmentSettingsDetails, shipmentSettingsDetails2));
         when(reportsFactory.getReport(any())).thenReturn(preAlertReport);
-        when(docVersionDao.findByEntityIdAndType(any(), any())).thenReturn(List.of(DocVersion.builder().versionNumber("2").build()));
+        when(docDetailsDao.findByEntityIdAndType(any(), any())).thenReturn(List.of(DocDetails.builder().versionNumber("2").build()));
         when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(ResponseEntity.ok(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))));
         when(jsonHelper.convertToJson(any())).thenReturn("");
         Map<String, Object> dataRetrived = new HashMap<>();
@@ -1647,7 +1647,7 @@ class ReportServiceTest extends CommonMocks {
         when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(shipmentSettingsDetails));
         when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(Arrays.asList(shipmentSettingsDetails, shipmentSettingsDetails2));
         when(reportsFactory.getReport(any())).thenReturn(preAlertReport);
-        when(docVersionDao.findByEntityIdAndType(any(), any())).thenReturn(new ArrayList<>());
+        when(docDetailsDao.findByEntityIdAndType(any(), any())).thenReturn(new ArrayList<>());
         when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(ResponseEntity.ok(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))));
         when(jsonHelper.convertToJson(any())).thenReturn("");
         Map<String, Object> dataRetrived = new HashMap<>();
