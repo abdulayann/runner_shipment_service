@@ -740,6 +740,7 @@ public class ShipmentService implements IShipmentService {
         List<ShipmentListResponse> shipmentListResponses = ShipmentMapper.INSTANCE.toShipmentListResponses(lst);
         shipmentListResponses.forEach(response -> {
             setEventData(response);
+            setShipperReferenceNumber(response);
             if (response.getStatus() != null && response.getStatus() < ShipmentStatus.values().length)
                 response.setShipmentStatus(ShipmentStatus.values()[response.getStatus()].toString());
             int pendingCount = map.getOrDefault(response.getId(), 0) + notificationMap.getOrDefault(response.getId(), 0);
@@ -4304,7 +4305,7 @@ public class ShipmentService implements IShipmentService {
             // TODO- check if they want status
 //            if (shipmentDetail.getStatus() != null && shipmentDetail.getStatus() < ShipmentStatus.values().length)
 //                response.setShipmentStatus(ShipmentStatus.values()[shipmentDetail.getStatus()].toString());
-            setShipperReferenceNumber(shipmentDetail, response);
+            setShipperReferenceNumber(response);
             responseList.add(response);
         });
 //        setLocationData(responseList);
@@ -4313,16 +4314,29 @@ public class ShipmentService implements IShipmentService {
         return responseList;
     }
 
-    private void setShipperReferenceNumber(ShipmentDetails shipmentDetails, ShipmentDetailsResponse response){
-        if(shipmentDetails.getReferenceNumbersList() != null && !shipmentDetails.getReferenceNumbersList().isEmpty()){
-           Optional<String> srnReferenceNumber = shipmentDetails.getReferenceNumbersList().stream()
+    private void setShipperReferenceNumber(ShipmentDetailsResponse response){
+        if(response.getReferenceNumbersList() != null && !response.getReferenceNumbersList().isEmpty()){
+           Optional<String> srnReferenceNumber = response.getReferenceNumbersList().stream()
                 .filter(i -> i.getType().equalsIgnoreCase(SRN))
                 .findFirst()
-                .map(ReferenceNumbers::getReferenceNumber);
+                .map((a) -> a.getReferenceNumber());
 
            if(srnReferenceNumber.isPresent() && response.getPickupDetails() != null){
                response.getPickupDetails().setShipperRef(srnReferenceNumber.get());
            }
+        }
+    }
+
+    private void setShipperReferenceNumber(ShipmentListResponse response){
+        if(response.getReferenceNumbersList() != null && !response.getReferenceNumbersList().isEmpty()){
+            Optional<String> srnReferenceNumber = response.getReferenceNumbersList().stream()
+                .filter(i -> i.getType().equalsIgnoreCase(SRN))
+                .findFirst()
+                .map((a) -> a.getReferenceNumber());
+
+            if(srnReferenceNumber.isPresent() && response.getPickupDetails() != null){
+                response.getPickupDetails().setShipperRef(srnReferenceNumber.get());
+            }
         }
     }
 
