@@ -119,8 +119,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.COMBI_HAWB_COUNT;
-
 @Service
 @Slf4j
 public class ReportService implements IReportService {
@@ -894,7 +892,7 @@ public class ReportService implements IReportService {
                 documentType = ReportConstants.DRAFT_HOUSE_BILL;
             }
             DocUploadRequest docUploadRequest = new DocUploadRequest();
-            docUploadRequest.setEntityType(Constants.Shipments);
+            docUploadRequest.setEntityType(Constants.SHIPMENTS_WITH_SQ_BRACKETS);
             docUploadRequest.setId(Long.parseLong(reportRequest.getReportId()));
             docUploadRequest.setType(documentType);
             docUploadRequest.setReportId(reportRequest.getReportId());
@@ -916,7 +914,7 @@ public class ReportService implements IReportService {
             if(shipmentsRow.isPresent())
                 shipmentDetails = shipmentsRow.get();
             DocUploadRequest docUploadRequest = new DocUploadRequest();
-            docUploadRequest.setEntityType(Constants.Shipments);
+            docUploadRequest.setEntityType(Constants.SHIPMENTS_WITH_SQ_BRACKETS);
             docUploadRequest.setId(Long.parseLong(reportRequest.getReportId()));
             docUploadRequest.setType(ReportConstants.SEAWAY_BILL);
             docUploadRequest.setReportId(reportRequest.getReportId());
@@ -1271,7 +1269,7 @@ public class ReportService implements IReportService {
                 return setDocPages(null, getMainOrLastPageId(row.getSeawayMainPage(), adminRow.getSeawayMainPage()), null, getIsLogoFixed(row.getSeawayMainPage()), null, null,null);
             case ReportConstants.SHIP_TRUCKWAY_BILL:
                 return setDocPages(null, getMainOrLastPageId(row.getShipTruckWayBillMainPage(), adminRow.getShipTruckWayBillMainPage()), null, getIsLogoFixed(row.getShipTruckWayBillMainPage()), null, null,null);
-            case ReportConstants.CONS_TRUCKWAY_BIll:
+            case ReportConstants.CONS_TRUCKWAY_BILL:
                 return setDocPages(null, getMainOrLastPageId(row.getConsTruckWayBillMainPage(), adminRow.getConsTruckWayBillMainPage()), null, getIsLogoFixed(row.getConsTruckWayBillMainPage()), null, null,null);
             case ReportConstants.SHIP_TRUCK_DRIVER_PROOF:
                 return setDocPages(null, getMainOrLastPageId(row.getShipTruckDriverProof(), adminRow.getShipTruckDriverProof()), null, getIsLogoFixed(row.getShipTruckDriverProof()), null, null,null);
@@ -1996,7 +1994,7 @@ public class ReportService implements IReportService {
             String documentType = documentTypeFinder(reportRequest);
 
             DocUploadRequest docUploadRequest = new DocUploadRequest();
-            docUploadRequest.setEntityType(isShipment ? Constants.Shipments : Constants.Consolidations);
+            docUploadRequest.setEntityType(isShipment ? Constants.SHIPMENTS_WITH_SQ_BRACKETS : Constants.CONSOLIDATIONS_WITH_SQ_BRACKETS);
             docUploadRequest.setId(Long.parseLong(reportRequest.getReportId()));
             docUploadRequest.setType(documentType);
             docUploadRequest.setReportId(reportRequest.getReportId());
@@ -2022,7 +2020,7 @@ public class ReportService implements IReportService {
         ReportRequest reportRequest = new ReportRequest();
         reportRequest.setReportId(reportId);
         reportRequest.setReportInfo(CSD_REPORT);
-        if(Constants.Consolidations.equalsIgnoreCase(docUploadRequest.getEntityType())){
+        if(Constants.CONSOLIDATIONS_WITH_SQ_BRACKETS.equalsIgnoreCase(docUploadRequest.getEntityType())){
             reportRequest.setFromConsolidation(true);
         }
         try{

@@ -2,8 +2,8 @@ package com.dpw.runner.shipment.services.entity.enums;
 
 public enum GroupingNumber {
 
-    DotAndComma(0, "Use . and ,"),
-    CommaAndDot(1, "Use , and .");
+    DOT_AND_COMMA(0, "Use . and ,"),
+    COMMA_AND_DOT(1, "Use , and .");
     private final int value;
     private final String description;
 

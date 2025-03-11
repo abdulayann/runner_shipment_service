@@ -792,23 +792,23 @@ public class ShipmentService implements IShipmentService {
         if (shipmentDetail.getContainersList() != null) {
             for (Containers container : shipmentDetail.getContainersList()) {
                 if(container.getContainerCode() != null) {
-                    if (container.getContainerCode().contains(Constants.Cont20)) {
+                    if (container.getContainerCode().contains(Constants.CONT_20)) {
                         ++container20Count;
-                    } else if (container.getContainerCode().contains(Constants.Cont40)) {
+                    } else if (container.getContainerCode().contains(Constants.CONT_40)) {
                         ++container40Count;
                     }
 
                     switch (container.getContainerCode()) {
-                        case Constants.Cont20GP:
+                        case Constants.CONT_20_GP:
                             ++container20GPCount;
                             break;
-                        case Constants.Cont20RE:
+                        case Constants.CONT_20_RE:
                             ++container20RECount;
                             break;
-                        case Constants.Cont40GP:
+                        case Constants.CONT_40_GP:
                             ++container40GPCount;
                             break;
-                        case Constants.Cont40RE:
+                        case Constants.CONT_40_RE:
                             ++container40RECount;
                             break;
                         default:
@@ -977,11 +977,11 @@ public class ShipmentService implements IShipmentService {
             updateFileRequests.add(DocumentManagerUpdateFileEntitiesRequest.UpdateFileRequest.builder()
                     .source(DocumentManagerUpdateFileEntitiesRequest.EntityData.builder()
                             .entityKey(bookingGuid)
-                            .entityType(Bookings)
+                            .entityType(BOOKINGS_WITH_SQ_BRACKETS)
                             .build())
                     .entitiesToAttach(List.of(DocumentManagerUpdateFileEntitiesRequest.EntityData.builder()
                             .entityKey(shipmentGuid)
-                            .entityType(Shipments)
+                            .entityType(SHIPMENTS_WITH_SQ_BRACKETS)
                             .build()))
                     .build());
 
@@ -5261,7 +5261,7 @@ public class ShipmentService implements IShipmentService {
 
         if (shipmentDetails.getIsLocked() != null && shipmentDetails.getIsLocked()) {
             if (lockingUser != null && (Objects.equals(lockingUser, currentUser) ||
-                    (!Objects.isNull(PermissionsContext.getPermissions(PermissionConstants.tenantSuperAdmin)) && !PermissionsContext.getPermissions(PermissionConstants.tenantSuperAdmin).isEmpty()) ))
+                    (!Objects.isNull(PermissionsContext.getPermissions(PermissionConstants.TENANT_SUPER_ADMIN)) && !PermissionsContext.getPermissions(PermissionConstants.TENANT_SUPER_ADMIN).isEmpty()) ))
                 shipmentDetails.setIsLocked(false);
             else
                 throw new RunnerException(String.format(ErrorConstants.LOCK_UNLOCK_ERROR, Constants.SHIPMENT_CAMELCASE, lockingUser));
@@ -8486,7 +8486,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     private void fetchDgUserTask(OceanDGRequest request) throws RunnerException {
-        CommonV1ListRequest commonV1ListRequest = createCriteriaTaskListRequest(request.getShipmentId().toString(), Shipments);
+        CommonV1ListRequest commonV1ListRequest = createCriteriaTaskListRequest(request.getShipmentId().toString(), SHIPMENTS_WITH_SQ_BRACKETS);
         log.info("V1 task list request: {}" , jsonHelper.convertToJson(commonV1ListRequest));
 
         V1DataResponse v1Response;

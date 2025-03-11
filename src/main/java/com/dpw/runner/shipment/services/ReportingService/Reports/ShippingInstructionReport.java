@@ -169,18 +169,18 @@ public class ShippingInstructionReport extends IReport{
             dictionary.put(TOTAL_PACKS, null);
 
         if (breakFlagForVolume || totalVolume.equals(BigDecimal.ZERO)) {
-            dictionary.put(TOTAL_VOLUME, null);
+            dictionary.put(TOTAL_PACKS_VOLUME, null);
             dictionary.put(UOTV, null);
         } else {
-            dictionary.put(TOTAL_VOLUME, ConvertToVolumeNumberFormat(totalVolume, v1TenantSettingsResponse));
+            dictionary.put(TOTAL_PACKS_VOLUME, ConvertToVolumeNumberFormat(totalVolume, v1TenantSettingsResponse));
             dictionary.put(UOTV, unitOfTotalVolume);
         }
 
         if (breakFlagForWeight || totalWeight.equals(BigDecimal.ZERO)) {
-            dictionary.put(TOTAL_WEIGHT, null);
+            dictionary.put(TOTAL_PACKS_WEIGHT, null);
             dictionary.put(UOTW, null);
         } else {
-            dictionary.put(TOTAL_WEIGHT, ConvertToWeightNumberFormat(totalWeight, v1TenantSettingsResponse));
+            dictionary.put(TOTAL_PACKS_WEIGHT, ConvertToWeightNumberFormat(totalWeight, v1TenantSettingsResponse));
             dictionary.put(UOTW, unitOfTotalWeight);
         }
     }

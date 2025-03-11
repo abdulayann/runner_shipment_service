@@ -163,7 +163,7 @@ public class ConsolidatedPackingListReport extends IReport {
         if (!weightUnitConsistent || totalWeight.equals(BigDecimal.ZERO)) {
             setEmptyWeight(dictionary);
         } else {
-            dictionary.put(TOTAL_WEIGHT, ConvertToWeightNumberFormat(totalWeight, v1TenantSettingsResponse));
+            dictionary.put(TOTAL_PACKS_WEIGHT, ConvertToWeightNumberFormat(totalWeight, v1TenantSettingsResponse));
             dictionary.put(UOTW, unitOfTotalWeight);
         }
     }
@@ -171,12 +171,12 @@ public class ConsolidatedPackingListReport extends IReport {
     private void setEmptyTotals(Map<String, Object> dictionary) {
         dictionary.put(ITEMS, Collections.emptyList());
         dictionary.put(TOTAL_PACKS, null);
-        dictionary.put(TOTAL_WEIGHT, null);
+        dictionary.put(TOTAL_PACKS_WEIGHT, null);
         dictionary.put(UOTW, null);
     }
 
     private void setEmptyWeight(Map<String, Object> dictionary){
-        dictionary.put(TOTAL_WEIGHT, null);
+        dictionary.put(TOTAL_PACKS_WEIGHT, null);
         dictionary.put(UOTW, null);
     }
 

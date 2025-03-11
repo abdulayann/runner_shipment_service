@@ -1776,7 +1776,7 @@ public class CommonUtils {
         throws RunnerException {
         DGTaskCreateRequest taskRequest = DGTaskCreateRequest
             .builder()
-            .entityType(Shipments)
+            .entityType(SHIPMENTS_WITH_SQ_BRACKETS)
             .entityId(shipmentDetails.getId().toString())
             .roleId(roleId.toString())
             .taskType(OCEAN_DG_TASKTYPE)

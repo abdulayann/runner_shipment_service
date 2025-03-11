@@ -2173,7 +2173,7 @@ ShipmentServiceTest extends CommonMocks {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setAirDGFlag(true);
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(shipmentSettingsDetails);
-        UserContext.getUser().getPermissions().put(PermissionConstants.airDG, true);
+        UserContext.getUser().getPermissions().put(PermissionConstants.AIR_DG, true);
 
         when(consolidationDetailsDao.findById(consolidationId)).thenReturn(Optional.of(consolidationDetails));
 
@@ -3939,7 +3939,7 @@ ShipmentServiceTest extends CommonMocks {
         oldEntity.setId(1L);
         mockShipment.setConsolidationList(new HashSet<>(Arrays.asList(consolidationDetails1)));
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).iataTactFlag(true).airDGFlag(true).build());
-        UserContext.getUser().getPermissions().put(PermissionConstants.airDG, true);
+        UserContext.getUser().getPermissions().put(PermissionConstants.AIR_DG, true);
 
         ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
@@ -3995,7 +3995,7 @@ ShipmentServiceTest extends CommonMocks {
         oldEntity.getCarrierDetails().setShippingLine("ABC AirLine");
         oldEntity.setId(1L);
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).iataTactFlag(true).airDGFlag(true).build());
-        UserContext.getUser().getPermissions().put(PermissionConstants.airDG, true);
+        UserContext.getUser().getPermissions().put(PermissionConstants.AIR_DG, true);
 
         ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
@@ -4041,7 +4041,7 @@ ShipmentServiceTest extends CommonMocks {
         mockShipment.setConsolidationList(new HashSet<>(Arrays.asList(consolidationDetails1)));
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).airDGFlag(true).build());
         Map<String, Boolean> permissions = new HashMap<>();
-        permissions.put(PermissionConstants.airDG, dgUser);
+        permissions.put(PermissionConstants.AIR_DG, dgUser);
         UserContext.getUser().setPermissions(permissions);
 
         ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
@@ -5684,12 +5684,12 @@ ShipmentServiceTest extends CommonMocks {
         shipmentDetails.setEventsList(null);
 
         Set<Containers> containersList = new HashSet<>();
-        containersList.add(Containers.builder().containerCode(Constants.Cont20).containerNumber("CON123").build());
-        containersList.add(Containers.builder().containerCode(Constants.Cont40).build());
-        containersList.add(Containers.builder().containerCode(Constants.Cont20GP).build());
-        containersList.add(Containers.builder().containerCode(Constants.Cont20RE).build());
-        containersList.add(Containers.builder().containerCode(Constants.Cont40GP).build());
-        containersList.add(Containers.builder().containerCode(Constants.Cont40RE).build());
+        containersList.add(Containers.builder().containerCode(Constants.CONT_20).containerNumber("CON123").build());
+        containersList.add(Containers.builder().containerCode(Constants.CONT_40).build());
+        containersList.add(Containers.builder().containerCode(Constants.CONT_20_GP).build());
+        containersList.add(Containers.builder().containerCode(Constants.CONT_20_RE).build());
+        containersList.add(Containers.builder().containerCode(Constants.CONT_40_GP).build());
+        containersList.add(Containers.builder().containerCode(Constants.CONT_40_RE).build());
 
         shipmentDetails.setContainersList(containersList);
         when(consoleShipmentMappingDao.findByConsolidationId(consoleId)).thenReturn(consoleShipmentMappings);
@@ -6511,17 +6511,17 @@ ShipmentServiceTest extends CommonMocks {
         if (shipmentDetail.getContainersList() != null) {
             for (Containers container : shipmentDetail.getContainersList()) {
                 if(container.getContainerCode() != null) {
-                    if (container.getContainerCode().contains(Constants.Cont20)) {
+                    if (container.getContainerCode().contains(Constants.CONT_20)) {
                         ++container20Count;
-                    } else if (container.getContainerCode().contains(Constants.Cont40)) {
+                    } else if (container.getContainerCode().contains(Constants.CONT_40)) {
                         ++container40Count;
-                    } else if (container.getContainerCode().equals(Constants.Cont20GP)) {
+                    } else if (container.getContainerCode().equals(Constants.CONT_20_GP)) {
                         ++container20GPCount;
-                    } else if (container.getContainerCode().equals(Constants.Cont20RE)) {
+                    } else if (container.getContainerCode().equals(Constants.CONT_20_RE)) {
                         ++container20RECount;
-                    } else if (container.getContainerCode().equals(Constants.Cont40GP)) {
+                    } else if (container.getContainerCode().equals(Constants.CONT_40_GP)) {
                         ++container40GPCount;
-                    } else if (container.getContainerCode().equals(Constants.Cont40RE)) {
+                    } else if (container.getContainerCode().equals(Constants.CONT_40_RE)) {
                         ++container40RECount;
                     }
                 }

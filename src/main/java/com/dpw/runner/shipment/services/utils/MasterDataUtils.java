@@ -446,16 +446,16 @@ public class MasterDataUtils{
         ContainerCounts counts = new ContainerCounts();
         for (Containers container : containersList) {
             if (container.getContainerCode() != null) {
-                if (container.getContainerCode().contains(Constants.Cont20)) {
+                if (container.getContainerCode().contains(Constants.CONT_20)) {
                     counts.container20Count++;
-                } else if (container.getContainerCode().contains(Constants.Cont40)) {
+                } else if (container.getContainerCode().contains(Constants.CONT_40)) {
                     counts.container40Count++;
                 }
                 switch (container.getContainerCode()) {
-                    case Constants.Cont20GP -> counts.container20GPCount++;
-                    case Constants.Cont20RE -> counts.container20RECount++;
-                    case Constants.Cont40GP -> counts.container40GPCount++;
-                    case Constants.Cont40RE -> counts.container40RECount++;
+                    case Constants.CONT_20_GP -> counts.container20GPCount++;
+                    case Constants.CONT_20_RE -> counts.container20RECount++;
+                    case Constants.CONT_40_GP -> counts.container40GPCount++;
+                    case Constants.CONT_40_RE -> counts.container40RECount++;
                     default -> {}
                 }
             }

@@ -1303,7 +1303,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         CustomerBookingRequest request = objectMapper.convertValue(inputCustomerBooking, CustomerBookingRequest.class);
         request.setTransportType("AIR");
         request.setIsDg(true);
-        UserContext.getUser().setPermissions(Map.of(PermissionConstants.airDG, true));
+        UserContext.getUser().setPermissions(Map.of(PermissionConstants.AIR_DG, true));
         request.setBookingStatus(BookingStatus.READY_FOR_SHIPMENT);
         CustomerBookingResponse customerBookingResponse = objectMapper.convertValue(inputCustomerBooking, CustomerBookingResponse.class);
         // Mock
@@ -1336,7 +1336,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         inputCustomerBooking.setBookingStatus(BookingStatus.PENDING_FOR_CREDIT_LIMIT);
         CustomerBookingRequest request = objectMapper.convertValue(inputCustomerBooking, CustomerBookingRequest.class);
         request.setTransportType("AIR");
-        UserContext.getUser().setPermissions(Map.of(PermissionConstants.airDG, false));
+        UserContext.getUser().setPermissions(Map.of(PermissionConstants.AIR_DG, false));
         request.setIsDg(true);
         request.setBookingStatus(BookingStatus.READY_FOR_SHIPMENT);
         CustomerBookingResponse customerBookingResponse = objectMapper.convertValue(inputCustomerBooking, CustomerBookingResponse.class);
@@ -1368,7 +1368,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         CustomerBookingRequest request = objectMapper.convertValue(inputCustomerBooking, CustomerBookingRequest.class);
         request.setTransportType("AIR");
         request.setIsDg(false);
-        UserContext.getUser().setPermissions(Map.of(PermissionConstants.airDG, true));
+        UserContext.getUser().setPermissions(Map.of(PermissionConstants.AIR_DG, true));
         request.setBookingStatus(BookingStatus.READY_FOR_SHIPMENT);
         CustomerBookingResponse customerBookingResponse = objectMapper.convertValue(inputCustomerBooking, CustomerBookingResponse.class);
         // Mock
@@ -1399,7 +1399,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         CustomerBookingRequest request = objectMapper.convertValue(inputCustomerBooking, CustomerBookingRequest.class);
         request.setTransportType("AIR");
         request.setIsDg(false);
-        UserContext.getUser().setPermissions(Map.of(PermissionConstants.airDG, false));
+        UserContext.getUser().setPermissions(Map.of(PermissionConstants.AIR_DG, false));
         request.setBookingStatus(BookingStatus.READY_FOR_SHIPMENT);
         CustomerBookingResponse customerBookingResponse = objectMapper.convertValue(inputCustomerBooking, CustomerBookingResponse.class);
         // Mock

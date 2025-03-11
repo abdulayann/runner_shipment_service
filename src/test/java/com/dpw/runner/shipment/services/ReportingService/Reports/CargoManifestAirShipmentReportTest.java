@@ -251,7 +251,7 @@ class CargoManifestAirShipmentReportTest extends CommonMocks {
         shipmentModel.setPackingList(packingModels);
 
         ReferenceNumbersModel referenceNumbersModel = new ReferenceNumbersModel();
-        referenceNumbersModel.setType(ReportConstants.MoRN);
+        referenceNumbersModel.setType(ReportConstants.MO_RN);
         shipmentModel.setReferenceNumbersList(Arrays.asList(referenceNumbersModel));
 
         ConsolidationModel consolidationModel = new ConsolidationModel();

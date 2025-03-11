@@ -707,7 +707,7 @@ class PackingServiceTest extends CommonMocks {
         volumeWeightChargeable.setChargeable(new BigDecimal(434));
         volumeWeightChargeable.setVolumeWeight(new BigDecimal("217.167"));
         when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
-        UserContext.getUser().getPermissions().put(PermissionConstants.airDG, true);
+        UserContext.getUser().getPermissions().put(PermissionConstants.AIR_DG, true);
         packingService.uploadPacking(bulkUploadRequest);
         verify(packingDao, times(1)).saveAll(any());
     }

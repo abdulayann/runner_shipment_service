@@ -90,9 +90,9 @@ public class ContainerManifestPrint extends IReport {
         processConsolShipmentType(consol, dictionary, exportAgentAddress, importAgentAddress, exportAgentFreeTextAddress, importAgentFreeTextAddress);
 
         dictionary.put(ReportConstants.CTO_ADDRESS, ctoAddress);
-        dictionary.put(ReportConstants.TOTAL_WEIGHT, ConvertToWeightNumberFormat(weightAndUnit.getLeft(), v1TenantSettingsResponse));
+        dictionary.put(ReportConstants.TOTAL_PACKS_WEIGHT, ConvertToWeightNumberFormat(weightAndUnit.getLeft(), v1TenantSettingsResponse));
         dictionary.put(ReportConstants.TOTAL_WEIGHT_UNIT, weightAndUnit.getRight());
-        dictionary.put(ReportConstants.TOTAL_VOLUME, ConvertToVolumeNumberFormat(volumeAndUnit.getLeft(), v1TenantSettingsResponse));
+        dictionary.put(ReportConstants.TOTAL_PACKS_VOLUME, ConvertToVolumeNumberFormat(volumeAndUnit.getLeft(), v1TenantSettingsResponse));
         dictionary.put(ReportConstants.TOTAL_VOLUME_UNIT, volumeAndUnit.getRight());
         var user = UserContext.getUser();
         dictionary.put(ReportConstants.UN, user.getUsername());

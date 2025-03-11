@@ -32,10 +32,10 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CAL;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CAN_NUMBER;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CARGO_LOCATION;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHAPartyDescription;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHA_PARTY_DESCRIPTION;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHARGEABLE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHARGABLE_AND_UNIT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHARGEABLE_AND_UNIT;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHARGEABLE_AND_UNIT_;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHARGEABLE_UNIT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CITY;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CLIENT_ADRS;
@@ -540,7 +540,7 @@ public class HblReport extends IReport {
         JsonDateFormat(dictionary);
         processBlObject(hblModel, dictionary);
 
-        dictionary.put(ReportConstants.NoOfPackages, hblModel.noofPackages);
+        dictionary.put(ReportConstants.NO_OF_PACKAGES1, hblModel.noofPackages);
         dictionary.put(ReportConstants.CONTAINER_COUNT_GROUPED, concatGroupedContainerCount(hblModel.getContainerCountGrouped()));
         dictionary.put(ReportConstants.CONTAINER_PACKS_GROUPED, concatGroupedContainerCount(hblModel.getContainerPacksGrouped()));
         processDecimalPlacesTag(hblModel, dictionary, v1TenantSettingsResponse);
@@ -721,10 +721,10 @@ public class HblReport extends IReport {
 
     private void processDecimalPlacesTag(HblModel hblModel, Map<String, Object> dictionary, V1TenantSettingsResponse v1TenantSettingsResponse) {
         Integer decimalPlaces = hblModel.shipmentSettingsDetails == null || hblModel.shipmentSettingsDetails.getDecimalPlaces() == null ? 2 : hblModel.shipmentSettingsDetails.getDecimalPlaces();
-        dictionary.put(ReportConstants.ContainerWeightWithXSeparated, concatGroupedFieldValues(hblModel.getContainerWeightGrouped(), decimalPlaces));
-        dictionary.put(ReportConstants.ContainerVolumeWithXSeparated, concatGroupedFieldValues(hblModel.getContainerVolumeGrouped(), decimalPlaces));
-        dictionary.put(ReportConstants.ContainerWeightGrouped, concatGroupedFields(hblModel.getContainerWeightGrouped(), decimalPlaces));
-        dictionary.put(ReportConstants.ContainerVolumeGrouped, concatGroupedFields(hblModel.getContainerVolumeGrouped(), decimalPlaces));
+        dictionary.put(ReportConstants.CONTAINER_WEIGHT_WITH_XSEPARATED, concatGroupedFieldValues(hblModel.getContainerWeightGrouped(), decimalPlaces));
+        dictionary.put(ReportConstants.CONTAINER_VOLUME_WITH_XSEPARATED, concatGroupedFieldValues(hblModel.getContainerVolumeGrouped(), decimalPlaces));
+        dictionary.put(ReportConstants.CONTAINER_WEIGHT_GROUPED, concatGroupedFields(hblModel.getContainerWeightGrouped(), decimalPlaces));
+        dictionary.put(ReportConstants.CONTAINER_VOLUME_GROUPED, concatGroupedFields(hblModel.getContainerVolumeGrouped(), decimalPlaces));
         processWeightVolumeChargable(hblModel, decimalPlaces, v1TenantSettingsResponse, dictionary);
     }
 
@@ -872,7 +872,7 @@ public class HblReport extends IReport {
         if (hblModel.shipment.getShipmentAddresses() != null && !hblModel.shipment.getShipmentAddresses().isEmpty()) {
             for (PartiesModel shipmentAddress : hblModel.shipment.getShipmentAddresses()) {
                 if (shipmentAddress.getType() != null && shipmentAddress.getType().equalsIgnoreCase(CUSTOM_HOUSE_AGENT) && shipmentAddress.getOrgData() != null && getValueFromMap(shipmentAddress.getOrgData(), FULL_NAME) != null) {
-                    dictionary.put(CHAPartyDescription, getValueFromMap(shipmentAddress.getOrgData(), FULL_NAME));
+                    dictionary.put(CHA_PARTY_DESCRIPTION, getValueFromMap(shipmentAddress.getOrgData(), FULL_NAME));
                 }
             }
         }
@@ -980,11 +980,11 @@ public class HblReport extends IReport {
         if (deliveryTo != null && deliveryTo.getAddressData() != null)
         {
             Map<String, Object> addressMap = deliveryTo.getAddressData();
-            populateAddress(addressMap, dictionary, ReportConstants.DeliveryTo);
+            populateAddress(addressMap, dictionary, ReportConstants.DELIVERY_TO);
             var address = getOrgAddress(getValueFromMap(addressMap, ORG_FULL_NAME), getValueFromMap(addressMap, ADDRESS1), getValueFromMap(addressMap, ADDRESS2),
                     getCityCountry(getValueFromMap(addressMap, CITY), getValueFromMap(addressMap, COUNTRY)),
                     getValueFromMap(addressMap, EMAIL), getValueFromMap(addressMap, CONTACT_PHONE));
-            dictionary.put(ReportConstants.DeliveryTo, address);
+            dictionary.put(ReportConstants.DELIVERY_TO, address);
         }
     }
 
@@ -995,11 +995,11 @@ public class HblReport extends IReport {
         if (pickupFrom != null && pickupFrom.getAddressData() != null)
         {
             Map<String, Object> addressMap = pickupFrom.getAddressData();
-            populateAddress(addressMap, dictionary, ReportConstants.PickupFrom);
+            populateAddress(addressMap, dictionary, ReportConstants.PICKUP_FROM);
             var address = getOrgAddress(getValueFromMap(addressMap, ORG_FULL_NAME), getValueFromMap(addressMap, ADDRESS1), getValueFromMap(addressMap, ADDRESS2),
                     getCityCountry(getValueFromMap(addressMap, CITY), getValueFromMap(addressMap, COUNTRY)),
                     getValueFromMap(addressMap, EMAIL), getValueFromMap(addressMap, CONTACT_PHONE));
-            dictionary.put(ReportConstants.PickupFrom, address);
+            dictionary.put(ReportConstants.PICKUP_FROM, address);
         }
     }
 
@@ -1242,8 +1242,8 @@ public class HblReport extends IReport {
             BigDecimal chargeable = hblModel.shipment.getChargable().setScale(decimalPlaces, RoundingMode.HALF_UP);
             String chargeableString = ConvertToWeightNumberFormat(chargeable, v1TenantSettingsResponse);
             dictionary.put(CHARGEABLE, chargeableString);
-            dictionary.put(CHARGEABLE_AND_UNIT, String.format(REGEX_S_S, chargeableString, hblModel.shipment.getChargeableUnit()));
-            dictionary.put(CHARGEABLE_AND_UNIT_, dictionary.get(CHARGEABLE_AND_UNIT));
+            dictionary.put(CHARGABLE_AND_UNIT, String.format(REGEX_S_S, chargeableString, hblModel.shipment.getChargeableUnit()));
+            dictionary.put(CHARGEABLE_AND_UNIT, dictionary.get(CHARGABLE_AND_UNIT));
         }
     }
 

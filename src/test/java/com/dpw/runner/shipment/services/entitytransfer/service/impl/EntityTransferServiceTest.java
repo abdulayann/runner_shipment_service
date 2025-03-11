@@ -1221,7 +1221,7 @@ class EntityTransferServiceTest extends CommonMocks {
         try {
             CheckTaskExistRequest request = CheckTaskExistRequest.builder()
                 .entityId(123L)
-                .entityType(Constants.Shipments)
+                .entityType(Constants.SHIPMENTS_WITH_SQ_BRACKETS)
                 .sendToBranch(List.of(66))
                 .build();
             CheckTaskExistResponse response = CheckTaskExistResponse.builder().sendToBranch(Set.of(66)).build();
@@ -1246,7 +1246,7 @@ class EntityTransferServiceTest extends CommonMocks {
         try {
             CheckTaskExistRequest request = CheckTaskExistRequest.builder()
                     .entityId(123L)
-                    .entityType(Constants.Shipments)
+                    .entityType(Constants.SHIPMENTS_WITH_SQ_BRACKETS)
                     .sendToBranch(List.of())
                     .build();
             ResponseEntity<IRunnerResponse> responseEntity = entityTransferService.checkTaskExist(CommonRequestModel.buildRequest(request));
@@ -1260,7 +1260,7 @@ class EntityTransferServiceTest extends CommonMocks {
     void testCheckTaskExist_V1Error_Shipment() {
         CheckTaskExistRequest request = CheckTaskExistRequest.builder()
                 .entityId(123L)
-                .entityType(Constants.Shipments)
+                .entityType(Constants.SHIPMENTS_WITH_SQ_BRACKETS)
                 .sendToBranch(List.of(66))
                 .build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);

@@ -87,9 +87,9 @@ public class ManifestPrintReport extends IReport {
 
         var ctoAddress = consol.getArrivalDetails() == null ? new ArrayList<>() : ReportHelper.getOrgAddress(consol.getArrivalDetails().getCTOId());
         dictionary.put(ReportConstants.CTO_ADDRESS, ctoAddress);
-        dictionary.put(ReportConstants.TOTAL_WEIGHT, addCommas(weightAndUnit.getLeft()));
+        dictionary.put(ReportConstants.TOTAL_PACKS_WEIGHT, addCommas(weightAndUnit.getLeft()));
         dictionary.put(ReportConstants.TOTAL_WEIGHT_UNIT, weightAndUnit.getRight());
-        dictionary.put(ReportConstants.TOTAL_VOLUME, addCommas(volumeAndUnit.getLeft()));
+        dictionary.put(ReportConstants.TOTAL_PACKS_VOLUME, addCommas(volumeAndUnit.getLeft()));
         dictionary.put(ReportConstants.TOTAL_VOLUME_UNIT, volumeAndUnit.getRight());
         var user = UserContext.getUser();
         dictionary.put(ReportConstants.UN, user.getUsername());

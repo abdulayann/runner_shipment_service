@@ -39,7 +39,7 @@ public class ConsolidationDetails extends MultiTenancy {
 
     @Column(name = "consolidation_type")
     @Size(max=100, message = "max size is 100 for consolidation_type")
-    @MasterData(type = MasterDataType.CONSOlIDATION_TYPE)
+    @MasterData(type = MasterDataType.CONSOLIDATION_TYPE)
     private String consolidationType;
 
     @Column(name = "transport_mode")

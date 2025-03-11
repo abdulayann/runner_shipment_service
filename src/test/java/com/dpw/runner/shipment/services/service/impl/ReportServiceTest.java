@@ -376,7 +376,7 @@ class ReportServiceTest extends CommonMocks {
         shipmentSettingsDetails2.setConsTruckWayBillMainPage("123456789");
         shipmentSettingsDetails2.setTenantId(44);
         shipmentSettingsDetails2.setAutoEventCreate(true);
-        reportRequest.setReportInfo(ReportConstants.CONS_TRUCKWAY_BIll);
+        reportRequest.setReportInfo(ReportConstants.CONS_TRUCKWAY_BILL);
         // Mock
         when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(shipmentSettingsDetails));
         when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(Arrays.asList(shipmentSettingsDetails, shipmentSettingsDetails2));

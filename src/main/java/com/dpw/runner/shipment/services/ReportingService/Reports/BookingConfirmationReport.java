@@ -69,13 +69,13 @@ public class BookingConfirmationReport extends IReport{
         dictionary.put(ReportConstants.MAWB_NO, bookingConfirmationModel.hblModel.shipment.getMasterBill());
         dictionary.put(ReportConstants.PORT_OF_DEPARTURE, bookingConfirmationModel.hblModel.polName);
         if (bookingConfirmationModel.hblModel.polName != null)
-            dictionary.put(ReportConstants.PortofDepartureInCaps, bookingConfirmationModel.hblModel.polName.toUpperCase());
+            dictionary.put(ReportConstants.PORTOF_DEPARTURE_IN_CAPS, bookingConfirmationModel.hblModel.polName.toUpperCase());
         dictionary.put(ReportConstants.PORT_OF_DEPARTURE_COUNTRY, bookingConfirmationModel.hblModel.polCountry);
         if (bookingConfirmationModel.hblModel.polCountry != null)
             dictionary.put(ReportConstants.SHIPMENT_DETAILS_PORTOFDEPARTURECOUNTRYINCAPS, bookingConfirmationModel.hblModel.polCountry.toUpperCase());
         dictionary.put(ReportConstants.PORT_OF_ARRIVAL, bookingConfirmationModel.hblModel.podName);
         if (bookingConfirmationModel.hblModel.podName != null)
-            dictionary.put(ReportConstants.PortofArrivalInCaps, bookingConfirmationModel.hblModel.podName.toUpperCase());
+            dictionary.put(ReportConstants.PORTOF_ARRIVAL_IN_CAPS, bookingConfirmationModel.hblModel.podName.toUpperCase());
         dictionary.put(ReportConstants.PORT_OF_ARRIVAL_COUNTRY, bookingConfirmationModel.hblModel.podCountry);
         if (bookingConfirmationModel.hblModel.podCountry != null)
             dictionary.put(ReportConstants.SHIPMENT_DETAILS_PORTOFARRIVALCOUNTRYINCAPS, bookingConfirmationModel.hblModel.podCountry.toUpperCase());

@@ -170,9 +170,9 @@ public class PreAlertReport extends IReport {
         if(preAlertModel.shipmentDetails.getVolume() != null)
             dictionary.put(ReportConstants.VOLUME_AND_UNIT, String.format(REGEX_S_S, ConvertToVolumeNumberFormat(preAlertModel.shipmentDetails.getVolume(), v1TenantSettingsResponse), preAlertModel.shipmentDetails.getVolumeUnit()));
         if(preAlertModel.shipmentDetails.getVolume() != null)
-            dictionary.put(ReportConstants.TOTAL_VOLUME_, String.format(REGEX_S_S, ConvertToVolumeNumberFormat(preAlertModel.shipmentDetails.getVolume(), v1TenantSettingsResponse), preAlertModel.shipmentDetails.getVolumeUnit()));
+            dictionary.put(ReportConstants.TOTAL_VOLUME, String.format(REGEX_S_S, ConvertToVolumeNumberFormat(preAlertModel.shipmentDetails.getVolume(), v1TenantSettingsResponse), preAlertModel.shipmentDetails.getVolumeUnit()));
         if(preAlertModel.shipmentDetails.getWeight() != null)
-            dictionary.put(ReportConstants.TOTAL_WEIGHT_, String.format(REGEX_S_S, ConvertToWeightNumberFormat(preAlertModel.shipmentDetails.getWeight(), v1TenantSettingsResponse), preAlertModel.shipmentDetails.getWeightUnit()));
+            dictionary.put(ReportConstants.TOTAL_WEIGHT, String.format(REGEX_S_S, ConvertToWeightNumberFormat(preAlertModel.shipmentDetails.getWeight(), v1TenantSettingsResponse), preAlertModel.shipmentDetails.getWeightUnit()));
     }
 
     private void addOriginDestinationTag(PreAlertModel preAlertModel, Map<String, Object> dictionary) {
@@ -255,7 +255,7 @@ public class PreAlertReport extends IReport {
                 dictionary.put(ReportConstants.CONSIGNER_AIR, getCompleteNameAndAddress(consignerFullName, consigner));
             }
             try {
-                dictionary.put(ReportConstants.ConsignerFullName, consignerFullName);
+                dictionary.put(ReportConstants.CONSIGNER_FULL_NAME, consignerFullName);
             } catch (Exception ignored) { }
         }
     }
@@ -276,7 +276,7 @@ public class PreAlertReport extends IReport {
         if(preAlertModel.shipmentDetails.getConsigner() != null) {
             consigner = getOrgAddressWithPhoneEmail(preAlertModel.shipmentDetails.getConsigner());
             if(preAlertModel.shipmentDetails.getConsigner().getAddressData() != null) {
-                dictionary.put(ReportConstants.ConsignerPhone, preAlertModel.shipmentDetails.getConsigner().getAddressData().get("ContactPhone"));
+                dictionary.put(ReportConstants.CONSIGNER_PHONE, preAlertModel.shipmentDetails.getConsigner().getAddressData().get("ContactPhone"));
             }
         }
         return consigner;

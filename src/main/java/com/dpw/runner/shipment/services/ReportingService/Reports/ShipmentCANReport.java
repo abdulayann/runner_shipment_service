@@ -3,7 +3,7 @@ package com.dpw.runner.shipment.services.ReportingService.Reports;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.AIRLINE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.BILL_CHARGES;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CALCULATED_VALUE;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHAPartyDescription;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHA_PARTY_DESCRIPTION;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHARGE_TYPE_CODE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHARGE_TYPE_DESCRIPTION_LL;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CMS_REMARKS;
@@ -213,7 +213,7 @@ public class ShipmentCANReport extends IReport {
         if(shipmentCANModel.shipmentDetails.getShipmentAddresses() != null && !shipmentCANModel.shipmentDetails.getShipmentAddresses().isEmpty()) {
             for (PartiesModel shipmentAddress: shipmentCANModel.shipmentDetails.getShipmentAddresses()) {
                 if(shipmentAddress.getType().equals(CUSTOM_HOUSE_AGENT) && shipmentAddress.getOrgData() != null && getValueFromMap(shipmentAddress.getOrgData(), FULL_NAME) != null) {
-                    dictionary.put(CHAPartyDescription, getValueFromMap(shipmentAddress.getOrgData(), FULL_NAME));
+                    dictionary.put(CHA_PARTY_DESCRIPTION, getValueFromMap(shipmentAddress.getOrgData(), FULL_NAME));
                 }
             }
         }

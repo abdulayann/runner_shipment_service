@@ -342,7 +342,7 @@ class TransportOrderReportTest extends CommonMocks {
     @Test
     void getDocumentModel_CountryAirCargoSecurity2() {
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setCountryAirCargoSecurity(true);
-        UserContext.getUser().getPermissions().put(PermissionConstants.airDG, true);
+        UserContext.getUser().getPermissions().put(PermissionConstants.AIR_DG, true);
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
         ShipmentModel shipmentModel = new ShipmentModel();
         shipmentModel.setTransportMode(AIR);

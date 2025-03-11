@@ -94,7 +94,7 @@ public class PickupOrderReport extends IReport {
                 var rawData = consignerAddress.containsKey(PartiesConstants.RAW_DATA) ? StringUtility.convertToString(consignerAddress.get(PartiesConstants.RAW_DATA)) : null;
                 var consignorFreeText = ReportHelper.getAddressList(rawData);
                 dictionary.put(ReportConstants.CONSIGNER_FREETEXT, consignorFreeText);
-                dictionary.put(ReportConstants.CONSIGNER_FREETEXTInCaps, consignorFreeText == null ? null : consignorFreeText.stream().map(StringUtility::toUpperCase).collect(Collectors.toList()));
+                dictionary.put(ReportConstants.CONSIGNER_ADDRESS_FREE_TEXT_IN_CAPS, consignorFreeText == null ? null : consignorFreeText.stream().map(StringUtility::toUpperCase).collect(Collectors.toList()));
                 dictionary.put(ReportConstants.CONSIGNER_NAME_FREETEXT_INCAPS, consignorFreeText == null ? null : consignorFreeText.stream().map(StringUtility::toUpperCase).collect(Collectors.toList()));
             }
         }
@@ -104,7 +104,7 @@ public class PickupOrderReport extends IReport {
         if (pickUpOrderReportModel.hblModel.shipment != null && pickUpOrderReportModel.hblModel.shipment.getPickupDetails() != null) {
             PickupDeliveryDetailsModel pickupDetails = pickUpOrderReportModel.hblModel.shipment.getPickupDetails();
             List<String> pickUpFrom = getOrgAddress(pickupDetails.getSourceDetail());
-            dictionary.put(ReportConstants.PickupFrom, pickUpFrom);
+            dictionary.put(ReportConstants.PICKUP_FROM, pickUpFrom);
 
             // P0 tags pickup order doc
             if(pickupDetails.getTransporterDetail() != null) {

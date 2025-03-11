@@ -96,16 +96,16 @@ public class ManifestConsolReport extends IReport {
         processPackingList(packingList, totalPacks, allPacksTypes, dictionary);
 
         if (weightAndUnit.getLeft().compareTo(BigDecimal.ZERO) > 0)
-            dictionary.put(TOTAL_WEIGHT, ConvertToWeightNumberFormat(weightAndUnit.getLeft(), v1TenantSettingsResponse));
+            dictionary.put(TOTAL_PACKS_WEIGHT, ConvertToWeightNumberFormat(weightAndUnit.getLeft(), v1TenantSettingsResponse));
         else
-            dictionary.put(TOTAL_WEIGHT, "-");
+            dictionary.put(TOTAL_PACKS_WEIGHT, "-");
 
         dictionary.put(TOTAL_WEIGHT_UNIT, weightAndUnit.getRight());
 
         if (volumeAndUnit.getLeft().compareTo(BigDecimal.ZERO) > 0)
-            dictionary.put(TOTAL_VOLUME, ConvertToVolumeNumberFormat(volumeAndUnit.getLeft(), v1TenantSettingsResponse));
+            dictionary.put(TOTAL_PACKS_VOLUME, ConvertToVolumeNumberFormat(volumeAndUnit.getLeft(), v1TenantSettingsResponse));
         else
-            dictionary.put(TOTAL_VOLUME, "-");
+            dictionary.put(TOTAL_PACKS_VOLUME, "-");
 
         dictionary.put(TOTAL_VOLUME_UNIT, volumeAndUnit.getRight());
 

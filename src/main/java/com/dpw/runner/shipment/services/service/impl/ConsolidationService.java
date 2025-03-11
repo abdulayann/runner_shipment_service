@@ -171,33 +171,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import org.springframework.util.CollectionUtils;
 
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.lang.reflect.InvocationTargetException;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.security.SecureRandom;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.KCRA_EXPIRY;
-import static com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants.*;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.*;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
-import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
 @SuppressWarnings("ALL")
@@ -574,24 +550,24 @@ public class ConsolidationService implements IConsolidationService {
         for (Containers container : containersList) {
             if(container.getContainerCode() != null) {
                 String containerCode = container.getContainerCode();
-                if (containerCode.contains(Constants.Cont20)) {
+                if (containerCode.contains(Constants.CONT_20)) {
                     ++container20Count;
                 }
-                if (containerCode.contains(Constants.Cont40)) {
+                if (containerCode.contains(Constants.CONT_40)) {
                     ++container40Count;
                 }
 
                 switch (containerCode) {
-                    case Constants.Cont20GP:
+                    case Constants.CONT_20_GP:
                         ++container20GPCount;
                         break;
-                    case Constants.Cont20RE:
+                    case Constants.CONT_20_RE:
                         ++container20RECount;
                         break;
-                    case Constants.Cont40GP:
+                    case Constants.CONT_40_GP:
                         ++container40GPCount;
                         break;
-                    case Constants.Cont40RE:
+                    case Constants.CONT_40_RE:
                         ++container40RECount;
                         break;
                     default:
@@ -4184,7 +4160,7 @@ public class ConsolidationService implements IConsolidationService {
 
         if (consolidationDetails.getIsLocked() != null && consolidationDetails.getIsLocked()) {
             if (lockingUser != null && (Objects.equals(lockingUser, currentUser) ||
-                    (!Objects.isNull(PermissionsContext.getPermissions(PermissionConstants.tenantSuperAdmin)) && !PermissionsContext.getPermissions(PermissionConstants.tenantSuperAdmin).isEmpty()) ))
+                    (!Objects.isNull(PermissionsContext.getPermissions(PermissionConstants.TENANT_SUPER_ADMIN)) && !PermissionsContext.getPermissions(PermissionConstants.TENANT_SUPER_ADMIN).isEmpty()) ))
                 consolidationDetails.setIsLocked(false);
             else
                 throw new RunnerException(String.format(ErrorConstants.LOCK_UNLOCK_ERROR, Constants.CONSOLIDATION_CAMELCASE, lockingUser));

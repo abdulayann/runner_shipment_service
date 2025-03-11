@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.entity.enums;
 
+@SuppressWarnings("java:S115") //Suppressing Rename this constant name to match the regular expression
 public enum BookingSource {
     Runner(1, "Runner"),
     Platform(2, "Platform"),

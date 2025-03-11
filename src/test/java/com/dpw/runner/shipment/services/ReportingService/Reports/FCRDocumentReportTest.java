@@ -218,7 +218,7 @@ public class FCRDocumentReportTest {
         shipmentModel.setPackingList(packingModels);
 
         ReferenceNumbersModel referenceNumbersModel = new ReferenceNumbersModel();
-        referenceNumbersModel.setType(ReportConstants.MoRN);
+        referenceNumbersModel.setType(ReportConstants.MO_RN);
         shipmentModel.setReferenceNumbersList(Arrays.asList(referenceNumbersModel));
         when(modelMapper.map(any(), eq(ShipmentModel.class))).thenReturn(shipmentModel);
         when(commonUtils.getCurrentTenantSettings()).thenReturn(V1TenantSettingsResponse.builder().build());

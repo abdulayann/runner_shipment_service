@@ -135,7 +135,7 @@ public class CargoManifestReport extends IReport{
         processShipmentPackUnit(cargoManifestModel, dictionary);
         processShipmentShippingLine(cargoManifestModel, dictionary);
         processShipmentBookingCarriageList(cargoManifestModel, dictionary, tsDateTimeFormat, v1TenantSettingsResponse, unlocationsMap);
-        dictionary.put(ReportConstants.ContainerType, cargoManifestModel.shipmentDetails.getShipmentType());
+        dictionary.put(ReportConstants.CONTAINER_TYPE, cargoManifestModel.shipmentDetails.getShipmentType());
         processShipmentContainersList(cargoManifestModel, dictionary, v1TenantSettingsResponse);
 
         processCargoManifestAwb(cargoManifestModel, dictionary);
@@ -149,9 +149,9 @@ public class CargoManifestReport extends IReport{
         processConsolidation(cargoManifestModel, dictionary, unlocationsMap);
 
         dictionary.put(INSERT_DATE, ConvertToDPWDateFormat(LocalDateTime.now(), tsDateTimeFormat, v1TenantSettingsResponse));
-        dictionary.put(TOTAL_WEIGHT_, ConvertToWeightNumberFormat(cargoManifestModel.shipmentDetails.getWeight(), v1TenantSettingsResponse));
+        dictionary.put(TOTAL_WEIGHT, ConvertToWeightNumberFormat(cargoManifestModel.shipmentDetails.getWeight(), v1TenantSettingsResponse));
         dictionary.put(ReportConstants.PWEIGHT_UNIT, cargoManifestModel.shipmentDetails.getWeightUnit());
-        dictionary.put(TOTAL_VOLUME_, ConvertToVolumeNumberFormat(cargoManifestModel.shipmentDetails.getVolume(), v1TenantSettingsResponse));
+        dictionary.put(TOTAL_VOLUME, ConvertToVolumeNumberFormat(cargoManifestModel.shipmentDetails.getVolume(), v1TenantSettingsResponse));
         dictionary.put(PVOLUME_UNIT, cargoManifestModel.shipmentDetails.getVolumeUnit());
         dictionary.put(CHARGEABLE, ConvertToWeightNumberFormat(cargoManifestModel.shipmentDetails.getChargable(), v1TenantSettingsResponse));
         dictionary.put(PCHARGE_UNIT, cargoManifestModel.shipmentDetails.getChargeableUnit());
@@ -362,10 +362,10 @@ public class CargoManifestReport extends IReport{
         // Update dictionary with processed values and totals
         dictionary.put(ReportConstants.SHIPMENT_CONTAINERS, valuesContainer);
         dictionary.put(COMMON_CONTAINERS, valuesContainer);
-        dictionary.put(ReportConstants.TotalCntrWeight, ConvertToWeightNumberFormat(totalGrossWeight, v1TenantSettingsResponse));
-        dictionary.put(ReportConstants.TotalCntrVolume, ConvertToVolumeNumberFormat(totalGrossVolume, v1TenantSettingsResponse));
-        dictionary.put(ReportConstants.TotalCntrCount, addCommaWithoutDecimal(new BigDecimal(totalContainerCount)));
-        dictionary.put(ReportConstants.TotalCntrPacks, addCommaWithoutDecimal(new BigDecimal(totalPacks)));
+        dictionary.put(ReportConstants.TOTAL_CNTR_WEIGHT, ConvertToWeightNumberFormat(totalGrossWeight, v1TenantSettingsResponse));
+        dictionary.put(ReportConstants.TOTAL_CNTR_VOLUME, ConvertToVolumeNumberFormat(totalGrossVolume, v1TenantSettingsResponse));
+        dictionary.put(ReportConstants.TOTAL_CNTR_COUNT, addCommaWithoutDecimal(new BigDecimal(totalContainerCount)));
+        dictionary.put(ReportConstants.TOTAL_CNTR_PACKS, addCommaWithoutDecimal(new BigDecimal(totalPacks)));
     }
 
     private void processValuesContainer(V1TenantSettingsResponse v1TenantSettingsResponse, List<Map<String, Object>> valuesContainer) {
@@ -373,11 +373,11 @@ public class CargoManifestReport extends IReport{
             updateValue(v, ReportConstants.GROSS_VOLUME, ConvertToVolumeNumberFormat(v.get(ReportConstants.GROSS_VOLUME), v1TenantSettingsResponse));
             updateValue(v, ReportConstants.GROSS_WEIGHT, ConvertToWeightNumberFormat(v.get(ReportConstants.GROSS_WEIGHT), v1TenantSettingsResponse));
             updateValue(v, ReportConstants.SHIPMENT_PACKS, addCommaWithoutDecimal(new BigDecimal(v.get(ReportConstants.SHIPMENT_PACKS).toString())));
-            updateValue(v, ReportConstants.TareWeight, ConvertToWeightNumberFormat(v.get(ReportConstants.TareWeight), v1TenantSettingsResponse));
-            updateValue(v, ReportConstants.VGMWeight, ConvertToWeightNumberFormat(v.get(ReportConstants.VGMWeight), v1TenantSettingsResponse));
+            updateValue(v, ReportConstants.TARE_WEIGHT, ConvertToWeightNumberFormat(v.get(ReportConstants.TARE_WEIGHT), v1TenantSettingsResponse));
+            updateValue(v, ReportConstants.VGM_WEIGHT, ConvertToWeightNumberFormat(v.get(ReportConstants.VGM_WEIGHT), v1TenantSettingsResponse));
 
-            if (v.containsKey(CONTAINER_TYPE)) {
-                v.put(CONTAINER_TYPE_DESCRIPTION, v.get(CONTAINER_TYPE));
+            if (v.containsKey(CONTAINER_TYPE_CODE)) {
+                v.put(CONTAINER_TYPE_DESCRIPTION, v.get(CONTAINER_TYPE_CODE));
             }
         }
     }
@@ -392,8 +392,8 @@ public class CargoManifestReport extends IReport{
         if(cargoManifestModel.shipmentDetails.getBookingCarriagesList() != null && !cargoManifestModel.shipmentDetails.getBookingCarriagesList().isEmpty()) {
             Set<String> unlocoStrings = new HashSet<>();
             for (BookingCarriageModel bookingCarriageModel : cargoManifestModel.shipmentDetails.getBookingCarriagesList()) {
-                if (bookingCarriageModel.getCarriageType() != null && (bookingCarriageModel.getCarriageType().equals(Constants.PreCarriage) || bookingCarriageModel.getCarriageType().equals(Constants.Main))) {
-                    dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.Vessel, bookingCarriageModel.getVessel());
+                if (bookingCarriageModel.getCarriageType() != null && (bookingCarriageModel.getCarriageType().equals(Constants.PRE_CARRIAGE) || bookingCarriageModel.getCarriageType().equals(Constants.MAIN))) {
+                    dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.VESSEL, bookingCarriageModel.getVessel());
                     dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.VOYAGE, bookingCarriageModel.getVoyage());
                     dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.ETD_CAPS, ConvertToDPWDateFormat(bookingCarriageModel.getEtd(), tsDateTimeFormat, v1TenantSettingsResponse));
                     dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.ETA_CAPS, ConvertToDPWDateFormat(bookingCarriageModel.getEta(), tsDateTimeFormat, v1TenantSettingsResponse));
@@ -415,14 +415,14 @@ public class CargoManifestReport extends IReport{
         UnlocationsResponse pol = unlocationsMap.get(bookingCarriageModel.getPortOfLoading());
         UnlocationsResponse pod = unlocationsMap.get(bookingCarriageModel.getPortOfDischarge());
         if (pol != null) {
-            dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.PlaceofLoadCountry, pol.getCountry());
-            dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.PlaceofLoadPort, pol.getPortName());
-            dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.PlaceofLoadCode, pol.getLocCode());
+            dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.PLACE_OF_LOAD_COUNTRY, pol.getCountry());
+            dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.PLACE_OF_LOAD_PORT, pol.getPortName());
+            dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.PLACE_OF_LOAD_CODE, pol.getLocCode());
         }
         if (pod != null) {
-            dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.PlaceofDischargeCountry, pod.getCountry());
-            dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.PlaceofDischargePort, pod.getPortName());
-            dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.PlaceofDischargeCode, pod.getLocCode());
+            dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.PLACE_OF_DISCHARGE_COUNTRY, pod.getCountry());
+            dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.PLACE_OF_DISCHARGE_PORT, pod.getPortName());
+            dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.PLACE_OF_DISCHARGE_CODE, pod.getLocCode());
         }
     }
 

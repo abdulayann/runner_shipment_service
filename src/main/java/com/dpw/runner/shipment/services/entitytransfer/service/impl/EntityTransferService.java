@@ -215,7 +215,7 @@ public class EntityTransferService implements IEntityTransferService {
             if(Boolean.TRUE.equals(getIsNetworkTransferFeatureEnabled())){
                 processNetworkTransfer(tenant, shipment, taskPayload, shipId);
             } else {
-                createTask(taskPayload, shipment.getId(), Constants.Shipments, tenant);
+                createTask(taskPayload, shipment.getId(), Constants.SHIPMENTS_WITH_SQ_BRACKETS, tenant);
             }
             successTenantIds.add(tenant);
         }
@@ -337,7 +337,7 @@ public class EntityTransferService implements IEntityTransferService {
             if(Boolean.TRUE.equals(getIsNetworkTransferFeatureEnabled())) {
                 processConsoleNetworkTransfer(tenant, consol, consolidationPayload, consolId);
             }else{
-                createTask(consolidationPayload, consol.getId(), Constants.Consolidations, tenant);
+                createTask(consolidationPayload, consol.getId(), Constants.CONSOLIDATIONS_WITH_SQ_BRACKETS, tenant);
             }
 
             successTenantIds.add(tenant);
@@ -812,7 +812,7 @@ public class EntityTransferService implements IEntityTransferService {
             this.createImportEvent(entityTransferConsolidationDetails.getSourceBranchTenantName(), consolidationDetailsResponse.getId(), EventConstants.TCOA, CONSOLIDATION);
 
             // Prepare copy docs request for doc service
-            this.prepareCopyDocumentRequest(copyDocumentsRequest, consolidationDetailsResponse.getGuid().toString(), Consolidations, entityTransferConsolidationDetails.getSendToBranch(), entityTransferConsolidationDetails.getAdditionalDocs());
+            this.prepareCopyDocumentRequest(copyDocumentsRequest, consolidationDetailsResponse.getGuid().toString(), CONSOLIDATIONS_WITH_SQ_BRACKETS, entityTransferConsolidationDetails.getSendToBranch(), entityTransferConsolidationDetails.getAdditionalDocs());
 
             // Call document service api for copy docs
             String authToken = RequestAuthContext.getAuthToken();
@@ -987,7 +987,7 @@ public class EntityTransferService implements IEntityTransferService {
         this.createImportEvent(entityTransferShipmentDetails.getSourceBranchTenantName(), shipmentDetailsResponse.getId(), EventConstants.TSHA, Constants.SHIPMENT);
 
         // Prepare copy docs request for doc service
-        this.prepareCopyDocumentRequest(copyDocumentsRequest, shipmentDetailsResponse.getGuid().toString(), Shipments, shipmentDetailsResponse.getTenantId(), entityTransferShipmentDetails.getAdditionalDocs());
+        this.prepareCopyDocumentRequest(copyDocumentsRequest, shipmentDetailsResponse.getGuid().toString(), SHIPMENTS_WITH_SQ_BRACKETS, shipmentDetailsResponse.getTenantId(), entityTransferShipmentDetails.getAdditionalDocs());
 
         // Clean Inter Branch TenantId from TenantContext for this shipment
         TenantContext.setCurrentTenant(UserContext.getUser().getTenantId());
@@ -2684,7 +2684,7 @@ public class EntityTransferService implements IEntityTransferService {
         taskCreateRequest.setTenantId(StringUtility.convertToString(tenantId));
         taskCreateRequest.setUserId(UserContext.getUser().getUserId());
         // can be moved as background task
-        if(Constants.Consolidations.equalsIgnoreCase(entityType))
+        if(Constants.CONSOLIDATIONS_WITH_SQ_BRACKETS.equalsIgnoreCase(entityType))
             taskCreateRequest.setTaskType(TaskType.CONSOLIDATION_IMPORTER.getDescription());
         else
             taskCreateRequest.setTaskType(TaskType.SHIPMENT_IMPORTER.getDescription());
