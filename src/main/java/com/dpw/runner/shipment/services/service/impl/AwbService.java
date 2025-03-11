@@ -2993,16 +2993,7 @@ public class AwbService implements IAwbService {
                     if (consolidationDetails.getCarrierDetails() != null &&
                             consolidationDetails.getCarrierDetails().getOriginPort() != null &&
                             consolidationDetails.getCarrierDetails().getDestinationPort() != null) {
-                        if (!mawbLockSettings.getOriginPortLock()) {
-                            awbRoute.setOriginPortName(consolidationDetails.getCarrierDetails().getOriginPort());
-                        }
-                        if (!mawbLockSettings.getDestinationPortLock()) {
-                            awbRoute.setDestinationPortName(consolidationDetails.getCarrierDetails().getDestinationPort());
-                        }
-                        if (!mawbLockSettings.getByCarrierLock())
-                            awbRoute.setByCarrier(consolidationDetails.getCarrierDetails().getShippingLine());
-                        if (!mawbLockSettings.getFlightNumberLock())
-                            awbRoute.setFlightNumber(consolidationDetails.getCarrierDetails().getFlightNumber());
+                        processMawbLockSettingsField(consolidationDetails, mawbLockSettings, awbRoute);
                     } else {
                         deleteParty = awbRoute;
                     }
@@ -3011,6 +3002,19 @@ public class AwbService implements IAwbService {
             awb.getAwbRoutingInfo().remove(deleteParty);
         }
         return createRouting;
+    }
+
+    private void processMawbLockSettingsField(ConsolidationDetails consolidationDetails, MawbLockSettings mawbLockSettings, AwbRoutingInfo awbRoute) {
+        if (!mawbLockSettings.getOriginPortLock()) {
+            awbRoute.setOriginPortName(consolidationDetails.getCarrierDetails().getOriginPort());
+        }
+        if (!mawbLockSettings.getDestinationPortLock()) {
+            awbRoute.setDestinationPortName(consolidationDetails.getCarrierDetails().getDestinationPort());
+        }
+        if (!mawbLockSettings.getByCarrierLock())
+            awbRoute.setByCarrier(consolidationDetails.getCarrierDetails().getShippingLine());
+        if (!mawbLockSettings.getFlightNumberLock())
+            awbRoute.setFlightNumber(consolidationDetails.getCarrierDetails().getFlightNumber());
     }
 
     private void updateMawbCargoInfoFromShipment(ConsolidationDetails consolidationDetails, CreateAwbRequest request, Awb awb, MawbLockSettings mawbLockSettings) throws RunnerException {
@@ -3084,14 +3088,7 @@ public class AwbService implements IAwbService {
 
     private String getResForAirDgCase(List<AwbPackingInfo> awbPackingInfoList, Boolean dgFlag, String res) {
         if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getAirDGFlag()) && Boolean.TRUE.equals(dgFlag)) {
-            Integer packs = 0;
-            if(awbPackingInfoList != null && !awbPackingInfoList.isEmpty()) {
-                for (AwbPackingInfo awbPackingInfo: awbPackingInfoList) {
-                    if(Boolean.TRUE.equals(awbPackingInfo.getHazardous()) && !IsStringNullOrEmpty(awbPackingInfo.getPacks())) {
-                        packs = packs + Integer.parseInt(awbPackingInfo.getPacks());
-                    }
-                }
-            }
+            Integer packs = getPacksCount(awbPackingInfoList);
             if(packs != 0) {
                 if(!IsStringNullOrEmpty(res))
                     res = res + "\n";
@@ -3101,6 +3098,18 @@ public class AwbService implements IAwbService {
             }
         }
         return res;
+    }
+
+    private Integer getPacksCount(List<AwbPackingInfo> awbPackingInfoList) {
+        Integer packs = 0;
+        if(awbPackingInfoList != null && !awbPackingInfoList.isEmpty()) {
+            for (AwbPackingInfo awbPackingInfo: awbPackingInfoList) {
+                if(Boolean.TRUE.equals(awbPackingInfo.getHazardous()) && !IsStringNullOrEmpty(awbPackingInfo.getPacks())) {
+                    packs = packs + Integer.parseInt(awbPackingInfo.getPacks());
+                }
+            }
+        }
+        return packs;
     }
 
     @Override

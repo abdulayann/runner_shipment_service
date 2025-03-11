@@ -1312,11 +1312,7 @@ public class ShipmentService implements IShipmentService {
 
     private List<PackingRequest> getPackingListRequest(CustomerBookingRequest customerBookingRequest) {
         return customerBookingRequest.getPackingList() != null ? customerBookingRequest.getPackingList().stream().map(obj -> {
-            if(!StringUtility.isEmpty(obj.getLengthUnit()))
-            {
-                obj.setWidthUnit(obj.getLengthUnit());
-                obj.setHeightUnit(obj.getLengthUnit());
-            }
+            setHeightWidthUnit(obj);
             if(obj.getWeight() != null)
                 obj.setWeight(obj.getWeight().multiply(new BigDecimal(obj.getPacks())));
             if(obj.getVolume() != null)
@@ -1339,6 +1335,14 @@ public class ShipmentService implements IShipmentService {
             }
             return obj;
         }).collect(Collectors.toList()) : null;
+    }
+
+    private void setHeightWidthUnit(PackingRequest obj) {
+        if(!StringUtility.isEmpty(obj.getLengthUnit()))
+        {
+            obj.setWidthUnit(obj.getLengthUnit());
+            obj.setHeightUnit(obj.getLengthUnit());
+        }
     }
 
     @Override

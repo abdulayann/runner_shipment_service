@@ -237,50 +237,65 @@ public class ShipmentCANReport extends IReport {
                 billChargesDict.add(jsonHelper.convertValue(billChargesResponse, new TypeReference<>() {}));
             }
             for (Map<String, Object> v: billChargesDict) {
-                v.put(TOTAL_AMOUNT, v.containsKey(OVERSEAS_SELL_AMOUNT) && v.get(OVERSEAS_SELL_AMOUNT) != null ? new BigDecimal(v.get(OVERSEAS_SELL_AMOUNT).toString()) : 0);
-                v.put(TOTAL_AMOUNT, new BigDecimal(v.get(TOTAL_AMOUNT).toString()).add(v.containsKey(OVERSEAS_TAX) && v.get(OVERSEAS_TAX) != null ? new BigDecimal(v.get(OVERSEAS_TAX).toString()) : BigDecimal.ZERO));
-                if(shipmentCANModel.tenantSettingsResponse != null && (shipmentCANModel.tenantSettingsResponse.getUseV2ScreenForBillCharges())) {
-                    if (v.containsKey(REVENUE_MEASUREMENT_BASIS) && v.get(REVENUE_MEASUREMENT_BASIS) != null) {
-                        v.put(REVENUE_MEASUREMENT_UNIT, MeasurementBasis.getByValue(Integer.parseInt(v.get(REVENUE_MEASUREMENT_BASIS).toString())));
-                    }
-                    if (v.containsKey(REVENUE_CALCULATED_VALUE) && v.get(REVENUE_CALCULATED_VALUE) != null) {
-                        String[] split = v.get(REVENUE_CALCULATED_VALUE).toString().split(" ");
-                        BigDecimal count = BigDecimal.ONE;
-                        if (!split[0].equals("null"))
-                            count = new BigDecimal(split[0]);
-                        v.put(REVENUE_TOTAL_UNIT_COUNT, twoDecimalPlacesFormatDecimal(count));
-                    }
-                }
-                else if(v.containsKey(MEASUREMENT_BASIS) && v.get(MEASUREMENT_BASIS) != null) {
-                    v.put(MEASUREMENT_UNIT, MeasurementBasis.getByValue(Integer.parseInt(v.get(MEASUREMENT_BASIS).toString())));
-                    if(v.containsKey(CALCULATED_VALUE) && v.get(CALCULATED_VALUE) != null) {
-                        String[] split = v.get(CALCULATED_VALUE).toString().split(" ");
-                        BigDecimal count = BigDecimal.ONE;
-                        if (!split[0].equals("null"))
-                            count = new BigDecimal(split[0]);
-//                        v.put(TOTAL_UNIT_COUNT, twoDecimalPlacesFormatDecimal(count));
-                        v.put(TOTAL_UNIT_COUNT, GetDPWWeightVolumeFormat(count, 0, v1TenantSettingsResponse));
-                    }
-                }
-
-                if(v.containsKey(SELL_EXCHANGE) && v.get(SELL_EXCHANGE) != null)
-                    v.put(SELL_EXCHANGE, AmountNumberFormatter.FormatExchangeRate(new BigDecimal(v.get(SELL_EXCHANGE).toString()), shipmentCANModel.shipmentDetails.getFreightOverseasCurrency(), v1TenantSettingsResponse));
-                if(v.containsKey(CURRENT_SELL_RATE) && v.get(CURRENT_SELL_RATE) != null)
-                    v.put(CURRENT_SELL_RATE, AmountNumberFormatter.Format(new BigDecimal(v.get(CURRENT_SELL_RATE).toString()), shipmentCANModel.shipmentDetails.getFreightOverseasCurrency(), v1TenantSettingsResponse));
-                if(v.containsKey(OVERSEAS_SELL_AMOUNT) && v.get(OVERSEAS_SELL_AMOUNT) != null)
-                    v.put(OVERSEAS_SELL_AMOUNT, AmountNumberFormatter.Format(new BigDecimal(v.get(OVERSEAS_SELL_AMOUNT).toString()), shipmentCANModel.shipmentDetails.getFreightOverseasCurrency(), v1TenantSettingsResponse));
-                if(v.containsKey(OVERSEAS_TAX) && v.get(OVERSEAS_TAX) != null)
-                    v.put(OVERSEAS_TAX, AmountNumberFormatter.Format(new BigDecimal(v.get(OVERSEAS_TAX).toString()), shipmentCANModel.shipmentDetails.getFreightOverseasCurrency(), v1TenantSettingsResponse));
-                if(v.containsKey(TAX_PERCENTAGE) && v.get(TAX_PERCENTAGE) != null)
-                    v.put(TAX_PERCENTAGE, AmountNumberFormatter.Format(new BigDecimal(v.get(TAX_PERCENTAGE).toString()), shipmentCANModel.shipmentDetails.getFreightOverseasCurrency(), v1TenantSettingsResponse));
-                if(v.containsKey(TOTAL_AMOUNT) && v.get(TOTAL_AMOUNT) != null)
-                    v.put(TOTAL_AMOUNT, AmountNumberFormatter.Format(new BigDecimal(v.get(TOTAL_AMOUNT).toString()), shipmentCANModel.shipmentDetails.getFreightOverseasCurrency(), v1TenantSettingsResponse));
-                if(v.containsKey(CHARGE_TYPE_CODE) && v.get(CHARGE_TYPE_CODE) != null) {
-                    v.put(CHARGE_TYPE_DESCRIPTION_LL, GetChargeTypeDescriptionLL((String)v.get(CHARGE_TYPE_CODE), chargeTypesWithoutTranslation));
-                }
+                processBillChargesDict(shipmentCANModel, v1TenantSettingsResponse, chargeTypesWithoutTranslation, v);
             }
             dictionary.put(BILL_CHARGES, billChargesDict);
         }
+    }
+
+    private void processBillChargesDict(ShipmentCANModel shipmentCANModel, V1TenantSettingsResponse v1TenantSettingsResponse, List<String> chargeTypesWithoutTranslation, Map<String, Object> v) {
+        addTotalAmountTag(v);
+        putUnitTagsOnTenantSettings(shipmentCANModel, v1TenantSettingsResponse, v);
+
+        if(v.containsKey(SELL_EXCHANGE) && v.get(SELL_EXCHANGE) != null)
+            v.put(SELL_EXCHANGE, AmountNumberFormatter.FormatExchangeRate(new BigDecimal(v.get(SELL_EXCHANGE).toString()), shipmentCANModel.shipmentDetails.getFreightOverseasCurrency(), v1TenantSettingsResponse));
+        if(v.containsKey(CURRENT_SELL_RATE) && v.get(CURRENT_SELL_RATE) != null)
+            v.put(CURRENT_SELL_RATE, AmountNumberFormatter.Format(new BigDecimal(v.get(CURRENT_SELL_RATE).toString()), shipmentCANModel.shipmentDetails.getFreightOverseasCurrency(), v1TenantSettingsResponse));
+        if(v.containsKey(OVERSEAS_SELL_AMOUNT) && v.get(OVERSEAS_SELL_AMOUNT) != null)
+            v.put(OVERSEAS_SELL_AMOUNT, AmountNumberFormatter.Format(new BigDecimal(v.get(OVERSEAS_SELL_AMOUNT).toString()), shipmentCANModel.shipmentDetails.getFreightOverseasCurrency(), v1TenantSettingsResponse));
+        if(v.containsKey(OVERSEAS_TAX) && v.get(OVERSEAS_TAX) != null)
+            v.put(OVERSEAS_TAX, AmountNumberFormatter.Format(new BigDecimal(v.get(OVERSEAS_TAX).toString()), shipmentCANModel.shipmentDetails.getFreightOverseasCurrency(), v1TenantSettingsResponse));
+        if(v.containsKey(TAX_PERCENTAGE) && v.get(TAX_PERCENTAGE) != null)
+            v.put(TAX_PERCENTAGE, AmountNumberFormatter.Format(new BigDecimal(v.get(TAX_PERCENTAGE).toString()), shipmentCANModel.shipmentDetails.getFreightOverseasCurrency(), v1TenantSettingsResponse));
+        if(v.containsKey(TOTAL_AMOUNT) && v.get(TOTAL_AMOUNT) != null)
+            v.put(TOTAL_AMOUNT, AmountNumberFormatter.Format(new BigDecimal(v.get(TOTAL_AMOUNT).toString()), shipmentCANModel.shipmentDetails.getFreightOverseasCurrency(), v1TenantSettingsResponse));
+        if(v.containsKey(CHARGE_TYPE_CODE) && v.get(CHARGE_TYPE_CODE) != null) {
+            v.put(CHARGE_TYPE_DESCRIPTION_LL, GetChargeTypeDescriptionLL((String) v.get(CHARGE_TYPE_CODE), chargeTypesWithoutTranslation));
+        }
+    }
+
+    private void addTotalAmountTag(Map<String, Object> v) {
+        v.put(TOTAL_AMOUNT, v.containsKey(OVERSEAS_SELL_AMOUNT) && v.get(OVERSEAS_SELL_AMOUNT) != null ? new BigDecimal(v.get(OVERSEAS_SELL_AMOUNT).toString()) : 0);
+        v.put(TOTAL_AMOUNT, new BigDecimal(v.get(TOTAL_AMOUNT).toString()).add(v.containsKey(OVERSEAS_TAX) && v.get(OVERSEAS_TAX) != null ? new BigDecimal(v.get(OVERSEAS_TAX).toString()) : BigDecimal.ZERO));
+    }
+
+    private void putUnitTagsOnTenantSettings(ShipmentCANModel shipmentCANModel, V1TenantSettingsResponse v1TenantSettingsResponse, Map<String, Object> v) {
+        if(shipmentCANModel.tenantSettingsResponse != null && (shipmentCANModel.tenantSettingsResponse.getUseV2ScreenForBillCharges())) {
+            if (v.containsKey(REVENUE_MEASUREMENT_BASIS) && v.get(REVENUE_MEASUREMENT_BASIS) != null) {
+                v.put(REVENUE_MEASUREMENT_UNIT, MeasurementBasis.getByValue(Integer.parseInt(v.get(REVENUE_MEASUREMENT_BASIS).toString())));
+            }
+            if (v.containsKey(REVENUE_CALCULATED_VALUE) && v.get(REVENUE_CALCULATED_VALUE) != null) {
+                String[] split = v.get(REVENUE_CALCULATED_VALUE).toString().split(" ");
+                BigDecimal count = getCount(split);
+                v.put(REVENUE_TOTAL_UNIT_COUNT, twoDecimalPlacesFormatDecimal(count));
+            }
+        }
+        else if(v.containsKey(MEASUREMENT_BASIS) && v.get(MEASUREMENT_BASIS) != null) {
+            v.put(MEASUREMENT_UNIT, MeasurementBasis.getByValue(Integer.parseInt(v.get(MEASUREMENT_BASIS).toString())));
+            if(v.containsKey(CALCULATED_VALUE) && v.get(CALCULATED_VALUE) != null) {
+                String[] split = v.get(CALCULATED_VALUE).toString().split(" ");
+                BigDecimal count = getCount(split);
+//                        v.put(TOTAL_UNIT_COUNT, twoDecimalPlacesFormatDecimal(count));
+                v.put(TOTAL_UNIT_COUNT, GetDPWWeightVolumeFormat(count, 0, v1TenantSettingsResponse));
+            }
+        }
+    }
+
+    private BigDecimal getCount(String[] split) {
+        BigDecimal count = BigDecimal.ONE;
+        if (!split[0].equals("null"))
+            count = new BigDecimal(split[0]);
+        return count;
     }
 
     private void processWeightVolumeTags(ShipmentCANModel shipmentCANModel, Map<String, Object> dictionary, V1TenantSettingsResponse v1TenantSettingsResponse) {
