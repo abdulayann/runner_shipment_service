@@ -351,29 +351,11 @@ public abstract class IReport {
             additionalDetails = shipment.getAdditionalDetails();
         }
         // UnLocations Master-data
-        List<String> unlocoRequests = this.createUnLocoRequestFromShipmentModel(shipment);
-        Map<String, UnlocationsResponse> unlocationsMap = new HashMap<>();
-        Map<String, EntityTransferUnLocations> entityTransferUnLocationsMap = masterDataUtils.getLocationDataFromCache(new HashSet<>(unlocoRequests), EntityTransferConstants.LOCATION_SERVICE_GUID);
-        for (Map.Entry<String, EntityTransferUnLocations> entry : entityTransferUnLocationsMap.entrySet()) {
-            String key = entry.getKey();
-            UnlocationsResponse value = jsonHelper.convertValue(entry.getValue(), UnlocationsResponse.class);
-            unlocationsMap.put(key, value);
-        }
+        Map<String, UnlocationsResponse> unlocationsMap = getUnlocationsResponseMap(shipment);
         // Master lists Master-data
         List<MasterListRequest> masterListRequest = createMasterListsRequestFromShipment(shipment);
         masterListRequest.addAll(createMasterListsRequestFromUnLocoMap(unlocationsMap));
-        Map<String, EntityTransferMasterLists> entityTransferMasterListsMap = masterDataUtils.fetchMasterListFromCache(MasterListRequestV2.builder().MasterListRequests(masterListRequest.stream().filter(Objects::nonNull).collect(Collectors.toList())).build());
-        Map<Integer, Map<String, MasterData>> masterListsMap = new HashMap<>();
-        for (Map.Entry<String, EntityTransferMasterLists> entry : entityTransferMasterListsMap.entrySet()) {
-            String key = entry.getKey();
-            String[] parts = key.split("#");
-            String itemType = parts[0];
-            String itemValue = parts[1];
-            MasterDataType masterDataType = MasterDataType.valueOf(itemType);
-            int masterDataKey = masterDataType.getId();
-            MasterData masterData = jsonHelper.convertValue(entry.getValue(), MasterData.class);
-            masterListsMap.computeIfAbsent(masterDataKey, k -> new HashMap<>()).put(itemValue, masterData);
-        }
+        Map<Integer, Map<String, MasterData>> masterListsMap = getMasterListsMap(masterListRequest);
         PartiesModel shipmentNotify = additionalDetails.getNotifyParty();
         if (shipment.getReferenceNumbersList() != null) {
             dictionary.put(AMS_NUMBER, shipment.getReferenceNumbersList().stream()
@@ -404,120 +386,107 @@ public abstract class IReport {
         dictionary.put(SHIPMENT_ID, shipment.getShipmentId());
         String carrierVesselId = shipment.getCarrierDetails().getVessel();
         Set<String> vesselIds = new HashSet<>();
-        vesselIds.add(carrierVesselId);
-        Map<String, EntityTransferVessels> entityTransferVesselsMap = masterDataUtils.getVesselDataFromCache(vesselIds);
-        Map<String, VesselsResponse> vesselsResponseMap = new HashMap<>();
-        for (Map.Entry<String, EntityTransferVessels> entry : entityTransferVesselsMap.entrySet()) {
-            String key = entry.getKey();
-            VesselsResponse value = jsonHelper.convertValue(entry.getValue(), VesselsResponse.class);
-            vesselsResponseMap.put(key, value);
-        }
-        VesselsResponse vesselsResponse = vesselsResponseMap.get(carrierVesselId);
-        if(Objects.equals(shipment.getTransportMode(), AIR))
-        {
-            dictionary.put(VESSELS_NAME_FLIGHT_NAME, shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getShippingLine() : null);
-        }
-        if(vesselsResponse != null) {
-            dictionary.put(VESSEL_NAME, vesselsResponse.getName());
-            if(!Objects.equals(shipment.getTransportMode(), AIR))
-                dictionary.put(VESSELS_NAME_FLIGHT_NAME, vesselsResponse.getName());
-        }
+        processVessels(shipment, dictionary, vesselIds, carrierVesselId);
         dictionary.put(ReportConstants.VOYAGE,shipment.getCarrierDetails().getVoyage());
-        if(!Objects.isNull(pol)) {
-            dictionary.put(ReportConstants.POL_CODE, pol.getLocCode());
-            if (Objects.equals(shipment.getTransportMode(), AIR) && BOOKING_ORDER.equalsIgnoreCase(shipment.getDocument()))
-                dictionary.put(ReportConstants.POL_CODE, pol.getIataCode());
-        }
-        if(!Objects.isNull(pod)) {
-            dictionary.put(ReportConstants.POD_CODE, pod.getLocCode());
-            if (Objects.equals(shipment.getTransportMode(), AIR) && BOOKING_ORDER.equalsIgnoreCase(shipment.getDocument()))
-                dictionary.put(ReportConstants.POD_CODE, pod.getIataCode());
-        }
-        dictionary.put(ReportConstants.POD_COUNTRY, pod != null ? pod.getCountry() : null);
-        dictionary.put(ReportConstants.POL_COUNTRY, pol != null ? pol.getCountry() : null);
-        dictionary.put(CARGO_TERMS_DESCRIPTION, StringUtility.toUpperCase(shipment.getGoodsDescription()));
-        dictionary.put(BL_DESCRIPTION, StringUtility.toUpperCase(additionalDetails.getBLRemarksDescription()));
-        dictionary.put(LOAD_DESCRIPTION_REMARKS, StringUtility.toUpperCase(additionalDetails.getBLRemarks()));
-        if(pol != null) {
-            if(pol.getPortName() != null) {
-                dictionary.put(ReportConstants.POL_PORT_NAME_WITH_COUNTRY_IN_CAPS, (pol.getPortName().toUpperCase() + ", " + (masterListsMap.containsKey(MasterDataType.COUNTRIES.getId()) && masterListsMap.get(MasterDataType.COUNTRIES.getId()).containsKey(pol.getCountry()) ? masterListsMap.get(MasterDataType.COUNTRIES.getId()).get(pol.getCountry()).getItemDescription().toUpperCase() : "")));
-                dictionary.put(ReportConstants.POL_IN_CAPS, pol.getPortName().toUpperCase());
-                dictionary.put(ORIGIN_PORT, dictionary.get(POL_IN_CAPS));
-            }
-            else
-                dictionary.put(ORIGIN_PORT, pol.getName());
-            dictionary.put(POL_COUNTRY_NAME, pol.getCountryName());
-            dictionary.put(POL_COUNTRY_NAME_IN_CAPS , (masterListsMap.containsKey(MasterDataType.COUNTRIES.getId()) && masterListsMap.get(MasterDataType.COUNTRIES.getId()).containsKey(pol.getCountry()) ? masterListsMap.get(MasterDataType.COUNTRIES.getId()).get(pol.getCountry()).getItemDescription().toUpperCase() : ""));
-            dictionary.put(ReportConstants.POL_AIRPORT_CODE, pol.getIataCode());
-            if(pol.getIataCode() != null) {
-                dictionary.put(ReportConstants.POL_AIRPORT_CODE_IN_CAPS, pol.getIataCode().toUpperCase());
-            }
-            dictionary.put(POL_CODE_IN_CAPS, StringUtility.toUpperCase(pol.getLocCode()));
-        }
-        if(shipment.getAdditionalDetails() != null) {
-            dictionary.put(ReportConstants.COUNTRY_OF_GOODS_ORIGIN, shipment.getAdditionalDetails().getGoodsCO());
-        }
-        dictionary.put(CONTAINER_SUMMARY, shipment.getSummary());
-        dictionary.put(PACK_SUMMARY, shipment.getPackSummary());
-        dictionary.put(ReportConstants.SERVICE_MODE, shipment.getServiceType());
-        dictionary.put(ReportConstants.POL_PORTNAME, pol != null ? pol.getPortName() : null);
-        dictionary.put(ReportConstants.POL_PORT_NAME_IN_CAPS, pol != null ? StringUtility.toUpperCase(pol.getPortName()) : null);
-        dictionary.put(ReportConstants.POD_PORTNAME, pod != null ? pod.getPortName() : null);
-        dictionary.put(ReportConstants.POD_PORT_NAME_IN_CAPS, pod != null ? StringUtility.toUpperCase(pod.getPortName()) : null);
-
-        if (pod != null) {
-            String podCountry = masterListsMap.containsKey(MasterDataType.COUNTRIES.getId()) && masterListsMap.get(MasterDataType.COUNTRIES.getId()).containsKey(pod.getCountry()) ? masterListsMap.get(MasterDataType.COUNTRIES.getId()).get(pod.getCountry()).getItemDescription() : "";
-            dictionary.put(ReportConstants.DESTINATION_AIRPORT_COUNTRY, podCountry.toUpperCase());
-            if (pod.getPortName() != null) {
-                dictionary.put(ReportConstants.POD_PORT_NAME_WITH_COUNTRY_IN_CAPS, pod.getPortName().toUpperCase() + ", " + podCountry.toUpperCase());
-                dictionary.put(ReportConstants.POD_IN_CAPS, pod.getPortName().toUpperCase());
-                dictionary.put(DESTINATION_PORT, dictionary.get(POD_IN_CAPS));
-            }
-            else
-                dictionary.put(DESTINATION_PORT, pod.getName());
-            dictionary.put(POD_COUNTRY_NAME, pod.getCountryName());
-            dictionary.put(ReportConstants.POD_COUNTRY_NAME_IN_CAPS, podCountry.toUpperCase());
-            dictionary.put(ReportConstants.POD_AIRPORT_CODE, pod.getIataCode());
-            if (pod.getIataCode() != null) {
-                dictionary.put(ReportConstants.POD_AIRPORT_CODE_IN_CAPS, pod.getIataCode().toUpperCase());
-            }
-            if (pod.getPortName() != null)
-                dictionary.put(ReportConstants.POD_IN_CAPS, pod.getPortName().toUpperCase());
-            dictionary.put(POD_CODE_IN_CAPS, StringUtility.toUpperCase(pod.getLocCode()));
-        }
-
-        dictionary.put(ReportConstants.CARRIER, shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getShippingLine() : null);
-        dictionary.put(ReportConstants.PORT_OF_DISCHARGE, pod != null ? pod.getName() : null);
-        dictionary.put(ReportConstants.PORT_OF_LOADING, pol != null ? pol.getName() : null);
+        processPolPodTags(shipment, dictionary, pol, pod, additionalDetails, masterListsMap);
         dictionary.put(ReportConstants.PLACE_OF_DELIVERY, destination != null ? destination.getName() : null);
         dictionary.put(ReportConstants.REFERENCE_NUMBER,shipment.getBookingReference());
-        dictionary.put(ReportConstants.ORIGIN_NAME, origin != null ? origin.getName() : null);
-        dictionary.put(ReportConstants.ORIGIN, origin != null ? origin.getName() : null);
-        dictionary.put(ReportConstants.ORIGIN_COUNTRY, origin != null ? origin.getCountry() : null);
-        if(origin != null) {
-            dictionary.put(ReportConstants.ORIGIN_NAME_IN_CAPS, origin.getName().toUpperCase());
-            String originCountry = masterListsMap.containsKey(MasterDataType.COUNTRIES.getId()) && masterListsMap.get(MasterDataType.COUNTRIES.getId()).containsKey(origin.getCountry()) ? masterListsMap.get(MasterDataType.COUNTRIES.getId()).get(origin.getCountry()).getItemDescription() : "";
-            dictionary.put(ReportConstants.ORIGIN_COUNTRY_NAME_IN_CAPS, originCountry.toUpperCase());
-            dictionary.put(ReportConstants.POR_IN_CAPS, origin.getName().toUpperCase());
-            dictionary.put(ReportConstants.POR_COUNTRY_NAME_IN_CAPS, originCountry.toUpperCase());
-            dictionary.put(ORIGIN_CODE_IN_CAPS, StringUtility.toUpperCase(origin.getLocCode()));
-        }
+        processOriginTags(dictionary, origin, masterListsMap);
         dictionary.put(ReportConstants.DESCRIPTION,shipment.getGoodsDescription());
         dictionary.put(ReportConstants.SHIPMENT_TYPE,shipment.getDirection());
         dictionary.put(ReportConstants.CUSTOM_SHIPMENT_TYPE, shipment.getDirection() != null ? Character.toUpperCase(shipment.getDirection().charAt(0)) : null);
-        int containerCount = 0;
-        if (!shipment.getContainersList().isEmpty()) {
-            for (ContainerModel container : shipment.getContainersList()) {
-                if (container.getContainerCount() != null && container.getContainerCount() != 0) {
-                    containerCount += container.getContainerCount().intValue();
-                }
-            }
-        }
+        int containerCount = getContainerCount(shipment);
         dictionary.put(ReportConstants.CONTAINER_COUNT, numberToWords(containerCount).toUpperCase());
         dictionary.put(PICKUP_INSTRUCTION, shipment.getPickupDetails() != null ? shipment.getPickupDetails().getPickupDeliveryInstruction() : null);
         dictionary.put(DELIVERY_INSTRUCTIONS, shipment.getDeliveryDetails() != null ? shipment.getDeliveryDetails().getPickupDeliveryInstruction() : null);
         V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         String tsDateTimeFormat = v1TenantSettingsResponse.getDPWDateFormat();
+        processDateTimeTags(shipment, dictionary, tsDateTimeFormat, v1TenantSettingsResponse, additionalDetails, pickup);
+
+        dictionary.put(ReportConstants.INCO_TERM, shipment.getIncoterms());
+        dictionary.put(ReportConstants.INCOTERM, shipment.getIncoterms());
+        dictionary.put(ReportConstants.CHARGEABLE, ConvertToWeightNumberFormat(shipment.getChargable(), v1TenantSettingsResponse));
+        dictionary.put(ReportConstants.CHARGEABLE_UNIT, shipment.getChargeableUnit());
+        dictionary.put(ReportConstants.TRANSPORT_MODE, shipment.getTransportMode());
+        dictionary.put(ReportConstants.CONTAINER_TYPE, shipment.getShipmentType());
+
+        addOtherTagsAndProcessMasterData(shipment, dictionary, masterListsMap, v1TenantSettingsResponse, delivery, pickup, additionalDetails, placeOfIssue, paidPlace, destination, tsDateTimeFormat, pol, pod);
+        processTransportModeTags(shipment, dictionary, shipmentConsigner, shipmentConsignee, shipmentNotify, shipmentClient, additionalDetails, tsDateTimeFormat, shipmentSettingsDetails);
+        processReferenceNumbersList(shipment, dictionary);
+        processShippingLineTags(shipment, dictionary);
+        addPreCarriageTags(dictionary, pickup);
+        addNoOfPacks(shipment, dictionary, v1TenantSettingsResponse);
+        addWareHouseNameAndCodeTags(shipment, dictionary, wareHouseResponseMap);
+        if(shipment.getPickupDetails() != null)
+            dictionary.put(PICKUP_SHIPPERS_REF, shipment.getPickupDetails().getShipperRef());
+        processDeliveryTransportTag(shipment, dictionary);
+        SetContainerCount(shipment, dictionary);
+        populateUserFields(UserContext.getUser(), dictionary);
+        populateHasContainerFields(shipment, dictionary, v1TenantSettingsResponse);
+        addVoyageFlightNoTag(shipment, dictionary);
+        addGoodAndInsuranceValueTag(dictionary, v1TenantSettingsResponse);
+        addAliasTag(shipment, dictionary, v1TenantSettingsResponse);
+        populateIGMInfo(shipment, dictionary);
+        addDgTags(shipment, dictionary);
+        dictionary.put(MAWB_CAPS, StringUtility.convertToString(shipment.getMasterBill()));
+    }
+
+    private void addNoOfPacks(ShipmentModel shipment, Map<String, Object> dictionary, V1TenantSettingsResponse v1TenantSettingsResponse) {
+        if(shipment.getNoOfPacks() != null) {
+            dictionary.put(ReportConstants.NO_OF_PACKAGES, GetDPWWeightVolumeFormat(BigDecimal.valueOf(shipment.getNoOfPacks()), 0, v1TenantSettingsResponse));
+            dictionary.put(ReportConstants.NO_OF_PACKAGES_IN_CAPS, StringUtility.toUpperCase(GetDPWWeightVolumeFormat(BigDecimal.valueOf(shipment.getNoOfPacks()), 0, v1TenantSettingsResponse)));
+        }
+    }
+
+    private void addPreCarriageTags(Map<String, Object> dictionary, PickupDeliveryDetailsModel pickup) {
+        if(!Objects.isNull(pickup) && !Objects.isNull(pickup.getTransporterDetail())){
+            dictionary.put(PRE_CARRIAGE_PARTY, pickup.getTransporterDetail().getOrgData() != null &&
+                    pickup.getTransporterDetail().getOrgData().containsKey(FULL_NAME1) ?
+                    pickup.getTransporterDetail().getOrgData().get(FULL_NAME1) : "");
+        }
+    }
+
+    private void addWareHouseNameAndCodeTags(ShipmentModel shipment, Map<String, Object> dictionary, Map<String, WareHouseResponse> wareHouseResponseMap) {
+        if (!Objects.isNull(shipment.getAdditionalDetails().getWarehouseId()) &&
+                wareHouseResponseMap.containsKey(StringUtility.convertToString(shipment.getAdditionalDetails().getWarehouseId()))) {
+            dictionary.put(WAREHOUSE_NAME, wareHouseResponseMap.get(StringUtility.convertToString(shipment.getAdditionalDetails().getWarehouseId())).getWarehouseDepotName());
+            dictionary.put(WAREHOUSE_CODE, wareHouseResponseMap.get(StringUtility.convertToString(shipment.getAdditionalDetails().getWarehouseId())).getWarehouseDepotCode());
+        }
+        if (!Objects.isNull(shipment.getAdditionalDetails().getBondedWarehouseId()) &&
+                wareHouseResponseMap.containsKey(StringUtility.convertToString(shipment.getAdditionalDetails().getBondedWarehouseId()))) {
+            dictionary.put(BOUNDED_WAREHOUSE_NAME, wareHouseResponseMap.get(StringUtility.convertToString(shipment.getAdditionalDetails().getBondedWarehouseId())).getWarehouseDepotName());
+            dictionary.put(BOUNDED_WAREHOUSE_CODE, wareHouseResponseMap.get(StringUtility.convertToString(shipment.getAdditionalDetails().getBondedWarehouseId())).getWarehouseDepotCode());
+        }
+    }
+
+    private void addGoodAndInsuranceValueTag(Map<String, Object> dictionary, V1TenantSettingsResponse v1TenantSettingsResponse) {
+        if (!Objects.isNull(dictionary.get(GOODS_VALUE)))
+            dictionary.put(GOODS_VALUE, AmountNumberFormatter.Format(new BigDecimal(StringUtility.convertToString(dictionary.get(GOODS_VALUE))), UserContext.getUser().getCompanyCurrency(), v1TenantSettingsResponse));
+        if (!Objects.isNull(dictionary.get(INSURANCE_VALUE)))
+            dictionary.put(INSURANCE_VALUE, AmountNumberFormatter.Format(new BigDecimal(StringUtility.convertToString(dictionary.get(INSURANCE_VALUE))), UserContext.getUser().getCompanyCurrency(), v1TenantSettingsResponse));
+    }
+
+    private void addAliasTag(ShipmentModel shipment, Map<String, Object> dictionary, V1TenantSettingsResponse v1TenantSettingsResponse) {
+        if (!Objects.isNull(shipment.getNoOfPacks()))
+            dictionary.put(ReportConstants.NO_OF_PACKAGES_ALIAS, GetDPWWeightVolumeFormat(BigDecimal.valueOf(shipment.getNoOfPacks()), 0, v1TenantSettingsResponse));
+    }
+
+    private void addDgTags(ShipmentModel shipment, Map<String, Object> dictionary) {
+        dictionary.put(IS_DG, false);
+        if(Boolean.TRUE.equals(shipment.getContainsHazardous())) {
+            dictionary.put(IS_DG, true);
+            dictionary.put(DG_EMERGENCY_CONTACT, getConcatenatedContact(shipment.getAdditionalDetails().getEmergencyContactNumberCode(), shipment.getAdditionalDetails().getEmergencyContactNumber()));
+        }
+    }
+
+    private void addVoyageFlightNoTag(ShipmentModel shipment, Map<String, Object> dictionary) {
+        if(Objects.equals(shipment.getTransportMode(), AIR))
+            dictionary.put(VOYAGE_OR_FLIGHT_NO, shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getFlightNumber() : null);
+        else
+            dictionary.put(VOYAGE_OR_FLIGHT_NO, shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getVoyage() : null);
+    }
+
+    private void processDateTimeTags(ShipmentModel shipment, Map<String, Object> dictionary, String tsDateTimeFormat, V1TenantSettingsResponse v1TenantSettingsResponse, AdditionalDetailModel additionalDetails, PickupDeliveryDetailsModel pickup) {
         dictionary.put(ReportConstants.ETA, ConvertToDPWDateFormat(shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getEta() : null, tsDateTimeFormat, v1TenantSettingsResponse));
         dictionary.put(ReportConstants.ETD, ConvertToDPWDateFormat(shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getEtd() : null, tsDateTimeFormat, v1TenantSettingsResponse));
         dictionary.put(ReportConstants.ATA, ConvertToDPWDateFormat(shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getAta() : null, tsDateTimeFormat, v1TenantSettingsResponse));
@@ -534,343 +503,52 @@ public abstract class IReport {
         dictionary.put(SHIPMENT_DETAIL_DATE_OF_ISSUE, ConvertToDPWDateFormat(additionalDetails.getDateOfIssue(), formatPattern, true));
         dictionary.put(SHIPMENT_DETAIL_DATE_OF_ISSUE_IN_CAPS, StringUtility.toUpperCase(ConvertToDPWDateFormat(additionalDetails.getDateOfIssue(), formatPattern, true)));
         dictionary.put(ReportConstants.DATE_OF_RECEIPT, additionalDetails.getDateOfReceipt());
+    }
 
-        dictionary.put(ReportConstants.INCO_TERM, shipment.getIncoterms());
-        dictionary.put(ReportConstants.INCOTERM, shipment.getIncoterms());
-        dictionary.put(ReportConstants.CHARGEABLE, ConvertToWeightNumberFormat(shipment.getChargable(), v1TenantSettingsResponse));
-        dictionary.put(ReportConstants.CHARGEABLE_UNIT, shipment.getChargeableUnit());
-        dictionary.put(ReportConstants.TRANSPORT_MODE, shipment.getTransportMode());
-        dictionary.put(ReportConstants.CONTAINER_TYPE, shipment.getShipmentType());
-
-        MasterData masterData = null;
-        if (masterListsMap.containsKey(MasterDataType.TRANSPORT_MODE.getId()) && masterListsMap.get(MasterDataType.TRANSPORT_MODE.getId()).containsKey(shipment.getTransportMode()))
-            masterData = masterListsMap.get(MasterDataType.TRANSPORT_MODE.getId()).get(shipment.getTransportMode());
-        dictionary.put(ReportConstants.TRANSPORT_MODE_DESCRIPTION, masterData != null ? masterData.getItemDescription() : shipment.getTransportMode());
-        if (masterListsMap.containsKey(MasterDataType.CUSTOM_SHIPMENT_TYPE.getId()) && masterListsMap.get(MasterDataType.CUSTOM_SHIPMENT_TYPE.getId()).containsKey(shipment.getDirection()))
-            masterData = masterListsMap.get(MasterDataType.CUSTOM_SHIPMENT_TYPE.getId()).get(shipment.getDirection());
-        dictionary.put(ReportConstants.SHIPMENT_TYPE_DESCRIPTION, masterData != null ? masterData.getItemDescription() : shipment.getDirection());
-        dictionary.put(ReportConstants.SHIPMENT_NUMBER, shipment.getShipmentId());
-        dictionary.put(ReportConstants.FLIGHT_NUMBER, shipment.getCarrierDetails().getFlightNumber());
-        dictionary.put(ReportConstants.ADDITIONAL_TERMS, shipment.getAdditionalTerms());
-
-        dictionary.put(ReportConstants.PACKS, GetDPWWeightVolumeFormat(BigDecimal.valueOf(shipment.getNoOfPacks() != null ? shipment.getNoOfPacks() : 0), 0, v1TenantSettingsResponse));
-        dictionary.put(ReportConstants.PACKS_UNIT,Constants.MPK.equals(shipment.getPacksUnit()) ? Constants.PIECES : shipment.getPacksUnit());
-        dictionary.put(ReportConstants.PACKS_WITH_COMMA, addCommas(shipment.getNoOfPacks()));
-        if (masterListsMap.containsKey(MasterDataType.PACKS_UNIT.getId()) && masterListsMap.get(MasterDataType.PACKS_UNIT.getId()).containsKey(shipment.getPacksUnit()))
-            masterData = masterListsMap.get(MasterDataType.PACKS_UNIT.getId()).get(shipment.getPacksUnit());
-        String packsUnit = masterData != null && StringUtility.isNotEmpty(masterData.getItemDescription()) ? masterData.getItemDescription() : shipment.getPacksUnit();
-        dictionary.put(ReportConstants.PACKS_UNIT_DESC, Constants.MULTI_PACK.equals(packsUnit) ? Constants.PACKAGES : packsUnit);
-
-        if(shipment.getInnerPacks() != null)
-            dictionary.put(ReportConstants.INNERS, GetDPWWeightVolumeFormat(BigDecimal.valueOf(shipment.getInnerPacks()), 0, v1TenantSettingsResponse));
-
-        dictionary.put(ReportConstants.PAYMENT_TERMS , shipment.getPaymentTerms() == null ?"" :shipment.getPaymentTerms());
-
-        if (masterListsMap.containsKey(MasterDataType.PAYMENT.getId()) && masterListsMap.get(MasterDataType.PAYMENT.getId()).containsKey(shipment.getPaymentTerms()))
-            masterData = masterListsMap.get(MasterDataType.PAYMENT.getId()).get(shipment.getPaymentTerms());
-        if(masterData != null) {
-            dictionary.put(ReportConstants.PAYMENT_TERMS_DESCRIPTION, masterData.getItemDescription());
+    private void processShippingLineTags(ShipmentModel shipment, Map<String, Object> dictionary) {
+        if(Strings.isNullOrEmpty(shipment.getCarrierDetails().getShippingLine())){
+            return;
         }
-
-        if (masterListsMap.containsKey(MasterDataType.SERVICE_MODE.getId()) && masterListsMap.get(MasterDataType.SERVICE_MODE.getId()).containsKey(shipment.getServiceType())) {
-            masterData = masterListsMap.get(MasterDataType.SERVICE_MODE.getId()).get(shipment.getServiceType());
-            dictionary.put(ReportConstants.SERVICE_MODE_DESCRIPTION, StringUtility.isNotEmpty(masterData.getItemDescription()) ? StringUtility.toUpperCase(masterData.getItemDescription()) : shipment.getServiceType());
+        CarrierMasterData carrierData = getCarrier(shipment.getCarrierDetails().getShippingLine());
+        if(!Objects.isNull(carrierData)) {
+            dictionary.put(CARRIER_NAME, carrierData.getItemDescription());
+            String iataCode = carrierData.getIataCode();
+            dictionary.put(ReportConstants.FLIGHT_IATA_CODE, iataCode);
+            dictionary.put(ReportConstants.IATA_CODE, StringUtility.isEmpty(iataCode) ? shipment.getCarrierDetails().getFlightNumber() : iataCode + (StringUtility.isEmpty(shipment.getCarrierDetails().getFlightNumber()) ? "" :(" " + shipment.getCarrierDetails().getFlightNumber())));
+            dictionary.put(ReportConstants.SHIPMENT_FLIGHT_NUMBER_WITH_IATACODE, StringUtility.isEmpty(iataCode) ? shipment.getCarrierDetails().getFlightNumber() : iataCode + (StringUtility.isEmpty(shipment.getCarrierDetails().getFlightNumber()) ? "" :(" " + shipment.getCarrierDetails().getFlightNumber())));
         }
+    }
 
-        dictionary.put(ReportConstants.GROSS_WEIGHT, ConvertToWeightNumberFormat(shipment.getWeight(), v1TenantSettingsResponse));
-        dictionary.put(ReportConstants.GROSS_WEIGHT_UNIT,shipment.getWeightUnit());
-        dictionary.put(ReportConstants.GROSS_VOLUME, ConvertToVolumeNumberFormat(shipment.getVolume(), v1TenantSettingsResponse));
-        dictionary.put(ReportConstants.GROSS_VOLUME_UNIT,shipment.getVolumeUnit());
-        dictionary.put(ReportConstants.GROSS_WEIGHT_WITH_COMMA, ConvertToWeightNumberFormat(shipment.getWeight(), v1TenantSettingsResponse));
-        dictionary.put(ReportConstants.GROSS_VOLUME_WITH_COMMA, ConvertToVolumeNumberFormat(shipment.getVolume(), v1TenantSettingsResponse));
-        dictionary.put(ReportConstants.VOLUME_WEIGHT_WITH_COMMA, addCommas(shipment.getVolumetricWeight()));
-        dictionary.put(ReportConstants.WEIGHT_UNIT_DESCRIPTION,  shipment.getNetWeightUnit());
-        dictionary.put(ReportConstants.CHARGEABLE_WEIGHT, ConvertToVolumeNumberFormat(shipment.getChargable(), v1TenantSettingsResponse));
-        dictionary.put(ReportConstants.CHARGEABLE_WEIGHT_UNIT, shipment.getChargeableUnit());
-        dictionary.put(ReportConstants.WEIGHTS, ConvertToWeightNumberFormat(shipment.getNetWeight(), v1TenantSettingsResponse));
-        dictionary.put(WEIGHT, ConvertToWeightNumberFormat(shipment.getWeight(), v1TenantSettingsResponse));
-        dictionary.put(VOLUME, ConvertToVolumeNumberFormat(shipment.getVolume(), v1TenantSettingsResponse));
-        if (shipment.getVolumeUnit() != null && masterListsMap.containsKey(MasterDataType.VOLUME_UNIT.getId())) {
-            masterData =  masterListsMap.get(MasterDataType.VOLUME_UNIT.getId()).get(shipment.getVolumeUnit());
-            dictionary.put(VOLUME_UNIT_DESCRIPTION, masterData != null && masterData.getItemDescription() != null ? StringUtility.toUpperCase(masterData.getItemDescription()) : shipment.getVolumeUnit());
+    private void processOriginTags(Map<String, Object> dictionary, UnlocationsResponse origin, Map<Integer, Map<String, MasterData>> masterListsMap) {
+        dictionary.put(ReportConstants.ORIGIN_NAME, origin != null ? origin.getName() : null);
+        dictionary.put(ReportConstants.ORIGIN, origin != null ? origin.getName() : null);
+        dictionary.put(ReportConstants.ORIGIN_COUNTRY, origin != null ? origin.getCountry() : null);
+        if(origin != null) {
+            dictionary.put(ReportConstants.ORIGIN_NAME_IN_CAPS, origin.getName().toUpperCase());
+            String originCountry = masterListsMap.containsKey(MasterDataType.COUNTRIES.getId()) && masterListsMap.get(MasterDataType.COUNTRIES.getId()).containsKey(origin.getCountry()) ? masterListsMap.get(MasterDataType.COUNTRIES.getId()).get(origin.getCountry()).getItemDescription() : "";
+            dictionary.put(ReportConstants.ORIGIN_COUNTRY_NAME_IN_CAPS, originCountry.toUpperCase());
+            dictionary.put(ReportConstants.POR_IN_CAPS, origin.getName().toUpperCase());
+            dictionary.put(ReportConstants.POR_COUNTRY_NAME_IN_CAPS, originCountry.toUpperCase());
+            dictionary.put(ORIGIN_CODE_IN_CAPS, StringUtility.toUpperCase(origin.getLocCode()));
         }
-        dictionary.put(NET_WEIGHT, addCommas(shipment.getNetWeight()));
-        dictionary.put(NET_WEIGHT_UNIT_DESCRIPTION, shipment.getNetWeightUnit());
-        if (shipment.getNetWeightUnit() != null && masterListsMap.containsKey(MasterDataType.WEIGHT_UNIT.getId()) && masterListsMap.get(MasterDataType.WEIGHT_UNIT.getId()).containsKey(shipment.getNetWeightUnit())) {
-            masterData = masterListsMap.get(MasterDataType.WEIGHT_UNIT.getId()).get(shipment.getNetWeightUnit());
-            dictionary.put(NET_WEIGHT_UNIT_DESCRIPTION, (masterData != null && masterData.getItemDescription() != null) ? StringUtility.toUpperCase(masterData.getItemDescription()) : shipment.getVolumeUnit());
+    }
+
+    private void processDeliveryTransportTag(ShipmentModel shipment, Map<String, Object> dictionary) {
+        PartiesModel deliveryTransport = null;
+        if(shipment.getDeliveryDetails() != null)
+            deliveryTransport = shipment.getDeliveryDetails().getTransporterDetail();
+        if (deliveryTransport != null && deliveryTransport.getAddressData() != null)
+        {
+            Map<String, Object> addressMap = deliveryTransport.getAddressData();
+            populateAddress(addressMap, dictionary, DELIVERY_TRANSPORT);
+            var address = getOrgAddress(getValueFromMap(addressMap, ORG_FULL_NAME), getValueFromMap(addressMap, ADDRESS1), getValueFromMap(addressMap, ADDRESS2),
+                    getCityCountry(getValueFromMap(addressMap, CITY), getValueFromMap(addressMap, COUNTRY)),
+                    getValueFromMap(addressMap, EMAIL), getValueFromMap(addressMap, CONTACT_PHONE));
+            dictionary.put(ReportConstants.DELIVERY_TRANSPORT, address);
         }
+    }
 
-        dictionary.put(ReportConstants.DELIVERY_CFS, (delivery != null && !Objects.isNull(delivery.getSourceDetail()) && !Objects.isNull(delivery.getSourceDetail().getOrgData())) ? delivery.getSourceDetail().getOrgData().get(FULL_NAME) : null);
-        dictionary.put(ReportConstants.PICKUP_CFS, (pickup != null && !Objects.isNull(pickup.getDestinationDetail()) && !Objects.isNull(pickup.getDestinationDetail().getOrgData()) )? pickup.getDestinationDetail().getOrgData().get(FULL_NAME) : null);
-        dictionary.put(ReportConstants.MARKS_N_NUMS,shipment.getMarksNum());
-        dictionary.put(ReportConstants.ORIGINALS,additionalDetails.getOriginal() == null ? 1 : additionalDetails.getOriginal());
-        dictionary.put(ReportConstants.ORIGINAL_WORDS, numberToWords(additionalDetails.getOriginal() == null ? 1 : additionalDetails.getOriginal()));
-        dictionary.put(ReportConstants.COPY_BILLS,additionalDetails.getCopy() == null ? 0 : additionalDetails.getCopy());
-
-        dictionary.put(ReportConstants.ISSUE_PLACE_NAME, placeOfIssue !=  null ? placeOfIssue.getName() : null);
-        dictionary.put(ReportConstants.ISSUE_PLACE_COUNTRY, placeOfIssue != null ? placeOfIssue.getCountry() : null);
-        dictionary.put(ReportConstants.PAID_PLACE_NAME, paidPlace != null ? paidPlace.getName() : null);
-        dictionary.put(ReportConstants.PAID_PLACE_COUNTRY, paidPlace != null ? paidPlace.getCountry() : null);
-
-        dictionary.put(ReportConstants.PAID_PLACE_NAME_IN_CAPS, paidPlace != null ? StringUtility.toUpperCase(paidPlace.getName()) : null);
-        dictionary.put(ReportConstants.PAID_PLACE_COUNTRY_IN_CAPS, paidPlace != null ? StringUtility.toUpperCase(paidPlace.getCountry()) : null);
-
-        dictionary.put(ReportConstants.HSN_NUMBER, additionalDetails.getHsnNumber());
-        dictionary.put(ReportConstants.SHIPMENT_BOOKING_NUMBER, shipment.getBookingNumber());
-
-        dictionary.put(ReportConstants.DESTINATION_NAME, destination != null ? destination.getName() : null);
-        dictionary.put(ReportConstants.DESTINATION, destination != null ? destination.getName() : null);
-        dictionary.put(ReportConstants.DESTINATION_COUNTRY, destination != null ? destination.getCountry() : null);
-
-        dictionary.put(ReportConstants.PRINT_DATE, ConvertToDPWDateFormat(LocalDateTime.now(), tsDateTimeFormat, v1TenantSettingsResponse));
-        if(destination != null) {
-            dictionary.put(ReportConstants.DESTINATION_NAME_IN_CAPS, destination.getName().toUpperCase());
-            String destinationCountry = masterListsMap.containsKey(MasterDataType.COUNTRIES.getId()) && masterListsMap.get(MasterDataType.COUNTRIES.getId()).containsKey(destination.getCountry()) ? masterListsMap.get(MasterDataType.COUNTRIES.getId()).get(destination.getCountry()).getItemDescription() : "";
-            dictionary.put(ReportConstants.DESTINATION_COUNTRY_NAME_IN_CAPS, destinationCountry.toUpperCase());
-            dictionary.put(DESTINATION_COUNTRY_NAME, destinationCountry);
-            dictionary.put(ReportConstants.FPOD_IN_CAPS, destination.getName().toUpperCase());
-            dictionary.put(ReportConstants.FPOD_COUNTRY_NAME_IN_CAPS, destinationCountry.toUpperCase());
-            dictionary.put(DESTINATION_CODE_IN_CAPS, StringUtility.toUpperCase(destination.getLocCode()));
-        }
-
-        if (Objects.equals(shipment.getPaymentTerms(), "PPD")) {
-            dictionary.put(ReportConstants.AT, pol != null ? pol.getName() : null);
-        } else if (Objects.equals(shipment.getPaymentTerms(), "CCX")) {
-            dictionary.put(ReportConstants.AT, pod != null ? pod.getName() : null);
-        }
-        dictionary.put(PAYMENT_TERMS_DESCRITION_WITH_CAMELCASE,  shipment.getPaymentTerms());
-        if (shipment.getPaymentTerms() != null && masterListsMap.containsKey(MasterDataType.PAYMENT.getId()) && masterListsMap.get(MasterDataType.PAYMENT.getId()).containsKey(shipment.getPaymentTerms())) {
-            dictionary.put(PAYMENT_TERMS_DESCRITION_WITH_CAMELCASE,  StringUtility.toUpperCase(masterListsMap.get(MasterDataType.PAYMENT.getId()).get(shipment.getPaymentTerms()).getItemDescription()));
-        }
-        dictionary.put(ReportConstants.MARKS_N_NUMS_CAPS, StringUtility.toUpperCase(shipment.getMarksNum()));
-
-
-
-        var array = new String[] {"" + dictionary.get("VesselName"), shipment.getCarrierDetails().getVoyage()};
-        dictionary.put(ReportConstants.VESSEL_NAME_AND_VOYAGE, array[0] + " & " + array[1]);
-
-        masterData = null;
-        if(placeOfIssue != null && masterListsMap.containsKey(MasterDataType.COUNTRIES.getId()) && masterListsMap.get(MasterDataType.COUNTRIES.getId()).containsKey(placeOfIssue.getCountry()))  {
-            masterData = masterListsMap.get(MasterDataType.COUNTRIES.getId()).get(placeOfIssue.getCountry());
-        }
-        dictionary.put(ReportConstants.ISSUEPLACECOUNTRYNAME, masterData != null ? masterData.getItemDescription() : null);
-        List<String> consignorFreeText = null, consigneeFreeText = null, notifyPartyFreeText = null;
-        if ((Objects.equals(shipment.getTransportMode(), "SEA") || Objects.equals(shipment.getTransportMode(), "ROA") || Objects.equals(shipment.getTransportMode(), "RF") || Objects.equals(shipment.getTransportMode(), "AIR"))) {
-            List<String> consigner = null;
-            List<String> consignerWoCont = null;
-            final String email = "Email";
-            if(shipmentConsigner != null)
-            {
-                Map<String, Object> consignerAddress = shipmentConsigner.getAddressData();
-                if(consignerAddress != null)
-                {
-                    consigner = ReportHelper.getOrgAddressWithPhoneEmail(getValueFromMap(consignerAddress, COMPANY_NAME), getValueFromMap(consignerAddress, ADDRESS1),
-                            getValueFromMap(consignerAddress, ADDRESS2), ReportHelper.getCityCountry(getValueFromMap(consignerAddress, CITY), getValueFromMap(consignerAddress, COUNTRY)),
-                            getValueFromMap(consignerAddress, email), getValueFromMap(consignerAddress, CONTACT_PHONE),
-                            getValueFromMap(consignerAddress,ZIP_POST_CODE));
-
-                    consignerWoCont = ReportHelper.getOrgAddressWithoutPhoneEmail(
-                            getValueFromMap(consignerAddress, COMPANY_NAME),
-                            getValueFromMap(consignerAddress, ADDRESS1),
-                            getValueFromMap(consignerAddress, ADDRESS2),
-                            getValueFromMap(consignerAddress, CITY),
-                            getValueFromMap(consignerAddress, STATE),
-                            getValueFromMap(consignerAddress, ZIP_POST_CODE),
-                            getValueFromMap(consignerAddress, COUNTRY)
-                    );
-
-                    dictionary.put(ReportConstants.CONSIGNER_NAME, consignerAddress.get(COMPANY_NAME));
-                    dictionary.put(ReportConstants.CONSIGNER_COMPANY_NAME, consignerAddress.get(COMPANY_NAME));
-                    dictionary.put(ReportConstants.CONSIGNER_CONTACT_PERSON, consignerAddress.get(CONTACT_PERSON_ALIAS));
-                    dictionary.put(ReportConstants.CONSIGNER_ADDRESS, ReportHelper.getOrgAddress(shipmentConsigner));
-
-                    try {
-                        dictionary.put(ReportConstants.CONSIGNER_PHONE, consignerAddress.get("ContactPhone"));
-                        dictionary.put(ReportConstants.CONSIGNER_FULL_NAME, shipmentConsigner.getOrgData().get(FULL_NAME1));
-                    } catch (Exception ignored) { }
-                }
-                if(shipmentConsigner.getOrgData() != null)
-                    dictionary.put(ReportConstants.CONSIGNER_LOCAL_NAME,shipmentConsigner.getOrgData().get(LOCAL_NAME));
-                if (shipmentConsigner.getIsAddressFreeText() != null && shipmentConsigner.getIsAddressFreeText()) {
-                    var rawData = consignerAddress != null && consignerAddress.containsKey(PartiesConstants.RAW_DATA) ? StringUtility.convertToString(consignerAddress.get(PartiesConstants.RAW_DATA)) : null;
-                    consignorFreeText = ReportHelper.getAddressList(rawData);
-                    dictionary.put(ReportConstants.CONSIGNER_FREETEXT, consignorFreeText);
-                    dictionary.put(ReportConstants.CONSIGNER_ADDRESS_FREE_TEXT_IN_CAPS, consignorFreeText == null ? null : consignorFreeText.stream().map(StringUtility::toUpperCase).toList());
-                    dictionary.put(ReportConstants.CONSIGNER_NAME_FREETEXT_INCAPS, consignorFreeText == null ? null : consignorFreeText.stream().map(StringUtility::toUpperCase).toList());
-                } else {
-                    dictionary.put(ReportConstants.CONSIGNER_FREETEXT, consigner);
-                }
-            }
-            List<String> consignee = populateConsigneeData(dictionary, shipmentConsignee);
-            List<String> notify = null;
-            List<String> notifyWoCont = null;
-            if(shipmentNotify != null)
-            {
-                Map<String, Object> notifyAddress = shipmentNotify.getAddressData();
-                if(notifyAddress != null)
-                {
-                    notify = ReportHelper.getOrgAddressWithPhoneEmail(getValueFromMap(notifyAddress, COMPANY_NAME), getValueFromMap(notifyAddress, ADDRESS1),
-                            getValueFromMap(notifyAddress, ADDRESS2),
-                            ReportHelper.getCityCountry(getValueFromMap(notifyAddress, CITY), getValueFromMap(notifyAddress, COUNTRY)),
-                            getValueFromMap(notifyAddress, email), getValueFromMap(notifyAddress, CONTACT_PHONE),
-                            getValueFromMap(notifyAddress,ZIP_POST_CODE));
-
-                    notifyWoCont = ReportHelper.getOrgAddressWithoutPhoneEmail(
-                            getValueFromMap(notifyAddress, COMPANY_NAME),
-                            getValueFromMap(notifyAddress, ADDRESS1),
-                            getValueFromMap(notifyAddress, ADDRESS2),
-                            getValueFromMap(notifyAddress, CITY),
-                            getValueFromMap(notifyAddress, STATE),
-                            getValueFromMap(notifyAddress, ZIP_POST_CODE),
-                            getValueFromMap(notifyAddress, COUNTRY)
-                    );
-
-                    dictionary.put(ReportConstants.NOTIFY_PARTY_NAME,getValueFromMap(notifyAddress, COMPANY_NAME));
-                    dictionary.put(ReportConstants.NOTIFY_PARTY_CONTACT_PERSON,getValueFromMap(notifyAddress, CONTACT_PERSON_ALIAS));
-                }
-                if(shipmentNotify.getOrgData() != null)
-                    dictionary.put(ReportConstants.NOTIFY_PARTY_LOCAL_NAME,getValueFromMap(shipmentNotify.getOrgData(), LOCAL_NAME));
-                if (shipmentNotify.getIsAddressFreeText() != null && shipmentNotify.getIsAddressFreeText()) {
-                    var rawData = notifyAddress != null && notifyAddress.containsKey(PartiesConstants.RAW_DATA) ? StringUtility.convertToString(notifyAddress.get(PartiesConstants.RAW_DATA)) : null;
-                    notifyPartyFreeText = ReportHelper.getAddressList(rawData);
-                    dictionary.put(ReportConstants.NOTIFY_PARTY_FREETEXT, notifyPartyFreeText);
-                    dictionary.put(ReportConstants.NOTIFY_PARTY_FREETEXT_IN_CAPS, notifyPartyFreeText == null ? null : notifyPartyFreeText.stream().map(StringUtility::toUpperCase).toList());
-                    dictionary.put(ReportConstants.NOTIFY_PARTY_NAME_FREETEXT_INCAPS, notifyPartyFreeText == null || notifyPartyFreeText.isEmpty() ? null : StringUtility.toUpperCase(notifyPartyFreeText.get(0)));
-                } else {
-                    dictionary.put(ReportConstants.NOTIFY_PARTY_FREETEXT, notify);
-                }
-
-            }
-            List<String> client = null;
-            List<String> clientWoCont = null;
-            if(shipmentClient != null)
-            {
-                Map<String, Object> clientAddress = shipmentClient.getAddressData();
-                if(clientAddress != null) {
-                    client = ReportHelper.getOrgAddressWithPhoneEmail(getValueFromMap(clientAddress, COMPANY_NAME), getValueFromMap(clientAddress, ADDRESS1),
-                            getValueFromMap(clientAddress, ADDRESS2),
-                            ReportHelper.getCityCountry(getValueFromMap(clientAddress, CITY), getValueFromMap(clientAddress, COUNTRY)),
-                            getValueFromMap(clientAddress, email), getValueFromMap(clientAddress, CONTACT_PHONE),
-                            getValueFromMap(clientAddress, ZIP_POST_CODE));
-
-                    clientWoCont = ReportHelper.getOrgAddressWithoutPhoneEmail(getValueFromMap(clientAddress, COMPANY_NAME), getValueFromMap(clientAddress, ADDRESS1),
-                            getValueFromMap(clientAddress, ADDRESS2),
-                            getValueFromMap(clientAddress, CITY), getValueFromMap(clientAddress, STATE), getValueFromMap(clientAddress, ZIP_POST_CODE),
-                            getValueFromMap(clientAddress, COUNTRY));
-
-                    dictionary.put(ReportConstants.CLIENT_NAME, getValueFromMap(clientAddress, COMPANY_NAME));
-                    dictionary.put(ReportConstants.CLIENT_ADDRESS_1, getValueFromMap(clientAddress, ADDRESS1));
-                    dictionary.put(CLIENT_ADDRESS_COUNTRY, getValueFromMap(clientAddress, COUNTRY));
-                    dictionary.put(CLIENT_ADDRESS_CITY, getValueFromMap(clientAddress, CITY));
-                    dictionary.put(ReportConstants.CLIENT_ADDRESS_PHONE, getValueFromMap(clientAddress, CONTACT_PHONE));
-                    dictionary.put(ReportConstants.CLIENT_ADDRESS_MOBILE, getValueFromMap(clientAddress, "Mobile"));
-                    dictionary.put(ReportConstants.CLIENT_ADDRESS_CONTACT_PERSON, getValueFromMap(clientAddress, CONTACT_PERSON_ALIAS));
-                }
-            }
-
-            dictionary.put(ReportConstants.CONSIGNER,consigner);
-            dictionary.put(ReportConstants.CONSIGNEE,consignee);
-            dictionary.put(ReportConstants.NOTIFY_PARTY, notify);
-            dictionary.put(ReportConstants.CLIENT, client);
-            dictionary.put(CONSIGNER_ADD_WITHOUT_CONTACT,consignerWoCont);
-            dictionary.put(NOTIFY_PARTY_ADD_WITHOUT_CONTACT, notifyWoCont);
-            dictionary.put(CLIENT_ADD_WITHOUT_CONTACT, clientWoCont);
-            populateShipmentCargoManifestParty(shipment, dictionary);
-
-            addNotifyAddressTag(shipment.getShipmentAddresses(), dictionary, SHIPMENT_NOTIFY_PARTY);
-
-            PartiesModel originAgent = additionalDetails.getExportBroker();
-            if(originAgent != null) {
-                Map<String, Object> addressData = originAgent.getAddressData();
-                if(addressData != null) {
-                    List<String> partyAddress = ReportHelper.getOrgAddressWithPhoneEmail(StringUtility.convertToString(addressData.get(COMPANY_NAME)), StringUtility.convertToString(addressData.get(ADDRESS1)),
-                            StringUtility.convertToString(addressData.get(ADDRESS2)),
-                            ReportHelper.getCityCountry(StringUtility.convertToString(addressData.get(CITY)), StringUtility.convertToString(addressData.get(COUNTRY))),
-                            null, StringUtility.convertToString(addressData.get(CONTACT_PHONE)),
-                            StringUtility.convertToString(addressData.get(ZIP_POST_CODE))
-                    );
-                    dictionary.put(SHIPMENT_ORIGIN_AGENT, partyAddress);
-                }
-            }
-
-            PartiesModel destinationAgent = additionalDetails.getImportBroker();
-            if(destinationAgent != null) {
-                Map<String, Object> addressData = destinationAgent.getAddressData();
-                if(addressData != null) {
-                    List<String> partyAddress = ReportHelper.getOrgAddressWithPhoneEmail(StringUtility.convertToString(addressData.get(COMPANY_NAME)), StringUtility.convertToString(addressData.get(ADDRESS1)),
-                            StringUtility.convertToString(addressData.get(ADDRESS2)),
-                            ReportHelper.getCityCountry(StringUtility.convertToString(addressData.get(CITY)), StringUtility.convertToString(addressData.get(COUNTRY))),
-                            null, StringUtility.convertToString(addressData.get(CONTACT_PHONE)),
-                            StringUtility.convertToString(addressData.get(ZIP_POST_CODE))
-                    );
-                    dictionary.put(SHIPMENT_DESTINATION_AGENT, partyAddress);
-                }
-            }
-
-
-
-            if(shipment.getPickupDetails() != null && shipment.getPickupDetails().getSourceDetail() != null)
-            {
-                Map<String, Object> pickupAddress = shipment.getPickupDetails().getSourceDetail().getAddressData();
-                List<String> pickupAddressList;
-                if(pickupAddress != null)
-                {
-                    pickupAddressList = ReportHelper.getOrgAddressWithPhoneEmail(getValueFromMap(pickupAddress, COMPANY_NAME), getValueFromMap(pickupAddress, ADDRESS1),
-                            getValueFromMap(pickupAddress, ADDRESS2),
-                            ReportHelper.getCityCountry(getValueFromMap(pickupAddress, CITY), getValueFromMap(pickupAddress, COUNTRY)),
-                            getValueFromMap(pickupAddress, email), getValueFromMap(pickupAddress, CONTACT_PHONE),
-                            getValueFromMap(pickupAddress,ZIP_POST_CODE)
-                    );
-                    String pickupName = getValueFromMap(pickupAddress, COMPANY_NAME);
-                    dictionary.put(ReportConstants.PICKUP_FROM,pickupName);
-                    dictionary.put(ReportConstants.PICKUP_FROM_IN_CAPS, pickupName != null ? pickupName.toUpperCase() : "");
-                    dictionary.put(ReportConstants.PICKUP_FROM_ADDRESS,pickupAddressList);
-                    dictionary.put(ReportConstants.PICKUP_FROM_ADDRESS_IN_CAPS, pickupAddressList.stream().map(String::toUpperCase).toList());
-
-                }
-            }
-            if(shipment.getPickupDetails() != null) {
-                if (shipment.getPickupDetails().getActualPickupOrDelivery() != null) {
-                    dictionary.put(ReportConstants.PICKUP_TIME, convertToDPWDateFormatWithTime(shipment.getPickupDetails().getActualPickupOrDelivery(), tsDateTimeFormat, true));
-                    dictionary.put(ReportConstants.PICKUPTIME_TYPE,  "Actual Pickup");
-                } else {
-                    if (shipment.getPickupDetails().getEstimatedPickupOrDelivery() != null) {
-                        dictionary.put(ReportConstants.PICKUP_TIME, convertToDPWDateFormatWithTime(shipment.getPickupDetails().getEstimatedPickupOrDelivery(), tsDateTimeFormat, true));
-                    } else {
-                        dictionary.put(ReportConstants.PICKUP_TIME, "");
-                    }
-                    dictionary.put(ReportConstants.PICKUPTIME_TYPE, "Estimated Pickup");
-                }
-
-                if(shipment.getPickupDetails().getDestinationDetail() != null) {
-                    List<String> cyNameAddress = new ArrayList<>();
-                    if(!Boolean.TRUE.equals(shipmentSettingsDetails.getDisableBlPartiesName()))
-                        cyNameAddress.add(getValueFromMap(shipment.getPickupDetails().getDestinationDetail().getOrgData(), FULL_NAME));
-                    cyNameAddress.addAll(getOrgAddress(shipment.getPickupDetails().getDestinationDetail()));
-                    dictionary.put(CY_NAME_ADDRESS, String.join("\r\n", cyNameAddress));
-                }
-
-            }
-            if(shipment.getReferenceNumbersList() != null)
-            {
-                List<String> referenceNumberList = shipment.getReferenceNumbersList().stream()
-                        .filter(i -> i.getType().equals(DLV)).map(ReferenceNumbersModel::getReferenceNumber).toList();
-                if(!referenceNumberList.isEmpty()){
-                    dictionary.put(DO_MESSAGE, String.join(",", referenceNumberList));
-                }
-                referenceNumberList = shipment.getReferenceNumbersList().stream()
-                        .filter(i -> i.getType().equals(RAILAGE_PLAYER)).map(ReferenceNumbersModel::getReferenceNumber).toList();
-                if(!referenceNumberList.isEmpty()){
-                    dictionary.put(RAILAGE_PLAYER, String.join(",", referenceNumberList));
-                }
-                referenceNumberList = shipment.getReferenceNumbersList().stream()
-                        .filter(i -> i.getType().equals(ADDITIONAL_COST_AT)).map(ReferenceNumbersModel::getReferenceNumber).toList();
-                if(!referenceNumberList.isEmpty()){
-                    dictionary.put(ADDITIONAL_COST_AT, String.join(",", referenceNumberList));
-                }
-            }
-        }
+    private void processReferenceNumbersList(ShipmentModel shipment, Map<String, Object> dictionary) {
         if(shipment.getReferenceNumbersList() != null) {
             List<String> referenceNumberList = shipment.getReferenceNumbersList().stream()
                     .filter(i -> i.getType().equals(ERN)).map(ReferenceNumbersModel::getReferenceNumber).toList();
@@ -906,69 +584,553 @@ public abstract class IReport {
                 dictionary.put(FORWARDER_REFERENCE_NUMBER_IN_CAPS, String.join(",", referenceNumberListInCaps));
             }
         }
-        if(!Strings.isNullOrEmpty(shipment.getCarrierDetails().getShippingLine())){
-            CarrierMasterData carrierData = getCarrier(shipment.getCarrierDetails().getShippingLine());
-            if(!Objects.isNull(carrierData)) {
-                dictionary.put(CARRIER_NAME, carrierData.getItemDescription());
-                String iataCode = carrierData.getIataCode();
-                dictionary.put(ReportConstants.FLIGHT_IATA_CODE, iataCode);
-                dictionary.put(ReportConstants.IATA_CODE, StringUtility.isEmpty(iataCode) ? shipment.getCarrierDetails().getFlightNumber() : iataCode + (StringUtility.isEmpty(shipment.getCarrierDetails().getFlightNumber()) ? "" :(" " + shipment.getCarrierDetails().getFlightNumber())));
-                dictionary.put(ReportConstants.SHIPMENT_FLIGHT_NUMBER_WITH_IATACODE, StringUtility.isEmpty(iataCode) ? shipment.getCarrierDetails().getFlightNumber() : iataCode + (StringUtility.isEmpty(shipment.getCarrierDetails().getFlightNumber()) ? "" :(" " + shipment.getCarrierDetails().getFlightNumber())));
+    }
+
+    private void processTransportModeTags(ShipmentModel shipment, Map<String, Object> dictionary, PartiesModel shipmentConsigner, PartiesModel shipmentConsignee, PartiesModel shipmentNotify, PartiesModel shipmentClient, AdditionalDetailModel additionalDetails, String tsDateTimeFormat, ShipmentSettingsDetails shipmentSettingsDetails) {
+        List<String> consignorFreeText = null, consigneeFreeText = null, notifyPartyFreeText = null;
+        if ((Objects.equals(shipment.getTransportMode(), "SEA") || Objects.equals(shipment.getTransportMode(), "ROA") || Objects.equals(shipment.getTransportMode(), "RF") || Objects.equals(shipment.getTransportMode(), "AIR"))) {
+            final String email = "Email";
+            populateConsignerData(dictionary, shipmentConsigner, email);
+
+            List<String> consignee = populateConsigneeData(dictionary, shipmentConsignee);
+            dictionary.put(ReportConstants.CONSIGNEE,consignee);
+            populateNotifyPartyData(dictionary, shipmentNotify, email);
+
+            populateClientData(dictionary, shipmentClient, email);
+
+            populateShipmentCargoManifestParty(shipment, dictionary);
+
+            addNotifyAddressTag(shipment.getShipmentAddresses(), dictionary, SHIPMENT_NOTIFY_PARTY);
+
+            processOriginAndDestinationAgentTags(dictionary, additionalDetails);
+
+            processPickupDetailsTags(shipment, dictionary, tsDateTimeFormat, shipmentSettingsDetails, email);
+            if(shipment.getReferenceNumbersList() != null)
+            {
+                List<String> referenceNumberList = shipment.getReferenceNumbersList().stream()
+                        .filter(i -> i.getType().equals(DLV)).map(ReferenceNumbersModel::getReferenceNumber).toList();
+                if(!referenceNumberList.isEmpty()){
+                    dictionary.put(DO_MESSAGE, String.join(",", referenceNumberList));
+                }
+                referenceNumberList = shipment.getReferenceNumbersList().stream()
+                        .filter(i -> i.getType().equals(RAILAGE_PLAYER)).map(ReferenceNumbersModel::getReferenceNumber).toList();
+                if(!referenceNumberList.isEmpty()){
+                    dictionary.put(RAILAGE_PLAYER, String.join(",", referenceNumberList));
+                }
+                referenceNumberList = shipment.getReferenceNumbersList().stream()
+                        .filter(i -> i.getType().equals(ADDITIONAL_COST_AT)).map(ReferenceNumbersModel::getReferenceNumber).toList();
+                if(!referenceNumberList.isEmpty()){
+                    dictionary.put(ADDITIONAL_COST_AT, String.join(",", referenceNumberList));
+                }
             }
         }
-        if(!Objects.isNull(pickup) && !Objects.isNull(pickup.getTransporterDetail())){
-            dictionary.put(PRE_CARRIAGE_PARTY, pickup.getTransporterDetail().getOrgData() != null &&
-                    pickup.getTransporterDetail().getOrgData().containsKey(FULL_NAME1) ?
-                    pickup.getTransporterDetail().getOrgData().get(FULL_NAME1) : "");
+    }
+
+    private void processOriginAndDestinationAgentTags(Map<String, Object> dictionary, AdditionalDetailModel additionalDetails) {
+        PartiesModel originAgent = additionalDetails.getExportBroker();
+        if(originAgent != null) {
+            Map<String, Object> addressData = originAgent.getAddressData();
+            if(addressData != null) {
+                List<String> partyAddress = ReportHelper.getOrgAddressWithPhoneEmail(StringUtility.convertToString(addressData.get(COMPANY_NAME)), StringUtility.convertToString(addressData.get(ADDRESS1)),
+                        StringUtility.convertToString(addressData.get(ADDRESS2)),
+                        ReportHelper.getCityCountry(StringUtility.convertToString(addressData.get(CITY)), StringUtility.convertToString(addressData.get(COUNTRY))),
+                        null, StringUtility.convertToString(addressData.get(CONTACT_PHONE)),
+                        StringUtility.convertToString(addressData.get(ZIP_POST_CODE))
+                );
+                dictionary.put(SHIPMENT_ORIGIN_AGENT, partyAddress);
+            }
         }
-        if(shipment.getNoOfPacks() != null) {
-            dictionary.put(ReportConstants.NO_OF_PACKAGES, GetDPWWeightVolumeFormat(BigDecimal.valueOf(shipment.getNoOfPacks()), 0, v1TenantSettingsResponse));
-            dictionary.put(ReportConstants.NO_OF_PACKAGES_IN_CAPS, StringUtility.toUpperCase(GetDPWWeightVolumeFormat(BigDecimal.valueOf(shipment.getNoOfPacks()), 0, v1TenantSettingsResponse)));
+
+        PartiesModel destinationAgent = additionalDetails.getImportBroker();
+        if(destinationAgent != null) {
+            Map<String, Object> addressData = destinationAgent.getAddressData();
+            if(addressData != null) {
+                List<String> partyAddress = ReportHelper.getOrgAddressWithPhoneEmail(StringUtility.convertToString(addressData.get(COMPANY_NAME)), StringUtility.convertToString(addressData.get(ADDRESS1)),
+                        StringUtility.convertToString(addressData.get(ADDRESS2)),
+                        ReportHelper.getCityCountry(StringUtility.convertToString(addressData.get(CITY)), StringUtility.convertToString(addressData.get(COUNTRY))),
+                        null, StringUtility.convertToString(addressData.get(CONTACT_PHONE)),
+                        StringUtility.convertToString(addressData.get(ZIP_POST_CODE))
+                );
+                dictionary.put(SHIPMENT_DESTINATION_AGENT, partyAddress);
+            }
         }
-        if (!Objects.isNull(shipment.getAdditionalDetails().getWarehouseId()) &&
-                wareHouseResponseMap.containsKey(StringUtility.convertToString(shipment.getAdditionalDetails().getWarehouseId()))) {
-            dictionary.put(WAREHOUSE_NAME, wareHouseResponseMap.get(StringUtility.convertToString(shipment.getAdditionalDetails().getWarehouseId())).getWarehouseDepotName());
-            dictionary.put(WAREHOUSE_CODE, wareHouseResponseMap.get(StringUtility.convertToString(shipment.getAdditionalDetails().getWarehouseId())).getWarehouseDepotCode());
-        }
-        if (!Objects.isNull(shipment.getAdditionalDetails().getBondedWarehouseId()) &&
-                wareHouseResponseMap.containsKey(StringUtility.convertToString(shipment.getAdditionalDetails().getBondedWarehouseId()))) {
-            dictionary.put(BOUNDED_WAREHOUSE_NAME, wareHouseResponseMap.get(StringUtility.convertToString(shipment.getAdditionalDetails().getBondedWarehouseId())).getWarehouseDepotName());
-            dictionary.put(BOUNDED_WAREHOUSE_CODE, wareHouseResponseMap.get(StringUtility.convertToString(shipment.getAdditionalDetails().getBondedWarehouseId())).getWarehouseDepotCode());
-        }
-        if(shipment.getPickupDetails() != null)
-            dictionary.put(PICKUP_SHIPPERS_REF, shipment.getPickupDetails().getShipperRef());
-        PartiesModel deliveryTransport = null;
-        if(shipment.getDeliveryDetails() != null)
-            deliveryTransport = shipment.getDeliveryDetails().getTransporterDetail();
-        if (deliveryTransport != null && deliveryTransport.getAddressData() != null)
+    }
+
+    private void processPickupDetailsTags(ShipmentModel shipment, Map<String, Object> dictionary, String tsDateTimeFormat, ShipmentSettingsDetails shipmentSettingsDetails, String email) {
+        if(shipment.getPickupDetails() != null && shipment.getPickupDetails().getSourceDetail() != null)
         {
-            Map<String, Object> addressMap = deliveryTransport.getAddressData();
-            populateAddress(addressMap, dictionary, DELIVERY_TRANSPORT);
-            var address = getOrgAddress(getValueFromMap(addressMap, ORG_FULL_NAME), getValueFromMap(addressMap, ADDRESS1), getValueFromMap(addressMap, ADDRESS2),
-                    getCityCountry(getValueFromMap(addressMap, CITY), getValueFromMap(addressMap, COUNTRY)),
-                    getValueFromMap(addressMap, EMAIL), getValueFromMap(addressMap, CONTACT_PHONE));
-            dictionary.put(ReportConstants.DELIVERY_TRANSPORT, address);
+            Map<String, Object> pickupAddress = shipment.getPickupDetails().getSourceDetail().getAddressData();
+            List<String> pickupAddressList;
+            if(pickupAddress != null)
+            {
+                pickupAddressList = ReportHelper.getOrgAddressWithPhoneEmail(getValueFromMap(pickupAddress, COMPANY_NAME), getValueFromMap(pickupAddress, ADDRESS1),
+                        getValueFromMap(pickupAddress, ADDRESS2),
+                        ReportHelper.getCityCountry(getValueFromMap(pickupAddress, CITY), getValueFromMap(pickupAddress, COUNTRY)),
+                        getValueFromMap(pickupAddress, email), getValueFromMap(pickupAddress, CONTACT_PHONE),
+                        getValueFromMap(pickupAddress,ZIP_POST_CODE)
+                );
+                String pickupName = getValueFromMap(pickupAddress, COMPANY_NAME);
+                dictionary.put(ReportConstants.PICKUP_FROM,pickupName);
+                dictionary.put(ReportConstants.PICKUP_FROM_IN_CAPS, pickupName != null ? pickupName.toUpperCase() : "");
+                dictionary.put(ReportConstants.PICKUP_FROM_ADDRESS,pickupAddressList);
+                dictionary.put(ReportConstants.PICKUP_FROM_ADDRESS_IN_CAPS, pickupAddressList.stream().map(String::toUpperCase).toList());
+
+            }
         }
-        SetContainerCount(shipment, dictionary);
-        populateUserFields(UserContext.getUser(), dictionary);
-        populateHasContainerFields(shipment, dictionary, v1TenantSettingsResponse);
+        if(shipment.getPickupDetails() != null) {
+            processTagsWithActualEstimatedPickupOrDelivery(shipment, dictionary, tsDateTimeFormat);
+
+            if(shipment.getPickupDetails().getDestinationDetail() != null) {
+                List<String> cyNameAddress = new ArrayList<>();
+                if(!Boolean.TRUE.equals(shipmentSettingsDetails.getDisableBlPartiesName()))
+                    cyNameAddress.add(getValueFromMap(shipment.getPickupDetails().getDestinationDetail().getOrgData(), FULL_NAME));
+                cyNameAddress.addAll(getOrgAddress(shipment.getPickupDetails().getDestinationDetail()));
+                dictionary.put(CY_NAME_ADDRESS, String.join("\r\n", cyNameAddress));
+            }
+
+        }
+    }
+
+    private void processTagsWithActualEstimatedPickupOrDelivery(ShipmentModel shipment, Map<String, Object> dictionary, String tsDateTimeFormat) {
+        if (shipment.getPickupDetails().getActualPickupOrDelivery() != null) {
+            dictionary.put(ReportConstants.PICKUP_TIME, convertToDPWDateFormatWithTime(shipment.getPickupDetails().getActualPickupOrDelivery(), tsDateTimeFormat, true));
+            dictionary.put(ReportConstants.PICKUPTIME_TYPE,  "Actual Pickup");
+        } else {
+            if (shipment.getPickupDetails().getEstimatedPickupOrDelivery() != null) {
+                dictionary.put(ReportConstants.PICKUP_TIME, convertToDPWDateFormatWithTime(shipment.getPickupDetails().getEstimatedPickupOrDelivery(), tsDateTimeFormat, true));
+            } else {
+                dictionary.put(ReportConstants.PICKUP_TIME, "");
+            }
+            dictionary.put(ReportConstants.PICKUPTIME_TYPE, "Estimated Pickup");
+        }
+    }
+
+    private void populateConsignerData(Map<String, Object> dictionary, PartiesModel shipmentConsigner, String email) {
+        List<String> consigner = null;
+        List<String> consignerWoCont = null;
+        if(shipmentConsigner != null)
+        {
+            Map<String, Object> consignerAddress = shipmentConsigner.getAddressData();
+            if(consignerAddress != null)
+            {
+                consigner = ReportHelper.getOrgAddressWithPhoneEmail(getValueFromMap(consignerAddress, COMPANY_NAME), getValueFromMap(consignerAddress, ADDRESS1),
+                        getValueFromMap(consignerAddress, ADDRESS2), ReportHelper.getCityCountry(getValueFromMap(consignerAddress, CITY), getValueFromMap(consignerAddress, COUNTRY)),
+                        getValueFromMap(consignerAddress, email), getValueFromMap(consignerAddress, CONTACT_PHONE),
+                        getValueFromMap(consignerAddress,ZIP_POST_CODE));
+
+                consignerWoCont = ReportHelper.getOrgAddressWithoutPhoneEmail(
+                        getValueFromMap(consignerAddress, COMPANY_NAME),
+                        getValueFromMap(consignerAddress, ADDRESS1),
+                        getValueFromMap(consignerAddress, ADDRESS2),
+                        getValueFromMap(consignerAddress, CITY),
+                        getValueFromMap(consignerAddress, STATE),
+                        getValueFromMap(consignerAddress, ZIP_POST_CODE),
+                        getValueFromMap(consignerAddress, COUNTRY)
+                );
+
+                dictionary.put(ReportConstants.CONSIGNER_NAME, consignerAddress.get(COMPANY_NAME));
+                dictionary.put(ReportConstants.CONSIGNER_COMPANY_NAME, consignerAddress.get(COMPANY_NAME));
+                dictionary.put(ReportConstants.CONSIGNER_CONTACT_PERSON, consignerAddress.get(CONTACT_PERSON_ALIAS));
+                dictionary.put(ReportConstants.CONSIGNER_ADDRESS, ReportHelper.getOrgAddress(shipmentConsigner));
+
+                try {
+                    dictionary.put(ReportConstants.CONSIGNER_PHONE, consignerAddress.get("ContactPhone"));
+                    dictionary.put(ReportConstants.CONSIGNER_FULL_NAME, shipmentConsigner.getOrgData().get(FULL_NAME1));
+                } catch (Exception ignored) { }
+            }
+            if(shipmentConsigner.getOrgData() != null)
+                dictionary.put(ReportConstants.CONSIGNER_LOCAL_NAME, shipmentConsigner.getOrgData().get(LOCAL_NAME));
+            processConsignorAddressFreeText(dictionary, shipmentConsigner, consignerAddress, consigner);
+        }
+        dictionary.put(ReportConstants.CONSIGNER,consigner);
+        dictionary.put(CONSIGNER_ADD_WITHOUT_CONTACT,consignerWoCont);
+    }
+
+    private void processConsignorAddressFreeText(Map<String, Object> dictionary, PartiesModel shipmentConsigner, Map<String, Object> consignerAddress, List<String> consigner) {
+        List<String> consignorFreeText;
+        if (shipmentConsigner.getIsAddressFreeText() != null && shipmentConsigner.getIsAddressFreeText()) {
+            var rawData = consignerAddress != null && consignerAddress.containsKey(PartiesConstants.RAW_DATA) ? StringUtility.convertToString(consignerAddress.get(PartiesConstants.RAW_DATA)) : null;
+            consignorFreeText = ReportHelper.getAddressList(rawData);
+            dictionary.put(ReportConstants.CONSIGNER_FREETEXT, consignorFreeText);
+            dictionary.put(ReportConstants.CONSIGNER_ADDRESS_FREE_TEXT_IN_CAPS, consignorFreeText == null ? null : consignorFreeText.stream().map(StringUtility::toUpperCase).toList());
+            dictionary.put(ReportConstants.CONSIGNER_NAME_FREETEXT_INCAPS, consignorFreeText == null ? null : consignorFreeText.stream().map(StringUtility::toUpperCase).toList());
+        } else {
+            dictionary.put(ReportConstants.CONSIGNER_FREETEXT, consigner);
+        }
+    }
+
+    private void populateNotifyPartyData(Map<String, Object> dictionary, PartiesModel shipmentNotify, String email) {
+        List<String> notifyPartyFreeText;
+        List<String> notify = null;
+        List<String> notifyWoCont = null;
+        if(shipmentNotify != null)
+        {
+            Map<String, Object> notifyAddress = shipmentNotify.getAddressData();
+            if(notifyAddress != null)
+            {
+                notify = ReportHelper.getOrgAddressWithPhoneEmail(getValueFromMap(notifyAddress, COMPANY_NAME), getValueFromMap(notifyAddress, ADDRESS1),
+                        getValueFromMap(notifyAddress, ADDRESS2),
+                        ReportHelper.getCityCountry(getValueFromMap(notifyAddress, CITY), getValueFromMap(notifyAddress, COUNTRY)),
+                        getValueFromMap(notifyAddress, email), getValueFromMap(notifyAddress, CONTACT_PHONE),
+                        getValueFromMap(notifyAddress,ZIP_POST_CODE));
+
+                notifyWoCont = ReportHelper.getOrgAddressWithoutPhoneEmail(
+                        getValueFromMap(notifyAddress, COMPANY_NAME),
+                        getValueFromMap(notifyAddress, ADDRESS1),
+                        getValueFromMap(notifyAddress, ADDRESS2),
+                        getValueFromMap(notifyAddress, CITY),
+                        getValueFromMap(notifyAddress, STATE),
+                        getValueFromMap(notifyAddress, ZIP_POST_CODE),
+                        getValueFromMap(notifyAddress, COUNTRY)
+                );
+
+                dictionary.put(ReportConstants.NOTIFY_PARTY_NAME,getValueFromMap(notifyAddress, COMPANY_NAME));
+                dictionary.put(ReportConstants.NOTIFY_PARTY_CONTACT_PERSON,getValueFromMap(notifyAddress, CONTACT_PERSON_ALIAS));
+            }
+            if(shipmentNotify.getOrgData() != null)
+                dictionary.put(ReportConstants.NOTIFY_PARTY_LOCAL_NAME,getValueFromMap(shipmentNotify.getOrgData(), LOCAL_NAME));
+            processNotifyPartyAddressFreeText(dictionary, shipmentNotify, notifyAddress, notify);
+
+        }
+        dictionary.put(ReportConstants.NOTIFY_PARTY, notify);
+        dictionary.put(NOTIFY_PARTY_ADD_WITHOUT_CONTACT, notifyWoCont);
+    }
+
+    private void processNotifyPartyAddressFreeText(Map<String, Object> dictionary, PartiesModel shipmentNotify, Map<String, Object> notifyAddress, List<String> notify) {
+        List<String> notifyPartyFreeText;
+        if (shipmentNotify.getIsAddressFreeText() != null && shipmentNotify.getIsAddressFreeText()) {
+            var rawData = notifyAddress != null && notifyAddress.containsKey(PartiesConstants.RAW_DATA) ? StringUtility.convertToString(notifyAddress.get(PartiesConstants.RAW_DATA)) : null;
+            notifyPartyFreeText = ReportHelper.getAddressList(rawData);
+            dictionary.put(ReportConstants.NOTIFY_PARTY_FREETEXT, notifyPartyFreeText);
+            dictionary.put(ReportConstants.NOTIFY_PARTY_FREETEXT_IN_CAPS, notifyPartyFreeText == null ? null : notifyPartyFreeText.stream().map(StringUtility::toUpperCase).toList());
+            dictionary.put(ReportConstants.NOTIFY_PARTY_NAME_FREETEXT_INCAPS, notifyPartyFreeText == null || notifyPartyFreeText.isEmpty() ? null : StringUtility.toUpperCase(notifyPartyFreeText.get(0)));
+        } else {
+            dictionary.put(ReportConstants.NOTIFY_PARTY_FREETEXT, notify);
+        }
+    }
+
+    private void populateClientData(Map<String, Object> dictionary, PartiesModel shipmentClient, String email) {
+        List<String> client = null;
+        List<String> clientWoCont = null;
+        if(shipmentClient != null)
+        {
+            Map<String, Object> clientAddress = shipmentClient.getAddressData();
+            if(clientAddress != null) {
+                client = ReportHelper.getOrgAddressWithPhoneEmail(getValueFromMap(clientAddress, COMPANY_NAME), getValueFromMap(clientAddress, ADDRESS1),
+                        getValueFromMap(clientAddress, ADDRESS2),
+                        ReportHelper.getCityCountry(getValueFromMap(clientAddress, CITY), getValueFromMap(clientAddress, COUNTRY)),
+                        getValueFromMap(clientAddress, email), getValueFromMap(clientAddress, CONTACT_PHONE),
+                        getValueFromMap(clientAddress, ZIP_POST_CODE));
+
+                clientWoCont = ReportHelper.getOrgAddressWithoutPhoneEmail(getValueFromMap(clientAddress, COMPANY_NAME), getValueFromMap(clientAddress, ADDRESS1),
+                        getValueFromMap(clientAddress, ADDRESS2),
+                        getValueFromMap(clientAddress, CITY), getValueFromMap(clientAddress, STATE), getValueFromMap(clientAddress, ZIP_POST_CODE),
+                        getValueFromMap(clientAddress, COUNTRY));
+
+                dictionary.put(ReportConstants.CLIENT_NAME, getValueFromMap(clientAddress, COMPANY_NAME));
+                dictionary.put(ReportConstants.CLIENT_ADDRESS_1, getValueFromMap(clientAddress, ADDRESS1));
+                dictionary.put(CLIENT_ADDRESS_COUNTRY, getValueFromMap(clientAddress, COUNTRY));
+                dictionary.put(CLIENT_ADDRESS_CITY, getValueFromMap(clientAddress, CITY));
+                dictionary.put(ReportConstants.CLIENT_ADDRESS_PHONE, getValueFromMap(clientAddress, CONTACT_PHONE));
+                dictionary.put(ReportConstants.CLIENT_ADDRESS_MOBILE, getValueFromMap(clientAddress, "Mobile"));
+                dictionary.put(ReportConstants.CLIENT_ADDRESS_CONTACT_PERSON, getValueFromMap(clientAddress, CONTACT_PERSON_ALIAS));
+            }
+        }
+        dictionary.put(ReportConstants.CLIENT, client);
+        dictionary.put(CLIENT_ADD_WITHOUT_CONTACT, clientWoCont);
+    }
+
+    private void addOtherTagsAndProcessMasterData(ShipmentModel shipment, Map<String, Object> dictionary, Map<Integer, Map<String, MasterData>> masterListsMap, V1TenantSettingsResponse v1TenantSettingsResponse, PickupDeliveryDetailsModel delivery, PickupDeliveryDetailsModel pickup, AdditionalDetailModel additionalDetails, UnlocationsResponse placeOfIssue, UnlocationsResponse paidPlace, UnlocationsResponse destination, String tsDateTimeFormat, UnlocationsResponse pol, UnlocationsResponse pod) {
+        MasterData masterData = getMasterData(shipment, dictionary, masterListsMap);
+        dictionary.put(ReportConstants.SHIPMENT_TYPE_DESCRIPTION, masterData != null ? masterData.getItemDescription() : shipment.getDirection());
+        dictionary.put(ReportConstants.SHIPMENT_NUMBER, shipment.getShipmentId());
+        dictionary.put(ReportConstants.FLIGHT_NUMBER, shipment.getCarrierDetails().getFlightNumber());
+        dictionary.put(ReportConstants.ADDITIONAL_TERMS, shipment.getAdditionalTerms());
+
+        masterData = getMasterDataForPackUnitAndAddTags(shipment, dictionary, masterListsMap, v1TenantSettingsResponse, masterData);
+
+        if(shipment.getInnerPacks() != null)
+            dictionary.put(ReportConstants.INNERS, GetDPWWeightVolumeFormat(BigDecimal.valueOf(shipment.getInnerPacks()), 0, v1TenantSettingsResponse));
+
+        dictionary.put(ReportConstants.PAYMENT_TERMS , shipment.getPaymentTerms() == null ?"" : shipment.getPaymentTerms());
+
+        if (masterListsMap.containsKey(MasterDataType.PAYMENT.getId()) && masterListsMap.get(MasterDataType.PAYMENT.getId()).containsKey(shipment.getPaymentTerms()))
+            masterData = masterListsMap.get(MasterDataType.PAYMENT.getId()).get(shipment.getPaymentTerms());
+        if(masterData != null) {
+            dictionary.put(ReportConstants.PAYMENT_TERMS_DESCRIPTION, masterData.getItemDescription());
+        }
+
+        if (masterListsMap.containsKey(MasterDataType.SERVICE_MODE.getId()) && masterListsMap.get(MasterDataType.SERVICE_MODE.getId()).containsKey(shipment.getServiceType())) {
+            masterData = masterListsMap.get(MasterDataType.SERVICE_MODE.getId()).get(shipment.getServiceType());
+            dictionary.put(ReportConstants.SERVICE_MODE_DESCRIPTION, StringUtility.isNotEmpty(masterData.getItemDescription()) ? StringUtility.toUpperCase(masterData.getItemDescription()) : shipment.getServiceType());
+        }
+
+        dictionary.put(ReportConstants.GROSS_WEIGHT, ConvertToWeightNumberFormat(shipment.getWeight(), v1TenantSettingsResponse));
+        dictionary.put(ReportConstants.GROSS_WEIGHT_UNIT, shipment.getWeightUnit());
+        dictionary.put(ReportConstants.GROSS_VOLUME, ConvertToVolumeNumberFormat(shipment.getVolume(), v1TenantSettingsResponse));
+        dictionary.put(ReportConstants.GROSS_VOLUME_UNIT, shipment.getVolumeUnit());
+        dictionary.put(ReportConstants.GROSS_WEIGHT_WITH_COMMA, ConvertToWeightNumberFormat(shipment.getWeight(), v1TenantSettingsResponse));
+        dictionary.put(ReportConstants.GROSS_VOLUME_WITH_COMMA, ConvertToVolumeNumberFormat(shipment.getVolume(), v1TenantSettingsResponse));
+        dictionary.put(ReportConstants.VOLUME_WEIGHT_WITH_COMMA, addCommas(shipment.getVolumetricWeight()));
+        dictionary.put(ReportConstants.WEIGHT_UNIT_DESCRIPTION,  shipment.getNetWeightUnit());
+        dictionary.put(ReportConstants.CHARGEABLE_WEIGHT, ConvertToVolumeNumberFormat(shipment.getChargable(), v1TenantSettingsResponse));
+        dictionary.put(ReportConstants.CHARGEABLE_WEIGHT_UNIT, shipment.getChargeableUnit());
+        dictionary.put(ReportConstants.WEIGHTS, ConvertToWeightNumberFormat(shipment.getNetWeight(), v1TenantSettingsResponse));
+        addWeigthVolUnitTags(shipment, dictionary, masterListsMap, v1TenantSettingsResponse);
+
+        addTagsWithDefaultValues(dictionary, delivery, pickup, additionalDetails, placeOfIssue);
+        dictionary.put(ReportConstants.MARKS_N_NUMS, shipment.getMarksNum());
+        addPaidPlaceTags(dictionary, paidPlace);
+
+        dictionary.put(ReportConstants.HSN_NUMBER, additionalDetails.getHsnNumber());
+        dictionary.put(ReportConstants.SHIPMENT_BOOKING_NUMBER, shipment.getBookingNumber());
+
+        processDestinationTags(dictionary, masterListsMap, v1TenantSettingsResponse, destination, tsDateTimeFormat);
+
+        addAtTag(shipment, dictionary, pol, pod);
+        addPaymentTermsTag(shipment, dictionary, masterListsMap);
+        dictionary.put(ReportConstants.MARKS_N_NUMS_CAPS, StringUtility.toUpperCase(shipment.getMarksNum()));
+
+
+        var array = new String[] {"" + dictionary.get("VesselName"), shipment.getCarrierDetails().getVoyage()};
+        dictionary.put(ReportConstants.VESSEL_NAME_AND_VOYAGE, array[0] + " & " + array[1]);
+
+        masterData = null;
+        if(placeOfIssue != null && masterListsMap.containsKey(MasterDataType.COUNTRIES.getId()) && masterListsMap.get(MasterDataType.COUNTRIES.getId()).containsKey(placeOfIssue.getCountry()))  {
+            masterData = masterListsMap.get(MasterDataType.COUNTRIES.getId()).get(placeOfIssue.getCountry());
+        }
+        dictionary.put(ReportConstants.ISSUEPLACECOUNTRYNAME, masterData != null ? masterData.getItemDescription() : null);
+    }
+
+    private void addTagsWithDefaultValues(Map<String, Object> dictionary, PickupDeliveryDetailsModel delivery, PickupDeliveryDetailsModel pickup, AdditionalDetailModel additionalDetails, UnlocationsResponse placeOfIssue) {
+        dictionary.put(ReportConstants.DELIVERY_CFS, (delivery != null && !Objects.isNull(delivery.getSourceDetail()) && !Objects.isNull(delivery.getSourceDetail().getOrgData())) ? delivery.getSourceDetail().getOrgData().get(FULL_NAME) : null);
+        dictionary.put(ReportConstants.PICKUP_CFS, (pickup != null && !Objects.isNull(pickup.getDestinationDetail()) && !Objects.isNull(pickup.getDestinationDetail().getOrgData()) )? pickup.getDestinationDetail().getOrgData().get(FULL_NAME) : null);
+
+        dictionary.put(ReportConstants.ORIGINALS, additionalDetails.getOriginal() == null ? 1 : additionalDetails.getOriginal());
+        dictionary.put(ReportConstants.ORIGINAL_WORDS, numberToWords(additionalDetails.getOriginal() == null ? 1 : additionalDetails.getOriginal()));
+        dictionary.put(ReportConstants.COPY_BILLS, additionalDetails.getCopy() == null ? 0 : additionalDetails.getCopy());
+
+        dictionary.put(ReportConstants.ISSUE_PLACE_NAME, placeOfIssue !=  null ? placeOfIssue.getName() : null);
+        dictionary.put(ReportConstants.ISSUE_PLACE_COUNTRY, placeOfIssue != null ? placeOfIssue.getCountry() : null);
+    }
+
+    private void addPaymentTermsTag(ShipmentModel shipment, Map<String, Object> dictionary, Map<Integer, Map<String, MasterData>> masterListsMap) {
+        dictionary.put(PAYMENT_TERMS_DESCRITION_WITH_CAMELCASE,  shipment.getPaymentTerms());
+        if (shipment.getPaymentTerms() != null && masterListsMap.containsKey(MasterDataType.PAYMENT.getId()) && masterListsMap.get(MasterDataType.PAYMENT.getId()).containsKey(shipment.getPaymentTerms())) {
+            dictionary.put(PAYMENT_TERMS_DESCRITION_WITH_CAMELCASE,  StringUtility.toUpperCase(masterListsMap.get(MasterDataType.PAYMENT.getId()).get(shipment.getPaymentTerms()).getItemDescription()));
+        }
+    }
+
+    private void addPaidPlaceTags(Map<String, Object> dictionary, UnlocationsResponse paidPlace) {
+        dictionary.put(ReportConstants.PAID_PLACE_NAME, paidPlace != null ? paidPlace.getName() : null);
+        dictionary.put(ReportConstants.PAID_PLACE_COUNTRY, paidPlace != null ? paidPlace.getCountry() : null);
+
+        dictionary.put(ReportConstants.PAID_PLACE_NAME_IN_CAPS, paidPlace != null ? StringUtility.toUpperCase(paidPlace.getName()) : null);
+        dictionary.put(ReportConstants.PAID_PLACE_COUNTRY_IN_CAPS, paidPlace != null ? StringUtility.toUpperCase(paidPlace.getCountry()) : null);
+    }
+
+    private MasterData getMasterDataForPackUnitAndAddTags(ShipmentModel shipment, Map<String, Object> dictionary, Map<Integer, Map<String, MasterData>> masterListsMap, V1TenantSettingsResponse v1TenantSettingsResponse, MasterData masterData) {
+        dictionary.put(ReportConstants.PACKS, GetDPWWeightVolumeFormat(BigDecimal.valueOf(shipment.getNoOfPacks() != null ? shipment.getNoOfPacks() : 0), 0, v1TenantSettingsResponse));
+        dictionary.put(ReportConstants.PACKS_UNIT,Constants.MPK.equals(shipment.getPacksUnit()) ? Constants.PIECES : shipment.getPacksUnit());
+        dictionary.put(ReportConstants.PACKS_WITH_COMMA, addCommas(shipment.getNoOfPacks()));
+        if (masterListsMap.containsKey(MasterDataType.PACKS_UNIT.getId()) && masterListsMap.get(MasterDataType.PACKS_UNIT.getId()).containsKey(shipment.getPacksUnit()))
+            masterData = masterListsMap.get(MasterDataType.PACKS_UNIT.getId()).get(shipment.getPacksUnit());
+        String packsUnit = masterData != null && StringUtility.isNotEmpty(masterData.getItemDescription()) ? masterData.getItemDescription() : shipment.getPacksUnit();
+        dictionary.put(ReportConstants.PACKS_UNIT_DESC, Constants.MULTI_PACK.equals(packsUnit) ? Constants.PACKAGES : packsUnit);
+        return masterData;
+    }
+
+    private MasterData getMasterData(ShipmentModel shipment, Map<String, Object> dictionary, Map<Integer, Map<String, MasterData>> masterListsMap) {
+        MasterData masterData = null;
+        if (masterListsMap.containsKey(MasterDataType.TRANSPORT_MODE.getId()) && masterListsMap.get(MasterDataType.TRANSPORT_MODE.getId()).containsKey(shipment.getTransportMode()))
+            masterData = masterListsMap.get(MasterDataType.TRANSPORT_MODE.getId()).get(shipment.getTransportMode());
+        dictionary.put(ReportConstants.TRANSPORT_MODE_DESCRIPTION, masterData != null ? masterData.getItemDescription() : shipment.getTransportMode());
+        if (masterListsMap.containsKey(MasterDataType.CUSTOM_SHIPMENT_TYPE.getId()) && masterListsMap.get(MasterDataType.CUSTOM_SHIPMENT_TYPE.getId()).containsKey(shipment.getDirection()))
+            masterData = masterListsMap.get(MasterDataType.CUSTOM_SHIPMENT_TYPE.getId()).get(shipment.getDirection());
+        return masterData;
+    }
+
+    private void addAtTag(ShipmentModel shipment, Map<String, Object> dictionary, UnlocationsResponse pol, UnlocationsResponse pod) {
+        if (Objects.equals(shipment.getPaymentTerms(), "PPD")) {
+            dictionary.put(ReportConstants.AT, pol != null ? pol.getName() : null);
+        } else if (Objects.equals(shipment.getPaymentTerms(), "CCX")) {
+            dictionary.put(ReportConstants.AT, pod != null ? pod.getName() : null);
+        }
+    }
+
+    private void addWeigthVolUnitTags(ShipmentModel shipment, Map<String, Object> dictionary, Map<Integer, Map<String, MasterData>> masterListsMap, V1TenantSettingsResponse v1TenantSettingsResponse) {
+        MasterData masterData;
+        dictionary.put(WEIGHT, ConvertToWeightNumberFormat(shipment.getWeight(), v1TenantSettingsResponse));
+        dictionary.put(VOLUME, ConvertToVolumeNumberFormat(shipment.getVolume(), v1TenantSettingsResponse));
+        if (shipment.getVolumeUnit() != null && masterListsMap.containsKey(MasterDataType.VOLUME_UNIT.getId())) {
+            masterData =  masterListsMap.get(MasterDataType.VOLUME_UNIT.getId()).get(shipment.getVolumeUnit());
+            dictionary.put(VOLUME_UNIT_DESCRIPTION, masterData != null && masterData.getItemDescription() != null ? StringUtility.toUpperCase(masterData.getItemDescription()) : shipment.getVolumeUnit());
+        }
+        dictionary.put(NET_WEIGHT, addCommas(shipment.getNetWeight()));
+        dictionary.put(NET_WEIGHT_UNIT_DESCRIPTION, shipment.getNetWeightUnit());
+        if (shipment.getNetWeightUnit() != null && masterListsMap.containsKey(MasterDataType.WEIGHT_UNIT.getId()) && masterListsMap.get(MasterDataType.WEIGHT_UNIT.getId()).containsKey(shipment.getNetWeightUnit())) {
+            masterData = masterListsMap.get(MasterDataType.WEIGHT_UNIT.getId()).get(shipment.getNetWeightUnit());
+            dictionary.put(NET_WEIGHT_UNIT_DESCRIPTION, (masterData != null && masterData.getItemDescription() != null) ? StringUtility.toUpperCase(masterData.getItemDescription()) : shipment.getVolumeUnit());
+        }
+    }
+
+    private void processDestinationTags(Map<String, Object> dictionary, Map<Integer, Map<String, MasterData>> masterListsMap, V1TenantSettingsResponse v1TenantSettingsResponse, UnlocationsResponse destination, String tsDateTimeFormat) {
+        dictionary.put(ReportConstants.DESTINATION_NAME, destination != null ? destination.getName() : null);
+        dictionary.put(ReportConstants.DESTINATION, destination != null ? destination.getName() : null);
+        dictionary.put(ReportConstants.DESTINATION_COUNTRY, destination != null ? destination.getCountry() : null);
+
+        dictionary.put(ReportConstants.PRINT_DATE, ConvertToDPWDateFormat(LocalDateTime.now(), tsDateTimeFormat, v1TenantSettingsResponse));
+        if(destination != null) {
+            dictionary.put(ReportConstants.DESTINATION_NAME_IN_CAPS, destination.getName().toUpperCase());
+            String destinationCountry = masterListsMap.containsKey(MasterDataType.COUNTRIES.getId()) && masterListsMap.get(MasterDataType.COUNTRIES.getId()).containsKey(destination.getCountry()) ? masterListsMap.get(MasterDataType.COUNTRIES.getId()).get(destination.getCountry()).getItemDescription() : "";
+            dictionary.put(ReportConstants.DESTINATION_COUNTRY_NAME_IN_CAPS, destinationCountry.toUpperCase());
+            dictionary.put(DESTINATION_COUNTRY_NAME, destinationCountry);
+            dictionary.put(ReportConstants.FPOD_IN_CAPS, destination.getName().toUpperCase());
+            dictionary.put(ReportConstants.FPOD_COUNTRY_NAME_IN_CAPS, destinationCountry.toUpperCase());
+            dictionary.put(DESTINATION_CODE_IN_CAPS, StringUtility.toUpperCase(destination.getLocCode()));
+        }
+    }
+
+    private int getContainerCount(ShipmentModel shipment) {
+        int containerCount = 0;
+        if (!shipment.getContainersList().isEmpty()) {
+            for (ContainerModel container : shipment.getContainersList()) {
+                if (container.getContainerCount() != null && container.getContainerCount() != 0) {
+                    containerCount += container.getContainerCount().intValue();
+                }
+            }
+        }
+        return containerCount;
+    }
+
+    private void processPolPodTags(ShipmentModel shipment, Map<String, Object> dictionary, UnlocationsResponse pol, UnlocationsResponse pod, AdditionalDetailModel additionalDetails, Map<Integer, Map<String, MasterData>> masterListsMap) {
+        addPolAndPodCodeTags(shipment, dictionary, pol, pod);
+        dictionary.put(ReportConstants.POD_COUNTRY, pod != null ? pod.getCountry() : null);
+        dictionary.put(ReportConstants.POL_COUNTRY, pol != null ? pol.getCountry() : null);
+        dictionary.put(CARGO_TERMS_DESCRIPTION, StringUtility.toUpperCase(shipment.getGoodsDescription()));
+        dictionary.put(BL_DESCRIPTION, StringUtility.toUpperCase(additionalDetails.getBLRemarksDescription()));
+        dictionary.put(LOAD_DESCRIPTION_REMARKS, StringUtility.toUpperCase(additionalDetails.getBLRemarks()));
+        processPolTags(dictionary, pol, masterListsMap);
+        if(shipment.getAdditionalDetails() != null) {
+            dictionary.put(ReportConstants.COUNTRY_OF_GOODS_ORIGIN, shipment.getAdditionalDetails().getGoodsCO());
+        }
+        dictionary.put(CONTAINER_SUMMARY, shipment.getSummary());
+        dictionary.put(PACK_SUMMARY, shipment.getPackSummary());
+        dictionary.put(ReportConstants.SERVICE_MODE, shipment.getServiceType());
+        dictionary.put(ReportConstants.POL_PORTNAME, pol != null ? pol.getPortName() : null);
+        dictionary.put(ReportConstants.POL_PORT_NAME_IN_CAPS, pol != null ? StringUtility.toUpperCase(pol.getPortName()) : null);
+        dictionary.put(ReportConstants.POD_PORTNAME, pod != null ? pod.getPortName() : null);
+        dictionary.put(ReportConstants.POD_PORT_NAME_IN_CAPS, pod != null ? StringUtility.toUpperCase(pod.getPortName()) : null);
+
+        processPodTags(dictionary, pod, masterListsMap);
+
+        dictionary.put(ReportConstants.CARRIER, shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getShippingLine() : null);
+        dictionary.put(ReportConstants.PORT_OF_DISCHARGE, pod != null ? pod.getName() : null);
+        dictionary.put(ReportConstants.PORT_OF_LOADING, pol != null ? pol.getName() : null);
+    }
+
+    private void processPolTags(Map<String, Object> dictionary, UnlocationsResponse pol, Map<Integer, Map<String, MasterData>> masterListsMap) {
+        if(pol != null) {
+            if(pol.getPortName() != null) {
+                dictionary.put(ReportConstants.POL_PORT_NAME_WITH_COUNTRY_IN_CAPS, (pol.getPortName().toUpperCase() + ", " + (masterListsMap.containsKey(MasterDataType.COUNTRIES.getId()) && masterListsMap.get(MasterDataType.COUNTRIES.getId()).containsKey(pol.getCountry()) ? masterListsMap.get(MasterDataType.COUNTRIES.getId()).get(pol.getCountry()).getItemDescription().toUpperCase() : "")));
+                dictionary.put(ReportConstants.POL_IN_CAPS, pol.getPortName().toUpperCase());
+                dictionary.put(ORIGIN_PORT, dictionary.get(POL_IN_CAPS));
+            }
+            else
+                dictionary.put(ORIGIN_PORT, pol.getName());
+            dictionary.put(POL_COUNTRY_NAME, pol.getCountryName());
+            dictionary.put(POL_COUNTRY_NAME_IN_CAPS , (masterListsMap.containsKey(MasterDataType.COUNTRIES.getId()) && masterListsMap.get(MasterDataType.COUNTRIES.getId()).containsKey(pol.getCountry()) ? masterListsMap.get(MasterDataType.COUNTRIES.getId()).get(pol.getCountry()).getItemDescription().toUpperCase() : ""));
+            dictionary.put(ReportConstants.POL_AIRPORT_CODE, pol.getIataCode());
+            if(pol.getIataCode() != null) {
+                dictionary.put(ReportConstants.POL_AIRPORT_CODE_IN_CAPS, pol.getIataCode().toUpperCase());
+            }
+            dictionary.put(POL_CODE_IN_CAPS, StringUtility.toUpperCase(pol.getLocCode()));
+        }
+    }
+
+    private void processPodTags(Map<String, Object> dictionary, UnlocationsResponse pod, Map<Integer, Map<String, MasterData>> masterListsMap) {
+        if (pod != null) {
+            String podCountry = masterListsMap.containsKey(MasterDataType.COUNTRIES.getId()) && masterListsMap.get(MasterDataType.COUNTRIES.getId()).containsKey(pod.getCountry()) ? masterListsMap.get(MasterDataType.COUNTRIES.getId()).get(pod.getCountry()).getItemDescription() : "";
+            dictionary.put(ReportConstants.DESTINATION_AIRPORT_COUNTRY, podCountry.toUpperCase());
+            if (pod.getPortName() != null) {
+                dictionary.put(ReportConstants.POD_PORT_NAME_WITH_COUNTRY_IN_CAPS, pod.getPortName().toUpperCase() + ", " + podCountry.toUpperCase());
+                dictionary.put(ReportConstants.POD_IN_CAPS, pod.getPortName().toUpperCase());
+                dictionary.put(DESTINATION_PORT, dictionary.get(POD_IN_CAPS));
+            }
+            else
+                dictionary.put(DESTINATION_PORT, pod.getName());
+            dictionary.put(POD_COUNTRY_NAME, pod.getCountryName());
+            dictionary.put(ReportConstants.POD_COUNTRY_NAME_IN_CAPS, podCountry.toUpperCase());
+            dictionary.put(ReportConstants.POD_AIRPORT_CODE, pod.getIataCode());
+            if (pod.getIataCode() != null) {
+                dictionary.put(ReportConstants.POD_AIRPORT_CODE_IN_CAPS, pod.getIataCode().toUpperCase());
+            }
+            if (pod.getPortName() != null)
+                dictionary.put(ReportConstants.POD_IN_CAPS, pod.getPortName().toUpperCase());
+            dictionary.put(POD_CODE_IN_CAPS, StringUtility.toUpperCase(pod.getLocCode()));
+        }
+    }
+
+    private void addPolAndPodCodeTags(ShipmentModel shipment, Map<String, Object> dictionary, UnlocationsResponse pol, UnlocationsResponse pod) {
+        if(!Objects.isNull(pol)) {
+            dictionary.put(ReportConstants.POL_CODE, pol.getLocCode());
+            if (Objects.equals(shipment.getTransportMode(), AIR) && BOOKING_ORDER.equalsIgnoreCase(shipment.getDocument()))
+                dictionary.put(ReportConstants.POL_CODE, pol.getIataCode());
+        }
+        if(!Objects.isNull(pod)) {
+            dictionary.put(ReportConstants.POD_CODE, pod.getLocCode());
+            if (Objects.equals(shipment.getTransportMode(), AIR) && BOOKING_ORDER.equalsIgnoreCase(shipment.getDocument()))
+                dictionary.put(ReportConstants.POD_CODE, pod.getIataCode());
+        }
+    }
+
+    private void processVessels(ShipmentModel shipment, Map<String, Object> dictionary, Set<String> vesselIds, String carrierVesselId) {
+        vesselIds.add(carrierVesselId);
+        Map<String, EntityTransferVessels> entityTransferVesselsMap = masterDataUtils.getVesselDataFromCache(vesselIds);
+        Map<String, VesselsResponse> vesselsResponseMap = new HashMap<>();
+        for (Map.Entry<String, EntityTransferVessels> entry : entityTransferVesselsMap.entrySet()) {
+            String key = entry.getKey();
+            VesselsResponse value = jsonHelper.convertValue(entry.getValue(), VesselsResponse.class);
+            vesselsResponseMap.put(key, value);
+        }
+        VesselsResponse vesselsResponse = vesselsResponseMap.get(carrierVesselId);
         if(Objects.equals(shipment.getTransportMode(), AIR))
-            dictionary.put(VOYAGE_OR_FLIGHT_NO, shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getFlightNumber() : null);
-        else
-            dictionary.put(VOYAGE_OR_FLIGHT_NO, shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getVoyage() : null);
-        if (!Objects.isNull(dictionary.get(GOODS_VALUE)))
-            dictionary.put(GOODS_VALUE, AmountNumberFormatter.Format(new BigDecimal(StringUtility.convertToString(dictionary.get(GOODS_VALUE))), UserContext.getUser().getCompanyCurrency(), v1TenantSettingsResponse));
-        if (!Objects.isNull(dictionary.get(INSURANCE_VALUE)))
-            dictionary.put(INSURANCE_VALUE, AmountNumberFormatter.Format(new BigDecimal(StringUtility.convertToString(dictionary.get(INSURANCE_VALUE))), UserContext.getUser().getCompanyCurrency(), v1TenantSettingsResponse));
-        if (!Objects.isNull(shipment.getNoOfPacks()))
-            dictionary.put(ReportConstants.NO_OF_PACKAGES_ALIAS, GetDPWWeightVolumeFormat(BigDecimal.valueOf(shipment.getNoOfPacks()), 0, v1TenantSettingsResponse));
-        populateIGMInfo(shipment, dictionary);
-        dictionary.put(IS_DG, false);
-        if(Boolean.TRUE.equals(shipment.getContainsHazardous())) {
-            dictionary.put(IS_DG, true);
-            dictionary.put(DG_EMERGENCY_CONTACT, getConcatenatedContact(shipment.getAdditionalDetails().getEmergencyContactNumberCode(), shipment.getAdditionalDetails().getEmergencyContactNumber()));
+        {
+            dictionary.put(VESSELS_NAME_FLIGHT_NAME, shipment.getCarrierDetails() != null ? shipment.getCarrierDetails().getShippingLine() : null);
         }
-        dictionary.put(MAWB_CAPS, StringUtility.convertToString(shipment.getMasterBill()));
+        if(vesselsResponse != null) {
+            dictionary.put(VESSEL_NAME, vesselsResponse.getName());
+            if(!Objects.equals(shipment.getTransportMode(), AIR))
+                dictionary.put(VESSELS_NAME_FLIGHT_NAME, vesselsResponse.getName());
+        }
+    }
+
+    private Map<Integer, Map<String, MasterData>> getMasterListsMap(List<MasterListRequest> masterListRequest) {
+        Map<String, EntityTransferMasterLists> entityTransferMasterListsMap = masterDataUtils.fetchMasterListFromCache(MasterListRequestV2.builder().MasterListRequests(masterListRequest.stream().filter(Objects::nonNull).collect(Collectors.toList())).build());
+        Map<Integer, Map<String, MasterData>> masterListsMap = new HashMap<>();
+        for (Map.Entry<String, EntityTransferMasterLists> entry : entityTransferMasterListsMap.entrySet()) {
+            String key = entry.getKey();
+            String[] parts = key.split("#");
+            String itemType = parts[0];
+            String itemValue = parts[1];
+            MasterDataType masterDataType = MasterDataType.valueOf(itemType);
+            int masterDataKey = masterDataType.getId();
+            MasterData masterData = jsonHelper.convertValue(entry.getValue(), MasterData.class);
+            masterListsMap.computeIfAbsent(masterDataKey, k -> new HashMap<>()).put(itemValue, masterData);
+        }
+        return masterListsMap;
+    }
+
+    private Map<String, UnlocationsResponse> getUnlocationsResponseMap(ShipmentModel shipment) {
+        List<String> unlocoRequests = this.createUnLocoRequestFromShipmentModel(shipment);
+        Map<String, UnlocationsResponse> unlocationsMap = new HashMap<>();
+        Map<String, EntityTransferUnLocations> entityTransferUnLocationsMap = masterDataUtils.getLocationDataFromCache(new HashSet<>(unlocoRequests), EntityTransferConstants.LOCATION_SERVICE_GUID);
+        for (Map.Entry<String, EntityTransferUnLocations> entry : entityTransferUnLocationsMap.entrySet()) {
+            String key = entry.getKey();
+            UnlocationsResponse value = jsonHelper.convertValue(entry.getValue(), UnlocationsResponse.class);
+            unlocationsMap.put(key, value);
+        }
+        return unlocationsMap;
     }
 
     private void populateShipmentCargoManifestParty(ShipmentModel shipmentModel, Map<String, Object> dictionary) {
@@ -4072,20 +4234,7 @@ public abstract class IReport {
                 dictionary.put(EXEMPTION_CARGO, additionalDetailModel.getExemptionCodes());
             }
             if(additionalDetailModel.getScreeningStatus() != null && !additionalDetailModel.getScreeningStatus().isEmpty()) {
-                Set<String> screeningCodes = additionalDetailModel.getScreeningStatus().stream().collect(Collectors.toSet());
-                if(screeningCodes.contains(Constants.AOM)){
-                    screeningCodes.remove(Constants.AOM);
-                    String aomString = Constants.AOM;
-                    if(additionalDetailModel.getAomFreeText() != null) {
-                        aomString =  aomString + " (" + additionalDetailModel.getAomFreeText() + ")";
-                    }
-                    screeningCodes.add(aomString);
-                    dictionary.put(SCREENING_CODES, screeningCodes);
-                    dictionary.put(AOM_FREE_TEXT, additionalDetailModel.getAomFreeText());
-                } else {
-                    dictionary.put(SCREENING_CODES, screeningCodes);
-                }
-
+                addTagsForScreeningStatus(dictionary, additionalDetailModel);
             }
 
             dictionary.put(RA_NUMBER, additionalDetailModel.getRegulatedEntityCategory());
@@ -4095,6 +4244,22 @@ public abstract class IReport {
 
         if(shipmentDetails.getSecurityStatus() != null ) {
             dictionary.put(CONSIGNMENT_STATUS, shipmentDetails.getSecurityStatus());
+        }
+    }
+
+    private void addTagsForScreeningStatus(Map<String, Object> dictionary, AdditionalDetails additionalDetailModel) {
+        Set<String> screeningCodes = additionalDetailModel.getScreeningStatus().stream().collect(Collectors.toSet());
+        if(screeningCodes.contains(Constants.AOM)){
+            screeningCodes.remove(Constants.AOM);
+            String aomString = Constants.AOM;
+            if(additionalDetailModel.getAomFreeText() != null) {
+                aomString =  aomString + " (" + additionalDetailModel.getAomFreeText() + ")";
+            }
+            screeningCodes.add(aomString);
+            dictionary.put(SCREENING_CODES, screeningCodes);
+            dictionary.put(AOM_FREE_TEXT, additionalDetailModel.getAomFreeText());
+        } else {
+            dictionary.put(SCREENING_CODES, screeningCodes);
         }
     }
 

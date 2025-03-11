@@ -1426,10 +1426,7 @@ public class EntityTransferService implements IEntityTransferService {
             missingField.add(EntityTransferConstants.MISSING_FIELD_VOYAGE);
         if (Strings.isNullOrEmpty(flightNumber) && consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA))
             missingField.add(EntityTransferConstants.MISSING_FIELD_VESSEL);
-        if (eta == null)
-            missingField.add("Eta");
-        if (etd == null)
-            missingField.add("Etd");
+        addEtaEtdMissingFields(missingField, eta, etd);
         if (Strings.isNullOrEmpty(polId))
             missingField.add("Origin Port");
         if (Strings.isNullOrEmpty(podId))
@@ -1437,6 +1434,13 @@ public class EntityTransferService implements IEntityTransferService {
         if (entityTransferDetails) {
             missingField.add("Please select one of the branches in the entity transfer details section");
         }
+    }
+
+    private void addEtaEtdMissingFields(List<String> missingField, LocalDateTime eta, LocalDateTime etd) {
+        if (eta == null)
+            missingField.add("Eta");
+        if (etd == null)
+            missingField.add("Etd");
     }
 
     @Override
@@ -2395,13 +2399,7 @@ public class EntityTransferService implements IEntityTransferService {
                     if (destination != null)
                         locationRefGuids.add(destination);
                 }
-                if (receivingAgent != null && Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP) &&
-                        !shipmentDetails.getTenantId().equals(receivingAgent.intValue())) {
-                    shipmentGuids.add(shipmentDetails.getGuid());
-                }
-                if (shouldAddShipmentToGuidList(triangulationPartnerList, triangulationPartner, receivingAgent, shipmentDetails)) {
-                    shipmentGuids.add(shipmentDetails.getGuid());
-                }
+                setShipmentGuids(shipmentDetails, shipmentGuids, receivingAgent, triangulationPartnerList, triangulationPartner);
             }
         }
     }
@@ -2416,6 +2414,7 @@ public class EntityTransferService implements IEntityTransferService {
         }
     }
 
+
     private void populateNonAcceptedShipment(Long receivingAgent, List<Long> triangulationPartnerList, Long entityId, String entityType, ArValidationResponse response) {
         List<Long> partnerList = new ArrayList<>();
         if(receivingAgent != null) {
@@ -2424,15 +2423,7 @@ public class EntityTransferService implements IEntityTransferService {
         partnerList.addAll(triangulationPartnerList);
         if(!CollectionUtils.isEmpty(partnerList)) {
             try {
-                Set<Integer> tenantIds = new HashSet<>();
-                if(Boolean.TRUE.equals(getIsNetworkTransferFeatureEnabled())) {
-                    List<Integer> partnerListInt = partnerList.stream().map(Long::intValue).toList();
-                    tenantIds = this.retrieveTaskFromNte(entityId, entityType, partnerListInt);
-                } else {
-                    List<TaskCreateRequest> taskCreateRequests = retireveTaskFromV1(String.valueOf(entityId), entityType, partnerList);
-                    if(!CollectionUtils.isEmpty(taskCreateRequests))
-                        tenantIds = taskCreateRequests.stream().map(x -> Integer.parseInt(x.getTenantId())).collect(Collectors.toSet());
-                }
+                Set<Integer> tenantIds = getTenantIds(entityId, entityType, partnerList);
                 if(CollectionUtils.isEmpty(tenantIds)) {
                     if(receivingAgent != null) {
                         response.setReceivingShipment(mapShipmentDataToProfitShare(TransferStatus.NOT_TRANSFERRED, receivingAgent.intValue()));
@@ -2447,6 +2438,19 @@ public class EntityTransferService implements IEntityTransferService {
                 log.error(e.getMessage());
             }
         }
+    }
+
+    private Set<Integer> getTenantIds(Long entityId, String entityType, List<Long> partnerList) throws RunnerException {
+        Set<Integer> tenantIds = new HashSet<>();
+        if(Boolean.TRUE.equals(getIsNetworkTransferFeatureEnabled())) {
+            List<Integer> partnerListInt = partnerList.stream().map(Long::intValue).toList();
+            tenantIds = this.retrieveTaskFromNte(entityId, entityType, partnerListInt);
+        } else {
+            List<TaskCreateRequest> taskCreateRequests = retireveTaskFromV1(String.valueOf(entityId), entityType, partnerList);
+            if(!CollectionUtils.isEmpty(taskCreateRequests))
+                tenantIds = taskCreateRequests.stream().map(x -> Integer.parseInt(x.getTenantId())).collect(Collectors.toSet());
+        }
+        return tenantIds;
     }
 
     private Set<Integer> retrieveTaskFromNte(Long entityId, String entityType, List<Integer> tenantIds) {

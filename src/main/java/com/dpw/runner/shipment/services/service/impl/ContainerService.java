@@ -1779,19 +1779,7 @@ public class ContainerService implements IContainerService {
         if(canProcessContainers(containersList, v1TenantSettingsResponse)) {
             EventMessage eventMessage = new EventMessage();
             eventMessage.setMessageType(ContainerConstants.CONTAINER_UPDATE_MSG);
-            List<ContainerPayloadDetails> payloadDetails = new ArrayList<>();
-            for (Containers containers : containersList) {
-                if(!StringUtility.isEmpty(containers.getContainerNumber()) && containers.getShipmentsList()!=null  && !containers.getShipmentsList().isEmpty()) {
-                    Set<ShipmentDetails> shipmentDetailsList = containers.getShipmentsList();
-                    for(ShipmentDetails shipmentDetail: shipmentDetailsList) {
-                        String platformBookingRef = shipmentDetail.getBookingReference();
-                        log.info("Platform Booking reference obtained: {}", platformBookingRef);
-                        log.info("Preparing platform payload for container ID: {} with container number: {}",
-                                containers.getId(), containers.getContainerNumber());
-                        payloadDetails.add(prepareQueuePayload(containers, platformBookingRef));
-                    }
-                }
-            }
+            List<ContainerPayloadDetails> payloadDetails = getContainerPayloadDetails(containersList);
             if(CommonUtils.listIsNullOrEmpty(payloadDetails))
                 return;
             ContainerUpdateRequest updateRequest = new ContainerUpdateRequest();
@@ -1807,6 +1795,23 @@ public class ContainerService implements IContainerService {
             sbUtils.sendMessagesToTopic(isbProperties, messageTopic, List.of(new ServiceBusMessage(jsonBody)));
             log.info("Container pushed to kafka dependent services with data {}", jsonBody);
         }
+    }
+
+    private List<ContainerPayloadDetails> getContainerPayloadDetails(List<Containers> containersList) {
+        List<ContainerPayloadDetails> payloadDetails = new ArrayList<>();
+        for (Containers containers : containersList) {
+            if(!StringUtility.isEmpty(containers.getContainerNumber()) && containers.getShipmentsList()!=null  && !containers.getShipmentsList().isEmpty()) {
+                Set<ShipmentDetails> shipmentDetailsList = containers.getShipmentsList();
+                for(ShipmentDetails shipmentDetail: shipmentDetailsList) {
+                    String platformBookingRef = shipmentDetail.getBookingReference();
+                    log.info("Platform Booking reference obtained: {}", platformBookingRef);
+                    log.info("Preparing platform payload for container ID: {} with container number: {}",
+                            containers.getId(), containers.getContainerNumber());
+                    payloadDetails.add(prepareQueuePayload(containers, platformBookingRef));
+                }
+            }
+        }
+        return payloadDetails;
     }
 
     private boolean canProcessContainers(List<Containers> containersList, V1TenantSettingsResponse v1TenantSettingsResponse) {

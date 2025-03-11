@@ -855,30 +855,28 @@ public class HblService implements IHblService {
 
     }
 
+    /*Unico HBL*/
     private void processUnicoHblData(ShipmentDetails shipmentDetail, HblLockSettings hblLock, HblDataDto hblData, CarrierDetails carrierDetails) {
         // TODO: This needs to re-visit after incorporating this setting in service
-        if (/*Unico HBL*/true) {
-            if(!hblLock.getTransportTypeLock())
-                hblData.setTransportType(shipmentDetail.getTransportMode());
-            if(!hblLock.getShipmentTypeLock())
-                hblData.setShipmentType(shipmentDetail.getDirection());
-            if(!hblLock.getShippingTime())
-                hblData.setShippingTime(carrierDetails.getEtd() == null ? null : carrierDetails.getEtd().toLocalTime().toString());
-            if(!hblLock.getEtd())
-                hblData.setEtd(carrierDetails.getEtd());
-            if(!hblLock.getIncoTerms())
-                hblData.setIncoTerms(shipmentDetail.getIncoterms());
-//            hblData.setIncoTermPlace(shipmentDetail.incotermsDesctiption);
-            if(!hblLock.getFinalDestination())
-                hblData.setFinalDestination(carrierDetails.getDestination());
-            if(!hblLock.getQuantity())
-                hblData.setQuantity(shipmentDetail.getInnerPacks());
-            if(!hblLock.getQuantityCode())
-                hblData.setQuantityCode(shipmentDetail.getInnerPackUnit());
-            setElDetailsListInHbl(shipmentDetail, hblLock, hblData);
-            processReferenceNumbersListInHbl(shipmentDetail, hblLock, hblData);
+        if (!hblLock.getTransportTypeLock())
+            hblData.setTransportType(shipmentDetail.getTransportMode());
+        if(!hblLock.getShipmentTypeLock())
+            hblData.setShipmentType(shipmentDetail.getDirection());
+        if(!hblLock.getShippingTime())
+            hblData.setShippingTime(carrierDetails.getEtd() == null ? null : carrierDetails.getEtd().toLocalTime().toString());
+        if(!hblLock.getEtd())
+            hblData.setEtd(carrierDetails.getEtd());
+        if(!hblLock.getIncoTerms())
+            hblData.setIncoTerms(shipmentDetail.getIncoterms());
+        if(!hblLock.getFinalDestination())
+            hblData.setFinalDestination(carrierDetails.getDestination());
+        if(!hblLock.getQuantity())
+            hblData.setQuantity(shipmentDetail.getInnerPacks());
+        if(!hblLock.getQuantityCode())
+            hblData.setQuantityCode(shipmentDetail.getInnerPackUnit());
+        setElDetailsListInHbl(shipmentDetail, hblLock, hblData);
+        processReferenceNumbersListInHbl(shipmentDetail, hblLock, hblData);
 
-        }
     }
 
     private void setConsignerConsigneeDataInHbl(ShipmentDetails shipmentDetail, HblLockSettings hblLock, HblDataDto hblData) {
