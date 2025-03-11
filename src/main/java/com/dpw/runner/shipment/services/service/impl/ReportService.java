@@ -960,7 +960,7 @@ public class ReportService implements IReportService {
             }
             docDetail.setVersionNumber(refNum);
             docDetailsDao.save(docDetail);
-            eventsRequest.setReferenceNumber(refNum);
+            eventsRequest.setContainerNumber(refNum);
         }
 
         // Set reference number based on event code
