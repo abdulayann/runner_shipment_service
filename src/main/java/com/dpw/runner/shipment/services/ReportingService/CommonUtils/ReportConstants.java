@@ -720,6 +720,7 @@ public class ReportConstants {
     public static final String DLV = "DLV";
     public static final String CEN = "CEN";
     public static final String AMS = "AMS";
+    public static final String SRN = "SRN";
     public static final String AMS_NUMBER = "AMSNumber";
     public static final String CARGO_LOCATION = "CargoLocation";
     public static final String CAL = "CAL";

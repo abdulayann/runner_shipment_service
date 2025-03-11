@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.service.impl;
 
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.KCRA_EXPIRY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SRN;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.PADDING_10_PX;
 import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.STYLE;
@@ -36,6 +37,7 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.setIsNullOrEmpt
 import static com.dpw.runner.shipment.services.utils.StringUtility.isNotEmpty;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ReferenceNumbersModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
@@ -4302,12 +4304,26 @@ public class ShipmentService implements IShipmentService {
             // TODO- check if they want status
 //            if (shipmentDetail.getStatus() != null && shipmentDetail.getStatus() < ShipmentStatus.values().length)
 //                response.setShipmentStatus(ShipmentStatus.values()[shipmentDetail.getStatus()].toString());
+            setShipperReferenceNumber(shipmentDetail, response);
             responseList.add(response);
         });
 //        setLocationData(responseList);
 //        setContainerTeu(lst, responseList);
 //        setBillingData(lst, responseList);
         return responseList;
+    }
+
+    private void setShipperReferenceNumber(ShipmentDetails shipmentDetails, ShipmentDetailsResponse response){
+        if(shipmentDetails.getReferenceNumbersList() != null && !shipmentDetails.getReferenceNumbersList().isEmpty()){
+           Optional<String> srnReferenceNumber = shipmentDetails.getReferenceNumbersList().stream()
+                .filter(i -> i.getType().equalsIgnoreCase(SRN))
+                .findFirst()
+                .map(ReferenceNumbers::getReferenceNumber);
+
+           if(srnReferenceNumber.isPresent() && response.getPickupDetails() != null){
+               response.getPickupDetails().setShipperRef(srnReferenceNumber.get());
+           }
+        }
     }
 
     public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel) {
