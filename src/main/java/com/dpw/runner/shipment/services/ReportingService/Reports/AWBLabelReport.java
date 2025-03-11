@@ -97,6 +97,10 @@ public class AWBLabelReport extends IReport{
         isCombi = combi;
     }
 
+    public void setCustomLabel(boolean customLabel) {
+        isCustomLabel = customLabel;
+    }
+
     public void setRemarks(String remarks) {
         this.remarks = remarks;
     }
@@ -110,6 +114,7 @@ public class AWBLabelReport extends IReport{
     }
 
     private boolean isCombi;
+    private boolean isCustomLabel;
     private boolean isMawb;
     private String remarks;
     @Override
@@ -122,25 +127,22 @@ public class AWBLabelReport extends IReport{
     public IDocumentModel getDocumentModel(Long id) throws RunnerException {
         AWbLabelModel awbLabelModel = new AWbLabelModel();
         if(isCombi) {
-            ConsolidationDetails consolidationDetails;
-            Long consoleId = id;
-            if(!isMawb) {
-                ShipmentDetails shipmentDetails = getShipmentDetails(id);
-                if(setIsNullOrEmpty(shipmentDetails.getConsolidationList()))
-                    throw new RunnerException("Please attach the consolidation before printing Combi Labels");
-                consoleId = shipmentDetails.getConsolidationList().iterator().next().getId();
+            ConsolidationDetails consolidationDetails = null;
+            Long consoleId = null;
+            if(isMawb) {
+                consoleId = id;
+                consolidationDetails = getConsolidationsById(consoleId);
             }
-            consolidationDetails = getConsolidationsById(consoleId);
-            awbLabelModel.setConsolidation(getConsolidationModel(consolidationDetails));
-            awbLabelModel.setAwb(getMawb(consoleId, true));
-            awbLabelModel.getConsolidation().setConsoleGrossWeightAndUnit(getConsolGrossWeightAndUnit(awbLabelModel.getConsolidation()));
-            awbLabelModel.setShipmentModels(new ArrayList<>());
-            if(!setIsNullOrEmpty(consolidationDetails.getShipmentsList())) {
-                for (ShipmentDetails shipmentDetails: consolidationDetails.getShipmentsList()) {
-                    awbLabelModel.getShipmentModels().add(getShipment(shipmentDetails));
+            else {
+                ShipmentDetails shipmentDetails = getShipmentDetails(id);
+                if(!isCustomLabel) {
+                    if (setIsNullOrEmpty(shipmentDetails.getConsolidationList()))
+                        throw new RunnerException("Please attach the consolidation before printing Combi Labels");
+                    consoleId = shipmentDetails.getConsolidationList().iterator().next().getId();
+                    consolidationDetails = getConsolidationsById(consoleId);
                 }
             }
-            isMawb = true;
+            processNonCustomLabel(awbLabelModel, consolidationDetails, consoleId);
         } else {
             if(isMawb) {
                 awbLabelModel.setConsolidation(getConsolidation(id));
@@ -156,6 +158,21 @@ public class AWBLabelReport extends IReport{
         awbLabelModel.tenant = getTenant();
         awbLabelModel.setRemarks(this.remarks);
         return awbLabelModel;
+    }
+
+    private void processNonCustomLabel(AWbLabelModel awbLabelModel, ConsolidationDetails consolidationDetails, Long consoleId) throws RunnerException {
+        if(!isCustomLabel) {
+            awbLabelModel.setConsolidation(getConsolidationModel(consolidationDetails));
+            awbLabelModel.setAwb(getMawb(consoleId, true));
+            awbLabelModel.getConsolidation().setConsoleGrossWeightAndUnit(getConsolGrossWeightAndUnit(awbLabelModel.getConsolidation()));
+            awbLabelModel.setShipmentModels(new ArrayList<>());
+            if (!setIsNullOrEmpty(consolidationDetails.getShipmentsList())) {
+                for (ShipmentDetails shipmentDetails : consolidationDetails.getShipmentsList()) {
+                    awbLabelModel.getShipmentModels().add(getShipment(shipmentDetails));
+                }
+            }
+            isMawb = true;
+        }
     }
 
     @Override

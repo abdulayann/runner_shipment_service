@@ -1268,8 +1268,8 @@ public class AwbService implements IAwbService {
     }
 
     private List<AwbRoutingInfo> generateMawbRoutingInfo(ConsolidationDetails consolidationDetails, CreateAwbRequest request) {
-        if (consolidationDetails.getRoutingsList() != null && !consolidationDetails.getRoutingsList().isEmpty()) {
-            var sortedRoutingList = consolidationDetails.getRoutingsList().stream().filter(route -> Objects.equals(route.getMode(), Constants.TRANSPORT_MODE_AIR)).collect(Collectors.toList());
+        if (consolidationDetails.getRoutingsList() != null && consolidationDetails.getRoutingsList().size() > 0) {
+            var sortedRoutingList = consolidationDetails.getRoutingsList().stream().filter(route -> Objects.equals(route.getMode(), Constants.TRANSPORT_MODE_AIR) && Objects.equals(route.getCarriage(), RoutingCarriage.MAIN_CARRIAGE)).collect(Collectors.toList());
             if(sortedRoutingList != null && !sortedRoutingList.isEmpty()) {
                 List<AwbRoutingInfo> res = new ArrayList<>();
                 Collections.sort(sortedRoutingList, Comparator.comparing(Routings::getLeg));
@@ -1676,7 +1676,7 @@ public class AwbService implements IAwbService {
 
     private List<AwbRoutingInfo> generateAwbRoutingInfo(ShipmentDetails shipmentDetails, CreateAwbRequest request) {
         if (shipmentDetails.getRoutingsList() != null && shipmentDetails.getRoutingsList().size() > 0) {
-            var sortedRoutingList = shipmentDetails.getRoutingsList().stream().filter(route -> Objects.equals(route.getMode(), Constants.TRANSPORT_MODE_AIR)).collect(Collectors.toList());
+            var sortedRoutingList = shipmentDetails.getRoutingsList().stream().filter(route -> Objects.equals(route.getMode(), Constants.TRANSPORT_MODE_AIR) && Objects.equals(route.getCarriage(), RoutingCarriage.MAIN_CARRIAGE)).collect(Collectors.toList());
             if(sortedRoutingList != null && !sortedRoutingList.isEmpty()) {
                 List<AwbRoutingInfo> res = new ArrayList<>();
                 Collections.sort(sortedRoutingList, Comparator.comparing(Routings::getLeg));

@@ -247,6 +247,7 @@ public class ReportService implements IReportService {
             awbLabelReport.setMawb(reportRequest.isFromConsolidation());
             awbLabelReport.setRemarks(reportRequest.getRemarks());
             awbLabelReport.setCombi(reportRequest.isCombiLabel());
+            awbLabelReport.setCustomLabel(reportRequest.isCombiLabel());
         }
         if(report instanceof FCRDocumentReport fcrDocumentReport) {
             fcrDocumentReport.setFcrShipper(reportRequest.getFcrShipper());
