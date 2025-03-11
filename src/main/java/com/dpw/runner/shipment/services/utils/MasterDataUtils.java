@@ -1162,8 +1162,8 @@ public class MasterDataUtils{
                 switch (masterDataType) {
                     case CacheConstants.UNLOCATIONS:
                         EntityTransferUnLocations object = (EntityTransferUnLocations) cache;
-                        if(isBooking) fieldNameMasterDataMap.put(key, object.LocCode + " " + object.NameWoDiacritics);
-                        else fieldNameMasterDataMap.put(key, object.lookupDesc);
+                      //  if(isBooking) fieldNameMasterDataMap.put(key, object.LocCode + " " + object.NameWoDiacritics);
+                         fieldNameMasterDataMap.put(key, object.lookupDesc);
                         fieldNameMasterDataMap.put(key + Constants.COUNTRY, object.Country);
                         fieldNameMasterDataMap.put(key + Constants.NAME, object.NameWoDiacritics);
                         fieldNameMasterDataMap.put(key + Constants.CODE, object.LocCode);
