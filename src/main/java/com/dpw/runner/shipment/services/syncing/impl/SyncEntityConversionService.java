@@ -12,6 +12,7 @@ import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.syncing.Entity.*;
 import com.dpw.runner.shipment.services.utils.Generated;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -344,61 +345,69 @@ public class SyncEntityConversionService {
         }
         List<AuditLog> response = new ArrayList<>();
         for (AuditLogRequestV2 request : auditLogs) {
-            if(!oldLogsGuids.contains(request.getGuid())) {
-                AuditLog auditLog = new AuditLog();
-
-                auditLog.setParentType(Constants.SHIPMENT_DETAILS);
-                auditLog.setParentId(id);
-                auditLog.setGuid(request.getGuid());
-
-                if(Objects.equals(request.getAction(), "INSERT"))
-                    auditLog.setOperation(DBOperationType.CREATE.name());
-                else auditLog.setOperation(request.getAction());
-
-                try {
-                    List<Map<String, String>> v1changes = objectMapper.readValue(request.getChanges(), objectMapper.getTypeFactory().constructCollectionType(List.class, Map.class));
-                    Map<String, AuditLogChanges> changes = new HashMap<>();
-                    if(v1changes != null && !v1changes.isEmpty()) {
-                        for (Map<String, String> map : v1changes) {
-                            AuditLogChanges auditLogChanges = new AuditLogChanges();
-                            if(map.containsKey("F"))
-                                auditLogChanges.setFieldName(map.get("F"));
-                            if(map.containsKey("O"))
-                                auditLogChanges.setOldValue(map.get("O"));
-                            if(map.containsKey("V"))
-                                auditLogChanges.setNewValue(map.get("V"));
-                            changes.put(auditLogChanges.getFieldName(), auditLogChanges);
-                        }
-                    }
-                    auditLog.setChanges(changes);
-                }
-                catch (Exception e) {
-                    continue;
-                }
-
-                switch (request.getModule()) {
-                    case "ShipmentsRow" -> {
-                        auditLog.setEntity(ShipmentDetails.class.getSimpleName());
-                        auditLog.setEntityId(id);
-                    }
-                    case "CommonContainersRow" -> auditLog.setEntity(Containers.class.getSimpleName());
-                    case "PackingRow" -> auditLog.setEntity(Packing.class.getSimpleName());
-                    case "RoutingsRow" -> auditLog.setEntity(Routings.class.getSimpleName());
-                    case "NoteRow" -> auditLog.setEntity(Notes.class.getSimpleName());
-                    case "BookingCarriageRow" -> auditLog.setEntity(BookingCarriage.class.getSimpleName());
-                    case "EventsRow" -> auditLog.setEntity(Events.class.getSimpleName());
-                    case "ReferenceNumbersRow" -> auditLog.setEntity(ReferenceNumbers.class.getSimpleName());
-                    case "ConsolidationAddressRow" -> auditLog.setEntity(Parties.class.getSimpleName());
-                    case "ShipmentServicesRow" -> auditLog.setEntity(ServiceDetails.class.getSimpleName());
-                    case "TruckDriverDetailsRow" -> auditLog.setEntity(TruckDriverDetails.class.getSimpleName());
-                    default -> log.debug(Constants.SWITCH_DEFAULT_CASE_MSG, request.getModule());
-                }
-
-                response.add(auditLog);
-            }
+            processAuditLogRequest(id, request, oldLogsGuids, response);
         }
         auditLogDao.saveAll(response);
         return response;
+    }
+
+    private void processAuditLogRequest(Long id, AuditLogRequestV2 request, Set<UUID> oldLogsGuids, List<AuditLog> response) {
+        if(!oldLogsGuids.contains(request.getGuid())) {
+            AuditLog auditLog = new AuditLog();
+
+            auditLog.setParentType(Constants.SHIPMENT_DETAILS);
+            auditLog.setParentId(id);
+            auditLog.setGuid(request.getGuid());
+
+            if(Objects.equals(request.getAction(), "INSERT"))
+                auditLog.setOperation(DBOperationType.CREATE.name());
+            else auditLog.setOperation(request.getAction());
+
+            try {
+                setChangesInAuditLog(request, auditLog);
+            }
+            catch (Exception e) {
+                return;
+            }
+
+            switch (request.getModule()) {
+                case "ShipmentsRow" -> {
+                    auditLog.setEntity(ShipmentDetails.class.getSimpleName());
+                    auditLog.setEntityId(id);
+                }
+                case "CommonContainersRow" -> auditLog.setEntity(Containers.class.getSimpleName());
+                case "PackingRow" -> auditLog.setEntity(Packing.class.getSimpleName());
+                case "RoutingsRow" -> auditLog.setEntity(Routings.class.getSimpleName());
+                case "NoteRow" -> auditLog.setEntity(Notes.class.getSimpleName());
+                case "BookingCarriageRow" -> auditLog.setEntity(BookingCarriage.class.getSimpleName());
+                case "EventsRow" -> auditLog.setEntity(Events.class.getSimpleName());
+                case "ReferenceNumbersRow" -> auditLog.setEntity(ReferenceNumbers.class.getSimpleName());
+                case "ConsolidationAddressRow" -> auditLog.setEntity(Parties.class.getSimpleName());
+                case "ShipmentServicesRow" -> auditLog.setEntity(ServiceDetails.class.getSimpleName());
+                case "TruckDriverDetailsRow" -> auditLog.setEntity(TruckDriverDetails.class.getSimpleName());
+                default -> log.debug(Constants.SWITCH_DEFAULT_CASE_MSG, request.getModule());
+            }
+
+            response.add(auditLog);
+        }
+    }
+
+    private void setChangesInAuditLog(AuditLogRequestV2 request, AuditLog auditLog) throws JsonProcessingException {
+        List<Map<String, String>> v1changes = objectMapper.readValue(request.getChanges(), objectMapper.getTypeFactory().constructCollectionType(List.class, Map.class));
+        Map<String, AuditLogChanges> changes = new HashMap<>();
+        if(v1changes != null && !v1changes.isEmpty()) {
+            for (Map<String, String> map : v1changes) {
+                AuditLogChanges auditLogChanges = new AuditLogChanges();
+                if(map.containsKey("F"))
+                    auditLogChanges.setFieldName(map.get("F"));
+                if(map.containsKey("O"))
+                    auditLogChanges.setOldValue(map.get("O"));
+                if(map.containsKey("V"))
+                    auditLogChanges.setNewValue(map.get("V"));
+                changes.put(auditLogChanges.getFieldName(), auditLogChanges);
+            }
+        }
+        auditLog.setChanges(changes);
     }
 
 }

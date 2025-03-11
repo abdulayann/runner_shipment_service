@@ -3607,7 +3607,6 @@ ShipmentServiceTest extends CommonMocks {
         ShipmentOrder shipmentOrder = ShipmentOrder.builder().shipmentId(1L).orderGuid(UUID.fromString("eaf227f3-de85-42b4-8180-cf48ccf568f9")).build();
         ReferenceNumbers referenceNumbers = new ReferenceNumbers();
         Parties importBroker = Parties.builder().orgCode("1223").build();
-        PartiesRequest importBrokerRequest = PartiesRequest.builder().build();
         AdditionalDetails additionalDetails = new AdditionalDetails();
         additionalDetails.setImportBroker(importBroker);
         additionalDetails.setExportBroker(importBroker);
@@ -3620,7 +3619,7 @@ ShipmentServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(), eq(ConsolidationDetailsRequest.class))).thenReturn(ConsolidationDetailsRequest.builder().build());
         when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolRequest.class))).thenReturn(new AutoUpdateWtVolRequest());
         when(jsonHelper.convertValue(any(), eq(AutoUpdateWtVolResponse.class))).thenReturn(new AutoUpdateWtVolResponse());
-        doReturn(ResponseHelper.buildSuccessResponse(ConsolidationDetailsResponse.builder().build())).when(consolidationService).createFromBooking(any());
+        doReturn(ConsolidationDetailsResponse.builder().build()).when(consolidationService).createConsolidationForBooking(any());
 
         ReferenceNumbersRequest referenceNumberObj2 = ReferenceNumbersRequest.builder().build();
 
@@ -3636,7 +3635,7 @@ ShipmentServiceTest extends CommonMocks {
         when(shipmentOrderDao.updateEntityFromShipment(any(), any())).thenReturn(Collections.singletonList(shipmentOrder));
 
         when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
-        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
         when(shipmentDao.save(any(), eq(false))).thenReturn(shipmentDetails);
         when(notesDao.findByEntityIdAndEntityType(any(), any())).thenReturn(null);
 
@@ -6408,8 +6407,9 @@ ShipmentServiceTest extends CommonMocks {
     }
 
     private void mockRunnable() {
+        Runnable runnable = () -> System.out.println("Mock runnable executed");
+        runnable.run();
     }
-
     private List<IRunnerResponse> convertEntityListToFullShipmentList(List<ShipmentDetails> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
         lst.forEach(shipmentDetail -> {

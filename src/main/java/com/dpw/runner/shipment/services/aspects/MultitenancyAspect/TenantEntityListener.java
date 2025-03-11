@@ -39,9 +39,7 @@ public class TenantEntityListener {
 
             if ((permissions.containsKey(PermissionConstants.tenantSuperAdmin) || permissions.containsKey(PermissionConstants.crossTenantCreatePermission)) && isValidTenantId(tenantId)) {
                 multiTenancy.setTenantId(tenantId);
-            } else if (Objects.nonNull(interBranchData)
-                    && (Boolean.TRUE.equals(interBranchData.isHub()) || Boolean.TRUE.equals(interBranchData.isCoLoadStation()))
-                    && isValidTenantId(tenantId)) {
+            } else if (isInterBranchCase(interBranchData, tenantId)) {
                 multiTenancy.setTenantId(tenantId);
             } else {
                 tenantId = TenantContext.getCurrentTenant();
@@ -57,6 +55,12 @@ public class TenantEntityListener {
         }
     }
 
+    private boolean isInterBranchCase(InterBranchDto interBranchData, Integer tenantId) {
+        return Objects.nonNull(interBranchData)
+                && (Boolean.TRUE.equals(interBranchData.isHub()) || Boolean.TRUE.equals(interBranchData.isCoLoadStation()))
+                && isValidTenantId(tenantId);
+    }
+
 
     @PreUpdate
     public void preUpdate(Object object) throws AuthenticationException {
@@ -70,15 +74,9 @@ public class TenantEntityListener {
             Integer tenantId = multiTenancy.getTenantId();
             Map<String, Boolean> permissions = UserContext.getUser().getPermissions();
 
-            if ((permissions.containsKey(PermissionConstants.tenantSuperAdmin) || permissions.containsKey(PermissionConstants.crossTenantUpdatePermission)) && isValidTenantId(tenantId)) {
-                multiTenancy.setTenantId(tenantId);
-            } else if (!isValidTenantId(tenantId)) {
-                tenantId = TenantContext.getCurrentTenant();
-                multiTenancy.setTenantId(tenantId);
-            }
+            tenantId = getTenantInPreUpdate(multiTenancy, permissions, tenantId);
 
             InterBranchDto interBranchDto = InterBranchContext.getContext();
-            ObjectMapper objectMapper = new ObjectMapper();
 
             if (Objects.nonNull(interBranchDto) && !Objects.equals(TenantContext.getCurrentTenant(), tenantId)) {
                 if ((Boolean.TRUE.equals(interBranchDto.isHub()) && !interBranchDto.getColoadStationsTenantIds().contains(tenantId))
@@ -96,6 +94,16 @@ public class TenantEntityListener {
         }
     }
 
+    private Integer getTenantInPreUpdate(MultiTenancy multiTenancy, Map<String, Boolean> permissions, Integer tenantId) {
+        if ((permissions.containsKey(PermissionConstants.tenantSuperAdmin) || permissions.containsKey(PermissionConstants.crossTenantUpdatePermission)) && isValidTenantId(tenantId)) {
+            multiTenancy.setTenantId(tenantId);
+        } else if (!isValidTenantId(tenantId)) {
+            tenantId = TenantContext.getCurrentTenant();
+            multiTenancy.setTenantId(tenantId);
+        }
+        return tenantId;
+    }
+
     @PreRemove
     public void preRemove(Object object) throws AuthenticationException {
         if (object instanceof MultiTenancy multiTenancy && !byPassMultiTenancyFilter(object)) {
@@ -108,15 +116,9 @@ public class TenantEntityListener {
             Integer tenantId = multiTenancy.getTenantId();
             Map<String, Boolean> permissions = UserContext.getUser().getPermissions();
 
-            if (permissions.containsKey(PermissionConstants.tenantSuperAdmin) && isValidTenantId(tenantId)) {
-                multiTenancy.setTenantId(tenantId);
-            } else if (Objects.isNull(tenantId)) {
-                tenantId = TenantContext.getCurrentTenant();
-                multiTenancy.setTenantId(tenantId);
-            }
+            tenantId = getTenantIdInPreRemove(multiTenancy, permissions, tenantId);
 
             InterBranchDto interBranchDto = InterBranchContext.getContext();
-            ObjectMapper objectMapper = new ObjectMapper();
 
             if (Objects.nonNull(interBranchDto) && !Objects.equals(TenantContext.getCurrentTenant(), tenantId)) {
                 if ((Boolean.TRUE.equals(interBranchDto.isHub()) && !interBranchDto.getColoadStationsTenantIds().contains(tenantId))
@@ -131,6 +133,16 @@ public class TenantEntityListener {
 
             log.info("Final TenantId after PreRemove: {}", multiTenancy.getTenantId());
         }
+    }
+
+    private Integer getTenantIdInPreRemove(MultiTenancy multiTenancy, Map<String, Boolean> permissions, Integer tenantId) {
+        if (permissions.containsKey(PermissionConstants.tenantSuperAdmin) && isValidTenantId(tenantId)) {
+            multiTenancy.setTenantId(tenantId);
+        } else if (Objects.isNull(tenantId)) {
+            tenantId = TenantContext.getCurrentTenant();
+            multiTenancy.setTenantId(tenantId);
+        }
+        return tenantId;
     }
 
     private boolean isValidTenantId(Integer tenantId) {

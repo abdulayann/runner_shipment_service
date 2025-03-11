@@ -179,7 +179,7 @@ public class CustomerBookingController {
     public ResponseEntity<IRunnerResponse> cancel(@RequestBody @Valid CustomerBookingRequest request) {
         String responseMsg;
         try {
-            return customerBookingService.cancel(CommonRequestModel.buildRequest(request));
+            return customerBookingService.update(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                 : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;

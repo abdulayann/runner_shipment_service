@@ -105,6 +105,17 @@ public class EnumConstantService implements IEnumConstantService {
         }
         response.put(Constants.AIR_AUTHORISING_ENTITY, enumList);
 
+        addNetworkTransferStatusAndTypesInResponse(response);
+
+        addContainerPraStatusEnums(response);
+
+        addNotificationRequestTypeEnums(response);
+
+        return ResponseHelper.buildSuccessResponse(EnumResponse.builder().dataMap(response).build());
+    }
+
+    private void addNetworkTransferStatusAndTypesInResponse(Map<String, List<EnumConstantResponse>> response) {
+        List<EnumConstantResponse> enumList;
         enumList = new ArrayList<>();
         for(NetworkTransferStatus entity : NetworkTransferStatus.values()) {
             enumList.add(EnumConstantResponse.builder().id(entity.getValue()).description(entity.getDescription()).name(entity.name()).build());
@@ -115,19 +126,23 @@ public class EnumConstantService implements IEnumConstantService {
         enumList.add(EnumConstantResponse.builder().name(Constants.SHIPMENT).build());
         enumList.add(EnumConstantResponse.builder().id(1).name(Constants.CONSOLIDATION).build());
         response.put(Constants.NETWORK_TRANSFER_ENTITY_TYPES, enumList);
+    }
 
+    private void addContainerPraStatusEnums(Map<String, List<EnumConstantResponse>> response) {
+        List<EnumConstantResponse> enumList;
         enumList = new ArrayList<>();
         for(ContainerPraStatus entity : ContainerPraStatus.values()) {
             enumList.add(EnumConstantResponse.builder().name(entity.name()).build());
         }
         response.put(Constants.CONTAINER_PRA_STATUS_ENTITY, enumList);
+    }
 
+    private void addNotificationRequestTypeEnums(Map<String, List<EnumConstantResponse>> response) {
+        List<EnumConstantResponse> enumList;
         enumList = new ArrayList<>();
         for(NotificationRequestType entity : NotificationRequestType.values()) {
             enumList.add(EnumConstantResponse.builder().id(entity.getValue()).name(entity.name()).description(entity.getDescription()).build());
         }
         response.put(Constants.NOTIFICATION_REQUEST_TYPES, enumList);
-
-        return ResponseHelper.buildSuccessResponse(EnumResponse.builder().dataMap(response).build());
     }
 }

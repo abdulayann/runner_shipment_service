@@ -16,7 +16,6 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferVessels;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
-import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
@@ -67,44 +66,16 @@ public class CargoManifestReport extends IReport{
         Map<String, Object> dictionary = new HashMap<>();
         addTenantDetails(dictionary, cargoManifestModel.tenantDetails);
 
-        List<String> consigner = new ArrayList<>();
-        if(cargoManifestModel.shipmentDetails.getConsigner() != null) {
-            consigner = getOrgAddressWithPhoneEmail(cargoManifestModel.shipmentDetails.getConsigner());
-            if(cargoManifestModel.shipmentDetails.getConsigner().getOrgData() != null) {
-                Map<String, Object> partyOrg = cargoManifestModel.shipmentDetails.getConsigner().getOrgData();
-                if(!Boolean.TRUE.equals(cargoManifestModel.shipmentSettingsDetails.getDisableBlPartiesName()) && getValueFromMap(partyOrg, ReportConstants.FULL_NAME) != null) {
-                    consigner.add(0, getValueFromMap(partyOrg, ReportConstants.FULL_NAME));
-                }
-            }
-        }
+        List<String> consigner = getPartyDetails(cargoManifestModel.shipmentDetails.getConsigner(), cargoManifestModel);
 
-        List<String> consignee = new ArrayList<>();
-        if(cargoManifestModel.shipmentDetails.getConsignee() != null) {
-            consignee = getOrgAddressWithPhoneEmail(cargoManifestModel.shipmentDetails.getConsignee());
-            if(cargoManifestModel.shipmentDetails.getConsignee().getOrgData() != null) {
-                Map<String, Object> partyOrg = cargoManifestModel.shipmentDetails.getConsignee().getOrgData();
-                if(!Boolean.TRUE.equals(cargoManifestModel.shipmentSettingsDetails.getDisableBlPartiesName()) && getValueFromMap(partyOrg, ReportConstants.FULL_NAME) != null) {
-                    consignee.add(0, getValueFromMap(partyOrg, ReportConstants.FULL_NAME));
-                }
-            }
-        }
+        List<String> consignee = getPartyDetails(cargoManifestModel.shipmentDetails.getConsignee(), cargoManifestModel);
 
-        List<String> notify = new ArrayList<>();
-        if(cargoManifestModel.shipmentDetails.getAdditionalDetails().getNotifyParty() != null) {
-            notify = getOrgAddressWithPhoneEmail(cargoManifestModel.shipmentDetails.getAdditionalDetails().getNotifyParty());
-            if(cargoManifestModel.shipmentDetails.getAdditionalDetails().getNotifyParty().getOrgData() != null) {
-                Map<String, Object> partyOrg = cargoManifestModel.shipmentDetails.getAdditionalDetails().getNotifyParty().getOrgData();
-                if(!Boolean.TRUE.equals(cargoManifestModel.shipmentSettingsDetails.getDisableBlPartiesName()) && getValueFromMap(partyOrg, ReportConstants.FULL_NAME) != null) {
-                    notify.add(0, getValueFromMap(partyOrg, ReportConstants.FULL_NAME));
-                }
-            }
-        }
+        List<String> notify = getPartyDetails(cargoManifestModel.shipmentDetails.getAdditionalDetails().getNotifyParty(), cargoManifestModel);
 
         List<String> tenantsDataList = getListOfStrings(cargoManifestModel.tenantDetails.tenantName, cargoManifestModel.tenantDetails.address1, cargoManifestModel.tenantDetails.address2,
                 cargoManifestModel.tenantDetails.city, cargoManifestModel.tenantDetails.state, cargoManifestModel.tenantDetails.zipPostCode, cargoManifestModel.tenantDetails.country,
                 cargoManifestModel.tenantDetails.email, cargoManifestModel.tenantDetails.websiteUrl, cargoManifestModel.tenantDetails.phone);
-        if(tenantsDataList != null)
-            dictionary.put(ReportConstants.TENANT, tenantsDataList);
+        dictionary.put(ReportConstants.TENANT, tenantsDataList);
         dictionary.put(ReportConstants.CONSIGNOR, consigner);
         dictionary.put(ReportConstants.CONSIGNEE_ADDRESS, consignee);
         dictionary.put(ReportConstants.NOTIFY_PARTY, notify);
@@ -135,23 +106,7 @@ public class CargoManifestReport extends IReport{
         dictionary.put(ReportConstants.FLIGHT_NUMBER, cargoManifestModel.shipmentDetails.getCarrierDetails().getFlightNumber());
         dictionary.put(ReportConstants.PP_CC, cargoManifestModel.shipmentDetails.getPaymentTerms());
         dictionary.put(ReportConstants.BOOKING_NO, cargoManifestModel.shipmentDetails.getBookingNumber());
-        if(cargoManifestModel.shipmentDetails.getPackingList() != null && cargoManifestModel.shipmentDetails.getPackingList().size() > 0) {
-            var request = cargoManifestModel.shipmentDetails.getPackingList().stream().filter(c -> StringUtility.isNotEmpty(c.getCommodity())).map(PackingModel::getCommodity).toList();
-            var v1DataMap = masterDataUtils.fetchInBulkCommodityTypes(request);
-            List<Map<String, Object>> packDictionary = new ArrayList<>();
-            for (PackingModel pack : cargoManifestModel.shipmentDetails.getPackingList()) {
-                var map = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(pack));
-                map.put(ReportConstants.WEIGHT, ConvertToWeightNumberFormat(map.get(ReportConstants.WEIGHT), v1TenantSettingsResponse));
-                map.put(ReportConstants.NET_WEIGHT, ConvertToWeightNumberFormat(map.get(ReportConstants.NET_WEIGHT), v1TenantSettingsResponse));
-                map.put(ReportConstants.VOLUME_WEIGHT, ConvertToWeightNumberFormat(map.get(ReportConstants.VOLUME_WEIGHT), v1TenantSettingsResponse));
-                map.put(ReportConstants.VOLUME, ConvertToVolumeNumberFormat(map.get(ReportConstants.VOLUME), v1TenantSettingsResponse));
-                if (v1DataMap.containsKey(pack.getCommodity()))
-                    map.put(ReportConstants.COMMODITY_NAME, v1DataMap.get(pack.getCommodity()).getDescription());
-                packDictionary.add(map);
-            }
-            packDictionary.forEach(v -> JsonDateFormat(v));
-            dictionary.put(ReportConstants.ITEMS, packDictionary);
-        }
+        processShipmentPackingList(cargoManifestModel, v1TenantSettingsResponse, dictionary);
         dictionary.put(ReportConstants.CMS_REMARKS, cargoManifestModel.shipmentDetails.getAdditionalTerms());
         dictionary.put(ReportConstants.USER_EMAIL, cargoManifestModel.usersDto.Email);
         dictionary.put(ReportConstants.DATE_TIME, LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MMM/y hh:mm a")));
@@ -176,174 +131,22 @@ public class CargoManifestReport extends IReport{
         try {dictionary.put(ReportConstants.POD_COUNTRY_NAME_IN_CAPS, unlocationsMap.get(cargoManifestModel.shipmentDetails.getCarrierDetails().getDestinationPort()).getCountry().toUpperCase());} catch (Exception ignored) {}
         try {dictionary.put(ReportConstants.FPOD_COUNTRY_NAME_IN_CAPS, unlocationsMap.get(cargoManifestModel.shipmentDetails.getCarrierDetails().getDestination()).getCountry().toUpperCase());} catch (Exception ignored) {}
 
-        if(!CommonUtils.IsStringNullOrEmpty(cargoManifestModel.shipmentDetails.getPaymentTerms())) {
-            MasterData paymentTerms = getMasterListData(MasterDataType.PAYMENT, cargoManifestModel.shipmentDetails.getPaymentTerms());
-            try {dictionary.put(ReportConstants.PAYMENT_TERMS_DESCRIPTION, paymentTerms.getItemDescription());} catch (Exception ignored) {}
-            try {dictionary.put(ReportConstants.PAYMENT_TERMS, cargoManifestModel.shipmentDetails.getPaymentTerms());} catch (Exception ignored) {}
-        }
-        if(!CommonUtils.IsStringNullOrEmpty(cargoManifestModel.shipmentDetails.getPacksUnit())) {
-            MasterData packsUnitDesc = getMasterListData(MasterDataType.PACKS_UNIT, cargoManifestModel.shipmentDetails.getPacksUnit());
-            String packsUnit = null;
-            try {packsUnit = packsUnitDesc.getItemDescription();} catch (Exception ignored) {}
-            if(CommonUtils.IsStringNullOrEmpty(packsUnit))
-                packsUnit = cargoManifestModel.shipmentDetails.getPacksUnit();
-            dictionary.put(ReportConstants.PACKS_UNIT_DESCRIPTION, Constants.MPK.equals(packsUnit) ? Constants.PACKAGES : packsUnit);
-        }
-        try {
-            if(!CommonUtils.IsStringNullOrEmpty(cargoManifestModel.shipmentDetails.getCarrierDetails().getShippingLine())) {
-                Set<String> carrierSet = new HashSet<>();
-                carrierSet.add(cargoManifestModel.shipmentDetails.getCarrierDetails().getShippingLine());
-                Map<String, EntityTransferCarrier> entityTransferCarrierMap = masterDataUtils.getCarrierDataFromCache(carrierSet);
-                dictionary.put(ReportConstants.FLIGHT_IATA_CODE, entityTransferCarrierMap.get(cargoManifestModel.shipmentDetails.getCarrierDetails().getShippingLine()).IATACode);
-            }
-        } catch (Exception ignored) {}
-        if(cargoManifestModel.shipmentDetails.getBookingCarriagesList() != null && cargoManifestModel.shipmentDetails.getBookingCarriagesList().size() > 0) {
-            Set<String> unlocoStrings = new HashSet<>();
-            for (BookingCarriageModel bookingCarriageModel : cargoManifestModel.shipmentDetails.getBookingCarriagesList()) {
-                if (bookingCarriageModel.getCarriageType() != null && (bookingCarriageModel.getCarriageType().equals(Constants.PreCarriage) || bookingCarriageModel.getCarriageType().equals(Constants.Main))) {
-                    dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.Vessel, bookingCarriageModel.getVessel());
-                    dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.VOYAGE, bookingCarriageModel.getVoyage());
-                    dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.ETD_CAPS, ConvertToDPWDateFormat(bookingCarriageModel.getEtd(), tsDateTimeFormat, v1TenantSettingsResponse));
-                    dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.ETA_CAPS, ConvertToDPWDateFormat(bookingCarriageModel.getEta(), tsDateTimeFormat, v1TenantSettingsResponse));
-                    unlocoStrings.add(bookingCarriageModel.getPortOfLoading());
-                    unlocoStrings.add(bookingCarriageModel.getPortOfDischarge());
-                    Map<String, EntityTransferUnLocations> entityUnLocationsMap = masterDataUtils.getLocationDataFromCache(unlocoStrings, EntityTransferConstants.LOCATION_SERVICE_GUID);
-                    for (Map.Entry<String, EntityTransferUnLocations> entry : entityUnLocationsMap.entrySet()) {
-                        String key = entry.getKey();
-                        UnlocationsResponse value = jsonHelper.convertValue(entry.getValue(), UnlocationsResponse.class);
-                        unlocationsMap.put(key, value);
-                    }
-                    UnlocationsResponse pol = unlocationsMap.get(bookingCarriageModel.getPortOfLoading());
-                    UnlocationsResponse pod = unlocationsMap.get(bookingCarriageModel.getPortOfDischarge());
-                    if (pol != null) {
-                        dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.PlaceofLoadCountry, pol.getCountry());
-                        dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.PlaceofLoadPort, pol.getPortName());
-                        dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.PlaceofLoadCode, pol.getLocCode());
-                    }
-                    if (pod != null) {
-                        dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.PlaceofDischargeCountry, pod.getCountry());
-                        dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.PlaceofDischargePort, pod.getPortName());
-                        dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.PlaceofDischargeCode, pod.getLocCode());
-                    }
-                }
-            }
-        }
+        processShipmentPaymentTerms(cargoManifestModel, dictionary);
+        processShipmentPackUnit(cargoManifestModel, dictionary);
+        processShipmentShippingLine(cargoManifestModel, dictionary);
+        processShipmentBookingCarriageList(cargoManifestModel, dictionary, tsDateTimeFormat, v1TenantSettingsResponse, unlocationsMap);
         dictionary.put(ReportConstants.ContainerType, cargoManifestModel.shipmentDetails.getShipmentType());
-        BigDecimal Total_GrossWeight = BigDecimal.ZERO;
-        BigDecimal Total_GrossVolume = BigDecimal.ZERO;
-        long Total_ContainerCount = 0;
-        long Total_Packs = 0;
-        if(cargoManifestModel.shipmentDetails.getContainersList() != null && cargoManifestModel.shipmentDetails.getContainersList().size() > 0) {
-            List<ShipmentContainers> shipmentContainersList = new ArrayList<>();
-            for (ContainerModel item : cargoManifestModel.shipmentDetails.getContainersList()) {
-                ShipmentContainers shipmentContainers = getShipmentContainer(item);
-                shipmentContainersList.add(shipmentContainers);
-                if(item.getGrossWeight() != null)
-                    Total_GrossWeight = Total_GrossWeight.add(item.getGrossWeight());
-                if(item.getGrossVolume() != null)
-                    Total_GrossVolume = Total_GrossVolume.add(item.getGrossVolume());
-                if(item.getContainerCount() != null) {
-                    Total_ContainerCount = Total_ContainerCount + item.getContainerCount();
-                }
-                if(!CommonUtils.IsStringNullOrEmpty(item.getPacks())) {
-                    Total_Packs = Total_Packs + Long.parseLong(item.getPacks());
-                }
-            }
-            dictionary.put(ReportConstants.SHIPMENT_CONTAINERS, shipmentContainersList);
-            List<Map<String, Object>> valuesContainer = new ArrayList<>();
-            for (ShipmentContainers shipmentContainers : shipmentContainersList) {
-                valuesContainer.add(jsonHelper.convertValue(shipmentContainers, new TypeReference<>() {}));
-            }
-            for (Map<String, Object> v : valuesContainer) {
-                if(v.containsKey(ReportConstants.GROSS_VOLUME) && v.get(ReportConstants.GROSS_VOLUME) != null)
-                    v.put(ReportConstants.GROSS_VOLUME, ConvertToVolumeNumberFormat(v.get(ReportConstants.GROSS_VOLUME), v1TenantSettingsResponse));
-                if (v.containsKey(ReportConstants.GROSS_WEIGHT) && v.get(ReportConstants.GROSS_WEIGHT) != null)
-                    v.put(ReportConstants.GROSS_WEIGHT, ConvertToWeightNumberFormat(v.get(ReportConstants.GROSS_WEIGHT), v1TenantSettingsResponse));
-                if (v.containsKey(ReportConstants.SHIPMENT_PACKS) && v.get(ReportConstants.SHIPMENT_PACKS) != null)
-                    v.put(ReportConstants.SHIPMENT_PACKS, addCommaWithoutDecimal(new BigDecimal(v.get(ReportConstants.SHIPMENT_PACKS).toString())));
-                if (v.containsKey(ReportConstants.TareWeight) && v.get(ReportConstants.TareWeight) != null)
-                    v.put(ReportConstants.TareWeight, ConvertToWeightNumberFormat(v.get(ReportConstants.TareWeight), v1TenantSettingsResponse));
-                if (v.containsKey(ReportConstants.VGMWeight) && v.get(ReportConstants.VGMWeight) != null)
-                    v.put(ReportConstants.VGMWeight, ConvertToWeightNumberFormat(v.get(ReportConstants.VGMWeight), v1TenantSettingsResponse));
-                if (v.containsKey(CONTAINER_TYPE))
-                    v.put(CONTAINER_TYPE_DESCRIPTION, v.get(CONTAINER_TYPE));
-            }
-            dictionary.put(ReportConstants.SHIPMENT_CONTAINERS, valuesContainer);
-            dictionary.put(COMMON_CONTAINERS, valuesContainer);
-            dictionary.put(ReportConstants.TotalCntrWeight, ConvertToWeightNumberFormat(Total_GrossWeight, v1TenantSettingsResponse));
-            dictionary.put(ReportConstants.TotalCntrVolume, ConvertToVolumeNumberFormat(Total_GrossVolume, v1TenantSettingsResponse));
-            dictionary.put(ReportConstants.TotalCntrCount, addCommaWithoutDecimal(new BigDecimal(Total_ContainerCount)));
-            dictionary.put(ReportConstants.TotalCntrPacks, addCommaWithoutDecimal(new BigDecimal(Total_Packs)));
-        }
+        processShipmentContainersList(cargoManifestModel, dictionary, v1TenantSettingsResponse);
 
-        if(cargoManifestModel.awb != null) {
-            AwbCargoInfo cargoInfoRows = cargoManifestModel.awb.getAwbCargoInfo();
-            dictionary.put(ReportConstants.SCI, cargoInfoRows.getSci());
-            dictionary.put(RA_CSD, geteCSDInfo(cargoManifestModel.awb));
-            dictionary.put(ORIGINAL_PRINT_DATE, getPrintOriginalDate(cargoManifestModel.awb));
-            dictionary.put(USER_INITIALS, Optional.ofNullable(cargoInfoRows.getUserInitials()).map(StringUtility::toUpperCase).orElse(StringUtility.getEmptyString()));
-        }
+        processCargoManifestAwb(cargoManifestModel, dictionary);
         populateRaKcData(dictionary, cargoManifestModel.shipmentDetails);
 
-        if(!listIsNullOrEmpty(cargoManifestModel.shipmentDetails.getPackingList())) {
-            getPackingDetails(cargoManifestModel.shipmentDetails, dictionary);
-            dictionary.put(HAS_PACK_DETAILS, true);
-            var hazardousCheck = cargoManifestModel.shipmentDetails.getPackingList().stream().anyMatch(x -> !Objects.isNull(x.getHazardous()) && x.getHazardous());
-            var temperatureCheck = cargoManifestModel.shipmentDetails.getPackingList().stream().anyMatch(x -> !Objects.isNull(x.getIsTemperatureControlled()) && x.getIsTemperatureControlled());
-            if (hazardousCheck)
-                dictionary.put(HAS_DANGEROUS_GOODS, true);
-            else
-                dictionary.put(HAS_DANGEROUS_GOODS, false);
-            if (temperatureCheck)
-                dictionary.put(HAS_TEMPERATURE_DETAILS, true);
-            else
-                dictionary.put(HAS_TEMPERATURE_DETAILS, false);
-
-        } else {
-            dictionary.put(HAS_PACK_DETAILS, false);
-        }
+        processShipmentPackingList(cargoManifestModel, dictionary);
         if(cargoManifestModel.shipmentDetails.getAdditionalDetails() != null) {
             dictionary.put(NOTIFY_PARTY, ReportHelper.getOrgAddressDetails(cargoManifestModel.shipmentDetails.getAdditionalDetails().getNotifyParty()));
         }
 
-        if (cargoManifestModel.shipmentDetails.getConsolidationList() != null && !cargoManifestModel.shipmentDetails.getConsolidationList().isEmpty()) {
-            ConsolidationModel consol = cargoManifestModel.shipmentDetails.getConsolidationList().get(0);
-            dictionary.put(CONSOLIDATION_NUMBER, consol.getConsolidationNumber());
-            dictionary.put(AGENT_REFERENCE, consol.getAgentReference());
-            if(Constants.IMP.equalsIgnoreCase(cargoManifestModel.shipmentDetails.getDirection())) {
-                var ctoAddress = consol.getArrivalDetails() == null ? new ArrayList<>(): ReportHelper.getOrgAddress(consol.getArrivalDetails().getCTOId());
-                dictionary.put(CTO_ADDRESS, ctoAddress);
-                Set<String> arrivalRequest = new HashSet<>();
-                if(consol.getArrivalDetails()!=null){
-                    arrivalRequest.add(consol.getArrivalDetails().getLastForeignPort());
-                    Map<String, EntityTransferUnLocations> arrivalEntityTransferUnlocMap = masterDataUtils.getLocationDataFromCache(arrivalRequest, EntityTransferConstants.LOCATION_SERVICE_GUID);
-                    for (Map.Entry<String, EntityTransferUnLocations> entry : arrivalEntityTransferUnlocMap.entrySet()) {
-                        String key = entry.getKey();
-                        UnlocationsResponse value = jsonHelper.convertValue(entry.getValue(), UnlocationsResponse.class);
-                        unlocationsMap.put(key, value);
-                    }
-                    UnlocationsResponse arrival = unlocationsMap.get(consol.getArrivalDetails().getLastForeignPort());
-                    if (arrival != null)
-                        dictionary.put(LAST_FOREIGN_PORT_NAME, arrival.getLocCode());
-                }
-            } else {
-                var ctoAddress = consol.getDepartureDetails() == null ? new ArrayList<>(): ReportHelper.getOrgAddress(consol.getDepartureDetails().getCTOId());
-                dictionary.put(CTO_ADDRESS, ctoAddress);
-                Set<String> departureRequest = new HashSet<>();
-                if(consol.getDepartureDetails()!=null){
-                    departureRequest.add(consol.getDepartureDetails().getLastForeignPort());
-                    Map<String, EntityTransferUnLocations> departureEntityTransferUnlocMap = masterDataUtils.getLocationDataFromCache(departureRequest, EntityTransferConstants.LOCATION_SERVICE_GUID);
-                    for (Map.Entry<String, EntityTransferUnLocations> entry : departureEntityTransferUnlocMap.entrySet()) {
-                        String key = entry.getKey();
-                        UnlocationsResponse value = jsonHelper.convertValue(entry.getValue(), UnlocationsResponse.class);
-                        unlocationsMap.put(key, value);
-                    }
-                    UnlocationsResponse departure = unlocationsMap.get(consol.getDepartureDetails().getLastForeignPort());
-                    if (departure != null)
-                        dictionary.put(LAST_FOREIGN_PORT_NAME, departure.getLocCode());
-                }
-            }
-        }
+        processConsolidation(cargoManifestModel, dictionary, unlocationsMap);
 
         dictionary.put(INSERT_DATE, ConvertToDPWDateFormat(LocalDateTime.now(), tsDateTimeFormat, v1TenantSettingsResponse));
         dictionary.put(TOTAL_WEIGHT_, ConvertToWeightNumberFormat(cargoManifestModel.shipmentDetails.getWeight(), v1TenantSettingsResponse));
@@ -357,6 +160,91 @@ public class CargoManifestReport extends IReport{
         dictionary.put(CARRIER_BOOKING_REF, cargoManifestModel.shipmentDetails.getBookingNumber());
         dictionary.put(SERVICE_LEVEL, cargoManifestModel.shipmentDetails.getServiceType());
 
+        processShipmentRoutingList(cargoManifestModel, dictionary);
+
+        processReferenceNumbersList(cargoManifestModel, dictionary);
+        return dictionary;
+    }
+
+    private void processCargoManifestAwb(CargoManifestModel cargoManifestModel, Map<String, Object> dictionary) {
+        if(cargoManifestModel.awb != null) {
+            AwbCargoInfo cargoInfoRows = cargoManifestModel.awb.getAwbCargoInfo();
+            dictionary.put(ReportConstants.SCI, cargoInfoRows.getSci());
+            dictionary.put(RA_CSD, geteCSDInfo(cargoManifestModel.awb));
+            dictionary.put(ORIGINAL_PRINT_DATE, getPrintOriginalDate(cargoManifestModel.awb));
+            dictionary.put(USER_INITIALS, Optional.ofNullable(cargoInfoRows.getUserInitials()).map(StringUtility::toUpperCase).orElse(StringUtility.getEmptyString()));
+        }
+    }
+
+    private void processShipmentShippingLine(CargoManifestModel cargoManifestModel, Map<String, Object> dictionary) {
+        try {
+            if(!CommonUtils.IsStringNullOrEmpty(cargoManifestModel.shipmentDetails.getCarrierDetails().getShippingLine())) {
+                Set<String> carrierSet = new HashSet<>();
+                carrierSet.add(cargoManifestModel.shipmentDetails.getCarrierDetails().getShippingLine());
+                Map<String, EntityTransferCarrier> entityTransferCarrierMap = masterDataUtils.getCarrierDataFromCache(carrierSet);
+                dictionary.put(ReportConstants.FLIGHT_IATA_CODE, entityTransferCarrierMap.get(cargoManifestModel.shipmentDetails.getCarrierDetails().getShippingLine()).IATACode);
+            }
+        } catch (Exception ignored) {}
+    }
+
+    private void processShipmentPaymentTerms(CargoManifestModel cargoManifestModel, Map<String, Object> dictionary) {
+        if(!CommonUtils.IsStringNullOrEmpty(cargoManifestModel.shipmentDetails.getPaymentTerms())) {
+            MasterData paymentTerms = getMasterListData(MasterDataType.PAYMENT, cargoManifestModel.shipmentDetails.getPaymentTerms());
+            try {
+                dictionary.put(ReportConstants.PAYMENT_TERMS_DESCRIPTION, paymentTerms.getItemDescription());} catch (Exception ignored) {}
+            try {
+                dictionary.put(ReportConstants.PAYMENT_TERMS, cargoManifestModel.shipmentDetails.getPaymentTerms());} catch (Exception ignored) {}
+        }
+    }
+
+    private void processShipmentPackUnit(CargoManifestModel cargoManifestModel, Map<String, Object> dictionary) {
+        if(!CommonUtils.IsStringNullOrEmpty(cargoManifestModel.shipmentDetails.getPacksUnit())) {
+            MasterData packsUnitDesc = getMasterListData(MasterDataType.PACKS_UNIT, cargoManifestModel.shipmentDetails.getPacksUnit());
+            String packsUnit = null;
+            try {packsUnit = packsUnitDesc.getItemDescription();} catch (Exception ignored) {}
+            if(CommonUtils.IsStringNullOrEmpty(packsUnit))
+                packsUnit = cargoManifestModel.shipmentDetails.getPacksUnit();
+            dictionary.put(ReportConstants.PACKS_UNIT_DESCRIPTION, Constants.MPK.equals(packsUnit) ? Constants.PACKAGES : packsUnit);
+        }
+    }
+
+    private void processShipmentPackingList(CargoManifestModel cargoManifestModel, Map<String, Object> dictionary) {
+        if(!listIsNullOrEmpty(cargoManifestModel.shipmentDetails.getPackingList())) {
+            getPackingDetails(cargoManifestModel.shipmentDetails, dictionary);
+            dictionary.put(HAS_PACK_DETAILS, true);
+            var hazardousCheck = cargoManifestModel.shipmentDetails.getPackingList().stream().anyMatch(x -> !Objects.isNull(x.getHazardous()) && x.getHazardous());
+            var temperatureCheck = cargoManifestModel.shipmentDetails.getPackingList().stream().anyMatch(x -> !Objects.isNull(x.getIsTemperatureControlled()) && x.getIsTemperatureControlled());
+            dictionary.put(HAS_DANGEROUS_GOODS, hazardousCheck);
+            dictionary.put(HAS_TEMPERATURE_DETAILS, temperatureCheck);
+        } else {
+            dictionary.put(HAS_PACK_DETAILS, false);
+        }
+    }
+
+    private void processReferenceNumbersList(CargoManifestModel cargoManifestModel, Map<String, Object> dictionary) {
+        if (cargoManifestModel.shipmentDetails.getReferenceNumbersList() != null && !cargoManifestModel.shipmentDetails.getReferenceNumbersList().isEmpty()) {
+            Optional<ReferenceNumbersModel> refNumberModel = cargoManifestModel.shipmentDetails.getReferenceNumbersList().stream()
+                    .filter(i -> ReportConstants.CEN.equals(i.getType()))
+                    .reduce((first, second) -> second);
+            refNumberModel.ifPresent(referenceNumbersModel -> dictionary.put(CUSTOMS_ENTRY_NUMBER, referenceNumbersModel.getReferenceNumber()));
+        }
+    }
+
+    private List<String> getPartyDetails(PartiesModel shipmentDetails, CargoManifestModel cargoManifestModel) {
+        List<String> consigner = new ArrayList<>();
+        if (shipmentDetails != null) {
+            consigner = getOrgAddressWithPhoneEmail(shipmentDetails);
+            if (shipmentDetails.getOrgData() != null) {
+                Map<String, Object> partyOrg = shipmentDetails.getOrgData();
+                if (!Boolean.TRUE.equals(cargoManifestModel.shipmentSettingsDetails.getDisableBlPartiesName()) && getValueFromMap(partyOrg, ReportConstants.FULL_NAME) != null) {
+                    consigner.add(0, getValueFromMap(partyOrg, ReportConstants.FULL_NAME));
+                }
+            }
+        }
+        return consigner;
+    }
+
+    private void processShipmentRoutingList(CargoManifestModel cargoManifestModel, Map<String, Object> dictionary) {
         if (cargoManifestModel.shipmentDetails.getRoutingsList() != null && !cargoManifestModel.shipmentDetails.getRoutingsList().isEmpty()) {
             List<RoutingsModel> mainCarriageRouts = cargoManifestModel.shipmentDetails.getRoutingsList().stream()
                     .filter(i -> RoutingCarriage.MAIN_CARRIAGE.equals(i.getCarriage()))
@@ -382,14 +270,180 @@ public class CargoManifestReport extends IReport{
                 dictionary.put(ROUTINGS, mainCarriageRoutsList);
             }
         }
+    }
 
-        if (cargoManifestModel.shipmentDetails.getReferenceNumbersList() != null && !cargoManifestModel.shipmentDetails.getReferenceNumbersList().isEmpty()) {
-            Optional<ReferenceNumbersModel> refNumberModel = cargoManifestModel.shipmentDetails.getReferenceNumbersList().stream()
-                    .filter(i -> ReportConstants.CEN.equals(i.getType()))
-                    .reduce((first, second) -> second);
-            refNumberModel.ifPresent(referenceNumbersModel -> dictionary.put(CUSTOMS_ENTRY_NUMBER, referenceNumbersModel.getReferenceNumber()));
+    private void processConsolidation(CargoManifestModel cargoManifestModel, Map<String, Object> dictionary, Map<String, UnlocationsResponse> unlocationsMap) {
+        if (cargoManifestModel.shipmentDetails.getConsolidationList() != null && !cargoManifestModel.shipmentDetails.getConsolidationList().isEmpty()) {
+            ConsolidationModel consol = cargoManifestModel.shipmentDetails.getConsolidationList().get(0);
+            dictionary.put(CONSOLIDATION_NUMBER, consol.getConsolidationNumber());
+            dictionary.put(AGENT_REFERENCE, consol.getAgentReference());
+            if(Constants.IMP.equalsIgnoreCase(cargoManifestModel.shipmentDetails.getDirection())) {
+                var ctoAddress = consol.getArrivalDetails() == null ? new ArrayList<>(): ReportHelper.getOrgAddress(consol.getArrivalDetails().getCTOId());
+                dictionary.put(CTO_ADDRESS, ctoAddress);
+                Set<String> arrivalRequest = new HashSet<>();
+                processConsoleArrivalDetails(dictionary, unlocationsMap, consol, arrivalRequest);
+            } else {
+                var ctoAddress = consol.getDepartureDetails() == null ? new ArrayList<>(): ReportHelper.getOrgAddress(consol.getDepartureDetails().getCTOId());
+                dictionary.put(CTO_ADDRESS, ctoAddress);
+                Set<String> departureRequest = new HashSet<>();
+                processConsoleDepartureDetails(dictionary, unlocationsMap, consol, departureRequest);
+            }
         }
-        return dictionary;
+    }
+
+    private void processConsoleArrivalDetails(Map<String, Object> dictionary, Map<String, UnlocationsResponse> unlocationsMap, ConsolidationModel consol, Set<String> arrivalRequest) {
+        if(consol.getArrivalDetails()!=null){
+            arrivalRequest.add(consol.getArrivalDetails().getLastForeignPort());
+            Map<String, EntityTransferUnLocations> arrivalEntityTransferUnlocMap = masterDataUtils.getLocationDataFromCache(arrivalRequest, EntityTransferConstants.LOCATION_SERVICE_GUID);
+            for (Map.Entry<String, EntityTransferUnLocations> entry : arrivalEntityTransferUnlocMap.entrySet()) {
+                String key = entry.getKey();
+                UnlocationsResponse value = jsonHelper.convertValue(entry.getValue(), UnlocationsResponse.class);
+                unlocationsMap.put(key, value);
+            }
+            UnlocationsResponse arrival = unlocationsMap.get(consol.getArrivalDetails().getLastForeignPort());
+            if (arrival != null)
+                dictionary.put(LAST_FOREIGN_PORT_NAME, arrival.getLocCode());
+        }
+    }
+
+    private void processConsoleDepartureDetails(Map<String, Object> dictionary, Map<String, UnlocationsResponse> unlocationsMap, ConsolidationModel consol, Set<String> departureRequest) {
+        if(consol.getDepartureDetails()!=null){
+            departureRequest.add(consol.getDepartureDetails().getLastForeignPort());
+            Map<String, EntityTransferUnLocations> departureEntityTransferUnlocMap = masterDataUtils.getLocationDataFromCache(departureRequest, EntityTransferConstants.LOCATION_SERVICE_GUID);
+            for (Map.Entry<String, EntityTransferUnLocations> entry : departureEntityTransferUnlocMap.entrySet()) {
+                String key = entry.getKey();
+                UnlocationsResponse value = jsonHelper.convertValue(entry.getValue(), UnlocationsResponse.class);
+                unlocationsMap.put(key, value);
+            }
+            UnlocationsResponse departure = unlocationsMap.get(consol.getDepartureDetails().getLastForeignPort());
+            if (departure != null)
+                dictionary.put(LAST_FOREIGN_PORT_NAME, departure.getLocCode());
+        }
+    }
+
+
+    private void processShipmentContainersList(CargoManifestModel cargoManifestModel, Map<String, Object> dictionary, V1TenantSettingsResponse v1TenantSettingsResponse) {
+        if (cargoManifestModel.shipmentDetails.getContainersList() == null || cargoManifestModel.shipmentDetails.getContainersList().isEmpty()) {
+            return; // Early return if the list is empty or null
+        }
+
+        List<ContainerModel> containers = cargoManifestModel.shipmentDetails.getContainersList();
+        List<ShipmentContainers> shipmentContainersList = new ArrayList<>();
+        BigDecimal totalGrossWeight = BigDecimal.ZERO;
+        BigDecimal totalGrossVolume = BigDecimal.ZERO;
+        long totalContainerCount = 0;
+        long totalPacks = 0;
+
+        // Process each container and calculate totals
+        for (ContainerModel item : containers) {
+            shipmentContainersList.add(getShipmentContainer(item));
+
+            if (item.getGrossWeight() != null) {
+                totalGrossWeight = totalGrossWeight.add(item.getGrossWeight());
+            }
+            if (item.getGrossVolume() != null) {
+                totalGrossVolume = totalGrossVolume.add(item.getGrossVolume());
+            }
+            if (item.getContainerCount() != null) {
+                totalContainerCount += item.getContainerCount();
+            }
+            if (!CommonUtils.IsStringNullOrEmpty(item.getPacks())) {
+                totalPacks += Long.parseLong(item.getPacks());
+            }
+        }
+
+        // Convert ShipmentContainers to Map and process values
+        List<Map<String, Object>> valuesContainer = new ArrayList<>();
+        for (ShipmentContainers shipmentContainers : shipmentContainersList) {
+            valuesContainer.add(jsonHelper.convertValue(shipmentContainers, new TypeReference<>() {}));
+        }
+        processValuesContainer(v1TenantSettingsResponse, valuesContainer);
+
+        // Update dictionary with processed values and totals
+        dictionary.put(ReportConstants.SHIPMENT_CONTAINERS, valuesContainer);
+        dictionary.put(COMMON_CONTAINERS, valuesContainer);
+        dictionary.put(ReportConstants.TotalCntrWeight, ConvertToWeightNumberFormat(totalGrossWeight, v1TenantSettingsResponse));
+        dictionary.put(ReportConstants.TotalCntrVolume, ConvertToVolumeNumberFormat(totalGrossVolume, v1TenantSettingsResponse));
+        dictionary.put(ReportConstants.TotalCntrCount, addCommaWithoutDecimal(new BigDecimal(totalContainerCount)));
+        dictionary.put(ReportConstants.TotalCntrPacks, addCommaWithoutDecimal(new BigDecimal(totalPacks)));
+    }
+
+    private void processValuesContainer(V1TenantSettingsResponse v1TenantSettingsResponse, List<Map<String, Object>> valuesContainer) {
+        for (Map<String, Object> v : valuesContainer) {
+            updateValue(v, ReportConstants.GROSS_VOLUME, ConvertToVolumeNumberFormat(v.get(ReportConstants.GROSS_VOLUME), v1TenantSettingsResponse));
+            updateValue(v, ReportConstants.GROSS_WEIGHT, ConvertToWeightNumberFormat(v.get(ReportConstants.GROSS_WEIGHT), v1TenantSettingsResponse));
+            updateValue(v, ReportConstants.SHIPMENT_PACKS, addCommaWithoutDecimal(new BigDecimal(v.get(ReportConstants.SHIPMENT_PACKS).toString())));
+            updateValue(v, ReportConstants.TareWeight, ConvertToWeightNumberFormat(v.get(ReportConstants.TareWeight), v1TenantSettingsResponse));
+            updateValue(v, ReportConstants.VGMWeight, ConvertToWeightNumberFormat(v.get(ReportConstants.VGMWeight), v1TenantSettingsResponse));
+
+            if (v.containsKey(CONTAINER_TYPE)) {
+                v.put(CONTAINER_TYPE_DESCRIPTION, v.get(CONTAINER_TYPE));
+            }
+        }
+    }
+
+    private void updateValue(Map<String, Object> map, String key, Object newValue) {
+        if (map.containsKey(key) && map.get(key) != null) {
+            map.put(key, newValue);
+        }
+    }
+
+    private void processShipmentBookingCarriageList(CargoManifestModel cargoManifestModel, Map<String, Object> dictionary, String tsDateTimeFormat, V1TenantSettingsResponse v1TenantSettingsResponse, Map<String, UnlocationsResponse> unlocationsMap) {
+        if(cargoManifestModel.shipmentDetails.getBookingCarriagesList() != null && !cargoManifestModel.shipmentDetails.getBookingCarriagesList().isEmpty()) {
+            Set<String> unlocoStrings = new HashSet<>();
+            for (BookingCarriageModel bookingCarriageModel : cargoManifestModel.shipmentDetails.getBookingCarriagesList()) {
+                if (bookingCarriageModel.getCarriageType() != null && (bookingCarriageModel.getCarriageType().equals(Constants.PreCarriage) || bookingCarriageModel.getCarriageType().equals(Constants.Main))) {
+                    dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.Vessel, bookingCarriageModel.getVessel());
+                    dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.VOYAGE, bookingCarriageModel.getVoyage());
+                    dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.ETD_CAPS, ConvertToDPWDateFormat(bookingCarriageModel.getEtd(), tsDateTimeFormat, v1TenantSettingsResponse));
+                    dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.ETA_CAPS, ConvertToDPWDateFormat(bookingCarriageModel.getEta(), tsDateTimeFormat, v1TenantSettingsResponse));
+                    unlocoStrings.add(bookingCarriageModel.getPortOfLoading());
+                    unlocoStrings.add(bookingCarriageModel.getPortOfDischarge());
+                    Map<String, EntityTransferUnLocations> entityUnLocationsMap = masterDataUtils.getLocationDataFromCache(unlocoStrings, EntityTransferConstants.LOCATION_SERVICE_GUID);
+                    for (Map.Entry<String, EntityTransferUnLocations> entry : entityUnLocationsMap.entrySet()) {
+                        String key = entry.getKey();
+                        UnlocationsResponse value = jsonHelper.convertValue(entry.getValue(), UnlocationsResponse.class);
+                        unlocationsMap.put(key, value);
+                    }
+                    processPolPod(dictionary, unlocationsMap, bookingCarriageModel);
+                }
+            }
+        }
+    }
+
+    private void processPolPod(Map<String, Object> dictionary, Map<String, UnlocationsResponse> unlocationsMap, BookingCarriageModel bookingCarriageModel) {
+        UnlocationsResponse pol = unlocationsMap.get(bookingCarriageModel.getPortOfLoading());
+        UnlocationsResponse pod = unlocationsMap.get(bookingCarriageModel.getPortOfDischarge());
+        if (pol != null) {
+            dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.PlaceofLoadCountry, pol.getCountry());
+            dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.PlaceofLoadPort, pol.getPortName());
+            dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.PlaceofLoadCode, pol.getLocCode());
+        }
+        if (pod != null) {
+            dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.PlaceofDischargeCountry, pod.getCountry());
+            dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.PlaceofDischargePort, pod.getPortName());
+            dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.PlaceofDischargeCode, pod.getLocCode());
+        }
+    }
+
+    private void processShipmentPackingList(CargoManifestModel cargoManifestModel, V1TenantSettingsResponse v1TenantSettingsResponse, Map<String, Object> dictionary) {
+        if(cargoManifestModel.shipmentDetails.getPackingList() != null && !cargoManifestModel.shipmentDetails.getPackingList().isEmpty()) {
+            var request = cargoManifestModel.shipmentDetails.getPackingList().stream().map(PackingModel::getCommodity).filter(StringUtility::isNotEmpty).toList();
+            var v1DataMap = masterDataUtils.fetchInBulkCommodityTypes(request);
+            List<Map<String, Object>> packDictionary = new ArrayList<>();
+            for (PackingModel pack : cargoManifestModel.shipmentDetails.getPackingList()) {
+                var map = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(pack));
+                map.put(ReportConstants.WEIGHT, ConvertToWeightNumberFormat(map.get(ReportConstants.WEIGHT), v1TenantSettingsResponse));
+                map.put(ReportConstants.NET_WEIGHT, ConvertToWeightNumberFormat(map.get(ReportConstants.NET_WEIGHT), v1TenantSettingsResponse));
+                map.put(ReportConstants.VOLUME_WEIGHT, ConvertToWeightNumberFormat(map.get(ReportConstants.VOLUME_WEIGHT), v1TenantSettingsResponse));
+                map.put(ReportConstants.VOLUME, ConvertToVolumeNumberFormat(map.get(ReportConstants.VOLUME), v1TenantSettingsResponse));
+                if (v1DataMap.containsKey(pack.getCommodity()))
+                    map.put(ReportConstants.COMMODITY_NAME, v1DataMap.get(pack.getCommodity()).getDescription());
+                packDictionary.add(map);
+            }
+            packDictionary.forEach(this::JsonDateFormat);
+            dictionary.put(ReportConstants.ITEMS, packDictionary);
+        }
     }
 
 }

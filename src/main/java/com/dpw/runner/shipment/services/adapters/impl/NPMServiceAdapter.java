@@ -375,39 +375,43 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                 locCodes.add(cont.getDestination());
             });
             List<Object> criteria = Arrays.asList(
-                    Arrays.asList(LOCATIONS_REFERENCE_GUID),
+                    List.of(LOCATIONS_REFERENCE_GUID),
                     "In",
-                    Arrays.asList(locCodes)
+                    List.of(locCodes)
             );
             CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).criteriaRequests(criteria).build();
             V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
             List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
             if (unlocationsResponse != null && !unlocationsResponse.isEmpty()) {
-                Map<String, String> locationMap = new HashMap<>();
-                for (UnlocationsResponse unlocation : unlocationsResponse) {
-                    locationMap.put(unlocation.getLocationsReferenceGUID(), unlocation.getName());
-                }
-                Map<String, List<NPMContractsResponse.NPMContractResponse>> responseMap = new HashMap<>();
-                response.getContracts().forEach(cont -> {
-                    if(locationMap.containsKey(cont.getOrigin()))
-                        cont.setOrigin_name(locationMap.get(cont.getOrigin()));
-                    if(locationMap.containsKey(cont.getDestination()))
-                        cont.setDestination_name(locationMap.get(cont.getDestination()));
-                    List<NPMContractsResponse.NPMContractResponse> list = new ArrayList<>();
-                    if(responseMap.get(cont.getParent_contract_id()) != null && !responseMap.get(cont.getParent_contract_id()).isEmpty())
-                        list.addAll(responseMap.get(cont.getParent_contract_id()));
-                    list.add(cont);
-                    responseMap.put(cont.getParent_contract_id(), list);
-                });
-                for (var mapResponse: responseMap.entrySet()) {
-                    runnerResponseList.add(NPMContractsRunnerResponse.builder().
-                            parent_contract_id(mapResponse.getKey()).
-                            contracts(mapResponse.getValue()).
-                            build());
-                }
+                processUnLocationResponse(response, unlocationsResponse, runnerResponseList);
             }
         }
         return runnerResponseList;
+    }
+
+    private void processUnLocationResponse(NPMContractsResponse response, List<UnlocationsResponse> unlocationsResponse, List<NPMContractsRunnerResponse> runnerResponseList) {
+        Map<String, String> locationMap = new HashMap<>();
+        for (UnlocationsResponse unlocation : unlocationsResponse) {
+            locationMap.put(unlocation.getLocationsReferenceGUID(), unlocation.getName());
+        }
+        Map<String, List<NPMContractsResponse.NPMContractResponse>> responseMap = new HashMap<>();
+        response.getContracts().forEach(cont -> {
+            if(locationMap.containsKey(cont.getOrigin()))
+                cont.setOrigin_name(locationMap.get(cont.getOrigin()));
+            if(locationMap.containsKey(cont.getDestination()))
+                cont.setDestination_name(locationMap.get(cont.getDestination()));
+            List<NPMContractsResponse.NPMContractResponse> list = new ArrayList<>();
+            if(responseMap.get(cont.getParent_contract_id()) != null && !responseMap.get(cont.getParent_contract_id()).isEmpty())
+                list.addAll(responseMap.get(cont.getParent_contract_id()));
+            list.add(cont);
+            responseMap.put(cont.getParent_contract_id(), list);
+        });
+        for (var mapResponse: responseMap.entrySet()) {
+            runnerResponseList.add(NPMContractsRunnerResponse.builder().
+                    parent_contract_id(mapResponse.getKey()).
+                    contracts(mapResponse.getValue()).
+                    build());
+        }
     }
 
     private String mapMeasurementBasis(String uom)
@@ -451,78 +455,8 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         {
             FetchOffersResponse.Offer offer = response.getOffers().get(0);
             if(offer.getEntity_rate_cards() != null && !offer.getEntity_rate_cards().isEmpty())
-            {
-                for (FetchOffersResponse.EntityRateCard entityRateCard: offer.getEntity_rate_cards()) {
-                    if(entityRateCard.getLoads_rates_info() != null && !entityRateCard.getLoads_rates_info().isEmpty())
-                    {
-                        for(FetchOffersResponse.LoadsRatesInfo loadsRatesInfo : entityRateCard.getLoads_rates_info())
-                        {
-                            if(loadsRatesInfo.getAssociated_rates() != null && !loadsRatesInfo.getAssociated_rates().isEmpty())
-                            {
-                                for(FetchOffersResponse.AssociatedRate associatedRate: loadsRatesInfo.getAssociated_rates())
-                                {
-                                    if(associatedRate != null)
-                                    {
-                                        associatedRate.setRates_uom(mapMeasurementBasis(associatedRate.getRates_uom()));
-                                        if(Objects.equals(associatedRate.getRates_uom(), NPMConstants.CONTAINER_COUNT))
-                                        {
-                                            if(loadsRatesInfo.getQuantity() != null)
-                                            {
-                                                associatedRate.setTotal_unit_count(BigDecimal.valueOf(loadsRatesInfo.getQuantity()));
-                                                associatedRate.setMeasurement_unit("Containers");
-                                            }
-                                        }
-                                        else if(Objects.equals(associatedRate.getRates_uom(), NPMConstants.SHIPMENT_CAMEL_CASE))
-                                        {
-                                            associatedRate.setTotal_unit_count(BigDecimal.ONE);
-                                            associatedRate.setMeasurement_unit(NPMConstants.SHIPMENT);
-                                        }
-                                        else
-                                        {
-                                            associatedRate.setTotal_unit_count(associatedRate.getChargeable());
-                                            associatedRate.setMeasurement_unit(associatedRate.getChargeable_uom());
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    if(entityRateCard.getAggregated_shipment_load_rates_info() != null && !entityRateCard.getAggregated_shipment_load_rates_info().isEmpty())
-                    {
-                        for(FetchOffersResponse.LoadsRatesInfo loadsRatesInfo : entityRateCard.getAggregated_shipment_load_rates_info())
-                        {
-                            if(loadsRatesInfo.getAssociated_rates() != null && !loadsRatesInfo.getAssociated_rates().isEmpty())
-                            {
-                                for(FetchOffersResponse.AssociatedRate associatedRate: loadsRatesInfo.getAssociated_rates())
-                                {
-                                    if(associatedRate != null) {
-                                        associatedRate.setRates_uom(mapMeasurementBasis(associatedRate.getRates_uom()));
-                                        if(Objects.equals(associatedRate.getRates_uom(), NPMConstants.CONTAINER_COUNT))
-                                        {
-                                            if(loadsRatesInfo.getQuantity() != null)
-                                            {
-                                                associatedRate.setTotal_unit_count(BigDecimal.valueOf(loadsRatesInfo.getQuantity()));
-                                                associatedRate.setMeasurement_unit("Containers");
-                                            }
-                                        }
-                                        else if(Objects.equals(associatedRate.getRates_uom(), NPMConstants.SHIPMENT_CAMEL_CASE))
-                                        {
-                                            associatedRate.setTotal_unit_count(BigDecimal.ONE);
-                                            associatedRate.setMeasurement_unit(NPMConstants.SHIPMENT);
-                                        }
-                                        else
-                                        {
-                                            associatedRate.setTotal_unit_count(associatedRate.getChargeable());
-                                            associatedRate.setMeasurement_unit(associatedRate.getChargeable_uom());
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            if(offer.getShipment_level_rates() != null && offer.getShipment_level_rates().size() > 0)
+                processEntityRateCards(offer);
+            if(offer.getShipment_level_rates() != null && !offer.getShipment_level_rates().isEmpty())
             {
                 for(FetchOffersResponse.AssociatedRate associatedRate : offer.getShipment_level_rates())
                 {
@@ -532,6 +466,90 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                         associatedRate.setMeasurement_unit(NPMConstants.SHIPMENT);
                     }
                 }
+            }
+        }
+    }
+
+    private void processEntityRateCards(FetchOffersResponse.Offer offer) {
+        for (FetchOffersResponse.EntityRateCard entityRateCard: offer.getEntity_rate_cards()) {
+            processLoadsRatesInfo(entityRateCard);
+            if(entityRateCard.getAggregated_shipment_load_rates_info() != null && !entityRateCard.getAggregated_shipment_load_rates_info().isEmpty())
+            {
+                for(FetchOffersResponse.LoadsRatesInfo loadsRatesInfo : entityRateCard.getAggregated_shipment_load_rates_info())
+                {
+                    if(loadsRatesInfo.getAssociated_rates() != null && !loadsRatesInfo.getAssociated_rates().isEmpty())
+                    {
+                        processFetchOffersAssociatedRate(loadsRatesInfo);
+                    }
+                }
+            }
+        }
+    }
+
+    private void processFetchOffersAssociatedRate(FetchOffersResponse.LoadsRatesInfo loadsRatesInfo) {
+        for(FetchOffersResponse.AssociatedRate associatedRate: loadsRatesInfo.getAssociated_rates())
+        {
+            if(associatedRate != null) {
+                associatedRate.setRates_uom(mapMeasurementBasis(associatedRate.getRates_uom()));
+                if(Objects.equals(associatedRate.getRates_uom(), NPMConstants.CONTAINER_COUNT))
+                {
+                    if(loadsRatesInfo.getQuantity() != null)
+                    {
+                        associatedRate.setTotal_unit_count(BigDecimal.valueOf(loadsRatesInfo.getQuantity()));
+                        associatedRate.setMeasurement_unit("Containers");
+                    }
+                }
+                else if(Objects.equals(associatedRate.getRates_uom(), NPMConstants.SHIPMENT_CAMEL_CASE))
+                {
+                    associatedRate.setTotal_unit_count(BigDecimal.ONE);
+                    associatedRate.setMeasurement_unit(NPMConstants.SHIPMENT);
+                }
+                else
+                {
+                    associatedRate.setTotal_unit_count(associatedRate.getChargeable());
+                    associatedRate.setMeasurement_unit(associatedRate.getChargeable_uom());
+                }
+            }
+        }
+    }
+
+    private void processLoadsRatesInfo(FetchOffersResponse.EntityRateCard entityRateCard) {
+        if(entityRateCard.getLoads_rates_info() != null && !entityRateCard.getLoads_rates_info().isEmpty())
+        {
+            for(FetchOffersResponse.LoadsRatesInfo loadsRatesInfo : entityRateCard.getLoads_rates_info())
+            {
+                if(loadsRatesInfo.getAssociated_rates() != null && !loadsRatesInfo.getAssociated_rates().isEmpty())
+                {
+                    for(FetchOffersResponse.AssociatedRate associatedRate: loadsRatesInfo.getAssociated_rates())
+                    {
+                        processLoadRatesAssociatedRate(loadsRatesInfo, associatedRate);
+                    }
+                }
+            }
+        }
+    }
+
+    private void processLoadRatesAssociatedRate(FetchOffersResponse.LoadsRatesInfo loadsRatesInfo, FetchOffersResponse.AssociatedRate associatedRate) {
+        if(associatedRate != null)
+        {
+            associatedRate.setRates_uom(mapMeasurementBasis(associatedRate.getRates_uom()));
+            if(Objects.equals(associatedRate.getRates_uom(), NPMConstants.CONTAINER_COUNT))
+            {
+                if(loadsRatesInfo.getQuantity() != null)
+                {
+                    associatedRate.setTotal_unit_count(BigDecimal.valueOf(loadsRatesInfo.getQuantity()));
+                    associatedRate.setMeasurement_unit("Containers");
+                }
+            }
+            else if(Objects.equals(associatedRate.getRates_uom(), NPMConstants.SHIPMENT_CAMEL_CASE))
+            {
+                associatedRate.setTotal_unit_count(BigDecimal.ONE);
+                associatedRate.setMeasurement_unit(NPMConstants.SHIPMENT);
+            }
+            else
+            {
+                associatedRate.setTotal_unit_count(associatedRate.getChargeable());
+                associatedRate.setMeasurement_unit(associatedRate.getChargeable_uom());
             }
         }
     }
@@ -645,15 +663,15 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     private List<NPMFetchOffersRequest.LoadInformation> createLoadsInfo(NPMFetchOffersRequestFromUI request, CustomerBooking customerBooking, boolean isAlteration, String offerType) {
         //First Time
         List<NPMFetchOffersRequest.LoadInformation> result = new ArrayList<>();
-        if (isAlteration == false) {
+        if (!isAlteration) {
             var containers = request.getContainers() != null ? request.getContainers() : new ArrayList<NPMFetchOffersRequestFromUI.Container>();
             var packs = request.getPacks() != null ? request.getPacks() : new ArrayList<NPMFetchOffersRequestFromUI.Pack>();
             result.addAll(containers.stream().filter(Objects::nonNull).map(
-                    c -> createLoadInfoFromContainers(request, c, offerType)).collect(Collectors.toList()));
+                    c -> createLoadInfoFromContainers(request, c, offerType)).toList());
             result.addAll(packs.stream().filter(Objects::nonNull).map(
-                    p -> createLoadInfoFromPacks(request, p, offerType)).collect(Collectors.toList()));
+                    p -> createLoadInfoFromPacks(request, p, offerType)).toList());
 
-            if((request.getPacks() == null || request.getPacks().size() == 0)
+            if((request.getPacks() == null || request.getPacks().isEmpty())
                     && (NPMConstants.AIR.equals(request.getModeOfTransport())  || NPMConstants.LCL.equals(request.getCargoType())))
             {
                  result.add(createLoadInfoForEmptyPacksList(request));
@@ -666,6 +684,31 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         Map<Long, Containers> existingContainers = customerBooking != null ? customerBooking.getContainersList().stream().filter(Objects::nonNull).collect(Collectors.toMap(Containers::getId, c -> c)) : new HashMap<>();
         Map<Long, Packing> existingPacks = customerBooking != null ? customerBooking.getPackingList().stream().filter(Objects::nonNull).collect(Collectors.toMap(Packing::getId, c -> c)) : new HashMap<>();
 
+        processNPMRequestContainers(request, offerType, result, existingContainers);
+        processNPMRequestPacks(request, offerType, result, existingPacks);
+
+        return result;
+    }
+
+    private void processNPMRequestPacks(NPMFetchOffersRequestFromUI request, String offerType, List<NPMFetchOffersRequest.LoadInformation> result, Map<Long, Packing> existingPacks) {
+        if(request.getPacks() != null) {
+
+            result.addAll(request.getPacks().stream().filter(Objects::nonNull).map(
+                    p -> {
+                        NPMFetchOffersRequest.LoadInformation model =
+                                createLoadInfoFromPacks(request, p, offerType);
+                        if (existingPacks.containsKey(p.getId())) {
+                            Packing packing = existingPacks.get(p.getId());
+                            model.getLoad_attributes().setQuantity(Long.valueOf(packing.getPacks()));
+                        }
+
+                        return model;
+                    }
+            ).toList());
+        }
+    }
+
+    private void processNPMRequestContainers(NPMFetchOffersRequestFromUI request, String offerType, List<NPMFetchOffersRequest.LoadInformation> result, Map<Long, Containers> existingContainers) {
         if(request.getContainers() != null) {
             result.addAll(request.getContainers().stream().filter(Objects::nonNull).map(
                     c -> {
@@ -680,25 +723,8 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                         }
 
                         return model;
-                    }).collect(Collectors.toList()));
+                    }).toList());
         }
-        if(request.getPacks() != null) {
-
-            result.addAll(request.getPacks().stream().filter(Objects::nonNull).map(
-                    p -> {
-                        NPMFetchOffersRequest.LoadInformation model =
-                                createLoadInfoFromPacks(request, p, offerType);
-                        if (existingPacks.containsKey(p.getId())) {
-                            Packing packing = existingPacks.get(p.getId());
-                            model.getLoad_attributes().setQuantity(Long.valueOf(packing.getPacks()));
-                        }
-
-                        return model;
-                    }
-            ).collect(Collectors.toList()));
-        }
-
-        return result;
     }
 
     private NPMFetchOffersRequest.LoadInformation createLoadInfoForEmptyPacksList(NPMFetchOffersRequestFromUI request) {
@@ -777,7 +803,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
 
     private void mapContractToShipment(ShipmentDetailsResponse shipmentResponse, ListContractResponse contractResponse) {
         List<ListContractResponse.ContractResponse> contracts = contractResponse.getContracts();
-        if(contracts != null && contracts.size() > 0)
+        if(contractNotNull(contracts))
         {
             ListContractResponse.ContractResponse contract = contracts.get(0);
             shipmentResponse.setContractId(contract.getContract_id());
@@ -808,6 +834,10 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                 }
             }
         }
+    }
+
+    private boolean contractNotNull(List<ListContractResponse.ContractResponse> contracts) {
+        return contracts != null && !contracts.isEmpty();
     }
 
     private CarrierDetailResponse createCarrierDetails(ListContractResponse.ContractResponse contract) {
@@ -853,72 +883,85 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
 
     private List<PackingResponse> createPackings(ListContractResponse.ContractResponse contractResponse)
     {
-        if(contractResponse.getContract_usage() != null && contractResponse.getContract_usage().size() > 0)
+        if(contractResponse.getContract_usage() != null && !contractResponse.getContract_usage().isEmpty())
         {
             List<ListContractResponse.ContractUsage> contractUsages = contractResponse.getContract_usage();
             List<PackingResponse> packingList = new ArrayList<>();
             for(var contractUsage: contractUsages) {
-                var packing = new PackingResponse();
-                var filter_attributes = contractUsage.getFilter_params();
-                if(filter_attributes != null)
-                {
-                    if(filter_attributes.getCargo_type() != null && filter_attributes.getCargo_type().size() > 0)
-                        packing.setPacksType(filter_attributes.getCargo_type().get(0));
-                    if(filter_attributes.getCommodity() != null && filter_attributes.getCommodity().size() > 0)
-                        packing.setCommodityGroup(filter_attributes.getCommodity().get(0));
-                }
-                var meta = contractUsage.getMeta();
-                if(meta != null)
-                {
-                     var load_attributes = meta.getLoad_attributes();
-                     packing.setPacks(load_attributes.getQuantity() != null ? load_attributes.getQuantity().toString() : null);
-                     packing.setWeight(load_attributes.getWeight());
-                     packing.setWeightUnit(load_attributes.getWeight_uom());
-                     packing.setVolume(load_attributes.getVolume());
-                     packing.setVolumeUnit(load_attributes.getVolume_uom());
-                     packing.setIsDimension(false);
-                     if(load_attributes.getDimensions() != null)
-                     {
-                         if(load_attributes.getDimensions().getLength() != null)
-                            packing.setLength(BigDecimal.valueOf(load_attributes.getDimensions().getLength()));
-                         if(load_attributes.getDimensions().getWidth() != null)
-                             packing.setWidth(BigDecimal.valueOf(load_attributes.getDimensions().getWidth()));
-                         if(load_attributes.getDimensions().getHeight() != null)
-                             packing.setHeight(BigDecimal.valueOf(load_attributes.getDimensions().getHeight()));
-                         packing.setLengthUnit(load_attributes.getDimensions().getUom());
-                         packing.setHeightUnit(load_attributes.getDimensions().getUom());
-                         packing.setWidthUnit(load_attributes.getDimensions().getUom());
-                         packing.setIsDimension(true);
-                     }
-                     packingList.add(packing);
-                }
+                var packing = getPackingResponse(contractUsage);
+                setPackingListMeta(contractUsage, packing, packingList);
             }
             return packingList;
         }
         return null;
     }
 
+    private PackingResponse getPackingResponse(ListContractResponse.ContractUsage contractUsage) {
+        var packing = new PackingResponse();
+        var filterAttributes = contractUsage.getFilter_params();
+        if(filterAttributes != null)
+        {
+            if(filterAttributes.getCargo_type() != null && !filterAttributes.getCargo_type().isEmpty())
+                packing.setPacksType(filterAttributes.getCargo_type().get(0));
+            if(filterAttributes.getCommodity() != null && !filterAttributes.getCommodity().isEmpty())
+                packing.setCommodityGroup(filterAttributes.getCommodity().get(0));
+        }
+        return packing;
+    }
+
+    private void setPackingListMeta(ListContractResponse.ContractUsage contractUsage, PackingResponse packing, List<PackingResponse> packingList) {
+        var meta = contractUsage.getMeta();
+        if(meta != null)
+        {
+             var loadAttributes = meta.getLoad_attributes();
+             packing.setPacks(loadAttributes.getQuantity() != null ? loadAttributes.getQuantity().toString() : null);
+             packing.setWeight(loadAttributes.getWeight());
+             packing.setWeightUnit(loadAttributes.getWeight_uom());
+             packing.setVolume(loadAttributes.getVolume());
+             packing.setVolumeUnit(loadAttributes.getVolume_uom());
+             packing.setIsDimension(false);
+             if(loadAttributes.getDimensions() != null)
+             {
+                 if(loadAttributes.getDimensions().getLength() != null)
+                    packing.setLength(BigDecimal.valueOf(loadAttributes.getDimensions().getLength()));
+                 if(loadAttributes.getDimensions().getWidth() != null)
+                     packing.setWidth(BigDecimal.valueOf(loadAttributes.getDimensions().getWidth()));
+                 if(loadAttributes.getDimensions().getHeight() != null)
+                     packing.setHeight(BigDecimal.valueOf(loadAttributes.getDimensions().getHeight()));
+                 packing.setLengthUnit(loadAttributes.getDimensions().getUom());
+                 packing.setHeightUnit(loadAttributes.getDimensions().getUom());
+                 packing.setWidthUnit(loadAttributes.getDimensions().getUom());
+                 packing.setIsDimension(true);
+             }
+             packingList.add(packing);
+        }
+    }
+
     private Set<ContainerResponse> createContainers(ListContractResponse.ContractResponse contractResponse)
     {
-        if(contractResponse.getContract_usage() != null && contractResponse.getContract_usage().size() > 0) {
+        if(contractResponse.getContract_usage() != null && !contractResponse.getContract_usage().isEmpty()) {
             List<ListContractResponse.ContractUsage> contractUsages = contractResponse.getContract_usage();
-            Set<ContainerResponse> containerList = new HashSet<>();
-            for(var contractUsage: contractUsages)
-            {
-                ContainerResponse containerResponse = new ContainerResponse();
-                containerResponse.setContainerCount(Objects.isNull(contractUsage.getMeta()) ? contractUsage.getUsage() : contractUsage.getMeta().getOriginal_usage());
-                var filter_attributes = contractUsage.getFilter_params();
-                if(filter_attributes != null)
-                {
-                    if(filter_attributes.getCargo_type() != null && filter_attributes.getCargo_type().size() > 0)
-                        containerResponse.setContainerCode(filter_attributes.getCargo_type().get(0));
-                    if(filter_attributes.getCommodity() != null && filter_attributes.getCommodity().size() > 0)
-                        containerResponse.setCommodityGroup(filter_attributes.getCommodity().get(0));
-                }
-                containerList.add(containerResponse);
-            }
-            return containerList;
+            return getContainerList(contractUsages);
         }
         return null;
+    }
+
+    private Set<ContainerResponse> getContainerList(List<ListContractResponse.ContractUsage> contractUsages) {
+        Set<ContainerResponse> containerList = new HashSet<>();
+        for(var contractUsage: contractUsages)
+        {
+            ContainerResponse containerResponse = new ContainerResponse();
+            containerResponse.setContainerCount(Objects.isNull(contractUsage.getMeta()) ? contractUsage.getUsage() : contractUsage.getMeta().getOriginal_usage());
+            var filterAttributes = contractUsage.getFilter_params();
+            if(filterAttributes != null)
+            {
+                if(filterAttributes.getCargo_type() != null && !filterAttributes.getCargo_type().isEmpty())
+                    containerResponse.setContainerCode(filterAttributes.getCargo_type().get(0));
+                if(filterAttributes.getCommodity() != null && !filterAttributes.getCommodity().isEmpty())
+                    containerResponse.setCommodityGroup(filterAttributes.getCommodity().get(0));
+            }
+            containerList.add(containerResponse);
+        }
+        return containerList;
     }
 }

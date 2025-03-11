@@ -721,15 +721,15 @@ class DeliveryOrderReportTest extends CommonMocks {
         ShipmentModel shipmentModel = new ShipmentModel();
         shipmentModel.setTransportMode(SEA);
         shipmentModel.setDirection(EXP);
-        shipmentModel.setContainersList(Arrays.asList(new ContainerModel()));
+        shipmentModel.setContainersList(List.of(new ContainerModel()));
         ConsolidationModel consolidationModel = new ConsolidationModel();
         consolidationModel.setId(123L);
         consolidationModel.setPlaceOfIssue("Test");
-        shipmentModel.setConsolidationList(Arrays.asList(consolidationModel));
+        shipmentModel.setConsolidationList(List.of(consolidationModel));
         when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
         when(hblDao.findByShipmentId(any())).thenReturn(new ArrayList<>());
         V1DataResponse v1DataResponse = new V1DataResponse();
-        v1DataResponse.entities = Arrays.asList(new UnlocationsResponse());
+        v1DataResponse.entities = List.of(new UnlocationsResponse());
         when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(Arrays.asList(new UnlocationsResponse()));
         V1MasterDataImpl mockV1MasterDataImpl = mock(V1MasterDataImpl.class);
@@ -748,7 +748,7 @@ class DeliveryOrderReportTest extends CommonMocks {
         ShipmentModel shipmentModel = new ShipmentModel();
         shipmentModel.setTransportMode(AIR);
         shipmentModel.setDirection(EXP);
-        shipmentModel.setContainersList(Arrays.asList(new ContainerModel()));
+        shipmentModel.setContainersList(List.of(new ContainerModel()));
 
         when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
         mockShipmentSettings();
@@ -764,7 +764,7 @@ class DeliveryOrderReportTest extends CommonMocks {
         ShipmentModel shipmentModel = new ShipmentModel();
         shipmentModel.setTransportMode(AIR);
         shipmentModel.setDirection(EXP);
-        shipmentModel.setContainersList(Arrays.asList(new ContainerModel()));
+        shipmentModel.setContainersList(List.of(new ContainerModel()));
         shipmentModel.setContainsHazardous(true);
 
         when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);

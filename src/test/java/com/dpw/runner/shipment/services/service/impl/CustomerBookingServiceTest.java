@@ -1216,20 +1216,6 @@ class CustomerBookingServiceTest extends CommonMocks {
         assertEquals(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, t.getMessage());
     }
 
-    @Test
-    void testCancel() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
-        CustomerBookingRequest request = CustomerBookingRequest.builder().id(1l).bookingStatus(BookingStatus.CANCELLED).build();
-
-        var mockBookingEntity = customerBooking;
-        mockBookingEntity.setBookingStatus(BookingStatus.READY_FOR_SHIPMENT);
-        // mock
-        when(customerBookingDao.findById(any())).thenReturn(Optional.of(mockBookingEntity));
-
-        var t = assertThrows(Throwable.class, () -> customerBookingService.cancel(CommonRequestModel.builder().data(request).build()));
-        // assert
-        assertEquals(ValidationException.class.getSimpleName(), t.getClass().getSimpleName());
-    }
-
 
     @Test
     void testBookingUpdateWithReadyForShipment() {

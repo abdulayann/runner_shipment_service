@@ -894,26 +894,26 @@ import static org.mockito.Mockito.*;
     }
 
     @Test
-    public void testCreateFromBooking_Success() {
+    void testCreateFromBooking_Success() {
         // Setup
         ConsolidationDetailsRequest request = new ConsolidationDetailsRequest();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
-        ConsolidationDetails consolidationDetails = testConsol;
+        ConsolidationDetails consoleDetails = testConsol;
         ConsolidationDetailsResponse expectedResponse = testConsolResponse;
         ResponseEntity<IRunnerResponse> expectedEntity = ResponseHelper.buildSuccessResponse(expectedResponse);
 
-        when(jsonHelper.convertValue(request, ConsolidationDetails.class)).thenReturn(consolidationDetails);
+        when(jsonHelper.convertValue(request, ConsolidationDetails.class)).thenReturn(consoleDetails);
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
-        when(consolidationDetailsDao.save(any(ConsolidationDetails.class), anyBoolean(), eq(false))).thenReturn(consolidationDetails);
-        when(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class)).thenReturn(expectedResponse);
+        when(consolidationDetailsDao.save(any(ConsolidationDetails.class), anyBoolean(), eq(false))).thenReturn(consoleDetails);
+        when(jsonHelper.convertValue(consoleDetails, ConsolidationDetailsResponse.class)).thenReturn(expectedResponse);
         mockShipmentSettings();
-        ResponseEntity<IRunnerResponse> response = consolidationService.createFromBooking(commonRequestModel);
+        ConsolidationDetailsResponse response = consolidationService.createConsolidationForBooking(commonRequestModel);
 
-        assertEquals(expectedEntity, response);
+        assertEquals((((RunnerResponse<?>) Objects.requireNonNull(expectedEntity.getBody())).getData()), response);
     }
 
     @Test
-    public void testCreateFromBooking_Import_Success() {
+    void testCreateFromBooking_Import_Success() {
         // Setup
         ConsolidationDetailsRequest request = new ConsolidationDetailsRequest();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
@@ -923,13 +923,13 @@ import static org.mockito.Mockito.*;
         ResponseEntity<IRunnerResponse> expectedEntity = ResponseHelper.buildSuccessResponse(expectedResponse);
 
         when(jsonHelper.convertValue(request, ConsolidationDetails.class)).thenReturn(consolidationDetails1);
-        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+        when(masterDataUtils.withMdc(any())).thenReturn(this::mockRunnable);
         when(consolidationDetailsDao.save(any(ConsolidationDetails.class), anyBoolean(), eq(false))).thenReturn(consolidationDetails1);
         when(jsonHelper.convertValue(consolidationDetails1, ConsolidationDetailsResponse.class)).thenReturn(expectedResponse);
         mockShipmentSettings();
-        ResponseEntity<IRunnerResponse> response = consolidationService.createFromBooking(commonRequestModel);
+        ConsolidationDetailsResponse response = consolidationService.createConsolidationForBooking(commonRequestModel);
 
-        assertEquals(expectedEntity, response);
+        assertEquals((((RunnerResponse<?>) Objects.requireNonNull(expectedEntity.getBody())).getData()), response);
     }
 
     @Test
@@ -949,13 +949,13 @@ import static org.mockito.Mockito.*;
         doThrow(new IllegalAccessException("IllegalAccessException")).when(auditLogService).addAuditLog(any());
         mockShipmentSettings();
         // mockTenantSettings();
-        assertThrows(ValidationException.class, () -> consolidationService.createFromBooking(commonRequestModel));
+        assertThrows(ValidationException.class, () -> consolidationService.createConsolidationForBooking(commonRequestModel));
     }
 
     @Test
     void testCreateFromBooking_RequestIsNull() {
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(null).build();
-        assertThrows(ValidationException.class, () -> consolidationService.createFromBooking(commonRequestModel));
+        assertThrows(ValidationException.class, () -> consolidationService.createConsolidationForBooking(commonRequestModel));
     }
 
 
@@ -973,7 +973,7 @@ import static org.mockito.Mockito.*;
         when(v1ServiceUtil.getDefaultAgentOrgParty(any())).thenReturn(new Parties());
         mockShipmentSettings();
         mockTenantSettings();
-        assertThrows(ValidationException.class, () -> consolidationService.createFromBooking(commonRequestModel));
+        assertThrows(ValidationException.class, () -> consolidationService.createConsolidationForBooking(commonRequestModel));
     }
 
     @Test

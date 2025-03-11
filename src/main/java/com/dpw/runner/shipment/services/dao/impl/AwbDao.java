@@ -194,24 +194,7 @@ public class AwbDao implements IAwbDao {
                     Awb awb = getMawb(id);
                     getHawbPacks(awb);
                     if (awb.getConsolidationId() != null) {
-                        Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(awb.getConsolidationId());
-                        if (consolidationDetails.isPresent()) {
-                            this.pushToKafkaForAirMessaging(awb, null, consolidationDetails.get(), null, false, null, includeCSD);
-                            // AirMessageSent flag set to SENT
-                            this.updateAirMessageStatus(awb.getGuid(), AwbStatus.AIR_MESSAGE_SENT.name());
-                            this.updateLinkedHawbAirMessageStatus(awb.getGuid(), AwbStatus.AIR_MESSAGE_SENT.name());
-                            this.updateUserDetails(awb.getGuid(), UserContext.getUser().DisplayName, UserContext.getUser().Email);
-                            this.createAirMessagingEvents(consolidationDetails.get().getId(), Constants.CONSOLIDATION, EventConstants.FWB_FZB_EVENT_CODE, "FWB&FZB sent", consolidationDetails.get().getTenantId());
-                            var v1Map = v1ServiceUtil.getTenantDetails(consolidationDetails.get().getShipmentsList().stream().map(ShipmentDetails::getTenantId).toList());
-                            for (ShipmentDetails ship : consolidationDetails.get().getShipmentsList()) {
-                                Awb shipAwb = getHawb(ship.getId());
-                                this.pushToKafkaForAirMessaging(shipAwb, ship, null, v1Map.containsKey(ship.getTenantId()) ? modelMapper.map(v1Map.get(ship.getTenantId()), TenantModel.class) : null, !Objects.equals(consolidationDetails.get().getTenantId(), shipAwb.getTenantId()), awb, includeCSD);
-                                // AirMessageSent flag set to SENT
-                                this.updateAirMessageStatus(shipAwb.getGuid(), AwbStatus.AIR_MESSAGE_SENT.name());
-                                this.updateUserDetails(shipAwb.getGuid(), UserContext.getUser().DisplayName, UserContext.getUser().Email);
-                                this.createAirMessagingEvents(ship.getId(), Constants.SHIPMENT, EventConstants.FWB_FZB_EVENT_CODE, "FWB&FZB sent", ship.getTenantId());
-                            }
-                        }
+                        processAirMessagingConsolidation(includeCSD, awb);
                     }
                 } else {
                     Awb awb = getHawb(id);
@@ -231,6 +214,27 @@ public class AwbDao implements IAwbDao {
         } catch (Exception e)
         {
             log.error("Error pushing awb to kafka for entityId: {} with error: {}", id, e.getMessage());
+        }
+    }
+
+    private void processAirMessagingConsolidation(boolean includeCSD, Awb awb) throws RunnerException {
+        Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(awb.getConsolidationId());
+        if (consolidationDetails.isPresent()) {
+            this.pushToKafkaForAirMessaging(awb, null, consolidationDetails.get(), null, false, null, includeCSD);
+            // AirMessageSent flag set to SENT
+            this.updateAirMessageStatus(awb.getGuid(), AwbStatus.AIR_MESSAGE_SENT.name());
+            this.updateLinkedHawbAirMessageStatus(awb.getGuid(), AwbStatus.AIR_MESSAGE_SENT.name());
+            this.updateUserDetails(awb.getGuid(), UserContext.getUser().DisplayName, UserContext.getUser().Email);
+            this.createAirMessagingEvents(consolidationDetails.get().getId(), Constants.CONSOLIDATION, EventConstants.FWB_FZB_EVENT_CODE, "FWB&FZB sent", consolidationDetails.get().getTenantId());
+            var v1Map = v1ServiceUtil.getTenantDetails(consolidationDetails.get().getShipmentsList().stream().map(ShipmentDetails::getTenantId).toList());
+            for (ShipmentDetails ship : consolidationDetails.get().getShipmentsList()) {
+                Awb shipAwb = getHawb(ship.getId());
+                this.pushToKafkaForAirMessaging(shipAwb, ship, null, v1Map.containsKey(ship.getTenantId()) ? modelMapper.map(v1Map.get(ship.getTenantId()), TenantModel.class) : null, !Objects.equals(consolidationDetails.get().getTenantId(), shipAwb.getTenantId()), awb, includeCSD);
+                // AirMessageSent flag set to SENT
+                this.updateAirMessageStatus(shipAwb.getGuid(), AwbStatus.AIR_MESSAGE_SENT.name());
+                this.updateUserDetails(shipAwb.getGuid(), UserContext.getUser().DisplayName, UserContext.getUser().Email);
+                this.createAirMessagingEvents(ship.getId(), Constants.SHIPMENT, EventConstants.FWB_FZB_EVENT_CODE, "FWB&FZB sent", ship.getTenantId());
+            }
         }
     }
 
@@ -358,18 +362,7 @@ public class AwbDao implements IAwbDao {
         Optional<Awb> awb = Optional.ofNullable(this.findAwbByGuidByQuery(guid));
         if(awb.isPresent()){
             if(awb.get().getShipmentId() != null) {
-                var consoleShipMapping = consoleShipmentMappingDao.findByShipmentIdByQuery(awb.get().getShipmentId());
-                if(consoleShipMapping == null || consoleShipMapping.isEmpty()) {
-                    return Collections.emptyList();
-                } else {
-                    var consoleId = consoleShipMapping.get(0).getConsolidationId();
-                    List<Awb> response = new ArrayList<>(findByConsolidationIdByQuery(consoleId));
-                    var consoleShipMappingList = consoleShipmentMappingDao.findByConsolidationIdByQuery(consoleId);
-                    if(consoleShipMappingList != null && !consoleShipMappingList.isEmpty()){
-                        response.addAll(findByShipmentIdsByQuery(consoleShipMappingList.stream().map(ConsoleShipmentMapping::getShipmentId).toList()));
-                    }
-                    return response;
-                }
+                return processLinkedShipment(awb.get());
             } else if(awb.get().getConsolidationId() != null) {
                 var consoleId = awb.get().getConsolidationId();
                 List<Awb> response = new ArrayList<>(findByConsolidationIdByQuery(consoleId));
@@ -381,6 +374,21 @@ public class AwbDao implements IAwbDao {
             }
         }
         return Collections.emptyList();
+    }
+
+    private List<Awb> processLinkedShipment(Awb awb) {
+        var consoleShipMapping = consoleShipmentMappingDao.findByShipmentIdByQuery(awb.getShipmentId());
+        if(consoleShipMapping == null || consoleShipMapping.isEmpty()) {
+            return Collections.emptyList();
+        } else {
+            var consoleId = consoleShipMapping.get(0).getConsolidationId();
+            List<Awb> response = new ArrayList<>(findByConsolidationIdByQuery(consoleId));
+            var consoleShipMappingList = consoleShipmentMappingDao.findByConsolidationIdByQuery(consoleId);
+            if(consoleShipMappingList != null && !consoleShipMappingList.isEmpty()){
+                response.addAll(findByShipmentIdsByQuery(consoleShipMappingList.stream().map(ConsoleShipmentMapping::getShipmentId).toList()));
+            }
+            return response;
+        }
     }
 
     @Override
@@ -422,22 +430,8 @@ public class AwbDao implements IAwbDao {
         AwbSpecialHandlingCodesMappingInfo sph = null;
 
         if(newEntity instanceof ShipmentDetails shipmentDetails) {
-            ShipmentDetails oldShipment = (ShipmentDetails) oldEntity;
-            var list = findByShipmentId(shipmentDetails.getId());
-            awb = !list.isEmpty() ? list.get(0) : null;
-            if(Objects.isNull(awb))
-                return;
-
-            if(!Objects.equals(shipmentDetails.getAdditionalDetails().getEfreightStatus(), oldShipment.getAdditionalDetails().getEfreightStatus()) ||
-                    !Objects.equals(shipmentDetails.getSecurityStatus(), oldShipment.getSecurityStatus())) {
-                getAwbSphEntity(shipmentDetails.getAdditionalDetails().getEfreightStatus(), shipmentDetails.getSecurityStatus(), shipmentDetails.getId(), awb);
-                awb.setAirMessageResubmitted(false);
-            }
-            if(!Objects.equals(shipmentDetails.getAdditionalDetails().getSci(), oldShipment.getAdditionalDetails().getSci())){
-                awb.getAwbCargoInfo().setSci(shipmentDetails.getAdditionalDetails().getSci());
-                awb.setAirMessageResubmitted(false);
-                updateSciFieldFromHawb(awb, null, false, awb.getId());
-            }
+            awb = getAwbFromShipment((ShipmentDetails) oldEntity, shipmentDetails);
+            if (awb == null) return;
         }
         else if (newEntity instanceof ConsolidationDetails consolidationDetails) {
             ConsolidationDetails oldConsolidation = (ConsolidationDetails) oldEntity;
@@ -464,6 +458,27 @@ public class AwbDao implements IAwbDao {
 
     }
 
+    private Awb getAwbFromShipment(ShipmentDetails oldEntity, ShipmentDetails shipmentDetails) throws RunnerException {
+        Awb awb;
+        ShipmentDetails oldShipment = oldEntity;
+        var list = findByShipmentId(shipmentDetails.getId());
+        awb = !list.isEmpty() ? list.get(0) : null;
+        if(Objects.isNull(awb))
+            return null;
+
+        if(!Objects.equals(shipmentDetails.getAdditionalDetails().getEfreightStatus(), oldShipment.getAdditionalDetails().getEfreightStatus()) ||
+                !Objects.equals(shipmentDetails.getSecurityStatus(), oldShipment.getSecurityStatus())) {
+            getAwbSphEntity(shipmentDetails.getAdditionalDetails().getEfreightStatus(), shipmentDetails.getSecurityStatus(), shipmentDetails.getId(), awb);
+            awb.setAirMessageResubmitted(false);
+        }
+        if(!Objects.equals(shipmentDetails.getAdditionalDetails().getSci(), oldShipment.getAdditionalDetails().getSci())){
+            awb.getAwbCargoInfo().setSci(shipmentDetails.getAdditionalDetails().getSci());
+            awb.setAirMessageResubmitted(false);
+            updateSciFieldFromHawb(awb, null, false, awb.getId());
+        }
+        return awb;
+    }
+
     public void updateSciFieldFromHawb(Awb awb, Awb oldEntity, boolean isReset, Long awbId) throws RunnerException {
         if(awb.getAwbShipmentInfo().getEntityType().equals(Constants.HAWB) && Objects.equals(awb.getAwbCargoInfo().getSci(), AwbConstants.T1)){
             List<MawbHawbLink> mawbHawbLinks = mawbHawbLinkDao.findByHawbId(awb.getId());
@@ -477,28 +492,33 @@ public class AwbDao implements IAwbDao {
                 }
             }
         } else if(awb.getAwbShipmentInfo().getEntityType().equals(Constants.HAWB) && !Objects.equals(awb.getAwbCargoInfo().getSci(), AwbConstants.T1) && ((oldEntity != null && Objects.equals(oldEntity.getAwbCargoInfo().getSci(), AwbConstants.T1)) || isReset || oldEntity == null)){
-            List<MawbHawbLink> mawbHawbLinks = mawbHawbLinkDao.findByHawbId(awb.getId());
-            if(mawbHawbLinks != null && !mawbHawbLinks.isEmpty()){
-                Long mawbId = mawbHawbLinks.get(0).getMawbId();
-                List<Awb> hawbsList = getLinkedAwbFromMawb(mawbId);
-                boolean updateSci = false;
-                if(hawbsList != null && !hawbsList.isEmpty()){
-                    Optional<Awb> hawb = hawbsList.stream().filter(x -> Objects.equals(x.getAwbCargoInfo().getSci(), AwbConstants.T1) && !Objects.equals(x.getId(), awbId)).findAny();
-                    if(!hawb.isPresent()){
-                        updateSci = true;
-                    }
+            processNonT1SciField(awb, awbId);
+        }
+    }
+
+    private void processNonT1SciField(Awb awb, Long awbId) throws RunnerException {
+        List<MawbHawbLink> mawbHawbLinks = mawbHawbLinkDao.findByHawbId(awb.getId());
+        if(mawbHawbLinks != null && !mawbHawbLinks.isEmpty()){
+            Long mawbId = mawbHawbLinks.get(0).getMawbId();
+            List<Awb> hawbsList = getLinkedAwbFromMawb(mawbId);
+            boolean updateSci = false;
+            if(hawbsList != null && !hawbsList.isEmpty()){
+                Optional<Awb> hawb = hawbsList.stream().filter(x -> Objects.equals(x.getAwbCargoInfo().getSci(), AwbConstants.T1) && !Objects.equals(x.getId(), awbId)).findAny();
+                if(hawb.isEmpty()){
+                    updateSci = true;
                 }
-                if(updateSci) {
-                    Optional<Awb> mawb = findById(mawbId);
-                    if (mawb.isPresent() && !Objects.equals(mawb.get().getAirMessageStatus(), AwbStatus.AWB_FSU_LOCKED) && Objects.equals(mawb.get().getAwbCargoInfo().getSci(), AwbConstants.T1)) {
-                        mawb.get().getAwbCargoInfo().setSci(null);
-                        mawb.get().setAirMessageResubmitted(false);
-                        save(mawb.get());
-                    }
+            }
+            if(updateSci) {
+                Optional<Awb> mawb = findById(mawbId);
+                if (mawb.isPresent() && !Objects.equals(mawb.get().getAirMessageStatus(), AwbStatus.AWB_FSU_LOCKED) && Objects.equals(mawb.get().getAwbCargoInfo().getSci(), AwbConstants.T1)) {
+                    mawb.get().getAwbCargoInfo().setSci(null);
+                    mawb.get().setAirMessageResubmitted(false);
+                    save(mawb.get());
                 }
             }
         }
     }
+
     @Override
     public List<Awb> getLinkedAwbFromMawb(Long mawbId) {
         List<MawbHawbLink> mawbHawbLinks = mawbHawbLinkDao.findByMawbId(mawbId);

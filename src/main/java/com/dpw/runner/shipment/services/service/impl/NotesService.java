@@ -81,18 +81,12 @@ public class NotesService implements INotesService {
                 if(request.getEntityType().equalsIgnoreCase(Constants.SHIPMENT)) {
                     ResponseEntity<IRunnerResponse> response = shipmentService.getIdFromGuid(CommonRequestModel.buildRequest(commonGetRequest));
                     ShipmentDetailsResponse shipmentDetailsResponse = (ShipmentDetailsResponse) ((RunnerResponse<?>) Objects.requireNonNull(response.getBody())).getData();
-                    if(shipmentDetailsResponse == null) {
-                        log.debug(NotesConstants.NOTES_REQUEST_ID_NULL, LoggerHelper.getRequestIdFromMDC());
-                        throw new RunnerException(NotesConstants.NOTES_ENTITY_ID_NOT_PRESENT);
-                    }
+                    validateShipmentDetailsResponse(shipmentDetailsResponse);
                     request.setEntityId(shipmentDetailsResponse.getId());
                 } else if(request.getEntityType().equalsIgnoreCase(Constants.CONSOLIDATION)) {
                     ResponseEntity<IRunnerResponse> response = consolidationService.getIdFromGuid(CommonRequestModel.buildRequest(commonGetRequest));
                     ConsolidationDetailsResponse consolidationDetailsResponse = (ConsolidationDetailsResponse) ((RunnerResponse<?>) Objects.requireNonNull(response.getBody())).getData();
-                    if(consolidationDetailsResponse == null) {
-                        log.debug(NotesConstants.NOTES_REQUEST_ID_NULL, LoggerHelper.getRequestIdFromMDC());
-                        throw new RunnerException(NotesConstants.NOTES_ENTITY_ID_NOT_PRESENT);
-                    }
+                    validateConsoleDetailsResponse(consolidationDetailsResponse);
                     request.setEntityId(consolidationDetailsResponse.getId());
                 } else {
                     log.debug(NotesConstants.NOTES_REQUEST_ID_NULL, LoggerHelper.getRequestIdFromMDC());
@@ -119,6 +113,20 @@ public class NotesService implements INotesService {
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    private void validateConsoleDetailsResponse(ConsolidationDetailsResponse consolidationDetailsResponse) throws RunnerException {
+        if(consolidationDetailsResponse == null) {
+            log.debug(NotesConstants.NOTES_REQUEST_ID_NULL, LoggerHelper.getRequestIdFromMDC());
+            throw new RunnerException(NotesConstants.NOTES_ENTITY_ID_NOT_PRESENT);
+        }
+    }
+
+    private void validateShipmentDetailsResponse(ShipmentDetailsResponse shipmentDetailsResponse) throws RunnerException {
+        if(shipmentDetailsResponse == null) {
+            log.debug(NotesConstants.NOTES_REQUEST_ID_NULL, LoggerHelper.getRequestIdFromMDC());
+            throw new RunnerException(NotesConstants.NOTES_ENTITY_ID_NOT_PRESENT);
         }
     }
 

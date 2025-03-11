@@ -59,40 +59,9 @@ public class ContainerManifestPrint extends IReport {
         Pair<BigDecimal, String> volumeAndUnit = GetTotalVolume(packings);
 
 
-        if (consol.getAchievedQuantities() != null && consol.getAchievedQuantities().getConsolidatedWeight() != null) {
-            dictionary.put(ReportConstants.PWEIGHT_UNIT, ConvertToWeightNumberFormat(consol.getAchievedQuantities().getConsolidatedWeight(), v1TenantSettingsResponse) + " " + consol.getAchievedQuantities().getConsolidatedWeightUnit());
-        } else {
-            dictionary.put(ReportConstants.PWEIGHT_UNIT, EMPTY_STRING);
-        }
+        processConsoleAchievedQuantities(consol, dictionary, v1TenantSettingsResponse);
 
-        if (consol.getAchievedQuantities() != null && consol.getAchievedQuantities().getConsolidatedVolume() != null) {
-            dictionary.put(ReportConstants.PVOLUME_UNIT, ConvertToVolumeNumberFormat(consol.getAchievedQuantities().getConsolidatedVolume(), v1TenantSettingsResponse) + " " + consol.getAchievedQuantities().getConsolidatedVolumeUnit());
-        } else {
-            dictionary.put(ReportConstants.PVOLUME_UNIT, EMPTY_STRING);
-        }
-
-        if (consol.getAchievedQuantities() != null && consol.getAchievedQuantities().getConsolidationChargeQuantity() != null) {
-            dictionary.put(ReportConstants.PCHARGE_UNIT, consol.getAchievedQuantities().getConsolidationChargeQuantity() + " " + consol.getAchievedQuantities().getConsolidationChargeQuantityUnit());
-        } else {
-            dictionary.put(ReportConstants.PCHARGE_UNIT, EMPTY_STRING);
-        }
-
-        var containersList = consol.getContainersList();
-        long totalPackages = 0L;
-        if (containersList != null && !containersList.isEmpty()) {
-            totalPackages =
-                    containersList.stream()
-                            .filter(Objects::nonNull) // Filter out null values
-                            .map(c -> IsStringNullOrEmpty(c.getPacks()) ? 0 : Long.parseLong(c.getPacks()))
-                            .reduce(Long::sum)
-                            .orElse(0L); // Default value if the stream is empty
-        }
-
-        if (totalPackages == 0) {
-            dictionary.put(ReportConstants.CONSOL_SHIPMENT_TOTAL_PACKAGES, StringUtils.EMPTY);
-        } else {
-            dictionary.put(ReportConstants.CONSOL_SHIPMENT_TOTAL_PACKAGES, totalPackages);
-        }
+        processContainerList(consol, dictionary);
 
         String customReferenceNumber = "";
         if (consol.getId() != null) {
@@ -118,6 +87,81 @@ public class ContainerManifestPrint extends IReport {
             importAgentFreeTextAddress = importAgentAddress;
         }
 
+        processConsolShipmentType(consol, dictionary, exportAgentAddress, importAgentAddress, exportAgentFreeTextAddress, importAgentFreeTextAddress);
+
+        dictionary.put(ReportConstants.CTO_ADDRESS, ctoAddress);
+        dictionary.put(ReportConstants.TOTAL_WEIGHT, ConvertToWeightNumberFormat(weightAndUnit.getLeft(), v1TenantSettingsResponse));
+        dictionary.put(ReportConstants.TOTAL_WEIGHT_UNIT, weightAndUnit.getRight());
+        dictionary.put(ReportConstants.TOTAL_VOLUME, ConvertToVolumeNumberFormat(volumeAndUnit.getLeft(), v1TenantSettingsResponse));
+        dictionary.put(ReportConstants.TOTAL_VOLUME_UNIT, volumeAndUnit.getRight());
+        var user = UserContext.getUser();
+        dictionary.put(ReportConstants.UN, user.getUsername());
+        dictionary.put(ReportConstants.COMMON_CONTAINERS, consol.getContainersList());
+        dictionary.put(ReportConstants.SHIPMENTS, consol.getShipmentsList());
+        dictionary.put(ReportConstants.CONTAINER_COUNT_BY_CODE,
+                getCountByContainerTypeCode(consol.getContainersList().stream().map(this::getShipmentContainer).toList()));
+
+        processConsolCarrierDetails(consol, dictionary);
+
+        updateShipmentWeightAndPack(dictionary, v1TenantSettingsResponse);
+        return dictionary;
+    }
+
+    private void processConsoleAchievedQuantities(ConsolidationModel consol, Map<String, Object> dictionary, V1TenantSettingsResponse v1TenantSettingsResponse) {
+        if (consol.getAchievedQuantities() != null && consol.getAchievedQuantities().getConsolidatedWeight() != null) {
+            dictionary.put(ReportConstants.PWEIGHT_UNIT, ConvertToWeightNumberFormat(consol.getAchievedQuantities().getConsolidatedWeight(), v1TenantSettingsResponse) + " " + consol.getAchievedQuantities().getConsolidatedWeightUnit());
+        } else {
+            dictionary.put(ReportConstants.PWEIGHT_UNIT, EMPTY_STRING);
+        }
+
+        if (consol.getAchievedQuantities() != null && consol.getAchievedQuantities().getConsolidatedVolume() != null) {
+            dictionary.put(ReportConstants.PVOLUME_UNIT, ConvertToVolumeNumberFormat(consol.getAchievedQuantities().getConsolidatedVolume(), v1TenantSettingsResponse) + " " + consol.getAchievedQuantities().getConsolidatedVolumeUnit());
+        } else {
+            dictionary.put(ReportConstants.PVOLUME_UNIT, EMPTY_STRING);
+        }
+
+        if (consol.getAchievedQuantities() != null && consol.getAchievedQuantities().getConsolidationChargeQuantity() != null) {
+            dictionary.put(ReportConstants.PCHARGE_UNIT, consol.getAchievedQuantities().getConsolidationChargeQuantity() + " " + consol.getAchievedQuantities().getConsolidationChargeQuantityUnit());
+        } else {
+            dictionary.put(ReportConstants.PCHARGE_UNIT, EMPTY_STRING);
+        }
+    }
+
+    private void processConsolCarrierDetails(ConsolidationModel consol, Map<String, Object> dictionary) {
+        if (consol.getCarrierDetails() != null) {
+            UnlocationsResponse originUnloc = null;
+            UnlocationsResponse destinationUnloc = null;
+            if (consol.getCarrierDetails().getOriginPort() != null) {
+                originUnloc = getUNLocRow(consol.getCarrierDetails().getOriginPort());
+            }
+            destinationUnloc = getUNLocRow(consol.getCarrierDetails().getDestinationPort());
+            if (originUnloc != null)
+                dictionary.put(ReportConstants.ORIGIN_CODE, ReportHelper.getCityCountry(originUnloc.getNameWoDiacritics(), originUnloc.getCountry()));
+            if (destinationUnloc != null)
+                dictionary.put(ReportConstants.DESTINATION_CODE, ReportHelper.getCityCountry(destinationUnloc.getNameWoDiacritics(), destinationUnloc.getCountry()));
+        }
+    }
+
+    private void processContainerList(ConsolidationModel consol, Map<String, Object> dictionary) {
+        var containersList = consol.getContainersList();
+        long totalPackages = 0L;
+        if (containersList != null && !containersList.isEmpty()) {
+            totalPackages =
+                    containersList.stream()
+                            .filter(Objects::nonNull) // Filter out null values
+                            .map(c -> IsStringNullOrEmpty(c.getPacks()) ? 0 : Long.parseLong(c.getPacks()))
+                            .reduce(Long::sum)
+                            .orElse(0L); // Default value if the stream is empty
+        }
+
+        if (totalPackages == 0) {
+            dictionary.put(ReportConstants.CONSOL_SHIPMENT_TOTAL_PACKAGES, StringUtils.EMPTY);
+        } else {
+            dictionary.put(ReportConstants.CONSOL_SHIPMENT_TOTAL_PACKAGES, totalPackages);
+        }
+    }
+
+    private void processConsolShipmentType(ConsolidationModel consol, Map<String, Object> dictionary, List<String> exportAgentAddress, List<String> importAgentAddress, List<String> exportAgentFreeTextAddress, List<String> importAgentFreeTextAddress) {
         if (consol.getShipmentType().equalsIgnoreCase("EXP")) {
             dictionary.put(ReportConstants.EXPORT_AGENT, exportAgentAddress);
             dictionary.put(ReportConstants.IMPORT_AGENT, importAgentAddress);
@@ -139,36 +183,5 @@ public class ContainerManifestPrint extends IReport {
         } else {
             dictionary.put(ReportConstants.LAST_FOREIGN_PORT_NAME, StringUtils.EMPTY);
         }
-
-        dictionary.put(ReportConstants.CTO_ADDRESS, ctoAddress);
-        dictionary.put(ReportConstants.TOTAL_WEIGHT, ConvertToWeightNumberFormat(weightAndUnit.getLeft(), v1TenantSettingsResponse));
-        dictionary.put(ReportConstants.TOTAL_WEIGHT_UNIT, weightAndUnit.getRight());
-        dictionary.put(ReportConstants.TOTAL_VOLUME, ConvertToVolumeNumberFormat(volumeAndUnit.getLeft(), v1TenantSettingsResponse));
-        dictionary.put(ReportConstants.TOTAL_VOLUME_UNIT, volumeAndUnit.getRight());
-        var user = UserContext.getUser();
-        dictionary.put(ReportConstants.UN, user.getUsername());
-        dictionary.put(ReportConstants.COMMON_CONTAINERS, consol.getContainersList());
-        dictionary.put(ReportConstants.SHIPMENTS, consol.getShipmentsList());
-        dictionary.put(ReportConstants.CONTAINER_COUNT_BY_CODE,
-                getCountByContainerTypeCode(consol.getContainersList().stream().map(c -> getShipmentContainer(c)).toList()));
-
-        if (consol.getCarrierDetails() != null) {
-            UnlocationsResponse originUnloc = null;
-            UnlocationsResponse destinationUnloc = null;
-            if (consol.getCarrierDetails().getOriginPort() != null) {
-                originUnloc = getUNLocRow(consol.getCarrierDetails().getOriginPort());
-            }
-            if (consol.getCarrierDetails().getDestinationPort() != null) {
-
-            }
-            destinationUnloc = getUNLocRow(consol.getCarrierDetails().getDestinationPort());
-            if (originUnloc != null)
-                dictionary.put(ReportConstants.ORIGIN_CODE, ReportHelper.getCityCountry(originUnloc.getNameWoDiacritics(), originUnloc.getCountry()));
-            if (destinationUnloc != null)
-                dictionary.put(ReportConstants.DESTINATION_CODE, ReportHelper.getCityCountry(destinationUnloc.getNameWoDiacritics(), destinationUnloc.getCountry()));
-        }
-
-        updateShipmentWeightAndPack(dictionary, v1TenantSettingsResponse);
-        return dictionary;
     }
 }

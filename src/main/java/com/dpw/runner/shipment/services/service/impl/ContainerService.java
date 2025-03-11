@@ -12,6 +12,7 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
+import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.request.ContainerEventExcelModel;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.request.ContainersExcelModel;
@@ -292,17 +293,7 @@ public class ContainerService implements IContainerService {
             if (isHazardous) {
                 // DG CLASS(HAZARDOUS CLASS)
                 String dgClass = containersRow.getDgClass();
-                if (!StringUtils.isEmpty(dgClass)) {
-                    try {
-                        if (hazardousClassMasterData != null && !hazardousClassMasterData.contains(dgClass)) {
-                            throw new ValidationException("DG class is invalid at row: " + row);
-                        }
-                    } catch (Exception e) {
-                        throw new ValidationException("DG class is invalid at row: " + row + ". Please provide correct DG class.");
-                    }
-                } else {
-                    throw new ValidationException("DG class is empty at row: " + row + ". DG class is mandatory field for hazardous goods.");
-                }
+                validateDgClass(hazardousClassMasterData, row, dgClass);
 
                 //HAZARDOUS UN
                 String hazardousUn = containersRow.getHazardousUn();
@@ -310,6 +301,20 @@ public class ContainerService implements IContainerService {
                     containersRow.setHazardousUn(hazardousUn);
                 }
             }
+        }
+    }
+
+    private static void validateDgClass(Set<String> hazardousClassMasterData, int row, String dgClass) {
+        if (!StringUtils.isEmpty(dgClass)) {
+            try {
+                if (hazardousClassMasterData != null && !hazardousClassMasterData.contains(dgClass)) {
+                    throw new ValidationException("DG class is invalid at row: " + row);
+                }
+            } catch (Exception e) {
+                throw new ValidationException("DG class is invalid at row: " + row + ". Please provide correct DG class.");
+            }
+        } else {
+            throw new ValidationException("DG class is empty at row: " + row + ". DG class is mandatory field for hazardous goods.");
         }
     }
 
@@ -344,11 +349,7 @@ public class ContainerService implements IContainerService {
             actualChargeable = actualChargeable.setScale(2, BigDecimal.ROUND_HALF_UP);
             BigDecimal calculatedChargeable = null;
 
-            var vwob = consolidationService.calculateVolumeWeight(Constants.TRANSPORT_MODE_AIR,
-                    containersRow.getGrossWeightUnit() == null ? Constants.WEIGHT_UNIT_KG : containersRow.getGrossWeightUnit(),
-                    containersRow.getGrossVolumeUnit() == null ? Constants.VOLUME_UNIT_M3 : containersRow.getGrossVolumeUnit(),
-                    containersRow.getGrossWeight() == null ? BigDecimal.ZERO : containersRow.getGrossWeight(),
-                    containersRow.getGrossVolume() == null ? BigDecimal.ZERO : containersRow.getGrossVolume());
+            var vwob = getVolumeWeightChargeable(containersRow);
             if (vwob.getChargeable() != null) {
                 calculatedChargeable = vwob.getChargeable();
                 calculatedChargeable = calculatedChargeable.setScale(2, BigDecimal.ROUND_HALF_UP);
@@ -357,6 +358,14 @@ public class ContainerService implements IContainerService {
                 }
             }
         }
+    }
+
+    private VolumeWeightChargeable getVolumeWeightChargeable(Containers containersRow) throws RunnerException {
+        return consolidationService.calculateVolumeWeight(Constants.TRANSPORT_MODE_AIR,
+                containersRow.getGrossWeightUnit() == null ? Constants.WEIGHT_UNIT_KG : containersRow.getGrossWeightUnit(),
+                containersRow.getGrossVolumeUnit() == null ? Constants.VOLUME_UNIT_M3 : containersRow.getGrossVolumeUnit(),
+                containersRow.getGrossWeight() == null ? BigDecimal.ZERO : containersRow.getGrossWeight(),
+                containersRow.getGrossVolume() == null ? BigDecimal.ZERO : containersRow.getGrossVolume());
     }
 
     private void checkCalculatedVolumeAndActualVolume(BulkUploadRequest request, int row, Containers containersRow) {
@@ -506,18 +515,7 @@ public class ContainerService implements IContainerService {
 
         if(!Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && fieldNameMap.containsKey("containerStuffingLocation")) {
             Set<String> unlocationsRefGuids = new HashSet<>();
-            for (ContainersExcelModel model : modelList){
-                unlocationsRefGuids.add(model.getContainerStuffingLocation());
-            }
-            if(!unlocationsRefGuids.isEmpty()) {
-                Map<String, EntityTransferUnLocations> keyMasterDataMap = masterDataUtils.fetchInBulkUnlocations(unlocationsRefGuids, EntityTransferConstants.LOCATION_SERVICE_GUID);
-                for (ContainersExcelModel model : modelList){
-                    if(keyMasterDataMap.containsKey(model.getContainerStuffingLocation())){
-                        var locCode = keyMasterDataMap.get(model.getContainerStuffingLocation()).LocCode;
-                        model.setContainerStuffingLocation(locCode);
-                    }
-                }
-            }
+            processUnlocationsRefGuid(modelList, unlocationsRefGuids);
         }
         List<Field> fieldsList = new ArrayList<>();
         if(Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_SEA) || Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_ROA)
@@ -541,6 +539,21 @@ public class ContainerService implements IContainerService {
                 Object value = field.get(model);
                 Cell cell = row.createCell(cellIndex++);
                 cell.setCellValue(value != null ? value.toString() : "");
+            }
+        }
+    }
+
+    private void processUnlocationsRefGuid(List<ContainersExcelModel> modelList, Set<String> unlocationsRefGuids) {
+        for (ContainersExcelModel model : modelList){
+            unlocationsRefGuids.add(model.getContainerStuffingLocation());
+        }
+        if(!unlocationsRefGuids.isEmpty()) {
+            Map<String, EntityTransferUnLocations> keyMasterDataMap = masterDataUtils.fetchInBulkUnlocations(unlocationsRefGuids, EntityTransferConstants.LOCATION_SERVICE_GUID);
+            for (ContainersExcelModel model : modelList){
+                if(keyMasterDataMap.containsKey(model.getContainerStuffingLocation())){
+                    var locCode = keyMasterDataMap.get(model.getContainerStuffingLocation()).LocCode;
+                    model.setContainerStuffingLocation(locCode);
+                }
             }
         }
     }
@@ -616,6 +629,10 @@ public class ContainerService implements IContainerService {
         String format = "MM/dd/yyyy hh:mm:ss a";
         // Populate data
         int rowIndex = 1;
+        processModelList(modelList, sheet, rowIndex, fieldsList, actualFieldIdx, format, estimatedFieldIdx);
+    }
+
+    private void processModelList(List<ContainerEventExcelModel> modelList, XSSFSheet sheet, int rowIndex, List<Field> fieldsList, int actualFieldIdx, String format, int estimatedFieldIdx) throws IllegalAccessException {
         for (ContainerEventExcelModel model : modelList) {
             Row row = sheet.createRow(rowIndex++);
             int cellIndex = 0;
@@ -868,18 +885,7 @@ public class ContainerService implements IContainerService {
                     List<EntityTransferContainerType> containerTypesList = jsonHelper.convertValueToList(v1DataResponse.entities, EntityTransferContainerType.class);
                     if(containerTypesList.size() > 0) {
                         EntityTransferContainerType containerType = containerTypesList.get(0);
-                        if(request.getAllocatedVolume() != null && !IsStringNullOrEmpty(request.getAllocatedVolumeUnit())
-                                && !IsStringNullOrEmpty(containerType.getCubicCapacityUnit()) && containerType.getCubicCapacity() != null) {
-                            Double volume = (Double) convertUnit(Constants.VOLUME, request.getAllocatedVolume(), request.getAllocatedVolumeUnit(), containerType.getCubicCapacityUnit());
-                            if(volume > containerType.CubicCapacity)
-                                response.setVolumeAllowed(false);
-                        }
-                        if(request.getAllocatedWeight() != null && !IsStringNullOrEmpty(request.getAllocatedWeightUnit())
-                                && !IsStringNullOrEmpty(containerType.getMaxCargoGrossWeightUnit()) && containerType.getMaxCargoGrossWeight() != null) {
-                            Double weight = (Double) convertUnit(Constants.MASS, request.getAllocatedWeight(), request.getAllocatedWeightUnit(), containerType.getMaxCargoGrossWeightUnit());
-                            if(weight > containerType.MaxCargoGrossWeight)
-                                response.setWeightAllowed(false);
-                        }
+                        setWeightVolumeInReseponse(request, containerType, response);
                     }
                 }
             }
@@ -889,6 +895,21 @@ public class ContainerService implements IContainerService {
                     : DaoConstants.DAO_CALCULATION_ERROR;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    private void setWeightVolumeInReseponse(CheckAllocatedDataChangesRequest request, EntityTransferContainerType containerType, CheckAllocatedDataChangeResponse response) throws RunnerException {
+        if(request.getAllocatedVolume() != null && !IsStringNullOrEmpty(request.getAllocatedVolumeUnit())
+                && !IsStringNullOrEmpty(containerType.getCubicCapacityUnit()) && containerType.getCubicCapacity() != null) {
+            Double volume = (Double) convertUnit(Constants.VOLUME, request.getAllocatedVolume(), request.getAllocatedVolumeUnit(), containerType.getCubicCapacityUnit());
+            if(volume > containerType.CubicCapacity)
+                response.setVolumeAllowed(false);
+        }
+        if(request.getAllocatedWeight() != null && !IsStringNullOrEmpty(request.getAllocatedWeightUnit())
+                && !IsStringNullOrEmpty(containerType.getMaxCargoGrossWeightUnit()) && containerType.getMaxCargoGrossWeight() != null) {
+            Double weight = (Double) convertUnit(Constants.MASS, request.getAllocatedWeight(), request.getAllocatedWeightUnit(), containerType.getMaxCargoGrossWeightUnit());
+            if(weight > containerType.MaxCargoGrossWeight)
+                response.setWeightAllowed(false);
         }
     }
 
@@ -1050,23 +1071,7 @@ public class ContainerService implements IContainerService {
                     Page<Packing> allPackings = packingDao.findAll(pair.getLeft(), pair.getRight());
                     if(allPackings != null && !allPackings.isEmpty())
                     {
-                        List<Packing> packingList = allPackings.stream().toList();
-                        List<Packing> detachPacks = new ArrayList<>();
-                        boolean removeAllPacks = true;
-                        for(Packing packing: packingList) {
-                            if(request.getPacksId().contains(packing.getId())) {
-                                detachPacks.add(packing);
-                                if(!shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL)) {
-                                    changeContainerWtVolForSeaLCLDetach(container, packing);
-                                }
-                            }
-                            else if(packing.getContainerId() != null && packing.getContainerId().equals(request.getContainerId()))
-                                removeAllPacks = false;
-                        }
-                        if(removeAllPacks && shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL)) {
-                            changeContainerWtVolForSeaFCLDetach(container);
-                        }
-                        return detachContainer(detachPacks, container, request.getShipmentId(), removeAllPacks);
+                        return processAllPackings(allPackings, request, shipmentDetails, container);
                     }
                 }
                 else {
@@ -1084,6 +1089,26 @@ public class ContainerService implements IContainerService {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
+    }
+
+    private ResponseEntity<IRunnerResponse> processAllPackings(Page<Packing> allPackings, ContainerPackADInShipmentRequest request, ShipmentDetails shipmentDetails, Containers container) throws RunnerException {
+        List<Packing> packingList = allPackings.stream().toList();
+        List<Packing> detachPacks = new ArrayList<>();
+        boolean removeAllPacks = true;
+        for(Packing packing: packingList) {
+            if(request.getPacksId().contains(packing.getId())) {
+                detachPacks.add(packing);
+                if(!shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL)) {
+                    changeContainerWtVolForSeaLCLDetach(container, packing);
+                }
+            }
+            else if(packing.getContainerId() != null && packing.getContainerId().equals(request.getContainerId()))
+                removeAllPacks = false;
+        }
+        if(removeAllPacks && shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL)) {
+            changeContainerWtVolForSeaFCLDetach(container);
+        }
+        return detachContainer(detachPacks, container, request.getShipmentId(), removeAllPacks);
     }
 
     public ResponseEntity<IRunnerResponse> detachContainer(List<Packing> packingList, Containers container, Long shipmentId, boolean removeAllPacks) {
@@ -1128,58 +1153,23 @@ public class ContainerService implements IContainerService {
         String responseMsg;
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         boolean lclAndSeaOrRoadFlag = shipmentSettingsDetails.getMultipleShipmentEnabled() != null && shipmentSettingsDetails.getMultipleShipmentEnabled();
-        boolean IsConsolidatorFlag = shipmentSettingsDetails.getIsConsolidator() != null && shipmentSettingsDetails.getIsConsolidator();
+        boolean isConsolidatorFlag = shipmentSettingsDetails.getIsConsolidator() != null && shipmentSettingsDetails.getIsConsolidator();
         List<Containers> containersList = new ArrayList<>();
         try {
             ContainerAssignListRequest containerAssignRequest = (ContainerAssignListRequest) commonRequestModel.getData();
             Long shipmentId = containerAssignRequest.getShipmentId();
             Long consolidationId = containerAssignRequest.getConsolidationId();
-            if (lclAndSeaOrRoadFlag) {
-                if(!containerAssignRequest.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA) && !containerAssignRequest.getTransportMode().equals(Constants.TRANSPORT_MODE_ROA)) {
+            if (updateLclAndSeaOrRoadFlagFalse(lclAndSeaOrRoadFlag, containerAssignRequest)) {
                     lclAndSeaOrRoadFlag = false;
-                }
             }
+
             ListCommonRequest listCommonRequest = constructListCommonRequest(Constants.CONSOLIDATION_ID, consolidationId, "=");
             Pair<Specification<Containers>, Pageable> pair = fetchData(listCommonRequest, Containers.class);
             Page<Containers> containers = containerDao.findAll(pair.getLeft(), pair.getRight());
             List<Containers> conts = new ArrayList<>();
             if(lclAndSeaOrRoadFlag) {
-                for (Containers container : containers.getContent()) {
-                    List<ShipmentsContainersMapping> shipmentsContainersMappings = shipmentsContainersMappingDao.findByContainerId(container.getId());
-                    if(!shipmentsContainersMappings.stream().map(ShipmentsContainersMapping::getShipmentId).toList().contains(shipmentId)) {
-
-                        if(container.getAllocatedWeight() != null && container.getAchievedWeight() != null && container.getAllocatedVolume() != null && container.getAchievedWeight() != null
-                           && isNotEmpty(container.getAllocatedWeightUnit()) && isNotEmpty(container.getAllocatedVolumeUnit()) && isNotEmpty(container.getAchievedWeightUnit()) && isNotEmpty(container.getAchievedVolumeUnit())) {
-
-                            BigDecimal achievedWeight = new BigDecimal(convertUnit(Constants.MASS, container.getAchievedWeight(), container.getAchievedWeightUnit(), container.getAllocatedWeightUnit()).toString());
-                            BigDecimal achievedVolume = new BigDecimal(convertUnit(Constants.VOLUME, container.getAchievedVolume(), container.getAchievedVolumeUnit(), container.getAllocatedVolumeUnit()).toString());
-
-                            if(achievedWeight.compareTo(container.getAllocatedWeight()) < 0 && achievedVolume.compareTo(container.getAllocatedVolume()) < 0) {
-                                containersList.add(container);
-                            }
-                            else if(!IsConsolidatorFlag) {
-                                conts.add(container);
-                            }
-                        }
-                        else
-                            containersList.add(container);
-                    }
-                }
-                if(conts.size() > 0) {
-                    for (Containers x : conts) {
-                        boolean flag = true;
-                        if(x.getShipmentsList() != null && x.getShipmentsList().size() > 0) {
-                            for(ShipmentDetails shipmentDetails : x.getShipmentsList()) {
-                                if (shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL)) {
-                                    flag = false;
-                                    break;
-                                }
-                            }
-                        }
-                        if (flag)
-                            containersList.add(x);
-                    }
-                }
+                processContainers(containers, shipmentId, containersList, isConsolidatorFlag, conts);
+                processConts(conts, containersList);
             }
             else {
                 for (Containers container : containers.getContent()) {
@@ -1205,6 +1195,54 @@ public class ContainerService implements IContainerService {
         }
     }
 
+    private boolean updateLclAndSeaOrRoadFlagFalse(boolean lclAndSeaOrRoadFlag, ContainerAssignListRequest containerAssignRequest) {
+        return lclAndSeaOrRoadFlag && !containerAssignRequest.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA) && !containerAssignRequest.getTransportMode().equals(Constants.TRANSPORT_MODE_ROA);
+    }
+
+    private void processConts(List<Containers> conts, List<Containers> containersList) {
+        if(conts.isEmpty()) {
+            return;
+        }
+
+        for (Containers x : conts) {
+            boolean flag = true;
+            if(x.getShipmentsList() != null && x.getShipmentsList().size() > 0) {
+                for(ShipmentDetails shipmentDetails : x.getShipmentsList()) {
+                    if (shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL)) {
+                        flag = false;
+                        break;
+                    }
+                }
+            }
+            if (flag)
+                containersList.add(x);
+        }
+    }
+
+    private void processContainers(Page<Containers> containers, Long shipmentId, List<Containers> containersList, boolean IsConsolidatorFlag, List<Containers> conts) throws RunnerException {
+        for (Containers container : containers.getContent()) {
+            List<ShipmentsContainersMapping> shipmentsContainersMappings = shipmentsContainersMappingDao.findByContainerId(container.getId());
+            if(!shipmentsContainersMappings.stream().map(ShipmentsContainersMapping::getShipmentId).toList().contains(shipmentId)) {
+
+                if(container.getAllocatedWeight() != null && container.getAchievedWeight() != null && container.getAllocatedVolume() != null && container.getAchievedWeight() != null
+                   && isNotEmpty(container.getAllocatedWeightUnit()) && isNotEmpty(container.getAllocatedVolumeUnit()) && isNotEmpty(container.getAchievedWeightUnit()) && isNotEmpty(container.getAchievedVolumeUnit())) {
+
+                    BigDecimal achievedWeight = new BigDecimal(convertUnit(Constants.MASS, container.getAchievedWeight(), container.getAchievedWeightUnit(), container.getAllocatedWeightUnit()).toString());
+                    BigDecimal achievedVolume = new BigDecimal(convertUnit(Constants.VOLUME, container.getAchievedVolume(), container.getAchievedVolumeUnit(), container.getAllocatedVolumeUnit()).toString());
+
+                    if(achievedWeight.compareTo(container.getAllocatedWeight()) < 0 && achievedVolume.compareTo(container.getAllocatedVolume()) < 0) {
+                        containersList.add(container);
+                    }
+                    else if(!IsConsolidatorFlag) {
+                        conts.add(container);
+                    }
+                }
+                else
+                    containersList.add(container);
+            }
+        }
+    }
+
     @Override
     public ResponseEntity<IRunnerResponse> validateContainerNumber(String containerNumber) {
         String responseMsg;
@@ -1215,32 +1253,10 @@ public class ContainerService implements IContainerService {
                 response.setSuccess(false);
                 return ResponseHelper.buildSuccessResponse(response);
             }
-            for (int i = 0; i < 4; i++) {
-                if ((int) containerNumber.charAt(i) < 65 || (int) containerNumber.charAt(i) > 90) {
-                    response.setSuccess(false);
-                    return ResponseHelper.buildSuccessResponse(response);
-                }
-            }
-            for (int i = 4; i < 10; i++) {
-                if ((int) containerNumber.charAt(i) < 48 || (int) containerNumber.charAt(i) > 57) {
-                    response.setSuccess(false);
-                    return ResponseHelper.buildSuccessResponse(response);
-                }
-            }
-            if (containerNumber.length() == 11) {
-                if ((int) containerNumber.charAt(10) < 48 || (int) containerNumber.charAt(10) > 57) {
-                    response.setSuccess(false);
-                    return ResponseHelper.buildSuccessResponse(response);
-                }
-            }
+            ResponseEntity<IRunnerResponse> validationResponse = validateContainerNumberFormat(containerNumber, response);
+            if (validationResponse != null) return validationResponse;
             List<Integer> eqvNumValue = assignEquivalentNumberValue();
-            int expandedVal = 0;
-            for (int i = 0; i < 4; i++) {
-                expandedVal = expandedVal + (int) Math.pow(2, i) * eqvNumValue.get((int) containerNumber.charAt(i) - 65);
-            }
-            for (int i = 4; i < 10; i++) {
-                expandedVal = expandedVal + (int) Math.pow(2, i) * ((int) containerNumber.charAt(i) - 48);
-            }
+            int expandedVal = getExpandedVal(containerNumber, eqvNumValue);
             int checkDigit = expandedVal % 11;
             if (checkDigit == 10)
                 checkDigit = 0;
@@ -1259,6 +1275,39 @@ public class ContainerService implements IContainerService {
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
+    }
+
+    private ResponseEntity<IRunnerResponse> validateContainerNumberFormat(String containerNumber, ContainerNumberCheckResponse response) {
+        for (int i = 0; i < 4; i++) {
+            if ((int) containerNumber.charAt(i) < 65 || (int) containerNumber.charAt(i) > 90) {
+                response.setSuccess(false);
+                return ResponseHelper.buildSuccessResponse(response);
+            }
+        }
+        for (int i = 4; i < 10; i++) {
+            if ((int) containerNumber.charAt(i) < 48 || (int) containerNumber.charAt(i) > 57) {
+                response.setSuccess(false);
+                return ResponseHelper.buildSuccessResponse(response);
+            }
+        }
+        if (containerNumber.length() == 11) {
+            if ((int) containerNumber.charAt(10) < 48 || (int) containerNumber.charAt(10) > 57) {
+                response.setSuccess(false);
+                return ResponseHelper.buildSuccessResponse(response);
+            }
+        }
+        return null;
+    }
+
+    private int getExpandedVal(String containerNumber, List<Integer> eqvNumValue) {
+        int expandedVal = 0;
+        for (int i = 0; i < 4; i++) {
+            expandedVal = expandedVal + (int) Math.pow(2, i) * eqvNumValue.get((int) containerNumber.charAt(i) - 65);
+        }
+        for (int i = 4; i < 10; i++) {
+            expandedVal = expandedVal + (int) Math.pow(2, i) * ((int) containerNumber.charAt(i) - 48);
+        }
+        return expandedVal;
     }
 
     @Override
@@ -1337,20 +1386,16 @@ public class ContainerService implements IContainerService {
                 toVolumeUnit = shipmentSettingsDetails.getVolumeChargeableUnit();
             if(containersList != null) {
                 for (Containers containers : containersList) {
-                    if(Boolean.TRUE.equals(containers.getHazardous()))
-                        dgContainers += containers.getContainerCount() != null ? containers.getContainerCount().intValue() : 0;
+                    dgContainers = getDgContainers(containers, dgContainers);
                     double wInDef = convertUnit(Constants.MASS, containers.getGrossWeight(), containers.getGrossWeightUnit(), toWeightUnit).doubleValue();
                     double tarDef = convertUnit(Constants.MASS, containers.getTareWeight(), containers.getTareWeightUnit(), toWeightUnit).doubleValue();
                     double volume = convertUnit(Constants.VOLUME, containers.getGrossVolume(), containers.getGrossVolumeUnit(), toVolumeUnit).doubleValue();
                     totalWeight = totalWeight + wInDef;
                     tareWeight = tareWeight + tarDef;
-                    if(!IsStringNullOrEmpty(containers.getPacks()))
-                        packageCount = packageCount + Long.parseLong(containers.getPacks());
+                    packageCount = getTotalPacks(containers, packageCount);
                     totalVolume = totalVolume + volume;
-                    if(containers.getContainerCount() != null)
-                        totalContainerCount = totalContainerCount + containers.getContainerCount();
-                    if(!IsStringNullOrEmpty(containers.getPacks()))
-                        totalPacks = totalPacks + Long.parseLong(containers.getPacks());
+                    totalContainerCount = getTotalContainerCount(containers, totalContainerCount);
+                    totalPacks = getTotalPacks(containers, totalPacks);
                 }
             }
             ContainerSummaryResponse response = new ContainerSummaryResponse();
@@ -1384,6 +1429,24 @@ public class ContainerService implements IContainerService {
         }
     }
 
+    private double getTotalPacks(Containers containers, double totalPacks) {
+        if(!IsStringNullOrEmpty(containers.getPacks()))
+            totalPacks = totalPacks + Long.parseLong(containers.getPacks());
+        return totalPacks;
+    }
+
+    private double getTotalContainerCount(Containers containers, double totalContainerCount) {
+        if(containers.getContainerCount() != null)
+            totalContainerCount = totalContainerCount + containers.getContainerCount();
+        return totalContainerCount;
+    }
+
+    private int getDgContainers(Containers containers, int dgContainers) {
+        if(Boolean.TRUE.equals(containers.getHazardous()))
+            dgContainers += containers.getContainerCount() != null ? containers.getContainerCount().intValue() : 0;
+        return dgContainers;
+    }
+
     public String calculateContainerSummary(List<Containers> response) {
         if(response == null)
             response = new ArrayList<>();
@@ -1406,25 +1469,7 @@ public class ContainerService implements IContainerService {
             if (containerCountNoPart > 0) {
                 summary.append(" ").append(inWords(containerCountNoPart)).append("(");
 
-                for (int i = 0; i < response.size(); i++) {
-                    Containers container = response.get(i);
-                    if (container.getIsPart() == null || !container.getIsPart()) {
-                        Long containerCount = container.getContainerCount();
-                        int j;
-                        for (j = i + 1; j < response.size(); j++) {
-                            Containers nextContainer = response.get(j);
-                            if (nextContainer.getContainerCode().equals(container.getContainerCode())) {
-                                if (nextContainer.getIsPart() ==null || !nextContainer.getIsPart()) {
-                                    containerCount = containerCount + nextContainer.getContainerCount();
-                                }
-                            } else {
-                                break;
-                            }
-                        }
-                        summary.append(container.getContainerCode()).append(" * ").append(containerCount).append(", ");
-                        i = j - 1;
-                    }
-                }
+                updateSummaryForCountNoPart(response, summary);
                 summary = new StringBuilder(summary.substring(0, summary.length() - 2));
                 summary.append("), ");
             }
@@ -1432,25 +1477,7 @@ public class ContainerService implements IContainerService {
             if (containerCountPart > 0) {
                 summary.append(" ").append(inWords(containerCountPart)).append("( Part of ");
 
-                for (int i = 0; i < response.size(); i++) {
-                    Containers container = response.get(i);
-                    if (container.getIsPart() !=null && container.getIsPart()) {
-                        Long containerCount = container.getContainerCount();
-                        int j;
-                        for (j = i + 1; j < response.size(); j++) {
-                            Containers nextContainer = response.get(j);
-                            if (nextContainer.getContainerCode().equals(container.getContainerCode())) {
-                                if (nextContainer.getIsPart() !=null && nextContainer.getIsPart()) {
-                                    containerCount = containerCount + nextContainer.getContainerCount();
-                                }
-                            } else {
-                                break;
-                            }
-                        }
-                        summary.append(container.getContainerCode()).append(" * ").append(containerCount).append(", ");
-                        i = j - 1;
-                    }
-                }
+                updateSummaryForCountPart(response, summary);
                 summary = new StringBuilder(summary.substring(0, summary.length() - 2));
                 summary.append(")");
             } else {
@@ -1459,6 +1486,60 @@ public class ContainerService implements IContainerService {
             return summary.toString();
         }
         return null;
+    }
+
+    private void updateSummaryForCountPart(List<Containers> response, StringBuilder summary) {
+        for (int i = 0; i < response.size(); i++) {
+            Containers container = response.get(i);
+            if (container.getIsPart() !=null && container.getIsPart()) {
+                Long containerCount = container.getContainerCount();
+                int j;
+                for (j = i + 1; j < response.size(); j++) {
+                    Containers nextContainer = response.get(j);
+                    if (nextContainer.getContainerCode().equals(container.getContainerCode())) {
+                        containerCount = getContainerCountForCountPart(nextContainer, containerCount);
+                    } else {
+                        break;
+                    }
+                }
+                summary.append(container.getContainerCode()).append(" * ").append(containerCount).append(", ");
+                i = j - 1;
+            }
+        }
+    }
+
+    private Long getContainerCountForCountPart(Containers nextContainer, Long containerCount) {
+        if (nextContainer.getIsPart() !=null && nextContainer.getIsPart()) {
+            containerCount = containerCount + nextContainer.getContainerCount();
+        }
+        return containerCount;
+    }
+
+    private void updateSummaryForCountNoPart(List<Containers> response, StringBuilder summary) {
+        for (int i = 0; i < response.size(); i++) {
+            Containers container = response.get(i);
+            if (container.getIsPart() == null || !container.getIsPart()) {
+                Long containerCount = container.getContainerCount();
+                int j;
+                for (j = i + 1; j < response.size(); j++) {
+                    Containers nextContainer = response.get(j);
+                    if (nextContainer.getContainerCode().equals(container.getContainerCode())) {
+                        containerCount = getContainerCountForCountNoPart(nextContainer, containerCount);
+                    } else {
+                        break;
+                    }
+                }
+                summary.append(container.getContainerCode()).append(" * ").append(containerCount).append(", ");
+                i = j - 1;
+            }
+        }
+    }
+
+    private Long getContainerCountForCountNoPart(Containers nextContainer, Long containerCount) {
+        if (nextContainer.getIsPart() ==null || !nextContainer.getIsPart()) {
+            containerCount = containerCount + nextContainer.getContainerCount();
+        }
+        return containerCount;
     }
 
     public void afterSave(Containers containers, boolean isCreate) {
@@ -1509,14 +1590,7 @@ public class ContainerService implements IContainerService {
                         containers.setConsolidationId(consolidationDetails.get().getId());
                     }
                 }
-                if (containerRequest.getShipmentGuids() != null && containerRequest.getShipmentGuids().size() > 0) {
-                    ListCommonRequest listCommonRequest = constructListCommonRequest("guid", containerRequest.getShipmentGuids(), "IN");
-                    Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listCommonRequest, ShipmentDetails.class);
-                    Page<ShipmentDetails> shipmentDetails = shipmentDao.findAll(pair.getLeft(), pair.getRight());
-                    if (shipmentDetails.get() != null && shipmentDetails.get().count() > 0) {
-                        shipIds = shipmentDetails.get().map(e -> e.getId()).toList();
-                    }
-                }
+                shipIds = getShipIds(containerRequest, shipIds);
             }
             containers = containerDao.save(containers);
             afterSave(containers, isCreate);
@@ -1531,6 +1605,18 @@ public class ContainerService implements IContainerService {
             log.error(responseMsg, e);
             throw new RuntimeException(e);
         }
+    }
+
+    private List<Long> getShipIds(ContainerRequestV2 containerRequest, List<Long> shipIds) {
+        if (containerRequest.getShipmentGuids() != null && containerRequest.getShipmentGuids().size() > 0) {
+            ListCommonRequest listCommonRequest = constructListCommonRequest("guid", containerRequest.getShipmentGuids(), "IN");
+            Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listCommonRequest, ShipmentDetails.class);
+            Page<ShipmentDetails> shipmentDetails = shipmentDao.findAll(pair.getLeft(), pair.getRight());
+            if (shipmentDetails.get() != null && shipmentDetails.get().count() > 0) {
+                shipIds = shipmentDetails.get().map(e -> e.getId()).toList();
+            }
+        }
+        return shipIds;
     }
 
     /**
@@ -1562,11 +1648,7 @@ public class ContainerService implements IContainerService {
         if (request.getConsolidationId() != null) {
             consol = consolidationDetailsDao.findById(Long.valueOf(request.getConsolidationId()));
 
-            if (consol.isEmpty())
-                throw new RuntimeException("Consolidation does not exist, pls save the consol first");
-
-            if (consol.get().getContainersList().isEmpty())
-                throw new RuntimeException("No containers found attached to consoliation");
+            validateConsoleAndContainersSize(consol);
 
             List<Containers> containers = consol.get().getContainersList();
             if (containers == null || containers.isEmpty()) {
@@ -1619,6 +1701,14 @@ public class ContainerService implements IContainerService {
             }
         }
 
+    }
+
+    private void validateConsoleAndContainersSize(Optional<ConsolidationDetails> consol) {
+        if (consol.isEmpty())
+            throw new RuntimeException("Consolidation does not exist, pls save the consol first");
+
+        if (consol.get().getContainersList().isEmpty())
+            throw new RuntimeException("No containers found attached to consoliation");
     }
 
     private void makeHeadersInSheet(Sheet sheet, Optional<ConsolidationDetails> consol) {
@@ -1682,19 +1772,11 @@ public class ContainerService implements IContainerService {
         log.info("Starting pushContainersToDependentServices with containersList size: {} and oldContainers size: {}",
                 containersList != null ? containersList.size() : 0,
                 oldContainers != null ? oldContainers.size() : 0);
-        Map<Long, String> oldContsMap = new HashMap<>();
-        if(oldContainers != null && !oldContainers.isEmpty()) {
-            for(Containers container: oldContainers) {
-                oldContsMap.put(container.getId(), container.getContainerNumber());
-            }
-            log.debug("Old containers map created with size: {}", oldContsMap.size());
-        }
         V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
         log.debug("Tenant settings retrieved: LogicAppIntegrationEnabled={}, TransportOrchestratorEnabled={}",
                 v1TenantSettingsResponse.getLogicAppIntegrationEnabled(),
                 v1TenantSettingsResponse.getTransportOrchestratorEnabled());
-        if(containersList != null && !containersList.isEmpty() && (Boolean.TRUE.equals(v1TenantSettingsResponse.getLogicAppIntegrationEnabled())
-            || Boolean.TRUE.equals(v1TenantSettingsResponse.getTransportOrchestratorEnabled()))) {
+        if(canProcessContainers(containersList, v1TenantSettingsResponse)) {
             EventMessage eventMessage = new EventMessage();
             eventMessage.setMessageType(ContainerConstants.CONTAINER_UPDATE_MSG);
             List<ContainerPayloadDetails> payloadDetails = new ArrayList<>();
@@ -1725,6 +1807,11 @@ public class ContainerService implements IContainerService {
             sbUtils.sendMessagesToTopic(isbProperties, messageTopic, List.of(new ServiceBusMessage(jsonBody)));
             log.info("Container pushed to kafka dependent services with data {}", jsonBody);
         }
+    }
+
+    private boolean canProcessContainers(List<Containers> containersList, V1TenantSettingsResponse v1TenantSettingsResponse) {
+        return containersList != null && !containersList.isEmpty() && (Boolean.TRUE.equals(v1TenantSettingsResponse.getLogicAppIntegrationEnabled())
+                || Boolean.TRUE.equals(v1TenantSettingsResponse.getTransportOrchestratorEnabled()));
     }
 
     private ContainerPayloadDetails prepareQueuePayload(Containers containers, String bookingRef) {

@@ -21,8 +21,6 @@ public interface ICustomerBookingService {
 
     ResponseEntity<IRunnerResponse> delete(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<IRunnerResponse> cancel(CommonRequestModel commonRequestModel) throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException;
-
     ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> checkCreditLimitFromFusion(CommonRequestModel commonRequestModel) throws RunnerException;
     ResponseEntity<IRunnerResponse> retryForBilling(CommonRequestModel commonRequestModel);

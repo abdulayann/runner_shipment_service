@@ -84,7 +84,10 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.Predicate;
+import javax.persistence.criteria.Root;
+
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -160,7 +163,7 @@ public class EventService implements IEventService {
         }
         Events event = convertRequestToEntity(request);
         try {
-            saveEvent(request);
+            saveEventUtil(request);
 
             // audit logs
             auditLogService.addAuditLog(
@@ -211,7 +214,7 @@ public class EventService implements IEventService {
         try {
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
 
-            saveEvent(request);
+            saveEventUtil(request);
 
             // audit logs
             auditLogService.addAuditLog(
@@ -451,38 +454,7 @@ public class EventService implements IEventService {
             boolean isEmptyContainerReturnedEvent = false;
 
             if (trackingEventsResponse != null) {
-                if (trackingEventsResponse.getEventsList() != null) {
-                    ShipmentDetails shipmentDetails = optionalShipmentDetails.orElse(null);
-                    for (var trackingEvent : trackingEventsResponse.getEventsList()) {
-                        EventsResponse eventsResponse = getEventsResponse(Optional.ofNullable(shipmentId), trackingEvent);
-                        res.add(eventsResponse);
-                    }
-                    saveTrackingEventsToEventsDump(jsonHelper.convertValueToList(res, Events.class), shipmentDetails, entityType, MDC.get(LoggingConstants.REQUEST_ID));
-                    List<Events> updatedEventsList = saveTrackingEventsToEvents(jsonHelper.convertValueToList(res, Events.class), entityType, shipmentDetails, identifier2ToLocationRoleMap,
-                            MDC.get(LoggingConstants.REQUEST_ID));
-                    res = jsonHelper.convertValueToList(updatedEventsList, EventsResponse.class);
-                }
-
-                for (EventsResponse eventsResponse : res) {
-                    if (Objects.equals(eventsResponse.getEventCode(), EventConstants.EMCR)) {
-                        isEmptyContainerReturnedEvent = true;
-                        break;
-                    }
-                }
-
-                if (optionalShipmentDetails.isPresent()) {
-                    ShipmentDetails shipment = optionalShipmentDetails.get();
-                    boolean isShipmentUpdateRequired = updateShipmentDetails(shipment, trackingEventsResponse, isEmptyContainerReturnedEvent);
-
-                    if (isShipmentUpdateRequired) {
-                        shipmentDao.save(shipment, false);
-                        try {
-                            shipmentSync.sync(shipment, null, null, UUID.randomUUID().toString(), false);
-                        } catch (Exception e) {
-                            log.error("Error performing sync on shipment entity, {}", e);
-                        }
-                    }
-                }
+                processTrackingEventsResponse(trackingEventsResponse, optionalShipmentDetails, shipmentId, res, entityType, identifier2ToLocationRoleMap, isEmptyContainerReturnedEvent);
             }
 
         } else if (consolidationId != null) {
@@ -502,6 +474,54 @@ public class EventService implements IEventService {
 
 
         // Bring all Events saved from DB
+        List<EventsResponse> allEventResponses = getEventsResponsesFromDb(request, entityType, entityId, consolidationId);
+
+        // set MasterData
+        setEventCodesMasterData(
+                allEventResponses,
+                EventsResponse::getEventCode,
+                EventsResponse::setDescription
+        );
+
+        return ResponseHelper.buildSuccessResponse(allEventResponses);
+    }
+
+    private void processTrackingEventsResponse(TrackingEventsResponse trackingEventsResponse, Optional<ShipmentDetails> optionalShipmentDetails, Long shipmentId, List<EventsResponse> res, String entityType, Map<String, EntityTransferMasterLists> identifier2ToLocationRoleMap, boolean isEmptyContainerReturnedEvent) throws RunnerException {
+        if (trackingEventsResponse.getEventsList() != null) {
+            ShipmentDetails shipmentDetails = optionalShipmentDetails.orElse(null);
+            for (var trackingEvent : trackingEventsResponse.getEventsList()) {
+                EventsResponse eventsResponse = getEventsResponse(Optional.ofNullable(shipmentId), trackingEvent);
+                res.add(eventsResponse);
+            }
+            saveTrackingEventsToEventsDump(jsonHelper.convertValueToList(res, Events.class), shipmentDetails, entityType, MDC.get(LoggingConstants.REQUEST_ID));
+            List<Events> updatedEventsList = saveTrackingEventsToEvents(jsonHelper.convertValueToList(res, Events.class), entityType, shipmentDetails, identifier2ToLocationRoleMap,
+                    MDC.get(LoggingConstants.REQUEST_ID));
+            res = jsonHelper.convertValueToList(updatedEventsList, EventsResponse.class);
+        }
+
+        for (EventsResponse eventsResponse : res) {
+            if (Objects.equals(eventsResponse.getEventCode(), EventConstants.EMCR)) {
+                isEmptyContainerReturnedEvent = true;
+                break;
+            }
+        }
+
+        if (optionalShipmentDetails.isPresent()) {
+            ShipmentDetails shipment = optionalShipmentDetails.get();
+            boolean isShipmentUpdateRequired = updateShipmentDetails(shipment, trackingEventsResponse, isEmptyContainerReturnedEvent);
+
+            if (isShipmentUpdateRequired) {
+                shipmentDao.save(shipment, false);
+                try {
+                    shipmentSync.sync(shipment, null, null, UUID.randomUUID().toString(), false);
+                } catch (Exception e) {
+                    log.error("Error performing sync on shipment entity, {}", e);
+                }
+            }
+        }
+    }
+
+    private List<EventsResponse> getEventsResponsesFromDb(TrackingEventsRequest request, String entityType, Long entityId, Long consolidationId) {
         List<EventsResponse> allEventResponses;
         ListCommonRequest listRequest = jsonHelper.convertValue(request, ListCommonRequest.class);
 
@@ -520,15 +540,7 @@ public class EventService implements IEventService {
             log.info("Received {} events for consolidation with id {}", consolEventsPage.getTotalElements(), consolidationId);
             allEventResponses = jsonHelper.convertValueToList(consolEventsPage.getContent(), EventsResponse.class);
         }
-
-        // set MasterData
-        setEventCodesMasterData(
-                allEventResponses,
-                EventsResponse::getEventCode,
-                EventsResponse::setDescription
-        );
-
-        return ResponseHelper.buildSuccessResponse(allEventResponses);
+        return allEventResponses;
     }
 
     @NotNull
@@ -723,7 +735,7 @@ public class EventService implements IEventService {
      * @return true if the event should be processed, false otherwise
      */
     private boolean shouldProcessEvent(Events event, ShipmentDetails shipmentDetails, String messageId) {
-        if (event == null || shipmentDetails == null) {
+        if (requiredParametersMissing(event, shipmentDetails)) {
             return false;
         }
 
@@ -744,14 +756,12 @@ public class EventService implements IEventService {
             return true;
         }
 
-        if (EventConstants.VSDP.equalsIgnoreCase(eventCode) &&
-                (isFclShipment(shipmentType) || isLclShipment(shipmentType) || isAirShipment(transportMode))) {
+        if (EventConstants.VSDP.equalsIgnoreCase(eventCode) && matchCommonCriteria(shipmentType, transportMode)) {
             log.info("Event code {} matches FCL/LCL/Air shipment criteria. messageId {}", eventCode, messageId);
             return true;
         }
 
-        if (EventConstants.ARDP.equalsIgnoreCase(eventCode) &&
-                (isFclShipment(shipmentType) || isLclShipment(shipmentType) || isAirShipment(transportMode))) {
+        if (EventConstants.ARDP.equalsIgnoreCase(eventCode) && matchCommonCriteria(shipmentType, transportMode)) {
             log.info("Event code {} matches FCL/LCL/Air shipment criteria. messageId {}", eventCode, messageId);
             return true;
         }
@@ -773,6 +783,14 @@ public class EventService implements IEventService {
 
         log.info("Event code {} does not match any processing criteria. messageId {}", eventCode, messageId);
         return false;
+    }
+
+    private boolean requiredParametersMissing(Events event, ShipmentDetails shipmentDetails) {
+        return event == null || shipmentDetails == null;
+    }
+
+    private boolean matchCommonCriteria(String shipmentType, String transportMode) {
+        return isFclShipment(shipmentType) || isLclShipment(shipmentType) || isAirShipment(transportMode);
     }
 
     private boolean isFclShipment(String shipmentType) {
@@ -996,8 +1014,7 @@ public class EventService implements IEventService {
     public void updateAtaAtdInShipment(List<Events> events, ShipmentDetails shipmentDetails, ShipmentSettingsDetails tenantSettings) {
         if (ObjectUtils.isNotEmpty(events)) {
             Events lastEvent = events.get(events.size() - 1);
-            if (tenantSettings.getIsAtdAtaAutoPopulateEnabled() != null && tenantSettings.getIsAtdAtaAutoPopulateEnabled().equals(true)) {
-                if (lastEvent.getActual() != null) {
+            if (tenantSettings.getIsAtdAtaAutoPopulateEnabled() != null && tenantSettings.getIsAtdAtaAutoPopulateEnabled().equals(true) && lastEvent.getActual() != null) {
                     shipmentDetails.setCarrierDetails(shipmentDetails.getCarrierDetails() == null ? new CarrierDetails() : shipmentDetails.getCarrierDetails());
                     if (EventConstants.ATA_EVENT_CODES.contains(lastEvent.getEventCode())) {
                         shipmentDetails.getCarrierDetails().setAta(lastEvent.getActual());
@@ -1008,7 +1025,7 @@ public class EventService implements IEventService {
                         createDateTimeChangeLog(DateType.ATD, lastEvent.getActual(), shipmentDetails.getId());
                     }
                 }
-            }
+
         }
     }
 
@@ -1371,6 +1388,10 @@ public class EventService implements IEventService {
     @Override
     @Transactional
     public void saveEvent(EventsRequest eventsRequest) {
+        saveEventUtil(eventsRequest);
+    }
+
+    public void saveEventUtil(EventsRequest eventsRequest) {
         Events entity = convertRequestToEntity(eventsRequest);
 
         // event code and master-data description
@@ -1428,28 +1449,43 @@ public class EventService implements IEventService {
                 predicate = cb.and(predicate, cb.isNull(root.get("source")));
             }
 
-            if (event.getPlaceName() != null) {
-                predicate = cb.and(predicate, cb.equal(root.get("placeName"), event.getPlaceName()));
-            } else {
-                predicate = cb.and(predicate, cb.isNull(root.get("placeName")));
-            }
+            predicate = getPredicateForPlaceName(event, root, cb, predicate);
 
-            if (event.getEntityId() != null) {
-                predicate = cb.and(predicate, cb.equal(root.get(EventConstants.ENTITY_ID), event.getEntityId()));
-            } else {
-                predicate = cb.and(predicate, cb.isNull(root.get(EventConstants.ENTITY_ID)));
-            }
+            predicate = getPredicateForEntityId(event, root, cb, predicate);
 
-            if (event.getEntityType() != null) {
-                predicate = cb.and(predicate, cb.equal(root.get(EventConstants.ENTITY_TYPE), event.getEntityType()));
-            } else {
-                predicate = cb.and(predicate, cb.isNull(root.get(EventConstants.ENTITY_TYPE)));
-            }
+            predicate = getPredicateForEventType(event, root, cb, predicate);
 
             predicate = cb.and(predicate, cb.equal(root.get("isDeleted"), false));
 
             return predicate;
         };
+    }
+
+    private Predicate getPredicateForPlaceName(Events event, Root<Events> root, CriteriaBuilder cb, Predicate predicate) {
+        if (event.getPlaceName() != null) {
+            predicate = cb.and(predicate, cb.equal(root.get("placeName"), event.getPlaceName()));
+        } else {
+            predicate = cb.and(predicate, cb.isNull(root.get("placeName")));
+        }
+        return predicate;
+    }
+
+    private Predicate getPredicateForEntityId(Events event, Root<Events> root, CriteriaBuilder cb, Predicate predicate) {
+        if (event.getEntityId() != null) {
+            predicate = cb.and(predicate, cb.equal(root.get(EventConstants.ENTITY_ID), event.getEntityId()));
+        } else {
+            predicate = cb.and(predicate, cb.isNull(root.get(EventConstants.ENTITY_ID)));
+        }
+        return predicate;
+    }
+
+    private Predicate getPredicateForEventType(Events event, Root<Events> root, CriteriaBuilder cb, Predicate predicate) {
+        if (event.getEntityType() != null) {
+            predicate = cb.and(predicate, cb.equal(root.get(EventConstants.ENTITY_TYPE), event.getEntityType()));
+        } else {
+            predicate = cb.and(predicate, cb.isNull(root.get(EventConstants.ENTITY_TYPE)));
+        }
+        return predicate;
     }
 
     private void handleDuplicationForExistingEvents(Events event) {
