@@ -2670,8 +2670,8 @@ class ReportServiceTest extends CommonMocks {
     void createDocumentTagsForShipment() throws RunnerException {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().id(1L).build());
         when(shipmentDao.findById(any())).thenReturn(Optional.of(new ShipmentDetails()));
-        Mockito.doNothing().when(shipmentTagsForExteranlServices).populateRaKcData(any(), any());
-        ResponseEntity<IRunnerResponse> responseEntity = reportService.createDocumentTagsForShipment(commonRequestModel);
+        Mockito.doNothing().when(shipmentTagsForExteranlServices).populateRaKcDataWithShipmentDetails(any(), any());
+        ResponseEntity<IRunnerResponse> responseEntity = reportService.createDocumentTagsForShipment(commonRequestModel);;
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
@@ -2679,8 +2679,8 @@ class ReportServiceTest extends CommonMocks {
     void createDocumentTagsForShipmentGuid() throws RunnerException {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().guid(UUID.randomUUID().toString()).build());
         when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(new ShipmentDetails()));
-        Mockito.doNothing().when(shipmentTagsForExteranlServices).populateRaKcData(any(), any());
-        ResponseEntity<IRunnerResponse> responseEntity = reportService.createDocumentTagsForShipment(commonRequestModel);
+        Mockito.doNothing().when(shipmentTagsForExteranlServices).populateRaKcDataWithShipmentDetails(any(), any());
+        ResponseEntity<IRunnerResponse> responseEntity = reportService.createDocumentTagsForShipment(commonRequestModel);;
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 

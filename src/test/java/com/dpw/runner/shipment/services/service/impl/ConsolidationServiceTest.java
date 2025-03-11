@@ -3768,7 +3768,7 @@ import static org.mockito.Mockito.*;
     }
 
     @Test
-    void testExportExcel_Success() throws IOException, IllegalAccessException {
+    void testExportExcel_Success() throws IOException, IllegalAccessException, RunnerException {
         ListCommonRequest listCommonRequest = constructListCommonRequest("id", 1, "=");
         MockHttpServletResponse response = new MockHttpServletResponse();
         ConsolidationDetails consolidationDetails = testConsol;
@@ -3776,6 +3776,8 @@ import static org.mockito.Mockito.*;
         UsersDto usersDto = UserContext.getUser();
         usersDto.setEnableTimeZone(false);
         UserContext.setUser(usersDto);
+        PermissionsContext.setPermissions(List.of("Operations:Consolidations:AIR:Create"));
+
         ConsolidationListResponse consolidationListResponse = modelMapperTest.map(consolidationDetails, ConsolidationListResponse.class);
 
         when(customConsolidationDetailsRepository.findAllLiteConsol(any(), any())).thenReturn(new PageImpl<>(List.of(liteResponse)));

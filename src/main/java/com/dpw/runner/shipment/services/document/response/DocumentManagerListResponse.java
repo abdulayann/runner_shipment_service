@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.document.response;
 
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 import java.util.List;
@@ -7,7 +8,7 @@ import java.util.List;
 
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class DocumentManagerListResponse<T> {
+public class DocumentManagerListResponse<T> implements IRunnerResponse {
 
     private Boolean success;
 

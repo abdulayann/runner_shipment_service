@@ -1060,7 +1060,8 @@ public class ShipmentService implements IShipmentService {
             );
 
             ShipmentDetails finalShipmentDetails1 = shipmentDetails;
-            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForShipment(finalShipmentDetails1)), executorService);
+            String entityPayload = jsonHelper.convertToJson(finalShipmentDetails1);
+            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForShipment(entityPayload, finalShipmentDetails1.getId(), finalShipmentDetails1.getGuid())), executorService);
             ShipmentDetails finalShipmentDetails = shipmentDetails;
 
         } catch (Exception e) {
@@ -1311,14 +1312,31 @@ public class ShipmentService implements IShipmentService {
 
     private List<PackingRequest> getPackingListRequest(CustomerBookingRequest customerBookingRequest) {
         return customerBookingRequest.getPackingList() != null ? customerBookingRequest.getPackingList().stream().map(obj -> {
-            if (!StringUtility.isEmpty(obj.getLengthUnit())) {
+            if(!StringUtility.isEmpty(obj.getLengthUnit()))
+            {
                 obj.setWidthUnit(obj.getLengthUnit());
                 obj.setHeightUnit(obj.getLengthUnit());
             }
-            if (obj.getWeight() != null)
+            if(obj.getWeight() != null)
                 obj.setWeight(obj.getWeight().multiply(new BigDecimal(obj.getPacks())));
-            if (obj.getVolume() != null)
+            if(obj.getVolume() != null)
                 obj.setVolume(obj.getVolume().multiply(new BigDecimal(obj.getPacks())));
+
+            try {
+                if(customerBookingRequest.getTransportType().equalsIgnoreCase(TRANSPORT_MODE_AIR)) {
+                    obj.setWeight(new BigDecimal(convertUnit(MASS, obj.getWeight(), obj.getWeightUnit(), WEIGHT_UNIT_KG).toString()));
+                    obj.setWeightUnit(Constants.WEIGHT_UNIT_KG);
+                    obj.setVolume(new BigDecimal(convertUnit(VOLUME, obj.getVolume(), obj.getVolumeUnit(), VOLUME_UNIT_M3).toString()));
+                    obj.setVolumeUnit(Constants.VOLUME_UNIT_M3);
+                    double factor = Constants.AIR_FACTOR_FOR_VOL_WT;
+                    BigDecimal wvInKG = obj.getVolume().multiply(BigDecimal.valueOf(factor));
+                    obj.setVolumeWeight(wvInKG);
+                    obj.setVolumeWeightUnit(Constants.WEIGHT_UNIT_KG);
+                }
+            }
+            catch (Exception e) {
+                log.error("Error while unit conversion for AIR transport mode in shipment packs from booking", e);
+            }
             return obj;
         }).collect(Collectors.toList()) : null;
     }
@@ -1957,7 +1975,8 @@ public class ShipmentService implements IShipmentService {
             afterSave(entity, oldConvertedShipment, false, shipmentRequest, shipmentSettingsDetails, syncConsole, removedConsolIds, isNewConsolAttached, false, isFromET);
             log.info("{} | completeUpdateShipment after save.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
             ShipmentDetails finalEntity1 = entity;
-            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForShipment(finalEntity1)), executorService);
+            String entityPayload = jsonHelper.convertToJson(finalEntity1);
+            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForShipment(entityPayload, finalEntity1.getId(), finalEntity1.getGuid())), executorServiceMasterData);
             ShipmentDetails finalEntity = entity;
             log.info("end completeUpdateShipment.... {} ms", System.currentTimeMillis() - start);
             return shipmentDetailsMapper.map(entity);
@@ -1991,11 +2010,10 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    public void createLogHistoryForShipment(ShipmentDetails shipmentDetails){
+    public void createLogHistoryForShipment(String entityPayload, Long id, UUID guid){
         try {
-            String entityPayload = jsonHelper.convertToJson(shipmentDetails);
-            logsHistoryService.createLogHistory(LogHistoryRequest.builder().entityId(shipmentDetails.getId())
-                    .entityType(Constants.SHIPMENT).entityGuid(shipmentDetails.getGuid()).entityPayload(entityPayload).build());
+            logsHistoryService.createLogHistory(LogHistoryRequest.builder().entityId(id)
+                    .entityType(Constants.SHIPMENT).entityGuid(guid).entityPayload(entityPayload).build());
         } catch (Exception ex) {
             log.error("Error while creating LogsHistory for Shipment: " + ex.getMessage());
         }
@@ -5675,18 +5693,18 @@ public class ShipmentService implements IShipmentService {
     @Override
     public Map<String, Object> fetchAllMasterDataByKey(ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse) {
         Map<String, Object> masterDataResponse = new HashMap<>();
-        var masterListFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllMasterDataInSingleCall(shipmentDetailsResponse, masterDataResponse)), executorService);
-        var unLocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllUnlocationDataInSingleCall(shipmentDetailsResponse, masterDataResponse)), executorService);
-        var carrierFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllCarrierDataInSingleCall(shipmentDetailsResponse, masterDataResponse)), executorService);
-        var currencyFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllCurrencyDataInSingleCall(shipmentDetailsResponse, masterDataResponse)), executorService);
-        var commodityTypesFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllCommodityTypesInSingleCall(shipmentDetailsResponse, masterDataResponse)), executorService);
-        var tenantDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllTenantDataInSingleCall(shipmentDetailsResponse, masterDataResponse)), executorService);
-        var wareHouseDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllWarehouseDataInSingleCall(shipmentDetailsResponse, masterDataResponse)), executorService);
-        var activityDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllActivityDataInSingleCall(shipmentDetailsResponse, masterDataResponse)), executorService);
-        var salesAgentFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllSalesAgentInSingleCall(shipmentDetailsResponse, masterDataResponse)), executorService);
-        var containerTypeFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllContainerTypesInSingleCall(shipmentDetailsResponse, masterDataResponse)), executorService);
-        var vesselsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllVesselDataInSingleCall(shipmentDetailsResponse, masterDataResponse)), executorService);
-        var dgSubstanceFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllDGSubstanceDataInSingleCall(shipmentDetailsResponse, masterDataResponse)), executorService);
+        var masterListFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllMasterDataInSingleCall(shipmentDetailsResponse, masterDataResponse)), executorServiceMasterData);
+        var unLocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllUnlocationDataInSingleCall(shipmentDetailsResponse, masterDataResponse)), executorServiceMasterData);
+        var carrierFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllCarrierDataInSingleCall(shipmentDetailsResponse, masterDataResponse)), executorServiceMasterData);
+        var currencyFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllCurrencyDataInSingleCall(shipmentDetailsResponse, masterDataResponse)), executorServiceMasterData);
+        var commodityTypesFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllCommodityTypesInSingleCall(shipmentDetailsResponse, masterDataResponse)), executorServiceMasterData);
+        var tenantDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllTenantDataInSingleCall(shipmentDetailsResponse, masterDataResponse)), executorServiceMasterData);
+        var wareHouseDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllWarehouseDataInSingleCall(shipmentDetailsResponse, masterDataResponse)), executorServiceMasterData);
+        var activityDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllActivityDataInSingleCall(shipmentDetailsResponse, masterDataResponse)), executorServiceMasterData);
+        var salesAgentFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllSalesAgentInSingleCall(shipmentDetailsResponse, masterDataResponse)), executorServiceMasterData);
+        var containerTypeFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllContainerTypesInSingleCall(shipmentDetailsResponse, masterDataResponse)), executorServiceMasterData);
+        var vesselsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllVesselDataInSingleCall(shipmentDetailsResponse, masterDataResponse)), executorServiceMasterData);
+        var dgSubstanceFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllDGSubstanceDataInSingleCall(shipmentDetailsResponse, masterDataResponse)), executorServiceMasterData);
         CompletableFuture.allOf(masterListFuture, unLocationsFuture, carrierFuture, currencyFuture, commodityTypesFuture, tenantDataFuture, wareHouseDataFuture, activityDataFuture, salesAgentFuture,
                 containerTypeFuture, vesselsFuture, dgSubstanceFuture).join();
 
@@ -5731,8 +5749,12 @@ public class ShipmentService implements IShipmentService {
             log.info("{} | createShipmentPayload Time taken for setContainersPacksAutoUpdateData & setTruckDriverDetailsData: {} ms", LoggerHelper.getRequestIdFromMDC(), (System.currentTimeMillis() - mid));
             mid = System.currentTimeMillis();
             if(!Objects.isNull(shipmentDetails)) {
+                double _start1 = System.currentTimeMillis();
                 shipmentDetailsResponse.setPackSummary(packingService.calculatePackSummary(shipmentDetails.getPackingList(), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType(), new ShipmentMeasurementDetailsDto()));
+                log.info("Time taken to calculate pack summary for event:{} | Time: {} ms. || RequestId: {},  pack size: {}", LoggerEvent.SHIPMENT_RETRIEVE_COMPLETE_MASTER_DATA, (System.currentTimeMillis() - _start1) , LoggerHelper.getRequestIdFromMDC(), CollectionUtils.isEmpty(shipmentDetails.getPackingList()) ? 0 : shipmentDetails.getPackingList().size());
+                _start1 = System.currentTimeMillis();
                 shipmentDetailsResponse.setContainerSummary(containerService.calculateContainerSummary(new ArrayList<>(shipmentDetails.getContainersList()), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType()));
+                log.info("Time taken to calculate container summary for event:{} | Time: {} ms. || RequestId: {}, container size: {}", LoggerEvent.SHIPMENT_RETRIEVE_COMPLETE_MASTER_DATA, (System.currentTimeMillis() - _start1) , LoggerHelper.getRequestIdFromMDC(), CollectionUtils.isEmpty(shipmentDetails.getContainersList()) ? 0 : shipmentDetails.getContainersList().size());
                 log.info("{} | createShipmentPayload Time taken for setPackSummary & setContainerSummary: {} ms", LoggerHelper.getRequestIdFromMDC(), (System.currentTimeMillis() - mid));
                 mid = System.currentTimeMillis();
             }
