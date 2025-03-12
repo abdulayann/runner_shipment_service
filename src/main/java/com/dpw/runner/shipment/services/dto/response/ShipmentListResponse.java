@@ -149,4 +149,6 @@ public class ShipmentListResponse implements IRunnerResponse {
     private List<EventsResponse> eventsList;
     @JsonIgnore
     private List<ShipmentOrderResponse> shipmentOrders;
+    @JsonIgnore
+    private List<ReferenceNumbersResponse> referenceNumbersList;
 }
