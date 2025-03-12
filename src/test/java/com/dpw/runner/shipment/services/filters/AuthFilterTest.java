@@ -82,7 +82,6 @@ class AuthFilterTest {
     @Test
     void testDoFilterInternal() throws IOException, ServletException {
         // Arrange
-        when(tokenUtility.getUserIdAndBranchId(Mockito.<String>any())).thenReturn("janedoe/featurebranch");
         DefaultMultipartHttpServletRequest servletRequest = mock(DefaultMultipartHttpServletRequest.class);
         when(servletRequest.getHeader(Mockito.<String>any())).thenReturn("https://example.org/example");
         when(servletRequest.getRequestURI()).thenReturn("https://example.org/example");
@@ -94,7 +93,6 @@ class AuthFilterTest {
         when(getUserServiceFactory.returnUserService()).thenReturn(userServiceV1);
         authFilter.doFilterInternal(servletRequest, servletResponse, mock(FilterChain.class));
 
-        verify(tokenUtility).getUserIdAndBranchId("https://example.org/example");
         verify(servletRequest).getHeader("Authorization");
         verify(servletRequest).getRequestURI();
         verify(servletRequest, atLeast(1)).getServletPath();
@@ -122,7 +120,6 @@ class AuthFilterTest {
 
     @Test
     void testDoFilterInternal3() throws ServletException, IOException {
-        when(tokenUtility.getUserIdAndBranchId(Mockito.<String>any())).thenReturn("abc");
         DefaultMultipartHttpServletRequest servletRequest = mock(DefaultMultipartHttpServletRequest.class);
         when(servletRequest.getServletPath()).thenReturn("https://example.org/example");
         when(servletRequest.getRequestURI()).thenReturn("https://example.org/example");
@@ -135,7 +132,7 @@ class AuthFilterTest {
         permissions.put("superAdmin", false);
         user.setPermissions(permissions);
         user.setTenantId(1);
-        when(userService.getUserByToken(any(), any())).thenReturn(user);
+        when(userService.getUserByToken(any())).thenReturn(user);
         //when(iShipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(new ShipmentSettingsDetails()));
         AddDefaultCharsetFilter.ResponseWrapper servletResponse = mock(AddDefaultCharsetFilter.ResponseWrapper.class);
         authFilter.doFilterInternal(servletRequest, servletResponse, mock(FilterChain.class));
@@ -144,13 +141,12 @@ class AuthFilterTest {
 
     @Test
     void testDoFilterInternal4() throws ServletException, IOException {
-        when(tokenUtility.getUserIdAndBranchId(Mockito.<String>any())).thenReturn("abc");
         DefaultMultipartHttpServletRequest servletRequest = mock(DefaultMultipartHttpServletRequest.class);
         when(servletRequest.getServletPath()).thenReturn("https://example.org/example");
         when(servletRequest.getHeader(Mockito.<String>any())).thenReturn("def");
         IUserService userService = mock(IUserService.class);
         when(getUserServiceFactory.returnUserService()).thenReturn(userService);
-        when(userService.getUserByToken(any(), any())).thenThrow(new HttpClientErrorException(HttpStatus.CONTINUE));
+        when(userService.getUserByToken(any())).thenThrow(new HttpClientErrorException(HttpStatus.CONTINUE));
         AddDefaultCharsetFilter.ResponseWrapper servletResponse = mock(AddDefaultCharsetFilter.ResponseWrapper.class);
         authFilter.doFilterInternal(servletRequest, servletResponse, mock(FilterChain.class));
         verify(servletRequest).getHeader("Authorization");
