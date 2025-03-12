@@ -21,11 +21,7 @@ import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.SendEmailDto;
-import com.dpw.runner.shipment.services.dto.v1.request.DGTaskCreateRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.TenantDetailsByListRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.V1RoleIdRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.V1UsersEmailRequest;
-import com.dpw.runner.shipment.services.dto.v1.request.TenantFilterRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.*;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
@@ -36,7 +32,6 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocat
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
-import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
@@ -1454,7 +1449,9 @@ public class CommonUtils {
         request.setTake(usernamesList.size());
         V1DataResponse v1DataResponse = iv1Service.getUserDetails(request);
         List<UsersDto> usersDtos = jsonHelper.convertValueToList(v1DataResponse.entities, UsersDto.class);
-        usernameEmailsMap.putAll(usersDtos.stream().collect(Collectors.toMap(UsersDto::getUsername, UsersDto::getEmail)));
+        usernameEmailsMap.putAll(usersDtos.stream()
+                .filter(user -> !IsStringNullOrEmpty(user.getEmail()))
+                .collect(Collectors.toMap(UsersDto::getUsername, UsersDto::getEmail)));
     }
 
     // called when new dg pack is added or dg pack fields are changed or new dg container is added, or new pack added in dg container or dg container fields are changed

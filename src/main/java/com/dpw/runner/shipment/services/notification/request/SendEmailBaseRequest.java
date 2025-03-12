@@ -28,4 +28,5 @@ public class SendEmailBaseRequest implements Serializable {
     private String userId;
     private List<TagsData> tags;
     private List<Object> attachments;
+    private Boolean sendMeCopy;
 }

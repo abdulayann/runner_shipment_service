@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.notification.service.impl;
 
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -17,8 +18,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
+
+import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 
 @Service
 @Slf4j
@@ -75,6 +77,7 @@ public class NotificationServiceImpl implements INotificationService {
         notificationServiceSendEmailRequest.setItem(request.getItem());
         notificationServiceSendEmailRequest.setHtmlBody(request.getHtmlBody());
         notificationServiceSendEmailRequest.setSubject(request.getSubject());
+        handleSendMeCopyCheck(request);
         notificationServiceSendEmailRequest.setCcEmails(request.getCc());
         notificationServiceSendEmailRequest.setRecipientEmails(request.getTo());
         notificationServiceSendEmailRequest.setApplicationId(notificationConfig.getApplicationId());
@@ -100,6 +103,21 @@ public class NotificationServiceImpl implements INotificationService {
         log.info("Notification Service Request: {}", jsonHelper.convertToJson(notificationServiceSendEmailRequest));
 
         return notificationServiceSendEmailRequest;
+    }
+
+    private void handleSendMeCopyCheck(SendEmailBaseRequest request) {
+        if (Boolean.TRUE.equals(request.getSendMeCopy())) {
+            String userEmail = UserContext.getUser().getEmail();
+            if (!IsStringNullOrEmpty(userEmail)) {
+                String cc = request.getCc();
+                Set<String> emailList = new HashSet<>();
+                if (!IsStringNullOrEmpty(cc)) {
+                    emailList.addAll(Arrays.asList(cc.split("\\s*,\\s*")));
+                }
+                emailList.add(userEmail);
+                request.setCc(String.join(",", emailList));
+            }
+        }
     }
 
     @Override
