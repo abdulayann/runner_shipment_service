@@ -102,7 +102,7 @@ public class AuthFilter extends OncePerRequestFilter {
         }
         UsersDto user = null;
         try{
-            user = userService.getUserByToken(tokenUtility.getUserIdAndBranchId(authToken), authToken);
+            user = userService.getUserByToken(authToken);
         } catch (HttpStatusCodeException e)
         {
             log.error("Request: {} || Error while validating token with exception: {} for token: {}", LoggerHelper.getRequestIdFromMDC(), e.getMessage(), authToken);
@@ -120,7 +120,7 @@ public class AuthFilter extends OncePerRequestFilter {
             res.setStatus(HttpStatus.UNAUTHORIZED.value());
             return;
         }
-        log.info("Auth Successful, username:-{},tenantId:-{} for request: {}", user.getUsername(), user.getTenantId(), LoggerHelper.getRequestIdFromMDC());
+        log.info("RequestID: {} | Auth Successful, API:-{}, username:-{}, tenantId:-{}", LoggerHelper.getRequestIdFromMDC(), servletRequest.getRequestURI(), user.getUsername(), user.getTenantId());
         RequestAuthContext.setAuthToken(authToken);
         TenantContext.setCurrentTenant(user.getTenantId());
         List<String> grantedPermissions = new ArrayList<>();
