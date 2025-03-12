@@ -378,6 +378,12 @@ public abstract class IReport {
                 .findFirst()
                 .map(ReferenceNumbersModel::getReferenceNumber)
                 .orElse(null));
+
+            dictionary.put(SRN, shipment.getReferenceNumbersList().stream()
+                .filter(i -> i.getType().equalsIgnoreCase(SRN))
+                .findFirst()
+                .map(ReferenceNumbersModel::getReferenceNumber)
+                .orElse(null));
         }
 
         if (shipment.getShipmentAddresses() != null) {
