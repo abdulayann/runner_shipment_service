@@ -27,6 +27,8 @@ import org.springframework.web.bind.annotation.*;
 import javax.validation.Valid;
 import java.util.Optional;
 
+import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.FETCH_SUCCESSFUL;
+
 @RestController
 @RequestMapping(ReportConstants.REPORT_API_HANDLE)
 @Slf4j
@@ -76,4 +78,18 @@ public class ReportController {
         }
         return ResponseHelper.buildFailedResponse(responseMsg, httpStatus);
     }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = FETCH_SUCCESSFUL)})
+    @GetMapping(ReportConstants.PRE_ALERT_EMAIL_TEMPLATE_DATA)
+    public ResponseEntity<IRunnerResponse> getPreAlertEmailTemplateData(@RequestParam Long shipmentId, @RequestParam Long emailTemplateId) {
+        String responseMsg;
+        try {
+            return ResponseHelper.buildSuccessResponse(reportService.getPreAlertEmailTemplateData(shipmentId, emailTemplateId));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_DATA_RETRIEVAL_FAILURE;
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
 }
