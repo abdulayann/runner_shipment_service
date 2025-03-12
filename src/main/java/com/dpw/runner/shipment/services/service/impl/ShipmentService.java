@@ -4319,7 +4319,7 @@ public class ShipmentService implements IShipmentService {
            Optional<String> srnReferenceNumber = response.getReferenceNumbersList().stream()
                 .filter(i -> i.getType().equalsIgnoreCase(SRN))
                 .findFirst()
-                .map((a) -> a.getReferenceNumber());
+                .map(a -> a.getReferenceNumber());
 
            if(srnReferenceNumber.isPresent() && response.getPickupDetails() != null){
                response.getPickupDetails().setShipperRef(srnReferenceNumber.get());
@@ -4332,7 +4332,7 @@ public class ShipmentService implements IShipmentService {
             Optional<String> srnReferenceNumber = response.getReferenceNumbersList().stream()
                 .filter(i -> i.getType().equalsIgnoreCase(SRN))
                 .findFirst()
-                .map((a) -> a.getReferenceNumber());
+                .map(a -> a.getReferenceNumber());
 
             if(srnReferenceNumber.isPresent() && response.getPickupDetails() != null){
                 response.getPickupDetails().setShipperRef(srnReferenceNumber.get());
