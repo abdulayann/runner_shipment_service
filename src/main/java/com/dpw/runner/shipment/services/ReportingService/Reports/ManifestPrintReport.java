@@ -98,7 +98,7 @@ public class ManifestPrintReport extends IReport {
         dictionary.put(ReportConstants.CONTAINER_COUNT_BY_CODE,
                 getCountByContainerTypeCode(consol.getContainersList().stream().map(this::getShipmentContainer).toList()));
 
-        processConsoleCarrierDetails(consol, dictionary);
+        processConsolidationCarrierDetails(consol, dictionary);
         updateShipmentWeightAndPack(dictionary, v1TenantSettingsResponse);
         return dictionary;
     }
@@ -106,8 +106,8 @@ public class ManifestPrintReport extends IReport {
     private void processAgentShipmentType(ConsolidationModel consol, Map<String, Object> dictionary) {
         var exportAgentAddress = ReportHelper.getOrgAddress(consol.getSendingAgent());
         var importAgentAddress = ReportHelper.getOrgAddress(consol.getReceivingAgent());
-        List<String> exportAgentFreeTextAddress = getExportAgentFreeTextAddress(consol, exportAgentAddress);
-        List<String> importAgentFreeTextAddress = getImportAgentFreeTextAddress(consol, importAgentAddress);
+        List<String> exportAgentFreeTextAddress = getExportAgentFreeTextAdd(consol, exportAgentAddress);
+        List<String> importAgentFreeTextAddress = getImportAgentFreeTextAdd(consol, importAgentAddress);
 
         if (consol.getShipmentType().equalsIgnoreCase("EXP")) {
             dictionary.put(ReportConstants.EXPORT_AGENT, exportAgentAddress);
@@ -132,7 +132,7 @@ public class ManifestPrintReport extends IReport {
         }
     }
 
-    private List<String> getImportAgentFreeTextAddress(ConsolidationModel consol, List<String> importAgentAddress) {
+    private List<String> getImportAgentFreeTextAdd(ConsolidationModel consol, List<String> importAgentAddress) {
         List<String> importAgentFreeTextAddress;
         if (consol.getIsReceivingAgentFreeTextAddress() != null && consol.getIsReceivingAgentFreeTextAddress()) {
             importAgentFreeTextAddress = ReportHelper.getAddressList(consol.getReceivingAgentFreeTextAddress());
@@ -142,7 +142,7 @@ public class ManifestPrintReport extends IReport {
         return importAgentFreeTextAddress;
     }
 
-    private List<String> getExportAgentFreeTextAddress(ConsolidationModel consol, List<String> exportAgentAddress) {
+    private List<String> getExportAgentFreeTextAdd(ConsolidationModel consol, List<String> exportAgentAddress) {
         List<String> exportAgentFreeTextAddress;
         if (consol.getIsSendingAgentFreeTextAddress() != null && consol.getIsSendingAgentFreeTextAddress()) {
             exportAgentFreeTextAddress = ReportHelper.getAddressList(consol.getSendingAgentFreeTextAddress());
@@ -171,7 +171,7 @@ public class ManifestPrintReport extends IReport {
         }
     }
 
-    private void processConsoleCarrierDetails(ConsolidationModel consol, Map<String, Object> dictionary) {
+    private void processConsolidationCarrierDetails(ConsolidationModel consol, Map<String, Object> dictionary) {
         if (consol.getCarrierDetails() != null) {
             UnlocationsResponse originUnloc = null;
             UnlocationsResponse destinationUnloc = null;
