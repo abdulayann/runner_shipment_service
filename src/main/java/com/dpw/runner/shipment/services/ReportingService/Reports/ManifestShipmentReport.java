@@ -96,9 +96,9 @@ public class ManifestShipmentReport extends IReport{
             dictionary.put(ReportConstants.TOTAL_PACKS, addCommas(totalPacks.get()));
             dictionary.put(ReportConstants.TOTAL_PACKS_TYPE, allPackages);
         }
-        dictionary.put(ReportConstants.TOTAL_WEIGHT, addCommas(weightAndUnit.getLeft()));
+        dictionary.put(ReportConstants.TOTAL_PACKS_WEIGHT, addCommas(weightAndUnit.getLeft()));
         dictionary.put(ReportConstants.TOTAL_WEIGHT_UNIT, weightAndUnit.getRight());
-        dictionary.put(ReportConstants.TOTAL_VOLUME, addCommas(volumeAndUnit.getLeft()));
+        dictionary.put(ReportConstants.TOTAL_PACKS_VOLUME, addCommas(volumeAndUnit.getLeft()));
         dictionary.put(ReportConstants.TOTAL_VOLUME_UNIT, volumeAndUnit.getRight());
         return dictionary;
     }

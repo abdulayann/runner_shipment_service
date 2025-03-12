@@ -123,46 +123,62 @@ public class PackingService implements IPackingService {
         Boolean isHazardous = packingRow.getHazardous();
         if (isHazardous != null && isHazardous) {
 
-                boolean dgUser = UserContext.isAirDgUser();
-                if(!dgUser)
-                    throw new ValidationException("You do not have Air DG permissions for this.");
+            boolean dgUser = UserContext.isAirDgUser();
+            if(!dgUser)
+                throw new ValidationException("You do not have Air DG permissions for this.");
 
-                // DG CLASS(HAZARDOUS CLASS)
-                if (!StringUtils.isEmpty(packingRow.getDGClass())) {
-                    String dgClass = packingRow.getDGClass();
-                        if (hazardousClassMasterData != null && !hazardousClassMasterData.contains(dgClass)) {
-                            throw new ValidationException("DG class is invalid at row: " + row);
-                        }
-                }
+            // DG CLASS(HAZARDOUS CLASS)
+            validateDgClass(hazardousClassMasterData, row, packingRow);
 
-                if (packingRow.getDGSubstanceId() != null) {
-                    if (!dicDGSubstanceUNDGContact.containsKey(packingRow.getDGSubstanceId())) {
-                        throw new ValidationException("DG Substance Id is invalid at row: " + row);
-                    }
-                }
+            valiadteDGSubstanceId(dicDGSubstanceUNDGContact, row, packingRow);
 
-                if (!StringUtils.isEmpty(packingRow.getFlashPoint())) {
-                    if (packingRow.getDGSubstanceId() != null) {
-                        if (!dicDGSubstanceFlashPoint.containsKey(Long.valueOf(packingRow.getDGSubstanceId())) ||
-                                !Objects.equals(dicDGSubstanceFlashPoint.get(Long.valueOf(packingRow.getDGSubstanceId())), packingRow.getFlashPoint())) {
-                            throw new ValidationException(PackingConstants.FLASH_POINT_INVALID_ERROR + row);
-                        }
-                    } else {
-                        throw new ValidationException(PackingConstants.FLASH_POINT_INVALID_ERROR + row);
-                    }
-                }
+            validateFlashPoint(dicDGSubstanceFlashPoint, row, packingRow);
 
-                if (!StringUtils.isEmpty(packingRow.getUNDGContact())) {
-                    if (packingRow.getDGSubstanceId() != null) {
-                        long substanceId = packingRow.getDGSubstanceId();
-                        if (!dicDGSubstanceUNDGContact.containsKey(substanceId) ||
-                                !Objects.equals(dicDGSubstanceUNDGContact.get(Long.valueOf(packingRow.getDGSubstanceId())), Long.valueOf(packingRow.getUNDGContact()))) {
-                            throw new ValidationException("UNDGContact is invalid at row: " + row);
-                        }
-                    } else if (packingRow.getDGSubstanceId() == null && !StringUtils.isEmpty(packingRow.getUNDGContact())) {
-                        throw new ValidationException("UNDGContact is invalid at row: " + row);
-                    }
+            validateUNDGContact(dicDGSubstanceUNDGContact, row, packingRow);
+        }
+    }
+
+    private static void validateDgClass(Set<String> hazardousClassMasterData, int row, Packing packingRow) {
+        if (!StringUtils.isEmpty(packingRow.getDGClass())) {
+            String dgClass = packingRow.getDGClass();
+                if (hazardousClassMasterData != null && !hazardousClassMasterData.contains(dgClass)) {
+                    throw new ValidationException("DG class is invalid at row: " + row);
                 }
+        }
+    }
+
+    private static void valiadteDGSubstanceId(Map<Long, Long> dicDGSubstanceUNDGContact, int row, Packing packingRow) {
+        if (packingRow.getDGSubstanceId() != null) {
+            if (!dicDGSubstanceUNDGContact.containsKey(packingRow.getDGSubstanceId())) {
+                throw new ValidationException("DG Substance Id is invalid at row: " + row);
+            }
+        }
+    }
+
+    private static void validateFlashPoint(Map<Long, String> dicDGSubstanceFlashPoint, int row, Packing packingRow) {
+        if (!StringUtils.isEmpty(packingRow.getFlashPoint())) {
+            if (packingRow.getDGSubstanceId() != null) {
+                if (!dicDGSubstanceFlashPoint.containsKey(Long.valueOf(packingRow.getDGSubstanceId())) ||
+                        !Objects.equals(dicDGSubstanceFlashPoint.get(Long.valueOf(packingRow.getDGSubstanceId())), packingRow.getFlashPoint())) {
+                    throw new ValidationException(PackingConstants.FLASH_POINT_INVALID_ERROR + row);
+                }
+            } else {
+                throw new ValidationException(PackingConstants.FLASH_POINT_INVALID_ERROR + row);
+            }
+        }
+    }
+
+    private static void validateUNDGContact(Map<Long, Long> dicDGSubstanceUNDGContact, int row, Packing packingRow) {
+        if (!StringUtils.isEmpty(packingRow.getUNDGContact())) {
+            if (packingRow.getDGSubstanceId() != null) {
+                long substanceId = packingRow.getDGSubstanceId();
+                if (!dicDGSubstanceUNDGContact.containsKey(substanceId) ||
+                        !Objects.equals(dicDGSubstanceUNDGContact.get(Long.valueOf(packingRow.getDGSubstanceId())), Long.valueOf(packingRow.getUNDGContact()))) {
+                    throw new ValidationException("UNDGContact is invalid at row: " + row);
+                }
+            } else if (packingRow.getDGSubstanceId() == null && !StringUtils.isEmpty(packingRow.getUNDGContact())) {
+                throw new ValidationException("UNDGContact is invalid at row: " + row);
+            }
         }
     }
 
@@ -238,19 +254,7 @@ public class PackingService implements IPackingService {
                 .packingList(jsonHelper.convertValueToList(packingList, PackingRequest.class))
                 .build());
 
-            if(utilizationResponse != null && utilizationResponse.getConsolidationAchievedQuantities() != null) {
-                Double wtUtilization = utilizationResponse.getConsolidationAchievedQuantities().getWeightUtilization() != null ? Double.valueOf(utilizationResponse.getConsolidationAchievedQuantities().getWeightUtilization()) : 0;
-                Double volUtilization = utilizationResponse.getConsolidationAchievedQuantities().getVolumeUtilization() != null ? Double.valueOf(utilizationResponse.getConsolidationAchievedQuantities().getVolumeUtilization()) : 0;
-                if(wtUtilization >= 100) {
-                    if(!Boolean.TRUE.equals(request.getOverride()))
-                        throw new ValidationException((String.format("Entered Pack weight %s exceeds the allocated weight %s",utilizationResponse.getAchievedWeight(), utilizationResponse.getAllocatedWeight())));
-                }
-                else if(volUtilization >= 100) {
-                    if(!Boolean.TRUE.equals(request.getOverride()))
-                        throw new ValidationException(String.format("Entered Pack Volume %s exceeds the allocated volume %s",utilizationResponse.getAchievedVolume(), utilizationResponse.getAllocatedVolume()));
-                }
-
-            }
+            validateConsolidationAchievedQuantities(request, utilizationResponse);
         }
         catch(IOException | ValidationException e) {
             throw new RunnerException(e.getMessage());
@@ -260,6 +264,22 @@ public class PackingService implements IPackingService {
 
         packingList = packingDao.saveAll(packingList);
         packingSync.sync(packingList, request.getConsolidationId(), request.getShipmentId());
+    }
+
+    private void validateConsolidationAchievedQuantities(BulkUploadRequest request, PackSummaryResponse utilizationResponse) {
+        if(utilizationResponse != null && utilizationResponse.getConsolidationAchievedQuantities() != null) {
+            Double wtUtilization = utilizationResponse.getConsolidationAchievedQuantities().getWeightUtilization() != null ? Double.valueOf(utilizationResponse.getConsolidationAchievedQuantities().getWeightUtilization()) : 0;
+            Double volUtilization = utilizationResponse.getConsolidationAchievedQuantities().getVolumeUtilization() != null ? Double.valueOf(utilizationResponse.getConsolidationAchievedQuantities().getVolumeUtilization()) : 0;
+            if(wtUtilization >= 100) {
+                if(!Boolean.TRUE.equals(request.getOverride()))
+                    throw new ValidationException((String.format("Entered Pack weight %s exceeds the allocated weight %s", utilizationResponse.getAchievedWeight(), utilizationResponse.getAllocatedWeight())));
+            }
+            else if(volUtilization >= 100) {
+                if(!Boolean.TRUE.equals(request.getOverride()))
+                    throw new ValidationException(String.format("Entered Pack Volume %s exceeds the allocated volume %s", utilizationResponse.getAchievedVolume(), utilizationResponse.getAllocatedVolume()));
+            }
+
+        }
     }
 
     private void applyPackingValidations(List<Packing> packingList, BulkUploadRequest request, Map<String, Set<String>> masterDataMap,
@@ -285,26 +305,26 @@ public class PackingService implements IPackingService {
         if (!StringUtils.isEmpty(packingRow.getVolumeWeightUnit())) {
             if (packingRow.getVolumeWeight() != null) {
                 String wtunit = packingRow.getWeightUnit() != null ? packingRow.getWeightUnit() : WEIGHT_UNIT_KG;
-                var vwob = consolidationService.calculateVolumeWeight(Constants.TRANSPORT_MODE_AIR,
-                        packingRow.getWeightUnit() == null ? Constants.WEIGHT_UNIT_KG : packingRow.getWeightUnit(),
-                        packingRow.getVolumeUnit() == null ? Constants.VOLUME_UNIT_M3 : packingRow.getVolumeUnit(),
-                        packingRow.getWeight() == null ? BigDecimal.ZERO : packingRow.getWeight(),
-                        packingRow.getVolume() == null ? BigDecimal.ZERO : packingRow.getVolume());
-                if (vwob.getVolumeWeight() != null) {
-                    var calculatedVolumeWeight = vwob.getVolumeWeight();
-                    calculatedVolumeWeight = calculatedVolumeWeight.setScale(2, RoundingMode.HALF_UP);
-                    var actualVolumeWeight = packingRow.getVolumeWeight();
-                    actualVolumeWeight = actualVolumeWeight.setScale(2, RoundingMode.HALF_UP);
-                    if (!wtunit.equals(vwob.getVolumeWeightUnit())) {
-                        throw new ValidationException("Volumetric weight unit not in " + wtunit + " at row: " + i);
-                    }
-                    if (calculatedVolumeWeight.compareTo(actualVolumeWeight) != 0) { // not equal
-                        throw new ValidationException("Volumetric weight is invalid at row: " + i);
-                    }
-                }
+                var vwob = getVolumeWeightChargeable(packingRow);
+                validateVolumeWeight(i, packingRow, vwob, wtunit);
             }
         } else if (packingRow.getVolumeWeight() != null) {
             throw new ValidationException("Volumetric weight unit is empty or Volumetric weight unit not entered at row: " + i);
+        }
+    }
+
+    private void validateVolumeWeight(int i, Packing packingRow, VolumeWeightChargeable vwob, String wtunit) {
+        if (vwob.getVolumeWeight() != null) {
+            var calculatedVolumeWeight = vwob.getVolumeWeight();
+            calculatedVolumeWeight = calculatedVolumeWeight.setScale(2, RoundingMode.HALF_UP);
+            var actualVolumeWeight = packingRow.getVolumeWeight();
+            actualVolumeWeight = actualVolumeWeight.setScale(2, RoundingMode.HALF_UP);
+            if (!wtunit.equals(vwob.getVolumeWeightUnit())) {
+                throw new ValidationException("Volumetric weight unit not in " + wtunit + " at row: " + i);
+            }
+            if (calculatedVolumeWeight.compareTo(actualVolumeWeight) != 0) { // not equal
+                throw new ValidationException("Volumetric weight is invalid at row: " + i);
+            }
         }
     }
 
@@ -360,25 +380,34 @@ public class PackingService implements IPackingService {
             actualChargeable = actualChargeable.setScale(2, BigDecimal.ROUND_HALF_UP);
             BigDecimal calculatedChargeable = null;
 
-            var vwob = consolidationService.calculateVolumeWeight(Constants.TRANSPORT_MODE_AIR,
-                    packingRow.getWeightUnit() == null ? Constants.WEIGHT_UNIT_KG : packingRow.getWeightUnit(),
-                    packingRow.getVolumeUnit() == null ? Constants.VOLUME_UNIT_M3 : packingRow.getVolumeUnit(),
-                    packingRow.getWeight() == null ? BigDecimal.ZERO : packingRow.getWeight(),
-                    packingRow.getVolume() == null ? BigDecimal.ZERO : packingRow.getVolume());
-            if (vwob.getChargeable() != null) {
-                calculatedChargeable = vwob.getChargeable();
-                calculatedChargeable = calculatedChargeable.setScale(2, BigDecimal.ROUND_HALF_UP);
-                if (!Objects.equals(calculatedChargeable, actualChargeable)) {
-                    BigDecimal difference = calculatedChargeable.subtract(actualChargeable).abs();
-                    BigDecimal threshold = new BigDecimal("0.01");
-                    if (difference.compareTo(threshold) > 0) {
-                        throw new ValidationException("Chargeable is invalid at row: " + row);
-                    }
-                }
-            }
+            var vwob = getVolumeWeightChargeable(packingRow);
+            validateChargeable(row, vwob, actualChargeable);
         } else if (packingRow.getChargeable() != null && StringUtils.isEmpty(packingRow.getChargeableUnit())) {
             throw new ValidationException("Chargeable unit is empty or Chargeable unit not entered at row: " + row);
         }
+    }
+
+    private void validateChargeable(int row, VolumeWeightChargeable vwob, BigDecimal actualChargeable) {
+        BigDecimal calculatedChargeable;
+        if (vwob.getChargeable() != null) {
+            calculatedChargeable = vwob.getChargeable();
+            calculatedChargeable = calculatedChargeable.setScale(2, BigDecimal.ROUND_HALF_UP);
+            if (!Objects.equals(calculatedChargeable, actualChargeable)) {
+                BigDecimal difference = calculatedChargeable.subtract(actualChargeable).abs();
+                BigDecimal threshold = new BigDecimal("0.01");
+                if (difference.compareTo(threshold) > 0) {
+                    throw new ValidationException("Chargeable is invalid at row: " + row);
+                }
+            }
+        }
+    }
+
+    private VolumeWeightChargeable getVolumeWeightChargeable(Packing packingRow) throws RunnerException {
+        return consolidationService.calculateVolumeWeight(Constants.TRANSPORT_MODE_AIR,
+                packingRow.getWeightUnit() == null ? Constants.WEIGHT_UNIT_KG : packingRow.getWeightUnit(),
+                packingRow.getVolumeUnit() == null ? Constants.VOLUME_UNIT_M3 : packingRow.getVolumeUnit(),
+                packingRow.getWeight() == null ? BigDecimal.ZERO : packingRow.getWeight(),
+                packingRow.getVolume() == null ? BigDecimal.ZERO : packingRow.getVolume());
     }
 
     @Override
@@ -438,21 +467,7 @@ public class PackingService implements IPackingService {
         Map<String, Field> fieldNameMap = Arrays.stream(fields).filter(f->f.isAnnotationPresent(ExcelCell.class)).collect(Collectors.toMap(Field::getName, c-> c));
         ColumnsToIgnore(fieldNameMap, request);
 
-        if(fieldNameMap.containsKey("Origin")) {
-            Set<String> unlocationsRefGuids = new HashSet<>();
-            for (PackingExcelModel model : modelList){
-                unlocationsRefGuids.add(model.getOrigin());
-            }
-            if(!unlocationsRefGuids.isEmpty()) {
-                Map<String, EntityTransferUnLocations> keyMasterDataMap = masterDataUtils.fetchInBulkUnlocations(unlocationsRefGuids, EntityTransferConstants.LOCATION_SERVICE_GUID);
-                for (PackingExcelModel model : modelList){
-                    if(keyMasterDataMap.containsKey(model.getOrigin())){
-                        var locCode = keyMasterDataMap.get(model.getOrigin()).LocCode;
-                        model.setOrigin(locCode);
-                    }
-                }
-            }
-        }
+        processOriginFieldNameMap(modelList, fieldNameMap);
         List<Field> fieldsList = reorderFields(fieldNameMap, columnsSequenceForExcelDownloadForCargo);
         int i = 0;
         for (var field : fieldsList){
@@ -470,6 +485,24 @@ public class PackingService implements IPackingService {
                 Object value = field.get(model);
                 Cell cell = row.createCell(cellIndex++);
                 cell.setCellValue(value != null ? value.toString() : "");
+            }
+        }
+    }
+
+    private void processOriginFieldNameMap(List<PackingExcelModel> modelList, Map<String, Field> fieldNameMap) {
+        if(fieldNameMap.containsKey("Origin")) {
+            Set<String> unlocationsRefGuids = new HashSet<>();
+            for (PackingExcelModel model : modelList){
+                unlocationsRefGuids.add(model.getOrigin());
+            }
+            if(!unlocationsRefGuids.isEmpty()) {
+                Map<String, EntityTransferUnLocations> keyMasterDataMap = masterDataUtils.fetchInBulkUnlocations(unlocationsRefGuids, EntityTransferConstants.LOCATION_SERVICE_GUID);
+                for (PackingExcelModel model : modelList){
+                    if(keyMasterDataMap.containsKey(model.getOrigin())){
+                        var locCode = keyMasterDataMap.get(model.getOrigin()).LocCode;
+                        model.setOrigin(locCode);
+                    }
+                }
             }
         }
     }
@@ -563,6 +596,11 @@ public class PackingService implements IPackingService {
         Containers newContainer = null;
         if(request.getNewContainer() != null)
             newContainer = jsonHelper.convertValue(request.getNewContainer(), Containers.class);
+        processContainersInResponse(shipmentSettingsDetails, shipmentDetails, request, oldContainer, newContainer, response);
+        return ResponseHelper.buildSuccessResponse(response);
+    }
+
+    private void processContainersInResponse(ShipmentSettingsDetails shipmentSettingsDetails, ShipmentDetails shipmentDetails, PackContainerNumberChangeRequest request, Containers oldContainer, Containers newContainer, PackContainerNumberChangeResponse response) throws RunnerException {
         if(shipmentSettingsDetails.getMultipleShipmentEnabled() != null && shipmentSettingsDetails.getMultipleShipmentEnabled()
         && !shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL)
                 && (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA) || shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_ROA))) {
@@ -594,7 +632,6 @@ public class PackingService implements IPackingService {
             containerService.calculateUtilization(newContainer);
             response.setNewContainer(jsonHelper.convertValue(newContainer, ContainerResponse.class));
         }
-        return ResponseHelper.buildSuccessResponse(response);
     }
 
     public PackSummaryResponse calculatePackSummary(List<Packing> packingList, String transportMode, String containerCategory, ShipmentMeasurementDetailsDto dto) throws RunnerException {
@@ -628,35 +665,14 @@ public class PackingService implements IPackingService {
                     totalWeight = totalWeight + winDef;
                     totalVolume = totalVolume + volDef;
                     netWeight = netWeight + netWtDif;
-                    if(!IsStringNullOrEmpty(packing.getPacksType())) {
-                        if(packsUnit == null)
-                            packsUnit = packing.getPacksType();
-                        else if(!packsUnit.equals(packing.getPacksType()))
-                            packsUnit = MPK;
-                        if(!map.containsKey(packing.getPacksType()))
-                            map.put(packing.getPacksType(), 0L);
-                    }
+                    packsUnit = getPacksUnit(packing, packsUnit, map);
                     if(!IsStringNullOrEmpty(packing.getPacks())) {
                         int packs = Integer.parseInt(packing.getPacks());
                         totalPacks = totalPacks + packs;
-                        if(!IsStringNullOrEmpty(packing.getPacksType())) {
-                            map.put(packing.getPacksType(), map.get(packing.getPacksType()) + packs);
-                        }
-                        if(Boolean.TRUE.equals(packing.getHazardous()))
-                        {
-                            dgPacks += packs;
-                        }
+                        dgPacks = getDgPacks(packing, map, packs, dgPacks);
                     }
-                    if(!IsStringNullOrEmpty(packing.getInnerPackageNumber())) {
-                        int innerPacks = Integer.parseInt(packing.getInnerPackageNumber());
-                        totalInnerPacks = totalInnerPacks + innerPacks;
-                    }
-                    if(!IsStringNullOrEmpty(packing.getInnerPackageType())) {
-                        if(innerPacksUnit == null)
-                            innerPacksUnit = packing.getInnerPackageType();
-                        else if(!innerPacksUnit.equals(packing.getInnerPackageType()))
-                            innerPacksUnit = MPK;
-                    }
+                    totalInnerPacks = getTotalInnerPacks(packing, totalInnerPacks);
+                    innerPacksUnit = getInnerPacksUnit(packing, innerPacksUnit);
                 }
             }
             double totalVolInM3 = (double) convertUnit(VOLUME, BigDecimal.valueOf(totalVolume), toVolumeUnit, VOLUME_UNIT_M3);
@@ -675,12 +691,7 @@ public class PackingService implements IPackingService {
             }
             List<String> sortedKeys = new ArrayList<>(map.keySet());
             Collections.sort(sortedKeys);
-            for (int i=0; i<sortedKeys.size(); i++) {
-                Long value = map.get(sortedKeys.get(i));
-                packsCount.append(IReport.GetDPWWeightVolumeFormat(BigDecimal.valueOf(value), 0, v1TenantSettingsResponse)).append(" ").append(sortedKeys.get(i));
-                if (i + 1 < sortedKeys.size())
-                    packsCount.append(", ");
-            }
+            updatePacksCount(sortedKeys, map, packsCount, v1TenantSettingsResponse);
             response.setDgPacks(dgPacks);
             response.setTotalPacksWithUnit(totalPacks + " " + (packsUnit != null? packsUnit : ""));
             response.setTotalPacks(packsCount.toString());
@@ -688,10 +699,7 @@ public class PackingService implements IPackingService {
             response.setTotalPacksVolume(String.format(Constants.STRING_FORMAT, IReport.ConvertToVolumeNumberFormat(BigDecimal.valueOf(totalVolume), v1TenantSettingsResponse), toVolumeUnit));
             response.setPacksVolume(BigDecimal.valueOf(totalVolume));
             response.setPacksVolumeUnit(toVolumeUnit);
-            if(Objects.equals(transportMode, TRANSPORT_MODE_SEA))
-                response.setPacksVolumetricWeight(String.format(Constants.STRING_FORMAT, IReport.ConvertToWeightNumberFormat(BigDecimal.valueOf(volumetricWeight), v1TenantSettingsResponse), VOLUME_UNIT_M3));
-            else
-                response.setPacksVolumetricWeight(String.format(Constants.STRING_FORMAT, IReport.ConvertToWeightNumberFormat(BigDecimal.valueOf(volumetricWeight), v1TenantSettingsResponse), WEIGHT_UNIT_KG));
+            setPacksVolumetricWeightInResponse(transportMode, response, volumetricWeight, v1TenantSettingsResponse);
 
             // setting these fields for UI to consume; Only for Consolidation
             response.setAchievedWeight(BigDecimal.valueOf(totalWeight));
@@ -710,23 +718,89 @@ public class PackingService implements IPackingService {
             dto.setInnerPacks(totalInnerPacks);
             dto.setInnerPackUnit(innerPacksUnit);
 
-            String packChargeableWeightUnit = WEIGHT_UNIT_KG;
-            if (!IsStringNullOrEmpty(transportMode) && transportMode.equals(Constants.TRANSPORT_MODE_AIR))
-                chargeableWeight = roundOffAirShipment(chargeableWeight);
-            if (Objects.equals(transportMode, Constants.TRANSPORT_MODE_SEA)) {
-                double volInM3 = convertUnit(VOLUME, BigDecimal.valueOf(totalVolume), toVolumeUnit, Constants.VOLUME_UNIT_M3).doubleValue();
-                double wtInKg = convertUnit(Constants.MASS, BigDecimal.valueOf(totalWeight), toWeightUnit, Constants.WEIGHT_UNIT_KG).doubleValue();
-                chargeableWeight = Math.max(wtInKg / 1000, volInM3);
-                packChargeableWeightUnit = Constants.VOLUME_UNIT_M3;
-            }
-            chargeableWeight = BigDecimal.valueOf(chargeableWeight).setScale(2, RoundingMode.HALF_UP).doubleValue();
-            response.setPacksChargeableWeight(String.format(Constants.STRING_FORMAT, IReport.ConvertToWeightNumberFormat(BigDecimal.valueOf(chargeableWeight), v1TenantSettingsResponse), packChargeableWeightUnit));
-            response.setChargeableWeight(BigDecimal.valueOf(chargeableWeight));
-            response.setPacksChargeableWeightUnit(packChargeableWeightUnit);
+            setChargeableWeightAndUnit(transportMode, chargeableWeight, totalVolume, toVolumeUnit, totalWeight, toWeightUnit, response, v1TenantSettingsResponse);
             return response;
         } catch (Exception e) {
             throw new RunnerException(e.getMessage());
         }
+    }
+
+    private void setPacksVolumetricWeightInResponse(String transportMode, PackSummaryResponse response, double volumetricWeight, V1TenantSettingsResponse v1TenantSettingsResponse) {
+        if(Objects.equals(transportMode, TRANSPORT_MODE_SEA))
+            response.setPacksVolumetricWeight(String.format(Constants.STRING_FORMAT, IReport.ConvertToWeightNumberFormat(BigDecimal.valueOf(volumetricWeight), v1TenantSettingsResponse), VOLUME_UNIT_M3));
+        else
+            response.setPacksVolumetricWeight(String.format(Constants.STRING_FORMAT, IReport.ConvertToWeightNumberFormat(BigDecimal.valueOf(volumetricWeight), v1TenantSettingsResponse), WEIGHT_UNIT_KG));
+    }
+
+    private String getPacksUnit(Packing packing, String packsUnit, Map<String, Long> map) {
+        if(!IsStringNullOrEmpty(packing.getPacksType())) {
+            packsUnit = getPacksUnit(packing, packsUnit);
+            if(!map.containsKey(packing.getPacksType()))
+                map.put(packing.getPacksType(), 0L);
+        }
+        return packsUnit;
+    }
+
+    private void setChargeableWeightAndUnit(String transportMode, double chargeableWeight, double totalVolume, String toVolumeUnit, double totalWeight, String toWeightUnit, PackSummaryResponse response, V1TenantSettingsResponse v1TenantSettingsResponse) throws RunnerException {
+        String packChargeableWeightUnit = WEIGHT_UNIT_KG;
+        if (!IsStringNullOrEmpty(transportMode) && transportMode.equals(Constants.TRANSPORT_MODE_AIR))
+            chargeableWeight = roundOffAirShipment(chargeableWeight);
+        if (Objects.equals(transportMode, Constants.TRANSPORT_MODE_SEA)) {
+            double volInM3 = convertUnit(VOLUME, BigDecimal.valueOf(totalVolume), toVolumeUnit, Constants.VOLUME_UNIT_M3).doubleValue();
+            double wtInKg = convertUnit(Constants.MASS, BigDecimal.valueOf(totalWeight), toWeightUnit, Constants.WEIGHT_UNIT_KG).doubleValue();
+            chargeableWeight = Math.max(wtInKg / 1000, volInM3);
+            packChargeableWeightUnit = Constants.VOLUME_UNIT_M3;
+        }
+        chargeableWeight = BigDecimal.valueOf(chargeableWeight).setScale(2, RoundingMode.HALF_UP).doubleValue();
+        response.setPacksChargeableWeight(String.format(Constants.STRING_FORMAT, IReport.ConvertToWeightNumberFormat(BigDecimal.valueOf(chargeableWeight), v1TenantSettingsResponse), packChargeableWeightUnit));
+        response.setChargeableWeight(BigDecimal.valueOf(chargeableWeight));
+        response.setPacksChargeableWeightUnit(packChargeableWeightUnit);
+    }
+
+    private void updatePacksCount(List<String> sortedKeys, Map<String, Long> map, StringBuilder packsCount, V1TenantSettingsResponse v1TenantSettingsResponse) {
+        for (int i = 0; i< sortedKeys.size(); i++) {
+            Long value = map.get(sortedKeys.get(i));
+            packsCount.append(IReport.GetDPWWeightVolumeFormat(BigDecimal.valueOf(value), 0, v1TenantSettingsResponse)).append(" ").append(sortedKeys.get(i));
+            if (i + 1 < sortedKeys.size())
+                packsCount.append(", ");
+        }
+    }
+
+    private int getDgPacks(Packing packing, Map<String, Long> map, int packs, int dgPacks) {
+        if(!IsStringNullOrEmpty(packing.getPacksType())) {
+            map.put(packing.getPacksType(), map.get(packing.getPacksType()) + packs);
+        }
+        if(Boolean.TRUE.equals(packing.getHazardous()))
+        {
+            dgPacks += packs;
+        }
+        return dgPacks;
+    }
+
+    private String getPacksUnit(Packing packing, String packsUnit) {
+        if(packsUnit == null)
+            packsUnit = packing.getPacksType();
+        else if(!packsUnit.equals(packing.getPacksType()))
+            packsUnit = MPK;
+        return packsUnit;
+    }
+
+    private int getTotalInnerPacks(Packing packing, int totalInnerPacks) {
+        if(!IsStringNullOrEmpty(packing.getInnerPackageNumber())) {
+            int innerPacks = Integer.parseInt(packing.getInnerPackageNumber());
+            totalInnerPacks = totalInnerPacks + innerPacks;
+        }
+        return totalInnerPacks;
+    }
+
+    private String getInnerPacksUnit(Packing packing, String innerPacksUnit) {
+        if(!IsStringNullOrEmpty(packing.getInnerPackageType())) {
+            if(innerPacksUnit == null)
+                innerPacksUnit = packing.getInnerPackageType();
+            else if(!innerPacksUnit.equals(packing.getInnerPackageType()))
+                innerPacksUnit = MPK;
+        }
+        return innerPacksUnit;
     }
 
     public void calculateVolume(AutoCalculatePackingRequest request, AutoCalculatePackingResponse pack) throws RunnerException {
@@ -841,16 +915,7 @@ public class PackingService implements IPackingService {
                 packing.setConsolidationId(existingPacking.get().getConsolidationId());
                 packing.setShipmentId(existingPacking.get().getShipmentId());
             } else {
-                if (packingRequestV2.getShipmentGuid() != null) {
-                    Optional<ShipmentDetails> shipmentDetails = shipmentDao.findByGuid(packingRequestV2.getShipmentGuid());
-                    if (shipmentDetails.isPresent())
-                        packing.setShipmentId(shipmentDetails.get().getId());
-                }
-                if (packingRequestV2.getConsolidationGuid() != null) {
-                    Optional<ConsolidationDetails> consolidationDetails = consolidationDao.findByGuid(packingRequestV2.getConsolidationGuid());
-                    if (consolidationDetails.isPresent())
-                        packing.setConsolidationId(consolidationDetails.get().getId());
-                }
+                processNewPackingInV1(packingRequestV2, packing);
             }
             packing = packingDao.save(packing);
             PackingResponse response = objectMapper.convertValue(packing, PackingResponse.class);
@@ -860,6 +925,19 @@ public class PackingService implements IPackingService {
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, ex);
             throw new RuntimeException(ex);
+        }
+    }
+
+    private void processNewPackingInV1(PackingRequestV2 packingRequestV2, Packing packing) {
+        if (packingRequestV2.getShipmentGuid() != null) {
+            Optional<ShipmentDetails> shipmentDetails = shipmentDao.findByGuid(packingRequestV2.getShipmentGuid());
+            if (shipmentDetails.isPresent())
+                packing.setShipmentId(shipmentDetails.get().getId());
+        }
+        if (packingRequestV2.getConsolidationGuid() != null) {
+            Optional<ConsolidationDetails> consolidationDetails = consolidationDao.findByGuid(packingRequestV2.getConsolidationGuid());
+            if (consolidationDetails.isPresent())
+                packing.setConsolidationId(consolidationDetails.get().getId());
         }
     }
 

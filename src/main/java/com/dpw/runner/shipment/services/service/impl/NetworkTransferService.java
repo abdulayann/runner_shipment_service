@@ -472,17 +472,7 @@ public class NetworkTransferService implements INetworkTransferService {
         }
         List<NetworkTransfer> networkTransferList = new ArrayList<>();
         Integer receivingBranch = TenantContext.getCurrentTenant();
-        if(Objects.equals(networkTransfer.get().getEntityType(), Constants.CONSOLIDATION) && shipmentGuidReassignBranch != null && !shipmentGuidReassignBranch.isEmpty() &&
-                !Objects.equals(networkTransfer.get().getJobType(), Constants.DIRECTION_CTS)) {
-            var consolidation = consolidationDao.findConsolidationByIdWithQuery(networkTransfer.get().getEntityId());
-            if(consolidation.isPresent() && Boolean.TRUE.equals(consolidation.get().getInterBranchConsole())){
-                for(var ship: consolidation.get().getShipmentsList()) {
-                    if(shipmentGuidReassignBranch.containsKey(ship.getGuid().toString()) && shipmentGuidReassignBranch.get(ship.getGuid().toString()) != null) {
-                        this.createShipmentNotification(reassignRequest, ship.getId(), shipmentGuidReassignBranch.get(ship.getGuid().toString()), ship.getTenantId(), ship.getReceivingBranch().intValue(), networkTransferList);
-                    }
-                }
-            }
-        }
+        createShipmentNotificationForConsole(networkTransfer.get(), shipmentGuidReassignBranch, reassignRequest, networkTransferList);
         if(reassignRequest.getBranchId() != null) {
             networkTransfer.get().setStatus(NetworkTransferStatus.REASSIGNED);
             Notification notification = getNotificationEntity(networkTransfer.get().getSourceBranchId(), NotificationRequestType.REASSIGN, reassignRequest.getRemarks(), reassignRequest.getBranchId(), networkTransfer.get().getEntityType(), networkTransfer.get().getEntityId(), receivingBranch);
@@ -493,6 +483,20 @@ public class NetworkTransferService implements INetworkTransferService {
             networkTransferDao.saveAll(networkTransferList);
         }
         return ResponseHelper.buildSuccessResponse();
+    }
+
+    private void createShipmentNotificationForConsole(NetworkTransfer networkTransfer, Map<String, Integer> shipmentGuidReassignBranch, ReassignRequest reassignRequest, List<NetworkTransfer> networkTransferList) {
+        if(Objects.equals(networkTransfer.getEntityType(), Constants.CONSOLIDATION) && shipmentGuidReassignBranch != null && !shipmentGuidReassignBranch.isEmpty() &&
+                !Objects.equals(networkTransfer.getJobType(), Constants.DIRECTION_CTS)) {
+            var consolidation = consolidationDao.findConsolidationByIdWithQuery(networkTransfer.getEntityId());
+            if(consolidation.isPresent() && Boolean.TRUE.equals(consolidation.get().getInterBranchConsole())){
+                for(var ship: consolidation.get().getShipmentsList()) {
+                    if(shipmentGuidReassignBranch.containsKey(ship.getGuid().toString()) && shipmentGuidReassignBranch.get(ship.getGuid().toString()) != null) {
+                        this.createShipmentNotification(reassignRequest, ship.getId(), shipmentGuidReassignBranch.get(ship.getGuid().toString()), ship.getTenantId(), ship.getReceivingBranch().intValue(), networkTransferList);
+                    }
+                }
+            }
+        }
     }
 
     private void createShipmentNotification(ReassignRequest reassignRequest, Long entityId, Integer reassignBranchId, Integer sourceBranchId, Integer receivingBranchId, List<NetworkTransfer> networkTransferList) {

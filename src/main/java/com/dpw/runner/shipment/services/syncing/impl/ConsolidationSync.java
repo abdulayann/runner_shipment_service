@@ -152,6 +152,15 @@ public class ConsolidationSync implements IConsolidationSync {
         }
         else  response.setIsCreditorFreeTextAddress(false);
 
+        setIsReceivingAgentFreeTextAddressInResponse(request, response);
+
+        setIsSendingAgentFreeTextAddressInResponse(request, response);
+
+        response.setGuid(request.getGuid());
+        return response;
+    }
+
+    private void setIsReceivingAgentFreeTextAddressInResponse(ConsolidationDetails request, CustomConsolidationRequest response) {
         if(request.getReceivingAgent() != null && Boolean.TRUE.equals(request.getReceivingAgent().getIsAddressFreeText())){
             response.setIsReceivingAgentFreeTextAddress(true);
             var rawData = request.getReceivingAgent().getAddressData() != null ? request.getReceivingAgent().getAddressData().get(PartiesConstants.RAW_DATA): null;
@@ -159,7 +168,9 @@ public class ConsolidationSync implements IConsolidationSync {
                 response.setReceivingAgentFreeTextAddress(rawData.toString());
         }
         else response.setIsReceivingAgentFreeTextAddress(false);
+    }
 
+    private void setIsSendingAgentFreeTextAddressInResponse(ConsolidationDetails request, CustomConsolidationRequest response) {
         if(request.getSendingAgent() != null && Boolean.TRUE.equals(request.getSendingAgent().getIsAddressFreeText())){
             response.setIsSendingAgentFreeTextAddress(true);
             var rawData = request.getSendingAgent().getAddressData() != null ? request.getSendingAgent().getAddressData().get(PartiesConstants.RAW_DATA): null;
@@ -167,9 +178,6 @@ public class ConsolidationSync implements IConsolidationSync {
                 response.setSendingAgentFreeTextAddress(rawData.toString());
         }
         else response.setIsSendingAgentFreeTextAddress(false);
-
-        response.setGuid(request.getGuid());
-        return response;
     }
 
     private void mapJobs(CustomConsolidationRequest response, ConsolidationDetails request) {
@@ -278,6 +286,10 @@ public class ConsolidationSync implements IConsolidationSync {
         // Departure Details
         com.dpw.runner.shipment.services.entity.ArrivalDepartureDetails request2 = request_.getDepartureDetails();
 
+        processRequest2(request2, response);
+    }
+
+    private void processRequest2(com.dpw.runner.shipment.services.entity.ArrivalDepartureDetails request2, ArrivalDepartureDetails response) {
         if(request2 != null) {
             if(request2.getContainerYardId() != null)
                 response.setDcontainerYardId(modelMapper.map(request2.getContainerYardId(), PartyRequestV2.class));

@@ -26,6 +26,7 @@ import java.util.*;
 @AllArgsConstructor
 @Data
 @Generated
+@SuppressWarnings("java:S1948")
 public class ShipmentDetailsResponse implements IRunnerResponse {
     private Long id;
     private Integer tenantId;

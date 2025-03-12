@@ -405,8 +405,8 @@ class DeliveryOrderReportTest extends CommonMocks {
         containerMap.put(GROSS_VOLUME, BigDecimal.TEN);
         containerMap.put(GROSS_WEIGHT, BigDecimal.TEN);
         containerMap.put(SHIPMENT_PACKS, BigDecimal.TEN);
-        containerMap.put(TareWeight, BigDecimal.TEN);
-        containerMap.put(VGMWeight, BigDecimal.TEN);
+        containerMap.put(TARE_WEIGHT, BigDecimal.TEN);
+        containerMap.put(VGM_WEIGHT, BigDecimal.TEN);
         containerMap.put(NET_WEIGHT, BigDecimal.TEN);
         doReturn(containerMap).when(jsonHelper).convertValue(any(ShipmentContainers.class), any(TypeReference.class));
 
@@ -440,8 +440,8 @@ class DeliveryOrderReportTest extends CommonMocks {
         containerMap.put(GROSS_VOLUME, BigDecimal.TEN);
         containerMap.put(GROSS_WEIGHT, BigDecimal.TEN);
         containerMap.put(SHIPMENT_PACKS, BigDecimal.TEN);
-        containerMap.put(TareWeight, BigDecimal.TEN);
-        containerMap.put(VGMWeight, BigDecimal.TEN);
+        containerMap.put(TARE_WEIGHT, BigDecimal.TEN);
+        containerMap.put(VGM_WEIGHT, BigDecimal.TEN);
         containerMap.put(NET_WEIGHT, BigDecimal.TEN);
         doReturn(containerMap).when(jsonHelper).convertValue(any(ShipmentContainers.class), any(TypeReference.class));
 
@@ -479,8 +479,8 @@ class DeliveryOrderReportTest extends CommonMocks {
         containerMap.put(GROSS_VOLUME, BigDecimal.TEN);
         containerMap.put(GROSS_WEIGHT, BigDecimal.TEN);
         containerMap.put(SHIPMENT_PACKS, BigDecimal.TEN);
-        containerMap.put(TareWeight, BigDecimal.TEN);
-        containerMap.put(VGMWeight, BigDecimal.TEN);
+        containerMap.put(TARE_WEIGHT, BigDecimal.TEN);
+        containerMap.put(VGM_WEIGHT, BigDecimal.TEN);
         containerMap.put(NET_WEIGHT, BigDecimal.TEN);
         doReturn(containerMap).when(jsonHelper).convertValue(any(ShipmentContainers.class), any(TypeReference.class));
 
@@ -518,8 +518,8 @@ class DeliveryOrderReportTest extends CommonMocks {
         containerMap.put(GROSS_VOLUME, BigDecimal.TEN);
         containerMap.put(GROSS_WEIGHT, BigDecimal.TEN);
         containerMap.put(SHIPMENT_PACKS, BigDecimal.TEN);
-        containerMap.put(TareWeight, BigDecimal.TEN);
-        containerMap.put(VGMWeight, BigDecimal.TEN);
+        containerMap.put(TARE_WEIGHT, BigDecimal.TEN);
+        containerMap.put(VGM_WEIGHT, BigDecimal.TEN);
         containerMap.put(NET_WEIGHT, BigDecimal.TEN);
         doReturn(containerMap).when(jsonHelper).convertValue(any(ShipmentContainers.class), any(TypeReference.class));
 
@@ -551,7 +551,7 @@ class DeliveryOrderReportTest extends CommonMocks {
         BillChargesResponse billChargesResponse = new BillChargesResponse();
         billChargesResponse.setOverseasSellAmount(BigDecimal.TEN);
         billChargesResponse.setLocalTax(BigDecimal.TEN);
-        billChargesResponse.setMeasurementBasis(Integer.toString(MeasurementBasis.Chargeable.getValue()));
+        billChargesResponse.setMeasurementBasis(Integer.toString(MeasurementBasis.CHARGEABLE.getValue()));
         billChargesResponse.setLocalCostCurrency("INR");
         billChargesResponse.setPaymentType("PPD");
         billChargesResponse.setChargeTypeCode("AGENT");
@@ -560,7 +560,7 @@ class DeliveryOrderReportTest extends CommonMocks {
         billChargesResponse = new BillChargesResponse();
         billChargesResponse.setOverseasSellAmount(BigDecimal.TEN);
         billChargesResponse.setLocalTax(BigDecimal.TEN);
-        billChargesResponse.setMeasurementBasis(Integer.toString(MeasurementBasis.Chargeable.getValue()));
+        billChargesResponse.setMeasurementBasis(Integer.toString(MeasurementBasis.CHARGEABLE.getValue()));
         billChargesResponse.setLocalCostCurrency("INR");
         billChargesResponse.setPaymentType("CPP");
         billChargesResponse.setChargeTypeCode("AGENT");
@@ -569,7 +569,7 @@ class DeliveryOrderReportTest extends CommonMocks {
         billChargesResponse = new BillChargesResponse();
         billChargesResponse.setOverseasSellAmount(BigDecimal.TEN);
         billChargesResponse.setLocalTax(BigDecimal.TEN);
-        billChargesResponse.setMeasurementBasis(Integer.toString(MeasurementBasis.Chargeable.getValue()));
+        billChargesResponse.setMeasurementBasis(Integer.toString(MeasurementBasis.CHARGEABLE.getValue()));
         billChargesResponse.setLocalCostCurrency("INR");
         billChargesResponse.setPaymentType("CAL");
         billChargesResponse.setChargeTypeCode("AGENT");
@@ -578,7 +578,7 @@ class DeliveryOrderReportTest extends CommonMocks {
         billChargesResponse = new BillChargesResponse();
         billChargesResponse.setOverseasSellAmount(BigDecimal.TEN);
         billChargesResponse.setLocalTax(BigDecimal.TEN);
-        billChargesResponse.setMeasurementBasis(Integer.toString(MeasurementBasis.Chargeable.getValue()));
+        billChargesResponse.setMeasurementBasis(Integer.toString(MeasurementBasis.CHARGEABLE.getValue()));
         billChargesResponse.setLocalCostCurrency("INR");
         billChargesResponse.setPaymentType("SHW");
         billChargesResponse.setChargeTypeCode("AGENT");
@@ -587,7 +587,7 @@ class DeliveryOrderReportTest extends CommonMocks {
         billChargesResponse = new BillChargesResponse();
         billChargesResponse.setOverseasSellAmount(BigDecimal.TEN);
         billChargesResponse.setLocalTax(BigDecimal.TEN);
-        billChargesResponse.setMeasurementBasis(Integer.toString(MeasurementBasis.Chargeable.getValue()));
+        billChargesResponse.setMeasurementBasis(Integer.toString(MeasurementBasis.CHARGEABLE.getValue()));
         billChargesResponse.setLocalCostCurrency("INR");
         billChargesResponse.setPaymentType("ALL");
         billChargesResponse.setChargeTypeCode("AGENT");
@@ -596,7 +596,7 @@ class DeliveryOrderReportTest extends CommonMocks {
         billChargesResponse = new BillChargesResponse();
         billChargesResponse.setOverseasSellAmount(BigDecimal.TEN);
         billChargesResponse.setLocalTax(BigDecimal.TEN);
-        billChargesResponse.setMeasurementBasis(Integer.toString(MeasurementBasis.Chargeable.getValue()));
+        billChargesResponse.setMeasurementBasis(Integer.toString(MeasurementBasis.CHARGEABLE.getValue()));
         billChargesResponse.setLocalCostCurrency("INR");
         billChargesResponse.setPaymentType("CCL");
         billChargesResponse.setChargeTypeCode("AGENT");
@@ -721,15 +721,15 @@ class DeliveryOrderReportTest extends CommonMocks {
         ShipmentModel shipmentModel = new ShipmentModel();
         shipmentModel.setTransportMode(SEA);
         shipmentModel.setDirection(EXP);
-        shipmentModel.setContainersList(Arrays.asList(new ContainerModel()));
+        shipmentModel.setContainersList(List.of(new ContainerModel()));
         ConsolidationModel consolidationModel = new ConsolidationModel();
         consolidationModel.setId(123L);
         consolidationModel.setPlaceOfIssue("Test");
-        shipmentModel.setConsolidationList(Arrays.asList(consolidationModel));
+        shipmentModel.setConsolidationList(List.of(consolidationModel));
         when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
         when(hblDao.findByShipmentId(any())).thenReturn(new ArrayList<>());
         V1DataResponse v1DataResponse = new V1DataResponse();
-        v1DataResponse.entities = Arrays.asList(new UnlocationsResponse());
+        v1DataResponse.entities = List.of(new UnlocationsResponse());
         when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(Arrays.asList(new UnlocationsResponse()));
         V1MasterDataImpl mockV1MasterDataImpl = mock(V1MasterDataImpl.class);
@@ -748,7 +748,7 @@ class DeliveryOrderReportTest extends CommonMocks {
         ShipmentModel shipmentModel = new ShipmentModel();
         shipmentModel.setTransportMode(AIR);
         shipmentModel.setDirection(EXP);
-        shipmentModel.setContainersList(Arrays.asList(new ContainerModel()));
+        shipmentModel.setContainersList(List.of(new ContainerModel()));
 
         when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
         mockShipmentSettings();
@@ -764,7 +764,7 @@ class DeliveryOrderReportTest extends CommonMocks {
         ShipmentModel shipmentModel = new ShipmentModel();
         shipmentModel.setTransportMode(AIR);
         shipmentModel.setDirection(EXP);
-        shipmentModel.setContainersList(Arrays.asList(new ContainerModel()));
+        shipmentModel.setContainersList(List.of(new ContainerModel()));
         shipmentModel.setContainsHazardous(true);
 
         when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);

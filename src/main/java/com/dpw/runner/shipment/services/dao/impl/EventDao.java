@@ -233,6 +233,11 @@ public class EventDao implements IEventDao {
             res.add(req);
         }
         res = saveAll(res);
+        addAuditLog(entityId, entityType, res, oldEntityJsonStringMap);
+        return res;
+    }
+
+    private void addAuditLog(Long entityId, String entityType, List<Events> res, Map<Long, String> oldEntityJsonStringMap) {
         for (var req : res) {
             String oldEntityJsonString = null;
             String operation = DBOperationType.CREATE.name();
@@ -255,7 +260,6 @@ public class EventDao implements IEventDao {
                 log.error(e.getMessage());
             }
         }
-        return res;
     }
 
     private void deleteEvents(Map<Long, Events> hashMap, String entityType, Long entityId) {
@@ -557,28 +561,32 @@ public class EventDao implements IEventDao {
         Boolean automaticTransfer = isAutomaticTransfer();
         for (Events event : events) {
             if (Constants.SHIPMENT.equals(event.getEntityType())) {
-                ShipmentDetails shipmentDetails = shipmentDetailsMap.get(event.getEntityId());
-
-                if (shipmentDetails != null) {
-                    event.setShipmentNumber(shipmentDetails.getShipmentId());
-                    event.setEntityId(shipmentDetails.getId());
-
-                    if (event.getDirection() == null) {
-                        event.setDirection(shipmentDetails.getDirection());
-                    }
-
-                    Long consolidationId = shipmentToConsolidationMap.get(event.getEntityId());
-                    if (consolidationId != null &&
-                            shouldSendEventFromShipmentToConsolidation(event, shipmentDetails.getTransportMode())) {
-                        event.setConsolidationId(consolidationId);
-                    }
-                }
+                processShipmentEvents(event, shipmentDetailsMap, shipmentToConsolidationMap);
             } else if (Constants.CONSOLIDATION.equals(event.getEntityType())) {
                 event.setConsolidationId(event.getEntityId());
             }
 
             if (Boolean.FALSE.equals(automaticTransfer) && !Objects.equals(event.getUserName(), Constants.SYSTEM_GENERATED)) {
                 updateUserFieldsInEvent(event, false);
+            }
+        }
+    }
+
+    private void processShipmentEvents(Events event, Map<Long, ShipmentDetails> shipmentDetailsMap, Map<Long, Long> shipmentToConsolidationMap) {
+        ShipmentDetails shipmentDetails = shipmentDetailsMap.get(event.getEntityId());
+
+        if (shipmentDetails != null) {
+            event.setShipmentNumber(shipmentDetails.getShipmentId());
+            event.setEntityId(shipmentDetails.getId());
+
+            if (event.getDirection() == null) {
+                event.setDirection(shipmentDetails.getDirection());
+            }
+
+            Long consolidationId = shipmentToConsolidationMap.get(event.getEntityId());
+            if (consolidationId != null &&
+                    shouldSendEventFromShipmentToConsolidation(event, shipmentDetails.getTransportMode())) {
+                event.setConsolidationId(consolidationId);
             }
         }
     }

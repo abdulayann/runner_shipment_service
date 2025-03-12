@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
+@SuppressWarnings("java:S1948")
 public class NPMOffer implements Serializable {
     public Double total_route_price;
     public Double total_route_cost;

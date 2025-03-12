@@ -119,7 +119,7 @@ class MawbReportTest extends CommonMocks {
                 ShipmentSettingsDetails.builder().airDGFlag(true).build());
         UsersDto usersDto = new UsersDto();
         Map<String, Boolean> permissions = new HashMap<>();
-        permissions.put(PermissionConstants.airDG, true);
+        permissions.put(PermissionConstants.AIR_DG, true);
         usersDto.setPermissions(permissions);
         UserContext.setUser(usersDto);
     }

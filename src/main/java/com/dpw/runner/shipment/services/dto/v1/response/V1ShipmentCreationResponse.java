@@ -11,6 +11,7 @@ import lombok.Setter;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
+@SuppressWarnings("java:S1948")
 public class V1ShipmentCreationResponse implements IRunnerResponse {
     @JsonProperty("Entity")
     public Object entity;

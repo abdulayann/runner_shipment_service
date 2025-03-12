@@ -42,24 +42,28 @@ public class ConsTruckDriverProof extends IReport {
             if (shipments != null && !shipments.isEmpty()) {
                 int sum = shipments.stream().filter(c -> c.getNoOfPacks() != null).mapToInt(ShipmentModel::getNoOfPacks).sum();
                 truckDriverModel.totalPacks += sum;
-                BigDecimal totalWeight = BigDecimal.ZERO;
-                for (var shipment : shipments) {
-                    if (shipment.getWeight() != null && shipment.getWeightUnit() != null) {
-                        try {
-                            var weightInKg = UnitConversionUtility.convertUnit(Constants.MASS, shipment.getWeight(), shipment.getWeightUnit(), "KG");
-                            if (weightInKg != null)
-                                totalWeight = totalWeight.add((BigDecimal) weightInKg);
-                        } catch (Exception e) {
-
-                        }
-                    }
-                }
-                truckDriverModel.totalWeight = totalWeight;
+                truckDriverModel.totalWeight = getTruckDriverModelTotalWeight(shipments);
             }
         }
         truckDriverModel.tenant = getTenant();
         truckDriverModel.usersDto = UserContext.getUser();
         return truckDriverModel;
+    }
+
+    private BigDecimal getTruckDriverModelTotalWeight(List<ShipmentModel> shipments) {
+        BigDecimal totalWeight = BigDecimal.ZERO;
+        for (var shipment : shipments) {
+            if (shipment.getWeight() != null && shipment.getWeightUnit() != null) {
+                try {
+                    var weightInKg = UnitConversionUtility.convertUnit(Constants.MASS, shipment.getWeight(), shipment.getWeightUnit(), "KG");
+                    if (weightInKg != null)
+                        totalWeight = totalWeight.add((BigDecimal) weightInKg);
+                } catch (Exception e) {
+
+                }
+            }
+        }
+        return totalWeight;
     }
 
     @Override

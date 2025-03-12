@@ -110,4 +110,8 @@ public class EventConstants {
     public static final String ORIGIN = "origin";
 
     public static final String SYSTEM_GENERATED = "System Generated";
+    public static final String ERROR_FETCHING_EVENTS_MSG = "Error fetching Events";
+    public static final String ENTITY_ID = "entityId";
+    public static final String ENTITY_TYPE = "entityType";
+    public static final String EVENT_CODE_MATCHES_FCL = "Event code {} matches FCL shipment criteria. messageId {}";
 }
