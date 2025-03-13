@@ -4,7 +4,6 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.sync.SyncingContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
-import com.dpw.runner.shipment.services.commons.constants.TimeZoneConstants;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
@@ -19,11 +18,11 @@ import com.dpw.runner.shipment.services.syncing.Entity.*;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
-import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -33,7 +32,6 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 
 import static com.dpw.runner.shipment.services.utils.CommonUtils.stringValueOf;
-import static com.dpw.runner.shipment.services.utils.DateUtils.convertDateToUserTimeZone;
 import static java.util.stream.Collectors.toMap;
 
 @Component
@@ -61,6 +59,9 @@ public class ShipmentSync implements IShipmentSync {
     private ISyncService syncService;
     @Autowired
     private IConsolidationSync consolidationSync;
+
+    @Autowired
+    private CommonUtils commonUtils;
 
     private static final String SHIPMENTS = "Shipments";
 
@@ -268,9 +269,9 @@ public class ShipmentSync implements IShipmentSync {
             return;
         modelMapper.map(sd.getAdditionalDetails(), cs);
         if(cs.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR))
-            cs.setIssueDate(sd.getAdditionalDetails().getDateOfIssue());
+            cs.setIssueDate(commonUtils.getUserZoneTime(sd.getAdditionalDetails().getDateOfIssue()));
         else
-            cs.setDateofIssue(sd.getAdditionalDetails().getDateOfIssue());
+            cs.setDateofIssue(commonUtils.getUserZoneTime(sd.getAdditionalDetails().getDateOfIssue()));
         cs.setDateofReceipt(sd.getAdditionalDetails().getDateOfReceipt());
         cs.setReceivingForwarderParty(mapPartyObject(sd.getAdditionalDetails().getReceivingForwarder()));
         cs.setSendingForwarderParty(mapPartyObject(sd.getAdditionalDetails().getSendingForwarder()));
@@ -286,12 +287,12 @@ public class ShipmentSync implements IShipmentSync {
         }
         if(sd.getAdditionalDetails().getPassedBy() != null)
             cs.setPassedByString(String.valueOf(sd.getAdditionalDetails().getPassedBy().getValue()));
-        cs.setBoedate(convertDateToUserTimeZone(sd.getAdditionalDetails().getBOEDate(), MDC.get(TimeZoneConstants.BROWSER_TIME_ZONE_NAME), null, false));
+        cs.setBoedate(commonUtils.getUserZoneTime(sd.getAdditionalDetails().getBOEDate()));
         cs.setBoenumber(sd.getAdditionalDetails().getBOENumber());
-        cs.setIgmfileDate(convertDateToUserTimeZone(sd.getAdditionalDetails().getIGMFileDate(), MDC.get(TimeZoneConstants.BROWSER_TIME_ZONE_NAME), null, false));
+        cs.setIgmfileDate(commonUtils.getUserZoneTime(sd.getAdditionalDetails().getIGMFileDate()));
         cs.setIgmfileNo(sd.getAdditionalDetails().getIGMFileNo());
-        cs.setIgminwardDate(convertDateToUserTimeZone(sd.getAdditionalDetails().getIGMInwardDate(), MDC.get(TimeZoneConstants.BROWSER_TIME_ZONE_NAME), null, false));
-        cs.setSmtpigmdate(convertDateToUserTimeZone(sd.getAdditionalDetails().getSMTPIGMDate(), MDC.get(TimeZoneConstants.BROWSER_TIME_ZONE_NAME), null, false));
+        cs.setIgminwardDate(commonUtils.getUserZoneTime(sd.getAdditionalDetails().getIGMInwardDate()));
+        cs.setSmtpigmdate(commonUtils.getUserZoneTime(sd.getAdditionalDetails().getSMTPIGMDate()));
         cs.setSmtpigmnumber(sd.getAdditionalDetails().getSMTPIGMNumber());
         cs.setHblDeliveryMode(sd.getAdditionalDetails().getDeliveryMode());
         cs.setChargesApply(sd.getAdditionalDetails().getBLChargesDisplay());
