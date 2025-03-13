@@ -85,13 +85,12 @@ public class NotificationRestClient {
         String sub = params.getSubject();
         String bodyEmail = params.getHtmlBody();
         String item = params.getItem();
-        List<String> toEmailsList = getEmailsListFromString(params.getRecipientEmails());
-        List<String> ccEmailsList = getEmailsListFromString(params.getCcEmails());
-        List<String> bccEmailsList = getEmailsListFromString(params.getBccEmails());
-
 
         var subject = !StringUtility.isEmpty(sub) ? sub : "CargoRunner Notifications";
         try {
+            List<String> toEmailsList = getEmailsListFromString(params.getRecipientEmails());
+            List<String> ccEmailsList = getEmailsListFromString(params.getCcEmails());
+            List<String> bccEmailsList = getEmailsListFromString(params.getBccEmails());
             var user = UserContext.getUser();
             MailAuditLogRequest request = MailAuditLogRequest.builder()
                     .tenantIds(List.of(user.TenantId))
@@ -137,11 +136,11 @@ public class NotificationRestClient {
         if (emailString == null)
             return emailsList;
         String emailRegex = "^[a-zA-Z0-9+_.-]+@[a-zA-Z0-9.-]+$";
-        for (String subAddress : emailString.split(";")) {
+        for (String subAddress : emailString.split(",")) {
             String trimmedAddress = subAddress.trim();
 
             if (!Pattern.matches(emailRegex, trimmedAddress)) {
-                throw new ValidationException("Some Email ID(s) are incorrect. Please enter semicolon(;) as a delimiter for entering multiple email IDs");
+                throw new ValidationException("Some Email ID(s) are incorrect. Please enter comma(,) as a delimiter for entering multiple email IDs");
             }
 
             emailsList.add(trimmedAddress);
