@@ -13,7 +13,6 @@ import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksLinkDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
-import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -1730,5 +1729,85 @@ class ShipmentDaoTest extends CommonMocks {
         when(shipmentRepository.findReceivingByGuid(guid)).thenReturn(1);
         var res = shipmentDao.findReceivingByGuid(guid);
         assertEquals(1, res);
+    }
+
+    @Test
+    void applyShipmentValidationsTest_CountryAirCargoSecurity() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().countryAirCargoSecurity(true).restrictedLocationsEnabled(true).build());
+
+        Packing packing = new Packing();
+        packing.setHazardous(true);
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .containsHazardous(false)
+                .transportMode(Constants.TRANSPORT_MODE_AIR)
+                .packingList(Arrays.asList(packing))
+                .direction(Constants.DIRECTION_IMP)
+                .build();
+
+        mockShipmentSettings();
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        assertTrue(errors.contains("The shipment contains DG package. Marking the shipment as non DG is not allowed"));
+    }
+
+    @Test
+    void applyShipmentValidationsExpTest_CountryAirCargoSecurity() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().countryAirCargoSecurity(true).restrictedLocationsEnabled(true).build());
+
+        Packing packing = new Packing();
+        packing.setHazardous(true);
+        UserContext.setUser(UsersDto.builder().Permissions(new HashMap<>()).build());
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .containsHazardous(false)
+                .transportMode(Constants.TRANSPORT_MODE_AIR)
+                .packingList(Arrays.asList(packing))
+                .direction(Constants.DIRECTION_EXP)
+                .build();
+
+        mockShipmentSettings();
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        assertTrue(errors.contains("You don't have Air Security permission to create or update AIR EXP Shipment."));
+    }
+
+    @Test
+    void applyShipmentValidationsExpTest_NonHazPack_CountryAirCargoSecurity() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().countryAirCargoSecurity(true).restrictedLocationsEnabled(true).build());
+
+        Packing packing = new Packing();
+        packing.setHazardous(false);
+        Map<String, Boolean> permissions = new HashMap<>();
+        permissions.put(PermissionConstants.AIR_SECURITY_PERMISSION, true);
+        UserContext.setUser(UsersDto.builder().Permissions(permissions).build());
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .containsHazardous(false)
+                .transportMode(Constants.TRANSPORT_MODE_AIR)
+                .packingList(Arrays.asList(packing))
+                .direction(Constants.DIRECTION_EXP)
+                .build();
+
+        mockShipmentSettings();
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        assertFalse(errors.contains("You don't have Air Security permission to create or update AIR EXP Shipment."));
+    }
+
+    @Test
+    void applyShipmentValidationsTest_NonHazPack_CountryAirCargoSecurity_V1Sync() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().countryAirCargoSecurity(true).restrictedLocationsEnabled(true).build());
+
+        Packing packing = new Packing();
+        packing.setHazardous(false);
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .containsHazardous(true)
+                .transportMode(Constants.TRANSPORT_MODE_AIR)
+                .packingList(Arrays.asList(packing))
+                .direction(Constants.DIRECTION_IMP)
+                .build();
+
+        mockShipmentSettings();
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, true);
+        assertFalse(errors.contains("You don't have Air Security permission to create or update AIR EXP Shipment."));
     }
 }

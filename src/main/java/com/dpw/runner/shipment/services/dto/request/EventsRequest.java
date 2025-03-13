@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -15,10 +16,12 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Data
 public class EventsRequest extends CommonRequest implements IRunnerRequest {
+    @ExcludeTimeZone
     private LocalDateTime actual;
     private String description;
     private Long entityId;
     private String entityType;
+    @ExcludeTimeZone
     private LocalDateTime estimated;
     private String event_estimate_update_reasons;
     private Long id;

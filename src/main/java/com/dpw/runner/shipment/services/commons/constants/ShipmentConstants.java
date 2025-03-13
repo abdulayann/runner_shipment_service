@@ -158,6 +158,7 @@ public class ShipmentConstants {
     public static final String IMPORT_SHIPMENT = "/import";
 
     public static final String LIST_SUCCESSFUL = "Successful Shipment List Retrieval";
+    public static final String NON_BILLABLE_CUSTOMER_SUCCESSFUL = "Successful Created Non Billable Customer";
 
     public static final String TI_LIST_SUCCESSFUL = "Successful Transport Instruction List Retrieval";
     public static final String CONTAINER_LIST_SUCCESSFUL_NEW_TI = "Successful Container List Retrieval for Transport Instruction";

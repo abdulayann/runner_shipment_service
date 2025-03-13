@@ -12,6 +12,9 @@ public class Constants {
     public static final String ACTIVE_CLIENT = "ActiveClient";
     public static final String LocalReferenceNumber = "LocalReferenceNumber";
 
+    public static final String GLOBALFF = "GLOBALFF";
+    public static final String GLOBAL = "GLOBAL";
+    public static final String SUBMITTED = "Submitted";
     public static final int TRANSPORT_MODE_INDEX = 0;
     public static final String DIRECTION = "direction";
     public static final String SHIPMENT_TYPE = "shipmentType";
@@ -238,6 +241,7 @@ public class Constants {
 
     public static final String Shipments = "[Shipments]";
     public static final String Consolidations = "[Consolidations]";
+    public static final String Bookings = "[Bookings]";
 
     public static final String IMP = "IMP";
     public static final String SHIPMENT_TYPE_DRT = "DRT";
@@ -614,6 +618,9 @@ public class Constants {
     public static final String ADDRESS_SHORT_CODE = "AddressShortCode";
     public static final String ORG_ADDRESS = "orgAddress";
     public static final String IS_CSD_DOCUMENT_ADDED = "isCSDDocumentAdded";
+    public static final String AIR_SECURITY_PERMISSION_MSG = "You do not have Air Security permissions for this.";
+
+    public static final String OUTBOUND = "Outbound";
 
     private Constants() {
     }

@@ -1,49 +1,43 @@
 package com.dpw.runner.shipment.services.document.service.impl;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
+import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
+import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.document.config.DocumentManagerRestClient;
-import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerBulkDownloadRequest;
-import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerFileAndRulesRequest;
-import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerSaveFileRequest;
-import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerTempFileUploadRequest;
-import com.dpw.runner.shipment.services.document.response.DocumentManagerBulkDownloadResponse;
-import com.dpw.runner.shipment.services.document.response.DocumentManagerDataResponse;
-import com.dpw.runner.shipment.services.document.response.DocumentManagerResponse;
+import com.dpw.runner.shipment.services.document.request.documentmanager.*;
+import com.dpw.runner.shipment.services.document.response.*;
 import com.dpw.runner.shipment.services.document.util.BASE64DecodedMultipartFile;
-
-import java.io.UnsupportedEncodingException;
-import javax.servlet.http.HttpServletRequest;
-
+import org.apache.poi.ss.formula.functions.T;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.PropertySource;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 
-@ContextConfiguration(classes = {DocumentManagerServiceImpl.class})
-@ExtendWith(SpringExtension.class)
-@PropertySource("classpath:application-test.properties")
-@EnableConfigurationProperties
+import javax.servlet.http.HttpServletRequest;
+import java.io.UnsupportedEncodingException;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.isA;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
+@Execution(ExecutionMode.CONCURRENT)
 class DocumentManagerServiceImplTest {
-    @MockBean
+    @Mock
     private DocumentManagerRestClient documentManagerRestClient;
 
-    @Autowired
+    @InjectMocks
     private DocumentManagerServiceImpl documentManagerServiceImpl;
 
-    @MockBean
+    @Mock
     private HttpServletRequest httpServletRequest;
 
     /**
@@ -227,7 +221,91 @@ class DocumentManagerServiceImplTest {
         assertEquals(mockResponse, responseEntity);
     }
 
+    @Test
+    void updateFileEntities() {
+        var mockResponse = new DocumentManagerResponse<T>();
+        when(documentManagerRestClient.updateFileEntities(any())).thenReturn(mockResponse);
+        var responseEntity = documentManagerServiceImpl.updateFileEntities(new DocumentManagerUpdateFileEntitiesRequest());
+        assertNotNull(responseEntity);
+        assertEquals(mockResponse, responseEntity);
+    }
+
+    @Test
+    void testDeleteFile() {
+        var mockResponse = createMockResponse();
+        when(documentManagerRestClient.deleteFile(any())).thenReturn(mockResponse);
+        var responseEntity = documentManagerServiceImpl.deleteFile(CommonRequestModel.builder().dependentData(new DocumentManagerUpdateFileEntitiesRequest()).build());
+        assertNotNull(responseEntity);
+        assertTrue(responseEntity.getBody() instanceof DependentServiceResponse);
+        assertEquals(mockResponse.getData(), ((DependentServiceResponse) responseEntity.getBody()).getData());
+    }
+
+    @Test
+    void testGetFileHistory() {
+        var mockResponse = createMockResponse();
+        when(documentManagerRestClient.getFileHistory(any())).thenReturn(mockResponse);
+        var responseEntity = documentManagerServiceImpl.getFileHistory(CommonRequestModel.builder().data(CommonGetRequest.builder().id(11L).build()).build());
+        assertNotNull(responseEntity);
+        assertTrue(responseEntity.getBody() instanceof DependentServiceResponse);
+        assertEquals(mockResponse.getData(), ((DependentServiceResponse) responseEntity.getBody()).getData());
+    }
+
+    @Test
+    void testDownloadDocument() {
+        var mockResponse = ResponseEntity.ok(new byte[1024]);
+        when(documentManagerRestClient.downloadDocument(any())).thenReturn(mockResponse);
+        var responseEntity = documentManagerServiceImpl.downloadDocument(CommonRequestModel.builder().data(CommonGetRequest.builder().id(11L).build()).build());
+        assertNotNull(responseEntity);
+        assertEquals(mockResponse.getBody(), responseEntity);
+    }
+
+    @Test
+    void testBulkSave() {
+        var mockResponse = createMockResponse();
+        when(documentManagerRestClient.bulkSaveFiles(any())).thenReturn(mockResponse);
+        var responseEntity = documentManagerServiceImpl.bulkSave(CommonRequestModel.builder().id(11L).build());
+        assertNotNull(responseEntity);
+        assertTrue(responseEntity.getBody() instanceof DependentServiceResponse);
+        assertEquals(mockResponse.getData(), ((DependentServiceResponse) responseEntity.getBody()).getData());
+    }
+
+    @Test
+    void testTemporaryUpload() {
+        var mockResponse = createMockResponse();
+        when(documentManagerRestClient.temporaryUpload(any())).thenReturn(mockResponse);
+        var responseEntity = documentManagerServiceImpl.temporaryUpload(CommonRequestModel.builder().dependentData(new DocumentManagerUpdateFileEntitiesRequest()).build());
+        assertNotNull(responseEntity);
+        assertTrue(responseEntity.getBody() instanceof DependentServiceResponse);
+        assertEquals(mockResponse.getData(), ((DependentServiceResponse) responseEntity.getBody()).getData());
+    }
+
+    @Test
+    void testList() {
+        var mockResponse = createMockResponse();
+        when(documentManagerRestClient.list(any())).thenReturn(mockResponse);
+        var responseEntity = documentManagerServiceImpl.list(CommonRequestModel.builder().dependentData(new DocumentManagerUpdateFileEntitiesRequest()).build());
+        assertNotNull(responseEntity);
+        assertTrue(responseEntity.getBody() instanceof DependentServiceResponse);
+        assertEquals(mockResponse.getData(), ((DependentServiceResponse) responseEntity.getBody()).getData());
+    }
+
+    @Test
+    void testFetchMultipleFilesWithTenant() {
+        var mockResponse = new DocumentManagerListResponse<DocumentManagerEntityFileResponse>();
+        when(documentManagerRestClient.multipleEntityFilesWithTenant(any())).thenReturn(mockResponse);
+        var responseEntity = documentManagerServiceImpl.fetchMultipleFilesWithTenant(new DocumentManagerMultipleEntityFileRequest());
+        assertNotNull(responseEntity);
+        assertEquals(mockResponse, responseEntity);
+    }
 
 
 
+    private DocumentManagerResponse<T> createMockResponse() {
+        var mockResponse = new DocumentManagerResponse<T>();
+        mockResponse.setData(new T());
+        mockResponse.setPageNo(1);
+        mockResponse.setPageSize(2);
+
+        return mockResponse;
+    }
 }

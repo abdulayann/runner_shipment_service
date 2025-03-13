@@ -195,7 +195,7 @@ public class ShipmentSettingRequest extends CommonRequest implements IRunnerRequ
     private Boolean isAwbRevampEnabled;
     private String fcrDocument;
     private Boolean isRunnerV3Enabled;
-
     private Boolean isRAEnabled;
     private Boolean isKCEnabled;
+    private Boolean countryAirCargoSecurity;
 }

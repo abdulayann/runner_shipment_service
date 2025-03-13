@@ -65,6 +65,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.dpw.runner.shipment.services.service.interfaces.IDpsEventService;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
+import com.dpw.runner.shipment.services.service.interfaces.IEventService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.service_bus.AzureServiceBusTopic;
@@ -276,6 +277,9 @@ import static org.mockito.Mockito.*;
 
     @Mock
     private NetworkTransferService networkTransferService;
+
+    @Mock
+    private IEventService eventService;
 
     private static JsonTestUtility jsonTestUtility;
     private static ShipmentDetails testShipment;
@@ -846,11 +850,39 @@ import static org.mockito.Mockito.*;
     }
 
     @Test
-    public void testUpdateConsoleBookingFields_Success() {
+    void testUpdateConsoleBookingFields_Success() {
         ConsoleBookingRequest request = new ConsoleBookingRequest();
         request.setGuid(UUID.randomUUID());
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
         when(consolidationDetailsDao.updateConsoleBookingFields(request)).thenReturn(1);
+        ResponseEntity<IRunnerResponse> response = consolidationService.updateConsoleBookingFields(commonRequestModel);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testUpdateConsoleBookingFields_Success2() {
+        ConsoleBookingRequest request = new ConsoleBookingRequest();
+        request.setGuid(UUID.randomUUID());
+        request.setBookingNumber("BookingNumber");
+        Map<Integer, Object> tenantDetailsMap = Map.of(
+                1, new Object(),
+                2, new Object()
+        );
+
+        V1TenantResponse tenantResponse1 = new V1TenantResponse();
+        tenantResponse1.setCode("Tenant1");
+
+        consolidationDetails = testConsol;
+        shipmentDetails.setTenantId(1);
+        consolidationDetails.setShipmentsList(Set.of(shipmentDetails));
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
+        when(consolidationDetailsDao.updateConsoleBookingFields(request)).thenReturn(1);
+        when(consolidationDetailsDao.findConsolidationByGuidWithQuery(request.getGuid())).thenReturn(Optional.of(consolidationDetails));
+        when(shipmentDao.updateShipmentsBookingNumber(anyList(), anyString())).thenReturn(1);
+        when(v1ServiceUtil.getTenantDetails(any())).thenReturn(tenantDetailsMap);
+        when(commonUtils.prepareEventRequest(anyLong(), anyString(), anyString(), anyString())).thenReturn(new EventsRequest());
+        when(jsonHelper.convertValue(tenantDetailsMap.get(1), V1TenantResponse.class)).thenReturn(tenantResponse1);
+        doNothing().when(eventService).saveEvent(any());
         ResponseEntity<IRunnerResponse> response = consolidationService.updateConsoleBookingFields(commonRequestModel);
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
@@ -1440,6 +1472,7 @@ import static org.mockito.Mockito.*;
         consolidationDetails.setCarrierDetails(new CarrierDetails());
         consolidationDetails.setInterBranchConsole(false);
         consolidationDetails.setSendingAgent(Parties.builder().orgId("sending").build());
+        consolidationDetails.setBookingNumber("BookingNumber");
 
         ConsoleShipmentMapping consoleShipmentMapping1 = new ConsoleShipmentMapping();
         consoleShipmentMapping1.setShipmentId(2L);
@@ -1450,6 +1483,7 @@ import static org.mockito.Mockito.*;
         shipmentDetails1.setCarrierDetails(new CarrierDetails());
         shipmentDetails1.setTenantId(UserContext.getUser().TenantId);
         shipmentDetails1.setGuid(UUID.randomUUID());
+        shipmentDetails1.setDirection(DIRECTION_IMP);
 
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails, shipmentDetails1));
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
@@ -1608,6 +1642,7 @@ import static org.mockito.Mockito.*;
         consolidationDetails.setInterBranchConsole(false);
         consolidationDetails.setTransportMode(TRANSPORT_MODE_AIR);
         consolidationDetails.setShipmentType(Constants.DIRECTION_EXP);
+        consolidationDetails.setBookingNumber("BookingNumber");
 
         ConsoleShipmentMapping consoleShipmentMapping1 = new ConsoleShipmentMapping();
         consoleShipmentMapping1.setShipmentId(2L);
@@ -4473,7 +4508,7 @@ import static org.mockito.Mockito.*;
     @Test
     void testCreate_SuccessRa() throws RunnerException {
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().EnableAirMessaging(true).build());
-
+        mockShipmentSettings();
 
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
         ConsolidationDetailsRequest copy = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetailsRequest.class);
@@ -4549,6 +4584,7 @@ import static org.mockito.Mockito.*;
     @Test
     void testCreate_SuccessIdNullSendingAgent() throws RunnerException {
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().EnableAirMessaging(true).build());
+        mockShipmentSettings();
 
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
         ConsolidationDetailsRequest copy = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetailsRequest.class);
@@ -4589,7 +4625,7 @@ import static org.mockito.Mockito.*;
     @Test
     void testCreate_SuccessRaScreeningStatusNotNull() throws RunnerException {
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().EnableAirMessaging(true).build());
-
+        mockShipmentSettings();
 
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
         ConsolidationDetailsRequest copy = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetailsRequest.class);
@@ -4629,6 +4665,7 @@ import static org.mockito.Mockito.*;
     @Test
     void testCreate_SuccessIdNullScreeningStatusNotNull() throws RunnerException {
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().EnableAirMessaging(true).build());
+        mockShipmentSettings();
 
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
         ConsolidationDetailsRequest copy = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetailsRequest.class);
@@ -4665,6 +4702,7 @@ import static org.mockito.Mockito.*;
     @Test
     void testCreate_SuccessIdNullSendingAgentScreeningStatusNotNull() throws RunnerException {
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().EnableAirMessaging(true).build());
+        mockShipmentSettings();
 
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
         ConsolidationDetailsRequest copy = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetailsRequest.class);
@@ -4705,6 +4743,7 @@ import static org.mockito.Mockito.*;
     @Test
     void testCreate_SuccessRaSecurityStatusNull() throws RunnerException {
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().EnableAirMessaging(true).build());
+        mockShipmentSettings();
 
 
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
@@ -4747,6 +4786,7 @@ import static org.mockito.Mockito.*;
     @Test
     void testCreate_SuccessIdNullSecurityStatusNull() throws RunnerException {
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().EnableAirMessaging(true).build());
+        mockShipmentSettings();
 
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
         ConsolidationDetailsRequest copy = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetailsRequest.class);
@@ -4785,6 +4825,7 @@ import static org.mockito.Mockito.*;
     @Test
     void testCreate_SuccessIdNullSendingAgentSecurityStatusNull() throws RunnerException {
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().EnableAirMessaging(true).build());
+        mockShipmentSettings();
 
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
         ConsolidationDetailsRequest copy = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetailsRequest.class);
@@ -5832,7 +5873,6 @@ import static org.mockito.Mockito.*;
 
         when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.empty());
         when(networkTransferDao.findByTenantAndEntity(any(), anyLong(), anyString())).thenReturn(Optional.of(networkTransfer));
-        doNothing().when(commonErrorLogsDao).logConsoleAutomaticTransferErrors(any(), anyLong(), anyList());
         mockShipmentSettings();
         List<V1TenantSettingsResponse.FileTransferConfigurations> fileTransferConfigurationsList = Collections.singletonList(V1TenantSettingsResponse.FileTransferConfigurations.builder().build());
         when(quartzJobInfoService.getActiveFileTransferConfigurations(any())).thenReturn(fileTransferConfigurationsList);
@@ -5841,7 +5881,6 @@ import static org.mockito.Mockito.*;
 
         verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
         verify(networkTransferDao, times(1)).findByTenantAndEntity(any(), anyLong(), anyString());
-        verify(commonErrorLogsDao, times(1)).logConsoleAutomaticTransferErrors(any(), anyLong(), anyList());
     }
 
     @Test
@@ -6003,13 +6042,11 @@ import static org.mockito.Mockito.*;
 
         QuartzJobInfo existingJob = QuartzJobInfo.builder().jobStatus(JobState.ERROR).build();
         when(quartzJobInfoDao.findByJobFilters(any(), anyLong(), anyString())).thenReturn(Optional.of(existingJob));
-        doNothing().when(commonErrorLogsDao).logConsoleAutomaticTransferErrors(any(), anyLong(), anyList());
         mockShipmentSettings();
 
         consolidationService.triggerAutomaticTransfer(consolidationDetails1, consolidationDetails, false);
 
         verify(quartzJobInfoDao, times(1)).findByJobFilters(any(), anyLong(), anyString());
-        verify(commonErrorLogsDao, times(1)).logConsoleAutomaticTransferErrors(any(), anyLong(), anyList());
     }
 
     @Test

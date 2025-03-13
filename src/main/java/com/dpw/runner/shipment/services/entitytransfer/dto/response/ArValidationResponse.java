@@ -3,9 +3,11 @@ package com.dpw.runner.shipment.services.entitytransfer.dto.response;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import com.dpw.runner.shipment.services.dto.response.TriangulationPartnerResponse;
+import com.dpw.runner.shipment.services.entitytransfer.enums.TransferStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -19,7 +21,6 @@ public class ArValidationResponse implements IRunnerResponse {
     private UUID shipmentGuid;
     private String consolidationType;
     private Long receivingAgent;
-    private List<TriangulationPartnerResponse> triangulationPartnerList;
     private Long triangulationPartner;
     private Integer sourceBranch;
     private Integer origin;
@@ -50,6 +51,16 @@ public class ArValidationResponse implements IRunnerResponse {
         private String status;
         private String jobType;
         private Long orderNumber;
+        private Integer branchId;
+        private Boolean isAccepted;
+        private TransferStatus transferStatus;
+    }
+
+    public void addTriangulationShipmentList(ProfitShareShipmentData trigangulationPartner) {
+        if(this.triangulationShipmentList == null) {
+            this.triangulationShipmentList = new ArrayList<>();
+        }
+        this.triangulationShipmentList.add(trigangulationPartner);
     }
 }
 

@@ -297,18 +297,25 @@ public class ShipmentDao implements IShipmentDao {
         }
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
 
-        // Non dg Shipments can not have dg packs
-        if(checkForNonDGShipmentAndAirDGFlag(request, shipmentSettingsDetails) && request.getPackingList() != null) {
-            for (Packing packing: request.getPackingList()) {
-                if(Boolean.TRUE.equals(packing.getHazardous())) {
-                    errors.add("The shipment contains DG package. Marking the shipment as non DG is not allowed");
-                }
+        Boolean countryAirCargoSecurity = shipmentSettingsDetails.getCountryAirCargoSecurity();
+        if (Boolean.TRUE.equals(countryAirCargoSecurity)) {
+            if (!fromV1Sync && !CommonUtils.checkAirSecurityForShipment(request)) {
+                errors.add("You don't have Air Security permission to create or update AIR EXP Shipment.");
             }
-        }
+            // Non dg Shipments can not have dg packs
+            if (!Boolean.TRUE.equals(request.getContainsHazardous()) && checkContainsDGPackage(request)) {
+                errors.add("The shipment contains DG package. Marking the shipment as non DG is not allowed");
+            }
+        } else {
+            // Non dg Shipments can not have dg packs
+            if (checkForNonDGShipmentAndAirDGFlag(request, shipmentSettingsDetails) && checkContainsDGPackage(request)) {
+                errors.add("The shipment contains DG package. Marking the shipment as non DG is not allowed");
+            }
 
-        // Non dg user cannot save dg shipment
-        if(!fromV1Sync && checkForDGShipmentAndAirDGFlag(request, shipmentSettingsDetails) && !UserContext.isAirDgUser())
-            errors.add("You don't have permission to update DG Shipment");
+            // Non dg user cannot save dg shipment
+            if(!fromV1Sync && checkForDGShipmentAndAirDGFlag(request, shipmentSettingsDetails) && !UserContext.isAirDgUser())
+                errors.add("You don't have permission to update DG Shipment");
+        }
         
         // Routings leg no can not be repeated
         if (request.getRoutingsList() != null && request.getRoutingsList().size() > 0) {
@@ -756,5 +763,16 @@ public class ShipmentDao implements IShipmentDao {
     @Override
     public Integer findReceivingByGuid(UUID guid) {
         return shipmentRepository.findReceivingByGuid(guid);
+    }
+
+    private boolean checkContainsDGPackage(ShipmentDetails request) {
+        if (CommonUtils.listIsNullOrEmpty(request.getPackingList()))
+            return false;
+        for (Packing packing : request.getPackingList()) {
+            if (Boolean.TRUE.equals(packing.getHazardous())) {
+                return true;
+            }
+        }
+        return false;
     }
 }

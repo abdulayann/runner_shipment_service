@@ -21,6 +21,8 @@ import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstan
 import com.dpw.runner.shipment.services.commons.constants.EventConstants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
+import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
+import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -58,6 +60,7 @@ import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
@@ -74,6 +77,7 @@ import com.dpw.runner.shipment.services.kafka.dto.DocumentDto.Document;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
+import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IEventService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
@@ -140,6 +144,8 @@ public class BookingIntegrationsUtility {
     private IEventDao eventDao;
     @Autowired
     private IEventService eventService;
+    @Autowired
+    private IAuditLogService auditLogService;
 
     @Value("${platform.failure.notification.enabled}")
     private Boolean isFailureNotificationEnabled;
@@ -153,6 +159,8 @@ public class BookingIntegrationsUtility {
     private String lclBusinessCode;
     @Value("${platform.business.code.LSE}")
     private String lseBusinessCode;
+    @Value("${platform.document.path.update}")
+    private Boolean updateDocumentPath;
     @Autowired
     private BillingServiceAdapter billingServiceAdapter;
     @Autowired
@@ -348,6 +356,7 @@ public class BookingIntegrationsUtility {
                 .status(platformStatusMap.get(customerBooking.getBookingStatus()))
                 .referenceNumbers(new ArrayList<>())
                 .addresses(getPartyAddresses(customerBooking.getCustomer(), customerBooking.getConsignor(), customerBooking.getConsignee(), customerBooking.getNotifyParty()))
+                .branchId(UserContext.getUser().getTenantId())
                 .build();
         return CommonRequestModel.builder().data(platformCreateRequest).build();
     }
@@ -657,6 +666,7 @@ public class BookingIntegrationsUtility {
                 .load(createLoad(customerBooking))
                 .route(createRoute(customerBooking))
                 .source("RUNNER")
+                .branchId(UserContext.getUser().getTenantId())
                 .build();
         return CommonRequestModel.builder().data(platformUpdateRequest).build();
     }
@@ -941,12 +951,11 @@ public class BookingIntegrationsUtility {
 
         Document payloadData = payload.getData();
         String payloadAction = payload.getAction();
+        var shipments = shipmentDao.findShipmentsByGuids(Set.of(UUID.fromString(payload.getData().getEntityId())));
+        var shipment = shipments.stream().findFirst().orElse(new ShipmentDetails());
         if (Constants.KAFKA_EVENT_CREATE.equalsIgnoreCase(payloadAction)
                 && Objects.equals(payloadData.getEntityType(), Constants.SHIPMENTS_CAPS)
                 && Boolean.TRUE.equals(payloadData.getCustomerPortalVisibility())) {
-
-            var shipments = shipmentDao.findShipmentsByGuids(Set.of(UUID.fromString(payload.getData().getEntityId())));
-            var shipment = shipments.stream().findFirst().orElse(new ShipmentDetails());
 
             // Sending document to Logistics Platform in case of online booking
             if (Objects.equals(shipment.getBookingType(), CustomerBookingConstants.ONLINE) && !Objects.isNull(shipment.getBookingReference())) {
@@ -992,6 +1001,7 @@ public class BookingIntegrationsUtility {
                 RequestAuthContext.setAuthToken("Bearer " + StringUtils.defaultString(v1Service.generateToken()));
                 TenantContext.setCurrentTenant(shipmentDetails.getTenantId());
                 UserContext.setUser(UsersDto.builder().TenantId(shipmentDetails.getTenantId()).Permissions(new HashMap<>()).build());
+                commonUtils.impersonateUser(shipmentDetails.getTenantId());
                 boolean updatedExistingEvent = false;
 
                 // If existing events are found, iterate through them for potential updates
@@ -1003,7 +1013,7 @@ public class BookingIntegrationsUtility {
                                 Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER.equals(event.getSource())) {
 
                             log.info("Updating event: {} with new actual time and entity type.", event.getEventCode());
-                            event.setActual(LocalDateTime.now());
+                            event.setActual(commonUtils.getUserZoneTime(LocalDateTime.now()));
                             event.setEntityType(Constants.SHIPMENT);
                             event.setUserName(payloadData.getUserDisplayName());
                             event.setUserEmail(payloadData.getUserEmail());
@@ -1030,7 +1040,7 @@ public class BookingIntegrationsUtility {
                     }
 
                     EventsRequest eventsRequest = new EventsRequest();
-                    eventsRequest.setActual(LocalDateTime.now());
+                    eventsRequest.setActual(commonUtils.getUserZoneTime(LocalDateTime.now()));
                     eventsRequest.setEntityId(shipmentDetails.getId());
                     eventsRequest.setEntityType(Constants.SHIPMENT);
                     eventsRequest.setEventCode(payloadData.getEventCode());
@@ -1074,7 +1084,7 @@ public class BookingIntegrationsUtility {
                         DocumentMetaDTO.builder()
                                 .name(document.getFileName())
                                 .document_type(document.getDocType())
-                                .document_link(document.getSecureDownloadLink())
+                                .document_link(Boolean.TRUE.equals(updateDocumentPath) ? document.getPath(): document.getSecureDownloadLink())
                                 .uploaded_by_user_id(document.getUploadedBy())
                                 .build()))
                 .build();

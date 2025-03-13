@@ -1,23 +1,22 @@
 package com.dpw.runner.shipment.services.document.service.impl;
 
 
+import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
+import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.document.config.DocumentManagerRestClient;
 import com.dpw.runner.shipment.services.document.exception.BadRequestException;
-import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerBulkDownloadRequest;
-import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerFileAndRulesRequest;
-import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerSaveFileRequest;
-import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerTempFileUploadRequest;
-import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerMultipleEntityFileRequest;
-import com.dpw.runner.shipment.services.document.response.DocumentManagerBulkDownloadResponse;
-import com.dpw.runner.shipment.services.document.response.DocumentManagerDataResponse;
-import com.dpw.runner.shipment.services.document.response.DocumentManagerResponse;
-import com.dpw.runner.shipment.services.document.response.DocumentManagerEntityFileResponse;
-import com.dpw.runner.shipment.services.document.response.DocumentManagerListResponse;
+import com.dpw.runner.shipment.services.document.request.documentmanager.*;
+import com.dpw.runner.shipment.services.document.response.*;
 import com.dpw.runner.shipment.services.document.service.IDocumentManagerService;
 import com.dpw.runner.shipment.services.document.util.FileUtils;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
+import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.ss.formula.functions.T;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -33,6 +32,7 @@ public class DocumentManagerServiceImpl implements IDocumentManagerService {
 
     @Autowired
     private HttpServletRequest httpServletRequest;
+
 
     @Override
     public DocumentManagerResponse<DocumentManagerDataResponse> temporaryFileUpload(MultipartFile file, String filename) {
@@ -95,4 +95,46 @@ public class DocumentManagerServiceImpl implements IDocumentManagerService {
         return restClient.multipleEntityFilesWithTenant(request);
     }
 
+    @Override
+    public DocumentManagerResponse<T> updateFileEntities(DocumentManagerUpdateFileEntitiesRequest request) {
+        log.info("CR-ID {} || updateFileEntities: {}", LoggerHelper.getRequestIdFromMDC(), request);
+        return restClient.updateFileEntities(request);
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> deleteFile(CommonRequestModel request) {
+        var response = restClient.deleteFile(request.getDependentData());
+        return ResponseHelper.buildDependentServiceResponse(response.getData(), response.getPageNo(), response.getPageSize());
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> getFileHistory(CommonRequestModel commonRequestModel) {
+        CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+        var response = restClient.getFileHistory(request.getId());
+        return ResponseHelper.buildDependentServiceResponse(response.getData(), response.getPageNo(), response.getPageSize());
+    }
+
+    @Override
+    public byte[] downloadDocument(CommonRequestModel commonRequestModel) {
+        CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+        var response = restClient.downloadDocument(request.getId());
+        return response.getBody();
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> bulkSave(CommonRequestModel request) {
+        var response = restClient.bulkSaveFiles(request.getDependentData());
+        return ResponseHelper.buildDependentServiceResponse(response.getData(), response.getPageNo(), response.getPageSize());
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> temporaryUpload(CommonRequestModel request) {
+        var response = restClient.temporaryUpload(request.getDependentData());
+        return ResponseHelper.buildDependentServiceResponse(response.getData(), response.getPageNo(), response.getPageSize());
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> list(CommonRequestModel request) {
+        var response = restClient.list(request.getDependentData());
+        return ResponseHelper.buildDependentServiceResponse(response.getData(), response.getPageNo(), response.getPageSize());    }
 }

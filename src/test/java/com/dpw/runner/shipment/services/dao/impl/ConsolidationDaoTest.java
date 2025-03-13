@@ -653,4 +653,115 @@ class ConsolidationDaoTest extends CommonMocks {
         assertEquals(Optional.of(consolidationDetails), responseEntity);
     }
 
+    @Test
+    void applyConsolidationValidationsTest_CountryAirCargoSecurity() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().countryAirCargoSecurity(true).restrictedLocationsEnabled(true).build());
+
+        Packing packing = new Packing();
+        packing.setHazardous(true);
+
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder()
+                .hazardous(false)
+                .transportMode(Constants.TRANSPORT_MODE_AIR)
+                .packingList(Arrays.asList(packing))
+                .shipmentType(Constants.DIRECTION_IMP)
+                .build();
+
+        mockShipmentSettings();
+        Set<String> errors = consolidationsDao.applyConsolidationValidations(consolidationDetails, false, false);
+        assertTrue(errors.contains("The consolidation contains DG package. Marking the consolidation as non DG is not allowed"));
+    }
+
+    @Test
+    void applyConsolidationValidationsTest_CountryAirCargoSecurity2() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().countryAirCargoSecurity(true).restrictedLocationsEnabled(true).build());
+
+        Packing packing = new Packing();
+        packing.setHazardous(false);
+
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder()
+                .hazardous(false)
+                .transportMode(Constants.TRANSPORT_MODE_AIR)
+                .packingList(Arrays.asList(packing))
+                .shipmentType(Constants.DIRECTION_IMP)
+                .build();
+
+        mockShipmentSettings();
+        Set<String> errors = consolidationsDao.applyConsolidationValidations(consolidationDetails, false, false);
+        assertTrue(errors.contains("First load or Last Discharge can not be null."));
+    }
+
+    @Test
+    void applyConsolidationValidationsExpTest_CountryAirCargoSecurity() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().countryAirCargoSecurity(true).restrictedLocationsEnabled(true).build());
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().containsHazardous(true).build();
+
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder()
+                .hazardous(false)
+                .transportMode(Constants.TRANSPORT_MODE_AIR)
+                .shipmentsList(Set.of(shipmentDetails))
+                .shipmentType(Constants.DIRECTION_EXP)
+                .build();
+
+        mockShipmentSettings();
+        Set<String> errors = consolidationsDao.applyConsolidationValidations(consolidationDetails, false, false);
+        assertTrue(errors.contains("You don't have Air Security permission to create or update AIR EXP Consolidation."));
+    }
+
+    @Test
+    void applyConsolidationValidationsExpTest_CountryAirCargoSecurity2() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().countryAirCargoSecurity(true).restrictedLocationsEnabled(true).build());
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().containsHazardous(false).build();
+
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder()
+                .hazardous(true)
+                .transportMode(Constants.TRANSPORT_MODE_AIR)
+                .shipmentsList(Set.of(shipmentDetails))
+                .shipmentType(Constants.DIRECTION_EXP)
+                .build();
+
+        mockShipmentSettings();
+        Set<String> errors = consolidationsDao.applyConsolidationValidations(consolidationDetails, false, false);
+        assertTrue(errors.contains("Consolidation cannot be marked as DG. Please attach at least one DG Shipment."));
+    }
+
+    @Test
+    void applyConsolidationValidationsExpTest_CountryAirCargoSecurity3() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().countryAirCargoSecurity(true).restrictedLocationsEnabled(true).build());
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().containsHazardous(false).build();
+
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder()
+                .hazardous(true)
+                .transportMode(Constants.TRANSPORT_MODE_AIR)
+                .shipmentsList(Set.of(shipmentDetails))
+                .shipmentType(Constants.DIRECTION_EXP)
+                .build();
+
+        mockShipmentSettings();
+        Set<String> errors = consolidationsDao.applyConsolidationValidations(consolidationDetails, true, false);
+        assertTrue(errors.contains("First load or Last Discharge can not be null."));
+    }
+
+    @Test
+    void applyShipmentValidationsTest_NonHazPack_CountryAirCargoSecurity_V1Sync() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().countryAirCargoSecurity(true).restrictedLocationsEnabled(true).build());
+
+        Packing packing = new Packing();
+        packing.setHazardous(true);
+
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder()
+                .hazardous(false)
+                .transportMode(Constants.TRANSPORT_MODE_AIR)
+                .packingList(Arrays.asList(packing))
+                .shipmentType(Constants.DIRECTION_EXP)
+                .build();
+
+        mockShipmentSettings();
+        Set<String> errors = consolidationsDao.applyConsolidationValidations(consolidationDetails, false, true);
+        assertFalse(errors.contains("You don't have Air Security permission to create or update AIR EXP Consolidation."));
+    }
+
 }

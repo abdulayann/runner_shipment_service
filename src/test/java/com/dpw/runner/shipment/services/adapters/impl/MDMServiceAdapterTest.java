@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.commons.responses.DependentServiceRespon
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.mdm.MdmListCriteriaRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.ApprovalPartiesRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.CompanyDetailsRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.CreateShipmentTaskFromBookingTaskRequest;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -203,6 +204,42 @@ class MDMServiceAdapterTest {
         mdmServiceAdapter.createShipmentTaskFromBooking(commonRequestModel);
         verify(jsonHelper,times(4)).convertToJson(request);
         verify(restTemplate,times(3)).exchange(any(RequestEntity.class), eq(DependentServiceResponse.class));
+    }
+
+    @Test
+    void createNonBillableCustomer_Success() throws Exception {
+        // Arrange
+        CommonRequestModel commonRequestModel = mock(CommonRequestModel.class);
+        CompanyDetailsRequest request = new CompanyDetailsRequest();
+        when(commonRequestModel.getDependentData()).thenReturn(request);
+        String jsonRequest = "{}";
+        when(jsonHelper.convertToJson(any())).thenReturn(jsonRequest);
+        DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().build();
+        ResponseEntity<DependentServiceResponse> responseEntity = new ResponseEntity<>(dependentServiceResponse, HttpStatus.OK);
+        when(restTemplate.exchange(any(RequestEntity.class), eq(DependentServiceResponse.class)))
+            .thenReturn(responseEntity);
+
+        // Act
+        ResponseEntity<IRunnerResponse> response = mdmServiceAdapter.createNonBillableCustomer(commonRequestModel);
+
+        // Assert
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void createNonBillableCustomer_Exception() throws Exception {
+        // Arrange
+        CommonRequestModel commonRequestModel = mock(CommonRequestModel.class);
+        CompanyDetailsRequest request = new CompanyDetailsRequest();
+        when(commonRequestModel.getDependentData()).thenReturn(request);
+        String jsonRequest = "{}";
+        when(jsonHelper.convertToJson(any())).thenReturn(jsonRequest);
+        when(restTemplate.exchange(any(RequestEntity.class), eq(DependentServiceResponse.class)))
+            .thenThrow(new RuntimeException("MDM Service Error"));
+
+        // Act & Assert
+        mdmServiceAdapter.createNonBillableCustomer(commonRequestModel);
+        verify(restTemplate,times(1)).exchange(any(RequestEntity.class), eq(DependentServiceResponse.class));
     }
 
     @Test

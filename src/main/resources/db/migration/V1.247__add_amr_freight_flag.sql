@@ -1,0 +1,2 @@
+ALTER TABLE IF EXISTS shipment_setting
+  ADD COLUMN IF NOT EXISTS is_amr_freight_enabled BOOLEAN DEFAULT FALSE;

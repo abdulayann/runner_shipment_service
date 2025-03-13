@@ -13,6 +13,7 @@ public final class PermissionConstants {
     public static final String crossTenantCreatePermission = "Cross_Tenant:Create";
     public static final String crossTenantUpdatePermission = "Cross_Tenant:Update";
     public static final String airDG = "AirDG";
+    public static final String AIR_SECURITY_PERMISSION = "Manage:AirSecurity";
     public static final String OCEAN_DG_APPROVER = "OceanDgPermission";
     public static final String OCEAN_DG_COMMERCIAL_APPROVER = "OceanDgCommercialPermission";
     public static final String CONSOLIDATIONS_AIR_INTER_BRANCH = "Consolidations:Air:Interbranch Consolidation";

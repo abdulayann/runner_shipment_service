@@ -67,6 +67,8 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.anyBoolean;
@@ -107,6 +109,8 @@ class CustomerBookingServiceTest extends CommonMocks {
     private IV1Service v1Service;
     @Mock
     private MasterDataUtils masterDataUtils;
+    @Mock
+    private IEventDao eventDao;
 
     @Mock
     private IMDMServiceAdapter mdmServiceAdapter;
@@ -1671,6 +1675,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         when(customerBookingDao.findById(any())).thenReturn(Optional.of(customerBooking1));
         when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(CommonGetRequest.builder().id(1L).build()).build();
+        mockShipmentSettings();
         customerBookingService.cloneBooking(commonRequestModel);
         assertNotNull(commonRequestModel);
     }
@@ -1679,10 +1684,16 @@ class CustomerBookingServiceTest extends CommonMocks {
     void testClone2()
     {
         CustomerBooking customerBooking1 = new CustomerBooking();
+        customerBooking1.setTransportType(TRANSPORT_MODE_AIR);
+        customerBooking1.setDirection(DIRECTION_EXP);
         CustomerBookingResponse customerBookingResponse = objectMapper.convertValue(customerBooking1, CustomerBookingResponse.class);
         when(customerBookingDao.findById(any())).thenReturn(Optional.of(customerBooking1));
         when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(CommonGetRequest.builder().id(1L).build()).build();
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setCountryAirCargoSecurity(true);
+        UserContext.getUser().setPermissions(new HashMap<>());
+        UserContext.getUser().getPermissions().put(PermissionConstants.AIR_SECURITY_PERMISSION, true);
+        mockShipmentSettings();
         customerBookingService.cloneBooking(commonRequestModel);
         assertNotNull(commonRequestModel);
     }

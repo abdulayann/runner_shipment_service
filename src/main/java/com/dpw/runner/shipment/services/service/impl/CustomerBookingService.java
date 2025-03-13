@@ -145,6 +145,9 @@ public class CustomerBookingService implements ICustomerBookingService {
     @Value("${booking.event.kafka.queue}")
     private String senderQueue;
 
+    @Autowired
+    private IEventDao eventDao;
+
     private static final Map<String, String> loadTypeMap = Map.of("SEA", "LCL", "AIR", "LSE");
 
     private Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
@@ -272,6 +275,9 @@ public class CustomerBookingService implements ICustomerBookingService {
                             .prevData(null)
                             .parent(CustomerBooking.class.getSimpleName())
                             .parentId(customerBooking.getId())
+                            .isIntegrationLog(Objects.equals(customerBooking.getBookingStatus(), BookingStatus.PENDING_FOR_REVIEW))
+                            .flow("Inbound")
+                            .dataType("Transactional")
                             .operation(DBOperationType.CREATE.name()).build()
             );
         } catch (Exception e) {
@@ -299,6 +305,15 @@ public class CustomerBookingService implements ICustomerBookingService {
             log.debug(CustomerBookingConstants.BOOKING_DETAILS_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
+
+        boolean eventPersisted = false;
+        Optional<Events> persistedEvent = eventDao.findByEntityIdAndEntityType(oldEntity.get().getId(), Constants.BOOKING);
+        if(persistedEvent.isPresent())
+            eventPersisted = true;
+        if(!eventPersisted && request.getBookingStatus().equals(BookingStatus.PENDING_FOR_KYC) && oldEntity.get().getBookingStatus().equals(BookingStatus.PENDING_FOR_REVIEW)) {
+            createAutomatedEvents(request, EventConstants.BKCR, LocalDateTime.now(), null);
+        }
+
         if (Objects.equals(oldEntity.get().getBookingStatus(), BookingStatus.READY_FOR_SHIPMENT)) {
             throw new ValidationException("Booking alterations are not allowed once booking moved to Ready For Shipment.");
         }
@@ -368,9 +383,15 @@ public class CustomerBookingService implements ICustomerBookingService {
         if (Objects.equals(customerBooking.getBookingStatus(), BookingStatus.READY_FOR_SHIPMENT)) {
             if(Boolean.TRUE.equals(tenantSettingsResponse.getShipmentServiceV2Enabled()))
             {
-                boolean hasAirDGPermission = UserContext.isAirDgUser();
-                if(Objects.equals(request.getTransportType(),Constants.TRANSPORT_MODE_AIR) && Objects.equals(request.getIsDg(), Boolean.TRUE) && !hasAirDGPermission){
-                    throw new ValidationException("User does not have AIR DG Permission to create AIR Shipment from Booking");
+                Boolean countryAirCargoSecurity = tenantSettingsResponse.getCountryAirCargoSecurity();
+                if (Boolean.TRUE.equals(countryAirCargoSecurity)) {
+                    if (!CommonUtils.checkAirSecurityForBookingRequest(request))
+                        throw new ValidationException("User does not have Air Security permission to create AIR EXP Shipment from Booking.");
+                } else {
+                    boolean hasAirDGPermission = UserContext.isAirDgUser();
+                    if (Objects.equals(request.getTransportType(), Constants.TRANSPORT_MODE_AIR) && Objects.equals(request.getIsDg(), Boolean.TRUE) && !hasAirDGPermission) {
+                        throw new ValidationException("User does not have AIR DG Permission to create AIR Shipment from Booking");
+                    }
                 }
                 ShipmentDetailsResponse shipmentResponse = (ShipmentDetailsResponse) (((RunnerResponse) bookingIntegrationsUtility.createShipmentInV2(request).getBody()).getData());
                 //Check 3
@@ -415,6 +436,9 @@ public class CustomerBookingService implements ICustomerBookingService {
                             .prevData(jsonHelper.readFromJson(oldEntity, CustomerBooking.class))
                             .parent(CustomerBooking.class.getSimpleName())
                             .parentId(customerBooking.getId())
+                            .isIntegrationLog(Objects.equals(customerBooking.getBookingStatus(), BookingStatus.PENDING_FOR_REVIEW))
+                            .flow("Inbound")
+                            .dataType("Transactional")
                             .operation(DBOperationType.UPDATE.name()).build()
             );
         } catch (Exception e) {
@@ -1434,9 +1458,14 @@ public class CustomerBookingService implements ICustomerBookingService {
             }
             long id = request.getId();
             Optional<CustomerBooking> customerBooking = customerBookingDao.findById(id);
-            if(!customerBooking.isPresent())
+            if(customerBooking.isEmpty())
             {
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+            ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+            Boolean countryAirCargoSecurity = shipmentSettingsDetails.getCountryAirCargoSecurity();
+            if (Boolean.TRUE.equals(countryAirCargoSecurity) && !CommonUtils.checkAirSecurityForBooking(customerBooking.get())) {
+                throw new ValidationException(Constants.AIR_SECURITY_PERMISSION_MSG);
             }
             CustomerBookingResponse customerBookingResponse = jsonHelper.convertValue(customerBooking.get(), CustomerBookingResponse.class);
             customerBookingResponse.setId(null);
@@ -1648,5 +1677,30 @@ public class CustomerBookingService implements ICustomerBookingService {
             }
         }
         return true;
+    }
+
+    private Events createAutomatedEvents(CustomerBookingRequest request, String eventCode,
+                                         LocalDateTime actualDateTime, LocalDateTime estimatedDateTime) {
+        Events events = initializeAutomatedEvents(request, eventCode, actualDateTime, estimatedDateTime);
+        commonUtils.updateEventWithMasterData(List.of(events));
+        // Persist the event
+        eventDao.save(events);
+        return events;
+    }
+
+    private Events initializeAutomatedEvents(CustomerBookingRequest request, String eventCode,
+                                             LocalDateTime actualDateTime, LocalDateTime estimatedDateTime) {
+        Events events = new Events();
+        // Set event fields from booking request
+        events.setActual(actualDateTime);
+        events.setEstimated(estimatedDateTime);
+        events.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
+        events.setIsPublicTrackingEvent(true);
+        events.setEntityType(Constants.BOOKING);
+        events.setEntityId(request.getId());
+        events.setTenantId(TenantContext.getCurrentTenant());
+        events.setEventCode(eventCode);
+
+        return events;
     }
 }

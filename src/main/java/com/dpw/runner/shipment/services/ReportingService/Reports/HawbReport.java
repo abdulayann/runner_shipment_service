@@ -16,6 +16,7 @@ import com.dpw.runner.shipment.services.dto.request.reportService.CompanyDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.Awb;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.ChargesDue;
 import com.dpw.runner.shipment.services.entity.enums.RateClass;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
@@ -58,6 +59,8 @@ public class HawbReport extends IReport{
     @Autowired
     private ModelMapper modelMapper;
 
+    public String printType;
+
     @Override
     public Map<String, Object> getData(Long id) {
         HawbModel hawbModel = (HawbModel) getDocumentModel(id);
@@ -70,7 +73,17 @@ public class HawbReport extends IReport{
         hawbModel.usersDto = UserContext.getUser();
         hawbModel.shipmentDetails = getShipment(id);
         validateAirAndOceanDGCheck(hawbModel.shipmentDetails);
-        validateAirDGCheckShipments(hawbModel.shipmentDetails);
+        ShipmentSettingsDetails shipmentSettingsDetails = getCurrentShipmentSettings();
+        Boolean countryAirCargoSecurity = shipmentSettingsDetails.getCountryAirCargoSecurity();
+        if (Boolean.TRUE.equals(countryAirCargoSecurity)) {
+            if (ReportConstants.ORIGINAL.equalsIgnoreCase(printType)) {
+                validateAirDGAndAirSecurityCheckShipments(hawbModel.shipmentDetails);
+            } else {
+                validateAirSecurityCheckShipments(hawbModel.shipmentDetails);
+            }
+        } else {
+            validateAirDGCheckShipments(hawbModel.shipmentDetails);
+        }
         if(hawbModel.shipmentDetails != null && hawbModel.shipmentDetails.getConsolidationList() != null && !hawbModel.shipmentDetails.getConsolidationList().isEmpty())
         {
             hawbModel.setConsolidationDetails(hawbModel.shipmentDetails.getConsolidationList().get(0));

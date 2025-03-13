@@ -32,10 +32,7 @@ import com.dpw.runner.shipment.services.ReportingService.Reports.TransportOrderR
 import com.dpw.runner.shipment.services.ReportingService.ReportsFactory;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.constants.DpsConstants;
-import com.dpw.runner.shipment.services.commons.constants.EventConstants;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.enums.MawbPrintFor;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
@@ -102,15 +99,7 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -194,6 +183,10 @@ public class ReportService implements IReportService {
     private DependentServiceHelper dependentServiceHelper;
     @Autowired
     private IDpsEventService dpsEventService;
+    @Autowired
+    private CommonUtils commonUtils;
+    @Autowired
+    private ConsolidationService consolidationService;
 
     @Autowired
     @Lazy
@@ -289,6 +282,7 @@ public class ReportService implements IReportService {
         IReport report = reportsFactory.getReport(reportRequest.getReportInfo());
         if (report instanceof MawbReport mawbReport) {
             mawbReport.isDMawb = reportRequest.isFromShipment(); // Set isDMawb based on isFromShipment flag
+            mawbReport.printType = reportRequest.getPrintType();
 
             if (!reportRequest.isFromShipment()) { // Case: Request came from consolidation
                 long consolidationId = Long.parseLong(reportRequest.getReportId());
@@ -312,9 +306,6 @@ public class ReportService implements IReportService {
             }
         }
 
-        // Awb print status set for Hawb and Mawb
-        this.setPrintTypeForAwb(reportRequest, isOriginalPrint);
-
         if(Boolean.TRUE.equals(reportRequest.getPushAwbEvent()) && reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB) && Boolean.TRUE.equals(isOriginalPrint)) {
             awbDao.airMessagingIntegration(Long.parseLong(reportRequest.getReportId()), reportRequest.getReportInfo(), reportRequest.isFromShipment(), reportRequest.isIncludeCsdInfo());
         } else if((reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB) || reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.HAWB)) && Boolean.TRUE.equals(isOriginalPrint)) {
@@ -323,6 +314,9 @@ public class ReportService implements IReportService {
             else
                 awbDao.updateAirMessageStatusFromShipmentId(Long.parseLong(reportRequest.getReportId()), AwbStatus.AWB_ORIGINAL_PRINTED.name());
         }
+
+        // Awb print status set for Hawb and Mawb
+        this.setPrintTypeForAwb(reportRequest, isOriginalPrint);
 
         boolean reportingNewFlow = false;
         Map<String, Object> dataRetrived = new HashMap<>();
@@ -433,6 +427,7 @@ public class ReportService implements IReportService {
             if (Boolean.TRUE.equals(dpsEventService.isImplicationPresent(List.of(Long.parseLong(reportRequest.getReportId())), DpsConstants.HAWBPR))) {
                 throw new ReportException(DpsConstants.DPS_ERROR_1);
             }
+            vHawbReport.printType = reportRequest.getPrintType();
 
             dataRetrived = vHawbReport.getData(Long.parseLong(reportRequest.getReportId()));
             createEvent(reportRequest, EventConstants.HAWB);
@@ -441,6 +436,9 @@ public class ReportService implements IReportService {
         } else if (report instanceof SeawayBillReport vSeawayBillReport) {
             dataRetrived = vSeawayBillReport.getData(Long.parseLong(reportRequest.getReportId()));
             createEvent(reportRequest, EventConstants.FHBL);
+        } else if (report instanceof HawbReport vHawbReport) {
+            vHawbReport.printType = reportRequest.getPrintType();
+            dataRetrived = vHawbReport.getData(Long.parseLong(reportRequest.getReportId()));
         } else {
             dataRetrived = report.getData(Long.parseLong(reportRequest.getReportId()));
         }
@@ -548,6 +546,8 @@ public class ReportService implements IReportService {
             }
 
             addDocumentToDocumentMaster(reportRequest, pdfByte_Content);
+
+            triggerAutomaticTransfer(report, reportRequest);
 
             return pdfByte_Content;
         }
@@ -677,6 +677,8 @@ public class ReportService implements IReportService {
             }
 
             addDocumentToDocumentMaster(reportRequest, pdfByte_Content);
+
+            triggerAutomaticTransfer(report, reportRequest);
 
             //Update shipment issue date
             return pdfByte_Content;
@@ -935,6 +937,7 @@ public class ReportService implements IReportService {
             shipmentDao.updateFCRNo(Long.valueOf(reportRequest.getReportId()));
         }
 
+        triggerAutomaticTransfer(report, reportRequest);
         return pdfByteContent;
     }
 
@@ -952,7 +955,7 @@ public class ReportService implements IReportService {
 
         // Create EventsRequest
         EventsRequest eventsRequest = new EventsRequest();
-        eventsRequest.setActual(LocalDateTime.now());
+        eventsRequest.setActual(commonUtils.getUserZoneTime(LocalDateTime.now()));
         eventsRequest.setEntityId(reportId);
         eventsRequest.setEntityType(Constants.SHIPMENT);
         eventsRequest.setEventCode(eventCode);
@@ -1947,6 +1950,94 @@ public class ReportService implements IReportService {
             pdf_Bytes.add(mainDocPage);
         }
         return CommonUtils.concatAndAddContent(pdf_Bytes);
+    }
+
+    public void triggerAutomaticTransfer(IReport report, ReportRequest reportRequest){
+        try {
+            ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+            if (!Boolean.TRUE.equals(shipmentSettingsDetails.getIsAutomaticTransferEnabled())) {
+                return;
+            }
+            if (reportRequest.getPrintType()!=null && !reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.ORIGINAL)) {
+                return;
+            }
+            Long reportId = Long.parseLong(reportRequest.getReportId());
+
+            if (report instanceof HblReport) {
+                ShipmentDetails shipmentDetails = getShipmentDetails(reportRequest);
+                if(shipmentDetails!=null) {
+                    CompletableFuture.runAsync(masterDataUtils.withMdc(() -> triggerBlAutomaticTransfer(shipmentDetails)), executorService);
+                }
+            } else if (report instanceof HawbReport) {
+                ShipmentDetails shipmentDetails = getShipmentDetails(reportRequest);
+                if(shipmentDetails!=null) {
+                    CompletableFuture.runAsync(masterDataUtils.withMdc(() -> triggerHAWBAutomaticTransfer(shipmentDetails)), executorService);
+                }
+            } else if (report instanceof MawbReport) {
+                if (!reportRequest.isFromShipment()) { // Case: Request came from consolidation
+                    CompletableFuture.runAsync(masterDataUtils.withMdc(() -> triggerConsoleMAWBAutomaticTransfer(reportId)), executorService);
+                } else {
+                    ShipmentDetails shipmentDetails = getShipmentDetails(reportRequest);
+                    if(shipmentDetails!=null) {
+                        CompletableFuture.runAsync(masterDataUtils.withMdc(() -> triggerShipmentMAWBAutomaticTransfer(shipmentDetails)), executorService);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error while triggering automatic transfer for report {}, errorMsg: {}", reportRequest.getReportInfo(), e.getMessage());
+        }
+    }
+
+    private ShipmentDetails getShipmentDetails(ReportRequest reportRequest){
+        Long shipmentId = Long.parseLong(reportRequest.getReportId());
+        long startTimeForShipment = System.currentTimeMillis();
+        ShipmentDetails shipmentDetails = shipmentDao.findById(shipmentId).orElse(null);
+        if(shipmentDetails!=null) {
+            if(shipmentDetails.getConsolidationList()!=null)
+                log.info(String.valueOf(shipmentDetails.getConsolidationList().size()));
+            log.info(ReportConstants.TIME_TAKE_TO_GET_SHIPMENT_CONSOLE_DATA, shipmentId, System.currentTimeMillis() - startTimeForShipment);
+        }
+        return shipmentDetails;
+    }
+
+    public void triggerBlAutomaticTransfer(ShipmentDetails shipmentDetails){
+        if(!CommonUtils.setIsNullOrEmpty(shipmentDetails.getConsolidationList())){
+            for(ConsolidationDetails consolidationDetails: shipmentDetails.getConsolidationList()){
+                if (consolidationDetails!=null  &&
+                        (Objects.equals(Constants.TRANSPORT_MODE_SEA, consolidationDetails.getTransportMode()) &&
+                                !Objects.equals(Constants.CONSOLIDATION_TYPE_DRT, consolidationDetails.getConsolidationType())))
+                    consolidationService.triggerAutomaticTransfer(consolidationDetails, null, true);
+            }
+        }
+    }
+
+    public void triggerHAWBAutomaticTransfer(ShipmentDetails shipmentDetails){
+        if(ObjectUtils.isNotEmpty(shipmentDetails.getConsolidationList())){
+            for(ConsolidationDetails consolidationDetails: shipmentDetails.getConsolidationList()){
+                if (consolidationDetails!=null &&
+                        (Objects.equals(Constants.TRANSPORT_MODE_AIR, consolidationDetails.getTransportMode()) &&
+                                Objects.equals(Constants.SHIPMENT_TYPE_STD, shipmentDetails.getJobType())))
+                    consolidationService.triggerAutomaticTransfer(consolidationDetails, null, true);
+            }
+        }
+    }
+
+    public void triggerConsoleMAWBAutomaticTransfer(Long consolidationId){
+        ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(consolidationId).orElse(null);
+        if(consolidationDetails==null)
+            return;
+        if(Objects.equals(Constants.TRANSPORT_MODE_AIR, consolidationDetails.getTransportMode()) &&
+                Objects.equals(Constants.SHIPMENT_TYPE_STD, consolidationDetails.getConsolidationType())) {
+            consolidationService.triggerAutomaticTransfer(consolidationDetails, null, true);
+        }
+    }
+
+    public void triggerShipmentMAWBAutomaticTransfer(ShipmentDetails shipmentDetails){
+        if(Objects.equals(Constants.TRANSPORT_MODE_AIR, shipmentDetails.getTransportMode()) &&
+                Objects.equals(Constants.SHIPMENT_TYPE_DRT, shipmentDetails.getJobType())) {
+            shipmentService.triggerAutomaticTransfer(shipmentDetails, null, true);
+        }
+
     }
 
 }

@@ -97,6 +97,7 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocat
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
@@ -2408,7 +2409,8 @@ public class CommonUtils {
         V1DataResponse response = iv1Service.listBranchesByDefaultOrgAndAddress(request);
         if (Objects.nonNull(response.getEntities())) {
             List<V1TenantResponse> tenantResponses = jsonHelper.convertValueToList(response.getEntities(), V1TenantResponse.class);
-            return tenantResponses.get(0).getTenantId();
+            if(!tenantResponses.isEmpty())
+                return tenantResponses.get(0).getTenantId();
         }
         return null;
     }
@@ -2595,6 +2597,72 @@ public class CommonUtils {
      */
     private String capitalizeV3(String str) {
         return str.substring(0, 1).toUpperCase() + str.substring(1);
+    }
+
+    public static boolean checkAirSecurityForShipment(ShipmentDetails shipmentDetails) {
+        if (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipmentDetails.getDirection().equals(DIRECTION_EXP)) {
+            return UserContext.isAirSecurityUser();
+        }
+        return true;
+    }
+
+    public static boolean checkAirSecurityForConsolidation(ConsolidationDetails consolidationDetails) {
+        if (consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && consolidationDetails.getShipmentType().equals(DIRECTION_EXP)) {
+            return UserContext.isAirSecurityUser();
+        }
+        return true;
+    }
+
+    public static boolean checkAirSecurityForBooking(CustomerBooking customerBooking) {
+        if (customerBooking.getTransportType().equals(Constants.TRANSPORT_MODE_AIR) && customerBooking.getDirection().equals(DIRECTION_EXP)) {
+            return UserContext.isAirSecurityUser();
+        }
+        return true;
+    }
+
+    public static boolean checkAirSecurityForBookingRequest(CustomerBookingRequest customerBooking) {
+        if (customerBooking.getTransportType().equals(Constants.TRANSPORT_MODE_AIR) && customerBooking.getDirection().equals(DIRECTION_EXP)) {
+            return UserContext.isAirSecurityUser();
+        }
+        return true;
+    }
+
+    public EventsRequest prepareEventRequest(Long entityId, String eventCode, String entityType, String referenceNumber) {
+        EventsRequest eventsRequest = new EventsRequest();
+        eventsRequest.setActual(getUserZoneTime(LocalDateTime.now()));
+        eventsRequest.setEntityId(entityId);
+        eventsRequest.setEntityType(entityType);
+        eventsRequest.setEventCode(eventCode);
+        if (!CommonUtils.IsStringNullOrEmpty(referenceNumber))
+            eventsRequest.setContainerNumber(referenceNumber);
+        eventsRequest.setIsPublicTrackingEvent(true);
+        eventsRequest.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
+        return eventsRequest;
+    }
+
+    public LocalDateTime getUserZoneTime(LocalDateTime inputDateTime) {
+        UsersDto userDetails = UserContext.getUser();
+        Boolean enableTimeZoneFlag = Optional.ofNullable(userDetails.getEnableTimeZone()).orElse(false);
+        String tenantTimeZone = userDetails.getTimeZoneId();
+        return DateUtils.convertDateToUserTimeZone(inputDateTime, null, tenantTimeZone, enableTimeZoneFlag);
+    }
+
+    public void impersonateUser(Integer tenantId) {
+        try {
+            Map<Integer, Object> responseMap = getTenantSettingsAndTenantsData(Set.of(tenantId));
+            TenantDetailsByListResponse.TenantDetails response = modelMapper.map(responseMap.get(tenantId), TenantDetailsByListResponse.TenantDetails.class);
+            TenantModel tenantModel = modelMapper.map(response.getTenant(), TenantModel.class);
+            UserContext.getUser().setEnableTimeZone(tenantModel.getEnableTimeZone());
+            UserContext.getUser().setTimeZoneId(tenantModel.getTimeZoneId());
+            log.info("User impersonated successfully");
+        }
+        catch (Exception e) {
+            // in case of any failure set Enable Time zone and time zone id as null to avoid wrong transformations
+            // UTC will be the fallback value
+            UserContext.getUser().setEnableTimeZone(null);
+            UserContext.getUser().setTimeZoneId(null);
+            log.warn("Error while impersonating user with tenant Id {}", tenantId, e);
+        }
     }
 
 }

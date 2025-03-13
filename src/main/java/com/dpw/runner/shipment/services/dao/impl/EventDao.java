@@ -118,6 +118,11 @@ public class EventDao implements IEventDao {
     }
 
     @Override
+    public Optional<Events> findByEntityIdAndEntityType(Long id, String entityType) {
+        return eventRepository.findByEntityIdAndEntityType(id, entityType);
+    }
+
+    @Override
     public Optional<Events> findByGuid(UUID id) {
         return eventRepository.findByGuid(id);
     }
@@ -373,11 +378,11 @@ public class EventDao implements IEventDao {
         try {
             Events eventsRow = new Events();
             if (isActualRequired) {
-                eventsRow.setActual(LocalDateTime.now());
+                eventsRow.setActual(commonUtils.getUserZoneTime(LocalDateTime.now()));
             }
 
             if (isEstimatedRequired) {
-                eventsRow.setEstimated(LocalDateTime.now());
+                eventsRow.setEstimated(commonUtils.getUserZoneTime(LocalDateTime.now()));
             }
 
             eventsRow.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
@@ -572,7 +577,7 @@ public class EventDao implements IEventDao {
                 event.setConsolidationId(event.getEntityId());
             }
 
-            if (Boolean.FALSE.equals(automaticTransfer)) {
+            if (Boolean.FALSE.equals(automaticTransfer) && !Objects.equals(event.getUserName(), Constants.SYSTEM_GENERATED)) {
                 updateUserFieldsInEvent(event, false);
             }
         }
@@ -651,6 +656,10 @@ public class EventDao implements IEventDao {
         }
         if (forceUpdate || ObjectUtils.isEmpty(event.getBranchName())) {
             event.setBranchName(Optional.ofNullable(UserContext.getUser()).map(UsersDto::getTenantDisplayName).orElse(null));
+        }
+
+        if (Constants.SYSTEM_GENERATED.equals(event.getSource())) {
+            event.setUserEmail(null);
         }
 
         if(Constants.MASTER_DATA_SOURCE_CARGOES_TRACKING.equals(event.getSource())) {

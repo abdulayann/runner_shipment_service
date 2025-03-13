@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.service.interfaces;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.ListCousinBranchesForEtRequest;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import org.springframework.http.ResponseEntity;
 
 public interface IMasterDataService extends ICommonService{
@@ -114,6 +115,9 @@ public interface IMasterDataService extends ICommonService{
     ResponseEntity<IRunnerResponse> retrieveTenant();
 
     ResponseEntity<IRunnerResponse> listOwnType(CommonRequestModel commonRequestModel);
+
+    ResponseEntity<IRunnerResponse> createNonBillableCustomer(CommonRequestModel commonRequestModel)
+        throws RunnerException;
 
     ResponseEntity<IRunnerResponse> listCarrierFilter(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> fetchGetTemplateMainPage(CommonRequestModel commonRequestModel);
