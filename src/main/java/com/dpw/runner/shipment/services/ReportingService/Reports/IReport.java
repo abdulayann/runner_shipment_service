@@ -1170,7 +1170,8 @@ public abstract class IReport {
         String res = "";
         if(routingsModel == null)
             return res;
-        return getFlightAndDayString(map, routingsModel.getCarrier(), routingsModel.getFlightNumber(), routingsModel.getEtd());
+        String flightNumber = Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster()) ? routingsModel.getVoyage() : routingsModel.getFlightNumber();
+        return getFlightAndDayString(map, routingsModel.getCarrier(), flightNumber, routingsModel.getEtd());
     }
 
     public String getFlightAndDayString(Map<String, CarrierMasterData> carriersMap, String carrierCode, String flightNumber, LocalDateTime etd) {
