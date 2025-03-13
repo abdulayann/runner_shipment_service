@@ -99,6 +99,7 @@ import net.sourceforge.barbecue.BarcodeFactory;
 import net.sourceforge.barbecue.BarcodeImageHandler;
 import net.sourceforge.barbecue.output.OutputException;
 import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.Nullable;
 import org.krysalis.barcode4j.impl.upcean.EAN13Bean;
 import org.krysalis.barcode4j.output.bitmap.BitmapCanvasProvider;
 import org.modelmapper.ModelMapper;
@@ -120,6 +121,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
@@ -215,6 +217,19 @@ public class CommonUtils {
     @Autowired
     IMDMServiceAdapter mdmServiceAdapter;
 
+    private static final Map<String, ShipmentRequestedType> EMAIL_TYPE_MAPPING = new HashMap<>();
+
+    static {
+        EMAIL_TYPE_MAPPING.put(SHIPMENT_PULL_REQUESTED_EMAIL_TYPE, SHIPMENT_PULL_REQUESTED);
+        EMAIL_TYPE_MAPPING.put(SHIPMENT_PULL_ACCEPTED_EMAIL_TYPE, SHIPMENT_PULL_ACCEPTED);
+        EMAIL_TYPE_MAPPING.put(SHIPMENT_PULL_REJECTED_EMAIL_TYPE, SHIPMENT_PULL_REJECTED);
+        EMAIL_TYPE_MAPPING.put(SHIPMENT_PUSH_REQUESTED_EMAIL_TYPE, SHIPMENT_PUSH_REQUESTED);
+        EMAIL_TYPE_MAPPING.put(SHIPMENT_PUSH_ACCEPTED_EMAIL_TYPE, SHIPMENT_PUSH_ACCEPTED);
+        EMAIL_TYPE_MAPPING.put(SHIPMENT_PUSH_REJECTED_EMAIL_TYPE, SHIPMENT_PUSH_REJECTED);
+        EMAIL_TYPE_MAPPING.put(SHIPMENT_DETACH_EMAIL_TYPE, SHIPMENT_DETACH);
+        EMAIL_TYPE_MAPPING.put(SHIPMENT_PULL_WITHDRAW_EMAIL_TYPE, SHIPMENT_PULL_WITHDRAW);
+        EMAIL_TYPE_MAPPING.put(SHIPMENT_PUSH_WITHDRAW_EMAIL_TYPE, SHIPMENT_PUSH_WITHDRAW);
+    }
 
     @Value("${current-base-url}")
     private String baseUrl;
@@ -307,7 +322,7 @@ public class CommonUtils {
         List<FilterCriteria> innerFilters = criterias.get(0).getInnerFilter();
         Criteria criteria = Criteria.builder().fieldName(fieldName).operator(operator).value(value).build();
         FilterCriteria filterCriteria = FilterCriteria.builder().criteria(criteria).build();
-        if (innerFilters.size() > 0) {
+        if(!innerFilters.isEmpty()) {
             filterCriteria.setLogicOperator("and");
         }
         innerFilters.add(filterCriteria);
@@ -326,7 +341,7 @@ public class CommonUtils {
         List<FilterCriteria> innerFilters = criterias.get(0).getInnerFilter();
         Criteria criteria = Criteria.builder().fieldName(fieldName).operator(operator).value(value).build();
         FilterCriteria filterCriteria = FilterCriteria.builder().criteria(criteria).build();
-        if (innerFilters.size() > 0) {
+        if(!innerFilters.isEmpty()) {
             filterCriteria.setLogicOperator("or");
         }
         innerFilters.add(filterCriteria);
@@ -1150,6 +1165,7 @@ public class CommonUtils {
             case SHIPMENT_DETACH -> sendEmailShipmentDetach(sendEmailDto);
             case SHIPMENT_PULL_WITHDRAW -> sendEmailShipmentPullWithdraw(sendEmailDto);
             case SHIPMENT_PUSH_WITHDRAW -> sendEmailShipmentPushWithdraw(sendEmailDto);
+            default -> log.debug(Constants.SWITCH_DEFAULT_CASE_MSG, sendEmailDto.getType());
         }
     }
 
@@ -1176,22 +1192,25 @@ public class CommonUtils {
     }
 
     public void getToAndCcEmailMasterLists(Set<String> toEmailIds, Set<String> ccEmailIds, Map<Integer, V1TenantSettingsResponse> v1TenantSettingsMap, Integer tenantId, boolean isShipment) {
-        if (v1TenantSettingsMap.containsKey(tenantId)) {
+        if(v1TenantSettingsMap.containsKey(tenantId)) {
+            V1TenantSettingsResponse settings = v1TenantSettingsMap.get(tenantId);
             if (isShipment) {
-                if (!IsStringNullOrEmpty(v1TenantSettingsMap.get(tenantId).getShipmentAttachDefaultToMailId()))
-                    toEmailIds.addAll(Arrays.stream(v1TenantSettingsMap.get(tenantId).getShipmentAttachDefaultToMailId().split(",")).map(String::trim)
-                            .filter(s -> !s.isEmpty()).toList());
-                if (!IsStringNullOrEmpty(v1TenantSettingsMap.get(tenantId).getShipmentAttachDefaultCCMailId()))
-                    ccEmailIds.addAll(Arrays.stream(v1TenantSettingsMap.get(tenantId).getShipmentAttachDefaultCCMailId().split(",")).map(String::trim)
-                            .filter(s -> !s.isEmpty()).toList());
+                addEmails(toEmailIds, settings.getShipmentAttachDefaultToMailId());
+                addEmails(ccEmailIds, settings.getShipmentAttachDefaultCCMailId());
             } else {
-                if (!IsStringNullOrEmpty(v1TenantSettingsMap.get(tenantId).getConsolidationAttachDefaultToMailId()))
-                    toEmailIds.addAll(Arrays.stream(v1TenantSettingsMap.get(tenantId).getConsolidationAttachDefaultToMailId().split(",")).map(String::trim)
-                            .filter(s -> !s.isEmpty()).toList());
-                if (!IsStringNullOrEmpty(v1TenantSettingsMap.get(tenantId).getConsolidationAttachDefaultCCMailId()))
-                    ccEmailIds.addAll(Arrays.stream(v1TenantSettingsMap.get(tenantId).getConsolidationAttachDefaultCCMailId().split(",")).map(String::trim)
-                            .filter(s -> !s.isEmpty()).toList());
+                addEmails(toEmailIds, settings.getConsolidationAttachDefaultToMailId());
+                addEmails(ccEmailIds, settings.getConsolidationAttachDefaultCCMailId());
             }
+        }
+    }
+
+    private void addEmails(Set<String> emailIds, String emailString) {
+        if (!IsStringNullOrEmpty(emailString)) {
+            List<String> emails = Arrays.stream(emailString.split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .collect(Collectors.toList());
+            emailIds.addAll(emails);
         }
     }
 
@@ -1420,27 +1439,17 @@ public class CommonUtils {
         V1DataResponse v1DataResponse = iv1Service.getEmailTemplates(request);
         if (v1DataResponse != null) {
             List<EmailTemplatesRequest> emailTemplatesRequests = jsonHelper.convertValueToList(v1DataResponse.entities, EmailTemplatesRequest.class);
-            if (emailTemplatesRequests != null && !emailTemplatesRequests.isEmpty()) {
-                for (EmailTemplatesRequest emailTemplatesRequest : emailTemplatesRequests) {
-                    if (Objects.equals(emailTemplatesRequest.getType(), SHIPMENT_PULL_REQUESTED_EMAIL_TYPE))
-                        response.put(SHIPMENT_PULL_REQUESTED, emailTemplatesRequest);
-                    if (Objects.equals(emailTemplatesRequest.getType(), SHIPMENT_PULL_ACCEPTED_EMAIL_TYPE))
-                        response.put(SHIPMENT_PULL_ACCEPTED, emailTemplatesRequest);
-                    if (Objects.equals(emailTemplatesRequest.getType(), SHIPMENT_PULL_REJECTED_EMAIL_TYPE))
-                        response.put(SHIPMENT_PULL_REJECTED, emailTemplatesRequest);
-                    if (Objects.equals(emailTemplatesRequest.getType(), SHIPMENT_PUSH_REQUESTED_EMAIL_TYPE))
-                        response.put(SHIPMENT_PUSH_REQUESTED, emailTemplatesRequest);
-                    if (Objects.equals(emailTemplatesRequest.getType(), SHIPMENT_PUSH_ACCEPTED_EMAIL_TYPE))
-                        response.put(SHIPMENT_PUSH_ACCEPTED, emailTemplatesRequest);
-                    if (Objects.equals(emailTemplatesRequest.getType(), SHIPMENT_PUSH_REJECTED_EMAIL_TYPE))
-                        response.put(SHIPMENT_PUSH_REJECTED, emailTemplatesRequest);
-                    if (Objects.equals(emailTemplatesRequest.getType(), SHIPMENT_DETACH_EMAIL_TYPE))
-                        response.put(SHIPMENT_DETACH, emailTemplatesRequest);
-                    if (Objects.equals(emailTemplatesRequest.getType(), SHIPMENT_PULL_WITHDRAW_EMAIL_TYPE))
-                        response.put(SHIPMENT_PULL_WITHDRAW, emailTemplatesRequest);
-                    if (Objects.equals(emailTemplatesRequest.getType(), SHIPMENT_PUSH_WITHDRAW_EMAIL_TYPE))
-                        response.put(SHIPMENT_PUSH_WITHDRAW, emailTemplatesRequest);
-                }
+            if(emailTemplatesRequests != null && !emailTemplatesRequests.isEmpty()) {
+                populateEmailTemplateInResponseMap(response, emailTemplatesRequests);
+            }
+        }
+    }
+
+    private void populateEmailTemplateInResponseMap(Map<ShipmentRequestedType, EmailTemplatesRequest> response, List<EmailTemplatesRequest> emailTemplatesRequests) {
+        for (EmailTemplatesRequest emailTemplatesRequest : emailTemplatesRequests) {
+            ShipmentRequestedType shipmentRequestedType = EMAIL_TYPE_MAPPING.get(emailTemplatesRequest.getType());
+            if (shipmentRequestedType != null) {
+                response.put(shipmentRequestedType, emailTemplatesRequest);
             }
         }
     }
@@ -1601,16 +1610,8 @@ public class CommonUtils {
             if (!Objects.isNull(carrierDetails) && (Objects.isNull(oldCarrierDetails) || !Objects.equals(carrierDetails.getOrigin(), oldCarrierDetails.getOrigin())
                     || !Objects.equals(carrierDetails.getOriginPort(), oldCarrierDetails.getOriginPort())
                     || !Objects.equals(carrierDetails.getDestination(), oldCarrierDetails.getDestination())
-                    || !Objects.equals(carrierDetails.getDestinationPort(), oldCarrierDetails.getDestinationPort()))) {
-                Set<String> unlocoRequests = new HashSet<>();
-                if (!IsStringNullOrEmpty(carrierDetails.getOrigin()))
-                    unlocoRequests.add(carrierDetails.getOrigin());
-                if (!IsStringNullOrEmpty(carrierDetails.getOriginPort()))
-                    unlocoRequests.add(carrierDetails.getOriginPort());
-                if (!IsStringNullOrEmpty(carrierDetails.getDestination()))
-                    unlocoRequests.add(carrierDetails.getDestination());
-                if (!IsStringNullOrEmpty(carrierDetails.getDestinationPort()))
-                    unlocoRequests.add(carrierDetails.getDestinationPort());
+                    || !Objects.equals(carrierDetails.getDestinationPort(), oldCarrierDetails.getDestinationPort()) )) {
+                Set<String> unlocoRequests = getUnlocoRequests(carrierDetails);
                 Map<String, EntityTransferUnLocations> unlocationsMap = masterDataUtils.getLocationDataFromCache(unlocoRequests, EntityTransferConstants.LOCATION_SERVICE_GUID);
                 EntityTransferUnLocations pol = unlocationsMap.get(carrierDetails.getOriginPort());
                 EntityTransferUnLocations pod = unlocationsMap.get(carrierDetails.getDestinationPort());
@@ -1628,6 +1629,19 @@ public class CommonUtils {
         } catch (Exception e) {
             log.error("Error while updating unlocCode for Carrier with Id {} due to {}", carrierDetails.getId(), e.getMessage());
         }
+    }
+
+    private Set<String> getUnlocoRequests(CarrierDetails carrierDetails) {
+        Set<String> unlocoRequests = new HashSet<>();
+        if(!IsStringNullOrEmpty(carrierDetails.getOrigin()))
+            unlocoRequests.add(carrierDetails.getOrigin());
+        if(!IsStringNullOrEmpty(carrierDetails.getOriginPort()))
+            unlocoRequests.add(carrierDetails.getOriginPort());
+        if(!IsStringNullOrEmpty(carrierDetails.getDestination()))
+            unlocoRequests.add(carrierDetails.getDestination());
+        if(!IsStringNullOrEmpty(carrierDetails.getDestinationPort()))
+            unlocoRequests.add(carrierDetails.getDestinationPort());
+        return unlocoRequests;
     }
 
     public void updateCarrierUnLocData(CarrierDetails carrierDetails, Map<String, EntityTransferUnLocations> unlocationsMap) {
@@ -1811,15 +1825,15 @@ public class CommonUtils {
     public TaskCreateResponse createTask(ShipmentDetails shipmentDetails, Integer roleId)
             throws RunnerException {
         DGTaskCreateRequest taskRequest = DGTaskCreateRequest
-                .builder()
-                .entityType(Shipments)
-                .entityId(shipmentDetails.getId().toString())
-                .roleId(roleId.toString())
-                .taskType(OCEAN_DG_TASKTYPE)
-                .taskStatus(PENDING_ACTION)
-                .userId(UserContext.getUser().getUserId())
-                .tenantId(UserContext.getUser().getTenantId().toString())
-                .build();
+            .builder()
+            .entityType(SHIPMENTS_WITH_SQ_BRACKETS)
+            .entityId(shipmentDetails.getId().toString())
+            .roleId(roleId.toString())
+            .taskType(OCEAN_DG_TASKTYPE)
+            .taskStatus(PENDING_ACTION)
+            .userId(UserContext.getUser().getUserId())
+            .tenantId(UserContext.getUser().getTenantId().toString())
+            .build();
 
         try {
             TaskCreateResponse taskCreateResponse = iv1Service.createTask(taskRequest);
@@ -2144,63 +2158,7 @@ public class CommonUtils {
                 Method getter = ShipmentDetails.class.getMethod("get" + capitalizedField);
                 Object value = getter.invoke(shipmentDetail);
 
-                Object dtoValue = null;
-                if (value instanceof CarrierDetails) {
-                    dtoValue = modelMapper.map(value, CarrierDetailResponse.class);
-                } else if (value instanceof AdditionalDetails) {
-                    dtoValue = modelMapper.map(value, AdditionalDetailResponse.class);
-                } else if (value instanceof PickupDeliveryDetails) {
-                    dtoValue = modelMapper.map(value, PickupDeliveryDetailsResponse.class);
-                } else if (value instanceof Parties) {
-                    dtoValue = modelMapper.map(value, PartiesResponse.class);
-                }
-
-                if (value instanceof List<?>) {
-                    List<?> list = (List<?>) value;
-                    if (!list.isEmpty() && list.get(0) instanceof Containers) {
-                        dtoValue = modelMapper.map(value, new TypeToken<List<ContainerResponse>>() {
-                        }.getType());
-                    } else if (!list.isEmpty() && list.get(0) instanceof BookingCarriage) {
-                        dtoValue = modelMapper.map(value, new TypeToken<List<BookingCarriageResponse>>() {
-                        }.getType());
-                    } else if (!list.isEmpty() && list.get(0) instanceof ELDetails) {
-                        dtoValue = modelMapper.map(value, new TypeToken<List<ELDetailsResponse>>() {
-                        }.getType());
-                    } else if (!list.isEmpty() && list.get(0) instanceof Events) {
-                        dtoValue = modelMapper.map(value, new TypeToken<List<EventsResponse>>() {
-                        }.getType());
-                    } else if (!list.isEmpty() && list.get(0) instanceof Packing) {
-                        dtoValue = modelMapper.map(value, new TypeToken<List<PackingResponse>>() {
-                        }.getType());
-                    } else if (!list.isEmpty() && list.get(0) instanceof ReferenceNumbers) {
-                        dtoValue = modelMapper.map(value, new TypeToken<List<ReferenceNumbersResponse>>() {
-                        }.getType());
-                    } else if (!list.isEmpty() && list.get(0) instanceof Routings) {
-                        dtoValue = modelMapper.map(value, new TypeToken<List<RoutingsResponse>>() {
-                        }.getType());
-                    } else if (!list.isEmpty() && list.get(0) instanceof ServiceDetails) {
-                        dtoValue = modelMapper.map(value, new TypeToken<List<ServiceDetailsResponse>>() {
-                        }.getType());
-                    } else if (!list.isEmpty() && list.get(0) instanceof TruckDriverDetails) {
-                        dtoValue = modelMapper.map(value, new TypeToken<List<TruckDriverDetailsResponse>>() {
-                        }.getType());
-                    } else if (!list.isEmpty() && list.get(0) instanceof Notes) {
-                        dtoValue = modelMapper.map(value, new TypeToken<List<NotesResponse>>() {
-                        }.getType());
-                    } else if (!list.isEmpty() && list.get(0) instanceof Jobs) {
-                        dtoValue = modelMapper.map(value, new TypeToken<List<JobResponse>>() {
-                        }.getType());
-                    } else if (!list.isEmpty() && list.get(0) instanceof ConsolidationDetails) {
-                        dtoValue = modelMapper.map(value, new TypeToken<List<ConsolidationListResponse>>() {
-                        }.getType());
-                    } else if (!list.isEmpty() && list.get(0) instanceof Parties) {
-                        dtoValue = modelMapper.map(value, new TypeToken<List<PartiesResponse>>() {
-                        }.getType());
-                    } else if (!list.isEmpty() && list.get(0) instanceof ShipmentOrder) {
-                        dtoValue = modelMapper.map(value, new TypeToken<List<ShipmentOrderResponse>>() {
-                        }.getType());
-                    }
-                }
+                Object dtoValue = getDtoValue(value);
                 Class<?> paramType;
                 if (dtoValue instanceof List<?> list && !list.isEmpty()) {
                     paramType = List.class;
@@ -2217,6 +2175,54 @@ public class CommonUtils {
             }
         });
         return shipmentDetailsResponse;
+    }
+
+    @Nullable
+    private Object getDtoValue(Object value) {
+        Object dtoValue = null;
+        if(value instanceof CarrierDetails) {
+            dtoValue = modelMapper.map(value, CarrierDetailResponse.class);
+        }
+        else if(value instanceof AdditionalDetails) {
+            dtoValue = modelMapper.map(value, AdditionalDetailResponse.class);
+        }
+        else if(value instanceof PickupDeliveryDetails) {
+            dtoValue = modelMapper.map(value, PickupDeliveryDetailsResponse.class);
+        }
+        else if(value instanceof Parties) {
+            dtoValue = modelMapper.map(value, PartiesResponse.class);
+        }
+
+        if(value instanceof List<?>) {
+            List<?> list = (List<?>) value;
+            if (!list.isEmpty()) {
+                Class<?> firstElementClass = list.get(0).getClass();
+                Type targetType = getTypeTokenMap().get(firstElementClass);
+                if (targetType != null) {
+                    dtoValue = modelMapper.map(value, targetType);
+                }
+            }
+        }
+        return dtoValue;
+    }
+
+    private Map<Class<?>, Type> getTypeTokenMap() {
+        Map<Class<?>, Type> typeTokenMap = new HashMap<>();
+        typeTokenMap.put(Containers.class, new TypeToken<List<ContainerResponse>>() {}.getType());
+        typeTokenMap.put(BookingCarriage.class, new TypeToken<List<BookingCarriageResponse>>() {}.getType());
+        typeTokenMap.put(ELDetails.class, new TypeToken<List<ELDetailsResponse>>() {}.getType());
+        typeTokenMap.put(Events.class, new TypeToken<List<EventsResponse>>() {}.getType());
+        typeTokenMap.put(Packing.class, new TypeToken<List<PackingResponse>>() {}.getType());
+        typeTokenMap.put(ReferenceNumbers.class, new TypeToken<List<ReferenceNumbersResponse>>() {}.getType());
+        typeTokenMap.put(Routings.class, new TypeToken<List<RoutingsResponse>>() {}.getType());
+        typeTokenMap.put(ServiceDetails.class, new TypeToken<List<ServiceDetailsResponse>>() {}.getType());
+        typeTokenMap.put(TruckDriverDetails.class, new TypeToken<List<TruckDriverDetailsResponse>>() {}.getType());
+        typeTokenMap.put(Notes.class, new TypeToken<List<NotesResponse>>() {}.getType());
+        typeTokenMap.put(Jobs.class, new TypeToken<List<JobResponse>>() {}.getType());
+        typeTokenMap.put(ConsolidationDetails.class, new TypeToken<List<ConsolidationListResponse>>() {}.getType());
+        typeTokenMap.put(Parties.class, new TypeToken<List<PartiesResponse>>() {}.getType());
+        typeTokenMap.put(ShipmentOrder.class, new TypeToken<List<ShipmentOrderResponse>>() {}.getType());
+        return typeTokenMap;
     }
 
 
@@ -2242,11 +2248,8 @@ public class CommonUtils {
         Optional<ShipmentDetails> optionalShipmentDetails;
         Optional<ConsolidationDetails> optionalConsolidationDetails;
 
-        if (Objects.equals(request.getEntityType(), Constants.SHIPMENT) && (request.getEntityId() != null || request.getEntityGuid() != null)) {
-            if (request.getEntityId() != null)
-                optionalShipmentDetails = shipmentDao.findShipmentByIdWithQuery(request.getEntityId());
-            else
-                optionalShipmentDetails = shipmentDao.findShipmentByGuidWithQuery(UUID.fromString(request.getEntityGuid()));
+        if (Objects.equals(request.getEntityType(), Constants.SHIPMENT) && (request.getEntityId() != null || request.getEntityGuid()!=null)) {
+            optionalShipmentDetails = getShipmentDetails(request);
 
             if (optionalShipmentDetails.isEmpty()) {
                 return new ArrayList<>();
@@ -2260,11 +2263,8 @@ public class CommonUtils {
             }
 
             processConsolidationDetails(shipmentDetails, request.getIsReceivingBranch(), request.getIsTriangulationBranch(), otherIds);
-        } else if (Objects.equals(request.getEntityType(), Constants.CONSOLIDATION) && (request.getEntityId() != null || request.getEntityGuid() != null)) {
-            if (request.getEntityId() != null)
-                optionalConsolidationDetails = consolidationDetailsDao.findConsolidationByIdWithQuery(request.getEntityId());
-            else
-                optionalConsolidationDetails = consolidationDetailsDao.findConsolidationByGuidWithQuery(UUID.fromString(request.getEntityGuid()));
+        } else if (Objects.equals(request.getEntityType(), Constants.CONSOLIDATION) && (request.getEntityId() != null || request.getEntityGuid()!=null)) {
+            optionalConsolidationDetails = getConsolidationDetails(request);
             if (optionalConsolidationDetails.isEmpty()) {
                 return new ArrayList<>();
             }
@@ -2283,13 +2283,35 @@ public class CommonUtils {
         if (receivingBranch != null) {
             tenantIds.add(receivingBranch);
         }
-        if (!CommonUtils.listIsNullOrEmpty(triangulationPartners)) {
-            tenantIds.addAll(triangulationPartners);
-        }
-        if (!CommonUtils.listIsNullOrEmpty(otherIds)) {
-            tenantIds.addAll(otherIds);
-        }
+        addAllIfNotEmpty(tenantIds, triangulationPartners);
+        addAllIfNotEmpty(tenantIds, otherIds);
         return tenantIds.stream().filter(Objects::nonNull).toList();
+    }
+
+    private Optional<ShipmentDetails> getShipmentDetails(ListCousinBranchesForEtRequest request) {
+        Optional<ShipmentDetails> optionalShipmentDetails;
+        if (request.getEntityId() != null) {
+            optionalShipmentDetails = shipmentDao.findShipmentByIdWithQuery(request.getEntityId());
+        } else {
+            optionalShipmentDetails = shipmentDao.findShipmentByGuidWithQuery(UUID.fromString(request.getEntityGuid()));
+        }
+        return optionalShipmentDetails;
+    }
+
+    private Optional<ConsolidationDetails> getConsolidationDetails(ListCousinBranchesForEtRequest request) {
+        Optional<ConsolidationDetails> optionalConsolidationDetails;
+        if (request.getEntityId() != null) {
+            optionalConsolidationDetails = consolidationDetailsDao.findConsolidationByIdWithQuery(request.getEntityId());
+        } else {
+            optionalConsolidationDetails = consolidationDetailsDao.findConsolidationByGuidWithQuery(UUID.fromString(request.getEntityGuid()));
+        }
+        return optionalConsolidationDetails;
+    }
+
+    private void addAllIfNotEmpty(Set<Long> set, List<Long> list) {
+        if (list != null && !list.isEmpty()) {
+            set.addAll(list);
+        }
     }
 
     private void processConsolidationDetails(ShipmentDetails shipmentDetails, Boolean isReceivingBranch, Boolean isTriangulationBranch, List<Long> otherIds) {

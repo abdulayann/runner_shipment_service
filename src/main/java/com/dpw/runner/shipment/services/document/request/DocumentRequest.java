@@ -9,6 +9,7 @@ import java.io.Serializable;
 @Getter
 @Setter @Generated
 public class DocumentRequest<T> implements Serializable {
+    @SuppressWarnings("java:S1948")
     private T data;
     private DocumentOption options;
 }

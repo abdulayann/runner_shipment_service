@@ -11,10 +11,12 @@ import com.dpw.runner.shipment.services.validator.enums.Operators;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.json.*;
+import javax.validation.constraints.Null;
 import java.io.StringReader;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -313,23 +315,19 @@ public class ValidatorUtility {
 
             switch (schemaValue) {
                 case OBJECT:
-                    if (fieldValue.getValueType() != JsonValue.ValueType.OBJECT)
-                        errors.add(String.format(ErrorConstants.INVALID_FIELD_TYPE_VALIDATION, at, fieldValue.getValueType(), schemaValue));
+                    validateJsonValueType(at, fieldValue, errors, schemaValue, JsonValue.ValueType.OBJECT);
                     break;
 
                 case ARRAY:
-                    if (fieldValue.getValueType() != JsonValue.ValueType.ARRAY)
-                        errors.add(String.format(ErrorConstants.INVALID_FIELD_TYPE_VALIDATION, at, fieldValue.getValueType(), schemaValue));
+                    validateJsonValueType(at, fieldValue, errors, schemaValue, JsonValue.ValueType.ARRAY);
                     break;
 
                 case STRING:
-                    if (fieldValue.getValueType() != JsonValue.ValueType.STRING)
-                        errors.add(String.format(ErrorConstants.INVALID_FIELD_TYPE_VALIDATION, at, fieldValue.getValueType(), schemaValue));
+                    validateJsonValueType(at, fieldValue, errors, schemaValue, JsonValue.ValueType.STRING);
                     break;
 
                 case NUMBER:
-                    if (fieldValue.getValueType() != JsonValue.ValueType.NUMBER)
-                        errors.add(String.format(ErrorConstants.INVALID_FIELD_TYPE_VALIDATION, at, fieldValue.getValueType(), schemaValue));
+                    validateJsonValueType(at, fieldValue, errors, schemaValue, JsonValue.ValueType.NUMBER);
                     break;
 
                 case DATE:
@@ -348,14 +346,19 @@ public class ValidatorUtility {
                     break;
 
                 case NULL:
-                    if (fieldValue.getValueType() != JsonValue.ValueType.NULL)
-                        errors.add(String.format(ErrorConstants.INVALID_FIELD_TYPE_VALIDATION, at, fieldValue.getValueType(), schemaValue));
+                    validateJsonValueType(at, fieldValue, errors, schemaValue, JsonValue.ValueType.NULL);
                     break;
 
                 default:
             }
         }
         return errors;
+    }
+
+    private void validateJsonValueType(String at, JsonValue fieldValue, Set<String> errors, JsonTypes schemaValue, JsonValue.ValueType expectedType) {
+        if (fieldValue.getValueType() != expectedType) {
+            errors.add(String.format(ErrorConstants.INVALID_FIELD_TYPE_VALIDATION, at, fieldValue.getValueType(), schemaValue));
+        }
     }
 
 
@@ -383,132 +386,158 @@ public class ValidatorUtility {
                 switch (operator) {
 
                     case EQUALS:
-                        switch (currentValue.getValueType()) {
-                            // For comparing String & Date-time, behaviour would be similar as both are coming as type string and comparison process is same.
-                            case STRING:
-                                if (!jsonMap.containsKey(compareWith) || !jsonMap.get(compareWith).toString().equalsIgnoreCase(jsonObject.getString(at)))
-                                    errors.add(String.format(ErrorConstants.INVALID_COMPARISION_VALIDATION, at, compareWith));
-                                break;
-
-                            case NUMBER:
-                                if (!jsonMap.containsKey(compareWith) || ((Integer) jsonMap.get(compareWith) != jsonObject.getInt(at)))
-                                    errors.add(String.format(ErrorConstants.INVALID_COMPARISION_VALIDATION, at, compareWith));
-                                break;
-
-                            case TRUE:
-
-                            case FALSE:
-                                if (! jsonMap.containsKey(compareWith) || ((Boolean) jsonMap.get(compareWith) != jsonObject.getBoolean(at)))
-                                    errors.add(String.format(ErrorConstants.INVALID_COMPARISION_VALIDATION, at, compareWith));
-                                break;
-                            default:
-
-                        }
+                        validateEqualsCase(jsonObject, at, jsonMap, currentValue, compareWith, errors);
                         break;
 
                     case NOT_EQUALS:
-                        switch (currentValue.getValueType()) {
-                            // For comparing String & Date-time, behaviour would be similar as both are coming as type string and comparison process is same.
-                            case STRING:
-                                if (!jsonMap.containsKey(compareWith) || jsonMap.get(compareWith).toString().equalsIgnoreCase(jsonObject.getString(at)))
-                                    errors.add(String.format(ErrorConstants.INVALID_COMPARISION_VALIDATION, at, compareWith));
-                                break;
-
-                            case NUMBER:
-                                if (!jsonMap.containsKey(compareWith) || ((Integer) jsonMap.get(compareWith) == jsonObject.getInt(at)))
-                                    errors.add(String.format(ErrorConstants.INVALID_COMPARISION_VALIDATION, at, compareWith));
-                                break;
-
-                            case TRUE:
-
-                            case FALSE:
-                                if (!jsonMap.containsKey(compareWith) || ((Boolean) jsonMap.get(compareWith) == jsonObject.getBoolean(at)))
-                                    errors.add(String.format(ErrorConstants.INVALID_COMPARISION_VALIDATION, at, compareWith));
-                                break;
-                            default:
-                        }
+                        validateNotEqualsCase(jsonObject, at, jsonMap, currentValue, compareWith, errors);
                         break;
 
                     case LESSER_THAN:
-                        switch (currentValue.getValueType()) {
-                            case NUMBER:
-                                if (!jsonMap.containsKey(compareWith) || jsonObject.getInt(at) >= ((Integer) jsonMap.get(compareWith)))
-                                    errors.add(String.format(ErrorConstants.INVALID_COMPARISION_VALIDATION, at, compareWith));
-                                break;
-
-                            // Comparison of Date-time fields
-                            case STRING:
-                                if (!jsonMap.containsKey(compareWith) && isValidaDateTime(jsonObject.getString(at)) && isValidaDateTime(jsonObject.getString(compareWith))
-                                        && !isValidDateComparison(jsonObject.getString(at), jsonObject.getString(compareWith), Operators.LESSER_THAN)) {
-                                    errors.add(String.format(ErrorConstants.INVALID_COMPARISION_VALIDATION, at, compareWith));
-                                }
-                                break;
-                            default:
-                        }
+                        validateLesserThanCase(jsonObject, at, jsonMap, currentValue, compareWith, errors);
                         break;
 
                     case LESSER_THAN_EQUALS:
-                        switch (currentValue.getValueType()) {
-                            case NUMBER:
-                                if (!jsonMap.containsKey(compareWith) || jsonObject.getInt(at) > ((Integer) jsonMap.get(compareWith))) {
-                                    errors.add(String.format(ErrorConstants.INVALID_COMPARISION_VALIDATION, at, compareWith));
-                                }
-                                break;
-
-                            // Comparison of Date-time fields
-                            case STRING:
-                                if (jsonMap.containsKey(compareWith) && isValidaDateTime(jsonObject.getString(at)) && isValidaDateTime(String.valueOf(jsonMap.get(compareWith)))
-                                        && !isValidDateComparison(jsonObject.getString(at), String.valueOf(jsonMap.get(compareWith)), Operators.LESSER_THAN_EQUALS)) {
-                                    errors.add(String.format(ErrorConstants.INVALID_COMPARISION_VALIDATION, at, compareWith));
-                                }
-                                break;
-                            default:
-                        }
+                        validateLesserThanEqualsCase(jsonObject, at, jsonMap, currentValue, compareWith, errors);
                         break;
 
                     case GREATER_THAN:
-                        switch (currentValue.getValueType()) {
-                            case NUMBER:
-                                if (!jsonMap.containsKey(compareWith) || jsonObject.getInt(at) <= ((Integer) jsonMap.get(compareWith))) {
-                                    errors.add(String.format(ErrorConstants.INVALID_COMPARISION_VALIDATION, at, compareWith));
-                                }
-                                break;
-
-                            // Comparison of Date-time fields
-                            case STRING:
-                                if (jsonMap.containsKey(compareWith) && isValidaDateTime(jsonObject.getString(at)) && isValidaDateTime(jsonMap.get(compareWith).toString())
-                                        && !isValidDateComparison(jsonObject.getString(at), String.valueOf(jsonMap.get(compareWith)), Operators.GREATER_THAN)) {
-                                    errors.add(String.format(ErrorConstants.INVALID_COMPARISION_VALIDATION, at, compareWith));
-                                }
-                                break;
-                            default:
-                        }
+                        validateGreaterThanCase(jsonObject, at, jsonMap, currentValue, compareWith, errors);
                         break;
 
                     case GREATER_THAN_EQUALS:
-                        switch (currentValue.getValueType()) {
-                            case NUMBER:
-                                if (!jsonMap.containsKey(compareWith) || jsonObject.getInt(at) < ((Integer) jsonMap.get(compareWith))) {
-                                    errors.add(String.format(ErrorConstants.INVALID_COMPARISION_VALIDATION, at, compareWith));
-                                }
-                                break;
-
-                            // Comparison of Date-time fields
-                            case STRING:
-                                if (jsonMap.containsKey(compareWith) && isValidaDateTime(jsonObject.getString(at)) && isValidaDateTime(StringUtility.convertToString(jsonMap.get(compareWith)))
-                                        && !isValidDateComparison(jsonObject.getString(at), String.valueOf(jsonMap.get(compareWith)), Operators.GREATER_THAN_EQUALS)) {
-                                    errors.add(String.format(ErrorConstants.INVALID_COMPARISION_VALIDATION, at, compareWith));
-                                }
-                                break;
-                            default:
-                        }
+                        validateGreaterThanEqualsCase(jsonObject, at, jsonMap, currentValue, compareWith, errors);
                         break;
                     default:
+                        break;
                 }
             }
         }
 
         return errors;
+    }
+
+    private void validateGreaterThanEqualsCase(JsonObject jsonObject, String at, Map<String, Object> jsonMap, JsonValue currentValue, String compareWith, Set<String> errors) {
+        switch (currentValue.getValueType()) {
+            case NUMBER:
+                if (!jsonMap.containsKey(compareWith) || jsonObject.getInt(at) < ((Integer) jsonMap.get(compareWith))) {
+                    errors.add(String.format(ErrorConstants.INVALID_COMPARISION_VALIDATION, at, compareWith));
+                }
+                break;
+
+            // Comparison of Date-time fields
+            case STRING:
+                if (jsonMap.containsKey(compareWith) && isValidaDateTime(jsonObject.getString(at)) && isValidaDateTime(StringUtility.convertToString(jsonMap.get(compareWith)))
+                        && !isValidDateComparison(jsonObject.getString(at), String.valueOf(jsonMap.get(compareWith)), Operators.GREATER_THAN_EQUALS)) {
+                    errors.add(String.format(ErrorConstants.INVALID_COMPARISION_VALIDATION, at, compareWith));
+                }
+                break;
+            default:
+                break;
+        }
+    }
+
+    private void validateGreaterThanCase(JsonObject jsonObject, String at, Map<String, Object> jsonMap, JsonValue currentValue, String compareWith, Set<String> errors) {
+        switch (currentValue.getValueType()) {
+            case NUMBER:
+                if (!jsonMap.containsKey(compareWith) || jsonObject.getInt(at) <= ((Integer) jsonMap.get(compareWith))) {
+                    errors.add(String.format(ErrorConstants.INVALID_COMPARISION_VALIDATION, at, compareWith));
+                }
+                break;
+
+            // Comparison of Date-time fields
+            case STRING:
+                if (jsonMap.containsKey(compareWith) && isValidaDateTime(jsonObject.getString(at)) && isValidaDateTime(jsonMap.get(compareWith).toString())
+                        && !isValidDateComparison(jsonObject.getString(at), String.valueOf(jsonMap.get(compareWith)), Operators.GREATER_THAN)) {
+                    errors.add(String.format(ErrorConstants.INVALID_COMPARISION_VALIDATION, at, compareWith));
+                }
+                break;
+            default:
+                break;
+        }
+    }
+
+    private void validateLesserThanEqualsCase(JsonObject jsonObject, String at, Map<String, Object> jsonMap, JsonValue currentValue, String compareWith, Set<String> errors) {
+        switch (currentValue.getValueType()) {
+            case NUMBER:
+                if (!jsonMap.containsKey(compareWith) || jsonObject.getInt(at) > ((Integer) jsonMap.get(compareWith))) {
+                    errors.add(String.format(ErrorConstants.INVALID_COMPARISION_VALIDATION, at, compareWith));
+                }
+                break;
+
+            // Comparison of Date-time fields
+            case STRING:
+                if (jsonMap.containsKey(compareWith) && isValidaDateTime(jsonObject.getString(at)) && isValidaDateTime(String.valueOf(jsonMap.get(compareWith)))
+                        && !isValidDateComparison(jsonObject.getString(at), String.valueOf(jsonMap.get(compareWith)), Operators.LESSER_THAN_EQUALS)) {
+                    errors.add(String.format(ErrorConstants.INVALID_COMPARISION_VALIDATION, at, compareWith));
+                }
+                break;
+            default:
+                break;
+        }
+    }
+
+    private void validateLesserThanCase(JsonObject jsonObject, String at, Map<String, Object> jsonMap, JsonValue currentValue, String compareWith, Set<String> errors) {
+        switch (currentValue.getValueType()) {
+            case NUMBER:
+                if (!jsonMap.containsKey(compareWith) || jsonObject.getInt(at) >= ((Integer) jsonMap.get(compareWith)))
+                    errors.add(String.format(ErrorConstants.INVALID_COMPARISION_VALIDATION, at, compareWith));
+                break;
+
+            // Comparison of Date-time fields
+            case STRING:
+                if (!jsonMap.containsKey(compareWith) && isValidaDateTime(jsonObject.getString(at)) && isValidaDateTime(jsonObject.getString(compareWith))
+                        && !isValidDateComparison(jsonObject.getString(at), jsonObject.getString(compareWith), Operators.LESSER_THAN)) {
+                    errors.add(String.format(ErrorConstants.INVALID_COMPARISION_VALIDATION, at, compareWith));
+                }
+                break;
+            default:
+                break;
+        }
+    }
+
+    private void validateNotEqualsCase(JsonObject jsonObject, String at, Map<String, Object> jsonMap, JsonValue currentValue, String compareWith, Set<String> errors) {
+        switch (currentValue.getValueType()) {
+            // For comparing String & Date-time, behaviour would be similar as both are coming as type string and comparison process is same.
+            case STRING:
+                if (!jsonMap.containsKey(compareWith) || jsonMap.get(compareWith).toString().equalsIgnoreCase(jsonObject.getString(at)))
+                    errors.add(String.format(ErrorConstants.INVALID_COMPARISION_VALIDATION, at, compareWith));
+                break;
+
+            case NUMBER:
+                if (!jsonMap.containsKey(compareWith) || ((Integer) jsonMap.get(compareWith) == jsonObject.getInt(at)))
+                    errors.add(String.format(ErrorConstants.INVALID_COMPARISION_VALIDATION, at, compareWith));
+                break;
+
+            case TRUE, FALSE:
+                if (!jsonMap.containsKey(compareWith) || ((Boolean) jsonMap.get(compareWith) == jsonObject.getBoolean(at)))
+                    errors.add(String.format(ErrorConstants.INVALID_COMPARISION_VALIDATION, at, compareWith));
+                break;
+            default:
+                break;
+        }
+    }
+
+    private void validateEqualsCase(JsonObject jsonObject, String at, Map<String, Object> jsonMap, JsonValue currentValue, String compareWith, Set<String> errors) {
+        switch (currentValue.getValueType()) {
+            // For comparing String & Date-time, behaviour would be similar as both are coming as type string and comparison process is same.
+            case STRING:
+                if (!jsonMap.containsKey(compareWith) || !jsonMap.get(compareWith).toString().equalsIgnoreCase(jsonObject.getString(at)))
+                    errors.add(String.format(ErrorConstants.INVALID_COMPARISION_VALIDATION, at, compareWith));
+                break;
+
+            case NUMBER:
+                if (!jsonMap.containsKey(compareWith) || ((Integer) jsonMap.get(compareWith) != jsonObject.getInt(at)))
+                    errors.add(String.format(ErrorConstants.INVALID_COMPARISION_VALIDATION, at, compareWith));
+                break;
+
+            case TRUE, FALSE:
+                if (! jsonMap.containsKey(compareWith) || ((Boolean) jsonMap.get(compareWith) != jsonObject.getBoolean(at)))
+                    errors.add(String.format(ErrorConstants.INVALID_COMPARISION_VALIDATION, at, compareWith));
+                break;
+            default:
+                break;
+        }
     }
 
     private boolean isValidDateComparison(String value, String compareTo, Operators operators) {
@@ -581,7 +610,7 @@ public class ValidatorUtility {
                 default:
             }
 
-            if (isValid) {
+            if (Boolean.TRUE.equals(isValid)) {
                 return errors;
             }
         }
@@ -601,54 +630,10 @@ public class ValidatorUtility {
 
                     switch (compareWithValue.getValueType()) {
                         case STRING:
-                            String fieldValueString = String.valueOf(jsonMap.get(compareWith)).replace("\"", "");
-                            switch (operator) {
-                                case IN:
-                                    JsonArray enumList = schemaObject.getJsonArray(ValidatorConstants.VALUE);
-                                    Set<String> enumStringList = enumList.stream().map(c -> c.toString().replace("\"", "")).collect(Collectors.toSet());
-                                    if (!enumStringList.isEmpty() && !enumStringList.contains(fieldValueString))
-                                        return false;
-                                    break;
-
-                                case EQUALS:
-                                    String compareToValue = schemaObject.getString(ValidatorConstants.VALUE);
-                                    if (!fieldValueString.equals(compareToValue))
-                                        return false;
-                                    break;
-
-                                case NOT_EQUALS:
-                                    String compareToValue1 = schemaObject.getString(ValidatorConstants.VALUE);
-                                    if (fieldValueString.equals(compareToValue1))
-                                        return false;
-                                    break;
-                                default:
-                            }
-                            break;
+                            return validateAdditionalStringCompare(jsonMap, compareWith, operator, schemaObject);
 
                         case NUMBER:
-                            Integer fieldValueInteger = Integer.parseInt(String.valueOf(jsonMap.get(compareWith)));
-                            switch (operator) {
-                                case IN:
-                                    JsonArray enumList = schemaObject.getJsonArray(ValidatorConstants.VALUE);
-                                    Set enumIntegerList = enumList.stream().map(c -> Integer.parseInt(c.toString())).collect(Collectors.toSet());
-                                    if (!enumIntegerList.isEmpty() && !enumIntegerList.contains(fieldValueInteger))
-                                        return false;
-
-                                    break;
-                                case EQUALS:
-                                    Integer compareToValue = schemaObject.getInt(ValidatorConstants.VALUE);
-                                    if (compareToValue != fieldValueInteger)
-                                        return false;
-                                    break;
-
-                                case NOT_EQUALS:
-                                    Integer compareToValue1 = schemaObject.getInt(ValidatorConstants.VALUE);
-                                    if (compareToValue1 == fieldValueInteger)
-                                        return false;
-                                    break;
-                                default:
-                            }
-                            break;
+                            return validateAdditionalNumberCompare(jsonMap, compareWith, operator, schemaObject);
                         default:
                     }
                 }
@@ -657,6 +642,58 @@ public class ValidatorUtility {
 
         }
 
+        return true;
+    }
+
+    private Boolean validateAdditionalNumberCompare(Map jsonMap, String compareWith, Operators operator, JsonObject schemaObject) {
+        Integer fieldValueInteger = Integer.parseInt(String.valueOf(jsonMap.get(compareWith)));
+        switch (operator) {
+            case IN:
+                JsonArray enumList = schemaObject.getJsonArray(ValidatorConstants.VALUE);
+                Set enumIntegerList = enumList.stream().map(c -> Integer.parseInt(c.toString())).collect(Collectors.toSet());
+                if (!enumIntegerList.isEmpty() && !enumIntegerList.contains(fieldValueInteger))
+                    return false;
+
+                break;
+            case EQUALS:
+                Integer compareToValue = schemaObject.getInt(ValidatorConstants.VALUE);
+                if (compareToValue != fieldValueInteger)
+                    return false;
+                break;
+
+            case NOT_EQUALS:
+                Integer compareToValue1 = schemaObject.getInt(ValidatorConstants.VALUE);
+                if (compareToValue1 == fieldValueInteger)
+                    return false;
+                break;
+            default:
+        }
+        return true;
+    }
+
+    private Boolean validateAdditionalStringCompare(Map jsonMap, String compareWith, Operators operator, JsonObject schemaObject) {
+        String fieldValueString = String.valueOf(jsonMap.get(compareWith)).replace("\"", "");
+        switch (operator) {
+            case IN:
+                JsonArray enumList = schemaObject.getJsonArray(ValidatorConstants.VALUE);
+                Set<String> enumStringList = enumList.stream().map(c -> c.toString().replace("\"", "")).collect(Collectors.toSet());
+                if (!enumStringList.isEmpty() && !enumStringList.contains(fieldValueString))
+                    return false;
+                break;
+
+            case EQUALS:
+                String compareToValue = schemaObject.getString(ValidatorConstants.VALUE);
+                if (!fieldValueString.equals(compareToValue))
+                    return false;
+                break;
+
+            case NOT_EQUALS:
+                String compareToValue1 = schemaObject.getString(ValidatorConstants.VALUE);
+                if (fieldValueString.equals(compareToValue1))
+                    return false;
+                break;
+            default:
+        }
         return true;
     }
 
@@ -679,25 +716,29 @@ public class ValidatorUtility {
                     break;
 
                 case ValidatorConstants.UNIQUE:
-                    for (JsonValue value :  jsonSchema.getJsonArray(ValidatorConstants.UNIQUE)) {
-                        String uniqueKey = value.toString().replace("\"", "");
-                        Set<JsonValue> set = new HashSet<>();
-
-                        for (JsonValue currentValue : fieldValueArray) {
-                            JsonValue _value = currentValue.asJsonObject().get(uniqueKey);
-
-                            if (_value != null && set.contains(_value))
-                                errors.add(String.format(ErrorConstants.INVALID_UNIQUE_CONSTRAINT, uniqueKey, at));
-                            set.add(_value);
-
-                        }
-                    }
+                    validateArrayUniqueElements(jsonSchema, at, fieldValueArray, errors);
                     break;
                 default:
             }
 
         }
         return errors;
+    }
+
+    private static void validateArrayUniqueElements(JsonObject jsonSchema, String at, JsonArray fieldValueArray, Set<String> errors) {
+        for (JsonValue value :  jsonSchema.getJsonArray(ValidatorConstants.UNIQUE)) {
+            String uniqueKey = value.toString().replace("\"", "");
+            Set<JsonValue> set = new HashSet<>();
+
+            for (JsonValue currentValue : fieldValueArray) {
+                JsonValue _value = currentValue.asJsonObject().get(uniqueKey);
+
+                if (_value != null && set.contains(_value))
+                    errors.add(String.format(ErrorConstants.INVALID_UNIQUE_CONSTRAINT, uniqueKey, at));
+                set.add(_value);
+
+            }
+        }
     }
 
     private String getErrorMessage(JsonObject errorJson, String key) {

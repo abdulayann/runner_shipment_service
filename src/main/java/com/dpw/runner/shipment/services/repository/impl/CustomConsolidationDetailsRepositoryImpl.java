@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.repository.impl;
 
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -8,6 +9,8 @@ import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.response.consolidation.ConsolidationLiteResponse;
 import com.dpw.runner.shipment.services.repository.interfaces.ICustomConsolidationDetailsRepository;
+
+import java.util.ArrayList;
 import java.util.List;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -35,18 +38,17 @@ public class CustomConsolidationDetailsRepositoryImpl implements ICustomConsolid
     Root<ConsolidationDetails> root = cq.from(ConsolidationDetails.class);
     Join<ConsolidationDetails, CarrierDetails> carrier = root.join("carrierDetails", JoinType.LEFT);
 
-    // Apply the specification filters
+    List<Predicate> predicates  = new ArrayList<>();
     if (spec != null) {
       Predicate predicate = spec.toPredicate(root, cq, cb);
       if (predicate != null) {
-        cq.where(predicate);
-      } else {
-        cq.where(cb.conjunction());
+        predicates.add(predicate);
       }
-    } else {
-      cq.where(cb.conjunction());
     }
-
+    predicates.add(cb.equal(root.get("tenantId"), TenantContext.getCurrentTenant()));
+    if (!predicates.isEmpty()) {
+      cq.where(cb.and(predicates.toArray(new Predicate[0])));
+    }
     // Add your selects (mapping all fields to ConsolidationLiteResponse)
     cq.select(cb.construct(ConsolidationLiteResponse.class,
         root.get("id"),
@@ -95,17 +97,24 @@ public class CustomConsolidationDetailsRepositoryImpl implements ICustomConsolid
     // Count total records for pagination
     CriteriaQuery<Long> countQuery = cb.createQuery(Long.class);
     Root<ConsolidationDetails> countRoot = countQuery.from(ConsolidationDetails.class);
-    countQuery.select(cb.count(countRoot));
+
+    List<Predicate> countPredicates = new ArrayList<>();
+
     if (spec != null) {
       Predicate countPredicate = spec.toPredicate(countRoot, countQuery, cb);
       if (countPredicate != null) {
-        countQuery.where(countPredicate);
-      } else {
-        countQuery.where(cb.conjunction());
+        countPredicates.add(countPredicate);
       }
-    } else {
-      countQuery.where(cb.conjunction());
     }
+
+    // Add tenantId condition to count query
+    countPredicates.add(cb.equal(countRoot.get("tenantId"), TenantContext.getCurrentTenant()));
+
+    if (!countPredicates.isEmpty()) {
+      countQuery.where(cb.and(countPredicates.toArray(new Predicate[0])));
+    }
+
+    countQuery.select(cb.count(countRoot));
     long total = entityManager.createQuery(countQuery).getSingleResult();
 
     // Return paginated result

@@ -11,6 +11,7 @@ import java.util.List;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
+@SuppressWarnings("java:S1948")
 public class MasterListRequestV2 implements IRunnerRequest {
     private List<MasterListRequest> MasterListRequests = new ArrayList<>();
     private List<String> IncludeCols;

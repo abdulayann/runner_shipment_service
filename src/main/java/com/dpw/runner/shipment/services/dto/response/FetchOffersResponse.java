@@ -15,6 +15,7 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@SuppressWarnings("java:S1948")
 public class FetchOffersResponse implements IRunnerResponse {
  
     @JsonProperty("offer_type")

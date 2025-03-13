@@ -21,6 +21,7 @@ import java.util.Map;
 @AllArgsConstructor
 @Accessors(chain = true)
 @TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
+@SuppressWarnings("java:S1948")
 public class Validations extends MultiTenancy {
 
     @Column(name = "entity")

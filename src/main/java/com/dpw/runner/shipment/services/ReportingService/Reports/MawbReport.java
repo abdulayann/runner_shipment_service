@@ -117,15 +117,7 @@ public class MawbReport extends IReport {
         if (!isDMawb) {
             hawbModel.usersDto = UserContext.getUser();
             hawbModel.setConsolidationDetails(getConsolidation(id));
-            if (Boolean.TRUE.equals(countryAirCargoSecurity)) {
-                if (ReportConstants.ORIGINAL.equalsIgnoreCase(printType)) {
-                    validateAirDGAndAirSecurityCheckConsolidations(hawbModel.getConsolidationDetails());
-                } else {
-                    validateAirSecurityCheckConsolidations(hawbModel.getConsolidationDetails());
-                }
-            } else {
-                validateAirDGCheckConsolidations(hawbModel.getConsolidationDetails());
-            }
+            validateMawbCargoSecurity(countryAirCargoSecurity, hawbModel);
             String entityType = "MAWB";
             hawbModel.setMawb(getMawb(hawbModel.getConsolidationDetails().getId(), true));
             hawbModel.awb = hawbModel.getMawb();
@@ -133,15 +125,7 @@ public class MawbReport extends IReport {
         } else {
             hawbModel.usersDto = UserContext.getUser();
             hawbModel.shipmentDetails = getShipment(id);
-            if (Boolean.TRUE.equals(countryAirCargoSecurity)) {
-                if (ReportConstants.ORIGINAL.equalsIgnoreCase(printType)) {
-                    validateAirDGAndAirSecurityCheckShipments(hawbModel.shipmentDetails);
-                } else {
-                    validateAirSecurityCheckShipments(hawbModel.shipmentDetails);
-                }
-            } else {
-                validateAirDGCheckShipments(hawbModel.shipmentDetails);
-            }
+            validateDMawbCargoSecurity(countryAirCargoSecurity, hawbModel);
             String entityType = "MAWB";
             if(hawbModel.shipmentDetails != null && hawbModel.shipmentDetails.getConsolidationList() != null && !hawbModel.shipmentDetails.getConsolidationList().isEmpty())
             {
@@ -157,6 +141,30 @@ public class MawbReport extends IReport {
         }
 
         return hawbModel;
+    }
+
+    private void validateDMawbCargoSecurity(Boolean countryAirCargoSecurity, HawbModel hawbModel) {
+        if (Boolean.TRUE.equals(countryAirCargoSecurity)) {
+            if (ReportConstants.ORIGINAL.equalsIgnoreCase(printType)) {
+                validateAirDGAndAirSecurityCheckShipments(hawbModel.shipmentDetails);
+            } else {
+                validateAirSecurityCheckShipments(hawbModel.shipmentDetails);
+            }
+        } else {
+            validateAirDGCheckShipments(hawbModel.shipmentDetails);
+        }
+    }
+
+    private void validateMawbCargoSecurity(Boolean countryAirCargoSecurity, HawbModel hawbModel) {
+        if (Boolean.TRUE.equals(countryAirCargoSecurity)) {
+            if (ReportConstants.ORIGINAL.equalsIgnoreCase(printType)) {
+                validateAirDGAndAirSecurityCheckConsolidations(hawbModel.getConsolidationDetails());
+            } else {
+                validateAirSecurityCheckConsolidations(hawbModel.getConsolidationDetails());
+            }
+        } else {
+            validateAirDGCheckConsolidations(hawbModel.getConsolidationDetails());
+        }
     }
 
     @Override

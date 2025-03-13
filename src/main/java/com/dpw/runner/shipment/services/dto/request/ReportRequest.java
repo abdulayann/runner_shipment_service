@@ -9,6 +9,7 @@ import java.util.List;
 
 @Getter
 @Setter
+@SuppressWarnings("java:S1948")
 public class ReportRequest implements IRunnerRequest {
     String reportInfo;
     String reportKey;

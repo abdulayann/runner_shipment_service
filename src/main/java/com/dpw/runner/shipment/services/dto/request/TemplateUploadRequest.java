@@ -9,6 +9,7 @@ import org.springframework.web.multipart.MultipartFile;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
+@SuppressWarnings("java:S1948")
 public class TemplateUploadRequest implements IRunnerRequest {
     private MultipartFile file;
     private String previousFileId;

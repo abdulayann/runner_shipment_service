@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@SuppressWarnings("java:S1948")
 public class CheckCreditBalanceFusionRequest implements IRunnerRequest {
     @JsonProperty("req_Params")
     private ReqParams req_Params;

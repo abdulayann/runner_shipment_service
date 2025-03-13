@@ -1672,7 +1672,6 @@ class AwbServiceTest extends CommonMocks {
         when(awbDao.findById(anyLong())).thenReturn(Optional.of(testMawb));
         when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(testConsol));
         when(awbDao.save(any())).thenReturn(testMawb);
-        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(objectMapper.convertValue(testMawb, AwbResponse.class));
 
         ResponseEntity<IRunnerResponse> httpResponse = awbService.reset(commonRequestModel);
@@ -1842,10 +1841,6 @@ class AwbServiceTest extends CommonMocks {
 
         // Mocking
         when(awbDao.findByShipmentId(shipmentId)).thenReturn(List.of(mockAwb));
-//        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(testShipment));
-//        when(awbDao.save(mockAwb)).thenReturn(mockAwb);
-//        when(jsonHelper.convertValue(anyString(), eq(LocalDateTime.class))).thenReturn(LocalDateTime.now());
-//        when(jsonHelper.convertValue(any(Awb.class), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
 
         // Reset Mocking
 
@@ -1874,7 +1869,6 @@ class AwbServiceTest extends CommonMocks {
                 objectMapper.convertValue(DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_T_HH_MM_SS).format(LocalDateTime.now()), LocalDateTime.class)
         );
         when(v1Service.fetchMasterData(any())).thenReturn(new V1DataResponse());
-//        when(jsonHelper.convertValue(any(), eq(EntityTransferMasterLists.class))).thenReturn(null);
         when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
         List<AddressDataV1> addressDataV1List = List.of(AddressDataV1.builder().build());
         when(jsonHelper.convertValueToList(any(), eq(AddressDataV1.class))).thenReturn(addressDataV1List);
@@ -2161,7 +2155,6 @@ class AwbServiceTest extends CommonMocks {
         // Mocking
         when(awbDao.findByConsolidationId(consolidationId)).thenReturn(List.of(mockAwb));
         when(v1Service.fetchMasterData(any())).thenReturn(new V1DataResponse());
-//        when(jsonHelper.convertValue(anyString(), eq(LocalDateTime.class))).thenReturn(LocalDateTime.now());
 
 
         // Reset Mocking
@@ -2207,9 +2200,9 @@ class AwbServiceTest extends CommonMocks {
         when(v1Service.fetchMasterData(any())).thenReturn(new V1DataResponse());
 
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
+        mockTenantSettings();
 
         mockShipmentSettings();
-        mockTenantSettings();
 
         var httpResponse = awbService.partialAutoUpdateMawb(commonRequestModel);
 

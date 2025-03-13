@@ -9,6 +9,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@SuppressWarnings("java:S1948")
 public class V1DataResponse implements IRunnerResponse {
     @JsonProperty("Entities")
     public Object entities;

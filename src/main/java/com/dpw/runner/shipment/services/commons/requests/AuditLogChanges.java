@@ -12,6 +12,7 @@ import lombok.Setter;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@SuppressWarnings("java:S1948")
 public class AuditLogChanges implements Serializable {
     private String fieldName;
     private Object oldValue;

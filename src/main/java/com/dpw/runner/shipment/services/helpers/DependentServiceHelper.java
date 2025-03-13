@@ -40,23 +40,17 @@ public class DependentServiceHelper {
     }
 
     public void pushShipmentDataToDependentService(ShipmentDetails shipmentDetails, boolean isCreate, boolean isAutoSellRequired, Set<Containers> oldContainers) {
+        pushShipmentDataToKafka(shipmentDetails, isCreate, isAutoSellRequired);
+        pushShipmentDataToTrackingServiceAdapter(shipmentDetails);
         try {
-            if(shipmentDetails.getTenantId() == null)
-                shipmentDetails.setTenantId(TenantContext.getCurrentTenant());
-            if (IsStringNullOrEmpty(shipmentDetails.getUpdatedBy()))
-                shipmentDetails.setUpdatedBy(UserContext.getUser().getUsername());
-            ShipmentRequest shipmentRequest = jsonHelper.convertValue(shipmentDetails, ShipmentRequest.class);
-            shipmentRequest.setIsAutoSellRequired(isAutoSellRequired);
-            if (shipmentDetails.getStatus() != null && shipmentDetails.getStatus() < ShipmentStatus.values().length)
-                shipmentRequest.setShipmentStatus(ShipmentStatus.values()[shipmentDetails.getStatus()].toString());
-            KafkaResponse kafkaResponse = producer.getKafkaResponse(shipmentRequest, isCreate);
-            kafkaResponse.setTransactionId(UUID.randomUUID().toString());
-            log.info("Producing shipment data to kafka with RequestId: {} and payload: {}",LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(kafkaResponse));
-            producer.produceToKafka(jsonHelper.convertToJson(kafkaResponse), senderQueue, StringUtility.convertToString(shipmentDetails.getGuid()));
+            containerService.pushContainersToDependentServices(new ArrayList<>(shipmentDetails.getContainersList()), new ArrayList<>(oldContainers));
         }
         catch (Exception e) {
-            log.error("Error Producing shipment to kafka, error is due to " + e.getMessage());
+            log.error("Error producing message due to " + e.getMessage());
         }
+    }
+
+    private void pushShipmentDataToTrackingServiceAdapter(ShipmentDetails shipmentDetails) {
         try {
             if(shipmentDetails.getStatus() != null && !Objects.equals(shipmentDetails.getStatus(), ShipmentStatus.Completed.getValue()) || shipmentDetails.getStatus() != null && !Objects.equals(shipmentDetails.getStatus(), ShipmentStatus.Cancelled.getValue())
                     && trackingServiceAdapter.checkIfConsolAttached(shipmentDetails)|| (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipmentDetails.getShipmentType().equals(Constants.SHIPMENT_TYPE_DRT) && !Objects.isNull(shipmentDetails.getMasterBill()))) {
@@ -84,11 +78,25 @@ public class DependentServiceHelper {
         catch (Exception e) {
             log.error(e.getMessage());
         }
+    }
+
+    private void pushShipmentDataToKafka(ShipmentDetails shipmentDetails, boolean isCreate, boolean isAutoSellRequired) {
         try {
-            containerService.pushContainersToDependentServices(new ArrayList<>(shipmentDetails.getContainersList()), new ArrayList<>(oldContainers));
+            if(shipmentDetails.getTenantId() == null)
+                shipmentDetails.setTenantId(TenantContext.getCurrentTenant());
+            if (IsStringNullOrEmpty(shipmentDetails.getUpdatedBy()))
+                shipmentDetails.setUpdatedBy(UserContext.getUser().getUsername());
+            ShipmentRequest shipmentRequest = jsonHelper.convertValue(shipmentDetails, ShipmentRequest.class);
+            shipmentRequest.setIsAutoSellRequired(isAutoSellRequired);
+            if (shipmentDetails.getStatus() != null && shipmentDetails.getStatus() < ShipmentStatus.values().length)
+                shipmentRequest.setShipmentStatus(ShipmentStatus.values()[shipmentDetails.getStatus()].toString());
+            KafkaResponse kafkaResponse = producer.getKafkaResponse(shipmentRequest, isCreate);
+            kafkaResponse.setTransactionId(UUID.randomUUID().toString());
+            log.info("Producing shipment data to kafka with RequestId: {} and payload: {}",LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(kafkaResponse));
+            producer.produceToKafka(jsonHelper.convertToJson(kafkaResponse), senderQueue, StringUtility.convertToString(shipmentDetails.getGuid()));
         }
         catch (Exception e) {
-            log.error("Error producing message due to " + e.getMessage());
+            log.error("Error Producing shipment to kafka, error is due to " + e.getMessage());
         }
     }
 }

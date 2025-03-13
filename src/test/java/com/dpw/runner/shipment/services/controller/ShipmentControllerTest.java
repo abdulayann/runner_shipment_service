@@ -1,8 +1,6 @@
 package com.dpw.runner.shipment.services.controller;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -17,7 +15,6 @@ import static org.mockito.Mockito.when;
 
 import com.dpw.runner.shipment.services.adapters.interfaces.IOrderManagementAdapter;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.UpdateConsoleShipmentRequest;
@@ -596,7 +593,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void delete() throws RunnerException {
+    void delete() {
         // Mock
         when(shipmentService.delete(any())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
@@ -606,7 +603,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void testList() throws RunnerException {
+    void testList() {
         // Mock
         when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(10));
         when(shipmentService.fullShipmentsList(any())).thenReturn(ResponseHelper.buildSuccessResponse());
@@ -617,7 +614,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void testList1() throws RunnerException {
+    void testList1() {
         // Mock
         when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(10));
         when(shipmentService.list(any(), anyBoolean())).thenReturn(ResponseHelper.buildSuccessResponse());
@@ -628,7 +625,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void testList3() throws RunnerException {
+    void testList3() {
         // Mock
         when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(10));
         when(shipmentService.list(any())).thenThrow(new RuntimeException());
@@ -888,7 +885,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void getDefaultShipment() throws RunnerException {
+    void getDefaultShipment() {
         // Mock
         when(shipmentService.getDefaultShipment()).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
@@ -908,7 +905,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void getConsolFromShipment() throws RunnerException {
+    void getConsolFromShipment() {
         // Mock
         when(consolidationService.getConsolFromShipment(any())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
@@ -918,7 +915,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void getConsolFromShipment2() throws RunnerException {
+    void getConsolFromShipment2() {
         // Mock
         when(consolidationService.getConsolFromShipment(any())).thenThrow(new RuntimeException());
         // Test
@@ -928,7 +925,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void attachListShipment() throws RunnerException {
+    void attachListShipment() {
         // Mock
         when(shipmentService.attachListShipment(any())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
@@ -938,7 +935,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void attachListShipment2() throws RunnerException {
+    void attachListShipment2() {
         // Mock
         when(shipmentService.attachListShipment(any())).thenThrow(new RuntimeException());
         // Test
@@ -948,7 +945,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void getMasterDataDescriptionMapping() throws RunnerException {
+    void getMasterDataDescriptionMapping() {
         // Mock
         when(shipmentService.getMasterDataMappings()).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
@@ -958,7 +955,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void getIdFromGuid() throws RunnerException {
+    void getIdFromGuid() {
         // Mock
         when(shipmentService.getIdFromGuid(any())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
@@ -968,7 +965,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void getIdFromGuid2() throws RunnerException {
+    void getIdFromGuid2() {
         // Mock
         when(shipmentService.getIdFromGuid(any())).thenThrow(new RuntimeException());
         // Test
@@ -978,7 +975,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void getGuidFromId() throws RunnerException {
+    void getGuidFromId() {
         // Mock
         when(shipmentService.getGuidFromId(any())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
@@ -988,7 +985,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void getGuidFromId2() throws RunnerException {
+    void getGuidFromId2() {
         // Mock
         when(shipmentService.getGuidFromId(any())).thenThrow(new RuntimeException());
         // Test
@@ -998,7 +995,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void checkCreditLimitFromV1() throws RunnerException {
+    void checkCreditLimitFromV1() {
         // Mock
         when(shipmentService.checkCreditLimitFromV1(any())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
@@ -1008,7 +1005,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void checkCreditLimitFromV12() throws RunnerException {
+    void checkCreditLimitFromV12() {
         // Mock
         when(shipmentService.checkCreditLimitFromV1(any())).thenThrow(new RuntimeException());
         // Test
@@ -1058,7 +1055,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void fetchEmails() throws RunnerException {
+    void fetchEmails() {
         // Mock
         when(shipmentService.fetchEmails(any(), anyLong())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
@@ -1232,7 +1229,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void getPendingNotifications() throws RunnerException {
+    void getPendingNotifications() {
         // Mock
         when(shipmentService.getPendingNotifications(any())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
@@ -1242,7 +1239,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void getPendingNotificationsFails() throws RunnerException {
+    void getPendingNotificationsFails() {
         // Mock
         when(shipmentService.getPendingNotifications(any())).thenThrow(new RuntimeException("RuntimeException"));
         // Test
@@ -1252,7 +1249,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void testGetAllConsolShipmentsLatestDate_Success() throws Exception {
+    void testGetAllConsolShipmentsLatestDate_Success() {
         // Arrange
         Long consoleId = 1L;
         ResponseEntity<IRunnerResponse> expectedResponse = ResponseEntity.ok(new UpstreamDateUpdateResponse());
@@ -1265,7 +1262,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void testGetAllConsolShipmentsLatestDate_Exception() throws Exception {
+    void testGetAllConsolShipmentsLatestDate_Exception() {
         // Arrange
         Long consoleId = 1L;
         String errorMessage = "Service error";
@@ -1322,7 +1319,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void testListWithoutTenantFilter() throws RunnerException {
+    void testListWithoutTenantFilter() {
         ListCommonRequest listCommonRequest = ListCommonRequest.builder().build();
         when(shipmentService.listWithoutTenantCheck(any())).thenThrow(new RuntimeException());
         var responseEntity = shipmentController.listWithoutTenantFilter(listCommonRequest);
@@ -1356,7 +1353,7 @@ class ShipmentControllerTest {
     void testAttachDetachOrderException(){
         ShipmentOrderAttachDetachRequest shipmentOrderAttachDetachRequest = ShipmentOrderAttachDetachRequest.builder().build();
         when(shipmentController.attachDetachOrder(any())).thenThrow(new RuntimeException());
-        var responseEntity = shipmentController.attachDetachOrder(shipmentOrderAttachDetachRequest);
+        assertDoesNotThrow(() -> shipmentController.attachDetachOrder(shipmentOrderAttachDetachRequest));
     }
 
     @Test
@@ -1393,7 +1390,6 @@ class ShipmentControllerTest {
     @Test
     void getMatchingRulesByGuid() {
         String guid = UUID.randomUUID().toString();
-        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().guid(guid).build());
         // Mock
         when(dpsEventService.getShipmentMatchingRulesByGuid(guid)).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
@@ -1405,13 +1401,10 @@ class ShipmentControllerTest {
     @Test
     void getMatchingRulesByGuid_Failure() {
         String guid = UUID.randomUUID().toString();
-        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().guid(guid).build());
         // Mock
         when(dpsEventService.getShipmentMatchingRulesByGuid((guid))).thenThrow(new DpsException());
         // Test
-        assertThrows(DpsException.class, () -> {
-            shipmentController.getMatchingRulesByGuid(guid);
-        });
+        assertThrows(DpsException.class, () -> shipmentController.getMatchingRulesByGuid(guid));
     }
     @Test
     void testListExternal() {
@@ -1513,7 +1506,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void listV3Test() throws RunnerException {
+    void listV3Test() {
         // Mock
         when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(10));
         when(shipmentService.fullShipmentsListV3(any())).thenReturn(ResponseHelper.buildSuccessResponse());
@@ -1524,7 +1517,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void ListV3Test2() throws RunnerException {
+    void ListV3Test2() {
         // Mock
         when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(10));
         when(shipmentService.listV3(any(), anyBoolean())).thenReturn(ResponseHelper.buildSuccessResponse());
@@ -1535,7 +1528,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void listV3Test3() throws RunnerException {
+    void listV3Test3() {
         // Mock
         when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(10));
         when(shipmentService.listV3(any(), anyBoolean())).thenThrow(new RuntimeException());

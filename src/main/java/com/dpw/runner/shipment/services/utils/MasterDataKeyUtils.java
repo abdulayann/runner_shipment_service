@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Component;
@@ -52,12 +53,7 @@ public class MasterDataKeyUtils {
             if(value1 != null && !value1.isEmpty()) {
                 value1.forEach((key, value) -> {
                     Object cache = null;
-                    if(Objects.isNull(cacheMap)) {
-                        var resp = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).get(keyGenerator.customCacheKeyForMasterData(masterDataType.equalsIgnoreCase(CacheConstants.UNLOCATIONS_AWB) ? CacheConstants.UNLOCATIONS : masterDataType, value));
-                        if(!Objects.isNull(resp)) cache = resp.get();
-                    } else {
-                        cache = cacheMap.get(value);
-                    }
+                    cache = getCacheValue(masterDataType, cacheMap, value, cache);
                     if(!Objects.isNull(cache)) {
                         switch (masterDataType) {
                             case CacheConstants.UNLOCATIONS:
@@ -125,6 +121,17 @@ public class MasterDataKeyUtils {
                 });
             }
         });
+    }
+
+    @Nullable
+    private Object getCacheValue(String masterDataType, Map<String, Object> cacheMap, String value, Object cache) {
+        if(Objects.isNull(cacheMap)) {
+            var resp = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).get(keyGenerator.customCacheKeyForMasterData(masterDataType.equalsIgnoreCase(CacheConstants.UNLOCATIONS_AWB) ? CacheConstants.UNLOCATIONS : masterDataType, value));
+            if(!Objects.isNull(resp)) cache = resp.get();
+        } else {
+            cache = cacheMap.get(value);
+        }
+        return cache;
     }
 
     private void setKeyValueForMasterLists(Map<String, Object> map, String key, Object cacheValue) { //key is SEA#TRANSPORT_MODE

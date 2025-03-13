@@ -14,6 +14,7 @@ import java.util.UUID;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
+@SuppressWarnings("java:S1948")
 public class PartiesResponse implements IRunnerResponse {
     private Long id;
     private UUID guid;

@@ -39,7 +39,6 @@ import com.dpw.runner.shipment.services.masterdata.helper.impl.v1.V1MasterDataIm
 import com.dpw.runner.shipment.services.masterdata.response.BillChargesResponse;
 import com.dpw.runner.shipment.services.masterdata.response.BillingResponse;
 import com.dpw.runner.shipment.services.masterdata.response.CommodityResponse;
-import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
@@ -344,8 +343,8 @@ class ArrivalNoticeReportTest extends CommonMocks {
         containerMap.put(GROSS_VOLUME, BigDecimal.TEN);
         containerMap.put(GROSS_WEIGHT, BigDecimal.TEN);
         containerMap.put(SHIPMENT_PACKS, BigDecimal.TEN);
-        containerMap.put(TareWeight, BigDecimal.TEN);
-        containerMap.put(VGMWeight, BigDecimal.TEN);
+        containerMap.put(TARE_WEIGHT, BigDecimal.TEN);
+        containerMap.put(VGM_WEIGHT, BigDecimal.TEN);
         containerMap.put(NET_WEIGHT, BigDecimal.TEN);
         doReturn(containerMap).when(jsonHelper).convertValue(any(ShipmentContainers.class), any(TypeReference.class));
 
@@ -390,8 +389,8 @@ class ArrivalNoticeReportTest extends CommonMocks {
         containerMap.put(GROSS_VOLUME, BigDecimal.TEN);
         containerMap.put(GROSS_WEIGHT, BigDecimal.TEN);
         containerMap.put(SHIPMENT_PACKS, BigDecimal.TEN);
-        containerMap.put(TareWeight, BigDecimal.TEN);
-        containerMap.put(VGMWeight, BigDecimal.TEN);
+        containerMap.put(TARE_WEIGHT, BigDecimal.TEN);
+        containerMap.put(VGM_WEIGHT, BigDecimal.TEN);
         containerMap.put(NET_WEIGHT, BigDecimal.TEN);
         doReturn(containerMap).when(jsonHelper).convertValue(any(ShipmentContainers.class), any(TypeReference.class));
 
@@ -435,8 +434,8 @@ class ArrivalNoticeReportTest extends CommonMocks {
         containerMap.put(GROSS_VOLUME, BigDecimal.TEN);
         containerMap.put(GROSS_WEIGHT, BigDecimal.TEN);
         containerMap.put(SHIPMENT_PACKS, BigDecimal.TEN);
-        containerMap.put(TareWeight, BigDecimal.TEN);
-        containerMap.put(VGMWeight, BigDecimal.TEN);
+        containerMap.put(TARE_WEIGHT, BigDecimal.TEN);
+        containerMap.put(VGM_WEIGHT, BigDecimal.TEN);
         containerMap.put(NET_WEIGHT, BigDecimal.TEN);
         doReturn(containerMap).when(jsonHelper).convertValue(any(ShipmentContainers.class), any(TypeReference.class));
 
@@ -480,8 +479,8 @@ class ArrivalNoticeReportTest extends CommonMocks {
         containerMap.put(GROSS_VOLUME, BigDecimal.TEN);
         containerMap.put(GROSS_WEIGHT, BigDecimal.TEN);
         containerMap.put(SHIPMENT_PACKS, BigDecimal.TEN);
-        containerMap.put(TareWeight, BigDecimal.TEN);
-        containerMap.put(VGMWeight, BigDecimal.TEN);
+        containerMap.put(TARE_WEIGHT, BigDecimal.TEN);
+        containerMap.put(VGM_WEIGHT, BigDecimal.TEN);
         containerMap.put(NET_WEIGHT, BigDecimal.TEN);
         doReturn(containerMap).when(jsonHelper).convertValue(any(ShipmentContainers.class), any(TypeReference.class));
 
@@ -522,8 +521,8 @@ class ArrivalNoticeReportTest extends CommonMocks {
         containerMap.put(GROSS_VOLUME, BigDecimal.TEN);
         containerMap.put(GROSS_WEIGHT, BigDecimal.TEN);
         containerMap.put(SHIPMENT_PACKS, BigDecimal.TEN);
-        containerMap.put(TareWeight, BigDecimal.TEN);
-        containerMap.put(VGMWeight, BigDecimal.TEN);
+        containerMap.put(TARE_WEIGHT, BigDecimal.TEN);
+        containerMap.put(VGM_WEIGHT, BigDecimal.TEN);
         containerMap.put(NET_WEIGHT, BigDecimal.TEN);
         doReturn(containerMap).when(jsonHelper).convertValue(any(ShipmentContainers.class), any(TypeReference.class));
 
@@ -560,7 +559,7 @@ class ArrivalNoticeReportTest extends CommonMocks {
         BillChargesResponse billChargesResponse = new BillChargesResponse();
         billChargesResponse.setOverseasSellAmount(BigDecimal.TEN);
         billChargesResponse.setLocalTax(BigDecimal.TEN);
-        billChargesResponse.setMeasurementBasis(Integer.toString(MeasurementBasis.Chargeable.getValue()));
+        billChargesResponse.setMeasurementBasis(Integer.toString(MeasurementBasis.CHARGEABLE.getValue()));
         billChargesResponse.setLocalCostCurrency("INR");
 
         List<BillChargesResponse> billChargesResponseList = Arrays.asList(billChargesResponse);

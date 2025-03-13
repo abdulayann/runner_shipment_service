@@ -1221,7 +1221,7 @@ class EntityTransferServiceTest extends CommonMocks {
         try {
             CheckTaskExistRequest request = CheckTaskExistRequest.builder()
                 .entityId(123L)
-                .entityType(Constants.Shipments)
+                .entityType(Constants.SHIPMENTS_WITH_SQ_BRACKETS)
                 .sendToBranch(List.of(66))
                 .build();
             CheckTaskExistResponse response = CheckTaskExistResponse.builder().sendToBranch(Set.of(66)).build();
@@ -1246,7 +1246,7 @@ class EntityTransferServiceTest extends CommonMocks {
         try {
             CheckTaskExistRequest request = CheckTaskExistRequest.builder()
                     .entityId(123L)
-                    .entityType(Constants.Shipments)
+                    .entityType(Constants.SHIPMENTS_WITH_SQ_BRACKETS)
                     .sendToBranch(List.of())
                     .build();
             ResponseEntity<IRunnerResponse> responseEntity = entityTransferService.checkTaskExist(CommonRequestModel.buildRequest(request));
@@ -1260,7 +1260,7 @@ class EntityTransferServiceTest extends CommonMocks {
     void testCheckTaskExist_V1Error_Shipment() {
         CheckTaskExistRequest request = CheckTaskExistRequest.builder()
                 .entityId(123L)
-                .entityType(Constants.Shipments)
+                .entityType(Constants.SHIPMENTS_WITH_SQ_BRACKETS)
                 .sendToBranch(List.of(66))
                 .build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
@@ -1421,7 +1421,6 @@ class EntityTransferServiceTest extends CommonMocks {
 
         mockShipmentSettings();
         when(shipmentDao.findShipmentsByGuids(shipGuidSet1)).thenReturn(List.of(shipmentDetailsDrt, shipmentDetailsImp, shipmentDetailsImp1, shipmentDetailsExp, shipmentDetailsImp2, shipmentDetailsImp3));
-        when(masterDataUtils.getLocationData(Set.of(locationRefGuid))).thenReturn(unlocationsResponseMap);
         when(consolidationDetailsDao.findConsolidationsByGuids(consoleGuids1))
                 .thenReturn(List.of(shipmentDetailsDrt.getConsolidationList().iterator().next(), shipmentDetailsImp.getConsolidationList().iterator().next(), shipmentDetailsImp1.getConsolidationList().iterator().next(), shipmentDetailsExp.getConsolidationList().iterator().next()));
         when(logsHistoryService.findByEntityGuidsAndTimeStamp(shipGuidSet.stream().toList(), timeStamp)).thenReturn(List.of(logHistoryResponse));
@@ -1441,7 +1440,7 @@ class EntityTransferServiceTest extends CommonMocks {
 
     @Test
     void testCheckEntityExists() {
-        var request = CheckEntityExistRequest.builder().entityId(UUID.randomUUID().toString()).entityType(Constants.Shipment).build();
+        var request = CheckEntityExistRequest.builder().entityId(UUID.randomUUID().toString()).entityType(Constants.SHIPMENT_CAMELCASE).build();
         when(shipmentDao.findBySourceGuid(any())).thenReturn(List.of(new ShipmentDetails()));
         var responseEntity = entityTransferService.checkEntityExists(CommonRequestModel.buildRequest(request));
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
@@ -1449,7 +1448,7 @@ class EntityTransferServiceTest extends CommonMocks {
 
     @Test
     void testCheckEntityExists2() {
-        var request = CheckEntityExistRequest.builder().entityId(UUID.randomUUID().toString()).entityType(Constants.Consolidation).build();
+        var request = CheckEntityExistRequest.builder().entityId(UUID.randomUUID().toString()).entityType(Constants.CONSOLIDATION_CAMELCASE).build();
         when(consolidationDetailsDao.findBySourceGuid(any())).thenReturn(List.of(new ConsolidationDetails()));
         var responseEntity = entityTransferService.checkEntityExists(CommonRequestModel.buildRequest(request));
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
@@ -1457,7 +1456,7 @@ class EntityTransferServiceTest extends CommonMocks {
 
     @Test
     void testCheckEntityExists3() {
-        var request = CheckEntityExistRequest.builder().entityId(UUID.randomUUID().toString()).entityType(Constants.Consolidation).build();
+        var request = CheckEntityExistRequest.builder().entityId(UUID.randomUUID().toString()).entityType(Constants.CONSOLIDATION_CAMELCASE).build();
         when(consolidationDetailsDao.findBySourceGuid(any())).thenThrow(new RuntimeException(""));
         var responseEntity = entityTransferService.checkEntityExists(CommonRequestModel.buildRequest(request));
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());

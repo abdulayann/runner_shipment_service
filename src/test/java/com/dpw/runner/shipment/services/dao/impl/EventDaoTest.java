@@ -1,10 +1,6 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.anyBoolean;
@@ -30,10 +26,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDa
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
-import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
-import com.dpw.runner.shipment.services.entity.Events;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -63,6 +56,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -203,8 +197,8 @@ class EventDaoTest {
 
         Events savedEvent = testData;
 
-        Page<Events> page = new PageImpl(List.of(savedEvent));
-        when(eventRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+        Page<Events> page = new PageImpl<>(List.of(savedEvent));
+        when(eventRepository.findAll(ArgumentMatchers.<Specification<Events>>any(), any(Pageable.class))).thenReturn(page);
 
         try {
             var result = eventDao.updateEntityFromOtherEntity(List.of(testData) , 1L , "Shipment");
@@ -220,8 +214,8 @@ class EventDaoTest {
 
         Events savedEvent = testData;
 
-        Page<Events> page = new PageImpl(List.of(savedEvent));
-        when(eventRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+        Page<Events> page = new PageImpl<>(List.of(savedEvent));
+        when(eventRepository.findAll(ArgumentMatchers.<Specification<Events>>any(), any(Pageable.class))).thenReturn(page);
 
         try {
             var result = eventDao.updateEntityFromOtherEntity(List.of(testData) , 1L , "CONSOLIDATION");
@@ -289,13 +283,13 @@ class EventDaoTest {
         when(jsonHelper.convertToJson(any())).thenReturn(objectMapper.writeValueAsString(testData));
         when(eventRepository.save(testData)).thenReturn(testData);
 
-        var result = eventDao.saveEntityFromOtherEntity(List.of(testData) , 1L , "Shipment");
+        eventDao.saveEntityFromOtherEntity(List.of(testData) , 1L , "Shipment");
 
         verify(auditLogService, atLeast(1)).addAuditLog(any());
     }
 
     @Test
-    void saveEntityFromOtherEntityWithOldEntityMap() throws JsonProcessingException, RunnerException, NoSuchFieldException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+    void saveEntityFromOtherEntityWithOldEntityMap() throws JsonProcessingException {
         Long eventId = 1L;
         testData.setId(eventId);
 
@@ -305,22 +299,23 @@ class EventDaoTest {
         when(jsonHelper.convertToJson(any())).thenReturn(objectMapper.writeValueAsString(testData));
         when(eventRepository.saveAll(anyList())).thenReturn(List.of(testData));
 
-        var result = eventDao.saveEntityFromOtherEntity(List.of(testData), 1L, "Shipment", oldEntityMap);
+        assertDoesNotThrow(() ->eventDao.saveEntityFromOtherEntity(List.of(testData), 1L, "Shipment", oldEntityMap));
 
     }
 
     @Test
-    void saveEntityFromOtherEntityWithOldEntityMapThrowsException() throws JsonProcessingException, RunnerException, NoSuchFieldException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+    void saveEntityFromOtherEntityWithOldEntityMapThrowsException(){
         Long eventId = 1L;
         testData.setId(eventId);
-
-        var e = assertThrows(DataRetrievalFailureException.class, () ->
-                eventDao.saveEntityFromOtherEntity(List.of(testData), 1L, "Shipment", new HashMap<>()));
+        Map<Long, Events> oldEntityMap = new HashMap<>();
+        List<Events> events = List.of(testData);
+        assertThrows(DataRetrievalFailureException.class, () ->
+                eventDao.saveEntityFromOtherEntity(events, 1L, "Shipment", oldEntityMap));
 
     }
 
     @Test
-    void saveEntityFromOtherEntityIgnoresEntityTypeIfAlreadyPresentInEvents() throws JsonProcessingException, RunnerException, NoSuchFieldException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+    void saveEntityFromOtherEntityIgnoresEntityTypeIfAlreadyPresentInEvents() throws JsonProcessingException{
         Long eventId = 1L;
         testData.setId(eventId);
         testData.setEntityId(5L);
@@ -339,7 +334,7 @@ class EventDaoTest {
     }
 
     @Test
-    void saveEntityFromOtherEntityUpdateEntityTypeIfNotPresentInEvents() throws JsonProcessingException, RunnerException, NoSuchFieldException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+    void saveEntityFromOtherEntityUpdateEntityTypeIfNotPresentInEvents() throws JsonProcessingException{
         Long eventId = 1L;
         testData.setId(eventId);
         testData.setEntityId(null);
@@ -398,8 +393,8 @@ class EventDaoTest {
         Events savedEvent = new Events();
         savedEvent.setEventCode(request.eventCode);
 
-        Page<Events> page = new PageImpl(List.of(savedEvent));
-        when(eventRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+        Page<Events> page = new PageImpl<>(List.of(savedEvent));
+        when(eventRepository.findAll(ArgumentMatchers.<Specification<Events>>any(), any(Pageable.class))).thenReturn(page);
 
         eventDao.autoGenerateEvents(request);
 
@@ -454,10 +449,10 @@ class EventDaoTest {
         Events savedEvent = new Events();
         savedEvent.setEventCode("EventCode");
 
-        Page<Events> page = new PageImpl(List.of());
-        when(eventRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+        Page<Events> page = new PageImpl<>(List.of());
+        when(eventRepository.findAll(ArgumentMatchers.<Specification<Events>>any(), any(Pageable.class))).thenReturn(page);
 
-        assertEquals(false, eventDao.checkIfEventsRowExistsForEntityTypeAndEntityId(customAutoEventRequest));
+        assertFalse(eventDao.checkIfEventsRowExistsForEntityTypeAndEntityId(customAutoEventRequest));
     }
 
     @Test
@@ -465,8 +460,8 @@ class EventDaoTest {
         Events savedEvent = new Events();
         savedEvent.setEventCode("EventCode");
 
-        Page<Events> page = new PageImpl(List.of(savedEvent));
-        when(eventRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+        Page<Events> page = new PageImpl<>(List.of(savedEvent));
+        when(eventRepository.findAll(ArgumentMatchers.<Specification<Events>>any(), any(Pageable.class))).thenReturn(page);
 
         assertEquals(List.of(savedEvent), eventDao.getTheDataFromEntity("SHIPMENTS", 1, false));
     }

@@ -352,7 +352,7 @@ public class BookingIntegrationsUtility {
                 .voyage(carrierDetails.getVoyage())
                 .load(createLoad(customerBooking))
                 .route(createRoute(customerBooking))
-                .source("RUNNER")
+                .source(CustomerBookingConstants.RUNNER)
                 .status(platformStatusMap.get(customerBooking.getBookingStatus()))
                 .referenceNumbers(new ArrayList<>())
                 .addresses(getPartyAddresses(customerBooking.getCustomer(), customerBooking.getConsignor(), customerBooking.getConsignee(), customerBooking.getNotifyParty()))
@@ -567,6 +567,12 @@ public class BookingIntegrationsUtility {
             return RouteRequest.builder().legs(legRequestList).build();
         Map<String, EntityTransferVessels> entityTransferVesselsMap = masterDataUtils.fetchInBulkVessels(routingsList.stream().map(Routings::getVesselName).filter(Objects::nonNull).collect(Collectors.toSet()));
         Map<String, EntityTransferCarrier> entityTransferCarrierMap = masterDataUtils.fetchInBulkCarriers(routingsList.stream().map(Routings::getCarrier).filter(Objects::nonNull).collect(Collectors.toSet()));
+        processRoutingList(shipmentDetails, routingsList, entityTransferVesselsMap, entityTransferCarrierMap, legRequestList);
+
+        return RouteRequest.builder().legs(legRequestList).build();
+    }
+
+    private void processRoutingList(ShipmentDetails shipmentDetails, List<Routings> routingsList, Map<String, EntityTransferVessels> entityTransferVesselsMap, Map<String, EntityTransferCarrier> entityTransferCarrierMap, List<RouteLegRequest> legRequestList) {
         for (int counter = 0; counter < routingsList.size(); counter++) {
             var vessel = entityTransferVesselsMap.get(routingsList.get(counter).getVesselName());
             var carrier = entityTransferCarrierMap.get(routingsList.get(counter).getCarrier());
@@ -589,10 +595,6 @@ public class BookingIntegrationsUtility {
                     .vesselMmsi(!Objects.isNull(vessel) ? vessel.getMmsi() : null)
                     .build());
         }
-
-        return RouteRequest.builder()
-                .legs(legRequestList)
-                .build();
     }
 
     private DimensionDTO getDimension(String cargoType, Packing packing) {
@@ -665,7 +667,7 @@ public class BookingIntegrationsUtility {
                 .isDg(customerBooking.getIsDg())
                 .load(createLoad(customerBooking))
                 .route(createRoute(customerBooking))
-                .source("RUNNER")
+                .source(CustomerBookingConstants.RUNNER)
                 .branchId(UserContext.getUser().getTenantId())
                 .build();
         return CommonRequestModel.builder().data(platformUpdateRequest).build();
@@ -696,7 +698,7 @@ public class BookingIntegrationsUtility {
                 .shipmentMovement(shipmentDetails.getDirection())
                 .route(createRoute(shipmentDetails))
                 .referenceNumbers(createReferenceNumbers(shipmentDetails))
-                .source("RUNNER")
+                .source(CustomerBookingConstants.RUNNER)
                 .business_code(getBusinessCode(shipmentDetails.getShipmentType()))
                 .customer_org_id(shipmentDetails.getClient().getOrgCode())
                 .bill_to_party(Collections.singletonList(createOrgRequest(shipmentDetails.getClient())))
@@ -825,18 +827,8 @@ public class BookingIntegrationsUtility {
                     PartiesConstants.ADDRESS_SHORT_CODE, "in", List.of(addressCodes),
                     "Active", "=", Boolean.TRUE);
             DependentServiceResponse v1AddressResponse = masterDataFactory.getMasterDataService().addressList(addressRequest);
-            if (v1OrgResponse.getData() == null || ((ArrayList)v1AddressResponse.getData()).isEmpty()) {
-                log.error("Request: {} || No Address exist in Runner V1 with OrgCodes: {} with AddressCodes: {}", LoggerHelper.getRequestIdFromMDC(), orgCodes , addressCodes);
-                throw new DataRetrievalFailureException("No Address exist in Runner V1 with OrgCodes: " + orgCodes + " with AddressCodes: " + addressCodes);
-            }
-            List<Object> addressRows = jsonHelper.convertValueToList(v1AddressResponse.getData(), Object.class);
-            for(Object addressRow: addressRows) {
-                Map addressRowMap = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(addressRow));
-                setAddressDataInPartiesRequest(CUSTOMER_REQUEST, requestMap, addressRowMap, client);
-                setAddressDataInPartiesRequest(CONSIGNOR_REQUEST, requestMap, addressRowMap, consignor);
-                setAddressDataInPartiesRequest(CONSIGNEE_REQUEST, requestMap, addressRowMap, consignee);
-                setAddressDataInPartiesRequest(NOTIFY_PARTY_REQUEST, requestMap, addressRowMap, notifyParty);
-            }
+            validateV1OrgResponseData(v1OrgResponse, v1AddressResponse, orgCodes, addressCodes);
+            processAddressRows(requestMap, v1AddressResponse, client, consignor, consignee, notifyParty);
             if(client.getOrgId() != null && client.getAddressId() != null) {
                 requestMap.put("Customer", client);
             }
@@ -855,6 +847,24 @@ public class BookingIntegrationsUtility {
             throw new DataRetrievalFailureException(ex.getMessage());
         }
 
+    }
+
+    private void processAddressRows(Map<String, PartiesRequest> requestMap, DependentServiceResponse v1AddressResponse, PartiesRequest client, PartiesRequest consignor, PartiesRequest consignee, PartiesRequest notifyParty) {
+        List<Object> addressRows = jsonHelper.convertValueToList(v1AddressResponse.getData(), Object.class);
+        for(Object addressRow: addressRows) {
+            Map addressRowMap = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(addressRow));
+            setAddressDataInPartiesRequest(CUSTOMER_REQUEST, requestMap, addressRowMap, client);
+            setAddressDataInPartiesRequest(CONSIGNOR_REQUEST, requestMap, addressRowMap, consignor);
+            setAddressDataInPartiesRequest(CONSIGNEE_REQUEST, requestMap, addressRowMap, consignee);
+            setAddressDataInPartiesRequest(NOTIFY_PARTY_REQUEST, requestMap, addressRowMap, notifyParty);
+        }
+    }
+
+    private void validateV1OrgResponseData(DependentServiceResponse v1OrgResponse, DependentServiceResponse v1AddressResponse, List<String> orgCodes, List<String> addressCodes) {
+        if (v1OrgResponse.getData() == null || ((ArrayList) v1AddressResponse.getData()).isEmpty()) {
+            log.error("Request: {} || No Address exist in Runner V1 with OrgCodes: {} with AddressCodes: {}", LoggerHelper.getRequestIdFromMDC(), orgCodes, addressCodes);
+            throw new DataRetrievalFailureException("No Address exist in Runner V1 with OrgCodes: " + orgCodes + " with AddressCodes: " + addressCodes);
+        }
     }
 
     public void transformOrgAndAddressPayload(PartiesRequest request, String addressCode, String orgCode) {
@@ -990,9 +1000,7 @@ public class BookingIntegrationsUtility {
 
                 log.debug("Valid action and entity type. Fetching shipment details for entity ID: {}", payloadData.getEntityId());
 
-                if (payloadData.getEntityId() == null) {
-                    throw new IllegalArgumentException("Entity ID in payload data is null.");
-                }
+                validateEntityId(payloadData);
 
                 var shipmentDetails = shipmentDao.findShipmentsByGuids(Set.of(UUID.fromString(payloadData.getEntityId())))
                         .stream().findFirst().orElse(new ShipmentDetails());
@@ -1005,32 +1013,7 @@ public class BookingIntegrationsUtility {
                 boolean updatedExistingEvent = false;
 
                 // If existing events are found, iterate through them for potential updates
-                if (ObjectUtils.isNotEmpty(eventListFromDb)) {
-                    log.debug("Existing events found for shipment with entity ID: {}", payloadData.getEntityId());
-
-                    for (Events event : eventListFromDb) {
-                        if (Objects.equals(event.getEventCode(), payloadData.getEventCode()) &&
-                                Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER.equals(event.getSource())) {
-
-                            log.info("Updating event: {} with new actual time and entity type.", event.getEventCode());
-                            event.setActual(commonUtils.getUserZoneTime(LocalDateTime.now()));
-                            event.setEntityType(Constants.SHIPMENT);
-                            event.setUserName(payloadData.getUserDisplayName());
-                            event.setUserEmail(payloadData.getUserEmail());
-                            event.setBranchName(payloadData.getBranchDisplayName());
-                            event.setBranch(payloadData.getBranchCode());
-                            if (EventConstants.FNMU.equals(payloadData.getEventCode())) {
-                                event.setContainerNumber(shipmentDetails.getMasterBill());
-                            }
-
-                            // Update the event details and save in the database
-                            eventDao.updateEventDetails(event);
-                            eventDao.save(event);
-                            updatedExistingEvent = true;
-                            log.info("Event updated successfully for event code: {}", event.getEventCode());
-                        }
-                    }
-                }
+                updatedExistingEvent = getAndUpdateExistingEvent(payloadData, eventListFromDb, shipmentDetails, updatedExistingEvent);
                 if (!updatedExistingEvent && (EventConstants.DNMU.equals(payloadData.getEventCode()) || EventConstants.FNMU.equals(payloadData.getEventCode())
                     || (EventConstants.BOCO.equals(payloadData.getEventCode()) && Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP)))) {
                     log.debug("No existing events found for shipment with entity ID: {}. Checking conditions for auto-generation.", payloadData.getEntityId());
@@ -1065,6 +1048,42 @@ public class BookingIntegrationsUtility {
             UserContext.removeUser();
             RequestAuthContext.removeToken();
         }
+    }
+
+    private void validateEntityId(Document payloadData) {
+        if (payloadData.getEntityId() == null) {
+            throw new IllegalArgumentException("Entity ID in payload data is null.");
+        }
+    }
+
+    private boolean getAndUpdateExistingEvent(Document payloadData, List<Events> eventListFromDb, ShipmentDetails shipmentDetails, boolean updatedExistingEvent) {
+        if (ObjectUtils.isNotEmpty(eventListFromDb)) {
+            log.debug("Existing events found for shipment with entity ID: {}", payloadData.getEntityId());
+
+            for (Events event : eventListFromDb) {
+                if (Objects.equals(event.getEventCode(), payloadData.getEventCode()) &&
+                        Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER.equals(event.getSource())) {
+
+                    log.info("Updating event: {} with new actual time and entity type.", event.getEventCode());
+                    event.setActual(commonUtils.getUserZoneTime(LocalDateTime.now()));
+                    event.setEntityType(Constants.SHIPMENT);
+                    event.setUserName(payloadData.getUserDisplayName());
+                    event.setUserEmail(payloadData.getUserEmail());
+                    event.setBranchName(payloadData.getBranchDisplayName());
+                    event.setBranch(payloadData.getBranchCode());
+                    if (EventConstants.FNMU.equals(payloadData.getEventCode())) {
+                        event.setContainerNumber(shipmentDetails.getMasterBill());
+                    }
+
+                    // Update the event details and save in the database
+                    eventDao.updateEventDetails(event);
+                    eventDao.save(event);
+                    updatedExistingEvent = true;
+                    log.info("Event updated successfully for event code: {}", event.getEventCode());
+                }
+            }
+        }
+        return updatedExistingEvent;
     }
 
     private void sendDocumentsToPlatform(ShipmentDetails shipmentDetails, DocumentDto payload) {

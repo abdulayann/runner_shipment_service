@@ -265,6 +265,12 @@ public class DpsEventService implements IDpsEventService {
             return "No approval details available.";
         }
 
+        StringBuilder result = getStringBuilder(dpsApprovalDetailList);
+
+        return result.toString();
+    }
+
+    private StringBuilder getStringBuilder(List<DpsApprovalDetail> dpsApprovalDetailList) {
         StringBuilder result = new StringBuilder();
         for (DpsApprovalDetail detail : dpsApprovalDetailList) {
             result.append("Username: ").append(detail.getUsername() != null ? detail.getUsername() : "N/A").append(", ")
@@ -275,8 +281,7 @@ public class DpsEventService implements IDpsEventService {
                     .append("Role Name: ").append(detail.getRoleName() != null ? detail.getRoleName() : "N/A").append(", ")
                     .append("Role ID: ").append(detail.getRoleId() != null ? detail.getRoleId() : "N/A").append("\n");
         }
-
-        return result.toString();
+        return result;
     }
 
 
@@ -385,21 +390,10 @@ public class DpsEventService implements IDpsEventService {
     public DpsEvent constructDpsEvent(DpsDto dpsDto) {
         try {
             // Attempt to find an existing DpsEvent by execution ID, or create a new one if not found
-            DpsDataDto dtoData = dpsDto.getData();
-            if (dtoData == null) {
-                throw new DpsException("DpsDataDto cannot be null.");
-            }
+            DpsDataDto dtoData = getValidatedDpsDataDto(dpsDto);
 
             // Fetch existing DpsEvent or create a new one
-            DpsEvent dpsEvent = dpsEventRepository.findByExecutionId(dtoData.getRuleExecutionId());
-            if (dpsEvent == null) {
-                // Validate mandatory fields for creating a new DpsEvent
-                if (dtoData.getEntityType() == null || dtoData.getEntityId() == null) {
-                    throw new DpsException("Entity Type and Entity ID are mandatory for new Dps rule execution id: "
-                            + dtoData.getRuleExecutionId());
-                }
-                dpsEvent = new DpsEvent();
-            }
+            DpsEvent dpsEvent = getDpsEvent(dtoData);
 
             // Update fields conditionally only if non-null
             if (dtoData.getRuleExecutionId() != null) {
@@ -444,40 +438,73 @@ public class DpsEventService implements IDpsEventService {
             if (dtoData.getEventTimestamp() != null) {
                 dpsEvent.setEventTimestamp(dtoData.getEventTimestamp());
             }
-            if (dpsDto.getTransactionId() != null) {
-                dpsEvent.setTransactionId(dpsDto.getTransactionId());
-            }
-            if (dtoData.getFieldsDetectedValues() != null) {
-                List<DpsFieldData> fieldDataList = ObjectUtils.defaultIfNull(dpsEvent.getDpsFieldData(), new ArrayList<>());
-                dtoData.getFieldsDetectedValues().forEach(fieldDataDto ->
-                        fieldDataList.add(DpsFieldData.builder()
-                                .key(fieldDataDto.getKey())
-                                .value(fieldDataDto.getValue())
-                                .build())
-                );
-                dpsEvent.setDpsFieldData(fieldDataList); // Set the updated list back to the entity
-            }
-            if (dtoData.getApprovalLineUpdates() != null) {
-                List<DpsApprovalDetail> approvalDetailList = ObjectUtils.defaultIfNull(dpsEvent.getDpsApprovalDetailList(), new ArrayList<>());
-                dtoData.getApprovalLineUpdates().forEach(approvalDetailDto ->
-                        approvalDetailList.add(DpsApprovalDetail.builder()
-                                .username(approvalDetailDto.getUsername())
-                                .actionTime(approvalDetailDto.getTime())
-                                .message(approvalDetailDto.getMessage())
-                                .state(approvalDetailDto.getState())
-                                .approvalLevel(approvalDetailDto.getLevel())
-                                .roleName(approvalDetailDto.getRoleName())
-                                .roleId(approvalDetailDto.getRoleId())
-                                .build())
-                );
-                dpsEvent.setDpsApprovalDetailList(approvalDetailList);
-            }
+            setTransactionIdInEvent(dpsDto, dpsEvent);
+            setDpsFieldDataInEvent(dtoData, dpsEvent);
+            setDpsApprovalDetailListInEvent(dtoData, dpsEvent);
 
             return dpsEvent;
 
         } catch (Exception e) {
             throw new DpsException("Error in creating or updating object of DpsEvent: " + e.getMessage(), e);
         }
+    }
+
+    private void setTransactionIdInEvent(DpsDto dpsDto, DpsEvent dpsEvent) {
+        if (dpsDto.getTransactionId() != null) {
+            dpsEvent.setTransactionId(dpsDto.getTransactionId());
+        }
+    }
+
+    private void setDpsFieldDataInEvent(DpsDataDto dtoData, DpsEvent dpsEvent) {
+        if (dtoData.getFieldsDetectedValues() != null) {
+            List<DpsFieldData> fieldDataList = ObjectUtils.defaultIfNull(dpsEvent.getDpsFieldData(), new ArrayList<>());
+            dtoData.getFieldsDetectedValues().forEach(fieldDataDto ->
+                    fieldDataList.add(DpsFieldData.builder()
+                            .key(fieldDataDto.getKey())
+                            .value(fieldDataDto.getValue())
+                            .build())
+            );
+            dpsEvent.setDpsFieldData(fieldDataList); // Set the updated list back to the entity
+        }
+    }
+
+    private void setDpsApprovalDetailListInEvent(DpsDataDto dtoData, DpsEvent dpsEvent) {
+        if (dtoData.getApprovalLineUpdates() != null) {
+            List<DpsApprovalDetail> approvalDetailList = ObjectUtils.defaultIfNull(dpsEvent.getDpsApprovalDetailList(), new ArrayList<>());
+            dtoData.getApprovalLineUpdates().forEach(approvalDetailDto ->
+                    approvalDetailList.add(DpsApprovalDetail.builder()
+                            .username(approvalDetailDto.getUsername())
+                            .actionTime(approvalDetailDto.getTime())
+                            .message(approvalDetailDto.getMessage())
+                            .state(approvalDetailDto.getState())
+                            .approvalLevel(approvalDetailDto.getLevel())
+                            .roleName(approvalDetailDto.getRoleName())
+                            .roleId(approvalDetailDto.getRoleId())
+                            .build())
+            );
+            dpsEvent.setDpsApprovalDetailList(approvalDetailList);
+        }
+    }
+
+    private DpsDataDto getValidatedDpsDataDto(DpsDto dpsDto) {
+        DpsDataDto dtoData = dpsDto.getData();
+        if (dtoData == null) {
+            throw new DpsException("DpsDataDto cannot be null.");
+        }
+        return dtoData;
+    }
+
+    private DpsEvent getDpsEvent(DpsDataDto dtoData) {
+        DpsEvent dpsEvent = dpsEventRepository.findByExecutionId(dtoData.getRuleExecutionId());
+        if (dpsEvent == null) {
+            // Validate mandatory fields for creating a new DpsEvent
+            if (dtoData.getEntityType() == null || dtoData.getEntityId() == null) {
+                throw new DpsException("Entity Type and Entity ID are mandatory for new Dps rule execution id: "
+                        + dtoData.getRuleExecutionId());
+            }
+            dpsEvent = new DpsEvent();
+        }
+        return dpsEvent;
     }
 
 

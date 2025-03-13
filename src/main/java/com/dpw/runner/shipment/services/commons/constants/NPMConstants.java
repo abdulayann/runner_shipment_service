@@ -28,4 +28,9 @@ public class NPMConstants {
     public static final String QUOTE_CONTRACTS_DATA_API_HANDLE = "/api/v2/quoteContractsData";
 
     public static final String QUOTE_CONTRACTS_LIST_SUCCESSFUL = "Successful quote contracts Data List Retrieval";
+
+    public static final String CONTAINER_COUNT = "ContainerCount";
+    public static final String SHIPMENT_CAMEL_CASE = "Shipment";
+    public static final String SHIPMENT = "SHIPMENT";
+
 }

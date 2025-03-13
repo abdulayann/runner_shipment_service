@@ -54,6 +54,111 @@ public class TransportOrderReport extends IReport{
         ShipmentModel shipmentModel = transportOrderModel.shipmentDetails;
         Map<String, Object> dictionary = new HashMap<>();
         dictionary.put(ReportConstants.SHIPMENT_NUMBER, shipmentModel.getShipmentId());
+        processTruckDriverDetailsTags(shipmentModel, dictionary);
+        List<String> unlocoRequests = this.createUnLocoRequestFromShipmentModel(shipmentModel);
+        Map<String, UnlocationsResponse> unlocationsMap = masterDataUtils.getLocationData(new HashSet<>(unlocoRequests));
+        UnlocationsResponse origin = unlocationsMap.get(shipmentModel.getCarrierDetails().getOrigin());
+        UnlocationsResponse destination = unlocationsMap.get(shipmentModel.getCarrierDetails().getDestination());
+        dictionary.put(ReportConstants.ORIGIN, origin != null ? origin.getName() : null);
+        dictionary.put(ReportConstants.DESTINATION, destination != null ? destination.getName() : null);
+        dictionary.put(ReportConstants.ETA_CAPS, ConvertToDPWDateFormat(shipmentModel.getCarrierDetails().getEta()));
+        dictionary.put(ReportConstants.ETD_CAPS, ConvertToDPWDateFormat(shipmentModel.getCarrierDetails().getEtd()));
+        processContainersListTags(shipmentModel, dictionary);
+        processReferenceNumbersListTags(shipmentModel, dictionary);
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
+        dictionary.put(GOODS_VALUE, AmountNumberFormatter.Format(shipmentModel.getGoodsValue(), UserContext.getUser().getCompanyCurrency(), v1TenantSettingsResponse));
+        dictionary.put(ReportConstants.GOODS_VALUE_CURRENCY, shipmentModel.getGoodsValueCurrency());
+        dictionary.put(ReportConstants.INSURANCE_VALUE, AmountNumberFormatter.Format(shipmentModel.getInsuranceValue(), UserContext.getUser().getCompanyCurrency(), v1TenantSettingsResponse));
+        dictionary.put(ReportConstants.INSURANCE_VALUE_CURRENCY, shipmentModel.getInsuranceValueCurrency());
+
+        if(shipmentModel.getFreightLocal() != null)
+            dictionary.put(ReportConstants.FREIGHT_LOCAL, AmountNumberFormatter.Format(shipmentModel.getFreightLocal(), UserContext.getUser().getCompanyCurrency(), v1TenantSettingsResponse));
+        if(shipmentModel.getFreightLocalCurrency() != null && !shipmentModel.getFreightLocalCurrency().isEmpty())
+            dictionary.put(ReportConstants.FREIGHT_LOCAL_CURRENCY, shipmentModel.getFreightLocalCurrency());
+        if(shipmentModel.getFreightOverseas() != null)
+            dictionary.put(ReportConstants.FREIGHT_OVERSEAS, AmountNumberFormatter.Format(shipmentModel.getFreightOverseas(), UserContext.getUser().getCompanyCurrency(), v1TenantSettingsResponse));
+        if(shipmentModel.getFreightOverseasCurrency() != null && !shipmentModel.getFreightOverseasCurrency().isEmpty())
+            dictionary.put(ReportConstants.FREIGHT_OVERSEAS_CURRENCY, shipmentModel.getFreightOverseasCurrency());
+        if(shipmentModel.getPickupDetails() != null && shipmentModel.getPickupDetails().getSourceDetail() != null) {
+            PartiesModel pickup = shipmentModel.getPickupDetails().getSourceDetail();
+            dictionary.put(ReportConstants.PICK_UP_ADDRESS, getFormattedAddress(pickup,true));
+            dictionary.put(ReportConstants.PICKUP_CONTACT, getValueFromMap(pickup.getAddressData(), ReportConstants.CONTACT_PHONE));
+        }
+        if(shipmentModel.getDeliveryDetails() != null && shipmentModel.getDeliveryDetails().getDestinationDetail() != null) {
+            PartiesModel delivery = shipmentModel.getDeliveryDetails().getDestinationDetail();
+            dictionary.put(ReportConstants.DELIVERY_ADDRESS, getFormattedAddress(delivery,true));
+            dictionary.put(ReportConstants.DELIVERY_CONTACT, getValueFromMap(delivery.getAddressData(), ReportConstants.CONTACT_PHONE));
+        }
+        processBrokerDetailTags(dictionary, shipmentModel);
+        addFreightLocalTags(shipmentModel, dictionary, v1TenantSettingsResponse);
+        if(shipmentModel.getTransportInstructionId() != null)
+            addTransportInstructionTags(dictionary, shipmentModel);
+        return dictionary;
+    }
+
+    private void addFreightLocalTags(ShipmentModel shipmentModel, Map<String, Object> dictionary, V1TenantSettingsResponse v1TenantSettingsResponse) {
+        if(shipmentModel.getFreightLocal() != null)
+            dictionary.put(ReportConstants.FREIGHT_LOCAL, AmountNumberFormatter.Format(shipmentModel.getFreightLocal(), shipmentModel.getFreightLocalCurrency(), v1TenantSettingsResponse));
+        if(shipmentModel.getFreightLocalCurrency() != null && !shipmentModel.getFreightLocalCurrency().isEmpty())
+            dictionary.put(ReportConstants.FREIGHT_LOCAL_CURRENCY, shipmentModel.getFreightLocalCurrency());
+        if(shipmentModel.getFreightOverseas() != null)
+            dictionary.put(ReportConstants.FREIGHT_OVERSEAS, AmountNumberFormatter.Format(shipmentModel.getFreightOverseas(), shipmentModel.getFreightOverseasCurrency(), v1TenantSettingsResponse));
+        if(shipmentModel.getFreightOverseasCurrency() != null && !shipmentModel.getFreightOverseasCurrency().isEmpty())
+            dictionary.put(ReportConstants.FREIGHT_OVERSEAS_CURRENCY, shipmentModel.getFreightOverseasCurrency());
+    }
+
+    private void processBrokerDetailTags(Map<String, Object> dictionary, ShipmentModel shipmentModel) {
+        try { dictionary.put(ReportConstants.EXPORT_BROKER, getValueFromMap(shipmentModel.getPickupDetails().getBrokerDetail().getOrgData(), ReportConstants.FULL_NAME)); } catch (Exception ignored) {}
+        try { dictionary.put(ReportConstants.EXPORT_BROKER_CONTACT, getValueFromMap(shipmentModel.getPickupDetails().getBrokerDetail().getAddressData(), ReportConstants.CONTACT_PHONE)); } catch (Exception ignored) {}
+        try { dictionary.put(ReportConstants.IMPORT_BROKER, getValueFromMap(shipmentModel.getDeliveryDetails().getBrokerDetail().getOrgData(), ReportConstants.FULL_NAME)); } catch (Exception ignored) {}
+        try { dictionary.put(ReportConstants.IMPORT_BROKER_CONTACT, getValueFromMap(shipmentModel.getDeliveryDetails().getBrokerDetail().getAddressData(), ReportConstants.CONTACT_PHONE)); } catch (Exception ignored) {}
+    }
+
+    private void processReferenceNumbersListTags(ShipmentModel shipmentModel, Map<String, Object> dictionary) {
+        if(shipmentModel.getReferenceNumbersList() != null && !shipmentModel.getReferenceNumbersList().isEmpty()) {
+            for (ReferenceNumbersModel referenceNumbersModel: shipmentModel.getReferenceNumbersList()) {
+                if(Objects.equals(referenceNumbersModel.getType(), ReferenceNumbersConstants.REF_NUM_TYPE_ETN) && !dictionary.containsKey(ReportConstants.ENTRY_NUMBER))
+                    dictionary.put(ReportConstants.ENTRY_NUMBER, referenceNumbersModel.getReferenceNumber());
+                if(Objects.equals(referenceNumbersModel.getType(), ReferenceNumbersConstants.REF_NUM_TYPE_CRR) && !dictionary.containsKey(ReportConstants.CUSTOMER_REFERENCE))
+                    dictionary.put(ReportConstants.CUSTOMER_REFERENCE, referenceNumbersModel.getReferenceNumber());
+            }
+        }
+    }
+
+    private void processContainersListTags(ShipmentModel shipmentModel, Map<String, Object> dictionary) {
+        if(shipmentModel.getContainersList() != null && !shipmentModel.getContainersList().isEmpty()) {
+            StringBuilder containerNumbers = null;
+            StringBuilder carrierSealNumbers = null;
+            for (ContainerModel containerModel: shipmentModel.getContainersList()) {
+                containerNumbers = getContainerNumbers(containerModel, containerNumbers);
+                carrierSealNumbers = getCarrierSealNumbers(containerModel, carrierSealNumbers);
+            }
+            if(carrierSealNumbers != null) dictionary.put(ReportConstants.CARRIER_SEAL_NUMBER, carrierSealNumbers.toString());
+            if(containerNumbers != null) dictionary.put(ReportConstants.CONTAINER_NUM, containerNumbers.toString());
+        }
+    }
+
+    private StringBuilder getCarrierSealNumbers(ContainerModel containerModel, StringBuilder carrierSealNumbers) {
+        if(!IsStringNullOrEmpty(containerModel.getCarrierSealNumber())) {
+            if(carrierSealNumbers == null)
+                carrierSealNumbers = new StringBuilder(containerModel.getCarrierSealNumber());
+            else
+                carrierSealNumbers.append(", ").append(containerModel.getCarrierSealNumber());
+        }
+        return carrierSealNumbers;
+    }
+
+    private StringBuilder getContainerNumbers(ContainerModel containerModel, StringBuilder containerNumbers) {
+        if(!IsStringNullOrEmpty(containerModel.getContainerNumber())) {
+            if(containerNumbers == null)
+                containerNumbers = new StringBuilder(containerModel.getContainerNumber());
+            else
+                containerNumbers.append(", ").append(containerModel.getContainerNumber());
+        }
+        return containerNumbers;
+    }
+
+    private void processTruckDriverDetailsTags(ShipmentModel shipmentModel, Map<String, Object> dictionary) {
         if(shipmentModel.getTruckDriverDetails() != null && !shipmentModel.getTruckDriverDetails().isEmpty()) {
             TruckDriverDetailsModel truckDriverDetailsModel = shipmentModel.getTruckDriverDetails().get(0);
             dictionary.put(ReportConstants.TRUCK_NUMBER_PLATE, truckDriverDetailsModel.getTruckNumberPlate());
@@ -66,80 +171,5 @@ public class TransportOrderReport extends IReport{
                 try { dictionary.put(ReportConstants.TRANSPORTER_NAME, truckDriverDetailsModel.getThirdPartyTransporter().getOrgData().get(ReportConstants.FULL_NAME)); } catch (Exception ignored) {}
             }
         }
-        List<String> unlocoRequests = this.createUnLocoRequestFromShipmentModel(shipmentModel);
-        Map<String, UnlocationsResponse> unlocationsMap = masterDataUtils.getLocationData(new HashSet<>(unlocoRequests));
-        UnlocationsResponse origin = unlocationsMap.get(shipmentModel.getCarrierDetails().getOrigin());
-        UnlocationsResponse destination = unlocationsMap.get(shipmentModel.getCarrierDetails().getDestination());
-        dictionary.put(ReportConstants.ORIGIN, origin != null ? origin.getName() : null);
-        dictionary.put(ReportConstants.DESTINATION, destination != null ? destination.getName() : null);
-        dictionary.put(ReportConstants.ETA_CAPS, ConvertToDPWDateFormat(shipmentModel.getCarrierDetails().getEta()));
-        dictionary.put(ReportConstants.ETD_CAPS, ConvertToDPWDateFormat(shipmentModel.getCarrierDetails().getEtd()));
-        if(shipmentModel.getContainersList() != null && !shipmentModel.getContainersList().isEmpty()) {
-            StringBuilder containerNumbers = null;
-            StringBuilder carrierSealNumbers = null;
-            for (ContainerModel containerModel: shipmentModel.getContainersList()) {
-                if(!IsStringNullOrEmpty(containerModel.getContainerNumber())) {
-                    if(containerNumbers == null)
-                        containerNumbers = new StringBuilder(containerModel.getContainerNumber());
-                    else
-                        containerNumbers.append(", ").append(containerModel.getContainerNumber());
-                }
-                if(!IsStringNullOrEmpty(containerModel.getCarrierSealNumber())) {
-                    if(carrierSealNumbers == null)
-                        carrierSealNumbers = new StringBuilder(containerModel.getCarrierSealNumber());
-                    else
-                        carrierSealNumbers.append(", ").append(containerModel.getCarrierSealNumber());
-                }
-            }
-            if(carrierSealNumbers != null) dictionary.put(ReportConstants.CARRIER_SEAL_NUMBER, carrierSealNumbers.toString());
-            if(containerNumbers != null) dictionary.put(ReportConstants.CONTAINER_NUM, containerNumbers.toString());
-        }
-        if(shipmentModel.getReferenceNumbersList() != null && !shipmentModel.getReferenceNumbersList().isEmpty()) {
-            for (ReferenceNumbersModel referenceNumbersModel: shipmentModel.getReferenceNumbersList()) {
-                if(Objects.equals(referenceNumbersModel.getType(), ReferenceNumbersConstants.REF_NUM_TYPE_ETN) && !dictionary.containsKey(ReportConstants.ENTRY_NUMBER))
-                    dictionary.put(ReportConstants.ENTRY_NUMBER, referenceNumbersModel.getReferenceNumber());
-                if(Objects.equals(referenceNumbersModel.getType(), ReferenceNumbersConstants.REF_NUM_TYPE_CRR) && !dictionary.containsKey(ReportConstants.CUSTOMER_REFERENCE))
-                    dictionary.put(ReportConstants.CUSTOMER_REFERENCE, referenceNumbersModel.getReferenceNumber());
-            }
-        }
-        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
-        dictionary.put(GOODS_VALUE, AmountNumberFormatter.Format(shipmentModel.getGoodsValue(), UserContext.getUser().getCompanyCurrency(), v1TenantSettingsResponse));
-        dictionary.put(ReportConstants.GOODS_VALUE_CURRENCY, shipmentModel.getGoodsValueCurrency());
-        dictionary.put(ReportConstants.INSURANCE_VALUE, AmountNumberFormatter.Format(shipmentModel.getInsuranceValue(), UserContext.getUser().getCompanyCurrency(), v1TenantSettingsResponse));
-        dictionary.put(ReportConstants.INSURANCE_VALUE_CURRENCY, shipmentModel.getInsuranceValueCurrency());
-
-        if(shipmentModel != null && shipmentModel.getFreightLocal() != null)
-            dictionary.put(ReportConstants.FREIGHT_LOCAL, AmountNumberFormatter.Format(shipmentModel.getFreightLocal(), UserContext.getUser().getCompanyCurrency(), v1TenantSettingsResponse));
-        if(shipmentModel != null && shipmentModel.getFreightLocalCurrency() != null && !shipmentModel.getFreightLocalCurrency().isEmpty())
-            dictionary.put(ReportConstants.FREIGHT_LOCAL_CURRENCY, shipmentModel.getFreightLocalCurrency());
-        if(shipmentModel != null && shipmentModel.getFreightOverseas() != null)
-            dictionary.put(ReportConstants.FREIGHT_OVERSEAS, AmountNumberFormatter.Format(shipmentModel.getFreightOverseas(), UserContext.getUser().getCompanyCurrency(), v1TenantSettingsResponse));
-        if(shipmentModel != null && shipmentModel.getFreightOverseasCurrency() != null && !shipmentModel.getFreightOverseasCurrency().isEmpty())
-            dictionary.put(ReportConstants.FREIGHT_OVERSEAS_CURRENCY, shipmentModel.getFreightOverseasCurrency());
-        if(shipmentModel.getPickupDetails() != null && shipmentModel.getPickupDetails().getSourceDetail() != null) {
-            PartiesModel pickup = shipmentModel.getPickupDetails().getSourceDetail();
-            dictionary.put(ReportConstants.PICK_UP_ADDRESS, getFormattedAddress(pickup,true));
-            dictionary.put(ReportConstants.PICKUP_CONTACT, getValueFromMap(pickup.getAddressData(), ReportConstants.CONTACT_PHONE));
-        }
-        if(shipmentModel.getDeliveryDetails() != null && shipmentModel.getDeliveryDetails().getDestinationDetail() != null) {
-            PartiesModel delivery = shipmentModel.getDeliveryDetails().getDestinationDetail();
-            dictionary.put(ReportConstants.DELIVERY_ADDRESS, getFormattedAddress(delivery,true));
-            dictionary.put(ReportConstants.DELIVERY_CONTACT, getValueFromMap(delivery.getAddressData(), ReportConstants.CONTACT_PHONE));
-        }
-        try { dictionary.put(ReportConstants.EXPORT_BROKER, getValueFromMap(shipmentModel.getPickupDetails().getBrokerDetail().getOrgData(), ReportConstants.FULL_NAME)); } catch (Exception ignored) {}
-        try { dictionary.put(ReportConstants.EXPORT_BROKER_CONTACT, getValueFromMap(shipmentModel.getPickupDetails().getBrokerDetail().getAddressData(), ReportConstants.CONTACT_PHONE)); } catch (Exception ignored) {}
-        try { dictionary.put(ReportConstants.IMPORT_BROKER, getValueFromMap(shipmentModel.getDeliveryDetails().getBrokerDetail().getOrgData(), ReportConstants.FULL_NAME)); } catch (Exception ignored) {}
-        try { dictionary.put(ReportConstants.IMPORT_BROKER_CONTACT, getValueFromMap(shipmentModel.getDeliveryDetails().getBrokerDetail().getAddressData(), ReportConstants.CONTACT_PHONE)); } catch (Exception ignored) {}
-        if(shipmentModel != null && shipmentModel.getFreightLocal() != null)
-            dictionary.put(ReportConstants.FREIGHT_LOCAL, AmountNumberFormatter.Format(shipmentModel.getFreightLocal(), shipmentModel.getFreightLocalCurrency(), v1TenantSettingsResponse));
-        if(shipmentModel != null && shipmentModel.getFreightLocalCurrency() != null && !shipmentModel.getFreightLocalCurrency().isEmpty())
-            dictionary.put(ReportConstants.FREIGHT_LOCAL_CURRENCY, shipmentModel.getFreightLocalCurrency());
-        if(shipmentModel != null && shipmentModel.getFreightOverseas() != null)
-            dictionary.put(ReportConstants.FREIGHT_OVERSEAS, AmountNumberFormatter.Format(shipmentModel.getFreightOverseas(), shipmentModel.getFreightOverseasCurrency(), v1TenantSettingsResponse));
-        if(shipmentModel != null && shipmentModel.getFreightOverseasCurrency() != null && !shipmentModel.getFreightOverseasCurrency().isEmpty())
-            dictionary.put(ReportConstants.FREIGHT_OVERSEAS_CURRENCY, shipmentModel.getFreightOverseasCurrency());
-        if(shipmentModel.getTransportInstructionId() != null)
-            addTransportInstructionTags(dictionary, shipmentModel);
-        return dictionary;
     }
 }

@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.kafka.config;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.utils.Generated;
 import java.util.HashMap;
 import java.util.Map;
@@ -75,7 +76,7 @@ public class ConsumerConfiguration {
 
         // Reset the offset to the earliest available offset on the partition if no offset is stored
         // This is useful when a new consumer group is created, and you want to consume all messages from the beginning
-        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
+        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, Constants.AUTO_OFFSET_RESET_CONFIG_LATEST);
         return new DefaultKafkaConsumerFactory<>(props, new StringDeserializer(), new StringDeserializer());
     }
 
@@ -95,7 +96,7 @@ public class ConsumerConfiguration {
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         props.put(ConsumerConfig.GROUP_ID_CONFIG, documentKafkaGroupId);
-        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
+        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, Constants.AUTO_OFFSET_RESET_CONFIG_LATEST);
         return new DefaultKafkaConsumerFactory<>(props, new StringDeserializer(), new StringDeserializer());
     }
 
@@ -123,7 +124,7 @@ public class ConsumerConfiguration {
 
         // Reset the offset to the earliest available offset on the partition if no offset is stored
         // This is useful when a new consumer group is created, and you want to consume all messages from the beginning
-        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
+        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, Constants.AUTO_OFFSET_RESET_CONFIG_LATEST);
         return new DefaultKafkaConsumerFactory<>(props, new StringDeserializer(), new StringDeserializer());
     }
 

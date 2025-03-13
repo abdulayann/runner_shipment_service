@@ -135,15 +135,7 @@ public class ContainersSync implements IContainersSync {
                     ));
             shipmentIds = shipmentsContainersMappingPageable.getContent().stream().map(ShipmentsContainersMapping::getShipmentId).toList();
         }
-        Map<Long, UUID> shipmentIdGuidMap = new HashMap<>();
-        if(shipmentIds.size() > 0) {
-            ListCommonRequest listCommonRequest = constructListCommonRequest("id", shipmentIds, "IN");
-            Pair<Specification<ShipmentDetails>, Pageable> pair2 = fetchData(listCommonRequest, ShipmentDetails.class);
-            Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(pair2.getLeft(), pair2.getRight());
-            if(shipmentDetailsPage != null && !shipmentDetailsPage.isEmpty()) {
-                shipmentIdGuidMap = shipmentDetailsPage.stream().collect(Collectors.toMap(ShipmentDetails::getId, ShipmentDetails::getGuid));
-            }
-        }
+        Map<Long, UUID> shipmentIdGuidMap = processShipmentIds(shipmentIds);
         Map<UUID, Long> contGuidIdMap = containersList.stream().collect(Collectors.toMap(Containers::getGuid, Containers::getId));
         if(containerRequestV2List != null && containerRequestV2List.size() > 0) {
             for (ContainerRequestV2 containerRequestV2 : containerRequestV2List) {
@@ -161,5 +153,18 @@ public class ContainersSync implements IContainersSync {
                 }
             }
         }
+    }
+
+    private Map<Long, UUID> processShipmentIds(List<Long> shipmentIds) {
+        Map<Long, UUID> shipmentIdGuidMap = new HashMap<>();
+        if(shipmentIds.size() > 0) {
+            ListCommonRequest listCommonRequest = constructListCommonRequest("id", shipmentIds, "IN");
+            Pair<Specification<ShipmentDetails>, Pageable> pair2 = fetchData(listCommonRequest, ShipmentDetails.class);
+            Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(pair2.getLeft(), pair2.getRight());
+            if(shipmentDetailsPage != null && !shipmentDetailsPage.isEmpty()) {
+                shipmentIdGuidMap = shipmentDetailsPage.stream().collect(Collectors.toMap(ShipmentDetails::getId, ShipmentDetails::getGuid));
+            }
+        }
+        return shipmentIdGuidMap;
     }
 }

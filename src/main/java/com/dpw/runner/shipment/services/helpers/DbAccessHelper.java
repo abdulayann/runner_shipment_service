@@ -32,8 +32,7 @@ public class DbAccessHelper {
         log.info("RequestId {}, Received Criteria Request from {}", LoggerHelper.getRequestIdFromMDC(), className.getSimpleName());
         Pageable pages;
         globalSearchCriteria(request, tableNames);
-        if (request.getSortRequest() != null && request.getFilterCriteria() != null &&
-                (request.getFilterCriteria().size() == 0  || (request.getFilterCriteria().size() == 1 && request.getFilterCriteria().get(0).getInnerFilter() != null && request.getFilterCriteria().get(0).getInnerFilter().size() == 0))) {
+        if (sortRequestAndFilterCriteriaNotNull(request)) {
             String _tableName = !Objects.isNull(tableNames.get(request.getSortRequest().getFieldName())) ? tableNames.get(request.getSortRequest().getFieldName()).getTableName() : null;
             Sort sortRequest = null;
             if (_tableName != null) {
@@ -57,6 +56,18 @@ public class DbAccessHelper {
         if(filterCriteria.size() == 0) {
             specification = where(createSpecificationWithoutFilter(request.getIncludeTbls()));
         }
+        specification = gettSpecificationFromFilterCriteria(request, className, tableNames, filterCriteria, specification, sortRequest, map);
+        log.info("RequestId {}, Received Criteria Request from {} got completed", LoggerHelper.getRequestIdFromMDC(), className.getSimpleName());
+        map.clear();
+        return Pair.of(specification, pages);
+    }
+
+    private static boolean sortRequestAndFilterCriteriaNotNull(ListCommonRequest request) {
+        return request.getSortRequest() != null && request.getFilterCriteria() != null &&
+                (request.getFilterCriteria().size() == 0 || (request.getFilterCriteria().size() == 1 && request.getFilterCriteria().get(0).getInnerFilter() != null && request.getFilterCriteria().get(0).getInnerFilter().size() == 0));
+    }
+
+    private static <T> Specification<T> gettSpecificationFromFilterCriteria(ListCommonRequest request, Class className, Map<String, RunnerEntityMapping> tableNames, List<FilterCriteria> filterCriteria, Specification<T> specification, SortRequest sortRequest, Map<String, Join<Class, T>> map) {
         for (FilterCriteria filters : filterCriteria) {
             if (filters.getLogicOperator() == null) {
                 specification =
@@ -67,9 +78,7 @@ public class DbAccessHelper {
                 specification = specification.and(getSpecificationFromFilters(filters.getInnerFilter(), null, map, className.getSimpleName(), null, tableNames));
             }
         }
-        log.info("RequestId {}, Received Criteria Request from {} got completed", LoggerHelper.getRequestIdFromMDC(), className.getSimpleName());
-        map.clear();
-        return Pair.of(specification, pages);
+        return specification;
     }
 
     private static void globalSearchCriteria(ListCommonRequest request, Map<String, RunnerEntityMapping> tableName) {
@@ -145,28 +154,37 @@ public class DbAccessHelper {
 
         for (FilterCriteria input : filter) {
             if (input.getInnerFilter() != null && input.getInnerFilter().size() > 0) {
-                if (input.getLogicOperator() != null) {
-                    if (input.getLogicOperator().equalsIgnoreCase("OR")) {
-                        specification = specification.or(getSpecificationFromFilters(input.getInnerFilter(), null, map, className, null, tableNames));
-                    } else if (input.getLogicOperator().equalsIgnoreCase("AND")) {
-                        specification = specification.and(getSpecificationFromFilters(input.getInnerFilter(), null, map, className, null, tableNames));
-                    }
-                } else {
-                    specification =
-                            where(getSpecificationFromFilters(input.getInnerFilter(), sortRequest, map, className, tableName, tableNames));
-                }
+                specification = getSpecificationFromInnerFilter(sortRequest, map, className, tableName, tableNames, input, specification);
             } else {
                 if (input.getLogicOperator() != null) {
-                    if (input.getLogicOperator().equalsIgnoreCase("OR")) {
-                        specification = specification.or(createSpecification(input.getCriteria(), null, map, className, null, tableNames));
-                    } else if (input.getLogicOperator().equalsIgnoreCase("AND")) {
-                        specification = specification.and(createSpecification(input.getCriteria(), null, map, className, null, tableNames));
-                    }
+                    specification = getSpecificationFromLogicalOperator(map, className, tableNames, input, specification);
                 } else {
-                    specification =
-                            where(createSpecification(input.getCriteria(), sortRequest, map, className, tableName, tableNames));
+                    specification = where(createSpecification(input.getCriteria(), sortRequest, map, className, tableName, tableNames));
                 }
             }
+        }
+        return specification;
+    }
+
+    private static <T> Specification<T> getSpecificationFromLogicalOperator(Map<String, Join<Class, T>> map, String className, Map<String, RunnerEntityMapping> tableNames, FilterCriteria input, Specification<T> specification) {
+        if (input.getLogicOperator().equalsIgnoreCase("OR")) {
+            specification = specification.or(createSpecification(input.getCriteria(), null, map, className, null, tableNames));
+        } else if (input.getLogicOperator().equalsIgnoreCase("AND")) {
+            specification = specification.and(createSpecification(input.getCriteria(), null, map, className, null, tableNames));
+        }
+        return specification;
+    }
+
+    private static <T> Specification<T> getSpecificationFromInnerFilter(SortRequest sortRequest, Map<String, Join<Class, T>> map, String className, List<String> tableName, Map<String, RunnerEntityMapping> tableNames, FilterCriteria input, Specification<T> specification) {
+        if (input.getLogicOperator() != null) {
+            if (input.getLogicOperator().equalsIgnoreCase("OR")) {
+                specification = specification.or(getSpecificationFromFilters(input.getInnerFilter(), null, map, className, null, tableNames));
+            } else if (input.getLogicOperator().equalsIgnoreCase("AND")) {
+                specification = specification.and(getSpecificationFromFilters(input.getInnerFilter(), null, map, className, null, tableNames));
+            }
+        } else {
+            specification =
+                    where(getSpecificationFromFilters(input.getInnerFilter(), sortRequest, map, className, tableName, tableNames));
         }
         return specification;
     }
@@ -198,46 +216,64 @@ public class DbAccessHelper {
                 }
             }
 
-            if (!query.getResultType().isAssignableFrom(Long.class) && sortRequest != null && (query.getOrderList() == null || query.getOrderList().size() == 0)) {
-                if (tableNames.get(sortRequest.getFieldName()).getTableName().equalsIgnoreCase(className)) {
-                    if (sortRequest.getOrder().equalsIgnoreCase("DESC")) {
-                        query.orderBy(Arrays.asList(criteriaBuilder.desc(root.get(getFieldName(sortRequest.getFieldName(), tableNames)))));
-                    } else {
-                        query.orderBy(Arrays.asList(criteriaBuilder.asc(root.get(getFieldName(sortRequest.getFieldName(), tableNames)))));
-                    }
-                } else {
-                    if ((root.getJoins() == null && root.getFetches() == null) || (root.getJoins().size() == 0 && root.getFetches().size() == 0) || map.get(tableNames.get(sortRequest.getFieldName()).getTableName()) == null ||
-                            (!root.getJoins().contains(map.get(tableNames.get(sortRequest.getFieldName()).getTableName())) && !root.getFetches().contains(map.get(tableNames.get(sortRequest.getFieldName()).getTableName())))) {
-                        join = (Join) root.fetch(tableNames.get(sortRequest.getFieldName()).getTableName(), JoinType.LEFT);
-                        map.put(tableNames.get(sortRequest.getFieldName()).getTableName(), join);
-                        query.distinct(true);
-                    } else {
-                        join = map.get(tableNames.get(sortRequest.getFieldName()).getTableName());
-                    }
-                    if (sortRequest.getOrder().equalsIgnoreCase("DESC")) {
-                        query.orderBy(Arrays.asList(criteriaBuilder.desc(((Join) join).get(getFieldName(sortRequest.getFieldName(), tableNames)))));
-                    } else {
-                        query.orderBy(Arrays.asList(criteriaBuilder.asc(((Join) join).get(getFieldName(sortRequest.getFieldName(), tableNames)))));
-                    }
-                }
-            }
+            getQuery(sortRequest, map, className, tableNames, root, query, criteriaBuilder);
 
-            if (tableNames.get(input.getFieldName()).getTableName().equalsIgnoreCase(className)) {
-                path = root;
-            } else {
-                if ((root.getJoins() == null && root.getFetches() == null) || (root.getJoins().size() == 0 && root.getFetches().size() == 0) || map.get(tableNames.get(input.getFieldName()).getTableName()) == null ||
-                        (!root.getJoins().contains(map.get(tableNames.get(input.getFieldName()).getTableName())) && !root.getFetches().contains(map.get(tableNames.get(input.getFieldName()).getTableName())))) {
-                    join = root.join(tableNames.get(input.getFieldName()).getTableName(), JoinType.LEFT);
-                    map.put(tableNames.get(input.getFieldName()).getTableName(), join);
-                    path = join;
-                    query.distinct(true);
-                } else {
-                    path = map.get(tableNames.get(input.getFieldName()).getTableName());
-                }
-            }
+            path = getPath(input, map, className, tableNames, root, query);
             return createSpecification(tableNames.get(input.getFieldName()).getDataType(), input, path, criteriaBuilder, getFieldName(input.getFieldName(), tableNames));
 
         };
+    }
+
+    private static <T> void getQuery(SortRequest sortRequest, Map<String, Join<Class, T>> map, String className, Map<String, RunnerEntityMapping> tableNames, Root<T> root, CriteriaQuery<?> query, CriteriaBuilder criteriaBuilder) {
+        Join<Class, T> join;
+        if (!query.getResultType().isAssignableFrom(Long.class) && sortRequest != null && (query.getOrderList() == null || query.getOrderList().size() == 0)) {
+            if (tableNames.get(sortRequest.getFieldName()).getTableName().equalsIgnoreCase(className)) {
+                if (sortRequest.getOrder().equalsIgnoreCase("DESC")) {
+                    query.orderBy(Arrays.asList(criteriaBuilder.desc(root.get(getFieldName(sortRequest.getFieldName(), tableNames)))));
+                } else {
+                    query.orderBy(Arrays.asList(criteriaBuilder.asc(root.get(getFieldName(sortRequest.getFieldName(), tableNames)))));
+                }
+            } else {
+                join = manageJoin(sortRequest, map, tableNames, root, query);
+                if (sortRequest.getOrder().equalsIgnoreCase("DESC")) {
+                    query.orderBy(Arrays.asList(criteriaBuilder.desc(((Join) join).get(getFieldName(sortRequest.getFieldName(), tableNames)))));
+                } else {
+                    query.orderBy(Arrays.asList(criteriaBuilder.asc(((Join) join).get(getFieldName(sortRequest.getFieldName(), tableNames)))));
+                }
+            }
+        }
+    }
+
+    private static <T> Join<Class, T> manageJoin(SortRequest sortRequest, Map<String, Join<Class, T>> map, Map<String, RunnerEntityMapping> tableNames, Root<T> root, CriteriaQuery<?> query) {
+        Join<Class, T> join;
+        if ((root.getJoins() == null && root.getFetches() == null) || (root.getJoins().size() == 0 && root.getFetches().size() == 0) || map.get(tableNames.get(sortRequest.getFieldName()).getTableName()) == null ||
+                (!root.getJoins().contains(map.get(tableNames.get(sortRequest.getFieldName()).getTableName())) && !root.getFetches().contains(map.get(tableNames.get(sortRequest.getFieldName()).getTableName())))) {
+            join = (Join) root.fetch(tableNames.get(sortRequest.getFieldName()).getTableName(), JoinType.LEFT);
+            map.put(tableNames.get(sortRequest.getFieldName()).getTableName(), join);
+            query.distinct(true);
+        } else {
+            join = map.get(tableNames.get(sortRequest.getFieldName()).getTableName());
+        }
+        return join;
+    }
+
+    private static <T> Path getPath(Criteria input, Map<String, Join<Class, T>> map, String className, Map<String, RunnerEntityMapping> tableNames, Root<T> root, CriteriaQuery<?> query) {
+        Join<Class, T> join;
+        Path path;
+        if (tableNames.get(input.getFieldName()).getTableName().equalsIgnoreCase(className)) {
+            path = root;
+        } else {
+            if ((root.getJoins() == null && root.getFetches() == null) || (root.getJoins().size() == 0 && root.getFetches().size() == 0) || map.get(tableNames.get(input.getFieldName()).getTableName()) == null ||
+                    (!root.getJoins().contains(map.get(tableNames.get(input.getFieldName()).getTableName())) && !root.getFetches().contains(map.get(tableNames.get(input.getFieldName()).getTableName())))) {
+                join = root.join(tableNames.get(input.getFieldName()).getTableName(), JoinType.LEFT);
+                map.put(tableNames.get(input.getFieldName()).getTableName(), join);
+                path = join;
+                query.distinct(true);
+            } else {
+                path = map.get(tableNames.get(input.getFieldName()).getTableName());
+            }
+        }
+        return path;
     }
 
     private static String getFieldName(String key,  Map<String, RunnerEntityMapping> tableNames) {
@@ -261,81 +297,21 @@ public class DbAccessHelper {
     private static <T> Predicate createSpecification(Class dataType, Criteria input, Path path, CriteriaBuilder criteriaBuilder, String fieldName) {
         switch (input.getOperator()) {
             case "=":
-                if (dataType.isAssignableFrom(String.class)) {
-                    return criteriaBuilder.equal(criteriaBuilder.lower(path.get(fieldName)), (((String) input.getValue()).toLowerCase()));
-                }
-                else if (dataType.isAssignableFrom(UUID.class) && input.getValue() instanceof String) {
-                    return criteriaBuilder.equal(path.get(fieldName), UUID.fromString((String) input.getValue()));
-                }
-                else if(dataType.isEnum()) {
-                    return criteriaBuilder.equal(path.get(fieldName), getEnum(dataType.getName(), (String) input.getValue()));
-                }
-                return criteriaBuilder.equal(path.get(fieldName), input.getValue());
+                return processEqualsToCriteria(dataType, input, path, criteriaBuilder, fieldName);
 
             case "!=":
-                if (dataType.isAssignableFrom(String.class)) {
-                    return criteriaBuilder.notEqual(criteriaBuilder.lower(path.get(fieldName)), (((String) input.getValue()).toLowerCase()));
-                }
-                return criteriaBuilder.notEqual(path.get(fieldName), input.getValue());
+                return processNotEqualsToCriteria(dataType, input, path, criteriaBuilder, fieldName);
 
             case ">":
-                if (dataType.isAssignableFrom(String.class)) {
-                    return criteriaBuilder.greaterThan(path.get(fieldName), (String) input.getValue());
-                }
-                if (dataType.isAssignableFrom(Date.class)) {
-                    return criteriaBuilder.greaterThan(path.get(fieldName), covertStringToData((String) input.getValue(), YYYY_MM_DD));
-                }
-                if (dataType.isAssignableFrom(LocalDateTime.class)) {
-                    if(input.getValue() instanceof LocalDateTime) {
-                        return criteriaBuilder.greaterThan(path.get(fieldName), convertFromTenantTimeZone(path, fieldName, (LocalDateTime) input.getValue(), input));
-                    }
-                    return criteriaBuilder.greaterThan(path.get(fieldName), convertFromTenantTimeZone(path, fieldName, covertStringToLocalDate((String) input.getValue(), YYYY_MM_DD), input));
-                }
-                return criteriaBuilder.gt(path.get(fieldName), (Number) input.getValue());
+                return processGreaterThanCriteria(dataType, input, path, criteriaBuilder, fieldName);
 
             case "<":
-                if (dataType.isAssignableFrom(String.class)) {
-                    return criteriaBuilder.lessThan(path.get(fieldName), (String) input.getValue());
-                }
-                if (dataType.isAssignableFrom(Date.class)) {
-                    return criteriaBuilder.lessThan(path.get(fieldName), covertStringToData((String) input.getValue(), YYYY_MM_DD));
-                }
-                if (dataType.isAssignableFrom(LocalDateTime.class)) {
-                    if(input.getValue() instanceof LocalDateTime) {
-                        return criteriaBuilder.lessThan(path.get(fieldName), convertFromTenantTimeZone(path, fieldName, (LocalDateTime) input.getValue(), input));
-                    }
-                    return criteriaBuilder.lessThan(path.get(fieldName), convertFromTenantTimeZone(path, fieldName, covertStringToLocalDate((String) input.getValue(), YYYY_MM_DD), input));
-                }
-                return criteriaBuilder.lt(path.get(fieldName), (Number) input.getValue());
+                return processLessThanCriteria(dataType, input, path, criteriaBuilder, fieldName);
             case ">=":
-                if (dataType.isAssignableFrom(String.class)) {
-                    return criteriaBuilder.greaterThanOrEqualTo(path.get(fieldName), (String) input.getValue());
-                }
-                if (dataType.isAssignableFrom(Date.class)) {
-                    return criteriaBuilder.greaterThanOrEqualTo(path.get(fieldName), covertStringToData((String) input.getValue(), YYYY_MM_DD));
-                }
-                if (dataType.isAssignableFrom(LocalDateTime.class)) {
-                    if(input.getValue() instanceof LocalDateTime) {
-                        return criteriaBuilder.greaterThanOrEqualTo(path.get(fieldName), convertFromTenantTimeZone(path, fieldName, (LocalDateTime) input.getValue(), input));
-                    }
-                    return criteriaBuilder.greaterThanOrEqualTo(path.get(fieldName), convertFromTenantTimeZone(path, fieldName, covertStringToLocalDate((String) input.getValue(), YYYY_MM_DD), input));
-                }
-                return criteriaBuilder.gt(path.get(fieldName), (Number) input.getValue());
+                return processGreaterThanEqualsToCriteria(dataType, input, path, criteriaBuilder, fieldName);
 
             case "<=":
-                if (dataType.isAssignableFrom(String.class)) {
-                    return criteriaBuilder.lessThanOrEqualTo(path.get(fieldName), (String) input.getValue());
-                }
-                if (dataType.isAssignableFrom(Date.class)) {
-                    return criteriaBuilder.lessThanOrEqualTo(path.get(fieldName), covertStringToData((String) input.getValue(), YYYY_MM_DD));
-                }
-                if (dataType.isAssignableFrom(LocalDateTime.class)) {
-                    if(input.getValue() instanceof LocalDateTime) {
-                        return criteriaBuilder.lessThanOrEqualTo(path.get(fieldName), convertFromTenantTimeZone(path, fieldName, (LocalDateTime) input.getValue(), input));
-                    }
-                    return criteriaBuilder.lessThanOrEqualTo(path.get(fieldName), convertFromTenantTimeZone(path, fieldName, covertStringToLocalDate((String) input.getValue(), YYYY_MM_DD), input));
-                }
-                return criteriaBuilder.lt(path.get(fieldName), (Number) input.getValue());
+                return processLessThanEqualsToCriteria(dataType, input, path, criteriaBuilder, fieldName);
 
             case "LIKE":
                 return criteriaBuilder.like(criteriaBuilder.lower(path.get(fieldName)),
@@ -346,49 +322,9 @@ public class DbAccessHelper {
                         ((String) input.getValue()).toLowerCase() + "%");
 
             case "IN":
-                if (dataType.isAssignableFrom(UUID.class) && input.getValue() != null && input.getValue() instanceof List) {
-                    List<UUID> querySet = ((List<?>) input.getValue()).stream()
-                            .map(i -> {
-                                if (i instanceof String)
-                                    return UUID.fromString((String) i);
-                                return (UUID) i;
-                            }).toList();
-                    return criteriaBuilder.in(path.get(fieldName)).value(querySet);
-                }
-                if (dataType.isAssignableFrom(Long.class) && input.getValue() != null && input.getValue() instanceof List) {
-                    List<Long> querySet = ((List<?>) input.getValue()).stream()
-                            .map(i -> Long.valueOf(String.valueOf(i))).toList();
-                    return criteriaBuilder.in(path.get(fieldName)).value(querySet);
-                }
-                if (dataType.isEnum()) {
-                    List<Enum> querySet = ((List<?>) input.getValue()).stream()
-                            .map(i -> getEnum(dataType.getName(), String.valueOf(i))).collect(Collectors.toList());
-                    return criteriaBuilder.in(path.get(fieldName)).value(querySet);
-                }
-                return criteriaBuilder.in(path.get(fieldName))
-                        .value(input.getValue());
+                return processInCriteria(dataType, input, path, criteriaBuilder, fieldName);
             case "NOTIN":
-                if (dataType.isAssignableFrom(UUID.class) && input.getValue() != null && input.getValue() instanceof List) {
-                    List<UUID> querySet = ((List<?>) input.getValue()).stream()
-                            .map(i -> {
-                                if (i instanceof String string)
-                                    return UUID.fromString(string);
-                                return (UUID) i;
-                            }).toList();
-                    return criteriaBuilder.in(path.get(fieldName)).value(querySet).not();
-                }
-                if (dataType.isAssignableFrom(Long.class) && input.getValue() != null && input.getValue() instanceof List) {
-                    List<Long> querySet = ((List<?>) input.getValue()).stream()
-                            .map(i -> Long.valueOf(String.valueOf(i))).toList();
-                    return criteriaBuilder.in(path.get(fieldName)).value(querySet).not();
-                }
-                if (dataType.isEnum()) {
-                    List<Enum> querySet = ((List<?>) input.getValue()).stream()
-                            .map(i -> getEnum(dataType.getName(), String.valueOf(i))).collect(Collectors.toList());
-                    return criteriaBuilder.in(path.get(fieldName)).value(querySet).not();
-                }
-                return criteriaBuilder.in(path.get(fieldName))
-                        .value(input.getValue()).not();
+                return processNOTINCriteria(dataType, input, path, criteriaBuilder, fieldName);
             case "CONTAINS":
                 if (dataType.isAssignableFrom(List.class) || dataType.isAssignableFrom(Set.class))
                     return criteriaBuilder.isMember(input.getValue(), path.get(fieldName));
@@ -401,6 +337,138 @@ public class DbAccessHelper {
             default:
                 throw new RuntimeException("Operation not supported yet");
         }
+    }
+
+    private static CriteriaBuilder.In processInCriteria(Class dataType, Criteria input, Path path, CriteriaBuilder criteriaBuilder, String fieldName) {
+        if (dataType.isAssignableFrom(UUID.class) && input.getValue() != null && input.getValue() instanceof List) {
+            List<UUID> querySet = ((List<?>) input.getValue()).stream()
+                    .map(i -> {
+                        if (i instanceof String)
+                            return UUID.fromString((String) i);
+                        return (UUID) i;
+                    }).toList();
+            return criteriaBuilder.in(path.get(fieldName)).value(querySet);
+        }
+        if (dataType.isAssignableFrom(Long.class) && input.getValue() != null && input.getValue() instanceof List) {
+            List<Long> querySet = ((List<?>) input.getValue()).stream()
+                    .map(i -> Long.valueOf(String.valueOf(i))).toList();
+            return criteriaBuilder.in(path.get(fieldName)).value(querySet);
+        }
+        if (dataType.isEnum()) {
+            List<Enum> querySet = ((List<?>) input.getValue()).stream()
+                    .map(i -> getEnum(dataType.getName(), String.valueOf(i))).collect(Collectors.toList());
+            return criteriaBuilder.in(path.get(fieldName)).value(querySet);
+        }
+        return criteriaBuilder.in(path.get(fieldName))
+                .value(input.getValue());
+    }
+
+    private static Predicate processLessThanEqualsToCriteria(Class dataType, Criteria input, Path path, CriteriaBuilder criteriaBuilder, String fieldName) {
+        if (dataType.isAssignableFrom(String.class)) {
+            return criteriaBuilder.lessThanOrEqualTo(path.get(fieldName), (String) input.getValue());
+        }
+        if (dataType.isAssignableFrom(Date.class)) {
+            return criteriaBuilder.lessThanOrEqualTo(path.get(fieldName), covertStringToData((String) input.getValue(), YYYY_MM_DD));
+        }
+        if (dataType.isAssignableFrom(LocalDateTime.class)) {
+            if(input.getValue() instanceof LocalDateTime) {
+                return criteriaBuilder.lessThanOrEqualTo(path.get(fieldName), convertFromTenantTimeZone(path, fieldName, (LocalDateTime) input.getValue(), input));
+            }
+            return criteriaBuilder.lessThanOrEqualTo(path.get(fieldName), convertFromTenantTimeZone(path, fieldName, covertStringToLocalDate((String) input.getValue(), YYYY_MM_DD), input));
+        }
+        return criteriaBuilder.lt(path.get(fieldName), (Number) input.getValue());
+    }
+
+    private static Predicate processGreaterThanEqualsToCriteria(Class dataType, Criteria input, Path path, CriteriaBuilder criteriaBuilder, String fieldName) {
+        if (dataType.isAssignableFrom(String.class)) {
+            return criteriaBuilder.greaterThanOrEqualTo(path.get(fieldName), (String) input.getValue());
+        }
+        if (dataType.isAssignableFrom(Date.class)) {
+            return criteriaBuilder.greaterThanOrEqualTo(path.get(fieldName), covertStringToData((String) input.getValue(), YYYY_MM_DD));
+        }
+        if (dataType.isAssignableFrom(LocalDateTime.class)) {
+            if(input.getValue() instanceof LocalDateTime) {
+                return criteriaBuilder.greaterThanOrEqualTo(path.get(fieldName), convertFromTenantTimeZone(path, fieldName, (LocalDateTime) input.getValue(), input));
+            }
+            return criteriaBuilder.greaterThanOrEqualTo(path.get(fieldName), convertFromTenantTimeZone(path, fieldName, covertStringToLocalDate((String) input.getValue(), YYYY_MM_DD), input));
+        }
+        return criteriaBuilder.gt(path.get(fieldName), (Number) input.getValue());
+    }
+
+    private static Predicate processLessThanCriteria(Class dataType, Criteria input, Path path, CriteriaBuilder criteriaBuilder, String fieldName) {
+        if (dataType.isAssignableFrom(String.class)) {
+            return criteriaBuilder.lessThan(path.get(fieldName), (String) input.getValue());
+        }
+        if (dataType.isAssignableFrom(Date.class)) {
+            return criteriaBuilder.lessThan(path.get(fieldName), covertStringToData((String) input.getValue(), YYYY_MM_DD));
+        }
+        if (dataType.isAssignableFrom(LocalDateTime.class)) {
+            if(input.getValue() instanceof LocalDateTime) {
+                return criteriaBuilder.lessThan(path.get(fieldName), convertFromTenantTimeZone(path, fieldName, (LocalDateTime) input.getValue(), input));
+            }
+            return criteriaBuilder.lessThan(path.get(fieldName), convertFromTenantTimeZone(path, fieldName, covertStringToLocalDate((String) input.getValue(), YYYY_MM_DD), input));
+        }
+        return criteriaBuilder.lt(path.get(fieldName), (Number) input.getValue());
+    }
+
+    private static Predicate processNotEqualsToCriteria(Class dataType, Criteria input, Path path, CriteriaBuilder criteriaBuilder, String fieldName) {
+        if (dataType.isAssignableFrom(String.class)) {
+            return criteriaBuilder.notEqual(criteriaBuilder.lower(path.get(fieldName)), (((String) input.getValue()).toLowerCase()));
+        }
+        return criteriaBuilder.notEqual(path.get(fieldName), input.getValue());
+    }
+
+    private static Predicate processNOTINCriteria(Class dataType, Criteria input, Path path, CriteriaBuilder criteriaBuilder, String fieldName) {
+        if (dataType.isAssignableFrom(UUID.class) && input.getValue() != null && input.getValue() instanceof List) {
+            List<UUID> querySet = ((List<?>) input.getValue()).stream()
+                    .map(i -> {
+                        if (i instanceof String string)
+                            return UUID.fromString(string);
+                        return (UUID) i;
+                    }).toList();
+            return criteriaBuilder.in(path.get(fieldName)).value(querySet).not();
+        }
+        if (dataType.isAssignableFrom(Long.class) && input.getValue() != null && input.getValue() instanceof List) {
+            List<Long> querySet = ((List<?>) input.getValue()).stream()
+                    .map(i -> Long.valueOf(String.valueOf(i))).toList();
+            return criteriaBuilder.in(path.get(fieldName)).value(querySet).not();
+        }
+        if (dataType.isEnum()) {
+            List<Enum> querySet = ((List<?>) input.getValue()).stream()
+                    .map(i -> getEnum(dataType.getName(), String.valueOf(i))).collect(Collectors.toList());
+            return criteriaBuilder.in(path.get(fieldName)).value(querySet).not();
+        }
+        return criteriaBuilder.in(path.get(fieldName))
+                .value(input.getValue()).not();
+    }
+
+    private static Predicate processGreaterThanCriteria(Class dataType, Criteria input, Path path, CriteriaBuilder criteriaBuilder, String fieldName) {
+        if (dataType.isAssignableFrom(String.class)) {
+            return criteriaBuilder.greaterThan(path.get(fieldName), (String) input.getValue());
+        }
+        if (dataType.isAssignableFrom(Date.class)) {
+            return criteriaBuilder.greaterThan(path.get(fieldName), covertStringToData((String) input.getValue(), YYYY_MM_DD));
+        }
+        if (dataType.isAssignableFrom(LocalDateTime.class)) {
+            if(input.getValue() instanceof LocalDateTime) {
+                return criteriaBuilder.greaterThan(path.get(fieldName), convertFromTenantTimeZone(path, fieldName, (LocalDateTime) input.getValue(), input));
+            }
+            return criteriaBuilder.greaterThan(path.get(fieldName), convertFromTenantTimeZone(path, fieldName, covertStringToLocalDate((String) input.getValue(), YYYY_MM_DD), input));
+        }
+        return criteriaBuilder.gt(path.get(fieldName), (Number) input.getValue());
+    }
+
+    private static Predicate processEqualsToCriteria(Class dataType, Criteria input, Path path, CriteriaBuilder criteriaBuilder, String fieldName) {
+        if (dataType.isAssignableFrom(String.class)) {
+            return criteriaBuilder.equal(criteriaBuilder.lower(path.get(fieldName)), (((String) input.getValue()).toLowerCase()));
+        }
+        else if (dataType.isAssignableFrom(UUID.class) && input.getValue() instanceof String) {
+            return criteriaBuilder.equal(path.get(fieldName), UUID.fromString((String) input.getValue()));
+        }
+        else if(dataType.isEnum()) {
+            return criteriaBuilder.equal(path.get(fieldName), getEnum(dataType.getName(), (String) input.getValue()));
+        }
+        return criteriaBuilder.equal(path.get(fieldName), input.getValue());
     }
 
     private static LocalDateTime convertFromTenantTimeZone(Path path, String fieldName, LocalDateTime localDateTime, Criteria input) {
@@ -425,28 +493,38 @@ public class DbAccessHelper {
 
         for (FilterCriteria input : filter) {
             if (input.getInnerFilter() != null && input.getInnerFilter().size() > 0) {
-                if (input.getLogicOperator() != null) {
-                    if (input.getLogicOperator().equalsIgnoreCase("OR")) {
-                        specification = specification.or(getSpecificationFromFiltersWithoutMapping(input.getInnerFilter(), null, map, className, dataTypeMap));
-                    } else if (input.getLogicOperator().equalsIgnoreCase("AND")) {
-                        specification = specification.and(getSpecificationFromFiltersWithoutMapping(input.getInnerFilter(), null, map, className, dataTypeMap));
-                    }
-                } else {
-                    specification =
-                            where(getSpecificationFromFiltersWithoutMapping(input.getInnerFilter(), sortRequest, map, className, dataTypeMap));
-                }
+                specification = getSpecificationFromInnerFilter(sortRequest, map, className, dataTypeMap, input, specification);
             } else {
-                if (input.getLogicOperator() != null) {
-                    if (input.getLogicOperator().equalsIgnoreCase("OR")) {
-                        specification = specification.or(createSpecificationWithoutFilter(input.getCriteria(), null, map, className, dataTypeMap));
-                    } else if (input.getLogicOperator().equalsIgnoreCase("AND")) {
-                        specification = specification.and(createSpecificationWithoutFilter(input.getCriteria(), null, map, className, dataTypeMap));
-                    }
-                } else {
-                    specification =
-                            where(createSpecificationWithoutFilter(input.getCriteria(), sortRequest, map, className, dataTypeMap));
-                }
+                specification = getSpecificationFromLogicalOperator(sortRequest, map, className, dataTypeMap, input, specification);
             }
+        }
+        return specification;
+    }
+
+    private static <T> Specification<T> getSpecificationFromLogicalOperator(SortRequest sortRequest, Map<String, Join<Class, T>> map, String className, Map<String, Class> dataTypeMap, FilterCriteria input, Specification<T> specification) {
+        if (input.getLogicOperator() != null) {
+            if (input.getLogicOperator().equalsIgnoreCase("OR")) {
+                specification = specification.or(createSpecificationWithoutFilter(input.getCriteria(), null, map, className, dataTypeMap));
+            } else if (input.getLogicOperator().equalsIgnoreCase("AND")) {
+                specification = specification.and(createSpecificationWithoutFilter(input.getCriteria(), null, map, className, dataTypeMap));
+            }
+        } else {
+            specification =
+                    where(createSpecificationWithoutFilter(input.getCriteria(), sortRequest, map, className, dataTypeMap));
+        }
+        return specification;
+    }
+
+    private static <T> Specification<T> getSpecificationFromInnerFilter(SortRequest sortRequest, Map<String, Join<Class, T>> map, String className, Map<String, Class> dataTypeMap, FilterCriteria input, Specification<T> specification) {
+        if (input.getLogicOperator() != null) {
+            if (input.getLogicOperator().equalsIgnoreCase("OR")) {
+                specification = specification.or(getSpecificationFromFiltersWithoutMapping(input.getInnerFilter(), null, map, className, dataTypeMap));
+            } else if (input.getLogicOperator().equalsIgnoreCase("AND")) {
+                specification = specification.and(getSpecificationFromFiltersWithoutMapping(input.getInnerFilter(), null, map, className, dataTypeMap));
+            }
+        } else {
+            specification =
+                    where(getSpecificationFromFiltersWithoutMapping(input.getInnerFilter(), sortRequest, map, className, dataTypeMap));
         }
         return specification;
     }
