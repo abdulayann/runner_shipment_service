@@ -504,5 +504,17 @@ class EventDaoTest {
         assertEquals(1L, events.getConsolidationId());
     }
 
+    @Test
+    void updateEventDetailsForConsolidationEventAndDescartesSource() {
+        Events events = new Events();
+        events.setEntityId(1L);
+        events.setEntityType(Constants.CONSOLIDATION);
+        events.setSource(Constants.DESCARTES);
+
+        eventDao.updateEventDetails(events);
+
+        assertEquals(1L, events.getConsolidationId());
+    }
+
 
 }
