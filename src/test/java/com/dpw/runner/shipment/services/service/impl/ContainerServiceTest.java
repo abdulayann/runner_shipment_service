@@ -467,15 +467,21 @@ class ContainerServiceTest extends CommonMocks {
         ListCommonRequest listCommonRequest = ListCommonRequest.builder().build();
         CommonRequestModel requestModel = CommonRequestModel.buildRequest(listCommonRequest);
         Page<Containers> page = new PageImpl<>(List.of(testContainer) , PageRequest.of(0 , 10) , 1);
-        ContainerResponse containerResponse = objectMapper.convertValue(testContainer, ContainerResponse.class);
 
         when(containerDao.findAll(any(), any())).thenReturn(page);
-        when(jsonHelper.convertValue(any(Containers.class), eq(ContainerResponse.class))).thenReturn(containerResponse);
-
         var response = containerService.getContainers(requestModel);
         assertNotNull(response);
     }
+    @Test
+    void getContainersWithIncludeColumns() {
+        ListCommonRequest listCommonRequest = ListCommonRequest.builder().includeColumns(List.of("id", "guid", "tenantId", "containerNumber")).build();
+        CommonRequestModel requestModel = CommonRequestModel.buildRequest(listCommonRequest);
+        Page<Containers> page = new PageImpl<>(List.of(testContainer) , PageRequest.of(0 , 10) , 1);
 
+        when(containerDao.findAll(any(), any())).thenReturn(page);
+        var response = containerService.getContainers(requestModel);
+        assertNotNull(response);
+    }
     @Test
     void getContainers_Failure() {
         CommonRequestModel requestModel = CommonRequestModel.buildRequest();
