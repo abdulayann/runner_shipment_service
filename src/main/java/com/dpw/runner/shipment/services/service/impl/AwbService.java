@@ -1645,10 +1645,11 @@ public class AwbService implements IAwbService {
         // Set the RA Number and Country Code from branch default address
         populateCsdInfo(awbCargoInfo, tenantModel);
         // Set Screening Status, Other info (in case of AOM), security Status, screening status, exemption code
-        awbCargoInfo.setScreeningStatus(shipmentDetails.getAdditionalDetails().getScreeningStatus());
-        awbCargoInfo.setOtherMethod(shipmentDetails.getAdditionalDetails().getAomFreeText());
+        AdditionalDetails additionalDetails = shipmentDetails.getAdditionalDetails();
+        awbCargoInfo.setScreeningStatus(jsonHelper.convertValueToList(additionalDetails.getScreeningStatus(), String.class));
+        awbCargoInfo.setOtherMethod(additionalDetails.getAomFreeText());
         awbCargoInfo.setSecurityStatus(shipmentDetails.getSecurityStatus());
-        awbCargoInfo.setExemptionCode(shipmentDetails.getAdditionalDetails().getExemptionCodes());
+        awbCargoInfo.setExemptionCode(additionalDetails.getExemptionCodes());
 
         return awbCargoInfo;
     }
