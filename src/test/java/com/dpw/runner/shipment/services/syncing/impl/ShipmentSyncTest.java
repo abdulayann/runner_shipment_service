@@ -15,6 +15,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ISyncService;
 import com.dpw.runner.shipment.services.syncing.Entity.*;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import org.junit.jupiter.api.Test;
@@ -59,6 +60,8 @@ class ShipmentSyncTest {
     private ISyncService syncService;
     @Mock
     private IConsolidationSync consolidationSync;
+    @Mock
+    private CommonUtils commonUtils;
 
     /**
      * Method under test:
