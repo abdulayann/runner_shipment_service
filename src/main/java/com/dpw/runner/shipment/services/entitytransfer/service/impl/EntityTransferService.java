@@ -2383,7 +2383,7 @@ public class EntityTransferService implements IEntityTransferService {
     }
 
     private void setGuidsWithShipmentDetails(ShipmentDetails shipmentDetails, Set<UUID> sourceGuids, Map<UUID, ConsolidationDetails> consolidationDetailsMap, Set<String> locationRefGuids, Set<UUID> shipmentGuids) {
-        if(!Objects.equals(shipmentDetails.getSourceGuid(), shipmentDetails.getGuid())){
+        if(!Objects.equals(shipmentDetails.getSourceGuid(), shipmentDetails.getGuid()) || Objects.equals(shipmentDetails.getJobType(), SHIPMENT_TYPE_DRT)){
             sourceGuids.add(shipmentDetails.getSourceGuid());
         }
         else if(shipmentDetails.getConsolidationList() != null && !shipmentDetails.getConsolidationList().isEmpty()){
@@ -2399,19 +2399,13 @@ public class EntityTransferService implements IEntityTransferService {
                     if (destination != null)
                         locationRefGuids.add(destination);
                 }
-                if (receivingAgent != null &&
-                        !shipmentDetails.getTenantId().equals(receivingAgent.intValue())) {
-                    shipmentGuids.add(shipmentDetails.getGuid());
-                }
-                if (shouldAddShipmentToGuidList(triangulationPartnerList, triangulationPartner, receivingAgent, shipmentDetails)) {
-                    shipmentGuids.add(shipmentDetails.getGuid());
-                }
+                setShipmentGuids(shipmentDetails, shipmentGuids, receivingAgent, triangulationPartnerList, triangulationPartner);
             }
         }
     }
 
     private void setShipmentGuids(ShipmentDetails shipmentDetails, Set<UUID> shipmentGuids, Long receivingAgent, List<TriangulationPartner> triangulationPartnerList, Long triangulationPartner) {
-        if (receivingAgent != null && Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP) &&
+        if (receivingAgent != null &&
                 !shipmentDetails.getTenantId().equals(receivingAgent.intValue())) {
             shipmentGuids.add(shipmentDetails.getGuid());
         }
