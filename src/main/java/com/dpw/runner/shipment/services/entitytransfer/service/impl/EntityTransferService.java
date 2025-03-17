@@ -2282,7 +2282,7 @@ public class EntityTransferService implements IEntityTransferService {
     }
 
     private Long getReceivingBranchFromAgent(Map<UUID, List<ShipmentDetails>> destinationShipmentsMap, ShipmentDetails shipmentDetails, Long receivingAgent, ArValidationResponse arValidationResponse, Long receivingBranch) {
-        if (receivingAgent != null && Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP) &&
+        if (receivingAgent != null &&
                 !shipmentDetails.getTenantId().equals(receivingAgent.intValue()) && destinationShipmentsMap.containsKey(shipmentDetails.getGuid())) {
             var ships = destinationShipmentsMap.get(shipmentDetails.getGuid());
             var isShip = ships.stream().filter(x -> x.getTenantId().equals(receivingAgent.intValue())).findAny();
@@ -2399,7 +2399,13 @@ public class EntityTransferService implements IEntityTransferService {
                     if (destination != null)
                         locationRefGuids.add(destination);
                 }
-                setShipmentGuids(shipmentDetails, shipmentGuids, receivingAgent, triangulationPartnerList, triangulationPartner);
+                if (receivingAgent != null &&
+                        !shipmentDetails.getTenantId().equals(receivingAgent.intValue())) {
+                    shipmentGuids.add(shipmentDetails.getGuid());
+                }
+                if (shouldAddShipmentToGuidList(triangulationPartnerList, triangulationPartner, receivingAgent, shipmentDetails)) {
+                    shipmentGuids.add(shipmentDetails.getGuid());
+                }
             }
         }
     }

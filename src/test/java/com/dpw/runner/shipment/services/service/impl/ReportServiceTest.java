@@ -5,20 +5,6 @@ import com.dpw.runner.shipment.services.DocumentService.DocumentService;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.DocPages;
 import com.dpw.runner.shipment.services.ReportingService.Models.DocUploadRequest;
-import com.dpw.runner.shipment.services.ReportingService.Reports.ArrivalNoticeReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.BookingConfirmationReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.CSDReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.CargoManifestAirConsolidationReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.CargoManifestAirShipmentReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.DeliveryOrderReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.HblReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.MawbReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.PickupOrderReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.PreAlertReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.SeawayBillReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.ShipmentCANReport;
-import com.dpw.runner.shipment.services.ReportingService.Reports.ShipmentTagsForExteranlServices;
-import com.dpw.runner.shipment.services.ReportingService.Reports.TransportOrderReport;
 import com.dpw.runner.shipment.services.ReportingService.Reports.*;
 import com.dpw.runner.shipment.services.ReportingService.ReportsFactory;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
@@ -31,13 +17,16 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.impl.*;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IDocDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerDataResponse;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerResponse;
 import com.dpw.runner.shipment.services.document.service.impl.DocumentManagerServiceImpl;
+import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.ReportRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.PrintType;
@@ -48,6 +37,7 @@ import com.dpw.runner.shipment.services.helpers.DependentServiceHelper;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IDpsEventService;
 import com.dpw.runner.shipment.services.service.interfaces.IEventService;
+import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -93,6 +83,12 @@ class ReportServiceTest extends CommonMocks {
 
     @Mock
     private IShipmentSettingsDao shipmentSettingsDao;
+
+    @Mock
+    private IDocDetailsDao docDetailsDao;
+
+    @Mock
+    private IV1Service iv1Service;
 
     @Mock
     private ReportsFactory reportsFactory;
@@ -279,6 +275,7 @@ class ReportServiceTest extends CommonMocks {
         when(reportsFactory.getReport(any())).thenReturn(seawayBillReport);
         when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(ResponseEntity.ok(null));
         when(jsonHelper.convertToJson(any())).thenReturn("");
+        Mockito.when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().volumeDecimalPlace(2).build());
 
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
 
@@ -305,6 +302,7 @@ class ReportServiceTest extends CommonMocks {
         when(reportsFactory.getReport(any())).thenReturn(seawayBillReport);
         when(documentService.downloadDocumentTemplate(any(), any())).thenThrow(new ValidationException("Invalid Template Id"));
         when(jsonHelper.convertToJson(any())).thenReturn("");
+        Mockito.when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().volumeDecimalPlace(2).build());
 
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
 
@@ -328,6 +326,7 @@ class ReportServiceTest extends CommonMocks {
         when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(shipmentSettingsDetails));
         when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(Arrays.asList(shipmentSettingsDetails, shipmentSettingsDetails2));
         when(reportsFactory.getReport(any())).thenReturn(seawayBillReport);
+        Mockito.when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().volumeDecimalPlace(2).build());
 
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
 
@@ -1564,17 +1563,19 @@ class ReportServiceTest extends CommonMocks {
     }
 
     @Test
-    void getShipPreAlertSeaDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+    void getShipPreAlertSeaDocumentData2()
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setPreAlertDoc("123456789");
         shipmentSettingsDetails.setTenantId(1);
         shipmentSettingsDetails.setAutoEventCreate(true);
+        shipmentSettingsDetails.setPreAlertEmailAndLogs(true);
 
         ShipmentSettingsDetails shipmentSettingsDetails2 = new ShipmentSettingsDetails();
         shipmentSettingsDetails2.setPreAlertDoc("123456789");
         shipmentSettingsDetails2.setTenantId(44);
         shipmentSettingsDetails2.setAutoEventCreate(true);
+        shipmentSettingsDetails2.setPreAlertEmailAndLogs(true);
         reportRequest.setReportInfo(ReportConstants.PRE_ALERT);
         reportRequest.setPrintIATAChargeCode(true);
         reportRequest.setDisplayFreightAmount(false);
@@ -1586,10 +1587,53 @@ class ReportServiceTest extends CommonMocks {
         when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(shipmentSettingsDetails));
         when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(Arrays.asList(shipmentSettingsDetails, shipmentSettingsDetails2));
         when(reportsFactory.getReport(any())).thenReturn(preAlertReport);
+        when(docDetailsDao.findByEntityIdAndType(any(), any())).thenReturn(List.of(DocDetails.builder().versionNumber("2").build()));
         when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(ResponseEntity.ok(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))));
         when(jsonHelper.convertToJson(any())).thenReturn("");
         Mockito.doNothing().when(eventService).saveEvent(any());
-        mockShipmentSettings();
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setPreAlertEmailAndLogs(true);
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
+        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
+        byte[] data = reportService.getDocumentData(commonRequestModel);
+        assertNotNull(data);
+    }
+
+    @Test
+    void getShipPreAlertSeaDocumentData()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+        ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
+        shipmentSettingsDetails.setPreAlertDoc("123456789");
+        shipmentSettingsDetails.setTenantId(1);
+        shipmentSettingsDetails.setAutoEventCreate(true);
+        shipmentSettingsDetails.setPreAlertEmailAndLogs(true);
+
+        ShipmentSettingsDetails shipmentSettingsDetails2 = new ShipmentSettingsDetails();
+        shipmentSettingsDetails2.setPreAlertDoc("123456789");
+        shipmentSettingsDetails2.setTenantId(44);
+        shipmentSettingsDetails2.setAutoEventCreate(true);
+        shipmentSettingsDetails2.setPreAlertEmailAndLogs(true);
+        reportRequest.setReportInfo(ReportConstants.PRE_ALERT);
+        reportRequest.setPrintIATAChargeCode(true);
+        reportRequest.setDisplayFreightAmount(false);
+        reportRequest.setDisplayOtherAmount(false);
+        reportRequest.setPrintType(ReportConstants.ORIGINAL);
+        reportRequest.setPrintForParties(true);
+        reportRequest.setPrintingFor_str("0");
+        // Mock
+        when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(shipmentSettingsDetails));
+        when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(Arrays.asList(shipmentSettingsDetails, shipmentSettingsDetails2));
+        when(reportsFactory.getReport(any())).thenReturn(preAlertReport);
+        when(docDetailsDao.findByEntityIdAndType(any(), any())).thenReturn(new ArrayList<>());
+        when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(ResponseEntity.ok(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))));
+        when(jsonHelper.convertToJson(any())).thenReturn("");
+        Map<String, Object> dataRetrived = new HashMap<>();
+        dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
+        dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.SEA);
+        Mockito.doNothing().when(eventService).saveEvent(any());
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setPreAlertEmailAndLogs(true);
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
+        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
@@ -3505,6 +3549,25 @@ class ReportServiceTest extends CommonMocks {
         reportService.triggerAutomaticTransfer(hawbreport, reportRequest);
         verify(shipmentDao, times(1)).findById(any());
         verify(consolidationService, times(0)).triggerAutomaticTransfer(any(), any(), any());
+    }
+
+    @Test
+    void getPreAlertEmailTemplateData() throws RunnerException {
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(ShipmentDetails.builder().carrierDetails(CarrierDetails.builder().build()).build()));
+        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+        assertThrows(RunnerException.class, () -> reportService.getPreAlertEmailTemplateData(1L, 2L));
+    }
+
+    @Test
+    void getEmailTemplate() {
+        List<EmailTemplatesRequest> emailTemplatesRequests = new ArrayList<>();
+        when(iv1Service.getEmailTemplates(any())).thenReturn(V1DataResponse.builder().entities(new ArrayList<>()).build());
+        reportService.getEmailTemplate(1L, emailTemplatesRequests);
+        verify(iv1Service).getEmailTemplates(any());
+    }
+
+    private Runnable mockRunnable() {
+        return null;
     }
 
 }
