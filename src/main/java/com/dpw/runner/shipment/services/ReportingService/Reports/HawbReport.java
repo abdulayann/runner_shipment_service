@@ -802,6 +802,7 @@ public class HawbReport extends IReport{
     public static String constructAddressForAwb(String address1, String address2, String country, String state, String city, String zipCode, String phone) {
         StringBuilder sb = new StringBuilder();
         String newLine = "\r\n";
+        String comma = ", ";
         if(address1 != null) {
             sb.append(address1);
         }
@@ -814,32 +815,32 @@ public class HawbReport extends IReport{
             tempAddress.append(state);
         }
         if (!Strings.isNullOrEmpty(city)){
-            if(!tempAddress.isEmpty())
-                tempAddress.append(", ");
+            checkAndAppendDelimiter(tempAddress, comma);
             tempAddress.append(city);
         }
         if (!Strings.isNullOrEmpty(country)){
-            if(!tempAddress.isEmpty())
-                tempAddress.append(", ");
+            checkAndAppendDelimiter(tempAddress, comma);
             tempAddress.append(country);
         }
         if(!tempAddress.isEmpty()) {
-            if(!sb.isEmpty())
-                sb.append(newLine);
+            checkAndAppendDelimiter(sb, newLine);
             sb.append(tempAddress);
         }
 
         if (!Strings.isNullOrEmpty(zipCode)){
-            if(!sb.isEmpty())
-                sb.append(newLine);
+            checkAndAppendDelimiter(sb, newLine);
             sb.append(zipCode);
         }
         if (!Strings.isNullOrEmpty(phone)){
-            if(!sb.isEmpty())
-                sb.append(newLine);
+            checkAndAppendDelimiter(sb, newLine);
             sb.append(phone);
         }
         return sb.toString();
+    }
+
+    private static void checkAndAppendDelimiter(StringBuilder address, String delimiter) {
+        if(!address.isEmpty())
+            address.append(delimiter);
     }
 
     public static OtherChargesResponse getOtherChargesDetails(List<AwbOtherChargesInfo> otherChargesRows, Awb siData, AwbCargoInfo cargoInfoRows, V1TenantSettingsResponse v1TenantSettingsResponse)
@@ -856,86 +857,102 @@ public class HawbReport extends IReport{
             BigDecimal chargeAmount = (chargeRow.getAmount() != null ? chargeRow.getAmount() : BigDecimal.ZERO);
             String newOtherCharges = chargeKey + " : " + (siData.getAwbCargoInfo() != null ? siData.getAwbCargoInfo().getCurrency() : "") + " " + AmountNumberFormatter.Format(chargeAmount, cargoInfoRows.getCurrency(), v1TenantSettingsResponse);
             if (chargeDue == ChargesDue.AGENT) {
-                if(agentCharges.containsKey(chargeKey)) {
-                    agentCharges.put(chargeKey, agentCharges.get(chargeKey).add(chargeAmount));
-                } else {
-                    agentCharges.put(chargeKey, chargeAmount);
-                }
+                populateAgentCharges(agentCharges, chargeKey, chargeAmount);
             } else {
-                if(carrierCharges.containsKey(chargeKey)) {
-                    carrierCharges.put(chargeKey, carrierCharges.get(chargeKey).add(chargeAmount));
-                } else {
-                    carrierCharges.put(chargeKey, chargeAmount);
-                }
+                populateCarrierCharges(carrierCharges, chargeKey, chargeAmount);
             }
             newOtherChargesList.add(newOtherCharges);
         }
 
-        String CarrierChargesStr = getStringFromDict(carrierCharges, v1TenantSettingsResponse);
-        String AgentChargesStr = getStringFromDict(agentCharges, v1TenantSettingsResponse);
+        String carrierChargesStr = getStringFromDict(carrierCharges, v1TenantSettingsResponse);
+        String agentChargesStr = getStringFromDict(agentCharges, v1TenantSettingsResponse);
 
-        List<String> otherCharges = Arrays.asList(AgentChargesStr, CarrierChargesStr);
+        List<String> otherCharges = Arrays.asList(agentChargesStr, carrierChargesStr);
         otherChargesResponses.setOtherChargesItems(otherCharges);
         otherChargesResponses.setOtherChargesItems(newOtherChargesList);
 
         return otherChargesResponses;
     }
 
+    private static void populateCarrierCharges(Map<String, BigDecimal> carrierCharges, String chargeKey, BigDecimal chargeAmount) {
+        if(carrierCharges.containsKey(chargeKey)) {
+            carrierCharges.put(chargeKey, carrierCharges.get(chargeKey).add(chargeAmount));
+        } else {
+            carrierCharges.put(chargeKey, chargeAmount);
+        }
+    }
+
+    private static void populateAgentCharges(Map<String, BigDecimal> agentCharges, String chargeKey, BigDecimal chargeAmount) {
+        if(agentCharges.containsKey(chargeKey)) {
+            agentCharges.put(chargeKey, agentCharges.get(chargeKey).add(chargeAmount));
+        } else {
+            agentCharges.put(chargeKey, chargeAmount);
+        }
+    }
+
     public static List<String> getOtherChargesDetailsOAT(List<AwbOtherChargesInfo> otherChargesRows, String OAT)
     {
         Map<String, String> carrierCharges = new HashMap<>();
         Map<String, String> agentCharges = new HashMap<>();
-        StringBuilder AgentChargesStrBuilder = new StringBuilder();
-        StringBuilder CarrierChargesStrBuilder = new StringBuilder();
+        StringBuilder agentChargesStrBuilder = new StringBuilder();
+        StringBuilder carrierChargesStrBuilder = new StringBuilder();
         for (AwbOtherChargesInfo chargeRow : emptyIfNull(otherChargesRows))
         {
             ChargesDue chargeDue = ChargesDue.getById(chargeRow.getChargeDue());
             String chargeKey = chargeRow.getChargeTypeId();
             if (chargeDue == ChargesDue.AGENT)
             {
-                if (!agentCharges.containsKey(chargeKey))
-                {
-                    if (AgentChargesStrBuilder.isEmpty())
-                    {
-                        AgentChargesStrBuilder.append(chargeKey).append(":").append(OAT);
-                    }
-                    else
-                    {
-                        AgentChargesStrBuilder.append(" , ").append(chargeKey).append(":").append(OAT);
-                    }
-                    agentCharges.put(chargeKey, OAT);
-                }
+                populateAgentChargesOAT(OAT, agentCharges, chargeKey, agentChargesStrBuilder);
             }
             else
             {
-                if (!carrierCharges.containsKey(chargeKey))
-                {
-                    if (CarrierChargesStrBuilder.isEmpty())
-                    {
-                        CarrierChargesStrBuilder.append(chargeKey).append(":").append(OAT);
-                    }
-                    else
-                    {
-                        CarrierChargesStrBuilder.append(" , ").append(chargeKey).append(":").append(OAT);
-                    }
-                    carrierCharges.put(chargeKey, OAT);
-                }
+                populateCarrierChargesOAT(OAT, carrierCharges, chargeKey, carrierChargesStrBuilder);
             }
 
         }
 
         List<String> otherCharges = new ArrayList<>();
-        otherCharges.add(AgentChargesStrBuilder.toString());
-        otherCharges.add(CarrierChargesStrBuilder.toString());
+        otherCharges.add(agentChargesStrBuilder.toString());
+        otherCharges.add(carrierChargesStrBuilder.toString());
         return otherCharges;
+    }
+
+    private static void populateCarrierChargesOAT(String OAT, Map<String, String> carrierCharges, String chargeKey, StringBuilder carrierChargesStrBuilder) {
+        if (!carrierCharges.containsKey(chargeKey))
+        {
+            if (carrierChargesStrBuilder.isEmpty())
+            {
+                carrierChargesStrBuilder.append(chargeKey).append(":").append(OAT);
+            }
+            else
+            {
+                carrierChargesStrBuilder.append(" , ").append(chargeKey).append(":").append(OAT);
+            }
+            carrierCharges.put(chargeKey, OAT);
+        }
+    }
+
+    private static void populateAgentChargesOAT(String OAT, Map<String, String> agentCharges, String chargeKey, StringBuilder agentChargesStrBuilder) {
+        if (!agentCharges.containsKey(chargeKey))
+        {
+            if (agentChargesStrBuilder.isEmpty())
+            {
+                agentChargesStrBuilder.append(chargeKey).append(":").append(OAT);
+            }
+            else
+            {
+                agentChargesStrBuilder.append(" , ").append(chargeKey).append(":").append(OAT);
+            }
+            agentCharges.put(chargeKey, OAT);
+        }
     }
 
     public static List<String> getOtherChargesDetailsIATAOAT(List<AwbOtherChargesInfo> otherChargesRows, String OAT)
     {
         Map<String, String> carrierCharges = new HashMap<>();
         Map<String, String> agentCharges = new HashMap<>();
-        StringBuilder AgentChargesStrBuilder = new StringBuilder();
-        StringBuilder CarrierChargesStrBuilder = new StringBuilder();
+        StringBuilder agentChargesStrBuilder = new StringBuilder();
+        StringBuilder carrierChargesStrBuilder = new StringBuilder();
         for (AwbOtherChargesInfo chargeRow : emptyIfNull(otherChargesRows))
         {
             ChargesDue chargeDue = ChargesDue.getById(chargeRow.getChargeDue());
@@ -951,18 +968,7 @@ public class HawbReport extends IReport{
                     {
                         chargeKey = chargeKey + Constants.AGENT_PREFIX;
                     }
-                    if (!agentCharges.containsKey(chargeKey))
-                    {
-                        if (AgentChargesStrBuilder.isEmpty())
-                        {
-                            AgentChargesStrBuilder.append(chargeKey).append(":").append(OAT);
-                        }
-                        else
-                        {
-                            AgentChargesStrBuilder.append(" , ").append(chargeKey).append(":").append(OAT);
-                        }
-                        agentCharges.put(chargeKey, OAT);
-                    }
+                    populateAgentChargesOAT(OAT, agentCharges, chargeKey, agentChargesStrBuilder);
                 }
                 else
                 {
@@ -970,25 +976,14 @@ public class HawbReport extends IReport{
                     {
                         chargeKey = chargeKey + Constants.CARRIER_PREFIX;
                     }
-                    if (!carrierCharges.containsKey(chargeKey))
-                    {
-                        if (CarrierChargesStrBuilder.isEmpty())
-                        {
-                            CarrierChargesStrBuilder.append(chargeKey).append(":").append(OAT);
-                        }
-                        else
-                        {
-                            CarrierChargesStrBuilder.append(" , ").append(chargeKey).append(":").append(OAT);
-                        }
-                        carrierCharges.put(chargeKey, OAT);
-                    }
+                    populateCarrierChargesOAT(OAT, carrierCharges, chargeKey, carrierChargesStrBuilder);
                 }
             }
         }
 
         List<String> otherCharges = new ArrayList<>();
-        otherCharges.add(AgentChargesStrBuilder.toString());
-        otherCharges.add(CarrierChargesStrBuilder.toString());
+        otherCharges.add(agentChargesStrBuilder.toString());
+        otherCharges.add(carrierChargesStrBuilder.toString());
         return otherCharges;
     }
 
@@ -1034,39 +1029,35 @@ public class HawbReport extends IReport{
                 String chargeKey = chargeRow.getIataDescription();
                 newOtherCharges += chargeKey + " : " + (siData.getAwbCargoInfo() != null ? siData.getAwbCargoInfo().getCurrency() : "") + " " + AmountNumberFormatter.Format(chargeAmount, cargoInfoRows.getCurrency(), v1TenantSettingsResponse);
 
-                if(chargeDue == ChargesDue.AGENT) {
-                    if (chargeKey.length() < 3)
-                    {
-                        chargeKey = chargeKey + Constants.AGENT_PREFIX;
-                    }
-                    if(agentChargesIATA.containsKey(chargeKey)) {
-                        agentChargesIATA.put(chargeKey, agentChargesIATA.get(chargeKey).add(chargeAmount));
-                    } else {
-                        agentChargesIATA.put(chargeKey, chargeAmount);
-                    }
-                } else {
-                    if (chargeKey.length() < 3)
-                    {
-                        chargeKey = chargeKey + Constants.CARRIER_PREFIX;
-                    }
-                    if (carrierChargesIATA.containsKey(chargeKey)) {
-                        carrierChargesIATA.put(chargeKey, carrierChargesIATA.get(chargeKey).add(chargeAmount));
-                    } else {
-                        carrierChargesIATA.put(chargeKey, chargeAmount);
-                    }
-                }
+                populateChargesIATA(chargeDue, chargeKey, agentChargesIATA, chargeAmount, carrierChargesIATA);
             }
             newOtherChargesList.add(newOtherCharges);
         }
 
-        String CarrierChargesIATAStr = getStringFromDictWithNoComma(carrierChargesIATA, v1TenantSettingsResponse);
-        String AgentChargesIATAStr = getStringFromDictWithNoComma(agentChargesIATA, v1TenantSettingsResponse);
-        List<String> otherChargesIATA = Arrays.asList(CarrierChargesIATAStr, AgentChargesIATAStr);
+        String carrierChargesIATAStr = getStringFromDictWithNoComma(carrierChargesIATA, v1TenantSettingsResponse);
+        String agentChargesIATAStr = getStringFromDictWithNoComma(agentChargesIATA, v1TenantSettingsResponse);
+        List<String> otherChargesIATA = Arrays.asList(carrierChargesIATAStr, agentChargesIATAStr);
 
         otherChargesResponses.setOtherChargesItems(otherChargesIATA);
         otherChargesResponses.setNewOtherChargesItems(newOtherChargesList);
 
         return otherChargesResponses;
+    }
+
+    private static void populateChargesIATA(ChargesDue chargeDue, String chargeKey, Map<String, BigDecimal> agentChargesIATA, BigDecimal chargeAmount, Map<String, BigDecimal> carrierChargesIATA) {
+        if(chargeDue == ChargesDue.AGENT) {
+            if (chargeKey.length() < 3)
+            {
+                chargeKey = chargeKey + Constants.AGENT_PREFIX;
+            }
+            populateAgentCharges(agentChargesIATA, chargeKey, chargeAmount);
+        } else {
+            if (chargeKey.length() < 3)
+            {
+                chargeKey = chargeKey + Constants.CARRIER_PREFIX;
+            }
+            populateCarrierCharges(carrierChargesIATA, chargeKey, chargeAmount);
+        }
     }
 
     private String getSpecialHandlingCodes(List<AwbSpecialHandlingCodesMappingInfo> specialHandlingCodesRows)
@@ -1118,7 +1109,7 @@ public class HawbReport extends IReport{
             String itemValue = query[1];
             requests.getMasterListRequests().add(MasterListRequest.builder().ItemType(itemType).ItemValue(itemValue).build());
         }
-        if(requests.getMasterListRequests().size() > 0) {
+        if(!requests.getMasterListRequests().isEmpty()) {
             V1DataResponse response = v1Service.fetchMultipleMasterData(requests);
             List<EntityTransferMasterLists> masterLists = jsonHelper.convertValueToList(response.entities, EntityTransferMasterLists.class);
             masterLists.forEach(masterData -> {
@@ -1139,7 +1130,7 @@ public class HawbReport extends IReport{
             orgRequest.setCriteriaRequests(orgCriteria);
             V1DataResponse orgResponse = v1Service.fetchOrganization(orgRequest);
             List<EntityTransferOrganizations> orgList = jsonHelper.convertValueToList(orgResponse.entities, EntityTransferOrganizations.class);
-            if(orgList != null && orgList.size() > 0) {
+            if(orgList != null && !orgList.isEmpty()) {
                 return Objects.equals(null, orgList.get(0).City) ? "" : orgList.get(0).City;
             }
         }

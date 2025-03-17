@@ -285,6 +285,7 @@ import org.apache.http.auth.AuthenticationException;
 import org.apache.poi.ss.formula.functions.T;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.jetbrains.annotations.Nullable;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -5798,27 +5799,31 @@ public class ShipmentService implements IShipmentService {
             log.info("{} | createShipmentPayload Time taken for setPackSummary & fetchNTEstatusForReceivingBranch: {} ms", LoggerHelper.getRequestIdFromMDC(), (System.currentTimeMillis() - mid));
             mid = System.currentTimeMillis();
             mid = getUpdatedMidAfterAwbStatusAndSummary(shipmentDetailsResponse, mid);
-            if(!Objects.isNull(shipmentDetails)) {
-                Set<ConsolidationDetails> consolidationList = shipmentDetails.getConsolidationList();
-                if(!Objects.isNull(consolidationList) && !consolidationList.isEmpty()){
-                    List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(consolidationList.iterator().next().getId());
-                    if(!Objects.isNull(consoleShipmentMappings) && !consoleShipmentMappings.isEmpty())
-                        shipmentDetailsResponse.setShipmentCount((long) consoleShipmentMappings.size());
-                    else
-                        shipmentDetailsResponse.setShipmentCount(0L);
-                } else {
-                    shipmentDetailsResponse.setShipmentCount(0L);
-                }
-                log.info("{} | createShipmentPayload Time taken for setting Notification Count: {} ms", LoggerHelper.getRequestIdFromMDC(), (System.currentTimeMillis() - mid));
-            } else {
-                shipmentDetailsResponse.setShipmentCount(0L);
-            }
+            setShipmentCount(shipmentDetails, shipmentDetailsResponse, mid);
             log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.SHIPMENT_RETRIEVE_COMPLETE_MASTER_DATA, (System.currentTimeMillis() - start) , LoggerHelper.getRequestIdFromMDC());
         }
         catch (Exception ex) {
             log.error(Constants.ERROR_OCCURRED_FOR_EVENT, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_SHIPMENT_RETRIEVE, ex.getLocalizedMessage());
         }
 
+    }
+
+    private void setShipmentCount(ShipmentDetails shipmentDetails, ShipmentDetailsResponse shipmentDetailsResponse, double mid) {
+        if(!Objects.isNull(shipmentDetails)) {
+            Set<ConsolidationDetails> consolidationList = shipmentDetails.getConsolidationList();
+            if(!Objects.isNull(consolidationList) && !consolidationList.isEmpty()){
+                List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(consolidationList.iterator().next().getId());
+                if(!Objects.isNull(consoleShipmentMappings) && !consoleShipmentMappings.isEmpty())
+                    shipmentDetailsResponse.setShipmentCount((long) consoleShipmentMappings.size());
+                else
+                    shipmentDetailsResponse.setShipmentCount(0L);
+            } else {
+                shipmentDetailsResponse.setShipmentCount(0L);
+            }
+            log.info("{} | createShipmentPayload Time taken for setting Notification Count: {} ms", LoggerHelper.getRequestIdFromMDC(), (System.currentTimeMillis() - mid));
+        } else {
+            shipmentDetailsResponse.setShipmentCount(0L);
+        }
     }
 
     private double getUpdatedMidAfterAwbStatusAndSummary(ShipmentDetailsResponse shipmentDetailsResponse, double mid) {
@@ -8113,16 +8118,9 @@ public class ShipmentService implements IShipmentService {
         List<ConsoleShipmentMapping> pullRequests = new ArrayList<>();
         List<ConsoleShipmentMapping> pushRequests = new ArrayList<>();
         for (var consoleShip: consoleShipmentMappings) {
-            if (!Objects.equals(consoleShip.getConsolidationId(), consoleId) && Boolean.TRUE.equals(consoleShip.getIsAttachmentDone())) {
-                return ResponseHelper.buildFailedResponse("These is already consolidation exist in shipment. Please detach and update shipment first.");
-            }
-            if (Objects.equals(consoleShip.getConsolidationId(), consoleId)) {
-                return ResponseHelper.buildSuccessResponse();
-            }
-            if(ShipmentRequestedType.SHIPMENT_PULL_REQUESTED.equals(consoleShip.getRequestedType()))
-                pullRequests.add(jsonHelper.convertValue(consoleShip, ConsoleShipmentMapping.class));
-            if(ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED.equals(consoleShip.getRequestedType()))
-                pushRequests.add(jsonHelper.convertValue(consoleShip, ConsoleShipmentMapping.class));
+            ResponseEntity<IRunnerResponse> buildFailedResponse = checkAlreadyExistingConsole(consoleId, consoleShip);
+            if (buildFailedResponse != null) return buildFailedResponse;
+            updatePullRequests(consoleShip, pullRequests, pushRequests);
         }
         awbDao.validateAirMessaging(consoleId);
         ShipmentDetails shipmentDetails = shipmentDao.findById(shipId).orElseThrow(() -> new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE));
@@ -8159,6 +8157,24 @@ public class ShipmentService implements IShipmentService {
             return ResponseHelper.buildSuccessResponseWithWarning(warning);
         }
         return ResponseHelper.buildSuccessResponse();
+    }
+
+    @Nullable
+    private static ResponseEntity<IRunnerResponse> checkAlreadyExistingConsole(Long consoleId, ConsoleShipmentMapping consoleShip) {
+        if (!Objects.equals(consoleShip.getConsolidationId(), consoleId) && Boolean.TRUE.equals(consoleShip.getIsAttachmentDone())) {
+            return ResponseHelper.buildFailedResponse("These is already consolidation exist in shipment. Please detach and update shipment first.");
+        }
+        if (Objects.equals(consoleShip.getConsolidationId(), consoleId)) {
+            return ResponseHelper.buildSuccessResponse();
+        }
+        return null;
+    }
+
+    private void updatePullRequests(ConsoleShipmentMapping consoleShip, List<ConsoleShipmentMapping> pullRequests, List<ConsoleShipmentMapping> pushRequests) {
+        if(ShipmentRequestedType.SHIPMENT_PULL_REQUESTED.equals(consoleShip.getRequestedType()))
+            pullRequests.add(jsonHelper.convertValue(consoleShip, ConsoleShipmentMapping.class));
+        if(ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED.equals(consoleShip.getRequestedType()))
+            pushRequests.add(jsonHelper.convertValue(consoleShip, ConsoleShipmentMapping.class));
     }
 
     private String getWarningMsg(Set<ShipmentRequestedType> shipmentRequestedTypes) {

@@ -3152,6 +3152,7 @@ public abstract class IReport {
 
     // Populates packing details fields in the source dictionary
     // can return List<Map<String, Object>> packing Dictionary, keeping it void for now
+    @SuppressWarnings("java:S3516")
     public List<Map<String, Object>> getPackingDetails(ShipmentModel shipment, Map<String, Object> dictionary) {
         if(shipment.getPackingList() == null || shipment.getPackingList().isEmpty()) {
             dictionary.put(HAS_PACK_DETAILS, false);
@@ -3661,7 +3662,7 @@ public abstract class IReport {
             if (!containerNumbers.isEmpty()) {
                 containerNumber = containerNumbers.get(0);
             }
-            dictionary.put(CONTAINER_NUMBER_WITH_ETC_COUNT, String.format("%s %s", containerNumber, containerEtcCount));
+            dictionary.put(CONTAINER_NUMBER_WITH_ETC_COUNT, String.format(REGEX_S_S, containerNumber, containerEtcCount));
 
             var containerCodeMap = shipmentContainerList.stream().filter(x -> !Objects.isNull(x.getContainerCode()))
                     .collect(Collectors.groupingBy(ContainerModel::getContainerCode));

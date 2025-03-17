@@ -55,7 +55,7 @@ public class SyncEntityConversionService {
             map = containers.stream().filter(container -> container.getContainerNumber() != null).collect(Collectors.toMap(Containers::getId, Containers::getContainerNumber));
         if(packingList != null) {
             Map<Long, String> finalMap = map;
-            List<PackingRequestV2> res = packingList.stream()
+            return packingList.stream()
                     .map(item -> {
                         PackingRequestV2 p;
                         p = modelMapper.map(item, PackingRequestV2.class);
@@ -65,30 +65,36 @@ public class SyncEntityConversionService {
                         if(item.getContainerId() != null && finalMap.containsKey(item.getContainerId()))
                             p.setContainerNumber(finalMap.get(item.getContainerId()));
 
-                        if(shipmentGuid == null && item.getShipmentId() != null) {
-                            try { p.setShipmentGuid(shipmentDao.findById(p.getShipmentId()).get().getGuid()); }  catch (Exception ignored) { }
-                        }
-                        else p.setShipmentGuid(shipmentGuid);
-
-                        if(consoleGuid == null && item.getConsolidationId() != null) {
-                            try { p.setConsolidationGuid(consolidationDetailsDao.findById(p.getConsolidationId()).get().getGuid()); }  catch (Exception ignored) { }
-                        }
-                        else p.setConsolidationGuid(consoleGuid);
+                        setShipmentConsoleGuid(shipmentGuid, consoleGuid, item, p);
 
                         return p;
                     })
                     .toList();
-            return res;
         }
         return new ArrayList<>();
     }
 
+    private void setShipmentConsoleGuid(UUID shipmentGuid, UUID consoleGuid, Packing item, PackingRequestV2 p) {
+        if(shipmentGuid == null && item.getShipmentId() != null) {
+            try { p.setShipmentGuid(shipmentDao.findById(p.getShipmentId()).get().getGuid()); }  catch (Exception ex) {
+                log.debug(ex.getMessage());
+            }
+        }
+        else p.setShipmentGuid(shipmentGuid);
+
+        if(consoleGuid == null && item.getConsolidationId() != null) {
+            try { p.setConsolidationGuid(consolidationDetailsDao.findById(p.getConsolidationId()).get().getGuid()); }  catch (Exception ex) {
+                log.debug(ex.getMessage());
+            }
+        }
+        else p.setConsolidationGuid(consoleGuid);
+    }
+
     public List<Packing> packingsV1ToV2(List<PackingRequestV2> packingRequestV2List) {
         if(packingRequestV2List != null) {
-            List<Packing> res = packingRequestV2List.stream().map(
+            return packingRequestV2List.stream().map(
                     this::packingV1ToV2
             ).toList();
-            return res;
         }
         return new ArrayList<>();
     }
@@ -117,10 +123,9 @@ public class SyncEntityConversionService {
 
     public List<ContainerRequestV2> containersV2ToV1(List<Containers> containersList) {
         if(containersList != null) {
-            List<ContainerRequestV2> res = containersList.stream().map(
+            return containersList.stream().map(
                     this::containerV2ToV1
             ).toList();
-            return res;
         }
         return new ArrayList<>();
     }
@@ -136,10 +141,9 @@ public class SyncEntityConversionService {
 
     public Set<Containers> containersV1ToV2(List<ContainerRequestV2> containersList) {
         if(containersList != null) {
-            Set<Containers> res = containersList.stream().map(
+            return containersList.stream().map(
                     this::containerV1ToV2
             ).collect(Collectors.toSet());
-            return res;
         }
         return new HashSet<>();
     }
@@ -157,7 +161,7 @@ public class SyncEntityConversionService {
                 containers.setConsolidationId(null);
             }
         }
-        if(containerRequestV2.getShipmentGuids() != null && containerRequestV2.getShipmentGuids().size() > 0) {
+        if(containerRequestV2.getShipmentGuids() != null && !containerRequestV2.getShipmentGuids().isEmpty()) {
             try {
                 ListCommonRequest listCommonRequest = constructListCommonRequest("guid", containerRequestV2.getShipmentGuids(), "IN");
                 Pair<Specification<ShipmentDetails>, org.springframework.data.domain.Pageable> pair = fetchData(listCommonRequest, ShipmentDetails.class);
@@ -178,10 +182,9 @@ public class SyncEntityConversionService {
 
     public List<RoutingsRequestV2> routingsV2ToV1(List<Routings> routingsList) {
         if(routingsList != null) {
-            List<RoutingsRequestV2> res = routingsList.stream().map(
+            return routingsList.stream().map(
                     this::routingV2ToV1
             ).toList();
-            return res;
         }
         return new ArrayList<>();
     }
@@ -197,10 +200,9 @@ public class SyncEntityConversionService {
 
     public List<Routings> routingsV1ToV2(List<RoutingsRequestV2> routingsRequestV2List) {
         if(routingsRequestV2List != null) {
-            List<Routings> res = routingsRequestV2List.stream().map(
+            return routingsRequestV2List.stream().map(
                     this::routingV1ToV2
             ).toList();
-            return res;
         }
         return new ArrayList<>();
     }
@@ -230,7 +232,7 @@ public class SyncEntityConversionService {
         partyRequestV2.setIsFreeTextAddress(parties.getIsAddressFreeText());
         if(partyRequestV2.getIsFreeTextAddress() == null)
             partyRequestV2.setIsFreeTextAddress(false);
-        if(partyRequestV2.getIsFreeTextAddress()){
+        if(Boolean.TRUE.equals(partyRequestV2.getIsFreeTextAddress())){
             var rawData = parties.getAddressData() != null ? parties.getAddressData().get(PartiesConstants.RAW_DATA): null;
             if(rawData != null)
                 partyRequestV2.setFreeTextAddress(rawData.toString());
@@ -260,10 +262,9 @@ public class SyncEntityConversionService {
 
     public List<EventsRequestV2> eventsV2ToV1(List<Events> eventsList) {
         if(eventsList != null) {
-            List<EventsRequestV2> res = eventsList.stream().map(
+            return eventsList.stream().map(
                     this::eventV2ToV1
             ).toList();
-            return res;
         }
         return new ArrayList<>();
     }
