@@ -30,29 +30,26 @@ import org.springframework.transaction.annotation.Transactional;
 @Repository
 @Slf4j
 public class CustomerBookingDao implements ICustomerBookingDao {
-    @Autowired
-    private ICustomerBookingRepository customerBookingRepository;
-
-
-    @Autowired
-    private ValidatorUtility validatorUtility;
-
-    @Autowired
-    private JsonHelper jsonHelper;
-
-    @Autowired
-    private CustomerBookingValidations customValidations;
 
     @Autowired
     CustomKeyGenerator keyGenerator;
+    @Autowired
+    private ICustomerBookingRepository customerBookingRepository;
+    @Autowired
+    private ValidatorUtility validatorUtility;
+    @Autowired
+    private JsonHelper jsonHelper;
+    @Autowired
+    private CustomerBookingValidations customValidations;
     @Autowired
     private CacheManager cacheManager;
 
     @Override
     public CustomerBooking save(CustomerBooking customerBooking) {
-        Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(customerBooking) , Constants.BOOKING, LifecycleHooks.ON_CREATE, false);
-        if (! errors.isEmpty())
+        Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(customerBooking), Constants.BOOKING, LifecycleHooks.ON_CREATE, false);
+        if (!errors.isEmpty()) {
             throw new ValidationException(String.join(",", errors));
+        }
         CustomerBooking old = null;
         if (customerBooking.getId() != null) {
             Optional<CustomerBooking> oldEntity = findById(customerBooking.getId());
@@ -72,18 +69,25 @@ public class CustomerBookingDao implements ICustomerBookingDao {
         var resp = customerBookingRepository.save(customerBooking);
 
         // ----- Cache update section -----
-        Cache cache = cacheManager.getCache(CacheConstants.CUSTOMER_BOOKING);
-        if (cache != null && resp.getId() != null && resp.getGuid() != null) {
-            String idKey = keyGenerator.customCacheKey(CacheConstants.CUSTOMER_BOOKING_ID, resp.getId());
-            String guidKey = keyGenerator.customCacheKey(CacheConstants.CUSTOMER_BOOKING_GUID, resp.getGuid());
-            Optional<CustomerBooking> result = Optional.of(resp);
+        try {
+            Cache cache = cacheManager.getCache(CacheConstants.CUSTOMER_BOOKING);
+            if (cache != null && resp.getId() != null && resp.getGuid() != null) {
+                String idKey = keyGenerator.customCacheKey(CacheConstants.CUSTOMER_BOOKING_ID, resp.getId());
+                String guidKey = keyGenerator.customCacheKey(CacheConstants.CUSTOMER_BOOKING_GUID, resp.getGuid());
+                Optional<CustomerBooking> result = Optional.of(resp);
 
-            cache.put(idKey, result);
-            cache.put(guidKey, result);
+                cache.put(idKey, result);
+                cache.put(guidKey, result);
 
-            log.info("Cached CustomerBooking after save for keys: [ID key: {}, GUID key: {}]", idKey, guidKey);
-        } else {
-            log.info("Skipping cache update due to missing cache or identifiers.");
+                cache.evictIfPresent(idKey);
+                cache.evictIfPresent(guidKey);
+
+                log.info("Cached CustomerBooking after save for keys: [ID key: {}, GUID key: {}]", idKey, guidKey);
+            } else {
+                log.info("Skipping cache update due to missing cache or identifiers.");
+            }
+        } catch (Exception e) {
+            log.error("Error while updating CustomerBooking in cache, skipping step");
         }
 
         return resp;
@@ -96,12 +100,20 @@ public class CustomerBookingDao implements ICustomerBookingDao {
 
     @Override
     public Optional<CustomerBooking> findById(Long id) {
-        return findWithCache(id, CacheConstants.CUSTOMER_BOOKING_ID);
+        try {
+            return findWithCache(id, CacheConstants.CUSTOMER_BOOKING_ID);
+        } catch (Exception e) {
+            return customerBookingRepository.findById(id);
+        }
     }
 
     @Override
     public Optional<CustomerBooking> findByGuid(UUID guid) {
-        return findWithCache(guid, CacheConstants.CUSTOMER_BOOKING_GUID);
+        try {
+            return findWithCache(guid, CacheConstants.CUSTOMER_BOOKING_GUID);
+        } catch (Exception e) {
+            return customerBookingRepository.findByGuid(guid);
+        }
     }
 
     private Optional<CustomerBooking> findWithCache(Object keyValue, String keyType) {
