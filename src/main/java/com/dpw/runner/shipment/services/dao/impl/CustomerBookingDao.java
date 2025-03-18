@@ -74,7 +74,6 @@ public class CustomerBookingDao implements ICustomerBookingDao {
             if (cache != null && resp.getId() != null && resp.getGuid() != null) {
                 String idKey = keyGenerator.customCacheKey(CacheConstants.CUSTOMER_BOOKING_ID, resp.getId());
                 String guidKey = keyGenerator.customCacheKey(CacheConstants.CUSTOMER_BOOKING_GUID, resp.getGuid());
-                Optional<CustomerBooking> result = Optional.of(resp);
 
                 cache.evictIfPresent(idKey);
                 cache.evictIfPresent(guidKey);
