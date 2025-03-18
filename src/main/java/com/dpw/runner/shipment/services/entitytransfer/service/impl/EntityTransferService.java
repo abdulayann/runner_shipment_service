@@ -1818,7 +1818,7 @@ public class EntityTransferService implements IEntityTransferService {
             Set<UUID> shipmentGuids = new HashSet<>();
             Set<String> locationRefGuids = new HashSet<>();
             for (var shipmentDetails: shipmentDetailsList) {
-                if(!Objects.equals(shipmentDetails.getSourceGuid(), shipmentDetails.getGuid())){
+                if(!Objects.equals(shipmentDetails.getSourceGuid(), shipmentDetails.getGuid()) || Objects.equals(shipmentDetails.getJobType(), SHIPMENT_TYPE_DRT)){
                     sourceGuids.add(shipmentDetails.getSourceGuid());
                 }
                 else if(shipmentDetails.getConsolidationList() != null && !shipmentDetails.getConsolidationList().isEmpty()){
