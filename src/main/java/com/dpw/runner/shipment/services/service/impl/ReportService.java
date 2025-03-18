@@ -2317,13 +2317,9 @@ public class ReportService implements IReportService {
             map.put(DA_EMAIL, shipmentDetails.getAdditionalDetails().getImportBroker().getOrgData().get(EMAIL));
         } catch (Exception e) {log.error("Error while getting destination Agent Data");}
         Map<String, EntityTransferUnLocations> unLocMap = new HashMap<>();
-        Set<String> usernamesList = new HashSet<>();
-        Map<String, String> usernameEmailsMap = new HashMap<>();
-        if(!CommonUtils.IsStringNullOrEmpty(shipmentDetails.getCreatedBy()))
-            usernamesList.add(shipmentDetails.getCreatedBy());
-        if(!CommonUtils.IsStringNullOrEmpty(shipmentDetails.getAssignedTo()))
-            usernamesList.add(shipmentDetails.getAssignedTo());
+        Set<String> usernamesList = getUsernamesList(shipmentDetails);
 
+        Map<String, String> usernameEmailsMap = new HashMap<>();
         var unlocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.getLocationDataFromCache(Stream.of(shipmentDetails.getCarrierDetails().getOriginPort(),
                 shipmentDetails.getCarrierDetails().getDestinationPort(),
                 shipmentDetails.getCarrierDetails().getOrigin(),
@@ -2346,6 +2342,15 @@ public class ReportService implements IReportService {
             cc.add(usernameEmailsMap.get(shipmentDetails.getCreatedBy()));
         if(!CommonUtils.IsStringNullOrEmpty(shipmentDetails.getAssignedTo()) && usernameEmailsMap.containsKey(shipmentDetails.getAssignedTo()))
             cc.add(usernameEmailsMap.get(shipmentDetails.getAssignedTo()));
+    }
+
+    private Set<String> getUsernamesList(ShipmentDetails shipmentDetails) {
+        Set<String> usernamesList = new HashSet<>();
+        if(!CommonUtils.IsStringNullOrEmpty(shipmentDetails.getCreatedBy()))
+            usernamesList.add(shipmentDetails.getCreatedBy());
+        if(!CommonUtils.IsStringNullOrEmpty(shipmentDetails.getAssignedTo()))
+            usernamesList.add(shipmentDetails.getAssignedTo());
+        return usernamesList;
     }
 
     private String getPartyString(Parties parties) {
