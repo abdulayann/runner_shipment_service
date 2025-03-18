@@ -1,7 +1,9 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
@@ -11,18 +13,19 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.ICustomerBookingRepository;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.dpw.runner.shipment.services.validator.custom.validations.CustomerBookingValidations;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
 
 @Repository
 @Slf4j
@@ -39,6 +42,11 @@ public class CustomerBookingDao implements ICustomerBookingDao {
 
     @Autowired
     private CustomerBookingValidations customValidations;
+
+    @Autowired
+    CustomKeyGenerator keyGenerator;
+    @Autowired
+    private CacheManager cacheManager;
 
     @Override
     public CustomerBooking save(CustomerBooking customerBooking) {
@@ -62,6 +70,22 @@ public class CustomerBookingDao implements ICustomerBookingDao {
         }
         customValidations.onSave(old, customerBooking); //Custom Validations
         var resp = customerBookingRepository.save(customerBooking);
+
+        // ----- Cache update section -----
+        Cache cache = cacheManager.getCache(CacheConstants.CUSTOMER_BOOKING);
+        if (cache != null && resp.getId() != null && resp.getGuid() != null) {
+            String idKey = keyGenerator.customCacheKey(CacheConstants.CUSTOMER_BOOKING_ID, resp.getId());
+            String guidKey = keyGenerator.customCacheKey(CacheConstants.CUSTOMER_BOOKING_GUID, resp.getGuid());
+            Optional<CustomerBooking> result = Optional.of(resp);
+
+            cache.put(idKey, result);
+            cache.put(guidKey, result);
+
+            log.info("Cached CustomerBooking after save for keys: [ID key: {}, GUID key: {}]", idKey, guidKey);
+        } else {
+            log.info("Skipping cache update due to missing cache or identifiers.");
+        }
+
         return resp;
     }
 
@@ -72,12 +96,57 @@ public class CustomerBookingDao implements ICustomerBookingDao {
 
     @Override
     public Optional<CustomerBooking> findById(Long id) {
-        return customerBookingRepository.findById(id);
+        return findWithCache(id, CacheConstants.CUSTOMER_BOOKING_ID);
     }
 
     @Override
-    public Optional<CustomerBooking> findByGuid(UUID id) {
-        return customerBookingRepository.findByGuid(id);
+    public Optional<CustomerBooking> findByGuid(UUID guid) {
+        return findWithCache(guid, CacheConstants.CUSTOMER_BOOKING_GUID);
+    }
+
+    private Optional<CustomerBooking> findWithCache(Object keyValue, String keyType) {
+        String primaryKey = keyGenerator.customCacheKey(keyType, keyValue);
+        Cache cache = cacheManager.getCache(CacheConstants.CUSTOMER_BOOKING);
+
+        log.info("Looking up CustomerBooking with keyType: {}, keyValue: {}, generatedCacheKey: {}", keyType, keyValue, primaryKey);
+
+        if (cache != null) {
+            Cache.ValueWrapper cachedValue = cache.get(primaryKey);
+            if (cachedValue != null) {
+                log.info("Cache hit for key: {}", primaryKey);
+                return (Optional<CustomerBooking>) cachedValue.get();
+            } else {
+                log.info("Cache miss for key: {}", primaryKey);
+            }
+        } else {
+            log.warn("Cache '{}' not found in cacheManager", CacheConstants.CUSTOMER_BOOKING);
+        }
+
+        // Fallback to DB
+        Optional<CustomerBooking> result;
+        if (CacheConstants.CUSTOMER_BOOKING_ID.equals(keyType)) {
+            result = customerBookingRepository.findById((Long) keyValue);
+            log.info("DB lookup by ID: {}, result present: {}", keyValue, result.isPresent());
+        } else {
+            result = customerBookingRepository.findByGuid((UUID) keyValue);
+            log.info("DB lookup by GUID: {}, result present: {}", keyValue, result.isPresent());
+        }
+
+        // Cache both ID and GUID
+        if (result.isPresent() && cache != null) {
+            CustomerBooking booking = result.get();
+            String idKey = keyGenerator.customCacheKey(CacheConstants.CUSTOMER_BOOKING_ID, booking.getId());
+            String guidKey = keyGenerator.customCacheKey(CacheConstants.CUSTOMER_BOOKING_GUID, booking.getGuid());
+
+            cache.put(idKey, result);
+            cache.put(guidKey, result);
+
+            log.info("Cached result for keys: [ID key: {}, GUID key: {}]", idKey, guidKey);
+        } else if (cache != null) {
+            log.info("Empty result. Skipping caching for keyType: {}, keyValue: {}", keyType, keyValue);
+        }
+
+        return result;
     }
 
     @Override
@@ -88,6 +157,19 @@ public class CustomerBookingDao implements ICustomerBookingDao {
     @Override
     public void delete(CustomerBooking customerBooking) {
         customerBookingRepository.delete(customerBooking);
+
+        Cache cache = cacheManager.getCache(CacheConstants.CUSTOMER_BOOKING);
+        if (cache != null) {
+            String idKey = keyGenerator.customCacheKey(CacheConstants.CUSTOMER_BOOKING_ID, customerBooking.getId());
+            String guidKey = keyGenerator.customCacheKey(CacheConstants.CUSTOMER_BOOKING_GUID, customerBooking.getGuid());
+
+            cache.evict(idKey);
+            cache.evict(guidKey);
+
+            log.info("Evicted cache entries for CustomerBooking - ID: {}, GUID: {}", customerBooking.getId(), customerBooking.getGuid());
+        } else {
+            log.info("Cache '{}' not found while deleting CustomerBooking with ID: {}", CacheConstants.CUSTOMER_BOOKING, customerBooking.getId());
+        }
     }
 
     public CustomerBooking updateEntityFromShipmentConsole(CustomerBooking customerBooking) throws RunnerException {
