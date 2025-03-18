@@ -199,7 +199,7 @@ public class CommonUtils {
 
 
         List<FilterCriteria> criterias = new ArrayList<>();
-        List<FilterCriteria> innerFilters = new ArrayList();
+        List<FilterCriteria> innerFilters = new ArrayList<>();
         Criteria criteria = Criteria.builder().fieldName(fieldName).operator(operator).value(value).build();
         FilterCriteria filterCriteria = FilterCriteria.builder().criteria(criteria).build();
         innerFilters.add(filterCriteria);
@@ -226,13 +226,11 @@ public class CommonUtils {
                                 .build()))
                 .build();
 
-        ListCommonRequest listCommonRequest = ListCommonRequest.builder()
+        return ListCommonRequest.builder()
                 .pageNo(1)
                 .pageSize(Integer.MAX_VALUE)
                 .filterCriteria(Arrays.asList(entityIdCriteria))
                 .build();
-
-        return listCommonRequest;
     }
 
     public static Criteria getFilterCriteria(String fieldName, Object value, String operator) {
@@ -2417,6 +2415,16 @@ public class CommonUtils {
             UserContext.getUser().setTimeZoneId(null);
             log.warn("Error while impersonating user with tenant Id {}", tenantId, e);
         }
+    }
+
+    public static List<String> splitAndTrimStrings(String input) {
+        if (input == null || input.isEmpty()) {
+            return List.of();
+        }
+
+        return Arrays.stream(input.split(","))
+                .map(String::trim)
+                .toList();
     }
 
 }

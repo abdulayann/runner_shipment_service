@@ -528,9 +528,9 @@ public class ReportService implements IReportService {
         pdfByte_Content = CommonUtils.concatAndAddContent(pdfBytesHawb);
         if (pdfByte_Content == null) throw new ValidationException(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE);
         var shc = dataRetrived.getOrDefault(ReportConstants.SPECIAL_HANDLING_CODE, null);
-        Boolean addWaterMarkForEaw = false;
+        boolean addWaterMarkForEaw = false;
         if(shc != null){
-            List<String> items = Arrays.asList(shc.toString().split("\\s*,\\s*"));
+            List<String> items = CommonUtils.splitAndTrimStrings(shc.toString());
             if(!items.isEmpty() && items.contains(Constants.EAW)){
                 addWaterMarkForEaw = true;
             }
@@ -579,8 +579,7 @@ public class ReportService implements IReportService {
         var shc = dataRetrived.getOrDefault(ReportConstants.SPECIAL_HANDLING_CODE, null);
         boolean addWaterMarkForEaw = false;
         if(shc != null){
-            Pattern pattern = Pattern.compile("\\s*,\\s*");
-            List<String> items = Arrays.asList(pattern.split(shc.toString()));
+            List<String> items = CommonUtils.splitAndTrimStrings(shc.toString());
             if(!items.isEmpty() && items.contains(Constants.EAW)){
                 addWaterMarkForEaw = true;
             }

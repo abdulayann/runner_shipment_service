@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.google.common.base.Strings;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -17,6 +18,7 @@ import java.util.*;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 
 @Component
+@Slf4j
 public class ReportHelper {
     public static String getCityCountry(String city, String country)
     {
@@ -476,7 +478,7 @@ public class ReportHelper {
 
                 return numberInstance.format(roundedNumber);
             } catch (Exception e) {
-                e.printStackTrace();  // Handle the exception appropriately
+                log.error("An error occurred: {}", e.getMessage(), e);
             }
         }
 

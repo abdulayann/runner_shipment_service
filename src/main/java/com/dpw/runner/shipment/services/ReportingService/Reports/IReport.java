@@ -1993,7 +1993,7 @@ public abstract class IReport {
         List<String> importAgentFreeTextAddress = new ArrayList<>();
         if (consolidation.getReceivingAgent() != null && consolidation.getIsReceivingAgentFreeTextAddress() != null && Boolean.TRUE.equals(consolidation.getIsReceivingAgentFreeTextAddress()))
         {
-            Map importAgentAddressData = consolidation.getReceivingAgent().getAddressData();
+            Map<String, Object> importAgentAddressData = consolidation.getReceivingAgent().getAddressData();
             if (importAgentAddressData != null && importAgentAddressData.containsKey(PartiesConstants.RAW_DATA))
                 importAgentFreeTextAddress = ReportHelper.getAddressList(StringUtility.convertToString(importAgentAddressData.get(PartiesConstants.RAW_DATA)));
         }
@@ -2006,7 +2006,7 @@ public abstract class IReport {
     private List<String> getExportAgentFreeTextAddress(ConsolidationModel consolidation, List<String> exportAgentAddress) {
         List<String> exportAgentFreeTextAddress = new ArrayList<>();
         if (consolidation.getSendingAgent() != null && consolidation.getIsSendingAgentFreeTextAddress() != null && Boolean.TRUE.equals(consolidation.getIsSendingAgentFreeTextAddress())) {
-            Map sendingAgentAddressData = consolidation.getSendingAgent().getAddressData();
+            Map<String, Object> sendingAgentAddressData = consolidation.getSendingAgent().getAddressData();
             if (sendingAgentAddressData != null && sendingAgentAddressData.containsKey(PartiesConstants.RAW_DATA))
                 exportAgentFreeTextAddress = ReportHelper.getAddressList(StringUtility.convertToString(sendingAgentAddressData.get(PartiesConstants.RAW_DATA)));
         }
@@ -2611,7 +2611,7 @@ public abstract class IReport {
                     decimalFormat.setMinimumFractionDigits(decimalPlaces);
                 return decimalFormat.format(roundedNumber);
             } catch (Exception e) {
-                e.printStackTrace();
+                log.error("An error occurred: {}", e.getMessage(), e);
             }
         }
         return String.valueOf(number);

@@ -289,7 +289,7 @@ public class DbAccessHelper {
             final Enum result = Enum.valueOf(cl, enumName);
             return result;
         } catch (ClassNotFoundException e) {
-            e.printStackTrace();
+            log.error("An error occurred: {}", e.getMessage(), e);
         }
         return null;
     }
