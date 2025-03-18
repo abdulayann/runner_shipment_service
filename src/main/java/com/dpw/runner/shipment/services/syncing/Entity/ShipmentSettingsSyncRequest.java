@@ -332,4 +332,6 @@ public class ShipmentSettingsSyncRequest implements IRunnerRequest {
     private String fcrDocument;
     @JsonProperty("CountryAirCargoSecurity")
     private Boolean countryAirCargoSecurity;
+    @JsonProperty("AmrAirFreight")
+    private Boolean isAmrAirFreightEnabled;
 }
