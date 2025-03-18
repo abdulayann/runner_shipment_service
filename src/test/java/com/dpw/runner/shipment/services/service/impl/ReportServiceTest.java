@@ -585,6 +585,9 @@ class ReportServiceTest extends CommonMocks {
         shipmentSettingsDetails.setTenantId(1);
         shipmentSettingsDetails.setAutoEventCreate(true);
 
+        Awb mockAwb = new Awb();
+        when(awbDao.updateAwbPrintInformation(any(), any(), any(), any(), any())).thenReturn(mockAwb);
+
         ShipmentSettingsDetails shipmentSettingsDetails2 = new ShipmentSettingsDetails();
         shipmentSettingsDetails2.setHawb("123456789");
         shipmentSettingsDetails2.setTenantId(44);
@@ -645,6 +648,8 @@ class ReportServiceTest extends CommonMocks {
         reportRequest.setPrintForParties(true);
         reportRequest.setPrintingFor_str("0");
         // Mock
+        Awb mockAwb = new Awb();
+        when(awbDao.updateAwbPrintInformation(any(), any(), any(), any(), any())).thenReturn(mockAwb);
         when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(shipmentSettingsDetails));
         when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(Arrays.asList(shipmentSettingsDetails, shipmentSettingsDetails2));
         when(reportsFactory.getReport(any())).thenReturn(mawbReport);
