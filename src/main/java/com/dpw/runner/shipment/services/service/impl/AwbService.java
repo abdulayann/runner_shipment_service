@@ -3478,15 +3478,20 @@ public class AwbService implements IAwbService {
                 defaultAwbShipmentInfo = jsonHelper.convertValue(generateMawbShipmentInfo(consol, createAwbRequest, new AwbCargoInfo(), v1Service.retrieveTenant()), AwbShipmentInfoResponse.class);
                 defaultRoutingInfo = jsonHelper.convertValueToList(generateMawbRoutingInfo(consol, createAwbRequest), AwbRoutingInfoResponse.class);
                 defaultNotifyPartyInfo = generateMawbNotifyPartyinfo(consol, createAwbRequest);
+                awbResponse.setDefaultAwbShipmentInfo(defaultAwbShipmentInfo);
+                awbResponse.setDefaultAwbNotifyPartyInfo(defaultNotifyPartyInfo);
+                awbResponse.setDefaultAwbRoutingInfo(defaultRoutingInfo);
             } else {
                 ShipmentDetails shipment = shipmentDao.findById(awb.getShipmentId()).get();
                 defaultAwbShipmentInfo = jsonHelper.convertValue(generateAwbShipmentInfo(shipment, createAwbRequest, new AwbCargoInfo(), v1Service.retrieveTenant()), AwbShipmentInfoResponse.class);
                 defaultRoutingInfo = jsonHelper.convertValueToList(generateAwbRoutingInfo(shipment, createAwbRequest), AwbRoutingInfoResponse.class);
                 defaultNotifyPartyInfo = generateAwbNotifyPartyinfo(shipment, createAwbRequest);
+                awbResponse.setDefaultAwbShipmentInfo(defaultAwbShipmentInfo);
+                awbResponse.setDefaultAwbNotifyPartyInfo(defaultNotifyPartyInfo);
+                awbResponse.setDefaultAwbRoutingInfo(defaultRoutingInfo);
+                populateTaxRegistrationNumberInAwbResponse(awbResponse, shipment);
             }
-            awbResponse.setDefaultAwbShipmentInfo(defaultAwbShipmentInfo);
-            awbResponse.setDefaultAwbNotifyPartyInfo(defaultNotifyPartyInfo);
-            awbResponse.setDefaultAwbRoutingInfo(defaultRoutingInfo);
+
         } catch (Exception e) {
             log.error("Error while creating default awbShipmentInfo object for awb having id {} with error \n {}", awb.getId(), e.getMessage());
         }
@@ -3629,6 +3634,76 @@ public class AwbService implements IAwbService {
                                 : null;
                         if (awb.getAwbNotifyPartyInfo() != null && !awb.getAwbNotifyPartyInfo().isEmpty()) {
                             awb.getAwbNotifyPartyInfo().get(0).setTaxRegistrationNumber(notifyTaxRegNumber);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private void populateTaxRegistrationNumberInAwbResponse(AwbResponse awbResponse, ShipmentDetails shipmentDetails) {
+        ArrayList<String> addressIdList = new ArrayList<>();
+        if (shipmentDetails.getConsigner() != null && shipmentDetails.getConsigner().getAddressId() != null) {
+            addressIdList.add(shipmentDetails.getConsigner().getAddressId());
+        }
+        if (shipmentDetails.getConsignee() != null && shipmentDetails.getConsignee().getAddressId() != null) {
+            addressIdList.add(shipmentDetails.getConsignee().getAddressId());
+        }
+        if (shipmentDetails.getAdditionalDetails() != null &&
+                shipmentDetails.getAdditionalDetails().getNotifyParty() != null &&
+                shipmentDetails.getAdditionalDetails().getNotifyParty().getAddressId() != null) {
+            addressIdList.add(shipmentDetails.getAdditionalDetails().getNotifyParty().getAddressId());
+        }
+        if (!CommonUtils.listIsNullOrEmpty(addressIdList)) {
+            CommonV1ListRequest addressRequest = createCriteriaToFetchAddressList(addressIdList);
+            V1DataResponse addressResponse = v1Service.addressList(addressRequest);
+            List<AddressDataV1> addressDataList = jsonHelper.convertValueToList(addressResponse.entities, AddressDataV1.class);
+
+            Map<Long, AddressDataV1> addressIdToEntityOrgMap = addressDataList.stream()
+                    .collect(Collectors.toMap(AddressDataV1::getId, entity -> entity));
+
+            if (shipmentDetails.getConsigner() != null && shipmentDetails.getConsigner().getAddressId() != null) {
+                Long consignerAddressId = Long.valueOf(shipmentDetails.getConsigner().getAddressId());
+                if (addressIdToEntityOrgMap.containsKey(consignerAddressId)) {
+                    AddressDataV1 consignerAddressData = addressIdToEntityOrgMap.get(consignerAddressId);
+                    if (consignerAddressData != null) {
+                        String consignerTaxRegNumber = consignerAddressData.getTaxRegNumber() != null
+                                ? StringUtility.toUpperCase(StringUtility.convertToString(consignerAddressData.getTaxRegNumber()))
+                                : null;
+                        if (awbResponse.getDefaultAwbShipmentInfo() != null) {
+                            awbResponse.getDefaultAwbShipmentInfo().setShipperTaxRegistrationNumber(consignerTaxRegNumber);
+                        }
+                    }
+                }
+            }
+
+            if (shipmentDetails.getConsignee() != null && shipmentDetails.getConsignee().getAddressId() != null) {
+                Long consigneeAddressId = Long.valueOf(shipmentDetails.getConsignee().getAddressId());
+                if (addressIdToEntityOrgMap.containsKey(consigneeAddressId)) {
+                    AddressDataV1 consigneeAddressData = addressIdToEntityOrgMap.get(consigneeAddressId);
+                    if (consigneeAddressData != null) {
+                        String consigneeTaxRegNumber = consigneeAddressData.getTaxRegNumber() != null
+                                ? StringUtility.toUpperCase(StringUtility.convertToString(consigneeAddressData.getTaxRegNumber()))
+                                : null;
+                        if (awbResponse.getDefaultAwbShipmentInfo() != null) {
+                            awbResponse.getDefaultAwbShipmentInfo().setConsigneeTaxRegistrationNumber(consigneeTaxRegNumber);
+                        }
+                    }
+                }
+            }
+
+            if (shipmentDetails.getAdditionalDetails() != null &&
+                    shipmentDetails.getAdditionalDetails().getNotifyParty() != null &&
+                    shipmentDetails.getAdditionalDetails().getNotifyParty().getAddressId() != null) {
+                Long notifyAddressId = Long.valueOf(shipmentDetails.getAdditionalDetails().getNotifyParty().getAddressId());
+                if (addressIdToEntityOrgMap.containsKey(notifyAddressId)) {
+                    AddressDataV1 notifyAddressData = addressIdToEntityOrgMap.get(notifyAddressId);
+                    if (notifyAddressData != null) {
+                        String notifyTaxRegNumber = notifyAddressData.getTaxRegNumber() != null
+                                ? StringUtility.toUpperCase(StringUtility.convertToString(notifyAddressData.getTaxRegNumber()))
+                                : null;
+                        if (awbResponse.getDefaultAwbNotifyPartyInfo() != null && !awbResponse.getDefaultAwbNotifyPartyInfo().isEmpty()) {
+                            awbResponse.getDefaultAwbNotifyPartyInfo().get(0).setTaxRegistrationNumber(notifyTaxRegNumber);
                         }
                     }
                 }
