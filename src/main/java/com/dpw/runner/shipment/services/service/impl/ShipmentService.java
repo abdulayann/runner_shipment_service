@@ -4129,7 +4129,6 @@ public class ShipmentService implements IShipmentService {
             // TODO- check if they want status
 //            if (shipmentDetail.getStatus() != null && shipmentDetail.getStatus() < ShipmentStatus.values().length)
 //                response.setShipmentStatus(ShipmentStatus.values()[shipmentDetail.getStatus()].toString());
-            setShipperReferenceNumber(response);
             responseList.add(response);
         });
 //        setLocationData(responseList);
@@ -4138,28 +4137,16 @@ public class ShipmentService implements IShipmentService {
         return responseList;
     }
 
-    private void setShipperReferenceNumber(ShipmentDetailsResponse response){
-        if(response.getReferenceNumbersList() != null && !response.getReferenceNumbersList().isEmpty()){
-           Optional<String> srnReferenceNumber = response.getReferenceNumbersList().stream()
-                .filter(i -> i.getType().equalsIgnoreCase(SRN))
-                .findFirst()
-                .map(a -> a.getReferenceNumber());
-
-           if(srnReferenceNumber.isPresent() && response.getPickupDetails() != null){
-               response.getPickupDetails().setShipperRef(srnReferenceNumber.get());
-           }
-        }
-    }
 
     private void setShipperReferenceNumber(ShipmentListResponse response){
-        if(response.getReferenceNumbersList() != null && !response.getReferenceNumbersList().isEmpty()){
-            Optional<String> srnReferenceNumber = response.getReferenceNumbersList().stream()
+        if (response.getReferenceNumbersList() != null && !response.getReferenceNumbersList().isEmpty()) {
+            List<String> srnReferenceNumbers = response.getReferenceNumbersList().stream()
                 .filter(i -> i.getType().equalsIgnoreCase(SRN))
-                .findFirst()
-                .map(a -> a.getReferenceNumber());
+                .map(i -> i.getReferenceNumber())
+                .toList();
 
-            if(srnReferenceNumber.isPresent() && response.getPickupDetails() != null){
-                response.getPickupDetails().setShipperRef(srnReferenceNumber.get());
+            if (srnReferenceNumbers.size() == 1) {
+                response.setSrnReferenceNumber(srnReferenceNumbers.get(0));
             }
         }
     }
