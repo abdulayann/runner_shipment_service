@@ -1284,6 +1284,8 @@ public class ShipmentService implements IShipmentService {
                             BigDecimal wvInKG = obj.getVolume().multiply(BigDecimal.valueOf(factor));
                             obj.setVolumeWeight(wvInKG);
                             obj.setVolumeWeightUnit(Constants.WEIGHT_UNIT_KG);
+                            obj.setChargeable(wvInKG.max(obj.getWeight()));
+                            obj.setChargeableUnit(WEIGHT_UNIT_KG);
                         }
                     }
                     catch (Exception e) {
