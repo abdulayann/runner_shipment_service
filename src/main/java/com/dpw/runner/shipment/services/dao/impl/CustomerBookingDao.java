@@ -13,6 +13,8 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.ICustomerBookingRepository;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.dpw.runner.shipment.services.validator.custom.validations.CustomerBookingValidations;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -43,6 +45,8 @@ public class CustomerBookingDao implements ICustomerBookingDao {
     private CustomerBookingValidations customValidations;
     @Autowired
     private CacheManager cacheManager;
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Override
     public CustomerBooking save(CustomerBooking customerBooking) {
@@ -112,17 +116,18 @@ public class CustomerBookingDao implements ICustomerBookingDao {
         }
     }
 
-    private Optional<CustomerBooking> findWithCache(Object keyValue, String keyType) {
+    private Optional<CustomerBooking> findWithCache(Object keyValue, String keyType) throws JsonProcessingException {
         String primaryKey = keyGenerator.customCacheKey(keyType, keyValue);
         Cache cache = cacheManager.getCache(CacheConstants.CUSTOMER_BOOKING);
 
         log.info("Looking up CustomerBooking with keyType: {}, keyValue: {}, generatedCacheKey: {}", keyType, keyValue, primaryKey);
 
         if (cache != null) {
-            Cache.ValueWrapper cachedValue = cache.get(primaryKey);
-            if (cachedValue != null) {
+            String customerBookingString = cache.get(primaryKey, String.class);
+            if (customerBookingString != null) {
+                CustomerBooking customerBooking = objectMapper.readValue(customerBookingString, CustomerBooking.class);
                 log.info("Cache hit for key: {}", primaryKey);
-                return (Optional<CustomerBooking>) cachedValue.get();
+                return Optional.of(customerBooking);
             } else {
                 log.info("Cache miss for key: {}", primaryKey);
             }
@@ -143,11 +148,12 @@ public class CustomerBookingDao implements ICustomerBookingDao {
         // Cache both ID and GUID
         if (result.isPresent() && cache != null) {
             CustomerBooking booking = result.get();
+            String customerBookingString = objectMapper.writeValueAsString(booking);
             String idKey = keyGenerator.customCacheKey(CacheConstants.CUSTOMER_BOOKING_ID, booking.getId());
             String guidKey = keyGenerator.customCacheKey(CacheConstants.CUSTOMER_BOOKING_GUID, booking.getGuid());
 
-            cache.put(idKey, result);
-            cache.put(guidKey, result);
+            cache.put(idKey, customerBookingString);
+            cache.put(guidKey, customerBookingString);
 
             log.info("Cached result for keys: [ID key: {}, GUID key: {}]", idKey, guidKey);
         } else if (cache != null) {
