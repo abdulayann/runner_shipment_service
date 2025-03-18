@@ -29,7 +29,7 @@ public class UserServiceV1 implements IUserService {
 
     @Override
     @Cacheable(cacheNames = CacheConstants.CACHE_KEY_USER, keyGenerator = "customKeyGenerator")
-    public UsersDto getUserByToken(String key, String token) {
+    public UsersDto getUserByToken(String token) {
         log.info("Request: {} || getUserByToken --- URL: {} ||| Token: {}", LoggerHelper.getRequestIdFromMDC(), url, token);
         HttpHeaders headers = new HttpHeaders();
         headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));

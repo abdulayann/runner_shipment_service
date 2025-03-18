@@ -2282,7 +2282,7 @@ public class EntityTransferService implements IEntityTransferService {
     }
 
     private Long getReceivingBranchFromAgent(Map<UUID, List<ShipmentDetails>> destinationShipmentsMap, ShipmentDetails shipmentDetails, Long receivingAgent, ArValidationResponse arValidationResponse, Long receivingBranch) {
-        if (receivingAgent != null && Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP) &&
+        if (receivingAgent != null &&
                 !shipmentDetails.getTenantId().equals(receivingAgent.intValue()) && destinationShipmentsMap.containsKey(shipmentDetails.getGuid())) {
             var ships = destinationShipmentsMap.get(shipmentDetails.getGuid());
             var isShip = ships.stream().filter(x -> x.getTenantId().equals(receivingAgent.intValue())).findAny();
@@ -2383,7 +2383,7 @@ public class EntityTransferService implements IEntityTransferService {
     }
 
     private void setGuidsWithShipmentDetails(ShipmentDetails shipmentDetails, Set<UUID> sourceGuids, Map<UUID, ConsolidationDetails> consolidationDetailsMap, Set<String> locationRefGuids, Set<UUID> shipmentGuids) {
-        if(!Objects.equals(shipmentDetails.getSourceGuid(), shipmentDetails.getGuid())){
+        if(!Objects.equals(shipmentDetails.getSourceGuid(), shipmentDetails.getGuid()) || Objects.equals(shipmentDetails.getJobType(), SHIPMENT_TYPE_DRT)){
             sourceGuids.add(shipmentDetails.getSourceGuid());
         }
         else if(shipmentDetails.getConsolidationList() != null && !shipmentDetails.getConsolidationList().isEmpty()){
@@ -2405,7 +2405,7 @@ public class EntityTransferService implements IEntityTransferService {
     }
 
     private void setShipmentGuids(ShipmentDetails shipmentDetails, Set<UUID> shipmentGuids, Long receivingAgent, List<TriangulationPartner> triangulationPartnerList, Long triangulationPartner) {
-        if (receivingAgent != null && Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP) &&
+        if (receivingAgent != null &&
                 !shipmentDetails.getTenantId().equals(receivingAgent.intValue())) {
             shipmentGuids.add(shipmentDetails.getGuid());
         }

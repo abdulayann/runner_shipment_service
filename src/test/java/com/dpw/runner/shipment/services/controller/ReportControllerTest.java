@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.controller;
 
+import com.dpw.runner.shipment.services.ReportingService.Models.Commons.EmailBodyResponse;
 import com.dpw.runner.shipment.services.dto.request.ReportRequest;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.TranslationException;
@@ -7,7 +8,7 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IReportService;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.itextpdf.text.DocumentException;
-import java.util.concurrent.ExecutionException;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
@@ -21,6 +22,7 @@ import org.springframework.test.context.ContextConfiguration;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -120,6 +122,19 @@ class ReportControllerTest {
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
+    @Test
+    void createAuditLog() throws Exception {
+        when(reportService.getPreAlertEmailTemplateData(any(), any())).thenReturn(new EmailBodyResponse());
+        var response = reportController.getPreAlertEmailTemplateData(1L, 2L);
+        Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void createAuditLog1() throws Exception {
+        when(reportService.getPreAlertEmailTemplateData(any(), any())).thenThrow(new RunnerException());
+        var response = reportController.getPreAlertEmailTemplateData(1L, 2L);
+        Assertions.assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    }
 
 
 }
