@@ -319,19 +319,21 @@ public class ReportService implements IReportService {
             shipmentDao.updateFCRNo(Long.valueOf(reportRequest.getReportId()));
         }
 
+        processPreAlert(reportRequest, pdfByteContent, dataRetrived);
+
+        triggerAutomaticTransfer(report, reportRequest);
+        return pdfByteContent;
+    }
+
+    private void processPreAlert(ReportRequest reportRequest, byte[] pdfByteContent, Map<String, Object> dataRetrived) {
         if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getPreAlertEmailAndLogs()) &&
                 reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.PRE_ALERT)) {
-            byte[] finalPdfByteContent = pdfByteContent;
             DocUploadRequest docUploadRequest = new DocUploadRequest();
             docUploadRequest.setEntityType(Constants.SHIPMENTS_WITH_SQ_BRACKETS);
             docUploadRequest.setType(ReportConstants.PRE_ALERT);
             docUploadRequest.setIsTransferEnabled(true);
-            Map<String, Object> finalDataRetrived = dataRetrived;
-            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> addFilesFromReport(new BASE64DecodedMultipartFile(finalPdfByteContent), ReportConstants.PRE_ALERT + ".pdf", docUploadRequest, finalDataRetrived.get(GUID).toString())), executorService);
+            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> addFilesFromReport(new BASE64DecodedMultipartFile(pdfByteContent), ReportConstants.PRE_ALERT + ".pdf", docUploadRequest, dataRetrived.get(GUID).toString())), executorService);
         }
-
-        triggerAutomaticTransfer(report, reportRequest);
-        return pdfByteContent;
     }
 
     private void updateCustomDataCargoManifestAirReport(IReport report, ReportRequest reportRequest) {

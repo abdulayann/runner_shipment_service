@@ -788,10 +788,7 @@ public class ShipmentService implements IShipmentService {
                 shipmentDetails.setShipmentOrders(shipmentOrderDao.updateEntityFromShipment(jsonHelper.convertValueToList(shipmentOrderRequestList, ShipmentOrder.class), shipmentId));
             }
 
-            Hbl hbl = null;
-            if(shipmentDetails.getContainersList() != null && shipmentDetails.getContainersList().size() > 0) {
-                hbl = hblService.checkAllContainerAssigned(shipmentDetails, shipmentDetails.getContainersList(), updatedPackings);
-            }
+            checkContainerAssignedForHbl(shipmentDetails, updatedPackings);
 
             List<NotesRequest> notesRequest = getNotesRequests(request, shipmentId);
             String transactionId = shipmentDetails.getGuid().toString();
@@ -819,6 +816,13 @@ public class ShipmentService implements IShipmentService {
         ShipmentDetailsResponse shipmentDetailsResponse = jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class);
         CompletableFuture.runAsync(masterDataUtils.withMdc(() -> addFilesFromBookingToShipment(shipmentDetailsResponse.getGuid().toString(), shipmentDetailsResponse.getCustomerBookingGuid().toString())), executorService);
         return ResponseHelper.buildSuccessResponse(shipmentDetailsResponse);
+    }
+
+    private void checkContainerAssignedForHbl(ShipmentDetails shipmentDetails, List<Packing> updatedPackings) {
+        Hbl hbl = null;
+        if(shipmentDetails.getContainersList() != null && shipmentDetails.getContainersList().size() > 0) {
+            hbl = hblService.checkAllContainerAssigned(shipmentDetails, shipmentDetails.getContainersList(), updatedPackings);
+        }
     }
 
     private List<NotesRequest> getNotesRequests(ShipmentRequest request, Long shipmentId) {
@@ -1177,11 +1181,7 @@ public class ShipmentService implements IShipmentService {
 
     private List<PackingRequest> getPackingListRequest(CustomerBookingRequest customerBookingRequest) {
         return customerBookingRequest.getPackingList() != null ? customerBookingRequest.getPackingList().stream().map(obj -> {
-            if(!StringUtility.isEmpty(obj.getLengthUnit()))
-            {
-                obj.setWidthUnit(obj.getLengthUnit());
-                obj.setHeightUnit(obj.getLengthUnit());
-            }
+            setHeightWidthUnit(obj);
             if(obj.getWeight() != null)
                 obj.setWeight(obj.getWeight().multiply(new BigDecimal(obj.getPacks())));
             if(obj.getVolume() != null)
@@ -5928,6 +5928,27 @@ public class ShipmentService implements IShipmentService {
                 shipment.getAdditionalDetails().setDateOfReceipt(shipment.getCarrierDetails().getEta());
         }
 
+        setPartiesBroker(consolidation, shipment);
+
+        //Generate HBL
+        if(Constants.TRANSPORT_MODE_SEA.equals(shipment.getTransportMode()) && Constants.DIRECTION_EXP.equals(shipment.getDirection()))
+            shipment.setHouseBill(generateCustomHouseBL(null));
+
+        try {
+            log.info("Fetching Tenant Model");
+            TenantModel tenantModel = modelMapper.map(v1Service.retrieveTenant().getEntity(), TenantModel.class);
+            String currencyCode = tenantModel.currencyCode;
+            shipment.setFreightLocalCurrency(currencyCode);
+        } catch (Exception e){
+            log.error("Failed in fetching tenant data from V1 with error : {}", e);
+        }
+
+        createShipmentPayload(modelMapper.map(shipment, ShipmentDetails.class), shipment);
+
+        return ResponseHelper.buildSuccessResponse(shipment);
+    }
+
+    private void setPartiesBroker(ConsolidationDetailsResponse consolidation, ShipmentDetailsResponse shipment) {
         PartiesResponse parties;
         if(consolidation.getReceivingAgent() != null) {
             parties = jsonHelper.convertValue(consolidation.getReceivingAgent(), PartiesResponse.class);
@@ -5949,23 +5970,6 @@ public class ShipmentService implements IShipmentService {
                 shipment.getAdditionalDetails().setExportBrokerCountry(commonUtils.getCountryFromUnLocCode(consolidation.getCarrierDetails().getOriginLocCode()));
             }
         }
-
-        //Generate HBL
-        if(Constants.TRANSPORT_MODE_SEA.equals(shipment.getTransportMode()) && Constants.DIRECTION_EXP.equals(shipment.getDirection()))
-            shipment.setHouseBill(generateCustomHouseBL(null));
-
-        try {
-            log.info("Fetching Tenant Model");
-            TenantModel tenantModel = modelMapper.map(v1Service.retrieveTenant().getEntity(), TenantModel.class);
-            String currencyCode = tenantModel.currencyCode;
-            shipment.setFreightLocalCurrency(currencyCode);
-        } catch (Exception e){
-            log.error("Failed in fetching tenant data from V1 with error : {}", e);
-        }
-
-        createShipmentPayload(modelMapper.map(shipment, ShipmentDetails.class), shipment);
-
-        return ResponseHelper.buildSuccessResponse(shipment);
     }
 
     private void processCarrierDetailsOrigin(ShipmentDetailsResponse shipment) {
