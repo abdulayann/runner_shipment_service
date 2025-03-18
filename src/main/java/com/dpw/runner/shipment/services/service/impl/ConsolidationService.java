@@ -172,9 +172,7 @@ import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import org.springframework.util.CollectionUtils;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
-import static java.util.stream.Collectors.toMap;
 
 @SuppressWarnings("ALL")
 @Service
@@ -5719,11 +5717,13 @@ public class ConsolidationService implements IConsolidationService {
                 consol.setSendingAgent(parties);
             }
         }
-        if(!commonUtils.checkIfPartyExists(consol.getSendingAgent())) {
-            consol.setSendingAgentCountry(commonUtils.getCountryFromUnLocCode(shipmentCarrierDetails.getOriginPortLocCode()));
-        }
-        if(!commonUtils.checkIfPartyExists(consol.getReceivingAgent())) {
-            consol.setReceivingAgentCountry(commonUtils.getCountryFromUnLocCode(shipmentCarrierDetails.getDestinationPortLocCode()));
+        if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsEntityTransferPrerequisiteEnabled())) {
+            if(!commonUtils.checkIfPartyExists(consol.getSendingAgent())) {
+                consol.setSendingAgentCountry(commonUtils.getCountryFromUnLocCode(shipmentCarrierDetails.getOriginPortLocCode()));
+            }
+            if(!commonUtils.checkIfPartyExists(consol.getReceivingAgent())) {
+                consol.setReceivingAgentCountry(commonUtils.getCountryFromUnLocCode(shipmentCarrierDetails.getDestinationPortLocCode()));
+            }
         }
 
         if (consol.getReceivingBranch() == null && Objects.equals(consol.getShipmentType(), DIRECTION_EXP) && CommonUtils.checkAddressNotNull(consol.getReceivingAgent())) {

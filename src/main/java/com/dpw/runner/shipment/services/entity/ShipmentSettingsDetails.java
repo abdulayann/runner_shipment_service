@@ -594,6 +594,9 @@ public class ShipmentSettingsDetails extends MultiTenancy {
 
     @Column(name = "country_air_cargo_security")
     private Boolean countryAirCargoSecurity;
+    
+    @Column(name = "pre_alert_email_and_logs")
+    private Boolean preAlertEmailAndLogs;
 
     @Column(name = "is_amr_freight_enabled")
     private Boolean isAmrAirFreightEnabled;

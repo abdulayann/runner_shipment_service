@@ -461,7 +461,7 @@ public class V1ServiceImpl implements IV1Service {
         String token = "Bearer " + StringUtils.defaultString(generateToken());
 
         // Retrieve user by token
-        UsersDto user = getUserServiceFactory.returnUserService().getUserByToken(tokenUtility.getUserIdAndBranchId(token), token);
+        UsersDto user = getUserServiceFactory.returnUserService().getUserByToken(token);
         if (user != null) {
             log.info("User found for token, setting auth context for user: {}", user.getUsername());
             setAuthContext(token, user);
