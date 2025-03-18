@@ -76,18 +76,15 @@ public class CustomerBookingDao implements ICustomerBookingDao {
                 String guidKey = keyGenerator.customCacheKey(CacheConstants.CUSTOMER_BOOKING_GUID, resp.getGuid());
                 Optional<CustomerBooking> result = Optional.of(resp);
 
-                cache.put(idKey, result);
-                cache.put(guidKey, result);
-
                 cache.evictIfPresent(idKey);
                 cache.evictIfPresent(guidKey);
 
-                log.info("Cached CustomerBooking after save for keys: [ID key: {}, GUID key: {}]", idKey, guidKey);
+                log.info("Evicted stale CustomerBooking cache entries after save. [ID Key: {}, GUID Key: {}]", idKey, guidKey);
             } else {
-                log.info("Skipping cache update due to missing cache or identifiers.");
+                log.info("CustomerBooking cache eviction skipped. Cache is null or identifiers (ID/GUID) are missing.");
             }
         } catch (Exception e) {
-            log.error("Error while updating CustomerBooking in cache, skipping step");
+            log.error("Exception occurred while evicting CustomerBooking cache entries. Skipping cache update. Error: {}", e.getMessage(), e);
         }
 
         return resp;
@@ -175,8 +172,8 @@ public class CustomerBookingDao implements ICustomerBookingDao {
             String idKey = keyGenerator.customCacheKey(CacheConstants.CUSTOMER_BOOKING_ID, customerBooking.getId());
             String guidKey = keyGenerator.customCacheKey(CacheConstants.CUSTOMER_BOOKING_GUID, customerBooking.getGuid());
 
-            cache.evict(idKey);
-            cache.evict(guidKey);
+            cache.evictIfPresent(idKey);
+            cache.evictIfPresent(guidKey);
 
             log.info("Evicted cache entries for CustomerBooking - ID: {}, GUID: {}", customerBooking.getId(), customerBooking.getGuid());
         } else {
