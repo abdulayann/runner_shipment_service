@@ -640,7 +640,7 @@ public class AwbService implements IAwbService {
         BigDecimal totalGrossWeightOfMawbGood = BigDecimal.ZERO;
         BigDecimal chargeableWeightOfMawbGood = BigDecimal.ZERO;
         BigDecimal totalAmountOfMawbGood = BigDecimal.ZERO;
-        String grossWeightUnit = "";
+        String grossWeightUnit = Constants.WEIGHT_UNIT_KG;
 
         BigDecimal totalVolumetricWeight = BigDecimal.ZERO;
 
