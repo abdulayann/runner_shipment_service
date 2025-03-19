@@ -52,11 +52,11 @@ public class ShipmentSettingsReverseSync implements IShipmentSettingsReverseSync
             ShipmentSettingRequest dest = modelMapper.map(req, ShipmentSettingRequest.class);
             TenantContext.setCurrentTenant(dest.getTenantId().intValue());
             // Non Enums entities
-            if(req.getHblLock() != null && req.getHblLock().size() > 0)
+            if(req.getHblLock() != null && !req.getHblLock().isEmpty())
                 dest.setHblLockSettings(convertToClass(req.getHblLock().get(0), HblLockSettingsRequest.class));
-            if(req.getHawbLock() != null && req.getHawbLock().size() > 0)
+            if(req.getHawbLock() != null && !req.getHawbLock().isEmpty())
                 dest.setHawbLockSettings(convertToClass(req.getHawbLock().get(0), HawbLockSettingsRequest.class));
-            if(req.getMawbLock() != null && req.getMawbLock().size() > 0)
+            if(req.getMawbLock() != null && !req.getMawbLock().isEmpty())
                 dest.setMawbLockSettings(convertToClass(req.getMawbLock().get(0), MawbLockSettingsRequest.class));
 
             // Entities with enums

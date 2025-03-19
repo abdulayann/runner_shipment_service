@@ -88,7 +88,7 @@ public class NotesDao implements INotesDao {
                         .collect(Collectors.toMap(Notes::getId, Function.identity()));
             Map<Long, Notes> copyHashMap = new HashMap<>(hashMap);
             List<Notes> notesRequestList = new ArrayList<>();
-            if (notesList != null && notesList.size() != 0) {
+            if (notesList != null && !notesList.isEmpty()) {
                 for (Notes request : notesList) {
                     Long id = request.getId();
                     if (id != null) {
@@ -227,7 +227,7 @@ public class NotesDao implements INotesDao {
         String responseMsg;
         List<Notes> responseNotes = new ArrayList<>();
         Map<UUID, Notes> notesMap = new HashMap<>();
-        if(oldEntityList != null && oldEntityList.size() > 0) {
+        if(oldEntityList != null && !oldEntityList.isEmpty()) {
             for (Notes entity:
                     oldEntityList) {
                 notesMap.put(entity.getGuid(), entity);
@@ -236,7 +236,7 @@ public class NotesDao implements INotesDao {
         try {
             Notes oldEntity;
             List<Notes> notesRequestList = new ArrayList<>();
-            if (notesList != null && notesList.size() != 0) {
+            if (notesList != null && !notesList.isEmpty()) {
                 for (Notes request : notesList) {
                     oldEntity = notesMap.get(request.getGuid());
                     if(oldEntity != null) {

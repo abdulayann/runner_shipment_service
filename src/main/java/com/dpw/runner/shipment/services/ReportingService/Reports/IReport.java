@@ -1477,7 +1477,7 @@ public abstract class IReport {
     public ConsolidationModel getFirstConsolidationFromShipmentId(Long shipmentId)
     {
         List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByShipmentIdByQuery(shipmentId);
-        if(consoleShipmentMappings != null && consoleShipmentMappings.size() > 0) {
+        if(consoleShipmentMappings != null && !consoleShipmentMappings.isEmpty()) {
             Long id = consoleShipmentMappings.stream().map(ConsoleShipmentMapping::getConsolidationId).max(Comparator.naturalOrder()).get();
             return getConsolidation(id);
         }
@@ -2770,7 +2770,7 @@ public abstract class IReport {
         CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).criteriaRequests(criteria).build();
         Object commodity = masterDataFactory.getMasterDataService().fetchCommodityData(commonV1ListRequest).getData();
         List<CommodityResponse> commodityResponses = jsonHelper.convertValueToList(commodity, CommodityResponse.class);
-        if(commodityResponses.size() > 0)
+        if(!commodityResponses.isEmpty())
             return commodityResponses.get(0);
         return null;
     }

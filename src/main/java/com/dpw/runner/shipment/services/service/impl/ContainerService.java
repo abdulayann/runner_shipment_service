@@ -883,7 +883,7 @@ public class ContainerService implements IContainerService {
                 V1DataResponse v1DataResponse = v1Service.fetchContainerTypeData(listRequest);
                 if(v1DataResponse != null && v1DataResponse.entities != null) {
                     List<EntityTransferContainerType> containerTypesList = jsonHelper.convertValueToList(v1DataResponse.entities, EntityTransferContainerType.class);
-                    if(containerTypesList.size() > 0) {
+                    if(!containerTypesList.isEmpty()) {
                         EntityTransferContainerType containerType = containerTypesList.get(0);
                         setWeightVolumeInReseponse(request, containerType, response);
                     }
@@ -1065,7 +1065,7 @@ public class ContainerService implements IContainerService {
                 Containers container = containersOptional.get();
                 changeAchievedUnit(container);
                 ShipmentDetails shipmentDetails = shipmentDao.findById(request.getShipmentId()).get();
-                if(request.getPacksId() != null && request.getPacksId().size() > 0) {
+                if(request.getPacksId() != null && !request.getPacksId().isEmpty()) {
                     ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", request.getShipmentId(), "=");
                     Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
                     Page<Packing> allPackings = packingDao.findAll(pair.getLeft(), pair.getRight());
@@ -1126,7 +1126,7 @@ public class ContainerService implements IContainerService {
                     log.error("Error syncing containers");
                 }
             }
-            if(packingList != null && packingList.size() > 0) {
+            if(packingList != null && !packingList.isEmpty()) {
                 for (Packing packing: packingList) {
                     packing.setContainerId(null);
                 }
@@ -1206,7 +1206,7 @@ public class ContainerService implements IContainerService {
 
         for (Containers x : conts) {
             boolean flag = true;
-            if(x.getShipmentsList() != null && x.getShipmentsList().size() > 0) {
+            if(x.getShipmentsList() != null && !x.getShipmentsList().isEmpty()) {
                 for(ShipmentDetails shipmentDetails : x.getShipmentsList()) {
                     if (shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL)) {
                         flag = false;
@@ -1554,7 +1554,7 @@ public class ContainerService implements IContainerService {
     }
 
     public void afterSaveList(List<Containers> containers, boolean isCreate) {
-        if(containers != null && containers.size() > 0) {
+        if(containers != null && !containers.isEmpty()) {
             for (Containers container : containers) {
                 afterSave(container, isCreate);
             }
@@ -1580,7 +1580,7 @@ public class ContainerService implements IContainerService {
             Containers containers = syncEntityConversionService.containerV1ToV2(containerRequest);
             List<Long> shipIds = null;
             boolean isCreate = true;
-            if (existingCont != null && existingCont.size() > 0) {
+            if (existingCont != null && !existingCont.isEmpty()) {
                 containers.setId(existingCont.get(0).getId());
                 containers.setConsolidationId(existingCont.get(0).getConsolidationId());
             } else {
@@ -1608,7 +1608,7 @@ public class ContainerService implements IContainerService {
     }
 
     private List<Long> getShipIds(ContainerRequestV2 containerRequest, List<Long> shipIds) {
-        if (containerRequest.getShipmentGuids() != null && containerRequest.getShipmentGuids().size() > 0) {
+        if (containerRequest.getShipmentGuids() != null && !containerRequest.getShipmentGuids().isEmpty()) {
             ListCommonRequest listCommonRequest = constructListCommonRequest("guid", containerRequest.getShipmentGuids(), "IN");
             Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listCommonRequest, ShipmentDetails.class);
             Page<ShipmentDetails> shipmentDetails = shipmentDao.findAll(pair.getLeft(), pair.getRight());

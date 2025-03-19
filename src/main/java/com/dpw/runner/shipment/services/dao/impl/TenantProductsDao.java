@@ -79,7 +79,7 @@ public class TenantProductsDao implements ITenantProductsDao {
             Map<Long, TenantProducts> hashMap = tenantProducts.stream()
                     .collect(Collectors.toMap(TenantProducts::getId, Function.identity()));
             List<TenantProducts> tenantProductsRequestList = new ArrayList<>();
-            if (tenantProductsList != null && tenantProductsList.size() != 0) {
+            if (tenantProductsList != null && !tenantProductsList.isEmpty()) {
                 for (TenantProducts request : tenantProductsList) {
                     Long id = request.getId();
                     if (id != null) {
@@ -105,10 +105,10 @@ public class TenantProductsDao implements ITenantProductsDao {
         List<TenantProducts> responseTenantProducts = new ArrayList<>();
         try {
             Map<UUID, TenantProducts> hashMap = new HashMap<>();
-            if(oldTenantProducts != null && oldTenantProducts.size() > 0)
+            if(oldTenantProducts != null && !oldTenantProducts.isEmpty())
                 hashMap = oldTenantProducts.stream().collect(Collectors.toMap(TenantProducts::getGuid, Function.identity()));
             List<TenantProducts> tenantProductsRequestList = new ArrayList<>();
-            if (tenantProductsList != null && tenantProductsList.size() != 0) {
+            if (tenantProductsList != null && !tenantProductsList.isEmpty()) {
                 for (TenantProducts request : tenantProductsList) {
                     UUID guid = request.getGuid();
                     if(hashMap.containsKey(guid)) {

@@ -453,7 +453,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
 
     private void setMawbStock(ConsolidationDetails consolidationDetails) {
         List<MawbStocksLink> mawbStocksLinks = mawbStocksLinkDao.findByMawbNumber(consolidationDetails.getMawb());
-        if(mawbStocksLinks != null && mawbStocksLinks.size() > 0) {
+        if(mawbStocksLinks != null && !mawbStocksLinks.isEmpty()) {
             MawbStocksLink res = mawbStocksLinks.get(0);
             if(!res.getStatus().equalsIgnoreCase(CONSUMED)) {
                 res.setEntityId(consolidationDetails.getId());

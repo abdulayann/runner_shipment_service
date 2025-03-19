@@ -32,7 +32,7 @@ public class ShipTruckDriverProof extends IReport {
         TruckDriverModel truckDriverModel = new TruckDriverModel();
         truckDriverModel.shipmentDetails = getShipment(id);
         validateAirAndOceanDGCheck(truckDriverModel.shipmentDetails);
-        if(truckDriverModel.shipmentDetails != null && truckDriverModel.shipmentDetails.getContainersList() != null && truckDriverModel.shipmentDetails.getContainersList().size() > 0) {
+        if(truckDriverModel.shipmentDetails != null && truckDriverModel.shipmentDetails.getContainersList() != null && !truckDriverModel.shipmentDetails.getContainersList().isEmpty()) {
             List<ShipmentContainers> shipmentContainers = new ArrayList<>();
             for(var container: truckDriverModel.shipmentDetails.getContainersList())
             {
@@ -40,7 +40,7 @@ public class ShipTruckDriverProof extends IReport {
             }
             truckDriverModel.shipmentDetails.setShipmentContainersList(shipmentContainers);
         }
-        if(truckDriverModel.shipmentDetails != null && truckDriverModel.shipmentDetails.getTruckDriverDetails() != null && truckDriverModel.shipmentDetails.getTruckDriverDetails().size() > 0)
+        if(truckDriverModel.shipmentDetails != null && truckDriverModel.shipmentDetails.getTruckDriverDetails() != null && !truckDriverModel.shipmentDetails.getTruckDriverDetails().isEmpty())
         {
             truckDriverModel.setTruckDriverDetails(truckDriverModel.shipmentDetails.getTruckDriverDetails());
         }

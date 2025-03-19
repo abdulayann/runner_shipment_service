@@ -224,7 +224,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
     public List<ReferenceNumbers> updateEntityFromConsole(List<ReferenceNumbers> referenceNumbersList, Long consolidationId, List<ReferenceNumbers> oldEntityList) throws RunnerException {
         String responseMsg;
         Map<UUID, ReferenceNumbers> referenceNumbersMap = new HashMap<>();
-        if(oldEntityList != null && oldEntityList.size() > 0) {
+        if(oldEntityList != null && !oldEntityList.isEmpty()) {
             for (ReferenceNumbers entity:
                     oldEntityList) {
                 referenceNumbersMap.put(entity.getGuid(), entity);
@@ -376,7 +376,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
     public List<ReferenceNumbers> updateEntityFromShipment(List<ReferenceNumbers> referenceNumbersList, Long shipmentId, List<ReferenceNumbers> oldEntityList) throws RunnerException {
         String responseMsg;
         Map<UUID, ReferenceNumbers> referenceNumbersMap = new HashMap<>();
-        if(oldEntityList != null && oldEntityList.size() > 0) {
+        if(oldEntityList != null && !oldEntityList.isEmpty()) {
             for (ReferenceNumbers entity:
                     oldEntityList) {
                 referenceNumbersMap.put(entity.getGuid(), entity);

@@ -208,7 +208,7 @@ public class HblService implements IHblService {
         Hbl hbl = null;
         if(allContainerAssigned) {
             List<Hbl> hbls = hblDao.findByShipmentId(shipmentId);
-            if(hbls.size() > 0) {
+            if(!hbls.isEmpty()) {
                 hbl = hbls.get(0);
                 hbl = getHblWithContainerAndCargoData(shipment, containersList, packings, hbl);
             }
@@ -239,7 +239,7 @@ public class HblService implements IHblService {
 
     private Hbl getHblWithContainerAndCargoData(ShipmentDetails shipment, Set<Containers> containersList, List<Packing> packings, Hbl hbl) {
         boolean isContainerWithoutNumberOrNoContainer = false;
-        if(hbl.getHblContainer() != null && hbl.getHblContainer().size() > 0) {
+        if(hbl.getHblContainer() != null && !hbl.getHblContainer().isEmpty()) {
             for(HblContainerDto hblContainerDto: hbl.getHblContainer()) {
                 if(hblContainerDto.getContainerNumber() == null || hblContainerDto.getContainerNumber().isEmpty()) {
                     isContainerWithoutNumberOrNoContainer = true;
@@ -624,7 +624,7 @@ public class HblService implements IHblService {
         String volumeUnit = null;
         BigDecimal volume = BigDecimal.valueOf(0);
         BigDecimal weight = BigDecimal.valueOf(0);
-        if(shipment.getPackingList() != null && shipment.getPackingList().size() > 0)
+        if(shipment.getPackingList() != null && !shipment.getPackingList().isEmpty())
         {
             for(Packing packing: shipment.getPackingList())
             {
@@ -647,7 +647,7 @@ public class HblService implements IHblService {
     }
 
     private List<ReferenceNumbers> getReferenceNumber(ShipmentDetails shipment) {
-        return (shipment.getReferenceNumbersList() != null && shipment.getReferenceNumbersList().size() > 0) ? shipment.getReferenceNumbersList().stream().filter(x -> Objects.equals(x.getType(), "Container")).toList() : null;
+        return (shipment.getReferenceNumbersList() != null && !shipment.getReferenceNumbersList().isEmpty()) ? shipment.getReferenceNumbersList().stream().filter(x -> Objects.equals(x.getType(), "Container")).toList() : null;
     }
 
     private String getPacksType(ShipmentDetails shipment) {
@@ -699,7 +699,7 @@ public class HblService implements IHblService {
     }
 
     private List<HblContainerDto> getHblContainerDtos(ShipmentDetails shipment, List<ReferenceNumbers> referenceNumber, CompanySettingsResponse companySettingsResponse, Long noOfPackage, String packsType, BigDecimal volume, BigDecimal weight, String volumeUnit, String weightUnit) {
-        if(referenceNumber != null && referenceNumber.size() > 0 && (shipment.getContainersList() == null || shipment.getContainersList().isEmpty()) && Objects.equals(shipment.getTransportMode(), "SEA") && Objects.equals(shipment.getShipmentType(), "LCL") && companySettingsResponse.getSeaLclContainerFlag())
+        if(referenceNumber != null && !referenceNumber.isEmpty() && (shipment.getContainersList() == null || shipment.getContainersList().isEmpty()) && Objects.equals(shipment.getTransportMode(), "SEA") && Objects.equals(shipment.getShipmentType(), "LCL") && companySettingsResponse.getSeaLclContainerFlag())
         {
             return List.of(HblContainerDto.builder().
                     containerNumber(referenceNumber.get(0).getReferenceNumber()).
@@ -718,7 +718,7 @@ public class HblService implements IHblService {
     private List<HblCargoDto> mapShipmentCargoToHBL(List<Packing> packings, Set<Containers> containers) {
         List<HblCargoDto> hblCargoes = new ArrayList<>();
         Map<Long, String> map = new HashMap<>();
-        if(containers != null && containers.size() > 0)
+        if(containers != null && !containers.isEmpty())
             map = containers.stream().filter(e -> !IsStringNullOrEmpty(e.getContainerNumber())).collect(Collectors.toMap(Containers::getId, Containers::getContainerNumber));
         Map<Long, String> finalMap = map;
         if(Objects.equals(packings, null)) {
@@ -955,7 +955,7 @@ public class HblService implements IHblService {
         });
         List<HblCargoDto> deletedList = new ArrayList<>();
         Map<Long, String> map = new HashMap<>();
-        if(containers != null && containers.size() > 0)
+        if(containers != null && !containers.isEmpty())
             map = containers.stream().collect(Collectors.toMap(Containers::getId, Containers::getContainerNumber));
         Map<Long, String> finalMap = map;
         if(hbl.getHblCargo() != null && !hbl.getHblCargo().isEmpty()) {

@@ -175,7 +175,7 @@ public class BookingChargesDao implements IBookingChargesDao {
             Map<Long, BookingCharges> hashMap = bookingCharges.stream()
                     .collect(Collectors.toMap(BookingCharges::getId, Function.identity()));
             List<BookingCharges> bookingChargesRequestList = new ArrayList<>();
-            if (BookingChargesList != null && BookingChargesList.size() != 0) {
+            if (BookingChargesList != null && !BookingChargesList.isEmpty()) {
                 for (BookingCharges request : BookingChargesList) {
                     Long id = request.getId();
                     if (id != null) {

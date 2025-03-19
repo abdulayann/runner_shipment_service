@@ -410,7 +410,7 @@ public class HawbReport extends IReport{
                         hsCodesSet.add(packInfo.getHsCode());
                 });
             }
-            if (awbGoodsDescriptionInfo != null && awbGoodsDescriptionInfo.size() > 0){
+            if (awbGoodsDescriptionInfo != null && !awbGoodsDescriptionInfo.isEmpty()){
                 String finalNtrQtyGoods = NtrQtyGoods;
                 List<AwbGoodsDescriptionInfoModel> awbGoodsDescriptionInfoModel = awbGoodsDescriptionInfo.stream().map(x ->modelMapper.map(x, AwbGoodsDescriptionInfoModel.class)).toList();
                 List<Map<String,Object>> values = jsonHelper.convertValue(awbGoodsDescriptionInfoModel, new TypeReference<>(){});
@@ -519,7 +519,7 @@ public class HawbReport extends IReport{
             List<AwbRoutingInfo> routingInfoRows = hawbModel.awb.getAwbRoutingInfo();
             Set<String> carrierSet;
             String tsDateTimeFormat = v1TenantSettingsResponse.getDPWDateFormat();
-            if(routingInfoRows != null && routingInfoRows.size() > 0){
+            if(routingInfoRows != null && !routingInfoRows.isEmpty()){
                 locCodes = new HashSet<>();
                 carrierSet = new HashSet<>();
 

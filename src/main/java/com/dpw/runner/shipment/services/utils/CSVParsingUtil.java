@@ -134,7 +134,7 @@ public class CSVParsingUtil<T> {
     public Map<Integer, Map<String, MasterData>> fetchInBulkMasterList(MasterListRequestV2 requests) {
         Map<String, MasterData> keyMasterDataMap = new HashMap<>();
         Map<Integer, Map<String, MasterData>> dataMap = new HashMap<>();
-        if (requests.getMasterListRequests() != null && requests.getMasterListRequests().size() > 0) {
+        if (requests.getMasterListRequests() != null && !requests.getMasterListRequests().isEmpty()) {
             V1DataResponse response = v1Service.fetchMultipleMasterData(requests);
             List<MasterData> masterLists = jsonHelper.convertValueToList(response.entities, MasterData.class);
             masterLists.forEach(masterData -> {

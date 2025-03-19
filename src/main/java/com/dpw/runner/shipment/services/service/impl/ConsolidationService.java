@@ -592,10 +592,10 @@ public class ConsolidationService implements IConsolidationService {
         containersList = consolidationDetails.getContainersList();
         if(isShipmentLevelContainer) {
             Set<ShipmentDetails> shipmentDetails = consolidationDetails.getShipmentsList();
-            if(shipmentDetails != null && shipmentDetails.size() > 0) {
+            if(shipmentDetails != null && !shipmentDetails.isEmpty()) {
                 containersList = new ArrayList<>();
                 for(ShipmentDetails shipmentDetails1 : shipmentDetails) {
-                    if(shipmentDetails1.getContainersList() != null && shipmentDetails1.getContainersList().size() > 0) {
+                    if(shipmentDetails1.getContainersList() != null && !shipmentDetails1.getContainersList().isEmpty()) {
                         containersList.addAll(shipmentDetails1.getContainersList());
                     }
                 }
@@ -1360,7 +1360,7 @@ public class ConsolidationService implements IConsolidationService {
         Long consolidationId = consol.getId();
         List<Packing> packingList = new ArrayList<>();
         List<ShipmentDetails> shipmentDetailsToSave = new ArrayList<>();
-        if(consolidationId != null && shipmentIds!= null && shipmentIds.size() > 0) {
+        if(consolidationId != null && shipmentIds!= null && !shipmentIds.isEmpty()) {
             List<Long> removedShipmentIds = consoleShipmentMappingDao.detachShipments(consolidationId, shipmentIds);
             Map<Long, ShipmentDetails> shipmentDetailsMap = getShipmentDetailsMap(shipmentDetails);
             List<Containers> allContainersList = new ArrayList<>();
@@ -2334,7 +2334,7 @@ public class ConsolidationService implements IConsolidationService {
         boolean lcl = shipmentSettingsDetails.getMultipleShipmentEnabled() != null && shipmentSettingsDetails.getMultipleShipmentEnabled();
         boolean autoUpdate = isAutoUpdate || (consolidationDetails.getAutoUpdateGoodsDesc() != null && consolidationDetails.getAutoUpdateGoodsDesc());
         Set<Long> containerSelfDataAdded = new HashSet<>();
-        if(consolidationDetails.getShipmentsList() != null && consolidationDetails.getShipmentsList().size() > 0) {
+        if(consolidationDetails.getShipmentsList() != null && !consolidationDetails.getShipmentsList().isEmpty()) {
             for(ShipmentDetails shipmentDetails : consolidationDetails.getShipmentsList()) {
                 shipmentNumberMap.put(shipmentDetails.getId(), shipmentDetails);
                 boolean setContData = autoUpdate;
@@ -2357,7 +2357,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     private void updateContainerResponseForContainerList(ConsolidationDetailsResponse consolidationDetailsResponse, Map<Long, String> descOfGoodsMap, Map<Long, String> handlingInfoMap, Map<Long, String> hblNumberMap) {
-        if(consolidationDetailsResponse.getContainersList() != null && consolidationDetailsResponse.getContainersList().size() > 0) {
+        if(consolidationDetailsResponse.getContainersList() != null && !consolidationDetailsResponse.getContainersList().isEmpty()) {
             for (ContainerResponse containerResponse : consolidationDetailsResponse.getContainersList()) {
                 Map<String, String> tempMap = new HashMap<>();
                 if(descOfGoodsMap.containsKey(containerResponse.getId()))
@@ -2376,7 +2376,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     private void updateDescGoodsAndhandlingInfoMap(ShipmentDetails shipmentDetails, boolean setContData, Set<Long> containerSelfDataAdded, boolean lcl, Map<Long, String> descOfGoodsMap, Map<Long, String> handlingInfoMap, Map<Long, String> hblNumberMap) {
-        if((setContData || !IsStringNullOrEmpty(shipmentDetails.getHouseBill())) && shipmentDetails.getContainersList() != null && shipmentDetails.getContainersList().size() > 0) {
+        if((setContData || !IsStringNullOrEmpty(shipmentDetails.getHouseBill())) && shipmentDetails.getContainersList() != null && !shipmentDetails.getContainersList().isEmpty()) {
                 for(Containers containers : shipmentDetails.getContainersList()) {
                     if(setContData && !containerSelfDataAdded.contains(containers.getId()) && lcl) {
                         containerSelfDataAdded.add(containers.getId());
@@ -2391,7 +2391,7 @@ public class ConsolidationService implements IConsolidationService {
 
     private boolean getCountDataForAutoUpdateAndLcl(ShipmentDetails shipmentDetails, boolean autoUpdate, boolean lcl, Map<Long, String> descOfGoodsMap, Map<Long, String> handlingInfoMap, Map<Long, String> hblNumberMap, boolean setContData) {
         if(autoUpdate && lcl && shipmentDetails.getContainerAutoWeightVolumeUpdate() != null && shipmentDetails.getContainerAutoWeightVolumeUpdate()) {
-            if(shipmentDetails.getPackingList() != null && shipmentDetails.getPackingList().size() > 0) {
+            if(shipmentDetails.getPackingList() != null && !shipmentDetails.getPackingList().isEmpty()) {
                 for (Packing packing : shipmentDetails.getPackingList()) {
                     if(packing.getContainerId() != null) {
                         setDescGoodsAndhandlingInfoMap(descOfGoodsMap, handlingInfoMap, hblNumberMap, packing.getContainerId(), packing.getGoodsDescription(), packing.getHandlingInfo(), null);
@@ -2551,7 +2551,7 @@ public class ConsolidationService implements IConsolidationService {
         Double shipmentTeu = 0.0;
         long consoleCont = 0l;
         long shipmentCont = 0l;
-        if(consolidationDetails.getContainersList() != null && consolidationDetails.getContainersList().size() > 0) {
+        if(consolidationDetails.getContainersList() != null && !consolidationDetails.getContainersList().isEmpty()) {
             Map<String, Object> cacheMap = new HashMap<String, Object>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
             Set<String> containerTypes = new HashSet<>();
@@ -2599,7 +2599,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     private boolean isShipmentListPresent(Containers containers) {
-        return containers.getShipmentsList() != null && containers.getShipmentsList().size() > 0;
+        return containers.getShipmentsList() != null && !containers.getShipmentsList().isEmpty();
     }
 
     private Object getEntityTransferObjectCache(Containers containers, Map<String, Object> cacheMap) {
@@ -2694,7 +2694,7 @@ public class ConsolidationService implements IConsolidationService {
     private void processNonAssignRequest(ConsolePacksListRequest request, int size, ConsolePacksListResponse response) {
         List<Long> shipIds = new ArrayList<>();
         List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(request.getConsolidationId());
-        if(consoleShipmentMappings != null && consoleShipmentMappings.size() > 0)
+        if(consoleShipmentMappings != null && !consoleShipmentMappings.isEmpty())
             shipIds = consoleShipmentMappings.stream().map(e -> e.getShipmentId()).toList();
         ListCommonRequest listCommonRequest = andCriteria(Constants.SHIPMENT_ID, shipIds, "IN", null);
         listCommonRequest = andCriteria(Constants.CONTAINER_ID, request.getContainerId(), "=", listCommonRequest);
@@ -2704,7 +2704,7 @@ public class ConsolidationService implements IConsolidationService {
         List<Long> contShipIds = getContShipIds(request);
         Map<Long, ShipmentDetails> map = new HashMap<>();
 
-        if(packings != null && packings.getContent() != null && packings.getContent().size() > 0) {
+        if(packings != null && packings.getContent() != null && !packings.getContent().isEmpty()) {
             size = getSizeForPacking(packings, map, response, size);
         }
 
@@ -2721,7 +2721,7 @@ public class ConsolidationService implements IConsolidationService {
     private void processIsAssignRequest(ConsolePacksListRequest request, int size, ConsolePacksListResponse response) {
         List<Long> shipIds = new ArrayList<>();
         List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(request.getConsolidationId());
-        if(consoleShipmentMappings != null && consoleShipmentMappings.size() > 0)
+        if(consoleShipmentMappings != null && !consoleShipmentMappings.isEmpty())
             shipIds = consoleShipmentMappings.stream().map(e -> e.getShipmentId()).toList();
         ListCommonRequest listCommonRequest = andCriteria(Constants.SHIPMENT_ID, shipIds, "IN", null);
         listCommonRequest = andCriteria(Constants.CONTAINER_ID, "", "ISNULL", listCommonRequest);
@@ -2732,7 +2732,7 @@ public class ConsolidationService implements IConsolidationService {
 
         Map<Long, ShipmentDetails> map = new HashMap<>();
         List<Long> shipmentsIncluded = new ArrayList<>();
-        if(packings != null && packings.getContent() != null && packings.getContent().size() > 0) {
+        if(packings != null && packings.getContent() != null && !packings.getContent().isEmpty()) {
             shipmentsIncluded = packings.getContent().stream().map(e -> e.getShipmentId()).toList();
             size = getSizeForPacking(packings, map, response, size);
         }
@@ -2770,7 +2770,7 @@ public class ConsolidationService implements IConsolidationService {
     private List<Long> getContShipIds(ConsolePacksListRequest request) {
         List<Long> contShipIds = new ArrayList<>();
         List<ShipmentsContainersMapping> shipmentsContainersMappingList = shipmentsContainersMappingDao.findByContainerId(request.getContainerId());
-        if(shipmentsContainersMappingList != null && shipmentsContainersMappingList.size() > 0) {
+        if(shipmentsContainersMappingList != null && !shipmentsContainersMappingList.isEmpty()) {
             contShipIds = shipmentsContainersMappingList.stream().map(e -> e.getShipmentId()).toList();
         }
         return contShipIds;
@@ -2869,7 +2869,7 @@ public class ConsolidationService implements IConsolidationService {
             ContainerShipmentADInConsoleResponse response = new ContainerShipmentADInConsoleResponse();
             Optional<Containers> containersOpt = containerDao.findById(request.getContainer().getId());
             Containers container = getContainersFromOpt(containersOpt);
-            if(container != null && request.getPacksList() != null && request.getPacksList().size() > 0) {
+            if(container != null && request.getPacksList() != null && !request.getPacksList().isEmpty()) {
                 BigDecimal weight = getContainerWeight(container);
                 BigDecimal volume = getContainerVolume(container);
 
@@ -2972,13 +2972,13 @@ public class ConsolidationService implements IConsolidationService {
 
     private List<Long> getContShipIds(Containers container) {
         List<Long> contShipIds = new ArrayList<>();
-        if(container.getShipmentsList() != null && container.getShipmentsList().size() > 0)
+        if(container.getShipmentsList() != null && !container.getShipmentsList().isEmpty())
             contShipIds = container.getShipmentsList().stream().map(e -> e.getId()).toList();
         return contShipIds;
     }
 
     private void validateFCLContainerAssignment(boolean isFCL, boolean isFCLAlready, List<Long> contShipIds, Set<Long> shipmentsIncluded, Containers container) {
-        if( (isFCL || isFCLAlready) && contShipIds.size() + shipmentsIncluded.size() > 1 && container.getShipmentsList().size() > 0 && container.getShipmentsList().iterator().next().getShipmentType().equals(Constants.CARGO_TYPE_FCL)) {
+        if( (isFCL || isFCLAlready) && contShipIds.size() + shipmentsIncluded.size() > 1 && !container.getShipmentsList().isEmpty() && container.getShipmentsList().iterator().next().getShipmentType().equals(Constants.CARGO_TYPE_FCL)) {
                 throw new ValidationException("Mentioned container is already assigned or being assigned to a FCL Shipment - " + container.getShipmentsList().iterator().next().getShipmentId() + " along with some other Shipment. Please check and retry!");
             }
 
@@ -3021,7 +3021,7 @@ public class ConsolidationService implements IConsolidationService {
         Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
         Page<Packing> packings = packingDao.findAll(pair.getLeft(), pair.getRight());
         List<Packing> packingList = null;
-        if(packings != null && packings.getContent() != null && packings.getContent().size() > 0) {
+        if(packings != null && packings.getContent() != null && !packings.getContent().isEmpty()) {
             packingList = packings.getContent();
             for(Packing pack: packingList) {
                 pack.setContainerId(container.getId());
@@ -3050,7 +3050,7 @@ public class ConsolidationService implements IConsolidationService {
             ContainerResponse response = null;
             Optional<Containers> containersOpt = containerDao.findById(request.getContainer().getId());
             Containers container = getContainersFromOpt(containersOpt);
-            if(container != null && request.getPacksList() != null && request.getPacksList().size() > 0) {
+            if(container != null && request.getPacksList() != null && !request.getPacksList().isEmpty()) {
                 BigDecimal weight = getContainerWeight(container);
                 BigDecimal volume = getContainerVolume(container);
                 Set<Long> shipmentdIdSet = new HashSet<>();
@@ -3138,7 +3138,7 @@ public class ConsolidationService implements IConsolidationService {
 
     private Set<Long> getRemoveShipmentIds(Set<Long> shipmentdIdSet, Containers container) {
         Set<Long> removeShipmentIds = new HashSet<>();
-        if(shipmentdIdSet.size() > 0) {
+        if(!shipmentdIdSet.isEmpty()) {
             for(Long shipmentId : shipmentdIdSet) {
                 ListCommonRequest listCommonRequest = andCriteria(Constants.SHIPMENT_ID, shipmentId, "=", null);
                 listCommonRequest = andCriteria(Constants.CONTAINER_ID, container.getId(), "=", listCommonRequest);
@@ -3320,7 +3320,7 @@ public class ConsolidationService implements IConsolidationService {
 
     private void checkBookingIdCriteria(ListCommonRequest request)
     {
-        if(request != null && request.getFilterCriteria() != null && request.getFilterCriteria().size() > 0)
+        if(request != null && request.getFilterCriteria() != null && !request.getFilterCriteria().isEmpty())
         {
             checkForBookingIdFilter(request.getFilterCriteria());
         }
@@ -3339,7 +3339,7 @@ public class ConsolidationService implements IConsolidationService {
                 filterCriteria.getCriteria().setOperator("IN");
                 filterCriteria.getCriteria().setValue(guidsListResponse.getGuidsList());
             }
-            if(filterCriteria.getInnerFilter() != null && filterCriteria.getInnerFilter().size() > 0) {
+            if(filterCriteria.getInnerFilter() != null && !filterCriteria.getInnerFilter().isEmpty()) {
                 checkForBookingIdFilter(filterCriteria.getInnerFilter());
             }
         }
@@ -3988,7 +3988,7 @@ public class ConsolidationService implements IConsolidationService {
                     if(value.size() == 1) {
                         response.add(value.get(0));
                     }
-                    else if(entry.getValue().size() > 0){
+                    else if(!entry.getValue().isEmpty()){
                         Containers finalContainer = value.get(0);
                         finalContainer.setId(null);
                         finalContainer.setGuid(null);
@@ -4606,7 +4606,7 @@ public class ConsolidationService implements IConsolidationService {
     private void applyPermissionFilter(CommonRequestModel commonRequestModel) throws RunnerException {
         ListCommonRequest listCommonRequest = (ListCommonRequest) commonRequestModel.getData();
         List<String> permissionList = PermissionsContext.getPermissions(CONSOLIDATION_LIST_PERMISSION);
-        if (permissionList == null || permissionList.size() == 0)
+        if (permissionList == null || permissionList.isEmpty())
             throw new RunnerException("Unable to list consolidations due to insufficient list permissions.");
         permissionList.sort(new Comparator<String>() {
             @Override
@@ -4617,12 +4617,12 @@ public class ConsolidationService implements IConsolidationService {
         List<FilterCriteria> criterias = PermissionUtil.generateFilterCriteriaFromPermissions(permissionList, false);
 
         FilterCriteria criteria1 = null;
-        if (listCommonRequest.getFilterCriteria() != null && listCommonRequest.getFilterCriteria().size() > 0) {
+        if (listCommonRequest.getFilterCriteria() != null && !listCommonRequest.getFilterCriteria().isEmpty()) {
             criteria1 = FilterCriteria.builder().innerFilter(listCommonRequest.getFilterCriteria()).build();
         }
         FilterCriteria criteria2 = FilterCriteria.builder().innerFilter(criterias).build();
-        if (criteria2 != null && (criteria2.getCriteria() != null || (criteria2.getInnerFilter() != null && criteria2.getInnerFilter().size() > 0))) {
-            if (criteria1 != null && criteria1.getInnerFilter().size() > 0) {
+        if (criteria2 != null && (criteria2.getCriteria() != null || (criteria2.getInnerFilter() != null && !criteria2.getInnerFilter().isEmpty()))) {
+            if (criteria1 != null && !criteria1.getInnerFilter().isEmpty()) {
                 criteria2.setLogicOperator("AND");
                 listCommonRequest.setFilterCriteria(Arrays.asList(criteria1, criteria2));
             } else
@@ -6171,7 +6171,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     private void updateConsoleShipmentMappingList(List<ConsoleShipmentMapping> consoleShipmentMappingList, ContainerPackSummaryDto response) {
-        if(consoleShipmentMappingList != null && consoleShipmentMappingList.size() > 0) {
+        if(consoleShipmentMappingList != null && !consoleShipmentMappingList.isEmpty()) {
             ListCommonRequest listCommonRequest = andCriteria(Constants.SHIPMENT_ID, consoleShipmentMappingList.stream().map(ConsoleShipmentMapping::getShipmentId).toList(), "IN", null);
             andCriteria(Constants.CONTAINER_ID, "", "ISNOTNULL", listCommonRequest);
             Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
@@ -6507,11 +6507,11 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     public ResponseEntity<IRunnerResponse> showCreateBooking(String operation) throws RunnerException {
-        if(operation.equals("CREATE") && (PermissionsContext.getPermissions(Constants.CARRIER_BOOKING_CREATE) == null || PermissionsContext.getPermissions(Constants.CARRIER_BOOKING_CREATE).size() == 0)){
+        if(operation.equals("CREATE") && (PermissionsContext.getPermissions(Constants.CARRIER_BOOKING_CREATE) == null || PermissionsContext.getPermissions(Constants.CARRIER_BOOKING_CREATE).isEmpty())){
             throw new RunnerException("You don't have necessary permission to create Carrier Booking.");
         }
 
-        if(operation.equals("VIEW") && (PermissionsContext.getPermissions(Constants.CARRIER_BOOKING_VIEW) == null || PermissionsContext.getPermissions(Constants.CARRIER_BOOKING_VIEW).size() == 0)){
+        if(operation.equals("VIEW") && (PermissionsContext.getPermissions(Constants.CARRIER_BOOKING_VIEW) == null || PermissionsContext.getPermissions(Constants.CARRIER_BOOKING_VIEW).isEmpty())){
             throw new RunnerException("You don't have necessary permission to view Carrier Booking.");
         }
 

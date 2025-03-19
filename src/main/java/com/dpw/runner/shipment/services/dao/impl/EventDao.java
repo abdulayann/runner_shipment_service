@@ -152,7 +152,7 @@ public class EventDao implements IEventDao {
             Map<Long, Events> copyHashMap = new HashMap<>(hashMap);
             List<Events> eventsRequestList = new ArrayList<>();
             eventsList = filterStaleEvents(eventsList, eventsPage.getContent());
-            if (eventsList != null && eventsList.size() != 0) {
+            if (eventsList != null && !eventsList.isEmpty()) {
                 for (Events request : eventsList) {
                     Long id = request.getId();
                     if (id != null) {
@@ -297,7 +297,7 @@ public class EventDao implements IEventDao {
     public List<Events> updateEntityFromOtherEntity(List<Events> eventsList, Long entityId, String entityType, List<Events> oldEntityList) throws RunnerException {
         String responseMsg;
         Map<UUID, Events> eventsMap = new HashMap<>();
-        if (oldEntityList != null && oldEntityList.size() > 0) {
+        if (oldEntityList != null && !oldEntityList.isEmpty()) {
             for (Events entity :
                     oldEntityList) {
                 eventsMap.put(entity.getGuid(), entity);
@@ -307,7 +307,7 @@ public class EventDao implements IEventDao {
         try {
             Events oldEntity;
             List<Events> eventsRequestList = new ArrayList<>();
-            if (eventsList != null && eventsList.size() != 0) {
+            if (eventsList != null && !eventsList.isEmpty()) {
                 for (Events request : eventsList) {
                     oldEntity = eventsMap.get(request.getGuid());
                     if (oldEntity != null) {
@@ -359,7 +359,7 @@ public class EventDao implements IEventDao {
 
         Pair<Specification<Events>, Pageable> pair = fetchData(listCommonRequest, Events.class);
         Page<Events> events = findAll(pair.getLeft(), pair.getRight());
-        if (events.getContent().size() > 0) {
+        if (!events.getContent().isEmpty()) {
             return events.getContent();
         }
         return null;
@@ -367,7 +367,7 @@ public class EventDao implements IEventDao {
 
     public boolean checkIfEventsRowExistsForEntityTypeAndEntityId(CustomAutoEventRequest request) {
         List<Events> eventsRowList = getTheDataFromEntity(request.entityType, request.entityId, true);
-        if (eventsRowList != null && eventsRowList.size() > 0) {
+        if (eventsRowList != null && !eventsRowList.isEmpty()) {
             for (Events eventsRow : eventsRowList) {
                 if (eventsRow.getEventCode().equalsIgnoreCase(request.eventCode)) {
                     log.info("Event already exists for given id: " + request.entityId + " and type: " + request.entityType + " and event code : " + request.eventCode);

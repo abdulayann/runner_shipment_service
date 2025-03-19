@@ -90,7 +90,7 @@ public class HblTermsConditionTemplateDao implements IHblTermsConditionTemplateD
                     .filter(e -> e.getIsFrontPrint() == isFrontPrint)
                     .toList();
             List<HblTermsConditionTemplate> hblTermsConditionTemplatesRequestList = new ArrayList<>();
-            if (hblTermsConditionTemplateList != null && hblTermsConditionTemplateList.size() != 0) {
+            if (hblTermsConditionTemplateList != null && !hblTermsConditionTemplateList.isEmpty()) {
                 for (HblTermsConditionTemplate request : hblTermsConditionTemplateList) {
                     Long id = request.getId();
                     hblTermsConditionTemplatesRequestList.add(request);
@@ -144,7 +144,7 @@ public class HblTermsConditionTemplateDao implements IHblTermsConditionTemplateD
         Pair<Specification<HblTermsConditionTemplate>, Pageable> pair = fetchData(listCommonRequest, HblTermsConditionTemplate.class);
         Page<HblTermsConditionTemplate> hblTermsConditionTemplates = findAll(pair.getLeft(), pair.getRight());
 
-        if (hblTermsConditionTemplates.getContent().size() > 0) {
+        if (!hblTermsConditionTemplates.getContent().isEmpty()) {
             return hblTermsConditionTemplates.getContent().get(0);
         }
 

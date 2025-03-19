@@ -55,7 +55,7 @@ public class PickupDeliveryDetailsDao implements IPickupDeliveryDetailsDao {
             Map<Long, PickupDeliveryDetails> hashMap = pickupDeliveryDetailsPage.stream()
                     .collect(Collectors.toMap(PickupDeliveryDetails::getId, Function.identity()));
             List<PickupDeliveryDetails> pickupDeliveryDetails = new ArrayList<>();
-            if (pickupDeliveryDetailsList != null && pickupDeliveryDetailsList.size() != 0) {
+            if (pickupDeliveryDetailsList != null && !pickupDeliveryDetailsList.isEmpty()) {
                 for (PickupDeliveryDetails request : pickupDeliveryDetailsList) {
                     Long id = request.getId();
                     if (id != null) {

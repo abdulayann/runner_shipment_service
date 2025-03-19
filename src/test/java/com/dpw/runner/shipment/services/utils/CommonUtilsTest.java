@@ -167,11 +167,6 @@ class CommonUtilsTest {
     private BaseFont font;
     private Rectangle realPageSize;
     private Rectangle rect;
-    private PdfReader reader;
-    private PdfStamper stamper;
-    private ByteArrayOutputStream outputStream;
-    private PrintStream originalOut;
-    private byte[] pdfBytes;
 
     @AfterEach
     void tearDown() {
@@ -184,10 +179,6 @@ class CommonUtilsTest {
         font = BaseFont.createFont(BaseFont.HELVETICA, BaseFont.WINANSI, BaseFont.EMBEDDED);
         realPageSize = new Rectangle(0, 0, 595, 842); // A4 size
         rect = new Rectangle(100, 100, 500, 742);
-        reader = mock(PdfReader.class);
-        stamper = mock(PdfStamper.class);
-        outputStream = new ByteArrayOutputStream();
-        pdfBytes = new byte[0];
 
         MockitoAnnotations.initMocks(this);
         commonUtils.syncExecutorService = Executors.newFixedThreadPool(2);
@@ -402,7 +393,7 @@ class CommonUtilsTest {
         inOrder.verify(dc).restoreState();
     }
 
-    private byte[] createSamplePdf() throws DocumentException, IOException {
+    private byte[] createSamplePdf() throws DocumentException{
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         Document document = new Document();
         PdfWriter.getInstance(document, baos);
@@ -589,7 +580,7 @@ class CommonUtilsTest {
         assertEquals("Generic exception message", result);
     }
 
-    private byte[] createSamplePdfWithMultiplePages() throws DocumentException, IOException {
+    private byte[] createSamplePdfWithMultiplePages() throws DocumentException{
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         Document document = new Document();
         PdfWriter.getInstance(document, baos);
@@ -981,7 +972,7 @@ class CommonUtilsTest {
         carrierDetails.setDestination("test");
         carrierDetails.setDestinationPort("test");
         commonUtils.updateCarrierUnLocData(carrierDetails, null);
-        assertEquals(carrierDetails.getOriginLocCode(), null);
+        assertEquals(null, carrierDetails.getOriginLocCode());
     }
 
     @Test
@@ -2138,7 +2129,7 @@ class CommonUtilsTest {
     }
 
     @Test
-    void testCheckIfAnyDGClass3() throws RunnerException {
+    void testCheckIfAnyDGClass3(){
         assertThrows(RunnerException.class, () -> commonUtils.checkIfAnyDGClass("7.1"));
     }
 

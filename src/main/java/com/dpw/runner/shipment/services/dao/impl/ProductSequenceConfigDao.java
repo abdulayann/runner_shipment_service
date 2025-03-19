@@ -94,7 +94,7 @@ public class ProductSequenceConfigDao implements IProductSequenceConfigDao {
             Map<Long, ProductSequenceConfig> hashMap = productSequenceConfigs.stream()
                     .collect(Collectors.toMap(ProductSequenceConfig::getId, Function.identity()));
             List<ProductSequenceConfig> productSequenceConfigRequestList = new ArrayList<>();
-            if (productSequenceConfigList != null && productSequenceConfigList.size() != 0) {
+            if (productSequenceConfigList != null && !productSequenceConfigList.isEmpty()) {
                 for (ProductSequenceConfig request : productSequenceConfigList) {
                     Long id = request.getId();
                     if (id != null) {
@@ -120,10 +120,10 @@ public class ProductSequenceConfigDao implements IProductSequenceConfigDao {
         List<ProductSequenceConfig> responseProductSequenceConfig = new ArrayList<>();
         try {
             Map<UUID, ProductSequenceConfig> hashMap = new HashMap<>();
-            if(oldProductSequenceConfig != null && oldProductSequenceConfig.size() > 0)
+            if(oldProductSequenceConfig != null && !oldProductSequenceConfig.isEmpty())
                 hashMap = oldProductSequenceConfig.stream().collect(Collectors.toMap(ProductSequenceConfig::getGuid, Function.identity()));
             List<ProductSequenceConfig> productSequenceConfigRequestList = new ArrayList<>();
-            if (productSequenceConfigList != null && productSequenceConfigList.size() != 0) {
+            if (productSequenceConfigList != null && !productSequenceConfigList.isEmpty()) {
                 for (ProductSequenceConfig request : productSequenceConfigList) {
                     UUID guid = request.getGuid();
                     if(hashMap.containsKey(guid)) {

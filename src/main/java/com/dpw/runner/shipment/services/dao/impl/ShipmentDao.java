@@ -391,7 +391,7 @@ public class ShipmentDao implements IShipmentDao {
     }
 
     private void addRoutingValidationsErrors(ShipmentDetails request, Set<String> errors) {
-        if (request.getRoutingsList() != null && request.getRoutingsList().size() > 0) {
+        if (request.getRoutingsList() != null && !request.getRoutingsList().isEmpty()) {
             HashSet<Long> hashSet = new HashSet<>();
             for (Routings routingsRequest : request.getRoutingsList()) {
                 if (routingsRequest.getLeg() != null) {
@@ -509,7 +509,7 @@ public class ShipmentDao implements IShipmentDao {
 
     private void setMawbStock(ShipmentDetails shipmentDetails) {
         List<MawbStocksLink> mawbStocksLinks = mawbStocksLinkDao.findByMawbNumber(shipmentDetails.getMasterBill());
-        if(mawbStocksLinks != null && mawbStocksLinks.size() > 0) {
+        if(mawbStocksLinks != null && !mawbStocksLinks.isEmpty()) {
             MawbStocksLink res = mawbStocksLinks.get(0);
             if(!Objects.isNull(res.getStatus()) && !res.getStatus().equals(CONSUMED)) {
                 res.setEntityId(shipmentDetails.getId());
@@ -688,7 +688,7 @@ public class ShipmentDao implements IShipmentDao {
              && shipmentDetails.getTransportMode().equalsIgnoreCase(Constants.TRANSPORT_MODE_AIR)) {
             V1DataResponse v1DataResponse = fetchCarrier(shipmentDetails.getCarrierDetails().getShippingLine());
             List<CarrierResponse> carrierDetails = jsonHelper.convertValueToList(v1DataResponse.entities, CarrierResponse.class);
-            if (carrierDetails == null || carrierDetails.size()==0 || StringUtility.isEmpty(carrierDetails.get(0).iATACode))
+            if (carrierDetails == null || carrierDetails.isEmpty() || StringUtility.isEmpty(carrierDetails.get(0).iATACode))
                 throw new ValidationException("Please add the IATA code in the Carrier Master for " + shipmentDetails.getCarrierDetails().getShippingLine());
         }
     }

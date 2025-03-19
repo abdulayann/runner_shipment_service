@@ -12,13 +12,13 @@ import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 class ObjectUtilityTest {
 
     class TestClassA {
-        private String field1;
+        protected String field1;
         protected Integer field2;
         Boolean field3;
     }
 
     class TestClassB extends TestClassA {
-        private Double field4;
+        protected Double field4;
     }
     class TestClassC extends TestClassB {
         Long field5;
@@ -65,6 +65,6 @@ class ObjectUtilityTest {
     void testGetAllFields_EmptyClass() {
         Map<String, Class> fields = ObjectUtility.getAllFields(EmptyClass.class, null);
         assertNotNull(fields);
-        assertTrue(fields.size() == 1);
+        assertEquals(1, fields.size());
     }
 }

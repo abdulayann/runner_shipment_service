@@ -91,7 +91,7 @@ public class PackingDao implements IPackingDao {
                         .collect(Collectors.toMap(Packing::getId, Function.identity()));
             Map<Long, Packing> hashMapCopy = new HashMap<>(hashMap);
             List<Packing> packingRequestList = new ArrayList<>();
-            if (packingList != null && packingList.size() != 0) {
+            if (packingList != null && !packingList.isEmpty()) {
                 for (Packing request : packingList) {
                     Long id = request.getId();
                     if (id != null) {
@@ -127,7 +127,7 @@ public class PackingDao implements IPackingDao {
             Map<Long, Packing> hashMap = packings.stream()
                     .collect(Collectors.toMap(Packing::getId, Function.identity()));
             List<Packing> packingRequestList = new ArrayList<>();
-            if (packingList != null && packingList.size() != 0) {
+            if (packingList != null && !packingList.isEmpty()) {
                 for (Packing request : packingList) {
                     Long id = request.getId();
                     if (id != null) {
@@ -163,7 +163,7 @@ public class PackingDao implements IPackingDao {
 //            }
             Map<Long, Packing> hashMapCopy = new HashMap<>(hashMap);
             List<Packing> packingRequestList = new ArrayList<>();
-            if (packingList != null && packingList.size() != 0) {
+            if (packingList != null && !packingList.isEmpty()) {
                 for (Packing request : packingList) {
                     Long id = request.getId();
                     if (id != null) {
@@ -187,7 +187,7 @@ public class PackingDao implements IPackingDao {
         String responseMsg;
         List<Packing> responsePackings = new ArrayList<>();
         Map<UUID, Packing> packingMap = new HashMap<>();
-        if (oldEntityList != null && oldEntityList.size() > 0) {
+        if (oldEntityList != null && !oldEntityList.isEmpty()) {
             for (Packing entity :
                     oldEntityList) {
                 packingMap.put(entity.getGuid(), entity);
@@ -196,7 +196,7 @@ public class PackingDao implements IPackingDao {
         try {
             Packing oldEntity;
             List<Packing> packingRequestList = new ArrayList<>();
-            if (packingList != null && packingList.size() != 0) {
+            if (packingList != null && !packingList.isEmpty()) {
                 for (Packing request : packingList) {
                     oldEntity = packingMap.get(request.getGuid());
                     if (oldEntity != null) {

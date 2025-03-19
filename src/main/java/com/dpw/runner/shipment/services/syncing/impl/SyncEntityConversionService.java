@@ -314,7 +314,7 @@ public class SyncEntityConversionService {
             response.setConsolidationId(consolidationDetails.getId());
         }
 
-        if(mawbStocks.getMawbStocksLinkRows() != null && mawbStocks.getMawbStocksLinkRows().size() > 0) {
+        if(mawbStocks.getMawbStocksLinkRows() != null && !mawbStocks.getMawbStocksLinkRows().isEmpty()) {
             List<MawbStocksLink> mawbStocksLinks = new ArrayList<>();
             for(var mawbStocksLinkV2 : mawbStocks.getMawbStocksLinkRows()) {
                 if(Objects.equals(mawbStocksLinkV2.getEntityType(), Constants.SHIPMENT)) {

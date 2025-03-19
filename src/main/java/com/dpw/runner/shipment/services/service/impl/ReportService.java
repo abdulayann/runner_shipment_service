@@ -937,7 +937,7 @@ public class ReportService implements IReportService {
             String shipmentIds = dataRetrived.get(ReportConstants.SHIPMENT_IDS).toString();
             if (StringUtility.isNotEmpty(shipmentIds)) {
                 List<String> shipmentIdList = Arrays.stream(shipmentIds.split(",")).toList();
-                if (shipmentIdList != null && shipmentIdList.size() > 0) {
+                if (shipmentIdList != null && !shipmentIdList.isEmpty()) {
                     for(String shipmentId : shipmentIdList) {
                         createAutoEvent(shipmentId, EventConstants.SR_SENT_OR_NOT, tenantSettingsRow);
                     }
@@ -1234,7 +1234,7 @@ public class ReportService implements IReportService {
                                           boolean isOriginalPrinted, String transportMode, String multiTemplateCode, boolean isTransportInstruction)
     {
         List<ShipmentSettingsDetails> shipmentSettingsDetailsList = shipmentSettingsDao.getSettingsByTenantIds(Arrays.asList(1, UserContext.getUser().TenantId));
-        if (shipmentSettingsDetailsList != null && shipmentSettingsDetailsList.size() >= 1)
+        if (shipmentSettingsDetailsList != null && !shipmentSettingsDetailsList.isEmpty())
         {
             ShipmentSettingsDetails admin = null;
             ShipmentSettingsDetails tenant = null;

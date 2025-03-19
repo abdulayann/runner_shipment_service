@@ -138,7 +138,7 @@ public class ContainerDao implements IContainerDao {
     }
 
     private void deleteByIds(List<Long> ids) {
-        if(ids != null && ids.size() > 0) {
+        if(ids != null && !ids.isEmpty()) {
             for (Long id: ids)
                 deleteById(id);
         }
@@ -158,7 +158,7 @@ public class ContainerDao implements IContainerDao {
             Map<Long, Containers> hashMap = containers.stream()
                     .collect(Collectors.toMap(Containers::getId, Function.identity()));
             List<Containers> containersRequestList = new ArrayList<>();
-            if (containersList != null && containersList.size() != 0) {
+            if (containersList != null && !containersList.isEmpty()) {
                 for (Containers request : containersList) {
                     Long id = request.getId();
                     if (id != null) {
@@ -407,7 +407,7 @@ public class ContainerDao implements IContainerDao {
         String responseMsg;
         List<Containers> responseContainers = new ArrayList<>();
         Map<UUID, Containers> containersMap = new HashMap<>();
-        if(oldEntityList != null && oldEntityList.size() > 0) {
+        if(oldEntityList != null && !oldEntityList.isEmpty()) {
             for (Containers containers:
                     oldEntityList) {
                 containersMap.put(containers.getGuid(), containers);
@@ -416,7 +416,7 @@ public class ContainerDao implements IContainerDao {
         Containers oldContainer;
         try {
             // TODO- Handle Transactions here
-            if (containersList != null && containersList.size() != 0) {
+            if (containersList != null && !containersList.isEmpty()) {
                 List<Containers> containerList = new ArrayList<>(containersList);
                 for (Containers containers: containerList) {
                     if(containersMap.containsKey(containers.getGuid())) {

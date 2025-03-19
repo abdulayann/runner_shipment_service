@@ -92,7 +92,7 @@ public class PartiesDao implements IPartiesDao {
                         .collect(Collectors.toMap(Parties::getId, Function.identity()));
             Map<Long, Parties> copyHashMap = new HashMap<>(hashMap);
             List<Parties> partiesRequestList = new ArrayList<>();
-            if (partiesList != null && partiesList.size() != 0) {
+            if (partiesList != null && !partiesList.isEmpty()) {
                 for (Parties request : partiesList) {
                     Long id = request.getId();
                     if (id != null) {
@@ -235,7 +235,7 @@ public class PartiesDao implements IPartiesDao {
         String responseMsg;
         List<Parties> responseParties = new ArrayList<>();
         Map<UUID, Parties> partiesMap = new HashMap<>();
-        if(oldEntityList != null && oldEntityList.size() > 0) {
+        if(oldEntityList != null && !oldEntityList.isEmpty()) {
             for (Parties entity:
                     oldEntityList) {
                 partiesMap.put(entity.getGuid(), entity);
@@ -244,7 +244,7 @@ public class PartiesDao implements IPartiesDao {
         try {
             Parties oldEntity;
             List<Parties> partiesRequestList = new ArrayList<>();
-            if (partiesList != null && partiesList.size() != 0) {
+            if (partiesList != null && !partiesList.isEmpty()) {
                 for (Parties request : partiesList) {
                     oldEntity = partiesMap.get(request.getGuid());
                     if(oldEntity != null) {
