@@ -272,7 +272,7 @@ public class ShipmentSync implements IShipmentSync {
             cs.setIssueDate(commonUtils.getUserZoneTime(sd.getAdditionalDetails().getDateOfIssue()));
         else
             cs.setDateofIssue(commonUtils.getUserZoneTime(sd.getAdditionalDetails().getDateOfIssue()));
-        cs.setDateofReceipt(sd.getAdditionalDetails().getDateOfReceipt());
+        cs.setDateofReceipt(commonUtils.getUserZoneTime(sd.getAdditionalDetails().getDateOfReceipt()));
         cs.setReceivingForwarderParty(mapPartyObject(sd.getAdditionalDetails().getReceivingForwarder()));
         cs.setSendingForwarderParty(mapPartyObject(sd.getAdditionalDetails().getSendingForwarder()));
         cs.setTraderOrSupplierParty(mapPartyObject(sd.getAdditionalDetails().getTraderOrSupplier()));
