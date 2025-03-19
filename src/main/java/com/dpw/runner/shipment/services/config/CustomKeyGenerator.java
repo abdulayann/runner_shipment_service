@@ -5,13 +5,13 @@ import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.interceptor.KeyGenerator;
 import org.springframework.stereotype.Component;
-
-import java.lang.reflect.Method;
-import java.util.Objects;
 
 @Component("customKeyGenerator")
 @Generated
@@ -69,6 +69,19 @@ public class CustomKeyGenerator implements KeyGenerator {
                 .append(UserContext.getUser().getTenantId())
                 .append("_")
                 .append(value);
+    }
+
+    public String customCacheKey(Object... params) {
+        StringBuilder keyBuilder = cacheBaseKey();
+        if (params != null && params.length > 0) {
+            String joinedParams = String.join("_",
+                    Arrays.stream(params)
+                            .map(String::valueOf)
+                            .toArray(String[]::new)
+            );
+            keyBuilder.append("_").append(joinedParams);
+        }
+        return keyBuilder.toString();
     }
 
 }
