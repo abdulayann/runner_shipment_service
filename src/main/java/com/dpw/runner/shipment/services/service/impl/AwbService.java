@@ -3727,21 +3727,38 @@ public class AwbService implements IAwbService {
     }
 
     private void setTaxRegistrationForNotifyParty(ShipmentDetails shipmentDetails, Map<Long, AddressDataV1> addressIdToEntityOrgMap, AwbResponse awbResponse) {
-        if (shipmentDetails.getAdditionalDetails() != null &&
-                shipmentDetails.getAdditionalDetails().getNotifyParty() != null &&
-                shipmentDetails.getAdditionalDetails().getNotifyParty().getAddressId() != null) {
-            Long notifyAddressId = Long.valueOf(shipmentDetails.getAdditionalDetails().getNotifyParty().getAddressId());
-            if (addressIdToEntityOrgMap.containsKey(notifyAddressId)) {
-                AddressDataV1 notifyAddressData = addressIdToEntityOrgMap.get(notifyAddressId);
-                if (notifyAddressData != null) {
-                    String notifyTaxRegNumber = notifyAddressData.getTaxRegNumber() != null
-                            ? StringUtility.toUpperCase(StringUtility.convertToString(notifyAddressData.getTaxRegNumber()))
-                            : null;
-                    if (awbResponse.getDefaultAwbNotifyPartyInfo() != null && !awbResponse.getDefaultAwbNotifyPartyInfo().isEmpty()) {
-                        awbResponse.getDefaultAwbNotifyPartyInfo().get(0).setTaxRegistrationNumber(notifyTaxRegNumber);
-                    }
-                }
-            }
+        Parties notifyParty = getNotifyParty(shipmentDetails);
+        if (notifyParty == null || notifyParty.getAddressId() == null) {
+            return;
+        }
+
+        Long notifyAddressId = Long.valueOf(notifyParty.getAddressId());
+        AddressDataV1 notifyAddressData = addressIdToEntityOrgMap.get(notifyAddressId);
+        if (notifyAddressData == null) {
+            return;
+        }
+
+        String notifyTaxRegNumber = getFormattedTaxRegNumber(notifyAddressData);
+        setTaxRegistrationNumber(awbResponse, notifyTaxRegNumber);
+    }
+
+    private Parties getNotifyParty(ShipmentDetails shipmentDetails) {
+        if (shipmentDetails.getAdditionalDetails() == null) {
+            return null;
+        }
+        return shipmentDetails.getAdditionalDetails().getNotifyParty();
+    }
+
+    private String getFormattedTaxRegNumber(AddressDataV1 notifyAddressData) {
+        return notifyAddressData.getTaxRegNumber() != null
+                ? StringUtility.toUpperCase(StringUtility.convertToString(notifyAddressData.getTaxRegNumber()))
+                : null;
+    }
+
+    private void setTaxRegistrationNumber(AwbResponse awbResponse, String taxRegNumber) {
+        List<AwbNotifyPartyInfo> notifyPartyInfoList = awbResponse.getDefaultAwbNotifyPartyInfo();
+        if (notifyPartyInfoList != null && !notifyPartyInfoList.isEmpty()) {
+            notifyPartyInfoList.get(0).setTaxRegistrationNumber(taxRegNumber);
         }
     }
 
