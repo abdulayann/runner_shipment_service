@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Data
 @Builder
+@SuppressWarnings("java:S3740")
 public class RunnerEntityMapping {
     private String parentTable;
     private String fieldName;

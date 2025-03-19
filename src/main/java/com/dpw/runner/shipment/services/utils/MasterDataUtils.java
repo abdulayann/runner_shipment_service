@@ -503,7 +503,7 @@ public class MasterDataUtils{
         }
     }
 
-    public List<MasterListRequest> createInBulkMasterListRequest (IRunnerResponse entityPayload, Class mainClass, Map<String, Map<String, String>> fieldNameMainKeyMap, String code, Map<String, Object> cacheMap) {
+    public <T> List<MasterListRequest> createInBulkMasterListRequest (IRunnerResponse entityPayload, Class<T> mainClass, Map<String, Map<String, String>> fieldNameMainKeyMap, String code, Map<String, Object> cacheMap) {
         List<MasterListRequest> requests = new ArrayList<>();
         if (Objects.isNull(entityPayload))
             return requests;
@@ -719,7 +719,7 @@ public class MasterDataUtils{
     }
 
     // Fetch All Locations in single call from V1
-    public List<String> createInBulkUnLocationsRequest (IRunnerResponse entityPayload, Class mainClass,  Map<String, Map<String, String>> fieldNameMainKeyMap, String code, Map<String, Object> cacheMap) {
+    public <T> List<String> createInBulkUnLocationsRequest (IRunnerResponse entityPayload, Class<T> mainClass,  Map<String, Map<String, String>> fieldNameMainKeyMap, String code, Map<String, Object> cacheMap) {
         if (Objects.isNull(entityPayload))
             return null;
 
@@ -789,7 +789,7 @@ public class MasterDataUtils{
 
 
     // Fetch All Charge Master in single call from V1
-    public List<String> createInBulkChargeTypeRequest (IRunnerResponse entityPayload, Class mainClass,  Map<String, Map<String, String>> fieldNameMainKeyMap, String code, Map<String, Object> cacheMap) {
+    public <T> List<String> createInBulkChargeTypeRequest (IRunnerResponse entityPayload, Class<T> mainClass,  Map<String, Map<String, String>> fieldNameMainKeyMap, String code, Map<String, Object> cacheMap) {
         if (Objects.isNull(entityPayload))
             return null;
 
@@ -835,7 +835,7 @@ public class MasterDataUtils{
 
 
     // Fetch All Charge Master in single call from V1
-    public List<String> createInBulkContainerTypeRequest (IRunnerResponse entityPayload, Class mainClass,  Map<String, Map<String, String>> fieldNameMainKeyMap, String code, Map<String, Object> cacheMap) {
+    public <T> List<String> createInBulkContainerTypeRequest (IRunnerResponse entityPayload, Class<T> mainClass,  Map<String, Map<String, String>> fieldNameMainKeyMap, String code, Map<String, Object> cacheMap) {
         if (Objects.isNull(entityPayload))
             return null;
 
@@ -881,7 +881,7 @@ public class MasterDataUtils{
     }
 
     // Fetch All Commodity Master in single call from V1
-    public List<String> createInBulkCommodityTypeRequest (IRunnerResponse entityPayload, Class mainClass,  Map<String, Map<String, String>> fieldNameMainKeyMap, String code, Map<String, Object> cacheMap) {
+    public <T> List<String> createInBulkCommodityTypeRequest (IRunnerResponse entityPayload, Class<T> mainClass,  Map<String, Map<String, String>> fieldNameMainKeyMap, String code, Map<String, Object> cacheMap) {
         if (Objects.isNull(entityPayload))
             return null;
 
@@ -928,7 +928,7 @@ public class MasterDataUtils{
     }
 
 
-    public List<String> createInBulkVesselsRequest (IRunnerResponse entityPayload, Class mainClass,  Map<String, Map<String, String>> fieldNameMainKeyMap, String code, Map<String, Object> cacheMap) {
+    public <T> List<String> createInBulkVesselsRequest (IRunnerResponse entityPayload, Class<T> mainClass,  Map<String, Map<String, String>> fieldNameMainKeyMap, String code, Map<String, Object> cacheMap) {
         if (Objects.isNull(entityPayload))
             return null;
 
@@ -958,7 +958,7 @@ public class MasterDataUtils{
         return itemValueList;
     }
 
-    public List<String> fetchFieldsMap(Class mainClass,String masterDataType) {
+    public <T> List<String> fetchFieldsMap(Class<T> mainClass,String masterDataType) {
         if(entityFieldsMasterDataMap.containsKey(mainClass.getSimpleName()) && entityFieldsMasterDataMap.get(mainClass.getSimpleName()).containsKey(masterDataType)){
             return entityFieldsMasterDataMap.get(mainClass.getSimpleName()).get(masterDataType);
         } else {
@@ -972,7 +972,7 @@ public class MasterDataUtils{
     }
 
     @NotNull
-    private List<String> getFieldsFromClassBasedOnMasterDataType(Class mainClass, String masterDataType) {
+    private <T> List<String> getFieldsFromClassBasedOnMasterDataType(Class<T> mainClass, String masterDataType) {
         List<String> fields = new ArrayList<>();
         for (Field field : mainClass.getDeclaredFields()) {
             switch (masterDataType) {
@@ -1053,7 +1053,7 @@ public class MasterDataUtils{
         return keyMasterDataMap;
     }
 
-    public List<String> createInBulkCarriersRequest (IRunnerResponse entityPayload, Class mainClass,  Map<String, Map<String, String>> fieldNameMainKeyMap, String code, Map<String, Object> cacheMap) {
+    public <T> List<String> createInBulkCarriersRequest (IRunnerResponse entityPayload, Class<T> mainClass,  Map<String, Map<String, String>> fieldNameMainKeyMap, String code, Map<String, Object> cacheMap) {
         if (Objects.isNull(entityPayload))
             return null;
 
@@ -1246,7 +1246,7 @@ public class MasterDataUtils{
         return cache;
     }
 
-    public List<String> createInBulkCurrencyRequest (IRunnerResponse entityPayload, Class mainClass, Map<String, Map<String, String>> fieldNameMainKeyMap, String code, Map<String, Object> cacheMap) {
+    public <T> List<String> createInBulkCurrencyRequest (IRunnerResponse entityPayload, Class<T> mainClass, Map<String, Map<String, String>> fieldNameMainKeyMap, String code, Map<String, Object> cacheMap) {
         List<String> requests = new ArrayList<>();
         if (Objects.isNull(entityPayload))
             return requests;
@@ -1425,7 +1425,7 @@ public class MasterDataUtils{
         return keyMasterDataMap;
     }
 
-    public List<String> createInBulkDGSubstanceRequest (IRunnerResponse entityPayload, Class mainClass, Map<String, Map<String, String>> fieldNameMainKeyMap, String code, Map<String, Object> cacheMap) {
+    public <T> List<String> createInBulkDGSubstanceRequest (IRunnerResponse entityPayload, Class<T> mainClass, Map<String, Map<String, String>> fieldNameMainKeyMap, String code, Map<String, Object> cacheMap) {
         List<String> requests = new ArrayList<>();
         if (Objects.isNull(entityPayload))
             return requests;
@@ -1472,7 +1472,7 @@ public class MasterDataUtils{
         return keyMasterDataMap;
     }
 
-    public List<String> createInBulkWareHouseRequest (IRunnerResponse entityPayload, Class mainClass, Map<String, Map<String, String>> fieldNameMainKeyMap, String code, Map<String, Object> cacheMap) {
+    public <T> List<String> createInBulkWareHouseRequest (IRunnerResponse entityPayload, Class<T> mainClass, Map<String, Map<String, String>> fieldNameMainKeyMap, String code, Map<String, Object> cacheMap) {
         List<String> requests = new ArrayList<>();
         if (Objects.isNull(entityPayload))
             return requests;
@@ -1564,7 +1564,7 @@ public class MasterDataUtils{
         return keyMasterDataMap;
     }
 
-    public List<String> createInBulkActivityTypeRequest (IRunnerResponse entityPayload, Class mainClass, Map<String, Map<String, String>> fieldNameMainKeyMap, String code, Map<String, Object> cacheMap) {
+    public <T> List<String> createInBulkActivityTypeRequest (IRunnerResponse entityPayload, Class<T> mainClass, Map<String, Map<String, String>> fieldNameMainKeyMap, String code, Map<String, Object> cacheMap) {
         List<String> requests = new ArrayList<>();
         if (Objects.isNull(entityPayload))
             return requests;
@@ -1591,7 +1591,7 @@ public class MasterDataUtils{
         return requests;
     }
 
-    public List<String> createInBulkSalesAgentRequest (IRunnerResponse entityPayload, Class mainClass, Map<String, Map<String, String>> fieldNameMainKeyMap, String code, Map<String, Object> cacheMap) {
+    public <T> List<String> createInBulkSalesAgentRequest (IRunnerResponse entityPayload, Class<T> mainClass, Map<String, Map<String, String>> fieldNameMainKeyMap, String code, Map<String, Object> cacheMap) {
         List<String> requests = new ArrayList<>();
         if (Objects.isNull(entityPayload))
             return requests;

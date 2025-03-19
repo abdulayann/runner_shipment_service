@@ -29,7 +29,7 @@ class ObjectUtilityTest {
 
     @Test
     void testGetAllFields_ClassWithNoSuperClass() {
-        Map<String, Class> fields = ObjectUtility.getAllFields(TestClassA.class, null);
+        Map<String, Class<Object>> fields = ObjectUtility.getAllFields(TestClassA.class, null);
         assertNotNull(fields);
         assertEquals(4, fields.size());
         assertEquals(String.class, fields.get("field1"));
@@ -39,7 +39,7 @@ class ObjectUtilityTest {
 
     @Test
     void testGetAllFields_ClassWithSuperClass() {
-        Map<String, Class> fields = ObjectUtility.getAllFields(TestClassB.class, null);
+        Map<String, Class<Object>> fields = ObjectUtility.getAllFields(TestClassB.class, null);
         assertNotNull(fields);
         assertEquals(5, fields.size());
         assertEquals(String.class, fields.get("field1"));
@@ -50,7 +50,7 @@ class ObjectUtilityTest {
 
     @Test
     void testGetAllFields_ClassWithMultipleSuperClasses() {
-        Map<String, Class> fields = ObjectUtility.getAllFields(TestClassC.class, null);
+        Map<String, Class<Object>> fields = ObjectUtility.getAllFields(TestClassC.class, null);
         assertNotNull(fields);
         assertEquals(7, fields.size());
         assertEquals(String.class, fields.get("field1"));
@@ -63,7 +63,7 @@ class ObjectUtilityTest {
 
     @Test
     void testGetAllFields_EmptyClass() {
-        Map<String, Class> fields = ObjectUtility.getAllFields(EmptyClass.class, null);
+        Map<String, Class<Object>> fields = ObjectUtility.getAllFields(EmptyClass.class, null);
         assertNotNull(fields);
         assertEquals(1, fields.size());
     }
