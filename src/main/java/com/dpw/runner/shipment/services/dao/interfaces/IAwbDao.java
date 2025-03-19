@@ -44,7 +44,7 @@ public interface IAwbDao {
     void updatedAwbInformationEvent(Object newEntity, Object oldEntity) throws RunnerException;
     void updateSciFieldFromHawb(Awb awb, Awb oldEntity, boolean isReset, Long awbId) throws RunnerException;
     List<Awb> getLinkedAwbFromMawb(Long mawbId);
-    void updateAwbPrintInformation(Long shipmentId, Long consolidationId, PrintType printType, Boolean isOriginal, LocalDateTime printedAt);
+    Awb updateAwbPrintInformation(Long shipmentId, Long consolidationId, PrintType printType, Boolean isOriginal, LocalDateTime printedAt);
     List<Awb> findByIds(List<Long> id);
     List<Awb> findAwbByAwbNumbers(List<String> awbNumbers);
     void validateAirMessaging(Long id) throws RunnerException;
