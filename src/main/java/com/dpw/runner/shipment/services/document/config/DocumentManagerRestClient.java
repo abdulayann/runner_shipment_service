@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.document.request.documentmanager.*;
 import com.dpw.runner.shipment.services.document.response.*;
 import com.dpw.runner.shipment.services.dto.request.CopyDocumentsRequest;
 import com.dpw.runner.shipment.services.exception.exceptions.DocumentClientException;
+import com.dpw.runner.shipment.services.exception.exceptions.UnAuthorizedException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.utils.Generated;
@@ -31,6 +32,8 @@ import java.util.concurrent.CompletableFuture;
 @Generated
 @Slf4j
 public class DocumentManagerRestClient {
+
+    public static final String UN_AUTHORIZED_EXCEPTION_STRING = "UnAuthorizedException";
 
     @Value("${document-manager.baseUrl}")
     private String baseUrl;
@@ -66,6 +69,8 @@ public class DocumentManagerRestClient {
     @Value("${document-manager.baseUrl}${document-manager.list}")
     private String documentList;
 
+    @Value("${document-manager.baseUrl}${document-manager.doc-type-list}")
+    private String docTypeList;
     @Autowired
     DocumentManagerRestClient(RestTemplate restTemplate, JsonHelper jsonHelper) {
         this.jsonHelper = jsonHelper;
@@ -121,6 +126,7 @@ public class DocumentManagerRestClient {
         HttpEntity<DocumentManagerSaveFileRequest> requestEntity = new HttpEntity<>(request, V1AuthHelper.getHeaders());
 
         String url = baseUrl + "/files-management/v2/saveFile";
+        log.info("{} | URL: {} | downloadDocument request: {}", url, LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(requestEntity));
 
         ResponseEntity<DocumentManagerResponse<DocumentManagerDataResponse>> responseEntity = restTemplate.exchange(
                 url,
@@ -243,6 +249,8 @@ public class DocumentManagerRestClient {
             );
             return jsonHelper.convertValue(response.getBody(), DocumentManagerResponse.class);
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            if (ex.getStatusCode() == HttpStatus.UNAUTHORIZED)
+                throw new UnAuthorizedException(UN_AUTHORIZED_EXCEPTION_STRING);
             throw new DocumentClientException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), DocumentManagerResponse.class).getErrorMessage());
         } catch (Exception var7) {
             throw new DocumentClientException(var7.getMessage());
@@ -263,6 +271,8 @@ public class DocumentManagerRestClient {
             );
             return jsonHelper.convertValue(response.getBody(), DocumentManagerResponse.class);
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            if (ex.getStatusCode() == HttpStatus.UNAUTHORIZED)
+                throw new UnAuthorizedException(UN_AUTHORIZED_EXCEPTION_STRING);
             throw new DocumentClientException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), DocumentManagerResponse.class).getErrorMessage());
         } catch (Exception var7) {
             throw new DocumentClientException(var7.getMessage());
@@ -284,6 +294,8 @@ public class DocumentManagerRestClient {
             );
             return ResponseEntity.ok(response.getBody());
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            if (ex.getStatusCode() == HttpStatus.UNAUTHORIZED)
+                throw new UnAuthorizedException(UN_AUTHORIZED_EXCEPTION_STRING);
             throw new DocumentClientException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), DocumentManagerResponse.class).getErrorMessage());
         } catch (Exception var7) {
             throw new DocumentClientException(var7.getMessage());
@@ -304,6 +316,8 @@ public class DocumentManagerRestClient {
             );
             return jsonHelper.convertValue(response.getBody(), DocumentManagerResponse.class);
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            if (ex.getStatusCode() == HttpStatus.UNAUTHORIZED)
+                throw new UnAuthorizedException(UN_AUTHORIZED_EXCEPTION_STRING);
             throw new DocumentClientException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), DocumentManagerResponse.class).getErrorMessage());
         } catch (Exception var7) {
             throw new DocumentClientException(var7.getMessage());
@@ -324,6 +338,8 @@ public class DocumentManagerRestClient {
             );
             return jsonHelper.convertValue(response.getBody(), DocumentManagerResponse.class);
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            if (ex.getStatusCode() == HttpStatus.UNAUTHORIZED)
+                throw new UnAuthorizedException(UN_AUTHORIZED_EXCEPTION_STRING);
             throw new DocumentClientException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), DocumentManagerResponse.class).getErrorMessage());
         } catch (Exception var7) {
             throw new DocumentClientException(var7.getMessage());
@@ -344,6 +360,30 @@ public class DocumentManagerRestClient {
             );
             return jsonHelper.convertValue(response.getBody(), DocumentManagerResponse.class);
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            if (ex.getStatusCode() == HttpStatus.UNAUTHORIZED)
+                throw new UnAuthorizedException(UN_AUTHORIZED_EXCEPTION_STRING);
+            throw new DocumentClientException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), DocumentManagerResponse.class).getErrorMessage());
+        } catch (Exception var7) {
+            throw new DocumentClientException(var7.getMessage());
+        }
+
+    }
+
+    public DocumentManagerResponse<T> listDocTypes(Object object) {
+        try {
+            HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
+            HttpEntity<Object> httpEntity = new HttpEntity<>(object, headers);
+            log.info("{} | URL: {} | list request: {}", this.docTypeList, LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(object));
+            var response  = restTemplate.exchange(
+                    this.docTypeList,
+                    HttpMethod.POST,
+                    httpEntity,
+                    new ParameterizedTypeReference<>() {}
+            );
+            return jsonHelper.convertValue(response.getBody(), DocumentManagerResponse.class);
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            if (ex.getStatusCode() == HttpStatus.UNAUTHORIZED)
+                throw new UnAuthorizedException(UN_AUTHORIZED_EXCEPTION_STRING);
             throw new DocumentClientException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), DocumentManagerResponse.class).getErrorMessage());
         } catch (Exception var7) {
             throw new DocumentClientException(var7.getMessage());
