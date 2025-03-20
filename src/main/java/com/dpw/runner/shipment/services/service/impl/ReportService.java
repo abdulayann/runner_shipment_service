@@ -2073,7 +2073,7 @@ public class ReportService implements IReportService {
             if (!uploadResponse.getSuccess())
                 throw new IOException("File Upload Failed");
 
-            var saveResponse = documentManagerService.saveFile(DocumentManagerSaveFileRequest.builder().fileName(filename)
+            return documentManagerService.saveFile(DocumentManagerSaveFileRequest.builder().fileName(filename)
                     .entityType(uploadRequest.getEntityType())
                     .secureDownloadLink(uploadResponse.getData().getSecureDownloadLink())
                     .fileSize(uploadResponse.getData().getFileSize())
@@ -2086,7 +2086,6 @@ public class ReportService implements IReportService {
                     .childType(uploadRequest.getDocType())
                     .isTransferEnabled(uploadRequest.getIsTransferEnabled())
                     .build());
-            return saveResponse;
         } catch (Exception ex) {
             log.error("Error while file upload : {}", ex.getLocalizedMessage());
         }
@@ -2419,7 +2418,6 @@ public class ReportService implements IReportService {
             docUploadRequest.setChildType(childType);
 
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> documentManagerService.pushSystemGeneratedDocumentToDocMaster(new BASE64DecodedMultipartFile(pdfByteContent), filename, docUploadRequest)), executorService);
-
         }
     }
 }
