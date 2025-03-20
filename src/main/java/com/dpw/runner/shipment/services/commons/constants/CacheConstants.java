@@ -33,4 +33,7 @@ public class CacheConstants {
     public static final String BILLING = "Billing";
     public static final String COUNTRIES = "Countries";
     public static final String ORGANIZATIONS_WITH_ADDRESSES = "OrganizationsWithAddresses";
+    public static final String CUSTOMER_BOOKING = "CustomerBooking";
+    public static final String CUSTOMER_BOOKING_ID = "CustomerBookingId";
+    public static final String CUSTOMER_BOOKING_GUID = "CustomerBookingGuid";
 }
