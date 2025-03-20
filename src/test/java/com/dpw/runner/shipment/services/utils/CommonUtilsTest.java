@@ -25,6 +25,7 @@ import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
 import com.dpw.runner.shipment.services.dto.response.AdditionalDetailResponse;
+import com.dpw.runner.shipment.services.dto.response.ArrivalDepartureDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.BookingCarriageResponse;
 import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
@@ -39,6 +40,7 @@ import com.dpw.runner.shipment.services.dto.response.PickupDeliveryDetailsRespon
 import com.dpw.runner.shipment.services.dto.response.ReferenceNumbersResponse;
 import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
 import com.dpw.runner.shipment.services.dto.response.ServiceDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentOrderResponse;
 import com.dpw.runner.shipment.services.dto.response.TruckDriverDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
@@ -420,7 +422,7 @@ class CommonUtilsTest {
 
     @Test
     void testAddWaterMark() {
-        CommonUtils.AddWaterMark(dc, "Test Watermark", font, 50, 35, new BaseColor(70, 70, 255), realPageSize, rect);
+        CommonUtils.addWaterMark(dc, "Test Watermark", font, 50, 35, new BaseColor(70, 70, 255), realPageSize, rect);
 
         InOrder inOrder = inOrder(dc);
         inOrder.verify(dc).saveState();
@@ -3886,6 +3888,17 @@ class CommonUtilsTest {
         assertEquals(partiesResponse, result);
     }
     @Test
+    void testMapToDTO_ArrivalDepartureDetails() {
+        ArrivalDepartureDetails arrivalDepartureDetails = new ArrivalDepartureDetails();
+        ArrivalDepartureDetailsResponse arrivalDepartureDetailsResponse =new ArrivalDepartureDetailsResponse();
+
+        when(modelMapper.map(arrivalDepartureDetails,ArrivalDepartureDetailsResponse.class)).thenReturn(arrivalDepartureDetailsResponse);
+
+        Object result = commonUtils.mapToDTO(arrivalDepartureDetails);
+
+        assertEquals(arrivalDepartureDetailsResponse, result);
+    }
+    @Test
     void testSetNestedFieldValue_SimpleField() throws NoSuchMethodException, IllegalAccessException, InstantiationException, InvocationTargetException {
         Parties obj = new Parties();
         commonUtils.setNestedFieldValue(obj, "type", "consignee");
@@ -3914,5 +3927,159 @@ class CommonUtilsTest {
         Parties obj = new Parties();
         assertThrows(NoSuchMethodException.class, () ->
                 commonUtils.setNestedFieldValue(obj, "invalidField", "test"));
+    }
+    @Test
+    void testMapListToDTOSet_Containers() {
+        Set<Containers> containersList = Set.of(new Containers());
+        Set<ContainerResponse> containerResponseList = Set.of(new ContainerResponse());
+        when(modelMapper.map(containersList, new TypeToken<Set<ContainerResponse>>() {}.getType()))
+                .thenReturn(containerResponseList);
+
+        Object result = commonUtils.mapToDTO(containersList);
+
+        assertEquals(containerResponseList, result);
+    }
+    @Test
+    void testMapListToDTOSet_ConsolidationDetails() {
+        Set<ConsolidationDetails> consolidationDetailsSet = Set.of(new ConsolidationDetails());
+        Set<ConsolidationListResponse> consolidationListResponseSet = Set.of(new ConsolidationListResponse());
+        when(modelMapper.map(consolidationDetailsSet, new TypeToken<Set<ConsolidationListResponse>>() {}.getType()))
+                .thenReturn(consolidationListResponseSet);
+
+        Object result = commonUtils.mapToDTO(consolidationDetailsSet);
+
+        assertEquals(consolidationListResponseSet, result);
+    }
+    @Test
+    void testSetIncludedFields_validField() throws Exception {
+        // Given
+        List<String> fields = Collections.singletonList("carrierDetails");
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setCarrierDetails(new CarrierDetails());
+        CarrierDetailResponse carrierDetailResponse = new CarrierDetailResponse();
+        when(modelMapper.map(any(CarrierDetails.class), eq(CarrierDetailResponse.class)))
+                .thenReturn(carrierDetailResponse);
+
+        // When
+        ShipmentDetailsResponse result = commonUtils.getShipmentDetailsResponse(shipmentDetails, fields);
+
+        // Then
+        verify(modelMapper).map(any(CarrierDetails.class), eq(CarrierDetailResponse.class));
+        assertNotNull(result);
+        // Add assertions depending on what the setter methods do with carrierDetailResponse
+    }
+
+    @Test
+    void testSetIncludedFields_fieldDoesNotExist() {
+        shipmentDetails = new ShipmentDetails();
+        // Given
+        List<String> fields = Collections.singletonList("nonExistentField");
+
+        // When
+        ShipmentDetailsResponse result = commonUtils.getShipmentDetailsResponse(shipmentDetails, fields);
+
+        // Then
+        assertNotNull(result);
+        // Assert that the non-existent field doesn't cause an issue (e.g., no setter invocation)
+    }
+
+    @Test
+    void testSetIncludedFields_fieldWithNullValue() {
+        // Given
+        List<String> fields = Collections.singletonList("packingList");
+        when(shipmentDetails.getPackingList()).thenReturn(null);
+
+        // When
+        ShipmentDetailsResponse result = commonUtils.getShipmentDetailsResponse(shipmentDetails, fields);
+
+        // Then
+        assertNotNull(result);
+        // Assert that no null pointer exceptions are thrown
+    }
+
+    @Test
+    void testSetIncludedFields_withMultipleFields() {
+        // Given
+        List<String> fields = Arrays.asList("carrierDetails", "additionalDetails");
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setCarrierDetails(new CarrierDetails());
+        shipmentDetails.setAdditionalDetails(new AdditionalDetails());
+        shipmentDetails.setPickupDetails(new PickupDeliveryDetails());
+        shipmentDetails.setConsigner(new Parties());
+        CarrierDetailResponse carrierDetailResponse = new CarrierDetailResponse();
+        AdditionalDetailResponse additionalDetailResponse = new AdditionalDetailResponse();
+        when(modelMapper.map(any(CarrierDetails.class), eq(CarrierDetailResponse.class)))
+                .thenReturn(carrierDetailResponse);
+        when(modelMapper.map(any(AdditionalDetails.class), eq(AdditionalDetailResponse.class)))
+                .thenReturn(additionalDetailResponse);
+
+        // When
+        ShipmentDetailsResponse result = commonUtils.getShipmentDetailsResponse(shipmentDetails, fields);
+
+        // Then
+        verify(modelMapper).map(any(CarrierDetails.class), eq(CarrierDetailResponse.class));
+        verify(modelMapper).map(any(AdditionalDetails.class), eq(AdditionalDetailResponse.class));
+        assertNotNull(result);
+    }
+
+    @Test
+    void testSetIncludedFields_withEmptyFields() {
+        // Given
+        List<String> fields = Collections.emptyList();
+
+        // When
+        ShipmentDetailsResponse result = commonUtils.getShipmentDetailsResponse(shipmentDetails, fields);
+
+        // Then
+        assertNotNull(result); // Ensure it still returns a non-null response even with empty fields
+    }
+    @Test
+    void testSetIncludedFields_withInvalidFieldType() {
+        // Given
+        List<String> fields = Arrays.asList("carrierDetails", "invalidField");
+
+        // When
+        ShipmentDetailsResponse result = commonUtils.getShipmentDetailsResponse(shipmentDetails, fields);
+
+        // Then
+        assertNotNull(result);
+        // Ensure that it doesn't throw exceptions for invalid fields, just logs an error
+    }
+    @Test
+    void testGetDtoValue_withList() {
+        // Given
+        List<CarrierDetails> carrierDetailsList = Collections.singletonList(new CarrierDetails());
+        TypeToken<List<CarrierDetailResponse>> typeToken = new TypeToken<>() {};
+        when(modelMapper.map(carrierDetailsList, typeToken.getType())).thenReturn(List.of(new CarrierDetails()));
+        // When
+        Object result = commonUtils.getDtoValue(carrierDetailsList);
+
+        // Then
+        assertNotNull(result);
+        assertTrue(result instanceof List<?>);
+    }
+
+    @Test
+    void testGetDtoValue_withNonList() {
+        // Given
+        CarrierDetails carrierDetail = new CarrierDetails();
+        CarrierDetailResponse carrierDetailResponse = new CarrierDetailResponse();
+        when(modelMapper.map(any(CarrierDetails.class), eq(CarrierDetailResponse.class)))
+                .thenReturn(carrierDetailResponse);
+        // When
+        Object result = commonUtils.getDtoValue(carrierDetail);
+
+        // Then
+        assertNotNull(result);
+        assertTrue(result instanceof CarrierDetailResponse);
+    }
+
+    @Test
+    void testGetDtoValue_withNull() {
+        // Given
+        Object result = commonUtils.getDtoValue(null);
+
+        // Then
+        assertNull(result);
     }
 }
