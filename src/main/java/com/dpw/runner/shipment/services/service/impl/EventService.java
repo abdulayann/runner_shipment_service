@@ -1357,7 +1357,8 @@ public class EventService implements IEventService {
      *
      * @param eventResponses the list of events to update with branch names
      */
-    private void populateBranchNames(List<EventsResponse> eventResponses) {
+    @Override
+    public void populateBranchNames(List<EventsResponse> eventResponses) {
         if (eventResponses == null || eventResponses.isEmpty()) {
             log.debug("No eventResponses to process in populateBranchNames.");
             return;
