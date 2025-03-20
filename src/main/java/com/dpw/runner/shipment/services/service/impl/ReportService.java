@@ -2407,7 +2407,7 @@ public class ReportService implements IReportService {
                     docType = DocumentConstants.AWB;
                     break;
                 default:
-                    filename = DocumentConstants.FILE_NAME + reportRequest.getReportId() + DocumentConstants.DOT_PDF;
+                    filename = reportRequest.getReportInfo() + DocumentConstants.DASH + reportRequest.getReportId() + DocumentConstants.DOT_PDF;
                     childType = reportRequest.getPrintType();
             }
 
