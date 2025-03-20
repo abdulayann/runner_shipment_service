@@ -26,6 +26,7 @@ public class ShipmentConstants {
             "Invoiced Profit %", "20s Count", "40s Count", "TEU Count", "CreatedBy", "POL",
             "POD", "Waybill Number", "Additional Terms", "Reference Number","POL Code", "POD Code" , "Origin Code", "Destination Code"
     );
+    public static final List<String> LIST_INCLUDE_COLUMNS = List.of( "carrierDetails", "routingsList", "bookingCarriagesList", "packingList", "referenceNumbersList","servicesList", "containersList", "eventsList");
 
     private ShipmentConstants(){}
     public static final String IMPLICATIONS_LIST_COLUMN = "implicationList";

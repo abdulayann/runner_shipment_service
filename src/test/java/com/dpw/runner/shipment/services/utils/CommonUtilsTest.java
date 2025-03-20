@@ -420,7 +420,7 @@ class CommonUtilsTest {
 
     @Test
     void testAddWaterMark() {
-        CommonUtils.AddWaterMark(dc, "Test Watermark", font, 50, 35, new BaseColor(70, 70, 255), realPageSize, rect);
+        CommonUtils.addWaterMark(dc, "Test Watermark", font, 50, 35, new BaseColor(70, 70, 255), realPageSize, rect);
 
         InOrder inOrder = inOrder(dc);
         inOrder.verify(dc).saveState();
