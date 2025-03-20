@@ -367,7 +367,7 @@ public class ReportService implements IReportService {
     }
 
     private void processPushAwbEventForMawb(ReportRequest reportRequest, Boolean isOriginalPrint) {
-        Awb awb = this.setPrintTypeForAwb(reportRequest, isOriginalPrint);
+        Optional<Awb> awb = Optional.ofNullable(this.setPrintTypeForAwb(reportRequest, isOriginalPrint));
 
         if(Boolean.TRUE.equals(reportRequest.getPushAwbEvent()) && reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB) && Boolean.TRUE.equals(isOriginalPrint)) {
             awbDao.airMessagingIntegration(Long.parseLong(reportRequest.getReportId()), reportRequest.getReportInfo(), reportRequest.isFromShipment(), reportRequest.isIncludeCsdInfo());
@@ -377,7 +377,7 @@ public class ReportService implements IReportService {
             else
                 awbDao.updateAirMessageStatusFromShipmentId(Long.parseLong(reportRequest.getReportId()), AwbStatus.AWB_ORIGINAL_PRINTED.name());
 
-            awb.setAirMessageStatus(AwbStatus.AWB_ORIGINAL_PRINTED);
+            awb.ifPresent(value -> value.setAirMessageStatus(AwbStatus.AWB_ORIGINAL_PRINTED));
         }
     }
 

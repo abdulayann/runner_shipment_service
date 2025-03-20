@@ -90,7 +90,6 @@ public class NotificationRestClient {
         try {
             List<String> toEmailsList = getEmailsListFromString(params.getRecipientEmails());
             List<String> ccEmailsList = getEmailsListFromString(params.getCcEmails());
-            List<String> bccEmailsList = getEmailsListFromString(params.getBccEmails());
             var user = UserContext.getUser();
             MailAuditLogRequest request = MailAuditLogRequest.builder()
                     .tenantIds(List.of(user.TenantId))
