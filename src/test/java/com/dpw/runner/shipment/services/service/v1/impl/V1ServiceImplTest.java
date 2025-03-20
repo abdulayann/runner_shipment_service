@@ -15,6 +15,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
@@ -22,6 +23,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSetti
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
+import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
@@ -77,8 +79,10 @@ import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.TokenUtility;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -107,6 +111,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
@@ -2582,6 +2587,158 @@ class V1ServiceImplTest {
         var responseEntity = v1ServiceImpl.listCousinBranches("Request");
         // Assert
         assertEquals(1L, responseEntity.getEntityId());
+    }
+
+    @Test
+    void testListCousinBranches_SuccessfulCall() {
+        // Arrange
+        Object request = "SomeRequest";
+        String expectedCacheKey = "tenant:1"; // Assuming this is what your key generator produces
+
+        V1DataResponse expectedResponse = V1DataResponse.builder().entityId(1L).build();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        UserContext.setUser(UsersDto.builder().TenantId(1).build());
+
+        when(keyGenerator.customCacheKey(1)).thenReturn(expectedCacheKey);
+
+        // Mock cache behavior
+        Cache mockCache = mock(Cache.class);
+        when(cacheManager.getCache(CacheConstants.COUSIN_BRANCHES_CACHE)).thenReturn(mockCache);
+        when(mockCache.get(expectedCacheKey, V1DataResponse.class)).thenReturn(null); // No cache hit
+
+        // Mock API call
+        var mock = mock(ResponseEntity.class);
+        ResponseEntity<V1DataResponse> responseEntity = new ResponseEntity<>(expectedResponse, HttpStatus.OK);
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(V1DataResponse.builder().entityId(1L).build()));
+        when(mock.getBody()).thenReturn(V1DataResponse.builder().entityId(1L).build());
+
+        // Act
+        V1DataResponse actualResponse = v1ServiceImpl.listCousinBranches(request);
+
+        // Assert
+        assertNotNull(actualResponse);
+        assertEquals(1L, actualResponse.getEntityId());
+    }
+
+    @Test
+    void testListCousinBranches_CacheHit() {
+        // Arrange
+        String expectedCacheKey = "tenant:1";
+        V1DataResponse cachedResponse = V1DataResponse.builder().entityId(42L).build();
+        UserContext.setUser(UsersDto.builder().TenantId(1).build());
+
+        when(keyGenerator.customCacheKey(1)).thenReturn(expectedCacheKey);
+        Cache mockCache = mock(Cache.class);
+        when(cacheManager.getCache(CacheConstants.COUSIN_BRANCHES_CACHE)).thenReturn(mockCache);
+        when(mockCache.get(expectedCacheKey, V1DataResponse.class)).thenReturn(cachedResponse);
+
+        // Act
+        V1DataResponse result = v1ServiceImpl.listCousinBranches("SomeRequest");
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(42L, result.getEntityId());
+        verifyNoInteractions(restTemplate); // REST call should be skipped
+    }
+
+    @Test
+    void testListCousinBranches_CacheNotAvailable() {
+        // Arrange
+        Object request = "SomeRequest";
+        String expectedCacheKey = "tenant:1";
+        V1DataResponse expectedResponse = V1DataResponse.builder().entityId(99L).build();
+
+        UserContext.setUser(UsersDto.builder().TenantId(1).build());
+        when(keyGenerator.customCacheKey(1)).thenReturn(expectedCacheKey);
+        when(cacheManager.getCache(CacheConstants.COUSIN_BRANCHES_CACHE)).thenReturn(null); // cache unavailable
+
+        when(restTemplate.postForEntity(Mockito.anyString(), Mockito.any(), Mockito.eq(V1DataResponse.class)))
+                .thenReturn(ResponseEntity.ok(expectedResponse));
+
+        // Act
+        V1DataResponse result = v1ServiceImpl.listCousinBranches(request);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(99L, result.getEntityId());
+    }
+
+    @Test
+    void testListCousinBranches_HttpClientErrorWithParsableBody() throws JsonProcessingException {
+        // Arrange
+        Object request = "SomeRequest";
+        String expectedCacheKey = "tenant:1";
+
+        UserContext.setUser(UsersDto.builder().TenantId(1).build());
+        when(keyGenerator.customCacheKey(1)).thenReturn(expectedCacheKey);
+        when(cacheManager.getCache(CacheConstants.COUSIN_BRANCHES_CACHE)).thenReturn(mock(Cache.class));
+
+        V1ErrorResponse errorResponse = V1ErrorResponse.builder()
+                .error(V1ErrorResponse.V1Error.builder().message("Client error occurred").build()).build();
+
+        String jsonError = new ObjectMapper().writeValueAsString(errorResponse);
+        HttpClientErrorException ex = new HttpClientErrorException(HttpStatus.BAD_REQUEST, "Bad Request", jsonError.getBytes(), StandardCharsets.UTF_8);
+
+        when(restTemplate.postForEntity(Mockito.anyString(), Mockito.any(), Mockito.eq(V1DataResponse.class)))
+                .thenThrow(ex);
+
+        when(jsonHelper.readFromJson(anyString(), eq(V1ErrorResponse.class)))
+                .thenReturn(errorResponse);
+
+        // Act & Assert
+        V1ServiceException exception = assertThrows(V1ServiceException.class,
+                () -> v1ServiceImpl.listCousinBranches(request));
+
+        assertEquals("Client error occurred", exception.getMessage());
+    }
+
+    @Test
+    void testListCousinBranches_HttpServerErrorWithUnparseableBody() {
+        // Arrange
+        Object request = "SomeRequest";
+        String expectedCacheKey = "tenant:1";
+
+        UserContext.setUser(UsersDto.builder().TenantId(1).build());
+        when(keyGenerator.customCacheKey(1)).thenReturn(expectedCacheKey);
+        when(cacheManager.getCache(CacheConstants.COUSIN_BRANCHES_CACHE)).thenReturn(mock(Cache.class));
+
+        String invalidJson = "not-a-json";
+        HttpServerErrorException ex = new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR, "Server Error", invalidJson.getBytes(), StandardCharsets.UTF_8);
+
+        when(restTemplate.postForEntity(Mockito.anyString(), Mockito.any(), Mockito.eq(V1DataResponse.class)))
+                .thenThrow(ex);
+
+        when(jsonHelper.readFromJson(anyString(), eq(V1ErrorResponse.class)))
+                .thenThrow(new RuntimeException("Parse error"));
+
+        // Act & Assert
+        V1ServiceException exception = assertThrows(V1ServiceException.class,
+                () -> v1ServiceImpl.listCousinBranches(request));
+
+        assertEquals("Unknown error", exception.getMessage()); // fallback in code
+    }
+
+    @Test
+    void testListCousinBranches_UnexpectedException() {
+        // Arrange
+        Object request = "SomeRequest";
+        String expectedCacheKey = "tenant:1";
+
+        UserContext.setUser(UsersDto.builder().TenantId(1).build());
+        when(keyGenerator.customCacheKey(1)).thenReturn(expectedCacheKey);
+        when(cacheManager.getCache(CacheConstants.COUSIN_BRANCHES_CACHE)).thenReturn(mock(Cache.class));
+
+        when(restTemplate.postForEntity(Mockito.anyString(), Mockito.any(), Mockito.eq(V1DataResponse.class)))
+                .thenThrow(new RuntimeException("Some unexpected error"));
+
+        // Act & Assert
+        V1ServiceException exception = assertThrows(V1ServiceException.class,
+                () -> v1ServiceImpl.listCousinBranches(request));
+
+        assertEquals("Unexpected error occurred while fetching cousin branches.", exception.getMessage());
     }
 
     @Test
