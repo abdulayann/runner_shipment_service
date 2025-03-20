@@ -305,6 +305,7 @@ class DocumentManagerServiceImplTest {
         mockResponse.setData(new T());
         mockResponse.setPageNo(1);
         mockResponse.setPageSize(2);
+        mockResponse.setCount(2l);
 
         return mockResponse;
     }
