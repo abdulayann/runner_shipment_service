@@ -2257,7 +2257,7 @@ public class ReportService implements IReportService {
     private void pushFileToDocumentMaster(ReportRequest reportRequest, byte[] pdfByteContent, Map<String, Object> dataRetrieved) {
         var shipmentSettings = commonUtils.getShipmentSettingFromContext();
         // If Shipment V3 is enabled
-        if (Boolean.TRUE.equals(shipmentSettings.getIsRunnerV3Enabled())) {
+        if (shipmentSettings != null && Boolean.TRUE.equals(shipmentSettings.getIsRunnerV3Enabled())) {
             String filename, childType, docType = reportRequest.getReportInfo();
 
             // Generate FileName, childType & DocType based on request Type
@@ -2275,7 +2275,7 @@ public class ReportService implements IReportService {
                     childType = reportRequest.getPrintType();
                     docType = DocumentConstants.HBL;
                     break;
-                case ReportConstants.SEAWAY_BILL:
+                case SEAWAY_BILL:
                     filename = SEAWAY_BILL + DocumentConstants.DASH + reportRequest.getReportId() + DocumentConstants.DOT_PDF;
                     childType = SEAWAY_BILL;
                     docType = DocumentConstants.HBL;
