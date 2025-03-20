@@ -37,7 +37,7 @@ public class ServiceDetails extends MultiTenancy {
     @MasterData(type = MasterDataType.ADDITIONAL_SERVICES)
     private String serviceType;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "contractor_id", referencedColumnName = "id")
     @OrganizationData
     private Parties contractor;
