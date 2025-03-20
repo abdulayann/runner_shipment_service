@@ -120,10 +120,6 @@ public class HawbReport extends IReport{
             dictionary.put(ReportConstants.COMPANY_ADDRESS, companyAddress.stream().filter(StringUtility::isNotEmpty).toList());
         }
 
-        //TODO- Tenant data
-//        var tenantDetails = ReportHelper.getOrgAddress(siData.tenant.TenantName, siData.tenant.Address1, siData.tenant.Address2, siData.tenant.City, siData.tenant.Email, siData.tenant.Phone, siData.tenant.ZipPostCode, siData.tenant.State);
-//        dictionary[ReportConstants.AGENT] = tenantDetails;
-
         populateUserFields(hawbModel.usersDto, dictionary);
 
         // Get the shipmentInforRow
@@ -187,7 +183,6 @@ public class HawbReport extends IReport{
                 }
                 dictionary.put(ReportConstants.IS_DMAWB, false);
                 dictionary.put(ReportConstants.IS_B2BMAWB, true);
-                //dictionary["PrintUserName"] = consolRow.InsertUserIdUsername;
             }
             else
             {
@@ -576,12 +571,8 @@ public class HawbReport extends IReport{
 
 
                 if(routingInfoRows.size()>=2){
-//                    locCodes.add(routingInfoRows.get(1).getDestination());
-//                    locCodeMap = getLocationData(locCodes);
                     if(locCodeMap.containsKey(routingInfoRows.get(1).getDestinationPortName()))
                         dictionary.put(ReportConstants.TO_SECOND, locCodeMap.get(routingInfoRows.get(1).getDestinationPortName()).getIataCode());
-//                    carrierSet.add(routingInfoRows.get(1).getByCarrier());
-//                    carrierRow = fetchCarrier(carrierSet);
                     if (carrierRow.containsKey(routingInfoRows.get(1).getByCarrier()))
                     {
                         dictionary.put(ReportConstants.BY_SECOND, carrierRow.get(routingInfoRows.get(1).getByCarrier()).IATACode);
@@ -599,11 +590,8 @@ public class HawbReport extends IReport{
                 if(routingInfoRows.size()>=3){
                     locCodes = new HashSet<>();
                     locCodes.add(routingInfoRows.get(2).getDestinationPortName());
-//                    locCodeMap = getLocationData(locCodes);
                     if(locCodeMap.containsKey(routingInfoRows.get(2).getDestinationPortName()))
                         dictionary.put(ReportConstants.TO_THIRD, locCodeMap.get(routingInfoRows.get(2).getDestinationPortName()).getIataCode());
-//                    carrierSet.add(routingInfoRows.get(2).getByCarrier());
-//                    carrierRow = fetchCarrier(carrierSet);
                     if (carrierRow.containsKey(routingInfoRows.get(1).getByCarrier()))
                     {
                         dictionary.put(ReportConstants.BY_THIRD, carrierRow.get(routingInfoRows.get(2).getByCarrier()).IATACode);

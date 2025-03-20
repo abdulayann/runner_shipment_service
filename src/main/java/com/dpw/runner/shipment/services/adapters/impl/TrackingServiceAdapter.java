@@ -508,6 +508,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
     // WILL REMOVE AFTER EVENTS TESTING
     // IGNORE THE COMMENTED SECTION
 
+    @SuppressWarnings("java:S125")
 //    @Override
 //    public TrackingServiceApiResponse fetchTrackingData(TrackingRequest request) throws RunnerException {
 //        // Toggle this flag to switch between remote call and reading from file

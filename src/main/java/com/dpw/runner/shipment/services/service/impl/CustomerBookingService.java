@@ -740,26 +740,6 @@ public class CustomerBookingService implements ICustomerBookingService {
                         .guid(charge.getGuid())
                         .build());
 
-//                if (charge.getContainers() != null) {
-//                    charge.getContainers().forEach(cont -> {
-//                        if (cont.getRunner_guid() != null) {
-//                            if (charge.getContainersUUID() != null)
-//                                charge.getContainersUUID().add(cont.getRunner_guid());
-//                            else
-//                                charge.setContainersUUID(List.of(cont.getRunner_guid()));
-//                        } else {
-//                            if (charge.getContainersUUID() != null) {
-//                                if (referenceIdVsGuidContainerMap.containsKey(cont.getReference_id())) {
-//                                    charge.getContainersUUID().add(referenceIdVsGuidContainerMap.get(cont.getReference_id()));
-//                                }
-//                            } else {
-//                                if (referenceIdVsGuidContainerMap.containsKey(cont.getReference_id())) {
-//                                    charge.setContainersUUID(List.of(referenceIdVsGuidContainerMap.get(cont.getReference_id())));
-//                                }
-//                            }
-//                        }
-//                    });
-//                }
             });
             platformResponse.setCharges(referenceNumbersGuidMapResponses);
         }

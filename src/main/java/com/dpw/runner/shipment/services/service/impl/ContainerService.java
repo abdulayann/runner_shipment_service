@@ -424,7 +424,6 @@ public class ContainerService implements IContainerService {
 
     @Override
     public void uploadContainerEvents(BulkUploadRequest request) throws RunnerException, IOException {
-//        CSVParsingUtil<Events> newParser = new CSVParsingUtil<>(Events.class);
         if (request == null || request.getConsolidationId() == null) {
             throw new ValidationException("Please save the consolidation and then try again.");
         }
@@ -436,13 +435,7 @@ public class ContainerService implements IContainerService {
             c.setEntityType("CONSOLIDATION");
             return c;
         }).toList();
-        eventsList = eventDao.saveAll(eventsList);
-        // TODO- revisit Abhimanyu and handle sync as well
-//        if (request.getShipmentId() != null) {
-//            eventsList.stream().forEach(container -> {
-//                shipmentsContainersMappingDao.updateShipmentsMappings(container.getId(), List.of(request.getShipmentId()));
-//            });
-//        }
+        eventDao.saveAll(eventsList);
     }
 
     @Override
@@ -507,11 +500,8 @@ public class ContainerService implements IContainerService {
         // Create header row using annotations for order
         Row headerRow = sheet.createRow(0);
         Field[] fields = ContainersExcelModel.class.getDeclaredFields();
-//        Arrays.sort(fields, Comparator.comparingInt(f -> f.getAnnotation(ExcelCell.class).order()));
 
         Map<String, Field> fieldNameMap = Arrays.stream(fields).filter(f->f.isAnnotationPresent(ExcelCell.class)).collect(Collectors.toMap(Field::getName, c-> c));
-        // Removed columns to ignore logic
-//        ColumnsToIgnore(fieldNameMap, request);
 
         if(!Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && fieldNameMap.containsKey("containerStuffingLocation")) {
             Set<String> unlocationsRefGuids = new HashSet<>();
@@ -912,65 +902,6 @@ public class ContainerService implements IContainerService {
                 response.setWeightAllowed(false);
         }
     }
-
-//    @Override
-//    public ResponseEntity<?> calculateAchievedQuantity_onPackAssign(CommonRequestModel commonRequestModel) {
-//        String responseMsg;
-//        try {
-//            ContainerPackADInShipmentRequest request = (ContainerPackADInShipmentRequest) commonRequestModel.getData();
-//
-//            Optional<Containers> containersOptional = containerDao.findById(request.getContainerId());
-//            if(containersOptional.isPresent()) {
-//                Containers container = containersOptional.get();
-//                changeAchievedUnit(container);
-//                ListCommonRequest listCommonRequest = constructListCommonRequest("id", request.getPacksId(), "IN");
-//                Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
-//                Page<Packing> packings = packingDao.findAll(pair.getLeft(), pair.getRight());
-//                if(!packings.isEmpty() && packings.get().findAny().isPresent()) {
-//                    List<Packing> packingList = packings.stream().toList();
-//                    for(Packing packing: packingList) {
-//                        if(packing.getWeight() != null && !packing.getWeightUnit().isEmpty() && !IsStringNullOrEmpty(container.getAchievedWeightUnit())) {
-//                            BigDecimal val = new BigDecimal(convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), container.getAchievedWeightUnit()).toString());
-//                            container.setAchievedWeight(container.getAchievedWeight().add(val));
-//                            container.setWeightUtilization(((container.getAchievedWeight().divide(container.getAllocatedWeight())).multiply(new BigDecimal(100))).toString());
-//                        }
-//                        if(packing.getVolume() != null && !packing.getVolumeUnit().isEmpty() && !IsStringNullOrEmpty(container.getAchievedVolumeUnit())) {
-//                            BigDecimal val = new BigDecimal(convertUnit(Constants.VOLUME, packing.getVolume(), packing.getVolumeUnit(), container.getAchievedVolumeUnit()).toString());
-//                            container.setAchievedVolume(container.getAchievedVolume().add(val));
-//                            container.setVolumeUtilization(((container.getAchievedVolume().divide(container.getAllocatedVolume())).multiply(new BigDecimal(100))).toString());
-//                        }
-//                    }
-//                    return assignContainers(packingList, container, request.getShipmentId());
-//                }
-//            }
-//            responseMsg = "Data not available for provided request";
-//            throw new DataRetrievalFailureException(responseMsg);
-//        } catch (Exception e) {
-//            responseMsg = e.getMessage() != null ? e.getMessage()
-//                    : DaoConstants.DAO_CALCULATION_ERROR;
-//            log.error(responseMsg, e);
-//            return ResponseHelper.buildFailedResponse(responseMsg);
-//        }
-//    }
-
-//    public ResponseEntity<?> assignContainers(List<Packing> packingList, Containers container, Long shipmentId) {
-//        String responseMsg;
-//        try {
-//            shipmentsContainersMappingDao.assignShipments(container.getId(), List.of(shipmentId));
-//            Containers containers = containerDao.save(jsonHelper.convertValue(container, Containers.class));
-//            for (Packing packing: packingList) {
-//                packing.setContainerId(container.getId());
-//            }
-//            packingDao.saveAll(packingList);
-//            afterSave(containers, false);
-//            return ResponseHelper.buildSuccessResponse(convertEntityToDto(containers));
-//        } catch (Exception e) {
-//            responseMsg = e.getMessage() != null ? e.getMessage()
-//                    : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
-//            log.error(responseMsg, e);
-//            return ResponseHelper.buildFailedResponse(responseMsg);
-//        }
-//    }
 
     public void changeContainerWtVolForSeaLCLDetach(Containers container, Packing packing) throws RunnerException {
         if(packing.getWeight() != null && !IsStringNullOrEmpty(packing.getWeightUnit()) && !IsStringNullOrEmpty(container.getAchievedWeightUnit())) {
@@ -1712,7 +1643,6 @@ public class ContainerService implements IContainerService {
     }
 
     private void makeHeadersInSheet(Sheet sheet, Optional<ConsolidationDetails> consol) {
-//        Row preHeaderRow = sheet.createRow(0);
         Row headerRow = sheet.createRow(0);
         List<String> containerHeader = parser.getHeadersForContainer();
         for (int i = 0; i < containerHeader.size(); i++) {

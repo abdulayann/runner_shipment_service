@@ -462,7 +462,6 @@ public class PackingService implements IPackingService {
         // Create header row using annotations for order
         Row headerRow = sheet.createRow(0);
         Field[] fields = PackingExcelModel.class.getDeclaredFields();
-//        Arrays.sort(fields, Comparator.comparingInt(f -> f.getAnnotation(ExcelCell.class).order()));
 
         Map<String, Field> fieldNameMap = Arrays.stream(fields).filter(f->f.isAnnotationPresent(ExcelCell.class)).collect(Collectors.toMap(Field::getName, c-> c));
         ColumnsToIgnore(fieldNameMap, request);

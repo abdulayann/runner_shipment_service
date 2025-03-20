@@ -201,7 +201,7 @@ public class EventService implements IEventService {
         }
         long id = request.getId();
         Optional<Events> oldEntity = eventDao.findById(id);
-        if (!oldEntity.isPresent()) {
+        if (oldEntity.isEmpty()) {
             log.debug(EventConstants.EVENT_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
@@ -1287,8 +1287,6 @@ public class EventService implements IEventService {
     private void saveAndSyncShipment(ShipmentDetails shipmentDetails, String messageId) throws RunnerException {
         log.info("Saving shipment entity: {} messageId {}", shipmentDetails.getShipmentId(), messageId);
         shipmentDao.saveWithoutValidation(shipmentDetails);
-//        log.info("Synchronizing shipment: {}", shipmentDetails.getShipmentId());
-//        shipmentSync.sync(shipmentDetails, null, null, UUID.randomUUID().toString(), false);
     }
 
     @Override

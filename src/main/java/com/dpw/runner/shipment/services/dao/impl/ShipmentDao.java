@@ -346,22 +346,6 @@ public class ShipmentDao implements IShipmentDao {
         // Shipment restricted unlocations validation
         addUnLocationValidationErrors(request, shipmentSettingsDetails, errors);
 
-//        // Shipment Lock validation error
-//        if(oldEntity != null && oldEntity.getIsLocked()) {
-//            List <Object> criteria = Arrays.asList(
-//                    Arrays.asList("Username"),
-//                    "=",
-//                    oldEntity.getLockedBy()
-//            );
-//            CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).criteriaRequests(criteria).build();
-//            V1DataResponse v1DataResponse = v1Service.fetchUsersData(commonV1ListRequest);
-//            List<UsersDto> usersDtos = jsonHelper.convertValueToList(v1DataResponse.entities, UsersDto.class);
-//            String username = "";
-//            if(usersDtos != null && usersDtos.size() > 0)
-//                username = usersDtos.get(0).Username;
-//            errors.add("Shipment is Locked By User " + username + ". Please unlock for any Updation.");
-//        }
-
         // BL# and Reference No can not be repeated
         addBlValidationErrors(request, errors);
         addBookingReferenceValidationErrors(request, errors);

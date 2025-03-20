@@ -54,7 +54,6 @@ public class GetNextNumberHelper {
         String prefix =
             startPosition == -1 ? regexPattern : regexPattern.substring(0, startPosition); // prefix
         String suffix = "";
-        //        CompaniesRow companiesRow = null;
         if (sequenceSettings.getGenerationType() == GenerationType.Regex) {
             Pattern p = Pattern.compile("\\{([^}]*)\\}"); // original v1 regex @"(?<={)[\w;]{1,}(?=})"
             Matcher matches = p.matcher(regexPattern);

@@ -104,7 +104,6 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
         String responseMsg;
         List<TruckDriverDetails> responseTruckDriverDetails = new ArrayList<>();
         try {
-            // TODO- Handle Transactions here
             List<TruckDriverDetails> truckDriverDetails = findByShipmentId(shipmentId);
             Map<Long, TruckDriverDetails> hashMap = truckDriverDetails.stream()
                         .collect(Collectors.toMap(TruckDriverDetails::getId, Function.identity()));
@@ -303,7 +302,6 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
                 req.setCreatedAt(oldEntityMap.get(id).getCreatedAt());
                 req.setCreatedBy(oldEntityMap.get(id).getCreatedBy());
             }
-//            req.setConsolidationId(consolidationId);
             res.add(req);
         }
         res = saveAll(res);

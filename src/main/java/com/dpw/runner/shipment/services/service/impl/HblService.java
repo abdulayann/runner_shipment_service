@@ -510,7 +510,6 @@ public class HblService implements IHblService {
             hblData.setShippingTime(carrierDetails.getEtd() == null ? null : carrierDetails.getEtd().toLocalTime().toString());
             hblData.setEtd(carrierDetails.getEtd());
             hblData.setIncoTerms(shipmentDetail.getIncoterms());
-//            hblData.setIncoTermPlace(shipmentDetail.incotermsDesctiption);
             hblData.setFinalDestination(carrierDetails.getDestination());
             hblData.setQuantity(shipmentDetail.getInnerPacks());
             hblData.setQuantityCode(shipmentDetail.getInnerPackUnit());

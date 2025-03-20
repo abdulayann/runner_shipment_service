@@ -61,10 +61,6 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
             mapReverseShipmentGuids(sd, cs);
             mapShipmentServiceReverse(cs, sd);
 
-//            // Clarity required
-//            if(cs.getStatusString() != null && !cs.getStatusString().isEmpty()){
-//                sd.setStatus(Integer.parseInt(cs.getStatusString())); // ENUM MAPPING ?
-//            }
             sd.setLockedBy(cs.getLockedByUser());
             sd.setSourceGuid(cs.getSourceGuid());
 

@@ -593,7 +593,6 @@ public abstract class IReport {
     }
 
     private void processTransportModeTags(ShipmentModel shipment, Map<String, Object> dictionary, PartiesModel shipmentConsigner, PartiesModel shipmentConsignee, PartiesModel shipmentNotify, PartiesModel shipmentClient, AdditionalDetailModel additionalDetails, String tsDateTimeFormat, ShipmentSettingsDetails shipmentSettingsDetails) {
-        List<String> consignorFreeText = null, consigneeFreeText = null, notifyPartyFreeText = null;
         if ((Objects.equals(shipment.getTransportMode(), "SEA") || Objects.equals(shipment.getTransportMode(), "ROA") || Objects.equals(shipment.getTransportMode(), "RF") || Objects.equals(shipment.getTransportMode(), "AIR"))) {
             final String email = "Email";
             populateConsignerData(dictionary, shipmentConsigner, email);
@@ -766,7 +765,6 @@ public abstract class IReport {
     }
 
     private void populateNotifyPartyData(Map<String, Object> dictionary, PartiesModel shipmentNotify, String email) {
-        List<String> notifyPartyFreeText;
         List<String> notify = null;
         List<String> notifyWoCont = null;
         if(shipmentNotify != null)
@@ -1642,7 +1640,7 @@ public abstract class IReport {
             v1BillCharge.setLocalTax(
                     revenueDetailsOpt.map(BillChargeRevenueDetailsResponse::getTaxAmount).orElse(null)
             );
-            v1BillCharge.setMeasurementBasis(null); // TODO: Check for cost/revenue MeasurementBasis
+            v1BillCharge.setMeasurementBasis(null);
 
             v1BillCharge.setPaymentType(billingBillCharge.getPaymentTypeCode());
             v1BillCharge.setChargeTypeCode(
@@ -3011,11 +3009,8 @@ public abstract class IReport {
             if(shipmentModel.getDirection().equalsIgnoreCase(EXP)) {
                 List<Awb> awbList = awbDao.findByShipmentIdByQuery(shipmentModel.getId());
                 String entityType = (Objects.equals(shipmentModel.getJobType(), Constants.SHIPMENT_TYPE_DRT)) ? Constants.DMAWB : Constants.HAWB;
-                if (awbList != null && !awbList.isEmpty()) {
-                    if(awbList.get(0).getAwbShipmentInfo().getEntityType().equalsIgnoreCase(entityType))
+                if (awbList != null && !awbList.isEmpty() && awbList.get(0).getAwbShipmentInfo().getEntityType().equalsIgnoreCase(entityType))
                         return false;
-                }
-                // TODO- Throw Exception that AWB is not generated
             }
             return false;
         } else if (shipmentModel.getDirection().equalsIgnoreCase(EXP)) {
@@ -3508,7 +3503,6 @@ public abstract class IReport {
                 dictionary.put(CLIENT_ADDRESS_LL, ReportHelper.getOrgAddress(null, address.getAddress(), null, null, ReportHelper.combineStringsWithComma(address.getCityName(),address.getPostalCode()), address.getStateName()));
                 dictionary.put(CLIENT_ADDWO_CONT_LL, ReportHelper.getOrgAddressWithoutPhoneEmail(address.getOrgName(), address.getAddress(), null, address.getCityName(), address.getStateName(), address.getPostalCode(), null ));
             } else {
-//                throw new ValidationException("Translation not available for Client Organization");
                 orgWithoutTranslation.add("Client");
             }
         }
@@ -3524,7 +3518,6 @@ public abstract class IReport {
                 dictionary.put(CONSIGNER_ADDRESS_LL, ReportHelper.getOrgAddress(null, address.getAddress(), null, null, ReportHelper.combineStringsWithComma(address.getCityName(),address.getPostalCode()), address.getStateName()));
                 dictionary.put(CONSIGNER_ADDWO_CONT_LL, ReportHelper.getOrgAddressWithoutPhoneEmail(address.getOrgName(), address.getAddress(), null, address.getCityName(), address.getStateName(), address.getPostalCode(), null ));
             } else {
-//                throw new ValidationException("Translation not available for Consigner Organization");
                 orgWithoutTranslation.add("Consigner");
             }
         }
@@ -3540,7 +3533,6 @@ public abstract class IReport {
                 dictionary.put(CONSIGNEE_ADDRESS_LL, ReportHelper.getOrgAddress(null, address.getAddress(), null, null, ReportHelper.combineStringsWithComma(address.getCityName(),address.getPostalCode()), address.getStateName()));
                 dictionary.put(CONSIGNEE_ADDWO_CONT_LL, ReportHelper.getOrgAddressWithoutPhoneEmail(address.getOrgName(), address.getAddress(), null, address.getCityName(), address.getStateName(), address.getPostalCode(), null ));
             } else {
-//                throw new ValidationException("Translation not available for Consignee Organization");
                 orgWithoutTranslation.add("Consignee");
             }
         }
@@ -3556,7 +3548,6 @@ public abstract class IReport {
                 dictionary.put(NOTIFY_PARTY_ADDRESS_LL, ReportHelper.getOrgAddress(null, address.getAddress(), null, null, ReportHelper.combineStringsWithComma(address.getCityName(),address.getPostalCode()), address.getStateName()));
                 dictionary.put(NOTIFY_PART_ADDWO_CONT_LL, ReportHelper.getOrgAddressWithoutPhoneEmail(address.getOrgName(), address.getAddress(), null, address.getCityName(), address.getStateName(), address.getPostalCode(), null ));
             } else {
-//                throw new ValidationException("Translation not available for Notify Party Organization");
                 orgWithoutTranslation.add("Notify Party");
             }
         }
@@ -3571,7 +3562,6 @@ public abstract class IReport {
                 dictionary.put(PICKUP_FROM_LL, address.getOrgName());
                 dictionary.put(PICKUP_FROM_ADDRESS_LL, ReportHelper.getOrgAddress(null, address.getAddress(), null, null, ReportHelper.combineStringsWithComma(address.getCityName(),address.getPostalCode()), address.getStateName()));
             } else {
-//                throw new ValidationException("Translation not available for PickupFrom Organization");
                 orgWithoutTranslation.add("PickupFrom");
             }
         }
@@ -3586,7 +3576,6 @@ public abstract class IReport {
                 dictionary.put(DELIVERY_TO_LL, address.getOrgName());
                 dictionary.put(DELIVERY_TO_ADDRESS_LL, ReportHelper.getOrgAddress(null, address.getAddress(), null, null, ReportHelper.combineStringsWithComma(address.getCityName(),address.getPostalCode()), address.getStateName()));
             } else {
-//                throw new ValidationException("Translation not available for DeliveryTo Organization");
                 orgWithoutTranslation.add("DeliveryTo");
             }
         }
@@ -3622,7 +3611,6 @@ public abstract class IReport {
         try {
             NPMFetchLangChargeCodeResponse response = npmServiceAdapter.fetchMultiLangChargeCode(CommonRequestModel.buildRequest(request));
             if(Objects.isNull(response) || StringUtility.isEmpty(response.getTranslation())) {
-//                throw new ValidationException("Translation not available for Charge Type Description for Charge Code: " + chargeCode);
                 chargeTypesWithoutTranslation.add(chargeCode);
                 return null;
             }
@@ -3645,7 +3633,7 @@ public abstract class IReport {
                 String failedChargeType = String.join(" ,", chargeTypesWithoutTranslation);
                 errorMessage.append(String.format("Translation not available for Charge codes : %s", failedChargeType));
             }
-            if(errorMessage.length() != 0) {
+            if(!errorMessage.isEmpty()) {
                 throw new TranslationException(errorMessage.toString());
             }
         }

@@ -781,10 +781,6 @@ public class ConsolidationService implements IConsolidationService {
 
     private String getConsolidationSerialNumber() {
         String maxId = v1Service.getMaxConsolidationId();
-//        Long maxId = consolidationDetailsDao.findMaxId();
-//        if(maxId == null)
-//            maxId = 0L;
-//        maxId += 1;
         return maxId;
     }
 
@@ -854,10 +850,6 @@ public class ConsolidationService implements IConsolidationService {
             if (request == null) {
                 log.error("Request is empty for Consolidation update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-//        if (request.getId() == null) {
-//            log.error("Request Id is null for Consolidation update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-//        }
-            // TODO- implement Validation logic
 
             Optional<ConsolidationDetails> oldEntity = retrieveByIdOrGuid(request);
             if (!oldEntity.isPresent()) {
@@ -1750,7 +1742,6 @@ public class ConsolidationService implements IConsolidationService {
             }
             if (truckDriverDetailsRequestList != null) {
                 List<TruckDriverDetails> updatedTruckDriverDetails = truckDriverDetailsDao.updateEntityFromConsole(commonUtils.convertToEntityList(truckDriverDetailsRequestList, TruckDriverDetails.class), id);
-//                entity.setTruckDriverDetails(updatedTruckDriverDetails);
             }
             if (routingsRequestList != null) {
                 List<Routings> updatedRoutings = routingsDao.updateEntityFromConsole(commonUtils.convertToEntityList(routingsRequestList, Routings.class), id);
@@ -4173,25 +4164,6 @@ public class ConsolidationService implements IConsolidationService {
         return ResponseHelper.buildSuccessResponse();
     }
 
-//    private <T extends IRunnerResponse> List<T> getResponse(CompletableFuture<ResponseEntity<IRunnerResponse>> responseEntity) throws ExecutionException, InterruptedException {
-//        var runnerListResponse = (RunnerListResponse<T>) responseEntity.get().getBody();
-//        return (List<T>) runnerListResponse.getData();
-//    }
-//
-//    private <T extends IRunnerResponse> List<T> getResponse(ResponseEntity<?> responseEntity) throws ExecutionException, InterruptedException {
-//        var runnerListResponse = (RunnerListResponse<T>) responseEntity.getBody();
-//        return (List<T>) runnerListResponse.getData();
-//    }
-//
-//    private <T extends IRunnerResponse> T getResponseEntity(ResponseEntity<?> responseEntity) throws ExecutionException, InterruptedException {
-//        var runnerResponse = (RunnerResponse<T>) responseEntity.getBody();
-//        return (T) runnerResponse.getData();
-//    }
-//
-//    private Containers convertRequestToEntity(ContainerRequest request) {
-//        return jsonHelper.convertValue(request, Containers.class);
-//    }
-
     @Transactional
     public ResponseEntity<IRunnerResponse> completeV1ConsolidationCreateAndUpdate(CommonRequestModel commonRequestModel, boolean dataMigration, String createdBy, LocalDateTime createdDate) throws RunnerException {
         ConsolidationDetailsRequest consolidationDetailsRequest = (ConsolidationDetailsRequest) commonRequestModel.getData();
@@ -4978,7 +4950,6 @@ public class ConsolidationService implements IConsolidationService {
         }
         if (truckDriverDetailsRequestList != null) {
             List<TruckDriverDetails> updatedTruckDriverDetails = truckDriverDetailsDao.updateEntityFromConsole(commonUtils.convertToEntityList(truckDriverDetailsRequestList, TruckDriverDetails.class, isFromBooking ? false : isCreate), id);
-//            consolidationDetails.setTruckDriverDetails(updatedTruckDriverDetails);
         }
         if (routingsRequestList != null) {
             List<Routings> updatedRoutings = routingsDao.updateEntityFromConsole(commonUtils.convertToEntityList(routingsRequestList, Routings.class, isFromBooking ? false : isCreate), id);
