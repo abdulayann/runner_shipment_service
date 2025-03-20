@@ -24,7 +24,23 @@ import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
+import com.dpw.runner.shipment.services.dto.response.AdditionalDetailResponse;
+import com.dpw.runner.shipment.services.dto.response.BookingCarriageResponse;
+import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
+import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.ELDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.EventsResponse;
+import com.dpw.runner.shipment.services.dto.response.JobResponse;
+import com.dpw.runner.shipment.services.dto.response.NotesResponse;
+import com.dpw.runner.shipment.services.dto.response.PackingResponse;
 import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
+import com.dpw.runner.shipment.services.dto.response.PickupDeliveryDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ReferenceNumbersResponse;
+import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
+import com.dpw.runner.shipment.services.dto.response.ServiceDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentOrderResponse;
+import com.dpw.runner.shipment.services.dto.response.TruckDriverDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
@@ -53,11 +69,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
+import org.modelmapper.TypeToken;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.transaction.TransactionSystemException;
 
@@ -65,6 +83,7 @@ import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
 import java.awt.image.BufferedImage;
 import java.io.*;
+import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -173,6 +192,18 @@ class CommonUtilsTest {
     private PrintStream originalOut;
     private byte[] pdfBytes;
 
+    static Stream<Arguments> pTestCases() {
+        return Stream.of(
+                Arguments.of("Entity", new ArrayList<>(), "Response"),
+                Arguments.of("Entity", List.of("foo"), "Response"),
+                Arguments.of("Entity", List.of("No such field: {}", "foo"), "Response"),
+                Arguments.of("Entity", Collections.singletonList(null), "Response"),
+                Arguments.of("Entity", Collections.singletonList(""), "Response"),
+                Arguments.of(new HashMap<>(), List.of("foo"), "Response"),
+                Arguments.of(null, List.of("foo"), "Response"),
+                Arguments.of(Map.of("foo", "42"), List.of("foo"), "Response")
+        );
+    }
     @AfterEach
     void tearDown() {
         commonUtils.syncExecutorService.shutdown();
@@ -981,7 +1012,7 @@ class CommonUtilsTest {
         carrierDetails.setDestination("test");
         carrierDetails.setDestinationPort("test");
         commonUtils.updateCarrierUnLocData(carrierDetails, null);
-        assertEquals(carrierDetails.getOriginLocCode(), null);
+        assertEquals(null, carrierDetails.getOriginLocCode());
     }
 
     @Test
@@ -3619,5 +3650,269 @@ class CommonUtilsTest {
         assertNull(eventsRequest.getContainerNumber());
         assertNotNull(eventsRequest.getActual());
     }
+    @ParameterizedTest
+    @MethodSource("pTestCases")
+    void testSetIncludedFieldsToResponse(Object entity, List<String> includeColumns, Object expectedResponse) {
+        assertEquals(expectedResponse, commonUtils.setIncludedFieldsToResponse(entity, includeColumns, expectedResponse));
+    }
+    @Test
+    void testMapListToDTO_EmptyList() {
+        List<Containers> emptyList = new ArrayList<>();
+        Object result = commonUtils.mapListToDTO(emptyList);
+        assertEquals(emptyList, result);
+    }
 
+    @Test
+    void testMapListToDTO_Containers() {
+        List<Containers> containerList = List.of(new Containers());
+        List<ContainerResponse> containerResponseList = List.of(new ContainerResponse());
+
+        when(modelMapper.map(containerList, new TypeToken<List<ContainerResponse>>() {}.getType()))
+                .thenReturn(containerResponseList);
+
+        Object result = commonUtils.mapListToDTO(containerList);
+
+        //assertInstanceOf(List.class, result);
+        assertEquals(containerResponseList, result);
+    }
+
+    @Test
+    void testMapListToDTO_BookingCarriage() {
+        List<BookingCarriage> bookingCarriageList = List.of(new BookingCarriage());
+        List<BookingCarriageResponse> bookingCarriageResponseList = List.of(new BookingCarriageResponse());
+
+        when(modelMapper.map(bookingCarriageList, new TypeToken<List<BookingCarriageResponse>>() {}.getType()))
+                .thenReturn(bookingCarriageResponseList);
+
+        Object result = commonUtils.mapListToDTO(bookingCarriageList);
+
+        assertEquals(bookingCarriageResponseList, result);
+    }
+
+    @Test
+    void testMapListToDTO_NoMappingFound() {
+        List<String> stringList = List.of("test");
+        Object result = commonUtils.mapListToDTO(stringList);
+        assertEquals(stringList, result);
+    }
+    @Test
+    void testMapListToDTO_ELDetails() {
+        List<ELDetails> elDetailsList = List.of(new ELDetails());
+        List<ELDetailsResponse> elDetailsResponseList = List.of(new ELDetailsResponse());
+
+        when(modelMapper.map(elDetailsList, new TypeToken<List<ELDetailsResponse>>() {}.getType()))
+                .thenReturn(elDetailsResponseList);
+
+        Object result = commonUtils.mapListToDTO(elDetailsList);
+
+        assertEquals(elDetailsResponseList, result);
+    }
+
+    @Test
+    void testMapListToDTO_Events() {
+        List<Events> eventsList = List.of(new Events());
+        List<EventsResponse> eventsResponseList = List.of(new EventsResponse());
+        when(modelMapper.map(eventsList, new TypeToken<List<EventsResponse>>() {}.getType()))
+                .thenReturn(eventsResponseList);
+
+        Object result = commonUtils.mapListToDTO(eventsList);
+        assertEquals(eventsResponseList, result);
+    }
+    @Test
+    void testMapListToDTO_Packing() {
+        List<Packing> packings = List.of(new Packing());
+        List<PackingResponse> packingResponseList = List.of(new PackingResponse());
+        when(modelMapper.map(packings, new TypeToken<List<PackingResponse>>() {}.getType()))
+                .thenReturn(packingResponseList);
+
+        Object result = commonUtils.mapListToDTO(packings);
+        assertEquals(packingResponseList, result);
+    }
+    @Test
+    void testMapListToDTO_ReferenceNumbers() {
+        List<ReferenceNumbers> referenceNumbersList = List.of(new ReferenceNumbers());
+        List<ReferenceNumbersResponse> referenceNumbersResponseList = List.of(new ReferenceNumbersResponse());
+
+        when(modelMapper.map(referenceNumbersList, new TypeToken<List<ReferenceNumbersResponse>>() {}.getType()))
+                .thenReturn(referenceNumbersResponseList);
+
+        Object result = commonUtils.mapListToDTO(referenceNumbersList);
+
+        assertEquals(referenceNumbersResponseList, result);
+    }
+    @Test
+    void testMapListToDTO_Routings() {
+        List<Routings> routingList = List.of(new Routings());
+        List<RoutingsResponse> routingResponseList = List.of(new RoutingsResponse());
+
+        when(modelMapper.map(routingList, new TypeToken<List<RoutingsResponse>>() {}.getType()))
+                .thenReturn(routingResponseList);
+
+        Object result = commonUtils.mapListToDTO(routingList);
+
+        assertEquals(routingResponseList, result);
+    }
+    @Test
+    void testMapListToDTO_ServiceDetails() {
+        List<ServiceDetails> serviceDetailsList = List.of(new ServiceDetails());
+        List<ServiceDetailsResponse> serviceDetailsResponseList = List.of(new ServiceDetailsResponse());
+
+        when(modelMapper.map(serviceDetailsList, new TypeToken<List<ServiceDetailsResponse>>() {}.getType()))
+                .thenReturn(serviceDetailsResponseList);
+
+        Object result = commonUtils.mapListToDTO(serviceDetailsList);
+
+        assertEquals(serviceDetailsResponseList, result);
+    }
+    @Test
+    void testMapListToDTO_Notes() {
+        List<Notes> notesList = List.of(new Notes());
+        List<NotesResponse> notesResponseList = List.of(new NotesResponse());
+
+        when(modelMapper.map(notesList, new TypeToken<List<NotesResponse>>() {}.getType()))
+                .thenReturn(notesResponseList);
+
+        Object result = commonUtils.mapListToDTO(notesList);
+
+        assertEquals(notesResponseList, result);
+    }
+
+    @Test
+    void testMapListToDTO_Jobs() {
+        List<Jobs> jobsList = List.of(new Jobs());
+        List<JobResponse> jobResponseList = List.of(new JobResponse());
+
+        when(modelMapper.map(jobsList, new TypeToken<List<JobResponse>>() {}.getType()))
+                .thenReturn(jobResponseList);
+
+        Object result = commonUtils.mapListToDTO(jobsList);
+
+        assertEquals(jobResponseList, result);
+    }
+
+    @Test
+    void testMapListToDTO_ConsolidationDetails() {
+        List<ConsolidationDetails> consolidationDetailsList = List.of(new ConsolidationDetails());
+        List<ConsolidationListResponse> consolidationResponseList = List.of(new ConsolidationListResponse());
+
+        when(modelMapper.map(consolidationDetailsList, new TypeToken<List<ConsolidationListResponse>>() {}.getType()))
+                .thenReturn(consolidationResponseList);
+
+        Object result = commonUtils.mapListToDTO(consolidationDetailsList);
+
+        assertEquals(consolidationResponseList, result);
+    }
+
+    @Test
+    void testMapListToDTO_Parties() {
+        List<Parties> partiesList = List.of(new Parties());
+        List<PartiesResponse> partiesResponseList = List.of(new PartiesResponse());
+
+        when(modelMapper.map(partiesList, new TypeToken<List<PartiesResponse>>() {}.getType()))
+                .thenReturn(partiesResponseList);
+
+        Object result = commonUtils.mapListToDTO(partiesList);
+
+        assertEquals(partiesResponseList, result);
+    }
+
+    @Test
+    void testMapListToDTO_ShipmentOrder() {
+        List<ShipmentOrder> shipmentOrderList = List.of(new ShipmentOrder());
+        List<ShipmentOrderResponse> shipmentOrderResponseList = List.of(new ShipmentOrderResponse());
+
+        when(modelMapper.map(shipmentOrderList, new TypeToken<List<ShipmentOrderResponse>>() {}.getType()))
+                .thenReturn(shipmentOrderResponseList);
+
+        Object result = commonUtils.mapListToDTO(shipmentOrderList);
+
+        assertEquals(shipmentOrderResponseList, result);
+    }
+    @Test
+    void testMapListToDTO_TruckDriverDetails() {
+        List<TruckDriverDetails> truckDriverDetailsList = List.of(new TruckDriverDetails());
+        List<TruckDriverDetailsResponse> truckDriverDetailsResponseList = List.of(new TruckDriverDetailsResponse());
+
+        when(modelMapper.map(truckDriverDetailsList, new TypeToken<List<TruckDriverDetailsResponse>>() {}.getType()))
+                .thenReturn(truckDriverDetailsResponseList);
+
+        Object result = commonUtils.mapListToDTO(truckDriverDetailsList);
+
+        assertEquals(truckDriverDetailsResponseList, result);
+    }
+    @Test
+    void testMapToDTO_CarrierDetails() {
+        CarrierDetails carrierDetails = new CarrierDetails();
+        CarrierDetailResponse carrierDetailResponse =new CarrierDetailResponse();
+
+        when(modelMapper.map(carrierDetails,CarrierDetailResponse.class)).thenReturn(carrierDetailResponse);
+
+        Object result = commonUtils.mapToDTO(carrierDetails);
+
+        assertEquals(carrierDetailResponse, result);
+    }
+    @Test
+    void testMapToDTO_AdditionalDetails() {
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        AdditionalDetailResponse additionalDetailResponse =new AdditionalDetailResponse();
+
+        when(modelMapper.map(additionalDetails,AdditionalDetailResponse.class)).thenReturn(additionalDetailResponse);
+
+        Object result = commonUtils.mapToDTO(additionalDetails);
+
+        assertEquals(additionalDetailResponse, result);
+    }
+
+    @Test
+    void testMapToDTO_PickupDeliveryDetails() {
+        PickupDeliveryDetails pickupDeliveryDetails = new PickupDeliveryDetails();
+        PickupDeliveryDetailsResponse pickupDeliveryDetailsResponse =new PickupDeliveryDetailsResponse();
+
+        when(modelMapper.map(pickupDeliveryDetails,PickupDeliveryDetailsResponse.class)).thenReturn(pickupDeliveryDetailsResponse);
+
+        Object result = commonUtils.mapToDTO(pickupDeliveryDetails);
+
+        assertEquals(pickupDeliveryDetailsResponse, result);
+    }
+    @Test
+    void testMapToDTO_Parties() {
+        Parties parties = new Parties();
+        PartiesResponse partiesResponse =new PartiesResponse();
+
+        when(modelMapper.map(parties,PartiesResponse.class)).thenReturn(partiesResponse);
+
+        Object result = commonUtils.mapToDTO(parties);
+
+        assertEquals(partiesResponse, result);
+    }
+    @Test
+    void testSetNestedFieldValue_SimpleField() throws NoSuchMethodException, IllegalAccessException, InstantiationException, InvocationTargetException {
+        Parties obj = new Parties();
+        commonUtils.setNestedFieldValue(obj, "type", "consignee");
+        assertEquals("consignee", obj.getType());
+    }
+
+    @Test
+    void testSetNestedFieldValue_NestedField() throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
+        ShipmentDetails obj = new ShipmentDetails();
+        commonUtils.setNestedFieldValue(obj, "carrierDetails.shippingLine", "Perma");
+        assertNotNull(obj.getCarrierDetails());
+        assertEquals("Perma", obj.getCarrierDetails().getShippingLine());
+    }
+
+    @Test
+    void testSetNestedFieldValue_MapField() throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
+        Map<String, Object> map = new HashMap<>();
+        commonUtils.setNestedFieldValue(map, "orgData.city", "new York");
+        assertTrue(map.containsKey("orgData"));
+        assertTrue(((Map<?, ?>) map.get("orgData")).containsKey("city"));
+        assertEquals("new York", ((Map<?, ?>) map.get("orgData")).get("city"));
+    }
+
+    @Test
+    void testSetNestedFieldValue_NoGetterAvailable() {
+        Parties obj = new Parties();
+        assertThrows(NoSuchMethodException.class, () ->
+                commonUtils.setNestedFieldValue(obj, "invalidField", "test"));
+    }
 }
