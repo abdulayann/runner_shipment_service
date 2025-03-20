@@ -21,8 +21,6 @@ import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstan
 import com.dpw.runner.shipment.services.commons.constants.EventConstants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
-import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
-import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -60,7 +58,6 @@ import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
@@ -1030,7 +1027,6 @@ public class BookingIntegrationsUtility {
                     eventsRequest.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
                     eventsRequest.setUserName(payloadData.getUserDisplayName());
                     eventsRequest.setUserEmail(payloadData.getUserEmail());
-                    eventsRequest.setBranchName(payloadData.getBranchDisplayName());
                     eventsRequest.setBranch(payloadData.getBranchCode());
                     if (EventConstants.FNMU.equals(payloadData.getEventCode())) {
                         eventsRequest.setContainerNumber(shipmentDetails.getMasterBill());
@@ -1069,7 +1065,6 @@ public class BookingIntegrationsUtility {
                     event.setEntityType(Constants.SHIPMENT);
                     event.setUserName(payloadData.getUserDisplayName());
                     event.setUserEmail(payloadData.getUserEmail());
-                    event.setBranchName(payloadData.getBranchDisplayName());
                     event.setBranch(payloadData.getBranchCode());
                     if (EventConstants.FNMU.equals(payloadData.getEventCode())) {
                         event.setContainerNumber(shipmentDetails.getMasterBill());
