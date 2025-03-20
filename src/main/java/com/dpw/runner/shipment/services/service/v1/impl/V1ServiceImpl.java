@@ -1451,84 +1451,90 @@ public class V1ServiceImpl implements IV1Service {
         }
     }
 
-    /**
-     * Fetches cousin branch information for the given request payload.
-     * <p>
-     * Uses tenant ID from the current user context as the cache key. First checks the cache, and on a miss, performs an HTTP POST request to the configured URL. Successful
-     * responses are cached for subsequent calls.
-     *
-     * @param request the request payload for cousin branches
-     * @return {@link V1DataResponse} containing cousin branch details
-     * @throws V1ServiceException if an error occurs during remote call or response parsing
-     */
     @Override
     public V1DataResponse listCousinBranches(Object request) {
         String cacheKeyTenantId = keyGenerator.customCacheKey(UserContext.getUser().getTenantId());
-
         Cache cache = cacheManager.getCache(CacheConstants.COUSIN_BRANCHES_CACHE);
-        if (cache != null) {
-            try {
-                V1DataResponse cachedResponse = cache.get(cacheKeyTenantId, V1DataResponse.class);
-                if (cachedResponse != null) {
-                    log.info("Returning cached cousin branches for cache tenant key: {}", cacheKeyTenantId);
-                    return cachedResponse;
-                } else {
-                    log.info("No cached cousin branches found for cache tenant key: {}", cacheKeyTenantId);
-                }
-            } catch (Exception e) {
-                log.warn("Failed to read from cache for cache tenant key {}: {}", cacheKeyTenantId, e.getMessage());
-            }
-        } else {
+
+        V1DataResponse cachedResponse = getFromCache(cache, cacheKeyTenantId);
+        if (cachedResponse != null) return cachedResponse;
+
+        V1DataResponse responseBody = callCousinBranchAPI(request, cacheKeyTenantId);
+
+        putInCache(cache, cacheKeyTenantId, responseBody);
+
+        return responseBody;
+    }
+
+    private V1DataResponse getFromCache(Cache cache, String key) {
+        if (cache == null) {
             log.warn("Cache '{}' not available. Proceeding with API call.", CacheConstants.COUSIN_BRANCHES_CACHE);
+            return null;
         }
 
         try {
-            long startTime = System.currentTimeMillis();
+            V1DataResponse cached = cache.get(key, V1DataResponse.class);
+            if (cached != null) {
+                log.info("Returning cached cousin branches for cache tenant key: {}", key);
+            } else {
+                log.info("No cached cousin branches found for cache tenant key: {}", key);
+            }
+            return cached;
+        } catch (Exception e) {
+            log.warn("Failed to read from cache for cache tenant key {}: {}", key, e.getMessage());
+            return null;
+        }
+    }
 
+    private void putInCache(Cache cache, String key, V1DataResponse responseBody) {
+        if (cache == null) return;
+        try {
+            cache.put(key, responseBody);
+            log.info("Cached cousin branches for cache tenant key: {}", key);
+        } catch (Exception e) {
+            log.warn("Failed to write to cache for cache tenant key {}: {}", key, e.getMessage());
+        }
+    }
+
+    private V1DataResponse callCousinBranchAPI(Object request, String cacheKeyTenantId) {
+        try {
+            long startTime = System.currentTimeMillis();
             HttpEntity<Object> entity = new HttpEntity<>(request, V1AuthHelper.getHeaders());
 
             ResponseEntity<V1DataResponse> response = restTemplate.postForEntity(
-                    LIST_COUSIN_BRANCH_URL,
-                    entity,
-                    V1DataResponse.class
+                    LIST_COUSIN_BRANCH_URL, entity, V1DataResponse.class
             );
 
             long elapsed = System.currentTimeMillis() - startTime;
             log.info("API call to listCousinBranches took {} ms for cache tenant key: {}", elapsed, cacheKeyTenantId);
 
-            V1DataResponse responseBody = response.getBody();
-
-            if (responseBody == null) {
+            V1DataResponse body = response.getBody();
+            if (body == null) {
                 log.error("Received null response from cousin branch service for cache tenant key: {}", cacheKeyTenantId);
                 throw new V1ServiceException("Received null response from cousin branch service.");
             }
 
-            if (cache != null) {
-                try {
-                    cache.put(cacheKeyTenantId, responseBody);
-                    log.info("Cached cousin branches for cache tenant key: {}", cacheKeyTenantId);
-                } catch (Exception e) {
-                    log.warn("Failed to write to cache for cache tenant key {}: {}", cacheKeyTenantId, e.getMessage());
-                }
-            }
+            return body;
 
-            return responseBody;
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
-            String errorMessage = "Unknown error";
-            try {
-                V1ErrorResponse errorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class);
-                if (errorResponse != null && errorResponse.getError() != null) {
-                    errorMessage = errorResponse.getError().getMessage();
-                }
-            } catch (Exception parseEx) {
-                log.error("Failed to parse error response for cache tenant key {}: {}", cacheKeyTenantId, parseEx.getMessage());
-            }
-            log.error("HTTP error while fetching cousin branches for cache tenant key {}: {}", cacheKeyTenantId, errorMessage);
-            throw new V1ServiceException(errorMessage);
+            throw new V1ServiceException(parseError(ex, cacheKeyTenantId));
         } catch (Exception e) {
             log.error("Unexpected error in listCousinBranches for cache tenant key {}: {}", cacheKeyTenantId, e.getMessage(), e);
             throw new V1ServiceException("Unexpected error occurred while fetching cousin branches.");
         }
+    }
+
+    private String parseError(HttpStatusCodeException ex, String cacheKeyTenantId) {
+        try {
+            V1ErrorResponse errorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class);
+            if (errorResponse != null && errorResponse.getError() != null) {
+                return errorResponse.getError().getMessage();
+            }
+        } catch (Exception parseEx) {
+            log.error("Failed to parse error response for cache tenant key {}: {}", cacheKeyTenantId, parseEx.getMessage());
+        }
+        log.error("HTTP error while fetching cousin branches for cache tenant key {}: {}", cacheKeyTenantId, ex.getMessage());
+        return "Unknown error";
     }
 
     @Override
