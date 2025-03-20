@@ -2373,7 +2373,8 @@ public class ReportService implements IReportService {
         var shipmentSettings = commonUtils.getShipmentSettingFromContext();
         // If Shipment V3 is enabled
         if (shipmentSettings != null && Boolean.TRUE.equals(shipmentSettings.getIsRunnerV3Enabled())) {
-            String filename, childType;
+            String filename;
+            String childType;
             String docType = reportRequest.getReportInfo();
 
             // Generate FileName, childType & DocType based on request Type
