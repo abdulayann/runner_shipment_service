@@ -1,0 +1,1 @@
+update carrier_details set eta = '2025-03-23 13:35:00.000', etd = '2025-03-22 14:55:00.000' where id = 109222;
