@@ -2304,7 +2304,6 @@ public class ReportService implements IReportService {
             docUploadRequest.setChildType(childType);
 
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> documentManagerService.pushSystemGeneratedDocumentToDocMaster(new BASE64DecodedMultipartFile(pdfByteContent), filename, docUploadRequest)), executorService);
-
         }
     }
 }
