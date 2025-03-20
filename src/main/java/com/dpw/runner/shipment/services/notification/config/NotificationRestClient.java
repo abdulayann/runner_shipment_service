@@ -90,6 +90,7 @@ public class NotificationRestClient {
         try {
             List<String> toEmailsList = getEmailsListFromString(params.getRecipientEmails());
             List<String> ccEmailsList = getEmailsListFromString(params.getCcEmails());
+            List<String> bccEmailsList = getEmailsListFromString(params.getBccEmails());
             var user = UserContext.getUser();
             MailAuditLogRequest request = MailAuditLogRequest.builder()
                     .tenantIds(List.of(user.TenantId))
@@ -103,7 +104,7 @@ public class NotificationRestClient {
                     .moduleName(getModuleType(module))
                     .item(item)
                     .sentTime(LocalDateTime.now())
-                    .emailAck(responseEntity.getBody() != null
+                    .emailAck((responseEntity != null && responseEntity.getBody() != null)
                             ? responseEntity.getBody().getAcknowledgementId() : null)
                     .build();
             reportServiceAdapter.postRequest(request, null);

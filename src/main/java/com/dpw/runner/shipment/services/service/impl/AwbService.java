@@ -661,8 +661,8 @@ public class AwbService implements IAwbService {
         BigDecimal totalGrossVolumeOfMawbGood = BigDecimal.ZERO;
         BigDecimal totalGrossWeightOfMawbGood = BigDecimal.ZERO;
         BigDecimal chargeableWeightOfMawbGood = BigDecimal.ZERO;
-        BigDecimal totalAmountOfMawbGood;
-        String grossWeightUnit = "";
+        BigDecimal totalAmountOfMawbGood = BigDecimal.ZERO;
+        String grossWeightUnit = Constants.WEIGHT_UNIT_KG;
 
         BigDecimal totalVolumetricWeight = BigDecimal.ZERO;
 
@@ -731,7 +731,7 @@ public class AwbService implements IAwbService {
             if (i.getWeightUnit() == null || i.getWeightUnit().isEmpty())
                 totalGrossWeightOfMawbGood = totalGrossWeightOfMawbGood.add(convertToBigDecimal(unitConversionUtility.convertUnit(Constants.MASS, i.getWeight(), Constants.WEIGHT_UNIT_KG, tenantSettings.getWeightChargeableUnit())));
             else
-                totalGrossWeightOfMawbGood = totalGrossWeightOfMawbGood.add(convertToBigDecimal(unitConversionUtility.convertUnit(Constants.MASS, i.getWeight(), i.getWeightUnit(), tenantSettings.getWeightChargeableUnit())));
+                totalGrossWeightOfMawbGood = totalGrossWeightOfMawbGood.add(convertToBigDecimal(unitConversionUtility.convertUnit(Constants.MASS, i.getWeight(), i.getWeightUnit(), Constants.WEIGHT_UNIT_KG)));
         }
         return totalGrossWeightOfMawbGood;
     }
@@ -742,7 +742,7 @@ public class AwbService implements IAwbService {
                 totalGrossVolumeOfMawbGood = totalGrossVolumeOfMawbGood.add(convertToBigDecimal(unitConversionUtility.convertUnit(Constants.VOLUME, i.getVolume(), Constants.VOLUME_UNIT_M3, tenantSettings.getVolumeChargeableUnit())));
 
             else
-                totalGrossVolumeOfMawbGood = totalGrossVolumeOfMawbGood.add(convertToBigDecimal(unitConversionUtility.convertUnit(Constants.VOLUME, i.getVolume(), i.getVolumeUnit(), tenantSettings.getVolumeChargeableUnit())));
+                totalGrossVolumeOfMawbGood = totalGrossVolumeOfMawbGood.add(convertToBigDecimal(unitConversionUtility.convertUnit(Constants.VOLUME, i.getVolume(), i.getVolumeUnit(), Constants.VOLUME_UNIT_M3)));
         }
         return totalGrossVolumeOfMawbGood;
     }
@@ -3704,15 +3704,20 @@ public class AwbService implements IAwbService {
                 defaultAwbShipmentInfo = jsonHelper.convertValue(generateMawbShipmentInfo(consol, createAwbRequest, new AwbCargoInfo(), v1Service.retrieveTenant()), AwbShipmentInfoResponse.class);
                 defaultRoutingInfo = jsonHelper.convertValueToList(generateMawbRoutingInfo(consol, createAwbRequest), AwbRoutingInfoResponse.class);
                 defaultNotifyPartyInfo = generateMawbNotifyPartyinfo(consol, createAwbRequest);
+                awbResponse.setDefaultAwbShipmentInfo(defaultAwbShipmentInfo);
+                awbResponse.setDefaultAwbNotifyPartyInfo(defaultNotifyPartyInfo);
+                awbResponse.setDefaultAwbRoutingInfo(defaultRoutingInfo);
             } else {
                 ShipmentDetails shipment = shipmentDao.findById(awb.getShipmentId()).get();
                 defaultAwbShipmentInfo = jsonHelper.convertValue(generateAwbShipmentInfo(shipment, createAwbRequest, new AwbCargoInfo(), v1Service.retrieveTenant()), AwbShipmentInfoResponse.class);
                 defaultRoutingInfo = jsonHelper.convertValueToList(generateAwbRoutingInfo(shipment, createAwbRequest), AwbRoutingInfoResponse.class);
                 defaultNotifyPartyInfo = generateAwbNotifyPartyinfo(shipment, createAwbRequest);
+                awbResponse.setDefaultAwbShipmentInfo(defaultAwbShipmentInfo);
+                awbResponse.setDefaultAwbNotifyPartyInfo(defaultNotifyPartyInfo);
+                awbResponse.setDefaultAwbRoutingInfo(defaultRoutingInfo);
+                populateTaxRegistrationNumberInAwbResponse(awbResponse, shipment);
             }
-            awbResponse.setDefaultAwbShipmentInfo(defaultAwbShipmentInfo);
-            awbResponse.setDefaultAwbNotifyPartyInfo(defaultNotifyPartyInfo);
-            awbResponse.setDefaultAwbRoutingInfo(defaultRoutingInfo);
+
         } catch (Exception e) {
             log.error("Error while creating default awbShipmentInfo object for awb having id {} with error \n {}", awb.getId(), e.getMessage());
         }
@@ -3873,6 +3878,128 @@ public class AwbService implements IAwbService {
             }
         }
     }
+
+    private void populateTaxRegistrationNumberInAwbResponse(AwbResponse awbResponse, ShipmentDetails shipmentDetails) {
+        // Step 1: Collect address IDs
+        ArrayList<String> addressIdList = collectAddressIds(shipmentDetails);
+
+        if (!CommonUtils.listIsNullOrEmpty(addressIdList)) {
+            // Step 2: Fetch address data
+            Map<Long, AddressDataV1> addressIdToEntityOrgMap = fetchAddressData(addressIdList);
+
+            setTaxRegistrationForConsginer(shipmentDetails, addressIdToEntityOrgMap, awbResponse);
+            setTaxRegistrationForConsginee(shipmentDetails, addressIdToEntityOrgMap, awbResponse);
+            setTaxRegistrationForNotifyParty(shipmentDetails, addressIdToEntityOrgMap, awbResponse);
+        }
+    }
+
+    /**
+     * Collects address IDs from shipment details.
+     */
+    private ArrayList<String> collectAddressIds(ShipmentDetails shipmentDetails) {
+        ArrayList<String> addressIdList = new ArrayList<>();
+
+        addAddressIdIfPresent(addressIdList, shipmentDetails.getConsigner());
+        addAddressIdIfPresent(addressIdList, shipmentDetails.getConsignee());
+
+        if (shipmentDetails.getAdditionalDetails() != null && shipmentDetails.getAdditionalDetails().getNotifyParty() != null) {
+            addAddressIdIfPresent(addressIdList, shipmentDetails.getAdditionalDetails().getNotifyParty());
+        }
+
+        return addressIdList;
+    }
+
+    /**
+     * Adds an address ID to the list if the party is not null and has an address ID.
+     */
+    private void addAddressIdIfPresent(List<String> addressIdList, Parties party) {
+        if (party != null && party.getAddressId() != null) {
+            addressIdList.add(party.getAddressId());
+        }
+    }
+
+    /**
+     * Fetches address data for the given address IDs.
+     */
+    private Map<Long, AddressDataV1> fetchAddressData(ArrayList<String> addressIdList) {
+        CommonV1ListRequest addressRequest = createCriteriaToFetchAddressList(addressIdList);
+        V1DataResponse addressResponse = v1Service.addressList(addressRequest);
+        List<AddressDataV1> addressDataList = jsonHelper.convertValueToList(addressResponse.entities, AddressDataV1.class);
+
+        return addressDataList.stream()
+                .collect(Collectors.toMap(AddressDataV1::getId, entity -> entity));
+    }
+
+    private void setTaxRegistrationForConsginer(ShipmentDetails shipmentDetails, Map<Long, AddressDataV1> addressIdToEntityOrgMap, AwbResponse awbResponse) {
+        if (shipmentDetails.getConsigner() != null && shipmentDetails.getConsigner().getAddressId() != null) {
+            Long consignerAddressId = Long.valueOf(shipmentDetails.getConsigner().getAddressId());
+            if (addressIdToEntityOrgMap.containsKey(consignerAddressId)) {
+                AddressDataV1 consignerAddressData = addressIdToEntityOrgMap.get(consignerAddressId);
+                if (consignerAddressData != null) {
+                    String consignerTaxRegNumber = consignerAddressData.getTaxRegNumber() != null
+                            ? StringUtility.toUpperCase(StringUtility.convertToString(consignerAddressData.getTaxRegNumber()))
+                            : null;
+                    if (awbResponse.getDefaultAwbShipmentInfo() != null) {
+                        awbResponse.getDefaultAwbShipmentInfo().setShipperTaxRegistrationNumber(consignerTaxRegNumber);
+                    }
+                }
+            }
+        }
+    }
+
+    private void setTaxRegistrationForConsginee(ShipmentDetails shipmentDetails, Map<Long, AddressDataV1> addressIdToEntityOrgMap, AwbResponse awbResponse) {
+        if (shipmentDetails.getConsignee() != null && shipmentDetails.getConsignee().getAddressId() != null) {
+            Long consigneeAddressId = Long.valueOf(shipmentDetails.getConsignee().getAddressId());
+            if (addressIdToEntityOrgMap.containsKey(consigneeAddressId)) {
+                AddressDataV1 consigneeAddressData = addressIdToEntityOrgMap.get(consigneeAddressId);
+                if (consigneeAddressData != null) {
+                    String consigneeTaxRegNumber = consigneeAddressData.getTaxRegNumber() != null
+                            ? StringUtility.toUpperCase(StringUtility.convertToString(consigneeAddressData.getTaxRegNumber()))
+                            : null;
+                    if (awbResponse.getDefaultAwbShipmentInfo() != null) {
+                        awbResponse.getDefaultAwbShipmentInfo().setConsigneeTaxRegistrationNumber(consigneeTaxRegNumber);
+                    }
+                }
+            }
+        }
+    }
+
+    private void setTaxRegistrationForNotifyParty(ShipmentDetails shipmentDetails, Map<Long, AddressDataV1> addressIdToEntityOrgMap, AwbResponse awbResponse) {
+        Parties notifyParty = getNotifyParty(shipmentDetails);
+        if (notifyParty == null || notifyParty.getAddressId() == null) {
+            return;
+        }
+
+        Long notifyAddressId = Long.valueOf(notifyParty.getAddressId());
+        AddressDataV1 notifyAddressData = addressIdToEntityOrgMap.get(notifyAddressId);
+        if (notifyAddressData == null) {
+            return;
+        }
+
+        String notifyTaxRegNumber = getFormattedTaxRegNumber(notifyAddressData);
+        setTaxRegistrationNumber(awbResponse, notifyTaxRegNumber);
+    }
+
+    private Parties getNotifyParty(ShipmentDetails shipmentDetails) {
+        if (shipmentDetails.getAdditionalDetails() == null) {
+            return null;
+        }
+        return shipmentDetails.getAdditionalDetails().getNotifyParty();
+    }
+
+    private String getFormattedTaxRegNumber(AddressDataV1 notifyAddressData) {
+        return notifyAddressData.getTaxRegNumber() != null
+                ? StringUtility.toUpperCase(StringUtility.convertToString(notifyAddressData.getTaxRegNumber()))
+                : null;
+    }
+
+    private void setTaxRegistrationNumber(AwbResponse awbResponse, String taxRegNumber) {
+        List<AwbNotifyPartyInfo> notifyPartyInfoList = awbResponse.getDefaultAwbNotifyPartyInfo();
+        if (notifyPartyInfoList != null && !notifyPartyInfoList.isEmpty()) {
+            notifyPartyInfoList.get(0).setTaxRegistrationNumber(taxRegNumber);
+        }
+    }
+
 
     private void populateIssuingAgent(AwbShipmentInfo awbShipmentInfo, TenantModel tenantModel, AwbCargoInfo awbCargoInfo) throws RunnerException {
         if(tenantModel.DefaultOrgId == null) {
