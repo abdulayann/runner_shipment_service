@@ -36,6 +36,7 @@ import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
 import com.dpw.runner.shipment.services.dto.response.AdditionalDetailResponse;
+import com.dpw.runner.shipment.services.dto.response.ArrivalDepartureDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.BookingCarriageResponse;
 import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
@@ -69,6 +70,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse
 import com.dpw.runner.shipment.services.entity.AchievedQuantities;
 import com.dpw.runner.shipment.services.entity.AdditionalDetails;
 import com.dpw.runner.shipment.services.entity.Allocations;
+import com.dpw.runner.shipment.services.entity.ArrivalDepartureDetails;
 import com.dpw.runner.shipment.services.entity.AuditLog;
 import com.dpw.runner.shipment.services.entity.Awb;
 import com.dpw.runner.shipment.services.entity.BookingCarriage;
@@ -2214,7 +2216,7 @@ public class CommonUtils {
     }
 
     @Nullable
-    private Object getDtoValue(Object value) {
+    public Object getDtoValue(Object value) {
         Object dtoValue = null;
         if (value instanceof CarrierDetails) {
             dtoValue = modelMapper.map(value, CarrierDetailResponse.class);
@@ -2268,6 +2270,8 @@ public class CommonUtils {
         typeTokenMap.put(Parties.class, new TypeToken<List<PartiesResponse>>() {
         }.getType());
         typeTokenMap.put(ShipmentOrder.class, new TypeToken<List<ShipmentOrderResponse>>() {
+        }.getType());
+        typeTokenMap.put(CarrierDetails.class, new TypeToken<List<CarrierDetailResponse>>() {
         }.getType());
         return typeTokenMap;
     }
@@ -2546,6 +2550,8 @@ public class CommonUtils {
             return modelMapper.map(value, PickupDeliveryDetailsResponse.class);
         } else if (value instanceof Parties) {
             return modelMapper.map(value, PartiesResponse.class);
+        } else if (value instanceof ArrivalDepartureDetails) {
+            return modelMapper.map(value, ArrivalDepartureDetailsResponse.class);
         } else if (value instanceof List<?>) {
             return mapListToDTO(value);
         } else if (value instanceof Set) {
