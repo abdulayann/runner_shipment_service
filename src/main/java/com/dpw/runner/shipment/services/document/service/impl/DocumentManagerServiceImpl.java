@@ -155,7 +155,7 @@ public class DocumentManagerServiceImpl implements IDocumentManagerService {
         try {
             long start = System.currentTimeMillis();
             var uploadResponse = this.temporaryFileUpload(file, filename);
-            if (!uploadResponse.getSuccess())
+            if (Boolean.FALSE.equals(uploadResponse.getSuccess()))
                 throw new IOException(FILE_UPLOAD_TO_TEMP_FAILED);
 
             this.saveFile(DocumentManagerSaveFileRequest.builder().fileName(filename)
