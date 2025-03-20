@@ -257,7 +257,7 @@ public class ContainerController {
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = EventConstants.EVENT_LIST_SUCCESS, response = MyListResponseClass.class)})
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_LIST_SUCCESSFUL, response = MyListResponseClass.class)})
     @PostMapping(ContainerConstants.GET_CONTAINERS)
     public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest) {
         return containerService.getContainers(CommonRequestModel.buildRequest(listCommonRequest));

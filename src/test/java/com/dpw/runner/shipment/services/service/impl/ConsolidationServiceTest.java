@@ -3687,7 +3687,6 @@ import static org.mockito.Mockito.*;
         Map<String, Object> response = new HashMap<>();
         var spyService = Mockito.spy(consolidationService);
         when(consolidationDetailsDao.findConsolidationByIdWithQuery(anyLong())).thenReturn(Optional.of(consolidationDetails));
-        when(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class)).thenReturn(consolidationDetailsResponse);
         Mockito.doReturn(response).when(spyService).fetchAllMasterDataByKey(any(), any());
 
         ResponseEntity<IRunnerResponse> responseEntity = spyService.getAllMasterData(CommonRequestModel.buildRequest(1L));

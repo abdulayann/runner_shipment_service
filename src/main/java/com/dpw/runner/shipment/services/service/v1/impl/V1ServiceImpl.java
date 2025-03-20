@@ -6,13 +6,45 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.request.CreateBookingModuleInV1;
 import com.dpw.runner.shipment.services.dto.request.UserWithPermissionRequestV1;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
-import com.dpw.runner.shipment.services.dto.v1.request.*;
-import com.dpw.runner.shipment.services.dto.v1.response.*;
+import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.CheckActiveInvoiceRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.CheckTaskExistV1Request;
+import com.dpw.runner.shipment.services.dto.v1.request.CreateConsolidationTaskRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.CreateShipmentTaskRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.CreateV1ConsolidationTaskFromV2Request;
+import com.dpw.runner.shipment.services.dto.v1.request.CreateV1ShipmentTaskFromV2Request;
+import com.dpw.runner.shipment.services.dto.v1.request.CreditLimitValidateRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.ShipmentBillingListRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.V1RetrieveRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.V1RoleIdRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.V1UsersEmailRequest;
+import com.dpw.runner.shipment.services.dto.v1.response.AddressTranslationListResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.CheckActiveInvoiceResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.CompanySettingsResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.ConsoleBookingListResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.CreditLimitValidateResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.GuidsListResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.HblTaskCreationResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.SendEntityResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.ShipmentBillingListResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.TaskCreateResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.TenantDetailsByListResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.TenantIdResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.UpdateOrgCreditLimitBookingResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.UsersRoleListResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataSyncResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1RoleIdResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1ShipmentCreationResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantResponse;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
@@ -32,6 +64,14 @@ import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.TokenUtility;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
 import org.apache.commons.lang3.StringUtils;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
@@ -42,7 +82,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -51,8 +96,6 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
-
-import java.util.*;
 
 
 @Service
@@ -395,6 +438,9 @@ public class V1ServiceImpl implements IV1Service {
     private V1AuthHelper v1AuthHelper;
     @Autowired
     private CommonUtils commonUtils;
+
+    @Autowired
+    private CustomKeyGenerator keyGenerator;
 
     @Autowired
     public V1ServiceImpl(@Qualifier("restTemplateForV1") RestTemplate restTemplate,
@@ -1408,19 +1454,88 @@ public class V1ServiceImpl implements IV1Service {
 
     @Override
     public V1DataResponse listCousinBranches(Object request) {
-        ResponseEntity<V1DataResponse> masterDataResponse = null;
+        String cacheKeyTenantId = keyGenerator.customCacheKey(UserContext.getUser().getTenantId());
+        Cache cache = cacheManager.getCache(CacheConstants.COUSIN_BRANCHES_CACHE);
+
+        V1DataResponse cachedResponse = getFromCache(cache, cacheKeyTenantId);
+        if (cachedResponse != null) return cachedResponse;
+
+        V1DataResponse responseBody = callCousinBranchAPI(request, cacheKeyTenantId);
+
+        putInCache(cache, cacheKeyTenantId, responseBody);
+
+        return responseBody;
+    }
+
+    private V1DataResponse getFromCache(Cache cache, String key) {
+        if (cache == null) {
+            log.warn("Cache '{}' not available. Proceeding with API call.", CacheConstants.COUSIN_BRANCHES_CACHE);
+            return null;
+        }
 
         try {
-            long time = System.currentTimeMillis();
-            HttpEntity<Object> entity = new HttpEntity<>(request, V1AuthHelper.getHeaders());
-            masterDataResponse = this.restTemplate.postForEntity(this.LIST_COUSIN_BRANCH_URL, entity, V1DataResponse.class, new Object[0]);
-            log.info("Token time taken in listCousinBranches() function " + (System.currentTimeMillis() - time));
-            return masterDataResponse.getBody();
-        } catch (HttpClientErrorException | HttpServerErrorException ex) {
-            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
-        } catch (Exception var7) {
-            throw new V1ServiceException(var7.getMessage());
+            V1DataResponse cached = cache.get(key, V1DataResponse.class);
+            if (cached != null) {
+                log.info("Returning cached cousin branches for cache tenant key: {}", key);
+            } else {
+                log.info("No cached cousin branches found for cache tenant key: {}", key);
+            }
+            return cached;
+        } catch (Exception e) {
+            log.warn("Failed to read from cache for cache tenant key {}: {}", key, e.getMessage());
+            return null;
         }
+    }
+
+    private void putInCache(Cache cache, String key, V1DataResponse responseBody) {
+        if (cache == null) return;
+        try {
+            cache.put(key, responseBody);
+            log.info("Cached cousin branches for cache tenant key: {}", key);
+        } catch (Exception e) {
+            log.warn("Failed to write to cache for cache tenant key {}: {}", key, e.getMessage());
+        }
+    }
+
+    private V1DataResponse callCousinBranchAPI(Object request, String cacheKeyTenantId) {
+        try {
+            long startTime = System.currentTimeMillis();
+            HttpEntity<Object> entity = new HttpEntity<>(request, V1AuthHelper.getHeaders());
+
+            ResponseEntity<V1DataResponse> response = restTemplate.postForEntity(
+                    LIST_COUSIN_BRANCH_URL, entity, V1DataResponse.class
+            );
+
+            long elapsed = System.currentTimeMillis() - startTime;
+            log.info("API call to listCousinBranches took {} ms for cache tenant key: {}", elapsed, cacheKeyTenantId);
+
+            V1DataResponse body = response.getBody();
+            if (body == null) {
+                log.error("Received null response from cousin branch service for cache tenant key: {}", cacheKeyTenantId);
+                throw new V1ServiceException("Received null response from cousin branch service.");
+            }
+
+            return body;
+
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(parseError(ex, cacheKeyTenantId));
+        } catch (Exception e) {
+            log.error("Unexpected error in listCousinBranches for cache tenant key {}: {}", cacheKeyTenantId, e.getMessage(), e);
+            throw new V1ServiceException("Unexpected error occurred while fetching cousin branches.");
+        }
+    }
+
+    private String parseError(HttpStatusCodeException ex, String cacheKeyTenantId) {
+        try {
+            V1ErrorResponse errorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class);
+            if (errorResponse != null && errorResponse.getError() != null) {
+                return errorResponse.getError().getMessage();
+            }
+        } catch (Exception parseEx) {
+            log.error("Failed to parse error response for cache tenant key {}: {}", cacheKeyTenantId, parseEx.getMessage());
+        }
+        log.error("HTTP error while fetching cousin branches for cache tenant key {}: {}", cacheKeyTenantId, ex.getMessage());
+        return "Unknown error";
     }
 
     @Override

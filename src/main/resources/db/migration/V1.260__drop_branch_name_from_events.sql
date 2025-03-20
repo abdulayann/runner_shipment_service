@@ -1,0 +1,2 @@
+ALTER TABLE IF EXISTS events
+    DROP COLUMN IF EXISTS branch_name;

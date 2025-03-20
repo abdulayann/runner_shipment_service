@@ -72,8 +72,10 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
+import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -195,7 +197,7 @@ public class ContainerService implements IContainerService {
             "chargeableUnit", "grossVolume", "grossVolumeUnit", "commodityCode", "hsCode", "customsReleaseCode", "pacrNumber",
             "containerComments"
     );
-
+    private List<String> defaultIncludeColumns = new ArrayList<>();
     @Transactional
     public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
         return null;
@@ -1252,9 +1254,15 @@ public class ContainerService implements IContainerService {
             // construct specifications for filter request
             Pair<Specification<Containers>, Pageable> tuple = fetchData(request, Containers.class);
             Page<Containers> containersPage = containerDao.findAll(tuple.getLeft(), tuple.getRight());
-            log.info("Event list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
+            log.info("Containers list for get containers retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
+            List<String> includeColumns;
+            if (CollectionUtils.isEmpty(request.getIncludeColumns())) {
+                includeColumns = defaultIncludeColumns;
+            } else {
+                includeColumns = request.getIncludeColumns();
+            }
             return ResponseHelper.buildListSuccessResponse(
-                    convertEntityListToDtoList(containersPage.getContent()),
+                    convertEntityListToDtoList(containersPage.getContent(), includeColumns),
                     containersPage.getTotalPages(),
                     containersPage.getTotalElements());
         } catch (Exception e) {
@@ -1697,6 +1705,13 @@ public class ContainerService implements IContainerService {
         });
         return responseList;
     }
+    private List<IRunnerResponse> convertEntityListToDtoList(List<Containers> lst, List<String> includeColumns) {
+        List<IRunnerResponse> responseList = new ArrayList<>();
+        long start = System.currentTimeMillis();
+        lst.forEach(containers -> responseList.add((IRunnerResponse) commonUtils.setIncludedFieldsToResponse(containers, includeColumns, new ContainerResponse())));
+        log.info("Total time take to set container response {} ms", (System.currentTimeMillis() - start));
+        return responseList;
+    }
 
     public void pushContainersToDependentServices(List<Containers> containersList, List<Containers> oldContainers) {
         log.info("Starting pushContainersToDependentServices with containersList size: {} and oldContainers size: {}",
@@ -1771,4 +1786,9 @@ public class ContainerService implements IContainerService {
         return null;
     }
 
+    @PostConstruct
+    private void setDefaultIncludeColumns() {
+        defaultIncludeColumns = FieldUtils.getNonRelationshipFields(Containers.class);
+        defaultIncludeColumns.addAll(List.of("id","guid","tenantId"));
+    }
 }

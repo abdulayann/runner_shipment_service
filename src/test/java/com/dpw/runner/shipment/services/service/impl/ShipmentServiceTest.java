@@ -5739,7 +5739,6 @@ ShipmentServiceTest extends CommonMocks {
     void getAllMasterDataTest() {
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().id(1L).build();
         when(shipmentDao.findShipmentByIdWithQuery(any())).thenReturn(Optional.of(ShipmentDetails.builder().build()));
-        when(jsonHelper.convertValue(any(), eq(ShipmentDetailsResponse.class))).thenReturn(ShipmentDetailsResponse.builder().build());
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         Map<String, Object> response = new HashMap<>();
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.getAllMasterData(commonRequestModel);

@@ -5513,23 +5513,32 @@ public class ShipmentService implements IShipmentService {
         try {
             Long id = commonRequestModel.getId();
             Optional<ShipmentDetails> shipmentDetailsOptional = shipmentDao.findShipmentByIdWithQuery(id);
-            if(!shipmentDetailsOptional.isPresent()) {
+            if (!shipmentDetailsOptional.isPresent()) {
                 log.debug(ShipmentConstants.SHIPMENT_DETAILS_NULL_FOR_ID_ERROR, id);
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             ShipmentDetails shipmentDetails = shipmentDetailsOptional.get();
-            ShipmentDetailsResponse shipmentDetailsResponse = jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class);
+            long start = System.currentTimeMillis();
+            List<String> includeColumns = FieldUtils.getMasterDataAnnotationFields(List.of(createFieldClassDto(ShipmentDetails.class, null), createFieldClassDto(AdditionalDetails.class, "additionalDetails.")));
+            includeColumns.addAll(FieldUtils.getTenantIdAnnotationFields(List.of(createFieldClassDto(ShipmentDetails.class, null))));
+            includeColumns.addAll(ShipmentConstants.LIST_INCLUDE_COLUMNS);
+            ShipmentDetailsResponse shipmentDetailsResponse = (ShipmentDetailsResponse) commonUtils.setIncludedFieldsToResponse(shipmentDetails, includeColumns, new ShipmentDetailsResponse());
+            log.info("Total time taken in setting shipment details response {}", (System.currentTimeMillis() - start));
             Map<String, Object> response = fetchAllMasterDataByKey(shipmentDetails, shipmentDetailsResponse);
             return ResponseHelper.buildSuccessResponse(response);
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_DATA_RETRIEVAL_FAILURE;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
     }
-
+    private FieldClassDto createFieldClassDto(Class<?> clazz, String parentref) {
+        FieldClassDto fieldClassDto = new FieldClassDto();
+        fieldClassDto.setClazz(clazz);
+        fieldClassDto.setFieldRef(parentref);
+        return fieldClassDto;
+    }
     /**
      * * fetchAllMasterDataByKey to be used for direct API
      * @param shipmentDetails
