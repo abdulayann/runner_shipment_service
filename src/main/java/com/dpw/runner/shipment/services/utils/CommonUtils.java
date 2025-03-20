@@ -28,37 +28,14 @@ import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
-import com.dpw.runner.shipment.services.dto.response.AdditionalDetailResponse;
-import com.dpw.runner.shipment.services.dto.response.BookingCarriageResponse;
-import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.ELDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.EventsResponse;
-import com.dpw.runner.shipment.services.dto.response.JobResponse;
-import com.dpw.runner.shipment.services.dto.response.NotesResponse;
-import com.dpw.runner.shipment.services.dto.response.PackingResponse;
-import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
-import com.dpw.runner.shipment.services.dto.response.PickupDeliveryDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ReferenceNumbersResponse;
-import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
-import com.dpw.runner.shipment.services.dto.response.ServiceDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentOrderResponse;
-import com.dpw.runner.shipment.services.dto.response.TruckDriverDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.SendEmailDto;
 import com.dpw.runner.shipment.services.dto.v1.request.DGTaskCreateRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TenantDetailsByListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TenantFilterRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.V1RoleIdRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.V1UsersEmailRequest;
-import com.dpw.runner.shipment.services.dto.v1.response.CoLoadingMAWBDetailsResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.TaskCreateResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.TenantDetailsByListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.UsersRoleListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1TenantResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
@@ -120,6 +97,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
@@ -322,7 +300,7 @@ public class CommonUtils {
         List<FilterCriteria> innerFilters = criterias.get(0).getInnerFilter();
         Criteria criteria = Criteria.builder().fieldName(fieldName).operator(operator).value(value).build();
         FilterCriteria filterCriteria = FilterCriteria.builder().criteria(criteria).build();
-        if(!innerFilters.isEmpty()) {
+        if (!innerFilters.isEmpty()) {
             filterCriteria.setLogicOperator("and");
         }
         innerFilters.add(filterCriteria);
@@ -341,7 +319,7 @@ public class CommonUtils {
         List<FilterCriteria> innerFilters = criterias.get(0).getInnerFilter();
         Criteria criteria = Criteria.builder().fieldName(fieldName).operator(operator).value(value).build();
         FilterCriteria filterCriteria = FilterCriteria.builder().criteria(criteria).build();
-        if(!innerFilters.isEmpty()) {
+        if (!innerFilters.isEmpty()) {
             filterCriteria.setLogicOperator("or");
         }
         innerFilters.add(filterCriteria);
@@ -501,7 +479,7 @@ public class CommonUtils {
         return outputStream.toByteArray();
     }
 
-    public static void AddWaterMark(PdfContentByte dc, String text, BaseFont font, float fontSize, float angle, BaseColor color, Rectangle realPageSize, Rectangle rect) {
+    public static void addWaterMark(PdfContentByte dc, String text, BaseFont font, float fontSize, float angle, BaseColor color, Rectangle realPageSize, Rectangle rect) {
         var gstate = new PdfGState();
         gstate.setFillOpacity(0.2f);
         gstate.setStrokeOpacity(0.3f);
@@ -525,7 +503,7 @@ public class CommonUtils {
         int times = reader.getNumberOfPages();
         for (int i = 1; i <= times; i++) {
             var dc = stamper.getOverContent(i);
-            AddWaterMark(dc, watermark, bf, 50, 35, new BaseColor(70, 70, 255), reader.getPageSizeWithRotation(i), null);
+            addWaterMark(dc, watermark, bf, 50, 35, new BaseColor(70, 70, 255), reader.getPageSizeWithRotation(i), null);
         }
         stamper.close();
         reader.close();
@@ -1192,7 +1170,7 @@ public class CommonUtils {
     }
 
     public void getToAndCcEmailMasterLists(Set<String> toEmailIds, Set<String> ccEmailIds, Map<Integer, V1TenantSettingsResponse> v1TenantSettingsMap, Integer tenantId, boolean isShipment) {
-        if(v1TenantSettingsMap.containsKey(tenantId)) {
+        if (v1TenantSettingsMap.containsKey(tenantId)) {
             V1TenantSettingsResponse settings = v1TenantSettingsMap.get(tenantId);
             if (isShipment) {
                 addEmails(toEmailIds, settings.getShipmentAttachDefaultToMailId());
@@ -1439,7 +1417,7 @@ public class CommonUtils {
         V1DataResponse v1DataResponse = iv1Service.getEmailTemplates(request);
         if (v1DataResponse != null) {
             List<EmailTemplatesRequest> emailTemplatesRequests = jsonHelper.convertValueToList(v1DataResponse.entities, EmailTemplatesRequest.class);
-            if(emailTemplatesRequests != null && !emailTemplatesRequests.isEmpty()) {
+            if (emailTemplatesRequests != null && !emailTemplatesRequests.isEmpty()) {
                 populateEmailTemplateInResponseMap(response, emailTemplatesRequests);
             }
         }
@@ -1518,7 +1496,9 @@ public class CommonUtils {
         request.setTake(usernamesList.size());
         V1DataResponse v1DataResponse = iv1Service.getUserDetails(request);
         List<UsersDto> usersDtos = jsonHelper.convertValueToList(v1DataResponse.entities, UsersDto.class);
-        usernameEmailsMap.putAll(usersDtos.stream().collect(Collectors.toMap(UsersDto::getUsername, UsersDto::getEmail)));
+        usernameEmailsMap.putAll(usersDtos.stream()
+                .filter(user -> !IsStringNullOrEmpty(user.getEmail()))
+                .collect(Collectors.toMap(UsersDto::getUsername, UsersDto::getEmail)));
     }
 
     // called when new dg pack is added or dg pack fields are changed or new dg container is added, or new pack added in dg container or dg container fields are changed
@@ -1610,7 +1590,7 @@ public class CommonUtils {
             if (!Objects.isNull(carrierDetails) && (Objects.isNull(oldCarrierDetails) || !Objects.equals(carrierDetails.getOrigin(), oldCarrierDetails.getOrigin())
                     || !Objects.equals(carrierDetails.getOriginPort(), oldCarrierDetails.getOriginPort())
                     || !Objects.equals(carrierDetails.getDestination(), oldCarrierDetails.getDestination())
-                    || !Objects.equals(carrierDetails.getDestinationPort(), oldCarrierDetails.getDestinationPort()) )) {
+                    || !Objects.equals(carrierDetails.getDestinationPort(), oldCarrierDetails.getDestinationPort()))) {
                 Set<String> unlocoRequests = getUnlocoRequests(carrierDetails);
                 Map<String, EntityTransferUnLocations> unlocationsMap = masterDataUtils.getLocationDataFromCache(unlocoRequests, EntityTransferConstants.LOCATION_SERVICE_GUID);
                 EntityTransferUnLocations pol = unlocationsMap.get(carrierDetails.getOriginPort());
@@ -1633,13 +1613,13 @@ public class CommonUtils {
 
     private Set<String> getUnlocoRequests(CarrierDetails carrierDetails) {
         Set<String> unlocoRequests = new HashSet<>();
-        if(!IsStringNullOrEmpty(carrierDetails.getOrigin()))
+        if (!IsStringNullOrEmpty(carrierDetails.getOrigin()))
             unlocoRequests.add(carrierDetails.getOrigin());
-        if(!IsStringNullOrEmpty(carrierDetails.getOriginPort()))
+        if (!IsStringNullOrEmpty(carrierDetails.getOriginPort()))
             unlocoRequests.add(carrierDetails.getOriginPort());
-        if(!IsStringNullOrEmpty(carrierDetails.getDestination()))
+        if (!IsStringNullOrEmpty(carrierDetails.getDestination()))
             unlocoRequests.add(carrierDetails.getDestination());
-        if(!IsStringNullOrEmpty(carrierDetails.getDestinationPort()))
+        if (!IsStringNullOrEmpty(carrierDetails.getDestinationPort()))
             unlocoRequests.add(carrierDetails.getDestinationPort());
         return unlocoRequests;
     }
@@ -1825,15 +1805,15 @@ public class CommonUtils {
     public TaskCreateResponse createTask(ShipmentDetails shipmentDetails, Integer roleId)
             throws RunnerException {
         DGTaskCreateRequest taskRequest = DGTaskCreateRequest
-            .builder()
-            .entityType(SHIPMENTS_WITH_SQ_BRACKETS)
-            .entityId(shipmentDetails.getId().toString())
-            .roleId(roleId.toString())
-            .taskType(OCEAN_DG_TASKTYPE)
-            .taskStatus(PENDING_ACTION)
-            .userId(UserContext.getUser().getUserId())
-            .tenantId(UserContext.getUser().getTenantId().toString())
-            .build();
+                .builder()
+                .entityType(SHIPMENTS_WITH_SQ_BRACKETS)
+                .entityId(shipmentDetails.getId().toString())
+                .roleId(roleId.toString())
+                .taskType(OCEAN_DG_TASKTYPE)
+                .taskStatus(PENDING_ACTION)
+                .userId(UserContext.getUser().getUserId())
+                .tenantId(UserContext.getUser().getTenantId().toString())
+                .build();
 
         try {
             TaskCreateResponse taskCreateResponse = iv1Service.createTask(taskRequest);
@@ -2178,22 +2158,19 @@ public class CommonUtils {
     }
 
     @Nullable
-    private Object getDtoValue(Object value) {
+    public Object getDtoValue(Object value) {
         Object dtoValue = null;
-        if(value instanceof CarrierDetails) {
+        if (value instanceof CarrierDetails) {
             dtoValue = modelMapper.map(value, CarrierDetailResponse.class);
-        }
-        else if(value instanceof AdditionalDetails) {
+        } else if (value instanceof AdditionalDetails) {
             dtoValue = modelMapper.map(value, AdditionalDetailResponse.class);
-        }
-        else if(value instanceof PickupDeliveryDetails) {
+        } else if (value instanceof PickupDeliveryDetails) {
             dtoValue = modelMapper.map(value, PickupDeliveryDetailsResponse.class);
-        }
-        else if(value instanceof Parties) {
+        } else if (value instanceof Parties) {
             dtoValue = modelMapper.map(value, PartiesResponse.class);
         }
 
-        if(value instanceof List<?>) {
+        if (value instanceof List<?>) {
             List<?> list = (List<?>) value;
             if (!list.isEmpty()) {
                 Class<?> firstElementClass = list.get(0).getClass();
@@ -2208,20 +2185,36 @@ public class CommonUtils {
 
     private Map<Class<?>, Type> getTypeTokenMap() {
         Map<Class<?>, Type> typeTokenMap = new HashMap<>();
-        typeTokenMap.put(Containers.class, new TypeToken<List<ContainerResponse>>() {}.getType());
-        typeTokenMap.put(BookingCarriage.class, new TypeToken<List<BookingCarriageResponse>>() {}.getType());
-        typeTokenMap.put(ELDetails.class, new TypeToken<List<ELDetailsResponse>>() {}.getType());
-        typeTokenMap.put(Events.class, new TypeToken<List<EventsResponse>>() {}.getType());
-        typeTokenMap.put(Packing.class, new TypeToken<List<PackingResponse>>() {}.getType());
-        typeTokenMap.put(ReferenceNumbers.class, new TypeToken<List<ReferenceNumbersResponse>>() {}.getType());
-        typeTokenMap.put(Routings.class, new TypeToken<List<RoutingsResponse>>() {}.getType());
-        typeTokenMap.put(ServiceDetails.class, new TypeToken<List<ServiceDetailsResponse>>() {}.getType());
-        typeTokenMap.put(TruckDriverDetails.class, new TypeToken<List<TruckDriverDetailsResponse>>() {}.getType());
-        typeTokenMap.put(Notes.class, new TypeToken<List<NotesResponse>>() {}.getType());
-        typeTokenMap.put(Jobs.class, new TypeToken<List<JobResponse>>() {}.getType());
-        typeTokenMap.put(ConsolidationDetails.class, new TypeToken<List<ConsolidationListResponse>>() {}.getType());
-        typeTokenMap.put(Parties.class, new TypeToken<List<PartiesResponse>>() {}.getType());
-        typeTokenMap.put(ShipmentOrder.class, new TypeToken<List<ShipmentOrderResponse>>() {}.getType());
+        typeTokenMap.put(Containers.class, new TypeToken<List<ContainerResponse>>() {
+        }.getType());
+        typeTokenMap.put(BookingCarriage.class, new TypeToken<List<BookingCarriageResponse>>() {
+        }.getType());
+        typeTokenMap.put(ELDetails.class, new TypeToken<List<ELDetailsResponse>>() {
+        }.getType());
+        typeTokenMap.put(Events.class, new TypeToken<List<EventsResponse>>() {
+        }.getType());
+        typeTokenMap.put(Packing.class, new TypeToken<List<PackingResponse>>() {
+        }.getType());
+        typeTokenMap.put(ReferenceNumbers.class, new TypeToken<List<ReferenceNumbersResponse>>() {
+        }.getType());
+        typeTokenMap.put(Routings.class, new TypeToken<List<RoutingsResponse>>() {
+        }.getType());
+        typeTokenMap.put(ServiceDetails.class, new TypeToken<List<ServiceDetailsResponse>>() {
+        }.getType());
+        typeTokenMap.put(TruckDriverDetails.class, new TypeToken<List<TruckDriverDetailsResponse>>() {
+        }.getType());
+        typeTokenMap.put(Notes.class, new TypeToken<List<NotesResponse>>() {
+        }.getType());
+        typeTokenMap.put(Jobs.class, new TypeToken<List<JobResponse>>() {
+        }.getType());
+        typeTokenMap.put(ConsolidationDetails.class, new TypeToken<List<ConsolidationListResponse>>() {
+        }.getType());
+        typeTokenMap.put(Parties.class, new TypeToken<List<PartiesResponse>>() {
+        }.getType());
+        typeTokenMap.put(ShipmentOrder.class, new TypeToken<List<ShipmentOrderResponse>>() {
+        }.getType());
+        typeTokenMap.put(CarrierDetails.class, new TypeToken<List<CarrierDetailResponse>>() {
+        }.getType());
         return typeTokenMap;
     }
 
@@ -2248,7 +2241,7 @@ public class CommonUtils {
         Optional<ShipmentDetails> optionalShipmentDetails;
         Optional<ConsolidationDetails> optionalConsolidationDetails;
 
-        if (Objects.equals(request.getEntityType(), Constants.SHIPMENT) && (request.getEntityId() != null || request.getEntityGuid()!=null)) {
+        if (Objects.equals(request.getEntityType(), Constants.SHIPMENT) && (request.getEntityId() != null || request.getEntityGuid() != null)) {
             optionalShipmentDetails = getShipmentDetails(request);
 
             if (optionalShipmentDetails.isEmpty()) {
@@ -2263,7 +2256,7 @@ public class CommonUtils {
             }
 
             processConsolidationDetails(shipmentDetails, request.getIsReceivingBranch(), request.getIsTriangulationBranch(), otherIds);
-        } else if (Objects.equals(request.getEntityType(), Constants.CONSOLIDATION) && (request.getEntityId() != null || request.getEntityGuid()!=null)) {
+        } else if (Objects.equals(request.getEntityType(), Constants.CONSOLIDATION) && (request.getEntityId() != null || request.getEntityGuid() != null)) {
             optionalConsolidationDetails = getConsolidationDetails(request);
             if (optionalConsolidationDetails.isEmpty()) {
                 return new ArrayList<>();
@@ -2401,7 +2394,7 @@ public class CommonUtils {
         V1DataResponse response = iv1Service.listBranchesByDefaultOrgAndAddress(request);
         if (Objects.nonNull(response.getEntities())) {
             List<V1TenantResponse> tenantResponses = jsonHelper.convertValueToList(response.getEntities(), V1TenantResponse.class);
-            if(!tenantResponses.isEmpty())
+            if (!tenantResponses.isEmpty())
                 return tenantResponses.get(0).getTenantId();
         }
         return null;
@@ -2647,14 +2640,209 @@ public class CommonUtils {
             UserContext.getUser().setEnableTimeZone(tenantModel.getEnableTimeZone());
             UserContext.getUser().setTimeZoneId(tenantModel.getTimeZoneId());
             log.info("User impersonated successfully");
-        }
-        catch (Exception e) {
+        } catch (Exception e) {
             // in case of any failure set Enable Time zone and time zone id as null to avoid wrong transformations
             // UTC will be the fallback value
             UserContext.getUser().setEnableTimeZone(null);
             UserContext.getUser().setTimeZoneId(null);
             log.warn("Error while impersonating user with tenant Id {}", tenantId, e);
         }
+    }
+
+    public Object setIncludedFieldsToResponse(Object entity, List<String> includeColumns, Object response) {
+        includeColumns.forEach(field -> {
+            try {
+                Object value = getNestedFieldValue(entity, field); // Get nested field value
+                if (value == null) {
+                    return;
+                }
+
+                Object dtoValue = mapToDTO(value); // Convert to DTO if necessary
+                setNestedFieldValue(response, field, dtoValue != null ? dtoValue : value);
+            } catch (Exception e) {
+                log.error("No such field: {}", field, e);
+            }
+        });
+
+        return response;
+    }
+
+    public Object mapToDTO(Object value) {
+        if (value instanceof CarrierDetails) {
+            return modelMapper.map(value, CarrierDetailResponse.class);
+        } else if (value instanceof AdditionalDetails) {
+            return modelMapper.map(value, AdditionalDetailResponse.class);
+        } else if (value instanceof PickupDeliveryDetails) {
+            return modelMapper.map(value, PickupDeliveryDetailsResponse.class);
+        } else if (value instanceof Parties) {
+            return modelMapper.map(value, PartiesResponse.class);
+        } else if (value instanceof ArrivalDepartureDetails) {
+            return modelMapper.map(value, ArrivalDepartureDetailsResponse.class);
+        } else if (value instanceof List<?>) {
+            return mapListToDTO(value);
+        } else if (value instanceof Set) {
+            return mapListToDTOSet(value);
+        }
+        return value; // Return as is if not mappable
+    }
+
+    public Object mapListToDTOSet(Object value) {
+        Set<?> set = (Set<?>) value;
+        if (set.isEmpty()) return value;
+        Object obj = set.iterator().next();
+        if (obj instanceof Containers) {
+            return modelMapper.map(value, new TypeToken<Set<ContainerResponse>>() {
+            }.getType());
+        } else if (obj instanceof ConsolidationDetails) {
+            return modelMapper.map(value, new TypeToken<Set<ConsolidationListResponse>>() {
+            }.getType());
+        }
+        return value;
+    }
+
+    public Object mapListToDTO(Object value) {
+        List<?> list = (List<?>) value;
+        if (list.isEmpty()) return value;
+
+        if (list.get(0) instanceof Containers) {
+            return modelMapper.map(value, new TypeToken<List<ContainerResponse>>() {
+            }.getType());
+        } else if (list.get(0) instanceof BookingCarriage) {
+            return modelMapper.map(value, new TypeToken<List<BookingCarriageResponse>>() {
+            }.getType());
+        } else if (list.get(0) instanceof ELDetails) {
+            return modelMapper.map(value, new TypeToken<List<ELDetailsResponse>>() {
+            }.getType());
+        } else if (list.get(0) instanceof Events) {
+            return modelMapper.map(value, new TypeToken<List<EventsResponse>>() {
+            }.getType());
+        } else if (list.get(0) instanceof Packing) {
+            return modelMapper.map(value, new TypeToken<List<PackingResponse>>() {
+            }.getType());
+        } else if (list.get(0) instanceof ReferenceNumbers) {
+            return modelMapper.map(value, new TypeToken<List<ReferenceNumbersResponse>>() {
+            }.getType());
+        } else if (list.get(0) instanceof Routings) {
+            return modelMapper.map(value, new TypeToken<List<RoutingsResponse>>() {
+            }.getType());
+        } else if (list.get(0) instanceof ServiceDetails) {
+            return modelMapper.map(value, new TypeToken<List<ServiceDetailsResponse>>() {
+            }.getType());
+        } else if (list.get(0) instanceof TruckDriverDetails) {
+            return modelMapper.map(value, new TypeToken<List<TruckDriverDetailsResponse>>() {
+            }.getType());
+        } else if (list.get(0) instanceof Notes) {
+            return modelMapper.map(value, new TypeToken<List<NotesResponse>>() {
+            }.getType());
+        } else if (list.get(0) instanceof Jobs) {
+            return modelMapper.map(value, new TypeToken<List<JobResponse>>() {
+            }.getType());
+        } else if (list.get(0) instanceof ConsolidationDetails) {
+            return modelMapper.map(value, new TypeToken<List<ConsolidationListResponse>>() {
+            }.getType());
+        } else if (list.get(0) instanceof Parties) {
+            return modelMapper.map(value, new TypeToken<List<PartiesResponse>>() {
+            }.getType());
+        } else if (list.get(0) instanceof ShipmentOrder) {
+            return modelMapper.map(value, new TypeToken<List<ShipmentOrderResponse>>() {
+            }.getType());
+        }
+        return value; // Return as is if no mapping exists
+    }
+
+    public void setNestedFieldValue(Object object, String fieldPath, Object value) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException, InstantiationException {
+        String[] fields = fieldPath.split("\\.");
+        Object target = object;
+
+        for (int i = 0; i < fields.length - 1; i++) {
+            Method getter;
+            try {
+                getter = target.getClass().getMethod("get" + capitalizeV3(fields[i]));
+            } catch (NoSuchMethodException e) {
+                // If no getter exists, assume it's a Map field
+                if (target instanceof Map) {
+                    Map<String, Object> mapTarget = (Map<String, Object>) target;
+                    mapTarget.putIfAbsent(fields[i], new HashMap<>());
+                    target = mapTarget.get(fields[i]);
+                    continue;
+                } else {
+                    throw e; // Rethrow exception if it's not a map
+                }
+            }
+            Object nextTarget = getter.invoke(target);
+
+            if (nextTarget == null) {
+                Method setter = target.getClass().getMethod("set" + capitalizeV3(fields[i]), getter.getReturnType());
+                if (Map.class.isAssignableFrom(getter.getReturnType())) {
+                    nextTarget = new HashMap<>(); // Initialize Map
+                } else {
+                    nextTarget = getter.getReturnType().getDeclaredConstructor().newInstance();
+                }
+                setter.invoke(target, nextTarget);
+            }
+            target = nextTarget;
+        }
+
+        String lastField = fields[fields.length - 1];
+
+        setTargetValue(value, target, lastField);
+    }
+
+    public void setTargetValue(Object value, Object target, String lastField) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException {
+        if (target instanceof Map) {
+            ((Map<String, Object>) target).put(lastField, value);
+        } else {
+            Method setter;
+            try {
+                // Use Map.class for flexibility in map types
+                if (value instanceof Map) {
+                    setter = target.getClass().getMethod("set" + capitalize(lastField), Map.class);
+                } else if (value instanceof List) {
+                    setter = target.getClass().getMethod("set" + capitalize(lastField), List.class);
+                } else if (value instanceof Set) {
+                    setter = target.getClass().getMethod("set" + capitalize(lastField), Set.class);
+                } else {
+                    setter = target.getClass().getMethod("set" + capitalize(lastField), value.getClass());
+                }
+                setter.invoke(target, value);
+            } catch (NoSuchMethodException e) {
+                throw new NoSuchMethodException("No setter found for field: " + lastField + " in " + target.getClass().getSimpleName());
+            }
+        }
+    }
+
+    /**
+     * Recursively gets a nested field value using reflection.
+     */
+    public Object getNestedFieldValue(Object object, String fieldPath) throws NoSuchMethodException {
+        String[] fields = fieldPath.split("\\.");
+        Object value = object;
+
+        for (String field : fields) {
+            if (value == null) {
+                return null;
+            }
+            try {
+                // Attempt to get value using getter method
+                Method getter = value.getClass().getMethod("get" + capitalizeV3(field));
+                value = getter.invoke(value);
+            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+                // If no getter exists, check if it's a Map and retrieve value by key
+                if (value instanceof Map) {
+                    value = ((Map<?, ?>) value).get(field);
+                } else {
+                    throw new NoSuchMethodException("No getter found for field: " + field + " in " + value.getClass().getSimpleName());
+                }
+            }
+        }
+        return value;
+    }
+
+    /**
+     * Capitalizes the first letter of a string.
+     */
+    private String capitalizeV3(String str) {
+        return str.substring(0, 1).toUpperCase() + str.substring(1);
     }
 
 }
