@@ -95,4 +95,5 @@ public class CustomerBookingResponse implements IRunnerResponse {
     private Integer tenantId;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime createdAt;
+    private String rejectionRemarks;
 }

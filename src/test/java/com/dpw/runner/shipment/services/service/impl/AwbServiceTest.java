@@ -121,6 +121,11 @@ class AwbServiceTest extends CommonMocks {
     private BridgeServiceAdapter bridgeServiceAdapter;
     @Mock
     private V1ServiceUtil v1ServiceUtil;
+    @Mock
+    private V1RetrieveResponse tenantResponse;
+    @Mock
+    private Object entityMock; // Mock entity object that is converted
+
     @InjectMocks
     private AwbService awbService;
 
@@ -837,6 +842,7 @@ class AwbServiceTest extends CommonMocks {
         when(v1Service.fetchMasterData(any())).thenReturn(mockChargeCodeMasterData);
         when(jsonHelper.convertValue(any(Awb.class), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
         when(masterDataUtils.getCountriesMasterListData(any())).thenReturn(Map.of("IN", "INDIA"));
+        when(masterDataUtils.shipmentAddressCountryMasterData(any())).thenReturn(Map.of("IN", "INDIA"));
         V1DataResponse v1Response = V1DataResponse.builder().entities("").build();
         when(v1Service.getCompaniesDetails(any())).thenReturn(v1Response);
         CompanyDto companyDto = CompanyDto.builder().country("IND").city("test").zipPostCode("test").address1("test").address2("test").state("test").build();
@@ -844,6 +850,65 @@ class AwbServiceTest extends CommonMocks {
         when(jsonHelper.convertValueToList(any(), eq(CompanyDto.class))).thenReturn(companyDtos);
         mockShipmentSettings();
         mockTenantSettings();
+        // Mock V1DataResponse
+        V1DataResponse mockResponse = new V1DataResponse();
+        when(v1Service.fetchUnlocation(any())).thenReturn(mockResponse);
+        mockResponse.entities = new ArrayList<>(); // Assume it contains relevant data
+
+        when(v1Service.fetchUnlocation(any(CommonV1ListRequest.class))).thenReturn(mockResponse);
+
+        // Mock location data list
+        EntityTransferUnLocations loc1 = new EntityTransferUnLocations();
+        loc1.setLocationsReferenceGUID("OriginGUID");
+        loc1.setName("Origin Airport");
+
+        EntityTransferUnLocations loc2 = new EntityTransferUnLocations();
+        loc2.setLocationsReferenceGUID("DestGUID");
+        loc2.setName("Destination Airport");
+
+        List<EntityTransferUnLocations> locationDataList = Arrays.asList(loc1, loc2);
+
+        when(jsonHelper.convertValueToList(mockResponse.entities, EntityTransferUnLocations.class))
+                .thenReturn(locationDataList);
+        when(v1Service.retrieveTenant()).thenReturn(tenantResponse);
+
+        AwbShipmentInfoResponse awbShipmentInfoResponse = new AwbShipmentInfoResponse();
+        when(jsonHelper.convertValue(any(), eq(AwbShipmentInfoResponse.class))).thenReturn(awbShipmentInfoResponse);
+
+        // Mock JSON conversion
+        TenantModel mockTenantModel = new TenantModel();
+        when(tenantResponse.getEntity()).thenReturn(entityMock);
+        when(jsonHelper.convertValue(entityMock, TenantModel.class)).thenReturn(mockTenantModel);
+
+        AwbRoutingInfoResponse awbRoutingInfoResponse = new AwbRoutingInfoResponse();
+        when(jsonHelper.convertValueToList(any(), eq(AwbRoutingInfoResponse.class))).thenReturn(List.of(awbRoutingInfoResponse));
+        testShipment.getConsigner().setAddressId("123");
+        testShipment.getConsignee().setAddressId("456");
+        testShipment.getAdditionalDetails().getNotifyParty().setAddressId("789");
+
+        // Mock address list request and response
+        V1DataResponse addressResponse = new V1DataResponse();
+        List<AddressDataV1> addressDataList = new ArrayList<>();
+
+        AddressDataV1 consignerAddressData = new AddressDataV1();
+        consignerAddressData.setId(123L);
+        consignerAddressData.setTaxRegNumber("TAX123");
+
+        AddressDataV1 consigneeAddressData = new AddressDataV1();
+        consigneeAddressData.setId(456L);
+        consigneeAddressData.setTaxRegNumber("TAX456");
+
+        AddressDataV1 notifyAddressData = new AddressDataV1();
+        notifyAddressData.setId(789L);
+        notifyAddressData.setTaxRegNumber("TAX789");
+
+        addressDataList.add(consignerAddressData);
+        addressDataList.add(consigneeAddressData);
+        addressDataList.add(notifyAddressData);
+
+        when(v1Service.addressList(any(CommonV1ListRequest.class))).thenReturn(addressResponse);
+        when(jsonHelper.convertValueToList(addressResponse.entities, AddressDataV1.class)).thenReturn(addressDataList);
+
         ResponseEntity<IRunnerResponse> listResponse = awbService.list(CommonRequestModel.buildRequest(listCommonRequest));
         assertEquals(HttpStatus.OK, listResponse.getStatusCode());
         assertNotNull(listResponse.getBody());

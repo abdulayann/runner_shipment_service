@@ -670,7 +670,7 @@ public class EventDao implements IEventDao {
             event.setUserEmail(null);
         }
 
-        if(Constants.MASTER_DATA_SOURCE_CARGOES_TRACKING.equals(event.getSource())) {
+        if(Constants.MASTER_DATA_SOURCE_CARGOES_TRACKING.equals(event.getSource()) || Constants.DESCARTES.equals(event.getSource())) {
             event.setUserName(EventConstants.SYSTEM_GENERATED);
             event.setUserEmail(null);
             event.setBranch(null);
