@@ -1877,7 +1877,7 @@ public class ConsolidationService implements IConsolidationService {
                     }
                     if(Objects.equals(console.getTransportMode(), Constants.TRANSPORT_MODE_AIR)) {
                         i.getCarrierDetails().setFlightNumber(console.getCarrierDetails().getFlightNumber());
-                        if(Boolean.FALSE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled()) && Boolean.FALSE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster())) {
+                        if(!Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled()) && Boolean.FALSE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster())) {
                             i.getCarrierDetails().setOriginPort(console.getCarrierDetails().getOriginPort());
                             i.getCarrierDetails().setDestinationPort(console.getCarrierDetails().getDestinationPort());
                             i.getCarrierDetails().setEtd(console.getCarrierDetails().getEtd());
