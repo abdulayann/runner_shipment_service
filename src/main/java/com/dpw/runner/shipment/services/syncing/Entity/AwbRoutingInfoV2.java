@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 @Data
 public class AwbRoutingInfoV2 implements IRunnerRequest {
     public String entityType;
-    //TODO- LocCode
+    //LATER- LocCode
     public String originString;
     public String destinationString;
     public String  byCarrier;

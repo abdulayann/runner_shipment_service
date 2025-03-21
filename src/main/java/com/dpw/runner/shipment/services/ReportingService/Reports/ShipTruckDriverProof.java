@@ -62,7 +62,7 @@ public class ShipTruckDriverProof extends IReport {
         {
             if(StringUtility.isEmpty(truckDriver.getSelfTransporterName()))
             {
-                truckDriver.setTransporterName(""); //TODO - fetch transporter real name
+                truckDriver.setTransporterName(""); //LATER - fetch transporter real name
             }
             else
                 truckDriver.setTransporterName(truckDriver.getSelfTransporterName());

@@ -6786,7 +6786,7 @@ public class ShipmentService implements IShipmentService {
     private void autoGenerateEvents(ShipmentDetails shipmentDetails, Integer previousStauts) {
         Events response = null;
         if(shipmentDetails.getStatus() != null) {
-            // TODO : remove this
+            // LATER : remove this
             if(response != null) {
                 if (shipmentDetails.getEventsList() == null)
                     shipmentDetails.setEventsList(new ArrayList<>());
@@ -9110,7 +9110,7 @@ public class ShipmentService implements IShipmentService {
     public ResponseEntity<IRunnerResponse> fullShipmentsListV3(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
-            // TODO- implement actual logic with filters
+            // LATER- implement actual logic with filters
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
             if (request == null) {
                 log.error(ShipmentConstants.SHIPMENT_LIST_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());

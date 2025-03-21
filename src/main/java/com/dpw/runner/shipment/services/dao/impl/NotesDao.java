@@ -82,7 +82,7 @@ public class NotesDao implements INotesDao {
         String responseMsg;
         List<Notes> responseNotes = new ArrayList<>();
         try {
-            // TODO- Handle Transactions here
+            // LATER- Handle Transactions here
             List<Notes> notes = findByEntityIdAndEntityType(entityId, entityType);
             Map<Long, Notes> hashMap = notes.stream()
                         .collect(Collectors.toMap(Notes::getId, Function.identity()));

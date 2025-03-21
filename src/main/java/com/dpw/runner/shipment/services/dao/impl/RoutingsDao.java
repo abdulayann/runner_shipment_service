@@ -101,7 +101,7 @@ public class RoutingsDao implements IRoutingsDao {
         String responseMsg;
         List<Routings> responseRoutings = new ArrayList<>();
         try {
-            // TODO- Handle Transactions here
+            // LATER- Handle Transactions here
             List<Routings> routings = findByShipmentId(shipmentId);
             Map<Long, Routings> hashMap = routings.stream()
                         .collect(Collectors.toMap(Routings::getId, Function.identity()));
@@ -290,7 +290,7 @@ public class RoutingsDao implements IRoutingsDao {
         String responseMsg;
         List<Routings> responseRoutings = new ArrayList<>();
         try {
-            // TODO- Handle Transactions here
+            // LATER- Handle Transactions here
             List<Routings> routings = findRoutingsByConsolidationId(consolidationId);
             Map<Long, Routings> hashMap = routings.stream()
                         .collect(Collectors.toMap(Routings::getId, Function.identity()));

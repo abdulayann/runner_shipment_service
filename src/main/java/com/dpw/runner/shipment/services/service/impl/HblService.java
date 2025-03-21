@@ -503,7 +503,7 @@ public class HblService implements IHblService {
         }
         mapDeliveryDataInHbl(additionalDetails, hblData);
         UnlocationsResponse destination = masterDataUtil.getUNLocRow(carrierDetails.getDestination());
-        // TODO: This needs to re-visit after incorporating this setting in service
+        // LATER: This needs to re-visit after incorporating this setting in service
         if (/*Unico HBL*/true) {
             hblData.setTransportType(shipmentDetail.getTransportMode());
             hblData.setShipmentType(shipmentDetail.getDirection());
@@ -856,7 +856,7 @@ public class HblService implements IHblService {
 
     /*Unico HBL*/
     private void processUnicoHblData(ShipmentDetails shipmentDetail, HblLockSettings hblLock, HblDataDto hblData, CarrierDetails carrierDetails) {
-        // TODO: This needs to re-visit after incorporating this setting in service
+        // LATER: This needs to re-visit after incorporating this setting in service
         if (!Boolean.TRUE.equals(hblLock.getTransportTypeLock()))
             hblData.setTransportType(shipmentDetail.getTransportMode());
         if(!Boolean.TRUE.equals(hblLock.getShipmentTypeLock()))

@@ -82,7 +82,7 @@ public class HblTermsConditionTemplateDao implements IHblTermsConditionTemplateD
         String responseMsg;
         List<HblTermsConditionTemplate> responseHblTermsConditionTemplate = new ArrayList<>();
         try {
-            // TODO- Handle Transactions here
+            // LATER- Handle Transactions here
             ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentSettingsId", shipmentSettingsId, "=");
             Pair<Specification<HblTermsConditionTemplate>, Pageable> pair = fetchData(listCommonRequest, HblTermsConditionTemplate.class);
             Page<HblTermsConditionTemplate> hblTermsConditionTemplates = findAll(pair.getLeft(), pair.getRight());

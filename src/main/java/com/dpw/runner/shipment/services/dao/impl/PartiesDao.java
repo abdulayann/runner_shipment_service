@@ -63,7 +63,7 @@ public class PartiesDao implements IPartiesDao {
     public Parties updateEntityFromShipment(Parties parties) throws RunnerException {
         String responseMsg;
         try {
-            // TODO- Handle Transactions here
+            // LATER- Handle Transactions here
             if (parties.getId() != null) {
                 long id = parties.getId();
                 Optional<Parties> oldEntity = findById(id);
@@ -86,7 +86,7 @@ public class PartiesDao implements IPartiesDao {
         String responseMsg;
         List<Parties> responseParties = new ArrayList<>();
         try {
-            // TODO- Handle Transactions here
+            // LATER- Handle Transactions here
             List<Parties> parties = findByEntityIdAndEntityType(entityId, entityType);
             Map<Long, Parties> hashMap = parties.stream()
                         .collect(Collectors.toMap(Parties::getId, Function.identity()));
