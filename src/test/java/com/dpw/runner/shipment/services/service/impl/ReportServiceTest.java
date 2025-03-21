@@ -281,7 +281,7 @@ class ReportServiceTest extends CommonMocks {
 
         Exception e = assertThrows(ValidationException.class, () -> reportService.getDocumentData(commonRequestModel));
 
-        String errorMessage ="Please Upload Valid Template";
+        String errorMessage = "Please Upload Valid Template";
         assertEquals(errorMessage, e.getMessage());
     }
 
@@ -307,9 +307,9 @@ class ReportServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
 
         Exception e = assertThrows(ValidationException.class, () ->
-            reportService.getDocumentData(commonRequestModel));
+                reportService.getDocumentData(commonRequestModel));
 
-        String errorMessage ="Please Upload Valid Template";
+        String errorMessage = "Please Upload Valid Template";
         assertEquals(errorMessage, e.getMessage());
     }
 
@@ -331,16 +331,16 @@ class ReportServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
 
         Exception e = assertThrows(ValidationException.class, () ->
-            reportService.getDocumentData(commonRequestModel)
+                reportService.getDocumentData(commonRequestModel)
         );
 
-        String errorMessage ="Please upload template in branch settings for: SeawayBill";
+        String errorMessage = "Please upload template in branch settings for: SeawayBill";
         assertEquals(errorMessage, e.getMessage());
     }
 
     @Test
     void getShipTruckWayDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setShipTruckWayBillMainPage("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -365,7 +365,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getConTruckWayDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setConsTruckWayBillMainPage("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -390,7 +390,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getShipTruckDriverDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setShipTruckDriverProof("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -415,7 +415,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getConsTruckDriverDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setConsTruckDriverProof("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -441,7 +441,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getMAwbDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setMawb("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -474,7 +474,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getMAwbDocumentDataForEAW()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setMawb("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -508,7 +508,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getMAwbWithOtherAmountDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setMawb("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -541,7 +541,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getDMAwbDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setMawb("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -576,7 +576,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getHawbDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setHawb("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -624,7 +624,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getHawbWithOtherAmountDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setHawb("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -671,7 +671,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getHawbDraftDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setHawb("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -705,7 +705,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getHawbNeutralDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setAwbNeutral("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -741,7 +741,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getHouseBillDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setHouseMainPage("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -817,7 +817,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getHouseBillWithReleaseTypeDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setHouseMainPage("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -893,7 +893,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getHouseBillWithFailedUploadDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setHouseMainPage("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -967,7 +967,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getHouseBillDraftDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setHouseMainPage("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1014,7 +1014,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getHouseBillSurrenderDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setHouseMainPage("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1053,7 +1053,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getSeaShippingInstructionDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setSeaShippingInstructionMainPage("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1092,7 +1092,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getShippingRequestDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setShippingRequestMainPage("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1132,7 +1132,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getCargoManifestDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setCargoManifest("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1158,7 +1158,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getCargoManifestAirImportDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setAirImportConsoleManifest("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1187,7 +1187,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getPackinListAirDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setPackingListMainPageAir("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1222,7 +1222,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getPackinListSeaDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setPackingListMainPage("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1257,7 +1257,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getShipCanSeaDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setCanMainPage("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1288,7 +1288,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getShipCanAirDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setCanMainPageAir("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1323,7 +1323,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getAirWayBillDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setAirwayMainPage("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1358,7 +1358,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getShipCustomSeaDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setCustomsInsMainPage("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1393,7 +1393,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getShipCustomAirDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setCustomsInsMainPageAir("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1428,7 +1428,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getShipArrivalNoticeSeaDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setArrivalNotice("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1459,7 +1459,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getShipArrivalNoticeAirDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setArrivalNoticeAir("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1494,7 +1494,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getShipFreightCertificationNoticeSeaDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setFreightCertification("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1529,7 +1529,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getShipFreightCertificationAirDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setFreightCertificationAir("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1601,7 +1601,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getShipPreAlertSeaDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setPreAlertDoc("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1641,7 +1641,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getShipPreAlertAirDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setPreAlertAir("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1676,7 +1676,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getShipProofOfDeliveryDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setProofOfDelivery("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1711,7 +1711,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getPickupOrderSeaDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setPickupOrder("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1742,7 +1742,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getShipPicupOrderAirDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setPickupOrderAir("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1777,7 +1777,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getDeliveryOrderSeaDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setDeliveryOrder("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1808,7 +1808,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getShipDeliveryOrderAirDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setDeliveryOrderAir("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1843,7 +1843,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getBookingConfirmationSeaDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setBookingConfirmation("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1875,7 +1875,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getShipBookingConfirmationAirDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setBookingConfirmationAir("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1911,7 +1911,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getCoastalDocDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setCostalDocument("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1946,7 +1946,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getConsolidationPackingListDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setConsolidatedPackingList("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -1981,7 +1981,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getShippingRequestAirDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setShippingRequestAir("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -2016,7 +2016,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getImportShipmentManifestSeaDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setSeaImportShipmentManifest("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -2051,7 +2051,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getShipImportManifestAirDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setAirImportShipmentManifest("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -2086,7 +2086,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getExportShipmentManifestSeaDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setSeaExportShipmentManifest("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -2121,7 +2121,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getShipExportManifestAirDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setAirExportShipmentManifest("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -2156,7 +2156,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getShipCargoManifestAirImportDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setAirImportShipmentManifest("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -2187,7 +2187,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getShipCargoManifestAirExportDocumentDataSuccess()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setAirExportShipmentManifest("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -2225,7 +2225,7 @@ class ReportServiceTest extends CommonMocks {
         assertNotNull(data);
     }
 
-//    @Test
+    //    @Test
     void getShipCargoManifestAirExportDocumentDataFailsWhenOriginalAwbNotPrinted() {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setAirExportShipmentManifest("123456789");
@@ -2285,7 +2285,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getShipCargoManifestAirConsolidationDocumentDataSuccess()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setAirExportConsoleManifest("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -2327,7 +2327,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getImportConsolManifestSeaDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setSeaImportConsoleManifest("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -2363,7 +2363,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getConsolImportManifestAirDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setAirImportConsoleManifest("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -2398,7 +2398,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getExportConsolManifestSeaDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setSeaExportConsoleManifest("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -2433,7 +2433,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getConsolExportManifestAirDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setAirExportConsoleManifest("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -2468,7 +2468,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getCSRDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setCsr("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -2503,7 +2503,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getCommercialInvoiceSeaDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setCommercialInvMainPage("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -2538,7 +2538,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getCommercialInvoiceAirDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setCommercialInvMainPageAir("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -2573,7 +2573,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getIsfFileDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setIsfFileMainPage("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -2608,7 +2608,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getContainerManifestDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setContainerManifestPrint("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -2643,7 +2643,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getManifestPrintDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setManifestPrint("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -2678,7 +2678,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getTransportOrderDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setTransportOrderRoad("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -2715,7 +2715,8 @@ class ReportServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().id(1L).build());
         when(shipmentDao.findById(any())).thenReturn(Optional.of(new ShipmentDetails()));
         Mockito.doNothing().when(shipmentTagsForExteranlServices).populateRaKcDataWithShipmentDetails(any(), any());
-        ResponseEntity<IRunnerResponse> responseEntity = reportService.createDocumentTagsForShipment(commonRequestModel);;
+        ResponseEntity<IRunnerResponse> responseEntity = reportService.createDocumentTagsForShipment(commonRequestModel);
+        ;
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
@@ -2724,7 +2725,8 @@ class ReportServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().guid(UUID.randomUUID().toString()).build());
         when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(new ShipmentDetails()));
         Mockito.doNothing().when(shipmentTagsForExteranlServices).populateRaKcDataWithShipmentDetails(any(), any());
-        ResponseEntity<IRunnerResponse> responseEntity = reportService.createDocumentTagsForShipment(commonRequestModel);;
+        ResponseEntity<IRunnerResponse> responseEntity = reportService.createDocumentTagsForShipment(commonRequestModel);
+        ;
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
@@ -2732,9 +2734,9 @@ class ReportServiceTest extends CommonMocks {
     void idNotExits() {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().build());
         Exception e = assertThrows(RunnerException.class, () ->
-            reportService.createDocumentTagsForShipment(commonRequestModel));
+                reportService.createDocumentTagsForShipment(commonRequestModel));
 
-        String errorMessage ="Id and GUID can't be null. Please provide any one !";
+        String errorMessage = "Id and GUID can't be null. Please provide any one !";
         assertEquals(errorMessage, e.getMessage());
     }
 
@@ -2742,14 +2744,14 @@ class ReportServiceTest extends CommonMocks {
     void shipmentNotExits() {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().guid(UUID.randomUUID().toString()).build());
         Exception e = assertThrows(DataRetrievalFailureException.class, () ->
-            reportService.createDocumentTagsForShipment(commonRequestModel));
+                reportService.createDocumentTagsForShipment(commonRequestModel));
 
         assertEquals(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, e.getMessage());
     }
 
     @Test
     void getTransportInstructionPickupOrderDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setPickupOrder("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -2786,7 +2788,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getTransportInstructionDeliveryOrderDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setDeliveryOrder("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -2822,7 +2824,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getTransportInstructionTransportOrderDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setDeliveryOrder("122456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -2855,7 +2857,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void getHblReportDocumentData()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setDeliveryOrder("122456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -2911,7 +2913,7 @@ class ReportServiceTest extends CommonMocks {
         when(reportsFactory.getReport(any())).thenReturn(csdReport);
 
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest1);
-        assertThrows(ValidationException.class , () -> reportService.getDocumentData(commonRequestModel));
+        assertThrows(ValidationException.class, () -> reportService.getDocumentData(commonRequestModel));
     }
 
     @Test
@@ -2951,7 +2953,7 @@ class ReportServiceTest extends CommonMocks {
         List<byte[]> pdfBytes = new ArrayList<>();
 
         ValidationException thrown = assertThrows(ValidationException.class, () ->
-            reportService1.generatePdfBytes(reportRequest1, pages, dataRetrived, pdfBytes));
+                reportService1.generatePdfBytes(reportRequest1, pages, dataRetrived, pdfBytes));
 
         assertEquals("Copy count is less than 1", thrown.getMessage());
     }
@@ -3088,7 +3090,6 @@ class ReportServiceTest extends CommonMocks {
     }
 
 
-
     @Test
     void testGeneratePdfBytes_CopyCountLessThanOne() {
         ReportService reportService1 = spy(new ReportService());
@@ -3100,7 +3101,7 @@ class ReportServiceTest extends CommonMocks {
         List<byte[]> pdfBytes = new ArrayList<>();
 
         ValidationException thrown = assertThrows(ValidationException.class, () ->
-            reportService1.generatePdfBytes(reportRequest1, pages, dataRetrived, pdfBytes));
+                reportService1.generatePdfBytes(reportRequest1, pages, dataRetrived, pdfBytes));
         assertEquals("Copy count is less than 1", thrown.getMessage());
     }
 
@@ -3123,7 +3124,7 @@ class ReportServiceTest extends CommonMocks {
         doReturn(null).when(reportService1).GetFromDocumentService(any(Map.class), anyString());
 
         ValidationException thrown = assertThrows(ValidationException.class, () ->
-            reportService1.generatePdfBytes(reportRequest1, pages, dataRetrived, pdfBytes)
+                reportService1.generatePdfBytes(reportRequest1, pages, dataRetrived, pdfBytes)
         );
         assertEquals(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE, thrown.getMessage());
     }
@@ -3142,7 +3143,7 @@ class ReportServiceTest extends CommonMocks {
         List<byte[]> pdfBytes = new ArrayList<>();
 
         ValidationException thrown = assertThrows(ValidationException.class, () ->
-            reportService1.generatePdfBytes(reportRequest1, pages, dataRetrived, pdfBytes));
+                reportService1.generatePdfBytes(reportRequest1, pages, dataRetrived, pdfBytes));
         assertEquals("no of pack is less than 1", thrown.getMessage());
     }
 
@@ -3234,7 +3235,7 @@ class ReportServiceTest extends CommonMocks {
     }
 
     @Test
-    void addDocumentToDocumentMasterTestHAWBORIGNAL(){
+    void addDocumentToDocumentMasterTestHAWBORIGNAL() {
         ReportRequest reportRequest = new ReportRequest();
         reportRequest.setReportId("1");
         reportRequest.setPrintType("ORIGINAL");
@@ -3249,7 +3250,7 @@ class ReportServiceTest extends CommonMocks {
 
     @Test
     void addDocumentToDocumentMasterTestHAWBORIGNALWithCSDPrint()
-        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         ReportRequest reportRequest = new ReportRequest();
         reportRequest.setReportId("1");
         reportRequest.setPrintType("ORIGINAL");
@@ -3262,7 +3263,7 @@ class ReportServiceTest extends CommonMocks {
     }
 
     @Test
-    void addDocumentToDocumentMasterTestMAWBDRAFT(){
+    void addDocumentToDocumentMasterTestMAWBDRAFT() {
         ReportRequest reportRequest = new ReportRequest();
         reportRequest.setReportId("1");
         reportRequest.setPrintType("DRAFT");
@@ -3276,7 +3277,7 @@ class ReportServiceTest extends CommonMocks {
     }
 
     @Test
-    void addDocumentToDocumentMasterTestHAWBDRAFT(){
+    void addDocumentToDocumentMasterTestHAWBDRAFT() {
         ReportRequest reportRequest = new ReportRequest();
         reportRequest.setReportId("1");
         reportRequest.setPrintType("DRAFT");
@@ -3290,7 +3291,7 @@ class ReportServiceTest extends CommonMocks {
     }
 
     @Test
-    void addDocumentToDocumentMasterTestMAWBORIGNAL(){
+    void addDocumentToDocumentMasterTestMAWBORIGNAL() {
         ReportRequest reportRequest = new ReportRequest();
         reportRequest.setReportId("1");
         reportRequest.setPrintType("ORIGINAL");
@@ -3304,7 +3305,7 @@ class ReportServiceTest extends CommonMocks {
     }
 
     @Test
-    void triggerAutomaticTransferWithHblReport_Success(){
+    void triggerAutomaticTransferWithHblReport_Success() {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isAutomaticTransferEnabled(true).build());
         mockShipmentSettings();
         reportRequest.setPrintType("ORIGINAL");
@@ -3327,7 +3328,7 @@ class ReportServiceTest extends CommonMocks {
     }
 
     @Test
-    void triggerAutomaticTransferWithHblReport_InvalidCase(){
+    void triggerAutomaticTransferWithHblReport_InvalidCase() {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isAutomaticTransferEnabled(true).build());
         mockShipmentSettings();
         reportRequest.setPrintType("ORIGINAL");
@@ -3340,7 +3341,7 @@ class ReportServiceTest extends CommonMocks {
     }
 
     @Test
-    void triggerAutomaticTransferWithHblReport_InvalidCase2(){
+    void triggerAutomaticTransferWithHblReport_InvalidCase2() {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isAutomaticTransferEnabled(true).build());
         mockShipmentSettings();
         reportRequest.setPrintType("ORIGINAL");
@@ -3353,7 +3354,7 @@ class ReportServiceTest extends CommonMocks {
     }
 
     @Test
-    void triggerAutomaticTransferWithHblReport_InvalidCase_EmptyConsole(){
+    void triggerAutomaticTransferWithHblReport_InvalidCase_EmptyConsole() {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isAutomaticTransferEnabled(true).build());
         mockShipmentSettings();
         reportRequest.setPrintType("ORIGINAL");
@@ -3365,7 +3366,7 @@ class ReportServiceTest extends CommonMocks {
     }
 
     @Test
-    void triggerAutomaticTransferWithHAWBReport_Success(){
+    void triggerAutomaticTransferWithHAWBReport_Success() {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isAutomaticTransferEnabled(true).build());
         mockShipmentSettings();
         reportRequest.setPrintType("ORIGINAL");
@@ -3388,7 +3389,7 @@ class ReportServiceTest extends CommonMocks {
     }
 
     @Test
-    void triggerAutomaticTransferWithHAWBReport_InvalidCase(){
+    void triggerAutomaticTransferWithHAWBReport_InvalidCase() {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isAutomaticTransferEnabled(true).build());
         mockShipmentSettings();
         reportRequest.setPrintType("ORIGINAL");
@@ -3401,7 +3402,7 @@ class ReportServiceTest extends CommonMocks {
     }
 
     @Test
-    void triggerAutomaticTransferWithHAWBReport_InvalidCase2(){
+    void triggerAutomaticTransferWithHAWBReport_InvalidCase2() {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isAutomaticTransferEnabled(true).build());
         mockShipmentSettings();
         reportRequest.setPrintType("ORIGINAL");
@@ -3414,7 +3415,7 @@ class ReportServiceTest extends CommonMocks {
     }
 
     @Test
-    void triggerAutomaticTransferWithHAWBReport_InvalidCase_EmptyConsole(){
+    void triggerAutomaticTransferWithHAWBReport_InvalidCase_EmptyConsole() {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isAutomaticTransferEnabled(true).build());
         mockShipmentSettings();
         reportRequest.setPrintType("ORIGINAL");
@@ -3426,7 +3427,7 @@ class ReportServiceTest extends CommonMocks {
     }
 
     @Test
-    void triggerAutomaticTransferWithMAWB_ConsolidationReport_Success(){
+    void triggerAutomaticTransferWithMAWB_ConsolidationReport_Success() {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isAutomaticTransferEnabled(true).build());
         mockShipmentSettings();
         reportRequest.setPrintType("ORIGINAL");
@@ -3449,7 +3450,7 @@ class ReportServiceTest extends CommonMocks {
     }
 
     @Test
-    void triggerAutomaticTransferWithMAWB_ConsolidationReport_InvalidCase(){
+    void triggerAutomaticTransferWithMAWB_ConsolidationReport_InvalidCase() {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isAutomaticTransferEnabled(true).build());
         mockShipmentSettings();
         reportRequest.setPrintType("ORIGINAL");
@@ -3471,7 +3472,7 @@ class ReportServiceTest extends CommonMocks {
     }
 
     @Test
-    void triggerAutomaticTransferWithMAWB_ConsolidationReport_InvalidCase2(){
+    void triggerAutomaticTransferWithMAWB_ConsolidationReport_InvalidCase2() {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isAutomaticTransferEnabled(true).build());
         mockShipmentSettings();
         reportRequest.setPrintType("ORIGINAL");
@@ -3493,7 +3494,7 @@ class ReportServiceTest extends CommonMocks {
     }
 
     @Test
-    void triggerAutomaticTransferWithMAWB_ShipmentReport_Success(){
+    void triggerAutomaticTransferWithMAWB_ShipmentReport_Success() {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isAutomaticTransferEnabled(true).build());
         mockShipmentSettings();
         reportRequest.setPrintType("ORIGINAL");
@@ -3516,7 +3517,7 @@ class ReportServiceTest extends CommonMocks {
     }
 
     @Test
-    void triggerAutomaticTransferWithMAWB_ShipmentReport_InvalidCase(){
+    void triggerAutomaticTransferWithMAWB_ShipmentReport_InvalidCase() {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isAutomaticTransferEnabled(true).build());
         mockShipmentSettings();
         reportRequest.setPrintType("ORIGINAL");
@@ -3539,7 +3540,7 @@ class ReportServiceTest extends CommonMocks {
     }
 
     @Test
-    void triggerAutomaticTransferWithMAWB_ShipmentReport_InvalidCase2(){
+    void triggerAutomaticTransferWithMAWB_ShipmentReport_InvalidCase2() {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isAutomaticTransferEnabled(true).build());
         mockShipmentSettings();
         reportRequest.setPrintType("ORIGINAL");
@@ -3564,6 +3565,142 @@ class ReportServiceTest extends CommonMocks {
         when(iv1Service.getEmailTemplates(any())).thenReturn(V1DataResponse.builder().entities(new ArrayList<>()).build());
         reportService.getEmailTemplate(1L, emailTemplatesRequests);
         verify(iv1Service).getEmailTemplates(any());
+    }
+
+    @Test
+    void testPushFileToDocumentMasterWithOutShipmentSettings() {
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(null);
+
+        reportService.pushFileToDocumentMaster(reportRequest, new byte[1024], null);
+
+        verify(documentManagerService, times(0)).pushSystemGeneratedDocumentToDocMaster(any(), any(), any());
+    }
+
+    @Test
+    void testPushFileToDocumentMasterWithRunner3_0Disabled() {
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().build());
+
+        reportService.pushFileToDocumentMaster(reportRequest, new byte[1024], null);
+
+        verify(documentManagerService, times(0)).pushSystemGeneratedDocumentToDocMaster(any(), any(), any());
+    }
+
+    @Test
+    void testPushFileToDocumentMasterForFCR() {
+        reportRequest.setReportInfo(ReportConstants.FCR_DOCUMENT);
+        Map<String, Object> dataRetrieved = new HashMap<>();
+        dataRetrieved.put(ReportConstants.FCR_NO, "FCR_SHP00001004");
+
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
+        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+
+        reportService.pushFileToDocumentMaster(reportRequest, new byte[1024], dataRetrieved);
+
+        verify(documentManagerService, times(0)).pushSystemGeneratedDocumentToDocMaster(any(), any(), any());
+    }
+
+    @Test
+    void testPushFileToDocumentMasterForTO() {
+        reportRequest.setReportInfo(ReportConstants.TRANSPORT_ORDER);
+        Map<String, Object> dataRetrieved = new HashMap<>();
+        dataRetrieved.put(ReportConstants.REFERENCE_NO, "FCR_SHP00001004");
+
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
+        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+
+        reportService.pushFileToDocumentMaster(reportRequest, new byte[1024], dataRetrieved);
+
+        verify(documentManagerService, times(0)).pushSystemGeneratedDocumentToDocMaster(any(), any(), any());
+    }
+
+    @Test
+    void testPushFileToDocumentMasterForHBL() {
+        reportRequest.setReportInfo(ReportConstants.HOUSE_BILL);
+        reportRequest.setPrintType(ReportConstants.ORIGINAL);
+        reportRequest.setReportId("123");
+        reportRequest.setEntityGuid(UUID.randomUUID().toString());
+        reportRequest.setEntityName(Constants.SHIPMENTS_WITH_SQ_BRACKETS);
+
+        Map<String, Object> dataRetrieved = new HashMap<>();
+
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
+        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+
+        reportService.pushFileToDocumentMaster(reportRequest, new byte[1024], dataRetrieved);
+
+        verify(documentManagerService, times(0)).pushSystemGeneratedDocumentToDocMaster(any(), any(), any());
+    }
+
+
+    @Test
+    void testPushFileToDocumentMasterForSeawayBill() {
+        reportRequest.setReportInfo(ReportConstants.SEAWAY_BILL);
+        reportRequest.setReportId("123");
+        reportRequest.setEntityGuid(UUID.randomUUID().toString());
+        reportRequest.setEntityName(Constants.SHIPMENTS_WITH_SQ_BRACKETS);
+
+        Map<String, Object> dataRetrieved = new HashMap<>();
+
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
+        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+
+        reportService.pushFileToDocumentMaster(reportRequest, new byte[1024], dataRetrieved);
+
+        verify(documentManagerService, times(0)).pushSystemGeneratedDocumentToDocMaster(any(), any(), any());
+    }
+
+    @Test
+    void testPushFileToDocumentMasterForHAWB() {
+        reportRequest.setReportInfo(ReportConstants.HAWB);
+        reportRequest.setPrintType(ReportConstants.ORIGINAL);
+        reportRequest.setReportId("123");
+        reportRequest.setEntityGuid(UUID.randomUUID().toString());
+        reportRequest.setEntityName(Constants.SHIPMENTS_WITH_SQ_BRACKETS);
+
+        Map<String, Object> dataRetrieved = new HashMap<>();
+
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
+        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+
+        reportService.pushFileToDocumentMaster(reportRequest, new byte[1024], dataRetrieved);
+
+        verify(documentManagerService, times(0)).pushSystemGeneratedDocumentToDocMaster(any(), any(), any());
+    }
+
+    @Test
+    void testPushFileToDocumentMasterForMAWB() {
+        reportRequest.setReportInfo(ReportConstants.MAWB);
+        reportRequest.setPrintType(ReportConstants.DRAFT);
+        reportRequest.setReportId("123");
+        reportRequest.setEntityGuid(UUID.randomUUID().toString());
+        reportRequest.setEntityName(Constants.SHIPMENTS_WITH_SQ_BRACKETS);
+
+        Map<String, Object> dataRetrieved = new HashMap<>();
+
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
+        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+
+        reportService.pushFileToDocumentMaster(reportRequest, new byte[1024], dataRetrieved);
+
+        verify(documentManagerService, times(0)).pushSystemGeneratedDocumentToDocMaster(any(), any(), any());
+    }
+
+
+    @Test
+    void testPushFileToDocumentMasterForDefault() {
+        reportRequest.setReportInfo(ReportConstants.CSD_INFO);
+        reportRequest.setReportId("123");
+        reportRequest.setEntityGuid(UUID.randomUUID().toString());
+        reportRequest.setEntityName(Constants.SHIPMENTS_WITH_SQ_BRACKETS);
+
+        Map<String, Object> dataRetrieved = new HashMap<>();
+
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
+        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
+
+        reportService.pushFileToDocumentMaster(reportRequest, new byte[1024], dataRetrieved);
+
+        verify(documentManagerService, times(0)).pushSystemGeneratedDocumentToDocMaster(any(), any(), any());
     }
 
     private Runnable mockRunnable() {
