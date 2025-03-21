@@ -258,4 +258,34 @@ class DocumentManagerControllerTest {
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
+
+    @Test
+    void testGetDocTypesList() {
+        // Mock
+        when(documentManagerService.listDocTypes(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = documentManagerController.getDocTypesList(new Object());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testGetDocTypesList2() {
+        // Mock
+        when(documentManagerService.listDocTypes(any())).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = documentManagerController.getDocTypesList(new Object());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testGetDocTypesList3() {
+        // Mock
+        when(documentManagerService.listDocTypes(any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = documentManagerController.getDocTypesList(new Object());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
 }
