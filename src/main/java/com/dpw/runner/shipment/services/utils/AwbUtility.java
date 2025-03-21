@@ -282,6 +282,12 @@ public class AwbUtility {
 
         // Rounding off Currencies fields
         this.roundOffCurrencyFields(awbResponse);
+
+        awbResponse.setAcasEnabled(consolidationDetails.getRoutingsList().stream()
+                .map(Routings::getPod) // Extract POD
+                .filter(Objects::nonNull) // Ignore null PODs
+                .anyMatch(pod -> pod.startsWith("US"))); // Check if starts with "US"
+
         // Rounding off Weight fields
         this.roundOffWeightFields(awbResponse);
         this.roundOffVolumeFields(awbResponse);
@@ -525,6 +531,12 @@ public class AwbUtility {
         if(masterAwb != null) {
             this.populateMasterAwbData(awbResponse, masterAwb);
         }
+
+        awbResponse.setAcasEnabled(shipmentDetails.getRoutingsList().stream()
+                .map(Routings::getPod) // Extract POD
+                .filter(Objects::nonNull) // Ignore null PODs
+                .anyMatch(pod -> pod.startsWith("US"))); // Check if starts with "US"
+
         // Rounding off Currencies fields
         this.roundOffCurrencyFields(awbResponse);
         // Rounding off Weight fields

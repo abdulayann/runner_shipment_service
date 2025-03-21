@@ -93,7 +93,7 @@ public class AwbDao implements IAwbDao {
     @Override
     public Awb save(Awb awbShipmentInfo) throws RunnerException {
         boolean isCreate = awbShipmentInfo.getId() == null;
-        applyValidations(awbShipmentInfo);
+        //applyValidations(awbShipmentInfo);
         Awb awb = awbRepository.save(awbShipmentInfo);
         kafkaAsyncService.pushToKafkaAwb(awb, isCreate);
         return awb;
@@ -116,6 +116,7 @@ public class AwbDao implements IAwbDao {
 
     @Override
     public List<Awb> findByShipmentId(Long shipmentId) {
+
         return awbRepository.findByShipmentId(shipmentId);
     }
 
@@ -165,26 +166,26 @@ public class AwbDao implements IAwbDao {
         return entities;
     }
 
-    private void applyValidations(Awb awb) throws RunnerException {
-        Set<String> errors = new HashSet<>();
-        // do not allow duplicate pair of Information Identifier and Trade Identification Code
-        if(awb.getAwbOciInfo() != null) {
-            Set<Pair<Integer, Integer>> uniqueOciPair = new HashSet<>();
-            for(var ociInfo : awb.getAwbOciInfo()) {
-                Pair<Integer, Integer> pair = Pair.of(ociInfo.getInformationIdentifier(), ociInfo.getTradeIdentificationCode());
-                if(!uniqueOciPair.contains(pair)) {
-                    uniqueOciPair.add(pair);
-                }
-                else {
-                    errors.add(AwbConstants.DUPLICATE_PAIR_AWB_OCI_INFO_VALIDATION);
-                }
-            }
-        }
-
-
-        if(!errors.isEmpty())
-            throw new RunnerException(errors.toString());
-    }
+//    private void applyValidations(Awb awb) throws RunnerException {
+//        Set<String> errors = new HashSet<>();
+//        // do not allow duplicate pair of Information Identifier and Trade Identification Code
+//        if(awb.getAwbOciInfo() != null) {
+//            Set<Pair<Integer, Integer>> uniqueOciPair = new HashSet<>();
+//            for(var ociInfo : awb.getAwbOciInfo()) {
+//                Pair<Integer, Integer> pair = Pair.of(ociInfo.getInformationIdentifier(), ociInfo.getTradeIdentificationCode());
+//                if(!uniqueOciPair.contains(pair)) {
+//                    uniqueOciPair.add(pair);
+//                }
+//                else {
+//                    errors.add(AwbConstants.DUPLICATE_PAIR_AWB_OCI_INFO_VALIDATION);
+//                }
+//            }
+//        }
+//
+//
+//        if(!errors.isEmpty())
+//            throw new RunnerException(errors.toString());
+//    }
 
     @Override
     public void airMessagingIntegration(Long id, String reportType, Boolean fromShipment, boolean includeCSD) {

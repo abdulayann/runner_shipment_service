@@ -8,16 +8,14 @@ import java.io.Serializable;
 
 @Data
 @Builder
-@ApiModel("AWB OCI Info Model")
+@ApiModel("Other Identity Info Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class AwbOCIInfo implements Serializable {
+public class OtherIdentityInfo implements Serializable {
 
-    private PartyContactInfo shipper;
-    private PartyContactInfo consignee;
-    private PartyContactInfo notifyParty;
-    private CustomerAccountInfo customerAccountInfo;
-    private OtherIdentityInfo otherIdentityInfo;
+    private String iaIpAddress;
+    private String irIpAddress;
+    private String proofOfIdentification;
 }
