@@ -2848,7 +2848,7 @@ public class ConsolidationService implements IConsolidationService {
         List<Long> contShipIds = getContShipIds(request);
         Map<Long, ShipmentDetails> map = new HashMap<>();
 
-        if(packings != null && packings.getContent() != null && !packings.getContent().isEmpty()) {
+        if(packings != null && !packings.getContent().isEmpty()) {
             size = getSizeForPacking(packings, map, response, size);
         }
 
@@ -2876,7 +2876,7 @@ public class ConsolidationService implements IConsolidationService {
 
         Map<Long, ShipmentDetails> map = new HashMap<>();
         List<Long> shipmentsIncluded = new ArrayList<>();
-        if(packings != null && packings.getContent() != null && !packings.getContent().isEmpty()) {
+        if(packings != null && !packings.getContent().isEmpty()) {
             shipmentsIncluded = packings.getContent().stream().map(e -> e.getShipmentId()).toList();
             size = getSizeForPacking(packings, map, response, size);
         }
@@ -5112,7 +5112,7 @@ public class ConsolidationService implements IConsolidationService {
             consolidationDetails.setReferenceNumbersList(updatedReferenceNumbers);
         }
         if (truckDriverDetailsRequestList != null) {
-            List<TruckDriverDetails> updatedTruckDriverDetails = truckDriverDetailsDao.updateEntityFromConsole(commonUtils.convertToEntityList(truckDriverDetailsRequestList, TruckDriverDetails.class, !Boolean.TRUE.equals(isFromBooking) && isCreate), id);
+            truckDriverDetailsDao.updateEntityFromConsole(commonUtils.convertToEntityList(truckDriverDetailsRequestList, TruckDriverDetails.class, !Boolean.TRUE.equals(isFromBooking) && isCreate), id);
         }
         if (routingsRequestList != null) {
             List<Routings> updatedRoutings = routingsDao.updateEntityFromConsole(commonUtils.convertToEntityList(routingsRequestList, Routings.class, !Boolean.TRUE.equals(isFromBooking) && isCreate), id);

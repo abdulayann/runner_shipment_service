@@ -218,7 +218,7 @@ class ContainerServiceTest extends CommonMocks {
     }
 
     @Test
-    @Disabled
+    @Disabled("Skipped")
     void testAttachPacks_ContainerNotFound() {
         long containerId = 1L;
         List<Long> packsId = new ArrayList<>();

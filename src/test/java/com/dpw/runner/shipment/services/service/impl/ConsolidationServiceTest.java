@@ -721,7 +721,7 @@ import static org.mockito.Mockito.*;
     }
 
     @Test
-    @Disabled
+    @Disabled("Skipped")
     void testCompleteRetrieveById_Success_WithColumnsIncluded() throws ExecutionException, InterruptedException {
 
         CommonRequestModel requestModel = CommonRequestModel.builder().build();
