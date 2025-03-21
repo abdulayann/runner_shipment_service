@@ -1903,26 +1903,29 @@ public class ReportService implements IReportService {
 
         return documentType;
     }
-
     public DocumentManagerResponse<DocumentManagerDataResponse> addFilesFromReport(MultipartFile file, String filename, DocUploadRequest uploadRequest, String entityKey) {
         try {
-            var uploadResponse = documentManagerService.temporaryFileUpload(file, filename);
-            if (!Boolean.TRUE.equals(uploadResponse.getSuccess()))
-                throw new IOException("File Upload Failed");
+            var shipmentSettings = commonUtils.getShipmentSettingFromContext();
+            // If Shipment V3 is disabled
+            if (shipmentSettings != null && !Boolean.TRUE.equals(shipmentSettings.getIsRunnerV3Enabled())) {
+                var uploadResponse = documentManagerService.temporaryFileUpload(file, filename);
+                if (!Boolean.TRUE.equals(uploadResponse.getSuccess()))
+                    throw new IOException("File Upload Failed");
 
-            return documentManagerService.saveFile(DocumentManagerSaveFileRequest.builder().fileName(filename)
-                    .entityType(uploadRequest.getEntityType())
-                    .secureDownloadLink(uploadResponse.getData().getSecureDownloadLink())
-                    .fileSize(uploadResponse.getData().getFileSize())
-                    .fileType(uploadResponse.getData().getFileType())
-                    .path(uploadResponse.getData().getPath())
-                    .entityKey(entityKey)
-                    .source(Constants.SYSTEM_GENERATED)
-                    .docType(uploadRequest.getDocType())
-                    .docName(uploadRequest.getDocType())
-                    .childType(uploadRequest.getDocType())
-                    .isTransferEnabled(uploadRequest.getIsTransferEnabled())
-                    .build());
+                return documentManagerService.saveFile(DocumentManagerSaveFileRequest.builder().fileName(filename)
+                        .entityType(uploadRequest.getEntityType())
+                        .secureDownloadLink(uploadResponse.getData().getSecureDownloadLink())
+                        .fileSize(uploadResponse.getData().getFileSize())
+                        .fileType(uploadResponse.getData().getFileType())
+                        .path(uploadResponse.getData().getPath())
+                        .entityKey(entityKey)
+                        .source(Constants.SYSTEM_GENERATED)
+                        .docType(uploadRequest.getDocType())
+                        .docName(uploadRequest.getDocType())
+                        .childType(uploadRequest.getDocType())
+                        .isTransferEnabled(uploadRequest.getIsTransferEnabled())
+                        .build());
+            }
         } catch (Exception ex) {
             log.error("Error while file upload : {}", ex.getLocalizedMessage());
         }
