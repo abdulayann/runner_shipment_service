@@ -5,7 +5,6 @@ import com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.ShipmentAttachDetachV3Request;
-import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Service;
 import io.swagger.annotations.ApiResponse;
@@ -41,8 +40,7 @@ public class ConsolidationV3Controller {
             @ApiResponse(code = 200, response = RunnerResponse.class, message = ConsolidationConstants.ATTACH_SHIPMENT_SUCCESSFUL)
     })
     @PostMapping(ApiConstants.ATTACH_SHIPMENTS)
-    public ResponseEntity<IRunnerResponse> attachShipments(@RequestBody @Valid ShipmentAttachDetachV3Request request)
-            throws RunnerException {
+    public ResponseEntity<IRunnerResponse> attachShipments(@RequestBody @Valid ShipmentAttachDetachV3Request request) {
         log.info("Received attachShipments request: {}", request);
         String warning = consolidationV3Service.attachShipments(request);
         return ResponseHelper.buildSuccessResponseWithWarning(warning);
