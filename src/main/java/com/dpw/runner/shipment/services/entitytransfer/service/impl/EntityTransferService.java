@@ -2201,11 +2201,11 @@ public class EntityTransferService implements IEntityTransferService {
 
     private void processDrtShipmentTypeForEmptyAgent(Map<UUID, List<ShipmentDetails>> destinationShipmentsMap, ShipmentDetails shipmentDetails, ShipmentDetails originShipment, ArValidationResponse arValidationResponse, Long receivingAgent) {
         if (Objects.isNull(receivingAgent) && Objects.equals(shipmentDetails.getJobType(), Constants.SHIPMENT_TYPE_DRT)) {
-            Long receiving_agent = shipmentDetails.getReceivingBranch();
+            Long receivingBranch = shipmentDetails.getReceivingBranch();
             if (destinationShipmentsMap.containsKey(originShipment.getGuid())) {
                 var ships = destinationShipmentsMap.get(originShipment.getGuid());
                 var isShips = ships.stream()
-                        .filter(x -> !x.getTenantId().equals(receiving_agent != null ? receiving_agent.intValue() : 0))
+                        .filter(x -> !x.getTenantId().equals(receivingBranch != null ? receivingBranch.intValue() : 0))
                         .toList();
 
                 if (!isShips.isEmpty()) {

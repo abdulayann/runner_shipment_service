@@ -828,8 +828,8 @@ public class V1ServiceImpl implements IV1Service {
             long time = System.currentTimeMillis();
             HttpEntity<Object> entity = new HttpEntity<>(request, V1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.VESSEL_DATA_URL, entity, V1DataResponse.class, new Object[0]);
-            double _timeTaken = System.currentTimeMillis() - time;
-            log.info("Token time taken in getVesselData() function {} with Request ID: {}", _timeTaken, LoggerHelper.getRequestIdFromMDC());
+            double timeTaken = System.currentTimeMillis() - time;
+            log.info("Token time taken in getVesselData() function {} with Request ID: {}", timeTaken, LoggerHelper.getRequestIdFromMDC());
             return masterDataResponse.getBody();
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
             throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());

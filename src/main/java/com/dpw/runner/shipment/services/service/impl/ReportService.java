@@ -234,6 +234,7 @@ public class ReportService implements IReportService {
             csdReport.setIsConsolidation(reportRequest.isFromConsolidation());
         }
 
+        //LATER - Need to handle for new flow
         dataRetrived = getDocumentDataForReports(report, reportRequest);
 
         boolean isOriginalPrinted = (boolean) dataRetrived.getOrDefault(ReportConstants.PRINTED_ORIGINAL, false);
@@ -241,10 +242,10 @@ public class ReportService implements IReportService {
         String objectType = getObjectType(reportRequest, dataRetrived);
 
         if (reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.AWB_LABEL)){
-            List<byte[]> pdf_Bytes = new ArrayList<>();
+            List<byte[]> pdfBytes = new ArrayList<>();
             DocPages pages = GetFromTenantSettings(reportRequest.getReportInfo(), null, null, reportRequest.getPrintType(), reportRequest.getFrontTemplateCode(), reportRequest.getBackTemplateCode(), false, null, null,false);
-            generatePdfBytes(reportRequest, pages, dataRetrived, pdf_Bytes);
-            return CommonUtils.concatAndAddContent(pdf_Bytes);
+            generatePdfBytes(reportRequest, pages, dataRetrived, pdfBytes);
+            return CommonUtils.concatAndAddContent(pdfBytes);
         }
         else if(reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB))
         {
@@ -406,29 +407,29 @@ public class ReportService implements IReportService {
 
         updateDateAndStatusForHawbPrint(reportRequest, dataRetrived, isOriginalPrint, isSurrenderPrint, isNeutralPrint);
 
-        List<byte[]> pdf_Bytes = new ArrayList<>();
+        List<byte[]> pdfBytes = new ArrayList<>();
         if (reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.NEUTRAL))
             return getBytesForNeutralAWB(dataRetrived);
 
-        DocPages Pages = GetFromTenantSettings(reportRequest.getReportInfo(), hbltype, objectType, reportRequest.getPrintType(), reportRequest.getFrontTemplateCode(), reportRequest.getBackTemplateCode(), isOriginalPrinted, reportRequest.getTransportMode(), reportRequest.getMultiTemplateCode(),false);
-        byte[] pdfByte_Content = null;
+        DocPages docPages = GetFromTenantSettings(reportRequest.getReportInfo(), hbltype, objectType, reportRequest.getPrintType(), reportRequest.getFrontTemplateCode(), reportRequest.getBackTemplateCode(), isOriginalPrinted, reportRequest.getTransportMode(), reportRequest.getMultiTemplateCode(),false);
+        byte[] pdfByteContent;
         byte[] mainDocHawb = null;
         Map<String, Object> dataRetrived1 = dataRetrived;
         CompletableFuture<byte[]> mainDocFuture = null;
         boolean asyncFlag = Boolean.FALSE;
         if(reportRequest.isPrintForParties()){
-            mainDocHawb = printForPartiesAndBarcode(reportRequest, pdf_Bytes, dataRetrived.get(ReportConstants.HAWB_NO) == null? "" : dataRetrived.get(ReportConstants.HAWB_NO).toString(), dataRetrived, Pages);
+            mainDocHawb = printForPartiesAndBarcode(reportRequest, pdfBytes, dataRetrived.get(ReportConstants.HAWB_NO) == null? "" : dataRetrived.get(ReportConstants.HAWB_NO).toString(), dataRetrived, docPages);
         }else{
             asyncFlag = Boolean.TRUE;
             mainDocFuture = CompletableFuture.supplyAsync(
-                () -> GetFromDocumentService(dataRetrived1, Pages.getMainPageId()),
+                () -> GetFromDocumentService(dataRetrived1, docPages.getMainPageId()),
                 executorService);
         }
         var firstPageHawbFuture =  CompletableFuture.supplyAsync(
-             () -> GetFromDocumentService(dataRetrived1, Pages.getFirstPageId()),
+             () -> GetFromDocumentService(dataRetrived1, docPages.getFirstPageId()),
              executorService);
         var backPageHawbFuture =  CompletableFuture.supplyAsync(
-            () -> GetFromDocumentService(dataRetrived1, Pages.getBackPrintId()),
+            () -> GetFromDocumentService(dataRetrived1, docPages.getBackPrintId()),
             executorService);
         if (asyncFlag) {
             CompletableFuture.allOf(mainDocFuture, firstPageHawbFuture, backPageHawbFuture)
@@ -445,15 +446,15 @@ public class ReportService implements IReportService {
         {
             throw new ValidationException(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE);
         }
-        List<byte[]> pdfBytesHawb = getOriginalandCopies(Pages, reportRequest.getReportInfo(), mainDocHawb, firstPageHawb, backPrintHawb, dataRetrived, hbltype, tenantSettingsRow, reportRequest.getNoOfCopies(), reportRequest);
-        pdfByte_Content = getPdfByteContentForHawb(reportRequest, dataRetrived, isOriginalPrint, pdfBytesHawb);
+        List<byte[]> pdfBytesHawb = getOriginalandCopies(docPages, reportRequest.getReportInfo(), mainDocHawb, firstPageHawb, backPrintHawb, dataRetrived, hbltype, tenantSettingsRow, reportRequest.getNoOfCopies(), reportRequest);
+        pdfByteContent = getPdfByteContentForHawb(reportRequest, dataRetrived, isOriginalPrint, pdfBytesHawb);
 
-        addDocumentToDocumentMaster(reportRequest, pdfByte_Content);
+        addDocumentToDocumentMaster(reportRequest, pdfByteContent);
 
         triggerAutomaticTransfer(report, reportRequest);
 
         //Update shipment issue date
-        return pdfByte_Content;
+        return pdfByteContent;
     }
 
     private void updateCustomDataInDataRetrivedForHawb(ReportRequest reportRequest, Map<String, Object> dataRetrived) {
@@ -549,11 +550,11 @@ public class ReportService implements IReportService {
 
     private byte[] getBytesForMawb(ReportRequest reportRequest, Map<String, Object> dataRetrived, Boolean isOriginalPrint, Boolean isSurrenderPrint, IReport report) throws DocumentException, IOException, RunnerException {
         updateCustomDataInDataRetrivedForMawb(reportRequest, dataRetrived);
-        List<byte[]> pdf_Bytes = new ArrayList<>();
+        List<byte[]> pdfBytes = new ArrayList<>();
         if(reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.NEUTRAL)) {
             return getBytesForNeutralAWB(dataRetrived);
         }
-        byte[] pdfByte_Content = getPdfByteContentForMawb(reportRequest, dataRetrived, pdf_Bytes);
+        byte[] pdfByteContentForMawb = getPdfByteContentForMawb(reportRequest, dataRetrived, pdfBytes);
         var shc = dataRetrived.getOrDefault(ReportConstants.SPECIAL_HANDLING_CODE, null);
         boolean addWaterMarkForEaw = false;
         if(shc != null){
@@ -563,12 +564,12 @@ public class ReportService implements IReportService {
             }
         }
         if(addWaterMarkForEaw && reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.Draft.name())) {
-            pdfByte_Content = CommonUtils.addWatermarkToPdfBytes(pdfByte_Content, BaseFont.createFont(BaseFont.TIMES_BOLD, BaseFont.WINANSI, BaseFont.EMBEDDED), ReportConstants.DRAFT_EAW_WATERMARK);
+            pdfByteContentForMawb = CommonUtils.addWatermarkToPdfBytes(pdfByteContentForMawb, BaseFont.createFont(BaseFont.TIMES_BOLD, BaseFont.WINANSI, BaseFont.EMBEDDED), ReportConstants.DRAFT_EAW_WATERMARK);
         }
         else if(reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.DRAFT)){
-            pdfByte_Content = CommonUtils.addWatermarkToPdfBytes(pdfByte_Content, BaseFont.createFont(BaseFont.TIMES_BOLD, BaseFont.WINANSI, BaseFont.EMBEDDED), ReportConstants.DRAFT_WATERMARK);
+            pdfByteContentForMawb = CommonUtils.addWatermarkToPdfBytes(pdfByteContentForMawb, BaseFont.createFont(BaseFont.TIMES_BOLD, BaseFont.WINANSI, BaseFont.EMBEDDED), ReportConstants.DRAFT_WATERMARK);
         } else if(addWaterMarkForEaw && Boolean.TRUE.equals(isOriginalPrint)) {
-            pdfByte_Content = CommonUtils.addWatermarkToPdfBytes(pdfByte_Content, BaseFont.createFont(BaseFont.TIMES_BOLD, BaseFont.WINANSI, BaseFont.EMBEDDED), ReportConstants.ORIGINAL_EAW_WATERMARK);
+            pdfByteContentForMawb = CommonUtils.addWatermarkToPdfBytes(pdfByteContentForMawb, BaseFont.createFont(BaseFont.TIMES_BOLD, BaseFont.WINANSI, BaseFont.EMBEDDED), ReportConstants.ORIGINAL_EAW_WATERMARK);
         }
         //Update shipment issue date
         if ((isOriginalPrint || isSurrenderPrint) && reportRequest.getReportKey() != null && reportRequest.getReportKey().equalsIgnoreCase(ReportConstants.SHIPMENT_ID))
@@ -576,23 +577,23 @@ public class ReportService implements IReportService {
             shipmentService.updateDateAndStatus(Long.parseLong(reportRequest.getReportId()), LocalDate.now().atStartOfDay(), null);
         }
 
-        addDocumentToDocumentMaster(reportRequest, pdfByte_Content);
+        addDocumentToDocumentMaster(reportRequest, pdfByteContentForMawb);
 
         triggerAutomaticTransfer(report, reportRequest);
 
-        return pdfByte_Content;
+        return pdfByteContentForMawb;
     }
 
-    private byte[] getPdfByteContentForMawb(ReportRequest reportRequest, Map<String, Object> dataRetrived, List<byte[]> pdf_Bytes) throws DocumentException, IOException {
-        DocPages Pages = GetFromTenantSettings(reportRequest.getReportInfo(), null, null, reportRequest.getPrintType(), reportRequest.getFrontTemplateCode(), reportRequest.getBackTemplateCode(), false, null, null, false);
-        byte[] pdfByte_Content = null;
+    private byte[] getPdfByteContentForMawb(ReportRequest reportRequest, Map<String, Object> dataRetrived, List<byte[]> pdfBytes) throws DocumentException, IOException {
+        DocPages docPages = GetFromTenantSettings(reportRequest.getReportInfo(), null, null, reportRequest.getPrintType(), reportRequest.getFrontTemplateCode(), reportRequest.getBackTemplateCode(), false, null, null, false);
+        byte[] pdfByteContent = null;
         if(reportRequest.isPrintForParties()){
-            pdfByte_Content = printForPartiesAndBarcode(reportRequest, pdf_Bytes, dataRetrived.get(ReportConstants.MAWB_NUMBER) == null ? "": dataRetrived.get(ReportConstants.MAWB_NUMBER).toString(), dataRetrived, Pages);
+            pdfByteContent = printForPartiesAndBarcode(reportRequest, pdfBytes, dataRetrived.get(ReportConstants.MAWB_NUMBER) == null ? "": dataRetrived.get(ReportConstants.MAWB_NUMBER).toString(), dataRetrived, docPages);
         }else{
-            pdfByte_Content = GetFromDocumentService(dataRetrived, Pages.getMainPageId());
-            if(pdfByte_Content == null) throw new ValidationException(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE);
+            pdfByteContent = GetFromDocumentService(dataRetrived, docPages.getMainPageId());
+            if(pdfByteContent == null) throw new ValidationException(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE);
         }
-        return pdfByte_Content;
+        return pdfByteContent;
     }
 
     private void updateCustomDataInDataRetrivedForMawb(ReportRequest reportRequest, Map<String, Object> dataRetrived) {
@@ -1608,40 +1609,40 @@ public class ReportService implements IReportService {
     }
 
     private byte[] getBytesForNeutralAWB(Object json){
-        DocPages Pages = GetFromTenantSettings(ReportConstants.AWB_NEUTRAL, null, null, null, null, null, false, null, null,false);;
-        return GetFromDocumentService(json, Pages.getMainPageId());
+        DocPages docPages = GetFromTenantSettings(ReportConstants.AWB_NEUTRAL, null, null, null, null, null, false, null, null,false);;
+        return GetFromDocumentService(json, docPages.getMainPageId());
     }
 
-    public List<byte[]> getOriginalandCopies(DocPages pages, String ReportInfo, byte[] mainDoc, byte[] firstpage, byte[] backprint, final Map<String, Object> json, String hbltype, ShipmentSettingsDetails shipmentSettings, String noOfCopies, ReportRequest reportRequest) throws DocumentException, IOException {
+    public List<byte[]> getOriginalandCopies(DocPages pages, String reportInfo, byte[] mainDoc, byte[] firstpage, byte[] backprint, final Map<String, Object> json, String hbltype, ShipmentSettingsDetails shipmentSettings, String noOfCopies, ReportRequest reportRequest) throws DocumentException, IOException {
 
         List<byte[]> pdfBytes = new ArrayList<>();
 
-        String logopath = getLogopath(pages, ReportInfo, json, hbltype);
+        String logopath = getLogopath(pages, reportInfo, json, hbltype);
 
         int originalCount = Integer.parseInt(json.getOrDefault(ReportConstants.ORIGINALS, -1).toString());
         int copyCount = Integer.parseInt(json.getOrDefault(ReportConstants.COPY_BILLS, -1).toString());
 
-        if (!ReportInfo.equalsIgnoreCase(ReportConstants.SHIPMENT_HOUSE_BILL))
+        if (!reportInfo.equalsIgnoreCase(ReportConstants.SHIPMENT_HOUSE_BILL))
         {
             copyCount = -1;
 
-            byte[] pdfByteContentOriginal = mergeDocumentBytes(mainDoc, firstpage, backprint, logopath, ReportInfo, pages.getShipmentSettingsDetails());
+            byte[] pdfByteContentOriginal = mergeDocumentBytes(mainDoc, firstpage, backprint, logopath, reportInfo, pages.getShipmentSettingsDetails());
             pdfBytes.add(pdfByteContentOriginal);
         }
         else if ( originalCount != 0 )
         {
-            addPdfBytesForOriginalCount(pages, ReportInfo, firstpage, backprint, json, reportRequest, originalCount, logopath, pdfBytes);
+            addPdfBytesForOriginalCount(pages, reportInfo, firstpage, backprint, json, reportRequest, originalCount, logopath, pdfBytes);
 
         }
 
-        mainDoc = getBytesForMainDoc(pages, ReportInfo, mainDoc, firstpage, backprint, json, reportRequest, copyCount, logopath, pdfBytes);
+        mainDoc = getBytesForMainDoc(pages, reportInfo, mainDoc, firstpage, backprint, json, reportRequest, copyCount, logopath, pdfBytes);
 
         try {
             if (Boolean.TRUE.equals(!Objects.isNull(shipmentSettings) && !Objects.isNull(shipmentSettings.getRestrictBlRelease())
                     && shipmentSettings.getRestrictBlRelease()) && StringUtility.isNotEmpty(noOfCopies)) {
-                Integer _copy = Integer.parseInt(noOfCopies);
-                byte[] pdfByteContentCopy = mergeDocumentBytes(mainDoc, firstpage, backprint, logopath, ReportInfo, pages.getShipmentSettingsDetails());
-                while (_copy-- > 1) {
+                int copy = Integer.parseInt(noOfCopies);
+                byte[] pdfByteContentCopy = mergeDocumentBytes(mainDoc, firstpage, backprint, logopath, reportInfo, pages.getShipmentSettingsDetails());
+                while (copy-- > 1) {
                     pdfBytes.add(pdfByteContentCopy);
                 }
             }
@@ -1650,7 +1651,7 @@ public class ReportService implements IReportService {
 
     }
 
-    private byte[] getBytesForMainDoc(DocPages pages, String ReportInfo, byte[] mainDoc, byte[] firstpage, byte[] backprint, Map<String, Object> json, ReportRequest reportRequest, int copyCount, String logopath, List<byte[]> pdfBytes) throws DocumentException, IOException {
+    private byte[] getBytesForMainDoc(DocPages pages, String reportInfo, byte[] mainDoc, byte[] firstpage, byte[] backprint, Map<String, Object> json, ReportRequest reportRequest, int copyCount, String logopath, List<byte[]> pdfBytes) throws DocumentException, IOException {
         if (copyCount > 0)
         {
             json.put(ReportConstants.ORIGINAL_OR_COPY, ReportConstants.COPY);
@@ -1661,7 +1662,7 @@ public class ReportService implements IReportService {
             }else{
                 mainDoc = GetFromDocumentService(json, pages.getMainPageId());
             }
-            byte[] pdfByteContentCopy = mergeDocumentBytes(mainDoc, firstpage, backprint, logopath, ReportInfo, pages.getShipmentSettingsDetails());
+            byte[] pdfByteContentCopy = mergeDocumentBytes(mainDoc, firstpage, backprint, logopath, reportInfo, pages.getShipmentSettingsDetails());
             for (int i = 0; i < copyCount; i++)
             {
                 pdfBytes.add(pdfByteContentCopy);
@@ -1671,18 +1672,18 @@ public class ReportService implements IReportService {
         return mainDoc;
     }
 
-    private String getLogopath(DocPages pages, String ReportInfo, Map<String, Object> json, String hbltype) {
+    private String getLogopath(DocPages pages, String reportInfo, Map<String, Object> json, String hbltype) {
         String logopath = (String) json.getOrDefault(ReportConstants.LOGO, null);
 
 
-        if (pages.isLogoFixed() || Boolean.TRUE.equals(isHblType(hbltype, ReportInfo)))
+        if (pages.isLogoFixed() || Boolean.TRUE.equals(isHblType(hbltype, reportInfo)))
         {
             logopath = null;
         }
         return logopath;
     }
 
-    private void addPdfBytesForOriginalCount(DocPages pages, String ReportInfo, byte[] firstpage, byte[] backprint, Map<String, Object> json, ReportRequest reportRequest, int originalCount, String logopath, List<byte[]> pdfBytes) throws DocumentException, IOException {
+    private void addPdfBytesForOriginalCount(DocPages pages, String reportInfo, byte[] firstpage, byte[] backprint, Map<String, Object> json, ReportRequest reportRequest, int originalCount, String logopath, List<byte[]> pdfBytes) throws DocumentException, IOException {
         // use a concurrent dictionary instead of a list for thread safety and preserving the order of document
         Map<Integer, byte[]> mainDocParallel = new ConcurrentHashMap<>();
         // Call document service in parallel
@@ -1705,7 +1706,7 @@ public class ReportService implements IReportService {
         );
 
         for(int i = 1; i <= originalCount; i++){
-            byte[] pdfByteContentCurrent = mergeDocumentBytes(mainDocParallel.get(i), firstpage, backprint, logopath, ReportInfo, pages.getShipmentSettingsDetails());
+            byte[] pdfByteContentCurrent = mergeDocumentBytes(mainDocParallel.get(i), firstpage, backprint, logopath, reportInfo, pages.getShipmentSettingsDetails());
             pdfBytes.add(pdfByteContentCurrent);
         }
     }
@@ -1751,20 +1752,20 @@ public class ReportService implements IReportService {
             PdfReader pdfReader = new PdfReader(mainDoc);
             int totalPages = pdfReader.getNumberOfPages();
             for (int i = 1; i <= totalPages; i++) {
-                PdfReader pdfReader_maindoc = new PdfReader(mainDoc);
+                PdfReader pdfReaderMaindoc = new PdfReader(mainDoc);
                 pages = new ArrayList<>();
                 pages.add(i);
-                pdfReader_maindoc.selectPages(pages);
-                pdfConcat.addPages(pdfReader_maindoc);
+                pdfReaderMaindoc.selectPages(pages);
+                pdfConcat.addPages(pdfReaderMaindoc);
 
                 if (backPrint != null) {
-                    PdfReader pdfReader_backdoc = new PdfReader(backPrint);
+                    PdfReader pdfReaderBackdoc = new PdfReader(backPrint);
                     List<Integer> pages2 = new ArrayList<>();
                     pages2.add(1);
-                    pdfReader_backdoc.selectPages(pages2);
-                    pdfConcat.addPages(pdfReader_backdoc);
+                    pdfReaderBackdoc.selectPages(pages2);
+                    pdfConcat.addPages(pdfReaderBackdoc);
                 }
-                pdfReader_maindoc.close();
+                pdfReaderMaindoc.close();
             }
             pdfReader.close();
         } else {
@@ -1805,10 +1806,10 @@ public class ReportService implements IReportService {
         return inputBytes;
     }
 
-    private void createAutoEvent(String ReportId, String eventCode, ShipmentSettingsDetails tenantSettingsRow) {
-        if (Boolean.TRUE.equals(tenantSettingsRow.getAutoEventCreate()) && StringUtility.isNotEmpty(ReportId)) {
+    private void createAutoEvent(String reportId, String eventCode, ShipmentSettingsDetails tenantSettingsRow) {
+        if (Boolean.TRUE.equals(tenantSettingsRow.getAutoEventCreate()) && StringUtility.isNotEmpty(reportId)) {
             CustomAutoEventRequest eventReq = new CustomAutoEventRequest();
-            eventReq.entityId = Long.parseLong(ReportId);
+            eventReq.entityId = Long.parseLong(reportId);
             eventReq.entityType = Constants.SHIPMENT;
             eventReq.eventCode = eventCode;
             eventDao.autoGenerateEvents(eventReq);
@@ -1859,7 +1860,7 @@ public class ReportService implements IReportService {
         }
     }
 
-    public void addDocumentToDocumentMaster(ReportRequest reportRequest,  byte[] pdfByte_Content) {
+    public void addDocumentToDocumentMaster(ReportRequest reportRequest,  byte[] pdfByteContent) {
         try {
             boolean isShipment = reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.HAWB);
             String guid = null;
@@ -1884,7 +1885,7 @@ public class ReportService implements IReportService {
                 throw new RunnerException("Report Id is Invalid");
             }
 
-            byte[] finalPdfByte_Content = pdfByte_Content;
+            byte[] finalPdfByteContent = pdfByteContent;
             String documentType = documentTypeFinder(reportRequest);
 
             DocUploadRequest docUploadRequest = new DocUploadRequest();
@@ -1897,7 +1898,7 @@ public class ReportService implements IReportService {
             String filename = docUploadRequest.getType() + "_" + reportRequest.getPrintType() + "_" + docUploadRequest.getId() + ".pdf";
             String finalGuid = guid;
             CompletableFuture.runAsync(masterDataUtils.withMdc(
-                () -> addFilesFromReport(new BASE64DecodedMultipartFile(finalPdfByte_Content), filename,
+                () -> addFilesFromReport(new BASE64DecodedMultipartFile(finalPdfByteContent), filename,
                     docUploadRequest, finalGuid)), executorService);
 
 
@@ -2018,7 +2019,7 @@ public class ReportService implements IReportService {
         }
     }
 
-    private byte[] printForPartiesAndBarcode(ReportRequest reportRequest, List<byte[]> pdf_Bytes, String number, Map<String, Object> dataRetrived, DocPages pages) throws DocumentException, IOException {
+    private byte[] printForPartiesAndBarcode(ReportRequest reportRequest, List<byte[]> pdfBytes, String number, Map<String, Object> dataRetrived, DocPages pages) throws DocumentException, IOException {
         String[] printingForParties = null;
         byte[] lastPage = null;
         if(reportRequest.getPrintingFor_str() != null && reportRequest.getPrintingFor_str().equalsIgnoreCase("0")){
@@ -2040,9 +2041,9 @@ public class ReportService implements IReportService {
             }
             if(reportRequest.isPrintBarcode())
                 mainDocPage = addBarCodeInReport(mainDocPage, number, 140, -50, ReportConstants.MAWB, false);
-            pdf_Bytes.add(mainDocPage);
+            pdfBytes.add(mainDocPage);
         }
-        return CommonUtils.concatAndAddContent(pdf_Bytes);
+        return CommonUtils.concatAndAddContent(pdfBytes);
     }
 
     public void triggerAutomaticTransfer(IReport report, ReportRequest reportRequest){

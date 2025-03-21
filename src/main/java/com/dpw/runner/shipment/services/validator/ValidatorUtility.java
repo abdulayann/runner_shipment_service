@@ -731,11 +731,11 @@ public class ValidatorUtility {
             Set<JsonValue> set = new HashSet<>();
 
             for (JsonValue currentValue : fieldValueArray) {
-                JsonValue _value = currentValue.asJsonObject().get(uniqueKey);
+                JsonValue value1 = currentValue.asJsonObject().get(uniqueKey);
 
-                if (_value != null && set.contains(_value))
+                if (value1 != null && set.contains(value1))
                     errors.add(String.format(ErrorConstants.INVALID_UNIQUE_CONSTRAINT, uniqueKey, at));
-                set.add(_value);
+                set.add(value1);
 
             }
         }

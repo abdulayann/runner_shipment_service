@@ -50,18 +50,18 @@ public class SyncService implements ISyncService {
             if (ctx.getLastThrowable() != null) {
                 log.error("V1 error -> {}", ctx.getLastThrowable().getMessage());
             }
-            V1DataSyncResponse response_ = v1Service.v1DataSync(json, headers);
-            if (!Boolean.TRUE.equals(response_.getIsSuccess())) {
+            V1DataSyncResponse response = v1Service.v1DataSync(json, headers);
+            if (!Boolean.TRUE.equals(response.getIsSuccess())) {
                 try {
                     if (ctx.getRetryCount() == maxAttempts - 1)
                         emailServiceUtility.sendEmailForSyncEntity(id, guid,
-                                entity, response_.getError().toString());
+                                entity, response.getError().toString());
                 } catch (Exception ex) {
                     log.error("Not able to send email for sync: {} failure for: {}", entity, ex.getMessage());
                 }
-                throw new RunnerException((String) response_.error);
+                throw new RunnerException((String) response.error);
             }
-            return ResponseHelper.buildSuccessResponse(response_);
+            return ResponseHelper.buildSuccessResponse(response);
         });
     }
     @Override

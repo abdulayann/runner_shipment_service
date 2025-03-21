@@ -1640,7 +1640,7 @@ public abstract class IReport {
             v1BillCharge.setLocalTax(
                     revenueDetailsOpt.map(BillChargeRevenueDetailsResponse::getTaxAmount).orElse(null)
             );
-            v1BillCharge.setMeasurementBasis(null);
+            v1BillCharge.setMeasurementBasis(null); // LATER: Check for cost/revenue MeasurementBasis
 
             v1BillCharge.setPaymentType(billingBillCharge.getPaymentTypeCode());
             v1BillCharge.setChargeTypeCode(
@@ -1716,8 +1716,8 @@ public abstract class IReport {
         return null;
     }
 
-    public Hbl getHbl(Long Id) {
-        List<Hbl> hbls = hblDao.findByShipmentId(Id);
+    public Hbl getHbl(Long id) {
+        List<Hbl> hbls = hblDao.findByShipmentId(id);
         if(hbls != null && !hbls.isEmpty())
             return hbls.get(0);
         return null;
@@ -2198,8 +2198,8 @@ public abstract class IReport {
         dictionary.put(ReportConstants.TENANT_CURRENCY, user.CompanyCurrency);
     }
 
-    public MasterData getMasterListData(MasterDataType type, String ItemValue) {
-        return masterDataUtils.getMasterListData(type, ItemValue);
+    public MasterData getMasterListData(MasterDataType type, String itemValue) {
+        return masterDataUtils.getMasterListData(type, itemValue);
     }
     public CarrierMasterData getCarrier(String carrier) {
         if(StringUtility.isEmpty(carrier)) return null;
@@ -2275,8 +2275,8 @@ public abstract class IReport {
         return containerCountByCode;
     }
 
-    public Awb getHawb(Long Id) {
-        List<Awb> awb = awbDao.findByShipmentId(Id);
+    public Awb getHawb(Long id) {
+        List<Awb> awb = awbDao.findByShipmentId(id);
         if (awb != null && !awb.isEmpty())
             return awb.get(0);
         return null;
@@ -2736,25 +2736,25 @@ public abstract class IReport {
         return value.toString();
     }
 
-    public String getPortDetails(String UNLocCode) {
+    public String getPortDetails(String unLocCode) {
         Map<String, UnlocationsResponse> unlocationsMap = new HashMap<>();
         Set<String> locCodes = new HashSet<>();
-        locCodes.add(UNLocCode);
+        locCodes.add(unLocCode);
         Map<String, EntityTransferUnLocations> entityTransferUnLocationsMap = masterDataUtils.getLocationDataFromCache(locCodes, EntityTransferConstants.LOCATION_SERVICE_GUID);
         for (Map.Entry<String, EntityTransferUnLocations> entry : entityTransferUnLocationsMap.entrySet()) {
             String key = entry.getKey();
             UnlocationsResponse value = jsonHelper.convertValue(entry.getValue(), UnlocationsResponse.class);
             unlocationsMap.put(key, value);
         }
-        UnlocationsResponse unlocationsResponse = unlocationsMap.get(UNLocCode);
+        UnlocationsResponse unlocationsResponse = unlocationsMap.get(unLocCode);
         if(unlocationsResponse != null) {
             return combineStringsWithComma(unlocationsResponse.getName(), unlocationsResponse.getCountry());
         }
         return "";
     }
 
-    public UnlocationsResponse getUNLocRow(String UNLocCode) {
-        return masterDataUtils.getUNLocRow(UNLocCode);
+    public UnlocationsResponse getUNLocRow(String unLocCode) {
+        return masterDataUtils.getUNLocRow(unLocCode);
     }
 
     public CommodityResponse getCommodity(String commodityCode) {

@@ -198,7 +198,6 @@ public class HawbReport extends IReport{
 
         Set<String> masterDataQuery = new HashSet<>();
 
-        EntityTransferMasterLists paymentTerms = null;
         ConsolidationModel consolRow = hawbModel.getConsolidationDetails();
         String awbNumber = getAwbNumberAndAddTags(shipmentInfo, dictionary, hawbModel, consolRow, masterDataQuery);
         if(StringUtility.isNotEmpty(awbNumber)){
@@ -1019,7 +1018,7 @@ public class HawbReport extends IReport{
         }
     }
 
-    public static List<String> getOtherChargesDetailsOAT(List<AwbOtherChargesInfo> otherChargesRows, String OAT)
+    public static List<String> getOtherChargesDetailsOAT(List<AwbOtherChargesInfo> otherChargesRows, String oat)
     {
         Map<String, String> carrierCharges = new HashMap<>();
         Map<String, String> agentCharges = new HashMap<>();
@@ -1031,11 +1030,11 @@ public class HawbReport extends IReport{
             String chargeKey = chargeRow.getChargeTypeId();
             if (chargeDue == ChargesDue.AGENT)
             {
-                populateAgentChargesOAT(OAT, agentCharges, chargeKey, agentChargesStrBuilder);
+                populateAgentChargesOAT(oat, agentCharges, chargeKey, agentChargesStrBuilder);
             }
             else
             {
-                populateCarrierChargesOAT(OAT, carrierCharges, chargeKey, carrierChargesStrBuilder);
+                populateCarrierChargesOAT(oat, carrierCharges, chargeKey, carrierChargesStrBuilder);
             }
 
         }
@@ -1076,7 +1075,7 @@ public class HawbReport extends IReport{
         }
     }
 
-    public static List<String> getOtherChargesDetailsIATAOAT(List<AwbOtherChargesInfo> otherChargesRows, String OAT)
+    public static List<String> getOtherChargesDetailsIATAOAT(List<AwbOtherChargesInfo> otherChargesRows, String oat)
     {
         Map<String, String> carrierCharges = new HashMap<>();
         Map<String, String> agentCharges = new HashMap<>();
@@ -1097,7 +1096,7 @@ public class HawbReport extends IReport{
                     {
                         chargeKey = chargeKey + Constants.AGENT_PREFIX;
                     }
-                    populateAgentChargesOAT(OAT, agentCharges, chargeKey, agentChargesStrBuilder);
+                    populateAgentChargesOAT(oat, agentCharges, chargeKey, agentChargesStrBuilder);
                 }
                 else
                 {
@@ -1105,7 +1104,7 @@ public class HawbReport extends IReport{
                     {
                         chargeKey = chargeKey + Constants.CARRIER_PREFIX;
                     }
-                    populateCarrierChargesOAT(OAT, carrierCharges, chargeKey, carrierChargesStrBuilder);
+                    populateCarrierChargesOAT(oat, carrierCharges, chargeKey, carrierChargesStrBuilder);
                 }
             }
         }

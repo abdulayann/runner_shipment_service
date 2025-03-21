@@ -898,11 +898,11 @@ public class BookingIntegrationsUtility {
     }
 
     private CommonV1ListRequest createCriteriaForTwoFields(String field1, String operator1, Object value1, String field2, String operator2, Object value2) {
-        List<Object> field1_ = new ArrayList<>(List.of(field1));
-        List<Object> criteria1 = new ArrayList<>(List.of(field1_, operator1, value1));
+        List<Object> fieldList1 = new ArrayList<>(List.of(field1));
+        List<Object> criteria1 = new ArrayList<>(List.of(fieldList1, operator1, value1));
 
-        List<Object> field2_ = new ArrayList<>(List.of(field2));
-        List<Object> criteria2 = new ArrayList<>(List.of(field2_, operator2, value2));
+        List<Object> fieldList2 = new ArrayList<>(List.of(field2));
+        List<Object> criteria2 = new ArrayList<>(List.of(fieldList2, operator2, value2));
 
         return CommonV1ListRequest.builder().criteriaRequests(List.of(criteria1, "and", criteria2)).build();
     }
@@ -910,14 +910,14 @@ public class BookingIntegrationsUtility {
     private CommonV1ListRequest createCriteriaForThreeFields(String field1, String operator1, Object value1,
                                                              String field2, String operator2, Object value2,
                                                              String field3, String operator3, Object value3) {
-        List<Object> field1_ = new ArrayList<>(List.of(field1));
-        List<Object> criteria1 = new ArrayList<>(List.of(field1_, operator1, value1));
+        List<Object> fieldList1 = new ArrayList<>(List.of(field1));
+        List<Object> criteria1 = new ArrayList<>(List.of(fieldList1, operator1, value1));
 
-        List<Object> field2_ = new ArrayList<>(List.of(field2));
-        List<Object> criteria2 = new ArrayList<>(List.of(field2_, operator2, value2));
+        List<Object> fieldList2 = new ArrayList<>(List.of(field2));
+        List<Object> criteria2 = new ArrayList<>(List.of(fieldList2, operator2, value2));
 
-        List<Object> field3_ = new ArrayList<>(List.of(field3));
-        List<Object> criteria3 = new ArrayList<>(List.of(field3_, operator3, value3));
+        List<Object> fieldList3 = new ArrayList<>(List.of(field3));
+        List<Object> criteria3 = new ArrayList<>(List.of(fieldList3, operator3, value3));
 
         return CommonV1ListRequest.builder().criteriaRequests(List.of(List.of(criteria1, "and", criteria2), "and", criteria3)).build();
     }

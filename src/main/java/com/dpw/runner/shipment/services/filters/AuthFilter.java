@@ -142,10 +142,10 @@ public class AuthFilter extends OncePerRequestFilter {
         SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
         SyncingContext.setContext(true);
         filterChain.doFilter(servletRequest, servletResponse);
-        double _timeTaken = System.currentTimeMillis() - time;
-        log.info(String.format("Request Finished , Total Time in milis:- %s | Request ID: %s", (_timeTaken), LoggerHelper.getRequestIdFromMDC()));
-        if (_timeTaken > 500)
-            log.info(" RequestId: {} || {} for event: {} Actual time taken: {} ms for API :{}",LoggerHelper.getRequestIdFromMDC(), LoggerEvent.MORE_TIME_TAKEN, LoggerEvent.COMPLETE_API_TIME, _timeTaken, servletRequest.getRequestURI());
+        double timeTaken = System.currentTimeMillis() - time;
+        log.info(String.format("Request Finished , Total Time in milis:- %s | Request ID: %s", (timeTaken), LoggerHelper.getRequestIdFromMDC()));
+        if (timeTaken > 500)
+            log.info(" RequestId: {} || {} for event: {} Actual time taken: {} ms for API :{}",LoggerHelper.getRequestIdFromMDC(), LoggerEvent.MORE_TIME_TAKEN, LoggerEvent.COMPLETE_API_TIME, timeTaken, servletRequest.getRequestURI());
         }finally {
             MDC.clear();
             TenantContext.removeTenant();

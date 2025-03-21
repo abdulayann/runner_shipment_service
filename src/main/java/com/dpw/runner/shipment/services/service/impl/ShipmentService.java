@@ -612,7 +612,7 @@ public class ShipmentService implements IShipmentService {
     private void getMasterDataForList(List<ShipmentDetails> lst, List<IRunnerResponse> responseList, boolean getMasterData, boolean includeTenantData) {
         if(getMasterData || Boolean.TRUE.equals(includeMasterData)) {
             try {
-                double _start = System.currentTimeMillis();
+                double startTime = System.currentTimeMillis();
                 var locationDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.setLocationData(responseList, EntityTransferConstants.LOCATION_SERVICE_GUID)), executorServiceMasterData);
                 var containerDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.setContainerTeuData(lst, responseList)), executorServiceMasterData);
                 CompletableFuture<Void> billDataFuture = CompletableFuture.completedFuture(null);
@@ -624,7 +624,7 @@ public class ShipmentService implements IShipmentService {
                 if (Boolean.TRUE.equals(includeTenantData))
                     tenantDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.fetchTenantIdForList(responseList)), executorServiceMasterData);
                 CompletableFuture.allOf(locationDataFuture, containerDataFuture, billDataFuture, vesselDataFuture, tenantDataFuture).join();
-                log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.SHIPMENT_LIST_MASTER_DATA, (System.currentTimeMillis() - _start) , LoggerHelper.getRequestIdFromMDC());
+                log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.SHIPMENT_LIST_MASTER_DATA, (System.currentTimeMillis() - startTime) , LoggerHelper.getRequestIdFromMDC());
             }
             catch (Exception ex) {
                 log.error(Constants.ERROR_OCCURRED_FOR_EVENT, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_SHIPMENT_LIST, ex.getLocalizedMessage());
@@ -4375,11 +4375,11 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    private List<Long> getContainerIds(boolean lclAndSeaOrRoadFlag, Page<Containers> containers, Long shipmentId, List<Containers> containersList, boolean IsConsolidatorFlag, ShipmentDetails shipmentDetails) throws RunnerException {
+    private List<Long> getContainerIds(boolean lclAndSeaOrRoadFlag, Page<Containers> containers, Long shipmentId, List<Containers> containersList, boolean isConsolidatorFlag, ShipmentDetails shipmentDetails) throws RunnerException {
         List<Containers> conts = new ArrayList<>();
         List<Long> containerIds = new ArrayList<>();
         if(lclAndSeaOrRoadFlag) {
-            addContainerListWithContAndContent(containers, shipmentId, containersList, IsConsolidatorFlag, conts);
+            addContainerListWithContAndContent(containers, shipmentId, containersList, isConsolidatorFlag, conts);
             saveContainersListIfFcl(shipmentDetails, containersList, containerIds);
         }
         else {
@@ -4393,7 +4393,7 @@ public class ShipmentService implements IShipmentService {
         return containerIds;
     }
 
-    private void addContainerListWithContAndContent(Page<Containers> containers, Long shipmentId, List<Containers> containersList, boolean IsConsolidatorFlag, List<Containers> conts) throws RunnerException {
+    private void addContainerListWithContAndContent(Page<Containers> containers, Long shipmentId, List<Containers> containersList, boolean isConsolidatorFlag, List<Containers> conts) throws RunnerException {
         for (Containers container : containers.getContent()) {
             List<ShipmentsContainersMapping> shipmentsContainersMappings = shipmentsContainersMappingDao.findByContainerId(container.getId());
             if(!shipmentsContainersMappings.stream().map(ShipmentsContainersMapping::getShipmentId).toList().contains(shipmentId)) {
@@ -4407,7 +4407,7 @@ public class ShipmentService implements IShipmentService {
                     if(achievedWeight.compareTo(container.getAllocatedWeight()) < 0 && achievedVolume.compareTo(container.getAllocatedVolume()) < 0) {
                         containersList.add(container);
                     }
-                    else if(!IsConsolidatorFlag) {
+                    else if(!isConsolidatorFlag) {
                         conts.add(container);
                     }
                 }
@@ -5604,12 +5604,12 @@ public class ShipmentService implements IShipmentService {
             log.info("{} | createShipmentPayload Time taken for setContainersPacksAutoUpdateData & setTruckDriverDetailsData: {} ms", LoggerHelper.getRequestIdFromMDC(), (System.currentTimeMillis() - mid));
             mid = System.currentTimeMillis();
             if(!Objects.isNull(shipmentDetails)) {
-                double _start1 = System.currentTimeMillis();
+                double start1 = System.currentTimeMillis();
                 shipmentDetailsResponse.setPackSummary(packingService.calculatePackSummary(shipmentDetails.getPackingList(), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType(), new ShipmentMeasurementDetailsDto()));
-                log.info("Time taken to calculate pack summary for event:{} | Time: {} ms. || RequestId: {},  pack size: {}", LoggerEvent.SHIPMENT_RETRIEVE_COMPLETE_MASTER_DATA, (System.currentTimeMillis() - _start1) , LoggerHelper.getRequestIdFromMDC(), CollectionUtils.isEmpty(shipmentDetails.getPackingList()) ? 0 : shipmentDetails.getPackingList().size());
-                _start1 = System.currentTimeMillis();
+                log.info("Time taken to calculate pack summary for event:{} | Time: {} ms. || RequestId: {},  pack size: {}", LoggerEvent.SHIPMENT_RETRIEVE_COMPLETE_MASTER_DATA, (System.currentTimeMillis() - start1) , LoggerHelper.getRequestIdFromMDC(), CollectionUtils.isEmpty(shipmentDetails.getPackingList()) ? 0 : shipmentDetails.getPackingList().size());
+                start1 = System.currentTimeMillis();
                 shipmentDetailsResponse.setContainerSummary(containerService.calculateContainerSummary(new ArrayList<>(shipmentDetails.getContainersList()), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType()));
-                log.info("Time taken to calculate container summary for event:{} | Time: {} ms. || RequestId: {}, container size: {}", LoggerEvent.SHIPMENT_RETRIEVE_COMPLETE_MASTER_DATA, (System.currentTimeMillis() - _start1) , LoggerHelper.getRequestIdFromMDC(), CollectionUtils.isEmpty(shipmentDetails.getContainersList()) ? 0 : shipmentDetails.getContainersList().size());
+                log.info("Time taken to calculate container summary for event:{} | Time: {} ms. || RequestId: {}, container size: {}", LoggerEvent.SHIPMENT_RETRIEVE_COMPLETE_MASTER_DATA, (System.currentTimeMillis() - start1) , LoggerHelper.getRequestIdFromMDC(), CollectionUtils.isEmpty(shipmentDetails.getContainersList()) ? 0 : shipmentDetails.getContainersList().size());
                 log.info("{} | createShipmentPayload Time taken for setPackSummary & setContainerSummary: {} ms", LoggerHelper.getRequestIdFromMDC(), (System.currentTimeMillis() - mid));
                 mid = System.currentTimeMillis();
             }

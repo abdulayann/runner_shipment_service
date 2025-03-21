@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 @Service
 @Slf4j
 @Generated
+@SuppressWarnings("java:S125")
 public class DpsConsumer {
 
     @Autowired
@@ -82,4 +83,20 @@ public class DpsConsumer {
         log.info("{} Message: {}", LoggerEvent.KAFKA_DPS, kafkaMessage);
     }
 
+
+    // SIMULATION DPS Events
+//    @PostConstruct
+//    private void simulateKafkaConsumption() {
+//        try {
+//            ObjectMapper objectMapper = new ObjectMapper();
+//            objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+//            objectMapper.registerModule(new JavaTimeModule());
+//            // Assuming the JSON file is on the classpath, adjust if needed
+//
+//            DpsDto jsonPayload = objectMapper.readValue(new File("src/main/resources/dps_payload_sample.json"), DpsDto.class);
+//            consume(objectMapper.writeValueAsString(jsonPayload)); // Simulate Kafka message consumption
+//        } catch (Exception e) {
+//            log.error("Error simulating Kafka message consumption: {}", e.getMessage());
+//        }
+//    }
 }

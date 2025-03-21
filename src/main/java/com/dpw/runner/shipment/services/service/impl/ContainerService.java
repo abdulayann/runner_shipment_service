@@ -1152,12 +1152,12 @@ public class ContainerService implements IContainerService {
         }
     }
 
-    private void processContainers(Page<Containers> containers, Long shipmentId, List<Containers> containersList, boolean IsConsolidatorFlag, List<Containers> conts) throws RunnerException {
+    private void processContainers(Page<Containers> containers, Long shipmentId, List<Containers> containersList, boolean isConsolidatorFlag, List<Containers> conts) throws RunnerException {
         for (Containers container : containers.getContent()) {
             List<ShipmentsContainersMapping> shipmentsContainersMappings = shipmentsContainersMappingDao.findByContainerId(container.getId());
             if(!shipmentsContainersMappings.stream().map(ShipmentsContainersMapping::getShipmentId).toList().contains(shipmentId)) {
 
-                if(container.getAllocatedWeight() != null && container.getAchievedWeight() != null && container.getAllocatedVolume() != null && container.getAchievedWeight() != null
+                if(container.getAllocatedWeight() != null && container.getAchievedWeight() != null && container.getAllocatedVolume() != null && container.getAchievedVolume() != null
                    && isNotEmpty(container.getAllocatedWeightUnit()) && isNotEmpty(container.getAllocatedVolumeUnit()) && isNotEmpty(container.getAchievedWeightUnit()) && isNotEmpty(container.getAchievedVolumeUnit())) {
 
                     BigDecimal achievedWeight = new BigDecimal(convertUnit(Constants.MASS, container.getAchievedWeight(), container.getAchievedWeightUnit(), container.getAllocatedWeightUnit()).toString());
@@ -1166,7 +1166,7 @@ public class ContainerService implements IContainerService {
                     if(achievedWeight.compareTo(container.getAllocatedWeight()) < 0 && achievedVolume.compareTo(container.getAllocatedVolume()) < 0) {
                         containersList.add(container);
                     }
-                    else if(!IsConsolidatorFlag) {
+                    else if(!isConsolidatorFlag) {
                         conts.add(container);
                     }
                 }

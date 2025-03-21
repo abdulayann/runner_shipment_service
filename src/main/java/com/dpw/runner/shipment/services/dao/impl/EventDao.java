@@ -143,6 +143,7 @@ public class EventDao implements IEventDao {
         String responseMsg;
         List<Events> responseEvents = new ArrayList<>();
         try {
+            // LATER- Handle Transactions here
             Map<Long, Events> hashMap;
             ListCommonRequest listCommonRequest = constructListRequestFromEntityId(entityId, entityType);
             if (entityType.equalsIgnoreCase(Constants.CONSOLIDATION)) {

@@ -203,9 +203,9 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
             return;
         List<ServiceDetails> res = cs.getServicesList().stream().map(
                 i -> {
-                    var _service = modelMapper.map(i, ServiceDetails.class);
-                    _service.setServiceDuration(i.getServiceDurationSpan());
-                    return _service;
+                    var serviceDetails = modelMapper.map(i, ServiceDetails.class);
+                    serviceDetails.setServiceDuration(i.getServiceDurationSpan());
+                    return serviceDetails;
                 }
         ).toList();
         sd.setServicesList(res);

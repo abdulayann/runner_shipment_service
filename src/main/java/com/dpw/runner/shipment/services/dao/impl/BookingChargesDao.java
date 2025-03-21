@@ -164,7 +164,7 @@ public class BookingChargesDao implements IBookingChargesDao {
         return res;
     }
 
-    public List<BookingCharges> updateEntityFromBooking(List<BookingCharges> BookingChargesList, Long bookingId) throws RunnerException {
+    public List<BookingCharges> updateEntityFromBooking(List<BookingCharges> bookingChargesList, Long bookingId) throws RunnerException {
         String responseMsg;
         List<BookingCharges> responseBookingCharges = new ArrayList<>();
         try {
@@ -175,8 +175,8 @@ public class BookingChargesDao implements IBookingChargesDao {
             Map<Long, BookingCharges> hashMap = bookingCharges.stream()
                     .collect(Collectors.toMap(BookingCharges::getId, Function.identity()));
             List<BookingCharges> bookingChargesRequestList = new ArrayList<>();
-            if (BookingChargesList != null && !BookingChargesList.isEmpty()) {
-                for (BookingCharges request : BookingChargesList) {
+            if (bookingChargesList != null && !bookingChargesList.isEmpty()) {
+                for (BookingCharges request : bookingChargesList) {
                     Long id = request.getId();
                     if (id != null) {
                         hashMap.remove(id);

@@ -141,7 +141,7 @@ public class MasterDataUtils{
     public void setLocationData(List<IRunnerResponse> responseList, String onField) {
         try {
             Map<String, Object> cacheMap = new HashMap<>();
-            double _start = System.currentTimeMillis();
+            double startTime = System.currentTimeMillis();
             Set<String> locCodes = new HashSet<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
             for (IRunnerResponse response : responseList) {
@@ -154,7 +154,7 @@ public class MasterDataUtils{
             for (IRunnerResponse response : responseList) {
                 setUnlocationMasterData(response, fieldNameKeyMap, cacheMap);
             }
-            log.info("Time taken to fetch location Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.SHIPMENT_LIST_MASTER_DATA, (System.currentTimeMillis() - _start) , LoggerHelper.getRequestIdFromMDC());
+            log.info("Time taken to fetch location Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.SHIPMENT_LIST_MASTER_DATA, (System.currentTimeMillis() - startTime) , LoggerHelper.getRequestIdFromMDC());
 
         } catch (Exception ex) {
             log.error("Request: {} | Error Occurred in CompletableFuture: setLocationData in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), MasterDataUtils.class.getSimpleName(), ex.getMessage());
@@ -218,7 +218,7 @@ public class MasterDataUtils{
     public void fetchVesselForList(List<IRunnerResponse> responseList) {
         try {
             Map<String, Object> cacheMap = new HashMap<>();
-            double _start = System.currentTimeMillis();
+            double startTime = System.currentTimeMillis();
             Set<String> vessels = new HashSet<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
             for (IRunnerResponse response : responseList) {
@@ -231,7 +231,7 @@ public class MasterDataUtils{
             for (IRunnerResponse response : responseList) {
                 setVesselsMasterData(response, fieldNameKeyMap, cacheMap);
             }
-            log.info("Time taken to fetch vessel Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.SHIPMENT_LIST_MASTER_DATA, (System.currentTimeMillis() - _start) , LoggerHelper.getRequestIdFromMDC());
+            log.info("Time taken to fetch vessel Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.SHIPMENT_LIST_MASTER_DATA, (System.currentTimeMillis() - startTime) , LoggerHelper.getRequestIdFromMDC());
         } catch (Exception ex) {
             log.error("Request: {} | Error Occurred in CompletableFuture: fetchVesselForList in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), MasterDataUtils.class.getSimpleName(), ex.getMessage());
         }
@@ -279,7 +279,7 @@ public class MasterDataUtils{
     public void fetchTenantIdForList(List<IRunnerResponse> responseList) {
         try {
             Map<String, Object> cacheMap = new HashMap<>();
-            double _start = System.currentTimeMillis();
+            double startTime = System.currentTimeMillis();
             Set<String> tenantIdList = new HashSet<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
             for (IRunnerResponse response : responseList) {
@@ -292,7 +292,7 @@ public class MasterDataUtils{
             for (IRunnerResponse response : responseList) {
                 setTenantsMasterData(response, fieldNameKeyMap, cacheMap);
             }
-            log.info("Time taken to fetch Tenant Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.SHIPMENT_LIST_MASTER_DATA, (System.currentTimeMillis() - _start) , LoggerHelper.getRequestIdFromMDC());
+            log.info("Time taken to fetch Tenant Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.SHIPMENT_LIST_MASTER_DATA, (System.currentTimeMillis() - startTime) , LoggerHelper.getRequestIdFromMDC());
 
         } catch (Exception ex) {
             log.error("Request: {} | Error Occurred in CompletableFuture: fetchTenantIdForList in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), MasterDataUtils.class.getSimpleName(), ex.getMessage());
@@ -368,7 +368,7 @@ public class MasterDataUtils{
     public <T extends IRunnerResponse> void setContainerTeuData(List<ShipmentDetails> shipmentDetailsList, List<T> responseList) {
         try {
             Map<String, Object> cacheMap = new HashMap<>();
-            double _start = System.currentTimeMillis();
+            double startTime = System.currentTimeMillis();
             Map<Long, T> dataMap = new HashMap<>();
             for (T response : responseList) {
                 if (response instanceof ShipmentListResponse shipmentListResponse) {
@@ -400,7 +400,7 @@ public class MasterDataUtils{
                     attachListShipmentResponse.setTeuCount(teu);
                 }
             }
-            log.info("Time taken to fetch COntainer Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.SHIPMENT_LIST_MASTER_DATA, (System.currentTimeMillis() - _start) , LoggerHelper.getRequestIdFromMDC());
+            log.info("Time taken to fetch COntainer Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.SHIPMENT_LIST_MASTER_DATA, (System.currentTimeMillis() - startTime) , LoggerHelper.getRequestIdFromMDC());
         } catch (Exception ex) {
             log.error("Request: {} | Error Occurred in CompletableFuture: setContainerTeuData in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), MasterDataUtils.class.getSimpleName(), ex.getMessage());
         }
@@ -1660,13 +1660,13 @@ public class MasterDataUtils{
         };
     }
 
-    public UnlocationsResponse getUNLocRow(String UNLocCode) {
-        if(StringUtility.isEmpty(UNLocCode))
+    public UnlocationsResponse getUNLocRow(String unLocCode) {
+        if(StringUtility.isEmpty(unLocCode))
             return null;
         List <Object> criteria = Arrays.asList(
                 Arrays.asList(EntityTransferConstants.LOCATION_SERVICE_GUID),
                 "=",
-                UNLocCode
+                unLocCode
         );
         CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).criteriaRequests(criteria).build();
         V1DataResponse response = v1Service.fetchUnlocation(commonV1ListRequest);
@@ -2037,10 +2037,10 @@ public class MasterDataUtils{
         return guidsList;
     }
 
-    public com.dpw.runner.shipment.services.masterdata.dto.MasterData getMasterListData(MasterDataType type, String ItemValue)
+    public com.dpw.runner.shipment.services.masterdata.dto.MasterData getMasterListData(MasterDataType type, String itemValue)
     {
-        if (ItemValue == null || StringUtility.isEmpty(ItemValue)) return null;
-        MasterListRequest masterListRequest = MasterListRequest.builder().ItemType(type.getDescription()).ItemValue(ItemValue).build();
+        if (itemValue == null || StringUtility.isEmpty(itemValue)) return null;
+        MasterListRequest masterListRequest = MasterListRequest.builder().ItemType(type.getDescription()).ItemValue(itemValue).build();
         MasterListRequestV2 masterListRequests = new MasterListRequestV2();
         masterListRequests.getMasterListRequests().add(masterListRequest);
         Object masterDataList = v1Service.fetchMultipleMasterData(masterListRequests).getEntities();

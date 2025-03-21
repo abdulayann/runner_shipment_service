@@ -654,7 +654,7 @@ public class ConsolidationService implements IConsolidationService {
     private void getMasterDataForList(List<ConsolidationDetails> lst, List<IRunnerResponse> responseList, boolean getMasterData, boolean includeTenantData) {
         if(getMasterData || Boolean.TRUE.equals(includeMasterData)) {
             try {
-                double _start = System.currentTimeMillis();
+                double startTime = System.currentTimeMillis();
                 var locationDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.setLocationData(responseList, EntityTransferConstants.LOCATION_SERVICE_GUID)), executorServiceMasterData);
                 var containerTeuData = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.setConsolidationContainerTeuData(lst, responseList)), executorServiceMasterData);
                 var vesselDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.fetchVesselForList(responseList)), executorServiceMasterData);
@@ -662,7 +662,7 @@ public class ConsolidationService implements IConsolidationService {
                 if (Boolean.TRUE.equals(includeTenantData))
                     tenantDataFuture =CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.fetchTenantIdForList(responseList)), executorServiceMasterData);
                 CompletableFuture.allOf(locationDataFuture, containerTeuData, vesselDataFuture, tenantDataFuture).join();
-                log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.SHIPMENT_LIST_MASTER_DATA, (System.currentTimeMillis() - _start) , LoggerHelper.getRequestIdFromMDC());
+                log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.SHIPMENT_LIST_MASTER_DATA, (System.currentTimeMillis() - startTime) , LoggerHelper.getRequestIdFromMDC());
             }
             catch (Exception ex) {
                 log.error(Constants.ERROR_OCCURRED_FOR_EVENT, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_SHIPMENT_LIST, ex.getLocalizedMessage());
@@ -1004,6 +1004,7 @@ public class ConsolidationService implements IConsolidationService {
                 log.error("Request is empty for Consolidation update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
 
+            // LATER- implement Validation logic
             Optional<ConsolidationDetails> oldEntity = retrieveByIdOrGuid(request);
             if (!oldEntity.isPresent()) {
                 log.debug(ConsolidationConstants.CONSOLIDATION_DETAILS_NULL_ERROR_WITH_REQUEST_ID, request.getId(), LoggerHelper.getRequestIdFromMDC());
@@ -2582,8 +2583,8 @@ public class ConsolidationService implements IConsolidationService {
                         }
                         vwOb.setChargeable(wtInKG.multiply(BigDecimal.valueOf(100)).setScale(0, BigDecimal.ROUND_CEILING).divide(BigDecimal.valueOf(100)));
                         vwOb.setChargeableUnit(Constants.WEIGHT_UNIT_KG);
-                        BigDecimal WV = new BigDecimal(convertUnit(Constants.MASS, wvInKG, Constants.WEIGHT_UNIT_KG, weightUnit).toString());
-                        vwOb.setVolumeWeight(WV);
+                        BigDecimal wv1 = new BigDecimal(convertUnit(Constants.MASS, wvInKG, Constants.WEIGHT_UNIT_KG, weightUnit).toString());
+                        vwOb.setVolumeWeight(wv1);
                         vwOb.setVolumeWeightUnit(weightUnit);
                         break;
                     default:
@@ -3743,12 +3744,12 @@ public class ConsolidationService implements IConsolidationService {
 
     public void createConsolidationPayload(ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse, boolean getMasterData) {
         try {
-            double _start = System.currentTimeMillis();
+            double startTime = System.currentTimeMillis();
             setMasterDataForCreateConsolePayload(consolidationDetails, consolidationDetailsResponse, getMasterData);
             this.calculationsOnRetrieve(consolidationDetails, consolidationDetailsResponse);
             if(consolidationDetails.getBookingStatus() != null && Arrays.stream(CarrierBookingStatus.values()).map(CarrierBookingStatus::name).toList().contains(consolidationDetails.getBookingStatus()))
                 consolidationDetailsResponse.setBookingStatus(CarrierBookingStatus.valueOf(consolidationDetails.getBookingStatus()).getDescription());
-            log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.CONSOLE_RETRIEVE_COMPLETE_MASTER_DATA, (System.currentTimeMillis() - _start) , LoggerHelper.getRequestIdFromMDC());
+            log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.CONSOLE_RETRIEVE_COMPLETE_MASTER_DATA, (System.currentTimeMillis() - startTime) , LoggerHelper.getRequestIdFromMDC());
             if(consolidationDetailsResponse.getId() != null) {
                 var awb = awbDao.findByConsolidationId(consolidationDetailsResponse.getId());
                 if (awb != null && !awb.isEmpty()) {
@@ -5772,11 +5773,11 @@ public class ConsolidationService implements IConsolidationService {
             if(trackingServiceAdapter.checkIfConsolContainersExist(consolidationDetails) || trackingServiceAdapter.checkIfAwbExists(consolidationDetails)) {
                 List<ShipmentDetails> shipmentDetailsList = findShipmentForTrackingService(consolidationDetails, oldEntity);
                 for(ShipmentDetails shipmentDetails : shipmentDetailsList) {
-                    UniversalTrackingPayload _utPayload = trackingServiceAdapter.mapConsoleDataToTrackingServiceData(
+                    UniversalTrackingPayload utPayload = trackingServiceAdapter.mapConsoleDataToTrackingServiceData(
                         consolidationDetails, shipmentDetails);
                     List<UniversalTrackingPayload> trackingPayloads = new ArrayList<>();
-                    if (_utPayload != null) {
-                        trackingPayloads.add(_utPayload);
+                    if (utPayload != null) {
+                        trackingPayloads.add(utPayload);
                         var jsonBody = jsonHelper.convertToJson(trackingPayloads);
                         log.info(
                             "Producing tracking service payload from consolidation with RequestId: {} and payload: {}",

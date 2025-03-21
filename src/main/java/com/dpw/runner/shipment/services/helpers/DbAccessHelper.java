@@ -33,13 +33,13 @@ public class DbAccessHelper {
         Pageable pages;
         globalSearchCriteria(request, tableNames);
         if (sortRequestAndFilterCriteriaNotNull(request)) {
-            String _tableName = !Objects.isNull(tableNames.get(request.getSortRequest().getFieldName())) ? tableNames.get(request.getSortRequest().getFieldName()).getTableName() : null;
+            String tableName = !Objects.isNull(tableNames.get(request.getSortRequest().getFieldName())) ? tableNames.get(request.getSortRequest().getFieldName()).getTableName() : null;
             Sort sortRequest = null;
-            if (_tableName != null) {
-                if (Objects.equals(_tableName, className.getSimpleName()))
+            if (tableName != null) {
+                if (Objects.equals(tableName, className.getSimpleName()))
                     sortRequest = Sort.by(getFieldName(request.getSortRequest().getFieldName(), tableNames));
                 else
-                    sortRequest = Sort.by( _tableName + "." + getFieldName(request.getSortRequest().getFieldName(), tableNames));
+                    sortRequest = Sort.by( tableName + "." + getFieldName(request.getSortRequest().getFieldName(), tableNames));
                 sortRequest = sortRequest.ascending();
                 if (Objects.equals(request.getSortRequest().getOrder(), "DESC"))
                     sortRequest = sortRequest.descending();
@@ -364,9 +364,9 @@ public class DbAccessHelper {
         }
         if (dataType.isAssignableFrom(LocalDateTime.class)) {
             if(input.getValue() instanceof LocalDateTime) {
-                return criteriaBuilder.lessThanOrEqualTo(path.get(fieldName), convertFromTenantTimeZone(path, fieldName, (LocalDateTime) input.getValue(), input));
+                return criteriaBuilder.lessThanOrEqualTo(path.get(fieldName), convertFromTenantTimeZone((LocalDateTime) input.getValue(), input));
             }
-            return criteriaBuilder.lessThanOrEqualTo(path.get(fieldName), convertFromTenantTimeZone(path, fieldName, covertStringToLocalDate((String) input.getValue(), YYYY_MM_DD), input));
+            return criteriaBuilder.lessThanOrEqualTo(path.get(fieldName), convertFromTenantTimeZone(covertStringToLocalDate((String) input.getValue(), YYYY_MM_DD), input));
         }
         return criteriaBuilder.lt(path.get(fieldName), (Number) input.getValue());
     }
@@ -380,9 +380,9 @@ public class DbAccessHelper {
         }
         if (dataType.isAssignableFrom(LocalDateTime.class)) {
             if(input.getValue() instanceof LocalDateTime) {
-                return criteriaBuilder.greaterThanOrEqualTo(path.get(fieldName), convertFromTenantTimeZone(path, fieldName, (LocalDateTime) input.getValue(), input));
+                return criteriaBuilder.greaterThanOrEqualTo(path.get(fieldName), convertFromTenantTimeZone((LocalDateTime) input.getValue(), input));
             }
-            return criteriaBuilder.greaterThanOrEqualTo(path.get(fieldName), convertFromTenantTimeZone(path, fieldName, covertStringToLocalDate((String) input.getValue(), YYYY_MM_DD), input));
+            return criteriaBuilder.greaterThanOrEqualTo(path.get(fieldName), convertFromTenantTimeZone(covertStringToLocalDate((String) input.getValue(), YYYY_MM_DD), input));
         }
         return criteriaBuilder.gt(path.get(fieldName), (Number) input.getValue());
     }
@@ -396,9 +396,9 @@ public class DbAccessHelper {
         }
         if (dataType.isAssignableFrom(LocalDateTime.class)) {
             if(input.getValue() instanceof LocalDateTime) {
-                return criteriaBuilder.lessThan(path.get(fieldName), convertFromTenantTimeZone(path, fieldName, (LocalDateTime) input.getValue(), input));
+                return criteriaBuilder.lessThan(path.get(fieldName), convertFromTenantTimeZone((LocalDateTime) input.getValue(), input));
             }
-            return criteriaBuilder.lessThan(path.get(fieldName), convertFromTenantTimeZone(path, fieldName, covertStringToLocalDate((String) input.getValue(), YYYY_MM_DD), input));
+            return criteriaBuilder.lessThan(path.get(fieldName), convertFromTenantTimeZone(covertStringToLocalDate((String) input.getValue(), YYYY_MM_DD), input));
         }
         return criteriaBuilder.lt(path.get(fieldName), (Number) input.getValue());
     }
@@ -444,9 +444,9 @@ public class DbAccessHelper {
         }
         if (dataType.isAssignableFrom(LocalDateTime.class)) {
             if(input.getValue() instanceof LocalDateTime) {
-                return criteriaBuilder.greaterThan(path.get(fieldName), convertFromTenantTimeZone(path, fieldName, (LocalDateTime) input.getValue(), input));
+                return criteriaBuilder.greaterThan(path.get(fieldName), convertFromTenantTimeZone((LocalDateTime) input.getValue(), input));
             }
-            return criteriaBuilder.greaterThan(path.get(fieldName), convertFromTenantTimeZone(path, fieldName, covertStringToLocalDate((String) input.getValue(), YYYY_MM_DD), input));
+            return criteriaBuilder.greaterThan(path.get(fieldName), convertFromTenantTimeZone(covertStringToLocalDate((String) input.getValue(), YYYY_MM_DD), input));
         }
         return criteriaBuilder.gt(path.get(fieldName), (Number) input.getValue());
     }
@@ -464,7 +464,7 @@ public class DbAccessHelper {
         return criteriaBuilder.equal(path.get(fieldName), input.getValue());
     }
 
-    private static <T> LocalDateTime convertFromTenantTimeZone(Path<T> path, String fieldName, LocalDateTime localDateTime, Criteria input) {
+    private static LocalDateTime convertFromTenantTimeZone(LocalDateTime localDateTime, Criteria input) {
         LocalDateTime res = localDateTime;
         try {
             if(Boolean.TRUE.equals(input.getConvertTimeZone())) {

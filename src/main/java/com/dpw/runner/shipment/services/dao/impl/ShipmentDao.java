@@ -625,23 +625,23 @@ public class ShipmentDao implements IShipmentDao {
             entryForMawbStocksLinkRow.setSeqNumber(shipmentRequest.getMasterBill().substring(4, 10));
             entryForMawbStocksLinkRow.setMawbNumber(shipmentRequest.getMasterBill());
             entryForMawbStocksLinkRow.setStatus(UNUSED);
-            entryForMawbStocksLinkRow = mawbStocksLinkDao.save(entryForMawbStocksLinkRow);
+            mawbStocksLinkDao.save(entryForMawbStocksLinkRow);
         }
     }
 
     private Boolean isMAWBNumberValid(String masterBill) {
-        Boolean MAWBNumberValidity = true;
+        boolean mAWBNumberValidity = true;
         if (masterBill.length() == 12) {
             String mawbSeqNum = masterBill.substring(4, 11);
             String checkDigit = masterBill.substring(11, 12);
             if (areAllCharactersDigits(masterBill, 4, 12)) { // masterBill.substring(4, 12).matches("\\d+")
-                Long imawbSeqNum = Long.valueOf(mawbSeqNum);
-                Long icheckDigit = Long.valueOf(checkDigit);
+                long imawbSeqNum = Long.parseLong(mawbSeqNum);
+                long icheckDigit = Long.parseLong(checkDigit);
                 if (imawbSeqNum % 7 != icheckDigit)
-                    MAWBNumberValidity = false;
-            } else MAWBNumberValidity = false;
-        } else MAWBNumberValidity = false;
-        return MAWBNumberValidity;
+                    mAWBNumberValidity = false;
+            } else mAWBNumberValidity = false;
+        } else mAWBNumberValidity = false;
+        return mAWBNumberValidity;
     }
 
     private boolean areAllCharactersDigits(String input, int startIndex, int endIndex) {
