@@ -200,11 +200,11 @@ public class HawbReport extends IReport{
 
         EntityTransferMasterLists paymentTerms = null;
         ConsolidationModel consolRow = hawbModel.getConsolidationDetails();
-        String AwbNumber = getAwbNumberAndAddTags(shipmentInfo, dictionary, hawbModel, consolRow, masterDataQuery);
-        if(StringUtility.isNotEmpty(AwbNumber)){
-            AwbNumber = AwbNumber.replace("-", "");
-            dictionary.put(ReportConstants.MAWB_NO3 , AwbNumber.substring(0, Math.min(3, AwbNumber.length())));
-            if(AwbNumber.length() > 3) dictionary.put(ReportConstants.MAWB_REMAINING, AwbNumber.substring(3));
+        String awbNumber = getAwbNumberAndAddTags(shipmentInfo, dictionary, hawbModel, consolRow, masterDataQuery);
+        if(StringUtility.isNotEmpty(awbNumber)){
+            awbNumber = awbNumber.replace("-", "");
+            dictionary.put(ReportConstants.MAWB_NO3 , awbNumber.substring(0, Math.min(3, awbNumber.length())));
+            if(awbNumber.length() > 3) dictionary.put(ReportConstants.MAWB_REMAINING, awbNumber.substring(3));
         }
         var shipInfo = hawbModel.getAwb().getAwbShipmentInfo();
         dictionary.put(ISSUING_AGENT_ADDRESS, constructAddressForAwb(shipInfo.getIssuingAgentAddress(), shipInfo.getIssuingAgentAddress2(), shipInfo.getIssuingAgentCountry(), shipInfo.getIssuingAgentState(), shipInfo.getIssuingAgentCity(), shipInfo.getIssuingAgentZipCode(), shipInfo.getIssuingAgentPhone()));
@@ -220,8 +220,8 @@ public class HawbReport extends IReport{
         final BigDecimal[] totalGrossWeight = {BigDecimal.ZERO};
         final BigDecimal[] sumOfTotalAmount = {BigDecimal.ZERO};
         final BigDecimal[] sumOfChargeableWt = {BigDecimal.ZERO};
-        String FreightAmountText = "";
-        String OtherAmountText = "";
+        String freightAmountText = "";
+        String otherAmountText = "";
 
         masterDataQuery.add(MasterDataType.MAWB_CHARGE_TEXT.getDescription() + "#" + AwbConstants.FREIGHT_AMOUNT);
         masterDataQuery.add(MasterDataType.MAWB_CHARGE_TEXT.getDescription() + "#" + AwbConstants.OTHER_AMOUNT);
@@ -231,8 +231,8 @@ public class HawbReport extends IReport{
         Map<String, EntityTransferMasterLists> dataMap = getMasterData(masterDataQuery);
 
         if(dataMap != null) {
-            FreightAmountText = getFreightAmountText(dataMap, FreightAmountText);
-            OtherAmountText = getOtherAmountText(dataMap, OtherAmountText);
+            freightAmountText = getFreightAmountText(dataMap, freightAmountText);
+            otherAmountText = getOtherAmountText(dataMap, otherAmountText);
             paymentCodeDetails = dataMap.get(MasterDataType.PAYMENT_CODES.getDescription() + "#" + cargoInfoRows.getChargeCode());
 
             addPaymentTermsTag(dictionary, hawbModel, consolRow, dataMap);
@@ -241,13 +241,13 @@ public class HawbReport extends IReport{
         }
 
 
-        dictionary.put(ReportConstants.FREIGHT_AMOUNT_TEXT,  FreightAmountText);
-        dictionary.put(ReportConstants.OTHER_AMOUNT_TEXT, OtherAmountText);
+        dictionary.put(ReportConstants.FREIGHT_AMOUNT_TEXT,  freightAmountText);
+        dictionary.put(ReportConstants.OTHER_AMOUNT_TEXT, otherAmountText);
         Set<String> hsCodesSet = new HashSet<>();
         Set<String> dgHsCodesSet = new HashSet<>();
         Set<String> slacCodeSet = new HashSet<>();
         setHsCodesSet(awbPackingInfo, hsCodesSet);
-        processGoodsDescription(dictionary, v1TenantSettingsResponse, awbGoodsDescriptionInfo, ntrQtyGoods, cargoInfoRows, dgHsCodesSet, hsCodesSet, slacCodeSet, FreightAmountText, totalPieces, totalGrossWeight, sumOfTotalAmount, sumOfChargeableWt);
+        processGoodsDescription(dictionary, v1TenantSettingsResponse, awbGoodsDescriptionInfo, ntrQtyGoods, cargoInfoRows, dgHsCodesSet, hsCodesSet, slacCodeSet, freightAmountText, totalPieces, totalGrossWeight, sumOfTotalAmount, sumOfChargeableWt);
 
         processCodesSet(dictionary, dgHsCodesSet, hsCodesSet, slacCodeSet);
 
@@ -279,9 +279,9 @@ public class HawbReport extends IReport{
         dictionary.put(ReportConstants.TOTAL_FREIGHT_C, null);
         dictionary.put(ReportConstants.TOTAL_OTHERS_P, null);
         dictionary.put(ReportConstants.TOTAL_OTHERS_C, null);
-        processPaymentInfoRows(dictionary, v1TenantSettingsResponse, paymentInfoRows, cargoInfoRows, OtherAmountText, FreightAmountText, paymentCodeDetails, sumOfTotalAmount);
+        processPaymentInfoRows(dictionary, v1TenantSettingsResponse, paymentInfoRows, cargoInfoRows, otherAmountText, freightAmountText, paymentCodeDetails, sumOfTotalAmount);
 
-        addMawbNumberTag(dictionary, AwbNumber);
+        addMawbNumberTag(dictionary, awbNumber);
 
         AwbOtherInfo otherInfoRows = hawbModel.awb.getAwbOtherInfo();
         processOtherInfoRows(dictionary, otherInfoRows, locCodeMap, tsDateTimeFormat);
@@ -292,25 +292,25 @@ public class HawbReport extends IReport{
         dictionary.put(ReportConstants.OTHER_CHARGES_IATA, getOtherChargesDetailsIATA(otherChargesInfoRows, hawbModel.awb, v1TenantSettingsResponse, cargoInfoRows).getOtherChargesItems());
         dictionary.put(ReportConstants.NEW_OTHER_CHARGES_IATA, getOtherChargesDetailsIATA(otherChargesInfoRows, hawbModel.awb, v1TenantSettingsResponse, cargoInfoRows).getNewOtherChargesItems());
         dictionary.put(ReportConstants.IATA_DESCRIPTION, getIATADescription(otherChargesInfoRows));
-        dictionary.put(ReportConstants.OTHER_CHARGES_OAT, getOtherChargesDetailsOAT(otherChargesInfoRows,OtherAmountText));
-        dictionary.put(ReportConstants.OTHER_CHARGES_IATA_OAT, getOtherChargesDetailsIATAOAT(otherChargesInfoRows, OtherAmountText));
+        dictionary.put(ReportConstants.OTHER_CHARGES_OAT, getOtherChargesDetailsOAT(otherChargesInfoRows,otherAmountText));
+        dictionary.put(ReportConstants.OTHER_CHARGES_IATA_OAT, getOtherChargesDetailsIATAOAT(otherChargesInfoRows, otherAmountText));
         List<AwbSpecialHandlingCodesMappingInfo> specialHandlingCodesRows = hawbModel.awb.getAwbSpecialHandlingCodesMappings();
         dictionary.put(ReportConstants.SPECIAL_HANDLING_CODE, getSpecialHandlingCodes(specialHandlingCodesRows));
         addPickUpAndDeliveryInstructionsTags(dictionary, hawbModel);
     }
 
-    private String getFreightAmountText(Map<String, EntityTransferMasterLists> dataMap, String FreightAmountText) {
+    private String getFreightAmountText(Map<String, EntityTransferMasterLists> dataMap, String freightAmountText) {
         if(dataMap.get(MasterDataType.MAWB_CHARGE_TEXT.getDescription() + "#" + AwbConstants.FREIGHT_AMOUNT) != null) {
-            FreightAmountText = dataMap.get(MasterDataType.MAWB_CHARGE_TEXT.getDescription() + "#" + AwbConstants.FREIGHT_AMOUNT).ItemDescription.toUpperCase();
+            freightAmountText = dataMap.get(MasterDataType.MAWB_CHARGE_TEXT.getDescription() + "#" + AwbConstants.FREIGHT_AMOUNT).ItemDescription.toUpperCase();
         }
-        return FreightAmountText;
+        return freightAmountText;
     }
 
-    private String getOtherAmountText(Map<String, EntityTransferMasterLists> dataMap, String OtherAmountText) {
+    private String getOtherAmountText(Map<String, EntityTransferMasterLists> dataMap, String otherAmountText) {
         if(dataMap.get(MasterDataType.MAWB_CHARGE_TEXT.getDescription() + "#" + AwbConstants.OTHER_AMOUNT) != null) {
-            OtherAmountText = dataMap.get(MasterDataType.MAWB_CHARGE_TEXT.getDescription() + "#" + AwbConstants.OTHER_AMOUNT).ItemDescription.toUpperCase();
+            otherAmountText = dataMap.get(MasterDataType.MAWB_CHARGE_TEXT.getDescription() + "#" + AwbConstants.OTHER_AMOUNT).ItemDescription.toUpperCase();
         }
-        return OtherAmountText;
+        return otherAmountText;
     }
 
     private void setHsCodesSet(List<AwbPackingInfo> awbPackingInfo, Set<String> hsCodesSet) {
@@ -401,20 +401,20 @@ public class HawbReport extends IReport{
         }
     }
 
-    private void addMawbNumberTag(Map<String, Object> dictionary, String AwbNumber) {
-        if(StringUtility.isNotEmpty(AwbNumber)){
-            AwbNumber = AwbNumber.replace("-","");
-            if(AwbNumber.length() < 11)
+    private void addMawbNumberTag(Map<String, Object> dictionary, String awbNumber) {
+        if(StringUtility.isNotEmpty(awbNumber)){
+            awbNumber = awbNumber.replace("-","");
+            if(awbNumber.length() < 11)
             {
-                AwbNumber = IReport.appendZero(AwbNumber, 11);
+                awbNumber = IReport.appendZero(awbNumber, 11);
             }
-            dictionary.put(ReportConstants.MAWB_NUMBER, AwbNumber);
+            dictionary.put(ReportConstants.MAWB_NUMBER, awbNumber);
         }else{
             dictionary.put(ReportConstants.MAWB_NUMBER,null);
         }
     }
 
-    private void processPaymentInfoRows(Map<String, Object> dictionary, V1TenantSettingsResponse v1TenantSettingsResponse, AwbPaymentInfo paymentInfoRows, AwbCargoInfo cargoInfoRows, String OtherAmountText, String FreightAmountText, EntityTransferMasterLists paymentCodeDetails, BigDecimal[] sumOfTotalAmount) {
+    private void processPaymentInfoRows(Map<String, Object> dictionary, V1TenantSettingsResponse v1TenantSettingsResponse, AwbPaymentInfo paymentInfoRows, AwbCargoInfo cargoInfoRows, String otherAmountText, String freightAmountText, EntityTransferMasterLists paymentCodeDetails, BigDecimal[] sumOfTotalAmount) {
         if(paymentInfoRows == null) {
             return;
         }
@@ -422,13 +422,13 @@ public class HawbReport extends IReport{
             dictionary.put(ReportConstants.TOTAL_COLLECT, AmountNumberFormatter.Format(paymentInfoRows.getTotalCollect(), cargoInfoRows != null ? cargoInfoRows.getCurrency() : null, v1TenantSettingsResponse));
         if(!BigDecimal.ZERO.equals(paymentInfoRows.getTotalPrepaid()))
             dictionary.put(ReportConstants.TOTAL_PREPAID, AmountNumberFormatter.Format(paymentInfoRows.getTotalPrepaid(), cargoInfoRows != null ? cargoInfoRows.getCurrency() : null, v1TenantSettingsResponse));
-        dictionary.put(ReportConstants.AGENT_DUE_POAT, OtherAmountText);
-        dictionary.put(ReportConstants.CARRIER_DUE_POAT, OtherAmountText);
-        dictionary.put(ReportConstants.WT_CHARGE_CFAT, FreightAmountText);
-        processPaymentCodeDetails(dictionary, v1TenantSettingsResponse, paymentInfoRows, cargoInfoRows, OtherAmountText, FreightAmountText, paymentCodeDetails, sumOfTotalAmount);
+        dictionary.put(ReportConstants.AGENT_DUE_POAT, otherAmountText);
+        dictionary.put(ReportConstants.CARRIER_DUE_POAT, otherAmountText);
+        dictionary.put(ReportConstants.WT_CHARGE_CFAT, freightAmountText);
+        processPaymentCodeDetails(dictionary, v1TenantSettingsResponse, paymentInfoRows, cargoInfoRows, otherAmountText, freightAmountText, paymentCodeDetails, sumOfTotalAmount);
     }
 
-    private void processPaymentCodeDetails(Map<String, Object> dictionary, V1TenantSettingsResponse v1TenantSettingsResponse, AwbPaymentInfo paymentInfoRows, AwbCargoInfo cargoInfoRows, String OtherAmountText, String FreightAmountText, EntityTransferMasterLists paymentCodeDetails, BigDecimal[] sumOfTotalAmount) {
+    private void processPaymentCodeDetails(Map<String, Object> dictionary, V1TenantSettingsResponse v1TenantSettingsResponse, AwbPaymentInfo paymentInfoRows, AwbCargoInfo cargoInfoRows, String otherAmountText, String freightAmountText, EntityTransferMasterLists paymentCodeDetails, BigDecimal[] sumOfTotalAmount) {
         if (paymentCodeDetails != null)
         {
             BigDecimal totalOthers = getTotalOthers(paymentInfoRows);
@@ -441,7 +441,7 @@ public class HawbReport extends IReport{
                 dictionary.put(ReportConstants.VALUATION_CHARGES_P, AmountNumberFormatter.Format(paymentInfoRows.getValuationCharge(), cargoInfoRows.getCurrency(), v1TenantSettingsResponse));
                 dictionary.put(ReportConstants.TAX_P, AmountNumberFormatter.Format(paymentInfoRows.getTax(), cargoInfoRows.getCurrency(), v1TenantSettingsResponse));
                 dictionary.put(ReportConstants.TOTAL_FREIGHT_P, AmountNumberFormatter.Format(totalFreight, cargoInfoRows.getCurrency(), v1TenantSettingsResponse));
-                dictionary.put(ReportConstants.FREIGHT_AMOUNT_TEXT_P, FreightAmountText);
+                dictionary.put(ReportConstants.FREIGHT_AMOUNT_TEXT_P, freightAmountText);
             }
             if (paymentCodeDetails.Identifier2 != null && paymentCodeDetails.Identifier2.equalsIgnoreCase("true"))
             {
@@ -450,7 +450,7 @@ public class HawbReport extends IReport{
                 dictionary.put(ReportConstants.VALUATION_CHARGES_C, AmountNumberFormatter.Format(paymentInfoRows.getValuationCharge(), cargoInfoRows.getCurrency(), v1TenantSettingsResponse));
                 dictionary.put(ReportConstants.TAX_C, AmountNumberFormatter.Format(paymentInfoRows.getTax(), cargoInfoRows.getCurrency(), v1TenantSettingsResponse));
                 dictionary.put(ReportConstants.TOTAL_FREIGHT_C, AmountNumberFormatter.Format(totalFreight, cargoInfoRows.getCurrency(), v1TenantSettingsResponse));
-                dictionary.put(ReportConstants.FREIGHT_AMOUNT_TEXT_C, FreightAmountText);
+                dictionary.put(ReportConstants.FREIGHT_AMOUNT_TEXT_C, freightAmountText);
             }
             if (paymentCodeDetails.Identifier3 != null && paymentCodeDetails.Identifier3.equalsIgnoreCase("true"))
             {
@@ -458,7 +458,7 @@ public class HawbReport extends IReport{
                 dictionary.put(ReportConstants.AGENT_DUE_P, AmountNumberFormatter.Format(paymentInfoRows.getDueAgentCharges(), cargoInfoRows.getCurrency(), v1TenantSettingsResponse));
                 dictionary.put(ReportConstants.CARRIER_DUE_P, AmountNumberFormatter.Format(paymentInfoRows.getDueCarrierCharges(), cargoInfoRows.getCurrency(), v1TenantSettingsResponse));
                 dictionary.put(ReportConstants.TOTAL_OTHERS_P, AmountNumberFormatter.Format(totalOthers, cargoInfoRows.getCurrency(), v1TenantSettingsResponse));
-                dictionary.put(ReportConstants.OTHER_AMOUNT_TEXT_P, OtherAmountText);
+                dictionary.put(ReportConstants.OTHER_AMOUNT_TEXT_P, otherAmountText);
             }
             if (paymentCodeDetails.Identifier4 != null && paymentCodeDetails.Identifier4.equalsIgnoreCase("true"))
             {
@@ -466,7 +466,7 @@ public class HawbReport extends IReport{
                 dictionary.put(ReportConstants.AGENT_DUE_C, AmountNumberFormatter.Format(paymentInfoRows.getDueAgentCharges(), cargoInfoRows.getCurrency(), v1TenantSettingsResponse));
                 dictionary.put(ReportConstants.CARRIER_DUE_C, AmountNumberFormatter.Format(paymentInfoRows.getDueCarrierCharges(), cargoInfoRows.getCurrency(), v1TenantSettingsResponse));
                 dictionary.put(ReportConstants.TOTAL_OTHERS_C, AmountNumberFormatter.Format(totalOthers, cargoInfoRows.getCurrency(), v1TenantSettingsResponse));
-                dictionary.put(ReportConstants.OTHER_AMOUNT_TEXT_C, OtherAmountText);
+                dictionary.put(ReportConstants.OTHER_AMOUNT_TEXT_C, otherAmountText);
             }
         }
     }
@@ -502,13 +502,13 @@ public class HawbReport extends IReport{
     }
 
     private String getAwbNumberAndAddTags(AwbShipmentInfo shipmentInfo, Map<String, Object> dictionary, HawbModel hawbModel, ConsolidationModel consolRow, Set<String> masterDataQuery) {
-        String AwbNumber = "";
+        String awbNumber = "";
         if (hawbModel.getEntityType().equalsIgnoreCase(AwbConstants.MAWB))
         {
             dictionary.put(ReportConstants.JOB_NUMBER , consolRow.getConsolidationNumber());
             dictionary.put(ReportConstants.MAWB_NO , shipmentInfo.getAwbNumber());
             dictionary.put(ReportConstants.NEUTRAL_AWB_NO, shipmentInfo.getAwbNumber());
-            AwbNumber = shipmentInfo.getAwbNumber();
+            awbNumber = shipmentInfo.getAwbNumber();
 
             if (StringUtility.isNotEmpty(consolRow.getPayment()))
             {
@@ -522,7 +522,7 @@ public class HawbReport extends IReport{
             ShipmentModel shipmentRow = hawbModel.shipmentDetails;
             dictionary.put(ReportConstants.TRANSPORT_MODE,  shipmentRow.getTransportMode());
             dictionary.put(ReportConstants.JOB_NUMBER, shipmentRow.getShipmentId());
-            AwbNumber = getAwbNumberForNonMawb(shipmentInfo, dictionary, hawbModel);
+            awbNumber = getAwbNumberForNonMawb(shipmentInfo, dictionary, hawbModel);
             dictionary.put(ReportConstants.NEUTRAL_AWB_NO, shipmentInfo.getAwbNumber());
 
             if (StringUtility.isNotEmpty(shipmentRow.getPaymentTerms())) {
@@ -540,7 +540,7 @@ public class HawbReport extends IReport{
             addPreCarriagePartyTag(dictionary, shipmentRow);
             processShipmentRowPackingList(dictionary, shipmentRow);
         }
-        return AwbNumber;
+        return awbNumber;
     }
 
     private String getAwbNumberForNonMawb(AwbShipmentInfo shipmentInfo, Map<String, Object> dictionary, HawbModel hawbModel) {
@@ -777,9 +777,8 @@ public class HawbReport extends IReport{
         }
     }
 
-    private void processGoodsDescription(Map<String, Object> dictionary, V1TenantSettingsResponse v1TenantSettingsResponse, List<AwbGoodsDescriptionInfo> awbGoodsDescriptionInfo, String NtrQtyGoods, AwbCargoInfo cargoInfoRows, Set<String> dgHsCodesSet, Set<String> hsCodesSet, Set<String> slacCodeSet, String FreightAmountText, AtomicInteger TotalPieces, BigDecimal[] TotalGrossWeight, BigDecimal[] SumOfTotalAmount, BigDecimal[] SumOfChargeableWt) {
+    private void processGoodsDescription(Map<String, Object> dictionary, V1TenantSettingsResponse v1TenantSettingsResponse, List<AwbGoodsDescriptionInfo> awbGoodsDescriptionInfo, String ntrQtyGoods, AwbCargoInfo cargoInfoRows, Set<String> dgHsCodesSet, Set<String> hsCodesSet, Set<String> slacCodeSet, String freightAmountText, AtomicInteger totalPieces, BigDecimal[] totalGrossWeight, BigDecimal[] sumOfTotalAmount, BigDecimal[] sumOfChargeableWt) {
         if (awbGoodsDescriptionInfo != null && !awbGoodsDescriptionInfo.isEmpty()){
-            String finalNtrQtyGoods = NtrQtyGoods;
             List<AwbGoodsDescriptionInfoModel> awbGoodsDescriptionInfoModel = awbGoodsDescriptionInfo.stream().map(x ->modelMapper.map(x, AwbGoodsDescriptionInfoModel.class)).toList();
             List<Map<String,Object>> values = jsonHelper.convertValue(awbGoodsDescriptionInfoModel, new TypeReference<>(){});
             List<Map<String,Object>> valuesFAT = jsonHelper.convertValue(values, new TypeReference<>(){});
@@ -787,7 +786,7 @@ public class HawbReport extends IReport{
                 value.put(NATURE_OF_GOODS, value.get(NTR_QTY_GOODS));
                 value.put(AWB_GROSS_VOLUME_AND_UNIT, StringUtility.convertToString(value.get(GROSS_VOLUME)) + " "+ StringUtility.convertToString(value.get(GROSS_VOLUME_UNIT)));
                 value.put(AWB_DIMS, value.get(DIMENSIONS));
-                value.put(ReportConstants.NATURE_QLTY_OF_GOODS, finalNtrQtyGoods);
+                value.put(ReportConstants.NATURE_QLTY_OF_GOODS, ntrQtyGoods);
                 if(value.get(ReportConstants.RATE_CLASS) != null){
                     value.put(ReportConstants.RATE_CLASS, RateClass.getById((Integer) value.get(ReportConstants.RATE_CLASS)));
                 }
@@ -810,15 +809,15 @@ public class HawbReport extends IReport{
                 addCodeSets(dgHsCodesSet, hsCodesSet, slacCodeSet, value);
             });
             dictionary.put(ReportConstants.PACKING_LIST, values);
-            processValuesFat(v1TenantSettingsResponse, FreightAmountText, valuesFAT, finalNtrQtyGoods);
+            processValuesFat(v1TenantSettingsResponse, freightAmountText, valuesFAT, ntrQtyGoods);
             dictionary.put(ReportConstants.PACKING_LIST_FAT, valuesFAT);
-            processAwbGoodsDescriptionInfo(awbGoodsDescriptionInfo, TotalPieces, TotalGrossWeight, SumOfTotalAmount, SumOfChargeableWt);
-            dictionary.put(ReportConstants.TOTAL_PIECES, GetDPWWeightVolumeFormat(BigDecimal.valueOf(TotalPieces.get()), 0, v1TenantSettingsResponse));
-            dictionary.put(ReportConstants.TOTAL_GROSS_WEIGHT, ConvertToWeightNumberFormat(TotalGrossWeight[0], v1TenantSettingsResponse));
-            dictionary.put(ReportConstants.TGW, ConvertToWeightNumberFormat(TotalGrossWeight[0], v1TenantSettingsResponse));
-            dictionary.put(ReportConstants.SUM_OF_TOTAL_AMOUNT, AmountNumberFormatter.Format(SumOfTotalAmount[0], cargoInfoRows.getCurrency(), v1TenantSettingsResponse));
-            dictionary.put(ReportConstants.SUM_OF_TOTAL_AMOUNT_FAT, FreightAmountText);
-            dictionary.put(ReportConstants.SUM_OF_CHARGEABLE_WT, ConvertToWeightNumberFormat(SumOfChargeableWt[0], v1TenantSettingsResponse));
+            processAwbGoodsDescriptionInfo(awbGoodsDescriptionInfo, totalPieces, totalGrossWeight, sumOfTotalAmount, sumOfChargeableWt);
+            dictionary.put(ReportConstants.TOTAL_PIECES, GetDPWWeightVolumeFormat(BigDecimal.valueOf(totalPieces.get()), 0, v1TenantSettingsResponse));
+            dictionary.put(ReportConstants.TOTAL_GROSS_WEIGHT, ConvertToWeightNumberFormat(totalGrossWeight[0], v1TenantSettingsResponse));
+            dictionary.put(ReportConstants.TGW, ConvertToWeightNumberFormat(totalGrossWeight[0], v1TenantSettingsResponse));
+            dictionary.put(ReportConstants.SUM_OF_TOTAL_AMOUNT, AmountNumberFormatter.Format(sumOfTotalAmount[0], cargoInfoRows.getCurrency(), v1TenantSettingsResponse));
+            dictionary.put(ReportConstants.SUM_OF_TOTAL_AMOUNT_FAT, freightAmountText);
+            dictionary.put(ReportConstants.SUM_OF_CHARGEABLE_WT, ConvertToWeightNumberFormat(sumOfChargeableWt[0], v1TenantSettingsResponse));
         }
     }
 
@@ -853,7 +852,7 @@ public class HawbReport extends IReport{
         }
     }
 
-    private void processValuesFat(V1TenantSettingsResponse v1TenantSettingsResponse, String FreightAmountText, List<Map<String, Object>> valuesFAT, String finalNtrQtyGoods) {
+    private void processValuesFat(V1TenantSettingsResponse v1TenantSettingsResponse, String freightAmountText, List<Map<String, Object>> valuesFAT, String finalNtrQtyGoods) {
         valuesFAT.forEach(value -> {
             value.put(ReportConstants.NATURE_QLTY_OF_GOODS, finalNtrQtyGoods);
             value.put(NATURE_OF_GOODS, value.get(NTR_QTY_GOODS));
@@ -871,17 +870,17 @@ public class HawbReport extends IReport{
             if(value.get(ReportConstants.CHARGEABLE_WT) != null){
                 value.put(ReportConstants.CHARGEABLE_WT, ConvertToWeightNumberFormat(value.get(ReportConstants.CHARGEABLE_WT).toString(), CHARGEABLE_WEIGHT_DECIMAL_PLACES, v1TenantSettingsResponse));
             }
-            value.put(ReportConstants.TOTAL_AMOUNT, FreightAmountText);
-            value.put(ReportConstants.RATE_CHARGE, FreightAmountText);
+            value.put(ReportConstants.TOTAL_AMOUNT, freightAmountText);
+            value.put(ReportConstants.RATE_CHARGE, freightAmountText);
         });
     }
 
-    private void processAwbGoodsDescriptionInfo(List<AwbGoodsDescriptionInfo> awbGoodsDescriptionInfo, AtomicInteger TotalPieces, BigDecimal[] TotalGrossWeight, BigDecimal[] SumOfTotalAmount, BigDecimal[] SumOfChargeableWt) {
+    private void processAwbGoodsDescriptionInfo(List<AwbGoodsDescriptionInfo> awbGoodsDescriptionInfo, AtomicInteger totalPieces, BigDecimal[] totalGrossWeight, BigDecimal[] sumOfTotalAmount, BigDecimal[] sumOfChargeableWt) {
         awbGoodsDescriptionInfo.forEach(row -> {
-            TotalPieces.addAndGet((row.getPiecesNo() != null ? row.getPiecesNo() : 0));
-            TotalGrossWeight[0] =  TotalGrossWeight[0].add(row.getGrossWt() != null ? row.getGrossWt() : BigDecimal.ZERO);
-            SumOfTotalAmount[0] = SumOfTotalAmount[0].add(row.getTotalAmount() != null ? row.getTotalAmount() : BigDecimal.ZERO);
-            SumOfChargeableWt[0] = SumOfChargeableWt[0].add(row.getChargeableWt() != null ? row.getChargeableWt() : BigDecimal.ZERO);
+            totalPieces.addAndGet((row.getPiecesNo() != null ? row.getPiecesNo() : 0));
+            totalGrossWeight[0] =  totalGrossWeight[0].add(row.getGrossWt() != null ? row.getGrossWt() : BigDecimal.ZERO);
+            sumOfTotalAmount[0] = sumOfTotalAmount[0].add(row.getTotalAmount() != null ? row.getTotalAmount() : BigDecimal.ZERO);
+            sumOfChargeableWt[0] = sumOfChargeableWt[0].add(row.getChargeableWt() != null ? row.getChargeableWt() : BigDecimal.ZERO);
         });
     }
 
