@@ -578,7 +578,7 @@ public class CustomerBookingService implements ICustomerBookingService {
             CheckCreditLimitResponse checkCreditLimitResponse = createCheckCreditLimitPayload(checkCreditBalanceFusionResponse);
             try{
                 UpdateOrgCreditLimitBookingResponse updateOrgCreditLimitBookingResponse = jsonHelper.convertValue(bookingIntegrationsUtility.updateOrgCreditLimitFromBooking(checkCreditLimitResponse).getBody(), UpdateOrgCreditLimitBookingResponse.class);
-                if(updateOrgCreditLimitBookingResponse.getSuccess()){
+                if(Boolean.TRUE.equals(updateOrgCreditLimitBookingResponse.getSuccess())){
                     log.info("Successfully Updated Org with Credit Limit in V1");
                 }else {
                     log.error("Error in Updating Org Credit Limit in V1 with error : {}", updateOrgCreditLimitBookingResponse.getError());
@@ -717,7 +717,7 @@ public class CustomerBookingService implements ICustomerBookingService {
     public ResponseEntity<IRunnerResponse> platformCreateBooking(CommonRequestModel commonRequestModel) throws RunnerException {
         PlatformToRunnerCustomerBookingRequest request = (PlatformToRunnerCustomerBookingRequest) commonRequestModel.getData();
         if (request.getIsSingleUsageContract() != null)
-            request.setContractStatus(request.getIsSingleUsageContract() ? "SINGLE_USAGE" : "MULTI_USAGE");
+            request.setContractStatus(Boolean.TRUE.equals(request.getIsSingleUsageContract()) ? "SINGLE_USAGE" : "MULTI_USAGE");
         String bookingNumber = request.getBookingNumber();
         if (bookingNumber == null) {
             log.error("Booking Number is empty for create Booking with Request Id {}", LoggerHelper.getRequestIdFromMDC());
@@ -1129,7 +1129,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         if (Objects.equals(current.getTransportType(),Constants.TRANSPORT_MODE_SEA) && !Objects.isNull(current.getContractId()) ) {
             List<LoadInfoRequest> loadInfoRequestList = containersListForLoad(current, old, operation);
 
-            if (!loadInfoRequestList.isEmpty() || !isAlteration) {
+            if (!loadInfoRequestList.isEmpty() || !Boolean.TRUE.equals(isAlteration)) {
                 String contractStatus = null;
                 if (Objects.equals(current.getContractStatus(), CustomerBookingConstants.SINGLE_USAGE) && isCancelled)
                     contractStatus = CustomerBookingConstants.ENABLED;
@@ -1251,7 +1251,7 @@ public class CustomerBookingService implements ICustomerBookingService {
             if(customerBookingResponse.getBookingStatus() == BookingStatus.READY_FOR_SHIPMENT) {
                 V1TenantSettingsResponse tenantSettingsResponse = commonUtils.getCurrentTenantSettings();
                 Boolean isShipmentV2 = tenantSettingsResponse.getShipmentServiceV2Enabled();
-                if (isShipmentV2) {
+                if (Boolean.TRUE.equals(isShipmentV2)) {
                     if (customerBookingResponse.getShipmentEntityIdV2() == null) {
                         setShipmentEntityIdV2InResponse(customerBooking, customerBookingResponse);
                     }

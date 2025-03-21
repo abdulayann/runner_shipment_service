@@ -2818,7 +2818,7 @@ public class ConsolidationService implements IConsolidationService {
             response.setPacksList(new ArrayList<>());
             int size = 1;
             response.setIsFCL(false);
-            if(request.getIsAssign()) {
+            if(Boolean.TRUE.equals(request.getIsAssign())) {
                 processIsAssignRequest(request, size, response);
             }
             else {
@@ -4842,7 +4842,7 @@ public class ConsolidationService implements IConsolidationService {
         Map<Long, ShipmentDetails> dgStatusChangeInShipments = new HashMap<>();
         dgOceanFlowsAndValidations(consolidationDetails, oldEntity, dgStatusChangeInShipments);
         List<ShipmentDetails> shipmentDetails = null;
-        if(!isCreate){
+        if(!Boolean.TRUE.equals(isCreate)){
             // This method will only work for non air transport modes , validation check moved inside the method
             calculateAchievedValues(consolidationDetails, new ShipmentGridChangeResponse(), oldEntity.getShipmentsList());
             shipmentDetails = updateLinkedShipmentData(consolidationDetails, oldEntity, false, dgStatusChangeInShipments);
@@ -5081,7 +5081,7 @@ public class ConsolidationService implements IConsolidationService {
 
         processRequestLists(consolidationDetails, isCreate, isFromBooking, referenceNumbersRequestList, id, truckDriverDetailsRequestList, routingsRequestList);
         if (consolidationAddressRequest != null) {
-            List<Parties> updatedFileRepos = partiesDao.updateEntityFromOtherEntity(commonUtils.convertToEntityList(consolidationAddressRequest, Parties.class, isFromBooking ? false : isCreate), id, Constants.CONSOLIDATION_ADDRESSES);
+            List<Parties> updatedFileRepos = partiesDao.updateEntityFromOtherEntity(commonUtils.convertToEntityList(consolidationAddressRequest, Parties.class, !Boolean.TRUE.equals(isFromBooking) && isCreate), id, Constants.CONSOLIDATION_ADDRESSES);
             consolidationDetails.setConsolidationAddresses(updatedFileRepos);
         }
 
@@ -5090,7 +5090,7 @@ public class ConsolidationService implements IConsolidationService {
             this.pushAllShipmentDataToDependentService(consolidationDetails);
         }
         try {
-            if (!isFromBooking)
+            if (!Boolean.TRUE.equals(isFromBooking))
                 consolidationSync.sync(consolidationDetails, StringUtility.convertToString(consolidationDetails.getGuid()), isFromBooking);
         } catch (Exception e){
             log.error("Error performing sync on consolidation entity, {}", e);
@@ -5108,14 +5108,14 @@ public class ConsolidationService implements IConsolidationService {
 
     private void processRequestLists(ConsolidationDetails consolidationDetails, Boolean isCreate, Boolean isFromBooking, List<ReferenceNumbersRequest> referenceNumbersRequestList, Long id, List<TruckDriverDetailsRequest> truckDriverDetailsRequestList, List<RoutingsRequest> routingsRequestList) throws RunnerException {
         if (referenceNumbersRequestList != null) {
-            List<ReferenceNumbers> updatedReferenceNumbers = referenceNumbersDao.updateEntityFromConsole(commonUtils.convertToEntityList(referenceNumbersRequestList, ReferenceNumbers.class, isFromBooking ? false : isCreate), id);
+            List<ReferenceNumbers> updatedReferenceNumbers = referenceNumbersDao.updateEntityFromConsole(commonUtils.convertToEntityList(referenceNumbersRequestList, ReferenceNumbers.class, !Boolean.TRUE.equals(isFromBooking) && isCreate), id);
             consolidationDetails.setReferenceNumbersList(updatedReferenceNumbers);
         }
         if (truckDriverDetailsRequestList != null) {
-            List<TruckDriverDetails> updatedTruckDriverDetails = truckDriverDetailsDao.updateEntityFromConsole(commonUtils.convertToEntityList(truckDriverDetailsRequestList, TruckDriverDetails.class, isFromBooking ? false : isCreate), id);
+            List<TruckDriverDetails> updatedTruckDriverDetails = truckDriverDetailsDao.updateEntityFromConsole(commonUtils.convertToEntityList(truckDriverDetailsRequestList, TruckDriverDetails.class, !Boolean.TRUE.equals(isFromBooking) && isCreate), id);
         }
         if (routingsRequestList != null) {
-            List<Routings> updatedRoutings = routingsDao.updateEntityFromConsole(commonUtils.convertToEntityList(routingsRequestList, Routings.class, isFromBooking ? false : isCreate), id);
+            List<Routings> updatedRoutings = routingsDao.updateEntityFromConsole(commonUtils.convertToEntityList(routingsRequestList, Routings.class, !Boolean.TRUE.equals(isFromBooking) && isCreate), id);
             consolidationDetails.setRoutingsList(updatedRoutings);
         }
     }
@@ -6087,8 +6087,7 @@ public class ConsolidationService implements IConsolidationService {
                 return processConditionSatisfied(consolListRequest, isMasterBillPresent, request, response);
             }
         }
-
-        return ResponseHelper.buildSuccessResponse(response);
+        return null;
     }
 
     private void processInterBranchHubTenantIds(ListCommonRequest consolListRequest) {
@@ -6569,7 +6568,7 @@ public class ConsolidationService implements IConsolidationService {
         if(Strings.isNullOrEmpty(request.getMawb())){
             return ResponseHelper.buildSuccessResponse(response);
         }
-        if(!consolidationDetailsDao.isMAWBNumberValid(request.getMawb())){
+        if(!Boolean.TRUE.equals(consolidationDetailsDao.isMAWBNumberValid(request.getMawb()))){
             throw new ValidationException("Please enter a valid MAWB number.");
         }
         String mawbAirlineCode = request.getMawb().substring(0, 3);

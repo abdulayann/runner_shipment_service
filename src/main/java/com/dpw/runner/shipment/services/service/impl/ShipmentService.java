@@ -5656,7 +5656,8 @@ public class ShipmentService implements IShipmentService {
                         shipmentDetailsResponse.setAwbStatus(AwbStatus.AWB_GENERATED);
                 }
             }
-            if(Boolean.FALSE.equals(shipmentDetailsResponse.getAdditionalDetails().getIsSummaryUpdated()))
+
+            if(!Boolean.TRUE.equals(shipmentDetailsResponse.getAdditionalDetails().getIsSummaryUpdated()))
                 shipmentDetailsResponse.getAdditionalDetails().setSummary(shipmentDetailsResponse.getContainerSummary().getSummary());
             log.info("{} | createShipmentPayload Time taken for setAwbStatus & getIsSummaryUpdated: {} ms", LoggerHelper.getRequestIdFromMDC(), (System.currentTimeMillis() - mid));
             mid = System.currentTimeMillis();
@@ -6075,7 +6076,7 @@ public class ShipmentService implements IShipmentService {
             res = shipmentDetails.getHouseBill();
         }
         ShipmentSettingsDetails tenantSetting = commonUtils.getShipmentSettingFromContext();
-        if(shipmentDetails == null && tenantSetting != null && tenantSetting.getRestrictHblGen()) {
+        if(shipmentDetails == null && tenantSetting != null && Boolean.TRUE.equals(tenantSetting.getRestrictHblGen())) {
             return null;
         }
 

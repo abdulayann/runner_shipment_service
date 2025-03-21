@@ -51,7 +51,7 @@ public class SyncService implements ISyncService {
                 log.error("V1 error -> {}", ctx.getLastThrowable().getMessage());
             }
             V1DataSyncResponse response_ = v1Service.v1DataSync(json, headers);
-            if (!response_.getIsSuccess()) {
+            if (!Boolean.TRUE.equals(response_.getIsSuccess())) {
                 try {
                     if (ctx.getRetryCount() == maxAttempts - 1)
                         emailServiceUtility.sendEmailForSyncEntity(id, guid,

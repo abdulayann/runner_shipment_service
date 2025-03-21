@@ -53,7 +53,7 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
             CustomShipmentSyncRequest cs = (CustomShipmentSyncRequest) commonRequestModel.getData();
             ShipmentDetails sd = modelMapper.map(cs, ShipmentDetails.class);
 
-            if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
+            if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !Boolean.TRUE.equals(syncConfig.IS_REVERSE_SYNC_ACTIVE)) {
                 return ResponseHelper.buildSuccessResponse();
             }
             mapCarrierDetailsReverse(cs, sd);

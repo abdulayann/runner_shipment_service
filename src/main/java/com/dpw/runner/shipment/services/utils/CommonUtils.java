@@ -400,7 +400,7 @@ public class CommonUtils {
 
     public <T, P extends MultiTenancy> List<P> convertToEntityList(final List<T> lst, Class<P> clazz, Boolean isCreate) {
         return lst.stream()
-                .map(item -> isCreate ? this.convertToCreateClass(item, clazz) : convertToClass(item, clazz))
+                .map(item -> Boolean.TRUE.equals(isCreate) ? this.convertToCreateClass(item, clazz) : convertToClass(item, clazz))
                 .toList();
     }
 

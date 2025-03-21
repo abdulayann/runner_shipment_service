@@ -126,7 +126,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
     @Override
     @Async
     public void publishUpdatesToTrackingServiceQueue(String jsonBody, Boolean isTrackingEvents) {
-        if(isTrackingEvents){
+        if(Boolean.TRUE.equals(isTrackingEvents)){
           // Publish to EventsMessage Topic
           sbUtils.sendMessagesToTopic(
               isbProperties,

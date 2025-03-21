@@ -126,7 +126,7 @@ public class AuthFilter extends OncePerRequestFilter {
         Map<String, Boolean> permissions = new HashMap<>();
         for (Map.Entry<String,Boolean> entry : user.getPermissions().entrySet())
         {
-            if(entry.getValue())
+            if(Boolean.TRUE.equals(entry.getValue()))
             {
                 grantedPermissions.add(entry.getKey());
                 permissions.put(entry.getKey(), true);
