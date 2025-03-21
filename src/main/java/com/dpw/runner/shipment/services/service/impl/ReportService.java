@@ -1956,6 +1956,7 @@ public class ReportService implements IReportService {
 
         return documentType;
     }
+    
     public DocumentManagerResponse<DocumentManagerDataResponse> addFilesFromReport(MultipartFile file, String filename, DocUploadRequest uploadRequest, String entityKey) {
         try {
             var shipmentSettings = commonUtils.getShipmentSettingFromContext();
