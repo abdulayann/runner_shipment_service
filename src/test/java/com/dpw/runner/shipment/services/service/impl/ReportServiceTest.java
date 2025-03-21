@@ -582,6 +582,9 @@ class ReportServiceTest extends CommonMocks {
         shipmentSettingsDetails.setTenantId(1);
         shipmentSettingsDetails.setAutoEventCreate(true);
 
+        Awb mockAwb = new Awb();
+        when(awbDao.updateAwbPrintInformation(any(), any(), any(), any(), any())).thenReturn(mockAwb);
+
         ShipmentSettingsDetails shipmentSettingsDetails2 = new ShipmentSettingsDetails();
         shipmentSettingsDetails2.setHawb("123456789");
         shipmentSettingsDetails2.setTenantId(44);
@@ -642,6 +645,8 @@ class ReportServiceTest extends CommonMocks {
         reportRequest.setPrintForParties(true);
         reportRequest.setPrintingFor_str("0");
         // Mock
+        Awb mockAwb = new Awb();
+        when(awbDao.updateAwbPrintInformation(any(), any(), any(), any(), any())).thenReturn(mockAwb);
         when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(shipmentSettingsDetails));
         when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(Arrays.asList(shipmentSettingsDetails, shipmentSettingsDetails2));
         when(reportsFactory.getReport(any())).thenReturn(mawbReport);
@@ -1590,6 +1595,9 @@ class ReportServiceTest extends CommonMocks {
         when(docDetailsDao.findByEntityIdAndType(any(), any())).thenReturn(List.of(DocDetails.builder().versionNumber("2").build()));
         when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(ResponseEntity.ok(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))));
         when(jsonHelper.convertToJson(any())).thenReturn("");
+        Map<String, Object> dataRetrived = new HashMap<>();
+        dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
+        dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.SEA);
         Mockito.doNothing().when(eventService).saveEvent(any());
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setPreAlertEmailAndLogs(true);
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());

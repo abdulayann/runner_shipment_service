@@ -36,6 +36,7 @@ public class ShipmentListResponse implements IRunnerResponse {
     private String serviceType;
     private String masterBill;
     private String bookingReference;
+    private String srnReferenceNumber;
     private String consolRef;
     private Long salesAgent;
     private String paymentTerms;
