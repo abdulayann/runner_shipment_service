@@ -170,7 +170,7 @@ public class JsonHelper {
         try {
             map = mapper.readValue(json, Map.class);
         } catch (JsonProcessingException e) {
-            e.printStackTrace();
+            log.error("An error occurred: {}", e.getMessage(), e);
         }
         return map;
     }

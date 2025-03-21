@@ -73,13 +73,13 @@ public class ELDetailsDao implements IELDetailsDao {
         String responseMsg;
         List<ELDetails> responseELDetails = new ArrayList<>();
         try {
-            // TODO- Handle Transactions here
+            // LATER- Handle Transactions here
             List<ELDetails> elDetails = findByShipmentId(shipmentId);
             Map<Long, ELDetails> hashMap = elDetails.stream()
                         .collect(Collectors.toMap(ELDetails::getId, Function.identity()));
             Map<Long, ELDetails> copyHashMap = new HashMap<>(hashMap);
             List<ELDetails> elDetailsRequestList = new ArrayList<>();
-            if (elDetailsList != null && elDetailsList.size() != 0) {
+            if (elDetailsList != null && !elDetailsList.isEmpty()) {
                 for (ELDetails request : elDetailsList) {
                     Long id = request.getId();
                     if (id != null) {
@@ -220,7 +220,7 @@ public class ELDetailsDao implements IELDetailsDao {
         String responseMsg;
         List<ELDetails> responseELDetails = new ArrayList<>();
         Map<UUID, ELDetails> elDetailsMap = new HashMap<>();
-        if (oldEntityList != null && oldEntityList.size() > 0) {
+        if (oldEntityList != null && !oldEntityList.isEmpty()) {
             for (ELDetails entity :
                     oldEntityList) {
                 elDetailsMap.put(entity.getGuid(), entity);
@@ -229,7 +229,7 @@ public class ELDetailsDao implements IELDetailsDao {
         try {
             ELDetails oldEntity;
             List<ELDetails> elDetailsRequestList = new ArrayList<>();
-            if (elDetailsList != null && elDetailsList.size() != 0) {
+            if (elDetailsList != null && !elDetailsList.isEmpty()) {
                 for (ELDetails request : elDetailsList) {
                     oldEntity = elDetailsMap.get(request.getGuid());
                     if (oldEntity != null) {

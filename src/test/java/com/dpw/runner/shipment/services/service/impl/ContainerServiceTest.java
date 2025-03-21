@@ -167,7 +167,7 @@ class ContainerServiceTest extends CommonMocks {
     }
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         testContainer = jsonTestUtility.getTestContainer();
         testShipment = jsonTestUtility.getTestShipment();
         testPacking = jsonTestUtility.getTestPacking();
@@ -183,7 +183,7 @@ class ContainerServiceTest extends CommonMocks {
 
 
     @Test
-    public void testCreate_Success() {
+    void testCreate_Success() {
         ResponseEntity<IRunnerResponse> responseEntity = containerService.create(CommonRequestModel.buildRequest());
 
         Assertions.assertNull(responseEntity);
@@ -192,7 +192,7 @@ class ContainerServiceTest extends CommonMocks {
 
 
     @Test
-    public void testAttachPacks_Success() {
+    void testAttachPacks_Success() {
         long containerId = 1L;
         List<Long> packsId = new ArrayList<>();
         packsId.add(100L);
@@ -218,8 +218,8 @@ class ContainerServiceTest extends CommonMocks {
     }
 
     @Test
-    @Disabled
-    public void testAttachPacks_ContainerNotFound() {
+    @Disabled("Skipped")
+    void testAttachPacks_ContainerNotFound() {
         long containerId = 1L;
         List<Long> packsId = new ArrayList<>();
         packsId.add(100L);
@@ -233,7 +233,7 @@ class ContainerServiceTest extends CommonMocks {
     }
 
     @Test
-    public void testAttachPacks_PackingNotFound() {
+    void testAttachPacks_PackingNotFound() {
         long containerId = 1L;
         List<Long> packsId = new ArrayList<>();
         packsId.add(100L);
@@ -250,7 +250,7 @@ class ContainerServiceTest extends CommonMocks {
     }
 
     @Test
-    void testUpdate() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+    void testUpdate() throws RunnerException{
         ResponseEntity<IRunnerResponse> responseEntity = containerService.update(CommonRequestModel.buildRequest());
 
         Assertions.assertNull(responseEntity);
@@ -323,7 +323,7 @@ class ContainerServiceTest extends CommonMocks {
     }
 
     @Test
-    public void testCalculateUtilization_WithNonNullContainer() {
+    void testCalculateUtilization_WithNonNullContainer() {
         Containers container = new Containers();
         container.setAchievedVolume(BigDecimal.valueOf(50));
         container.setAllocatedVolume(BigDecimal.valueOf(100));
@@ -337,13 +337,13 @@ class ContainerServiceTest extends CommonMocks {
     }
 
     @Test
-    public void testCalculateUtilization_WithNullContainer() {
+    void testCalculateUtilization_WithNullContainer() {
         Containers resultContainer = containerService.calculateUtilization(null);
         Assertions.assertNull(resultContainer);
     }
 
     @Test
-    public void testCalculateUtilization_WithZeroAllocatedWeight() {
+    void testCalculateUtilization_WithZeroAllocatedWeight() {
         Containers container = new Containers();
         container.setAchievedVolume(BigDecimal.valueOf(50));
         container.setAllocatedVolume(BigDecimal.valueOf(100));
@@ -357,7 +357,7 @@ class ContainerServiceTest extends CommonMocks {
     }
 
     @Test
-    public void testCalculateUtilization_WithZeroAllocatedVolume() {
+    void testCalculateUtilization_WithZeroAllocatedVolume() {
         Containers container = new Containers();
         container.setAchievedVolume(BigDecimal.valueOf(50));
         container.setAllocatedVolume(BigDecimal.ZERO);
@@ -371,7 +371,7 @@ class ContainerServiceTest extends CommonMocks {
     }
 
     @Test
-    public void testCalculateUtilization_WithNullAchievedVolumeAndWeight() {
+    void testCalculateUtilization_WithNullAchievedVolumeAndWeight() {
         Containers container = new Containers();
         container.setAllocatedVolume(BigDecimal.valueOf(100));
         container.setAllocatedWeight(BigDecimal.valueOf(1000));
@@ -383,7 +383,7 @@ class ContainerServiceTest extends CommonMocks {
     }
 
     @Test
-    public void testCalculateAchieved_AllocatedForSameUnit_Success() {
+    void testCalculateAchieved_AllocatedForSameUnit_Success() {
         testContainer.setId(1L);
         ContainerRequest containerRequest = objectMapper.convertValue(testContainer, ContainerRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(containerRequest);
@@ -439,7 +439,7 @@ class ContainerServiceTest extends CommonMocks {
     }
 
     @Test
-    public void testValidateContainerNumber_Success() {
+    void testValidateContainerNumber_Success() {
         String validContainerNumber = "ABCD123456";
         ResponseEntity<IRunnerResponse> responseEntity = containerService.validateContainerNumber(validContainerNumber);
         Assertions.assertNotNull(responseEntity);
@@ -447,7 +447,7 @@ class ContainerServiceTest extends CommonMocks {
     }
 
     @Test
-    public void testValidateContainerNumber_InvalidLength() {
+    void testValidateContainerNumber_InvalidLength() {
         String invalidLengthContainerNumber = "ABC123";
         ResponseEntity<IRunnerResponse> responseEntity = containerService.validateContainerNumber(invalidLengthContainerNumber);
         Assertions.assertNotNull(responseEntity);
@@ -455,7 +455,7 @@ class ContainerServiceTest extends CommonMocks {
     }
 
     @Test
-    public void testValidateContainerNumber_InvalidCharacters() {
+    void testValidateContainerNumber_InvalidCharacters() {
         String invalidCharactersContainerNumber = "1234ABCD56";
         ResponseEntity<IRunnerResponse> responseEntity = containerService.validateContainerNumber(invalidCharactersContainerNumber);
         Assertions.assertNotNull(responseEntity);
@@ -827,7 +827,7 @@ class ContainerServiceTest extends CommonMocks {
     }
 
     @Test
-    void V1ContainerCreateAndUpdate_Failure() throws RunnerException{
+    void V1ContainerCreateAndUpdate_Failure(){
         when(containerDao.findByGuid(any())).thenThrow(new RuntimeException());
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(jsonTestUtility.getTestContainerRequestV2());
         assertThrows(RuntimeException.class, () -> containerService.V1ContainerCreateAndUpdate(commonRequestModel, false));
@@ -852,7 +852,7 @@ class ContainerServiceTest extends CommonMocks {
     }
 
     @Test
-    void testExportContainers_Success() throws IOException, RunnerException, IllegalAccessException {
+    void testExportContainers_Success() {
         HttpServletResponse response = new MockHttpServletResponse();
         ExportContainerListRequest request = new ExportContainerListRequest();
         request.setConsolidationId("1");
@@ -877,7 +877,7 @@ class ContainerServiceTest extends CommonMocks {
     }
 
     @Test
-    void testExportContainers_Failure_ConsoleIdNull() throws IOException, RunnerException, IllegalAccessException {
+    void testExportContainers_Failure_ConsoleIdNull(){
         HttpServletResponse response = new MockHttpServletResponse();
         ExportContainerListRequest request = new ExportContainerListRequest();
         request.setFreeTimeNoOfDaysDetention(3L);
@@ -886,7 +886,7 @@ class ContainerServiceTest extends CommonMocks {
     }
 
     @Test
-    void testExportContainers_Failure_ConsoleNotFound() throws IOException, RunnerException, IllegalAccessException {
+    void testExportContainers_Failure_ConsoleNotFound() {
         HttpServletResponse response = new MockHttpServletResponse();
         ExportContainerListRequest request = new ExportContainerListRequest();
         request.setConsolidationId("1");
@@ -897,7 +897,7 @@ class ContainerServiceTest extends CommonMocks {
     }
 
     @Test
-    void testExportContainers_Failure_EmptyContainers() throws IOException, RunnerException, IllegalAccessException {
+    void testExportContainers_Failure_EmptyContainers() {
         HttpServletResponse response = new MockHttpServletResponse();
         ExportContainerListRequest request = new ExportContainerListRequest();
         request.setConsolidationId("1");
@@ -913,7 +913,7 @@ class ContainerServiceTest extends CommonMocks {
     }
 
     @Test
-    void testExportContainers_Failure_NullContainers() throws IOException, RunnerException, IllegalAccessException {
+    void testExportContainers_Failure_NullContainers() {
         HttpServletResponse response = new MockHttpServletResponse();
         ExportContainerListRequest request = new ExportContainerListRequest();
         request.setConsolidationId("1");
@@ -1081,7 +1081,7 @@ class ContainerServiceTest extends CommonMocks {
     }
 
     @Test
-    void list_Failure() throws Exception{
+    void list_Failure(){
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest();
         ResponseEntity<IRunnerResponse> responseEntity = containerService.list(commonRequestModel);
         assertNotNull(responseEntity);
@@ -1089,12 +1089,12 @@ class ContainerServiceTest extends CommonMocks {
     }
 
     @Test
-    void uploadContainers_NullReq() throws Exception {
+    void uploadContainers_NullReq() {
         assertThrows(ValidationException.class, () -> containerService.uploadContainers(null));
     }
 
     @Test
-    void uploadContainers_NullConsoleId() throws Exception {
+    void uploadContainers_NullConsoleId(){
         BulkUploadRequest request = new BulkUploadRequest();
         assertThrows(ValidationException.class, () -> containerService.uploadContainers(request));
     }
@@ -1281,7 +1281,7 @@ class ContainerServiceTest extends CommonMocks {
     }
 
     @Test
-    void downloadContainers() throws RunnerException{
+    void downloadContainers(){
         HttpServletResponse response = new MockHttpServletResponse();
         BulkDownloadRequest request = new BulkDownloadRequest();
         request.setTransportMode(Constants.TRANSPORT_MODE_SEA);
@@ -1289,7 +1289,6 @@ class ContainerServiceTest extends CommonMocks {
         request.setShipmentId("6");
         when(shipmentDao.findById(any())).thenReturn(Optional.of(testShipment));
         when(containerDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testContainer)));
-//        when(shipmentsContainersMappingDao.findByShipmentId(any()))
         when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(jsonTestUtility.getTestConsolidation()));
         when(containerDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testContainer)));
         when(commonUtils.convertToList(anyList(), eq(ContainersExcelModel.class))).thenReturn(List.of(objectMapper.convertValue(testContainer, ContainersExcelModel.class)));
@@ -1297,7 +1296,7 @@ class ContainerServiceTest extends CommonMocks {
     }
 
     @Test
-    void downloadContainerEvents() throws Exception {
+    void downloadContainerEvents(){
         HttpServletResponse response = new MockHttpServletResponse();
         BulkDownloadRequest request = new BulkDownloadRequest();
         request.setTransportMode(Constants.TRANSPORT_MODE_SEA);
@@ -1317,12 +1316,12 @@ class ContainerServiceTest extends CommonMocks {
     }
 
     @Test
-    void uploadContainerEvents_Failure() throws Exception {
+    void uploadContainerEvents_Failure() {
         assertThrows(ValidationException.class, () -> containerService.uploadContainerEvents(null));
     }
 
     @Test
-    void uploadContainerEvents_Failure_NullId() throws Exception {
+    void uploadContainerEvents_Failure_NullId() {
         BulkUploadRequest request = new BulkUploadRequest();
         assertThrows(ValidationException.class, () -> containerService.uploadContainerEvents(request));
     }
@@ -1340,7 +1339,7 @@ class ContainerServiceTest extends CommonMocks {
         c2.setContainerNumber("C456");
 
         List<Containers> containersList = Arrays.asList(c1,c2);
-        List<Containers> oldContainers = Arrays.asList(c1);
+        List<Containers> oldContainers = List.of(c1);
 
         V1TenantSettingsResponse v1TenantSettingsResponse = new V1TenantSettingsResponse();
         v1TenantSettingsResponse.setLogicAppIntegrationEnabled(true);

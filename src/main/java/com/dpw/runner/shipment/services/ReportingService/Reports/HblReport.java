@@ -595,7 +595,6 @@ public class HblReport extends IReport {
         dictionary.put(MARKS_AND_NUMBER, hblModel.blObject.getHblData().getMarksAndNumbers());
         if (!Objects.isNull(hblModel.blObject.getHblData().getMarksAndNumbers()))
             dictionary.put(MARKS_N_NUMS_CAPS, hblModel.blObject.getHblData().getMarksAndNumbers().toUpperCase());
-//        dictionary.put(SHIPPED_ON_BOARD, hblModel.shipeedOnBoard != null ? ConvertToDPWDateFormat(hblModel.shipeedOnBoard) : null);
 
         processCommonContainers(hblModel, v1TenantSettingsResponse, dictionary);
         dictionary.put(IS_IMPORT, hblModel.shipment.getDirection().equals(IMP));
@@ -608,11 +607,9 @@ public class HblReport extends IReport {
 
         dictionary.put(CURRENT_DATE, ConvertToDPWDateFormat(LocalDateTime.now(), tsDateTimeFormat, v1TenantSettingsResponse));
         dictionary.put(HOUSE_BILL, StringUtility.toUpperCase(hblModel.shipment.getHouseBill()));
-//        dictionary.put(SUMMARY, hblModel.shipment.getSummary);
         dictionary.put(SHIPMENT_ID, hblModel.shipment.getShipmentId());
         dictionary.put(REFERENCE_NO, hblModel.shipment.getBookingReference());
         dictionary.put(SERVICE_MODE_DESCRIPTION, hblModel.serviceMode); //MasterListData
-//        dictionary.put("Goods_CO", hblModel.); //MasterListData
         dictionary.put(PAYMENT_TERMS, StringUtility.toUpperCase(hblModel.paymentTerms)); //MasterListData
         dictionary.put(RELEASE_TYPE, hblModel.releaseType); //MasterListData
 
@@ -622,7 +619,6 @@ public class HblReport extends IReport {
         addActualDeliveryTag(hblModel, dictionary);
 
         processShipmentPickupDetails(hblModel, dictionary, tsDateTimeFormat);
-//        dictionary.put(DELIVERY_TO_EMAIL_ADDRESS, DeliveryEmailAddress);
         dictionary.put(PLACE_OF_DELIVERY, hblModel.podCountry);
         processHblData(hblModel, dictionary, v1TenantSettingsResponse);
         getPartiesModel(hblModel, dictionary);
@@ -632,14 +628,6 @@ public class HblReport extends IReport {
         dictionary.put(USER_EMAIL, hblModel.user.getEmail());
 
         processOnBoard(hblModel, dictionary, tsDateTimeFormat);
-// TODO
-//        if(!String.IsNullOrEmpty(PrintType)) {
-//            if(PrintType.ToUpper() == "ORIGINAL") {
-//                dictionary.put(IS_ORIGINAL, true);
-//            } else {
-//                dictionary.put(IS_ORIGINAL, false);
-//            }
-//        }
 
 
         dictionary.put(ATTENTION, dictionary.get(CONSIGNEE));
@@ -679,7 +667,6 @@ public class HblReport extends IReport {
         processPreCarriage(hblModel, dictionary);
 
         // ====================  END OF MIGRATION PLACEHOLDER ===================
-//        populateBlFields(hblModel.blObject, dictionary);
         dictionary.put(ReportConstants.PAID_PLACE_COUNTRY_NAME, StringUtility.toUpperCase(hblModel.paidPlaceCountry));
         dictionary.put(ReportConstants.SERVICE_MODE_DESCRIPTION, hblModel.serviceMode);
         dictionary.put(ReportConstants.PPCC, hblModel.paymentTerms);
@@ -1057,7 +1044,6 @@ public class HblReport extends IReport {
         }
         bookingCarriageVesselVoyage.replaceAll(StringUtility::toUpperCase);
 
-        //TODO populate bookingPreCarriageMode
         if (!bookingPreCarriageMode.isEmpty())
             dictionary.put(PRE_CARRIAGE_MODE, String.join(",", bookingPreCarriageMode));
         if (!bookingCarriageVesselVoyage.isEmpty())
@@ -1401,7 +1387,6 @@ public class HblReport extends IReport {
                     getValueFromMap(sendingAgentParty.getAddressData(), STATE)
             );
             dictionary.put(SENDING_AGENT_ADDRESS, sendingAgent);
-//            dictionary.put(AGENT_REFERENCE, hblModel.shipment)
         }
     }
 
