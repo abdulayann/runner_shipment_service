@@ -1971,6 +1971,382 @@ class HawbReportTest extends CommonMocks {
         assertNotNull(hawbReport.populateDictionary(newHawbModel));
     }
 
+    @Test
+    void populateDictionaryDMawb3() {
+        HawbModel newHawbModel = new HawbModel();
+        newHawbModel.setEntityType(AwbConstants.DMAWB);
+
+        ShipmentModel shipmentModel = new ShipmentModel();
+        shipmentModel.setTransportMode(ReportConstants.AIR);
+        shipmentModel.setDirection(ReportConstants.EXP);
+        shipmentModel.setFreightLocal(BigDecimal.TEN);
+        shipmentModel.setFreightLocalCurrency("INR");
+        shipmentModel.setFreightOverseas(BigDecimal.TEN);
+        shipmentModel.setFreightOverseasCurrency("INR");
+        shipmentModel.setGoodsDescription("123");
+        shipmentModel.setWeight(BigDecimal.TEN);
+        shipmentModel.setVolume(BigDecimal.TEN);
+        shipmentModel.setChargable(BigDecimal.TEN);
+        shipmentModel.setVolumetricWeight(BigDecimal.TEN);
+        shipmentModel.setNoOfPacks(10);
+
+        List<ReferenceNumbersModel>  referenceNumbersModels = new ArrayList<>();
+        ReferenceNumbersModel referenceNumbersModel = new ReferenceNumbersModel();
+        referenceNumbersModel.setType(ERN);
+        referenceNumbersModels.add(referenceNumbersModel);
+        referenceNumbersModel = new ReferenceNumbersModel();
+        referenceNumbersModel.setType(CEN);
+        referenceNumbersModels.add(referenceNumbersModel);
+        referenceNumbersModel = new ReferenceNumbersModel();
+        referenceNumbersModel.setType(FRN);
+        referenceNumbersModels.add(referenceNumbersModel);
+        shipmentModel.setReferenceNumbersList(referenceNumbersModels);
+
+        PartiesModel partiesModel = new PartiesModel();
+        partiesModel.setType(CUSTOM_HOUSE_AGENT);
+        Map<String, Object> orgData = new HashMap<>();
+        orgData.put(FULL_NAME, "123");
+        orgData.put(CONTACT_PERSON, "123");
+        partiesModel.setOrgData(orgData);
+        partiesModel.setAddressData(orgData);
+        shipmentModel.setConsignee(partiesModel);
+        shipmentModel.setConsigner(partiesModel);
+        shipmentModel.setClient(partiesModel);
+        shipmentModel.setPaymentTerms("PPT");
+        shipmentModel.setShipmentAddresses(List.of(partiesModel));
+        CarrierDetailModel carrierDetailModel = new CarrierDetailModel();
+        carrierDetailModel.setOrigin("test");
+        carrierDetailModel.setOriginPort("test");
+        carrierDetailModel.setEta(LocalDateTime.now());
+        carrierDetailModel.setEtd(LocalDateTime.now());
+        carrierDetailModel.setAtd(LocalDateTime.now());
+        carrierDetailModel.setVessel(UUID.randomUUID().toString());
+        carrierDetailModel.setAta(LocalDateTime.now());
+        carrierDetailModel.setShippingLine("AIR lINE");
+        AdditionalDetailModel additionalDetailModel = new AdditionalDetailModel();
+        additionalDetailModel.setPaidPlace("test");
+        additionalDetailModel.setImportBroker(partiesModel);
+        additionalDetailModel.setExportBroker(partiesModel);
+        additionalDetailModel.setNotifyParty(partiesModel);
+        additionalDetailModel.setDateOfIssue(LocalDateTime.now());
+        additionalDetailModel.setDateOfReceipt(LocalDateTime.now());
+        additionalDetailModel.setOnBoard("RFS");
+        additionalDetailModel.setOnBoardDate(LocalDateTime.now());
+        shipmentModel.setCarrierDetails(carrierDetailModel);
+        shipmentModel.setAdditionalDetails(additionalDetailModel);
+
+        ShipmentContainers shipmentContainers = new ShipmentContainers();
+        shipmentContainers.setContainerCount(1L);
+        shipmentContainers.setContainerTypeCode("20GP");
+        shipmentContainers.setNetWeight(BigDecimal.TEN);
+        shipmentContainers.setNoofPackages(10L);
+        shipmentModel.setShipmentContainersList(List.of(shipmentContainers));
+
+        PackingModel packingModel = new PackingModel();
+        packingModel.setLength(BigDecimal.TEN);
+        packingModel.setWidth(BigDecimal.TEN);
+        packingModel.setHeight(BigDecimal.TEN);
+        packingModel.setCommodity("AIR");
+        shipmentModel.setPackingList(List.of(packingModel));
+
+        PickupDeliveryDetailsModel delivertDetails = new PickupDeliveryDetailsModel();
+        delivertDetails.setEstimatedPickupOrDelivery(LocalDateTime.now());
+        delivertDetails.setDestinationDetail(partiesModel);
+        delivertDetails.setAgentDetail(partiesModel);
+        delivertDetails.setSourceDetail(partiesModel);
+        delivertDetails.setTransporterDetail(partiesModel);
+        shipmentModel.setPickupDetails(delivertDetails);
+        shipmentModel.setDeliveryDetails(delivertDetails);
+        newHawbModel.setShipmentDetails(shipmentModel);
+        newHawbModel.setAwb(hawb);
+        newHawbModel.getAwb().setAirMessagingAdditionalFields(AirMessagingAdditionalFields.builder().targetCurrencyCode("RS").build());
+        newHawbModel.getAwb().getAwbOtherChargesInfo().get(0).setChargeDue(1);
+        newHawbModel.getAwb().getAwbOtherChargesInfo().get(0).setIataDescription("RS");
+
+        UsersDto usersDto = new UsersDto();
+        usersDto.setUsername("UserName");
+        usersDto.setCompanyId(1);
+        newHawbModel.setUsersDto(usersDto);
+
+        List<UnlocationsResponse> unlocationsResponses = new ArrayList<>();
+        UnlocationsResponse unlocationsResponse = new UnlocationsResponse();
+        unlocationsResponse.setName("Kempegowda International Airport BLR");
+        unlocationsResponse.setCountry("IND");
+        unlocationsResponses.add(unlocationsResponse);
+        unlocationsResponse = new UnlocationsResponse();
+        unlocationsResponse.setName("George Bush Intercontinental Airport IAH, TX");
+        unlocationsResponse.setCountry("IND");
+        unlocationsResponses.add(unlocationsResponse);
+
+
+        EntityTransferUnLocations et1 = EntityTransferUnLocations.builder().Name("Kempegowda International Airport BLR").build();
+        EntityTransferUnLocations et2 = EntityTransferUnLocations.builder().Name("George Bush Intercontinental Airport IAH, TX").build();
+        Map<String, EntityTransferUnLocations> entityTransferUnLocationsMap = new HashMap<>();
+        entityTransferUnLocationsMap.put("Kempegowda International Airport BLR", et1);
+        entityTransferUnLocationsMap.put("George Bush Intercontinental Airport IAH, TX", et2);
+        when(masterDataUtils.getLocationDataFromCache(any(), eq(EntityTransferConstants.NAME))).thenReturn(entityTransferUnLocationsMap);
+        when(jsonHelper.convertValue(et1, UnlocationsResponse.class)).thenReturn(unlocationsResponses.get(0));
+        when(jsonHelper.convertValue(et2, UnlocationsResponse.class)).thenReturn(unlocationsResponses.get(1));
+
+
+        V1DataResponse v1DataResponse = new V1DataResponse();
+        v1DataResponse.entities = unlocationsResponses;
+        v1TenantSettingsResponse.setLegalEntityCode("EntityCode");
+        CompanyDto companyDto = new CompanyDto();
+        companyDto.setId(12);
+        companyDto.setCountry("India");
+        companyDto.setCompanyName("CompanyName");
+        companyDto.setCity("city");
+        companyDto.setCode("code");
+        companyDto.setAddress1("Address1");
+        companyDto.setAddress2("Address2");
+        companyDto.setZipPostCode("ZipCode");
+        List<CompanyDto> companyDtoList = new ArrayList<>();
+        companyDtoList.add(companyDto);
+        when(jsonHelper.convertValueToList(any(), eq(CompanyDto.class))).thenReturn(companyDtoList);
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(v1TenantSettingsResponse);
+        when(v1Service.getCompaniesDetails(any())).thenReturn(v1DataResponse);
+
+        v1DataResponse = new V1DataResponse();
+        v1DataResponse.entities = List.of(new MasterData());
+        when(v1Service.fetchMultipleMasterData(any())).thenReturn(v1DataResponse);
+
+        List<EntityTransferMasterLists> masterDataList = getEntityTransferMasterLists(newHawbModel);
+
+        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), EntityTransferMasterLists.class)).thenReturn(masterDataList);
+
+        AwbGoodsDescriptionInfoModel awbGoodsDescriptionInfoModel = new AwbGoodsDescriptionInfoModel();
+        when(modelMapper.map(any(), eq(AwbGoodsDescriptionInfoModel.class))).thenReturn(awbGoodsDescriptionInfoModel);
+
+        EntityTransferCarrier entityTransferCarrier = new EntityTransferCarrier();
+        entityTransferCarrier.setIATACode("123");
+        entityTransferCarrier.setItemDescription("123");
+        entityTransferCarrier.setItemValue("Turkish Airlines");
+        v1DataResponse = new V1DataResponse();
+        v1DataResponse.entities = List.of(new EntityTransferCarrier());
+
+        doReturn(new ArrayList<>()).when(jsonHelper).convertValue(any(), any(TypeReference.class));
+
+        when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
+        DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(List.of(new CarrierMasterData())).build();
+        when(v1MasterData.fetchCarrierMasterData(any())).thenReturn(dependentServiceResponse);
+        when(jsonHelper.convertValueToList(dependentServiceResponse.getData(), CarrierMasterData.class)).thenReturn(List.of(new CarrierMasterData()));
+
+        v1DataResponse = new V1DataResponse();
+        v1DataResponse.entities = List.of(new EntityTransferOrganizations());
+        when(v1Service.fetchOrganization(any())).thenReturn(v1DataResponse);
+        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), EntityTransferOrganizations.class)).thenReturn(List.of(new EntityTransferOrganizations()));
+        UserContext.getUser().setEnableTimeZone(false);
+        UserContext.getUser().setTimeZoneId("12");
+        mockTenantSettings();
+
+        Map<String, Object> orgAddress = new HashMap<>();
+        orgAddress.put("AddressShortCode", "address1");
+        Map<String, Object> addressData = new HashMap<>();
+        addressData.put("orgAddress", Collections.singletonList(orgAddress));
+        addressData.put("name", "testing");
+        addressData.put("orgCode", "org1");
+        Map<String, Object> partiesOrgInfoFromCache = new HashMap<>();
+        partiesOrgInfoFromCache.put("org1", addressData);
+        when(modelMapper.map(any(), eq(Parties.class))).thenReturn(Parties.builder().orgCode("org1").addressCode("address1").build());
+        when(masterDataUtils.getPartiesOrgInfoFromCache(anyList())).thenReturn(partiesOrgInfoFromCache);
+
+        Map<String, Object> a = new HashMap<>();
+        a.put("CommodityGroup", "CommodityGroup");
+        when(jsonHelper.convertJsonToMap(any())).thenReturn(a);
+        Map<String, EntityTransferMasterLists> commodityResponse = new HashMap<>();
+        commodityResponse.put("CommodityGroup#COMMODITY_GROUP", EntityTransferMasterLists.builder().ItemDescription("abcd").build());
+        when( masterDataUtils.getCommodityGroupDataFromCache(any())).thenReturn(commodityResponse);
+        assertNotNull(hawbReport.populateDictionary(newHawbModel));
+    }
+
+    @Test
+    void populateDictionaryDMawb4() {
+        HawbModel newHawbModel = new HawbModel();
+        newHawbModel.setEntityType(AwbConstants.DMAWB);
+
+        ShipmentModel shipmentModel = new ShipmentModel();
+        shipmentModel.setTransportMode(ReportConstants.AIR);
+        shipmentModel.setDirection(ReportConstants.EXP);
+        shipmentModel.setFreightLocal(BigDecimal.TEN);
+        shipmentModel.setFreightLocalCurrency("INR");
+        shipmentModel.setFreightOverseas(BigDecimal.TEN);
+        shipmentModel.setFreightOverseasCurrency("INR");
+        shipmentModel.setGoodsDescription("123");
+        shipmentModel.setWeight(BigDecimal.TEN);
+        shipmentModel.setVolume(BigDecimal.TEN);
+        shipmentModel.setChargable(BigDecimal.TEN);
+        shipmentModel.setVolumetricWeight(BigDecimal.TEN);
+        shipmentModel.setNoOfPacks(10);
+
+        List<ReferenceNumbersModel>  referenceNumbersModels = new ArrayList<>();
+        ReferenceNumbersModel referenceNumbersModel = new ReferenceNumbersModel();
+        referenceNumbersModel.setType(ERN);
+        referenceNumbersModels.add(referenceNumbersModel);
+        referenceNumbersModel = new ReferenceNumbersModel();
+        referenceNumbersModel.setType(CEN);
+        referenceNumbersModels.add(referenceNumbersModel);
+        referenceNumbersModel = new ReferenceNumbersModel();
+        referenceNumbersModel.setType(FRN);
+        referenceNumbersModels.add(referenceNumbersModel);
+        shipmentModel.setReferenceNumbersList(referenceNumbersModels);
+
+        PartiesModel partiesModel = new PartiesModel();
+        partiesModel.setType(CUSTOM_HOUSE_AGENT);
+        Map<String, Object> orgData = new HashMap<>();
+        orgData.put(FULL_NAME, "123");
+        orgData.put(CONTACT_PERSON, "123");
+        partiesModel.setOrgData(orgData);
+        partiesModel.setAddressData(orgData);
+        shipmentModel.setConsignee(partiesModel);
+        shipmentModel.setConsigner(partiesModel);
+        shipmentModel.setClient(partiesModel);
+        shipmentModel.setPaymentTerms("PPT");
+        shipmentModel.setShipmentAddresses(List.of(partiesModel));
+        CarrierDetailModel carrierDetailModel = new CarrierDetailModel();
+        carrierDetailModel.setOrigin("test");
+        carrierDetailModel.setOriginPort("test");
+        carrierDetailModel.setEta(LocalDateTime.now());
+        carrierDetailModel.setEtd(LocalDateTime.now());
+        carrierDetailModel.setAtd(LocalDateTime.now());
+        carrierDetailModel.setVessel(UUID.randomUUID().toString());
+        carrierDetailModel.setAta(LocalDateTime.now());
+        carrierDetailModel.setShippingLine("AIR lINE");
+        AdditionalDetailModel additionalDetailModel = new AdditionalDetailModel();
+        additionalDetailModel.setPaidPlace("test");
+        additionalDetailModel.setImportBroker(partiesModel);
+        additionalDetailModel.setExportBroker(partiesModel);
+        additionalDetailModel.setNotifyParty(partiesModel);
+        additionalDetailModel.setDateOfIssue(LocalDateTime.now());
+        additionalDetailModel.setDateOfReceipt(LocalDateTime.now());
+        additionalDetailModel.setOnBoard("RFS");
+        additionalDetailModel.setOnBoardDate(LocalDateTime.now());
+        shipmentModel.setCarrierDetails(carrierDetailModel);
+        shipmentModel.setAdditionalDetails(additionalDetailModel);
+
+        ShipmentContainers shipmentContainers = new ShipmentContainers();
+        shipmentContainers.setContainerCount(1L);
+        shipmentContainers.setContainerTypeCode("20GP");
+        shipmentContainers.setNetWeight(BigDecimal.TEN);
+        shipmentContainers.setNoofPackages(10L);
+        shipmentModel.setShipmentContainersList(List.of(shipmentContainers));
+
+        PackingModel packingModel = new PackingModel();
+        packingModel.setLength(BigDecimal.TEN);
+        packingModel.setWidth(BigDecimal.TEN);
+        packingModel.setHeight(BigDecimal.TEN);
+        packingModel.setCommodity("AIR");
+        shipmentModel.setPackingList(List.of(packingModel));
+
+        PickupDeliveryDetailsModel delivertDetails = new PickupDeliveryDetailsModel();
+        delivertDetails.setEstimatedPickupOrDelivery(LocalDateTime.now());
+        delivertDetails.setDestinationDetail(partiesModel);
+        delivertDetails.setAgentDetail(partiesModel);
+        delivertDetails.setSourceDetail(partiesModel);
+        delivertDetails.setTransporterDetail(partiesModel);
+        shipmentModel.setPickupDetails(delivertDetails);
+        shipmentModel.setDeliveryDetails(delivertDetails);
+        newHawbModel.setShipmentDetails(shipmentModel);
+        newHawbModel.setAwb(hawb);
+        newHawbModel.getAwb().setAirMessagingAdditionalFields(AirMessagingAdditionalFields.builder().targetCurrencyCode("RS").build());
+        newHawbModel.getAwb().getAwbOtherChargesInfo().get(0).setIataDescription("RS");
+        UsersDto usersDto = new UsersDto();
+        usersDto.setUsername("UserName");
+        usersDto.setCompanyId(1);
+        newHawbModel.setUsersDto(usersDto);
+
+        List<UnlocationsResponse> unlocationsResponses = new ArrayList<>();
+        UnlocationsResponse unlocationsResponse = new UnlocationsResponse();
+        unlocationsResponse.setName("Kempegowda International Airport BLR");
+        unlocationsResponse.setCountry("IND");
+        unlocationsResponses.add(unlocationsResponse);
+        unlocationsResponse = new UnlocationsResponse();
+        unlocationsResponse.setName("George Bush Intercontinental Airport IAH, TX");
+        unlocationsResponse.setCountry("IND");
+        unlocationsResponses.add(unlocationsResponse);
+
+
+        EntityTransferUnLocations et1 = EntityTransferUnLocations.builder().Name("Kempegowda International Airport BLR").build();
+        EntityTransferUnLocations et2 = EntityTransferUnLocations.builder().Name("George Bush Intercontinental Airport IAH, TX").build();
+        Map<String, EntityTransferUnLocations> entityTransferUnLocationsMap = new HashMap<>();
+        entityTransferUnLocationsMap.put("Kempegowda International Airport BLR", et1);
+        entityTransferUnLocationsMap.put("George Bush Intercontinental Airport IAH, TX", et2);
+        when(masterDataUtils.getLocationDataFromCache(any(), eq(EntityTransferConstants.NAME))).thenReturn(entityTransferUnLocationsMap);
+        when(jsonHelper.convertValue(et1, UnlocationsResponse.class)).thenReturn(unlocationsResponses.get(0));
+        when(jsonHelper.convertValue(et2, UnlocationsResponse.class)).thenReturn(unlocationsResponses.get(1));
+
+
+        V1DataResponse v1DataResponse = new V1DataResponse();
+        v1DataResponse.entities = unlocationsResponses;
+        v1TenantSettingsResponse.setLegalEntityCode("EntityCode");
+        CompanyDto companyDto = new CompanyDto();
+        companyDto.setId(12);
+        companyDto.setCountry("India");
+        companyDto.setCompanyName("CompanyName");
+        companyDto.setCity("city");
+        companyDto.setCode("code");
+        companyDto.setAddress1("Address1");
+        companyDto.setAddress2("Address2");
+        companyDto.setZipPostCode("ZipCode");
+        List<CompanyDto> companyDtoList = new ArrayList<>();
+        companyDtoList.add(companyDto);
+        when(jsonHelper.convertValueToList(any(), eq(CompanyDto.class))).thenReturn(companyDtoList);
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(v1TenantSettingsResponse);
+        when(v1Service.getCompaniesDetails(any())).thenReturn(v1DataResponse);
+
+        v1DataResponse = new V1DataResponse();
+        v1DataResponse.entities = List.of(new MasterData());
+        when(v1Service.fetchMultipleMasterData(any())).thenReturn(v1DataResponse);
+
+        List<EntityTransferMasterLists> masterDataList = getEntityTransferMasterLists(newHawbModel);
+
+        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), EntityTransferMasterLists.class)).thenReturn(masterDataList);
+
+        AwbGoodsDescriptionInfoModel awbGoodsDescriptionInfoModel = new AwbGoodsDescriptionInfoModel();
+        when(modelMapper.map(any(), eq(AwbGoodsDescriptionInfoModel.class))).thenReturn(awbGoodsDescriptionInfoModel);
+
+        EntityTransferCarrier entityTransferCarrier = new EntityTransferCarrier();
+        entityTransferCarrier.setIATACode("123");
+        entityTransferCarrier.setItemDescription("123");
+        entityTransferCarrier.setItemValue("Turkish Airlines");
+        v1DataResponse = new V1DataResponse();
+        v1DataResponse.entities = List.of(new EntityTransferCarrier());
+
+        doReturn(new ArrayList<>()).when(jsonHelper).convertValue(any(), any(TypeReference.class));
+
+        when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
+        DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(List.of(new CarrierMasterData())).build();
+        when(v1MasterData.fetchCarrierMasterData(any())).thenReturn(dependentServiceResponse);
+        when(jsonHelper.convertValueToList(dependentServiceResponse.getData(), CarrierMasterData.class)).thenReturn(List.of(new CarrierMasterData()));
+
+        v1DataResponse = new V1DataResponse();
+        v1DataResponse.entities = List.of(new EntityTransferOrganizations());
+        when(v1Service.fetchOrganization(any())).thenReturn(v1DataResponse);
+        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), EntityTransferOrganizations.class)).thenReturn(List.of(new EntityTransferOrganizations()));
+        UserContext.getUser().setEnableTimeZone(false);
+        UserContext.getUser().setTimeZoneId("12");
+        mockTenantSettings();
+
+        Map<String, Object> orgAddress = new HashMap<>();
+        orgAddress.put("AddressShortCode", "address1");
+        Map<String, Object> addressData = new HashMap<>();
+        addressData.put("orgAddress", Collections.singletonList(orgAddress));
+        addressData.put("name", "testing");
+        addressData.put("orgCode", "org1");
+        Map<String, Object> partiesOrgInfoFromCache = new HashMap<>();
+        partiesOrgInfoFromCache.put("org1", addressData);
+        when(modelMapper.map(any(), eq(Parties.class))).thenReturn(Parties.builder().orgCode("org1").addressCode("address1").build());
+        when(masterDataUtils.getPartiesOrgInfoFromCache(anyList())).thenReturn(partiesOrgInfoFromCache);
+
+        Map<String, Object> a = new HashMap<>();
+        a.put("CommodityGroup", "CommodityGroup");
+        when(jsonHelper.convertJsonToMap(any())).thenReturn(a);
+        Map<String, EntityTransferMasterLists> commodityResponse = new HashMap<>();
+        commodityResponse.put("CommodityGroup#COMMODITY_GROUP", EntityTransferMasterLists.builder().ItemDescription("abcd").build());
+        when( masterDataUtils.getCommodityGroupDataFromCache(any())).thenReturn(commodityResponse);
+        assertNotNull(hawbReport.populateDictionary(newHawbModel));
+    }
+
     private List<EntityTransferMasterLists> getEntityTransferMasterLists(HawbModel newHawbModel) {
         List<EntityTransferMasterLists> masterDataList = new ArrayList<>();
         EntityTransferMasterLists masterData = new EntityTransferMasterLists();
