@@ -282,7 +282,6 @@ import static org.mockito.Mockito.*;
     private IEventService eventService;
 
     private static JsonTestUtility jsonTestUtility;
-    private static ShipmentDetails testShipment;
     private static ObjectMapper objectMapperTest;
     private static ConsolidationDetails testConsol;
     private static ShipmentDetails shipmentDetails;
@@ -322,13 +321,9 @@ import static org.mockito.Mockito.*;
     void tearDown() {
         consolidationService.executorService.shutdown();
     }
-//    @AfterEach
-//    void tearDown() {
-//        reset(CommonUtils.class);
-//    }
 
     @Test
-    public void testRetrieveByIdAsync_ValidId_Success() {
+    void testRetrieveByIdAsync_ValidId_Success() {
 
         CommonGetRequest getRequest = CommonGetRequest.builder().id(1L).build();
         CommonRequestModel requestModel = CommonRequestModel.buildRequest(getRequest);
@@ -654,7 +649,7 @@ import static org.mockito.Mockito.*;
     }
 
     @Test
-    public void testRetrieveByIdAsync_NullId_Failure() {
+    void testRetrieveByIdAsync_NullId_Failure() {
         CommonGetRequest getRequest = CommonGetRequest.builder().id(1L).build();
         CommonRequestModel requestModel = CommonRequestModel.buildRequest(getRequest);
         requestModel.setData(getRequest);
@@ -668,7 +663,7 @@ import static org.mockito.Mockito.*;
     }
 
     @Test
-    public void testRetrieveByIdAsync_DetailsNotFound_Failure() {
+    void testRetrieveByIdAsync_DetailsNotFound_Failure() {
         CommonGetRequest getRequest = CommonGetRequest.builder().id(1L).build();
         CommonRequestModel requestModel = CommonRequestModel.buildRequest(getRequest);
         when(consolidationDetailsDao.findById(1L)).thenReturn(Optional.empty());
@@ -678,12 +673,11 @@ import static org.mockito.Mockito.*;
 
 
         assertNotNull(future);
-//        assertTrue(future.join().getBody() instanceof String);
         assertEquals(400, future.join().getStatusCodeValue());
     }
 
     @Test
-    public void testRetrieveByIdAsync_ExceptionThrown_Failure() {
+    void testRetrieveByIdAsync_ExceptionThrown_Failure() {
         CommonGetRequest getRequest = CommonGetRequest.builder().id(1L).build();
         CommonRequestModel requestModel = CommonRequestModel.buildRequest(getRequest);
         when(consolidationDetailsDao.findById(1L)).thenThrow(new RuntimeException("Test Exception"));
@@ -700,10 +694,8 @@ import static org.mockito.Mockito.*;
     @Test
     void testFetchConsolidation_Success_with_data(){
         ListCommonRequest sampleRequest = constructListCommonRequest("id", 1, "=");
-        ConsolidationListResponse response = modelMapperTest.map(testConsol, ConsolidationListResponse.class);
 
         when(consolidationDetailsDao.findAll(any() , any())).thenReturn(new PageImpl<>(List.of(testConsol)));
-        Runnable mockRunnable = mock(Runnable.class);
         mockShipmentSettings();
 
         consolidationService.fetchConsolidations(CommonRequestModel.builder().data(sampleRequest).build());
@@ -712,7 +704,7 @@ import static org.mockito.Mockito.*;
     }
 
     @Test
-    public void testCompleteRetrieveById_Success_NoColumnsIncluded() throws ExecutionException, InterruptedException {
+    void testCompleteRetrieveById_Success_NoColumnsIncluded() throws ExecutionException, InterruptedException {
         Runnable mockRunnable = mock(Runnable.class);
         when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
             Runnable argument = invocation.getArgument(0);
@@ -735,8 +727,8 @@ import static org.mockito.Mockito.*;
     }
 
     @Test
-    @Disabled
-    public void testCompleteRetrieveById_Success_WithColumnsIncluded() throws ExecutionException, InterruptedException {
+    @Disabled("Skipped")
+    void testCompleteRetrieveById_Success_WithColumnsIncluded() throws ExecutionException, InterruptedException {
 
         CommonRequestModel requestModel = CommonRequestModel.builder().build();
         CommonGetRequest getRequest = CommonGetRequest.builder().build();
@@ -754,7 +746,7 @@ import static org.mockito.Mockito.*;
     }
 
     @Test
-    public void testCompleteRetrieveById_RequestIsNull() throws ExecutionException, InterruptedException {
+    void testCompleteRetrieveById_RequestIsNull() throws ExecutionException, InterruptedException {
 
         CommonRequestModel requestModel = CommonRequestModel.builder().build();
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.completeRetrieveById(requestModel);
@@ -765,7 +757,7 @@ import static org.mockito.Mockito.*;
     }
 
     @Test
-    public void testCompleteRetrieveById_RequestIdIsNull() throws ExecutionException, InterruptedException {
+    void testCompleteRetrieveById_RequestIdIsNull() throws ExecutionException, InterruptedException {
 
         CommonRequestModel requestModel = CommonRequestModel.builder().build();
         CommonGetRequest getRequest = CommonGetRequest.builder().build();
@@ -780,7 +772,7 @@ import static org.mockito.Mockito.*;
     }
 
     @Test
-    public void testCompleteRetrieveById_ExceptionThrown() throws ExecutionException, InterruptedException {
+    void testCompleteRetrieveById_ExceptionThrown() throws ExecutionException, InterruptedException {
 
         CommonRequestModel requestModel = CommonRequestModel.builder().build();
         CommonGetRequest getRequest = CommonGetRequest.builder().build();
@@ -808,7 +800,7 @@ import static org.mockito.Mockito.*;
     }
 
     @Test
-    public void testGetGuidFromId_Success() {
+    void testGetGuidFromId_Success() {
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
         CommonGetRequest getRequest = CommonGetRequest.builder().id(1L).build();
         commonRequestModel.setData(getRequest);
@@ -823,13 +815,13 @@ import static org.mockito.Mockito.*;
     }
 
     @Test
-    public void testGetGuidFromId_RequestIsNull() {
+    void testGetGuidFromId_RequestIsNull() {
         ResponseEntity<IRunnerResponse> response = consolidationService.getGuidFromId(null);
         assertEquals(400, response.getStatusCodeValue());
     }
 
     @Test
-    public void testGetGuidFromId_ConsolidationDetailsNotFound() {
+    void testGetGuidFromId_ConsolidationDetailsNotFound() {
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
         CommonGetRequest getRequest = CommonGetRequest.builder().id(1L).build();
         commonRequestModel.setData(getRequest);
@@ -841,13 +833,13 @@ import static org.mockito.Mockito.*;
     }
 
     @Test
-    public void testShowCreateBooking_CreatePermissionDenied() {
+    void testShowCreateBooking_CreatePermissionDenied() {
         PermissionsContext.setPermissions(Collections.emptyList());
         assertThrows(RunnerException.class, () -> consolidationService.showCreateBooking("CREATE"));
     }
 
     @Test
-    public void testShowCreateBooking_ViewPermissionDenied() {
+    void testShowCreateBooking_ViewPermissionDenied() {
         PermissionsContext.setPermissions(Collections.emptyList());
         assertThrows(RunnerException.class, () -> consolidationService.showCreateBooking("VIEW"));
     }
@@ -891,7 +883,7 @@ import static org.mockito.Mockito.*;
     }
 
     @Test
-    public void testUpdateConsoleBookingFields_Failure() {
+    void testUpdateConsoleBookingFields_Failure() {
         ConsoleBookingRequest request = new ConsoleBookingRequest();
         request.setGuid(UUID.randomUUID());
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
@@ -945,8 +937,6 @@ import static org.mockito.Mockito.*;
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
         ConsolidationDetails consolidationDetails = testConsol;
         consolidationDetails.setSendingAgent(null);
-        ConsolidationDetailsResponse expectedResponse = testConsolResponse;
-        ResponseEntity<IRunnerResponse> expectedEntity = ResponseHelper.buildSuccessResponse(expectedResponse);
 
         when(jsonHelper.convertValue(request, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
@@ -954,7 +944,6 @@ import static org.mockito.Mockito.*;
         when(v1ServiceUtil.getDefaultAgentOrgParty(any())).thenReturn(new Parties());
         doThrow(new IllegalAccessException("IllegalAccessException")).when(auditLogService).addAuditLog(any());
         mockShipmentSettings();
-        // mockTenantSettings();
         assertThrows(ValidationException.class, () -> consolidationService.createConsolidationForBooking(commonRequestModel));
     }
 
@@ -966,7 +955,7 @@ import static org.mockito.Mockito.*;
 
 
     @Test
-    public void testCreateFromBooking_ThrowsValidationException() {
+    void testCreateFromBooking_ThrowsValidationException() {
         ConsolidationDetailsRequest request = new ConsolidationDetailsRequest();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
         ConsolidationDetails consolidationDetails = testConsol;
@@ -983,13 +972,11 @@ import static org.mockito.Mockito.*;
     }
 
     @Test
-    public void testValidateMawbNumber_Success() {
+    void testValidateMawbNumber_Success() {
         String mawb = "ABC123";
         String type = "type";
         ValidateMawbNumberRequest request = ValidateMawbNumberRequest.builder().mawb(mawb).type(type).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
-        ValidateMawbNumberResponse expectedResponse = ValidateMawbNumberResponse.builder().success(true).build();
-        ResponseEntity<IRunnerResponse> expectedEntity = ResponseHelper.buildSuccessResponse(expectedResponse);
 
 
         CarrierResponse carrierResponse = CarrierResponse.builder().build();
@@ -1003,7 +990,7 @@ import static org.mockito.Mockito.*;
     }
 
     @Test
-    public void testValidateMawbNumber_InvalidMawb() {
+    void testValidateMawbNumber_InvalidMawb() {
         String mawb = "INVALID_MAWB";
         ValidateMawbNumberRequest request = ValidateMawbNumberRequest.builder().mawb(mawb).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
@@ -1012,7 +999,7 @@ import static org.mockito.Mockito.*;
     }
 
     @Test
-    public void testGenerateCustomHouseBLNumber_Success() throws RunnerException {
+    void testGenerateCustomHouseBLNumber_Success() throws RunnerException {
         String generatedNumber = "ABC123";
         GenerateCustomHblResponse expectedResponse = GenerateCustomHblResponse.builder().hblNumber(generatedNumber).build();
         ResponseEntity<IRunnerResponse> expectedEntity = ResponseHelper.buildSuccessResponse(expectedResponse);
@@ -1026,7 +1013,7 @@ import static org.mockito.Mockito.*;
     }
 
     @Test
-    public void testGenerateCustomHouseBLNumber_Exception(){
+    void testGenerateCustomHouseBLNumber_Exception(){
         ConsolidationService spyService = spy(consolidationService);
         doThrow(new RuntimeException("Test exception")).when(spyService).generateCustomBolNumber();
         assertThrows(RunnerException.class, ()->spyService.generateCustomHouseBLNumber());
@@ -1034,7 +1021,7 @@ import static org.mockito.Mockito.*;
 
     @Test
 //    @Disabled
-    public void testGetDefaultConsolidation_Success() {
+    void testGetDefaultConsolidation_Success() {
         ShipmentSettingsDetails tenantSettings = new ShipmentSettingsDetails();
         tenantSettings.setDefaultTransportMode("Sea");
         tenantSettings.setDefaultContainerType("ContainerType");
@@ -1131,7 +1118,7 @@ import static org.mockito.Mockito.*;
     }
 
     @Test
-    void testCompleteUpdate_Success_LCLConsolidation() throws RunnerException {
+    void testCompleteUpdate_Success_LCLConsolidation() {
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
         ConsolidationDetailsRequest copy = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetailsRequest.class);
         commonRequestModel.setData(copy);
@@ -1170,7 +1157,7 @@ import static org.mockito.Mockito.*;
     }
 
     @Test
-    void testCompleteUpdate_Success_LCLConsolidation_cutoffvalidation() throws RunnerException {
+    void testCompleteUpdate_Success_LCLConsolidation_cutoffvalidation() {
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
         ConsolidationDetailsRequest copy = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetailsRequest.class);
         commonRequestModel.setData(copy);
@@ -1274,24 +1261,24 @@ import static org.mockito.Mockito.*;
     }
 
     @Test
-    void testRetrieveByIdOrGuid_NullRequest_Failure() throws RunnerException {
+    void testRetrieveByIdOrGuid_NullRequest_Failure() {
         ConsolidationDetailsRequest request = null;
         assertThrows(NullPointerException.class, ()-> consolidationService.retrieveByIdOrGuid(request));
     }
     @Test
-    void testRetrieveByIdOrGuid_EmptyRequest_Failure() throws RunnerException {
+    void testRetrieveByIdOrGuid_EmptyRequest_Failure() {
         ConsolidationDetailsRequest request = new ConsolidationDetailsRequest();
         assertThrows(RunnerException.class, ()-> consolidationService.retrieveByIdOrGuid(request));
     }
 
     @Test
-    void testRetrieveByIdOrGuid_DataRetrieveForId_Failure() throws RunnerException {
+    void testRetrieveByIdOrGuid_DataRetrieveForId_Failure() {
         ConsolidationDetailsRequest request = ConsolidationDetailsRequest.builder().id(1L).build();
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.empty());
         assertThrows(DataRetrievalFailureException.class, ()-> consolidationService.retrieveByIdOrGuid(request));
     }
     @Test
-    void testRetrieveByIdOrGuid_DataRetrieveForGuid_Failure() throws RunnerException {
+    void testRetrieveByIdOrGuid_DataRetrieveForGuid_Failure() {
         ConsolidationDetailsRequest request = new ConsolidationDetailsRequest();
         request.setGuid(UUID.fromString("1d27fe99-0874-4587-9a83-460bb5ba31f0"));
         when(consolidationDetailsDao.findByGuid(any())).thenReturn(Optional.empty());
@@ -1360,7 +1347,6 @@ import static org.mockito.Mockito.*;
         Map<String, EntityTransferContainerType> keyMasterDataMap = new HashMap<>();
         EntityTransferContainerType containerTypeMasterData = jsonTestUtility.getJson("CONTAINER_TYPE_MASTER_DATA", EntityTransferContainerType.class);
         keyMasterDataMap.put("20GP", containerTypeMasterData);
-        Cache cache = mock(Cache.class);
 
         commonRequestModel.setData(copy);
         ConsolidationDetails consolidationDetails = jsonTestUtility.getJson("CONSOLIDATION", ConsolidationDetails.class);
@@ -1491,7 +1477,6 @@ import static org.mockito.Mockito.*;
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails, shipmentDetails1));
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
         when(consoleShipmentMappingDao.assignShipments(any(), anyLong(), any(), any(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
-//        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(containerDao.saveAll(anyList())).thenReturn(new ArrayList<>(shipmentDetails.getContainersList()));
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
         when(consoleShipmentMappingDao.findByConsolidationId(anyLong())).thenReturn(List.of(consoleShipmentMapping, consoleShipmentMapping1));
@@ -1506,7 +1491,7 @@ import static org.mockito.Mockito.*;
     }
 
     @Test
-    void testAttachShipments_Success_Sea_LCLConsole() throws RunnerException {
+    void testAttachShipments_Success_Sea_LCLConsole() {
         List<Long> shipmentIds = List.of(1L, 2L);
         ConsoleShipmentMapping consoleShipmentMapping = new ConsoleShipmentMapping();
         consoleShipmentMapping.setConsolidationId(1L);
@@ -1543,7 +1528,6 @@ import static org.mockito.Mockito.*;
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails, shipmentDetails1));
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
         when(consoleShipmentMappingDao.assignShipments(any(), anyLong(), any(), any(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
-//        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(containerDao.saveAll(anyList())).thenReturn(new ArrayList<>(shipmentDetails.getContainersList()));
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
         when(consoleShipmentMappingDao.findByConsolidationId(anyLong())).thenReturn(List.of(consoleShipmentMapping, consoleShipmentMapping1));
@@ -1610,7 +1594,6 @@ import static org.mockito.Mockito.*;
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails, shipmentDetails1, shipmentDetails2, shipmentDetails3));
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
         when(consoleShipmentMappingDao.assignShipments(any(), anyLong(), any(), any(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
-//        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails.getPackingList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
         when(consoleShipmentMappingDao.findByConsolidationId(anyLong())).thenReturn(List.of(consoleShipmentMapping, consoleShipmentMapping1));
@@ -1674,7 +1657,6 @@ import static org.mockito.Mockito.*;
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails, shipmentDetails1, shipmentDetails2, shipmentDetails3));
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
         when(consoleShipmentMappingDao.assignShipments(any(), anyLong(), any(), any(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
-//        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails.getPackingList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
         when(consoleShipmentMappingDao.findByConsolidationId(anyLong())).thenReturn(List.of(consoleShipmentMapping, consoleShipmentMapping1));
@@ -1720,7 +1702,6 @@ import static org.mockito.Mockito.*;
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails));
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
         when(consoleShipmentMappingDao.assignShipments(any(), anyLong(), any(), any(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
-//        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails.getPackingList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
         when(consoleShipmentMappingDao.findByConsolidationId(anyLong())).thenReturn(List.of(consoleShipmentMapping, consoleShipmentMapping1));
@@ -1962,7 +1943,6 @@ import static org.mockito.Mockito.*;
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails, shipmentDetails1));
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
         when(consoleShipmentMappingDao.assignShipments(any(), anyLong(), any(), any(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
-//        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails.getPackingList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
         when(consoleShipmentMappingDao.findByConsolidationId(anyLong())).thenReturn(List.of(consoleShipmentMapping, consoleShipmentMapping1));
@@ -1976,7 +1956,7 @@ import static org.mockito.Mockito.*;
     }
 
     @Test
-    void testAttachShipments_ConsoleMapping_Failure() throws RunnerException {
+    void testAttachShipments_ConsoleMapping_Failure(){
         List<Long> shipmentIds = List.of(1L, 2L);
         ConsoleShipmentMapping consoleShipmentMapping = new ConsoleShipmentMapping();
         consoleShipmentMapping.setConsolidationId(2L);
@@ -2033,7 +2013,7 @@ import static org.mockito.Mockito.*;
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails, shipmentDetails1));
         when(consoleShipmentMappingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consoleShipmentMapping)));
         when(consoleShipmentMappingDao.assignShipments(any(), anyLong(), any(), any(), any(), any(), any())).thenReturn(new HashSet<>(List.of(2L)));
-//        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
+
         when(packingDao.saveAll(anyList())).thenReturn(shipmentDetails.getPackingList());
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
         when(consoleShipmentMappingDao.findByConsolidationId(anyLong())).thenReturn(List.of(consoleShipmentMapping, consoleShipmentMapping1));
@@ -2362,7 +2342,6 @@ import static org.mockito.Mockito.*;
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setId(1L);
         consolidationDetails.setGuid(UUID.randomUUID());
-        BillingSummary sampleBillingSummary = createTestBillingSummary();
 
         when(consoleShipmentMappingDao.detachShipments(anyLong(), any())).thenReturn(shipmentIds);
         when(shipmentDao.findShipmentsByIds(any())).thenReturn(List.of(shipmentDetails));
@@ -2394,7 +2373,7 @@ import static org.mockito.Mockito.*;
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
-    // TODO: static method CommonUtils fix
+    // LATER: static method CommonUtils fix
     @Test
     void testPartialUpdate_Success() throws RunnerException {
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
@@ -2629,8 +2608,6 @@ import static org.mockito.Mockito.*;
         when(consolidationSync.sync(any(), anyString(), anyBoolean())).thenReturn(ResponseHelper.buildSuccessResponse());
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         when(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class)).thenReturn(expectedResponse);
-//        when(jsonHelper.convertValue(consolidationDetails.getAllocations(), AllocationsResponse.class)).thenReturn(expectedResponse.getAllocations());
-//        when(jsonHelper.convertValue(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class)).thenReturn(expectedResponse.getAchievedQuantities());
         mockShipmentSettings();
         mockTenantSettings();
 
@@ -2658,8 +2635,6 @@ import static org.mockito.Mockito.*;
         ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
         shipmentSettingsDetails.setIataTactFlag(true);
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(shipmentSettingsDetails);
-
-        Awb awb = new Awb().setAwbGoodsDescriptionInfo(List.of(new AwbGoodsDescriptionInfo()));
 
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().WeightDecimalPlace(2)
                 .WVGroupingNumber(0).WVDigitGrouping(1).VolumeDecimalPlace(2).build());
@@ -2811,7 +2786,6 @@ import static org.mockito.Mockito.*;
         ConsolidationDetails consolidationDetails = jsonTestUtility.getTestConsolidationAir();
         consolidationDetails.setEfreightStatus("newEfreightStatus");
         consolidationDetails.setInterBranchConsole(true);
-        ConsolidationDetailsResponse expectedResponse = jsonTestUtility.getJson("CONSOLIDATION_AIR", ConsolidationDetailsResponse.class);
         ConsolidationDetails oldEntity = jsonTestUtility.getTestConsolidationAir();
         oldEntity.getCarrierDetails().setOriginPort("INBLR_AIR");
 
@@ -2826,8 +2800,6 @@ import static org.mockito.Mockito.*;
 
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().WeightDecimalPlace(2)
                 .WVGroupingNumber(0).WVDigitGrouping(1).VolumeDecimalPlace(2).build());
-
-        ResponseEntity<IRunnerResponse> expectedEntity = ResponseHelper.buildSuccessResponse(expectedResponse);
 
         var spyService = Mockito.spy(consolidationService);
 
@@ -2894,8 +2866,6 @@ import static org.mockito.Mockito.*;
         when(consolidationSync.sync(any(), anyString(), anyBoolean())).thenReturn(ResponseHelper.buildSuccessResponse());
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         when(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class)).thenReturn(expectedResponse);
-//        when(jsonHelper.convertValue(consolidationDetails.getAllocations(), AllocationsResponse.class)).thenReturn(expectedResponse.getAllocations());
-//        when(jsonHelper.convertValue(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class)).thenReturn(expectedResponse.getAchievedQuantities());
         mockShipmentSettings();
         mockTenantSettings();
 
@@ -3191,7 +3161,6 @@ import static org.mockito.Mockito.*;
         request.setPackingList(List.of());
         Packing packing = new Packing();
         packing.setId(1L);
-        PackSummaryResponse response = new PackSummaryResponse();
 
         when(packingService.calculatePacksUtilisationForConsolidation(any())).thenThrow(new RuntimeException());
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.calculatePackUtilisation(CommonRequestModel.buildRequest(request));
@@ -3551,10 +3520,6 @@ import static org.mockito.Mockito.*;
         includeColumns.add("consolidationNumber");
         sampleRequest.setIncludeColumns(includeColumns);
         ConsolidationDetails consolidationDetails = testConsol;
-        ConsolidationDetailsResponse consolidationDetailsResponse = modelMapperTest.map(testConsol, ConsolidationDetailsResponse.class);
-        Map<String, Object>  responseMap = new HashMap<>();
-        responseMap.put("id", 1);
-        responseMap.put("consolidationNumber", "CONS000231188");
 
         when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consolidationDetails)));
 
@@ -3576,9 +3541,8 @@ import static org.mockito.Mockito.*;
     void testList_Success1(boolean shipmentLevelContainer) {
         ListCommonRequest sampleRequest = constructListCommonRequest("id", 1, "=");
         ConsolidationDetails consolidationDetails = testConsol;
-        ConsolidationListResponse response = modelMapperTest.map(testConsol, ConsolidationListResponse.class);
 
-        consolidationDetails.setShipmentsList(new HashSet<>(Arrays.asList(shipmentDetails)));
+        consolidationDetails.setShipmentsList(new HashSet<>(Collections.singletonList(shipmentDetails)));
         when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consolidationDetails)));
         mockShipmentSettings();
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsShipmentLevelContainer(shipmentLevelContainer);
@@ -3594,10 +3558,6 @@ import static org.mockito.Mockito.*;
         includeColumns.add("consolidationNumber");
         sampleRequest.setIncludeColumns(includeColumns);
         ConsolidationDetails consolidationDetails = testConsol;
-        ConsolidationListResponse response = modelMapperTest.map(testConsol, ConsolidationListResponse.class);
-        Map<String, Object>  responseMap = new HashMap<>();
-        responseMap.put("id", 1);
-        responseMap.put("consolidationNumber", "CONS000231188");
 
         when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consolidationDetails)));
         mockShipmentSettings();
@@ -3614,10 +3574,6 @@ import static org.mockito.Mockito.*;
         sampleRequest.setIncludeColumns(includeColumns);
         sampleRequest.setNotificationFlag(true);
         ConsolidationDetails consolidationDetails = testConsol;
-        ConsolidationListResponse response = modelMapperTest.map(testConsol, ConsolidationListResponse.class);
-        Map<String, Object>  responseMap = new HashMap<>();
-        responseMap.put("id", 1);
-        responseMap.put("consolidationNumber", "CONS000231188");
 
         Page<Long> consolIdPage = new PageImpl<>(List.of(1L));
         when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consolidationDetails)));
@@ -3632,7 +3588,6 @@ import static org.mockito.Mockito.*;
         ListCommonRequest sampleRequest = constructListCommonRequest("bookingId", 1, "=");
 
         ConsolidationDetails consolidationDetails = testConsol;
-        ConsolidationListResponse response = modelMapperTest.map(testConsol, ConsolidationListResponse.class);
         GuidsListResponse resp = new GuidsListResponse();
         resp.setGuidsList(List.of(UUID.randomUUID()));
 
@@ -3655,7 +3610,6 @@ import static org.mockito.Mockito.*;
     void testListAsync_Success() throws ExecutionException, InterruptedException {
         ListCommonRequest sampleRequest = constructListCommonRequest("id", 1, "=");
         ConsolidationDetails consolidationDetails = testConsol;
-        ConsolidationListResponse response = modelMapperTest.map(testConsol, ConsolidationListResponse.class);
 
         when(consolidationDetailsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(consolidationDetails)));
         mockShipmentSettings();
@@ -3811,16 +3765,6 @@ import static org.mockito.Mockito.*;
         assertEquals(200,response.getStatus());
     }
 
-//    @Test
-//    void testPushShipmentDataToDependentService_Success() {
-//        ConsolidationDetails consolidationDetails = testConsol;
-//        when(trackingServiceAdapter.checkIfConsolContainersExist(any())).thenReturn(true);
-//        when(trackingServiceAdapter.checkIfAwbExists(any())).thenReturn(true);
-//
-//
-//        consolidationService.pushShipmentDataToDependentService(consolidationDetails, false)
-//    }
-
     @Test
     void testGetConsolFromShipment_Success() {
         ShipmentDetails shipmentDetails = jsonTestUtility.getJson("SHIPMENT", ShipmentDetails.class);
@@ -3845,7 +3789,8 @@ import static org.mockito.Mockito.*;
     void testGetConsolFromShipment_Failure_ShipmentDataRetrievalError() {
         ShipmentDetails shipmentDetails = jsonTestUtility.getJson("SHIPMENT", ShipmentDetails.class);
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.empty());
-        assertThrows(DataRetrievalFailureException.class, () -> consolidationService.getConsolFromShipment(shipmentDetails.getId()));
+        long shipmentId = shipmentDetails.getId();
+        assertThrows(DataRetrievalFailureException.class, () -> consolidationService.getConsolFromShipment(shipmentId));
     }
 
     @Test
@@ -3855,7 +3800,8 @@ import static org.mockito.Mockito.*;
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(shipmentDetails));
         when(modelMapper.map(shipmentDetails, ShipmentDetailsResponse.class)).thenReturn(shipmentDetailsResponse);
         when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.empty());
-        assertThrows(DataRetrievalFailureException.class, () -> consolidationService.getConsolFromShipment(shipmentDetails.getId()));
+        long shipmentId = shipmentDetails.getId();
+        assertThrows(DataRetrievalFailureException.class, () -> consolidationService.getConsolFromShipment(shipmentId));
     }
 
     @Test
@@ -4523,7 +4469,7 @@ import static org.mockito.Mockito.*;
     }
 
     @Test
-    void testCreate_SuccessRa() throws RunnerException {
+    void testCreate_SuccessRa(){
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().EnableAirMessaging(true).build());
         mockShipmentSettings();
 
@@ -4537,10 +4483,6 @@ import static org.mockito.Mockito.*;
         Parties parties = Parties.builder().addressCode("c1").orgCode("o1").build();
         consolidationDetails.setSendingAgent(parties);
 
-        ConsolidationDetailsResponse expectedResponse = testConsolResponse;
-
-        ResponseEntity<IRunnerResponse> expectedEntity = ResponseHelper.buildSuccessResponse(expectedResponse);
-
         var spyService = Mockito.spy(consolidationService);
 
         OrgAddressResponse orgAddressResponse = OrgAddressResponse.builder().build();
@@ -4551,7 +4493,6 @@ import static org.mockito.Mockito.*;
         addressMap.put("o1#c1", map);
         orgAddressResponse.setAddresses(addressMap);
 
-//        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
         String errorMessage = "Screening Status and Security Status is mandatory for RA.";
         Exception e = assertThrows(RunnerException.class, () -> {
@@ -4562,7 +4503,7 @@ import static org.mockito.Mockito.*;
     }
 
     @Test
-    void testCreate_SuccessIdNull() throws RunnerException {
+    void testCreate_SuccessIdNull() {
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().EnableAirMessaging(true).build());
 
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
@@ -4575,10 +4516,6 @@ import static org.mockito.Mockito.*;
 
         Parties parties = Parties.builder().addressCode("c1").orgCode("o1").build();
         consolidationDetails.setSendingAgent(parties);
-
-        ConsolidationDetailsResponse expectedResponse = testConsolResponse;
-
-        ResponseEntity<IRunnerResponse> expectedEntity = ResponseHelper.buildSuccessResponse(expectedResponse);
 
         var spyService = Mockito.spy(consolidationService);
 
@@ -4592,14 +4529,13 @@ import static org.mockito.Mockito.*;
         orgAddressResponse.setAddresses(addressMap);
 
         when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
-//        when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
-        Exception e = assertThrows(ValidationException.class, () -> {
+        assertThrows(ValidationException.class, () -> {
             spyService.create(commonRequestModel);
         });
     }
 
     @Test
-    void testCreate_SuccessIdNullSendingAgent() throws RunnerException {
+    void testCreate_SuccessIdNullSendingAgent() {
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().EnableAirMessaging(true).build());
         mockShipmentSettings();
 
@@ -4614,10 +4550,6 @@ import static org.mockito.Mockito.*;
         Parties parties = Parties.builder().addressCode("c1").orgCode("o1").build();
         consolidationDetails.setSendingAgent(parties);
 
-        ConsolidationDetailsResponse expectedResponse = testConsolResponse;
-
-        ResponseEntity<IRunnerResponse> expectedEntity = ResponseHelper.buildSuccessResponse(expectedResponse);
-
         var spyService = Mockito.spy(consolidationService);
 
         OrgAddressResponse orgAddressResponse = OrgAddressResponse.builder().build();
@@ -4628,7 +4560,6 @@ import static org.mockito.Mockito.*;
         addressMap.put("o1#c1", map);
         orgAddressResponse.setAddresses(addressMap);
 
-//        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
 
         String errorMessage = "Screening Status and Security Status is mandatory for RA.";
@@ -4640,7 +4571,7 @@ import static org.mockito.Mockito.*;
     }
 
     @Test
-    void testCreate_SuccessRaScreeningStatusNotNull() throws RunnerException {
+    void testCreate_SuccessRaScreeningStatusNotNull() {
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().EnableAirMessaging(true).build());
         mockShipmentSettings();
 
@@ -4655,10 +4586,6 @@ import static org.mockito.Mockito.*;
         Parties parties = Parties.builder().addressCode("c1").orgCode("o1").build();
         consolidationDetails.setSendingAgent(parties);
 
-        ConsolidationDetailsResponse expectedResponse = testConsolResponse;
-
-        ResponseEntity<IRunnerResponse> expectedEntity = ResponseHelper.buildSuccessResponse(expectedResponse);
-
         var spyService = Mockito.spy(consolidationService);
 
         OrgAddressResponse orgAddressResponse = OrgAddressResponse.builder().build();
@@ -4669,7 +4596,6 @@ import static org.mockito.Mockito.*;
         addressMap.put("o1#c1", map);
         orgAddressResponse.setAddresses(addressMap);
 
-//        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
         String errorMessage = "Screening Status and Security Status is mandatory for RA.";
         Exception e = assertThrows(RunnerException.class, () -> {
@@ -4696,10 +4622,6 @@ import static org.mockito.Mockito.*;
         Parties parties = Parties.builder().addressCode("c1").orgCode("o1").build();
         consolidationDetails.setSendingAgent(parties);
 
-        ConsolidationDetailsResponse expectedResponse = testConsolResponse;
-
-        ResponseEntity<IRunnerResponse> expectedEntity = ResponseHelper.buildSuccessResponse(expectedResponse);
-
         var spyService = Mockito.spy(consolidationService);
 
         OrgAddressResponse orgAddressResponse = OrgAddressResponse.builder().build();
@@ -4710,14 +4632,13 @@ import static org.mockito.Mockito.*;
         addressMap.put("o1#c1", map);
         orgAddressResponse.setAddresses(addressMap);
 
-//        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
         spyService.validateRaKcForConsol(consolidationDetails,V1TenantSettingsResponse.builder().EnableAirMessaging(true).build());
         verify(v1ServiceUtil, times(1)).fetchOrgInfoFromV1(anyList());
     }
 
     @Test
-    void testCreate_SuccessIdNullSendingAgentScreeningStatusNotNull() throws RunnerException {
+    void testCreate_SuccessIdNullSendingAgentScreeningStatusNotNull() {
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().EnableAirMessaging(true).build());
         mockShipmentSettings();
 
@@ -4733,10 +4654,6 @@ import static org.mockito.Mockito.*;
         Parties parties = Parties.builder().addressCode("c1").orgCode("o1").build();
         consolidationDetails.setSendingAgent(parties);
 
-        ConsolidationDetailsResponse expectedResponse = testConsolResponse;
-
-        ResponseEntity<IRunnerResponse> expectedEntity = ResponseHelper.buildSuccessResponse(expectedResponse);
-
         var spyService = Mockito.spy(consolidationService);
 
         OrgAddressResponse orgAddressResponse = OrgAddressResponse.builder().build();
@@ -4747,7 +4664,6 @@ import static org.mockito.Mockito.*;
         addressMap.put("o1#c1", map);
         orgAddressResponse.setAddresses(addressMap);
 
-//        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
         String errorMessage = "Screening Status and Security Status is mandatory for RA.";
         Exception e = assertThrows(RunnerException.class, () -> {
@@ -4758,7 +4674,7 @@ import static org.mockito.Mockito.*;
     }
 
     @Test
-    void testCreate_SuccessRaSecurityStatusNull() throws RunnerException {
+    void testCreate_SuccessRaSecurityStatusNull() {
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().EnableAirMessaging(true).build());
         mockShipmentSettings();
 
@@ -4776,10 +4692,6 @@ import static org.mockito.Mockito.*;
         Parties parties = Parties.builder().addressCode("c1").orgCode("o1").build();
         consolidationDetails.setSendingAgent(parties);
 
-        ConsolidationDetailsResponse expectedResponse = testConsolResponse;
-
-        ResponseEntity<IRunnerResponse> expectedEntity = ResponseHelper.buildSuccessResponse(expectedResponse);
-
         var spyService = Mockito.spy(consolidationService);
 
         OrgAddressResponse orgAddressResponse = OrgAddressResponse.builder().build();
@@ -4790,7 +4702,6 @@ import static org.mockito.Mockito.*;
         addressMap.put("o1#c1", map);
         orgAddressResponse.setAddresses(addressMap);
 
-//        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
         String errorMessage = "Screening Status and Security Status is mandatory for RA.";
         Exception e = assertThrows(RunnerException.class, () -> {
@@ -4819,9 +4730,6 @@ import static org.mockito.Mockito.*;
         Parties parties = Parties.builder().addressCode("c1").orgCode("o1").build();
         consolidationDetails.setSendingAgent(parties);
 
-        ConsolidationDetailsResponse expectedResponse = testConsolResponse;
-
-        ResponseEntity<IRunnerResponse> expectedEntity = ResponseHelper.buildSuccessResponse(expectedResponse);
 
         var spyService = Mockito.spy(consolidationService);
 
@@ -4833,14 +4741,13 @@ import static org.mockito.Mockito.*;
         addressMap.put("c1#o1", map);
         orgAddressResponse.setAddresses(addressMap);
 
-//        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
         spyService.validateRaKcForConsol(consolidationDetails, V1TenantSettingsResponse.builder().EnableAirMessaging(true).build());
         verify(v1ServiceUtil, times(1)).fetchOrgInfoFromV1(any());
     }
 
     @Test
-    void testCreate_SuccessIdNullSendingAgentSecurityStatusNull() throws RunnerException {
+    void testCreate_SuccessIdNullSendingAgentSecurityStatusNull() {
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().EnableAirMessaging(true).build());
         mockShipmentSettings();
 
@@ -4859,10 +4766,6 @@ import static org.mockito.Mockito.*;
         Parties parties = Parties.builder().addressCode("c1").orgCode("o1").build();
         consolidationDetails.setSendingAgent(parties);
 
-        ConsolidationDetailsResponse expectedResponse = testConsolResponse;
-
-        ResponseEntity<IRunnerResponse> expectedEntity = ResponseHelper.buildSuccessResponse(expectedResponse);
-
         var spyService = Mockito.spy(consolidationService);
 
         OrgAddressResponse orgAddressResponse = OrgAddressResponse.builder().build();
@@ -4873,7 +4776,6 @@ import static org.mockito.Mockito.*;
         addressMap.put("o1#c1", map);
         orgAddressResponse.setAddresses(addressMap);
 
-//        when(jsonHelper.convertValue(copy, ConsolidationDetails.class)).thenReturn(consolidationDetails);
         when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
         String errorMessage = "Screening Status and Security Status is mandatory for RA.";
         Exception e = assertThrows(RunnerException.class, () -> {
@@ -5260,13 +5162,12 @@ import static org.mockito.Mockito.*;
                 .thenReturn(new PageImpl<>(new ArrayList<>(List.of(ConsoleShipmentMapping.builder().consolidationId(1L).shipmentId(2L).build()))));
         when(commonUtils.getCurrentTenantSettings()).thenReturn(V1TenantSettingsResponse.builder().build());
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().build());
-//        when(jsonHelper.convertCreateValue(any(), eq(Routings.class))).thenReturn(testConsol.getRoutingsList().get(0));
         spyService.attachShipments(null, 1L, new ArrayList<>(List.of(1L)), true);
         verify(consolidationSync).sync(any(), any(), anyBoolean());
     }
 
     @Test
-    void testDGShipment() throws RunnerException {
+    void testDGShipment() {
         CommonGetRequest getRequest = CommonGetRequest.builder().build();
         CommonRequestModel requestModel = CommonRequestModel.buildRequest(getRequest);
         assertThrows(ValidationException.class, () -> {
@@ -5275,7 +5176,7 @@ import static org.mockito.Mockito.*;
     }
 
     @Test
-    void testDGShipment2() throws RunnerException {
+    void testDGShipment2() {
         CommonGetRequest getRequest = CommonGetRequest.builder().id(1L).build();
         CommonRequestModel requestModel = CommonRequestModel.buildRequest(getRequest);
         assertThrows(ValidationException.class, () -> {
@@ -5284,7 +5185,7 @@ import static org.mockito.Mockito.*;
     }
 
     @Test
-    void testDGShipment3() throws RunnerException {
+    void testDGShipment3() {
         CommonGetRequest getRequest = CommonGetRequest.builder().id(1L).build();
         CommonRequestModel requestModel = CommonRequestModel.buildRequest(getRequest);
         ConsolidationDetails consolDetails = new ConsolidationDetails();
@@ -5294,7 +5195,7 @@ import static org.mockito.Mockito.*;
     }
 
     @Test
-    void testDGShipment4() throws RunnerException {
+    void testDGShipment4() {
         CommonGetRequest getRequest = CommonGetRequest.builder().id(1L).build();
         CommonRequestModel requestModel = CommonRequestModel.buildRequest(getRequest);
         ConsolidationDetails consolDetails = new ConsolidationDetails();
@@ -5305,7 +5206,7 @@ import static org.mockito.Mockito.*;
     }
 
     @Test
-    void testDGShipment5() throws RunnerException {
+    void testDGShipment5() {
         CommonGetRequest getRequest = CommonGetRequest.builder().id(1L).build();
         CommonRequestModel requestModel = CommonRequestModel.buildRequest(getRequest);
         ConsolidationDetails consolDetails = new ConsolidationDetails();
@@ -5320,7 +5221,7 @@ import static org.mockito.Mockito.*;
     }
 
     @Test
-    void testCheckContainerEditingRequiredForOceanDg() throws RunnerException {
+    void testCheckContainerEditingRequiredForOceanDg(){
         CommonGetRequest getRequest = CommonGetRequest.builder().build();
         CommonRequestModel requestModel = CommonRequestModel.buildRequest(getRequest);
         var response = consolidationService.checkContainerEditingRequiredForOceanDg(requestModel);
@@ -5328,13 +5229,13 @@ import static org.mockito.Mockito.*;
     }
 
     @Test
-    void testCheckContainerEditingRequiredForOceanDg2() throws RunnerException {
+    void testCheckContainerEditingRequiredForOceanDg2() {
         var response = consolidationService.checkContainerEditingRequiredForOceanDg(CommonRequestModel.builder().build());
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
     }
 
     @Test
-    void testCheckContainerEditingRequiredForOceanDg3() throws RunnerException {
+    void testCheckContainerEditingRequiredForOceanDg3() {
         CommonGetRequest getRequest = CommonGetRequest.builder().id(1L).build();
         CommonRequestModel requestModel = CommonRequestModel.buildRequest(getRequest);
         var response = consolidationService.checkContainerEditingRequiredForOceanDg(requestModel);
@@ -5342,7 +5243,7 @@ import static org.mockito.Mockito.*;
     }
 
     @Test
-    void testCheckContainerEditingRequiredForOceanDg4() throws RunnerException {
+    void testCheckContainerEditingRequiredForOceanDg4() {
         CommonGetRequest getRequest = CommonGetRequest.builder().id(1L).build();
         CommonRequestModel requestModel = CommonRequestModel.buildRequest(getRequest);
         when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(new ConsolidationDetails()));
@@ -5351,7 +5252,7 @@ import static org.mockito.Mockito.*;
     }
 
     @Test
-    void testCheckContainerEditingRequiredForOceanDg5() throws RunnerException {
+    void testCheckContainerEditingRequiredForOceanDg5() {
         CommonGetRequest getRequest = CommonGetRequest.builder().id(1L).build();
         CommonRequestModel requestModel = CommonRequestModel.buildRequest(getRequest);
         ConsolidationDetails console = new ConsolidationDetails();
@@ -5380,16 +5281,27 @@ import static org.mockito.Mockito.*;
         return null;
     }
 
-    @Test
-    void testListRequestedConsolidationForShipment() {
-        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().id(1L).build());
-        var consoleShipMapping = ConsoleShipmentMapping.builder().isAttachmentDone(false).consolidationId(2L).requestedType(ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED).build();
-        ConsolidationListResponse consolidationListResponse = ConsolidationListResponse.builder().id(2L).build();
-        TenantSettingsDetailsContext.getCurrentTenantSettings().setIsMAWBColoadingEnabled(true);
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})  // Runs test for both true and false cases
+    void testListRequestedConsolidationForShipment(boolean isMAWBColoadingEnabled) {
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(
+                CommonGetRequest.builder().id(1L).build()
+        );
+
+        var consoleShipMapping = ConsoleShipmentMapping.builder()
+                .isAttachmentDone(false)
+                .consolidationId(2L)
+                .requestedType(ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED)
+                .build();
+
+        TenantSettingsDetailsContext.getCurrentTenantSettings().setIsMAWBColoadingEnabled(isMAWBColoadingEnabled);
         mockTenantSettings();
-        var spyService = Mockito.spy(consolidationService);
-        when(consoleShipmentMappingDao.findByShipmentIdAll(1L)).thenReturn(Collections.singletonList(consoleShipMapping));
-        when(consolidationDetailsDao.findAll(any(), any())).thenReturn(Page.empty());
+        var spyService = spy(consolidationService);
+
+        when(consoleShipmentMappingDao.findByShipmentIdAll(1L))
+                .thenReturn(Collections.singletonList(consoleShipMapping));
+        when(consolidationDetailsDao.findAll(any(), any()))
+                .thenReturn(Page.empty());
 
         var response = spyService.listRequestedConsolidationForShipment(commonRequestModel, true);
         assertEquals(HttpStatus.OK, response.getStatusCode());
@@ -5402,33 +5314,6 @@ import static org.mockito.Mockito.*;
         mockTenantSettings();
         var spyService = Mockito.spy(consolidationService);
         when(consoleShipmentMappingDao.findByShipmentIdAll(1L)).thenReturn(List.of());
-        var response = spyService.listRequestedConsolidationForShipment(commonRequestModel, true);
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-    }
-
-    @Test
-    void testListRequestedConsolidationForShipment_Error1() {
-        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().id(1L).build());
-        var consoleShipMapping = ConsoleShipmentMapping.builder().isAttachmentDone(false).consolidationId(2L).requestedType(ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED).build();
-        TenantSettingsDetailsContext.getCurrentTenantSettings().setIsMAWBColoadingEnabled(true);
-        mockTenantSettings();
-        var spyService = Mockito.spy(consolidationService);
-        when(consoleShipmentMappingDao.findByShipmentIdAll(1L)).thenReturn(Collections.singletonList(consoleShipMapping));
-        when(consolidationDetailsDao.findAll(any(), any())).thenReturn(Page.empty());
-        var response = spyService.listRequestedConsolidationForShipment(commonRequestModel, true);
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-    }
-
-    @Test
-    void testListRequestedConsolidationForShipment_Error2() {
-        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().id(1L).build());
-        var consoleShipMapping = ConsoleShipmentMapping.builder().isAttachmentDone(false).consolidationId(2L).requestedType(ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED).build();
-        TenantSettingsDetailsContext.getCurrentTenantSettings().setIsMAWBColoadingEnabled(true);
-        mockTenantSettings();
-        var spyService = Mockito.spy(consolidationService);
-        when(consoleShipmentMappingDao.findByShipmentIdAll(1L)).thenReturn(Collections.singletonList(consoleShipMapping));
-        when(consolidationDetailsDao.findAll(any(), any())).thenReturn(Page.empty());
-
         var response = spyService.listRequestedConsolidationForShipment(commonRequestModel, true);
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
@@ -5483,7 +5368,6 @@ import static org.mockito.Mockito.*;
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         when(consolidationDetailsDao.update(any(ConsolidationDetails.class), anyBoolean())).thenReturn(mockConoslidation);
         when(consolidationSync.sync(any(), anyString(), anyBoolean())).thenReturn(ResponseHelper.buildSuccessResponse());
-        //when(jsonHelper.convertCreateValue(mockRouting, Routings.class)).thenReturn(mockRouting);
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         when(jsonHelper.convertValue(mockConoslidation, ConsolidationDetailsResponse.class)).thenReturn(expectedResponse);
         when(masterDataUtils.fetchInBulkContainerTypes(anySet())).thenReturn(keyMasterDataMap);
@@ -5502,7 +5386,7 @@ import static org.mockito.Mockito.*;
     }
 
     @Test
-    void testValidationsBeforeAttachShipments() throws RunnerException {
+    void testValidationsBeforeAttachShipments() {
         testConsol.setTransportMode(TRANSPORT_MODE_AIR);
         testConsol.setTenantId(1);
         shipmentDetails.setTenantId(2);
@@ -5513,7 +5397,7 @@ import static org.mockito.Mockito.*;
     }
 
     @Test
-    void testValidationsBeforeAttachShipments1() throws RunnerException {
+    void testValidationsBeforeAttachShipments1() {
         testConsol.setTransportMode(TRANSPORT_MODE_AIR);
         testConsol.setTenantId(1);
         shipmentDetails.setTenantId(2);
@@ -5524,7 +5408,7 @@ import static org.mockito.Mockito.*;
     }
 
     @Test
-    void testValidationsBeforeAttachShipments2() throws RunnerException {
+    void testValidationsBeforeAttachShipments2() {
         testConsol.setTransportMode(TRANSPORT_MODE_AIR);
         testConsol.setTenantId(1);
         shipmentDetails.setTenantId(2);
@@ -5536,7 +5420,7 @@ import static org.mockito.Mockito.*;
     }
 
     @Test
-    void testValidationsBeforeAttachShipments3() throws RunnerException {
+    void testValidationsBeforeAttachShipments3()  {
         testConsol.setTransportMode(TRANSPORT_MODE_AIR);
         testConsol.setTenantId(1);
         shipmentDetails.setTenantId(1);
@@ -5548,7 +5432,7 @@ import static org.mockito.Mockito.*;
     }
 
     @Test
-    void testValidationsBeforeAttachShipments4() throws RunnerException {
+    void testValidationsBeforeAttachShipments4() {
         testConsol.setTransportMode(TRANSPORT_MODE_AIR);
         testConsol.setTenantId(1);
         shipmentDetails.setTenantId(1);
@@ -5560,7 +5444,7 @@ import static org.mockito.Mockito.*;
     }
 
     @Test
-    void testValidationsBeforeAttachShipments5() throws RunnerException {
+    void testValidationsBeforeAttachShipments5() {
         testConsol.setTransportMode(TRANSPORT_MODE_AIR);
         testConsol.setTenantId(1);
         shipmentDetails.setTenantId(1);
@@ -6276,8 +6160,7 @@ import static org.mockito.Mockito.*;
     List<ShipmentDetails> result = consolidationService.findShipmentForTrackingService(consolidationDetails, oldEntity);
 
     // Then
-    assertThat(result).isNotEmpty();
-    assertThat(result).hasSize(1);
+    assertThat(result).isNotEmpty().hasSize(1);
   }
 
   @Test
@@ -6309,8 +6192,7 @@ import static org.mockito.Mockito.*;
     List<ShipmentDetails> result = consolidationService.findShipmentForTrackingService(consolidationDetails, oldEntity);
 
     // Then
-    assertThat(result).isNotEmpty();
-    assertThat(result).hasSize(1);
+    assertThat(result).isNotEmpty().hasSize(1);
     verify(shipmentsContainersMappingDao).findByContainerIdIn(List.of(1L));
     verify(shipmentDao).findShipmentsByIds(Set.of(101L));
   }

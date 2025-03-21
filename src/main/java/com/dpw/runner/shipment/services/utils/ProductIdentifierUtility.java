@@ -39,8 +39,6 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCo
 @Slf4j
 public class ProductIdentifierUtility {
 
-  //private List<TenantProducts> enabledTenantProducts = new ArrayList<>();
-
   @Autowired ITenantProductsDao tenantProductsDao;
   @Autowired ProductSequenceConfigDao productSequenceConfigDao;
   @Autowired IShipmentSettingsSync shipmentSettingsSync;

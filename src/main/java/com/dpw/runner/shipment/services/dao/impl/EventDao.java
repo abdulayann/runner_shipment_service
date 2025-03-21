@@ -143,22 +143,20 @@ public class EventDao implements IEventDao {
         String responseMsg;
         List<Events> responseEvents = new ArrayList<>();
         try {
-            // TODO- Handle Transactions here
+            // LATER- Handle Transactions here
             Map<Long, Events> hashMap;
-//            if(!Objects.isNull(eventsIdList) && !eventsIdList.isEmpty()) {
-                ListCommonRequest listCommonRequest = constructListRequestFromEntityId(entityId, entityType);
-                if (entityType.equalsIgnoreCase(Constants.CONSOLIDATION)) {
-                    listCommonRequest = CommonUtils.constructListCommonRequest("consolidationId", entityId, "=");
-                }
-                Pair<Specification<Events>, Pageable> pair = fetchData(listCommonRequest, Events.class);
-                Page<Events> eventsPage = findAll(pair.getLeft(), pair.getRight());
-                hashMap = eventsPage.stream()
-                        .collect(Collectors.toMap(Events::getId, Function.identity()));
-//            }
+            ListCommonRequest listCommonRequest = constructListRequestFromEntityId(entityId, entityType);
+            if (entityType.equalsIgnoreCase(Constants.CONSOLIDATION)) {
+                listCommonRequest = CommonUtils.constructListCommonRequest("consolidationId", entityId, "=");
+            }
+            Pair<Specification<Events>, Pageable> pair = fetchData(listCommonRequest, Events.class);
+            Page<Events> eventsPage = findAll(pair.getLeft(), pair.getRight());
+            hashMap = eventsPage.stream()
+                    .collect(Collectors.toMap(Events::getId, Function.identity()));
             Map<Long, Events> copyHashMap = new HashMap<>(hashMap);
             List<Events> eventsRequestList = new ArrayList<>();
             eventsList = filterStaleEvents(eventsList, eventsPage.getContent());
-            if (eventsList != null && eventsList.size() != 0) {
+            if (!CommonUtils.listIsNullOrEmpty(eventsList)) {
                 for (Events request : eventsList) {
                     Long id = request.getId();
                     if (id != null) {
@@ -303,7 +301,7 @@ public class EventDao implements IEventDao {
     public List<Events> updateEntityFromOtherEntity(List<Events> eventsList, Long entityId, String entityType, List<Events> oldEntityList) throws RunnerException {
         String responseMsg;
         Map<UUID, Events> eventsMap = new HashMap<>();
-        if (oldEntityList != null && oldEntityList.size() > 0) {
+        if (oldEntityList != null && !oldEntityList.isEmpty()) {
             for (Events entity :
                     oldEntityList) {
                 eventsMap.put(entity.getGuid(), entity);
@@ -313,7 +311,7 @@ public class EventDao implements IEventDao {
         try {
             Events oldEntity;
             List<Events> eventsRequestList = new ArrayList<>();
-            if (eventsList != null && eventsList.size() != 0) {
+            if (eventsList != null && !eventsList.isEmpty()) {
                 for (Events request : eventsList) {
                     oldEntity = eventsMap.get(request.getGuid());
                     if (oldEntity != null) {
@@ -350,22 +348,22 @@ public class EventDao implements IEventDao {
         }
     }
 
-    public List<Events> getTheDataFromEntity(String EntityType, long EntityID, boolean publicEvent) {
+    public List<Events> getTheDataFromEntity(String entityType, long entityID, boolean publicEvent) {
         ListCommonRequest listCommonRequest;
         if (publicEvent) {
-            listCommonRequest = CommonUtils.andCriteria("entityId", EntityID, "=", null);
-            CommonUtils.andCriteria("entityType", EntityType, "=", listCommonRequest);
+            listCommonRequest = CommonUtils.andCriteria("entityId", entityID, "=", null);
+            CommonUtils.andCriteria("entityType", entityType, "=", listCommonRequest);
             CommonUtils.andCriteria("isPublicTrackingEvent", true, "=", listCommonRequest);
         } else {
-            listCommonRequest = CommonUtils.andCriteria("entityId", EntityID, "=", null);
-            CommonUtils.andCriteria("entityType", EntityType, "=", listCommonRequest);
+            listCommonRequest = CommonUtils.andCriteria("entityId", entityID, "=", null);
+            CommonUtils.andCriteria("entityType", entityType, "=", listCommonRequest);
             CommonUtils.andCriteria("isPublicTrackingEvent", false, "=", listCommonRequest);
         }
 
 
         Pair<Specification<Events>, Pageable> pair = fetchData(listCommonRequest, Events.class);
         Page<Events> events = findAll(pair.getLeft(), pair.getRight());
-        if (events.getContent().size() > 0) {
+        if (!events.getContent().isEmpty()) {
             return events.getContent();
         }
         return null;
@@ -373,7 +371,7 @@ public class EventDao implements IEventDao {
 
     public boolean checkIfEventsRowExistsForEntityTypeAndEntityId(CustomAutoEventRequest request) {
         List<Events> eventsRowList = getTheDataFromEntity(request.entityType, request.entityId, true);
-        if (eventsRowList != null && eventsRowList.size() > 0) {
+        if (eventsRowList != null && !eventsRowList.isEmpty()) {
             for (Events eventsRow : eventsRowList) {
                 if (eventsRow.getEventCode().equalsIgnoreCase(request.eventCode)) {
                     log.info("Event already exists for given id: " + request.entityId + " and type: " + request.entityType + " and event code : " + request.eventCode);
@@ -659,13 +657,13 @@ public class EventDao implements IEventDao {
 
     @Override
     public Events updateUserFieldsInEvent(Events event, Boolean forceUpdate) {
-        if (forceUpdate || ObjectUtils.isEmpty(event.getUserName())) {
+        if (Boolean.TRUE.equals(forceUpdate) || ObjectUtils.isEmpty(event.getUserName())) {
             event.setUserName(Optional.ofNullable(UserContext.getUser()).map(UsersDto::getDisplayName).orElse(null));
         }
-        if (forceUpdate || ObjectUtils.isEmpty(event.getUserEmail())) {
+        if (Boolean.TRUE.equals(forceUpdate) || ObjectUtils.isEmpty(event.getUserEmail())) {
             event.setUserEmail(Optional.ofNullable(UserContext.getUser()).map(UsersDto::getEmail).orElse(null));
         }
-        if (forceUpdate || ObjectUtils.isEmpty(event.getBranch())) {
+        if (Boolean.TRUE.equals(forceUpdate) || ObjectUtils.isEmpty(event.getBranch())) {
             event.setBranch(Optional.ofNullable(UserContext.getUser()).map(UsersDto::getCode).orElse(null));
         }
 

@@ -242,7 +242,7 @@ public class CommonUtils {
 
 
         List<FilterCriteria> criterias = new ArrayList<>();
-        List<FilterCriteria> innerFilters = new ArrayList();
+        List<FilterCriteria> innerFilters = new ArrayList<>();
         Criteria criteria = Criteria.builder().fieldName(fieldName).operator(operator).value(value).build();
         FilterCriteria filterCriteria = FilterCriteria.builder().criteria(criteria).build();
         innerFilters.add(filterCriteria);
@@ -269,13 +269,11 @@ public class CommonUtils {
                                 .build()))
                 .build();
 
-        ListCommonRequest listCommonRequest = ListCommonRequest.builder()
+        return ListCommonRequest.builder()
                 .pageNo(1)
                 .pageSize(Integer.MAX_VALUE)
                 .filterCriteria(Arrays.asList(entityIdCriteria))
                 .build();
-
-        return listCommonRequest;
     }
 
     public static Criteria getFilterCriteria(String fieldName, Object value, String operator) {
@@ -344,7 +342,7 @@ public class CommonUtils {
 
     public <T, P extends MultiTenancy> List<P> convertToEntityList(final List<T> lst, Class<P> clazz, Boolean isCreate) {
         return lst.stream()
-                .map(item -> isCreate ? this.convertToCreateClass(item, clazz) : convertToClass(item, clazz))
+                .map(item -> Boolean.TRUE.equals(isCreate) ? this.convertToCreateClass(item, clazz) : convertToClass(item, clazz))
                 .toList();
     }
 
@@ -1724,8 +1722,8 @@ public class CommonUtils {
     public void populateDictionaryForOceanDGCommercialApproval(Map<String, Object> dictionary, ShipmentDetails shipmentDetails, VesselsResponse vesselsResponse, String remarks, TaskCreateResponse taskCreateResponse) {
         populateDictionaryForOceanDGApproval(dictionary, shipmentDetails, vesselsResponse, remarks, taskCreateResponse);
         List<AuditLog> auditLogList = iAuditLogDao.findByOperationAndParentId(
-                DBOperationType.DG_APPROVE.name(), shipmentDetails.getId());
-        if (auditLogList != null && auditLogList.size() != 0) {
+            DBOperationType.DG_APPROVE.name(), shipmentDetails.getId());
+        if(auditLogList != null && !auditLogList.isEmpty()){
             Map<String, AuditLogChanges> changesMap = auditLogList.get(0).getChanges();
             populateDGSenderDetailsFromAudit(changesMap, dictionary);
         }

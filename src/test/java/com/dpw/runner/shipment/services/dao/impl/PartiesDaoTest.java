@@ -6,14 +6,12 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.Parties;
-import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IPartiesRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,11 +23,8 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -54,15 +49,12 @@ class PartiesDaoTest {
     private PartiesDao partiesDao;
     private static JsonTestUtility jsonTestUtility;
 
-    private static ObjectMapper objectMapperTest;
-    private static ModelMapper modelMapperTest = new ModelMapper();
     private Parties testParties;
 
     @BeforeAll
     static void init(){
         try {
             jsonTestUtility = new JsonTestUtility();
-            objectMapperTest = JsonTestUtility.getMapper();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -144,11 +136,8 @@ class PartiesDaoTest {
 
     @Test
     void testUpdateEntityFromOtherEntity_Success() throws RunnerException {
-        List<Parties> partiesList = new ArrayList<>();
-        partiesList.add(testParties);
         Parties parties = jsonTestUtility.getParties();
         parties.setId(2L);
-        partiesList.add(parties);
         var spyService = Mockito.spy(partiesDao);
         doReturn(List.of(testParties)).when(spyService).saveEntityFromOtherEntity(any(), anyLong(), anyString(), any());
         List<Parties> responseEntity = spyService.updateEntityFromOtherEntity(List.of(testParties), 1L, "SHIPMENT");
@@ -156,9 +145,7 @@ class PartiesDaoTest {
     }
 
     @Test
-    void testUpdateEntityFromOtherEntity_Failure() throws RunnerException {
-        List<Parties> partiesList = new ArrayList<>();
-        partiesList.add(testParties);
+    void testUpdateEntityFromOtherEntity_Failure() {
         var spyService = Mockito.spy(partiesDao);
         assertThrows(RunnerException.class, () -> spyService.updateEntityFromOtherEntity(List.of(testParties), 1L, "SHIPMENT"));
     }
@@ -189,7 +176,8 @@ class PartiesDaoTest {
     void testSaveEntityFromOtherEntity_Failure() {
         var spyService = Mockito.spy(partiesDao);
         doReturn(Optional.empty()).when(spyService).findById(anyLong());
-        assertThrows(DataRetrievalFailureException.class, () -> spyService.saveEntityFromOtherEntity(List.of(testParties), 1L, "SHIPMENT"));
+        List<Parties> partiesRequests = List.of(testParties);
+        assertThrows(DataRetrievalFailureException.class, () -> spyService.saveEntityFromOtherEntity(partiesRequests, 1L, "SHIPMENT"));
     }
 
     @Test
@@ -206,7 +194,8 @@ class PartiesDaoTest {
     void testSaveEntityFromOtherEntity2_Failure() {
         Map<Long, Parties> oldEntityMap = new HashMap<>();
         var spyService = Mockito.spy(partiesDao);
-        assertThrows(DataRetrievalFailureException.class, () -> spyService.saveEntityFromOtherEntity(List.of(testParties), 1L, "SHIPMENT", oldEntityMap));
+        List<Parties> partiesRequests = List.of(testParties);
+        assertThrows(DataRetrievalFailureException.class, () -> spyService.saveEntityFromOtherEntity(partiesRequests, 1L, "SHIPMENT", oldEntityMap));
     }
 
     @Test
@@ -223,7 +212,7 @@ class PartiesDaoTest {
     }
 
     @Test
-    void testUpdateEntityFromOtherEntity2_Failure() throws RunnerException {
+    void testUpdateEntityFromOtherEntity2_Failure() {
         List<Parties> partiesList = new ArrayList<>();
         partiesList.add(testParties);
         Parties parties = jsonTestUtility.getParties();
