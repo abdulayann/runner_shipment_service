@@ -2,7 +2,6 @@ package com.dpw.runner.shipment.services.service.impl;
 
 
 import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
@@ -201,9 +200,9 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
             beforeSave(consolidationDetails, null, true);
 
-            getConsolidation(consolidationDetails, Boolean.TRUE.equals(request.getCreatingFromDgShipment()));
+            getConsolidation(consolidationDetails);
 
-            afterSave(consolidationDetails, null, request, true, shipmentSettingsDetails, false, includeGuid, isFromET);
+            afterSave(consolidationDetails, null, request, true, shipmentSettingsDetails, false, isFromET);
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForConsole(consolidationDetails)), executorService);
         } catch (Exception e) {
             log.error(e.getMessage());
@@ -233,9 +232,9 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             populateOriginDestinationAgentDetailsForBookingConsolidation(consolidationDetails);
             beforeSave(consolidationDetails, null, true);
 
-            getConsolidation(consolidationDetails, false);
+            getConsolidation(consolidationDetails);
 
-            afterSave(consolidationDetails, null, request, true, shipmentSettingsDetails, true, false, false);
+            afterSave(consolidationDetails, null, request, true, shipmentSettingsDetails, true, false);
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForConsole(consolidationDetails)), executorService);
         } catch (Exception e) {
             log.error(e.getMessage());
@@ -289,7 +288,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 log.error("Error writing audit service log", e);
             }
 
-            afterSave(entity, oldConvertedConsolidation, consolidationDetailsRequest, false, shipmentSettingsDetails, false, false, isFromET);
+            afterSave(entity, oldConvertedConsolidation, consolidationDetailsRequest, false, shipmentSettingsDetails, false, isFromET);
             ConsolidationDetails finalEntity1 = entity;
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForConsole(finalEntity1)), executorService);
             ConsolidationDetails finalEntity = entity;
@@ -354,13 +353,11 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         if (Objects.isNull(consolidationDetails.getSourceTenantId()))
             consolidationDetails.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));
         log.info("Executing consolidation before save");
-        Map<Long, ShipmentDetails> dgStatusChangeInShipments = new HashMap<>();
-        dgOceanFlowsAndValidations(consolidationDetails, oldEntity, dgStatusChangeInShipments);
         List<ShipmentDetails> shipmentDetails = null;
         if(!isCreate){
             // This method will only work for non air transport modes , validation check moved inside the method
             calculateAchievedValues(consolidationDetails, new ShipmentGridChangeResponse(), oldEntity.getShipmentsList());
-            shipmentDetails = updateLinkedShipmentData(consolidationDetails, oldEntity, false, dgStatusChangeInShipments);
+            shipmentDetails = updateLinkedShipmentData(consolidationDetails, oldEntity, false);
         }
         checkCFSValidation(consolidationDetails, isCreate, shipmentDetails);
 
@@ -380,15 +377,12 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
         this.checkInterBranchPermission(consolidationDetails, oldEntity);
 
-        // Ignore events payload to avoid transaction issues bypassing consolidationDao.update(...);
-        // Update happens in after save from request body
-        consolidationDetails.setEventsList(null);
         populateUnlocCodeFuture.join();
     }
 
-    void getConsolidation(ConsolidationDetails consolidationDetails, boolean creatingFromDgShipment) throws RunnerException{
+    void getConsolidation(ConsolidationDetails consolidationDetails) throws RunnerException{
         consolidationService.generateConsolidationNumber(consolidationDetails);
-        consolidationDetails = consolidationDetailsDao.save(consolidationDetails, false, creatingFromDgShipment);
+        consolidationDetails = consolidationDetailsDao.save(consolidationDetails, false, false);
 
         // audit logs
         try {
@@ -409,12 +403,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
     }
 
-    private void afterSave(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, ConsolidationDetailsRequest consolidationDetailsRequest, Boolean isCreate, ShipmentSettingsDetails shipmentSettingsDetails, Boolean isFromBooking, boolean includeGuid, boolean isFromET) throws RunnerException{
-        List<PackingRequest> packingRequestList = consolidationDetailsRequest.getPackingList();
-        List<ContainerRequest> containerRequestList = consolidationDetailsRequest.getContainersList();
-        List<EventsRequest> eventsRequestList = consolidationDetailsRequest.getEventsList();
-        List<FileRepoRequest> fileRepoRequestList = consolidationDetailsRequest.getFileRepoList();
-        List<JobRequest> jobRequestList = consolidationDetailsRequest.getJobsList();
+    private void afterSave(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, ConsolidationDetailsRequest consolidationDetailsRequest, Boolean isCreate, ShipmentSettingsDetails shipmentSettingsDetails, Boolean isFromBooking, boolean isFromET) throws RunnerException{
         List<ReferenceNumbersRequest> referenceNumbersRequestList = consolidationDetailsRequest.getReferenceNumbersList();
         List<TruckDriverDetailsRequest> truckDriverDetailsRequestList = consolidationDetailsRequest.getTruckDriverDetails();
         List<RoutingsRequest> routingsRequestList = consolidationDetailsRequest.getRoutingsList();
@@ -428,11 +417,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 awbDao.updatedAwbInformationEvent(consolidationDetails, oldEntity);
             }
         }
-
-        setContainerAndPackingList(consolidationDetails, isCreate, shipmentSettingsDetails, isFromBooking, includeGuid, containerRequestList, id, packingRequestList);
-
-        // Events section
-        setEventsForConsole(consolidationDetails, isCreate, shipmentSettingsDetails, isFromBooking, eventsRequestList, id);
 
         processRequestLists(consolidationDetails, isCreate, isFromBooking, referenceNumbersRequestList, id, truckDriverDetailsRequestList, routingsRequestList);
         if (consolidationAddressRequest != null) {
@@ -465,65 +449,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         if(!Objects.equals(consolidationDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR)) return false;
         if(!Objects.equals(consolidationDetails.getSci(), oldEntity.getSci())) return true;
         return !Objects.equals(consolidationDetails.getEfreightStatus(), oldEntity.getEfreightStatus());
-    }
-
-    private void setContainerAndPackingList(ConsolidationDetails consolidationDetails, Boolean isCreate, ShipmentSettingsDetails shipmentSettingsDetails, Boolean isFromBooking, boolean includeGuid, List<ContainerRequest> containerRequestList, Long id, List<PackingRequest> packingRequestList) throws RunnerException {
-        if(containerRequestList != null && (shipmentSettingsDetails.getMergeContainers() == null || !shipmentSettingsDetails.getMergeContainers())
-                && (shipmentSettingsDetails.getIsShipmentLevelContainer() == null || !shipmentSettingsDetails.getIsShipmentLevelContainer())) {
-            List<Containers> updatedContainers = containerDao.updateEntityFromShipmentConsole(commonUtils.convertToEntityList(containerRequestList, Containers.class, (!isFromBooking && !includeGuid) && isCreate), id, (Long) null, true);
-            consolidationDetails.setContainersList(updatedContainers);
-        }
-        if (packingRequestList != null) {
-            List<Packing> updatedPackings = packingDao.updateEntityFromConsole(commonUtils.convertToEntityList(packingRequestList, Packing.class, (!isFromBooking && !includeGuid) && isCreate), id);
-            consolidationDetails.setPackingList(updatedPackings);
-        }
-    }
-
-    private void setEventsForConsole(ConsolidationDetails consolidationDetails, Boolean isCreate, ShipmentSettingsDetails shipmentSettingsDetails, Boolean isFromBooking, List<EventsRequest> eventsRequestList, Long id) throws RunnerException {
-        if (eventsRequestList != null && !Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEventsRevampEnabled())) {
-            eventsRequestList = setEventDetails(eventsRequestList, consolidationDetails);
-            List<Events> eventsList = new ArrayList<>(commonUtils.convertToEntityList(eventsRequestList, Events.class, !Boolean.TRUE.equals(isFromBooking) && isCreate));
-            commonUtils.removeDuplicateTrackingEvents(eventsList);
-            commonUtils.updateEventWithMasterData(eventsList);
-            eventDao.updateEntityFromOtherEntity(eventsList, id, Constants.CONSOLIDATION);
-            consolidationDetails.setEventsList(eventsList);
-        }
-        if (Boolean.TRUE.equals(isCreate) && Boolean.TRUE.equals(shipmentSettingsDetails.getAutoEventCreate())) {
-            generateEvents(consolidationDetails);
-        }
-    }
-
-    private List<EventsRequest> setEventDetails(List<EventsRequest> eventsRequestList, ConsolidationDetails consolidationDetails) {
-        if(eventsRequestList != null && !eventsRequestList.isEmpty()) {
-            for (EventsRequest req : eventsRequestList) {
-                req.setConsolidationId(consolidationDetails.getId());
-            }
-        }
-        return eventsRequestList;
-    }
-
-    public void generateEvents(ConsolidationDetails consolidationDetails) {
-        if (consolidationDetails.getEventsList() == null) {
-            consolidationDetails.setEventsList(new ArrayList<>());
-        }
-        consolidationDetails.getEventsList().add(createEvent(consolidationDetails, EventConstants.COCR));
-    }
-
-    private Events createEvent(ConsolidationDetails consolidationDetails, String eventCode) {
-        Events events = new Events();
-        // Set event fields from consolidation
-        events.setActual(commonUtils.getUserZoneTime(LocalDateTime.now()));
-        events.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
-        events.setIsPublicTrackingEvent(true);
-        events.setEntityType(Constants.CONSOLIDATION);
-        events.setEntityId(consolidationDetails.getId());
-        events.setTenantId(TenantContext.getCurrentTenant());
-        events.setEventCode(eventCode);
-        events.setConsolidationId(consolidationDetails.getId());
-        events.setDirection(consolidationDetails.getShipmentType());
-        // Persist the event
-        eventDao.save(events);
-        return events;
     }
 
     private void processRequestLists(ConsolidationDetails consolidationDetails, Boolean isCreate, Boolean isFromBooking, List<ReferenceNumbersRequest> referenceNumbersRequestList, Long id, List<TruckDriverDetailsRequest> truckDriverDetailsRequestList, List<RoutingsRequest> routingsRequestList) throws RunnerException {
@@ -1108,7 +1033,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         shipmentDao.entityDetach(shipmentDetailsList);
 
         // Refresh linked shipment data after attachment process
-        updateLinkedShipmentData(consolidationDetails, null, true, new HashMap<>());
+        updateLinkedShipmentData(consolidationDetails, null, true);
 
         // If any inter-console linkage needs to be handled, process it now
         processInterConsoleAttachShipment(consolidationDetails, shipmentDetailsList);
@@ -1459,7 +1384,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         return new ArrayList<>(page.getContent());
     }
 
-    private boolean canProcessConsole(ConsolidationDetails console, ConsolidationDetails oldEntity, Map<Long, ShipmentDetails> dgStatusChangeInShipments) {
+    private boolean canProcessConsole(ConsolidationDetails console, ConsolidationDetails oldEntity) {
         return console != null && (oldEntity == null || !Objects.equals(console.getBol(), oldEntity.getBol()) ||
                 !Objects.equals(console.getShipmentType(), oldEntity.getShipmentType()) ||
                 !CollectionUtils.isEmpty(console.getRoutingsList()) ||
@@ -1485,7 +1410,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                                 !Objects.equals(console.getCarrierDetails().getEta(), oldEntity.getCarrierDetails().getEta()) ||
                                 !Objects.equals(console.getCarrierDetails().getAtd(), oldEntity.getCarrierDetails().getAtd()) ||
                                 !Objects.equals(console.getCarrierDetails().getAta(), oldEntity.getCarrierDetails().getAta())
-                        )) || !dgStatusChangeInShipments.isEmpty() ||
+                        )) ||
                 !CommonUtils.checkSameParties(console.getSendingAgent(), oldEntity.getSendingAgent()) ||
                 !CommonUtils.checkSameParties(console.getReceivingAgent(), oldEntity.getReceivingAgent()));
     }
@@ -1504,7 +1429,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
      * @throws RunnerException If EFreight status is invalid or CFS cutoff validation fails
      */
     public List<ShipmentDetails> updateLinkedShipmentData(ConsolidationDetails console, ConsolidationDetails oldConsolEntity,
-            Boolean fromAttachShipment, Map<Long, ShipmentDetails> dgStatusChangeInShipments) throws RunnerException {
+            Boolean fromAttachShipment) throws RunnerException {
 
         V1TenantSettingsResponse tenantSettingsResponse = commonUtils.getCurrentTenantSettings();
         List<ShipmentDetails> shipments = null;
@@ -1526,7 +1451,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         }
 
         // Proceed only if changes are allowed on the consolidation
-        if (canProcessConsole(console, oldConsolEntity, dgStatusChangeInShipments)) {
+        if (canProcessConsole(console, oldConsolEntity)) {
             if (shipments == null) {
                 shipments = getShipmentsList(console.getId());
             }
@@ -1535,7 +1460,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
             // Update each linked shipment and collect relevant event triggers
             for (ShipmentDetails sd : shipments) {
-                updateLinkedShipments(console, oldConsolEntity, fromAttachShipment, dgStatusChangeInShipments, sd, events);
+                updateLinkedShipments(console, oldConsolEntity, fromAttachShipment, sd, events);
             }
 
             // Persist updated shipment details and event logs
@@ -1625,7 +1550,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
      */
     private void updateLinkedShipments(ConsolidationDetails console, ConsolidationDetails oldEntity,
             Boolean fromAttachShipment,
-            Map<Long, ShipmentDetails> dgStatusChangeInShipments,
             ShipmentDetails shipmentDetails,
             List<EventsRequest> events) throws RunnerException {
 
@@ -1661,12 +1585,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
         // Update carrier details if required
         updateCarrierDetailsForLinkedShipments(console, fromAttachShipment, shipmentDetails);
-
-        // Update DG status if there’s a change detected for this shipment
-        if (dgStatusChangeInShipments.containsKey(shipmentDetails.getId())) {
-            shipmentDetails.setContainsHazardous(dgStatusChangeInShipments.get(shipmentDetails.getId()).getContainsHazardous());
-            shipmentDetails.setOceanDGStatus(dgStatusChangeInShipments.get(shipmentDetails.getId()).getOceanDGStatus());
-        }
 
         // Perform CFS cut-off date validation if enabled and required
         if (checkConsolidationEligibleForCFSValidation(console)
