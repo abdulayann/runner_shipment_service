@@ -7,7 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anySet;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
@@ -18,8 +17,6 @@ import static org.mockito.Mockito.when;
 
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
-import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.response.DpsEventResponse;
 import com.dpw.runner.shipment.services.entity.DpsEvent;
@@ -70,7 +67,6 @@ class DpsEventServiceTest {
     @Test
     void getShipmentMatchingRulesByGuid_Success() {
         String guid = UUID.randomUUID().toString();
-        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().guid(guid).build());
         DpsEvent dpsEvent = new DpsEvent().setWorkflowType(DpsWorkflowType.HOLD).setEntityType(DpsEntityType.SHIPMENT);
         List<DpsEvent> dpsEvents = new ArrayList<>();
         dpsEvents.add(dpsEvent);
@@ -84,7 +80,6 @@ class DpsEventServiceTest {
     @Test
     void getShipmentMatchingRulesByGuid_Success1() {
         String guid = UUID.randomUUID().toString();
-        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().guid(guid).build());
         when(dpsEventRepository.findDpsEventByGuidAndExecutionState(any(), any())).thenReturn(null);
         assertEquals(HttpStatus.OK, dpsEventService.getShipmentMatchingRulesByGuid(guid).getStatusCode());
     }
@@ -92,7 +87,6 @@ class DpsEventServiceTest {
     @Test
     void getShipmentMatchingRulesByGuid_Exception() {
         String guid = UUID.randomUUID().toString();
-        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().guid(guid).build());
         when(dpsEventRepository.findDpsEventByGuidAndExecutionState(any(), any())).thenThrow(new DpsException());
 
         assertThrows(DpsException.class, () -> dpsEventService.getShipmentMatchingRulesByGuid(guid));
@@ -100,7 +94,6 @@ class DpsEventServiceTest {
 
     @Test
     void fetchMatchingRulesByGuid_Exception1() {
-        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().build());
         assertThrows(DpsException.class, () -> dpsEventService.getShipmentMatchingRulesByGuid(null));
     }
 
@@ -512,7 +505,7 @@ class DpsEventServiceTest {
 
     @Test
      void testGetImplicationsForShipment_NullOrEmptyShipmentGuid() {
-        DpsException exception = assertThrows(DpsException.class, () ->
+        assertThrows(DpsException.class, () ->
                 dpsEventService.getImplicationsForShipment(null)
         );
 
@@ -528,9 +521,9 @@ class DpsEventServiceTest {
         // Arrange
         String shipmentGuid = "shipment-123";
         when(dpsEventRepository.findImplicationsByEntityIdAndEntityType(
-                eq(shipmentGuid),
-                eq(DpsEntityType.SHIPMENT.name()),
-                eq(DpsExecutionStatus.ACTIVE.name())
+                shipmentGuid,
+                DpsEntityType.SHIPMENT.name(),
+                DpsExecutionStatus.ACTIVE.name()
         )).thenReturn(Collections.emptyList());
 
         // Act
@@ -554,9 +547,9 @@ class DpsEventServiceTest {
         List<String> mockImplications = List.of("implication1", "implication2");
 
         when(dpsEventRepository.findImplicationsByEntityIdAndEntityType(
-                eq(shipmentGuid),
-                eq(DpsEntityType.SHIPMENT.name()),
-                eq(DpsExecutionStatus.ACTIVE.name())
+                shipmentGuid,
+                DpsEntityType.SHIPMENT.name(),
+                DpsExecutionStatus.ACTIVE.name()
         )).thenReturn(mockImplications);
 
         // Act
@@ -579,9 +572,9 @@ class DpsEventServiceTest {
         String shipmentGuid = "shipment-123";
 
         when(dpsEventRepository.findImplicationsByEntityIdAndEntityType(
-                eq(shipmentGuid),
-                eq(DpsEntityType.SHIPMENT.name()),
-                eq(DpsExecutionStatus.ACTIVE.name())
+                shipmentGuid,
+                DpsEntityType.SHIPMENT.name(),
+                DpsExecutionStatus.ACTIVE.name()
         )).thenThrow(new RuntimeException("Database error"));
 
         // Act & Assert
@@ -606,7 +599,6 @@ class DpsEventServiceTest {
         dpsDataDto.setRuleExecutionId(UUID.randomUUID());
         dpsDto.setData(dpsDataDto);
 
-        DpsEvent constructedEvent = new DpsEvent();
         DpsEvent savedEvent = new DpsEvent();
         savedEvent.setExecutionId(UUID.randomUUID());
         savedEvent.setEntityType(DpsEntityType.SHIPMENT);
@@ -641,8 +633,6 @@ class DpsEventServiceTest {
         DpsEvent constructedEvent = new DpsEvent();
         constructedEvent.setEntityType(DpsEntityType.SHIPMENT);
         constructedEvent.setEntityId(null); // Simulate null GUID
-
-//        when(dpsEventRepository.save(any(DpsEvent.class))).thenReturn(constructedEvent);
         assertThrows(DpsException.class, () ->
                 dpsEventService.saveDpsEvent(dpsDto)
         );
@@ -657,8 +647,6 @@ class DpsEventServiceTest {
         constructedEvent.setEntityType(DpsEntityType.SHIPMENT);
         constructedEvent.setEntityId(UUID.randomUUID().toString());
 
-//        when(dpsEventRepository.save(any(DpsEvent.class))).thenReturn(constructedEvent);
-//        when(shipmentDao.findShipmentsByGuids(anySet())).thenReturn(Collections.emptyList());
         assertThrows(DpsException.class, () ->
                 dpsEventService.saveDpsEvent(dpsDto)
         );
@@ -685,8 +673,9 @@ class DpsEventServiceTest {
 
     @Test
     void testSaveDpsEvent_RepositorySaveFails() {
+        DpsDto dpsDto = new DpsDto();
         assertThrows(DpsException.class, () ->
-                dpsEventService.saveDpsEvent(new DpsDto())
+                dpsEventService.saveDpsEvent(dpsDto)
         );
     }
 

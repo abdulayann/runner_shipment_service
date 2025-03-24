@@ -1,5 +1,10 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListRequestFromEntityId;
+
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
@@ -29,6 +34,23 @@ import com.dpw.runner.shipment.services.utils.ExcludeTenantFilter;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
+import java.lang.reflect.InvocationTargetException;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+import javax.persistence.Query;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.hibernate.jpa.TypedParameterValue;
@@ -41,22 +63,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
-
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-import javax.persistence.Query;
-import java.lang.reflect.InvocationTargetException;
-import java.sql.Timestamp;
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListRequestFromEntityId;
 
 @Repository
 @Slf4j
@@ -137,22 +143,20 @@ public class EventDao implements IEventDao {
         String responseMsg;
         List<Events> responseEvents = new ArrayList<>();
         try {
-            // TODO- Handle Transactions here
+            // LATER- Handle Transactions here
             Map<Long, Events> hashMap;
-//            if(!Objects.isNull(eventsIdList) && !eventsIdList.isEmpty()) {
-                ListCommonRequest listCommonRequest = constructListRequestFromEntityId(entityId, entityType);
-                if (entityType.equalsIgnoreCase(Constants.CONSOLIDATION)) {
-                    listCommonRequest = CommonUtils.constructListCommonRequest("consolidationId", entityId, "=");
-                }
-                Pair<Specification<Events>, Pageable> pair = fetchData(listCommonRequest, Events.class);
-                Page<Events> eventsPage = findAll(pair.getLeft(), pair.getRight());
-                hashMap = eventsPage.stream()
-                        .collect(Collectors.toMap(Events::getId, Function.identity()));
-//            }
+            ListCommonRequest listCommonRequest = constructListRequestFromEntityId(entityId, entityType);
+            if (entityType.equalsIgnoreCase(Constants.CONSOLIDATION)) {
+                listCommonRequest = CommonUtils.constructListCommonRequest("consolidationId", entityId, "=");
+            }
+            Pair<Specification<Events>, Pageable> pair = fetchData(listCommonRequest, Events.class);
+            Page<Events> eventsPage = findAll(pair.getLeft(), pair.getRight());
+            hashMap = eventsPage.stream()
+                    .collect(Collectors.toMap(Events::getId, Function.identity()));
             Map<Long, Events> copyHashMap = new HashMap<>(hashMap);
             List<Events> eventsRequestList = new ArrayList<>();
             eventsList = filterStaleEvents(eventsList, eventsPage.getContent());
-            if (eventsList != null && eventsList.size() != 0) {
+            if (!CommonUtils.listIsNullOrEmpty(eventsList)) {
                 for (Events request : eventsList) {
                     Long id = request.getId();
                     if (id != null) {
@@ -297,7 +301,7 @@ public class EventDao implements IEventDao {
     public List<Events> updateEntityFromOtherEntity(List<Events> eventsList, Long entityId, String entityType, List<Events> oldEntityList) throws RunnerException {
         String responseMsg;
         Map<UUID, Events> eventsMap = new HashMap<>();
-        if (oldEntityList != null && oldEntityList.size() > 0) {
+        if (oldEntityList != null && !oldEntityList.isEmpty()) {
             for (Events entity :
                     oldEntityList) {
                 eventsMap.put(entity.getGuid(), entity);
@@ -307,7 +311,7 @@ public class EventDao implements IEventDao {
         try {
             Events oldEntity;
             List<Events> eventsRequestList = new ArrayList<>();
-            if (eventsList != null && eventsList.size() != 0) {
+            if (eventsList != null && !eventsList.isEmpty()) {
                 for (Events request : eventsList) {
                     oldEntity = eventsMap.get(request.getGuid());
                     if (oldEntity != null) {
@@ -344,22 +348,22 @@ public class EventDao implements IEventDao {
         }
     }
 
-    public List<Events> getTheDataFromEntity(String EntityType, long EntityID, boolean publicEvent) {
+    public List<Events> getTheDataFromEntity(String entityType, long entityID, boolean publicEvent) {
         ListCommonRequest listCommonRequest;
         if (publicEvent) {
-            listCommonRequest = CommonUtils.andCriteria("entityId", EntityID, "=", null);
-            CommonUtils.andCriteria("entityType", EntityType, "=", listCommonRequest);
+            listCommonRequest = CommonUtils.andCriteria("entityId", entityID, "=", null);
+            CommonUtils.andCriteria("entityType", entityType, "=", listCommonRequest);
             CommonUtils.andCriteria("isPublicTrackingEvent", true, "=", listCommonRequest);
         } else {
-            listCommonRequest = CommonUtils.andCriteria("entityId", EntityID, "=", null);
-            CommonUtils.andCriteria("entityType", EntityType, "=", listCommonRequest);
+            listCommonRequest = CommonUtils.andCriteria("entityId", entityID, "=", null);
+            CommonUtils.andCriteria("entityType", entityType, "=", listCommonRequest);
             CommonUtils.andCriteria("isPublicTrackingEvent", false, "=", listCommonRequest);
         }
 
 
         Pair<Specification<Events>, Pageable> pair = fetchData(listCommonRequest, Events.class);
         Page<Events> events = findAll(pair.getLeft(), pair.getRight());
-        if (events.getContent().size() > 0) {
+        if (!events.getContent().isEmpty()) {
             return events.getContent();
         }
         return null;
@@ -367,7 +371,7 @@ public class EventDao implements IEventDao {
 
     public boolean checkIfEventsRowExistsForEntityTypeAndEntityId(CustomAutoEventRequest request) {
         List<Events> eventsRowList = getTheDataFromEntity(request.entityType, request.entityId, true);
-        if (eventsRowList != null && eventsRowList.size() > 0) {
+        if (eventsRowList != null && !eventsRowList.isEmpty()) {
             for (Events eventsRow : eventsRowList) {
                 if (eventsRow.getEventCode().equalsIgnoreCase(request.eventCode)) {
                     log.info("Event already exists for given id: " + request.entityId + " and type: " + request.entityType + " and event code : " + request.eventCode);
@@ -653,28 +657,24 @@ public class EventDao implements IEventDao {
 
     @Override
     public Events updateUserFieldsInEvent(Events event, Boolean forceUpdate) {
-        if (forceUpdate || ObjectUtils.isEmpty(event.getUserName())) {
+        if (Boolean.TRUE.equals(forceUpdate) || ObjectUtils.isEmpty(event.getUserName())) {
             event.setUserName(Optional.ofNullable(UserContext.getUser()).map(UsersDto::getDisplayName).orElse(null));
         }
-        if (forceUpdate || ObjectUtils.isEmpty(event.getUserEmail())) {
+        if (Boolean.TRUE.equals(forceUpdate) || ObjectUtils.isEmpty(event.getUserEmail())) {
             event.setUserEmail(Optional.ofNullable(UserContext.getUser()).map(UsersDto::getEmail).orElse(null));
         }
-        if (forceUpdate || ObjectUtils.isEmpty(event.getBranch())) {
+        if (Boolean.TRUE.equals(forceUpdate) || ObjectUtils.isEmpty(event.getBranch())) {
             event.setBranch(Optional.ofNullable(UserContext.getUser()).map(UsersDto::getCode).orElse(null));
-        }
-        if (forceUpdate || ObjectUtils.isEmpty(event.getBranchName())) {
-            event.setBranchName(Optional.ofNullable(UserContext.getUser()).map(UsersDto::getTenantDisplayName).orElse(null));
         }
 
         if (Constants.SYSTEM_GENERATED.equals(event.getSource())) {
             event.setUserEmail(null);
         }
 
-        if(Constants.MASTER_DATA_SOURCE_CARGOES_TRACKING.equals(event.getSource())) {
+        if(Constants.MASTER_DATA_SOURCE_CARGOES_TRACKING.equals(event.getSource()) || Constants.DESCARTES.equals(event.getSource())) {
             event.setUserName(EventConstants.SYSTEM_GENERATED);
             event.setUserEmail(null);
             event.setBranch(null);
-            event.setBranchName(null);
         }
         return event;
     }

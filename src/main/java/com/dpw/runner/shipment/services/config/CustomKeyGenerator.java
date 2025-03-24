@@ -73,7 +73,6 @@ public class CustomKeyGenerator implements KeyGenerator {
 
     public String customCacheKey(Object... params) {
         StringBuilder keyBuilder = cacheBaseKey();
-
         if (params != null && params.length > 0) {
             String joinedParams = String.join("_",
                     Arrays.stream(params)
@@ -82,9 +81,6 @@ public class CustomKeyGenerator implements KeyGenerator {
             );
             keyBuilder.append("_").append(joinedParams);
         }
-
         return keyBuilder.toString();
     }
-
 }
-

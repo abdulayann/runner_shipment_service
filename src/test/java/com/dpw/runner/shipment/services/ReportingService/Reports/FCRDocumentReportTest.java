@@ -16,7 +16,6 @@ import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,7 +40,7 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
-public class FCRDocumentReportTest {
+class FCRDocumentReportTest {
 
     @InjectMocks
     private FCRDocumentReport fcrDocumentReport;
@@ -55,14 +54,12 @@ public class FCRDocumentReportTest {
     @Mock
     private CommonUtils commonUtils;
 
-    private static ObjectMapper objectMapper;
     private static JsonTestUtility jsonTestUtility;
     private static ShipmentDetails shipmentDetails;
 
     @BeforeAll
     static void init() throws IOException {
         jsonTestUtility = new JsonTestUtility();
-        objectMapper = JsonTestUtility.getMapper();
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
         mockUser.setUsername("user");

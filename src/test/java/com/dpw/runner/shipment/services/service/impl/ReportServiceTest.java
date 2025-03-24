@@ -50,6 +50,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -582,6 +584,9 @@ class ReportServiceTest extends CommonMocks {
         shipmentSettingsDetails.setTenantId(1);
         shipmentSettingsDetails.setAutoEventCreate(true);
 
+        Awb mockAwb = new Awb();
+        when(awbDao.updateAwbPrintInformation(any(), any(), any(), any(), any())).thenReturn(mockAwb);
+
         ShipmentSettingsDetails shipmentSettingsDetails2 = new ShipmentSettingsDetails();
         shipmentSettingsDetails2.setHawb("123456789");
         shipmentSettingsDetails2.setTenantId(44);
@@ -642,6 +647,8 @@ class ReportServiceTest extends CommonMocks {
         reportRequest.setPrintForParties(true);
         reportRequest.setPrintingFor_str("0");
         // Mock
+        Awb mockAwb = new Awb();
+        when(awbDao.updateAwbPrintInformation(any(), any(), any(), any(), any())).thenReturn(mockAwb);
         when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(shipmentSettingsDetails));
         when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(Arrays.asList(shipmentSettingsDetails, shipmentSettingsDetails2));
         when(reportsFactory.getReport(any())).thenReturn(mawbReport);
@@ -794,7 +801,6 @@ class ReportServiceTest extends CommonMocks {
         hblTermsConditionTemplate.setTemplateFileName("122333");
         hblTermsConditionTemplate.setIsWaterMarkRequired(true);
         when(hblTermsConditionTemplateDao.getTemplateCode(any(), any(), any())).thenReturn(hblTermsConditionTemplate);
-        //when(documentManagerService.saveFile(any())).thenReturn(documentManagerResponse);
 
 
         Runnable mockRunnable = mock(Runnable.class);
@@ -869,8 +875,6 @@ class ReportServiceTest extends CommonMocks {
         hblReleaseTypeMapping.setCopiesPrinted(1);
         when(hblReleaseTypeMappingDao.findByReleaseTypeAndHblId(any(), any())).thenReturn(Arrays.asList(hblReleaseTypeMapping));
 
-        //when(documentManagerService.saveFile(any())).thenReturn(documentManagerResponse);
-
 
         Runnable mockRunnable = mock(Runnable.class);
 
@@ -943,8 +947,6 @@ class ReportServiceTest extends CommonMocks {
         HblReleaseTypeMapping hblReleaseTypeMapping = new HblReleaseTypeMapping();
         hblReleaseTypeMapping.setCopiesPrinted(1);
         when(hblReleaseTypeMappingDao.findByReleaseTypeAndHblId(any(), any())).thenReturn(Arrays.asList(hblReleaseTypeMapping));
-
-        //when(documentManagerService.saveFile(any())).thenReturn(documentManagerResponse);
 
 
         Runnable mockRunnable = mock(Runnable.class);
@@ -1590,6 +1592,9 @@ class ReportServiceTest extends CommonMocks {
         when(docDetailsDao.findByEntityIdAndType(any(), any())).thenReturn(List.of(DocDetails.builder().versionNumber("2").build()));
         when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(ResponseEntity.ok(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))));
         when(jsonHelper.convertToJson(any())).thenReturn("");
+        Map<String, Object> dataRetrived = new HashMap<>();
+        dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
+        dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.SEA);
         Mockito.doNothing().when(eventService).saveEvent(any());
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setPreAlertEmailAndLogs(true);
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
@@ -2715,7 +2720,7 @@ class ReportServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().id(1L).build());
         when(shipmentDao.findById(any())).thenReturn(Optional.of(new ShipmentDetails()));
         Mockito.doNothing().when(shipmentTagsForExteranlServices).populateRaKcDataWithShipmentDetails(any(), any());
-        ResponseEntity<IRunnerResponse> responseEntity = reportService.createDocumentTagsForShipment(commonRequestModel);;
+        ResponseEntity<IRunnerResponse> responseEntity = reportService.createDocumentTagsForShipment(commonRequestModel);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
@@ -2724,7 +2729,7 @@ class ReportServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().guid(UUID.randomUUID().toString()).build());
         when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(new ShipmentDetails()));
         Mockito.doNothing().when(shipmentTagsForExteranlServices).populateRaKcDataWithShipmentDetails(any(), any());
-        ResponseEntity<IRunnerResponse> responseEntity = reportService.createDocumentTagsForShipment(commonRequestModel);;
+        ResponseEntity<IRunnerResponse> responseEntity = reportService.createDocumentTagsForShipment(commonRequestModel);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
@@ -3233,74 +3238,40 @@ class ReportServiceTest extends CommonMocks {
         assertEquals(6, pdfBytes.size()); // 2 copies * 3 packs
     }
 
-    @Test
-    void addDocumentToDocumentMasterTestHAWBORIGNAL(){
-        ReportRequest reportRequest = new ReportRequest();
-        reportRequest.setReportId("1");
-        reportRequest.setPrintType("ORIGINAL");
-        reportRequest.setReportInfo("HAWB");
-        Optional<ShipmentDetails> shipmentDetails = Optional.of(ShipmentDetails.builder().build());
-        when(shipmentDao.findById(Long.parseLong(reportRequest.getReportId()))).thenReturn(shipmentDetails);
+    @ParameterizedTest
+    @CsvSource({
+            "ORIGINAL, HAWB",
+            "DRAFT, MAWB",
+            "DRAFT, HAWB",
+            "ORIGINAL, MAWB"
+    })
+    void addDocumentToDocumentMasterTest(String printType, String reportInfo) {
+        ReportRequest newReportRequest = new ReportRequest();
+        newReportRequest.setReportId("1");
+        newReportRequest.setPrintType(printType);
+        newReportRequest.setReportInfo(reportInfo);
 
-        byte[] pdfByte_Content = new byte[1];
-        reportService.addDocumentToDocumentMaster(reportRequest, pdfByte_Content);
+        Optional<ShipmentDetails> shipmentDetails = Optional.of(ShipmentDetails.builder().build());
+        when(shipmentDao.findById(Long.parseLong(newReportRequest.getReportId()))).thenReturn(shipmentDetails);
+
+        byte[] pdfByteContent = new byte[1];
+        reportService.addDocumentToDocumentMaster(newReportRequest, pdfByteContent);
+
         assertNotNull(shipmentDetails);
     }
 
     @Test
     void addDocumentToDocumentMasterTestHAWBORIGNALWithCSDPrint()
         throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
-        ReportRequest reportRequest = new ReportRequest();
-        reportRequest.setReportId("1");
-        reportRequest.setPrintType("ORIGINAL");
-        reportRequest.setPrintCSD(true);
-        reportRequest.setReportInfo("HAWB");
+        ReportRequest newReportRequest = new ReportRequest();
+        newReportRequest.setReportId("1");
+        newReportRequest.setPrintType("ORIGINAL");
+        newReportRequest.setPrintCSD(true);
+        newReportRequest.setReportInfo("HAWB");
 
         DocUploadRequest docUploadRequest = new DocUploadRequest();
         reportService.addCSDDocumentToDocumentMaster("1", docUploadRequest, "123");
-        assertNotNull(reportRequest);
-    }
-
-    @Test
-    void addDocumentToDocumentMasterTestMAWBDRAFT(){
-        ReportRequest reportRequest = new ReportRequest();
-        reportRequest.setReportId("1");
-        reportRequest.setPrintType("DRAFT");
-        reportRequest.setReportInfo("MAWB");
-        Optional<ShipmentDetails> shipmentDetails = Optional.of(ShipmentDetails.builder().build());
-        when(shipmentDao.findById(Long.parseLong(reportRequest.getReportId()))).thenReturn(shipmentDetails);
-
-        byte[] pdfByte_Content = new byte[1];
-        reportService.addDocumentToDocumentMaster(reportRequest, pdfByte_Content);
-        assertNotNull(shipmentDetails);
-    }
-
-    @Test
-    void addDocumentToDocumentMasterTestHAWBDRAFT(){
-        ReportRequest reportRequest = new ReportRequest();
-        reportRequest.setReportId("1");
-        reportRequest.setPrintType("DRAFT");
-        reportRequest.setReportInfo("HAWB");
-        Optional<ShipmentDetails> shipmentDetails = Optional.of(ShipmentDetails.builder().build());
-        when(shipmentDao.findById(Long.parseLong(reportRequest.getReportId()))).thenReturn(shipmentDetails);
-
-        byte[] pdfByte_Content = new byte[1];
-        reportService.addDocumentToDocumentMaster(reportRequest, pdfByte_Content);
-        assertNotNull(shipmentDetails);
-    }
-
-    @Test
-    void addDocumentToDocumentMasterTestMAWBORIGNAL(){
-        ReportRequest reportRequest = new ReportRequest();
-        reportRequest.setReportId("1");
-        reportRequest.setPrintType("ORIGINAL");
-        reportRequest.setReportInfo("MAWB");
-        Optional<ShipmentDetails> shipmentDetails = Optional.of(ShipmentDetails.builder().build());
-        when(shipmentDao.findById(Long.parseLong(reportRequest.getReportId()))).thenReturn(shipmentDetails);
-
-        byte[] pdfByte_Content = new byte[1];
-        reportService.addDocumentToDocumentMaster(reportRequest, pdfByte_Content);
-        assertNotNull(shipmentDetails);
+        assertNotNull(newReportRequest);
     }
 
     @Test
@@ -3552,7 +3523,7 @@ class ReportServiceTest extends CommonMocks {
     }
 
     @Test
-    void getPreAlertEmailTemplateData() throws RunnerException {
+    void getPreAlertEmailTemplateData(){
         when(shipmentDao.findById(any())).thenReturn(Optional.of(ShipmentDetails.builder().carrierDetails(CarrierDetails.builder().build()).build()));
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         assertThrows(RunnerException.class, () -> reportService.getPreAlertEmailTemplateData(1L, 2L));

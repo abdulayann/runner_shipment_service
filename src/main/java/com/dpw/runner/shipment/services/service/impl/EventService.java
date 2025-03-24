@@ -37,6 +37,7 @@ import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiRe
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Event;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Place;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantResponse;
 import com.dpw.runner.shipment.services.entity.AdditionalDetails;
 import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
@@ -48,6 +49,7 @@ import com.dpw.runner.shipment.services.entity.enums.DateType;
 import com.dpw.runner.shipment.services.entity.enums.EventType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
 import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -87,7 +89,6 @@ import java.util.stream.Collectors;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
-
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -201,7 +202,7 @@ public class EventService implements IEventService {
         }
         long id = request.getId();
         Optional<Events> oldEntity = eventDao.findById(id);
-        if (!oldEntity.isPresent()) {
+        if (oldEntity.isEmpty()) {
             log.debug(EventConstants.EVENT_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
@@ -387,7 +388,7 @@ public class EventService implements IEventService {
     public ResponseEntity<IRunnerResponse> V1EventsCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws RunnerException {
         EventsRequestV2 eventsRequestV2 = (EventsRequestV2) commonRequestModel.getData();
         try {
-            if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
+            if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !Boolean.TRUE.equals(syncConfig.IS_REVERSE_SYNC_ACTIVE)) {
                 return ResponseHelper.buildSuccessResponse();
             }
             Optional<Events> existingEvent = eventDao.findByGuid(eventsRequestV2.getGuid());
@@ -1287,8 +1288,6 @@ public class EventService implements IEventService {
     private void saveAndSyncShipment(ShipmentDetails shipmentDetails, String messageId) throws RunnerException {
         log.info("Saving shipment entity: {} messageId {}", shipmentDetails.getShipmentId(), messageId);
         shipmentDao.saveWithoutValidation(shipmentDetails);
-//        log.info("Synchronizing shipment: {}", shipmentDetails.getShipmentId());
-//        shipmentSync.sync(shipmentDetails, null, null, UUID.randomUUID().toString(), false);
     }
 
     @Override
@@ -1309,6 +1308,9 @@ public class EventService implements IEventService {
             List<Events> consolEvents = getEventsListForCriteria(consolidationId, false, listRequest);
             allEventResponses = jsonHelper.convertValueToList(consolEvents, EventsResponse.class);
         }
+
+        // set Branch name for every event response
+        populateBranchNames(allEventResponses);
 
         // set MasterData
         setEventCodesMasterData(
@@ -1346,6 +1348,59 @@ public class EventService implements IEventService {
         }
 
         return ResponseHelper.buildSuccessResponse(groupedEvents);
+    }
+
+    /**
+     * Populates branch display names in the provided list of event responses by fetching cousin branch data from the V1 service and mapping event codes to branch display names.
+     *
+     * @param eventResponses the list of events to update with branch names
+     */
+    @Override
+    public void populateBranchNames(List<EventsResponse> eventResponses) {
+        if (eventResponses == null || eventResponses.isEmpty()) {
+            log.debug("No eventResponses to process in populateBranchNames.");
+            return;
+        }
+
+        List<V1TenantResponse> tenants = Collections.emptyList();
+        try {
+            // Step 1: Fetch cousin branches from V1 service
+            V1DataResponse dataResponse = v1Service.listCousinBranches(Collections.emptyMap());
+
+            if (dataResponse == null || dataResponse.getEntities() == null) {
+                log.warn("Received null or empty response from V1 service while fetching cousin branches.");
+                return;
+            }
+
+            // Step 2: Convert raw entity list to V1TenantResponse list
+            tenants = jsonHelper.convertValueToList(dataResponse.getEntities(), V1TenantResponse.class);
+        } catch (V1ServiceException e) {
+            log.error("Failed to fetch cousin branches from V1 service: {}", e.getMessage(), e);
+            return;
+        } catch (Exception e) {
+            log.error("Unexpected error while converting cousin branch data: {}", e.getMessage(), e);
+            return;
+        }
+
+        // Step 3: Build a map of code -> display name
+        Map<String, String> codeToNameMap = tenants.stream()
+                .filter(t -> t.getCode() != null && t.getDisplayName() != null)
+                .collect(Collectors.toMap(
+                        V1TenantResponse::getCode,
+                        V1TenantResponse::getDisplayName,
+                        (existing, replacement) -> existing // keep the first
+                ));
+
+        // Step 4: Set branch name on each event
+        for (EventsResponse event : eventResponses) {
+            String branchCode = event.getBranch();
+            if (branchCode != null) {
+                String displayName = codeToNameMap.get(branchCode);
+                if (displayName != null) {
+                    event.setBranchName(displayName);
+                }
+            }
+        }
     }
 
     @Override

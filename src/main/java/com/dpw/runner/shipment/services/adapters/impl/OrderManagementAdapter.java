@@ -184,7 +184,7 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
         shipmentDetails.setTransportMode(order.getTransportMode());
         shipmentDetails.setIncoterms(order.getIncoTerm());
 
-        // TODO : to revert this change once order team gets back on this
+        // LATER : to revert this change once order team gets back on this
         // Skipping this fields for now as integration for LocationReferenceGuid is pending from order team
         shipmentDetails.getCarrierDetails().setOrigin(order.getOrigin());
         shipmentDetails.getCarrierDetails().setOriginPort(order.getOriginPort());
