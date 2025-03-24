@@ -2215,7 +2215,6 @@ class ReportServiceTest extends CommonMocks {
         var mockAwb = jsonTestUtility.getTestHawb();
         mockAwb.setPrintType(PrintType.ORIGINAL_PRINTED);
 
-        when(awbDao.findByShipmentId(anyLong())).thenReturn(List.of(mockAwb));
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);

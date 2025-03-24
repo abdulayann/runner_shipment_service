@@ -9,11 +9,13 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ManifestConsolMo
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ConsolidationModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.helper.ICarrierMasterData;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.nimbusds.jose.util.Pair;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -23,6 +25,7 @@ import java.util.*;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 
 @Component
+@Slf4j
 public class ManifestConsolReport extends IReport {
 
     @Autowired
@@ -140,7 +143,9 @@ public class ManifestConsolReport extends IReport {
             {
                 try{
                     totalPacks += Integer.parseInt(packing.getPacks());
-                } catch (Exception ignored){}
+                } catch (Exception ignored) {
+                    log.info(Constants.IGNORED_ERROR_MSG);
+                }
 
                 if(!allPacksTypes.contains(packing.getPacksType()))
                     allPacksTypes.add(packing.getPacksType());

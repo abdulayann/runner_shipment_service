@@ -741,8 +741,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     private List<Containers> getContainersList(ConsolidationDetails consolidationDetails, boolean isShipmentLevelContainer) {
-        List<Containers> containersList = new ArrayList<>();
-        containersList = consolidationDetails.getContainersList();
+        List<Containers> containersList = consolidationDetails.getContainersList();
         if(isShipmentLevelContainer) {
             Set<ShipmentDetails> shipmentDetails = consolidationDetails.getShipmentsList();
             if(shipmentDetails != null && !shipmentDetails.isEmpty()) {
@@ -960,13 +959,11 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     public Optional<ConsolidationDetails> retrieveByIdOrGuid(ConsolidationDetailsRequest request) throws RunnerException {
-        String responseMsg;
-
         if (request == null) {
             log.error("Request is empty for Consolidation update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
 
-        Optional<ConsolidationDetails> oldEntity = Optional.ofNullable(null);
+        Optional<ConsolidationDetails> oldEntity;
 
         if(request.getId()!=null){
             long id = request.getId();
@@ -997,7 +994,6 @@ public class ConsolidationService implements IConsolidationService {
     @Override
     @Transactional
     public ResponseEntity<IRunnerResponse> update(CommonRequestModel commonRequestModel) throws RunnerException {
-        String responseMsg;
         try {
             ConsolidationDetailsRequest request = (ConsolidationDetailsRequest) commonRequestModel.getData();
             if (request == null) {
@@ -1871,8 +1867,6 @@ public class ConsolidationService implements IConsolidationService {
             List<PackingRequest> packingRequestList = consolidationDetailsRequest.getPackingList();
             List<ContainerRequest> containerRequestList = consolidationDetailsRequest.getContainersList();
             List<EventsRequest> eventsRequestList = consolidationDetailsRequest.getEventsList();
-            List<FileRepoRequest> fileRepoRequestList = consolidationDetailsRequest.getFileRepoList();
-            List<JobRequest> jobRequestList = consolidationDetailsRequest.getJobsList();
             List<ReferenceNumbersRequest> referenceNumbersRequestList = consolidationDetailsRequest.getReferenceNumbersList();
             List<TruckDriverDetailsRequest> truckDriverDetailsRequestList = consolidationDetailsRequest.getTruckDriverDetails();
             List<RoutingsRequest> routingsRequestList = consolidationDetailsRequest.getRoutingsList();
@@ -1895,7 +1889,7 @@ public class ConsolidationService implements IConsolidationService {
                 entity.setReferenceNumbersList(updatedReferenceNumbers);
             }
             if (truckDriverDetailsRequestList != null) {
-                List<TruckDriverDetails> updatedTruckDriverDetails = truckDriverDetailsDao.updateEntityFromConsole(commonUtils.convertToEntityList(truckDriverDetailsRequestList, TruckDriverDetails.class), id);
+                truckDriverDetailsDao.updateEntityFromConsole(commonUtils.convertToEntityList(truckDriverDetailsRequestList, TruckDriverDetails.class), id);
             }
             if (routingsRequestList != null) {
                 List<Routings> updatedRoutings = routingsDao.updateEntityFromConsole(commonUtils.convertToEntityList(routingsRequestList, Routings.class), id);
@@ -1973,7 +1967,6 @@ public class ConsolidationService implements IConsolidationService {
             afterSave(entity, oldConvertedConsolidation, consolidationDetailsRequest, false, shipmentSettingsDetails, false, false, isFromET);
             ConsolidationDetails finalEntity1 = entity;
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForConsole(finalEntity1)), executorService);
-            ConsolidationDetails finalEntity = entity;
             return jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class);
         } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage()
@@ -3401,8 +3394,6 @@ public class ConsolidationService implements IConsolidationService {
 
     public ResponseEntity<IRunnerResponse> list(CommonRequestModel commonRequestModel, boolean getMasterData) {
         String responseMsg;
-        int totalPages = 0;
-        long totalElements = 0;
         try {
             // LATER- implement actual logic with filters
             ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
@@ -3422,18 +3413,10 @@ public class ConsolidationService implements IConsolidationService {
                 List<Long> combinedConsolIds = new ArrayList<>(uniqueConsolIds);
 
                 andCriteria("id", combinedConsolIds, "IN", request);
-
-                totalElements = combinedConsolIds.size();
-                int pageSize = request.getPageSize();
-                totalPages = (int) ((totalElements + pageSize - 1) / pageSize);
             }
             checkBookingIdCriteria(request);
             Pair<Specification<ConsolidationDetails>, Pageable> tuple = fetchData(request, ConsolidationDetails.class, tableNames);
             Page<ConsolidationDetails> consolidationDetailsPage = consolidationDetailsDao.findAll(tuple.getLeft(), tuple.getRight());
-            if(!Boolean.TRUE.equals(request.getNotificationFlag())) {
-                totalPages = consolidationDetailsPage.getTotalPages();
-                totalElements = consolidationDetailsPage.getTotalElements();
-            }
             if(request.getIncludeColumns() == null || request.getIncludeColumns().isEmpty()) {
                 List<IRunnerResponse> consoleResponse = convertEntityListToDtoList(consolidationDetailsPage.getContent(), getMasterData);
                 log.info("Consolidation list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
@@ -3620,7 +3603,7 @@ public class ConsolidationService implements IConsolidationService {
             throw new RunnerException("Id and GUID can't be null. Please provide any one !");
         }
         Long id = request.getId();
-        Optional<ConsolidationDetails> consolidationDetails = Optional.ofNullable(null);
+        Optional<ConsolidationDetails> consolidationDetails;
         if(id != null ){
             consolidationDetails = consolidationDetailsDao.findById(id);
         } else {
@@ -4095,7 +4078,9 @@ public class ConsolidationService implements IConsolidationService {
             Map<String, EntityTransferDGSubstance> v1Data = masterDataUtils.fetchInDGSubstanceList(dgSubstanceIdList.stream().toList());
             masterDataUtils.pushToCache(v1Data, CacheConstants.DG_SUBSTANCES, dgSubstanceIdList, new EntityTransferDGSubstance(), cacheMap);
 
-            if(masterDataResponse == null) { }
+            if(masterDataResponse == null) {
+                log.info("masterDataResponse is null, continue the process.");
+            }
             else {
                 masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.DG_SUBSTANCES, masterDataResponse, cacheMap);
             }
@@ -4335,23 +4320,17 @@ public class ConsolidationService implements IConsolidationService {
         List<PackingRequest> packingRequestList = consolidationDetailsRequest.getPackingList();
         List<ContainerRequest> containerRequestList = consolidationDetailsRequest.getContainersList();
         List<EventsRequest> eventsRequestList = consolidationDetailsRequest.getEventsList();
-        List<FileRepoRequest> fileRepoRequestList = consolidationDetailsRequest.getFileRepoList();
-        List<JobRequest> jobRequestList = consolidationDetailsRequest.getJobsList();
         List<ReferenceNumbersRequest> referenceNumbersRequestList = consolidationDetailsRequest.getReferenceNumbersList();
         List<RoutingsRequest> routingsRequestList = consolidationDetailsRequest.getRoutingsList();
-        List<TruckDriverDetailsRequest> truckDriverDetailsRequestList = consolidationDetailsRequest.getTruckDriverDetails();
         List<PartiesRequest> consolidationAddresses = consolidationDetailsRequest.getConsolidationAddresses();
-        CarrierDetailRequest carrierDetailRequest = consolidationDetailsRequest.getCarrierDetails();
-        AchievedQuantitiesRequest achievedQuantitiesRequest = consolidationDetailsRequest.getAchievedQuantities();
-        AllocationsRequest allocationsRequest = consolidationDetailsRequest.getAllocations();
-
 
         UUID guid = consolidationDetailsRequest.getGuid();
         Optional<ConsolidationDetails> oldEntity = Optional.empty();
         try {
             oldEntity = consolidationDetailsDao.findByGuid(guid);
         }
-        catch (Exception e){
+        catch (Exception e) {
+            log.info(Constants.IGNORED_ERROR_MSG);
         }
 
         Set<ShipmentDetails> tempShipIds = new HashSet<>();
@@ -4576,7 +4555,7 @@ public class ConsolidationService implements IConsolidationService {
 
         List<IContainerLiteResponse> containerLiteResponseList = containerDao.findAllLiteContainer(consolidationIds);
 
-        Map<Long, Set<ShipmentDetails>> consolidationShipmentMap = new HashMap<>();
+        Map<Long, Set<ShipmentDetails>> consolidationShipmentMap;
 
         if(isShipmentLevelContainer){
         List<IShipmentContainerLiteResponse> shipmentContainerLiteResponses = consolidationDetailsDao.findShipmentDetailsWithContainersByConsolidationIds(consolidationIds);
@@ -4829,9 +4808,6 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     private void beforeSave(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, Boolean isCreate) throws Exception {
-        CarrierDetails oldCarrierDetails = null;
-        if(!Boolean.TRUE.equals(isCreate))
-            oldCarrierDetails = jsonHelper.convertValue(oldEntity.getCarrierDetails(), CarrierDetails.class);
         if(Objects.isNull(consolidationDetails.getInterBranchConsole()))
             consolidationDetails.setInterBranchConsole(false);
         /* Future to populate unloc code in consoliation child entities*/
@@ -5059,8 +5035,6 @@ public class ConsolidationService implements IConsolidationService {
         List<PackingRequest> packingRequestList = consolidationDetailsRequest.getPackingList();
         List<ContainerRequest> containerRequestList = consolidationDetailsRequest.getContainersList();
         List<EventsRequest> eventsRequestList = consolidationDetailsRequest.getEventsList();
-        List<FileRepoRequest> fileRepoRequestList = consolidationDetailsRequest.getFileRepoList();
-        List<JobRequest> jobRequestList = consolidationDetailsRequest.getJobsList();
         List<ReferenceNumbersRequest> referenceNumbersRequestList = consolidationDetailsRequest.getReferenceNumbersList();
         List<TruckDriverDetailsRequest> truckDriverDetailsRequestList = consolidationDetailsRequest.getTruckDriverDetails();
         List<RoutingsRequest> routingsRequestList = consolidationDetailsRequest.getRoutingsList();
@@ -6321,10 +6295,10 @@ public class ConsolidationService implements IConsolidationService {
                     packsList.setShipmentHouseBill(shipmentDetails.getHouseBill());
                     packsList.setShipmentNumber(shipmentDetails.getShipmentId());
                     try { packsList.setShipmentStatus(ShipmentStatus.fromValue(shipmentDetails.getStatus())); }
-                    catch (Exception e) { }
+                    catch (Exception e) { log.info(Constants.IGNORED_ERROR_MSG); }
                     try { Containers containers = getContainerFromMap(contMap, packing.getContainerId());
                         packsList.setContainerNumber(containers.getContainerNumber()); }
-                    catch (Exception e) { }
+                    catch (Exception e) { log.info(Constants.IGNORED_ERROR_MSG); }
                     response.getPacksList().add(packsList);
                 }
             }

@@ -102,7 +102,6 @@ public class CSVParsingUtil<T> {
     }
 
     public List<String> getAllAttributeValuesAsListContainer(ContainerResponse response) throws IllegalAccessException {
-        Class<?> clazz = response.getClass();
         List<Field> containerFields = Arrays.stream(ContainerResponse.class.getDeclaredFields()).toList();
         final Set<String> requiredFields = Set.of(Constants.CONTAINER_NUMBER, "volumeUtilization", "weightUtilization", "achievedVolume",
                 "achievedVolumeUnit", "achievedWeight", "achievedWeightUnit", "grossVolume", "grossVolumeUnit",
@@ -132,7 +131,6 @@ public class CSVParsingUtil<T> {
     }
 
     public Map<Integer, Map<String, MasterData>> fetchInBulkMasterList(MasterListRequestV2 requests) {
-        Map<String, MasterData> keyMasterDataMap = new HashMap<>();
         Map<Integer, Map<String, MasterData>> dataMap = new HashMap<>();
         if (requests.getMasterListRequests() != null && !requests.getMasterListRequests().isEmpty()) {
             V1DataResponse response = v1Service.fetchMultipleMasterData(requests);
@@ -201,7 +199,6 @@ public class CSVParsingUtil<T> {
 
             setUNDGContactMasterDataAndFlashPointMasterData(dgSubstanceIdList, undg, flashpoint);
 
-            Map<String, String> existingContainerNumbers = new HashMap<>();
             processLastRowNumForExcelFilePacking(request, mapOfEntity, entityType, sheet, guidPos, shipmentNumberPos, dicShipmentId, header, masterListsMap, entityList);
         } catch (ValidationException e1) {
             log.error(e1.getMessage());
@@ -264,12 +261,8 @@ public class CSVParsingUtil<T> {
     private void processLastRowNumForExcelFilePacking(BulkUploadRequest request, Map<UUID, T> mapOfEntity, Class<T> entityType, Sheet sheet, int guidPos, int shipmentNumberPos, Map<String, Long> dicShipmentId, String[] header, Map<String, Set<String>> masterListsMap, List<T> entityList) throws InstantiationException, IllegalAccessException, NoSuchFieldException {
         for (int i = 1; i <= sheet.getLastRowNum(); i++) {
             Row row = sheet.getRow(i);
-            boolean isUpdate = false;
             validateGuidPos(mapOfEntity, guidPos, row, i);
             T entity = guidPos != -1 && mapOfEntity != null ? mapOfEntity.get(UUID.fromString(getCellValueAsString(row.getCell(guidPos)))) : createEntityInstance(entityType);
-            if (mapOfEntity != null && guidPos != -1 && mapOfEntity.containsKey(UUID.fromString(getCellValueAsString(row.getCell(guidPos))))) {
-                isUpdate = true;
-            }
 
             validateShipmentNumberPos(shipmentNumberPos, dicShipmentId, row, (Packing) entity, i);
 
@@ -967,7 +960,6 @@ public class CSVParsingUtil<T> {
         var hblModeMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchMasterLists(MasterDataType.HBL_DELIVERY_MODE, masterDataMap)), executorService);
         var dimensionUnitMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchMasterLists(MasterDataType.DIMENSION_UNIT, masterDataMap)), executorService);
         var dgClassMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchMasterLists(MasterDataType.DG_CLASS, masterDataMap)), executorService);
-        var countryCodeMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchMasterLists(MasterDataType.COUNTRIES, masterDataMap)), executorService);
         var packUnitMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchMasterLists(MasterDataType.PACKS_UNIT, masterDataMap)), executorService);
         var containerTypeMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchContainerType(masterDataMap)), executorService);
         var unlocationMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchUnlocationData(unlocationsList, masterDataMap, locCodeToLocationReferenceGuidMap)), executorService);

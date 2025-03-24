@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -111,7 +112,9 @@ public class ShipmentSettingsReverseSync implements IShipmentSettingsReverseSync
         // Setting ENUMS
         try {
             res.setTypeOfHblPrint(TypeOfHblPrint.valueOf(req.getTypeOfHblPrint()));
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+            log.info(Constants.IGNORED_ERROR_MSG);
+        }
 
         return res;
     }
@@ -124,7 +127,9 @@ public class ShipmentSettingsReverseSync implements IShipmentSettingsReverseSync
         // Setting ENUMS
         try {
             res.setProductType(ProductType.valueOf(req.getProductType()));
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+            log.info(Constants.IGNORED_ERROR_MSG);
+        }
 
         return res;
     }
@@ -138,7 +143,9 @@ public class ShipmentSettingsReverseSync implements IShipmentSettingsReverseSync
         try {
             res.setProductProcessTypes(ProductProcessTypes.valueOf(req.getProductProcessTypes()));
             res.setGenerationType(GenerationType.valueOf(req.getGenerationType()));
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+            log.info(Constants.IGNORED_ERROR_MSG);
+        }
 
         return res;
     }

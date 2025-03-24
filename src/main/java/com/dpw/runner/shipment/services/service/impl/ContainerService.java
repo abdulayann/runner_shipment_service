@@ -208,12 +208,12 @@ public class ContainerService implements IContainerService {
         if (request == null || request.getConsolidationId() == null) {
             throw new ValidationException("Please add the consolidation and then try again.");
         }
-        Map<UUID, Containers> containerMap = new HashMap<>();
-        Map<String, UUID> containerNumbersSet = new HashMap<>();
+        Map<UUID, Containers> containerMap;
+        Map<String, UUID> containerNumbersSet;
         Map<String, String> locCodeToLocationReferenceGuidMap = new HashMap<>();
-            List<Containers> consolContainers = containerDao.findByConsolidationId(request.getConsolidationId());
-            containerMap = consolContainers.stream().filter(Objects::nonNull).collect(Collectors.toMap(Containers::getGuid, Function.identity()));
-            containerNumbersSet = consolContainers.stream().filter(Objects::nonNull).filter(c -> c.getContainerNumber() != null).collect(Collectors.toMap(Containers::getContainerNumber, Containers::getGuid));
+        List<Containers> consolContainers = containerDao.findByConsolidationId(request.getConsolidationId());
+        containerMap = consolContainers.stream().filter(Objects::nonNull).collect(Collectors.toMap(Containers::getGuid, Function.identity()));
+        containerNumbersSet = consolContainers.stream().filter(Objects::nonNull).filter(c -> c.getContainerNumber() != null).collect(Collectors.toMap(Containers::getContainerNumber, Containers::getGuid));
 
         Map<String, Set<String>> masterDataMap = new HashMap<>();
         List<Containers> containersList = parser.parseExcelFile(request.getFile(), request, containerMap, masterDataMap, Containers.class, ContainersExcelModel.class, null, null, locCodeToLocationReferenceGuidMap);
@@ -224,10 +224,8 @@ public class ContainerService implements IContainerService {
 
         applyContainerValidations(containerNumbersSet, locCodeToLocationReferenceGuidMap, containersList, request, masterDataMap);
         containersList = containerDao.saveAll(containersList);
-        if (request.getShipmentId() != null) {
-            containersList.stream().forEach(container -> {
-                shipmentsContainersMappingDao.updateShipmentsMappings(container.getId(), List.of(request.getShipmentId()));
-            });
+        if (request.getShipmentId() != null && !CommonUtils.listIsNullOrEmpty(containersList)) {
+            containersList.forEach(container -> shipmentsContainersMappingDao.updateShipmentsMappings(container.getId(), List.of(request.getShipmentId())));
         }
         containerSync.sync(containersList, request.getConsolidationId(), request.getShipmentId());
         afterSaveList(containersList, true);
@@ -1338,7 +1336,6 @@ public class ContainerService implements IContainerService {
                 }
             }
             ContainerSummaryResponse response = new ContainerSummaryResponse();
-            DecimalFormat decimalFormat = new DecimalFormat("#");
             response.setTotalPackages(IReport.GetDPWWeightVolumeFormat(BigDecimal.valueOf(totalPacks), 0, v1TenantSettingsResponse));
             response.setTotalContainers(IReport.GetDPWWeightVolumeFormat(BigDecimal.valueOf(totalContainerCount), 0, v1TenantSettingsResponse));
             response.setTotalWeight(String.format(Constants.STRING_FORMAT, IReport.ConvertToWeightNumberFormat(BigDecimal.valueOf(totalWeight), v1TenantSettingsResponse), toWeightUnit));

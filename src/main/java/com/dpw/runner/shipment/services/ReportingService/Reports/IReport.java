@@ -210,7 +210,7 @@ public abstract class IReport {
             ship.DgClassDescription = ship.OceanDGClass;
             if (row.getGrossWeight() != null && row.getTareWeight() != null)
                 ship.VGMWeight = row.getGrossWeight().add(row.getTareWeight());
-        } catch (Exception ignored) { }
+        } catch (Exception ignored) { log.info(Constants.IGNORED_ERROR_MSG); }
         CommodityResponse commodityResponse = getCommodity(row.getCommodityCode());
         if (commodityResponse != null) {
             ship.CommodityDescription = commodityResponse.getDescription();
@@ -741,7 +741,7 @@ public abstract class IReport {
                 try {
                     dictionary.put(ReportConstants.CONSIGNER_PHONE, consignerAddress.get("ContactPhone"));
                     dictionary.put(ReportConstants.CONSIGNER_FULL_NAME, shipmentConsigner.getOrgData().get(FULL_NAME1));
-                } catch (Exception ignored) { }
+                } catch (Exception ignored) { log.info(Constants.IGNORED_ERROR_MSG); }
             }
             if(shipmentConsigner.getOrgData() != null)
                 dictionary.put(ReportConstants.CONSIGNER_LOCAL_NAME, shipmentConsigner.getOrgData().get(LOCAL_NAME));
@@ -1382,7 +1382,7 @@ public abstract class IReport {
                 try {
                     dictionary.put(ReportConstants.CONSIGNEE_PHONE, consigneeAddress.get("ContactPhone"));
                     dictionary.put(ReportConstants.CONSIGNEE_FULL_NAME, shipmentConsignee.getOrgData().get(FULL_NAME1));
-                } catch (Exception ignored) { }
+                } catch (Exception ignored) { log.info(Constants.IGNORED_ERROR_MSG); }
             }
             String consigneeFullName = getConsigneeFullName(dictionary, shipmentConsignee);
 
@@ -3324,7 +3324,7 @@ public abstract class IReport {
                 commonUtils.createMasterDataKeysList(requests, keys);
                 masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST, keys, new EntityTransferMasterLists(), null);
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) { log.info(Constants.IGNORED_ERROR_MSG); }
     }
 
     public void populateBillChargesFields(ShipmentModel shipment, Map<String, Object> dictionary) {

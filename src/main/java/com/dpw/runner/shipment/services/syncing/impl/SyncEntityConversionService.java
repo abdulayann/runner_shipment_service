@@ -175,7 +175,9 @@ public class SyncEntityConversionService {
                     }
                     containers.setShipmentsList(new HashSet<>(shipmentDetails));
                 }
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+                log.info(Constants.IGNORED_ERROR_MSG);
+            }
         }
         return containers;
     }
@@ -280,7 +282,9 @@ public class SyncEntityConversionService {
                 ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(events.getEntityId()).get();
                 eventsRequestV2.setConsolidationGuid(consolidationDetails.getGuid());
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+            log.info(Constants.IGNORED_ERROR_MSG);
+        }
         return eventsRequestV2;
     }
 

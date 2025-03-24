@@ -570,7 +570,7 @@ public class HawbReport extends IReport{
                     case ERN -> exporterReferenceNumberList.add(referenceNumber.getReferenceNumber());
                     case CEN -> customsReferenceNumberList.add(referenceNumber.getReferenceNumber());
                     case FRN -> forwarderReferenceNumberList.add(referenceNumber.getReferenceNumber());
-                    default -> {}
+                    default -> { break; }
                 }
             }
 

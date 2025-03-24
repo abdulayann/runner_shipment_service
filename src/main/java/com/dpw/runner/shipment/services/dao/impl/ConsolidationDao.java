@@ -582,7 +582,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
             entryForMawbStocksLinkRow.setSeqNumber(consolidationRequest.getMawb().substring(4, 10));
             entryForMawbStocksLinkRow.setMawbNumber(consolidationRequest.getMawb());
             entryForMawbStocksLinkRow.setStatus(UNUSED);
-            entryForMawbStocksLinkRow = mawbStocksLinkDao.save(entryForMawbStocksLinkRow);
+            mawbStocksLinkDao.save(entryForMawbStocksLinkRow);
         }
     }
 

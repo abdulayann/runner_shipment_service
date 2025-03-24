@@ -6,12 +6,14 @@ import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
 import com.dpw.runner.shipment.services.ReportingService.Models.TransportOrderModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.ReferenceNumbersConstants;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -21,6 +23,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 
 @Component
+@Slf4j
 public class TransportOrderReport extends IReport{
 
     @Override
@@ -108,10 +111,10 @@ public class TransportOrderReport extends IReport{
     }
 
     private void processBrokerDetailTags(Map<String, Object> dictionary, ShipmentModel shipmentModel) {
-        try { dictionary.put(ReportConstants.EXPORT_BROKER, getValueFromMap(shipmentModel.getPickupDetails().getBrokerDetail().getOrgData(), ReportConstants.FULL_NAME)); } catch (Exception ignored) {}
-        try { dictionary.put(ReportConstants.EXPORT_BROKER_CONTACT, getValueFromMap(shipmentModel.getPickupDetails().getBrokerDetail().getAddressData(), ReportConstants.CONTACT_PHONE)); } catch (Exception ignored) {}
-        try { dictionary.put(ReportConstants.IMPORT_BROKER, getValueFromMap(shipmentModel.getDeliveryDetails().getBrokerDetail().getOrgData(), ReportConstants.FULL_NAME)); } catch (Exception ignored) {}
-        try { dictionary.put(ReportConstants.IMPORT_BROKER_CONTACT, getValueFromMap(shipmentModel.getDeliveryDetails().getBrokerDetail().getAddressData(), ReportConstants.CONTACT_PHONE)); } catch (Exception ignored) {}
+        try { dictionary.put(ReportConstants.EXPORT_BROKER, getValueFromMap(shipmentModel.getPickupDetails().getBrokerDetail().getOrgData(), ReportConstants.FULL_NAME)); } catch (Exception ignored) { log.info(Constants.IGNORED_ERROR_MSG); }
+        try { dictionary.put(ReportConstants.EXPORT_BROKER_CONTACT, getValueFromMap(shipmentModel.getPickupDetails().getBrokerDetail().getAddressData(), ReportConstants.CONTACT_PHONE)); } catch (Exception ignored) { log.info(Constants.IGNORED_ERROR_MSG); }
+        try { dictionary.put(ReportConstants.IMPORT_BROKER, getValueFromMap(shipmentModel.getDeliveryDetails().getBrokerDetail().getOrgData(), ReportConstants.FULL_NAME)); } catch (Exception ignored) { log.info(Constants.IGNORED_ERROR_MSG); }
+        try { dictionary.put(ReportConstants.IMPORT_BROKER_CONTACT, getValueFromMap(shipmentModel.getDeliveryDetails().getBrokerDetail().getAddressData(), ReportConstants.CONTACT_PHONE)); } catch (Exception ignored) { log.info(Constants.IGNORED_ERROR_MSG); }
     }
 
     private void processReferenceNumbersListTags(ShipmentModel shipmentModel, Map<String, Object> dictionary) {
@@ -168,7 +171,7 @@ public class TransportOrderReport extends IReport{
             if(truckDriverDetailsModel.getTransporterType().equals(Ownership.Self)) {
                 dictionary.put(ReportConstants.TRANSPORTER_NAME, truckDriverDetailsModel.getSelfTransporterName());
             } else {
-                try { dictionary.put(ReportConstants.TRANSPORTER_NAME, truckDriverDetailsModel.getThirdPartyTransporter().getOrgData().get(ReportConstants.FULL_NAME)); } catch (Exception ignored) {}
+                try { dictionary.put(ReportConstants.TRANSPORTER_NAME, truckDriverDetailsModel.getThirdPartyTransporter().getOrgData().get(ReportConstants.FULL_NAME)); } catch (Exception ignored) { log.info(Constants.IGNORED_ERROR_MSG); }
             }
         }
     }

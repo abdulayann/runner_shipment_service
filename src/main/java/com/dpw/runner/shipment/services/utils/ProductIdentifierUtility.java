@@ -133,7 +133,7 @@ public class ProductIdentifierUtility {
   }
 
   public TenantProducts IdentifyProduct(ConsolidationDetails consolidation, List<TenantProducts> enabledTenantProducts) {
-    Optional<TenantProducts> res = Optional.empty();
+    Optional<TenantProducts> res;
 
     if (isConsolSea(consolidation, enabledTenantProducts)) {
       res =
@@ -322,7 +322,7 @@ public class ProductIdentifierUtility {
               log.error("Error performing sync on shipment settings product sequence entity, {}", e);
             }
           }
-          default -> {}
+          default -> { break; }
         }
       } else {
         result = getAppendedResult(result, segment);

@@ -425,8 +425,8 @@ public class EventService implements IEventService {
     public ResponseEntity<IRunnerResponse> trackEvents(TrackingEventsRequest request) throws RunnerException {
         var shipmentId = request.getShipmentId();
         var consolidationId = request.getConsolidationId();
-        Optional<ShipmentDetails> optionalShipmentDetails = Optional.empty();
-        Optional<ConsolidationDetails> optionalConsolidationDetails = Optional.empty();
+        Optional<ShipmentDetails> optionalShipmentDetails;
+        Optional<ConsolidationDetails> optionalConsolidationDetails;
         String referenceNumber = null;
         Long entityId = null;
         String entityType = null;
@@ -434,7 +434,7 @@ public class EventService implements IEventService {
             optionalShipmentDetails = shipmentDao.findById(shipmentId);
             if (optionalShipmentDetails.isEmpty()) {
                 log.debug(
-                    "No Shipment present for the current Event ",
+                    "No Shipment present for the current Event with RequestId : {}",
                     LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
@@ -462,7 +462,7 @@ public class EventService implements IEventService {
             optionalConsolidationDetails = consolidationDao.findById(consolidationId);
             if (optionalConsolidationDetails.isEmpty()) {
                 log.debug(
-                    "No Consolidation present for the current Event",
+                    "No Consolidation present for the current Event with RequestId : {}",
                     LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }

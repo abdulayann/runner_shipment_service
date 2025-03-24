@@ -23,6 +23,7 @@ import org.springframework.stereotype.Repository;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -87,14 +88,10 @@ public class HblTermsConditionTemplateDao implements IHblTermsConditionTemplateD
             Pair<Specification<HblTermsConditionTemplate>, Pageable> pair = fetchData(listCommonRequest, HblTermsConditionTemplate.class);
             Page<HblTermsConditionTemplate> hblTermsConditionTemplates = findAll(pair.getLeft(), pair.getRight());
             List<HblTermsConditionTemplate> hashMap = hblTermsConditionTemplates.stream()
-                    .filter(e -> e.getIsFrontPrint() == isFrontPrint)
+                    .filter(e -> Objects.equals(e.getIsFrontPrint(), isFrontPrint))
                     .toList();
-            List<HblTermsConditionTemplate> hblTermsConditionTemplatesRequestList = new ArrayList<>();
             if (hblTermsConditionTemplateList != null && !hblTermsConditionTemplateList.isEmpty()) {
-                for (HblTermsConditionTemplate request : hblTermsConditionTemplateList) {
-                    Long id = request.getId();
-                    hblTermsConditionTemplatesRequestList.add(request);
-                }
+                List<HblTermsConditionTemplate> hblTermsConditionTemplatesRequestList = new ArrayList<>(hblTermsConditionTemplateList);
                 responseHblTermsConditionTemplate = saveEntityFromSettings(hblTermsConditionTemplatesRequestList, shipmentSettingsId, isFrontPrint);
             }
             deleteHblTermsConditionTemplate(hashMap);

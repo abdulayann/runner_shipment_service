@@ -22,6 +22,7 @@ import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.core.type.TypeReference;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -34,6 +35,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.*;
 
 @Component
+@Slf4j
 public class CargoManifestReport extends IReport{
 
     @Autowired
@@ -121,15 +123,15 @@ public class CargoManifestReport extends IReport{
         UnlocationsResponse origin = unlocationsMap.get(cargoManifestModel.shipmentDetails.getCarrierDetails().getOrigin());
         if(origin != null)
             dictionary.put(ReportConstants.POR, origin.getNameWoDiacritics());
-        try {dictionary.put(ReportConstants.POR_IN_CAPS, unlocationsMap.get(cargoManifestModel.shipmentDetails.getCarrierDetails().getOrigin()).getName().toUpperCase());} catch (Exception ignored) {}
-        try {dictionary.put(ReportConstants.POL_IN_CAPS, unlocationsMap.get(cargoManifestModel.shipmentDetails.getCarrierDetails().getOriginPort()).getPortName().toUpperCase());} catch (Exception ignored) {}
-        try {dictionary.put(ReportConstants.FPOD_IN_CAPS, unlocationsMap.get(cargoManifestModel.shipmentDetails.getCarrierDetails().getDestinationPort()).getPortName().toUpperCase());} catch (Exception ignored) {}
-        try {dictionary.put(ReportConstants.POD_IN_CAPS, unlocationsMap.get(cargoManifestModel.shipmentDetails.getCarrierDetails().getDestination()).getName().toUpperCase());} catch (Exception ignored) {}
+        try {dictionary.put(ReportConstants.POR_IN_CAPS, unlocationsMap.get(cargoManifestModel.shipmentDetails.getCarrierDetails().getOrigin()).getName().toUpperCase());} catch (Exception ignored) { log.info(Constants.IGNORED_ERROR_MSG); }
+        try {dictionary.put(ReportConstants.POL_IN_CAPS, unlocationsMap.get(cargoManifestModel.shipmentDetails.getCarrierDetails().getOriginPort()).getPortName().toUpperCase());} catch (Exception ignored) { log.info(Constants.IGNORED_ERROR_MSG); }
+        try {dictionary.put(ReportConstants.FPOD_IN_CAPS, unlocationsMap.get(cargoManifestModel.shipmentDetails.getCarrierDetails().getDestinationPort()).getPortName().toUpperCase());} catch (Exception ignored) { log.info(Constants.IGNORED_ERROR_MSG); }
+        try {dictionary.put(ReportConstants.POD_IN_CAPS, unlocationsMap.get(cargoManifestModel.shipmentDetails.getCarrierDetails().getDestination()).getName().toUpperCase());} catch (Exception ignored) { log.info(Constants.IGNORED_ERROR_MSG); }
 
-        try {dictionary.put(ReportConstants.POR_COUNTRY_NAME_IN_CAPS, unlocationsMap.get(cargoManifestModel.shipmentDetails.getCarrierDetails().getOrigin()).getCountry().toUpperCase());} catch (Exception ignored) {}
-        try {dictionary.put(ReportConstants.POL_COUNTRY_NAME_IN_CAPS, unlocationsMap.get(cargoManifestModel.shipmentDetails.getCarrierDetails().getOriginPort()).getCountry().toUpperCase());} catch (Exception ignored) {}
-        try {dictionary.put(ReportConstants.POD_COUNTRY_NAME_IN_CAPS, unlocationsMap.get(cargoManifestModel.shipmentDetails.getCarrierDetails().getDestinationPort()).getCountry().toUpperCase());} catch (Exception ignored) {}
-        try {dictionary.put(ReportConstants.FPOD_COUNTRY_NAME_IN_CAPS, unlocationsMap.get(cargoManifestModel.shipmentDetails.getCarrierDetails().getDestination()).getCountry().toUpperCase());} catch (Exception ignored) {}
+        try {dictionary.put(ReportConstants.POR_COUNTRY_NAME_IN_CAPS, unlocationsMap.get(cargoManifestModel.shipmentDetails.getCarrierDetails().getOrigin()).getCountry().toUpperCase());} catch (Exception ignored) { log.info(Constants.IGNORED_ERROR_MSG); }
+        try {dictionary.put(ReportConstants.POL_COUNTRY_NAME_IN_CAPS, unlocationsMap.get(cargoManifestModel.shipmentDetails.getCarrierDetails().getOriginPort()).getCountry().toUpperCase());} catch (Exception ignored) { log.info(Constants.IGNORED_ERROR_MSG); }
+        try {dictionary.put(ReportConstants.POD_COUNTRY_NAME_IN_CAPS, unlocationsMap.get(cargoManifestModel.shipmentDetails.getCarrierDetails().getDestinationPort()).getCountry().toUpperCase());} catch (Exception ignored) { log.info(Constants.IGNORED_ERROR_MSG); }
+        try {dictionary.put(ReportConstants.FPOD_COUNTRY_NAME_IN_CAPS, unlocationsMap.get(cargoManifestModel.shipmentDetails.getCarrierDetails().getDestination()).getCountry().toUpperCase());} catch (Exception ignored) { log.info(Constants.IGNORED_ERROR_MSG); }
 
         processShipmentPaymentTerms(cargoManifestModel, dictionary);
         processShipmentPackUnit(cargoManifestModel, dictionary);
@@ -184,16 +186,24 @@ public class CargoManifestReport extends IReport{
                 Map<String, EntityTransferCarrier> entityTransferCarrierMap = masterDataUtils.getCarrierDataFromCache(carrierSet);
                 dictionary.put(ReportConstants.FLIGHT_IATA_CODE, entityTransferCarrierMap.get(cargoManifestModel.shipmentDetails.getCarrierDetails().getShippingLine()).IATACode);
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+            log.info(Constants.IGNORED_ERROR_MSG);
+        }
     }
 
     private void processShipmentPaymentTerms(CargoManifestModel cargoManifestModel, Map<String, Object> dictionary) {
         if(!CommonUtils.IsStringNullOrEmpty(cargoManifestModel.shipmentDetails.getPaymentTerms())) {
             MasterData paymentTerms = getMasterListData(MasterDataType.PAYMENT, cargoManifestModel.shipmentDetails.getPaymentTerms());
             try {
-                dictionary.put(ReportConstants.PAYMENT_TERMS_DESCRIPTION, paymentTerms.getItemDescription());} catch (Exception ignored) {}
+                dictionary.put(ReportConstants.PAYMENT_TERMS_DESCRIPTION, paymentTerms.getItemDescription());
+            } catch (Exception ignored) {
+                log.info(Constants.IGNORED_ERROR_MSG);
+            }
             try {
-                dictionary.put(ReportConstants.PAYMENT_TERMS, cargoManifestModel.shipmentDetails.getPaymentTerms());} catch (Exception ignored) {}
+                dictionary.put(ReportConstants.PAYMENT_TERMS, cargoManifestModel.shipmentDetails.getPaymentTerms());
+            } catch (Exception ignored) {
+                log.info(Constants.IGNORED_ERROR_MSG);
+            }
         }
     }
 
@@ -201,7 +211,11 @@ public class CargoManifestReport extends IReport{
         if(!CommonUtils.IsStringNullOrEmpty(cargoManifestModel.shipmentDetails.getPacksUnit())) {
             MasterData packsUnitDesc = getMasterListData(MasterDataType.PACKS_UNIT, cargoManifestModel.shipmentDetails.getPacksUnit());
             String packsUnit = null;
-            try {packsUnit = packsUnitDesc.getItemDescription();} catch (Exception ignored) {}
+            try {
+                packsUnit = packsUnitDesc.getItemDescription();
+            } catch (Exception ignored) {
+                log.info(Constants.IGNORED_ERROR_MSG);
+            }
             if(CommonUtils.IsStringNullOrEmpty(packsUnit))
                 packsUnit = cargoManifestModel.shipmentDetails.getPacksUnit();
             dictionary.put(ReportConstants.PACKS_UNIT_DESCRIPTION, Constants.MPK.equals(packsUnit) ? Constants.PACKAGES : packsUnit);

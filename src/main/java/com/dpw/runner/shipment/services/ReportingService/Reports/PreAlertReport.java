@@ -8,11 +8,13 @@ import com.dpw.runner.shipment.services.ReportingService.Models.PreAlertModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.response.CommodityResponse;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -28,6 +30,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.*;
 
 @Component
+@Slf4j
 public class PreAlertReport extends IReport {
 
     public static final String COMMODITY = "Commodity";
@@ -239,7 +242,9 @@ public class PreAlertReport extends IReport {
             }
             try {
                 dictionary.put(ReportConstants.CONSIGNEE_FULL_NAME, consigneeFullName);
-            } catch (Exception ignored) { }
+            } catch (Exception ignored) {
+                log.info(Constants.IGNORED_ERROR_MSG);
+            }
         }
     }
 
@@ -256,7 +261,9 @@ public class PreAlertReport extends IReport {
             }
             try {
                 dictionary.put(ReportConstants.CONSIGNER_FULL_NAME, consignerFullName);
-            } catch (Exception ignored) { }
+            } catch (Exception ignored) {
+                log.info(Constants.IGNORED_ERROR_MSG);
+            }
         }
     }
 

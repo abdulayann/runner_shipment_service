@@ -181,12 +181,6 @@ public class ReportService implements IReportService {
         byte[] dataForCombinedReport = getDataForCombinedReport(reportRequest);
         if (dataForCombinedReport != null) return dataForCombinedReport;
 
-        // if report info is CargoManifestAirExportShipment check original awb printed before
-        if(Objects.equals(reportRequest.getReportInfo(), ReportConstants.CARGO_MANIFEST_AIR_EXPORT_SHIPMENT)) {
-            Long shipmentId = Long.valueOf(reportRequest.getReportId());
-            var awbList = awbDao.findByShipmentId(shipmentId);
-        }
-
         // CargoManifestAirExportConsolidation , validate original awb printed for its HAWB
         validateOriginalAwbPrintForLinkedShipment(reportRequest);
 

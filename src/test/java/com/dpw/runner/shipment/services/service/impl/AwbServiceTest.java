@@ -2229,7 +2229,6 @@ class AwbServiceTest extends CommonMocks {
         PackSummaryResponse packSummaryResponse = new PackSummaryResponse();
         packSummaryResponse.setVolumeUnit("M3");
         packSummaryResponse.setPacksVolume(new BigDecimal("1000.567"));
-        Mockito.when(packingService.calculatePackSummary(any(),any(),any(),any())).thenReturn(packSummaryResponse);
         MawbLockSettings mawbLockSettings = jsonTestUtility.getJson("MAWB_LOCK_SETTINGS_ALL_FALSE", MawbLockSettings.class);
 
         Awb mockAwb = testMawb;
@@ -2270,7 +2269,6 @@ class AwbServiceTest extends CommonMocks {
         PackSummaryResponse packSummaryResponse = new PackSummaryResponse();
         packSummaryResponse.setVolumeUnit("M3");
         packSummaryResponse.setPacksVolume(new BigDecimal("1000.567"));
-        Mockito.when(packingService.calculatePackSummary(any(),any(),any(),any())).thenReturn(packSummaryResponse);
         MawbLockSettings mawbLockSettings = jsonTestUtility.getJson("MAWB_LOCK_SETTINGS_ALL_FALSE", MawbLockSettings.class);
 
         Awb mockAwb = testMawb;
@@ -2317,7 +2315,6 @@ class AwbServiceTest extends CommonMocks {
         PackSummaryResponse packSummaryResponse = new PackSummaryResponse();
         packSummaryResponse.setVolumeUnit("M3");
         packSummaryResponse.setPacksVolume(new BigDecimal("1000.567"));
-        Mockito.when(packingService.calculatePackSummary(any(),any(),any(),any())).thenReturn(packSummaryResponse);
         MawbLockSettings mawbLockSettings = jsonTestUtility.getJson("MAWB_LOCK_SETTINGS_ALL_FALSE", MawbLockSettings.class);
 
         Awb mockAwb = testMawb;

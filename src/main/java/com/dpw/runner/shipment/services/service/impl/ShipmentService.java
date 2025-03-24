@@ -634,7 +634,6 @@ public class ShipmentService implements IShipmentService {
 
     private List<IRunnerResponse> convertEntityListToDtoListForExport(List<ShipmentDetails> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
-        List<Long> shipmentIdList = lst.stream().map(ShipmentDetails::getId).toList();
         List<ShipmentExcelExportResponse> shipmentListResponses = ShipmentMapper.INSTANCE.toShipmentExportListResponses(lst);
         shipmentListResponses.forEach(response -> {
             if (response.getStatus() != null && response.getStatus() < ShipmentStatus.values().length)
@@ -742,7 +741,6 @@ public class ShipmentService implements IShipmentService {
         }
         ShipmentDetails shipmentDetails = jsonHelper.convertValue(request, ShipmentDetails.class);
         try {
-            ShipmentDetails finalShipmentDetails = shipmentDetails;
             /*  Populate unloc code for entities */
             var populateUnlocCodeFuture = getPopulateUnlocCodeFuture(shipmentDetails, null);
 
@@ -785,7 +783,6 @@ public class ShipmentService implements IShipmentService {
             checkContainerAssignedForHbl(shipmentDetails, updatedPackings);
 
             List<NotesRequest> notesRequest = getNotesRequests(request, shipmentId);
-            String transactionId = shipmentDetails.getGuid().toString();
             dependentServiceHelper.pushShipmentDataToDependentService(shipmentDetails, true, false, null);
             try {
                 shipmentDetails.setNotesList(null);
@@ -923,8 +920,6 @@ public class ShipmentService implements IShipmentService {
             ShipmentDetails finalShipmentDetails1 = shipmentDetails;
             String entityPayload = jsonHelper.convertToJson(finalShipmentDetails1);
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForShipment(entityPayload, finalShipmentDetails1.getId(), finalShipmentDetails1.getGuid())), executorService);
-            ShipmentDetails finalShipmentDetails = shipmentDetails;
-
         } catch (Exception e) {
             log.error("Error occurred due to: " + e.getStackTrace());
             log.error(e.getMessage());
@@ -955,13 +950,11 @@ public class ShipmentService implements IShipmentService {
 
 
     public Optional<ShipmentDetails> retrieveByIdOrGuid(ShipmentRequest request) throws RunnerException {
-        String responseMsg;
-
         if (request == null) {
             log.error("Request is empty for Shipment update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
 
-        Optional<ShipmentDetails> oldEntity = Optional.ofNullable(null);
+        Optional<ShipmentDetails> oldEntity;
 
         if(request.getId()!=null){
             long id = request.getId();
@@ -6178,7 +6171,7 @@ public class ShipmentService implements IShipmentService {
     public ResponseEntity<IRunnerResponse> getMasterDataMappings() {
         String responseMsg;
         try {
-            List<MasterDataDescriptionResponse> response = new ArrayList<>();
+            List<MasterDataDescriptionResponse> response;
 
             //Get current Tenant's setting
             Optional<ShipmentSettingsDetails> optional = shipmentSettingsDao.findByTenantId(TenantContext.getCurrentTenant());

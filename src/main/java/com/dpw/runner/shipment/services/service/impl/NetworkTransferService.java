@@ -528,7 +528,6 @@ public class NetworkTransferService implements INetworkTransferService {
 
     @Override
     public void updateStatusAndCreatedEntityId(Long id, String status, Long createdEntityId) {
-        var networkTransfer = networkTransferDao.findById(id);
         networkTransferDao.updateStatusAndCreatedEntityId(id, status, createdEntityId);
     }
 

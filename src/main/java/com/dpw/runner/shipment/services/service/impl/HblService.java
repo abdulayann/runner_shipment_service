@@ -502,7 +502,6 @@ public class HblService implements IHblService {
             hblData.setPurchaseOrderNumber(shipmentOrders.stream().map(ShipmentOrder::getOrderNumber).filter(Objects::nonNull).collect(Collectors.joining(", ")));
         }
         mapDeliveryDataInHbl(additionalDetails, hblData);
-        UnlocationsResponse destination = masterDataUtil.getUNLocRow(carrierDetails.getDestination());
         // LATER: This needs to re-visit after incorporating this setting in service
         if (/*Unico HBL*/true) {
             hblData.setTransportType(shipmentDetail.getTransportMode());
@@ -514,18 +513,14 @@ public class HblService implements IHblService {
             hblData.setQuantity(shipmentDetail.getInnerPacks());
             hblData.setQuantityCode(shipmentDetail.getInnerPackUnit());
             if(shipmentDetail.getElDetailsList() != null) {
-                hblData.setElNumber(String.join(",",
-                        shipmentDetail.getElDetailsList().stream().map(c -> c.getElNumber()).collect(Collectors.toList())));
-                hblData.setElDate(String.join(",",
-                        shipmentDetail.getElDetailsList().stream().map(c -> c.getCreatedAt().toString()).collect(Collectors.toList())));
+                hblData.setElNumber(shipmentDetail.getElDetailsList().stream().map(ELDetails::getElNumber).collect(Collectors.joining(",")));
+                hblData.setElDate(shipmentDetail.getElDetailsList().stream().map(c -> c.getCreatedAt().toString()).collect(Collectors.joining(",")));
             }
             if(shipmentDetail.getReferenceNumbersList() != null) {
-                hblData.setInvoiceNumbers(String.join(",",
-                        shipmentDetail.getReferenceNumbersList().stream().filter(c -> Objects.equals(c.getType(), Constants.INVNO))
-                                .map(c -> c.getReferenceNumber()).collect(Collectors.toList())));
-                hblData.setLcNumber(String.join(",",
-                        shipmentDetail.getReferenceNumbersList().stream().filter(c -> Objects.equals(c.getType(), Constants.CON))
-                                .map(c -> c.getReferenceNumber()).collect(Collectors.toList())));
+                hblData.setInvoiceNumbers(shipmentDetail.getReferenceNumbersList().stream().filter(c -> Objects.equals(c.getType(), Constants.INVNO))
+                        .map(ReferenceNumbers::getReferenceNumber).collect(Collectors.joining(",")));
+                hblData.setLcNumber(shipmentDetail.getReferenceNumbersList().stream().filter(c -> Objects.equals(c.getType(), Constants.CON))
+                        .map(ReferenceNumbers::getReferenceNumber).collect(Collectors.joining(",")));
             }
 
         }
@@ -533,7 +528,7 @@ public class HblService implements IHblService {
             try {
                 shipmentSync.sync(shipmentDetail, null, null, StringUtility.convertToString(shipmentDetail.getGuid()), false);
             } catch (Exception e) {
-                log.error("Error performing sync on shipment entity, {}", e);
+                log.error("Error performing sync on shipment entity, {}", e.getMessage(), e);
             }
         }
 
