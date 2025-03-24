@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
 import com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentGridChangeResponse;
 import com.dpw.runner.shipment.services.dto.request.ShipmentAttachDetachV3Request;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -17,6 +18,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -45,6 +47,13 @@ public class ConsolidationV3Controller {
         log.info("Received attachShipments request: {}", request);
         String warning = consolidationV3Service.attachShipments(request);
         return ResponseHelper.buildSuccessResponseWithWarning(warning);
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ConsolidationConstants.CONSOLIDATION_CALCULATION_SUCCESSFUL)})
+    @PostMapping(ApiConstants.API_CALCULATE_ACHIEVED_VALUES)
+    public ResponseEntity<IRunnerResponse> calculateAchievedValues(@RequestParam Long consolidationId) throws RunnerException {
+        ShipmentGridChangeResponse response = consolidationV3Service.calculateAchievedValues(consolidationId);
+        return ResponseHelper.buildSuccessResponse(response);
     }
 
 }
