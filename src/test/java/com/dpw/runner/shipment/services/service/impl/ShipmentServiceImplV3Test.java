@@ -22,7 +22,6 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.helpers.ShipmentMasterDataHelperV3;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.ObjectUtils;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -61,12 +60,12 @@ class ShipmentServiceImplV3Test {
     private IShipmentRepository shipmentRepository;
     @Mock
     private IShipmentDao shipmentDao;
+    @Mock
+    private ShipmentMasterDataHelperV3 shipmentMasterDataHelper;
 
-    private static JsonTestUtility jsonTestUtility;
 
     @BeforeAll
     static void init() throws IOException {
-        jsonTestUtility = new JsonTestUtility();
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
