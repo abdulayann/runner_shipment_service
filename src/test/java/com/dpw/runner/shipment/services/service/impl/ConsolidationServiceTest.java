@@ -705,12 +705,18 @@ import static org.mockito.Mockito.*;
 
     @Test
     void testCompleteRetrieveById_Success_NoColumnsIncluded() throws ExecutionException, InterruptedException {
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+            Runnable argument = invocation.getArgument(0);
+            argument.run();
+            return mockRunnable;
+        });
         CommonRequestModel requestModel = CommonRequestModel.builder().build();
         CommonGetRequest getRequest = CommonGetRequest.builder().build();
         getRequest.setId(1L);
         requestModel.setData(getRequest);
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(testConsol));
-        when(jsonHelper.convertValue(testConsol, ConsolidationDetailsResponse.class)).thenReturn(testConsolResponse);
+        when(jsonHelper.convertValueForConsole(testConsol, ConsolidationDetailsResponse.class)).thenReturn(testConsolResponse);
         mockShipmentSettings();
         var spyService = Mockito.spy(consolidationService);
 
@@ -3639,6 +3645,12 @@ import static org.mockito.Mockito.*;
 
     @Test
     void testRetrieveById_Success_byId() {
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+            Runnable argument = invocation.getArgument(0);
+            argument.run();
+            return mockRunnable;
+        });
         ConsolidationDetails consolidationDetails = testConsol;
         for (Containers container: consolidationDetails.getContainersList()) {
             container.setContainerNumber("TCLU1666663");
@@ -3648,7 +3660,7 @@ import static org.mockito.Mockito.*;
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(shipmentSettingsDetails);
         ConsolidationDetailsResponse consolidationDetailsResponse = modelMapperTest.map(consolidationDetails, ConsolidationDetailsResponse.class);
         when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
-        when(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class)).thenReturn(consolidationDetailsResponse);
+        when(jsonHelper.convertValueForConsole(consolidationDetails, ConsolidationDetailsResponse.class)).thenReturn(consolidationDetailsResponse);
         mockShipmentSettings();
 
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.retrieveById(CommonRequestModel.buildRequest(CommonGetRequest.builder().id(1L).build()));
@@ -3658,9 +3670,15 @@ import static org.mockito.Mockito.*;
     @Test
     void testRetrieveById_Success_byGuid() {
         ConsolidationDetails consolidationDetails = testConsol;
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+            Runnable argument = invocation.getArgument(0);
+            argument.run();
+            return mockRunnable;
+        });
         ConsolidationDetailsResponse consolidationDetailsResponse = modelMapperTest.map(consolidationDetails, ConsolidationDetailsResponse.class);
         when(consolidationDetailsDao.findByGuid(any())).thenReturn(Optional.of(consolidationDetails));
-        when(jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class)).thenReturn(consolidationDetailsResponse);
+        when(jsonHelper.convertValueForConsole(consolidationDetails, ConsolidationDetailsResponse.class)).thenReturn(consolidationDetailsResponse);
         mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = consolidationService.retrieveById(CommonRequestModel.buildRequest(CommonGetRequest.builder().guid("1d27fe99-0874-4587-9a83-460bb5ba31f0").build()));
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
