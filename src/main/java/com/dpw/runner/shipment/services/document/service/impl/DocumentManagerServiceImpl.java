@@ -116,7 +116,7 @@ public class DocumentManagerServiceImpl implements IDocumentManagerService {
     public ResponseEntity<IRunnerResponse> getFileHistory(CommonRequestModel commonRequestModel) {
         CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
         var response = restClient.getFileHistory(request.getId());
-        return ResponseHelper.buildDependentServiceResponse(response.getData(), response.getPageNo(), response.getCount());
+        return ResponseHelper.buildDependentServiceResponse(response.getData(), response.getPageNo(), response.getPageSize());
     }
 
     @Override
@@ -129,13 +129,13 @@ public class DocumentManagerServiceImpl implements IDocumentManagerService {
     @Override
     public ResponseEntity<IRunnerResponse> bulkSave(CommonRequestModel request) {
         var response = restClient.bulkSaveFiles(request.getDependentData());
-        return ResponseHelper.buildDependentServiceResponse(response.getData(), response.getPageNo(), response.getCount());
+        return ResponseHelper.buildDependentServiceResponse(response.getData(), response.getPageNo(), response.getPageSize());
     }
 
     @Override
     public ResponseEntity<IRunnerResponse> temporaryUpload(CommonRequestModel request) {
         var response = restClient.temporaryUpload(request.getDependentData());
-        return ResponseHelper.buildDependentServiceResponse(response.getData(), response.getPageNo(), response.getCount());
+        return ResponseHelper.buildDependentServiceResponse(response.getData(), response.getPageNo(), response.getPageSize());
     }
 
     @Override
