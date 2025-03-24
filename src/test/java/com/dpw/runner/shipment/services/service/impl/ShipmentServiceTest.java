@@ -9416,11 +9416,11 @@ ShipmentServiceTest extends CommonMocks {
         shipmentService.createOrUpdateNetworkTransferEntity(shipmentDetails, oldEntity);
 
         // Verify new tenant IDs processing
-        verify(networkTransferService, times(1)).processNetworkTransferEntity(eq(1L), isNull(), eq(Constants.SHIPMENT), eq(shipmentDetails), isNull(), eq(Constants.DIRECTION_CTS), isNull(), anyBoolean());
-        verify(networkTransferService, times(1)).processNetworkTransferEntity(eq(2L), isNull(), eq(Constants.SHIPMENT), eq(shipmentDetails), isNull(), eq(Constants.DIRECTION_CTS), isNull(), anyBoolean());
+        verify(networkTransferService, times(1)).processNetworkTransferEntity(eq(1L), isNull(), eq(Constants.SHIPMENT), eq(shipmentDetails), isNull(), eq(Constants.DIRECTION_CTS), isNull(), anyBoolean(), anyBoolean());
+        verify(networkTransferService, times(1)).processNetworkTransferEntity(eq(2L), isNull(), eq(Constants.SHIPMENT), eq(shipmentDetails), isNull(), eq(Constants.DIRECTION_CTS), isNull(), anyBoolean(), anyBoolean());
 
         // Verify old tenant IDs processing for removal
-        verify(networkTransferService, times(1)).processNetworkTransferEntity(isNull(), eq(4L), eq(Constants.SHIPMENT), eq(shipmentDetails), isNull(), eq(Constants.DIRECTION_CTS), isNull(), anyBoolean());
+        verify(networkTransferService, times(1)).processNetworkTransferEntity(isNull(), eq(4L), eq(Constants.SHIPMENT), eq(shipmentDetails), isNull(), eq(Constants.DIRECTION_CTS), isNull(), anyBoolean(), anyBoolean());
     }
 
     @Test
@@ -9458,7 +9458,7 @@ ShipmentServiceTest extends CommonMocks {
                 .deleteValidNetworkTransferEntity(eq(5L), eq(100L), eq(Constants.SHIPMENT));
 
         // Ensure no processNetworkTransferEntity is invoked
-        verify(networkTransferService, never()).processNetworkTransferEntity(any(), any(), any(), any(), any(), any(), any(), any());
+        verify(networkTransferService, never()).processNetworkTransferEntity(any(), any(), any(), any(), any(), any(), any(), any(), anyBoolean());
     }
 
     @Test
@@ -10065,7 +10065,7 @@ ShipmentServiceTest extends CommonMocks {
         shipmentService.createOrUpdateNetworkTransferEntity(newShipmentDetails, oldEntity);
 
         // Verify old tenant IDs processing for removal
-        verify(networkTransferService, times(1)).processNetworkTransferEntity(eq(1L), isNull(), eq(Constants.SHIPMENT), eq(newShipmentDetails), isNull(), eq(IMP), isNull(), eq(true));
+        verify(networkTransferService, times(1)).processNetworkTransferEntity(eq(1L), isNull(), eq(Constants.SHIPMENT), eq(newShipmentDetails), isNull(), eq(IMP), isNull(), eq(true), eq(false));
     }
 
     @Test
@@ -10116,7 +10116,7 @@ ShipmentServiceTest extends CommonMocks {
         shipmentService.createOrUpdateNetworkTransferEntity(newShipmentDetails, oldEntity);
 
         // Verify old tenant IDs processing for removal
-        verify(networkTransferService, times(1)).processNetworkTransferEntity(eq(2L), eq(1L), eq(Constants.SHIPMENT), eq(newShipmentDetails), isNull(), eq(IMP), isNull(), eq(true));
+        verify(networkTransferService, times(1)).processNetworkTransferEntity(eq(2L), eq(1L), eq(Constants.SHIPMENT), eq(newShipmentDetails), isNull(), eq(IMP), isNull(), eq(true), eq(false));
     }
 
     @Test

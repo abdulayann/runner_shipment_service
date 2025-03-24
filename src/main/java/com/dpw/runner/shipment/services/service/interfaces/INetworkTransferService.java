@@ -16,7 +16,7 @@ public interface INetworkTransferService{
     ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel);
     void processNetworkTransferEntity(Long tenantId, Long oldTenantId, String entityType,
                                       ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails,
-                                      String jobType, Map<String, Object> entityPayload, Boolean isInterBranchEntity);
+                                      String jobType, Map<String, Object> entityPayload, Boolean isInterBranchEntity, boolean isRetransfer);
     void deleteValidNetworkTransferEntity(Long tenantId, Long entityId, String entityType);
     void deleteNetworkTransferEntity(NetworkTransfer networkTransfer);
     void updateNetworkTransferTransferred(NetworkTransfer networkTransfer, Map<String, Object> payload);

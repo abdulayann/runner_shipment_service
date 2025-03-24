@@ -6592,7 +6592,7 @@ import static org.mockito.Mockito.*;
 
         spyService.createOrUpdateNetworkTransferEntity(shipmentSettingsDetails, consoleDetails, oldEntity);
 
-        verify(networkTransferService, times(1)).processNetworkTransferEntity(any(), any(),any(),any(),any(),any(),any(),any());
+        verify(networkTransferService, times(1)).processNetworkTransferEntity(any(), any(),any(),any(),any(),any(),any(),any(), anyBoolean());
     }
 
     @Test
@@ -6644,7 +6644,7 @@ import static org.mockito.Mockito.*;
 
         spyService.createOrUpdateNetworkTransferEntity(shipmentSettingsDetails, consoleDetails, oldEntity);
 
-        verify(networkTransferService, times(1)).processNetworkTransferEntity(any(), any(),any(), any(), any(),any(), any(), any());
+        verify(networkTransferService, times(1)).processNetworkTransferEntity(any(), any(),any(), any(), any(),any(), any(), any(), anyBoolean());
     }
 
     @Test
@@ -6672,7 +6672,7 @@ import static org.mockito.Mockito.*;
 
         spyService.createOrUpdateNetworkTransferEntity(shipmentSettingsDetails, consoleDetails, oldEntity);
 
-        verify(networkTransferService, times(1)).processNetworkTransferEntity(any(), any(),any(),any(),any(),any(),any(),any());
+        verify(networkTransferService, times(1)).processNetworkTransferEntity(any(), any(),any(),any(),any(),any(),any(),any(), anyBoolean());
     }
 
     @Test
@@ -6696,7 +6696,7 @@ import static org.mockito.Mockito.*;
 
         spyService.createOrUpdateNetworkTransferEntity(shipmentSettingsDetails, consoleDetails, oldEntity);
 
-        verify(networkTransferService, times(2)).processNetworkTransferEntity(any(), any(),any(),any(),any(),any(),any(),any());
+        verify(networkTransferService, times(2)).processNetworkTransferEntity(any(), any(),any(),any(),any(),any(),any(),any(),anyBoolean());
     }
 
     @Test
@@ -6725,7 +6725,7 @@ import static org.mockito.Mockito.*;
 
         spyService.createOrUpdateNetworkTransferEntity(shipmentSettingsDetails, consoleDetails, oldEntity);
 
-        verify(networkTransferService, times(1)).processNetworkTransferEntity(any(), any(),any(),any(),any(),any(),any(),any());
+        verify(networkTransferService, times(1)).processNetworkTransferEntity(any(), any(),any(),any(),any(),any(),any(),any(),anyBoolean());
     }
 
     @Test
@@ -6754,7 +6754,7 @@ import static org.mockito.Mockito.*;
 
         spyService.createOrUpdateNetworkTransferEntity(shipmentSettingsDetails, consoleDetails, oldEntity);
 
-        verify(networkTransferService, times(1)).processNetworkTransferEntity(any(), any(),any(), any(), any(),any(), any(), any());
+        verify(networkTransferService, times(1)).processNetworkTransferEntity(any(), any(),any(), any(), any(),any(), any(), any(),anyBoolean());
     }
 
     @Test
@@ -6782,7 +6782,7 @@ import static org.mockito.Mockito.*;
 
         spyService.createOrUpdateNetworkTransferEntity(shipmentSettingsDetails, consoleDetails, oldEntity);
 
-        verify(networkTransferService, times(1)).processNetworkTransferEntity(any(), any(),any(), any(), any(),any(), any(), any());
+        verify(networkTransferService, times(1)).processNetworkTransferEntity(any(), any(),any(), any(), any(),any(), any(), any(),anyBoolean());
         verify(networkTransferService, times(1)).deleteNetworkTransferEntity(any());
     }
 

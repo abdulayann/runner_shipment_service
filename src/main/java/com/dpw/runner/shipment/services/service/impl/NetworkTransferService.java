@@ -35,9 +35,9 @@ import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataKeyUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.nimbusds.jose.util.Pair;
+import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
-import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -311,13 +311,13 @@ public class NetworkTransferService implements INetworkTransferService {
     @Transactional
     public void processNetworkTransferEntity(Long newTenantId, Long oldTenantId, String entityType,
                                              ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails,
-                                             String jobType, Map<String, Object> entityPayload, Boolean isInterBranchEntity){
+                                             String jobType, Map<String, Object> entityPayload, Boolean isInterBranchEntity, boolean isRetransfer){
             NetworkTransfer networkTransfer = null;
 
             if(Objects.equals(newTenantId, Long.valueOf(TenantContext.getCurrentTenant())))
                 return; // Skip processing if entry is getting created for existing branch
 
-            if (Objects.equals(oldTenantId, newTenantId)) {
+            if (!isRetransfer && Objects.equals(oldTenantId, newTenantId)) {
                 return;  // Skip processing if tenant IDs are identical
             }
             var intTenantId = (newTenantId!=null) ? Math.toIntExact(newTenantId) : null;
@@ -334,14 +334,15 @@ public class NetworkTransferService implements INetworkTransferService {
                 String auditLogEntityType = getAuditLogEntityType(entityType);
                 optionalNetworkTransfer.ifPresent(dbNetworkTransfer -> {
                     if (dbNetworkTransfer.getStatus() == NetworkTransferStatus.ACCEPTED) {
-                        return; // Return if the status is ACCEPTED
                     }
                     networkTransferDao.deleteAndLog(dbNetworkTransfer, auditLogEntityType);
                 });
             }
 
+
+
             if (!Objects.isNull(networkTransfer) && networkTransfer.getTenantId() != null ) // Won't processing if tenant ID is null
-                createNetworkTransfer(networkTransfer, entityPayload);
+                createNetworkTransfer(networkTransfer, entityPayload, isRetransfer);
         }
 
     private String getAuditLogEntityType(String entityType) {
@@ -379,11 +380,14 @@ public class NetworkTransferService implements INetworkTransferService {
         }
     }
 
-    private void createNetworkTransfer(NetworkTransfer networkTransfer, Map<String, Object> entityPayload){
+    private void createNetworkTransfer(NetworkTransfer networkTransfer, Map<String, Object> entityPayload, boolean isRetransfer){
         networkTransfer.setStatus(NetworkTransferStatus.SCHEDULED);
         if(entityPayload!=null){
             networkTransfer.setStatus(NetworkTransferStatus.TRANSFERRED);
             networkTransfer.setEntityPayload(entityPayload);
+        }
+        if(isRetransfer){
+            networkTransfer.setStatus(NetworkTransferStatus.RETRANSFER);
         }
         networkTransferDao.save(networkTransfer);
     }
