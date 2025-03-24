@@ -191,14 +191,14 @@ class CommonUtilsTest {
 
     static Stream<Arguments> pTestCases() {
         return Stream.of(
-                Arguments.of("Entity", new ArrayList<>(), "Response"),
-                Arguments.of("Entity", List.of("foo"), "Response"),
-                Arguments.of("Entity", List.of("No such field: {}", "foo"), "Response"),
-                Arguments.of("Entity", Collections.singletonList(null), "Response"),
-                Arguments.of("Entity", Collections.singletonList(""), "Response"),
-                Arguments.of(new HashMap<>(), List.of("foo"), "Response"),
-                Arguments.of(null, List.of("foo"), "Response"),
-                Arguments.of(Map.of("foo", "42"), List.of("foo"), "Response")
+                Arguments.of("Entity", new HashSet<>(), "Response"),
+                Arguments.of("Entity", Set.of("foo"), "Response"),
+                Arguments.of("Entity", Set.of("No such field: {}", "foo"), "Response"),
+                Arguments.of("Entity", Collections.singleton(null), "Response"),
+                Arguments.of("Entity", Collections.singleton(""), "Response"),
+                Arguments.of(new HashMap<>(), Set.of("foo"), "Response"),
+                Arguments.of(null, Set.of("foo"), "Response"),
+                Arguments.of(Map.of("foo", "42"), Set.of("foo"), "Response")
         );
     }
     @AfterEach
@@ -3645,7 +3645,7 @@ class CommonUtilsTest {
     }
     @ParameterizedTest
     @MethodSource("pTestCases")
-    void testSetIncludedFieldsToResponse(Object entity, List<String> includeColumns, Object expectedResponse) {
+    void testSetIncludedFieldsToResponse(Object entity, Set<String> includeColumns, Object expectedResponse) {
         assertEquals(expectedResponse, commonUtils.setIncludedFieldsToResponse(entity, includeColumns, expectedResponse));
     }
     @Test

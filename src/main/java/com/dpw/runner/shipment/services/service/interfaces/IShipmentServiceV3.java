@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.service.interfaces;
 
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import org.springframework.http.ResponseEntity;
 
@@ -8,5 +8,5 @@ public interface IShipmentServiceV3 {
 
     ResponseEntity<IRunnerResponse> getPendingNotificationCount();
 
-    ResponseEntity<IRunnerResponse> listShipment(ListCommonRequest listCommonRequest, boolean getMasterData);
+    ResponseEntity<IRunnerResponse> listShipment(CommonRequestModel commonRequestModel, boolean getMasterData);
 }
