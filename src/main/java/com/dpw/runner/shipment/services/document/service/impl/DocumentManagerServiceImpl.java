@@ -1,6 +1,8 @@
 package com.dpw.runner.shipment.services.document.service.impl;
 
 
+import com.dpw.runner.shipment.services.ReportingService.Models.DocUploadRequest;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -22,11 +24,14 @@ import org.springframework.util.ObjectUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
+import java.io.IOException;
 
 @Service
 @Slf4j
 public class DocumentManagerServiceImpl implements IDocumentManagerService {
 
+    public static final String FILE_UPLOAD_TO_TEMP_FAILED = "File upload to temporary failed";
+    public static final String FILE_UPLOAD_FAILED = "Error while uploading file to document service: Error: %s File request: %s";
     @Autowired
     private DocumentManagerRestClient restClient;
 
@@ -111,7 +116,7 @@ public class DocumentManagerServiceImpl implements IDocumentManagerService {
     public ResponseEntity<IRunnerResponse> getFileHistory(CommonRequestModel commonRequestModel) {
         CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
         var response = restClient.getFileHistory(request.getId());
-        return ResponseHelper.buildDependentServiceResponse(response.getData(), response.getPageNo(), response.getPageSize());
+        return ResponseHelper.buildDependentServiceResponse(response.getData(), response.getPageNo(), response.getCount());
     }
 
     @Override
@@ -124,17 +129,50 @@ public class DocumentManagerServiceImpl implements IDocumentManagerService {
     @Override
     public ResponseEntity<IRunnerResponse> bulkSave(CommonRequestModel request) {
         var response = restClient.bulkSaveFiles(request.getDependentData());
-        return ResponseHelper.buildDependentServiceResponse(response.getData(), response.getPageNo(), response.getPageSize());
+        return ResponseHelper.buildDependentServiceResponse(response.getData(), response.getPageNo(), response.getCount());
     }
 
     @Override
     public ResponseEntity<IRunnerResponse> temporaryUpload(CommonRequestModel request) {
         var response = restClient.temporaryUpload(request.getDependentData());
-        return ResponseHelper.buildDependentServiceResponse(response.getData(), response.getPageNo(), response.getPageSize());
+        return ResponseHelper.buildDependentServiceResponse(response.getData(), response.getPageNo(), response.getCount());
     }
 
     @Override
     public ResponseEntity<IRunnerResponse> list(CommonRequestModel request) {
         var response = restClient.list(request.getDependentData());
-        return ResponseHelper.buildDependentServiceResponse(response.getData(), response.getPageNo(), response.getPageSize());    }
+        return ResponseHelper.buildDependentServiceResponse(response.getData(), response.getPageNo(), response.getCount());
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> listDocTypes(CommonRequestModel request) {
+        var response = restClient.listDocTypes(request.getDependentData());
+        return ResponseHelper.buildDependentServiceResponse(response.getData(), response.getPageNo(), response.getCount());
+    }
+
+    @Override
+    public void pushSystemGeneratedDocumentToDocMaster(MultipartFile file, String filename, DocUploadRequest uploadRequest) {
+        try {
+            long start = System.currentTimeMillis();
+            var uploadResponse = this.temporaryFileUpload(file, filename);
+            if (Boolean.FALSE.equals(uploadResponse.getSuccess()))
+                throw new IOException(FILE_UPLOAD_TO_TEMP_FAILED);
+
+            this.saveFile(DocumentManagerSaveFileRequest.builder().fileName(filename)
+                    .entityType(uploadRequest.getEntityType())
+                    .entityKey(uploadRequest.getKey())
+                    .secureDownloadLink(uploadResponse.getData().getSecureDownloadLink())
+                    .fileSize(uploadResponse.getData().getFileSize())
+                    .fileType(uploadResponse.getData().getFileType())
+                    .path(uploadResponse.getData().getPath())
+                    .source(Constants.SYSTEM_GENERATED)
+                    .docType(uploadRequest.getDocType())
+                    .docName(uploadRequest.getDocType())
+                    .childType(uploadRequest.getChildType())
+                    .build());
+            log.info("Time take to pushSystemGeneratedDocumentToDocMaster: {}ms", System.currentTimeMillis() - start);
+        } catch (Exception ex) {
+            log.error("Request: {} | Error while uploading file to document service: Error: {}", LoggerHelper.getRequestIdFromMDC(), ex.getMessage());
+        }
+    }
 }

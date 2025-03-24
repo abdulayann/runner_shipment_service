@@ -298,6 +298,7 @@ public class ReportService implements IReportService {
         processPreAlert(reportRequest, pdfByteContent, dataRetrived);
 
         triggerAutomaticTransfer(report, reportRequest);
+        pushFileToDocumentMaster(reportRequest, pdfByteContent, dataRetrived);
         return pdfByteContent;
     }
 
@@ -306,7 +307,7 @@ public class ReportService implements IReportService {
                 reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.PRE_ALERT)) {
             DocUploadRequest docUploadRequest = new DocUploadRequest();
             docUploadRequest.setEntityType(Constants.SHIPMENTS_WITH_SQ_BRACKETS);
-            docUploadRequest.setType(ReportConstants.PRE_ALERT);
+            docUploadRequest.setDocType(ReportConstants.PRE_ALERT);
             docUploadRequest.setIsTransferEnabled(true);
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> addFilesFromReport(new BASE64DecodedMultipartFile(pdfByteContent), ReportConstants.PRE_ALERT + ".pdf", docUploadRequest, dataRetrived.get(GUID).toString())), executorService);
         }
@@ -845,7 +846,7 @@ public class ReportService implements IReportService {
             DocUploadRequest docUploadRequest = new DocUploadRequest();
             docUploadRequest.setEntityType(Constants.SHIPMENTS_WITH_SQ_BRACKETS);
             docUploadRequest.setId(Long.parseLong(reportRequest.getReportId()));
-            docUploadRequest.setType(documentType);
+            docUploadRequest.setDocType(documentType);
             docUploadRequest.setReportId(reportRequest.getReportId());
             try {
                 AddHouseBillToRepo(docUploadRequest, reportRequest.getPrintType(), pdfByteContent, tenantSettingsRow, shipmentDetails.getAdditionalDetails().getReleaseType(), StringUtility.convertToString(shipmentDetails.getGuid()));
@@ -865,7 +866,7 @@ public class ReportService implements IReportService {
             DocUploadRequest docUploadRequest = new DocUploadRequest();
             docUploadRequest.setEntityType(Constants.SHIPMENTS_WITH_SQ_BRACKETS);
             docUploadRequest.setId(Long.parseLong(reportRequest.getReportId()));
-            docUploadRequest.setType(ReportConstants.SEAWAY_BILL);
+            docUploadRequest.setDocType(ReportConstants.SEAWAY_BILL);
             docUploadRequest.setReportId(reportRequest.getReportId());
             try {
                 AddHouseBillToRepo(docUploadRequest, TypeOfHblPrint.Draft.name().toUpperCase(), pdfByteContent, tenantSettingsRow, null, StringUtility.convertToString(shipmentDetails.getGuid()));
@@ -1834,7 +1835,7 @@ public class ReportService implements IReportService {
             blObject.getHblData().setVersion(blObject.getHblData().getVersion() + 1);
             hblDao.save(blObject);
         }
-        String filename = uploadRequest.getType() + "_" + printType + "_" + uploadRequest.getId() + "_" + fileVersion + ".pdf";
+        String filename = uploadRequest.getDocType() + "_" + printType + "_" + uploadRequest.getId() + "_" + fileVersion + ".pdf";
 
         CompletableFuture.runAsync(masterDataUtils.withMdc(() -> addFilesFromReport(new BASE64DecodedMultipartFile(document), filename, uploadRequest, shipmentGuid)), executorService);
 
@@ -1892,11 +1893,11 @@ public class ReportService implements IReportService {
             DocUploadRequest docUploadRequest = new DocUploadRequest();
             docUploadRequest.setEntityType(isShipment ? Constants.SHIPMENTS_WITH_SQ_BRACKETS : Constants.CONSOLIDATIONS_WITH_SQ_BRACKETS);
             docUploadRequest.setId(Long.parseLong(reportRequest.getReportId()));
-            docUploadRequest.setType(documentType);
+            docUploadRequest.setDocType(documentType);
             docUploadRequest.setReportId(reportRequest.getReportId());
             if(reportRequest.getPrintType().equalsIgnoreCase(ReportConstants.ORIGINAL))
                 docUploadRequest.setIsTransferEnabled(Boolean.TRUE);
-            String filename = docUploadRequest.getType() + "_" + reportRequest.getPrintType() + "_" + docUploadRequest.getId() + ".pdf";
+            String filename = docUploadRequest.getDocType() + "_" + reportRequest.getPrintType() + "_" + docUploadRequest.getId() + ".pdf";
             String finalGuid = guid;
             CompletableFuture.runAsync(masterDataUtils.withMdc(
                 () -> addFilesFromReport(new BASE64DecodedMultipartFile(finalPdfByteContent), filename,
@@ -1921,7 +1922,7 @@ public class ReportService implements IReportService {
         try{
         CommonRequestModel commonRequestModel =  CommonRequestModel.buildRequest(reportRequest);
         DocUploadRequest csdDocumentUploadRequest = new DocUploadRequest(docUploadRequest);
-        csdDocumentUploadRequest.setType(CSD_REPORT);
+        csdDocumentUploadRequest.setDocType(CSD_REPORT);
         String filename = CSD_REPORT + "_" + docUploadRequest.getId() + ".pdf";
 
         byte[] pdfByteContent = self.getDocumentData(commonRequestModel);
@@ -1955,26 +1956,30 @@ public class ReportService implements IReportService {
 
         return documentType;
     }
-
+    
     public DocumentManagerResponse<DocumentManagerDataResponse> addFilesFromReport(MultipartFile file, String filename, DocUploadRequest uploadRequest, String entityKey) {
         try {
-            var uploadResponse = documentManagerService.temporaryFileUpload(file, filename);
-            if (!Boolean.TRUE.equals(uploadResponse.getSuccess()))
-                throw new IOException("File Upload Failed");
+            var shipmentSettings = commonUtils.getShipmentSettingFromContext();
+            // If Shipment V3 is disabled
+            if (shipmentSettings != null && !Boolean.TRUE.equals(shipmentSettings.getIsRunnerV3Enabled())) {
+                var uploadResponse = documentManagerService.temporaryFileUpload(file, filename);
+                if (!Boolean.TRUE.equals(uploadResponse.getSuccess()))
+                    throw new IOException("File Upload Failed");
 
-            return documentManagerService.saveFile(DocumentManagerSaveFileRequest.builder().fileName(filename)
-                    .entityType(uploadRequest.getEntityType())
-                    .secureDownloadLink(uploadResponse.getData().getSecureDownloadLink())
-                    .fileSize(uploadResponse.getData().getFileSize())
-                    .fileType(uploadResponse.getData().getFileType())
-                    .path(uploadResponse.getData().getPath())
-                    .entityKey(entityKey)
-                    .source(Constants.SYSTEM_GENERATED)
-                    .docType(uploadRequest.getType())
-                    .docName(uploadRequest.getType())
-                    .childType(uploadRequest.getType())
-                    .isTransferEnabled(uploadRequest.getIsTransferEnabled())
-                    .build());
+                return documentManagerService.saveFile(DocumentManagerSaveFileRequest.builder().fileName(filename)
+                        .entityType(uploadRequest.getEntityType())
+                        .secureDownloadLink(uploadResponse.getData().getSecureDownloadLink())
+                        .fileSize(uploadResponse.getData().getFileSize())
+                        .fileType(uploadResponse.getData().getFileType())
+                        .path(uploadResponse.getData().getPath())
+                        .entityKey(entityKey)
+                        .source(Constants.SYSTEM_GENERATED)
+                        .docType(uploadRequest.getDocType())
+                        .docName(uploadRequest.getDocType())
+                        .childType(uploadRequest.getDocType())
+                        .isTransferEnabled(uploadRequest.getIsTransferEnabled())
+                        .build());
+            }
         } catch (Exception ex) {
             log.error("Error while file upload : {}", ex.getLocalizedMessage());
         }
@@ -2253,4 +2258,51 @@ public class ReportService implements IReportService {
         return String.join(", ", response);
     }
 
+    public void pushFileToDocumentMaster(ReportRequest reportRequest, byte[] pdfByteContent, Map<String, Object> dataRetrieved) {
+        var shipmentSettings = commonUtils.getShipmentSettingFromContext();
+        // If Shipment V3 is enabled
+        if (shipmentSettings != null && Boolean.TRUE.equals(shipmentSettings.getIsRunnerV3Enabled())) {
+            String filename;
+            String childType;
+            String docType = reportRequest.getReportInfo();
+
+            // Generate FileName, childType & DocType based on request Type
+            switch (reportRequest.getReportInfo()) {
+                case FCR_DOCUMENT:
+                    filename = StringUtility.convertToString(dataRetrieved.get(FCR_NO));
+                    childType = StringUtility.convertToString(dataRetrieved.get(FCR_NO));
+                    break;
+                case TRANSPORT_ORDER:
+                    filename = StringUtility.convertToString(dataRetrieved.get(REFERENCE_NO));
+                    childType = StringUtility.convertToString(dataRetrieved.get(REFERENCE_NO));
+                    break;
+                case HOUSE_BILL:
+                    filename =  HOUSE_BILL + DocumentConstants.DASH + reportRequest.getPrintType() + DocumentConstants.DASH + reportRequest.getReportId() + DocumentConstants.DOT_PDF;
+                    childType = reportRequest.getPrintType();
+                    docType = DocumentConstants.HBL;
+                    break;
+                case SEAWAY_BILL:
+                    filename = SEAWAY_BILL + DocumentConstants.DASH + reportRequest.getReportId() + DocumentConstants.DOT_PDF;
+                    childType = SEAWAY_BILL;
+                    docType = DocumentConstants.HBL;
+                    break;
+                case HAWB, MAWB:
+                    filename = reportRequest.getReportInfo() + DocumentConstants.DASH + reportRequest.getPrintType() + DocumentConstants.DASH + reportRequest.getReportId() + DocumentConstants.DOT_PDF;
+                    childType = reportRequest.getPrintType();
+                    docType = DocumentConstants.AWB;
+                    break;
+                default:
+                    filename = reportRequest.getReportInfo() + DocumentConstants.DASH + reportRequest.getReportId() + DocumentConstants.DOT_PDF;
+                    childType = reportRequest.getPrintType();
+            }
+
+            DocUploadRequest docUploadRequest = new DocUploadRequest();
+            docUploadRequest.setEntityType(reportRequest.getEntityName());
+            docUploadRequest.setKey(reportRequest.getEntityGuid());
+            docUploadRequest.setDocType(docType);
+            docUploadRequest.setChildType(childType);
+
+            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> documentManagerService.pushSystemGeneratedDocumentToDocMaster(new BASE64DecodedMultipartFile(pdfByteContent), filename, docUploadRequest)), executorService);
+        }
+    }
 }
