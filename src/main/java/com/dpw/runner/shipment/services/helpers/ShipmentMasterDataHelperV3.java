@@ -28,16 +28,19 @@ public class ShipmentMasterDataHelperV3 {
 
     @Value("${include.master.data}")
     private Boolean includeMasterData;
-    @Autowired
-    private MasterDataUtils masterDataUtils;
-    @Autowired
-    @Qualifier("executorServiceMasterData")
+    private final MasterDataUtils masterDataUtils;
     ExecutorService executorServiceMasterData;
+
+    @Autowired
+    public ShipmentMasterDataHelperV3(MasterDataUtils masterDataUtils, @Qualifier("executorServiceMasterData") ExecutorService executorServiceMasterData) {
+        this.masterDataUtils = masterDataUtils;
+        this.executorServiceMasterData = executorServiceMasterData;
+    }
 
     public void getMasterDataForList(List<ShipmentDetails> lst, List<IRunnerResponse> responseList, boolean getMasterData, boolean includeTenantData, Set<String> includeColumns) {
         if(getMasterData || Boolean.TRUE.equals(includeMasterData)) {
             try {
-                double _start = System.currentTimeMillis();
+                double startTime = System.currentTimeMillis();
                 var locationDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.setLocationData(responseList, EntityTransferConstants.LOCATION_SERVICE_GUID)), executorServiceMasterData);
                 CompletableFuture<Void> containerDataFuture = CompletableFuture.completedFuture(null);
                 if(includeColumns.contains(CONTAINERS_LIST))
@@ -51,7 +54,7 @@ public class ShipmentMasterDataHelperV3 {
                 if (Boolean.TRUE.equals(includeTenantData))
                     tenantDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.fetchTenantIdForList(responseList)), executorServiceMasterData);
                 CompletableFuture.allOf(locationDataFuture, containerDataFuture, billDataFuture, vesselDataFuture, tenantDataFuture).join();
-                log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.SHIPMENT_LIST_MASTER_DATA, (System.currentTimeMillis() - _start) , LoggerHelper.getRequestIdFromMDC());
+                log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.SHIPMENT_LIST_MASTER_DATA, (System.currentTimeMillis() - startTime) , LoggerHelper.getRequestIdFromMDC());
             }
             catch (Exception ex) {
                 log.error(Constants.ERROR_OCCURRED_FOR_EVENT, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_SHIPMENT_LIST, ex.getLocalizedMessage());

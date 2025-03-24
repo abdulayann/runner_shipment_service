@@ -30,8 +30,12 @@ import javax.validation.Valid;
 @Slf4j
 public class ShipmentControllerV3 {
 
-    @Autowired
     IShipmentServiceV3 shipmentService;
+
+    @Autowired
+    public ShipmentControllerV3(IShipmentServiceV3 shipmentService) {
+        this.shipmentService = shipmentService;
+    }
 
 
     @ApiResponses(value = {

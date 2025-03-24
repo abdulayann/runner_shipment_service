@@ -46,18 +46,23 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.andCriteria;
 @Slf4j
 public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
-    @Autowired
     private IConsoleShipmentMappingDao consoleShipmentMappingDao;
-    @Autowired
     private INotificationDao notificationDao;
-    @Autowired
     private CommonUtils commonUtils;
-    @Autowired
     private IShipmentRepository shipmentRepository;
-    @Autowired
     private IShipmentDao shipmentDao;
-    @Autowired
     private ShipmentMasterDataHelperV3 shipmentMasterDataHelper;
+
+    @Autowired
+    public ShipmentServiceImplV3(IConsoleShipmentMappingDao consoleShipmentMappingDao, INotificationDao notificationDao, CommonUtils commonUtils, IShipmentRepository shipmentRepository,
+                                 IShipmentDao shipmentDao, ShipmentMasterDataHelperV3 shipmentMasterDataHelper) {
+        this.consoleShipmentMappingDao = consoleShipmentMappingDao;
+        this.notificationDao = notificationDao;
+        this.commonUtils = commonUtils;
+        this.shipmentRepository = shipmentRepository;
+        this.shipmentDao = shipmentDao;
+        this.shipmentMasterDataHelper = shipmentMasterDataHelper;
+    }
 
     @Override
     public ResponseEntity<IRunnerResponse> getPendingNotificationCount() {
@@ -107,6 +112,11 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             Page<ShipmentDetails> shipmentDetailsPage = shipmentRepository.findAll(tuple.getLeft(), tuple.getRight());
             log.info(ShipmentConstants.SHIPMENT_LIST_V3_RESPONSE_SUCCESS, LoggerHelper.getRequestIdFromMDC());
 
+            if(!Boolean.TRUE.equals(listCommonRequest.getNotificationFlag())) {
+                totalPage = shipmentDetailsPage.getTotalPages();
+                totalElements = shipmentDetailsPage.getTotalElements();
+            }
+
             List<ShipmentListResponse> shipmentListResponses = new ArrayList<>();
 
             for (var curr : shipmentDetailsPage.getContent()) {
@@ -117,8 +127,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
 
             return ResponseHelper.buildListSuccessResponse(
                     filteredList,
-                    shipmentDetailsPage.getTotalPages(),
-                    shipmentDetailsPage.getTotalElements());
+                    totalPage,
+                    totalElements);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
@@ -144,7 +154,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             var ship = shipmentDetailsMap.get(response.getId());
             if(includeColumns.contains(SHIPPER_REFERENCE))
                 commonUtils.setShipperReferenceNumber(response, ship);
-            if (includeColumns.contains(SHIPMENT_STATUS_Fiels) && ship.getStatus() != null && ship.getStatus() < ShipmentStatus.values().length)
+            if (includeColumns.contains(SHIPMENT_STATUS_FIELDS) && ship.getStatus() != null && ship.getStatus() < ShipmentStatus.values().length)
                 response.setShipmentStatus(ShipmentStatus.values()[ship.getStatus()].toString());
             if(includeColumns.contains(ORDERS_COUNT) && ObjectUtils.isNotEmpty(ship.getShipmentOrders()))
                 response.setOrdersCount(ship.getShipmentOrders().size());

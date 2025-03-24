@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.utils;
 
+import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
@@ -24,25 +25,7 @@ import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
-import com.dpw.runner.shipment.services.dto.response.AdditionalDetailResponse;
-import com.dpw.runner.shipment.services.dto.response.ArrivalDepartureDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.BookingCarriageResponse;
-import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.ELDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.EventsResponse;
-import com.dpw.runner.shipment.services.dto.response.JobResponse;
-import com.dpw.runner.shipment.services.dto.response.NotesResponse;
-import com.dpw.runner.shipment.services.dto.response.PackingResponse;
-import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
-import com.dpw.runner.shipment.services.dto.response.PickupDeliveryDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ReferenceNumbersResponse;
-import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
-import com.dpw.runner.shipment.services.dto.response.ServiceDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentOrderResponse;
-import com.dpw.runner.shipment.services.dto.response.TruckDriverDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
@@ -4072,5 +4055,47 @@ class CommonUtilsTest {
 
         // Then
         assertNull(result);
+    }
+
+    @Test
+    void testSetShipperReferenceNumber() {
+        ShipmentListResponse response = new ShipmentListResponse();
+        response.setPickupDetails(new PickupDeliveryDetailsListResponse());
+        ShipmentDetails ship = new ShipmentDetails();
+        ReferenceNumbers referenceNumbers = new ReferenceNumbers();
+        referenceNumbers.setType(ReportConstants.SRN);
+        referenceNumbers.setReferenceNumber("123");
+        ship.setReferenceNumbersList(new ArrayList<>(List.of(referenceNumbers)));
+        commonUtils.setShipperReferenceNumber(response, ship);
+        assertEquals("123", response.getPickupDetails().getShipperRef());
+    }
+
+    @Test
+    void testSetShipperReferenceNumber1() {
+        ShipmentListResponse response = new ShipmentListResponse();
+        ShipmentDetails ship = new ShipmentDetails();
+        commonUtils.setShipperReferenceNumber(response, ship);
+        assertNull(response.getPickupDetails());
+    }
+
+    @Test
+    void testSetShipperReferenceNumber2() {
+        ShipmentListResponse response = new ShipmentListResponse();
+        ShipmentDetails ship = new ShipmentDetails();
+        ship.setReferenceNumbersList(new ArrayList<>(List.of()));
+        commonUtils.setShipperReferenceNumber(response, ship);
+        assertNull(response.getPickupDetails());
+    }
+
+    @Test
+    void testSetShipperReferenceNumber3() {
+        ShipmentListResponse response = new ShipmentListResponse();
+        ShipmentDetails ship = new ShipmentDetails();
+        ReferenceNumbers referenceNumbers = new ReferenceNumbers();
+        referenceNumbers.setType(ReportConstants.SRN);
+        referenceNumbers.setReferenceNumber("123");
+        ship.setReferenceNumbersList(new ArrayList<>(List.of(referenceNumbers)));
+        commonUtils.setShipperReferenceNumber(response, ship);
+        assertNull(response.getPickupDetails());
     }
 }
