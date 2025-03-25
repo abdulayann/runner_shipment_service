@@ -8,7 +8,7 @@ import java.io.Serializable;
 
 @Data
 @Builder
-@ApiModel("AWB OCI Info Model")
+@ApiModel("OCI Info Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
