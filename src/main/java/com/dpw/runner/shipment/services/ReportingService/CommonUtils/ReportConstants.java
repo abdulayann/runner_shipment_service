@@ -974,6 +974,7 @@ public class ReportConstants {
     public static final String PICKUP_FROM_ADDRESS_IN_CAPS = "PickupFromAddressInCaps";
     public static final String PICKUP_FROM_IN_CAPS = "PickupFromInCaps";
     public static final String SHIPMENT_PACKING_PACKS_PACKSTYPE = "PacksType";
+    public static final String SHIPMENT_PACKING_PACKS_TYPE_DESCRIPTION = "PacksTypeDescription";
 
 
     public static final String CHARGE_TYPE_CODE = "ChargeTypeCode";
@@ -1334,6 +1335,7 @@ public class ReportConstants {
     public static final String FCR_NO = "FCRNo";
     public static final String PACKS_MARKS_NUMBERS = "PacksMarksNumbers";
     public static final String PACKS_GOODS_DESCRIPTION = "PacksGoodsDescription";
+    public static final String PACKS_CONTAINER_NUMBER = "PacksContainerNumber";
     public static final String PLACE_OF_ISSUE = "PlaceOfIssue";
     public static final String FCR_PLACE_OF_ISSUE = "FCR_Placeofissue";
     public static final String FCR_DATE_OF_ISSUE = "FCR_Dateofissue";
@@ -1363,4 +1365,5 @@ public class ReportConstants {
     public static final String FREIGHT_DOCUMENT_PERMISSION_EXCEPTION = "You do not have permission to print the freight documents.";
     public static final String TIME_TAKE_TO_GET_SHIPMENT_CONSOLE_DATA = "Time taken to get Shipment Console Data for shipmentId :{} is  {}";
 
+    public static final String USA_LOC_CODE_PREFIX = "US";
 }
