@@ -28,7 +28,7 @@ public class AwbResponse implements IRunnerResponse {
     private AwbOtherInfoResponse awbOtherInfo;
     private List<AwbOCIInfo> awbOciInfo;
     private Boolean acasEnabled;
-    private OCIInfo awbOCIInfo;
+    private OCIInfo ociInfo;
     private List<AwbGoodsDescriptionInfoResponse> awbGoodsDescriptionInfo;
     private List<AwbPackingInfoResponse> awbPackingInfo;
     private List<AwbSpecialHandlingCodesMappingInfo> awbSpecialHandlingCodesMappings;

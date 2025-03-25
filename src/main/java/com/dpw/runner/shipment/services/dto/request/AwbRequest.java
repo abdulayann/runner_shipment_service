@@ -33,7 +33,7 @@ public class AwbRequest implements IRunnerRequest {
     private AwbOtherInfo awbOtherInfo;
     private List<AwbOCIInfo> awbOciInfo;
     private Boolean acasEnabled;
-    private OCIInfo awbOCIInfo;
+    private OCIInfo ociInfo;
     private List<AwbGoodsDescriptionInfo> awbGoodsDescriptionInfo;
     private List<AwbPackingInfo> awbPackingInfo;
     private List<AwbSpecialHandlingCodesMappingInfo> awbSpecialHandlingCodesMappings;
