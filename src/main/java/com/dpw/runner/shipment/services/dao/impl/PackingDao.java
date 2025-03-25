@@ -85,13 +85,13 @@ public class PackingDao implements IPackingDao {
         String responseMsg;
         List<Packing> responsePackings = new ArrayList<>();
         try {
-            // TODO- Handle Transactions here
+            // LATER- Handle Transactions here
             List<Packing> packings = findByShipmentId(shipmentId);
             Map<Long, Packing> hashMap = packings.stream()
                         .collect(Collectors.toMap(Packing::getId, Function.identity()));
             Map<Long, Packing> hashMapCopy = new HashMap<>(hashMap);
             List<Packing> packingRequestList = new ArrayList<>();
-            if (packingList != null && packingList.size() != 0) {
+            if (packingList != null && !packingList.isEmpty()) {
                 for (Packing request : packingList) {
                     Long id = request.getId();
                     if (id != null) {
@@ -127,7 +127,7 @@ public class PackingDao implements IPackingDao {
             Map<Long, Packing> hashMap = packings.stream()
                     .collect(Collectors.toMap(Packing::getId, Function.identity()));
             List<Packing> packingRequestList = new ArrayList<>();
-            if (packingList != null && packingList.size() != 0) {
+            if (packingList != null && !packingList.isEmpty()) {
                 for (Packing request : packingList) {
                     Long id = request.getId();
                     if (id != null) {
@@ -152,18 +152,16 @@ public class PackingDao implements IPackingDao {
         String responseMsg;
         List<Packing> responsePackings = new ArrayList<>();
         try {
-            // TODO- Handle Transactions here
+            // LATER- Handle Transactions here
             Map<Long, Packing> hashMap;
-//            if(!Objects.isNull(packIdList) && !packIdList.isEmpty()) {
-                ListCommonRequest listCommonRequest = constructListCommonRequest("consolidationId", consolidationId, "=");
-                Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
-                Page<Packing> packings = findAll(pair.getLeft(), pair.getRight());
-                hashMap = packings.stream()
-                        .collect(Collectors.toMap(Packing::getId, Function.identity()));
-//            }
+            ListCommonRequest listCommonRequest = constructListCommonRequest("consolidationId", consolidationId, "=");
+            Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
+            Page<Packing> packings = findAll(pair.getLeft(), pair.getRight());
+            hashMap = packings.stream()
+                    .collect(Collectors.toMap(Packing::getId, Function.identity()));
             Map<Long, Packing> hashMapCopy = new HashMap<>(hashMap);
             List<Packing> packingRequestList = new ArrayList<>();
-            if (packingList != null && packingList.size() != 0) {
+            if (packingList != null && !packingList.isEmpty()) {
                 for (Packing request : packingList) {
                     Long id = request.getId();
                     if (id != null) {
@@ -187,7 +185,7 @@ public class PackingDao implements IPackingDao {
         String responseMsg;
         List<Packing> responsePackings = new ArrayList<>();
         Map<UUID, Packing> packingMap = new HashMap<>();
-        if (oldEntityList != null && oldEntityList.size() > 0) {
+        if (oldEntityList != null && !oldEntityList.isEmpty()) {
             for (Packing entity :
                     oldEntityList) {
                 packingMap.put(entity.getGuid(), entity);
@@ -196,7 +194,7 @@ public class PackingDao implements IPackingDao {
         try {
             Packing oldEntity;
             List<Packing> packingRequestList = new ArrayList<>();
-            if (packingList != null && packingList.size() != 0) {
+            if (packingList != null && !packingList.isEmpty()) {
                 for (Packing request : packingList) {
                     oldEntity = packingMap.get(request.getGuid());
                     if (oldEntity != null) {
@@ -433,7 +431,7 @@ public class PackingDao implements IPackingDao {
             if (req.getId() != null) {
                 long id = req.getId();
                 Optional<Packing> oldEntity = findById(id);
-                if (!oldEntity.isPresent()) {
+                if (oldEntity.isEmpty()) {
                     log.debug(PACKING_IS_NULL_FOR_ID_MSG, req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }

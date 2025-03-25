@@ -133,7 +133,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
                 shipmentSettingsDetails.setTenantProducts(tenantProductsDao.saveEntityFromSettings(shipmentSettingsDetails.getTenantProducts(), shipmentSettingsDetails.getId()));
             }
             if(shipmentSettingsDetails.getProductSequenceConfig() != null) {
-                if(shipmentSettingsDetails.getProductSequenceConfig().size() > 0) {
+                if(!shipmentSettingsDetails.getProductSequenceConfig().isEmpty()) {
                     for (ProductSequenceConfig productSequenceConfig: shipmentSettingsDetails.getProductSequenceConfig()) {
                         ListCommonRequest listCommonRequest = constructListCommonRequest(ShipmentSettingsConstants.PRODUCT_TYPE, productSequenceConfig.getTenantProducts().getProductType(), "=");
                         Pair<Specification<TenantProducts>, Pageable> pair = fetchData(listCommonRequest, TenantProducts.class);
@@ -236,7 +236,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             newRequest.setFilterCriteria(new ArrayList<>());
             Pair<Specification<ShipmentSettingsDetails>, Pageable> tuple = fetchData(newRequest, ShipmentSettingsDetails.class);
             Page<ShipmentSettingsDetails> shipmentSettingsPage = shipmentSettingsDao.list(tuple.getLeft(), tuple.getRight());
-            if(shipmentSettingsPage.get().toList() != null && shipmentSettingsPage.get().toList().size() > 0)
+            if(shipmentSettingsPage.get().toList() != null && !shipmentSettingsPage.get().toList().isEmpty())
                 oldEntity = Optional.ofNullable(shipmentSettingsPage.get().toList().get(0));
         }
         else {
@@ -291,7 +291,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
 
     private void processProductSequenceConfigList(List<ProductSequenceConfigRequest> productSequenceConfigList, ShipmentSettingsDetails shipmentSettingsDetails, ShipmentSettingsDetailsResponse response) throws RunnerException {
         if(productSequenceConfigList != null) {
-            if(productSequenceConfigList.size() > 0) {
+            if(!productSequenceConfigList.isEmpty()) {
                 for (ProductSequenceConfigRequest productSequenceConfig: productSequenceConfigList) {
                     if(productSequenceConfig.getTenantProducts() != null && productSequenceConfig.getTenantProducts().getProductType() != null) {
                         ListCommonRequest listCommonRequest = constructListCommonRequest(ShipmentSettingsConstants.PRODUCT_TYPE, stringValueOf(productSequenceConfig.getTenantProducts().getProductType()), "=");
@@ -394,7 +394,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         if(shipmentSettingsDetails.getProductSequenceConfig() == null) {
             return;
         }
-        if(shipmentSettingsDetails.getProductSequenceConfig().size() > 0) {
+        if(!shipmentSettingsDetails.getProductSequenceConfig().isEmpty()) {
             for (ProductSequenceConfig productSequenceConfig: shipmentSettingsDetails.getProductSequenceConfig()) {
                 if(productSequenceConfig.getTenantProducts() != null && productSequenceConfig.getTenantProducts().getProductType() != null) {
                     ListCommonRequest listCommonRequest = constructListCommonRequest(ShipmentSettingsConstants.PRODUCT_TYPE, String.valueOf(productSequenceConfig.getTenantProducts().getProductType()), "=");
@@ -535,7 +535,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
     private void processProductSequenceConfigListForV1Update(List<ProductSequenceConfigRequest> productSequenceConfigList, ShipmentSettingsDetails shipmentSettingsDetails, List<ProductSequenceConfig> oldProductSequenceConfigList, ShipmentSettingsDetailsResponse response) throws RunnerException {
         ListCommonRequest listCommonRequest;
         List<ProductSequenceConfigRequest> productSequenceConfigRequests = new ArrayList<>();
-        if(productSequenceConfigList.size() > 0) {
+        if(!productSequenceConfigList.isEmpty()) {
             for (ProductSequenceConfigRequest productSequenceConfig: productSequenceConfigList) {
                 if(productSequenceConfig.getTenantProducts() != null && productSequenceConfig.getTenantProducts().getProductType() != null) {
                     listCommonRequest = constructListCommonRequest(ShipmentSettingsConstants.PRODUCT_TYPE, stringValueOf(productSequenceConfig.getTenantProducts().getProductType()), "=");

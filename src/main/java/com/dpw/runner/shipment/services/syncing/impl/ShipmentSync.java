@@ -285,7 +285,7 @@ public class ShipmentSync implements IShipmentSync {
             cs.setIssueDate(commonUtils.getUserZoneTime(sd.getAdditionalDetails().getDateOfIssue()));
         else
             cs.setDateofIssue(commonUtils.getUserZoneTime(sd.getAdditionalDetails().getDateOfIssue()));
-        cs.setDateofReceipt(sd.getAdditionalDetails().getDateOfReceipt());
+        cs.setDateofReceipt(commonUtils.getUserZoneTime(sd.getAdditionalDetails().getDateOfReceipt()));
         cs.setReceivingForwarderParty(mapPartyObject(sd.getAdditionalDetails().getReceivingForwarder()));
         cs.setSendingForwarderParty(mapPartyObject(sd.getAdditionalDetails().getSendingForwarder()));
         cs.setTraderOrSupplierParty(mapPartyObject(sd.getAdditionalDetails().getTraderOrSupplier()));
@@ -322,9 +322,9 @@ public class ShipmentSync implements IShipmentSync {
             return;
         List<ShipmentServiceRequestV2> res = sd.getServicesList().stream().map(
                 i -> {
-                    var _service = modelMapper.map(i, ShipmentServiceRequestV2.class);
-                    _service.setServiceDurationSpan(i.getServiceDuration());
-                    return _service;
+                    var serviceRequestV2 = modelMapper.map(i, ShipmentServiceRequestV2.class);
+                    serviceRequestV2.setServiceDurationSpan(i.getServiceDuration());
+                    return serviceRequestV2;
                 }
         ).toList();
         cs.setServicesList(res);

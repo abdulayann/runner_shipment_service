@@ -8,6 +8,6 @@ import java.util.Optional;
 public interface IHblDao {
     Hbl save(Hbl hbl);
     List<Hbl> findByShipmentId(Long shipmentId);
-    Optional<Hbl> findById(Long Id);
-    void delete(Hbl Hbl);
+    Optional<Hbl> findById(Long id);
+    void delete(Hbl hbl);
 }
