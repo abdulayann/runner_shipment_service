@@ -43,7 +43,7 @@ import java.util.*;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.EXEMPTION_CARGO;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 
 @Repository
 @Slf4j
@@ -399,7 +399,7 @@ public class AwbDao implements IAwbDao {
     private void getAwbSphEntity(String eFreightStatus, String securityStatus, Long id, Awb awb) {
         awb.setAwbSpecialHandlingCodesMappings(null);
         List<AwbSpecialHandlingCodesMappingInfo> sphs = new ArrayList<>();
-        if(!IsStringNullOrEmpty(eFreightStatus) && !Constants.NON.equals(eFreightStatus)) {
+        if(!isStringNullOrEmpty(eFreightStatus) && !Constants.NON.equals(eFreightStatus)) {
             AwbSpecialHandlingCodesMappingInfo sph = AwbSpecialHandlingCodesMappingInfo.builder()
                     .shcId(eFreightStatus)
                     .entityId(id)
@@ -408,7 +408,7 @@ public class AwbDao implements IAwbDao {
             sph.setEntityType(awb.getAwbShipmentInfo().getEntityType());
             sphs.add(sph);
         }
-        if(!IsStringNullOrEmpty(securityStatus) && !Constants.INSECURE.equals(securityStatus)) {
+        if(!isStringNullOrEmpty(securityStatus) && !Constants.INSECURE.equals(securityStatus)) {
             if(securityStatus.equalsIgnoreCase(EXEMPTION_CARGO) || securityStatus.equalsIgnoreCase(ReportConstants.EXEMPTION_CARGO))
                 securityStatus = Constants.SPX;
             AwbSpecialHandlingCodesMappingInfo sph = AwbSpecialHandlingCodesMappingInfo.builder()
@@ -427,7 +427,6 @@ public class AwbDao implements IAwbDao {
     public void updatedAwbInformationEvent(Object newEntity, Object oldEntity) throws RunnerException {
         // fetch Awb
         Awb awb = null;
-        AwbSpecialHandlingCodesMappingInfo sph = null;
 
         if(newEntity instanceof ShipmentDetails shipmentDetails) {
             awb = getAwbFromShipment((ShipmentDetails) oldEntity, shipmentDetails);

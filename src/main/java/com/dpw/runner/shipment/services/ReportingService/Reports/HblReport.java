@@ -202,7 +202,6 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getOrgAddress;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getOrgAddressWithPhoneEmail;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.numberToWords;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.AmountNumberFormatter;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
@@ -243,6 +242,7 @@ import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.service.impl.HblService;
 import com.dpw.runner.shipment.services.service.impl.ShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -488,7 +488,7 @@ public class HblReport extends IReport {
             hblModel.setContainerWeightGrouped(new HashMap<>());
             hblModel.setContainerVolumeGrouped(new HashMap<>());
             for (ContainerModel container: hblModel.shipment.getContainersList()) {
-                hblModel.noofPackages = IsStringNullOrEmpty(container.getPacks()) ? 0 : Long.parseLong(container.getPacks()) + hblModel.noofPackages;
+                hblModel.noofPackages = CommonUtils.isStringNullOrEmpty(container.getPacks()) ? 0 : Long.parseLong(container.getPacks()) + hblModel.noofPackages;
                 if(container.getContainerCode() != null) {
                     if(hblModel.getContainerCountGrouped().containsKey(container.getContainerCode()))
                         hblModel.getContainerCountGrouped().put(container.getContainerCode(), hblModel.getContainerCountGrouped().get(container.getContainerCode()) + container.getContainerCount());
@@ -503,7 +503,7 @@ public class HblReport extends IReport {
 
     private void processContainerPacks(HblModel hblModel, ContainerModel container) {
         if(container.getPacksType() != null) {
-            Long packs = !IsStringNullOrEmpty(container.getPacks()) ? Long.parseLong(container.getPacks()) : 0;
+            Long packs = !CommonUtils.isStringNullOrEmpty(container.getPacks()) ? Long.parseLong(container.getPacks()) : 0;
             if(hblModel.getContainerCountGrouped().containsKey(container.getPacksType()))
                 hblModel.getContainerCountGrouped().put(container.getPacksType(), hblModel.getContainerCountGrouped().get(container.getPacksType()) + packs);
             else
@@ -531,13 +531,13 @@ public class HblReport extends IReport {
         HblModel hblModel = (HblModel) documentModel;
         validateAirAndOceanDGCheck(hblModel.shipment);
         V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
-        String json = jsonHelper.convertToJsonWithDateTimeFormatter(hblModel.shipment, GetDPWDateFormatOrDefault(v1TenantSettingsResponse));
+        String json = jsonHelper.convertToJsonWithDateTimeFormatter(hblModel.shipment, getDPWDateFormatOrDefault(v1TenantSettingsResponse));
         setBlObject(hblModel);
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
         hblModel.shipment.setTransportInstructionId(hblModel.getTransportInstructionId());
         populateShipmentFields(hblModel.shipment, dictionary);
         populateConsolidationFields(hblModel.consolidation, dictionary);
-        JsonDateFormat(dictionary);
+        jsonDateFormat(dictionary);
         processBlObject(hblModel, dictionary);
 
         dictionary.put(ReportConstants.NO_OF_PACKAGES1, hblModel.noofPackages);
@@ -580,9 +580,9 @@ public class HblReport extends IReport {
         dictionary.put(ENTRY_REF_NUMBER, hblModel.shipment.getEntryRefNo());
         addVesselNameTag(hblModel, dictionary);
         dictionary.put(TRANSPORT_MODE, hblModel.shipment.getTransportMode());
-        dictionary.put(CHARGEABLE, ConvertToWeightNumberFormat(hblModel.shipment.getChargable(), v1TenantSettingsResponse));
+        dictionary.put(CHARGEABLE, convertToWeightNumberFormat(hblModel.shipment.getChargable(), v1TenantSettingsResponse));
         dictionary.put(CHARGEABLE_UNIT, hblModel.shipment.getChargeableUnit());
-        dictionary.put(FREIGHT_OVERSEAS, AmountNumberFormatter.Format(hblModel.shipment.getFreightOverseas(), hblModel.shipment.getFreightOverseasCurrency(), hblModel.tenantSettingsResponse));
+        dictionary.put(FREIGHT_OVERSEAS, AmountNumberFormatter.format(hblModel.shipment.getFreightOverseas(), hblModel.shipment.getFreightOverseasCurrency(), hblModel.tenantSettingsResponse));
         dictionary.put(FREIGHT_OVERSEAS_CURRENCY, hblModel.shipment.getFreightOverseasCurrency());
         dictionary.put(DESCRIPTION, hblModel.blObject != null ? StringUtility.toUpperCase(hblModel.blObject.getHblData().getCargoDescription())
                 : StringUtility.toUpperCase(hblModel.shipment.getGoodsDescription()));
@@ -605,7 +605,7 @@ public class HblReport extends IReport {
         addContainerCountTag(hblModel, dictionary);
         String tsDateTimeFormat = v1TenantSettingsResponse.getDPWDateFormat();
 
-        dictionary.put(CURRENT_DATE, ConvertToDPWDateFormat(LocalDateTime.now(), tsDateTimeFormat, v1TenantSettingsResponse));
+        dictionary.put(CURRENT_DATE, convertToDPWDateFormat(LocalDateTime.now(), tsDateTimeFormat, v1TenantSettingsResponse));
         dictionary.put(HOUSE_BILL, StringUtility.toUpperCase(hblModel.shipment.getHouseBill()));
         dictionary.put(SHIPMENT_ID, hblModel.shipment.getShipmentId());
         dictionary.put(REFERENCE_NO, hblModel.shipment.getBookingReference());
@@ -696,7 +696,7 @@ public class HblReport extends IReport {
         if (hblModel.blObject != null) {
             String blObjectJson = jsonHelper.convertToJson(hblModel.blObject);
             Map<String, Object> blObjectDictionary = jsonHelper.convertJsonToMap(blObjectJson);
-            JsonDateFormat(blObjectDictionary);
+            jsonDateFormat(blObjectDictionary);
             for (Map.Entry<String, Object> entry : blObjectDictionary.entrySet()) {
                 String key = entry.getKey();
                 Object value = entry.getValue();
@@ -758,7 +758,7 @@ public class HblReport extends IReport {
 
     private void addActualDeliveryTag(HblModel hblModel, Map<String, Object> dictionary) {
         if (hblModel.shipment.getDeliveryDetails() != null && hblModel.shipment.getDeliveryDetails().getActualPickupOrDelivery() != null)
-            dictionary.put(ACTUAL_DELIVERY, DateTimeFormatter.ofPattern(GetDPWDateFormatOrDefaultString() + " hh:mm ss")
+            dictionary.put(ACTUAL_DELIVERY, DateTimeFormatter.ofPattern(getDPWDateFormatOrDefaultString() + " hh:mm ss")
                     .format(hblModel.shipment.getDeliveryDetails().getActualPickupOrDelivery()));
     }
 
@@ -786,28 +786,28 @@ public class HblReport extends IReport {
 
     private void addCarrierDetailsTag(HblModel hblModel, Map<String, Object> dictionary, String tsDateTimeFormat, V1TenantSettingsResponse v1TenantSettingsResponse) {
         if (hblModel.shipment.getCarrierDetails().getEtd() != null)
-            dictionary.put(ETD, ConvertToDPWDateFormat(hblModel.shipment.getCarrierDetails().getEtd(), tsDateTimeFormat, v1TenantSettingsResponse));
+            dictionary.put(ETD, convertToDPWDateFormat(hblModel.shipment.getCarrierDetails().getEtd(), tsDateTimeFormat, v1TenantSettingsResponse));
         if (hblModel.shipment.getCarrierDetails().getEta() != null)
-            dictionary.put(ETA, ConvertToDPWDateFormat(hblModel.shipment.getCarrierDetails().getEta(), tsDateTimeFormat, v1TenantSettingsResponse));
+            dictionary.put(ETA, convertToDPWDateFormat(hblModel.shipment.getCarrierDetails().getEta(), tsDateTimeFormat, v1TenantSettingsResponse));
         if (hblModel.shipment.getAdditionalDetails().getDateOfIssue() != null) {
-            dictionary.put(DATE_OF_ISSUE_MDY, ConvertToDPWDateFormat(hblModel.shipment.getAdditionalDetails().getDateOfIssue(), tsDateTimeFormat, true));
-            dictionary.put(DATE_OF_ISSUE_DMY, ConvertToDPWDateFormat(hblModel.shipment.getAdditionalDetails().getDateOfIssue(), "dd/MM/yyyy", true));
-            dictionary.put(DATE_OF_ISSUE_DMMY, ConvertToDPWDateFormat(hblModel.shipment.getAdditionalDetails().getDateOfIssue(), "dd-MMM-yyyy", true));
+            dictionary.put(DATE_OF_ISSUE_MDY, convertToDPWDateFormat(hblModel.shipment.getAdditionalDetails().getDateOfIssue(), tsDateTimeFormat, true));
+            dictionary.put(DATE_OF_ISSUE_DMY, convertToDPWDateFormat(hblModel.shipment.getAdditionalDetails().getDateOfIssue(), "dd/MM/yyyy", true));
+            dictionary.put(DATE_OF_ISSUE_DMMY, convertToDPWDateFormat(hblModel.shipment.getAdditionalDetails().getDateOfIssue(), "dd-MMM-yyyy", true));
         }
         if (hblModel.shipment.getAdditionalDetails().getDateOfReceipt() != null)
-            dictionary.put(DATE_OF_RECEIPT, ConvertToDPWDateFormat(hblModel.shipment.getAdditionalDetails().getDateOfReceipt(), tsDateTimeFormat, v1TenantSettingsResponse));
+            dictionary.put(DATE_OF_RECEIPT, convertToDPWDateFormat(hblModel.shipment.getAdditionalDetails().getDateOfReceipt(), tsDateTimeFormat, v1TenantSettingsResponse));
         if (hblModel.shipment.getCarrierDetails().getAtd() != null) {
             LocalDateTime atd = hblModel.shipment.getCarrierDetails().getAtd();
-            dictionary.put(ATD_MDY, ConvertToDPWDateFormat(atd, tsDateTimeFormat, v1TenantSettingsResponse));
+            dictionary.put(ATD_MDY, convertToDPWDateFormat(atd, tsDateTimeFormat, v1TenantSettingsResponse));
             dictionary.put(ATD_DMY, DateTimeFormatter.ofPattern("dd/MM/yyyy").format(atd));
             dictionary.put(ATD_DMMY, DateTimeFormatter.ofPattern("dd-MMM-yyyy").format(atd));
         }
         dictionary.put(FLIGHT_CARRIER, hblModel.shipment.getCarrierDetails().getShippingLine());
         dictionary.put(FLIGHT_NUMBER, hblModel.shipment.getCarrierDetails().getFlightNumber());
         if (hblModel.shipment.getCarrierDetails().getAtd() != null)
-            dictionary.put(ATD, ConvertToDPWDateFormat(hblModel.shipment.getCarrierDetails().getAtd(), tsDateTimeFormat, v1TenantSettingsResponse));
+            dictionary.put(ATD, convertToDPWDateFormat(hblModel.shipment.getCarrierDetails().getAtd(), tsDateTimeFormat, v1TenantSettingsResponse));
         if (hblModel.shipment.getCarrierDetails().getAta() != null)
-            dictionary.put(ATA, ConvertToDPWDateFormat(hblModel.shipment.getCarrierDetails().getAta(), tsDateTimeFormat, v1TenantSettingsResponse));
+            dictionary.put(ATA, convertToDPWDateFormat(hblModel.shipment.getCarrierDetails().getAta(), tsDateTimeFormat, v1TenantSettingsResponse));
         dictionary.put(FLIGHT_NAME, hblModel.shipment.getCarrierDetails().getShippingLine());
         if(hblModel.shipment.getCarrierDetails()!= null && hblModel.shipment.getCarrierDetails().getOrigin() != null) {
             dictionary.put(PLACE_OF_RECEIPT_ALIAS, hblModel.shipment.getCarrierDetails().getOrigin());
@@ -816,7 +816,7 @@ public class HblReport extends IReport {
         assert hblModel.shipment.getCarrierDetails() != null;
         dictionary.put(PLACE_OF_DELIVERY_ALIAS, hblModel.shipment.getCarrierDetails().getDestination());
         dictionary.put(VOYAGE, hblModel.shipment.getCarrierDetails().getVoyage());
-        dictionary.put(VESSEL_BERTHING_DATE, ConvertToDPWDateFormat(hblModel.shipment.getCarrierDetails().getVesselBerthingDate(), tsDateTimeFormat, v1TenantSettingsResponse));
+        dictionary.put(VESSEL_BERTHING_DATE, convertToDPWDateFormat(hblModel.shipment.getCarrierDetails().getVesselBerthingDate(), tsDateTimeFormat, v1TenantSettingsResponse));
     }
 
     private void addVesselNameTag(HblModel hblModel, Map<String, Object> dictionary) {
@@ -853,7 +853,7 @@ public class HblReport extends IReport {
         if (hblModel.shipment.getFreightLocalCurrency() != null && !hblModel.shipment.getFreightLocalCurrency().isEmpty())
             dictionary.put(ReportConstants.FREIGHT_LOCAL_CURRENCY, hblModel.shipment.getFreightLocalCurrency());
         if (hblModel.shipment.getFreightOverseas() != null)
-            dictionary.put(ReportConstants.FREIGHT_OVERSEAS, AmountNumberFormatter.Format(hblModel.shipment.getFreightOverseas(), hblModel.shipment.getFreightOverseasCurrency(), hblModel.tenantSettingsResponse));
+            dictionary.put(ReportConstants.FREIGHT_OVERSEAS, AmountNumberFormatter.format(hblModel.shipment.getFreightOverseas(), hblModel.shipment.getFreightOverseasCurrency(), hblModel.tenantSettingsResponse));
         if (hblModel.shipment.getFreightOverseasCurrency() != null && !hblModel.shipment.getFreightOverseasCurrency().isEmpty())
             dictionary.put(ReportConstants.FREIGHT_OVERSEAS_CURRENCY, hblModel.shipment.getFreightOverseasCurrency());
         if (hblModel.shipment.getShipmentAddresses() != null && !hblModel.shipment.getShipmentAddresses().isEmpty()) {
@@ -870,9 +870,9 @@ public class HblReport extends IReport {
         {
             PickupDeliveryDetailsModel pickupDetails = hblModel.shipment.getPickupDetails();
             dictionary.put(UCR_REFERENCE, pickupDetails.getUcrReference());
-            dictionary.put(EMPTY_TRUCK_IN_DATE, ConvertToDPWDateFormat(pickupDetails.getEmptyTruckInDate(), tsDateTimeFormat, v1TenantSettingsResponse));
-            dictionary.put(LOADED_TRUCK_GATE_OUT_DATE, ConvertToDPWDateFormat(pickupDetails.getLoadedTruckGateOutDate(), tsDateTimeFormat, v1TenantSettingsResponse));
-            dictionary.put(PICKUP_PORT_TRANSPORT_ADVISED, ConvertToDPWDateFormat(pickupDetails.getPortTransportAdvised(), tsDateTimeFormat, v1TenantSettingsResponse));
+            dictionary.put(EMPTY_TRUCK_IN_DATE, convertToDPWDateFormat(pickupDetails.getEmptyTruckInDate(), tsDateTimeFormat, v1TenantSettingsResponse));
+            dictionary.put(LOADED_TRUCK_GATE_OUT_DATE, convertToDPWDateFormat(pickupDetails.getLoadedTruckGateOutDate(), tsDateTimeFormat, v1TenantSettingsResponse));
+            dictionary.put(PICKUP_PORT_TRANSPORT_ADVISED, convertToDPWDateFormat(pickupDetails.getPortTransportAdvised(), tsDateTimeFormat, v1TenantSettingsResponse));
         }
     }
 
@@ -901,13 +901,13 @@ public class HblReport extends IReport {
     private void addPackTags(HblModel hblModel, Map<String, Object> dictionary, V1TenantSettingsResponse v1TenantSettingsResponse) {
         if(Boolean.TRUE.equals(hblModel.isHbl)) {
             if(hblModel.blObject.getHblData().getPackageCount() != null)
-                dictionary.put(PACKS, StringUtility.toUpperCase(GetDPWWeightVolumeFormat(BigDecimal.valueOf(hblModel.blObject.getHblData().getPackageCount()), 0, v1TenantSettingsResponse)));
+                dictionary.put(PACKS, StringUtility.toUpperCase(getDPWWeightVolumeFormat(BigDecimal.valueOf(hblModel.blObject.getHblData().getPackageCount()), 0, v1TenantSettingsResponse)));
             dictionary.put(PACKS_UNIT, StringUtility.toUpperCase(Constants.MPK.equals(hblModel.blObject.getHblData().getPackageType()) ? StringUtility.toUpperCase(Constants.PACKAGES) : StringUtility.toUpperCase(hblModel.blObject.getHblData().getPackageType())));
             dictionary.put(PACKS_UNIT_DESC, Constants.MULTI_PACK.equals(masterListDescriptionPacksUnit(hblModel.blObject.getHblData().getPackageType())) ? StringUtility.toUpperCase(Constants.PACKAGES) : StringUtility.toUpperCase(masterListDescriptionPacksUnit(hblModel.blObject.getHblData().getPackageType())));
             dictionary.put(ReportConstants.DESCRIPTION, StringUtility.toUpperCase(hblModel.blObject.getHblData().getCargoDescription()));
         } else {
             if(hblModel.shipment.getNoOfPacks() != null)
-                dictionary.put(PACKS, StringUtility.toUpperCase(StringUtility.toUpperCase(GetDPWWeightVolumeFormat(BigDecimal.valueOf(hblModel.shipment.getNoOfPacks()), 0, v1TenantSettingsResponse))));
+                dictionary.put(PACKS, StringUtility.toUpperCase(StringUtility.toUpperCase(getDPWWeightVolumeFormat(BigDecimal.valueOf(hblModel.shipment.getNoOfPacks()), 0, v1TenantSettingsResponse))));
             dictionary.put(PACKS_UNIT, Constants.MPK.equals(hblModel.shipment.getPacksUnit()) ? Constants.PACKAGES : hblModel.shipment.getPacksUnit());
             dictionary.put(PACKS_UNIT_DESC, Constants.MULTI_PACK.equals(masterListDescriptionPacksUnit(hblModel.shipment.getPacksUnit())) ? StringUtility.toUpperCase(Constants.PACKAGES) : StringUtility.toUpperCase(masterListDescriptionPacksUnit(hblModel.shipment.getPacksUnit())));
             dictionary.put(DESCRIPTION, StringUtility.toUpperCase(hblModel.shipment.getGoodsDescription()));
@@ -1002,7 +1002,7 @@ public class HblReport extends IReport {
             }
             dictionary.put(ONBOARD_DATE, onBoardValue);
             dictionary.put(ONBOARD_TYPE_DATE, hblModel.shipment.getAdditionalDetails().getOnBoardDate() != null ?
-                    StringUtility.toUpperCase(ConvertToDPWDateFormat(hblModel.shipment.getAdditionalDetails().getOnBoardDate(), tsDateTimeFormat, true)) : null);
+                    StringUtility.toUpperCase(convertToDPWDateFormat(hblModel.shipment.getAdditionalDetails().getOnBoardDate(), tsDateTimeFormat, true)) : null);
         }
     }
 
@@ -1019,9 +1019,9 @@ public class HblReport extends IReport {
     private void processHblData(HblModel hblModel, Map<String, Object> dictionary, V1TenantSettingsResponse v1TenantSettingsResponse) {
         if (hblModel.blObject != null && hblModel.blObject.getHblData() != null) {
             dictionary.put(BL_PLACE_OF_DELIVERY, StringUtility.toUpperCase(hblModel.blObject.getHblData().getPlaceOfDelivery()));
-            dictionary.put(BL_WEIGHT, ConvertToWeightNumberFormat(hblModel.blObject.getHblData().getCargoGrossWeight(), v1TenantSettingsResponse));
+            dictionary.put(BL_WEIGHT, convertToWeightNumberFormat(hblModel.blObject.getHblData().getCargoGrossWeight(), v1TenantSettingsResponse));
             dictionary.put(BL_WEIGHT_UNIT, hblModel.blObject.getHblData().getCargoGrossWeightUnit());
-            dictionary.put(BL_NETWEIGHT, ConvertToWeightNumberFormat(hblModel.blObject.getHblData().getCargoNetWeight(), v1TenantSettingsResponse));
+            dictionary.put(BL_NETWEIGHT, convertToWeightNumberFormat(hblModel.blObject.getHblData().getCargoNetWeight(), v1TenantSettingsResponse));
             dictionary.put(BL_NETWEIGHT_UNIT, hblModel.blObject.getHblData().getCargoNetWeightUnit());
             dictionary.put(BL_DELIVERYAGENT, StringUtility.toUpperCase(hblModel.blObject.getHblData().getDeliveryAgent()));
             dictionary.put(BL_DELIVERYAGENT_ADDRESS, StringUtility.toUpperCase(hblModel.blObject.getHblData().getDeliveryAgentAddress()));
@@ -1083,13 +1083,13 @@ public class HblReport extends IReport {
         for (PackingModel packingModel : hblModel.shipment.getPackingList()) {
             Map<String, Object> packContJson = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(packingModel));
             if (packContJson.containsKey(PACKS) && packContJson.get(PACKS) != null)
-                packContJson.put(PACKS, StringUtility.toUpperCase(GetDPWWeightVolumeFormat(new BigDecimal(StringUtility.convertToString(packContJson.get(PACKS))), 0, v1TenantSettingsResponse)));
+                packContJson.put(PACKS, StringUtility.toUpperCase(getDPWWeightVolumeFormat(new BigDecimal(StringUtility.convertToString(packContJson.get(PACKS))), 0, v1TenantSettingsResponse)));
             if (packContJson.containsKey(LENGTH) && packContJson.get(LENGTH) != null)
-                packContJson.put(LENGTH, GetDPWWeightVolumeFormat(new BigDecimal(StringUtility.convertToString(packContJson.get(LENGTH))), 0, v1TenantSettingsResponse));
+                packContJson.put(LENGTH, getDPWWeightVolumeFormat(new BigDecimal(StringUtility.convertToString(packContJson.get(LENGTH))), 0, v1TenantSettingsResponse));
             if (packContJson.containsKey(WIDTH) && packContJson.get(WIDTH) != null)
-                packContJson.put(WIDTH, GetDPWWeightVolumeFormat(new BigDecimal(StringUtility.convertToString(packContJson.get(WIDTH))), 0, v1TenantSettingsResponse));
+                packContJson.put(WIDTH, getDPWWeightVolumeFormat(new BigDecimal(StringUtility.convertToString(packContJson.get(WIDTH))), 0, v1TenantSettingsResponse));
             if (packContJson.containsKey(HEIGHT) && packContJson.get(HEIGHT) != null)
-                packContJson.put(HEIGHT, GetDPWWeightVolumeFormat(new BigDecimal(StringUtility.convertToString(packContJson.get(HEIGHT))), 0, v1TenantSettingsResponse));
+                packContJson.put(HEIGHT, getDPWWeightVolumeFormat(new BigDecimal(StringUtility.convertToString(packContJson.get(HEIGHT))), 0, v1TenantSettingsResponse));
             valuesContainer.add(packContJson);
         }
         return valuesContainer;
@@ -1214,19 +1214,19 @@ public class HblReport extends IReport {
     private void processWeightVolumeChargable(HblModel hblModel, Integer decimalPlaces, V1TenantSettingsResponse v1TenantSettingsResponse, Map<String, Object> dictionary) {
         if (!Objects.isNull(hblModel.shipment.getWeight())) {
             BigDecimal weight = hblModel.shipment.getWeight().setScale(decimalPlaces, RoundingMode.HALF_UP);
-            String weightString = ConvertToWeightNumberFormat(weight, v1TenantSettingsResponse);
+            String weightString = convertToWeightNumberFormat(weight, v1TenantSettingsResponse);
             dictionary.put(WEIGHT, StringUtility.toUpperCase(weightString));
             dictionary.put(WEIGHT_AND_UNIT, String.format(REGEX_S_S, weightString, hblModel.shipment.getWeightUnit()));
         }
         if (!Objects.isNull(hblModel.shipment.getVolume())) {
             BigDecimal volume = hblModel.shipment.getVolume().setScale(decimalPlaces, RoundingMode.HALF_UP);
-            String volumeString = ConvertToVolumeNumberFormat(volume, v1TenantSettingsResponse);
+            String volumeString = convertToVolumeNumberFormat(volume, v1TenantSettingsResponse);
             dictionary.put(VOLUME, StringUtility.toUpperCase(volumeString));
             dictionary.put(VOLUME_AND_UNIT, String.format(REGEX_S_S, volumeString, hblModel.shipment.getVolumeUnit()));
         }
         if (!Objects.isNull(hblModel.shipment.getChargable())) {
             BigDecimal chargeable = hblModel.shipment.getChargable().setScale(decimalPlaces, RoundingMode.HALF_UP);
-            String chargeableString = ConvertToWeightNumberFormat(chargeable, v1TenantSettingsResponse);
+            String chargeableString = convertToWeightNumberFormat(chargeable, v1TenantSettingsResponse);
             dictionary.put(CHARGEABLE, chargeableString);
             dictionary.put(CHARGABLE_AND_UNIT, String.format(REGEX_S_S, chargeableString, hblModel.shipment.getChargeableUnit()));
             dictionary.put(CHARGEABLE_AND_UNIT, dictionary.get(CHARGABLE_AND_UNIT));
@@ -1346,13 +1346,13 @@ public class HblReport extends IReport {
     private Map<String, Object> getShipContJson(V1TenantSettingsResponse v1TenantSettingsResponse, String shipContJsonString) {
         Map<String, Object> shipContJson = jsonHelper.convertJsonToMap(shipContJsonString);
         if(shipContJson.containsKey(ReportConstants.GROSS_VOLUME) && shipContJson.get(ReportConstants.GROSS_VOLUME) != null)
-            shipContJson.put(ReportConstants.GROSS_VOLUME, ConvertToVolumeNumberFormat(shipContJson.get(ReportConstants.GROSS_VOLUME), v1TenantSettingsResponse));
+            shipContJson.put(ReportConstants.GROSS_VOLUME, convertToVolumeNumberFormat(shipContJson.get(ReportConstants.GROSS_VOLUME), v1TenantSettingsResponse));
         if (shipContJson.containsKey(ReportConstants.GROSS_WEIGHT) && shipContJson.get(ReportConstants.GROSS_WEIGHT) != null)
-            shipContJson.put(ReportConstants.GROSS_WEIGHT, ConvertToWeightNumberFormat(shipContJson.get(ReportConstants.GROSS_WEIGHT), v1TenantSettingsResponse));
+            shipContJson.put(ReportConstants.GROSS_WEIGHT, convertToWeightNumberFormat(shipContJson.get(ReportConstants.GROSS_WEIGHT), v1TenantSettingsResponse));
         if (shipContJson.containsKey(ReportConstants.NET_WEIGHT) && shipContJson.get(ReportConstants.NET_WEIGHT) != null)
-            shipContJson.put(ReportConstants.NET_WEIGHT, ConvertToWeightNumberFormat(new BigDecimal(shipContJson.get(ReportConstants.NET_WEIGHT).toString())));
+            shipContJson.put(ReportConstants.NET_WEIGHT, convertToWeightNumberFormat(new BigDecimal(shipContJson.get(ReportConstants.NET_WEIGHT).toString())));
         if (shipContJson.containsKey(NO_OF_PACKAGES) && shipContJson.get(NO_OF_PACKAGES) != null) {
-            shipContJson.put(NO_OF_PACKAGES, GetDPWWeightVolumeFormat(new BigDecimal(StringUtility.convertToString(shipContJson.get(NO_OF_PACKAGES))), 0, v1TenantSettingsResponse));
+            shipContJson.put(NO_OF_PACKAGES, getDPWWeightVolumeFormat(new BigDecimal(StringUtility.convertToString(shipContJson.get(NO_OF_PACKAGES))), 0, v1TenantSettingsResponse));
         }
         return shipContJson;
     }

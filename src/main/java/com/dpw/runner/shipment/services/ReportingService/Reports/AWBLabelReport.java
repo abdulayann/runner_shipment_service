@@ -227,7 +227,7 @@ public class AWBLabelReport extends IReport{
             addUnlocations(awbLabelModel.shipment.getCarrierDetails(), unlocations);
         }
 
-        dictionary.put(GROSS_WEIGHT_AND_UNIT, IReport.ConvertToWeightNumberFormat(awbLabelModel.shipment.getWeight(), v1TenantSettingsResponse) + " " + convertToSingleCharWeightFormat(awbLabelModel.shipment.getWeightUnit()));
+        dictionary.put(GROSS_WEIGHT_AND_UNIT, IReport.convertToWeightNumberFormat(awbLabelModel.shipment.getWeight(), v1TenantSettingsResponse) + " " + convertToSingleCharWeightFormat(awbLabelModel.shipment.getWeightUnit()));
     }
 
     private boolean isMawbCondition(AWbLabelModel awbLabelModel) {
@@ -238,14 +238,14 @@ public class AWBLabelReport extends IReport{
     private void processInnerPacks(AWbLabelModel awbLabelModel, Map<String, Object> dictionary, V1TenantSettingsResponse v1TenantSettingsResponse) {
         if (awbLabelModel.shipment.getInnerPacks() != null) {
             String inners = padWithZeros(awbLabelModel.shipment.getInnerPacks().toString());
-            dictionary.put(ReportConstants.INNERS, GetDPWWeightVolumeFormat(BigDecimal.valueOf(Long.parseLong(inners)), 0, v1TenantSettingsResponse));
+            dictionary.put(ReportConstants.INNERS, getDPWWeightVolumeFormat(BigDecimal.valueOf(Long.parseLong(inners)), 0, v1TenantSettingsResponse));
         }
     }
 
     private void processNoOfPacks(AWbLabelModel awbLabelModel, Map<String, Object> dictionary, V1TenantSettingsResponse v1TenantSettingsResponse) {
         if (awbLabelModel.shipment.getNoOfPacks() != null) {
             String packs = padWithZeros(awbLabelModel.shipment.getNoOfPacks().toString());
-            dictionary.put(ReportConstants.PACKS, GetDPWWeightVolumeFormat(BigDecimal.valueOf(Long.parseLong(packs)), 0, v1TenantSettingsResponse));
+            dictionary.put(ReportConstants.PACKS, getDPWWeightVolumeFormat(BigDecimal.valueOf(Long.parseLong(packs)), 0, v1TenantSettingsResponse));
         }
     }
 
@@ -280,7 +280,7 @@ public class AWBLabelReport extends IReport{
 
     private void processConsolidation(AWbLabelModel awbLabelModel, Map<String, Object> dictionary, List<String> unlocations) {
         String shippingLine = awbLabelModel.getConsolidation().getCarrierDetails() != null ? awbLabelModel.getConsolidation().getCarrierDetails().getShippingLine() : "";
-        if (!CommonUtils.IsStringNullOrEmpty(shippingLine)) {
+        if (!CommonUtils.isStringNullOrEmpty(shippingLine)) {
             dictionary.put(AIRLINE_NAME, shippingLine);
         }
 
@@ -327,7 +327,7 @@ public class AWBLabelReport extends IReport{
 
         if (awbLabelModel.shipment != null) {
             String shippingLine = awbLabelModel.getShipment().getCarrierDetails() != null ? awbLabelModel.getShipment().getCarrierDetails().getShippingLine() : "";
-            if (!CommonUtils.IsStringNullOrEmpty(shippingLine)) {
+            if (!CommonUtils.isStringNullOrEmpty(shippingLine)) {
                 dictionary.put(CARRIER, shippingLine);
             }
 

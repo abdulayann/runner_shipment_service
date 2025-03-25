@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.utils;
 
-import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
@@ -46,7 +46,6 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterL
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferVessels;
-import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
@@ -693,10 +692,10 @@ public class MasterDataUtils{
     }
 
     public void setKeyValueForMasterLists(Map<String, Object> map, String key, EntityTransferMasterLists masterLists) { //key is SEA#TRANSPORT_MODE
-        if(!IsStringNullOrEmpty(key)) {
+        if(!isStringNullOrEmpty(key)) {
             String value = null;
 
-            if(!IsStringNullOrEmpty(masterLists.getValuenDesc()))
+            if(!isStringNullOrEmpty(masterLists.getValuenDesc()))
                 value = masterLists.getValuenDesc();
             else
                 value = masterLists.getItemDescription();
@@ -1228,7 +1227,7 @@ public class MasterDataUtils{
         if(isBooking)
             fieldNameMasterDataMap.put(key, object3.getItemDescription());
         else {
-            if(!IsStringNullOrEmpty(object3.getValuenDesc()))
+            if(!isStringNullOrEmpty(object3.getValuenDesc()))
                 fieldNameMasterDataMap.put(key, object3.getValuenDesc());
             else
                 fieldNameMasterDataMap.put(key, object3.getItemDescription());
@@ -1316,7 +1315,7 @@ public class MasterDataUtils{
                 Object fieldValue = field.get(entityPayload);
 
                 // Process the field value if it's not null or empty
-                if (fieldValue != null && !IsStringNullOrEmpty(fieldValue.toString())) {
+                if (fieldValue != null && !isStringNullOrEmpty(fieldValue.toString())) {
                     Long tenantId = Long.parseLong(fieldValue.toString());
                     // Add tenant ID to requests or cache, and map it to the field name
                     processTenantId(tenantId, tenantMasterDataField, requests, cache, cacheMap, fieldNameKeyMap);
@@ -1438,7 +1437,7 @@ public class MasterDataUtils{
                 Field field1 = entityPayload.getClass().getDeclaredField(field);
                 field1.setAccessible(true);
                 Long dgSubstanceId = null;
-                if(field1.get(entityPayload) != null && !IsStringNullOrEmpty(field1.get(entityPayload).toString()))
+                if(field1.get(entityPayload) != null && !isStringNullOrEmpty(field1.get(entityPayload).toString()))
                     dgSubstanceId = Long.parseLong(field1.get(entityPayload).toString());
 
                 if(dgSubstanceId != null) {

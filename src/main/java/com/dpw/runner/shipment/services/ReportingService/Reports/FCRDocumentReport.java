@@ -80,13 +80,13 @@ public class FCRDocumentReport extends IReport{
                         .collect(Collectors.toList())
         );
         getPackingDetails(fcrDocumentModel.getShipmentModel(), dictionary);
-        if(!CommonUtils.IsStringNullOrEmpty(fcrDocumentModel.getShipmentModel().getAdditionalDetails().getPlaceOfIssue())) {
+        if(!CommonUtils.isStringNullOrEmpty(fcrDocumentModel.getShipmentModel().getAdditionalDetails().getPlaceOfIssue())) {
             Map<String, EntityTransferUnLocations> map = masterDataUtils.getLocationDataFromCache(Set.of(fcrDocumentModel.getShipmentModel().getAdditionalDetails().getPlaceOfIssue()), EntityTransferConstants.LOCATION_SERVICE_GUID);
             dictionary.put(PLACE_OF_ISSUE, map.get(fcrDocumentModel.getShipmentModel().getAdditionalDetails().getPlaceOfIssue()).Name);
         }
-        dictionary.put(SHIPMENT_DETAIL_DATE_OF_ISSUE, ConvertToDPWDateFormat(fcrDocumentModel.getShipmentModel().getAdditionalDetails().getDateOfIssue()));
+        dictionary.put(SHIPMENT_DETAIL_DATE_OF_ISSUE, convertToDPWDateFormat(fcrDocumentModel.getShipmentModel().getAdditionalDetails().getDateOfIssue()));
         dictionary.put(FCR_PLACE_OF_ISSUE, this.placeOfIssue);
-        dictionary.put(FCR_DATE_OF_ISSUE, ConvertToDPWDateFormat(this.issueDate));
+        dictionary.put(FCR_DATE_OF_ISSUE, convertToDPWDateFormat(this.issueDate));
         return convertValuesToUpperCase(dictionary);
     }
 

@@ -68,7 +68,7 @@ public class ShippingInstructionReport extends IReport{
         addCarrierDetailTags(model, dictionary);
         dictionary.put(SERVICE_TYPE, model.getShipment().getTransportMode());
         dictionary.put(PPCC, model.getShipment().getPaymentTerms());
-        dictionary.put(CURRENT_DATE, ConvertToDPWDateFormat(LocalDateTime.now()));
+        dictionary.put(CURRENT_DATE, convertToDPWDateFormat(LocalDateTime.now()));
 
 
         dictionary.put(JOB_NUMBER, model.getShipment().getShipmentId());
@@ -164,7 +164,7 @@ public class ShippingInstructionReport extends IReport{
     private void addWeightVolumeTagsinPacking(Map<String, Object> dictionary, long totalPacks, boolean breakFlagForVolume, BigDecimal totalVolume, String unitOfTotalVolume, boolean breakFlagForWeight, BigDecimal totalWeight, String unitOfTotalWeight) {
         V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         if(totalPacks != 0)
-            dictionary.put(TOTAL_PACKS, GetDPWWeightVolumeFormat(new BigDecimal(totalPacks), 0, v1TenantSettingsResponse));
+            dictionary.put(TOTAL_PACKS, getDPWWeightVolumeFormat(new BigDecimal(totalPacks), 0, v1TenantSettingsResponse));
         else
             dictionary.put(TOTAL_PACKS, null);
 
@@ -172,7 +172,7 @@ public class ShippingInstructionReport extends IReport{
             dictionary.put(TOTAL_PACKS_VOLUME, null);
             dictionary.put(UOTV, null);
         } else {
-            dictionary.put(TOTAL_PACKS_VOLUME, ConvertToVolumeNumberFormat(totalVolume, v1TenantSettingsResponse));
+            dictionary.put(TOTAL_PACKS_VOLUME, convertToVolumeNumberFormat(totalVolume, v1TenantSettingsResponse));
             dictionary.put(UOTV, unitOfTotalVolume);
         }
 
@@ -180,22 +180,22 @@ public class ShippingInstructionReport extends IReport{
             dictionary.put(TOTAL_PACKS_WEIGHT, null);
             dictionary.put(UOTW, null);
         } else {
-            dictionary.put(TOTAL_PACKS_WEIGHT, ConvertToWeightNumberFormat(totalWeight, v1TenantSettingsResponse));
+            dictionary.put(TOTAL_PACKS_WEIGHT, convertToWeightNumberFormat(totalWeight, v1TenantSettingsResponse));
             dictionary.put(UOTW, unitOfTotalWeight);
         }
     }
 
     private void formatPackingVolumes(Map<String, Object> v, V1TenantSettingsResponse v1TenantSettingsResponse) {
         if(v.get(VOLUME) != null)
-            v.put(VOLUME, ConvertToVolumeNumberFormat(v.get(VOLUME), v1TenantSettingsResponse));
+            v.put(VOLUME, convertToVolumeNumberFormat(v.get(VOLUME), v1TenantSettingsResponse));
         if(v.get(WEIGHT) != null)
-            v.put(WEIGHT, ConvertToWeightNumberFormat(v.get(WEIGHT), v1TenantSettingsResponse));
+            v.put(WEIGHT, convertToWeightNumberFormat(v.get(WEIGHT), v1TenantSettingsResponse));
         if(v.get(NET_WEIGHT) != null)
-            v.put(NET_WEIGHT, ConvertToWeightNumberFormat(v.get(NET_WEIGHT), v1TenantSettingsResponse));
+            v.put(NET_WEIGHT, convertToWeightNumberFormat(v.get(NET_WEIGHT), v1TenantSettingsResponse));
         if(v.get(VOLUME_WEIGHT) != null)
-            v.put(VOLUME_WEIGHT, ConvertToWeightNumberFormat(v.get(VOLUME_WEIGHT).toString(), v1TenantSettingsResponse));
+            v.put(VOLUME_WEIGHT, convertToWeightNumberFormat(v.get(VOLUME_WEIGHT).toString(), v1TenantSettingsResponse));
         if(v.get(PACKS) != null)
-            v.put(PACKS, GetDPWWeightVolumeFormat(new BigDecimal(v.get(PACKS).toString()), 0, v1TenantSettingsResponse));
+            v.put(PACKS, getDPWWeightVolumeFormat(new BigDecimal(v.get(PACKS).toString()), 0, v1TenantSettingsResponse));
     }
 
     private void addCarrierDetailTags(ShippingInstructionModel model, Map<String, Object> dictionary) {
@@ -211,10 +211,10 @@ public class ShippingInstructionReport extends IReport{
             dictionary.put(PO_DELIVERY, getPortDetails(model.getShipment().getCarrierDetails().getDestinationPort()));
             String formatPattern = "dd/MMM/y";
             V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
-            if(!CommonUtils.IsStringNullOrEmpty(v1TenantSettingsResponse.getDPWDateFormat()))
+            if(!CommonUtils.isStringNullOrEmpty(v1TenantSettingsResponse.getDPWDateFormat()))
                 formatPattern = v1TenantSettingsResponse.getDPWDateFormat();
-            dictionary.put(ETD, GenerateFormattedDate(model.getShipment().getCarrierDetails().getEtd(), formatPattern));
-            dictionary.put(ETA, GenerateFormattedDate(model.getShipment().getCarrierDetails().getEta(), formatPattern));
+            dictionary.put(ETD, generateFormattedDate(model.getShipment().getCarrierDetails().getEtd(), formatPattern));
+            dictionary.put(ETA, generateFormattedDate(model.getShipment().getCarrierDetails().getEta(), formatPattern));
             VesselsResponse vesselsResponse = getVesselsData(model.getShipment().getCarrierDetails().getVessel());
             if(vesselsResponse != null)
                 dictionary.put(ReportConstants.VESSEL_NAME, vesselsResponse.getName());

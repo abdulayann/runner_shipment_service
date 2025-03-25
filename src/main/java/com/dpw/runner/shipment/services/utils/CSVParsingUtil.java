@@ -68,9 +68,6 @@ public class CSVParsingUtil<T> {
 
     private IConsolidationDetailsDao consolidationDetailsDao;
 
-    private final Set<String> hiddenFields = Set.of("pickupAddress",
-            "deliveryAddress", "eventsList", "packsList", "shipmentsList", "bookingCharges");
-
     ExecutorService executorService;
 
     @Autowired
@@ -500,8 +497,6 @@ public class CSVParsingUtil<T> {
         mandatoryColumns.add("containerNumber");
         mandatoryColumns.add(Constants.CONTAINER_NUMBER);
 
-        int containerNumberPos = -1;
-
         try (Workbook workbook = new XSSFWorkbook(file.getInputStream())) {
             Sheet sheet = workbook.getSheetAt(0); // Assuming data is in the first sheet
             validateExcel(sheet);
@@ -512,9 +507,6 @@ public class CSVParsingUtil<T> {
                 validateExcelColumn(headerRow, i);
                 header[i] = getCamelCase(headerRow.getCell(i).getStringCellValue());
                 headerSet.add(header[i]);
-                if (header[i].equalsIgnoreCase(Constants.CONTAINER_NUMBER)) {
-                    containerNumberPos = i;
-                }
 
                 if (mandatoryColumns.contains(header[i])) {
                     mandatoryColumns.remove(header[i]);
@@ -532,7 +524,6 @@ public class CSVParsingUtil<T> {
                 throw new ValidationException(ContainerConstants.INVALID_EXCEL_COLUMNS);
             }
 
-            Set<String> guidSet = new HashSet<>();
             Set<String> orderEventsDictionary = masterListsMap.get(MasterDataType.ORDER_EVENTS.getDescription());
             Set<String> existingContainerNumberSet = consol.getContainersList()
                     .stream().map(containers -> containers.getContainerNumber())
@@ -540,7 +531,6 @@ public class CSVParsingUtil<T> {
                     .collect(Collectors.toSet());
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
-                boolean isUpdate = false;
                 T entity = createEntityInstance(entityType);
                 processHeader(header, row, i, existingContainerNumberSet, containerNumberList, orderEventsDictionary, entity);
 

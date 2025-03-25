@@ -390,13 +390,13 @@ public class ShipmentDao implements IShipmentDao {
     }
 
     private void addOriginDestinationValidationsError(ShipmentDetails request, Set<String> errors) {
-        if(request.getCarrierDetails() == null || IsStringNullOrEmpty(request.getCarrierDetails().getOrigin()) || IsStringNullOrEmpty(request.getCarrierDetails().getDestination()))
+        if(request.getCarrierDetails() == null || isStringNullOrEmpty(request.getCarrierDetails().getOrigin()) || isStringNullOrEmpty(request.getCarrierDetails().getDestination()))
             errors.add("Origin and Destination fields are mandatory.");
     }
 
     private void addPolPodValidationsErrors(ShipmentDetails request, Set<String> errors) {
         if( ( Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_SEA) || Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR) ) &&
-                (request.getCarrierDetails() == null || IsStringNullOrEmpty(request.getCarrierDetails().getOriginPort()) || IsStringNullOrEmpty(request.getCarrierDetails().getDestinationPort()) ))
+                (request.getCarrierDetails() == null || isStringNullOrEmpty(request.getCarrierDetails().getOriginPort()) || isStringNullOrEmpty(request.getCarrierDetails().getDestinationPort()) ))
             errors.add("POL and POD fields are mandatory.");
     }
 
@@ -404,7 +404,7 @@ public class ShipmentDao implements IShipmentDao {
         if (request.getContainersList() != null && !request.getContainersList().isEmpty()) {
             HashSet<String> hashSet = new HashSet<>();
             for (Containers containers : request.getContainersList()) {
-                if (!IsStringNullOrEmpty(containers.getContainerNumber())) {
+                if (!isStringNullOrEmpty(containers.getContainerNumber())) {
                     if (hashSet.contains(containers.getContainerNumber())) {
                         errors.add("Container Number cannot be same for two different containers");
                         break;
@@ -436,7 +436,7 @@ public class ShipmentDao implements IShipmentDao {
     }
 
     private void addMasterBillValidationErrors(ShipmentDetails request, Set<String> errors) {
-        if (!IsStringNullOrEmpty(request.getMasterBill())) {
+        if (!isStringNullOrEmpty(request.getMasterBill())) {
             var consoleList = consolidationDetailsDao.findByBol(request.getMasterBill());
             if (!consoleList.isEmpty()) {
                 ConsolidationDetails console = consoleList.get(0);
@@ -471,7 +471,7 @@ public class ShipmentDao implements IShipmentDao {
     }
 
     private void addBlValidationErrors(ShipmentDetails request, Set<String> errors) {
-        if(!IsStringNullOrEmpty(request.getHouseBill())) {
+        if(!isStringNullOrEmpty(request.getHouseBill())) {
             List<ShipmentDetails> shipmentDetails = findByHouseBill(request.getHouseBill(), TenantContext.getCurrentTenant());
             if(shipmentDetails != null && !shipmentDetails.isEmpty() && (request.getId() == null || shipmentDetails.get(0).getId().longValue() != request.getId().longValue())) {
                 if (Objects.equals(request.getStatus(), ShipmentStatus.Cancelled.getValue()))
@@ -483,7 +483,7 @@ public class ShipmentDao implements IShipmentDao {
     }
 
     private void addBookingReferenceValidationErrors(ShipmentDetails request, Set<String> errors) {
-        if(!IsStringNullOrEmpty(request.getBookingReference())) {
+        if(!isStringNullOrEmpty(request.getBookingReference())) {
             List<ShipmentDetails> shipmentDetails = findByBookingReference(request.getBookingReference(), TenantContext.getCurrentTenant());
             if(!shipmentDetails.isEmpty() && (request.getId() == null || shipmentDetails.get(0).getId().longValue() != request.getId().longValue())) {
                 errors.add("Shipment with ReferenceNo " + request.getBookingReference() + " already exists.");

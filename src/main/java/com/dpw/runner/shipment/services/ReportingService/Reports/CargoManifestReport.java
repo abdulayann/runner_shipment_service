@@ -97,12 +97,12 @@ public class CargoManifestReport extends IReport{
         dictionary.put(ReportConstants.FPOD, getPortDetails(cargoManifestModel.shipmentDetails.getCarrierDetails().getDestination()));
         V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         String tsDateTimeFormat = v1TenantSettingsResponse.getDPWDateFormat();
-        dictionary.put(ReportConstants.CURRENT_DATE, ConvertToDPWDateFormat(LocalDateTime.now(), tsDateTimeFormat, v1TenantSettingsResponse));
+        dictionary.put(ReportConstants.CURRENT_DATE, convertToDPWDateFormat(LocalDateTime.now(), tsDateTimeFormat, v1TenantSettingsResponse));
         if(cargoManifestModel.shipmentDetails.getCarrierDetails().getEtd() != null) {
-            dictionary.put(ReportConstants.ETD_CAPS, ConvertToDPWDateFormat(cargoManifestModel.shipmentDetails.getCarrierDetails().getEtd(), tsDateTimeFormat, v1TenantSettingsResponse));
+            dictionary.put(ReportConstants.ETD_CAPS, convertToDPWDateFormat(cargoManifestModel.shipmentDetails.getCarrierDetails().getEtd(), tsDateTimeFormat, v1TenantSettingsResponse));
         }
         if(cargoManifestModel.shipmentDetails.getCarrierDetails().getEta() != null) {
-            dictionary.put(ReportConstants.ETA_CAPS, ConvertToDPWDateFormat(cargoManifestModel.shipmentDetails.getCarrierDetails().getEta(), tsDateTimeFormat, v1TenantSettingsResponse));
+            dictionary.put(ReportConstants.ETA_CAPS, convertToDPWDateFormat(cargoManifestModel.shipmentDetails.getCarrierDetails().getEta(), tsDateTimeFormat, v1TenantSettingsResponse));
         }
         dictionary.put(ReportConstants.FLIGHT_NAME, cargoManifestModel.shipmentDetails.getCarrierDetails().getShippingLine());
         dictionary.put(ReportConstants.FLIGHT_NUMBER, cargoManifestModel.shipmentDetails.getCarrierDetails().getFlightNumber());
@@ -150,12 +150,12 @@ public class CargoManifestReport extends IReport{
 
         processConsolidation(cargoManifestModel, dictionary, unlocationsMap);
 
-        dictionary.put(INSERT_DATE, ConvertToDPWDateFormat(LocalDateTime.now(), tsDateTimeFormat, v1TenantSettingsResponse));
-        dictionary.put(TOTAL_WEIGHT, ConvertToWeightNumberFormat(cargoManifestModel.shipmentDetails.getWeight(), v1TenantSettingsResponse));
+        dictionary.put(INSERT_DATE, convertToDPWDateFormat(LocalDateTime.now(), tsDateTimeFormat, v1TenantSettingsResponse));
+        dictionary.put(TOTAL_WEIGHT, convertToWeightNumberFormat(cargoManifestModel.shipmentDetails.getWeight(), v1TenantSettingsResponse));
         dictionary.put(ReportConstants.PWEIGHT_UNIT, cargoManifestModel.shipmentDetails.getWeightUnit());
-        dictionary.put(TOTAL_VOLUME, ConvertToVolumeNumberFormat(cargoManifestModel.shipmentDetails.getVolume(), v1TenantSettingsResponse));
+        dictionary.put(TOTAL_VOLUME, convertToVolumeNumberFormat(cargoManifestModel.shipmentDetails.getVolume(), v1TenantSettingsResponse));
         dictionary.put(PVOLUME_UNIT, cargoManifestModel.shipmentDetails.getVolumeUnit());
-        dictionary.put(CHARGEABLE, ConvertToWeightNumberFormat(cargoManifestModel.shipmentDetails.getChargable(), v1TenantSettingsResponse));
+        dictionary.put(CHARGEABLE, convertToWeightNumberFormat(cargoManifestModel.shipmentDetails.getChargable(), v1TenantSettingsResponse));
         dictionary.put(PCHARGE_UNIT, cargoManifestModel.shipmentDetails.getChargeableUnit());
         dictionary.put(TOTAL_PACKAGES, cargoManifestModel.shipmentDetails.getNoOfPacks());
         dictionary.put(PACKS_UNIT, cargoManifestModel.shipmentDetails.getPacksUnit());
@@ -180,7 +180,7 @@ public class CargoManifestReport extends IReport{
 
     private void processShipmentShippingLine(CargoManifestModel cargoManifestModel, Map<String, Object> dictionary) {
         try {
-            if(!CommonUtils.IsStringNullOrEmpty(cargoManifestModel.shipmentDetails.getCarrierDetails().getShippingLine())) {
+            if(!CommonUtils.isStringNullOrEmpty(cargoManifestModel.shipmentDetails.getCarrierDetails().getShippingLine())) {
                 Set<String> carrierSet = new HashSet<>();
                 carrierSet.add(cargoManifestModel.shipmentDetails.getCarrierDetails().getShippingLine());
                 Map<String, EntityTransferCarrier> entityTransferCarrierMap = masterDataUtils.getCarrierDataFromCache(carrierSet);
@@ -192,7 +192,7 @@ public class CargoManifestReport extends IReport{
     }
 
     private void processShipmentPaymentTerms(CargoManifestModel cargoManifestModel, Map<String, Object> dictionary) {
-        if(!CommonUtils.IsStringNullOrEmpty(cargoManifestModel.shipmentDetails.getPaymentTerms())) {
+        if(!CommonUtils.isStringNullOrEmpty(cargoManifestModel.shipmentDetails.getPaymentTerms())) {
             MasterData paymentTerms = getMasterListData(MasterDataType.PAYMENT, cargoManifestModel.shipmentDetails.getPaymentTerms());
             try {
                 dictionary.put(ReportConstants.PAYMENT_TERMS_DESCRIPTION, paymentTerms.getItemDescription());
@@ -208,7 +208,7 @@ public class CargoManifestReport extends IReport{
     }
 
     private void processShipmentPackUnit(CargoManifestModel cargoManifestModel, Map<String, Object> dictionary) {
-        if(!CommonUtils.IsStringNullOrEmpty(cargoManifestModel.shipmentDetails.getPacksUnit())) {
+        if(!CommonUtils.isStringNullOrEmpty(cargoManifestModel.shipmentDetails.getPacksUnit())) {
             MasterData packsUnitDesc = getMasterListData(MasterDataType.PACKS_UNIT, cargoManifestModel.shipmentDetails.getPacksUnit());
             String packsUnit = null;
             try {
@@ -216,7 +216,7 @@ public class CargoManifestReport extends IReport{
             } catch (Exception ignored) {
                 log.info(Constants.IGNORED_ERROR_MSG);
             }
-            if(CommonUtils.IsStringNullOrEmpty(packsUnit))
+            if(CommonUtils.isStringNullOrEmpty(packsUnit))
                 packsUnit = cargoManifestModel.shipmentDetails.getPacksUnit();
             dictionary.put(ReportConstants.PACKS_UNIT_DESCRIPTION, Constants.MPK.equals(packsUnit) ? Constants.PACKAGES : packsUnit);
         }
@@ -266,19 +266,19 @@ public class CargoManifestReport extends IReport{
             if (!mainCarriageRouts.isEmpty()) {
                 List<Map<String, Object>> mainCarriageRoutsList = new ArrayList<>();
                 Set<String> vesselGuids = new HashSet<>();
-                mainCarriageRouts.stream().filter(e -> !CommonUtils.IsStringNullOrEmpty(e.getVesselName())).forEach(e -> vesselGuids.add(e.getVesselName()));
+                mainCarriageRouts.stream().filter(e -> !CommonUtils.isStringNullOrEmpty(e.getVesselName())).forEach(e -> vesselGuids.add(e.getVesselName()));
                 Map<String, EntityTransferVessels> vesselsMap = masterDataUtils.fetchInBulkVessels(vesselGuids);
                 for (RoutingsModel route : mainCarriageRouts) {
                     Map<String, Object> routeMap = new HashMap<>();
                     routeMap.put(MODE, route.getMode());
-                    if(!CommonUtils.IsStringNullOrEmpty(route.getVesselName()) && vesselsMap.containsKey(route.getVesselName()))
+                    if(!CommonUtils.isStringNullOrEmpty(route.getVesselName()) && vesselsMap.containsKey(route.getVesselName()))
                         routeMap.put(VESSEL_NAME, vesselsMap.get(route.getVesselName()).getName());
                     routeMap.put(VOYAGE, route.getVoyage());
                     routeMap.put(CARRIER, route.getCarrier());
                     routeMap.put(POLCODE, route.getPol());
                     routeMap.put(PODCODE, route.getPod());
-                    routeMap.put(ETD_FOR_PRINT, ConvertToDPWDateFormat(route.getEtd()));
-                    routeMap.put(ETA_FOR_PRINT, ConvertToDPWDateFormat(route.getEta()));
+                    routeMap.put(ETD_FOR_PRINT, convertToDPWDateFormat(route.getEtd()));
+                    routeMap.put(ETA_FOR_PRINT, convertToDPWDateFormat(route.getEta()));
                     mainCarriageRoutsList.add(routeMap);
                 }
                 dictionary.put(ROUTINGS, mainCarriageRoutsList);
@@ -361,7 +361,7 @@ public class CargoManifestReport extends IReport{
             if (item.getContainerCount() != null) {
                 totalContainerCount += item.getContainerCount();
             }
-            if (!CommonUtils.IsStringNullOrEmpty(item.getPacks())) {
+            if (!CommonUtils.isStringNullOrEmpty(item.getPacks())) {
                 totalPacks += Long.parseLong(item.getPacks());
             }
         }
@@ -376,19 +376,19 @@ public class CargoManifestReport extends IReport{
         // Update dictionary with processed values and totals
         dictionary.put(ReportConstants.SHIPMENT_CONTAINERS, valuesContainer);
         dictionary.put(COMMON_CONTAINERS, valuesContainer);
-        dictionary.put(ReportConstants.TOTAL_CNTR_WEIGHT, ConvertToWeightNumberFormat(totalGrossWeight, v1TenantSettingsResponse));
-        dictionary.put(ReportConstants.TOTAL_CNTR_VOLUME, ConvertToVolumeNumberFormat(totalGrossVolume, v1TenantSettingsResponse));
+        dictionary.put(ReportConstants.TOTAL_CNTR_WEIGHT, convertToWeightNumberFormat(totalGrossWeight, v1TenantSettingsResponse));
+        dictionary.put(ReportConstants.TOTAL_CNTR_VOLUME, convertToVolumeNumberFormat(totalGrossVolume, v1TenantSettingsResponse));
         dictionary.put(ReportConstants.TOTAL_CNTR_COUNT, addCommaWithoutDecimal(new BigDecimal(totalContainerCount)));
         dictionary.put(ReportConstants.TOTAL_CNTR_PACKS, addCommaWithoutDecimal(new BigDecimal(totalPacks)));
     }
 
     private void processValuesContainer(V1TenantSettingsResponse v1TenantSettingsResponse, List<Map<String, Object>> valuesContainer) {
         for (Map<String, Object> v : valuesContainer) {
-            updateValue(v, ReportConstants.GROSS_VOLUME, ConvertToVolumeNumberFormat(v.get(ReportConstants.GROSS_VOLUME), v1TenantSettingsResponse));
-            updateValue(v, ReportConstants.GROSS_WEIGHT, ConvertToWeightNumberFormat(v.get(ReportConstants.GROSS_WEIGHT), v1TenantSettingsResponse));
+            updateValue(v, ReportConstants.GROSS_VOLUME, convertToVolumeNumberFormat(v.get(ReportConstants.GROSS_VOLUME), v1TenantSettingsResponse));
+            updateValue(v, ReportConstants.GROSS_WEIGHT, convertToWeightNumberFormat(v.get(ReportConstants.GROSS_WEIGHT), v1TenantSettingsResponse));
             updateValue(v, ReportConstants.SHIPMENT_PACKS, addCommaWithoutDecimal(new BigDecimal(v.get(ReportConstants.SHIPMENT_PACKS).toString())));
-            updateValue(v, ReportConstants.TARE_WEIGHT, ConvertToWeightNumberFormat(v.get(ReportConstants.TARE_WEIGHT), v1TenantSettingsResponse));
-            updateValue(v, ReportConstants.VGM_WEIGHT, ConvertToWeightNumberFormat(v.get(ReportConstants.VGM_WEIGHT), v1TenantSettingsResponse));
+            updateValue(v, ReportConstants.TARE_WEIGHT, convertToWeightNumberFormat(v.get(ReportConstants.TARE_WEIGHT), v1TenantSettingsResponse));
+            updateValue(v, ReportConstants.VGM_WEIGHT, convertToWeightNumberFormat(v.get(ReportConstants.VGM_WEIGHT), v1TenantSettingsResponse));
 
             if (v.containsKey(CONTAINER_TYPE_CODE)) {
                 v.put(CONTAINER_TYPE_DESCRIPTION, v.get(CONTAINER_TYPE_CODE));
@@ -409,8 +409,8 @@ public class CargoManifestReport extends IReport{
                 if (bookingCarriageModel.getCarriageType() != null && (bookingCarriageModel.getCarriageType().equals(Constants.PRE_CARRIAGE) || bookingCarriageModel.getCarriageType().equals(Constants.MAIN))) {
                     dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.VESSEL, bookingCarriageModel.getVessel());
                     dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.VOYAGE, bookingCarriageModel.getVoyage());
-                    dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.ETD_CAPS, ConvertToDPWDateFormat(bookingCarriageModel.getEtd(), tsDateTimeFormat, v1TenantSettingsResponse));
-                    dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.ETA_CAPS, ConvertToDPWDateFormat(bookingCarriageModel.getEta(), tsDateTimeFormat, v1TenantSettingsResponse));
+                    dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.ETD_CAPS, convertToDPWDateFormat(bookingCarriageModel.getEtd(), tsDateTimeFormat, v1TenantSettingsResponse));
+                    dictionary.put(bookingCarriageModel.getCarriageType() + ReportConstants.ETA_CAPS, convertToDPWDateFormat(bookingCarriageModel.getEta(), tsDateTimeFormat, v1TenantSettingsResponse));
                     unlocoStrings.add(bookingCarriageModel.getPortOfLoading());
                     unlocoStrings.add(bookingCarriageModel.getPortOfDischarge());
                     Map<String, EntityTransferUnLocations> entityUnLocationsMap = masterDataUtils.getLocationDataFromCache(unlocoStrings, EntityTransferConstants.LOCATION_SERVICE_GUID);
@@ -447,15 +447,15 @@ public class CargoManifestReport extends IReport{
             List<Map<String, Object>> packDictionary = new ArrayList<>();
             for (PackingModel pack : cargoManifestModel.shipmentDetails.getPackingList()) {
                 var map = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(pack));
-                map.put(ReportConstants.WEIGHT, ConvertToWeightNumberFormat(map.get(ReportConstants.WEIGHT), v1TenantSettingsResponse));
-                map.put(ReportConstants.NET_WEIGHT, ConvertToWeightNumberFormat(map.get(ReportConstants.NET_WEIGHT), v1TenantSettingsResponse));
-                map.put(ReportConstants.VOLUME_WEIGHT, ConvertToWeightNumberFormat(map.get(ReportConstants.VOLUME_WEIGHT), v1TenantSettingsResponse));
-                map.put(ReportConstants.VOLUME, ConvertToVolumeNumberFormat(map.get(ReportConstants.VOLUME), v1TenantSettingsResponse));
+                map.put(ReportConstants.WEIGHT, convertToWeightNumberFormat(map.get(ReportConstants.WEIGHT), v1TenantSettingsResponse));
+                map.put(ReportConstants.NET_WEIGHT, convertToWeightNumberFormat(map.get(ReportConstants.NET_WEIGHT), v1TenantSettingsResponse));
+                map.put(ReportConstants.VOLUME_WEIGHT, convertToWeightNumberFormat(map.get(ReportConstants.VOLUME_WEIGHT), v1TenantSettingsResponse));
+                map.put(ReportConstants.VOLUME, convertToVolumeNumberFormat(map.get(ReportConstants.VOLUME), v1TenantSettingsResponse));
                 if (v1DataMap.containsKey(pack.getCommodity()))
                     map.put(ReportConstants.COMMODITY_NAME, v1DataMap.get(pack.getCommodity()).getDescription());
                 packDictionary.add(map);
             }
-            packDictionary.forEach(this::JsonDateFormat);
+            packDictionary.forEach(this::jsonDateFormat);
             dictionary.put(ReportConstants.ITEMS, packDictionary);
         }
     }

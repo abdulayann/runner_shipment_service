@@ -392,7 +392,7 @@ class ContainerServiceTest extends CommonMocks {
         when(jsonHelper.convertValue(any(ContainerRequest.class), eq(Containers.class))).thenReturn(testContainer);
         when(jsonHelper.convertValue(any(Containers.class), eq(ContainerResponse.class))).thenReturn(containerResponse);
 
-        ResponseEntity<IRunnerResponse> responseEntity = containerService.calculateAchieved_AllocatedForSameUnit(commonRequestModel);
+        ResponseEntity<IRunnerResponse> responseEntity = containerService.calculateAchievedAllocatedForSameUnit(commonRequestModel);
 
         Assertions.assertNotNull(responseEntity);
         assertEquals(responseEntity, ResponseHelper.buildSuccessResponse(containerResponse));
@@ -497,7 +497,7 @@ class ContainerServiceTest extends CommonMocks {
         request.setPacksId(List.of(2L));
         request.setShipmentId(3L);
         when(containerDao.findById(anyLong())).thenThrow(new RuntimeException());
-        ResponseEntity<IRunnerResponse> responseEntity = containerService.calculateAchievedQuantity_onPackDetach(CommonRequestModel.buildRequest(request));
+        ResponseEntity<IRunnerResponse> responseEntity = containerService.calculateAchievedQuantityOnPackDetach(CommonRequestModel.buildRequest(request));
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
@@ -509,7 +509,7 @@ class ContainerServiceTest extends CommonMocks {
         request.setPacksId(List.of(2L));
         request.setShipmentId(3L);
         when(containerDao.findById(anyLong())).thenReturn(Optional.empty());
-        ResponseEntity<IRunnerResponse> responseEntity = containerService.calculateAchievedQuantity_onPackDetach(CommonRequestModel.buildRequest(request));
+        ResponseEntity<IRunnerResponse> responseEntity = containerService.calculateAchievedQuantityOnPackDetach(CommonRequestModel.buildRequest(request));
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
@@ -522,7 +522,7 @@ class ContainerServiceTest extends CommonMocks {
         when(containerDao.findById(anyLong())).thenReturn(Optional.of(testContainer));
         testShipment.setShipmentType(Constants.CARGO_TYPE_FCL);
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(testShipment));
-        ResponseEntity<IRunnerResponse> responseEntity = containerService.calculateAchievedQuantity_onPackDetach(CommonRequestModel.buildRequest(request));
+        ResponseEntity<IRunnerResponse> responseEntity = containerService.calculateAchievedQuantityOnPackDetach(CommonRequestModel.buildRequest(request));
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -535,7 +535,7 @@ class ContainerServiceTest extends CommonMocks {
         request.setPacksId(new ArrayList<>());
         when(containerDao.findById(anyLong())).thenReturn(Optional.of(testContainer));
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(testShipment));
-        ResponseEntity<IRunnerResponse> responseEntity = containerService.calculateAchievedQuantity_onPackDetach(CommonRequestModel.buildRequest(request));
+        ResponseEntity<IRunnerResponse> responseEntity = containerService.calculateAchievedQuantityOnPackDetach(CommonRequestModel.buildRequest(request));
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -551,12 +551,12 @@ class ContainerServiceTest extends CommonMocks {
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(testShipment));
         testPacking.setId(2L);
         when(packingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testPacking)));
-        ResponseEntity<IRunnerResponse> responseEntity = containerService.calculateAchievedQuantity_onPackDetach(CommonRequestModel.buildRequest(request));
+        ResponseEntity<IRunnerResponse> responseEntity = containerService.calculateAchievedQuantityOnPackDetach(CommonRequestModel.buildRequest(request));
         assertNotNull(responseEntity);
     }
 
     @Test
-    void calculateAchievedQuantity_onPackDetach() {
+    void calculateAchievedQuantityOnPackDetach() {
         ContainerPackADInShipmentRequest request = new ContainerPackADInShipmentRequest();
         request.setContainerId(1L);
         request.setPacksId(List.of(2L));
@@ -565,7 +565,7 @@ class ContainerServiceTest extends CommonMocks {
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(testShipment));
         testPacking.setId(2L);
         when(packingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testPacking)));
-        ResponseEntity<IRunnerResponse> responseEntity = containerService.calculateAchievedQuantity_onPackDetach(CommonRequestModel.buildRequest(request));
+        ResponseEntity<IRunnerResponse> responseEntity = containerService.calculateAchievedQuantityOnPackDetach(CommonRequestModel.buildRequest(request));
         assertNotNull(responseEntity);
     }
 
@@ -579,7 +579,7 @@ class ContainerServiceTest extends CommonMocks {
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(testShipment));
         testPacking.setId(2L);
         when(packingDao.findAll(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>()));
-        ResponseEntity<IRunnerResponse> responseEntity = containerService.calculateAchievedQuantity_onPackDetach(CommonRequestModel.buildRequest(request));
+        ResponseEntity<IRunnerResponse> responseEntity = containerService.calculateAchievedQuantityOnPackDetach(CommonRequestModel.buildRequest(request));
         assertNotNull(responseEntity);
     }
 
@@ -593,7 +593,7 @@ class ContainerServiceTest extends CommonMocks {
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(testShipment));
         testPacking.setId(2L);
         when(packingDao.findAll(any(), any())).thenReturn(null);
-        ResponseEntity<IRunnerResponse> responseEntity = containerService.calculateAchievedQuantity_onPackDetach(CommonRequestModel.buildRequest(request));
+        ResponseEntity<IRunnerResponse> responseEntity = containerService.calculateAchievedQuantityOnPackDetach(CommonRequestModel.buildRequest(request));
         assertNotNull(responseEntity);
     }
 
@@ -810,7 +810,7 @@ class ContainerServiceTest extends CommonMocks {
         when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testShipment)));
         when(containerDao.save(any())).thenReturn(testContainer);
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(objectMapper.convertValue(testContainer, ContainerResponse.class));
-        ResponseEntity<IRunnerResponse> responseEntity = containerService.V1ContainerCreateAndUpdate(CommonRequestModel.buildRequest(jsonTestUtility.getTestContainerRequestV2()), false);
+        ResponseEntity<IRunnerResponse> responseEntity = containerService.v1ContainerCreateAndUpdate(CommonRequestModel.buildRequest(jsonTestUtility.getTestContainerRequestV2()), false);
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -821,7 +821,7 @@ class ContainerServiceTest extends CommonMocks {
         when(containerDao.findByGuid(any())).thenReturn(List.of(testContainer));
         when(containerDao.save(any())).thenReturn(testContainer);
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(objectMapper.convertValue(testContainer, ContainerResponse.class));
-        ResponseEntity<IRunnerResponse> responseEntity = containerService.V1ContainerCreateAndUpdate(CommonRequestModel.buildRequest(jsonTestUtility.getTestContainerRequestV2()), false);
+        ResponseEntity<IRunnerResponse> responseEntity = containerService.v1ContainerCreateAndUpdate(CommonRequestModel.buildRequest(jsonTestUtility.getTestContainerRequestV2()), false);
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -830,15 +830,15 @@ class ContainerServiceTest extends CommonMocks {
     void V1ContainerCreateAndUpdate_Failure(){
         when(containerDao.findByGuid(any())).thenThrow(new RuntimeException());
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(jsonTestUtility.getTestContainerRequestV2());
-        assertThrows(RuntimeException.class, () -> containerService.V1ContainerCreateAndUpdate(commonRequestModel, false));
+        assertThrows(RuntimeException.class, () -> containerService.v1ContainerCreateAndUpdate(commonRequestModel, false));
     }
 
     @Test
     void V1BulkContainerCreateAndUpdate() throws RunnerException{
         BulkContainerRequestV2 bulkContainerRequestV2 = BulkContainerRequestV2.builder().bulkContainers(List.of(jsonTestUtility.getTestContainerRequestV2())).build();
         ContainerService spyService = spy(containerService);
-        doReturn(new ResponseEntity<>(HttpStatus.OK)).when(spyService).V1ContainerCreateAndUpdate(any(), anyBoolean());
-        ResponseEntity<IRunnerResponse> responseEntity = spyService.V1BulkContainerCreateAndUpdate(CommonRequestModel.buildRequest(bulkContainerRequestV2));
+        doReturn(new ResponseEntity<>(HttpStatus.OK)).when(spyService).v1ContainerCreateAndUpdate(any(), anyBoolean());
+        ResponseEntity<IRunnerResponse> responseEntity = spyService.v1BulkContainerCreateAndUpdate(CommonRequestModel.buildRequest(bulkContainerRequestV2));
         assertNotNull(responseEntity);
     }
 
@@ -846,9 +846,9 @@ class ContainerServiceTest extends CommonMocks {
     void V1BulkContainerCreateAndUpdate_Failure() throws RunnerException{
         BulkContainerRequestV2 bulkContainerRequestV2 = BulkContainerRequestV2.builder().bulkContainers(List.of(jsonTestUtility.getTestContainerRequestV2())).build();
         ContainerService spyService = spy(containerService);
-        doThrow(new RunnerException()).when(spyService).V1ContainerCreateAndUpdate(any(), anyBoolean());
+        doThrow(new RunnerException()).when(spyService).v1ContainerCreateAndUpdate(any(), anyBoolean());
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(bulkContainerRequestV2);
-        assertThrows(RuntimeException.class, () -> spyService.V1BulkContainerCreateAndUpdate(commonRequestModel));
+        assertThrows(RuntimeException.class, () -> spyService.v1BulkContainerCreateAndUpdate(commonRequestModel));
     }
 
     @Test
@@ -1014,7 +1014,7 @@ class ContainerServiceTest extends CommonMocks {
 
     @Test
     void calculateAchieved_AllocatedForSameUnit_failure() {
-        ResponseEntity<IRunnerResponse> responseEntity = containerService.calculateAchieved_AllocatedForSameUnit(null);
+        ResponseEntity<IRunnerResponse> responseEntity = containerService.calculateAchievedAllocatedForSameUnit(null);
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }

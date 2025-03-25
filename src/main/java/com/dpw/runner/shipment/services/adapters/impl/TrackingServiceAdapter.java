@@ -57,7 +57,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ForkJoinPool;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 
@@ -152,7 +152,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
             }
 
             if(consolidationDetails != null && !consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR))
-                res = !GetContainerDetailsAttachedForShipment(shipmentDetails).isEmpty();
+                res = !getContainerDetailsAttachedForShipment(shipmentDetails).isEmpty();
             else
                 res = !Objects.isNull(shipmentDetails.getHouseBill()) || !Objects.isNull(shipmentDetails.getMasterBill());
 
@@ -193,17 +193,6 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
             log.info("Consolidation tracking payload : {}", trackingPayload);
         }
         return trackingPayload;
-    }
-
-    private ShipmentDetails GetShipmentIfConsolAttached(ConsolidationDetails consolidationDetails) {
-        ShipmentDetails shipmentDetails = null;
-        List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(consolidationDetails.getId());
-        if(consoleShipmentMappings != null && !consoleShipmentMappings.isEmpty()) {
-            Long shipmentId = consoleShipmentMappings.get(0).getShipmentId();
-            Optional<ShipmentDetails> optional = shipmentDao.findById(shipmentId);
-            shipmentDetails = optional.get();
-        }
-        return shipmentDetails;
     }
 
     @Override
@@ -327,23 +316,23 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
     private List<UniversalTrackingPayload.EntityDetail> getEntityDetails(ConsolidationDetails inputConsol, ShipmentDetails inputShipment, boolean isRequestFromShipment) {
         if(inputConsol!=null && !inputConsol.getTransportMode().equals("AIR")) {
             if(!isRequestFromShipment)
-                return GetContainerDetailsFromConsol(inputConsol);
+                return getContainerDetailsFromConsol(inputConsol);
             else
-                return GetContainerDetailsAttachedForShipment(inputShipment);
+                return getContainerDetailsAttachedForShipment(inputShipment);
         }
         else if(inputShipment.getTransportMode().equals("AIR"))
-                return GetAWBDetailsFromShipment(inputShipment);
+                return getAWBDetailsFromShipment(inputShipment);
         else
             return null;
     }
 
     private String getBillOfLading(ShipmentDetails shipmentDetails) {
-        if(!IsStringNullOrEmpty(shipmentDetails.getHouseBill()))
+        if(!isStringNullOrEmpty(shipmentDetails.getHouseBill()))
             return shipmentDetails.getHouseBill();
         return shipmentDetails.getMasterBill();
     }
 
-    private List<UniversalTrackingPayload.EntityDetail> GetAWBDetailsFromShipment(ShipmentDetails inputShipment) {
+    private List<UniversalTrackingPayload.EntityDetail> getAWBDetailsFromShipment(ShipmentDetails inputShipment) {
         List<UniversalTrackingPayload.EntityDetail> result = new ArrayList<>();
         List<Awb> awbList = awbDao.findByShipmentId(inputShipment.getId());
         result.add(UniversalTrackingPayload.EntityDetail.builder()
@@ -354,12 +343,12 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
         return result;
     }
 
-    private List<UniversalTrackingPayload.EntityDetail> GetContainerDetailsAttachedForShipment(ShipmentDetails inputShipment) {
+    private List<UniversalTrackingPayload.EntityDetail> getContainerDetailsAttachedForShipment(ShipmentDetails inputShipment) {
         return getEntityDetailsFromContainers(inputShipment.getContainersList() != null ? new ArrayList<>(inputShipment.getContainersList()) : null);
     }
 
 
-    private List<UniversalTrackingPayload.EntityDetail> GetContainerDetailsFromConsol(ConsolidationDetails inputConsol) {
+    private List<UniversalTrackingPayload.EntityDetail> getContainerDetailsFromConsol(ConsolidationDetails inputConsol) {
         return getEntityDetailsFromContainers(inputConsol.getContainersList());
     }
 
@@ -381,7 +370,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
                     .mode(container.getHblDeliveryMode())
                     .containerCount(container.getContainerCount())
                     .descriptionOfGoods(container.getDescriptionOfGoods())
-                    .noofPackages(IsStringNullOrEmpty(container.getPacks()) ? null : Long.valueOf(container.getPacks()))
+                    .noofPackages(isStringNullOrEmpty(container.getPacks()) ? null : Long.valueOf(container.getPacks()))
                     .netWeight(container.getNetWeight())
                     .netWeightUom(container.getNetWeightUnit())
                     .build();

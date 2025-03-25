@@ -5111,7 +5111,7 @@ ShipmentServiceTest extends CommonMocks {
 
         when(shipmentDao.save(any(), eq(false))).thenReturn(shipmentDetails);
         when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(ShipmentSettingsDetails.builder().customisedSequence(true).build()));
-        when(productEngine.IdentifyProduct(eq(shipmentDetails), anyList())).thenReturn(null);
+        when(productEngine.identifyProduct(eq(shipmentDetails), anyList())).thenReturn(null);
 
         Page<ShipmentDetails> page = new PageImpl<>(Collections.singletonList(shipmentDetails), Pageable.unpaged(), 0L); // Create a mock Page
         when(shipmentDao.findAll(any(), any())).thenReturn(page);
@@ -5128,7 +5128,7 @@ ShipmentServiceTest extends CommonMocks {
         when(shipmentDao.save(any(), eq(false))).thenReturn(shipmentDetails);
         when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(ShipmentSettingsDetails.builder().customisedSequence(true).build()));
 
-        when(productEngine.IdentifyProduct(eq(shipmentDetails), anyList())).thenReturn(new TenantProducts());
+        when(productEngine.identifyProduct(eq(shipmentDetails), anyList())).thenReturn(new TenantProducts());
         when(getNextNumberHelper.getProductSequence(any(), any())).thenReturn(new ProductSequenceConfig());
 
         Page<ShipmentDetails> page = new PageImpl<>(Collections.singletonList(shipmentDetails), Pageable.unpaged(), 0L); // Create a mock Page

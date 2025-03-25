@@ -77,7 +77,7 @@ import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.stringValueOf;
 
 @SuppressWarnings("ALL")
@@ -2705,7 +2705,6 @@ public class AwbService implements IAwbService {
     @Override
     @Transactional
     public ResponseEntity<IRunnerResponse> partialAutoUpdateMawb(CommonRequestModel commonRequestModel) throws RunnerException {
-        String responseMsg;
         CreateAwbRequest request = (CreateAwbRequest) commonRequestModel.getData();
         if (request == null) {
             log.debug("Request is empty for MAWB Create for Request Id {}", LoggerHelper.getRequestIdFromMDC());
@@ -3050,7 +3049,7 @@ public class AwbService implements IAwbService {
         if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getAirDGFlag()) && Boolean.TRUE.equals(dgFlag)) {
             Integer packs = getPacksCount(awbPackingInfoList);
             if(packs != 0) {
-                if(!IsStringNullOrEmpty(res))
+                if(!isStringNullOrEmpty(res))
                     res = res + "\n";
                 else
                     res = "";
@@ -3064,7 +3063,7 @@ public class AwbService implements IAwbService {
         Integer packs = 0;
         if(awbPackingInfoList != null && !awbPackingInfoList.isEmpty()) {
             for (AwbPackingInfo awbPackingInfo: awbPackingInfoList) {
-                if(Boolean.TRUE.equals(awbPackingInfo.getHazardous()) && !IsStringNullOrEmpty(awbPackingInfo.getPacks())) {
+                if(Boolean.TRUE.equals(awbPackingInfo.getHazardous()) && !isStringNullOrEmpty(awbPackingInfo.getPacks())) {
                     packs = packs + Integer.parseInt(awbPackingInfo.getPacks());
                 }
             }
@@ -3369,9 +3368,7 @@ public class AwbService implements IAwbService {
                 return ResponseHelper.buildSuccessResponse(jsonHelper.convertValueToList(awb, AwbResponse.class));
             else {
                 List<Object> data = new ArrayList<>();
-                for(Awb awb1 : awb) {
-                    data.add(partialFetchUtils.fetchPartialListData(jsonHelper.convertValue(awb, AwbResponse.class), request.getIncludeColumns()));
-                }
+                awb.forEach(a -> data.add(partialFetchUtils.fetchPartialListData(jsonHelper.convertValue(awb, AwbResponse.class), request.getIncludeColumns())));
                 return ResponseHelper.buildSuccessResponse(data);
             }
 
@@ -3522,6 +3519,7 @@ public class AwbService implements IAwbService {
             String len = " ";
             String width = " ";
             String height = " ";
+
             String cross = Constants.CROSS;
 
             if (packings.getPacks() != null) {

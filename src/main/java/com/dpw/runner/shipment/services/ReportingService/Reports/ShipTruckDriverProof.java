@@ -53,7 +53,7 @@ public class ShipTruckDriverProof extends IReport {
     public Map<String, Object> populateDictionary(IDocumentModel documentModel) {
         TruckDriverModel truckDriverModel = (TruckDriverModel) documentModel;
         V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
-        String json = jsonHelper.convertToJsonWithDateTimeFormatter(truckDriverModel.shipmentDetails, GetDPWDateFormatOrDefault(v1TenantSettingsResponse));
+        String json = jsonHelper.convertToJsonWithDateTimeFormatter(truckDriverModel.shipmentDetails, getDPWDateFormatOrDefault(v1TenantSettingsResponse));
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
         populateShipmentFields(truckDriverModel.shipmentDetails, dictionary);
         populateUserFields(truckDriverModel.usersDto, dictionary);

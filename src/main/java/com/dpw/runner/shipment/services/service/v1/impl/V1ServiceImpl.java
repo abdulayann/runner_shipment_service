@@ -61,7 +61,6 @@ import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
-import com.dpw.runner.shipment.services.utils.TokenUtility;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import com.dpw.runner.shipment.services.validator.enums.Operators;
 import java.util.ArrayList;
@@ -114,7 +113,6 @@ public class V1ServiceImpl implements IV1Service {
 
     private RestTemplate restTemplate;
     private GetUserServiceFactory getUserServiceFactory;
-    private TokenUtility tokenUtility;
 
     @Value("${v1service.url.base}${v1service.url.customerBooking}")
     private String CUSTOMER_BOOKING_URL;
@@ -444,10 +442,9 @@ public class V1ServiceImpl implements IV1Service {
 
     @Autowired
     public V1ServiceImpl(@Qualifier("restTemplateForV1") RestTemplate restTemplate,
-            GetUserServiceFactory getUserServiceFactory, TokenUtility tokenUtility, CacheManager cacheManager) {
+            GetUserServiceFactory getUserServiceFactory, CacheManager cacheManager) {
         this.restTemplate = restTemplate;
         this.getUserServiceFactory = getUserServiceFactory;
-        this.tokenUtility = tokenUtility;
         this.cacheManager = cacheManager;
     }
 

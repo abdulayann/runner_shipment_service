@@ -2928,7 +2928,7 @@ class ReportServiceTest extends CommonMocks {
         List<byte[]> pdfBytes = new ArrayList<>();
 
         // Mock GetFromDocumentService and addBarCodeInAWBLableReport methods
-        doReturn(new byte[1]).when(reportService1).GetFromDocumentService(any(Map.class), anyString());
+        doReturn(new byte[1]).when(reportService1).getFromDocumentService(any(Map.class), anyString());
         doReturn(new byte[1]).when(reportService1).addBarCodeInAWBLableReport(any(byte[].class), anyString(), anyString());
 
         reportService1.generatePdfBytes(reportRequest1, pages, dataRetrived, pdfBytes);
@@ -2969,7 +2969,7 @@ class ReportServiceTest extends CommonMocks {
         List<byte[]> pdfBytes = new ArrayList<>();
 
         // Mock GetFromDocumentService and other methods
-        doReturn(new byte[1]).when(reportService1).GetFromDocumentService(any(Map.class), anyString());
+        doReturn(new byte[1]).when(reportService1).getFromDocumentService(any(Map.class), anyString());
         doReturn(new byte[1]).when(reportService1).addBarCodeInAWBLableReport(any(byte[].class), anyString(), anyString());
 
         reportService1.generatePdfBytes(reportRequest1, pages, dataRetrived, pdfBytes);
@@ -2994,7 +2994,7 @@ class ReportServiceTest extends CommonMocks {
         List<byte[]> pdfBytes = new ArrayList<>();
 
         // Mock GetFromDocumentService and other methods
-        doReturn(new byte[1]).when(reportService1).GetFromDocumentService(any(Map.class), anyString());
+        doReturn(new byte[1]).when(reportService1).getFromDocumentService(any(Map.class), anyString());
         doReturn(new byte[1]).when(reportService1).addBarCodeInAWBLableReport(any(byte[].class), anyString(), anyString());
 
         reportService1.generatePdfBytes(reportRequest1, pages, dataRetrived, pdfBytes);
@@ -3021,7 +3021,7 @@ class ReportServiceTest extends CommonMocks {
         List<byte[]> pdfBytes = new ArrayList<>();
 
         // Mock GetFromDocumentService and other methods
-        doReturn(new byte[1]).when(reportService1).GetFromDocumentService(any(Map.class), anyString());
+        doReturn(new byte[1]).when(reportService1).getFromDocumentService(any(Map.class), anyString());
         doReturn(new byte[1]).when(reportService1).addBarCodeInAWBLableReport(any(byte[].class), anyString(), anyString());
 
         reportService1.generatePdfBytes(reportRequest1, pages, dataRetrived, pdfBytes);
@@ -3047,7 +3047,7 @@ class ReportServiceTest extends CommonMocks {
         List<byte[]> pdfBytes = new ArrayList<>();
 
         // Mock GetFromDocumentService and other methods
-        doReturn(new byte[1]).when(reportService1).GetFromDocumentService(any(Map.class), anyString());
+        doReturn(new byte[1]).when(reportService1).getFromDocumentService(any(Map.class), anyString());
         doReturn(new byte[1]).when(reportService1).addBarCodeInAWBLableReport(any(byte[].class), anyString(), anyString());
 
         reportService1.generatePdfBytes(reportRequest1, pages, dataRetrived, pdfBytes);
@@ -3074,7 +3074,7 @@ class ReportServiceTest extends CommonMocks {
         List<byte[]> pdfBytes = new ArrayList<>();
 
         // Mock GetFromDocumentService and other methods
-        doReturn(new byte[1]).when(reportService1).GetFromDocumentService(any(Map.class), anyString());
+        doReturn(new byte[1]).when(reportService1).getFromDocumentService(any(Map.class), anyString());
         doReturn(new byte[1]).when(reportService1).addBarCodeInAWBLableReport(any(byte[].class), anyString(), anyString());
 
         reportService1.generatePdfBytes(reportRequest1, pages, dataRetrived, pdfBytes);
@@ -3116,7 +3116,7 @@ class ReportServiceTest extends CommonMocks {
         List<byte[]> pdfBytes = new ArrayList<>();
 
         // Mock GetFromDocumentService to return null
-        doReturn(null).when(reportService1).GetFromDocumentService(any(Map.class), anyString());
+        doReturn(null).when(reportService1).getFromDocumentService(any(Map.class), anyString());
 
         ValidationException thrown = assertThrows(ValidationException.class, () ->
             reportService1.generatePdfBytes(reportRequest1, pages, dataRetrived, pdfBytes)
@@ -3160,7 +3160,7 @@ class ReportServiceTest extends CommonMocks {
         List<byte[]> pdfBytes = new ArrayList<>();
 
         // Mock GetFromDocumentService and other methods
-        doReturn(new byte[1]).when(reportService1).GetFromDocumentService(any(Map.class), anyString());
+        doReturn(new byte[1]).when(reportService1).getFromDocumentService(any(Map.class), anyString());
         doReturn(new byte[1]).when(reportService1).addBarCodeInAWBLableReport(any(byte[].class), anyString(), anyString());
 
         reportService1.generatePdfBytes(reportRequest1, pages, dataRetrived, pdfBytes);
@@ -3187,7 +3187,7 @@ class ReportServiceTest extends CommonMocks {
         List<byte[]> pdfBytes = new ArrayList<>();
 
         // Mock GetFromDocumentService and other methods
-        doReturn(new byte[1]).when(reportService1).GetFromDocumentService(any(Map.class), anyString());
+        doReturn(new byte[1]).when(reportService1).getFromDocumentService(any(Map.class), anyString());
         doReturn(new byte[1]).when(reportService1).addBarCodeInAWBLableReport(any(byte[].class), anyString(), anyString());
 
         reportService1.generatePdfBytes(reportRequest1, pages, dataRetrived, pdfBytes);
@@ -3221,7 +3221,7 @@ class ReportServiceTest extends CommonMocks {
         List<byte[]> pdfBytes = new ArrayList<>();
 
         // Mock GetFromDocumentService and other methods
-        doReturn(new byte[1]).when(reportService1).GetFromDocumentService(any(Map.class), anyString());
+        doReturn(new byte[1]).when(reportService1).getFromDocumentService(any(Map.class), anyString());
         doReturn(new byte[1]).when(reportService1).addBarCodeInAWBLableReport(any(byte[].class), anyString(), anyString());
 
         reportService1.generatePdfBytes(reportRequest1, pages, dataRetrived, pdfBytes);

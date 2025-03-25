@@ -73,7 +73,7 @@ import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 import static com.dpw.runner.shipment.services.validator.constants.CustomerBookingConstants.*;
 
 @Service
@@ -148,8 +148,6 @@ public class CustomerBookingService implements ICustomerBookingService {
     @Autowired
     private IEventDao eventDao;
 
-    private static final Map<String, String> loadTypeMap = Map.of("SEA", "LCL", "AIR", "LSE");
-
     private Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
             Map.entry("customerOrgCode", RunnerEntityMapping.builder().tableName("customer").dataType(String.class).fieldName(Constants.ORG_CODE).build()),
             Map.entry("consignerOrgCode", RunnerEntityMapping.builder().tableName("consignor").dataType(String.class).fieldName(Constants.ORG_CODE).build()),
@@ -181,7 +179,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         customerBooking.setSource(BookingSource.Runner);
         // Update NPM for contract utilization
         if(checkNPMContractUtilization(customerBooking)) {
-            _npmContractUpdate(customerBooking, null, false, CustomerBookingConstants.REMOVE, false);
+            npmContractUpdate(customerBooking, null, false, CustomerBookingConstants.REMOVE, false);
         }
         try {
             createEntities(customerBooking, request);
@@ -747,7 +745,6 @@ public class CustomerBookingService implements ICustomerBookingService {
 
         CustomerBookingRequest customerBookingRequest = modelMapper.map(request, CustomerBookingRequest.class);
         assignCarrierDetailsToRequest(customerBookingRequest, request);
-        ResponseEntity<RunnerResponse<CustomerBookingResponse>> response = null;
         if (customerBooking.isEmpty()) {
             customerBookingRequest.setCurrentPartyForQuote("CLIENT");
             this.createPlatformBooking(customerBookingRequest);
@@ -907,24 +904,24 @@ public class CustomerBookingService implements ICustomerBookingService {
             requestMap.put(CUSTOMER_REQUEST, request.getCustomer());
         }
         if(request.getConsignor() != null && !Boolean.TRUE.equals(request.getIsConsignorFreeText()) &&
-                !IsStringNullOrEmpty(request.getConsignor().getOrgCode()) &&
-                !IsStringNullOrEmpty(request.getConsignor().getAddressCode())) {
+                !isStringNullOrEmpty(request.getConsignor().getOrgCode()) &&
+                !isStringNullOrEmpty(request.getConsignor().getAddressCode())) {
             requestMap.put(CONSIGNOR_REQUEST, request.getConsignor());
         }
         else {
             transformOrgAndAddressToRawData(request.getConsignor());
         }
         if(request.getConsignee() != null && !Boolean.TRUE.equals(request.getIsConsigneeFreeText()) &&
-                !IsStringNullOrEmpty(request.getConsignee().getOrgCode()) &&
-                !IsStringNullOrEmpty(request.getConsignee().getAddressCode())) {
+                !isStringNullOrEmpty(request.getConsignee().getOrgCode()) &&
+                !isStringNullOrEmpty(request.getConsignee().getAddressCode())) {
             requestMap.put(CONSIGNEE_REQUEST, request.getConsignee());
         }
         else {
             transformOrgAndAddressToRawData(request.getConsignee());
         }
         if(request.getNotifyParty() != null && !Boolean.TRUE.equals(request.getIsNotifyPartyFreeText()) &&
-                !IsStringNullOrEmpty(request.getNotifyParty().getOrgCode()) &&
-                !IsStringNullOrEmpty(request.getNotifyParty().getAddressCode())) {
+                !isStringNullOrEmpty(request.getNotifyParty().getOrgCode()) &&
+                !isStringNullOrEmpty(request.getNotifyParty().getAddressCode())) {
             requestMap.put(NOTIFY_PARTY_REQUEST, request.getNotifyParty());
         }
         else {
@@ -1061,7 +1058,7 @@ public class CustomerBookingService implements ICustomerBookingService {
     private void assignCarrierDetailsToRequest(CustomerBookingRequest customerBookingRequest, PlatformToRunnerCustomerBookingRequest request) {
 
         String vessel = null;
-        if(!IsStringNullOrEmpty(request.getVessel())) {
+        if(!isStringNullOrEmpty(request.getVessel())) {
             VesselsResponse vesselsResponse = getVesselsData(request.getVessel());
             if(vesselsResponse != null)
                 vessel = StringUtility.convertToString(vesselsResponse.getGuid());
@@ -1082,7 +1079,7 @@ public class CustomerBookingService implements ICustomerBookingService {
     }
 
     private String getCarrierItemValueFromSCAC(String carrierSCACCode) {
-        if(IsStringNullOrEmpty(carrierSCACCode))
+        if(isStringNullOrEmpty(carrierSCACCode))
             return null;
         List<String> carrierCodes = new ArrayList<>();
         carrierCodes.add(carrierSCACCode);
@@ -1105,26 +1102,26 @@ public class CustomerBookingService implements ICustomerBookingService {
     private void contractUtilisationForUpdate(CustomerBooking customerBooking, CustomerBooking old) throws RunnerException {
         if (!Objects.isNull(customerBooking.getContractId()) && Objects.equals(old.getContractId(), customerBooking.getContractId())) {
             // Alteration on same contract
-            _npmContractUpdate(customerBooking,  old, true, CustomerBookingConstants.REMOVE, false);
+            npmContractUpdate(customerBooking,  old, true, CustomerBookingConstants.REMOVE, false);
         }  else if (!Objects.isNull(customerBooking.getContractId()) && !Objects.isNull(old.getContractId())) {
             // Lock current contract with current containers
-            _npmContractUpdate(customerBooking, null, false, CustomerBookingConstants.REMOVE, false);
+            npmContractUpdate(customerBooking, null, false, CustomerBookingConstants.REMOVE, false);
             // Release existing booking with old containers
-            _npmContractUpdate(old, null, false, CustomerBookingConstants.ADD, false);
+            npmContractUpdate(old, null, false, CustomerBookingConstants.ADD, false);
         } else if (!Objects.isNull(customerBooking.getContractId()) && Objects.isNull(old.getContractId())) {
             // Lock current contract with current containers
-            _npmContractUpdate(customerBooking, null, false, CustomerBookingConstants.REMOVE, false);
+            npmContractUpdate(customerBooking, null, false, CustomerBookingConstants.REMOVE, false);
         }  else if (Objects.isNull(customerBooking.getContractId()) && !Objects.isNull(old.getContractId())) {
             // Release existing booking with old containers
-            _npmContractUpdate(old, null, false, CustomerBookingConstants.ADD, false);
+            npmContractUpdate(old, null, false, CustomerBookingConstants.ADD, false);
         }
 
         if (!Objects.isNull(customerBooking.getContractId()) && Objects.equals(customerBooking.getBookingStatus(), BookingStatus.CANCELLED)) {
-            _npmContractUpdate(customerBooking, null, false, CustomerBookingConstants.ADD, true);
+            npmContractUpdate(customerBooking, null, false, CustomerBookingConstants.ADD, true);
         }
     }
 
-    private void _npmContractUpdate(CustomerBooking current, CustomerBooking old, Boolean isAlteration, String operation, boolean isCancelled) throws RunnerException {
+    private void npmContractUpdate(CustomerBooking current, CustomerBooking old, Boolean isAlteration, String operation, boolean isCancelled) throws RunnerException {
         if (Objects.equals(current.getTransportType(),Constants.TRANSPORT_MODE_SEA) && !Objects.isNull(current.getContractId()) ) {
             List<LoadInfoRequest> loadInfoRequestList = containersListForLoad(current, old, operation);
 

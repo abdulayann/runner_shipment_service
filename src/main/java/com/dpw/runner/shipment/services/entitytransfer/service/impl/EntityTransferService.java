@@ -1195,7 +1195,7 @@ public class EntityTransferService implements IEntityTransferService {
             eventsRequest.setEntityId(entityId);
             eventsRequest.setEntityType(entityType);
             eventsRequest.setEventCode(eventCode);
-            if (tenantDetails != null && !CommonUtils.IsStringNullOrEmpty(tenantDetails.getCode()))
+            if (tenantDetails != null && !CommonUtils.isStringNullOrEmpty(tenantDetails.getCode()))
                 eventsRequest.setPlaceName(tenantDetails.getCode());
             eventsRequest.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
             if (isAutomaticTransfer()) {
@@ -3135,7 +3135,7 @@ public class EntityTransferService implements IEntityTransferService {
         List<String> userEmailIds = new ArrayList<>();
         if(!CommonUtils.listIsNullOrEmpty(usersDtoList)) {
             for(UsersDto user: usersDtoList) {
-                if (!CommonUtils.IsStringNullOrEmpty(user.getEmail())) {
+                if (!CommonUtils.isStringNullOrEmpty(user.getEmail())) {
                     userEmailIds.add(user.getEmail());
                 }
             }
