@@ -426,6 +426,12 @@ public class Constants {
     public static final String ISSUING_AGENT_COUNTRY = "issuingAgentCountry";
     public static final String AWB_COUNTRY = "country";
 
+    // Include Column fields
+    public static final String BILLING_DATA = "billingData";
+    public static final String SHIPPER_REFERENCE = "pickupDetails.shipperRef";
+    public static final String ORDERS_COUNT = "ordersCount";
+    public static final String SHIPMENT_STATUS_FIELDS = "shipmentStatus";
+
 
     public static final List<String> ColumnsToBeDeletedForExport = List.of("sealNumber",DESCRIPTION_OF_GOODS,NET_WEIGHT,"netWeightUnit",
             GROSS_WEIGHT,"grossWeightUnit","grossVolume", "grossVolumeUnit","tareWeight","tareWeightUnit",
