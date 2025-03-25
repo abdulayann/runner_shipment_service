@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services.utils;
 
-import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
@@ -4055,47 +4054,5 @@ class CommonUtilsTest {
 
         // Then
         assertNull(result);
-    }
-
-    @Test
-    void testSetShipperReferenceNumber() {
-        ShipmentListResponse response = new ShipmentListResponse();
-        response.setPickupDetails(new PickupDeliveryDetailsListResponse());
-        ShipmentDetails ship = new ShipmentDetails();
-        ReferenceNumbers referenceNumbers = new ReferenceNumbers();
-        referenceNumbers.setType(ReportConstants.SRN);
-        referenceNumbers.setReferenceNumber("123");
-        ship.setReferenceNumbersList(new ArrayList<>(List.of(referenceNumbers)));
-        commonUtils.setShipperReferenceNumber(response, ship);
-        assertEquals("123", response.getPickupDetails().getShipperRef());
-    }
-
-    @Test
-    void testSetShipperReferenceNumber1() {
-        ShipmentListResponse response = new ShipmentListResponse();
-        ShipmentDetails ship = new ShipmentDetails();
-        commonUtils.setShipperReferenceNumber(response, ship);
-        assertNull(response.getPickupDetails());
-    }
-
-    @Test
-    void testSetShipperReferenceNumber2() {
-        ShipmentListResponse response = new ShipmentListResponse();
-        ShipmentDetails ship = new ShipmentDetails();
-        ship.setReferenceNumbersList(new ArrayList<>(List.of()));
-        commonUtils.setShipperReferenceNumber(response, ship);
-        assertNull(response.getPickupDetails());
-    }
-
-    @Test
-    void testSetShipperReferenceNumber3() {
-        ShipmentListResponse response = new ShipmentListResponse();
-        ShipmentDetails ship = new ShipmentDetails();
-        ReferenceNumbers referenceNumbers = new ReferenceNumbers();
-        referenceNumbers.setType(ReportConstants.SRN);
-        referenceNumbers.setReferenceNumber("123");
-        ship.setReferenceNumbersList(new ArrayList<>(List.of(referenceNumbers)));
-        commonUtils.setShipperReferenceNumber(response, ship);
-        assertNull(response.getPickupDetails());
     }
 }

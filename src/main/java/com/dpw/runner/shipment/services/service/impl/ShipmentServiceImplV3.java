@@ -37,6 +37,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SRN;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.andCriteria;
@@ -153,7 +154,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         shipmentListResponses.forEach(response -> {
             var ship = shipmentDetailsMap.get(response.getId());
             if(includeColumns.contains(SHIPPER_REFERENCE))
-                commonUtils.setShipperReferenceNumber(response, ship);
+                setShipperReferenceNumber(response, ship);
             if (includeColumns.contains(SHIPMENT_STATUS_FIELDS) && ship.getStatus() != null && ship.getStatus() < ShipmentStatus.values().length)
                 response.setShipmentStatus(ShipmentStatus.values()[ship.getStatus()].toString());
             if(includeColumns.contains(ORDERS_COUNT) && ObjectUtils.isNotEmpty(ship.getShipmentOrders()))
@@ -162,6 +163,19 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         });
         shipmentMasterDataHelper.getMasterDataForList(lst, responseList, getMasterData, true, includeColumns);
         return responseList;
+    }
+
+    private void setShipperReferenceNumber(ShipmentListResponse response, ShipmentDetails ship){
+        if(ship.getReferenceNumbersList() != null && !ship.getReferenceNumbersList().isEmpty()){
+            Optional<String> srnReferenceNumber = ship.getReferenceNumbersList().stream()
+                    .filter(i -> i.getType().equalsIgnoreCase(SRN))
+                    .findFirst()
+                    .map(a -> a.getReferenceNumber());
+
+            if(srnReferenceNumber.isPresent() && response.getPickupDetails() != null){
+                response.getPickupDetails().setShipperRef(srnReferenceNumber.get());
+            }
+        }
     }
 
 

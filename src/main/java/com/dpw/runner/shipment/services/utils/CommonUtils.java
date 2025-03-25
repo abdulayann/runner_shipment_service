@@ -2659,19 +2659,6 @@ public class CommonUtils {
         return str.substring(0, 1).toUpperCase() + str.substring(1);
     }
 
-    public void setShipperReferenceNumber(ShipmentListResponse response, ShipmentDetails ship){
-        if(ship.getReferenceNumbersList() != null && !ship.getReferenceNumbersList().isEmpty()){
-            Optional<String> srnReferenceNumber = ship.getReferenceNumbersList().stream()
-                    .filter(i -> i.getType().equalsIgnoreCase(SRN))
-                    .findFirst()
-                    .map(a -> a.getReferenceNumber());
-
-            if(srnReferenceNumber.isPresent() && response.getPickupDetails() != null){
-                response.getPickupDetails().setShipperRef(srnReferenceNumber.get());
-            }
-        }
-    }
-
     public static List<String> splitAndTrimStrings(String input) {
         if (input == null || input.isEmpty()) {
             return List.of();
