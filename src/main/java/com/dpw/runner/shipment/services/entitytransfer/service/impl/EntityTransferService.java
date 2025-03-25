@@ -2605,7 +2605,7 @@ public class EntityTransferService implements IEntityTransferService {
         networkTransfers = ObjectUtils.isNotEmpty(networkTransfers) ?
             networkTransfers.stream().filter(
                     networkTransfer -> NetworkTransferStatus.ACCEPTED == networkTransfer.getStatus())
-                .toList() : null;
+                .toList() : Collections.emptyList();;
 
         String acceptedBranches = "";
         if (ObjectUtils.isNotEmpty(networkTransfers) && sendingAgain) {
