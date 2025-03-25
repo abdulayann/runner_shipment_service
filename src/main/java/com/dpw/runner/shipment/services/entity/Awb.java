@@ -64,12 +64,16 @@ public class Awb extends MultiTenancy {
     @Column(name = "awb_other_info", columnDefinition = "jsonb")
     private AwbOtherInfo awbOtherInfo;
 
+    @Type(type = "jsonb")
+    @Column(name = "awb_oci_info", columnDefinition = "jsonb")
+    private List<AwbOCIInfo> awbOciInfo;
+
     @Column(name = "acas_enabled")
     private Boolean acasEnabled;
 
     @Type(type = "jsonb")
-    @Column(name = "awb_oci_info", columnDefinition = "jsonb")
-    private AwbOCIInfo awbOCIInfo;
+    @Column(name = "oci_info", columnDefinition = "jsonb")
+    private OCIInfo ociInfo;
 
     @Type(type = "jsonb")
     @Column(name = "awb_goods_description_info", columnDefinition = "jsonb")

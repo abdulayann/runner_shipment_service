@@ -150,6 +150,24 @@ class AwbDaoTest {
     }
 
     @Test
+    void testSaveNewAwbShipmentInfoThrowsExceptionWhenDuplicateOciInfo() {
+        try {
+            Awb awb = mockAwb;
+            AwbOCIInfo awbOCIInfo = AwbOCIInfo.builder().informationIdentifier(1).tradeIdentificationCode(1).build();
+            AwbOCIInfo duplicateAwbOciInfo = AwbOCIInfo.builder().informationIdentifier(1).tradeIdentificationCode(1).build();
+            awb.setAwbOciInfo(List.of(awbOCIInfo, duplicateAwbOciInfo));
+            awbDao.save(awb);
+
+        } catch (RunnerException e) {
+            // Handle the exception if necessary
+            Set<String> errors = new HashSet<>();
+            errors.add(AwbConstants.DUPLICATE_PAIR_AWB_OCI_INFO_VALIDATION);
+            String errorMessage = errors.toString();
+            assertEquals(errorMessage, e.getMessage());
+        }
+    }
+
+    @Test
     void testSaveNewAwbShipmentInfoThrowsExceptionWhenIataDescriptionLengthGreaterThan3() {
         try {
             Awb awb = mockAwb;

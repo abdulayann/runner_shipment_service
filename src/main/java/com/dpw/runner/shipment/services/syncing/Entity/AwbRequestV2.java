@@ -18,6 +18,7 @@ public class AwbRequestV2 implements IRunnerRequest {
     public AwbPaymentInfoV2 awbPaymentInfo;
     private List<AwbOtherChargesInfoV2> awbOtherChargesInfo;
     public AwbOtherInfoV2 awbOtherInfo;
+    private List<AwbOCIInfoV2> awbOciInfo;
     private List<AwbGoodsDescriptionInfoV2> awbGoodsDescriptionInfo;
     private List<AwbPackingInfoV2> awbPackingInfo;
     private List<AwbSpecialHandlingCodesMappingInfoV2> awbSpecialHandlingCodesMappings;
