@@ -185,14 +185,7 @@ public class DbAccessHelper {
 
     private static <T> Specification<T> createSpecificationWithoutFilter(List<String> tableName) {
         if (tableName != null) {
-            return (root, query, criteriaBuilder) -> {
-                if (!query.getResultType().isAssignableFrom(Long.class)) {
-                    for (String table : tableName) {
-                        Join<Class<T>, T> join = (Join) root.fetch(table, JoinType.LEFT);
-                    }
-                }
-                return criteriaBuilder.conjunction();
-            };
+            return (root, query, criteriaBuilder) -> criteriaBuilder.conjunction();
         }
         return null;
     }
@@ -488,22 +481,22 @@ public class DbAccessHelper {
             if (input.getInnerFilter() != null && !input.getInnerFilter().isEmpty()) {
                 specification = getSpecificationFromInnerFilter(sortRequest, map, className, dataTypeMap, input, specification);
             } else {
-                specification = getSpecificationFromLogicalOperator(sortRequest, map, className, dataTypeMap, input, specification);
+                specification = getSpecificationFromLogicalOperator(sortRequest, dataTypeMap, input, specification);
             }
         }
         return specification;
     }
 
-    private static <T> Specification<T> getSpecificationFromLogicalOperator(SortRequest sortRequest, Map<String, Join<Class<T>, T>> map, String className, Map<String, Class<T>> dataTypeMap, FilterCriteria input, Specification<T> specification) {
+    private static <T> Specification<T> getSpecificationFromLogicalOperator(SortRequest sortRequest, Map<String, Class<T>> dataTypeMap, FilterCriteria input, Specification<T> specification) {
         if (input.getLogicOperator() != null) {
             if (input.getLogicOperator().equalsIgnoreCase("OR")) {
-                specification = specification.or(createSpecificationWithoutFilter(input.getCriteria(), null, map, className, dataTypeMap));
+                specification = specification.or(createSpecificationWithoutFilter(input.getCriteria(), null, dataTypeMap));
             } else if (input.getLogicOperator().equalsIgnoreCase("AND")) {
-                specification = specification.and(createSpecificationWithoutFilter(input.getCriteria(), null, map, className, dataTypeMap));
+                specification = specification.and(createSpecificationWithoutFilter(input.getCriteria(), null, dataTypeMap));
             }
         } else {
             specification =
-                    where(createSpecificationWithoutFilter(input.getCriteria(), sortRequest, map, className, dataTypeMap));
+                    where(createSpecificationWithoutFilter(input.getCriteria(), sortRequest, dataTypeMap));
         }
         return specification;
     }
@@ -522,7 +515,7 @@ public class DbAccessHelper {
         return specification;
     }
 
-    private static <T> Specification<T> createSpecificationWithoutFilter(Criteria input, SortRequest sortRequest, Map<String, Join<Class<T>, T>> map, String className, Map<String, Class<T>> dataTypeMap) {
+    private static <T> Specification<T> createSpecificationWithoutFilter(Criteria input, SortRequest sortRequest, Map<String, Class<T>> dataTypeMap) {
         return (root, query, criteriaBuilder) -> {
             Path<T> path = root;
 

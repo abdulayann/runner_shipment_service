@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.utils;
 
-import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
@@ -135,16 +135,15 @@ public class MasterDataKeyUtils {
     }
 
     private void setKeyValueForMasterLists(Map<String, Object> map, String key, Object cacheValue) { //key is SEA#TRANSPORT_MODE
-        if(!IsStringNullOrEmpty(key)) {
+        if(!isStringNullOrEmpty(key)) {
             EntityTransferMasterLists object3 = null;
             if (Objects.isNull(cacheValue)) {
                 var cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).get(keyGenerator.customCacheKeyForMasterData(CacheConstants.MASTER_LIST, key));
                 object3 = (EntityTransferMasterLists) cache.get();
             } else object3 = (EntityTransferMasterLists) cacheValue;
-            boolean isBooking = false;
             String value = null;
 
-            if(!IsStringNullOrEmpty(object3.getValuenDesc()))
+            if(!isStringNullOrEmpty(object3.getValuenDesc()))
                 value = object3.getValuenDesc();
             else
                 value = object3.getItemDescription();

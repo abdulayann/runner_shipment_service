@@ -61,7 +61,7 @@ public class ConsolidatedPackingListReport extends IReport {
     Map<String, Object> populateDictionary(IDocumentModel documentModel) {
         ConsolidatedPackingListModel cplData = (ConsolidatedPackingListModel) documentModel;
         V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
-        String json = jsonHelper.convertToJsonWithDateTimeFormatter(cplData.getConsolidationDetails(), GetDPWDateFormatOrDefault(v1TenantSettingsResponse));
+        String json = jsonHelper.convertToJsonWithDateTimeFormatter(cplData.getConsolidationDetails(), getDPWDateFormatOrDefault(v1TenantSettingsResponse));
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
 
         List<String> exporter = getPartiesDetails(cplData.getConsolidationDetails().getSendingAgent());
@@ -84,7 +84,7 @@ public class ConsolidatedPackingListReport extends IReport {
 
         var etd = cplData.getConsolidationDetails().getCarrierDetails().getEtd();
 
-        dictionary.put(SHIP_DATE, ConvertToDPWDateFormat(etd));
+        dictionary.put(SHIP_DATE, convertToDPWDateFormat(etd));
         dictionary.put(AIRWAY_BILL_NUMBER, cplData.getConsolidationDetails().getBol());
 
         boolean flag = false;
@@ -126,7 +126,7 @@ public class ConsolidatedPackingListReport extends IReport {
     private void processItemWeights(List<Map<String, Object>> values, V1TenantSettingsResponse v1TenantSettingsResponse) {
         values.forEach(v -> {
             if (v.get(WEIGHT) != null) {
-                v.put(WEIGHT, ConvertToWeightNumberFormat(v.get(WEIGHT), v1TenantSettingsResponse));
+                v.put(WEIGHT, convertToWeightNumberFormat(v.get(WEIGHT), v1TenantSettingsResponse));
             }
         });
     }
@@ -163,7 +163,7 @@ public class ConsolidatedPackingListReport extends IReport {
         if (!weightUnitConsistent || totalWeight.equals(BigDecimal.ZERO)) {
             setEmptyWeight(dictionary);
         } else {
-            dictionary.put(TOTAL_PACKS_WEIGHT, ConvertToWeightNumberFormat(totalWeight, v1TenantSettingsResponse));
+            dictionary.put(TOTAL_PACKS_WEIGHT, convertToWeightNumberFormat(totalWeight, v1TenantSettingsResponse));
             dictionary.put(UOTW, unitOfTotalWeight);
         }
     }

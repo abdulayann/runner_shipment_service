@@ -159,7 +159,7 @@ public class SeawayBillReport extends IReport {
 
     private void processBlGrossWeightAlias(Map<String, Object> v) {
         if (v.get(BL_GROSS_WEIGHT_ALIAS) != null && v.get(BL_GROSS_WEIGHT_ALIAS).toString() != null) {
-            v.put(BL_GROSS_WEIGHT_ALIAS, ConvertToWeightNumberFormat(v.get(BL_GROSS_WEIGHT_ALIAS), tenantSettings));
+            v.put(BL_GROSS_WEIGHT_ALIAS, convertToWeightNumberFormat(v.get(BL_GROSS_WEIGHT_ALIAS), tenantSettings));
         }
     }
 
@@ -177,19 +177,19 @@ public class SeawayBillReport extends IReport {
 
     private void processNoofPackages(Map<String, Object> v) {
         if (v.get(NOOF_PACKAGES) != null && v.get(NOOF_PACKAGES).toString() != null) {
-            v.put(NOOF_PACKAGES, GetDPWWeightVolumeFormat((BigDecimal) v.get(NOOF_PACKAGES), 0, tenantSettings));
+            v.put(NOOF_PACKAGES, getDPWWeightVolumeFormat((BigDecimal) v.get(NOOF_PACKAGES), 0, tenantSettings));
         }
     }
 
     private void processNetWeight(Map<String, Object> v) {
         if (v.get(NET_WEIGHT) != null && v.get(NET_WEIGHT).toString() != null) {
-            v.put(NET_WEIGHT, ConvertToWeightNumberFormat(v.get(NET_WEIGHT), tenantSettings));
+            v.put(NET_WEIGHT, convertToWeightNumberFormat(v.get(NET_WEIGHT), tenantSettings));
         }
     }
 
     private void processGrossWeight(Map<String, Object> v) {
         if (v.get(GROSS_WEIGHT) != null && v.get(GROSS_WEIGHT).toString() != null) {
-            v.put(GROSS_WEIGHT, ConvertToWeightNumberFormat(v.get(GROSS_WEIGHT), tenantSettings));
+            v.put(GROSS_WEIGHT, convertToWeightNumberFormat(v.get(GROSS_WEIGHT), tenantSettings));
         }
     }
 
