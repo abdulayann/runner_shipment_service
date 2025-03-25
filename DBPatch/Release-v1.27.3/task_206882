@@ -1,0 +1,5 @@
+UPDATE consolidation_details
+SET receiving_agent_country = null
+WHERE id in (select id
+from consolidation_details
+where receiving_agent_country is not null);

@@ -204,6 +204,7 @@ public class AwbDao implements IAwbDao {
                             this.pushToKafkaForAirMessaging(awb, shipmentDetails.get(), null, null, false, null, includeCSD);
                             // AirMessageSent flag set to SENT
                             this.updateAirMessageStatus(awb.getGuid(), AwbStatus.AIR_MESSAGE_SENT.name());
+                            awb.setAirMessageStatus(AwbStatus.AIR_MESSAGE_SENT);
                             this.updateUserDetails(awb.getGuid(), UserContext.getUser().DisplayName, UserContext.getUser().Email);
                             this.createAirMessagingEvents(shipmentDetails.get().getId(), Constants.SHIPMENT, EventConstants.FWB_EVENT_CODE, "FWB sent", shipmentDetails.get().getTenantId());
                         }
@@ -223,6 +224,7 @@ public class AwbDao implements IAwbDao {
             this.pushToKafkaForAirMessaging(awb, null, consolidationDetails.get(), null, false, null, includeCSD);
             // AirMessageSent flag set to SENT
             this.updateAirMessageStatus(awb.getGuid(), AwbStatus.AIR_MESSAGE_SENT.name());
+            awb.setAirMessageStatus(AwbStatus.AIR_MESSAGE_SENT);
             this.updateLinkedHawbAirMessageStatus(awb.getGuid(), AwbStatus.AIR_MESSAGE_SENT.name());
             this.updateUserDetails(awb.getGuid(), UserContext.getUser().DisplayName, UserContext.getUser().Email);
             this.createAirMessagingEvents(consolidationDetails.get().getId(), Constants.CONSOLIDATION, EventConstants.FWB_FZB_EVENT_CODE, "FWB&FZB sent", consolidationDetails.get().getTenantId());
@@ -325,7 +327,7 @@ public class AwbDao implements IAwbDao {
 
     @Override
     @Transactional
-    public void updateAwbPrintInformation(Long shipmentId, Long consolidationId, PrintType printType, Boolean isOriginal, LocalDateTime printedAt) {
+    public Awb updateAwbPrintInformation(Long shipmentId, Long consolidationId, PrintType printType, Boolean isOriginal, LocalDateTime printedAt) {
         Awb awb = null;
         List<Awb> awbList;
         if(shipmentId != null) {
@@ -345,11 +347,12 @@ public class AwbDao implements IAwbDao {
                 commonUtils.checkForMandatoryHsCodeForUAE(awb);
             }
             try {
-                save(awb);
+                awb = save(awb);
             } catch (Exception e) {
                 log.error("Exception occurred while saving print information for awb : {}", e.getMessage());
             }
         }
+        return awb;
     }
 
     @Override

@@ -408,6 +408,7 @@ public class HblReport extends IReport {
                     populateBLContainer(shipmentContainer, hblContainerDtoMap.get(container.getContainerNumber()));
                 }
                 shipmentContainer.BL_SealNumber = container.getCustomsSealNumber();
+                shipmentContainer.ShipmentPacksUnit = shipmentContainer.PacksUnitDescription;
                 hblModel.getCommonContainers().add(shipmentContainer);
             }
         }

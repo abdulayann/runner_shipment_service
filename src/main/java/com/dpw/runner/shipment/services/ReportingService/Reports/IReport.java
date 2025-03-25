@@ -3158,49 +3158,62 @@ public abstract class IReport {
         Map<String, EntityTransferCommodityType> commodityTypeMap = getCommodityTypeMap(shipment);
         V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         for(var pack : shipment.getPackingList()) {
-            Map<String, Object> dict = new HashMap<>();
-            processStringUtilityTags(pack, dict);
-            if(Boolean.TRUE.equals(pack.getMarinePollutant()))
-                dict.put(MARINE_POLLUTANT, "Marine Pollutant");
-            processPackCommodity(pack, dict, commodityTypeMap);
-            processPackingWeightVolume(pack, dict, v1TenantSettingsResponse);
-            if (shipment.getPickupDetails() != null && shipment.getPickupDetails().getActualPickupOrDelivery() != null) {
-                dict.put(LOADED_DATE, convertToDPWDateFormat(shipment.getPickupDetails().getActualPickupOrDelivery()));
-            }
-            processPackingCommodityGroup(pack, dict);
-            if(pack.getPacks() != null) {
-                dict.put(PACKS, getDPWWeightVolumeFormat(new BigDecimal(pack.getPacks()), 0, v1TenantSettingsResponse) );
-            }
-            if (pack.getPacksType() != null)
-            {
-                dict.put(ReportConstants.SHIPMENT_PACKING_PACKS_PACKSTYPE, pack.getPacksType());
-            }
-
-            dict.put(SHIPMENT_PACKING_LENGTH, getDPWWeightVolumeFormat(pack.getLength(), 0, v1TenantSettingsResponse));
-            dict.put(SHIPMENT_PACKING_LENGTH_UNIT, pack.getLengthUnit());
-            dict.put(SHIPMENT_PACKING_WIDTH, getDPWWeightVolumeFormat(pack.getWidth(), 0, v1TenantSettingsResponse));
-            dict.put(SHIPMENT_PACKING_WIDTH_UNIT, pack.getWidthUnit());
-            dict.put(SHIPMENT_PACKING_HEIGHT, getDPWWeightVolumeFormat(pack.getHeight(), 0, v1TenantSettingsResponse));
-            dict.put(SHIPMENT_PACKING_HEIGHT_UNIT, pack.getHeightUnit());
-            dict.put(CHARGEABLE, convertToWeightNumberFormat(pack.getChargeable(), v1TenantSettingsResponse));
-            dict.put(CHARGEABLE_UNIT1, pack.getChargeableUnit());
-            dict.put(HS_CODE, pack.getHSCode());
-            dict.put(DESCRIPTION, pack.getGoodsDescription());
-            dict.put(IS_DG, false);
-            dict.put(PACKS_MARKS_NUMBERS, pack.getMarksnNums());
-            dict.put(PACKS_GOODS_DESCRIPTION, pack.getGoodsDescription());
-            if(Objects.isNull(pack.getGoodsDescription())) {
-                dict.put(PACKS_GOODS_DESCRIPTION, "");
-                dict.put(DESCRIPTION, "");
-            }
-            processPackingHazardous(pack, dict);
-            processPackingTempControlled(pack, dict);
-            packsDictionary.add(dict);
+            packsDictionary.add(processPackDetails(pack, shipment, v1TenantSettingsResponse, commodityTypeMap));
         }
 
         dictionary.put(HAS_PACK_DETAILS, true);
         dictionary.put(PACKS_DETAILS, packsDictionary);
         return packsDictionary;
+    }
+
+    private Map<String, Object> processPackDetails(PackingModel pack, ShipmentModel shipment, V1TenantSettingsResponse v1TenantSettingsResponse,Map<String, EntityTransferCommodityType> commodityTypeMap) {
+        Map<String, Object> dict = new HashMap<>();
+        processStringUtilityTags(pack, dict);
+        if(Boolean.TRUE.equals(pack.getMarinePollutant()))
+            dict.put(MARINE_POLLUTANT, "Marine Pollutant");
+        processPackCommodity(pack, dict, commodityTypeMap);
+        processPackingWeightVolume(pack, dict, v1TenantSettingsResponse);
+        if (shipment.getPickupDetails() != null && shipment.getPickupDetails().getActualPickupOrDelivery() != null) {
+            dict.put(LOADED_DATE, convertToDPWDateFormat(shipment.getPickupDetails().getActualPickupOrDelivery()));
+        }
+        processPackingCommodityGroup(pack, dict);
+        if(pack.getPacks() != null) {
+            dict.put(PACKS, getDPWWeightVolumeFormat(new BigDecimal(pack.getPacks()), 0, v1TenantSettingsResponse) );
+        }
+        if (pack.getPacksType() != null)
+        {
+            dict.put(ReportConstants.SHIPMENT_PACKING_PACKS_PACKSTYPE, pack.getPacksType());
+        }
+
+        dict.put(SHIPMENT_PACKING_LENGTH, getDPWWeightVolumeFormat(pack.getLength(), 0, v1TenantSettingsResponse));
+        dict.put(SHIPMENT_PACKING_LENGTH_UNIT, pack.getLengthUnit());
+        dict.put(SHIPMENT_PACKING_WIDTH, getDPWWeightVolumeFormat(pack.getWidth(), 0, v1TenantSettingsResponse));
+        dict.put(SHIPMENT_PACKING_WIDTH_UNIT, pack.getWidthUnit());
+        dict.put(SHIPMENT_PACKING_HEIGHT, getDPWWeightVolumeFormat(pack.getHeight(), 0, v1TenantSettingsResponse));
+        dict.put(SHIPMENT_PACKING_HEIGHT_UNIT, pack.getHeightUnit());
+        dict.put(CHARGEABLE, convertToWeightNumberFormat(pack.getChargeable(), v1TenantSettingsResponse));
+        dict.put(CHARGEABLE_UNIT1, pack.getChargeableUnit());
+        dict.put(HS_CODE, pack.getHSCode());
+        dict.put(DESCRIPTION, pack.getGoodsDescription());
+        dict.put(IS_DG, false);
+        dict.put(PACKS_MARKS_NUMBERS, pack.getMarksnNums());
+        dict.put(PACKS_GOODS_DESCRIPTION, pack.getGoodsDescription());
+        dict.put(PACKS_CONTAINER_NUMBER, pack.getContainerNumber());
+        if(Objects.isNull(pack.getGoodsDescription())) {
+            dict.put(PACKS_GOODS_DESCRIPTION, "");
+            dict.put(DESCRIPTION, "");
+        }
+        processPackingHazardous(pack, dict);
+        processPackingTempControlled(pack, dict);
+        try {
+            processPackingMasterData(pack);
+            dict.put(SHIPMENT_PACKING_PACKS_TYPE_DESCRIPTION, getMasterListItemDesc(pack.getPacksType(), MasterDataType.PACKS_UNIT.name(), false));
+        }
+        catch (Exception ignored) {
+            // Left blank for sonar to flag it
+        }
+
+        return dict;
     }
 
     private void processStringUtilityTags(PackingModel pack, Map<String, Object> dict) {
@@ -3314,6 +3327,9 @@ public abstract class IReport {
             Cache.ValueWrapper value2 = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.MASTER_LIST, pack.getPackingGroup()));
             if(Objects.isNull(value2))
                 requests.add(MasterListRequest.builder().ItemType(MasterDataType.PACKING_GROUP.getDescription()).ItemValue(pack.getPackingGroup()).Cascade(null).build());
+            Cache.ValueWrapper value3 = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.MASTER_LIST, pack.getPacksType()));
+            if(Objects.isNull(value3))
+                requests.add(MasterListRequest.builder().ItemType(MasterDataType.PACKS_UNIT.getDescription()).ItemValue(pack.getPacksType()).Cascade(null).build());
 
             if(!requests.isEmpty()) {
                 MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();

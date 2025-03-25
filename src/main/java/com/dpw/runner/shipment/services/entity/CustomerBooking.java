@@ -256,4 +256,7 @@ public class CustomerBooking extends MultiTenancy {
 
     @Column(name = "is_dg")
     private Boolean isDg;
+
+    @Column(name = "rejection_remarks")
+    private String rejectionRemarks;
 }

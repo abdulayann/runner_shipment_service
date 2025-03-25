@@ -1,13 +1,16 @@
 package com.dpw.runner.shipment.services.ReportingService.Models;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
+@AllArgsConstructor
 public class DocUploadRequest implements IDocumentModel{
     private String key;
-    private String type;
+    private String docType;
+    private String childType;
     private String entityType;
     private String opt;
     private long id;
@@ -19,7 +22,8 @@ public class DocUploadRequest implements IDocumentModel{
     // Copy Constructor
     public DocUploadRequest(DocUploadRequest other) {
         this.key = other.key;
-        this.type = other.type;
+        this.docType = other.docType;
+        this.childType = other.childType;
         this.entityType = other.entityType;
         this.opt = other.opt;
         this.id = other.id;
