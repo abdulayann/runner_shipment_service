@@ -243,6 +243,7 @@ public class EntityTransferService implements IEntityTransferService {
                 NetworkTransfer oldNetworkTransfer = optionalNetworkTransfer.get();
                 oldNetworkTransfer.setStatus(NetworkTransferStatus.RETRANSFER);
                 oldNetworkTransfer.setEntityPayload(entityPayload);
+                oldNetworkTransfer.setUpdatedBy(UserContext.getUser().Username);
                 networkTransferDao.save(oldNetworkTransfer);
             } else {
                 networkTransferService.updateNetworkTransferTransferred(optionalNetworkTransfer.get(), entityPayload);
