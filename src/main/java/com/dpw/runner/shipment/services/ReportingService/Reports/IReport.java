@@ -3193,6 +3193,7 @@ public abstract class IReport {
             dict.put(IS_DG, false);
             dict.put(PACKS_MARKS_NUMBERS, pack.getMarksnNums());
             dict.put(PACKS_GOODS_DESCRIPTION, pack.getGoodsDescription());
+            dict.put(PACKS_CONTAINER_NUMBER, pack.getContainerNumber());
             if(Objects.isNull(pack.getGoodsDescription())) {
                 dict.put(PACKS_GOODS_DESCRIPTION, "");
                 dict.put(DESCRIPTION, "");
@@ -3200,6 +3201,13 @@ public abstract class IReport {
             processPackingHazardous(pack, dict);
             processPackingTempControlled(pack, dict);
             packsDictionary.add(dict);
+            try {
+                processPackingMasterData(pack);
+                dict.put(SHIPMENT_PACKING_PACKS_TYPE_DESCRIPTION, getMasterListItemDesc(pack.getPacksType(), MasterDataType.PACKS_UNIT.name(), false));
+            }
+            catch (Exception ignored) {
+
+            }
         }
 
         dictionary.put(HAS_PACK_DETAILS, true);
@@ -3318,6 +3326,9 @@ public abstract class IReport {
             Cache.ValueWrapper value2 = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.MASTER_LIST, pack.getPackingGroup()));
             if(Objects.isNull(value2))
                 requests.add(MasterListRequest.builder().ItemType(MasterDataType.PACKING_GROUP.getDescription()).ItemValue(pack.getPackingGroup()).Cascade(null).build());
+            Cache.ValueWrapper value3 = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.MASTER_LIST, pack.getPacksType()));
+            if(Objects.isNull(value3))
+                requests.add(MasterListRequest.builder().ItemType(MasterDataType.PACKS_UNIT.getDescription()).ItemValue(pack.getPacksType()).Cascade(null).build());
 
             if(!requests.isEmpty()) {
                 MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
