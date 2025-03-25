@@ -1217,103 +1217,189 @@ public class ReportService implements IReportService {
 
 
     public DocPages getTemplateId(ShipmentSettingsDetails row, ShipmentSettingsDetails adminRow, String docKey, String objectType, String printType,
-                                  String frontTemplateCode, String backTemplateCode, String transportMode, boolean istransportInstruction)
-    {
-        switch (docKey)
-        {
-            case ReportConstants.SEAWAY_BILL:
-                return setDocPages(null, getMainOrLastPageId(row.getSeawayMainPage(), adminRow.getSeawayMainPage()), null, getIsLogoFixed(row.getSeawayMainPage()), null, null,null);
-            case ReportConstants.SHIP_TRUCKWAY_BILL:
-                return setDocPages(null, getMainOrLastPageId(row.getShipTruckWayBillMainPage(), adminRow.getShipTruckWayBillMainPage()), null, getIsLogoFixed(row.getShipTruckWayBillMainPage()), null, null,null);
-            case ReportConstants.CONS_TRUCKWAY_BILL:
-                return setDocPages(null, getMainOrLastPageId(row.getConsTruckWayBillMainPage(), adminRow.getConsTruckWayBillMainPage()), null, getIsLogoFixed(row.getConsTruckWayBillMainPage()), null, null,null);
-            case ReportConstants.SHIP_TRUCK_DRIVER_PROOF:
-                return setDocPages(null, getMainOrLastPageId(row.getShipTruckDriverProof(), adminRow.getShipTruckDriverProof()), null, getIsLogoFixed(row.getShipTruckDriverProof()), null, null,null);
-            case ReportConstants.CONS_TRUCK_DRIVER_PROOF:
-                return setDocPages(null, getMainOrLastPageId(row.getConsTruckDriverProof(), adminRow.getConsTruckDriverProof()), null, getIsLogoFixed(row.getConsTruckDriverProof()), null, null,null);
-            case ReportConstants.PACKING_LIST:
-                return setDocPagesForPackingList(row, adminRow, objectType);
-            case ReportConstants.CUSTOMS_INSTRUCTION:
-                return setDocPagesForCustomsInstruction(row, adminRow, objectType);
-            case ReportConstants.SHIPMENT_CAN_DOCUMENT:
-                return setDocPagesForCanMainPageAir(row, adminRow, objectType);
-            case ReportConstants.AIRWAY_BILL:
-                return setDocPages(null, getMainOrLastPageId(row.getAirwayMainPage(), adminRow.getAirwayMainPage()), null, getIsLogoFixed(row.getAirwayMainPage()), null, null,null);
-            case ReportConstants.SHIPMENT_HOUSE_BILL:
-                return setDocPagesForHouseBill(row, adminRow, printType, frontTemplateCode, backTemplateCode);
-            case ReportConstants.ARRIVAL_NOTICE:
-                return setDocPagesForArrivalNotice(row, adminRow, objectType);
-            case ReportConstants.FREIGHT_CERTIFICATION:
-                return setDocPagesForFreightCertification(row, adminRow, objectType);
-            case ReportConstants.PRE_ALERT:
-                return setDocPagesForPreAlert(row, adminRow, objectType);
-            case ReportConstants.PROOF_OF_DELIVERY:
-                return setDocPages(null, getMainOrLastPageId(row.getProofOfDelivery(), adminRow.getProofOfDelivery()), null, getIsLogoFixed(row.getProofOfDelivery()), null, null,null);
-            case ReportConstants.PICKUP_ORDER:
-                return setDocPagesForPickupOrder(row, adminRow, objectType, istransportInstruction);
-            case ReportConstants.DELIVERY_ORDER:
-                return setDocPagesForDeliveryOrder(row, adminRow, objectType, istransportInstruction);
-            case ReportConstants.BOOKING_CONFIRMATION:
-                return setDocPagesForBookingConfirmation(row, adminRow, objectType);
-            case ReportConstants.COSTAL_DOC:
-                return setDocPages(null, getMainOrLastPageId(row.getCostalDocument(), adminRow.getCostalDocument()), null, getIsLogoFixed(row.getCostalDocument()), null, null,null);
-            case ReportConstants.SHIPPING_INSTRUCTION:
-                return getShippingInstructionDocument(row, adminRow, objectType);
-            case ReportConstants.AWB_LABEL:
-                return setDocPages(null, getMainOrLastPageId(row.getAwbLable(), adminRow.getAwbLable()), null, getIsLogoFixed(row.getAwbLable()), null, null,null);
-            case ReportConstants.CARGO_MANIFEST:
-                return setDocPages(null, getMainOrLastPageId(row.getCargoManifest(), adminRow.getCargoManifest()), null, getIsLogoFixed(row.getCargoManifest()), null, null,null);
-            case ReportConstants.CONSOLIDATED_PACKING_LIST:
-                return setDocPages(null, getMainOrLastPageId(row.getConsolidatedPackingList(), adminRow.getConsolidatedPackingList()), null, getIsLogoFixed(row.getConsolidatedPackingList()), null, null,null);
-            case ReportConstants.HAWB:
-                return setDocPages(null, getMainOrLastPageId(row.getHawb(), adminRow.getHawb()), null, getIsLogoFixed(row.getHawb()), null, null,null);
-            case ReportConstants.MAWB:
-                return setDocPages(null, getMainOrLastPageId(row.getMawb(), adminRow.getMawb()), null, getIsLogoFixed(row.getMawb()), null, null,null);
-            case ReportConstants.AWB_NEUTRAL:
-                return setDocPages(null, getMainOrLastPageId(row.getAwbNeutral(), adminRow.getMawb()), null, getIsLogoFixed(row.getAwbNeutral()), null, null,null);
-            case ReportConstants.SHIPPING_REQUEST:
-                return setDocPages(null, getMainOrLastPageId(row.getShippingRequestMainPage(), adminRow.getShippingRequestMainPage()), null, getIsLogoFixed(row.getShippingRequestMainPage()), null, null,null);
-            case ReportConstants.SHIPPING_REQUEST_AIR:
-                return setDocPages(null, getMainOrLastPageId(row.getShippingRequestAir(), adminRow.getShippingRequestAir()), null, getIsLogoFixed(row.getShippingRequestAir()), null, null,null);
-            case ReportConstants.IMPORT_SHIPMENT_MANIFEST:
-                return setDocPagesForImportShipmentManifest(row, adminRow, objectType);
-            case ReportConstants.EXPORT_SHIPMENT_MANIFEST:
-                return setDocPagesForExportShipmentManifest(row, adminRow, objectType);
-            case ReportConstants.CARGO_MANIFEST_AIR_IMPORT_SHIPMENT:
-                return setDocPages(null, getMainOrLastPageId(row.getAirImportShipmentManifest(), adminRow.getAirImportShipmentManifest()), null, getIsLogoFixed(row.getAirImportShipmentManifest()), null, null,null);
-            case ReportConstants.CARGO_MANIFEST_AIR_IMPORT_CONSOLIDATION:
-                return setDocPages(null, getMainOrLastPageId(row.getAirImportConsoleManifest(), adminRow.getAirImportConsoleManifest()), null, getIsLogoFixed(row.getAirImportConsoleManifest()), null, null,null);
-            case ReportConstants.CARGO_MANIFEST_AIR_EXPORT_SHIPMENT:
-                return setDocPages(null, getMainOrLastPageId(row.getAirExportShipmentManifest(), adminRow.getAirExportShipmentManifest()), null, getIsLogoFixed(row.getAirExportShipmentManifest()), null, null,null);
-            case ReportConstants.CARGO_MANIFEST_AIR_EXPORT_CONSOLIDATION:
-                return setDocPages(null, getMainOrLastPageId(row.getAirExportConsoleManifest(), adminRow.getAirExportConsoleManifest()), null, getIsLogoFixed(row.getAirExportConsoleManifest()), null, null,null);
-            case ReportConstants.IMPORT_CONSOL_MANIFEST:
-                return setDocPagesForImportConsolManifest(row, adminRow, objectType);
-            case ReportConstants.EXPORT_CONSOL_MANIFEST:
-                return setDocPagesForExportConsolManifest(row, adminRow, objectType);
-            case ReportConstants.CSR:
-                return setDocPages(null, getMainOrLastPageId(row.getCsr(), adminRow.getCsr()), null, getIsLogoFixed(row.getCsr()), null, null,null);
-
-            case ReportConstants.COMMERCIAL_INVOICE:
-                return setDocPagesForCommercialInvoice(row, adminRow, objectType);
-            case ReportConstants.GENERATE_ISF_FILE:
-                return setDocPages(null, getMainOrLastPageId(row.getIsfFileMainPage(), adminRow.getIsfFileMainPage()), null, getIsLogoFixed(row.getIsfFileMainPage()), null, null,null);
-            case ReportConstants.CONTAINER_MANIFEST_PRINT:
-                return setDocPages(null, getMainOrLastPageId(row.getContainerManifestPrint(), adminRow.getContainerManifestPrint()), null, getIsLogoFixed(row.getContainerManifestPrint()), null, null,null);
-            case ReportConstants.MANIFEST_PRINT:
-                return setDocPages(null, getMainOrLastPageId(row.getManifestPrint(), adminRow.getManifestPrint()), null, getIsLogoFixed(row.getManifestPrint()), null, null,null);
-            case ReportConstants.TRANSPORT_ORDER:
-                return setDocPages(null, getMainOrLastPageId(row.getTransportOrderRoad(), adminRow.getTransportOrderRoad()), null, getIsLogoFixed(row.getTransportOrderRoad()), null, null,null);
-            case ReportConstants.BOOKING_ORDER:
-                return setDocPagesForBookingOrder(row, adminRow, transportMode);
-            case ReportConstants.CSD_REPORT:
-                return setDocPages(null, getMainOrLastPageId(row.getCsd(), adminRow.getCsd()), null, getIsLogoFixed(row.getCsd()), null, null,null);
-           case ReportConstants.FCR_DOCUMENT:
-               return setDocPages(null, getMainOrLastPageId(row.getFcrDocument(), adminRow.getFcrDocument()), null, getIsLogoFixed(row.getFcrDocument()), null, null,null);
-            default:
+                                  String frontTemplateCode, String backTemplateCode, String transportMode, boolean istransportInstruction) {
+        // Group similar document types that use the same pattern
+        if (isSimpleDocument(docKey)) {
+            return handleSimpleDocument(row, adminRow, docKey);
         }
 
-        return null;
+        return switch (docKey) {
+            case ReportConstants.PACKING_LIST -> setDocPagesForPackingList(row, adminRow, objectType);
+            case ReportConstants.CUSTOMS_INSTRUCTION -> setDocPagesForCustomsInstruction(row, adminRow, objectType);
+            case ReportConstants.SHIPMENT_CAN_DOCUMENT -> setDocPagesForCanMainPageAir(row, adminRow, objectType);
+            case ReportConstants.SHIPMENT_HOUSE_BILL ->
+                    setDocPagesForHouseBill(row, adminRow, printType, frontTemplateCode, backTemplateCode);
+            case ReportConstants.ARRIVAL_NOTICE -> setDocPagesForArrivalNotice(row, adminRow, objectType);
+            case ReportConstants.FREIGHT_CERTIFICATION -> setDocPagesForFreightCertification(row, adminRow, objectType);
+            case ReportConstants.PRE_ALERT -> setDocPagesForPreAlert(row, adminRow, objectType);
+            case ReportConstants.PICKUP_ORDER ->
+                    setDocPagesForPickupOrder(row, adminRow, objectType, istransportInstruction);
+            case ReportConstants.DELIVERY_ORDER ->
+                    setDocPagesForDeliveryOrder(row, adminRow, objectType, istransportInstruction);
+            case ReportConstants.BOOKING_CONFIRMATION -> setDocPagesForBookingConfirmation(row, adminRow, objectType);
+            case ReportConstants.SHIPPING_INSTRUCTION -> getShippingInstructionDocument(row, adminRow, objectType);
+            case ReportConstants.IMPORT_SHIPMENT_MANIFEST ->
+                    setDocPagesForImportShipmentManifest(row, adminRow, objectType);
+            case ReportConstants.EXPORT_SHIPMENT_MANIFEST ->
+                    setDocPagesForExportShipmentManifest(row, adminRow, objectType);
+            case ReportConstants.IMPORT_CONSOL_MANIFEST ->
+                    setDocPagesForImportConsolManifest(row, adminRow, objectType);
+            case ReportConstants.EXPORT_CONSOL_MANIFEST ->
+                    setDocPagesForExportConsolManifest(row, adminRow, objectType);
+            case ReportConstants.COMMERCIAL_INVOICE -> setDocPagesForCommercialInvoice(row, adminRow, objectType);
+            case ReportConstants.BOOKING_ORDER -> setDocPagesForBookingOrder(row, adminRow, transportMode);
+            default -> null;
+        };
+    }
+
+    private boolean isSimpleDocument(String docKey) {
+        return docKey.equals(ReportConstants.SEAWAY_BILL) ||
+                docKey.equals(ReportConstants.SHIP_TRUCKWAY_BILL) ||
+                docKey.equals(ReportConstants.CONS_TRUCKWAY_BILL) ||
+                docKey.equals(ReportConstants.SHIP_TRUCK_DRIVER_PROOF) ||
+                docKey.equals(ReportConstants.CONS_TRUCK_DRIVER_PROOF) ||
+                docKey.equals(ReportConstants.AIRWAY_BILL) ||
+                docKey.equals(ReportConstants.PROOF_OF_DELIVERY) ||
+                docKey.equals(ReportConstants.COSTAL_DOC) ||
+                docKey.equals(ReportConstants.AWB_LABEL) ||
+                docKey.equals(ReportConstants.CARGO_MANIFEST) ||
+                docKey.equals(ReportConstants.CONSOLIDATED_PACKING_LIST) ||
+                docKey.equals(ReportConstants.HAWB) ||
+                docKey.equals(ReportConstants.MAWB) ||
+                docKey.equals(ReportConstants.AWB_NEUTRAL) ||
+                docKey.equals(ReportConstants.SHIPPING_REQUEST) ||
+                docKey.equals(ReportConstants.SHIPPING_REQUEST_AIR) ||
+                docKey.equals(ReportConstants.CARGO_MANIFEST_AIR_IMPORT_SHIPMENT) ||
+                docKey.equals(ReportConstants.CARGO_MANIFEST_AIR_IMPORT_CONSOLIDATION) ||
+                docKey.equals(ReportConstants.CARGO_MANIFEST_AIR_EXPORT_SHIPMENT) ||
+                docKey.equals(ReportConstants.CARGO_MANIFEST_AIR_EXPORT_CONSOLIDATION) ||
+                docKey.equals(ReportConstants.CSR) ||
+                docKey.equals(ReportConstants.GENERATE_ISF_FILE) ||
+                docKey.equals(ReportConstants.CONTAINER_MANIFEST_PRINT) ||
+                docKey.equals(ReportConstants.MANIFEST_PRINT) ||
+                docKey.equals(ReportConstants.TRANSPORT_ORDER) ||
+                docKey.equals(ReportConstants.CSD_REPORT) ||
+                docKey.equals(ReportConstants.FCR_DOCUMENT);
+    }
+
+    private DocPages handleSimpleDocument(ShipmentSettingsDetails row, ShipmentSettingsDetails adminRow, String docKey) {
+        String mainPageId;
+        boolean isLogoFixed;
+
+        switch (docKey) {
+            case ReportConstants.SEAWAY_BILL:
+                mainPageId = getMainOrLastPageId(row.getSeawayMainPage(), adminRow.getSeawayMainPage());
+                isLogoFixed = getIsLogoFixed(row.getSeawayMainPage());
+                break;
+            case ReportConstants.SHIP_TRUCKWAY_BILL:
+                mainPageId = getMainOrLastPageId(row.getShipTruckWayBillMainPage(), adminRow.getShipTruckWayBillMainPage());
+                isLogoFixed = getIsLogoFixed(row.getShipTruckWayBillMainPage());
+                break;
+            case ReportConstants.CONS_TRUCKWAY_BILL:
+                mainPageId = getMainOrLastPageId(row.getConsTruckWayBillMainPage(), adminRow.getConsTruckWayBillMainPage());
+                isLogoFixed = getIsLogoFixed(row.getConsTruckWayBillMainPage());
+                break;
+            case ReportConstants.SHIP_TRUCK_DRIVER_PROOF:
+                mainPageId = getMainOrLastPageId(row.getShipTruckDriverProof(), adminRow.getShipTruckDriverProof());
+                isLogoFixed = getIsLogoFixed(row.getShipTruckDriverProof());
+                break;
+            case ReportConstants.CONS_TRUCK_DRIVER_PROOF:
+                mainPageId = getMainOrLastPageId(row.getConsTruckDriverProof(), adminRow.getConsTruckDriverProof());
+                isLogoFixed = getIsLogoFixed(row.getConsTruckDriverProof());
+                break;
+            case ReportConstants.AIRWAY_BILL:
+                mainPageId = getMainOrLastPageId(row.getAirwayMainPage(), adminRow.getAirwayMainPage());
+                isLogoFixed = getIsLogoFixed(row.getAirwayMainPage());
+                break;
+            case ReportConstants.PROOF_OF_DELIVERY:
+                mainPageId = getMainOrLastPageId(row.getProofOfDelivery(), adminRow.getProofOfDelivery());
+                isLogoFixed = getIsLogoFixed(row.getProofOfDelivery());
+                break;
+            case ReportConstants.COSTAL_DOC:
+                mainPageId = getMainOrLastPageId(row.getCostalDocument(), adminRow.getCostalDocument());
+                isLogoFixed = getIsLogoFixed(row.getCostalDocument());
+                break;
+            case ReportConstants.AWB_LABEL:
+                mainPageId = getMainOrLastPageId(row.getAwbLable(), adminRow.getAwbLable());
+                isLogoFixed = getIsLogoFixed(row.getAwbLable());
+                break;
+            case ReportConstants.CARGO_MANIFEST:
+                mainPageId = getMainOrLastPageId(row.getCargoManifest(), adminRow.getCargoManifest());
+                isLogoFixed = getIsLogoFixed(row.getCargoManifest());
+                break;
+            case ReportConstants.CONSOLIDATED_PACKING_LIST:
+                mainPageId = getMainOrLastPageId(row.getConsolidatedPackingList(), adminRow.getConsolidatedPackingList());
+                isLogoFixed = getIsLogoFixed(row.getConsolidatedPackingList());
+                break;
+            case ReportConstants.HAWB:
+                mainPageId = getMainOrLastPageId(row.getHawb(), adminRow.getHawb());
+                isLogoFixed = getIsLogoFixed(row.getHawb());
+                break;
+            case ReportConstants.MAWB:
+                mainPageId = getMainOrLastPageId(row.getMawb(), adminRow.getMawb());
+                isLogoFixed = getIsLogoFixed(row.getMawb());
+                break;
+            case ReportConstants.AWB_NEUTRAL:
+                mainPageId = getMainOrLastPageId(row.getAwbNeutral(), adminRow.getMawb());
+                isLogoFixed = getIsLogoFixed(row.getAwbNeutral());
+                break;
+            case ReportConstants.SHIPPING_REQUEST:
+                mainPageId = getMainOrLastPageId(row.getShippingRequestMainPage(), adminRow.getShippingRequestMainPage());
+                isLogoFixed = getIsLogoFixed(row.getShippingRequestMainPage());
+                break;
+            case ReportConstants.SHIPPING_REQUEST_AIR:
+                mainPageId = getMainOrLastPageId(row.getShippingRequestAir(), adminRow.getShippingRequestAir());
+                isLogoFixed = getIsLogoFixed(row.getShippingRequestAir());
+                break;
+            case ReportConstants.CARGO_MANIFEST_AIR_IMPORT_SHIPMENT:
+                mainPageId = getMainOrLastPageId(row.getAirImportShipmentManifest(), adminRow.getAirImportShipmentManifest());
+                isLogoFixed = getIsLogoFixed(row.getAirImportShipmentManifest());
+                break;
+            case ReportConstants.CARGO_MANIFEST_AIR_IMPORT_CONSOLIDATION:
+                mainPageId = getMainOrLastPageId(row.getAirImportConsoleManifest(), adminRow.getAirImportConsoleManifest());
+                isLogoFixed = getIsLogoFixed(row.getAirImportConsoleManifest());
+                break;
+            case ReportConstants.CARGO_MANIFEST_AIR_EXPORT_SHIPMENT:
+                mainPageId = getMainOrLastPageId(row.getAirExportShipmentManifest(), adminRow.getAirExportShipmentManifest());
+                isLogoFixed = getIsLogoFixed(row.getAirExportShipmentManifest());
+                break;
+            case ReportConstants.CARGO_MANIFEST_AIR_EXPORT_CONSOLIDATION:
+                mainPageId = getMainOrLastPageId(row.getAirExportConsoleManifest(), adminRow.getAirExportConsoleManifest());
+                isLogoFixed = getIsLogoFixed(row.getAirExportConsoleManifest());
+                break;
+            case ReportConstants.CSR:
+                mainPageId = getMainOrLastPageId(row.getCsr(), adminRow.getCsr());
+                isLogoFixed = getIsLogoFixed(row.getCsr());
+                break;
+            case ReportConstants.GENERATE_ISF_FILE:
+                mainPageId = getMainOrLastPageId(row.getIsfFileMainPage(), adminRow.getIsfFileMainPage());
+                isLogoFixed = getIsLogoFixed(row.getIsfFileMainPage());
+                break;
+            case ReportConstants.CONTAINER_MANIFEST_PRINT:
+                mainPageId = getMainOrLastPageId(row.getContainerManifestPrint(), adminRow.getContainerManifestPrint());
+                isLogoFixed = getIsLogoFixed(row.getContainerManifestPrint());
+                break;
+            case ReportConstants.MANIFEST_PRINT:
+                mainPageId = getMainOrLastPageId(row.getManifestPrint(), adminRow.getManifestPrint());
+                isLogoFixed = getIsLogoFixed(row.getManifestPrint());
+                break;
+            case ReportConstants.TRANSPORT_ORDER:
+                mainPageId = getMainOrLastPageId(row.getTransportOrderRoad(), adminRow.getTransportOrderRoad());
+                isLogoFixed = getIsLogoFixed(row.getTransportOrderRoad());
+                break;
+            case ReportConstants.CSD_REPORT:
+                mainPageId = getMainOrLastPageId(row.getCsd(), adminRow.getCsd());
+                isLogoFixed = getIsLogoFixed(row.getCsd());
+                break;
+            case ReportConstants.FCR_DOCUMENT:
+                mainPageId = getMainOrLastPageId(row.getFcrDocument(), adminRow.getFcrDocument());
+                isLogoFixed = getIsLogoFixed(row.getFcrDocument());
+                break;
+            default:
+                return null;
+        }
+
+        return setDocPages(null, mainPageId, null, isLogoFixed, null, null, null);
     }
 
     private DocPages setDocPagesForPreAlert(ShipmentSettingsDetails row, ShipmentSettingsDetails adminRow, String objectType) {
