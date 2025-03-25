@@ -2071,7 +2071,7 @@ public class ConsolidationService implements IConsolidationService {
         } else if (networkTransfer == null) {
             networkTransferService.processNetworkTransferEntity(
                     receivingBranch, null, Constants.SHIPMENT,
-                    shipment, null, Constants.DIRECTION_IMP, null, true, false);
+                    shipment, null, Constants.DIRECTION_IMP, null, true);
         }
     }
 
@@ -5027,7 +5027,7 @@ public class ConsolidationService implements IConsolidationService {
     private void processNetworkTransferEntity(Long tenantId, Long oldTenantId, ConsolidationDetails consolidationDetails, String jobType, Boolean isInterBranchConsole) {
         try{
             networkTransferService.processNetworkTransferEntity(tenantId, oldTenantId, Constants.CONSOLIDATION, null,
-                    consolidationDetails, jobType, null, isInterBranchConsole, false);
+                    consolidationDetails, jobType, null, isInterBranchConsole);
         } catch (Exception ex) {
             log.error("Exception during processing Network Transfer entity for Consolidation Number: {} with exception: {}", consolidationDetails.getConsolidationNumber(), ex.getMessage());
         }
@@ -5248,7 +5248,7 @@ public class ConsolidationService implements IConsolidationService {
         shipmentsForNte.forEach(shipmentDetails ->
                 networkTransferService.processNetworkTransferEntity(
                         shipmentDetails.getReceivingBranch(), null, SHIPMENT, shipmentDetails,
-                        null, Constants.DIRECTION_IMP, null, true, false)
+                        null, Constants.DIRECTION_IMP, null, true)
         );
 
         if (!shipmentsForHiddenNte.isEmpty()) {

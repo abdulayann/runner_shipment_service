@@ -2913,7 +2913,7 @@ public class ShipmentService implements IShipmentService {
     private void processNetworkTransferEntity(Long tenantId, Long oldTenantId, ShipmentDetails shipmentDetails, String jobType) {
         try{
             networkTransferService.processNetworkTransferEntity(tenantId, oldTenantId, Constants.SHIPMENT, shipmentDetails,
-                    null, jobType, null, false, false);
+                    null, jobType, null, false);
         } catch (Exception ex) {
             log.error("Exception during processing Network Transfer entity for shipment Id: {} with exception: {}", shipmentDetails.getShipmentId(), ex.getMessage());
         }
@@ -3321,7 +3321,7 @@ public class ShipmentService implements IShipmentService {
         if (!Objects.equals(shipmentDetails.getReceivingBranch(), consolidationDetails.getReceivingBranch())) {
             Long oldReceivingBranch = oldEntity!=null? oldEntity.getReceivingBranch(): null;
             networkTransferService.processNetworkTransferEntity(shipmentDetails.getReceivingBranch(), oldReceivingBranch,
-                    Constants.SHIPMENT, shipmentDetails, null, reverseDirection(shipmentDetails.getDirection()), null, true, false);
+                    Constants.SHIPMENT, shipmentDetails, null, reverseDirection(shipmentDetails.getDirection()), null, true);
         } else {
             if (existingNTE!=null) {
                 networkTransferService.deleteNetworkTransferEntity(existingNTE);
@@ -3363,7 +3363,7 @@ public class ShipmentService implements IShipmentService {
         Long oldTenantId = (existingNTE != null && Objects.equals(existingNTE.getTenantId(), shipmentDetails.getReceivingBranch().intValue()))
                 ? Long.valueOf(existingNTE.getTenantId()) : null;
         networkTransferService.processNetworkTransferEntity(shipmentDetails.getReceivingBranch(), oldTenantId, Constants.SHIPMENT,
-                shipmentDetails, null, reverseDirection(shipmentDetails.getDirection()), null, true, false);
+                shipmentDetails, null, reverseDirection(shipmentDetails.getDirection()), null, true);
     }
 
     private void deleteOldConsolidationTransfers(ShipmentDetails oldEntity, ShipmentDetails shipmentDetails) {
