@@ -28,7 +28,7 @@ import org.springframework.stereotype.Service;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 
 @Service
 @Slf4j
@@ -84,9 +84,9 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
             sd.setCreatedAt(cs.getInsertDate());
             sd.setVolumetricWeight(cs.getVolumeWeight());
             sd.setVolumetricWeightUnit(cs.getWeightVolumeUnit());
-            if(!IsStringNullOrEmpty(cs.getPrevShipmentStatusString()))
+            if(!isStringNullOrEmpty(cs.getPrevShipmentStatusString()))
                 sd.setPrevShipmentStatus(ShipmentStatus.valueOf(cs.getPrevShipmentStatusString()).getValue());
-            if(!IsStringNullOrEmpty(cs.getStatusString()))
+            if(!isStringNullOrEmpty(cs.getStatusString()))
                 sd.setStatus(ShipmentStatus.valueOf(cs.getStatusString()).getValue());
 
             sd.setConsigner(mapPartyObjectWithFreetext(cs.getConsignerParty(), cs.getIsConsignerFreeTextAddress(), cs.getConsignerFreeTextAddress()));
@@ -163,16 +163,16 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
         additionalDetails.setSendingForwarder(mapPartyObject(cs.getSendingForwarderParty()));
         additionalDetails.setTraderOrSupplier(mapPartyObject(cs.getTraderOrSupplierParty()));
         additionalDetails.setNotifyParty(mapPartyObjectWithFreetext(cs.getNotifyParty(), cs.getIsNotifyPartyFreeTextAddress(), cs.getNotifyPartyFreeTextAddress()));
-        if(!IsStringNullOrEmpty(cs.getAndesStatusString()))
+        if(!isStringNullOrEmpty(cs.getAndesStatusString()))
             additionalDetails.setAndesStatus(AndesStatus.valueOf(cs.getAndesStatusString()));
-        if(!IsStringNullOrEmpty(cs.getOwnershipString())) {
+        if(!isStringNullOrEmpty(cs.getOwnershipString())) {
             additionalDetails.setOwnership(Ownership.valueOf(cs.getOwnershipString()));
             if(additionalDetails.getOwnership().equals(Ownership.Self))
                 additionalDetails.setOwnershipName(cs.getOwnershipName());
             else
                 additionalDetails.setOwnershipOrg(mapPartyObject(cs.getOwnershipParty()));
         }
-        if(!IsStringNullOrEmpty(cs.getPassedByString()))
+        if(!isStringNullOrEmpty(cs.getPassedByString()))
             additionalDetails.setPassedBy(Ownership.valueOf(cs.getPassedByString()));
         additionalDetails.setBOEDate(cs.getBoedate());
         additionalDetails.setBOENumber(cs.getBoenumber());

@@ -22,7 +22,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
-import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -50,12 +49,6 @@ public class ShipmentSettingsSync implements IShipmentSettingsSync {
     private EmailServiceUtility emailServiceUtility;
     @Autowired
     private ISyncService syncService;
-
-    private RetryTemplate retryTemplate = RetryTemplate.builder()
-            .maxAttempts(3)
-            .fixedBackoff(1000)
-            .retryOn(Exception.class)
-            .build();
 
     @Value("${v1service.url.base}${v1service.url.shipmentSettingsSync}")
     private String SHIPMENT_SETTING_V1_SYNC_URL;

@@ -762,7 +762,7 @@ class EventServiceTest extends CommonMocks {
         when(eventDao.findByGuid(any())).thenReturn(Optional.of(mockEvent));
         when(modelMapper.map(any(), any())).thenReturn(mockEvent);
 
-        ResponseEntity<IRunnerResponse> responseEntity = eventService.V1EventsCreateAndUpdate(CommonRequestModel.buildRequest(testEventsRequestV2), false);
+        ResponseEntity<IRunnerResponse> responseEntity = eventService.v1EventsCreateAndUpdate(CommonRequestModel.buildRequest(testEventsRequestV2), false);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
@@ -772,7 +772,7 @@ class EventServiceTest extends CommonMocks {
         field.setAccessible(true);
         field.set(syncConfig, false);
         ResponseEntity<IRunnerResponse> responseEntity = new ResponseEntity<>(HttpStatus.OK);
-        ResponseEntity<IRunnerResponse> response = eventService.V1EventsCreateAndUpdate(CommonRequestModel.buildRequest(testEventsRequestV2), true);
+        ResponseEntity<IRunnerResponse> response = eventService.v1EventsCreateAndUpdate(CommonRequestModel.buildRequest(testEventsRequestV2), true);
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
@@ -786,7 +786,7 @@ class EventServiceTest extends CommonMocks {
         when(consolidationDao.findByGuid(any())).thenReturn(Optional.of(testConsolidation));
         when(eventDao.save(any())).thenReturn(mockEvent);
         when(objectMapper.convertValue(any(), eq(EventsResponse.class))).thenReturn(mockEventsResponse);
-        ResponseEntity<IRunnerResponse> responseEntity = eventService.V1EventsCreateAndUpdate(CommonRequestModel.buildRequest(testEventsRequestV2), false);
+        ResponseEntity<IRunnerResponse> responseEntity = eventService.v1EventsCreateAndUpdate(CommonRequestModel.buildRequest(testEventsRequestV2), false);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
@@ -799,7 +799,7 @@ class EventServiceTest extends CommonMocks {
         when(consolidationDao.findByGuid(any())).thenReturn(Optional.of(testConsolidation));
         when(eventDao.save(any())).thenThrow(new RuntimeException());
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(testEventsRequestV2);
-        var e  = assertThrows(RuntimeException.class, () -> eventService.V1EventsCreateAndUpdate(commonRequestModel, false));
+        var e  = assertThrows(RuntimeException.class, () -> eventService.v1EventsCreateAndUpdate(commonRequestModel, false));
         assertNotNull(e);
     }
 

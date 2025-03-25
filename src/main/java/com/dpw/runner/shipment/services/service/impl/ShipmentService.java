@@ -27,7 +27,7 @@ import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedTyp
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PUSH_WITHDRAW;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.andCriteria;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListRequestFromEntityId;
@@ -393,20 +393,8 @@ public class ShipmentService implements IShipmentService {
     private BookingIntegrationsUtility bookingIntegrationsUtility;
     private List<String> TRANSPORT_MODES = Arrays.asList("SEA", "ROAD", "RAIL", "AIR");
     private List<String> SHIPMENT_TYPE = Arrays.asList("FCL", "LCL");
-    private List<String> WEIGHT_UNIT = Arrays.asList("KGS", "G", "DT");
-    private List<String> VOLUME_UNIT = Arrays.asList("M3", "L3", "CC");
-    private List<String> SHIPPING_LINE = Arrays.asList("DPWC", "MARUSK", "APLU");
-    private List<String> LOCATIONS = Arrays.asList("Jabel Ali", "Nava Shiva", "Shanghai", "Vancouver", "Seattle");
-    private List<String> PARTY_TYPE = Arrays.asList("CLIENT", "CONSIGNER", "CONSIGNEE");
     private List<String> DIRECTIONS = Arrays.asList("IMP", "EXP");
     private List<String> SOURCE = Arrays.asList("API", "Runner", "Logistics");
-
-    private Map<String, Object> ADDRESS = Map.ofEntries(
-            Map.entry("AddressShortCode", "Default")
-    );
-    private Map<String, Object> ORG = Map.ofEntries(
-            Map.entry("TenantName", "DP WORLD LOGISTICS CANADA INC")
-    );
 
     public static final Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
             Map.entry(Constants.CLIENT_ORG_CODE, RunnerEntityMapping.builder().tableName(Constants.CLIENT).dataType(String.class).fieldName(Constants.ORG_CODE).isContainsText(true).build()),
@@ -635,7 +623,6 @@ public class ShipmentService implements IShipmentService {
 
     private List<IRunnerResponse> convertEntityListToDtoListForExport(List<ShipmentDetails> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
-        List<Long> shipmentIdList = lst.stream().map(ShipmentDetails::getId).toList();
         List<ShipmentExcelExportResponse> shipmentListResponses = ShipmentMapper.INSTANCE.toShipmentExportListResponses(lst);
         shipmentListResponses.forEach(response -> {
             if (response.getStatus() != null && response.getStatus() < ShipmentStatus.values().length)
@@ -743,7 +730,6 @@ public class ShipmentService implements IShipmentService {
         }
         ShipmentDetails shipmentDetails = jsonHelper.convertValue(request, ShipmentDetails.class);
         try {
-            ShipmentDetails finalShipmentDetails = shipmentDetails;
             /*  Populate unloc code for entities */
             var populateUnlocCodeFuture = getPopulateUnlocCodeFuture(shipmentDetails, null);
 
@@ -786,7 +772,6 @@ public class ShipmentService implements IShipmentService {
             checkContainerAssignedForHbl(shipmentDetails, updatedPackings);
 
             List<NotesRequest> notesRequest = getNotesRequests(request, shipmentId);
-            String transactionId = shipmentDetails.getGuid().toString();
             dependentServiceHelper.pushShipmentDataToDependentService(shipmentDetails, true, false, null);
             try {
                 shipmentDetails.setNotesList(null);
@@ -924,8 +909,6 @@ public class ShipmentService implements IShipmentService {
             ShipmentDetails finalShipmentDetails1 = shipmentDetails;
             String entityPayload = jsonHelper.convertToJson(finalShipmentDetails1);
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForShipment(entityPayload, finalShipmentDetails1.getId(), finalShipmentDetails1.getGuid())), executorService);
-            ShipmentDetails finalShipmentDetails = shipmentDetails;
-
         } catch (Exception e) {
             log.error("Error occurred due to: " + e.getStackTrace());
             log.error(e.getMessage());
@@ -956,13 +939,10 @@ public class ShipmentService implements IShipmentService {
 
 
     public Optional<ShipmentDetails> retrieveByIdOrGuid(ShipmentRequest request) throws RunnerException {
-        String responseMsg;
-
         if (request == null) {
             log.error("Request is empty for Shipment update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
-
-        Optional<ShipmentDetails> oldEntity = Optional.ofNullable(null);
+        Optional<ShipmentDetails> oldEntity;
 
         if(request.getId()!=null){
             long id = request.getId();
@@ -1337,7 +1317,7 @@ public class ShipmentService implements IShipmentService {
     private List<PackingRequest> setPackingDetails(List<PackingRequest> packingRequests, String transportMode, Long consolidationId) {
         if(packingRequests != null && !packingRequests.isEmpty()) {
             for (PackingRequest packingRequest : packingRequests) {
-                if(!IsStringNullOrEmpty(transportMode) && transportMode.equals(Constants.TRANSPORT_MODE_AIR)) {
+                if(!isStringNullOrEmpty(transportMode) && transportMode.equals(Constants.TRANSPORT_MODE_AIR)) {
                     packingRequest.setConsolidationId(consolidationId);
                 }
             }
@@ -1381,20 +1361,20 @@ public class ShipmentService implements IShipmentService {
     }
 
     private void setGrossWvInContainers(ContainerRequest containers) {
-        if(IsStringNullOrEmpty(containers.getGrossWeightUnit()))
+        if(isStringNullOrEmpty(containers.getGrossWeightUnit()))
             containers.setGrossWeightUnit(Constants.WEIGHT_UNIT_KG);
-        if(IsStringNullOrEmpty(containers.getGrossVolumeUnit()))
+        if(isStringNullOrEmpty(containers.getGrossVolumeUnit()))
             containers.setGrossVolumeUnit(Constants.VOLUME_UNIT_M3);
     }
 
     private BigDecimal getTotalVolFromWeightUnit(ContainerRequest containers, PackingRequest packing, BigDecimal totalVolume) throws RunnerException {
-        if(!IsStringNullOrEmpty(packing.getVolumeUnit()))
+        if(!isStringNullOrEmpty(packing.getVolumeUnit()))
             totalVolume = totalVolume.add(new BigDecimal(convertUnit(Constants.VOLUME, packing.getVolume(), packing.getVolumeUnit(), containers.getGrossVolumeUnit()).toString()));
         return totalVolume;
     }
 
     private BigDecimal getTotalWeightFromWeightUnit(ContainerRequest containers, PackingRequest packing, BigDecimal totalWeight) throws RunnerException {
-        if(!IsStringNullOrEmpty(packing.getWeightUnit()))
+        if(!isStringNullOrEmpty(packing.getWeightUnit()))
             totalWeight = totalWeight.add(new BigDecimal(convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), containers.getGrossWeightUnit()).toString()));
         return totalWeight;
     }
@@ -1458,7 +1438,7 @@ public class ShipmentService implements IShipmentService {
                                                      Set<Long> newPackAttachedInConts, ContainerRequest container, Map<Long, Containers> oldContainersMap) throws RunnerException {
         if(!Objects.isNull(container.getId()) && dgConts.contains(container.getId())) {
             container.setHazardous(true);
-            if(IsStringNullOrEmpty(container.getDgClass()) || IsStringNullOrEmpty(container.getUnNumber()) || IsStringNullOrEmpty(container.getProperShippingName()))
+            if(isStringNullOrEmpty(container.getDgClass()) || isStringNullOrEmpty(container.getUnNumber()) || isStringNullOrEmpty(container.getProperShippingName()))
                 throw new ValidationException(OCEAN_DG_CONTAINER_FIELDS_VALIDATION);
         }
         if(Boolean.TRUE.equals(container.getHazardous())) {
@@ -1589,12 +1569,12 @@ public class ShipmentService implements IShipmentService {
                 double volume = convertUnit(Constants.VOLUME, containers.getGrossVolume(), containers.getGrossVolumeUnit(), toVolumeUnit).doubleValue();
                 totalWeight = totalWeight + wInDef;
                 tareWeight = tareWeight + tarDef;
-                if(!IsStringNullOrEmpty(containers.getPacks()))
+                if(!isStringNullOrEmpty(containers.getPacks()))
                     packageCount = packageCount + Long.parseLong(containers.getPacks());
                 totalVolume = totalVolume + volume;
                 if(containers.getContainerCount() != null)
                     totalContainerCount = totalContainerCount + containers.getContainerCount();
-                if(!IsStringNullOrEmpty(containers.getPacks()))
+                if(!isStringNullOrEmpty(containers.getPacks()))
                     totalPacks = totalPacks + Integer.parseInt(containers.getPacks());
             }
         }
@@ -1618,7 +1598,7 @@ public class ShipmentService implements IShipmentService {
             long packageCount = 0;
             long totalPacks = 0;
             for (Containers container : containersList) {
-                if (!IsStringNullOrEmpty(container.getPacks())) {
+                if (!isStringNullOrEmpty(container.getPacks())) {
                     packageCount = packageCount + Integer.parseInt(container.getPacks());
                     totalPacks = totalPacks + Integer.parseInt(container.getPacks());
                 }
@@ -1647,16 +1627,16 @@ public class ShipmentService implements IShipmentService {
     private AutoUpdateWtVolResponse calculateWeightAndVolumeUnit(AutoUpdateWtVolRequest request, List<Packing> packings, AutoUpdateWtVolResponse response) throws RunnerException {
         BigDecimal totalWeight = BigDecimal.ZERO;
         BigDecimal totalVolume = BigDecimal.ZERO;
-        if(IsStringNullOrEmpty(request.getWeightUnit()))
+        if(isStringNullOrEmpty(request.getWeightUnit()))
             response.setWeightUnit(Constants.WEIGHT_UNIT_KG);
-        if(IsStringNullOrEmpty(request.getVolumeUnit()))
+        if(isStringNullOrEmpty(request.getVolumeUnit()))
             response.setVolumeUnit(Constants.VOLUME_UNIT_M3);
         if(packings != null && !packings.isEmpty()) {
             for (Packing packing : packings) {
-                if(packing.getWeight() != null && !IsStringNullOrEmpty(packing.getWeightUnit())) {
+                if(packing.getWeight() != null && !isStringNullOrEmpty(packing.getWeightUnit())) {
                     totalWeight = totalWeight.add(new BigDecimal(convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), response.getWeightUnit()).toString()));
                 }
-                if(packing.getVolume() != null && !IsStringNullOrEmpty(packing.getVolumeUnit())) {
+                if(packing.getVolume() != null && !isStringNullOrEmpty(packing.getVolumeUnit())) {
                     totalVolume = totalVolume.add(new BigDecimal(convertUnit(Constants.VOLUME, packing.getVolume(), packing.getVolumeUnit(), response.getVolumeUnit()).toString()));
                 }
             }
@@ -1668,25 +1648,24 @@ public class ShipmentService implements IShipmentService {
     }
 
     private AutoUpdateWtVolResponse calculateVW(AutoUpdateWtVolRequest request, AutoUpdateWtVolResponse response, boolean recalculateVwObInKgAndM3) throws RunnerException{
-        if(IsStringNullOrEmpty(request.getTransportMode()))
+        if(isStringNullOrEmpty(request.getTransportMode()))
             return response;
-        if(!IsStringNullOrEmpty(response.getWeightUnit()) && !IsStringNullOrEmpty(response.getVolumeUnit())) {
+        if(!isStringNullOrEmpty(response.getWeightUnit()) && !isStringNullOrEmpty(response.getVolumeUnit())) {
             VolumeWeightChargeable vwOb = consolidationService.calculateVolumeWeight(request.getTransportMode(), response.getWeightUnit(), response.getVolumeUnit(), response.getWeight(), response.getVolume());
             response.setChargable(vwOb.getChargeable());
             if(request.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
                 response.setChargable(BigDecimal.valueOf(roundOffAirShipment(response.getChargable().doubleValue())));
             }
             response.setChargeableUnit(vwOb.getChargeableUnit());
-            if(request.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)) {
-                if(!IsStringNullOrEmpty(request.getShipmentType()) && request.getShipmentType().equals(Constants.SHIPMENT_TYPE_LCL)) {
-                    double volInM3 = convertUnit(Constants.VOLUME, response.getVolume(), response.getVolumeUnit(), Constants.VOLUME_UNIT_M3).doubleValue();
-                    double wtInKg = convertUnit(Constants.MASS, response.getWeight(), response.getWeightUnit(), Constants.WEIGHT_UNIT_KG).doubleValue();
-                    response.setChargable(BigDecimal.valueOf(Math.max(wtInKg/1000, volInM3)));
-                    response.setChargeableUnit(Constants.VOLUME_UNIT_M3);
-                    if(recalculateVwObInKgAndM3)
-                        vwOb = consolidationService.calculateVolumeWeight(request.getTransportMode(), Constants.WEIGHT_UNIT_KG, Constants.VOLUME_UNIT_M3, new BigDecimal(wtInKg), new BigDecimal(volInM3));
-                }
+            if(request.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA) && !isStringNullOrEmpty(request.getShipmentType()) && request.getShipmentType().equals(Constants.SHIPMENT_TYPE_LCL)) {
+                double volInM3 = convertUnit(Constants.VOLUME, response.getVolume(), response.getVolumeUnit(), Constants.VOLUME_UNIT_M3).doubleValue();
+                double wtInKg = convertUnit(Constants.MASS, response.getWeight(), response.getWeightUnit(), Constants.WEIGHT_UNIT_KG).doubleValue();
+                response.setChargable(BigDecimal.valueOf(Math.max(wtInKg/1000, volInM3)));
+                response.setChargeableUnit(Constants.VOLUME_UNIT_M3);
+                if(recalculateVwObInKgAndM3)
+                    vwOb = consolidationService.calculateVolumeWeight(request.getTransportMode(), Constants.WEIGHT_UNIT_KG, Constants.VOLUME_UNIT_M3, BigDecimal.valueOf(wtInKg), BigDecimal.valueOf(volInM3));
             }
+
             response.setVolumetricWeight(vwOb.getVolumeWeight());
             response.setVolumetricWeightUnit(vwOb.getVolumeWeightUnit());
         }
@@ -1708,7 +1687,7 @@ public class ShipmentService implements IShipmentService {
         String packingUnit = null;
         if(packings != null && !packings.isEmpty()) {
             for (Packing packing : packings) {
-                if(!IsStringNullOrEmpty(packing.getPacks()))
+                if(!isStringNullOrEmpty(packing.getPacks()))
                     totalPacks = totalPacks + Integer.parseInt(packing.getPacks());
                 if (tempPackingUnit == null) {
                     tempPackingUnit = packing.getPacksType();
@@ -1726,7 +1705,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     private boolean isMPKUnitCase(Packing packing, String tempPackingUnit) {
-        return !IsStringNullOrEmpty(packing.getPacksType()) && tempPackingUnit.equals(packing.getPacksType());
+        return !isStringNullOrEmpty(packing.getPacksType()) && tempPackingUnit.equals(packing.getPacksType());
     }
 
     private <T> void getResponseForPacks(T response, Integer totalPacks, String packingUnit) {
@@ -2105,7 +2084,7 @@ public class ShipmentService implements IShipmentService {
     private void setBookingNumberInShipment(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails1) {
         if (consolidationDetails1.getId() != null) {
             Optional<ConsolidationDetails> consol = consolidationDetailsDao.findById(consolidationDetails1.getId());
-            if (!consol.isEmpty() && !CommonUtils.IsStringNullOrEmpty(consol.get().getBookingNumber())) {
+            if (!consol.isEmpty() && !CommonUtils.isStringNullOrEmpty(consol.get().getBookingNumber())) {
                 shipmentDetails.setBookingNumber(consol.get().getBookingNumber());
             } else if(!consol.isEmpty()) {
                 shipmentDetails.setBookingNumber(consol.get().getCarrierBookingRef());
@@ -2225,7 +2204,7 @@ public class ShipmentService implements IShipmentService {
             consolidationDetails = createConsolidation(shipmentDetails, new ArrayList<>(updatedContainers));
             if (!Objects.isNull(consolidationDetails)) {
                 shipmentDetails.setConsolidationList(new HashSet<>(Arrays.asList(consolidationDetails)));
-                if (IsStringNullOrEmpty(shipmentDetails.getMasterBill()))
+                if (isStringNullOrEmpty(shipmentDetails.getMasterBill()))
                     shipmentDetails.setMasterBill(consolidationDetails.getBol());
                 syncConsole = true;
             }
@@ -2471,11 +2450,11 @@ public class ShipmentService implements IShipmentService {
             if(shipmentDetails.getConsignee().getOrgCode() != null && shipmentDetails.getConsigner().getOrgCode() != null && shipmentDetails.getConsigner().getOrgCode().equals(shipmentDetails.getConsignee().getOrgCode()))
                 throw new ValidationException("Consignor & Consignee parties can't be selected as same.");
         }
-        if(!IsStringNullOrEmpty(shipmentDetails.getJobType()) && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)){
-            if(!IsStringNullOrEmpty(shipmentDetails.getTransportMode()) && !shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && !shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)) {
+        if(!isStringNullOrEmpty(shipmentDetails.getJobType()) && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)){
+            if(!isStringNullOrEmpty(shipmentDetails.getTransportMode()) && !shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && !shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)) {
                 shipmentDetails.setHouseBill(shipmentDetails.getMasterBill());
             }
-            else if(!IsStringNullOrEmpty(shipmentDetails.getTransportMode()) && (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) ||
+            else if(!isStringNullOrEmpty(shipmentDetails.getTransportMode()) && (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) ||
                     shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA))) {
                 shipmentDetails.setHouseBill(null);
             }
@@ -3456,7 +3435,7 @@ public class ShipmentService implements IShipmentService {
     private void createBOCOEvent(ShipmentDetails shipmentDetails, List<Events> events, boolean shouldCreateBOCO) {
         if(Boolean.TRUE.equals(shouldCreateBOCO)) {
             Events bocoEvent = initializeAutomatedEvents(shipmentDetails, EventConstants.BOCO, commonUtils.getUserZoneTime(LocalDateTime.now()), null);
-            if (!CommonUtils.IsStringNullOrEmpty(shipmentDetails.getBookingNumber()))
+            if (!CommonUtils.isStringNullOrEmpty(shipmentDetails.getBookingNumber()))
                 bocoEvent.setContainerNumber(shipmentDetails.getBookingNumber());
             events.add(bocoEvent);
         }
@@ -5189,11 +5168,11 @@ public class ShipmentService implements IShipmentService {
     private String getCustomizedShipmentProcessNumber(ProductProcessTypes productProcessType, ShipmentDetails currentShipment) throws RunnerException {
         List<TenantProducts> tenantProducts = productEngine.populateEnabledTenantProducts();
         // to check the commmon sequence
-        var sequenceNumber = productEngine.GetCommonSequenceNumber(currentShipment.getTransportMode(), ProductProcessTypes.Consol_Shipment_TI);
+        var sequenceNumber = productEngine.getCommonSequenceNumber(currentShipment.getTransportMode(), ProductProcessTypes.Consol_Shipment_TI);
         if (sequenceNumber != null && !sequenceNumber.isEmpty()) {
             return sequenceNumber;
         }
-        var identifiedProduct = productEngine.IdentifyProduct(currentShipment, tenantProducts);
+        var identifiedProduct = productEngine.identifyProduct(currentShipment, tenantProducts);
         if (identifiedProduct == null){
             return "";
         }
@@ -5948,12 +5927,12 @@ public class ShipmentService implements IShipmentService {
     }
 
     private void processCarrierDetailsOrigin(ShipmentDetailsResponse shipment) {
-        if(!IsStringNullOrEmpty(shipment.getCarrierDetails().getOrigin())) {
-            if(IsStringNullOrEmpty(shipment.getAdditionalDetails().getPaidPlace()))
+        if(!isStringNullOrEmpty(shipment.getCarrierDetails().getOrigin())) {
+            if(isStringNullOrEmpty(shipment.getAdditionalDetails().getPaidPlace()))
                 shipment.getAdditionalDetails().setPaidPlace(shipment.getCarrierDetails().getOrigin());
-            if(IsStringNullOrEmpty(shipment.getAdditionalDetails().getPlaceOfIssue()))
+            if(isStringNullOrEmpty(shipment.getAdditionalDetails().getPlaceOfIssue()))
                 shipment.getAdditionalDetails().setPlaceOfIssue(shipment.getCarrierDetails().getOrigin());
-            if(IsStringNullOrEmpty(shipment.getAdditionalDetails().getPlaceOfSupply()))
+            if(isStringNullOrEmpty(shipment.getAdditionalDetails().getPlaceOfSupply()))
                 shipment.getAdditionalDetails().setPlaceOfSupply(shipment.getCarrierDetails().getOrigin());
         }
     }
@@ -6194,7 +6173,7 @@ public class ShipmentService implements IShipmentService {
     public ResponseEntity<IRunnerResponse> getMasterDataMappings() {
         String responseMsg;
         try {
-            List<MasterDataDescriptionResponse> response = new ArrayList<>();
+            List<MasterDataDescriptionResponse> response;
 
             //Get current Tenant's setting
             Optional<ShipmentSettingsDetails> optional = shipmentSettingsDao.findByTenantId(TenantContext.getCurrentTenant());
@@ -8710,7 +8689,7 @@ public class ShipmentService implements IShipmentService {
             totalVolume = totalVolume + volDef;
             chargeableWeight = chargeableWeight + (ship.getChargable() != null ? ship.getChargable().doubleValue(): 0);
 
-            if(!IsStringNullOrEmpty(ship.getPacksUnit())) {
+            if(!isStringNullOrEmpty(ship.getPacksUnit())) {
                 if(packsUnit == null)
                     packsUnit = ship.getPacksUnit();
                 else if(!packsUnit.equals(ship.getPacksUnit()))
@@ -8721,25 +8700,25 @@ public class ShipmentService implements IShipmentService {
             transportMode = ship.getTransportMode();
         }
         response.setTotalPacksWithUnit(totalPacks + " " + (packsUnit != null? packsUnit : ""));
-        response.setTotalPacksWeight(String.format(Constants.STRING_FORMAT, IReport.ConvertToWeightNumberFormat(BigDecimal.valueOf(totalWeight), v1TenantSettingsResponse), toWeightUnit));
-        response.setTotalPacksVolume(String.format(Constants.STRING_FORMAT, IReport.ConvertToVolumeNumberFormat(BigDecimal.valueOf(totalVolume), v1TenantSettingsResponse), toVolumeUnit));
+        response.setTotalPacksWeight(String.format(Constants.STRING_FORMAT, IReport.convertToWeightNumberFormat(BigDecimal.valueOf(totalWeight), v1TenantSettingsResponse), toWeightUnit));
+        response.setTotalPacksVolume(String.format(Constants.STRING_FORMAT, IReport.convertToVolumeNumberFormat(BigDecimal.valueOf(totalVolume), v1TenantSettingsResponse), toVolumeUnit));
 
         if(Objects.equals(transportMode, Constants.TRANSPORT_MODE_AIR)) {
             chargeableWeight = CommonUtils.roundOffAirShipment(chargeableWeight);
         }
         chargeableWeight = BigDecimal.valueOf(chargeableWeight).setScale(2, RoundingMode.HALF_UP).doubleValue();
-        response.setPacksChargeableWeight(String.format(Constants.STRING_FORMAT, IReport.ConvertToWeightNumberFormat(BigDecimal.valueOf(chargeableWeight), v1TenantSettingsResponse), toWeightUnit));
+        response.setPacksChargeableWeight(String.format(Constants.STRING_FORMAT, IReport.convertToWeightNumberFormat(BigDecimal.valueOf(chargeableWeight), v1TenantSettingsResponse), toWeightUnit));
         return ResponseHelper.buildSuccessResponse(response);
     }
 
     private String getToVolumeUnit(ShipmentSettingsDetails shipmentSettingsDetails, String toVolumeUnit) {
-        if(!IsStringNullOrEmpty(shipmentSettingsDetails.getVolumeChargeableUnit()))
+        if(!isStringNullOrEmpty(shipmentSettingsDetails.getVolumeChargeableUnit()))
             toVolumeUnit = shipmentSettingsDetails.getVolumeChargeableUnit();
         return toVolumeUnit;
     }
 
     private String getToWeightUnit(ShipmentSettingsDetails shipmentSettingsDetails, String toWeightUnit) {
-        if(!IsStringNullOrEmpty(shipmentSettingsDetails.getWeightChargeableUnit()))
+        if(!isStringNullOrEmpty(shipmentSettingsDetails.getWeightChargeableUnit()))
             toWeightUnit = shipmentSettingsDetails.getWeightChargeableUnit();
         return toWeightUnit;
     }

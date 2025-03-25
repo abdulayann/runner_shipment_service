@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.filters;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SOURCE_SERVICE_TYPE;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
@@ -172,7 +172,7 @@ public class AuthFilter extends OncePerRequestFilter {
 
     private String getSourceServiceType(HttpServletRequest req) {
         String sourceService = req.getHeader(SOURCE_SERVICE_TYPE);
-        if(IsStringNullOrEmpty(sourceService))
+        if(isStringNullOrEmpty(sourceService))
             return "";
         return sourceService;
     }

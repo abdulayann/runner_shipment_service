@@ -4,7 +4,7 @@ package com.dpw.runner.shipment.services.utils;
 import static com.dpw.runner.shipment.services.commons.constants.PartiesConstants.ACTIVE_CLIENT;
 import static com.dpw.runner.shipment.services.commons.constants.PartiesConstants.FULLNAME;
 import static com.dpw.runner.shipment.services.commons.constants.PartiesConstants.ORG_ID;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 import static com.dpw.runner.shipment.services.validator.constants.CustomerBookingConstants.CONSIGNEE_REQUEST;
 import static com.dpw.runner.shipment.services.validator.constants.CustomerBookingConstants.CONSIGNOR_REQUEST;
 import static com.dpw.runner.shipment.services.validator.constants.CustomerBookingConstants.CUSTOMER_REQUEST;
@@ -405,7 +405,7 @@ public class BookingIntegrationsUtility {
     }
 
     private String getCarrierSCACCodeFromItemValue(String itemValue) {
-        if(IsStringNullOrEmpty(itemValue))
+        if(isStringNullOrEmpty(itemValue))
             return null;
         Set<String> carrierCodes = new HashSet<>();
         carrierCodes.add(itemValue);
