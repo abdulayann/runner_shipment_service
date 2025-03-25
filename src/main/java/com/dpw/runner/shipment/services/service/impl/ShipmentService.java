@@ -1657,16 +1657,15 @@ public class ShipmentService implements IShipmentService {
                 response.setChargable(BigDecimal.valueOf(roundOffAirShipment(response.getChargable().doubleValue())));
             }
             response.setChargeableUnit(vwOb.getChargeableUnit());
-            if(request.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)) {
-                if(!isStringNullOrEmpty(request.getShipmentType()) && request.getShipmentType().equals(Constants.SHIPMENT_TYPE_LCL)) {
-                    double volInM3 = convertUnit(Constants.VOLUME, response.getVolume(), response.getVolumeUnit(), Constants.VOLUME_UNIT_M3).doubleValue();
-                    double wtInKg = convertUnit(Constants.MASS, response.getWeight(), response.getWeightUnit(), Constants.WEIGHT_UNIT_KG).doubleValue();
-                    response.setChargable(BigDecimal.valueOf(Math.max(wtInKg/1000, volInM3)));
-                    response.setChargeableUnit(Constants.VOLUME_UNIT_M3);
-                    if(recalculateVwObInKgAndM3)
-                        vwOb = consolidationService.calculateVolumeWeight(request.getTransportMode(), Constants.WEIGHT_UNIT_KG, Constants.VOLUME_UNIT_M3, new BigDecimal(wtInKg), new BigDecimal(volInM3));
-                }
+            if(request.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA) && !isStringNullOrEmpty(request.getShipmentType()) && request.getShipmentType().equals(Constants.SHIPMENT_TYPE_LCL)) {
+                double volInM3 = convertUnit(Constants.VOLUME, response.getVolume(), response.getVolumeUnit(), Constants.VOLUME_UNIT_M3).doubleValue();
+                double wtInKg = convertUnit(Constants.MASS, response.getWeight(), response.getWeightUnit(), Constants.WEIGHT_UNIT_KG).doubleValue();
+                response.setChargable(BigDecimal.valueOf(Math.max(wtInKg/1000, volInM3)));
+                response.setChargeableUnit(Constants.VOLUME_UNIT_M3);
+                if(recalculateVwObInKgAndM3)
+                    vwOb = consolidationService.calculateVolumeWeight(request.getTransportMode(), Constants.WEIGHT_UNIT_KG, Constants.VOLUME_UNIT_M3, BigDecimal.valueOf(wtInKg), BigDecimal.valueOf(volInM3));
             }
+
             response.setVolumetricWeight(vwOb.getVolumeWeight());
             response.setVolumetricWeightUnit(vwOb.getVolumeWeightUnit());
         }

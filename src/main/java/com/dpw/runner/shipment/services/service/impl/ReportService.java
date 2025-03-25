@@ -390,10 +390,10 @@ public class ReportService implements IReportService {
 
         DocPages pages = getFromTenantSettings(reportRequest.getReportInfo(), null, consolidationType, reportRequest.getPrintType(), reportRequest.getFrontTemplateCode(), reportRequest.getBackTemplateCode(), isOriginalPrinted, transportMode, reportRequest.getMultiTemplateCode(),false);
 
-        byte[] pdfByte_Content = getFromDocumentService(dataRetrived, pages.getMainPageId());
-        if(pdfByte_Content == null) throw new ValidationException(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE);
+        byte[] pdfByteContent = getFromDocumentService(dataRetrived, pages.getMainPageId());
+        if(pdfByteContent == null) throw new ValidationException(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE);
 
-        return pdfByte_Content;
+        return pdfByteContent;
     }
 
     private byte[] getBytesForHawb(ReportRequest reportRequest, Map<String, Object> dataRetrived, Boolean isOriginalPrint, Boolean isSurrenderPrint, Boolean isNeutralPrint, String hbltype, String objectType, boolean isOriginalPrinted, ShipmentSettingsDetails tenantSettingsRow, IReport report) throws RunnerException, DocumentException, IOException, InterruptedException, ExecutionException {
@@ -1198,8 +1198,8 @@ public class ReportService implements IReportService {
                     tenant = shipmentSettingsDetails;
                 }
             }
-            DocPages page = getTemplateId(tenant, admin, key, hblType, objectType,
-                    printType, frontTemplateCode, backTemplateCode, isOriginalPrinted, transportMode, multiTemplateCode, isTransportInstruction);
+            DocPages page = getTemplateId(tenant, admin, key, objectType,
+                    printType, frontTemplateCode, backTemplateCode, transportMode, isTransportInstruction);
             if (page != null && Strings.isNullOrEmpty(page.getFirstPageId()) && Strings.isNullOrEmpty(page.getMainPageId()) && Strings.isNullOrEmpty(page.getBackPrintId())) {
                 throw new ValidationException("Please upload template in branch settings for: " + key);
             }
@@ -1218,10 +1218,10 @@ public class ReportService implements IReportService {
     }
 
 
-    public DocPages getTemplateId(ShipmentSettingsDetails row, ShipmentSettingsDetails adminRow, String DocKey, String HblType, String objectType, String printType,
-                                  String frontTemplateCode, String backTemplateCode, boolean isOriginalPrinted, String transportMode, String multiTemplateCode, boolean istransportInstruction)
+    public DocPages getTemplateId(ShipmentSettingsDetails row, ShipmentSettingsDetails adminRow, String docKey, String objectType, String printType,
+                                  String frontTemplateCode, String backTemplateCode, String transportMode, boolean istransportInstruction)
     {
-        switch (DocKey)
+        switch (docKey)
         {
             case ReportConstants.SEAWAY_BILL:
                 return setDocPages(null, getMainOrLastPageId(row.getSeawayMainPage(), adminRow.getSeawayMainPage()), null, getIsLogoFixed(row.getSeawayMainPage()), null, null,null);
@@ -1603,7 +1603,7 @@ public class ReportService implements IReportService {
     }
 
     private byte[] getBytesForNeutralAWB(Object json){
-        DocPages docPages = getFromTenantSettings(ReportConstants.AWB_NEUTRAL, null, null, null, null, null, false, null, null,false);;
+        DocPages docPages = getFromTenantSettings(ReportConstants.AWB_NEUTRAL, null, null, null, null, null, false, null, null,false);
         return getFromDocumentService(json, docPages.getMainPageId());
     }
 
@@ -1810,7 +1810,7 @@ public class ReportService implements IReportService {
         }
     }
 
-    public void addHouseBillToRepo(DocUploadRequest uploadRequest, String printType, byte[] document, ShipmentSettingsDetails shipmentSettingsDetails, String releaseType, String shipmentGuid) throws IOException {
+    public void addHouseBillToRepo(DocUploadRequest uploadRequest, String printType, byte[] document, ShipmentSettingsDetails shipmentSettingsDetails, String releaseType, String shipmentGuid) {
         List<Hbl> blObjectList = hblDao.findByShipmentId(Long.parseLong(uploadRequest.getReportId()));
         if (blObjectList == null || blObjectList.isEmpty())
             return;

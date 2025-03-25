@@ -186,16 +186,11 @@ public class ShippingInstructionReport extends IReport{
     }
 
     private void formatPackingVolumes(Map<String, Object> v, V1TenantSettingsResponse v1TenantSettingsResponse) {
-        if(v.get(VOLUME) != null)
-            v.put(VOLUME, convertToVolumeNumberFormat(v.get(VOLUME), v1TenantSettingsResponse));
-        if(v.get(WEIGHT) != null)
-            v.put(WEIGHT, convertToWeightNumberFormat(v.get(WEIGHT), v1TenantSettingsResponse));
-        if(v.get(NET_WEIGHT) != null)
-            v.put(NET_WEIGHT, convertToWeightNumberFormat(v.get(NET_WEIGHT), v1TenantSettingsResponse));
-        if(v.get(VOLUME_WEIGHT) != null)
-            v.put(VOLUME_WEIGHT, convertToWeightNumberFormat(v.get(VOLUME_WEIGHT).toString(), v1TenantSettingsResponse));
-        if(v.get(PACKS) != null)
-            v.put(PACKS, getDPWWeightVolumeFormat(new BigDecimal(v.get(PACKS).toString()), 0, v1TenantSettingsResponse));
+        v.computeIfPresent(VOLUME, (key, value) -> convertToVolumeNumberFormat(value, v1TenantSettingsResponse));
+        v.computeIfPresent(WEIGHT, (key, value) -> convertToWeightNumberFormat(value, v1TenantSettingsResponse));
+        v.computeIfPresent(NET_WEIGHT, (key, value) -> convertToWeightNumberFormat(value, v1TenantSettingsResponse));
+        v.computeIfPresent(VOLUME_WEIGHT, (key, value) -> convertToWeightNumberFormat(value.toString(), v1TenantSettingsResponse));
+        v.computeIfPresent(PACKS, (key, value) -> getDPWWeightVolumeFormat(new BigDecimal(value.toString()), 0, v1TenantSettingsResponse));
     }
 
     private void addCarrierDetailTags(ShippingInstructionModel model, Map<String, Object> dictionary) {

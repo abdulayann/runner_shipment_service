@@ -4266,7 +4266,7 @@ public class ConsolidationService implements IConsolidationService {
     }
 
     private String mergeTextField(String a, String b) {
-        if(!isStringNullOrEmpty(b) && !isStringNullOrEmpty(b))
+        if(!isStringNullOrEmpty(a) && !isStringNullOrEmpty(b))
             return a + "\n" + b;
         if(!isStringNullOrEmpty(b))
             return b;

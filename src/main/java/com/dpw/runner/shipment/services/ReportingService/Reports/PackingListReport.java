@@ -209,10 +209,8 @@ public class PackingListReport extends IReport {
                             new BigDecimal(ReportHelper.twoDecimalPlacesFormat(stringValueOf(v.get(ReportConstants.NET_WEIGHT))))));
         }
 
-        if(v.get(ReportConstants.WEIGHT) != null)
-            v.put(ReportConstants.WEIGHT, convertToWeightNumberFormat(new BigDecimal(stringValueOf(v.get(ReportConstants.WEIGHT)))));
-        if(v.get(PACKS) != null)
-            v.put(ReportConstants.PACKS, getDPWWeightVolumeFormat(new BigDecimal(stringValueOf(v.get(PACKS))), 0, v1TenantSettingsResponse));
+        v.computeIfPresent(ReportConstants.WEIGHT, (key, value) -> convertToWeightNumberFormat(new BigDecimal(stringValueOf(value))));
+        v.computeIfPresent(ReportConstants.PACKS, (key, value) -> getDPWWeightVolumeFormat(new BigDecimal(stringValueOf(value)), 0, v1TenantSettingsResponse));
     }
 
     private void processPacksType(Map<String, Object> v) {
