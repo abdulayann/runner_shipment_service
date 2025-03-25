@@ -3202,7 +3202,7 @@ public abstract class IReport {
                 dict.put(SHIPMENT_PACKING_PACKS_TYPE_DESCRIPTION, getMasterListItemDesc(pack.getPacksType(), MasterDataType.PACKS_UNIT.name(), false));
             }
             catch (Exception ignored) {
-
+                // Left blank for sonar to flag it
             }
         }
 
