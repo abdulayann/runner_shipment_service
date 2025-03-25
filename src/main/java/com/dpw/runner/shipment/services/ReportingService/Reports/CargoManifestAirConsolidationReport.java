@@ -104,7 +104,7 @@ public class CargoManifestAirConsolidationReport extends IReport{
         CarrierDetailModel carrierDetailModel = cargoManifestAirConsolidationModel.getConsolidationModel().getCarrierDetails();
         if(!airRoutingTagsAdded) {
             Map<String, CarrierMasterData> carriersMap = new HashMap<>();
-            if(!CommonUtils.IsStringNullOrEmpty(carrierDetailModel.getShippingLine()))
+            if(!CommonUtils.isStringNullOrEmpty(carrierDetailModel.getShippingLine()))
                 carriersMap = masterDataUtils.getCarriersData(Set.of(carrierDetailModel.getShippingLine()));
             dictionary.put(CONSOL_FIRST_FLIGHT_AND_DAY, getFlightAndDayString(carriersMap, carrierDetailModel.getShippingLine(), carrierDetailModel.getFlightNumber(), carrierDetailModel.getEtd()));
         }
@@ -113,7 +113,7 @@ public class CargoManifestAirConsolidationReport extends IReport{
         dictionary.put(CM_TOTAL_PACKS_AND_UNITS, getTotalPacksAndUnit(cargoManifestAirConsolidationModel.getPackSummaryResponse()));
         dictionary.put(CONSOL_FLIGHT_CARRIER, cargoManifestAirConsolidationModel.getConsolidationModel().getCarrierDetails().getShippingLine());
         dictionary.put(CONSOL_AIRCRAFT_TYPE, cargoManifestAirConsolidationModel.getConsolidationModel().getCarrierDetails().getAircraftType());
-        dictionary.put(CURRENT_DATE, ConvertToDPWDateFormat(LocalDateTime.now()));
+        dictionary.put(CURRENT_DATE, convertToDPWDateFormat(LocalDateTime.now()));
         ReportHelper.addTenantDetails(dictionary, cargoManifestAirConsolidationModel.getTenantModel());
         try{ dictionary.put(SENDING_AGENT_NAME, cargoManifestAirConsolidationModel.getConsolidationModel().getSendingAgent().getOrgData().get(FULL_NAME)); }catch (Exception ignored) {log.error(ORG_DATA_NOT_AVAILABLE);}
         try{ dictionary.put(SENDING_AGENT_ADDRESS, getOrgAddress(cargoManifestAirConsolidationModel.getConsolidationModel().getSendingAgent())); }catch (Exception ignored) {log.error(ORG_DATA_NOT_AVAILABLE);}

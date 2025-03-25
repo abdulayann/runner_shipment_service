@@ -187,4 +187,5 @@ public class ShipmentSettingsDetailsResponse implements IRunnerResponse {
     private List<SectionVisibilityResponse> sectionVisibilityResponses;
     private Boolean countryAirCargoSecurity;
     private Boolean preAlertEmailAndLogs;
+    private Boolean isAmrAirFreightEnabled;
 }

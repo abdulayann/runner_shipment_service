@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.document.service;
 
+import com.dpw.runner.shipment.services.ReportingService.Models.DocUploadRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.document.request.documentmanager.*;
@@ -32,4 +33,6 @@ public interface IDocumentManagerService {
     ResponseEntity<IRunnerResponse> bulkSave(CommonRequestModel request);
     ResponseEntity<IRunnerResponse> temporaryUpload(CommonRequestModel request);
     ResponseEntity<IRunnerResponse> list(CommonRequestModel request);
+    ResponseEntity<IRunnerResponse> listDocTypes(CommonRequestModel request);
+    void pushSystemGeneratedDocumentToDocMaster(MultipartFile file, String filename, DocUploadRequest uploadRequest);
 }

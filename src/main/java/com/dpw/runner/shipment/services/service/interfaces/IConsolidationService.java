@@ -7,7 +7,6 @@ import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
@@ -36,7 +35,7 @@ public interface IConsolidationService extends ICommonService{
 
     ResponseEntity<IRunnerResponse> calculateUtilization(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<IRunnerResponse> calculateAchieved_AllocatedForSameUnit(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> calculateAchievedAllocatedForSameUnit(CommonRequestModel commonRequestModel);
 
     ResponseEntity<IRunnerResponse> calculateAchievedValues(CommonRequestModel commonRequestModel);
 

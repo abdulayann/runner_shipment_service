@@ -47,7 +47,7 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
         ConsolidationDetailsRequest response = new ConsolidationDetailsRequest();
         String responseMsg;
         try {
-            if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
+            if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !Boolean.TRUE.equals(syncConfig.IS_REVERSE_SYNC_ACTIVE)) {
                 return ResponseHelper.buildSuccessResponse();
             }
             response = modelMapper.map(request, ConsolidationDetailsRequest.class);
@@ -158,11 +158,11 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
         response.getAllocations().setId(null);
     }
 
-    private void mapReverseArrivalDepartureDetails(ConsolidationDetailsRequest response_, CustomConsolidationRequest request_) {
-        if(request_ == null || request_.getArrivalDepartureDetails() == null)
+    private void mapReverseArrivalDepartureDetails(ConsolidationDetailsRequest consolidationDetailsRequest, CustomConsolidationRequest customConsolidationRequest) {
+        if(customConsolidationRequest == null || customConsolidationRequest.getArrivalDepartureDetails() == null)
             return;
 
-        ArrivalDepartureDetails request = request_.getArrivalDepartureDetails();
+        ArrivalDepartureDetails request = customConsolidationRequest.getArrivalDepartureDetails();
 
         // Arrival Details
         ArrivalDepartureDetailsRequest response1 = new ArrivalDepartureDetailsRequest();
@@ -184,7 +184,7 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
         if(request.getACFSId() != null)
             response1.setCFSId(modelMapper.map(request.getACFSId(), PartiesRequest.class));
 
-        response_.setArrivalDetails(response1);
+        consolidationDetailsRequest.setArrivalDetails(response1);
 
         // Departure Details
         ArrivalDepartureDetailsRequest response2 = new ArrivalDepartureDetailsRequest();
@@ -206,7 +206,7 @@ public class ConsolidationReverseSync implements IConsolidationReverseSync {
         if(request.getDCFSId() != null)
             response2.setCFSId(modelMapper.map(request.getDCFSId(), PartiesRequest.class));
 
-        response_.setDepartureDetails(response2);
+        consolidationDetailsRequest.setDepartureDetails(response2);
     }
 
     private PartiesRequest mapPartyObjectWithFreetext(PartyRequestV2 sourcePartyObject, Boolean isFreeText, String freeTextAddress) {

@@ -43,7 +43,7 @@ import java.util.*;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.EXEMPTION_CARGO;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 
 @Repository
 @Slf4j
@@ -204,6 +204,7 @@ public class AwbDao implements IAwbDao {
                             this.pushToKafkaForAirMessaging(awb, shipmentDetails.get(), null, null, false, null, includeCSD);
                             // AirMessageSent flag set to SENT
                             this.updateAirMessageStatus(awb.getGuid(), AwbStatus.AIR_MESSAGE_SENT.name());
+                            awb.setAirMessageStatus(AwbStatus.AIR_MESSAGE_SENT);
                             this.updateUserDetails(awb.getGuid(), UserContext.getUser().DisplayName, UserContext.getUser().Email);
                             this.createAirMessagingEvents(shipmentDetails.get().getId(), Constants.SHIPMENT, EventConstants.FWB_EVENT_CODE, "FWB sent", shipmentDetails.get().getTenantId());
                         }
@@ -223,6 +224,7 @@ public class AwbDao implements IAwbDao {
             this.pushToKafkaForAirMessaging(awb, null, consolidationDetails.get(), null, false, null, includeCSD);
             // AirMessageSent flag set to SENT
             this.updateAirMessageStatus(awb.getGuid(), AwbStatus.AIR_MESSAGE_SENT.name());
+            awb.setAirMessageStatus(AwbStatus.AIR_MESSAGE_SENT);
             this.updateLinkedHawbAirMessageStatus(awb.getGuid(), AwbStatus.AIR_MESSAGE_SENT.name());
             this.updateUserDetails(awb.getGuid(), UserContext.getUser().DisplayName, UserContext.getUser().Email);
             this.createAirMessagingEvents(consolidationDetails.get().getId(), Constants.CONSOLIDATION, EventConstants.FWB_FZB_EVENT_CODE, "FWB&FZB sent", consolidationDetails.get().getTenantId());
@@ -325,7 +327,7 @@ public class AwbDao implements IAwbDao {
 
     @Override
     @Transactional
-    public void updateAwbPrintInformation(Long shipmentId, Long consolidationId, PrintType printType, Boolean isOriginal, LocalDateTime printedAt) {
+    public Awb updateAwbPrintInformation(Long shipmentId, Long consolidationId, PrintType printType, Boolean isOriginal, LocalDateTime printedAt) {
         Awb awb = null;
         List<Awb> awbList;
         if(shipmentId != null) {
@@ -345,11 +347,12 @@ public class AwbDao implements IAwbDao {
                 commonUtils.checkForMandatoryHsCodeForUAE(awb);
             }
             try {
-                save(awb);
+                awb = save(awb);
             } catch (Exception e) {
                 log.error("Exception occurred while saving print information for awb : {}", e.getMessage());
             }
         }
+        return awb;
     }
 
     @Override
@@ -399,7 +402,7 @@ public class AwbDao implements IAwbDao {
     private void getAwbSphEntity(String eFreightStatus, String securityStatus, Long id, Awb awb) {
         awb.setAwbSpecialHandlingCodesMappings(null);
         List<AwbSpecialHandlingCodesMappingInfo> sphs = new ArrayList<>();
-        if(!IsStringNullOrEmpty(eFreightStatus) && !Constants.NON.equals(eFreightStatus)) {
+        if(!isStringNullOrEmpty(eFreightStatus) && !Constants.NON.equals(eFreightStatus)) {
             AwbSpecialHandlingCodesMappingInfo sph = AwbSpecialHandlingCodesMappingInfo.builder()
                     .shcId(eFreightStatus)
                     .entityId(id)
@@ -408,7 +411,7 @@ public class AwbDao implements IAwbDao {
             sph.setEntityType(awb.getAwbShipmentInfo().getEntityType());
             sphs.add(sph);
         }
-        if(!IsStringNullOrEmpty(securityStatus) && !Constants.INSECURE.equals(securityStatus)) {
+        if(!isStringNullOrEmpty(securityStatus) && !Constants.INSECURE.equals(securityStatus)) {
             if(securityStatus.equalsIgnoreCase(EXEMPTION_CARGO) || securityStatus.equalsIgnoreCase(ReportConstants.EXEMPTION_CARGO))
                 securityStatus = Constants.SPX;
             AwbSpecialHandlingCodesMappingInfo sph = AwbSpecialHandlingCodesMappingInfo.builder()
@@ -427,7 +430,6 @@ public class AwbDao implements IAwbDao {
     public void updatedAwbInformationEvent(Object newEntity, Object oldEntity) throws RunnerException {
         // fetch Awb
         Awb awb = null;
-        AwbSpecialHandlingCodesMappingInfo sph = null;
 
         if(newEntity instanceof ShipmentDetails shipmentDetails) {
             awb = getAwbFromShipment((ShipmentDetails) oldEntity, shipmentDetails);

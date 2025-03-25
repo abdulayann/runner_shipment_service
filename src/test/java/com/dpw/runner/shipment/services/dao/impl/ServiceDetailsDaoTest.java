@@ -32,7 +32,6 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -52,7 +51,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 @ExtendWith(SpringExtension.class)
 class ServiceDetailsDaoTest {
     private static JsonTestUtility jsonTestUtility;
-    private static ObjectMapper objectMapper;
     private static ShipmentDetails completeShipment;
     @MockBean
     private IAuditLogService iAuditLogService;
@@ -72,7 +70,6 @@ class ServiceDetailsDaoTest {
     @BeforeAll
     static void init() throws IOException {
         jsonTestUtility = new JsonTestUtility();
-        objectMapper = JsonTestUtility.getMapper();
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
@@ -1222,7 +1219,7 @@ class ServiceDetailsDaoTest {
      * {@link ServiceDetailsDao#updateEntityFromShipment(List, Long, List)}
      */
     @Test
-    void testUpdateEntityFromShipment6() throws RunnerException {
+    void testUpdateEntityFromShipment6() {
         // Arrange
         Parties contractor = new Parties();
         contractor.setAddressCode("42 Main St");
@@ -1839,10 +1836,11 @@ class ServiceDetailsDaoTest {
 
         ArrayList<ServiceDetails> serviceDetailsRequests = new ArrayList<>();
         serviceDetailsRequests.add(serviceDetails);
+        Map<Long, ServiceDetails> oldEntityMap = new HashMap<>();
 
         // Act and Assert
         Exception e = assertThrows(DataRetrievalFailureException.class,
-                () -> serviceDetailsDao.saveEntityFromShipment(serviceDetailsRequests, 1L, new HashMap<>()));
+                () -> serviceDetailsDao.saveEntityFromShipment(serviceDetailsRequests, 1L, oldEntityMap));
         assertEquals(DataRetrievalFailureException.class.getSimpleName(), e.getClass().getSimpleName());
     }
 
@@ -1935,9 +1933,11 @@ class ServiceDetailsDaoTest {
         serviceDetailsRequests.add(serviceDetails2);
         serviceDetailsRequests.add(serviceDetails);
 
+        Map<Long, ServiceDetails> oldEntityMap = new HashMap<>();
+
         // Act and Assert
         Exception e = assertThrows(DataRetrievalFailureException.class,
-                () -> serviceDetailsDao.saveEntityFromShipment(serviceDetailsRequests, 1L, new HashMap<>()));
+                () -> serviceDetailsDao.saveEntityFromShipment(serviceDetailsRequests, 1L, oldEntityMap));
         assertEquals(DataRetrievalFailureException.class.getSimpleName(), e.getClass().getSimpleName());
     }
 
@@ -1950,10 +1950,11 @@ class ServiceDetailsDaoTest {
     }
 
     @Test
-    void updateEntityFromShipmentThrowsException() throws RunnerException {
+    void updateEntityFromShipmentThrowsException() {
         var inputServices = completeShipment.getServicesList();
         inputServices.add(new ServiceDetails());
-        Exception e = assertThrows(RunnerException.class, () -> serviceDetailsDao.updateEntityFromShipment(inputServices, completeShipment.getId()));
+        long shipmentId = completeShipment.getId();
+        Exception e = assertThrows(RunnerException.class, () -> serviceDetailsDao.updateEntityFromShipment(inputServices, shipmentId));
         assertEquals(RunnerException.class.getSimpleName(), e.getClass().getSimpleName());
     }
 
@@ -1963,15 +1964,17 @@ class ServiceDetailsDaoTest {
         inputServices.add(new ServiceDetails());
         when(iServiceDetailsRepository.findByShipmentId(any()))
                 .thenReturn(completeShipment.getServicesList());
-        var servicesResponse = serviceDetailsDao.updateEntityFromShipment(inputServices, completeShipment.getId());
+        long shipmentId = completeShipment.getId();
+        var servicesResponse = serviceDetailsDao.updateEntityFromShipment(inputServices, shipmentId);
         assertNotNull(servicesResponse);
     }
 
     @Test
-    void saveEntityFromShipmentThrowsException() throws RunnerException {
+    void saveEntityFromShipmentThrowsException() {
         var inputServices = completeShipment.getServicesList();
         when(iServiceDetailsRepository.findById(anyLong())).thenReturn(Optional.empty());
-        Exception e = assertThrows(DataRetrievalFailureException.class, () -> serviceDetailsDao.saveEntityFromShipment(inputServices, completeShipment.getId()));
+        long shipmentId = completeShipment.getId();
+        Exception e = assertThrows(DataRetrievalFailureException.class, () -> serviceDetailsDao.saveEntityFromShipment(inputServices, shipmentId));
         assertNotNull(DataRetrievalFailureException.class.getSimpleName(), e.getClass().getSimpleName());
     }
 

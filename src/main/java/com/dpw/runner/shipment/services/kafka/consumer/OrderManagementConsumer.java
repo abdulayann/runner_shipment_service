@@ -21,7 +21,7 @@ public class OrderManagementConsumer {
     @Autowired
     private ObjectMapper objectMapper;
 
-    //TODO:bookingseparation:Mayank - remove this once booking service go live
+    //LATER:bookingseparation:Mayank - remove this once booking service go live
     @KafkaListener(
             topics = {"#{'${order.management.event.kafka.queue}'}"},
             autoStartup = "#{'${order.management.event.kafka.consumer-auto-startup}'}",

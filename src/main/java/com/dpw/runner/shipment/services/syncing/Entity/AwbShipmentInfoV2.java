@@ -18,9 +18,9 @@ public class AwbShipmentInfoV2 implements IRunnerRequest {
     public String noOfCopies;
     public String status;
     public String awbNumber;
-    //TODO- Loc Code
+    //LATER- Loc Code
     public String originAirport;
-    //TODO- Loc Code
+    //LATER- Loc Code
     public String destinationAirport;
     public String firstCarrier;
     public Integer abrId;

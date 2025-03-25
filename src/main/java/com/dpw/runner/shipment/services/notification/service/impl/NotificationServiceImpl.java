@@ -20,7 +20,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.*;
 
-import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 
 @Service
 @Slf4j
@@ -108,11 +108,11 @@ public class NotificationServiceImpl implements INotificationService {
     private void handleSendMeCopyCheck(SendEmailBaseRequest request) {
         if (Boolean.TRUE.equals(request.getSendMeCopy())) {
             String userEmail = UserContext.getUser().getEmail();
-            if (!IsStringNullOrEmpty(userEmail)) {
+            if (!isStringNullOrEmpty(userEmail)) {
                 String cc = request.getCc();
                 Set<String> emailList = new HashSet<>();
-                if (!IsStringNullOrEmpty(cc)) {
-                    emailList.addAll(Arrays.asList(cc.split("\\s*,\\s*")));
+                if (!isStringNullOrEmpty(cc)) {
+                    emailList.addAll(CommonUtils.splitAndTrimStrings(cc));
                 }
                 emailList.add(userEmail);
                 request.setCc(String.join(",", emailList));

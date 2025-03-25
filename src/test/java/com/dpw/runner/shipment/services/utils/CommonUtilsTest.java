@@ -24,25 +24,7 @@ import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
-import com.dpw.runner.shipment.services.dto.response.AdditionalDetailResponse;
-import com.dpw.runner.shipment.services.dto.response.ArrivalDepartureDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.BookingCarriageResponse;
-import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.ELDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.EventsResponse;
-import com.dpw.runner.shipment.services.dto.response.JobResponse;
-import com.dpw.runner.shipment.services.dto.response.NotesResponse;
-import com.dpw.runner.shipment.services.dto.response.PackingResponse;
-import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
-import com.dpw.runner.shipment.services.dto.response.PickupDeliveryDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ReferenceNumbersResponse;
-import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
-import com.dpw.runner.shipment.services.dto.response.ServiceDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentOrderResponse;
-import com.dpw.runner.shipment.services.dto.response.TruckDriverDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
@@ -188,22 +170,17 @@ class CommonUtilsTest {
     private BaseFont font;
     private Rectangle realPageSize;
     private Rectangle rect;
-    private PdfReader reader;
-    private PdfStamper stamper;
-    private ByteArrayOutputStream outputStream;
-    private PrintStream originalOut;
-    private byte[] pdfBytes;
 
     static Stream<Arguments> pTestCases() {
         return Stream.of(
-                Arguments.of("Entity", new ArrayList<>(), "Response"),
-                Arguments.of("Entity", List.of("foo"), "Response"),
-                Arguments.of("Entity", List.of("No such field: {}", "foo"), "Response"),
-                Arguments.of("Entity", Collections.singletonList(null), "Response"),
-                Arguments.of("Entity", Collections.singletonList(""), "Response"),
-                Arguments.of(new HashMap<>(), List.of("foo"), "Response"),
-                Arguments.of(null, List.of("foo"), "Response"),
-                Arguments.of(Map.of("foo", "42"), List.of("foo"), "Response")
+                Arguments.of("Entity", new HashSet<>(), "Response"),
+                Arguments.of("Entity", Set.of("foo"), "Response"),
+                Arguments.of("Entity", Set.of("No such field: {}", "foo"), "Response"),
+                Arguments.of("Entity", Collections.singleton(null), "Response"),
+                Arguments.of("Entity", Collections.singleton(""), "Response"),
+                Arguments.of(new HashMap<>(), Set.of("foo"), "Response"),
+                Arguments.of(null, Set.of("foo"), "Response"),
+                Arguments.of(Map.of("foo", "42"), Set.of("foo"), "Response")
         );
     }
     @AfterEach
@@ -217,10 +194,6 @@ class CommonUtilsTest {
         font = BaseFont.createFont(BaseFont.HELVETICA, BaseFont.WINANSI, BaseFont.EMBEDDED);
         realPageSize = new Rectangle(0, 0, 595, 842); // A4 size
         rect = new Rectangle(100, 100, 500, 742);
-        reader = mock(PdfReader.class);
-        stamper = mock(PdfStamper.class);
-        outputStream = new ByteArrayOutputStream();
-        pdfBytes = new byte[0];
 
         MockitoAnnotations.initMocks(this);
         commonUtils.syncExecutorService = Executors.newFixedThreadPool(2);
@@ -435,7 +408,7 @@ class CommonUtilsTest {
         inOrder.verify(dc).restoreState();
     }
 
-    private byte[] createSamplePdf() throws DocumentException, IOException {
+    private byte[] createSamplePdf() throws DocumentException{
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         Document document = new Document();
         PdfWriter.getInstance(document, baos);
@@ -490,21 +463,21 @@ class CommonUtilsTest {
     }
 
     @Test
-    void IsStringNullOrEmpty_NullInput_ReturnsTrue() {
-        boolean result = CommonUtils.IsStringNullOrEmpty(null);
+    void isStringNullOrEmpty_NullInput_ReturnsTrue() {
+        boolean result = CommonUtils.isStringNullOrEmpty(null);
         assertTrue(result);
     }
 
     @Test
-    void IsStringNullOrEmpty_EmptyStringInput_ReturnsTrue() {
-        boolean result = CommonUtils.IsStringNullOrEmpty("");
+    void isStringNullOrEmpty_EmptyStringInput_ReturnsTrue() {
+        boolean result = CommonUtils.isStringNullOrEmpty("");
         assertTrue(result);
     }
 
     @Test
-    void IsStringNullOrEmpty_NonEmptyStringInput_ReturnsFalse() {
+    void isStringNullOrEmpty_NonEmptyStringInput_ReturnsFalse() {
         String input = "Hello";
-        boolean result = CommonUtils.IsStringNullOrEmpty(input);
+        boolean result = CommonUtils.isStringNullOrEmpty(input);
         assertFalse(result);
     }
 
@@ -531,7 +504,7 @@ class CommonUtilsTest {
     @Test
     void testImageToByte() throws IOException {
         BufferedImage img = new BufferedImage(100, 100, BufferedImage.TYPE_INT_RGB);
-        byte[] result = CommonUtils.ImageToByte(img);
+        byte[] result = CommonUtils.imageToByte(img);
 
         assertNotNull(result);
     }
@@ -539,12 +512,12 @@ class CommonUtilsTest {
     @Test
     void testHasUnsupportedCharacters() {
         String input = "ValidString123";
-        boolean result = CommonUtils.HasUnsupportedCharacters(input);
+        boolean result = CommonUtils.hasUnsupportedCharacters(input);
 
         assertFalse(result);
 
         input = "InvalidString\u001F";
-        result = CommonUtils.HasUnsupportedCharacters(input);
+        result = CommonUtils.hasUnsupportedCharacters(input);
 
         assertTrue(result);
     }
@@ -622,7 +595,7 @@ class CommonUtilsTest {
         assertEquals("Generic exception message", result);
     }
 
-    private byte[] createSamplePdfWithMultiplePages() throws DocumentException, IOException {
+    private byte[] createSamplePdfWithMultiplePages() throws DocumentException{
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         Document document = new Document();
         PdfWriter.getInstance(document, baos);
@@ -2171,7 +2144,7 @@ class CommonUtilsTest {
     }
 
     @Test
-    void testCheckIfAnyDGClass3() throws RunnerException {
+    void testCheckIfAnyDGClass3(){
         assertThrows(RunnerException.class, () -> commonUtils.checkIfAnyDGClass("7.1"));
     }
 
@@ -3654,7 +3627,7 @@ class CommonUtilsTest {
     }
     @ParameterizedTest
     @MethodSource("pTestCases")
-    void testSetIncludedFieldsToResponse(Object entity, List<String> includeColumns, Object expectedResponse) {
+    void testSetIncludedFieldsToResponse(Object entity, Set<String> includeColumns, Object expectedResponse) {
         assertEquals(expectedResponse, commonUtils.setIncludedFieldsToResponse(entity, includeColumns, expectedResponse));
     }
     @Test

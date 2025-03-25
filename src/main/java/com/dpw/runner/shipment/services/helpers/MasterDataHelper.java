@@ -30,7 +30,7 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
-import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 
 @Component
 @Slf4j
@@ -451,7 +451,7 @@ public class MasterDataHelper {
             }
             String handlingInfo = getHandlingInfo(pack, contMap);
             String descriptionOfGoods = contMap.get(pack.getContainerId()).get(Constants.DESCRIPTION_OF_GOODS);
-            if(!IsStringNullOrEmpty(pack.getGoodsDescription())) {
+            if(!isStringNullOrEmpty(pack.getGoodsDescription())) {
                 if(descriptionOfGoods.isEmpty())
                     descriptionOfGoods = pack.getGoodsDescription();
                 else
@@ -464,7 +464,7 @@ public class MasterDataHelper {
 
     private String getHandlingInfo(PackingResponse pack, Map<Long, Map<String, String>> contMap) {
         String handlingInfo = contMap.get(pack.getContainerId()).get(Constants.HANDLING_INFO);
-        if(!IsStringNullOrEmpty(pack.getHandlingInfo())) {
+        if(!isStringNullOrEmpty(pack.getHandlingInfo())) {
             if (handlingInfo.isEmpty())
                 handlingInfo = pack.getHandlingInfo();
             else
