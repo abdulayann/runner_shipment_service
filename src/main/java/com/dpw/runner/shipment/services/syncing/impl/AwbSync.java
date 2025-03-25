@@ -103,7 +103,6 @@ public class AwbSync implements IAwbSync {
         res.setAwbNotifyPartyInfo(convertToList(awb.getAwbNotifyPartyInfo(), AwbNotifyPartyInfoV2.class));
         res.setAwbRoutingInfo(convertToList(awb.getAwbRoutingInfo(), AwbRoutingInfoV2.class));
         res.setAwbOtherChargesInfo(convertToList(awb.getAwbOtherChargesInfo(), AwbOtherChargesInfoV2.class));
-       // res.setAwbOciInfo(convertToList(awb.getAwbOciInfo(), AwbOCIInfoV2.class));
         res.setAwbGoodsDescriptionInfo(convertToList(awb.getAwbGoodsDescriptionInfo(), AwbGoodsDescriptionInfoV2.class));
         res.setAwbPackingInfo(convertToList(awb.getAwbPackingInfo(), AwbPackingInfoV2.class));
         res.setAwbSpecialHandlingCodesMappings(convertToList(awb.getAwbSpecialHandlingCodesMappings(), AwbSpecialHandlingCodesMappingInfoV2.class));
