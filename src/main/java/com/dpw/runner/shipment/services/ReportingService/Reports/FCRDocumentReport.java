@@ -63,6 +63,7 @@ public class FCRDocumentReport extends IReport{
     Map<String, Object> populateDictionary(IDocumentModel documentModel) throws RunnerException {
         FCRDocumentModel fcrDocumentModel = (FCRDocumentModel) documentModel;
         Map<String, Object> dictionary = new HashMap<>();
+        Set<String> unlocationCodeSet = new HashSet<>();
         if(fcrShipper != null)
             dictionary.put(ReportConstants.FCR_CONSIGNOR_IN_CAPS, getOrgAddressDetails(modelMapper.map(fcrShipper, PartiesModel.class)));
         dictionary.put(SHIP_CONSIGNEE_IN_CAPS, getOrgAddressDetails(fcrDocumentModel.getShipmentModel().getConsignee()));
@@ -80,15 +81,31 @@ public class FCRDocumentReport extends IReport{
                         .collect(Collectors.toList())
         );
         getPackingDetails(fcrDocumentModel.getShipmentModel(), dictionary);
+        unlocationCodeSet.add(fcrDocumentModel.getShipmentModel().getAdditionalDetails().getPlaceOfIssue());
+        unlocationCodeSet.add(this.placeOfIssue);
+        Map<String, EntityTransferUnLocations> unLocationsMap = masterDataUtils.getLocationDataFromCache(unlocationCodeSet, EntityTransferConstants.LOCATION_SERVICE_GUID);
         if(!CommonUtils.IsStringNullOrEmpty(fcrDocumentModel.getShipmentModel().getAdditionalDetails().getPlaceOfIssue())) {
-            Map<String, EntityTransferUnLocations> map = masterDataUtils.getLocationDataFromCache(Set.of(fcrDocumentModel.getShipmentModel().getAdditionalDetails().getPlaceOfIssue()), EntityTransferConstants.LOCATION_SERVICE_GUID);
-            dictionary.put(PLACE_OF_ISSUE, map.get(fcrDocumentModel.getShipmentModel().getAdditionalDetails().getPlaceOfIssue()).Name);
+            dictionary.put(PLACE_OF_ISSUE, unLocationsMap.get(fcrDocumentModel.getShipmentModel().getAdditionalDetails().getPlaceOfIssue()).Name);
         }
+        populateFcrPlaceOfIssue(dictionary, unLocationsMap);
         dictionary.put(SHIPMENT_DETAIL_DATE_OF_ISSUE, ConvertToDPWDateFormat(fcrDocumentModel.getShipmentModel().getAdditionalDetails().getDateOfIssue()));
-        dictionary.put(FCR_PLACE_OF_ISSUE, this.placeOfIssue);
         dictionary.put(FCR_DATE_OF_ISSUE, ConvertToDPWDateFormat(this.issueDate));
         return convertValuesToUpperCase(dictionary);
     }
+
+    private void populateFcrPlaceOfIssue(Map<String, Object> dictionary, Map<String, EntityTransferUnLocations> unLocationsMap) {
+        if(StringUtility.isEmpty(this.placeOfIssue)) return;
+
+        EntityTransferUnLocations unLocations = unLocationsMap.get(this.placeOfIssue);
+        StringBuilder sb = new StringBuilder(unLocations.getCityName());
+        // USA region -> display city name with state code
+        if (unLocations.getLocCode().startsWith(USA_LOC_CODE_PREFIX) && !StringUtility.isEmpty(unLocations.getState())) {
+            sb.append(", ").append(unLocations.getState());
+        }
+
+        dictionary.put(FCR_PLACE_OF_ISSUE, sb.toString());
+    }
+
 
     public static Map<String, Object> convertValuesToUpperCase(Map<String, Object> map) {
         Map<String, Object> result = new HashMap<>();
