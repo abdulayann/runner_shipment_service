@@ -2058,7 +2058,8 @@ public class AwbService implements IAwbService {
                 break;
             }
             case AWB_OCI_INFO: {
-                awb.setAwbOCIInfo(null);
+                awb.setAwbOciInfo(null);
+                awb.setOciInfo(null);
                 break;
             }
         }
@@ -2112,7 +2113,8 @@ public class AwbService implements IAwbService {
         awb.setAwbGoodsDescriptionInfo(resetAwb.getAwbGoodsDescriptionInfo());
         awb.setAwbCargoInfo(resetAwb.getAwbCargoInfo());
         awb.setAwbOtherInfo(resetAwb.getAwbOtherInfo());
-        awb.setAwbOCIInfo(resetAwb.getAwbOCIInfo());
+        awb.setAwbOciInfo(resetAwb.getAwbOciInfo());
+        awb.setOciInfo(resetAwb.getOciInfo());
         awb.setAwbOtherChargesInfo(resetAwb.getAwbOtherChargesInfo());
         awb.setAwbPaymentInfo(resetAwb.getAwbPaymentInfo());
         awb.setAwbSpecialHandlingCodesMappings(resetAwb.getAwbSpecialHandlingCodesMappings());

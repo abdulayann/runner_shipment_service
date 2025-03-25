@@ -13,10 +13,11 @@ import java.io.Serializable;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class AwbOCIInfo implements Serializable {
-    private Long entityId;
-    private String entityType;
-    private Integer informationIdentifier;
-    private Integer tradeIdentificationCode;
-    private String tradeIdentificationComment;
+public class OCIInfo implements Serializable {
+
+    private PartyContactInfo shipper;
+    private PartyContactInfo consignee;
+    private PartyContactInfo notifyParty;
+    private CustomerAccountInfo customerAccountInfo;
+    private OtherIdentityInfo otherIdentityInfo;
 }
