@@ -31,7 +31,6 @@ public class AwbRequest implements IRunnerRequest {
     private AwbPaymentInfo awbPaymentInfo;
     private List<AwbOtherChargesInfo> awbOtherChargesInfo;
     private AwbOtherInfo awbOtherInfo;
-    //private List<AwbOCIInfo> awbOciInfo;
     private Boolean acasEnabled;
     private AwbOCIInfo awbOCIInfo;
     private List<AwbGoodsDescriptionInfo> awbGoodsDescriptionInfo;
