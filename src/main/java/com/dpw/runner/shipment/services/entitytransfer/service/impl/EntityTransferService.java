@@ -386,42 +386,52 @@ public class EntityTransferService implements IEntityTransferService {
     }
 
     private void processConsoleShipmentList(EntityTransferConsolidationDetails consolidationPayload, Map<String, List<Integer>> shipmentGuidSendToBranch, int index, Integer tenant, Map<String, List<Integer>> shipmentGuidBranchMap, Map<UUID, ShipmentDetails> guidVsShipmentMap, ConsolidationDetails consol) {
-        boolean reverseDirection = false;
-        boolean sendingToTriangulationPartner = false;
-        if(Long.valueOf(tenant).equals(consol.getReceivingBranch())) {
-            consolidationPayload.setShipmentType(reverseDirection(consol.getShipmentType()));
-            reverseDirection = true;
-        }
-        else if (isTriangulationPartner(tenant, consol)) {
-            consolidationPayload.setShipmentType(Constants.DIRECTION_CTS);
-            sendingToTriangulationPartner = true;
-        }
-        processConsolShipmentList(consolidationPayload, shipmentGuidSendToBranch, tenant, index, shipmentGuidBranchMap,
-            guidVsShipmentMap, consol, reverseDirection, sendingToTriangulationPartner);
-    }
+        boolean reverseDirection = isReverseDirection(tenant, consol);
+        boolean sendingToTriangulationPartner = isSendingToTriangulationPartner(tenant, consol);
 
-    private void processConsolShipmentList(EntityTransferConsolidationDetails consolidationPayload, Map<String, List<Integer>> shipmentGuidSendToBranch,
-        Integer tenant, int index, Map<String, List<Integer>> shipmentGuidBranchMap, Map<UUID, ShipmentDetails> guidVsShipmentMap, ConsolidationDetails consol, boolean reverseDirection, boolean sendingToTriangulationPartner){
-        if(!consolidationPayload.getShipmentsList().isEmpty()) {
-            for(var entityTransferShipment : consolidationPayload.getShipmentsList()) {
+        updateConsolidationPayload(consolidationPayload, consol, reverseDirection, sendingToTriangulationPartner);
+
+        if (!consolidationPayload.getShipmentsList().isEmpty()) {
+            for (var entityTransferShipment : consolidationPayload.getShipmentsList()) {
                 var guid = entityTransferShipment.getGuid();
-                if(reverseDirection)
-                    entityTransferShipment.setDirection(reverseDirection(entityTransferShipment.getDirection()));
+                if (reverseDirection)
+                    entityTransferShipment.setDirection(
+                        reverseDirection(entityTransferShipment.getDirection()));
                 else if (sendingToTriangulationPartner)
                     entityTransferShipment.setDirection(Constants.DIRECTION_CTS);
 
-                if(validShipmentGuids(shipmentGuidSendToBranch, guid))
-                    entityTransferShipment.setSendToBranch(shipmentGuidSendToBranch.get(guid.toString()).get(index));
+                if (validShipmentGuids(shipmentGuidSendToBranch, guid))
+                    entityTransferShipment.setSendToBranch(
+                        shipmentGuidSendToBranch.get(guid.toString()).get(index));
                 else
                     entityTransferShipment.setSendToBranch(tenant);
-                if(guid != null) {
+                if (guid != null) {
                     shipmentGuidBranchMap.computeIfAbsent(guid.toString(), k -> new ArrayList<>())
                         .add(entityTransferShipment.getSendToBranch());
                 }
-                processInterConsoleCase(consolidationPayload, guidVsShipmentMap, entityTransferShipment, guid);
+                processInterConsoleCase(consolidationPayload, guidVsShipmentMap,
+                    entityTransferShipment, guid);
             }
             // Clear all pending shipment notifications for Inter branch console
             removePendingShipmentNotifications(consolidationPayload, consol, tenant);
+        }
+    }
+    private boolean isReverseDirection(Integer tenant, ConsolidationDetails consol) {
+        return Long.valueOf(tenant).equals(consol.getReceivingBranch());
+    }
+
+    private boolean isSendingToTriangulationPartner(Integer tenant, ConsolidationDetails consol) {
+        return isTriangulationPartner(tenant, consol);
+    }
+
+    private void updateConsolidationPayload(EntityTransferConsolidationDetails consolidationPayload,
+        ConsolidationDetails consol,
+        boolean reverseDirection,
+        boolean sendingToTriangulationPartner) {
+        if (reverseDirection) {
+            consolidationPayload.setShipmentType(reverseDirection(consol.getShipmentType()));
+        } else if (sendingToTriangulationPartner) {
+            consolidationPayload.setShipmentType(Constants.DIRECTION_CTS);
         }
     }
 
