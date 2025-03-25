@@ -393,6 +393,12 @@ public class EntityTransferService implements IEntityTransferService {
             consolidationPayload.setShipmentType(Constants.DIRECTION_CTS);
             sendingToTriangulationPartner = true;
         }
+        processConsolShipmentList(consolidationPayload, shipmentGuidSendToBranch, tenant, index, shipmentGuidBranchMap,
+            guidVsShipmentMap, consol, reverseDirection, sendingToTriangulationPartner);
+    }
+
+    private void processConsolShipmentList(EntityTransferConsolidationDetails consolidationPayload, Map<String, List<Integer>> shipmentGuidSendToBranch,
+        Integer tenant, int index, Map<String, List<Integer>> shipmentGuidBranchMap, Map<UUID, ShipmentDetails> guidVsShipmentMap, ConsolidationDetails consol, boolean reverseDirection, boolean sendingToTriangulationPartner){
         if(!consolidationPayload.getShipmentsList().isEmpty()) {
             for(var entityTransferShipment : consolidationPayload.getShipmentsList()) {
                 var guid = entityTransferShipment.getGuid();
@@ -409,7 +415,6 @@ public class EntityTransferService implements IEntityTransferService {
                     shipmentGuidBranchMap.computeIfAbsent(guid.toString(), k -> new ArrayList<>())
                         .add(entityTransferShipment.getSendToBranch());
                 }
-
                 processInterConsoleCase(consolidationPayload, guidVsShipmentMap, entityTransferShipment, guid);
             }
             // Clear all pending shipment notifications for Inter branch console
