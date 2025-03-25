@@ -21,6 +21,8 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.concurrent.CompletableFuture;
@@ -46,6 +48,24 @@ public class DocumentManagerRestClient {
 
     private RestTemplate restTemplate;
 
+    @Value("${document-manager.baseUrl}${document-manager.delete}")
+    private String documentDelete;
+
+    @Value("${document-manager.baseUrl}${document-manager.file-history}")
+    private String documentHistory;
+
+    @Value("${document-manager.baseUrl}${document-manager.download}")
+    private String documentDownload;
+
+    @Value("${document-manager.baseUrl}${document-manager.bulk-save}")
+    private String documentBulkSave;
+
+    @Value("${document-manager.baseUrl}${document-manager.temporary-upload}")
+    private String documentTemporaryUpload;
+
+    @Value("${document-manager.baseUrl}${document-manager.list}")
+    private String documentList;
+
     @Autowired
     DocumentManagerRestClient(RestTemplate restTemplate, JsonHelper jsonHelper) {
         this.jsonHelper = jsonHelper;
@@ -63,7 +83,8 @@ public class DocumentManagerRestClient {
                 url,
                 HttpMethod.POST,
                 requestEntity,
-                new ParameterizedTypeReference<>() {}
+                new ParameterizedTypeReference<>() {
+                }
         );
 
         return responseEntity.getBody();
@@ -88,7 +109,8 @@ public class DocumentManagerRestClient {
                 url,
                 HttpMethod.POST,
                 requestEntity,
-                new ParameterizedTypeReference<>() {}
+                new ParameterizedTypeReference<>() {
+                }
         );
 
         return responseEntity.getBody();
@@ -104,7 +126,8 @@ public class DocumentManagerRestClient {
                 url,
                 HttpMethod.POST,
                 requestEntity,
-                new ParameterizedTypeReference<>() {}
+                new ParameterizedTypeReference<>() {
+                }
         );
 
         return responseEntity.getBody();
@@ -119,7 +142,8 @@ public class DocumentManagerRestClient {
                 url,
                 HttpMethod.GET,
                 new HttpEntity<>(headers),
-                new ParameterizedTypeReference<>() {}
+                new ParameterizedTypeReference<>() {
+                }
         );
 
         return responseEntity.getBody();
@@ -136,7 +160,8 @@ public class DocumentManagerRestClient {
                 url,
                 HttpMethod.POST,
                 requestEntity,
-                new ParameterizedTypeReference<>() {}
+                new ParameterizedTypeReference<>() {
+                }
         );
 
         return responseEntity.getBody();
@@ -203,5 +228,126 @@ public class DocumentManagerRestClient {
                     LoggerHelper.getRequestIdFromMDC(), ex.getMessage(), request);
             throw new DocumentClientException(ex.getMessage());
         }
+    }
+
+    public DocumentManagerResponse<T> deleteFile(Object object) {
+        try {
+            HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
+            HttpEntity<Object> httpEntity = new HttpEntity<>(object, headers);
+            log.info("{} | URL: {} | deleteFile request: {}", this.documentDelete, LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(object));
+            var response  = restTemplate.exchange(
+                    this.documentDelete,
+                    HttpMethod.PUT,
+                    httpEntity,
+                    new ParameterizedTypeReference<>() {}
+            );
+            return jsonHelper.convertValue(response.getBody(), DocumentManagerResponse.class);
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new DocumentClientException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), DocumentManagerResponse.class).getErrorMessage());
+        } catch (Exception var7) {
+            throw new DocumentClientException(var7.getMessage());
+        }
+
+    }
+
+    public DocumentManagerResponse<T> getFileHistory(Object object) {
+        try {
+            HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
+            HttpEntity<Object> httpEntity = new HttpEntity<>(object, headers);
+            log.info("{} | URL: {} | getFileHistory request: {}", this.documentHistory + "/" + object, LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(object));
+            var response  = restTemplate.exchange(
+                    this.documentHistory + "/" + object,
+                    HttpMethod.GET,
+                    httpEntity,
+                    new ParameterizedTypeReference<>() {}
+            );
+            return jsonHelper.convertValue(response.getBody(), DocumentManagerResponse.class);
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new DocumentClientException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), DocumentManagerResponse.class).getErrorMessage());
+        } catch (Exception var7) {
+            throw new DocumentClientException(var7.getMessage());
+        }
+
+    }
+
+    public ResponseEntity<byte[]> downloadDocument(Object object) {
+        try {
+            HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
+            HttpEntity<Object> httpEntity = new HttpEntity<>(object, headers);
+
+            log.info("{} | URL: {} | downloadDocument request: {}", this.documentDownload + "?id=" + object, LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(object));
+            var response  = restTemplate.exchange(
+                    this.documentDownload + "?id=" + object,
+                    HttpMethod.GET,
+                    httpEntity,
+                    byte[].class
+            );
+            return ResponseEntity.ok(response.getBody());
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new DocumentClientException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), DocumentManagerResponse.class).getErrorMessage());
+        } catch (Exception var7) {
+            throw new DocumentClientException(var7.getMessage());
+        }
+
+    }
+
+    public DocumentManagerResponse<T> bulkSaveFiles(Object object) {
+        try {
+            HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
+            HttpEntity<Object> httpEntity = new HttpEntity<>(object, headers);
+            log.info("{} | URL: {} | bulkSaveFiles request: {}", this.documentBulkSave, LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(object));
+            var response  = restTemplate.exchange(
+                    this.documentBulkSave,
+                    HttpMethod.POST,
+                    httpEntity,
+                    new ParameterizedTypeReference<>() {}
+            );
+            return jsonHelper.convertValue(response.getBody(), DocumentManagerResponse.class);
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new DocumentClientException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), DocumentManagerResponse.class).getErrorMessage());
+        } catch (Exception var7) {
+            throw new DocumentClientException(var7.getMessage());
+        }
+
+    }
+
+    public DocumentManagerResponse<T> temporaryUpload(Object object) {
+        try {
+            HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
+            HttpEntity<Object> httpEntity = new HttpEntity<>(object, headers);
+            log.info("{} | URL: {} | temporaryUpload request: {}", this.documentTemporaryUpload, LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(object));
+            var response  = restTemplate.exchange(
+                    this.documentTemporaryUpload,
+                    HttpMethod.POST,
+                    httpEntity,
+                    new ParameterizedTypeReference<>() {}
+            );
+            return jsonHelper.convertValue(response.getBody(), DocumentManagerResponse.class);
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new DocumentClientException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), DocumentManagerResponse.class).getErrorMessage());
+        } catch (Exception var7) {
+            throw new DocumentClientException(var7.getMessage());
+        }
+
+    }
+
+    public DocumentManagerResponse<T> list(Object object) {
+        try {
+            HttpHeaders headers = getHttpHeaders(RequestAuthContext.getAuthToken());
+            HttpEntity<Object> httpEntity = new HttpEntity<>(object, headers);
+            log.info("{} | URL: {} | list request: {}", this.documentList, LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(object));
+            var response  = restTemplate.exchange(
+                    this.documentList,
+                    HttpMethod.POST,
+                    httpEntity,
+                    new ParameterizedTypeReference<>() {}
+            );
+            return jsonHelper.convertValue(response.getBody(), DocumentManagerResponse.class);
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new DocumentClientException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), DocumentManagerResponse.class).getErrorMessage());
+        } catch (Exception var7) {
+            throw new DocumentClientException(var7.getMessage());
+        }
+
     }
 }

@@ -508,9 +508,9 @@ public class RoutingsDao implements IRoutingsDao {
         int nextLocation = 1; // Index for the next location to compare
         long legCounter = 1L;   // A counter for leg numbers
         // Loop through the locations to generate routing requests
-        while (currentLocation < 4 && nextLocation < 4) {
+        while (canProcessNextLocation(currentLocation, nextLocation)) {
             // Skip null locations or If locations are the same, move to the next pair
-            if (locations.get(currentLocation).getLeft() == null || locations.get(currentLocation).getLeft().equalsIgnoreCase(locations.get(nextLocation).getLeft())) {
+            if (skipSameLocation(locations, currentLocation, nextLocation)) {
                 currentLocation++;
                 nextLocation++;
             } else if (locations.get(nextLocation).getLeft() == null) {
@@ -519,13 +519,13 @@ public class RoutingsDao implements IRoutingsDao {
                 String mode = transportMode;
                 RoutingCarriage carriage = RoutingCarriage.MAIN_CARRIAGE;
 
-                if (locations.get(currentLocation).getRight() != null || locations.get(nextLocation).getRight() != null) {
+                if (canUpdateModeCarriage(locations, currentLocation, nextLocation)) {
                     mode = Constants.TRANSPORT_MODE_ROA; // Set mode to ROA if specific conditions are met
                     carriage = locations.get(currentLocation).getRight() != null  ? RoutingCarriage.PRE_CARRIAGE : RoutingCarriage.ON_CARRIAGE;
                 }
                 String flightNumber = "";
                 String flightCarrier = "";
-                if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster()) && Objects.equals(transportMode, Constants.TRANSPORT_MODE_AIR) && Objects.equals(carriage, RoutingCarriage.MAIN_CARRIAGE)) {
+                if(shouldIncludeFlightDetails(transportMode, carriage)) {
                     flightNumber = carrierDetails.getFlightNumber();
                     flightCarrier = carrierDetails.getShippingLine();
                 }
@@ -539,6 +539,24 @@ public class RoutingsDao implements IRoutingsDao {
 
         // Return the generated routing requests
         return routingRequests;
+    }
+
+    private boolean canProcessNextLocation(int currentLocation, int nextLocation) {
+        return currentLocation < 4 && nextLocation < 4;
+    }
+
+    private boolean canUpdateModeCarriage(List<Pair<String, String>> locations, int currentLocation, int nextLocation) {
+        return locations.get(currentLocation).getRight() != null || locations.get(nextLocation).getRight() != null;
+    }
+
+    private boolean skipSameLocation(List<Pair<String, String>> locations, int currentLocation, int nextLocation) {
+        return locations.get(currentLocation).getLeft() == null || locations.get(currentLocation).getLeft().equalsIgnoreCase(locations.get(nextLocation).getLeft());
+    }
+
+    private boolean shouldIncludeFlightDetails(String transportMode, RoutingCarriage carriage) {
+        return Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster()) &&
+                Objects.equals(transportMode, Constants.TRANSPORT_MODE_AIR) &&
+                Objects.equals(carriage, RoutingCarriage.MAIN_CARRIAGE);
     }
 
     /**

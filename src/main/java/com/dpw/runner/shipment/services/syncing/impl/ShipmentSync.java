@@ -150,6 +150,19 @@ public class ShipmentSync implements IShipmentSync {
         // Manually mapped fields
         cs.setVolumeWeight(sd.getVolumetricWeight());
         cs.setWeightVolumeUnit(sd.getVolumetricWeightUnit());
+        setIsConsigneeFreeTextAddressInRequest(sd, cs);
+
+        setIsConsignerFreeTextAddressInRequest(sd, cs);
+
+        setIsNotifyPartyFreeTextAddressInRequest(sd, cs);
+
+        cs.setDeletedContGuids(deletedContGuids);
+        cs.setOrderNumber(sd.getOrderManagementId());
+        cs.setOrderManagementNumber(sd.getOrderManagementNumber());
+        return cs;
+    }
+
+    private void setIsConsigneeFreeTextAddressInRequest(ShipmentDetails sd, CustomShipmentSyncRequest cs) {
         if(sd.getConsignee() != null && Boolean.TRUE.equals(sd.getConsignee().getIsAddressFreeText())){
             cs.setIsConsigneeFreeTextAddress(true);
 
@@ -158,7 +171,9 @@ public class ShipmentSync implements IShipmentSync {
                 cs.setConsigneeFreeTextAddress(rawData.toString());
         }
         else cs.setIsConsigneeFreeTextAddress(false);
+    }
 
+    private void setIsConsignerFreeTextAddressInRequest(ShipmentDetails sd, CustomShipmentSyncRequest cs) {
         if(sd.getConsigner() != null && Boolean.TRUE.equals(sd.getConsigner().getIsAddressFreeText())){
             cs.setIsConsignerFreeTextAddress(true);
             var rawData = sd.getConsigner().getAddressData() != null ? sd.getConsigner().getAddressData().get(PartiesConstants.RAW_DATA): null;
@@ -166,7 +181,9 @@ public class ShipmentSync implements IShipmentSync {
                 cs.setConsignerFreeTextAddress(rawData.toString());
         }
         else  cs.setIsConsignerFreeTextAddress(false);
+    }
 
+    private void setIsNotifyPartyFreeTextAddressInRequest(ShipmentDetails sd, CustomShipmentSyncRequest cs) {
         if(sd.getAdditionalDetails() != null && sd.getAdditionalDetails().getNotifyParty() != null && Boolean.TRUE.equals(sd.getAdditionalDetails().getNotifyParty().getIsAddressFreeText())){
             cs.setIsNotifyPartyFreeTextAddress(true);
             var rawData = sd.getAdditionalDetails().getNotifyParty().getAddressData() != null ? sd.getAdditionalDetails().getNotifyParty().getAddressData().get(PartiesConstants.RAW_DATA): null;
@@ -174,12 +191,8 @@ public class ShipmentSync implements IShipmentSync {
                 cs.setNotifyPartyFreeTextAddress(rawData.toString());
         }
         else cs.setIsNotifyPartyFreeTextAddress(false);
-
-        cs.setDeletedContGuids(deletedContGuids);
-        cs.setOrderNumber(sd.getOrderManagementId());
-        cs.setOrderManagementNumber(sd.getOrderManagementNumber());
-        return cs;
     }
+
     @Override
     public void syncLockStatus(ShipmentDetails shipmentDetails) {
         LockSyncRequest lockSyncRequest = LockSyncRequest.builder().guid(shipmentDetails.getGuid()).lockStatus(shipmentDetails.getIsLocked()).build();

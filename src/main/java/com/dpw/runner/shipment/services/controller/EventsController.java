@@ -124,8 +124,7 @@ public class EventsController {
             request.setConsolidationId(consolidationId.orElse(null));
             return eventService.trackEvents(request);
         } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : "Error fetching Events";
+            responseMsg = e.getMessage() != null ? e.getMessage() : EventConstants.ERROR_FETCHING_EVENTS_MSG;
             log.error(responseMsg, e);
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
@@ -141,8 +140,7 @@ public class EventsController {
         try {
             return eventService.trackEvents(request);
         } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : "Error fetching Events";
+            responseMsg = e.getMessage() != null ? e.getMessage() : EventConstants.ERROR_FETCHING_EVENTS_MSG;
             log.error(responseMsg, e);
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
@@ -161,8 +159,7 @@ public class EventsController {
             authenticationService.authenticate(Constants.TRACKING_PUSH_API, xApiKey);
             return eventService.pushTrackingEvents(request);
         } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : "Error fetching Events";
+            responseMsg = e.getMessage() != null ? e.getMessage() : EventConstants.ERROR_FETCHING_EVENTS_MSG;
             log.error(responseMsg, e);
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
@@ -178,8 +175,7 @@ public class EventsController {
         try {
             return eventService.listV2(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : "Error fetching Events";
+            responseMsg = e.getMessage() != null ? e.getMessage() : EventConstants.ERROR_FETCHING_EVENTS_MSG;
             log.error(responseMsg, e);
         }
         return ResponseHelper.buildFailedResponse(responseMsg);

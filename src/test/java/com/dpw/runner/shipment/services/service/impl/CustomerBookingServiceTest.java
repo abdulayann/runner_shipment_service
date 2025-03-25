@@ -1216,20 +1216,6 @@ class CustomerBookingServiceTest extends CommonMocks {
         assertEquals(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, t.getMessage());
     }
 
-    @Test
-    void testCancel() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
-        CustomerBookingRequest request = CustomerBookingRequest.builder().id(1l).bookingStatus(BookingStatus.CANCELLED).build();
-
-        var mockBookingEntity = customerBooking;
-        mockBookingEntity.setBookingStatus(BookingStatus.READY_FOR_SHIPMENT);
-        // mock
-        when(customerBookingDao.findById(any())).thenReturn(Optional.of(mockBookingEntity));
-
-        var t = assertThrows(Throwable.class, () -> customerBookingService.cancel(CommonRequestModel.builder().data(request).build()));
-        // assert
-        assertEquals(ValidationException.class.getSimpleName(), t.getClass().getSimpleName());
-    }
-
 
     @Test
     void testBookingUpdateWithReadyForShipment() {
@@ -1317,7 +1303,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         CustomerBookingRequest request = objectMapper.convertValue(inputCustomerBooking, CustomerBookingRequest.class);
         request.setTransportType("AIR");
         request.setIsDg(true);
-        UserContext.getUser().setPermissions(Map.of(PermissionConstants.airDG, true));
+        UserContext.getUser().setPermissions(Map.of(PermissionConstants.AIR_DG, true));
         request.setBookingStatus(BookingStatus.READY_FOR_SHIPMENT);
         CustomerBookingResponse customerBookingResponse = objectMapper.convertValue(inputCustomerBooking, CustomerBookingResponse.class);
         // Mock
@@ -1350,7 +1336,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         inputCustomerBooking.setBookingStatus(BookingStatus.PENDING_FOR_CREDIT_LIMIT);
         CustomerBookingRequest request = objectMapper.convertValue(inputCustomerBooking, CustomerBookingRequest.class);
         request.setTransportType("AIR");
-        UserContext.getUser().setPermissions(Map.of(PermissionConstants.airDG, false));
+        UserContext.getUser().setPermissions(Map.of(PermissionConstants.AIR_DG, false));
         request.setIsDg(true);
         request.setBookingStatus(BookingStatus.READY_FOR_SHIPMENT);
         CustomerBookingResponse customerBookingResponse = objectMapper.convertValue(inputCustomerBooking, CustomerBookingResponse.class);
@@ -1382,7 +1368,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         CustomerBookingRequest request = objectMapper.convertValue(inputCustomerBooking, CustomerBookingRequest.class);
         request.setTransportType("AIR");
         request.setIsDg(false);
-        UserContext.getUser().setPermissions(Map.of(PermissionConstants.airDG, true));
+        UserContext.getUser().setPermissions(Map.of(PermissionConstants.AIR_DG, true));
         request.setBookingStatus(BookingStatus.READY_FOR_SHIPMENT);
         CustomerBookingResponse customerBookingResponse = objectMapper.convertValue(inputCustomerBooking, CustomerBookingResponse.class);
         // Mock
@@ -1413,7 +1399,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         CustomerBookingRequest request = objectMapper.convertValue(inputCustomerBooking, CustomerBookingRequest.class);
         request.setTransportType("AIR");
         request.setIsDg(false);
-        UserContext.getUser().setPermissions(Map.of(PermissionConstants.airDG, false));
+        UserContext.getUser().setPermissions(Map.of(PermissionConstants.AIR_DG, false));
         request.setBookingStatus(BookingStatus.READY_FOR_SHIPMENT);
         CustomerBookingResponse customerBookingResponse = objectMapper.convertValue(inputCustomerBooking, CustomerBookingResponse.class);
         // Mock

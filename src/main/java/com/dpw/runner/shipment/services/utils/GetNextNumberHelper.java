@@ -19,6 +19,7 @@ import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSettingsSync;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -79,38 +80,7 @@ public class GetNextNumberHelper {
                 if (ValueOf.get(wordSplit.get(0).toLowerCase()) == null) {
                     throw new ValidationException("CONFIGURED_SEQUENCE_REGEX_VALIDATION");
                 }
-                if (wordSplit.size() > 1) {
-                    if (wordSplit.get(0).equalsIgnoreCase("seq")) {
-                        String resetFreq = wordSplit.size() > 2 ? wordSplit.get(2) : "Never";
-                        suffix += padLeft(
-                            GetNextRegexSequenceNumber(sequenceSettings, resetFreq),
-                            Integer.parseInt(wordSplit.get(1)),
-                            '0');
-                    }
-                    else {
-                        suffix += padLeft(
-                            ValueOf.get(wordSplit.get(0).toLowerCase()),
-                            Integer.parseInt(wordSplit.get(1)),
-                            '0');
-                    }
-                }
-                // Ignoring this case for now TODO post clarification
-                //                else if (wordSplit.get(0).equalsIgnoreCase("cc")) {
-                //                    if (companiesRow == null && user != null && user.CompanyId != null)
-                //                    {
-                //                        companiesRow = uow.Connection.List<CompaniesRow>(new
-                // Criteria("Id").In(user.CompanyId)).FirstOrDefault();
-                //                        ValueOf["cc"] = companiesRow.Code;
-                //                    }
-                //                    suffix += ValueOf.get(wordSplit.get(0).toLowerCase());
-                //                }
-                else if (updateBranchCode && wordSplit.get(0).equalsIgnoreCase(Constants.BRANCH)) {
-                    if (user != null) {
-                        ValueOf.put(Constants.BRANCH, user.getCode());
-                    }
-                    suffix += ValueOf.get(wordSplit.get(0).toLowerCase());
-                }
-                else suffix += ValueOf.get(wordSplit.get(0).toLowerCase());
+                suffix = getSuffixValue(sequenceSettings, user, updateBranchCode, wordSplit, suffix, ValueOf);
             }
         }
         else if (sequenceSettings.getGenerationType() == GenerationType.Random) {
@@ -129,10 +99,37 @@ public class GetNextNumberHelper {
             try {
                 shipmentSettingsSync.syncProductSequence(sequenceSettings, v1AuthHelper.getHeadersForDataSync());
             } catch (Exception e) {
-                log.error("Error performing sync on shipment settings product sequence entity, {}", e);
+                log.error("Error performing sync on shipment settings product sequence entity", e);
             }
         }
         return prefix + suffix;
+    }
+
+    @NotNull
+    private String getSuffixValue(ProductSequenceConfig sequenceSettings, UsersDto user, boolean updateBranchCode, List<String> wordSplit, String suffix, HashMap<String, String> ValueOf) throws RunnerException {
+        if (wordSplit.size() > 1) {
+            if (wordSplit.get(0).equalsIgnoreCase("seq")) {
+                String resetFreq = wordSplit.size() > 2 ? wordSplit.get(2) : "Never";
+                suffix += padLeft(
+                    GetNextRegexSequenceNumber(sequenceSettings, resetFreq),
+                    Integer.parseInt(wordSplit.get(1)),
+                    '0');
+            }
+            else {
+                suffix += padLeft(
+                    ValueOf.get(wordSplit.get(0).toLowerCase()),
+                    Integer.parseInt(wordSplit.get(1)),
+                    '0');
+            }
+        }
+        else if (updateBranchCode && wordSplit.get(0).equalsIgnoreCase(Constants.BRANCH)) {
+            if (user != null) {
+                ValueOf.put(Constants.BRANCH, user.getCode());
+            }
+            suffix += ValueOf.get(wordSplit.get(0).toLowerCase());
+        }
+        else suffix += ValueOf.get(wordSplit.get(0).toLowerCase());
+        return suffix;
     }
 
     public String GetNextRegexSequenceNumber(ProductSequenceConfig sequenceSettings, String resetFreq) throws RunnerException {

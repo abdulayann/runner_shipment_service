@@ -88,7 +88,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -174,7 +173,7 @@ class ShipmentCANReportTest extends CommonMocks {
     void setup() {
         shipmentDetails = jsonTestUtility.getCompleteShipment();
         TenantSettingsDetailsContext.setCurrentTenantSettings(
-                V1TenantSettingsResponse.builder().P100Branch(false).UseV2ScreenForBillCharges(true).GSTTaxAutoCalculation(true).CurrencyDigitGrouping(1).CurrencyGroupingNumber(GroupingNumber.DotAndComma.getValue()).IsGroupingOverseas(false).RoundoffLocalCurrencyAmount(true).build());
+                V1TenantSettingsResponse.builder().P100Branch(false).UseV2ScreenForBillCharges(true).GSTTaxAutoCalculation(true).CurrencyDigitGrouping(1).CurrencyGroupingNumber(GroupingNumber.DOT_AND_COMMA.getValue()).IsGroupingOverseas(false).RoundoffLocalCurrencyAmount(true).build());
     }
 
     @Test
@@ -332,9 +331,9 @@ class ShipmentCANReportTest extends CommonMocks {
         when(modelMapper.map(shipmentModel.getConsigner(), Parties.class)).thenReturn(parties2);
 
         Map<String, Object> billChargeMap = new HashMap<>();
-        billChargeMap.put(REVENUE_MEASUREMENT_BASIS, MeasurementBasis.Chargeable.getValue());
+        billChargeMap.put(REVENUE_MEASUREMENT_BASIS, MeasurementBasis.CHARGEABLE.getValue());
         billChargeMap.put(REVENUE_CALCULATED_VALUE, "1 2");
-        billChargeMap.put(MEASUREMENT_BASIS, MeasurementBasis.Chargeable.getValue());
+        billChargeMap.put(MEASUREMENT_BASIS, MeasurementBasis.CHARGEABLE.getValue());
         billChargeMap.put(CALCULATED_VALUE, "1 2");
         billChargeMap.put(SELL_EXCHANGE, BigDecimal.TEN);
         billChargeMap.put(CURRENT_SELL_RATE, BigDecimal.TEN);
@@ -658,9 +657,9 @@ class ShipmentCANReportTest extends CommonMocks {
         when(modelMapper.map(shipmentModel.getConsigner(), Parties.class)).thenReturn(parties2);
 
         Map<String, Object> billChargeMap = new HashMap<>();
-        billChargeMap.put(REVENUE_MEASUREMENT_BASIS, MeasurementBasis.Chargeable.getValue());
+        billChargeMap.put(REVENUE_MEASUREMENT_BASIS, MeasurementBasis.CHARGEABLE.getValue());
         billChargeMap.put(REVENUE_CALCULATED_VALUE, "1 2");
-        billChargeMap.put(MEASUREMENT_BASIS, MeasurementBasis.Chargeable.getValue());
+        billChargeMap.put(MEASUREMENT_BASIS, MeasurementBasis.CHARGEABLE.getValue());
         billChargeMap.put(CALCULATED_VALUE, "1 2");
         billChargeMap.put(SELL_EXCHANGE, BigDecimal.TEN);
         billChargeMap.put(CURRENT_SELL_RATE, BigDecimal.TEN);
@@ -839,9 +838,9 @@ class ShipmentCANReportTest extends CommonMocks {
         when(modelMapper.map(shipmentModel.getConsigner(), Parties.class)).thenReturn(parties2);
 
         Map<String, Object> billChargeMap = new HashMap<>();
-        billChargeMap.put(REVENUE_MEASUREMENT_BASIS, MeasurementBasis.Chargeable.getValue());
+        billChargeMap.put(REVENUE_MEASUREMENT_BASIS, MeasurementBasis.CHARGEABLE.getValue());
         billChargeMap.put(REVENUE_CALCULATED_VALUE, "1 2");
-        billChargeMap.put(MEASUREMENT_BASIS, MeasurementBasis.Chargeable.getValue());
+        billChargeMap.put(MEASUREMENT_BASIS, MeasurementBasis.CHARGEABLE.getValue());
         billChargeMap.put(CALCULATED_VALUE, "1 2");
         billChargeMap.put(SELL_EXCHANGE, BigDecimal.TEN);
         billChargeMap.put(CURRENT_SELL_RATE, BigDecimal.TEN);

@@ -1,6 +1,6 @@
 package com.dpw.runner.shipment.services.ReportingService.Reports;
 
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHAPartyDescription;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CHA_PARTY_DESCRIPTION;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.CUSTOM_HOUSE_AGENT;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FULL_NAME;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.FULL_NAME1;
@@ -38,7 +38,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
+
+import lombok.Getter;
+import lombok.Setter;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -77,7 +79,7 @@ public class FreightCertificationReport extends IReport{
         validateAirAndOceanDGCheck(freightCertificationModel.shipmentDetails);
         freightCertificationModel.tenantDetails = getTenant();
         freightCertificationModel.setAllContainersList(new ArrayList<>());
-        if(freightCertificationModel.shipmentDetails.getContainersList() != null && freightCertificationModel.shipmentDetails.getContainersList().size() > 0) {
+        if(freightCertificationModel.shipmentDetails.getContainersList() != null && !freightCertificationModel.shipmentDetails.getContainersList().isEmpty()) {
             for (ContainerModel containers: freightCertificationModel.shipmentDetails.getContainersList()) {
                 ShipmentContainers shipmentContainers = jsonHelper.convertValue(containers, ShipmentContainers.class);
                 freightCertificationModel.getAllContainersList().add(shipmentContainers);
@@ -97,45 +99,17 @@ public class FreightCertificationReport extends IReport{
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
         addTenantDetails(dictionary, freightCertificationModel.tenantDetails);
 
-        List<String> consigner = null;
-        if(freightCertificationModel.shipmentDetails.getConsigner() != null) {
-            consigner = getOrgAddress(freightCertificationModel.shipmentDetails.getConsigner());
-            if(freightCertificationModel.shipmentDetails.getConsigner().getOrgData() != null) {
-                Map<String, Object> partyOrg = freightCertificationModel.shipmentDetails.getConsigner().getOrgData();
-                if(!Boolean.TRUE.equals(freightCertificationModel.shipmentSettingsDetails.getDisableBlPartiesName()) && getValueFromMap(partyOrg, FULL_NAME1) != null) {
-                    consigner.add(0, getValueFromMap(partyOrg, FULL_NAME1));
-                }
-            }
-        }
+        List<String> consigner = getPartyDetails(freightCertificationModel.shipmentDetails.getConsigner(), freightCertificationModel);
 
-        List<String> consignee = null;
-        if(freightCertificationModel.shipmentDetails.getConsignee() != null) {
-            consignee = getOrgAddress(freightCertificationModel.shipmentDetails.getConsignee());
-            if(freightCertificationModel.shipmentDetails.getConsignee().getOrgData() != null) {
-                Map<String, Object> partyOrg = freightCertificationModel.shipmentDetails.getConsignee().getOrgData();
-                if(!Boolean.TRUE.equals(freightCertificationModel.shipmentSettingsDetails.getDisableBlPartiesName()) && getValueFromMap(partyOrg, FULL_NAME1) != null) {
-                    consignee.add(0, getValueFromMap(partyOrg, FULL_NAME1));
-                }
-            }
-        }
+        List<String> consignee = getPartyDetails(freightCertificationModel.shipmentDetails.getConsignee(), freightCertificationModel);
 
-        List<String> notify = null;
-        if(freightCertificationModel.shipmentDetails.getAdditionalDetails().getNotifyParty() != null) {
-            notify = getOrgAddress(freightCertificationModel.shipmentDetails.getAdditionalDetails().getNotifyParty());
-            if(freightCertificationModel.shipmentDetails.getAdditionalDetails().getNotifyParty().getOrgData() != null) {
-                Map<String, Object> partyOrg = freightCertificationModel.shipmentDetails.getAdditionalDetails().getNotifyParty().getOrgData();
-                if(!Boolean.TRUE.equals(freightCertificationModel.shipmentSettingsDetails.getDisableBlPartiesName()) && getValueFromMap(partyOrg, FULL_NAME1) != null) {
-                    notify.add(0, getValueFromMap(partyOrg, FULL_NAME1));
-                }
-            }
-        }
+        List<String> notify = getPartyDetails(freightCertificationModel.shipmentDetails.getAdditionalDetails().getNotifyParty(), freightCertificationModel);
         V1TenantSettingsResponse tenantSettingsRow = getCurrentTenantSettings();
 
         List<String> tenantsDataList = getListOfStrings(freightCertificationModel.tenantDetails.tenantName, freightCertificationModel.tenantDetails.address1, freightCertificationModel.tenantDetails.address2,
                 freightCertificationModel.tenantDetails.city, freightCertificationModel.tenantDetails.state, freightCertificationModel.tenantDetails.zipPostCode, freightCertificationModel.tenantDetails.country,
                 freightCertificationModel.tenantDetails.email, freightCertificationModel.tenantDetails.websiteUrl, freightCertificationModel.tenantDetails.phone);
-        if(tenantsDataList != null)
-            dictionary.put(ReportConstants.TENANT, tenantsDataList);
+        dictionary.put(ReportConstants.TENANT, tenantsDataList);
         dictionary.put(ReportConstants.CONTAINER_COUNT_BY_CODE, getCountByContainerTypeCode(freightCertificationModel.getAllContainersList()));
         dictionary.put(ReportConstants.CLIENT_NAME, getValueFromMap(freightCertificationModel.shipmentDetails.getClient().getOrgData(), FULL_NAME1));
         dictionary.put(ReportConstants.CONSIGNER, consigner);
@@ -157,91 +131,161 @@ public class FreightCertificationReport extends IReport{
             dictionary.put(ReportConstants.FREIGHT_OVERSEAS, AmountNumberFormatter.Format(freightCertificationModel.shipmentDetails.getFreightOverseas(), freightCertificationModel.shipmentDetails.getFreightOverseasCurrency(), tenantSettingsRow));
         if(freightCertificationModel.shipmentDetails != null && freightCertificationModel.shipmentDetails.getFreightOverseasCurrency() != null && !freightCertificationModel.shipmentDetails.getFreightOverseasCurrency().isEmpty())
             dictionary.put(ReportConstants.FREIGHT_OVERSEAS_CURRENCY, freightCertificationModel.shipmentDetails.getFreightOverseasCurrency());
-        if (freightCertificationModel.shipmentDetails.getShipmentAddresses() != null && freightCertificationModel.shipmentDetails.getShipmentAddresses().size() > 0) {
+        processShipmentAddress(freightCertificationModel, dictionary);
+        populateIGMInfo(freightCertificationModel.shipmentDetails, dictionary);
+
+        processBillingList(freightCertificationModel, dictionary);
+        return dictionary;
+    }
+
+    private List<String> getPartyDetails(PartiesModel shipmentDetails, FreightCertificationModel freightCertificationModel) {
+        List<String> consigner = null;
+        if (shipmentDetails != null) {
+            consigner = getOrgAddress(shipmentDetails);
+            if (shipmentDetails.getOrgData() != null) {
+                Map<String, Object> partyOrg = shipmentDetails.getOrgData();
+                if (!Boolean.TRUE.equals(freightCertificationModel.shipmentSettingsDetails.getDisableBlPartiesName()) && getValueFromMap(partyOrg, FULL_NAME1) != null) {
+                    consigner.add(0, getValueFromMap(partyOrg, FULL_NAME1));
+                }
+            }
+        }
+        return consigner;
+    }
+
+    private void processShipmentAddress(FreightCertificationModel freightCertificationModel, Map<String, Object> dictionary) {
+        if (freightCertificationModel.shipmentDetails.getShipmentAddresses() != null && !freightCertificationModel.shipmentDetails.getShipmentAddresses().isEmpty()) {
             for (PartiesModel shipmentAddress : freightCertificationModel.shipmentDetails.getShipmentAddresses()) {
                 if (shipmentAddress.getType().equals(CUSTOM_HOUSE_AGENT) && shipmentAddress.getOrgData() != null
                         && getValueFromMap(shipmentAddress.getOrgData(), FULL_NAME) != null) {
-                    dictionary.put(CHAPartyDescription, getValueFromMap(shipmentAddress.getOrgData(), FULL_NAME));
+                    dictionary.put(CHA_PARTY_DESCRIPTION, getValueFromMap(shipmentAddress.getOrgData(), FULL_NAME));
                 }
             }
         }
-        populateIGMInfo(freightCertificationModel.shipmentDetails, dictionary);
+    }
 
+    private void processBillingList(FreightCertificationModel freightCertificationModel, Map<String, Object> dictionary) {
         List<BillingResponse> billingsList = getBillingData(freightCertificationModel.shipmentDetails.getGuid());
+        LocalDateTime lastDate = fetchLastPostedInvoiceDate(freightCertificationModel);
+        BillingSummary billingSummary = calculateBillingSummary(billingsList, lastDate);
+        updateDictionary(dictionary, billingSummary);
+    }
 
-        // Fetch the last posted invoice date
-        // Since there is only 1 shipment fetch lastDate once.
-        LocalDateTime lastDate = Boolean.TRUE.equals(billingServiceUrlConfig.getEnableBillingIntegration()) ?
-                billingServiceAdapter.fetchLastPostedInvoiceDate(LastPostedInvoiceDateRequest.builder()
-                        .moduleGuid(freightCertificationModel.getShipmentDetails().getGuid().toString())
-                        .moduleType(Constants.SHIPMENT).build())
-                : LocalDateTime.MIN;
+    private LocalDateTime fetchLastPostedInvoiceDate(FreightCertificationModel freightCertificationModel) {
+        if (Boolean.TRUE.equals(billingServiceUrlConfig.getEnableBillingIntegration())) {
+            return billingServiceAdapter.fetchLastPostedInvoiceDate(LastPostedInvoiceDateRequest.builder()
+                    .moduleGuid(freightCertificationModel.getShipmentDetails().getGuid().toString())
+                    .moduleType(Constants.SHIPMENT).build());
+        }
+        return LocalDateTime.MIN;
+    }
 
-        double totalAmount = 0;
-        String currency = null;
-        if (billingsList != null && billingsList.size() > 0) {
-            for (BillingResponse bill : billingsList) {
-                if (Boolean.FALSE.equals(billingServiceUrlConfig.getEnableBillingIntegration())) {
-                    List<ArObjectResponse> arObjectsList = getArObjectData(bill.getGuid());
-                    if (arObjectsList != null && arObjectsList.size() > 0) {
-                        for (ArObjectResponse arObject : arObjectsList) {
-                            if (arObject.getInvoiceDate() != null && arObject.getInvoiceDate().isAfter(lastDate)) {
-                                lastDate = arObject.getInvoiceDate();
-                            }
-                        }
-                    }
-                }
-                List<BillChargesResponse> billChargesList = getBillChargesData(bill);
-                boolean currencyFlag = false;
-                if (billChargesList != null && billChargesList.size() > 0) {
-                    for (BillChargesResponse billCharge : billChargesList) {
-                        ChargeTypesResponse chargeTypesResponse = getChargeTypesData(billCharge);
-                        if(chargeTypesResponse != null && Objects.equals(chargeTypesResponse.getServices(), "Freight")) {
-                            if(billCharge.getOverseasSellAmount() != null) {
-                                if (currency == null) {
-                                    currency = billCharge.getOverseasSellCurrency();
-                                    totalAmount = totalAmount + billCharge.getOverseasSellAmount().doubleValue();
-                                } else if (!billCharge.getOverseasSellCurrency().equals(currency)) {
-                                    currencyFlag = true;
-                                    break;
-                                }
-                                else
-                                    totalAmount = totalAmount + billCharge.getOverseasSellAmount().doubleValue();
-                            }
-                        }
-                    }
-                    if (currencyFlag) {
-                        totalAmount = 0;
-                        currency = null;
-                        for (BillChargesResponse billCharge: billChargesList) {
-                            ChargeTypesResponse chargeTypesResponse = getChargeTypesData(billCharge);
-                            if(chargeTypesResponse != null && chargeTypesResponse.getServices().equals("Freight")) {
-                                if(billCharge.getLocalSellAmount() != null) {
-                                    if (currency == null) {
-                                        currency = billCharge.getLocalSellCurrency();
-                                    }
-                                    totalAmount = totalAmount + billCharge.getLocalSellAmount().doubleValue();
-                                }
-                            }
-                        }
-                    }
+    private BillingSummary calculateBillingSummary(List<BillingResponse> billingsList, LocalDateTime lastDate) {
+        BillingSummary summary = new BillingSummary();
+        if (billingsList == null || billingsList.isEmpty()) {
+            return summary;
+        }
+
+        for (BillingResponse bill : billingsList) {
+            if (Boolean.FALSE.equals(billingServiceUrlConfig.getEnableBillingIntegration())) {
+                lastDate = updateLastDateFromArObjects(bill, lastDate);
+            }
+            processBillCharges(bill, summary);
+        }
+        summary.setLastDate(lastDate);
+        return summary;
+    }
+
+    private LocalDateTime updateLastDateFromArObjects(BillingResponse bill, LocalDateTime lastDate) {
+        List<ArObjectResponse> arObjectsList = getArObjectData(bill.getGuid());
+        if (arObjectsList != null && !arObjectsList.isEmpty()) {
+            for (ArObjectResponse arObject : arObjectsList) {
+                if (arObject.getInvoiceDate() != null && arObject.getInvoiceDate().isAfter(lastDate)) {
+                    lastDate = arObject.getInvoiceDate();
                 }
             }
         }
-        DecimalFormat decimalFormat = new DecimalFormat("0.00");
-        if(!lastDate.equals(LocalDateTime.MIN))
-            dictionary.put(INVOICE_DATE, lastDate.format(DateTimeFormatter.ofPattern("dd MMM yyyy")));
-        else
-            dictionary.put(INVOICE_DATE, null);
-        if(totalAmount != 0) {
-            String strTotalAmount = decimalFormat.format(totalAmount);
-            dictionary.put(TOTAL_AMOUNT, strTotalAmount);
-            dictionary.put(TOTAL_AMOUNT_CURRENCY, currency);
+        return lastDate;
+    }
+
+    private void processBillCharges(BillingResponse bill, BillingSummary summary) {
+        List<BillChargesResponse> billChargesList = getBillChargesData(bill);
+        if (billChargesList == null || billChargesList.isEmpty()) {
+            return;
         }
-        else {
+
+        boolean currencyFlag = false;
+        for (BillChargesResponse billCharge : billChargesList) {
+            ChargeTypesResponse chargeTypesResponse = getChargeTypesData(billCharge);
+            if (chargeTypesResponse != null && "Freight".equals(chargeTypesResponse.getServices())) {
+                currencyFlag = processCharge(billCharge, summary, currencyFlag);
+            }
+        }
+
+        if (currencyFlag) {
+            processLocalCharges(billChargesList, summary);
+        }
+    }
+
+    private boolean processCharge(BillChargesResponse billCharge, BillingSummary summary, boolean currencyFlag) {
+        if (billCharge.getOverseasSellAmount() != null) {
+            if (summary.getCurrency() == null) {
+                summary.setCurrency(billCharge.getOverseasSellCurrency());
+                summary.addToTotalAmount(billCharge.getOverseasSellAmount().doubleValue());
+            } else if (!billCharge.getOverseasSellCurrency().equals(summary.getCurrency())) {
+                return true;
+            } else {
+                summary.addToTotalAmount(billCharge.getOverseasSellAmount().doubleValue());
+            }
+        }
+        return currencyFlag;
+    }
+
+    private void processLocalCharges(List<BillChargesResponse> billChargesList, BillingSummary summary) {
+        summary.resetAmountAndCurrency();
+        for (BillChargesResponse billCharge : billChargesList) {
+            ChargeTypesResponse chargeTypesResponse = getChargeTypesData(billCharge);
+            if (chargeTypesResponse != null && "Freight".equals(chargeTypesResponse.getServices())) {
+                if (billCharge.getLocalSellAmount() != null) {
+                    if (summary.getCurrency() == null) {
+                        summary.setCurrency(billCharge.getLocalSellCurrency());
+                    }
+                    summary.addToTotalAmount(billCharge.getLocalSellAmount().doubleValue());
+                }
+            }
+        }
+    }
+
+    private void updateDictionary(Map<String, Object> dictionary, BillingSummary summary) {
+        DecimalFormat decimalFormat = new DecimalFormat("0.00");
+        if (!summary.getLastDate().equals(LocalDateTime.MIN)) {
+            dictionary.put(INVOICE_DATE, summary.getLastDate().format(DateTimeFormatter.ofPattern("dd MMM yyyy")));
+        } else {
+            dictionary.put(INVOICE_DATE, null);
+        }
+        if (summary.getTotalAmount() != 0) {
+            dictionary.put(TOTAL_AMOUNT, decimalFormat.format(summary.getTotalAmount()));
+            dictionary.put(TOTAL_AMOUNT_CURRENCY, summary.getCurrency());
+        } else {
             dictionary.put(TOTAL_AMOUNT, null);
             dictionary.put(TOTAL_AMOUNT_CURRENCY, null);
         }
-        return dictionary;
+    }
+
+    @Getter
+    static class BillingSummary {
+        private double totalAmount = 0;
+        @Setter
+        private String currency = null;
+        @Setter
+        private LocalDateTime lastDate;
+
+        public void addToTotalAmount(double amount) {
+            this.totalAmount += amount;
+        }
+
+        public void resetAmountAndCurrency() {
+            this.totalAmount = 0;
+            this.currency = null;
+        }
     }
 }

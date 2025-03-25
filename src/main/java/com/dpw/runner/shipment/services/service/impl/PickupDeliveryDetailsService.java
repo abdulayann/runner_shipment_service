@@ -19,7 +19,6 @@ import com.dpw.runner.shipment.services.dto.v1.response.RAKCDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
-import com.dpw.runner.shipment.services.dto.response.TIKafkaEventResponse;
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -28,9 +27,8 @@ import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
-import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
-import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
+import com.dpw.runner.shipment.services.service.interfaces.IKafkaAsyncService;
 import com.dpw.runner.shipment.services.service.interfaces.IPickupDeliveryDetailsService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
@@ -39,16 +37,13 @@ import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -74,15 +69,12 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
     private MasterDataKeyUtils masterDataKeyUtils;
     private ExecutorService executorService;
 
-    private KafkaProducer producer;
+    private IKafkaAsyncService kafkaAsyncService;
     private IV1Service v1Service;
 
-    @Value("${tiKafka.queue}")
-    private String senderQueue;
-
     @Autowired
-    public PickupDeliveryDetailsService(CommonUtils commonUtils, IPartiesDao partiesDao, IPickupDeliveryDetailsDao pickupDeliveryDetailsDao, JsonHelper jsonHelper, AuditLogService auditLogService, MasterDataUtils masterDataUtils, MasterDataKeyUtils masterDataKeyUtils, ExecutorService executorService, KafkaProducer producer,
-                                        IV1Service v1Service) {
+    public PickupDeliveryDetailsService(CommonUtils commonUtils, IPartiesDao partiesDao, IPickupDeliveryDetailsDao pickupDeliveryDetailsDao, JsonHelper jsonHelper, AuditLogService auditLogService, MasterDataUtils masterDataUtils, MasterDataKeyUtils masterDataKeyUtils, ExecutorService executorService,
+                                        KafkaAsyncService kafkaAsyncService, IV1Service v1Service) {
         this.pickupDeliveryDetailsDao = pickupDeliveryDetailsDao;
         this.jsonHelper = jsonHelper;
         this.auditLogService = auditLogService;
@@ -91,7 +83,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
         this.masterDataUtils = masterDataUtils;
         this.masterDataKeyUtils = masterDataKeyUtils;
         this.executorService = executorService;
-        this.producer = producer;
+        this.kafkaAsyncService = kafkaAsyncService;
         this.v1Service = v1Service;
     }
 
@@ -155,7 +147,10 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
         }
         if (pickupDeliveryDetails.getShipmentId() != null) {
             List<PickupDeliveryDetails> pickupDeliveryDetailsList = pickupDeliveryDetailsDao.findByShipmentId(pickupDeliveryDetails.getShipmentId());
-            pushToKafka(pickupDeliveryDetailsList, isCreate, pickupDeliveryDetails.getShipmentId());
+            if (!CommonUtils.listIsNullOrEmpty(pickupDeliveryDetailsList)) {
+                List<IRunnerResponse> pickupDeliveryDetailsResponses = convertEntityListToDtoList(pickupDeliveryDetailsList, false);
+                kafkaAsyncService.pushToKafkaTI(pickupDeliveryDetailsResponses, isCreate, pickupDeliveryDetails.getShipmentId());
+            }
         }
     }
 
@@ -267,7 +262,10 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
 
             if (pickupDeliveryDetails.get().getShipmentId() != null) {
                 List<PickupDeliveryDetails> pickupDeliveryDetailsList = pickupDeliveryDetailsDao.findByShipmentId(pickupDeliveryDetails.get().getShipmentId());
-                pushToKafka(pickupDeliveryDetailsList, false, pickupDeliveryDetails.get().getShipmentId());
+                if (!CommonUtils.listIsNullOrEmpty(pickupDeliveryDetailsList)) {
+                    List<IRunnerResponse> pickupDeliveryDetailsResponses = convertEntityListToDtoList(pickupDeliveryDetailsList, false);
+                    kafkaAsyncService.pushToKafkaTI(pickupDeliveryDetailsResponses, false, pickupDeliveryDetails.get().getShipmentId());
+                }
             }
             auditLogService.addAuditLog(
                     AuditLogMetaData.builder()
@@ -356,26 +354,6 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
 
     public PickupDeliveryDetails convertRequestToEntity(PickupDeliveryDetailsRequest request) {
         return jsonHelper.convertValue(request, PickupDeliveryDetails.class);
-    }
-
-    @Async
-    public void pushToKafka(List<PickupDeliveryDetails> pickupDeliveryDetails, boolean isCreate, Long shipmentId) {
-        try {
-            List<IRunnerResponse> pickupDeliveryDetailsResponses = null;
-            if (!CommonUtils.listIsNullOrEmpty(pickupDeliveryDetails)) {
-                pickupDeliveryDetailsResponses = convertEntityListToDtoList(pickupDeliveryDetails, false);
-            }
-            TIKafkaEventResponse tiKafkaEventResponse = new TIKafkaEventResponse();
-            tiKafkaEventResponse.setShipmentId(shipmentId);
-            tiKafkaEventResponse.setPickupDeliveryDetails(pickupDeliveryDetailsResponses);
-
-            KafkaResponse kafkaResponse = producer.getKafkaResponse(tiKafkaEventResponse, isCreate);
-            producer.produceToKafka(jsonHelper.convertToJson(kafkaResponse), senderQueue, UUID.randomUUID().toString());
-        }
-        catch (Exception e)
-        {
-            log.error("Error pushing awb to kafka: {}", e.getMessage());
-        }
     }
 
     // V2 Endpoints

@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.entity.enums;
 
+@SuppressWarnings("java:S115") //Suppressing Rename this constant name to match the regular expression
 public enum InstructionType {
     Pickup(1, "Pickup"),
     Delivery(2, "Delivery"),

@@ -161,8 +161,8 @@ public class ReportHelper {
             list.add(getValueFromMap(partyAddress,ReportConstants.ADDRESS2));
         if(getCityCountry(getValueFromMap(partyAddress,ReportConstants.CITY), getValueFromMap(partyAddress,ReportConstants.COUNTRY)) != null)
             list.add(getCityCountry(getValueFromMap(partyAddress,ReportConstants.CITY), getValueFromMap(partyAddress,ReportConstants.COUNTRY)));
-        if(getValueFromMap(partyAddress,"Zip_PostCode") != null)
-            list.add(getValueFromMap(partyAddress,"Zip_PostCode"));
+        if(getValueFromMap(partyAddress,ReportConstants.ZIP_POSTCODE) != null)
+            list.add(getValueFromMap(partyAddress,ReportConstants.ZIP_POSTCODE));
         return list;
     }
 
@@ -183,8 +183,8 @@ public class ReportHelper {
             list.add(getValueFromMap(partyAddress,ReportConstants.EMAIL));
         if(getValueFromMap(partyAddress,ReportConstants.CONTACT_PHONE) != null)
             list.add(getValueFromMap(partyAddress,ReportConstants.CONTACT_PHONE));
-        if(getValueFromMap(partyAddress,"Zip_PostCode") != null)
-            list.add(getValueFromMap(partyAddress,"Zip_PostCode"));
+        if(getValueFromMap(partyAddress,ReportConstants.ZIP_POSTCODE) != null)
+            list.add(getValueFromMap(partyAddress,ReportConstants.ZIP_POSTCODE));
         return list;
     }
 

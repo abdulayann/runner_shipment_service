@@ -12,6 +12,7 @@ import java.util.List;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
+@SuppressWarnings("java:S1948")
 public class UploadDocumentRequest implements IRunnerRequest {
     private List<MultipartFile> files;
     private Long entityId;

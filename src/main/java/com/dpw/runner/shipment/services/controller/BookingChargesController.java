@@ -8,6 +8,6 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 @SuppressWarnings("ALL")
 @RestController
-@RequestMapping(value = BookingChargesConstants.Booking_Charges_API_HANDLE)
+@RequestMapping(value = BookingChargesConstants.BOOKING_CHARGES_API_HANDLE)
 public class BookingChargesController {
 }

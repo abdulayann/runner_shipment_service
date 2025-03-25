@@ -28,6 +28,7 @@ import java.util.Objects;
 @SQLDelete(sql = "UPDATE parties SET is_deleted = true WHERE id=?")
 @Where(clause = "is_deleted = false")
 @BatchSize(size = 50)
+@SuppressWarnings("java:S1948")
 public class Parties extends MultiTenancy {
 
     private static final long serialVersionUID = 190794279984274725L;

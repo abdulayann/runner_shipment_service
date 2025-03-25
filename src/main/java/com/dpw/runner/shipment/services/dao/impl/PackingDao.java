@@ -456,7 +456,7 @@ public class PackingDao implements IPackingDao {
         String responseMsg;
         List<Packing> responsePackings = new ArrayList<>();
         Map<UUID, Packing> packingMap = new HashMap<>();
-        if (oldEntityList != null && oldEntityList.size() > 0) {
+        if (oldEntityList != null && !oldEntityList.isEmpty()) {
             for (Packing entity :
                     oldEntityList) {
                 packingMap.put(entity.getGuid(), entity);
@@ -470,30 +470,13 @@ public class PackingDao implements IPackingDao {
             }
         }
         try {
-            Packing oldEntity;
             Map<String, Long> contMap = new HashMap<>();
             if(containers != null) {
                 contMap = containers.stream().filter(container -> !IsStringNullOrEmpty(container.getContainerNumber())).collect(Collectors.toMap(Containers::getContainerNumber, Containers::getId));
             }
             List<Packing> packingRequestList = new ArrayList<>();
-            if (packingList != null && packingList.size() != 0) {
-                for (Packing request : packingList) {
-                    oldEntity = packingMap.get(request.getGuid());
-                    if (oldEntity != null) {
-                        packingMap.remove(oldEntity.getGuid());
-                        request.setId(oldEntity.getId());
-                    }
-                    else {
-                        oldEntity = consolePackingMap.get(request.getGuid());
-                        if (oldEntity != null) {
-                            consolePackingMap.remove(oldEntity.getGuid());
-                            request.setId(oldEntity.getId());
-                        }
-                    }
-                    if(packMap.containsKey(request.getGuid()) && !IsStringNullOrEmpty(packMap.get(request.getGuid())) && contMap.containsKey(packMap.get(request.getGuid())))
-                        request.setContainerId(contMap.get(packMap.get(request.getGuid())));
-                    packingRequestList.add(request);
-                }
+            if (packingList != null && !packingList.isEmpty()) {
+                getPackingRequestList(packingList, packMap, packingMap, consolePackingMap, contMap, packingRequestList);
                 responsePackings = saveEntityFromShipment(packingRequestList, shipmentId);
             }
             Map<Long, Packing> hashMap = new HashMap<>();
@@ -506,6 +489,27 @@ public class PackingDao implements IPackingDao {
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
             throw new RunnerException(e.getMessage());
+        }
+    }
+
+    private void getPackingRequestList(List<Packing> packingList, Map<UUID, String> packMap, Map<UUID, Packing> packingMap, Map<UUID, Packing> consolePackingMap, Map<String, Long> contMap, List<Packing> packingRequestList) {
+        Packing oldEntity;
+        for (Packing request : packingList) {
+            oldEntity = packingMap.get(request.getGuid());
+            if (oldEntity != null) {
+                packingMap.remove(oldEntity.getGuid());
+                request.setId(oldEntity.getId());
+            }
+            else {
+                oldEntity = consolePackingMap.get(request.getGuid());
+                if (oldEntity != null) {
+                    consolePackingMap.remove(oldEntity.getGuid());
+                    request.setId(oldEntity.getId());
+                }
+            }
+            if(packMap.containsKey(request.getGuid()) && !IsStringNullOrEmpty(packMap.get(request.getGuid())) && contMap.containsKey(packMap.get(request.getGuid())))
+                request.setContainerId(contMap.get(packMap.get(request.getGuid())));
+            packingRequestList.add(request);
         }
     }
 

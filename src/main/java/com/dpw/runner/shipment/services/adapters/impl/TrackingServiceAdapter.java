@@ -290,6 +290,16 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
         else
             trackingPayload = mapDetailsForTracking(Constants.SHIPMENT, shipmentNumber,masterBill, shipmentDetails, entityDetails);
 
+        setBookingReferenceNumberInTrackingPayload(inputConsol, inputShipment, isRequestFromShipment, trackingPayload);
+
+        setEntityTypeInTrackingPayload(inputConsol, inputShipment, trackingPayload);
+
+        setCarrierInTrackingPayload(inputConsol, inputShipment, trackingPayload);
+
+        return trackingPayload;
+    }
+
+    private void setBookingReferenceNumberInTrackingPayload(ConsolidationDetails inputConsol, ShipmentDetails inputShipment, boolean isRequestFromShipment, UniversalTrackingPayload trackingPayload) {
         if(inputShipment != null && "API".equals(inputShipment.getSource())) {
             if(!isRequestFromShipment)
                 trackingPayload.setBookingReferenceNumber(inputConsol.getReferenceNumber());
@@ -298,18 +308,20 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
         }
         else
             trackingPayload.setBookingReferenceNumber(null);
+    }
 
+    private void setEntityTypeInTrackingPayload(ConsolidationDetails inputConsol, ShipmentDetails inputShipment, UniversalTrackingPayload trackingPayload) {
         if((inputConsol != null && ! inputConsol.getTransportMode().equalsIgnoreCase(Constants.TRANSPORT_MODE_AIR)) || (inputShipment != null && !inputShipment.getTransportMode().equalsIgnoreCase(Constants.TRANSPORT_MODE_AIR)))
             trackingPayload.setEntityType("Container");
         else
             trackingPayload.setEntityType("awb");
+    }
 
+    private void setCarrierInTrackingPayload(ConsolidationDetails inputConsol, ShipmentDetails inputShipment, UniversalTrackingPayload trackingPayload) {
         if(inputConsol != null)
             trackingPayload.setCarrier(fetchCarrierName(inputConsol.getCarrierDetails().getShippingLine()));
         else
             trackingPayload.setCarrier(fetchCarrierName(inputShipment.getCarrierDetails().getShippingLine()));
-
-        return trackingPayload;
     }
 
     private List<UniversalTrackingPayload.EntityDetail> getEntityDetails(ConsolidationDetails inputConsol, ShipmentDetails inputShipment, boolean isRequestFromShipment) {
@@ -576,6 +588,32 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
             return EventConstants.FLDR;
         }
 
+        String shortCode = getShortCode(safeEventCode, safeDescription);
+        if (shortCode != null) return shortCode;
+
+        String ecpk = getECPKEventCode(safeEventCode, safeLocationRole);
+        if (ecpk != null) return ecpk;
+
+        String fcgi = getFCGIEventCode(safeEventCode, safeLocationRole);
+        if (fcgi != null) return fcgi;
+
+        String vsdp = getVSDPEventCode(safeEventCode, safeLocationRole);
+        if (vsdp != null) return vsdp;
+
+        String ardp = getADRPEventCode(safeEventCode, safeLocationRole);
+        if (ardp != null) return ardp;
+
+        String fugo = getFUGOEventCode(safeEventCode, safeLocationRole);
+        if (fugo != null) return fugo;
+
+        String emcr = getEMCREventCode(safeEventCode, safeLocationRole);
+        if (emcr != null) return emcr;
+
+        log.info("No match found for event code '{}' with location role '{}'. Returning original event code.", safeEventCode, safeLocationRole);
+        return eventCode;
+    }
+
+    private String getShortCode(String safeEventCode, String safeDescription) {
         if (EventConstants.LITERAL.equalsIgnoreCase(safeEventCode)) {
             String shortCode = null;
 
@@ -592,45 +630,61 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
                 return shortCode;
             }
         }
+        return null;
+    }
 
+    private String getECPKEventCode(String safeEventCode, String safeLocationRole) {
         if (EventConstants.GATE_IN_WITH_CONTAINER_EMPTY.equalsIgnoreCase(safeEventCode)
                 && safeLocationRole.startsWith(EventConstants.ORIGIN)) {
             log.debug("Matched GATE_IN_WITH_CONTAINER_EMPTY and ORIGIN. Returning short code: {}", EventConstants.ECPK);
             return EventConstants.ECPK;
         }
+        return null;
+    }
 
+    private String getFCGIEventCode(String safeEventCode, String safeLocationRole) {
         if (EventConstants.GATE_IN_WITH_CONTAINER_FULL.equalsIgnoreCase(safeEventCode)
                 && "originPort".equalsIgnoreCase(safeLocationRole)) {
             log.debug("Matched GATE_IN_WITH_CONTAINER_FULL and originPort. Returning short code: {}", EventConstants.FCGI);
             return EventConstants.FCGI;
         }
+        return null;
+    }
 
+    private String getVSDPEventCode(String safeEventCode, String safeLocationRole) {
         if (EventConstants.VESSEL_DEPARTURE_WITH_CONTAINER.equalsIgnoreCase(safeEventCode)
                 && "originPort".equalsIgnoreCase(safeLocationRole)) {
             log.debug("Matched VESSEL_DEPARTURE_WITH_CONTAINER and originPort. Returning short code: {}", EventConstants.VSDP);
             return EventConstants.VSDP;
         }
+        return null;
+    }
 
+    private String getADRPEventCode(String safeEventCode, String safeLocationRole) {
         if (EventConstants.VESSEL_ARRIVAL_WITH_CONTAINER.equalsIgnoreCase(safeEventCode)
                 && "destinationPort".equalsIgnoreCase(safeLocationRole)) {
             log.debug("Matched VESSEL_ARRIVAL_WITH_CONTAINER and destinationPort. Returning short code: {}", EventConstants.ARDP);
             return EventConstants.ARDP;
         }
+        return null;
+    }
 
+    private String getFUGOEventCode(String safeEventCode, String safeLocationRole) {
         if (EventConstants.GATE_OUT_WITH_CONTAINER_FULL.equalsIgnoreCase(safeEventCode)
                 && "destinationPort".equalsIgnoreCase(safeLocationRole)) {
             log.debug("Matched GATE_OUT_WITH_CONTAINER_FULL and destinationPort. Returning short code: {}", EventConstants.FUGO);
             return EventConstants.FUGO;
         }
+        return null;
+    }
 
+    private String getEMCREventCode(String safeEventCode, String safeLocationRole) {
         if (EventConstants.GATE_IN_WITH_CONTAINER_EMPTY.equalsIgnoreCase(safeEventCode)
                 && safeLocationRole.startsWith(EventConstants.DESTINATION)) {
             log.debug("Matched GATE_IN_WITH_CONTAINER_EMPTY and DESTINATION. Returning short code: {}", EventConstants.EMCR);
             return EventConstants.EMCR;
         }
-
-        log.info("No match found for event code '{}' with location role '{}'. Returning original event code.", safeEventCode, safeLocationRole);
-        return eventCode;
+        return null;
     }
 
     @Override

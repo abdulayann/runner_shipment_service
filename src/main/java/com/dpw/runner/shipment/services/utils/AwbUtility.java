@@ -34,6 +34,7 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.binary.Base64;
+import org.jetbrains.annotations.NotNull;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -181,11 +182,14 @@ public class AwbUtility {
         if (Objects.equals(shipmentDetails.getJobType(), ShipmentConstants.SHIPMENT_TYPE_DRT) && (shipmentDetails.getMasterBill() == null || shipmentDetails.getMasterBill().isBlank())) {
             throw new ValidationException("MAWB Number is required in shipment to generate the document.");
         }
-        if (shipmentDetails.getHouseBill() == null || shipmentDetails.getHouseBill().isBlank()) {
-            if(!(Objects.equals(Constants.SHIPMENT_TYPE_DRT, shipmentDetails.getJobType()) && Objects.equals(Constants.TRANSPORT_MODE_AIR, shipmentDetails.getTransportMode()))) {
-                throw new ValidationException("HAWB Number is required in shipment to generate the document.");
-            }
+        if (isHawbNumberPresent(shipmentDetails)) {
+            throw new ValidationException("HAWB Number is required in shipment to generate the document.");
         }
+
+    }
+
+    private static boolean isHawbNumberPresent(ShipmentDetails shipmentDetails) {
+        return (shipmentDetails.getHouseBill() == null || shipmentDetails.getHouseBill().isBlank()) && !(Objects.equals(Constants.SHIPMENT_TYPE_DRT, shipmentDetails.getJobType()) && Objects.equals(Constants.TRANSPORT_MODE_AIR, shipmentDetails.getTransportMode()));
     }
 
     public static void validateConsolidationInfoBeforeGeneratingAwb(ConsolidationDetails consolidationDetails)
@@ -229,92 +233,21 @@ public class AwbUtility {
         // Populate Special handling codes master data
         this.populateMasterDataMap(awbResponse, awb);
 
-        List<Parties> orgLists = new ArrayList<>();
-        Parties issuingAgent = null;
-        for (var orgRow : consolidationDetails.getConsolidationAddresses()) {
-            if (orgRow.getType().equals(Constants.FAG)) {
-                issuingAgent = orgRow;
-            }
-        }
-        if(consolidationDetails.getSendingAgent() != null){
-            orgLists.add(consolidationDetails.getSendingAgent());
-        }
-        if(consolidationDetails.getReceivingAgent() != null){
-            orgLists.add(consolidationDetails.getReceivingAgent());
-        }
-        if(issuingAgent != null) {
-            orgLists.add(issuingAgent);
-        }
+
+        Parties issuingAgent = getIssuingAgentForConsole(consolidationDetails);
+        List<Parties> orgLists = getOrgListsForConsole(consolidationDetails, issuingAgent);
         OrgAddressResponse response = v1ServiceUtil.fetchOrgInfoFromV1(orgLists);
         if(issuingAgent == null){
-            var orgs = masterDataUtils.fetchOrganizations("Id", tenantModel.getDefaultOrgId());
-            if(!orgs.isEmpty()) {
-
-                CommonV1ListRequest addressRequest = new CommonV1ListRequest();
-                List<Object> addressField = new ArrayList<>(List.of("Id"));
-                List<Object> addressCriteria = new ArrayList<>(List.of(addressField, "=", tenantModel.getDefaultAddressId()));
-                addressRequest.setCriteriaRequests(addressCriteria);
-                V1DataResponse addressResponse = v1Service.addressList(addressRequest);
-                List<EntityTransferAddress> addressList = jsonHelper.convertValueToList(addressResponse.entities, EntityTransferAddress.class);
-
-                String number = null;
-                String expiry = null;
-                Boolean isRA = false, isKC = false;
-                if(addressList != null && !addressList.isEmpty()){
-                    EntityTransferAddress address = addressList.stream().findFirst().orElse(EntityTransferAddress.builder().build());
-                    number = address.getKCRANumber();
-                    expiry = address.getKCRAExpiry();
-                    isRA = address.getRegulatedAgent();
-                    isKC = address.getKnownConsignor();
-                }
-                awbResponse.getMeta().setIssueingAgent(AwbAirMessagingResponse.OrgDetails.builder()
-                        .city(awb.getAwbShipmentInfo().getIssuingAgentCity())
-                        .country(CountryListHelper.ISO3166.getAlpha2IfAlpha3(awb.getAwbShipmentInfo().getIssuingAgentCountry()))
-                        .currency(orgs.get(0).getCurrencyCode())
-                        .expiry(expiry != null ? LocalDateTime.parse(expiry) : null)
-                        .number(number)
-                        .postCode(awb.getAwbShipmentInfo().getIssuingAgentZipCode())
-                        .isRA(isRA).isKC(isKC)
-                        .build());
-            }
+            processEmptyIssuingAgent(awb, tenantModel, awbResponse);
         } else {
-            if(response.getOrganizations().containsKey(issuingAgent.getOrgCode())
-                    && response.getAddresses().containsKey(issuingAgent.getOrgCode() + '#' + issuingAgent.getAddressCode())) {
-                var org = response.getOrganizations().get(issuingAgent.getOrgCode());
-                var address = response.getAddresses().get(issuingAgent.getOrgCode() + '#' + issuingAgent.getAddressCode());
-                awbResponse.getMeta().setIssueingAgent(populateOrgsFields(org, address, awb.getAwbShipmentInfo().getIssuingAgentCountry(), awb.getAwbShipmentInfo().getIssuingAgentCity(), awb.getAwbShipmentInfo().getIssuingAgentZipCode()));
-            }
+            setIssuingAgentInResponse(awb, response, issuingAgent, awbResponse);
         }
 
-        if(consolidationDetails.getSendingAgent() != null && (response.getOrganizations().containsKey(consolidationDetails.getSendingAgent().getOrgCode())
-             && response.getAddresses().containsKey(consolidationDetails.getSendingAgent().getOrgCode() + '#' + consolidationDetails.getSendingAgent().getAddressCode()))){
-                var org = response.getOrganizations().get(consolidationDetails.getSendingAgent().getOrgCode());
-                var address = response.getAddresses().get(consolidationDetails.getSendingAgent().getOrgCode() + '#' + consolidationDetails.getSendingAgent().getAddressCode());
-                awbResponse.getMeta().setShipper(populateOrgsFields(org, address, awb.getAwbShipmentInfo().getShipperCountry(), awb.getAwbShipmentInfo().getShipperCity(), awb.getAwbShipmentInfo().getShipperZipCode()));
-
-        }
-        if(consolidationDetails.getReceivingAgent() != null && (response.getOrganizations().containsKey(consolidationDetails.getReceivingAgent().getOrgCode())
-                    && response.getAddresses().containsKey(consolidationDetails.getReceivingAgent().getOrgCode() + '#' + consolidationDetails.getReceivingAgent().getAddressCode()))){
-                var org = response.getOrganizations().get(consolidationDetails.getReceivingAgent().getOrgCode());
-                var address = response.getAddresses().get(consolidationDetails.getReceivingAgent().getOrgCode() + '#' + consolidationDetails.getReceivingAgent().getAddressCode());
-                awbResponse.getMeta().setConsignee(populateOrgsFields(org, address, awb.getAwbShipmentInfo().getConsigneeCountry(), awb.getAwbShipmentInfo().getConsigneeCity(), awb.getAwbShipmentInfo().getConsigneeZipCode()));
-
-        }
+        setShipperAndConsigneeForConsole(awb, consolidationDetails, response, awbResponse);
 
         Set<String> carrierRequests = new HashSet<>();
 
-        List<String> unlocoRequests = new ArrayList<>();
-        awb.getAwbNotifyPartyInfo().forEach(party -> {
-            if(party.getSpecifiedAddressLocation() != null)
-                unlocoRequests.add(party.getSpecifiedAddressLocation());
-        });
-        if(awb.getAwbOtherInfo() != null) {
-            if(awb.getAwbOtherInfo().getExecutedAt() != null)
-                unlocoRequests.add(awb.getAwbOtherInfo().getExecutedAt());
-        }
-
-        unlocoRequests.add(consolidationDetails.getCarrierDetails().getOriginPort());
-        unlocoRequests.add(consolidationDetails.getCarrierDetails().getDestinationPort());
+        List<String> unlocoRequests = getUnLocRequestsForConsole(awb, consolidationDetails);
         if(awbResponse.getAwbRoutingInfo() != null && !awbResponse.getAwbRoutingInfo().isEmpty())
             awbResponse.getMeta().setAwbRoutingInfo(jsonHelper.convertValueToList(awbResponse.getAwbRoutingInfo(), AwbAirMessagingResponse.AwbRoutingInfoRes.class));
         if(awbResponse.getMeta().getAwbRoutingInfo() != null && !awbResponse.getMeta().getAwbRoutingInfo().isEmpty()){
@@ -330,39 +263,8 @@ public class AwbUtility {
 
         this.buildRcpIATAMapAndNotifyParty(awbResponse, unlocationsMap);
 
-        if(awb.getAwbPackingInfo() != null && unlocationsMap.containsKey(awb.getAwbOtherInfo().getExecutedAt())) {
-            var unloc = unlocationsMap.get(awb.getAwbOtherInfo().getExecutedAt());
-            awbResponse.getMeta().setExecutedAtCity(unloc.getNameWoDiacritics());
-        }
-        if(unlocationsMap.containsKey(consolidationDetails.getCarrierDetails().getOriginPort())) {
-            var unloc = unlocationsMap.get(consolidationDetails.getCarrierDetails().getOriginPort());
-            awbResponse.getMeta().setPol(populateUnlocFields(unloc));
-        }
-        if(unlocationsMap.containsKey(consolidationDetails.getCarrierDetails().getDestinationPort())) {
-            var unloc = unlocationsMap.get(consolidationDetails.getCarrierDetails().getDestinationPort());
-            awbResponse.getMeta().setPod(populateUnlocFields(unloc));
-        }
-        if(awbResponse.getMeta().getAwbRoutingInfo() != null && !awbResponse.getMeta().getAwbRoutingInfo().isEmpty()){
-            for (var awbRoute: awbResponse.getMeta().getAwbRoutingInfo()){
-                if(unlocationsMap.containsKey(awbRoute.getOriginPortName())) {
-                    var unloc = unlocationsMap.get(awbRoute.getOriginPortName());
-                    awbRoute.setOriginIATACode(unloc.getIataCode());
-                    awbRoute.setOriginPortUnlocName(unloc.getName());
-                }
-                if(unlocationsMap.containsKey(awbRoute.getDestinationPortName())) {
-                    var unloc = unlocationsMap.get(awbRoute.getDestinationPortName());
-                    awbRoute.setDestinationIATACode(unloc.getIataCode());
-                    awbRoute.setDestinationPortUnlocName(unloc.getName());
-                }
-                if(carriersMap.containsKey(awbRoute.getByCarrier())) {
-                    var carrier = carriersMap.get(awbRoute.getByCarrier());
-                    awbRoute.setAirlineInfo(AwbAirMessagingResponse.AirlineInfo.builder()
-                            .airlinePrefix(carrier.getAirlineCode())
-                            .iata(carrier.getIATACode())
-                            .build());
-                }
-            }
-        }
+        processConsoleUnLoc(awb, consolidationDetails, unlocationsMap, awbResponse);
+        processAwbRoutingInfo(awbResponse, unlocationsMap, carriersMap);
         if(awbResponse.getAwbPaymentInfo() != null)
             awbResponse.getMeta().setTotalAmount(awbResponse.getAwbPaymentInfo().getTotalCollect().max(awbResponse.getAwbPaymentInfo().getTotalPrepaid()));
         awbResponse.getMeta().setTenantInfo(populateTenantInfoFields(tenantModel, shipmentSettingsDetails));
@@ -386,6 +288,79 @@ public class AwbUtility {
 
         return awbResponse;
     }
+
+    private void setShipperAndConsigneeForConsole(Awb awb, ConsolidationDetails consolidationDetails, OrgAddressResponse response, AwbAirMessagingResponse awbResponse) {
+        if(consolidationDetails.getSendingAgent() != null && (response.getOrganizations().containsKey(consolidationDetails.getSendingAgent().getOrgCode())
+             && response.getAddresses().containsKey(consolidationDetails.getSendingAgent().getOrgCode() + '#' + consolidationDetails.getSendingAgent().getAddressCode()))){
+                var org = response.getOrganizations().get(consolidationDetails.getSendingAgent().getOrgCode());
+                var address = response.getAddresses().get(consolidationDetails.getSendingAgent().getOrgCode() + '#' + consolidationDetails.getSendingAgent().getAddressCode());
+                awbResponse.getMeta().setShipper(populateOrgsFields(org, address, awb.getAwbShipmentInfo().getShipperCountry(), awb.getAwbShipmentInfo().getShipperCity(), awb.getAwbShipmentInfo().getShipperZipCode()));
+
+        }
+        if(consolidationDetails.getReceivingAgent() != null && (response.getOrganizations().containsKey(consolidationDetails.getReceivingAgent().getOrgCode())
+                    && response.getAddresses().containsKey(consolidationDetails.getReceivingAgent().getOrgCode() + '#' + consolidationDetails.getReceivingAgent().getAddressCode()))){
+                var org = response.getOrganizations().get(consolidationDetails.getReceivingAgent().getOrgCode());
+                var address = response.getAddresses().get(consolidationDetails.getReceivingAgent().getOrgCode() + '#' + consolidationDetails.getReceivingAgent().getAddressCode());
+                awbResponse.getMeta().setConsignee(populateOrgsFields(org, address, awb.getAwbShipmentInfo().getConsigneeCountry(), awb.getAwbShipmentInfo().getConsigneeCity(), awb.getAwbShipmentInfo().getConsigneeZipCode()));
+
+        }
+    }
+
+    private void processConsoleUnLoc(Awb awb, ConsolidationDetails consolidationDetails, Map<String, UnlocationsResponse> unlocationsMap, AwbAirMessagingResponse awbResponse) {
+        if(awb.getAwbPackingInfo() != null && unlocationsMap.containsKey(awb.getAwbOtherInfo().getExecutedAt())) {
+            var unloc = unlocationsMap.get(awb.getAwbOtherInfo().getExecutedAt());
+            awbResponse.getMeta().setExecutedAtCity(unloc.getNameWoDiacritics());
+        }
+        if(unlocationsMap.containsKey(consolidationDetails.getCarrierDetails().getOriginPort())) {
+            var unloc = unlocationsMap.get(consolidationDetails.getCarrierDetails().getOriginPort());
+            awbResponse.getMeta().setPol(populateUnlocFields(unloc));
+        }
+        if(unlocationsMap.containsKey(consolidationDetails.getCarrierDetails().getDestinationPort())) {
+            var unloc = unlocationsMap.get(consolidationDetails.getCarrierDetails().getDestinationPort());
+            awbResponse.getMeta().setPod(populateUnlocFields(unloc));
+        }
+    }
+
+    private Parties getIssuingAgentForConsole(ConsolidationDetails consolidationDetails) {
+        Parties issuingAgent = null;
+        for (var orgRow : consolidationDetails.getConsolidationAddresses()) {
+            if (orgRow.getType().equals(Constants.FAG)) {
+                issuingAgent = orgRow;
+            }
+        }
+        return issuingAgent;
+    }
+
+    private List<Parties> getOrgListsForConsole(ConsolidationDetails consolidationDetails, Parties issuingAgent) {
+        List<Parties> orgLists = new ArrayList<>();
+        if(consolidationDetails.getSendingAgent() != null){
+            orgLists.add(consolidationDetails.getSendingAgent());
+        }
+        if(consolidationDetails.getReceivingAgent() != null){
+            orgLists.add(consolidationDetails.getReceivingAgent());
+        }
+        if(issuingAgent != null) {
+            orgLists.add(issuingAgent);
+        }
+        return orgLists;
+    }
+
+    private List<String> getUnLocRequestsForConsole(Awb awb, ConsolidationDetails consolidationDetails) {
+        List<String> unlocoRequests = new ArrayList<>();
+        awb.getAwbNotifyPartyInfo().forEach(party -> {
+            if(party.getSpecifiedAddressLocation() != null)
+                unlocoRequests.add(party.getSpecifiedAddressLocation());
+        });
+        if(awb.getAwbOtherInfo() != null) {
+            if(awb.getAwbOtherInfo().getExecutedAt() != null)
+                unlocoRequests.add(awb.getAwbOtherInfo().getExecutedAt());
+        }
+
+        unlocoRequests.add(consolidationDetails.getCarrierDetails().getOriginPort());
+        unlocoRequests.add(consolidationDetails.getCarrierDetails().getDestinationPort());
+        return unlocoRequests;
+    }
+
     private void buildRcpIATAMapAndNotifyParty(AwbAirMessagingResponse awbResponse, Map<String, UnlocationsResponse> unlocationsMap) {
         if (awbResponse.getAwbNotifyPartyInfo() != null) {
             awbResponse.getAwbNotifyPartyInfo().forEach(party -> {
@@ -507,93 +482,20 @@ public class AwbUtility {
         this.populateMasterDataMap(awbResponse, awb);
         this.populateOtherPartyInfoList(awbResponse);
 
-        List<Parties> orgLists = new ArrayList<>();
-        Parties issuingAgent = null;
-        for (var orgRow : shipmentDetails.getShipmentAddresses()) {
-            if (orgRow.getType().equals(Constants.FAG)) {
-                issuingAgent = orgRow;
-            }
-        }
-        if(shipmentDetails.getConsigner() != null){
-            orgLists.add(shipmentDetails.getConsigner());
-        }
-        if(shipmentDetails.getConsignee() != null){
-            orgLists.add(shipmentDetails.getConsignee());
-        }
-        if(issuingAgent != null) {
-            orgLists.add(issuingAgent);
-        }
+        Parties issuingAgent = getIssuingAgent(shipmentDetails);
+        List<Parties> orgLists = getOrgLists(shipmentDetails, issuingAgent);
         OrgAddressResponse response = v1ServiceUtil.fetchOrgInfoFromV1(orgLists);
         if(issuingAgent == null){
-            var orgs = masterDataUtils.fetchOrganizations("Id", tenantModel.getDefaultOrgId());
-            if(!orgs.isEmpty()) {
-
-                CommonV1ListRequest addressRequest = new CommonV1ListRequest();
-                List<Object> addressField = new ArrayList<>(List.of("Id"));
-                List<Object> addressCriteria = new ArrayList<>(List.of(addressField, "=", tenantModel.getDefaultAddressId()));
-                addressRequest.setCriteriaRequests(addressCriteria);
-                V1DataResponse addressResponse = v1Service.addressList(addressRequest);
-                List<EntityTransferAddress> addressList = jsonHelper.convertValueToList(addressResponse.entities, EntityTransferAddress.class);
-
-                String number = null;
-                String expiry = null;
-                Boolean isRA = false, isKC = false;
-                if(addressList != null && !addressList.isEmpty()){
-                    EntityTransferAddress address = addressList.stream().findFirst().orElse(EntityTransferAddress.builder().build());
-                    number = address.getKCRANumber();
-                    expiry = address.getKCRAExpiry();
-                    isRA = address.getRegulatedAgent();
-                    isKC = address.getKnownConsignor();
-                }
-                awbResponse.getMeta().setIssueingAgent(AwbAirMessagingResponse.OrgDetails.builder()
-                        .city(awb.getAwbShipmentInfo().getIssuingAgentCity())
-                        .country(CountryListHelper.ISO3166.getAlpha2IfAlpha3(awb.getAwbShipmentInfo().getIssuingAgentCountry()))
-                        .currency(orgs.get(0).getCurrencyCode())
-                        .expiry(expiry != null ? LocalDateTime.parse(expiry): null)
-                        .number(number)
-                        .postCode(awb.getAwbShipmentInfo().getIssuingAgentZipCode())
-                        .isRA(isRA).isKC(isKC)
-                        .build());
-            }
+            processEmptyIssuingAgent(awb, tenantModel, awbResponse);
         } else {
-            if(response.getOrganizations().containsKey(issuingAgent.getOrgCode())
-                    && response.getAddresses().containsKey(issuingAgent.getOrgCode() + '#' + issuingAgent.getAddressCode())) {
-                var org = response.getOrganizations().get(issuingAgent.getOrgCode());
-                var address = response.getAddresses().get(issuingAgent.getOrgCode() + '#' + issuingAgent.getAddressCode());
-                awbResponse.getMeta().setIssueingAgent(populateOrgsFields(org, address, awb.getAwbShipmentInfo().getIssuingAgentCountry(), awb.getAwbShipmentInfo().getIssuingAgentCity(), awb.getAwbShipmentInfo().getIssuingAgentZipCode()));
-            }
+            setIssuingAgentInResponse(awb, response, issuingAgent, awbResponse);
         }
 
-        if(shipmentDetails.getConsigner() != null && (response.getOrganizations().containsKey(shipmentDetails.getConsigner().getOrgCode())
-                    && response.getAddresses().containsKey(shipmentDetails.getConsigner().getOrgCode() + '#' + shipmentDetails.getConsigner().getAddressCode()))){
-                var org = response.getOrganizations().get(shipmentDetails.getConsigner().getOrgCode());
-                var address = response.getAddresses().get(shipmentDetails.getConsigner().getOrgCode() + '#' + shipmentDetails.getConsigner().getAddressCode());
-                awbResponse.getMeta().setShipper(populateOrgsFields(org, address, awb.getAwbShipmentInfo().getShipperCountry(), awb.getAwbShipmentInfo().getShipperCity(), awb.getAwbShipmentInfo().getShipperZipCode()));
-
-        }
-        if(shipmentDetails.getConsignee() != null && (response.getOrganizations().containsKey(shipmentDetails.getConsignee().getOrgCode())
-                    && response.getAddresses().containsKey(shipmentDetails.getConsignee().getOrgCode() + '#' + shipmentDetails.getConsignee().getAddressCode()))) {
-                var org = response.getOrganizations().get(shipmentDetails.getConsignee().getOrgCode());
-                var address = response.getAddresses().get(shipmentDetails.getConsignee().getOrgCode() + '#' + shipmentDetails.getConsignee().getAddressCode());
-                awbResponse.getMeta().setConsignee(populateOrgsFields(org, address, awb.getAwbShipmentInfo().getConsigneeCountry(), awb.getAwbShipmentInfo().getConsigneeCity(), awb.getAwbShipmentInfo().getConsigneeZipCode()));
-
-        }
+        setShipperConsgineeDetailsInResponse(awb, shipmentDetails, response, awbResponse);
 
         Set<String> carrierRequests = new HashSet<>();
 
-        List<String> unlocoRequests = new ArrayList<>();
-        if(awb.getAwbNotifyPartyInfo() != null) {
-            awb.getAwbNotifyPartyInfo().forEach(party -> {
-                if (party.getSpecifiedAddressLocation() != null)
-                    unlocoRequests.add(party.getSpecifiedAddressLocation());
-            });
-        }
-        if(awb.getAwbOtherInfo() != null && awb.getAwbOtherInfo().getExecutedAt() != null) {
-            unlocoRequests.add(awb.getAwbOtherInfo().getExecutedAt());
-        }
-
-        unlocoRequests.add(shipmentDetails.getCarrierDetails().getOriginPort());
-        unlocoRequests.add(shipmentDetails.getCarrierDetails().getDestinationPort());
+        List<String> unlocoRequests = getUnlocoRequests(awb, shipmentDetails);
         if(awbResponse.getAwbRoutingInfo() != null && !awbResponse.getAwbRoutingInfo().isEmpty())
             awbResponse.getMeta().setAwbRoutingInfo(jsonHelper.convertValueToList(awbResponse.getAwbRoutingInfo(), AwbAirMessagingResponse.AwbRoutingInfoRes.class));
         if(awbResponse.getMeta().getAwbRoutingInfo() != null && !awbResponse.getMeta().getAwbRoutingInfo().isEmpty()){
@@ -609,6 +511,114 @@ public class AwbUtility {
 
         this.buildRcpIATAMapAndNotifyParty(awbResponse, unlocationsMap);
 
+        processUnLocData(awb, shipmentDetails, unlocationsMap, awbResponse);
+        processAwbRoutingInfo(awbResponse, unlocationsMap, carriersMap);
+        processAwbPaymentInfo(awbResponse);
+        awbResponse.getMeta().setTenantInfo(populateTenantInfoFields(tenantModel, shipmentSettingsDetails));
+        awbResponse.getMeta().setAdditionalSecurityInfo(shipmentDetails.getAdditionalDetails().getAdditionalSecurityInformation());
+        setUserDataInAwbResponseMeta(shipmentDetails, awbResponse);
+        if(awbResponse.getAwbCargoInfo() != null && StringUtility.isNotEmpty(awbResponse.getAwbCargoInfo().getCsdInfo()) && StringUtility.isEmpty(awbResponse.getAwbCargoInfo().getCsdInfoDate())) {
+            awbResponse.getAwbCargoInfo().setCsdInfoDate(convertToDPWDateFormatWithTime(awb.getOriginalPrintedAt(), v1TenantSettingsResponse.getDPWDateFormat(), true, true));
+        }
+
+        // Add MasterAwb details for FZB
+        if(masterAwb != null) {
+            this.populateMasterAwbData(awbResponse, masterAwb);
+        }
+        // Rounding off Currencies fields
+        this.roundOffCurrencyFields(awbResponse);
+        // Rounding off Weight fields
+        this.roundOffWeightFields(awbResponse);
+        this.roundOffVolumeFields(awbResponse);
+        setCustomOriginCodeInResponse(awbResponse);
+        return awbResponse;
+    }
+
+    private void setShipperConsgineeDetailsInResponse(Awb awb, ShipmentDetails shipmentDetails, OrgAddressResponse response, AwbAirMessagingResponse awbResponse) {
+        if(shipmentDetails.getConsigner() != null && (response.getOrganizations().containsKey(shipmentDetails.getConsigner().getOrgCode())
+                    && response.getAddresses().containsKey(shipmentDetails.getConsigner().getOrgCode() + '#' + shipmentDetails.getConsigner().getAddressCode()))){
+                var org = response.getOrganizations().get(shipmentDetails.getConsigner().getOrgCode());
+                var address = response.getAddresses().get(shipmentDetails.getConsigner().getOrgCode() + '#' + shipmentDetails.getConsigner().getAddressCode());
+                awbResponse.getMeta().setShipper(populateOrgsFields(org, address, awb.getAwbShipmentInfo().getShipperCountry(), awb.getAwbShipmentInfo().getShipperCity(), awb.getAwbShipmentInfo().getShipperZipCode()));
+
+        }
+        if(shipmentDetails.getConsignee() != null && (response.getOrganizations().containsKey(shipmentDetails.getConsignee().getOrgCode())
+                    && response.getAddresses().containsKey(shipmentDetails.getConsignee().getOrgCode() + '#' + shipmentDetails.getConsignee().getAddressCode()))) {
+                var org = response.getOrganizations().get(shipmentDetails.getConsignee().getOrgCode());
+                var address = response.getAddresses().get(shipmentDetails.getConsignee().getOrgCode() + '#' + shipmentDetails.getConsignee().getAddressCode());
+                awbResponse.getMeta().setConsignee(populateOrgsFields(org, address, awb.getAwbShipmentInfo().getConsigneeCountry(), awb.getAwbShipmentInfo().getConsigneeCity(), awb.getAwbShipmentInfo().getConsigneeZipCode()));
+
+        }
+    }
+
+    private void setUserDataInAwbResponseMeta(ShipmentDetails shipmentDetails, AwbAirMessagingResponse awbResponse) {
+        if(awbResponse.getMeta() != null) {
+            var user = UserContext.getUser();
+
+            awbResponse.getMeta().setUserInfo(populateUserInfoFields(user));
+            awbResponse.getMeta().setMasterAwbNumber(shipmentDetails.getMasterBill());
+            awbResponse.getMeta().setEntityNumber(shipmentDetails.getShipmentId());
+        }
+    }
+
+    private void setCustomOriginCodeInResponse(AwbAirMessagingResponse awbResponse) {
+        if (!Objects.isNull(awbResponse.getAwbCargoInfo()) && StringUtility.isNotEmpty(awbResponse.getAwbCargoInfo().getCustomOriginCode())) {
+            String countryCode = awbResponse.getAwbCargoInfo().getCustomOriginCode();
+            awbResponse.getMeta().setCustomOriginCode(!StringUtility.isNotEmpty(countryCode) && countryCode.length() == 3 ? CountryListHelper.ISO3166.fromAlpha3(awbResponse.getAwbCargoInfo().getCustomOriginCode()).getAlpha2() : awbResponse.getAwbCargoInfo().getCustomOriginCode());
+        }
+    }
+
+    private void setIssuingAgentInResponse(Awb awb, OrgAddressResponse response, Parties issuingAgent, AwbAirMessagingResponse awbResponse) {
+        if(response.getOrganizations().containsKey(issuingAgent.getOrgCode())
+                && response.getAddresses().containsKey(issuingAgent.getOrgCode() + '#' + issuingAgent.getAddressCode())) {
+            var org = response.getOrganizations().get(issuingAgent.getOrgCode());
+            var address = response.getAddresses().get(issuingAgent.getOrgCode() + '#' + issuingAgent.getAddressCode());
+            awbResponse.getMeta().setIssueingAgent(populateOrgsFields(org, address, awb.getAwbShipmentInfo().getIssuingAgentCountry(), awb.getAwbShipmentInfo().getIssuingAgentCity(), awb.getAwbShipmentInfo().getIssuingAgentZipCode()));
+        }
+    }
+
+    private List<String> getUnlocoRequests(Awb awb, ShipmentDetails shipmentDetails) {
+        List<String> unlocoRequests = new ArrayList<>();
+        if(awb.getAwbNotifyPartyInfo() != null) {
+            awb.getAwbNotifyPartyInfo().forEach(party -> {
+                if (party.getSpecifiedAddressLocation() != null)
+                    unlocoRequests.add(party.getSpecifiedAddressLocation());
+            });
+        }
+        if(awb.getAwbOtherInfo() != null && awb.getAwbOtherInfo().getExecutedAt() != null) {
+            unlocoRequests.add(awb.getAwbOtherInfo().getExecutedAt());
+        }
+
+        unlocoRequests.add(shipmentDetails.getCarrierDetails().getOriginPort());
+        unlocoRequests.add(shipmentDetails.getCarrierDetails().getDestinationPort());
+        return unlocoRequests;
+    }
+
+    private List<Parties> getOrgLists(ShipmentDetails shipmentDetails, Parties issuingAgent) {
+        List<Parties> orgLists = new ArrayList<>();
+        if(shipmentDetails.getConsigner() != null){
+            orgLists.add(shipmentDetails.getConsigner());
+        }
+        if(shipmentDetails.getConsignee() != null){
+            orgLists.add(shipmentDetails.getConsignee());
+        }
+        if(issuingAgent != null) {
+            orgLists.add(issuingAgent);
+        }
+        return orgLists;
+    }
+
+    private Parties getIssuingAgent(ShipmentDetails shipmentDetails) {
+        Parties issuingAgent = null;
+        for (var orgRow : shipmentDetails.getShipmentAddresses()) {
+            if (orgRow.getType().equals(Constants.FAG)) {
+                issuingAgent = orgRow;
+            }
+        }
+        return issuingAgent;
+    }
+
+    private void processUnLocData(Awb awb, ShipmentDetails shipmentDetails, Map<String, UnlocationsResponse> unlocationsMap, AwbAirMessagingResponse awbResponse) {
         if(awb.getAwbOtherInfo() != null && unlocationsMap.containsKey(awb.getAwbOtherInfo().getExecutedAt())) {
             var unloc = unlocationsMap.get(awb.getAwbOtherInfo().getExecutedAt());
             awbResponse.getMeta().setExecutedAtCity(unloc.getNameWoDiacritics());
@@ -621,6 +631,20 @@ public class AwbUtility {
             var unloc = unlocationsMap.get(shipmentDetails.getCarrierDetails().getDestinationPort());
             awbResponse.getMeta().setPod(populateUnlocFields(unloc));
         }
+    }
+
+    private void processAwbPaymentInfo(AwbAirMessagingResponse awbResponse) {
+        if(awbResponse.getAwbPaymentInfo() != null) {
+            if (!Objects.isNull(awbResponse.getAwbPaymentInfo().getTotalCollect()) && !Objects.isNull(awbResponse.getAwbPaymentInfo().getTotalPrepaid()))
+                awbResponse.getMeta().setTotalAmount(awbResponse.getAwbPaymentInfo().getTotalCollect().max(awbResponse.getAwbPaymentInfo().getTotalPrepaid()));
+            else if (!Objects.isNull(awbResponse.getAwbPaymentInfo().getTotalCollect()))
+                awbResponse.getMeta().setTotalAmount(awbResponse.getAwbPaymentInfo().getTotalCollect());
+            else if (!Objects.isNull(awbResponse.getAwbPaymentInfo().getTotalPrepaid()))
+                awbResponse.getMeta().setTotalAmount(awbResponse.getAwbPaymentInfo().getTotalPrepaid());
+        }
+    }
+
+    private void processAwbRoutingInfo(AwbAirMessagingResponse awbResponse, Map<String, UnlocationsResponse> unlocationsMap, Map<String, EntityTransferCarrier> carriersMap) {
         if(awbResponse.getMeta().getAwbRoutingInfo() != null && !awbResponse.getMeta().getAwbRoutingInfo().isEmpty()){
             for (var awbRoute: awbResponse.getMeta().getAwbRoutingInfo()){
                 if(unlocationsMap.containsKey(awbRoute.getOriginPortName())) {
@@ -642,41 +666,39 @@ public class AwbUtility {
                 }
             }
         }
-        if(awbResponse.getAwbPaymentInfo() != null) {
-            if (!Objects.isNull(awbResponse.getAwbPaymentInfo().getTotalCollect()) && !Objects.isNull(awbResponse.getAwbPaymentInfo().getTotalPrepaid()))
-                awbResponse.getMeta().setTotalAmount(awbResponse.getAwbPaymentInfo().getTotalCollect().max(awbResponse.getAwbPaymentInfo().getTotalPrepaid()));
-            else if (!Objects.isNull(awbResponse.getAwbPaymentInfo().getTotalCollect()))
-                awbResponse.getMeta().setTotalAmount(awbResponse.getAwbPaymentInfo().getTotalCollect());
-            else if (!Objects.isNull(awbResponse.getAwbPaymentInfo().getTotalPrepaid()))
-                awbResponse.getMeta().setTotalAmount(awbResponse.getAwbPaymentInfo().getTotalPrepaid());
-        }
-        awbResponse.getMeta().setTenantInfo(populateTenantInfoFields(tenantModel, shipmentSettingsDetails));
-        awbResponse.getMeta().setAdditionalSecurityInfo(shipmentDetails.getAdditionalDetails().getAdditionalSecurityInformation());
-        if(awbResponse.getMeta() != null) {
-            var user = UserContext.getUser();
+    }
 
-            awbResponse.getMeta().setUserInfo(populateUserInfoFields(user));
-            awbResponse.getMeta().setMasterAwbNumber(shipmentDetails.getMasterBill());
-            awbResponse.getMeta().setEntityNumber(shipmentDetails.getShipmentId());
-        }
-        if(awbResponse.getAwbCargoInfo() != null && StringUtility.isNotEmpty(awbResponse.getAwbCargoInfo().getCsdInfo()) && StringUtility.isEmpty(awbResponse.getAwbCargoInfo().getCsdInfoDate())) {
-            awbResponse.getAwbCargoInfo().setCsdInfoDate(convertToDPWDateFormatWithTime(awb.getOriginalPrintedAt(), v1TenantSettingsResponse.getDPWDateFormat(), true, true));
-        }
+    private void processEmptyIssuingAgent(Awb awb, TenantModel tenantModel, AwbAirMessagingResponse awbResponse) {
+        var orgs = masterDataUtils.fetchOrganizations("Id", tenantModel.getDefaultOrgId());
+        if(!orgs.isEmpty()) {
 
-        // Add MasterAwb details for FZB
-        if(masterAwb != null) {
-            this.populateMasterAwbData(awbResponse, masterAwb);
+            CommonV1ListRequest addressRequest = new CommonV1ListRequest();
+            List<Object> addressField = new ArrayList<>(List.of("Id"));
+            List<Object> addressCriteria = new ArrayList<>(List.of(addressField, "=", tenantModel.getDefaultAddressId()));
+            addressRequest.setCriteriaRequests(addressCriteria);
+            V1DataResponse addressResponse = v1Service.addressList(addressRequest);
+            List<EntityTransferAddress> addressList = jsonHelper.convertValueToList(addressResponse.entities, EntityTransferAddress.class);
+
+            String number = null;
+            String expiry = null;
+            Boolean isRA = false, isKC = false;
+            if(addressList != null && !addressList.isEmpty()){
+                EntityTransferAddress address = addressList.stream().findFirst().orElse(EntityTransferAddress.builder().build());
+                number = address.getKCRANumber();
+                expiry = address.getKCRAExpiry();
+                isRA = address.getRegulatedAgent();
+                isKC = address.getKnownConsignor();
+            }
+            awbResponse.getMeta().setIssueingAgent(AwbAirMessagingResponse.OrgDetails.builder()
+                    .city(awb.getAwbShipmentInfo().getIssuingAgentCity())
+                    .country(CountryListHelper.ISO3166.getAlpha2IfAlpha3(awb.getAwbShipmentInfo().getIssuingAgentCountry()))
+                    .currency(orgs.get(0).getCurrencyCode())
+                    .expiry(expiry != null ? LocalDateTime.parse(expiry): null)
+                    .number(number)
+                    .postCode(awb.getAwbShipmentInfo().getIssuingAgentZipCode())
+                    .isRA(isRA).isKC(isKC)
+                    .build());
         }
-        // Rounding off Currencies fields
-        this.roundOffCurrencyFields(awbResponse);
-        // Rounding off Weight fields
-        this.roundOffWeightFields(awbResponse);
-        this.roundOffVolumeFields(awbResponse);
-        if (!Objects.isNull(awbResponse.getAwbCargoInfo()) && StringUtility.isNotEmpty(awbResponse.getAwbCargoInfo().getCustomOriginCode())) {
-            String countryCode = awbResponse.getAwbCargoInfo().getCustomOriginCode();
-            awbResponse.getMeta().setCustomOriginCode(!StringUtility.isNotEmpty(countryCode) && countryCode.length() == 3 ? CountryListHelper.ISO3166.fromAlpha3(awbResponse.getAwbCargoInfo().getCustomOriginCode()).getAlpha2() : awbResponse.getAwbCargoInfo().getCustomOriginCode());
-        }
-        return awbResponse;
     }
 
     private AwbAirMessagingResponse.UserInfo populateUserInfoFields(UsersDto user) {
@@ -733,6 +755,39 @@ public class AwbUtility {
                 awbResponse.getAwbPaymentInfo().setTotalCollect(awbResponse.getAwbPaymentInfo().getTotalCollect().setScale(decimalPlaces, RoundingMode.HALF_UP));
             }
         }
+        processAwbGoodsDescriptionInfo(awbResponse, decimalPlaces);
+        processAirMessagingAdditionalFields(awbResponse, decimalPlaces);
+        processAwbOtherChargesInfo(awbResponse, decimalPlaces);
+        processMetaTotalAmount(awbResponse, decimalPlaces);
+    }
+
+    private void processMetaTotalAmount(AwbAirMessagingResponse awbResponse, int decimalPlaces) {
+        if(awbResponse.getMeta().getTotalAmount() != null) {
+            awbResponse.getMeta().setTotalAmount(awbResponse.getMeta().getTotalAmount().setScale(decimalPlaces, RoundingMode.HALF_UP));
+        }
+    }
+
+    private void processAwbOtherChargesInfo(AwbAirMessagingResponse awbResponse, int decimalPlaces) {
+        if(awbResponse.getAwbOtherChargesInfo() != null) {
+            awbResponse.getAwbOtherChargesInfo().forEach(charge -> {
+                if (charge.getAmount() != null) {
+                    charge.setAmount(charge.getAmount().setScale(decimalPlaces, RoundingMode.HALF_UP));
+                }
+            });
+        }
+    }
+
+    private void processAirMessagingAdditionalFields(AwbAirMessagingResponse awbResponse, int decimalPlaces) {
+        if(awbResponse.getAirMessagingAdditionalFields() != null) {
+            if(awbResponse.getAirMessagingAdditionalFields().getCcchargesInDestinationCurrency() != null)
+                awbResponse.getAirMessagingAdditionalFields().setCcchargesInDestinationCurrency(awbResponse.getAirMessagingAdditionalFields().getCcchargesInDestinationCurrency().setScale(decimalPlaces, RoundingMode.HALF_UP));
+            if(awbResponse.getAirMessagingAdditionalFields().getChargesAtDestination() != null) {
+                awbResponse.getAirMessagingAdditionalFields().setChargesAtDestination(awbResponse.getAirMessagingAdditionalFields().getChargesAtDestination().setScale(decimalPlaces, RoundingMode.HALF_UP));
+            }
+        }
+    }
+
+    private void processAwbGoodsDescriptionInfo(AwbAirMessagingResponse awbResponse, int decimalPlaces) {
         if(awbResponse.getAwbGoodsDescriptionInfo() != null) {
             awbResponse.getAwbGoodsDescriptionInfo().forEach(good -> {
                 if(good.getRateCharge() != null) {
@@ -742,23 +797,6 @@ public class AwbUtility {
                     good.setTotalAmount(good.getTotalAmount().setScale(decimalPlaces, RoundingMode.HALF_UP));
                 }
             });
-        }
-        if(awbResponse.getAirMessagingAdditionalFields() != null) {
-            if(awbResponse.getAirMessagingAdditionalFields().getCcchargesInDestinationCurrency() != null)
-                awbResponse.getAirMessagingAdditionalFields().setCcchargesInDestinationCurrency(awbResponse.getAirMessagingAdditionalFields().getCcchargesInDestinationCurrency().setScale(decimalPlaces, RoundingMode.HALF_UP));
-            if(awbResponse.getAirMessagingAdditionalFields().getChargesAtDestination() != null) {
-                awbResponse.getAirMessagingAdditionalFields().setChargesAtDestination(awbResponse.getAirMessagingAdditionalFields().getChargesAtDestination().setScale(decimalPlaces, RoundingMode.HALF_UP));
-            }
-        }
-        if(awbResponse.getAwbOtherChargesInfo() != null) {
-            awbResponse.getAwbOtherChargesInfo().forEach(charge -> {
-                if (charge.getAmount() != null) {
-                    charge.setAmount(charge.getAmount().setScale(decimalPlaces, RoundingMode.HALF_UP));
-                }
-            });
-        }
-        if(awbResponse.getMeta().getTotalAmount() != null) {
-            awbResponse.getMeta().setTotalAmount(awbResponse.getMeta().getTotalAmount().setScale(decimalPlaces, RoundingMode.HALF_UP));
         }
     }
 
@@ -810,6 +848,155 @@ public class AwbUtility {
         }
         var tenantId = awb.get().getTenantId();
 
+        AirMessagingStatus status = getAirMessagingStatus(airMessageStatus);
+
+        String xmlPayload = airMessageStatus.getXmlPayload() != null ? new String(Base64.decodeBase64(airMessageStatus.getXmlPayload()), StandardCharsets.UTF_8) : null;
+
+
+        switch (status) {
+            case FAILED -> awbDao.updateAirMessageStatus(guid, AwbStatus.AIR_MESSAGE_FAILED.name());
+            case SUBMITTED -> awbDao.updateAirMessageStatus(guid, AwbStatus.AIR_MESSAGE_SENT.name());
+            case SUCCESS -> awbDao.updateAirMessageStatus(guid, AwbStatus.AIR_MESSAGE_SUCCESS.name());
+            default -> log.debug(Constants.SWITCH_DEFAULT_CASE_MSG, status);
+        }
+        Awb masterAwb = null;
+        if(awb.get().getConsolidationId() != null) {
+            airMessagingLogsDao.createAirMessagingLogs(UUID.randomUUID(), guid, airMessageStatus.getErrorMessage(),
+                    airMessageStatus.getMessageType() != null ? airMessageStatus.getMessageType() : "FWB", xmlPayload,
+                    status.name(), tenantId, LocalDateTime.now());
+            masterAwb = awb.get();
+            eventDao.createEventForAirMessagingStatus(UUID.randomUUID(), awb.get().getConsolidationId(),
+                    Constants.CONSOLIDATION, "FNM", "FNM received", LocalDateTime.now(), LocalDateTime.now(),
+                    Constants.DESCARTES, tenantId, status.name(), LocalDateTime.now(), LocalDateTime.now());
+
+            processAwbConsolidationId(guid, status, masterAwb);
+
+
+        } else if (awb.get().getShipmentId() != null) {
+            var shipmentDetailsList = shipmentDao.getShipmentNumberFromId(List.of(awb.get().getShipmentId()));
+            String msgType = getMsgType(airMessageStatus, shipmentDetailsList);
+            airMessagingLogsDao.createAirMessagingLogs(UUID.randomUUID(), guid, airMessageStatus.getErrorMessage(),
+                    msgType, xmlPayload, status.name(), tenantId, LocalDateTime.now());
+            eventDao.createEventForAirMessagingStatus(UUID.randomUUID(), awb.get().getShipmentId(),
+                    Constants.SHIPMENT, "FNM", "FNM received", LocalDateTime.now(), LocalDateTime.now(),
+                    Constants.DESCARTES, tenantId, status.name(), LocalDateTime.now(), LocalDateTime.now());
+
+            processAwbShipmentId(guid, masterAwb, awb);
+
+        }
+    }
+
+    private String getMsgType(AirMessagingStatusDto airMessageStatus, List<ShipmentDetails> shipmentDetailsList) {
+        String msgType = airMessageStatus.getMessageType();
+        if(shipmentDetailsList != null && !shipmentDetailsList.isEmpty()) {
+            if(msgType == null){
+                if(Objects.equals(shipmentDetailsList.get(0).getJobType(), Constants.SHIPMENT_TYPE_DRT))
+                    msgType = "FWB";
+                else
+                    msgType = "FZB";
+            }
+        }
+        return msgType;
+    }
+
+    private void processAwbShipmentId(UUID guid, Awb masterAwb, Optional<Awb> awb) {
+        List<Awb> awbsList = awbDao.findAllLinkedAwbs(guid);
+
+        AwbStatus hawbsStatus = null;
+        UUID consoleGuid = null;
+        boolean allStatusReceived = true;
+        AwbStatus consoleStatus = null;
+
+        if(awbsList != null && !awbsList.isEmpty()){
+            for (var x: awbsList) {
+                if(x.getShipmentId() != null){
+                    hawbsStatus = getHawbsStatusForShipmentId(x, hawbsStatus);
+                } else if (x.getConsolidationId() != null) {
+                    consoleGuid = x.getGuid();
+                    consoleStatus = x.getAirMessageStatus();
+                    masterAwb = x;
+                }
+                allStatusReceived = isAllStatusReceived(x, allStatusReceived);
+            }
+            if(awbsList.size() == 1){
+                masterAwb = awbsList.get(0);
+            }
+        }
+        if(masterAwb == null) {
+            consoleStatus = awb.get().getAirMessageStatus();
+            masterAwb = awb.get();
+        }
+        if(hawbsStatus != null && consoleGuid != null)
+            awbDao.updateLinkedHawbAirMessageStatus(consoleGuid, hawbsStatus.name());
+
+        sendFailureEmails(masterAwb, allStatusReceived, hawbsStatus, consoleStatus, awbsList);
+    }
+
+    private void sendFailureEmails(Awb masterAwb, boolean allStatusReceived, AwbStatus hawbsStatus, AwbStatus consoleStatus, List<Awb> awbsList) {
+        if(Boolean.TRUE.equals(allStatusReceived) && (Objects.equals(hawbsStatus, AwbStatus.AIR_MESSAGE_FAILED) || Objects.equals(consoleStatus, AwbStatus.AIR_MESSAGE_FAILED))) {
+            try {
+                this.sendAirMessagingFailureEmail(masterAwb, awbsList);
+            } catch (Exception e) {
+                log.error(Constants.SEND_EMAIL_AIR_MESSAGING_FAILURE, e.getMessage());
+            }
+        }
+    }
+
+    private boolean isAllStatusReceived(Awb x, boolean allStatusReceived) {
+        if(Objects.equals(x.getAirMessageStatus(), AwbStatus.AIR_MESSAGE_SENT)) {
+            allStatusReceived = false;
+        }
+        return allStatusReceived;
+    }
+
+    private AwbStatus getHawbsStatusForShipmentId(Awb x, AwbStatus hawbsStatus) {
+        if(Objects.equals(x.getAirMessageStatus(), AwbStatus.AIR_MESSAGE_SENT)) {
+            hawbsStatus = AwbStatus.AIR_MESSAGE_SENT;
+        } else if (Objects.equals(x.getAirMessageStatus(), AwbStatus.AIR_MESSAGE_FAILED) && !Objects.equals(hawbsStatus, AwbStatus.AIR_MESSAGE_SENT)) {
+            hawbsStatus = AwbStatus.AIR_MESSAGE_FAILED;
+        } else if (Objects.equals(x.getAirMessageStatus(), AwbStatus.AIR_MESSAGE_SUCCESS) && !Objects.equals(hawbsStatus, AwbStatus.AIR_MESSAGE_SENT) && !Objects.equals(hawbsStatus, AwbStatus.AIR_MESSAGE_FAILED)) {
+            hawbsStatus = AwbStatus.AIR_MESSAGE_SUCCESS;
+        }
+        return hawbsStatus;
+    }
+
+    private void processAwbConsolidationId(UUID guid, AirMessagingStatus status, Awb masterAwb) {
+        List<Awb> awbsList = awbDao.findAllLinkedAwbs(guid);
+
+        AwbStatus hawbsStatus = null;
+        boolean allStatusReceived = true;
+        if(awbsList != null && !awbsList.isEmpty()){
+            for (var x: awbsList) {
+                hawbsStatus = getHawbsStatus(x, hawbsStatus);
+                allStatusReceived = isAllStatusReceived(x, allStatusReceived);
+            }
+        }
+        if(hawbsStatus != null)
+            awbDao.updateLinkedHawbAirMessageStatus(guid, hawbsStatus.name());
+
+        if(Boolean.TRUE.equals(allStatusReceived) && (Objects.equals(hawbsStatus, AwbStatus.AIR_MESSAGE_FAILED) || Objects.equals(status, AwbStatus.AIR_MESSAGE_FAILED))) {
+            try {
+                this.sendAirMessagingFailureEmail(masterAwb, awbsList);
+            } catch (Exception e) {
+                log.error(Constants.SEND_EMAIL_AIR_MESSAGING_FAILURE, e.getMessage());
+            }
+        }
+    }
+
+    private AwbStatus getHawbsStatus(Awb x, AwbStatus hawbsStatus) {
+        if(x.getShipmentId() != null){
+            if(Objects.equals(x.getAirMessageStatus(), AwbStatus.AIR_MESSAGE_SENT)) {
+                hawbsStatus = AwbStatus.AIR_MESSAGE_SENT;
+            } else if (Objects.equals(x.getAirMessageStatus(), AwbStatus.AIR_MESSAGE_FAILED) && !Objects.equals(hawbsStatus, AwbStatus.AIR_MESSAGE_SENT)) {
+                hawbsStatus = AwbStatus.AIR_MESSAGE_FAILED;
+            } else if (Objects.equals(x.getAirMessageStatus(), AwbStatus.AIR_MESSAGE_SUCCESS) && !Objects.equals(hawbsStatus, AwbStatus.AIR_MESSAGE_SENT) && !Objects.equals(hawbsStatus, AwbStatus.AIR_MESSAGE_FAILED)) {
+                hawbsStatus = AwbStatus.AIR_MESSAGE_SUCCESS;
+            }
+        }
+        return hawbsStatus;
+    }
+
+    private AirMessagingStatus getAirMessagingStatus(AirMessagingStatusDto airMessageStatus) throws RunnerException {
         AirMessagingStatus status;
         if(Objects.equals(airMessageStatus.getStatus(), "INTERNAL_VALIDATION_ERROR") || Objects.equals(airMessageStatus.getStatus(), "EXTERNAL_VALIDATION_ERROR")
         || Objects.equals(airMessageStatus.getStatus(), "INTERNAL_ERROR") || Objects.equals(airMessageStatus.getStatus(), "REJECTED")) {
@@ -823,120 +1010,7 @@ public class AwbUtility {
         } else {
             throw new RunnerException("This status is not accepted by runner");
         }
-
-        String xmlPayload = airMessageStatus.getXmlPayload() != null ? new String(Base64.decodeBase64(airMessageStatus.getXmlPayload()), StandardCharsets.UTF_8) : null;
-
-
-        switch (status) {
-            case FAILED -> awbDao.updateAirMessageStatus(guid, AwbStatus.AIR_MESSAGE_FAILED.name());
-            case SUBMITTED -> awbDao.updateAirMessageStatus(guid, AwbStatus.AIR_MESSAGE_SENT.name());
-            case SUCCESS -> awbDao.updateAirMessageStatus(guid, AwbStatus.AIR_MESSAGE_SUCCESS.name());
-        }
-        Awb masterAwb = null;
-        if(awb.get().getConsolidationId() != null) {
-            airMessagingLogsDao.createAirMessagingLogs(UUID.randomUUID(), guid, airMessageStatus.getErrorMessage(),
-                    airMessageStatus.getMessageType() != null ? airMessageStatus.getMessageType() : "FWB", xmlPayload,
-                    status.name(), tenantId, LocalDateTime.now());
-            masterAwb = awb.get();
-            eventDao.createEventForAirMessagingStatus(UUID.randomUUID(), awb.get().getConsolidationId(),
-                    Constants.CONSOLIDATION, "FNM", "FNM received", LocalDateTime.now(), LocalDateTime.now(),
-                    Constants.DESCARTES, tenantId, status.name(), LocalDateTime.now(), LocalDateTime.now());
-
-            List<Awb> awbsList = awbDao.findAllLinkedAwbs(guid);
-
-            AwbStatus hawbsStatus = null;
-            Boolean allStatusReceived = true;
-            if(awbsList != null && !awbsList.isEmpty()){
-                for (var x: awbsList) {
-                    if(x.getShipmentId() != null){
-                        if(Objects.equals(x.getAirMessageStatus(), AwbStatus.AIR_MESSAGE_SENT)) {
-                            hawbsStatus = AwbStatus.AIR_MESSAGE_SENT;
-                        } else if (Objects.equals(x.getAirMessageStatus(), AwbStatus.AIR_MESSAGE_FAILED) && !Objects.equals(hawbsStatus, AwbStatus.AIR_MESSAGE_SENT)) {
-                            hawbsStatus = AwbStatus.AIR_MESSAGE_FAILED;
-                        } else if (Objects.equals(x.getAirMessageStatus(), AwbStatus.AIR_MESSAGE_SUCCESS) && !Objects.equals(hawbsStatus, AwbStatus.AIR_MESSAGE_SENT) && !Objects.equals(hawbsStatus, AwbStatus.AIR_MESSAGE_FAILED)) {
-                            hawbsStatus = AwbStatus.AIR_MESSAGE_SUCCESS;
-                        }
-                    }
-                    if(Objects.equals(x.getAirMessageStatus(), AwbStatus.AIR_MESSAGE_SENT)) {
-                        allStatusReceived = false;
-                    }
-                }
-            }
-            if(hawbsStatus != null)
-                awbDao.updateLinkedHawbAirMessageStatus(guid, hawbsStatus.name());
-
-            if(Boolean.TRUE.equals(allStatusReceived) && (Objects.equals(hawbsStatus, AwbStatus.AIR_MESSAGE_FAILED) || Objects.equals(status, AwbStatus.AIR_MESSAGE_FAILED))) {
-                try {
-                    this.sendAirMessagingFailureEmail(masterAwb, awbsList);
-                } catch (Exception e) {
-                    log.error("Send Email for Air Messaging Failure : " + e.getMessage());
-                }
-            }
-
-
-        } else if (awb.get().getShipmentId() != null) {
-            var shipmentDetailsList = shipmentDao.getShipmentNumberFromId(List.of(awb.get().getShipmentId()));
-            String msgType = airMessageStatus.getMessageType();
-            if(shipmentDetailsList != null && !shipmentDetailsList.isEmpty()) {
-                if(msgType == null){
-                    if(Objects.equals(shipmentDetailsList.get(0).getJobType(), Constants.SHIPMENT_TYPE_DRT))
-                        msgType = "FWB";
-                    else
-                        msgType = "FZB";
-                }
-            }
-            airMessagingLogsDao.createAirMessagingLogs(UUID.randomUUID(), guid, airMessageStatus.getErrorMessage(),
-                    msgType, xmlPayload, status.name(), tenantId, LocalDateTime.now());
-            eventDao.createEventForAirMessagingStatus(UUID.randomUUID(), awb.get().getShipmentId(),
-                    Constants.SHIPMENT, "FNM", "FNM received", LocalDateTime.now(), LocalDateTime.now(),
-                    Constants.DESCARTES, tenantId, status.name(), LocalDateTime.now(), LocalDateTime.now());
-
-            List<Awb> awbsList = awbDao.findAllLinkedAwbs(guid);
-
-            AwbStatus hawbsStatus = null;
-            UUID consoleGuid = null;
-            Boolean allStatusReceived = true;
-            AwbStatus consoleStatus = null;
-
-            if(awbsList != null && !awbsList.isEmpty()){
-                for (var x: awbsList) {
-                    if(x.getShipmentId() != null){
-                        if(Objects.equals(x.getAirMessageStatus(), AwbStatus.AIR_MESSAGE_SENT)) {
-                            hawbsStatus = AwbStatus.AIR_MESSAGE_SENT;
-                        } else if (Objects.equals(x.getAirMessageStatus(), AwbStatus.AIR_MESSAGE_FAILED) && !Objects.equals(hawbsStatus, AwbStatus.AIR_MESSAGE_SENT)) {
-                            hawbsStatus = AwbStatus.AIR_MESSAGE_FAILED;
-                        } else if (Objects.equals(x.getAirMessageStatus(), AwbStatus.AIR_MESSAGE_SUCCESS) && !Objects.equals(hawbsStatus, AwbStatus.AIR_MESSAGE_SENT) && !Objects.equals(hawbsStatus, AwbStatus.AIR_MESSAGE_FAILED)) {
-                            hawbsStatus = AwbStatus.AIR_MESSAGE_SUCCESS;
-                        }
-                    } else if (x.getConsolidationId() != null) {
-                        consoleGuid = x.getGuid();
-                        consoleStatus = x.getAirMessageStatus();
-                        masterAwb = x;
-                    }
-                    if(Objects.equals(x.getAirMessageStatus(), AwbStatus.AIR_MESSAGE_SENT)) {
-                        allStatusReceived = false;
-                    }
-                }
-                if(awbsList.size() == 1){
-                    masterAwb = awbsList.get(0);
-                }
-            }
-            if(masterAwb == null) {
-                consoleStatus = awb.get().getAirMessageStatus();
-                masterAwb = awb.get();
-            }
-            if(hawbsStatus != null && consoleGuid != null)
-                awbDao.updateLinkedHawbAirMessageStatus(consoleGuid, hawbsStatus.name());
-
-            if(Boolean.TRUE.equals(allStatusReceived) && (Objects.equals(hawbsStatus, AwbStatus.AIR_MESSAGE_FAILED) || Objects.equals(consoleStatus, AwbStatus.AIR_MESSAGE_FAILED))) {
-                try {
-                    this.sendAirMessagingFailureEmail(masterAwb, awbsList);
-                } catch (Exception e) {
-                    log.error("Send Email for Air Messaging Failure : " + e.getMessage());
-                }
-            }
-
-        }
+        return status;
     }
 
     public void createEventUpdateForAirMessaging(AirMessagingEventDto airMessageEvent) throws RunnerException {
@@ -1022,26 +1096,31 @@ public class AwbUtility {
         if(!awbsList.isEmpty() && awbsList.size() > 1) {
             var shipmentIds = awbsList.stream().filter(x -> x.getShipmentId() != null).map(Awb::getShipmentId).toList();
             if(shipmentIds != null) {
-                var shipmentDetailsList = shipmentDao.getShipmentNumberFromId(shipmentIds);
-                Map<Long, String> map = shipmentDetailsList.stream().collect(Collectors.toMap(ShipmentDetails::getId, ShipmentDetails::getShipmentId));
-                for (var x : awbsList) {
-                    if (x.getShipmentId() != null) {
-                        String shipNumber = map.get(x.getShipmentId());
-                        AirMessagingLogs shipAirMessagingLogs = airMessagingLogsService.getRecentLogForEntityGuid(x.getGuid());
-                        if (shipAirMessagingLogs != null) {
-                            if (Objects.equals(shipAirMessagingLogs.getStatus(), AirMessagingStatus.SUCCESS.name())) {
-                                body = body + "FZB for \"" + shipNumber + "\" : Success\n";
-                            } else if (Objects.equals(shipAirMessagingLogs.getStatus(), AirMessagingStatus.FAILED.name())) {
-                                body = body + "FZB for \"" + shipNumber + "\" : Failed. Failure reason is \"" + shipAirMessagingLogs.getErrorMessage() + "\"\n\n";
-                            }
-                        }
-                    }
-                }
+                body = getBodyForShipmentIds(awbsList, shipmentIds, body);
             }
         }
         body = body + "\n \n Please rectify the data as per the failure comment and resend the messages by clicking on the \"Print\" button in the MAWB. \n \n" +
                         "Thank you!\n" + "Cargoes Runner";
         emailServiceUtility.sendEmail(body, subject, emailIds, null, null, null);
+    }
+
+    private String getBodyForShipmentIds(List<Awb> awbsList, List<Long> shipmentIds, String body) {
+        var shipmentDetailsList = shipmentDao.getShipmentNumberFromId(shipmentIds);
+        Map<Long, String> map = shipmentDetailsList.stream().collect(Collectors.toMap(ShipmentDetails::getId, ShipmentDetails::getShipmentId));
+        for (var x : awbsList) {
+            if (x.getShipmentId() != null) {
+                String shipNumber = map.get(x.getShipmentId());
+                AirMessagingLogs shipAirMessagingLogs = airMessagingLogsService.getRecentLogForEntityGuid(x.getGuid());
+                if (shipAirMessagingLogs != null) {
+                    if (Objects.equals(shipAirMessagingLogs.getStatus(), AirMessagingStatus.SUCCESS.name())) {
+                        body = body + "FZB for \"" + shipNumber + "\" : Success\n";
+                    } else if (Objects.equals(shipAirMessagingLogs.getStatus(), AirMessagingStatus.FAILED.name())) {
+                        body = body + "FZB for \"" + shipNumber + "\" : Failed. Failure reason is \"" + shipAirMessagingLogs.getErrorMessage() + "\"\n\n";
+                    }
+                }
+            }
+        }
+        return body;
     }
 
     private void updateAwbStatusForFsuUpdate(Awb awb, String eventCode, List<ConsoleShipmentMapping> consoleShipmentMappings) {

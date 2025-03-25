@@ -13,6 +13,7 @@ import java.util.Map;
 @AllArgsConstructor
 @Data
 @Builder
+@SuppressWarnings("java:S1948")
 public class PartiesModel implements IDocumentModel {
     @JsonProperty("Id")
     private Long id;

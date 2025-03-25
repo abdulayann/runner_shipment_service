@@ -14,6 +14,7 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.impl.*;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IDocDetailsDao;
@@ -55,6 +56,7 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.springframework.dao.DataRetrievalFailureException;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import java.io.IOException;
@@ -157,7 +159,7 @@ class ReportServiceTest extends CommonMocks {
     @Mock
     private MasterDataUtils masterDataUtils;
 
-    private ExecutorService executorService = Executors.newFixedThreadPool(10);
+    private final ExecutorService executorService = Executors.newFixedThreadPool(10);
 
     @Mock
     private DocumentManagerServiceImpl documentManagerService;
@@ -198,7 +200,8 @@ class ReportServiceTest extends CommonMocks {
     @Mock
     private DependentServiceHelper dependentServiceHelper;
 
-    private Map<String, Object> dataRetrived;
+    @Mock
+    private ReportService self;
 
     private final String path = "src/test/java/com/dpw/runner/shipment/services/files/";
 
@@ -219,7 +222,6 @@ class ReportServiceTest extends CommonMocks {
         reportRequest = jsonTestUtility.getTestReportRequest();
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder().P100Branch(false).build());
-        dataRetrived = new HashMap<>();
         reportService.executorService = executorService;
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
     }
@@ -249,7 +251,6 @@ class ReportServiceTest extends CommonMocks {
         when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(ResponseEntity.ok(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))));
         when(jsonHelper.convertToJson(any())).thenReturn("");
         when(shipmentDao.findById(any())).thenReturn(Optional.of(new ShipmentDetails()));
-        // Mockito.doNothing().when(eventDao).generateEvents(any());
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
@@ -257,7 +258,7 @@ class ReportServiceTest extends CommonMocks {
     }
 
     @Test
-    void invalidTemplate() throws DocumentException, RunnerException, IOException {
+    void invalidTemplate() {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setSeawayMainPage("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -278,16 +279,14 @@ class ReportServiceTest extends CommonMocks {
 
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
 
-        Exception e = assertThrows(ValidationException.class, () -> {
-            reportService.getDocumentData(commonRequestModel);
-        });
+        Exception e = assertThrows(ValidationException.class, () -> reportService.getDocumentData(commonRequestModel));
 
         String errorMessage ="Please Upload Valid Template";
         assertEquals(errorMessage, e.getMessage());
     }
 
     @Test
-    void invalidTemplateId() throws DocumentException, RunnerException, IOException {
+    void invalidTemplateId() {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setSeawayMainPage("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -307,16 +306,15 @@ class ReportServiceTest extends CommonMocks {
 
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
 
-        Exception e = assertThrows(ValidationException.class, () -> {
-            reportService.getDocumentData(commonRequestModel);
-        });
+        Exception e = assertThrows(ValidationException.class, () ->
+            reportService.getDocumentData(commonRequestModel));
 
         String errorMessage ="Please Upload Valid Template";
         assertEquals(errorMessage, e.getMessage());
     }
 
     @Test
-    void templateNotExists() throws DocumentException, RunnerException, IOException {
+    void templateNotExists() {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setTenantId(1);
         shipmentSettingsDetails.setAutoEventCreate(true);
@@ -332,9 +330,9 @@ class ReportServiceTest extends CommonMocks {
 
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
 
-        Exception e = assertThrows(ValidationException.class, () -> {
-            reportService.getDocumentData(commonRequestModel);
-        });
+        Exception e = assertThrows(ValidationException.class, () ->
+            reportService.getDocumentData(commonRequestModel)
+        );
 
         String errorMessage ="Please upload template in branch settings for: SeawayBill";
         assertEquals(errorMessage, e.getMessage());
@@ -377,7 +375,7 @@ class ReportServiceTest extends CommonMocks {
         shipmentSettingsDetails2.setConsTruckWayBillMainPage("123456789");
         shipmentSettingsDetails2.setTenantId(44);
         shipmentSettingsDetails2.setAutoEventCreate(true);
-        reportRequest.setReportInfo(ReportConstants.CONS_TRUCKWAY_BIll);
+        reportRequest.setReportInfo(ReportConstants.CONS_TRUCKWAY_BILL);
         // Mock
         when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(shipmentSettingsDetails));
         when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(Arrays.asList(shipmentSettingsDetails, shipmentSettingsDetails2));
@@ -1008,12 +1006,11 @@ class ReportServiceTest extends CommonMocks {
         shipmentDetails.getAdditionalDetails().setReleaseType("ORG");
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
         when(shipmentDao.update(shipmentDetails, false)).thenReturn(shipmentDetails);
-//        Mockito.doNothing().when(eventService).saveEvent(any());
         Hbl hbl = new Hbl();
         hbl.setHblData(new HblDataDto());
         hbl.getHblData().setOriginalSeq(1);
         hbl.getHblData().setVersion(1);
-        when(hblDao.findByShipmentId(Long.parseLong(reportRequest.getReportId()))).thenReturn(Arrays.asList(hbl));
+        when(hblDao.findByShipmentId(Long.parseLong(reportRequest.getReportId()))).thenReturn(List.of(hbl));
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
@@ -1053,7 +1050,6 @@ class ReportServiceTest extends CommonMocks {
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         shipmentDetails.setAdditionalDetails(new AdditionalDetails());
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
-//        Mockito.doNothing().when(eventService).saveEvent(any());
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
@@ -1154,18 +1150,13 @@ class ReportServiceTest extends CommonMocks {
         reportRequest.setReportInfo(ReportConstants.CARGO_MANIFEST);
         reportRequest.setFromConsolidation(true);
         // Mock
-        when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(shipmentSettingsDetails));
-        when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(Arrays.asList(shipmentSettingsDetails, shipmentSettingsDetails2));
-        when(reportsFactory.getReport(any())).thenReturn(seawayBillReport);
-        when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(ResponseEntity.ok(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))));
-        when(jsonHelper.convertToJson(any())).thenReturn("");
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         shipmentDetails.setId(4415L);
-        consolidationDetails.setShipmentsList(new HashSet<>(Arrays.asList(shipmentDetails)));
+        consolidationDetails.setShipmentsList(new HashSet<>(List.of(shipmentDetails)));
         when(consolidationDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
-        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
+        when(self.getDocumentData(any())).thenReturn(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf")));
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
@@ -1185,21 +1176,16 @@ class ReportServiceTest extends CommonMocks {
         reportRequest.setReportInfo(ReportConstants.CARGO_MANIFEST_AIR_IMPORT_CONSOLIDATION);
         reportRequest.setFromConsolidation(true);
         // Mock
-        when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(shipmentSettingsDetails));
-        when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(Arrays.asList(shipmentSettingsDetails, shipmentSettingsDetails2));
-        when(reportsFactory.getReport(any())).thenReturn(seawayBillReport);
-        when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(ResponseEntity.ok(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))));
-        when(jsonHelper.convertToJson(any())).thenReturn("");
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         shipmentDetails.setId(4415L);
         CarrierDetails carrierDetails = new CarrierDetails();
         carrierDetails.setDestinationPort("Test");
         shipmentDetails.setCarrierDetails(carrierDetails);
-        consolidationDetails.setShipmentsList(new HashSet<>(Arrays.asList(shipmentDetails)));
+        consolidationDetails.setShipmentsList(new HashSet<>(List.of(shipmentDetails)));
         when(consolidationDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
-        mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
+        when(self.getDocumentData(any())).thenReturn(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf")));
         byte[] data = reportService.getDocumentData(commonRequestModel);
         assertNotNull(data);
     }
@@ -1299,9 +1285,6 @@ class ReportServiceTest extends CommonMocks {
         when(reportsFactory.getReport(any())).thenReturn(shipmentCANReport);
         when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(ResponseEntity.ok(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))));
         when(jsonHelper.convertToJson(any())).thenReturn("");
-        Map<String, Object> dataRetrived = new HashMap<>();
-        dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
-        dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.SEA);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
@@ -1473,9 +1456,6 @@ class ReportServiceTest extends CommonMocks {
         when(reportsFactory.getReport(any())).thenReturn(arrivalNoticeReport);
         when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(ResponseEntity.ok(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))));
         when(jsonHelper.convertToJson(any())).thenReturn("");
-        Map<String, Object> dataRetrived = new HashMap<>();
-        dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
-        dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.SEA);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
@@ -1762,9 +1742,6 @@ class ReportServiceTest extends CommonMocks {
         when(reportsFactory.getReport(any())).thenReturn(pickupOrderReport);
         when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(ResponseEntity.ok(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))));
         when(jsonHelper.convertToJson(any())).thenReturn("");
-        Map<String, Object> dataRetrived = new HashMap<>();
-        dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
-        dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.SEA);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
@@ -1831,9 +1808,6 @@ class ReportServiceTest extends CommonMocks {
         when(reportsFactory.getReport(any())).thenReturn(deliveryOrderReport);
         when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(ResponseEntity.ok(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))));
         when(jsonHelper.convertToJson(any())).thenReturn("");
-        Map<String, Object> dataRetrived = new HashMap<>();
-        dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
-        dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.SEA);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
@@ -1900,9 +1874,6 @@ class ReportServiceTest extends CommonMocks {
         when(reportsFactory.getReport(any())).thenReturn(bookingConfirmationReport);
         when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(ResponseEntity.ok(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))));
         when(jsonHelper.convertToJson(any())).thenReturn("");
-        Map<String, Object> dataRetrived = new HashMap<>();
-        dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
-        dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.SEA);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
@@ -2216,9 +2187,6 @@ class ReportServiceTest extends CommonMocks {
         when(reportsFactory.getReport(any())).thenReturn(cargoManifestAirShipmentReport);
         when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(ResponseEntity.ok(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))));
         when(jsonHelper.convertToJson(any())).thenReturn("");
-        Map<String, Object> dataRetrived = new HashMap<>();
-        dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
-        dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.TRANS_AIR);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
@@ -2266,7 +2234,7 @@ class ReportServiceTest extends CommonMocks {
     }
 
 //    @Test
-    void getShipCargoManifestAirExportDocumentDataFailsWhenOriginalAwbNotPrinted() throws IOException {
+    void getShipCargoManifestAirExportDocumentDataFailsWhenOriginalAwbNotPrinted() {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setAirExportShipmentManifest("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -2284,9 +2252,6 @@ class ReportServiceTest extends CommonMocks {
         reportRequest.setPrintForParties(true);
         reportRequest.setPrintingFor_str("0");
         // Mock
-        Map<String, Object> dataRetrived = new HashMap<>();
-        dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
-        dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.TRANS_AIR);
 
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
 
@@ -2295,7 +2260,7 @@ class ReportServiceTest extends CommonMocks {
     }
 
     @Test
-    void getShipCargoManifestAirConsolidationDocumentData() throws DocumentException, RunnerException, IOException {
+    void getShipCargoManifestAirConsolidationDocumentData() {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setAirExportConsoleManifest("123456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -2313,16 +2278,13 @@ class ReportServiceTest extends CommonMocks {
         reportRequest.setPrintForParties(true);
         reportRequest.setPrintingFor_str("0");
         // Mock
-        Map<String, Object> dataRetrived = new HashMap<>();
-        dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
-        dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.TRANS_AIR);
 
         var mockMawb = jsonTestUtility.getTestMawb();
         mockMawb.setPrintType(PrintType.ORIGINAL_PRINTED);
         var mockHawb = jsonTestUtility.getTestHawb();
 
         when(awbDao.findByConsolidationId(anyLong())).thenReturn(List.of(mockMawb));
-        when(awbDao.getLinkedAwbFromMawb(any())).thenReturn(Arrays.asList(mockHawb));
+        when(awbDao.getLinkedAwbFromMawb(any())).thenReturn(Collections.singletonList(mockHawb));
 
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         var e = assertThrows(RunnerException.class, () -> reportService.getDocumentData(commonRequestModel));
@@ -2354,9 +2316,6 @@ class ReportServiceTest extends CommonMocks {
         when(reportsFactory.getReport(any())).thenReturn(cargoManifestAirConsolidationReport);
         when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(ResponseEntity.ok(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))));
         when(jsonHelper.convertToJson(any())).thenReturn("");
-        Map<String, Object> dataRetrived = new HashMap<>();
-        dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
-        dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.TRANS_AIR);
 
         var mockMawb = jsonTestUtility.getTestMawb();
         mockMawb.setPrintType(PrintType.ORIGINAL_PRINTED);
@@ -2764,7 +2723,8 @@ class ReportServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().id(1L).build());
         when(shipmentDao.findById(any())).thenReturn(Optional.of(new ShipmentDetails()));
         Mockito.doNothing().when(shipmentTagsForExteranlServices).populateRaKcDataWithShipmentDetails(any(), any());
-        reportService.createDocumentTagsForShipment(commonRequestModel);
+        ResponseEntity<IRunnerResponse> responseEntity = reportService.createDocumentTagsForShipment(commonRequestModel);;
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
     @Test
@@ -2772,15 +2732,15 @@ class ReportServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().guid(UUID.randomUUID().toString()).build());
         when(shipmentDao.findByGuid(any())).thenReturn(Optional.of(new ShipmentDetails()));
         Mockito.doNothing().when(shipmentTagsForExteranlServices).populateRaKcDataWithShipmentDetails(any(), any());
-        reportService.createDocumentTagsForShipment(commonRequestModel);
+        ResponseEntity<IRunnerResponse> responseEntity = reportService.createDocumentTagsForShipment(commonRequestModel);;
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
     @Test
     void idNotExits() {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().build());
-        Exception e = assertThrows(RunnerException.class, () -> {
-            reportService.createDocumentTagsForShipment(commonRequestModel);
-        });
+        Exception e = assertThrows(RunnerException.class, () ->
+            reportService.createDocumentTagsForShipment(commonRequestModel));
 
         String errorMessage ="Id and GUID can't be null. Please provide any one !";
         assertEquals(errorMessage, e.getMessage());
@@ -2789,9 +2749,8 @@ class ReportServiceTest extends CommonMocks {
     @Test
     void shipmentNotExits() {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CommonGetRequest.builder().guid(UUID.randomUUID().toString()).build());
-        Exception e = assertThrows(DataRetrievalFailureException.class, () -> {
-            reportService.createDocumentTagsForShipment(commonRequestModel);
-        });
+        Exception e = assertThrows(DataRetrievalFailureException.class, () ->
+            reportService.createDocumentTagsForShipment(commonRequestModel));
 
         assertEquals(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, e.getMessage());
     }
@@ -2826,9 +2785,7 @@ class ReportServiceTest extends CommonMocks {
         when(reportsFactory.getReport(any())).thenReturn(pickupOrderReport);
         when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(ResponseEntity.ok(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))));
         when(jsonHelper.convertToJson(any())).thenReturn("");
-        Map<String, Object> dataRetrived = new HashMap<>();
-        dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
-        dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.SEA);
+
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
@@ -2864,9 +2821,7 @@ class ReportServiceTest extends CommonMocks {
         when(reportsFactory.getReport(any())).thenReturn(deliveryOrderReport);
         when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(ResponseEntity.ok(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))));
         when(jsonHelper.convertToJson(any())).thenReturn("");
-        Map<String, Object> dataRetrived = new HashMap<>();
-        dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123");
-        dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.SEA);
+
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
@@ -2900,9 +2855,6 @@ class ReportServiceTest extends CommonMocks {
         when(reportsFactory.getReport(any())).thenReturn(transportOrderReport);
         when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(ResponseEntity.ok(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))));
         when(jsonHelper.convertToJson(any())).thenReturn("");
-        Map<String, Object> dataRetrived = new HashMap<>();
-        dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123334");
-        dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.ROAD);
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
         byte[] data = reportService.getDocumentData(commonRequestModel);
@@ -2936,9 +2888,7 @@ class ReportServiceTest extends CommonMocks {
         when(reportsFactory.getReport(any())).thenReturn(hblReport);
         when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(ResponseEntity.ok(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))));
         when(jsonHelper.convertToJson(any())).thenReturn("");
-        Map<String, Object> dataRetrived = new HashMap<>();
-        dataRetrived.put(ReportConstants.OTHER_AMOUNT_TEXT, "123334");
-        dataRetrived.put(ReportConstants.TRANSPORT_MODE, ReportConstants.ROAD);
+
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isAutomaticTransferEnabled(true).build());
         mockShipmentSettings();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
@@ -2947,7 +2897,7 @@ class ReportServiceTest extends CommonMocks {
     }
 
     @Test
-    void test_CSDReport_shipment_throwsException() throws DocumentException, RunnerException, IOException {
+    void test_CSDReport_shipment_throwsException() {
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
         shipmentSettingsDetails.setDeliveryOrder("122456789");
         shipmentSettingsDetails.setTenantId(1);
@@ -2959,18 +2909,16 @@ class ReportServiceTest extends CommonMocks {
         shipmentSettingsDetails2.setTenantId(44);
         shipmentSettingsDetails2.setAutoEventCreate(true);
 
-        ReportRequest reportRequest = new ReportRequest();
-        reportRequest.setReportInfo(ReportConstants.CSD_REPORT);
-        reportRequest.setReportId("12");
-        reportRequest.setFromConsolidation(false);
+        ReportRequest reportRequest1 = new ReportRequest();
+        reportRequest1.setReportInfo(ReportConstants.CSD_REPORT);
+        reportRequest1.setReportId("12");
+        reportRequest1.setFromConsolidation(false);
 
         when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.of(shipmentSettingsDetails));
         when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(Arrays.asList(shipmentSettingsDetails, shipmentSettingsDetails2));
         when(reportsFactory.getReport(any())).thenReturn(csdReport);
-//        when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(ResponseEntity.ok(Files.readAllBytes(Paths.get(path + "SeawayBill.pdf"))));
-//        when(jsonHelper.convertToJson(any())).thenReturn("");
 
-        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(reportRequest1);
         assertThrows(ValidationException.class , () -> reportService.getDocumentData(commonRequestModel));
     }
 
@@ -2978,9 +2926,9 @@ class ReportServiceTest extends CommonMocks {
     void testGeneratePdfBytes_ValidInput() {
 
         ReportService reportService1 = spy(new ReportService());
-        ReportRequest reportRequest = mock(ReportRequest.class);
-        when(reportRequest.getCopyCountForAWB()).thenReturn(2);
-        when(reportRequest.isFromConsolidation()).thenReturn(true);
+        ReportRequest reportRequest1 = mock(ReportRequest.class);
+        when(reportRequest1.getCopyCountForAWB()).thenReturn(2);
+        when(reportRequest1.isFromConsolidation()).thenReturn(true);
 
         DocPages pages = mock(DocPages.class);
         when(pages.getMainPageId()).thenReturn("mainPageId");
@@ -2995,7 +2943,7 @@ class ReportServiceTest extends CommonMocks {
         doReturn(new byte[1]).when(reportService1).GetFromDocumentService(any(Map.class), anyString());
         doReturn(new byte[1]).when(reportService1).addBarCodeInAWBLableReport(any(byte[].class), anyString(), anyString());
 
-        reportService1.generatePdfBytes(reportRequest, pages, dataRetrived, pdfBytes);
+        reportService1.generatePdfBytes(reportRequest1, pages, dataRetrived, pdfBytes);
 
         assertEquals(6, pdfBytes.size()); // 2 copies * 3 packs = 6 PDFs
     }
@@ -3003,16 +2951,15 @@ class ReportServiceTest extends CommonMocks {
     @Test
     void testGeneratePdfBytes_CopyCountNull() {
         ReportService reportService1 = spy(new ReportService());
-        ReportRequest reportRequest = mock(ReportRequest.class);
-        when(reportRequest.getCopyCountForAWB()).thenReturn(null); // Simulate null copy count
+        ReportRequest reportRequest1 = mock(ReportRequest.class);
+        when(reportRequest1.getCopyCountForAWB()).thenReturn(null); // Simulate null copy count
 
         DocPages pages = mock(DocPages.class);
         Map<String, Object> dataRetrived = new HashMap<>();
         List<byte[]> pdfBytes = new ArrayList<>();
 
-        ValidationException thrown = assertThrows(ValidationException.class, () -> {
-            reportService1.generatePdfBytes(reportRequest, pages, dataRetrived, pdfBytes);
-        });
+        ValidationException thrown = assertThrows(ValidationException.class, () ->
+            reportService1.generatePdfBytes(reportRequest1, pages, dataRetrived, pdfBytes));
 
         assertEquals("Copy count is less than 1", thrown.getMessage());
     }
@@ -3020,9 +2967,9 @@ class ReportServiceTest extends CommonMocks {
     @Test
     void testGeneratePdfBytes_MawbOrHawbNotNull() {
         ReportService reportService1 = spy(new ReportService());
-        ReportRequest reportRequest = mock(ReportRequest.class);
-        when(reportRequest.getCopyCountForAWB()).thenReturn(1);
-        when(reportRequest.isFromConsolidation()).thenReturn(false);
+        ReportRequest reportRequest1 = mock(ReportRequest.class);
+        when(reportRequest1.getCopyCountForAWB()).thenReturn(1);
+        when(reportRequest1.isFromConsolidation()).thenReturn(false);
 
         DocPages pages = mock(DocPages.class);
         when(pages.getMainPageId()).thenReturn("mainPageId");
@@ -3037,7 +2984,7 @@ class ReportServiceTest extends CommonMocks {
         doReturn(new byte[1]).when(reportService1).GetFromDocumentService(any(Map.class), anyString());
         doReturn(new byte[1]).when(reportService1).addBarCodeInAWBLableReport(any(byte[].class), anyString(), anyString());
 
-        reportService1.generatePdfBytes(reportRequest, pages, dataRetrived, pdfBytes);
+        reportService1.generatePdfBytes(reportRequest1, pages, dataRetrived, pdfBytes);
 
         assertEquals("00001", dataRetrived.get(ReportConstants.COUNT)); // Assert the count is set correctly
     }
@@ -3045,9 +2992,9 @@ class ReportServiceTest extends CommonMocks {
     @Test
     void testGeneratePdfBytes_FromConsolidation_MawbNotNull() {
         ReportService reportService1 = spy(new ReportService());
-        ReportRequest reportRequest = mock(ReportRequest.class);
-        when(reportRequest.getCopyCountForAWB()).thenReturn(1);
-        when(reportRequest.isFromConsolidation()).thenReturn(true);
+        ReportRequest reportRequest1 = mock(ReportRequest.class);
+        when(reportRequest1.getCopyCountForAWB()).thenReturn(1);
+        when(reportRequest1.isFromConsolidation()).thenReturn(true);
 
         DocPages pages = mock(DocPages.class);
         when(pages.getMainPageId()).thenReturn("mainPageId");
@@ -3062,9 +3009,9 @@ class ReportServiceTest extends CommonMocks {
         doReturn(new byte[1]).when(reportService1).GetFromDocumentService(any(Map.class), anyString());
         doReturn(new byte[1]).when(reportService1).addBarCodeInAWBLableReport(any(byte[].class), anyString(), anyString());
 
-        reportService1.generatePdfBytes(reportRequest, pages, dataRetrived, pdfBytes);
+        reportService1.generatePdfBytes(reportRequest1, pages, dataRetrived, pdfBytes);
 
-        assertTrue(pdfBytes.size() > 0);
+        assertFalse(pdfBytes.isEmpty());
         assertEquals("MAWB12300001", dataRetrived.get(ReportConstants.MAWB_NUMBER) + "00001");
     }
 
@@ -3072,9 +3019,9 @@ class ReportServiceTest extends CommonMocks {
     void testGeneratePdfBytes_ConsolidationTrue() {
         // Test case where reportRequest.isFromConsolidation() returns true
         ReportService reportService1 = spy(new ReportService());
-        ReportRequest reportRequest = mock(ReportRequest.class);
-        when(reportRequest.getCopyCountForAWB()).thenReturn(2);
-        when(reportRequest.isFromConsolidation()).thenReturn(true);
+        ReportRequest reportRequest1 = mock(ReportRequest.class);
+        when(reportRequest1.getCopyCountForAWB()).thenReturn(2);
+        when(reportRequest1.isFromConsolidation()).thenReturn(true);
 
         DocPages pages = mock(DocPages.class);
         when(pages.getMainPageId()).thenReturn("mainPageId");
@@ -3089,7 +3036,7 @@ class ReportServiceTest extends CommonMocks {
         doReturn(new byte[1]).when(reportService1).GetFromDocumentService(any(Map.class), anyString());
         doReturn(new byte[1]).when(reportService1).addBarCodeInAWBLableReport(any(byte[].class), anyString(), anyString());
 
-        reportService1.generatePdfBytes(reportRequest, pages, dataRetrived, pdfBytes);
+        reportService1.generatePdfBytes(reportRequest1, pages, dataRetrived, pdfBytes);
 
         assertEquals(6, pdfBytes.size()); // 2 copies * 3 packs
     }
@@ -3098,9 +3045,9 @@ class ReportServiceTest extends CommonMocks {
     void testGeneratePdfBytes_HAWB_NotPresent() {
         // Test case where HAWB_NUMBER is null
         ReportService reportService1 = spy(new ReportService());
-        ReportRequest reportRequest = mock(ReportRequest.class);
-        when(reportRequest.getCopyCountForAWB()).thenReturn(1);
-        when(reportRequest.isFromConsolidation()).thenReturn(false);
+        ReportRequest reportRequest1 = mock(ReportRequest.class);
+        when(reportRequest1.getCopyCountForAWB()).thenReturn(1);
+        when(reportRequest1.isFromConsolidation()).thenReturn(false);
 
         DocPages pages = mock(DocPages.class);
         when(pages.getMainPageId()).thenReturn("mainPageId");
@@ -3115,7 +3062,7 @@ class ReportServiceTest extends CommonMocks {
         doReturn(new byte[1]).when(reportService1).GetFromDocumentService(any(Map.class), anyString());
         doReturn(new byte[1]).when(reportService1).addBarCodeInAWBLableReport(any(byte[].class), anyString(), anyString());
 
-        reportService1.generatePdfBytes(reportRequest, pages, dataRetrived, pdfBytes);
+        reportService1.generatePdfBytes(reportRequest1, pages, dataRetrived, pdfBytes);
 
         assertEquals("MAWB123", dataRetrived.get(ReportConstants.MAWB_NUMBER)); // MAWB_NUMBER is present
         assertEquals(1, pdfBytes.size());
@@ -3125,9 +3072,9 @@ class ReportServiceTest extends CommonMocks {
     void testGeneratePdfBytes_MAWB_NotPresent() {
         // Test case where MAWB_NUMBER is null
         ReportService reportService1 = spy(new ReportService());
-        ReportRequest reportRequest = mock(ReportRequest.class);
-        when(reportRequest.getCopyCountForAWB()).thenReturn(1);
-        when(reportRequest.isFromConsolidation()).thenReturn(false);
+        ReportRequest reportRequest1 = mock(ReportRequest.class);
+        when(reportRequest1.getCopyCountForAWB()).thenReturn(1);
+        when(reportRequest1.isFromConsolidation()).thenReturn(false);
 
         DocPages pages = mock(DocPages.class);
         when(pages.getMainPageId()).thenReturn("mainPageId");
@@ -3142,7 +3089,7 @@ class ReportServiceTest extends CommonMocks {
         doReturn(new byte[1]).when(reportService1).GetFromDocumentService(any(Map.class), anyString());
         doReturn(new byte[1]).when(reportService1).addBarCodeInAWBLableReport(any(byte[].class), anyString(), anyString());
 
-        reportService1.generatePdfBytes(reportRequest, pages, dataRetrived, pdfBytes);
+        reportService1.generatePdfBytes(reportRequest1, pages, dataRetrived, pdfBytes);
 
         assertEquals("HAWB456", dataRetrived.get(ReportConstants.HAWB_NUMBER)); // HAWB_NUMBER is present
         assertEquals(1, pdfBytes.size());
@@ -3153,25 +3100,24 @@ class ReportServiceTest extends CommonMocks {
     @Test
     void testGeneratePdfBytes_CopyCountLessThanOne() {
         ReportService reportService1 = spy(new ReportService());
-        ReportRequest reportRequest = mock(ReportRequest.class);
-        when(reportRequest.getCopyCountForAWB()).thenReturn(0);
+        ReportRequest reportRequest1 = mock(ReportRequest.class);
+        when(reportRequest1.getCopyCountForAWB()).thenReturn(0);
 
         DocPages pages = mock(DocPages.class);
         Map<String, Object> dataRetrived = new HashMap<>();
         List<byte[]> pdfBytes = new ArrayList<>();
 
-        ValidationException thrown = assertThrows(ValidationException.class, () -> {
-            reportService1.generatePdfBytes(reportRequest, pages, dataRetrived, pdfBytes);
-        });
+        ValidationException thrown = assertThrows(ValidationException.class, () ->
+            reportService1.generatePdfBytes(reportRequest1, pages, dataRetrived, pdfBytes));
         assertEquals("Copy count is less than 1", thrown.getMessage());
     }
 
     @Test
     void testGeneratePdfBytes_NullMainDocPage() {
         ReportService reportService1 = spy(new ReportService());
-        ReportRequest reportRequest = mock(ReportRequest.class);
-        when(reportRequest.getCopyCountForAWB()).thenReturn(1);
-        when(reportRequest.isFromConsolidation()).thenReturn(false);
+        ReportRequest reportRequest1 = mock(ReportRequest.class);
+        when(reportRequest1.getCopyCountForAWB()).thenReturn(1);
+        when(reportRequest1.isFromConsolidation()).thenReturn(false);
 
         DocPages pages = mock(DocPages.class);
         when(pages.getMainPageId()).thenReturn("mainPageId");
@@ -3184,18 +3130,18 @@ class ReportServiceTest extends CommonMocks {
         // Mock GetFromDocumentService to return null
         doReturn(null).when(reportService1).GetFromDocumentService(any(Map.class), anyString());
 
-        ValidationException thrown = assertThrows(ValidationException.class, () -> {
-            reportService1.generatePdfBytes(reportRequest, pages, dataRetrived, pdfBytes);
-        });
+        ValidationException thrown = assertThrows(ValidationException.class, () ->
+            reportService1.generatePdfBytes(reportRequest1, pages, dataRetrived, pdfBytes)
+        );
         assertEquals(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE, thrown.getMessage());
     }
 
     @Test
     void testGeneratePdfBytes_EmptyDataRetrived() {
         ReportService reportService1 = spy(new ReportService());
-        ReportRequest reportRequest = mock(ReportRequest.class);
-        when(reportRequest.getCopyCountForAWB()).thenReturn(1);
-        when(reportRequest.isFromConsolidation()).thenReturn(false);
+        ReportRequest reportRequest1 = mock(ReportRequest.class);
+        when(reportRequest1.getCopyCountForAWB()).thenReturn(1);
+        when(reportRequest1.isFromConsolidation()).thenReturn(false);
 
         DocPages pages = mock(DocPages.class);
 
@@ -3203,9 +3149,8 @@ class ReportServiceTest extends CommonMocks {
 
         List<byte[]> pdfBytes = new ArrayList<>();
 
-        ValidationException thrown = assertThrows(ValidationException.class, () -> {
-            reportService1.generatePdfBytes(reportRequest, pages, dataRetrived, pdfBytes);
-        });
+        ValidationException thrown = assertThrows(ValidationException.class, () ->
+            reportService1.generatePdfBytes(reportRequest1, pages, dataRetrived, pdfBytes));
         assertEquals("no of pack is less than 1", thrown.getMessage());
     }
 
@@ -3213,9 +3158,9 @@ class ReportServiceTest extends CommonMocks {
     void testGeneratePdfBytes_MAWBNumberPresent() {
         // Test case where MAWB_NUMBER is present
         ReportService reportService1 = spy(new ReportService());
-        ReportRequest reportRequest = mock(ReportRequest.class);
-        when(reportRequest.getCopyCountForAWB()).thenReturn(1);
-        when(reportRequest.isFromConsolidation()).thenReturn(true); // Consolidation is true, so MAWB is relevant
+        ReportRequest reportRequest1 = mock(ReportRequest.class);
+        when(reportRequest1.getCopyCountForAWB()).thenReturn(1);
+        when(reportRequest1.isFromConsolidation()).thenReturn(true); // Consolidation is true, so MAWB is relevant
 
         DocPages pages = mock(DocPages.class);
         when(pages.getMainPageId()).thenReturn("mainPageId");
@@ -3230,10 +3175,10 @@ class ReportServiceTest extends CommonMocks {
         doReturn(new byte[1]).when(reportService1).GetFromDocumentService(any(Map.class), anyString());
         doReturn(new byte[1]).when(reportService1).addBarCodeInAWBLableReport(any(byte[].class), anyString(), anyString());
 
-        reportService1.generatePdfBytes(reportRequest, pages, dataRetrived, pdfBytes);
+        reportService1.generatePdfBytes(reportRequest1, pages, dataRetrived, pdfBytes);
 
         // Assert that the correct mawbNumber is generated
-        assertTrue(pdfBytes.size() > 0);
+        assertFalse(pdfBytes.isEmpty());
         assertEquals("MAWB12300001", dataRetrived.get(ReportConstants.MAWB_NUMBER) + "00001"); // pack count appended
     }
 
@@ -3241,9 +3186,9 @@ class ReportServiceTest extends CommonMocks {
     void testGeneratePdfBytes_MAWBNumberAbsent() {
         // Test case where MAWB_NUMBER is absent (null)
         ReportService reportService1 = spy(new ReportService());
-        ReportRequest reportRequest = mock(ReportRequest.class);
-        when(reportRequest.getCopyCountForAWB()).thenReturn(1);
-        when(reportRequest.isFromConsolidation()).thenReturn(true); // Consolidation is true, so MAWB is relevant
+        ReportRequest reportRequest1 = mock(ReportRequest.class);
+        when(reportRequest1.getCopyCountForAWB()).thenReturn(1);
+        when(reportRequest1.isFromConsolidation()).thenReturn(true); // Consolidation is true, so MAWB is relevant
 
         DocPages pages = mock(DocPages.class);
         when(pages.getMainPageId()).thenReturn("mainPageId");
@@ -3257,19 +3202,19 @@ class ReportServiceTest extends CommonMocks {
         doReturn(new byte[1]).when(reportService1).GetFromDocumentService(any(Map.class), anyString());
         doReturn(new byte[1]).when(reportService1).addBarCodeInAWBLableReport(any(byte[].class), anyString(), anyString());
 
-        reportService1.generatePdfBytes(reportRequest, pages, dataRetrived, pdfBytes);
+        reportService1.generatePdfBytes(reportRequest1, pages, dataRetrived, pdfBytes);
 
         // Assert that the correct mawbNumber is generated
-        assertTrue(pdfBytes.size() > 0);
+        assertFalse(pdfBytes.isEmpty());
     }
 
     @Test
     void testGeneratePdfBytes_Combi() {
         // Test case where reportRequest.isFromConsolidation() returns true
         ReportService reportService1 = spy(new ReportService());
-        ReportRequest reportRequest = mock(ReportRequest.class);
-        when(reportRequest.getCopyCountForAWB()).thenReturn(2);
-        when(reportRequest.isFromConsolidation()).thenReturn(true);
+        ReportRequest reportRequest1 = mock(ReportRequest.class);
+        when(reportRequest1.getCopyCountForAWB()).thenReturn(2);
+        when(reportRequest1.isFromConsolidation()).thenReturn(true);
 
         DocPages pages = mock(DocPages.class);
         when(pages.getMainPageId()).thenReturn("mainPageId");
@@ -3291,7 +3236,7 @@ class ReportServiceTest extends CommonMocks {
         doReturn(new byte[1]).when(reportService1).GetFromDocumentService(any(Map.class), anyString());
         doReturn(new byte[1]).when(reportService1).addBarCodeInAWBLableReport(any(byte[].class), anyString(), anyString());
 
-        reportService1.generatePdfBytes(reportRequest, pages, dataRetrived, pdfBytes);
+        reportService1.generatePdfBytes(reportRequest1, pages, dataRetrived, pdfBytes);
 
         assertEquals(6, pdfBytes.size()); // 2 copies * 3 packs
     }

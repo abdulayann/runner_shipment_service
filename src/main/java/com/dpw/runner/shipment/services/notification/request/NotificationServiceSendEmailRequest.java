@@ -9,6 +9,7 @@ import java.util.List;
 
 @Getter
 @Setter
+@SuppressWarnings("java:S1948")
 public class NotificationServiceSendEmailRequest implements Serializable {
     private String templateName;
     private String organizationId;

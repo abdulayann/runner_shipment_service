@@ -76,35 +76,35 @@ public class ContainerDao implements IContainerDao {
         if (! errors.isEmpty())
             throw new ValidationException(String.join(",", errors));
         if(containers.getId() != null) {
-            long id = containers.getId();
-            Optional<Containers> oldEntity = findById(id);
-            if (!oldEntity.isPresent()) {
-                log.debug("Container is null for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
-                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-            }
-            containers.setCreatedAt(oldEntity.get().getCreatedAt());
-            containers.setCreatedBy(oldEntity.get().getCreatedBy());
-            if(containers.getShipmentsList() == null) {
-                containers.setShipmentsList(oldEntity.get().getShipmentsList());
-            }
-            if(containers.getEventsList() == null) {
-                containers.setEventsList(oldEntity.get().getEventsList());
-            }
-            if(containers.getTruckingDetails() == null) {
-                containers.setTruckingDetails(oldEntity.get().getTruckingDetails());
-            }
+            updateExistingContainerData(containers);
         }
-        if(containers.getEventsList() != null && containers.getEventsList().size() > 0) {
+        if(containers.getEventsList() != null && !containers.getEventsList().isEmpty()) {
             for (Events events : containers.getEventsList()) {
                 events.setEntityType(Constants.CONTAINER);
             }
         }
-        if(containers.getShipmentsList() != null && !containers.getShipmentsList().isEmpty()){
-            containers.setIsAttached(true);
-        }else{
-            containers.setIsAttached(false);
-        }
+        containers.setIsAttached(containers.getShipmentsList() != null && !containers.getShipmentsList().isEmpty());
         return containerRepository.save(containers);
+    }
+
+    private void updateExistingContainerData(Containers containers) {
+        long id = containers.getId();
+        Optional<Containers> oldEntity = findById(id);
+        if (oldEntity.isEmpty()) {
+            log.debug("Container is null for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+        containers.setCreatedAt(oldEntity.get().getCreatedAt());
+        containers.setCreatedBy(oldEntity.get().getCreatedBy());
+        if(containers.getShipmentsList() == null) {
+            containers.setShipmentsList(oldEntity.get().getShipmentsList());
+        }
+        if(containers.getEventsList() == null) {
+            containers.setEventsList(oldEntity.get().getEventsList());
+        }
+        if(containers.getTruckingDetails() == null) {
+            containers.setTruckingDetails(oldEntity.get().getTruckingDetails());
+        }
     }
 
     @Override
@@ -258,67 +258,15 @@ public class ContainerDao implements IContainerDao {
             if (containersList != null) {
                 List<Containers> containerList = new ArrayList<>(containersList);
                 if(fromConsolidation) {
-                    List<Containers> containersPage = findByConsolidationId(consolidationId);
-                    Map<Long, Containers> hashMap = containersPage.stream()
-                                .collect(Collectors.toMap(Containers::getId, Function.identity()));
-                    for (Containers containers: containerList) {
-                        containers.setConsolidationId(consolidationId);
-                        Long id = containers.getId();
-                        if (Objects.isNull(containers.getAllocationDate()) && !Objects.isNull(containers.getContainerNumber()))
-                            containers.setAllocationDate(LocalDateTime.now());
-                        if (id != null) {
-                            hashMap.remove(id);
-                        }
-                    }
-                    deleteContainers(hashMap, null, null);
-                    if(!hashMap.isEmpty()) {
-                        List<Long> deletedContIds = hashMap.keySet().stream().toList();
-                        if(deletedContIds.size() > 0) {
-                            List<Packing> packings = packingDao.findByContainerIdIn(deletedContIds);
-                            if(!CollectionUtils.isEmpty(packings)) {
-                                for (Packing packing : packings) {
-                                    packing.setContainerId(null);
-                                }
-                                packingDao.saveAll(packings);
-                                try {
-                                    packingsSync.sync(packings, UUID.randomUUID().toString());
-                                } catch (Exception e) {
-                                    log.error("Error performing sync on packings list, {}", e.getMessage());
-                                }
-                            }
-                        }
-                    }
+                    processConsolidationContainers(consolidationId, containerList);
                 }
                 if(shipmentId != null)
                 {
                     for (Containers container: containerList) {
                         container.setConsolidationId(consolidationId);
-                        if (Objects.isNull(container.getAllocationDate()) && !Objects.isNull(container.getContainerNumber()))
+                        if (canSetAllocationDate(container))
                             container.setAllocationDate(LocalDateTime.now());
-                        String operation = DBOperationType.CREATE.name();
-                        Containers oldEntityJson = null;
-                        if(container.getId() != null)
-                        {
-                            Optional<Containers> oldEntity = this.findById(container.getId());
-                            if(oldEntity.isPresent())
-                            {
-                                operation = DBOperationType.UPDATE.name();
-                                oldEntityJson = ContainersMapper.INSTANCE.toContainers(oldEntity.get());
-                            }
-                        }
-                        try {
-                            auditLogService.addAuditLog(
-                                    AuditLogMetaData.builder()
-                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
-                                            .newData(container)
-                                            .prevData(oldEntityJson)
-                                            .parent(ShipmentDetails.class.getSimpleName())
-                                            .parentId(shipmentId)
-                                            .operation(operation).build()
-                            );
-                        } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
-                            log.error(e.getMessage());
-                        }
+                        addAuditLogInShipmentConsole(shipmentId, container);
                     }
                 }
                 responseContainers = saveAll(containerList);
@@ -329,6 +277,74 @@ public class ContainerDao implements IContainerDao {
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
             throw new RunnerException(e.getMessage());
+        }
+    }
+
+    private boolean canSetAllocationDate(Containers container) {
+        return Objects.isNull(container.getAllocationDate()) && !Objects.isNull(container.getContainerNumber());
+    }
+
+    private void addAuditLogInShipmentConsole(Long shipmentId, Containers container) throws RunnerException {
+        String operation = DBOperationType.CREATE.name();
+        Containers oldEntityJson = null;
+        if(container.getId() != null)
+        {
+            Optional<Containers> oldEntity = this.findById(container.getId());
+            if(oldEntity.isPresent())
+            {
+                operation = DBOperationType.UPDATE.name();
+                oldEntityJson = ContainersMapper.INSTANCE.toContainers(oldEntity.get());
+            }
+        }
+        try {
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
+                            .newData(container)
+                            .prevData(oldEntityJson)
+                            .parent(ShipmentDetails.class.getSimpleName())
+                            .parentId(shipmentId)
+                            .operation(operation).build()
+            );
+        } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+            log.error(e.getMessage());
+        }
+    }
+
+    private void processConsolidationContainers(Long consolidationId, List<Containers> containerList) {
+        List<Containers> containersPage = findByConsolidationId(consolidationId);
+        Map<Long, Containers> hashMap = containersPage.stream()
+                    .collect(Collectors.toMap(Containers::getId, Function.identity()));
+        for (Containers containers: containerList) {
+            containers.setConsolidationId(consolidationId);
+            Long id = containers.getId();
+            if (Objects.isNull(containers.getAllocationDate()) && !Objects.isNull(containers.getContainerNumber()))
+                containers.setAllocationDate(LocalDateTime.now());
+            if (id != null) {
+                hashMap.remove(id);
+            }
+        }
+        deleteContainers(hashMap, null, null);
+        processHashMap(hashMap);
+    }
+
+    private void processHashMap(Map<Long, Containers> hashMap) {
+        if(!hashMap.isEmpty()) {
+            List<Long> deletedContIds = hashMap.keySet().stream().toList();
+            if(!deletedContIds.isEmpty()) {
+                List<Packing> packings = packingDao.findByContainerIdIn(deletedContIds);
+                if(!CollectionUtils.isEmpty(packings)) {
+                    for (Packing packing : packings) {
+                        packing.setContainerId(null);
+                    }
+                    packingDao.saveAll(packings);
+                    try {
+                        packingsSync.sync(packings, UUID.randomUUID().toString());
+                    } catch (Exception e) {
+                        log.error("Error performing sync on packings list, {}", e.getMessage());
+                    }
+                }
+            }
         }
     }
 
@@ -346,17 +362,11 @@ public class ContainerDao implements IContainerDao {
         List<Containers> responseContainers = new ArrayList<>();
         Map<UUID, Containers> containersMap = new HashMap<>();
         List<Long> deleteContIds = new ArrayList<>();
-        if(oldEntityList != null && oldEntityList.size() > 0) {
-            for (Containers containers:
-                 oldEntityList) {
-                containersMap.put(containers.getGuid(), containers);
-                deleteContIds.add(containers.getId());
-            }
-        }
+        processOldEntityList(oldEntityList, containersMap, deleteContIds);
         Containers oldContainer;
         try {
             // TODO- Handle Transactions here
-            if (containersList != null && containersList.size() != 0) {
+            if (containersList != null && !containersList.isEmpty()) {
                 List<Containers> containerList = new ArrayList<>(containersList);
                 for (Containers containers: containerList) {
                     if(containersMap.containsKey(containers.getGuid())) {
@@ -370,7 +380,7 @@ public class ContainerDao implements IContainerDao {
                 }
                 responseContainers = saveAll(containerList);
             }
-            if(deleteContIds.size() > 0) {
+            if(!deleteContIds.isEmpty()) {
                 deleteByIds(deleteContIds);
             }
             return responseContainers;
@@ -379,6 +389,16 @@ public class ContainerDao implements IContainerDao {
                     : DaoConstants.DAO_FAILED_ENTITY_UPDATE;
             log.error(responseMsg, e);
             throw new RunnerException(e.getMessage());
+        }
+    }
+
+    private void processOldEntityList(List<Containers> oldEntityList, Map<UUID, Containers> containersMap, List<Long> deleteContIds) {
+        if(oldEntityList != null && !oldEntityList.isEmpty()) {
+            for (Containers containers:
+                    oldEntityList) {
+                containersMap.put(containers.getGuid(), containers);
+                deleteContIds.add(containers.getId());
+            }
         }
     }
 

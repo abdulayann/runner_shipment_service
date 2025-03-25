@@ -17,6 +17,7 @@ import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSettingsSync;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -100,7 +101,7 @@ public class ProductIdentifierUtility {
         tenantProductsDao.findAll(pair.getLeft(), pair.getRight());
     List<TenantProducts> tenantProductList = tenantProducts.getContent();
 
-    if (tenantProductList.size() > 0) {
+    if (!tenantProductList.isEmpty()) {
       log.info("CR-ID {} || common sequence found", LoggerHelper.getRequestIdFromMDC());
       var tenantProductIds = tenantProductList.stream().map(TenantProducts::getId).toList();
       listRequest = getCommonProductSequenceListCriteria(tenantProductIds, productProcessTypes, transportMode);
@@ -199,114 +200,78 @@ public class ProductIdentifierUtility {
 
     Optional<TenantProducts> res = Optional.empty();
 
-    if (isShipmentAirIMP(shipment, enabledTenantProducts)) {
-      res =
-          enabledTenantProducts.stream()
-              .filter(p -> p.getProductType() == ProductType.Shipment_Air_IMP)
-              .findFirst();
-      if (res.isPresent()) return res.get();
-    } else if (isShipmentAirEXP(shipment, enabledTenantProducts)) {
-      res =
-          enabledTenantProducts.stream()
-              .filter(p -> p.getProductType() == ProductType.Shipment_Air_EXP)
-              .findFirst();
-      if (res.isPresent()) return res.get();
-    } else if (isShipmentAirCrossTrade(shipment, enabledTenantProducts)) {
-      res =
-          enabledTenantProducts.stream()
-              .filter(p -> p.getProductType() == ProductType.Shipment_Air_CrossTrade)
-              .findFirst();
-      if (res.isPresent()) return res.get();
-    } else if (isShipmentAirTransShip(shipment, enabledTenantProducts)) {
-      res =
-          enabledTenantProducts.stream()
-              .filter(p -> p.getProductType() == ProductType.Shipment_Air_TransShip)
-              .findFirst();
-      if (res.isPresent()) return res.get();
-    } else if (Objects.equals(shipment.getTransportMode(), AIR)) {
-      res =
-          enabledTenantProducts.stream()
-              .filter(p -> p.getProductType() == ProductType.Shipment_Air_EXIM)
-              .findFirst();
-      if (res.isPresent()) return res.get();
+    if (Objects.equals(shipment.getTransportMode(), AIR)) {
+      res = determineTenantProductForAir(shipment, enabledTenantProducts);
     }
 
-    if (isShipmentSeaIMP(shipment, enabledTenantProducts)) {
-      res =
-          enabledTenantProducts.stream()
-              .filter(p -> p.getProductType() == ProductType.Shipment_Sea_IMP)
-              .findFirst();
-      if (res.isPresent()) return res.get();
-    } else if (isShipmentSeaEXP(shipment, enabledTenantProducts)) {
-      res =
-          enabledTenantProducts.stream()
-              .filter(p -> p.getProductType() == ProductType.Shipment_Sea_EXP)
-              .findFirst();
-      if (res.isPresent()) return res.get();
-    } else if (isShipmentSeaCrossTrade(shipment, enabledTenantProducts)) {
-      res =
-          enabledTenantProducts.stream()
-              .filter(p -> p.getProductType() == ProductType.Shipment_Sea_CrossTrade)
-              .findFirst();
-      if (res.isPresent()) return res.get();
-    } else if (isShipmentSeaTransShip(shipment, enabledTenantProducts)) {
-      res =
-          enabledTenantProducts.stream()
-              .filter(p -> p.getProductType() == ProductType.Shipment_Sea_TransShip)
-              .findFirst();
-      if (res.isPresent()) return res.get();
-    } else if (Objects.equals(shipment.getTransportMode(), SEA)) {
-      res =
-          enabledTenantProducts.stream()
-              .filter(p -> p.getProductType() == ProductType.Shipment_Sea_EXIM)
-              .findFirst();
-      if (res.isPresent()) return res.get();
+    if (Objects.equals(shipment.getTransportMode(), SEA)) {
+      res = determineTenantProductForSea(shipment, enabledTenantProducts);
     }
 
     if (isShipmentRoadEXP(shipment, enabledTenantProducts)) {
-      res =
-          enabledTenantProducts.stream()
-              .filter(p -> p.getProductType() == ProductType.Shipment_Road_EXP)
-              .findFirst();
-      if (res.isPresent()) return res.get();
+      res = getTenantProductByProductType(enabledTenantProducts, ProductType.Shipment_Road_EXP);
     }
     if (isShipmentRoadCrossTrade(shipment, enabledTenantProducts)) {
-      res =
-          enabledTenantProducts.stream()
-              .filter(p -> p.getProductType() == ProductType.Shipment_Road_CrossTrade)
-              .findFirst();
-      if (res.isPresent()) return res.get();
+      res = getTenantProductByProductType(enabledTenantProducts, ProductType.Shipment_Road_CrossTrade);
     }
 
     if (isShipmentRoadTransShip(shipment, enabledTenantProducts)) {
-      res =
-          enabledTenantProducts.stream()
-              .filter(p -> p.getProductType() == ProductType.Shipment_Road_TransShip)
-              .findFirst();
-      if (res.isPresent()) return res.get();
+      res = getTenantProductByProductType(enabledTenantProducts, ProductType.Shipment_Road_TransShip);
     }
 
     if (isShipmentRailCrossTrade(shipment, enabledTenantProducts)) {
-      res =
-          enabledTenantProducts.stream()
-              .filter(p -> p.getProductType() == ProductType.Shipment_Rail_CrossTrade)
-              .findFirst();
-      if (res.isPresent()) return res.get();
+      res = getTenantProductByProductType(enabledTenantProducts, ProductType.Shipment_Rail_CrossTrade);
     }
 
     if (isShipmentRailTransShip(shipment, enabledTenantProducts)) {
-      res =
-          enabledTenantProducts.stream()
-              .filter(p -> p.getProductType() == ProductType.Shipment_Rail_TransShip)
-              .findFirst();
-      if (res.isPresent()) return res.get();
+      res = getTenantProductByProductType(enabledTenantProducts, ProductType.Shipment_Rail_TransShip);
     }
 
-    var transportAll =
-        enabledTenantProducts.stream()
-            .filter(p -> p.getProductType() == ProductType.Transport_All)
-            .findFirst();
-    return transportAll.orElse(null);
+    if (res.isPresent())
+      return res.get();
+
+    res = getTenantProductByProductType(enabledTenantProducts, ProductType.Transport_All);
+
+    return res.orElse(null);
+  }
+
+  private Optional<TenantProducts> determineTenantProductForAir(ShipmentDetails shipment, List<TenantProducts> enabledTenantProducts) {
+      if (isShipmentAirIMP(shipment, enabledTenantProducts)) {
+        return getTenantProductByProductType(enabledTenantProducts, ProductType.Shipment_Air_IMP);
+      } else if (isShipmentAirEXP(shipment, enabledTenantProducts)) {
+        return getTenantProductByProductType(enabledTenantProducts, ProductType.Shipment_Air_EXP);
+      } else if (isShipmentAirCrossTrade(shipment, enabledTenantProducts)) {
+        return getTenantProductByProductType(enabledTenantProducts, ProductType.Shipment_Air_CrossTrade);
+      } else if (isShipmentAirTransShip(shipment, enabledTenantProducts)) {
+        return getTenantProductByProductType(enabledTenantProducts, ProductType.Shipment_Air_TransShip);
+      } else if (Objects.equals(shipment.getTransportMode(), AIR)) {
+        return getTenantProductByProductType(enabledTenantProducts, ProductType.Shipment_Air_EXIM);
+      }
+      return Optional.empty();
+  }
+
+  private Optional<TenantProducts> determineTenantProductForSea(ShipmentDetails shipment, List<TenantProducts> enabledTenantProducts) {
+      if (isShipmentSeaIMP(shipment, enabledTenantProducts)) {
+        return getTenantProductByProductType(enabledTenantProducts, ProductType.Shipment_Sea_IMP);
+      } else if (isShipmentSeaEXP(shipment, enabledTenantProducts)) {
+        return getTenantProductByProductType(enabledTenantProducts, ProductType.Shipment_Sea_EXP);
+      } else if (isShipmentSeaCrossTrade(shipment, enabledTenantProducts)) {
+        return getTenantProductByProductType(enabledTenantProducts, ProductType.Shipment_Sea_CrossTrade);
+      } else if (isShipmentSeaTransShip(shipment, enabledTenantProducts)) {
+        return getTenantProductByProductType(enabledTenantProducts, ProductType.Shipment_Sea_TransShip);
+      } else if (Objects.equals(shipment.getTransportMode(), SEA)) {
+        return getTenantProductByProductType(enabledTenantProducts, ProductType.Shipment_Sea_EXIM);
+      }
+      return Optional.empty();
+  }
+
+  private Optional<TenantProducts> getTenantProductByProductType(List<TenantProducts> enabledTenantProducts, ProductType productType) {
+      Optional<TenantProducts> res;
+      res =
+          enabledTenantProducts.stream()
+              .filter(p -> p.getProductType() == productType)
+              .findFirst();
+      return res;
   }
 
   private String RegexToSequenceNumber(
@@ -336,42 +301,10 @@ public class ProductIdentifierUtility {
         var format = splitArray[1];
         Integer numberOfCharactersToRetain = 0;
         switch (regexKey.toLowerCase()) {
-          case "branchcode" -> {
-            var user = UserContext.getUser();
-            String tenantCode = user.getCode();
-            if (format.contains("L")) {
-              format = format.replace("L", "");
-              numberOfCharactersToRetain = tryParse(format, numberOfCharactersToRetain);
-              if (numberOfCharactersToRetain!= null)
-                result =
-                    (result == null ? new StringBuilder("null") : result)
-                        .append(
-                            tenantCode.length() >= numberOfCharactersToRetain
-                                ? tenantCode.substring(
-                                    tenantCode.length() - numberOfCharactersToRetain)
-                                : tenantCode);
-
-            } else {
-              numberOfCharactersToRetain = tryParse(format, numberOfCharactersToRetain);
-              if (numberOfCharactersToRetain != null) {
-                result =
-                    (result == null ? new StringBuilder("null") : result)
-                        .append(
-                            tenantCode.substring(
-                                0, Math.min(numberOfCharactersToRetain, tenantCode.length())));
-              }
-            }
-          }
-          case "transportmode" -> {
-            numberOfCharactersToRetain = tryParse(format, numberOfCharactersToRetain);
-            if (numberOfCharactersToRetain != null) {
-              result =
-                  (result == null ? new StringBuilder("null") : result)
-                      .append(
-                          transportMode.substring(
-                              0, Math.min(numberOfCharactersToRetain, transportMode.length())));
-            }
-          }
+          case "branchcode" ->
+            result = getSequenceNumberForBranchCode(format, numberOfCharactersToRetain, result);
+          case "transportmode" ->
+            result = getSequenceNumberForTransportMode(transportMode, numberOfCharactersToRetain, format, result);
           case "date" -> result =
               Optional.of(
                       result
@@ -380,19 +313,7 @@ public class ProductIdentifierUtility {
                   .map(StringBuilder::new)
                   .orElse(null);
           case "seq" -> {
-            productSequence.setSerialCounter(
-                productSequence.getSerialCounter() == null
-                    ? 1
-                    : (productSequence.getSerialCounter() + 1));
-            Integer numberOfDigits = 0;
-            numberOfDigits = tryParse(format, numberOfCharactersToRetain);
-            if (numberOfDigits != null) {
-            } else {
-              numberOfDigits = 3;
-            }
-            String counter =
-                    getNextNumberHelper.padLeft(productSequence.getSerialCounter().toString(), numberOfDigits, '0');
-            result = (result == null ? new StringBuilder("null") : result).append(counter);
+            result = getSequenceNumberForSequenceCase(productSequence, format, numberOfCharactersToRetain, result);
             log.info("CR-ID {} || Calling event {} from RegexToSequenceNumber", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PRODUCT_SEQ_SAVE);
 
 
@@ -406,10 +327,63 @@ public class ProductIdentifierUtility {
           default -> {}
         }
       } else {
-        result = (result == null ? new StringBuilder("null") : result).append(segment);
+        result = getAppendedResult(result, segment);
       }
     }
     return result == null ? null : result.toString();
+  }
+
+  @NotNull
+  private StringBuilder getSequenceNumberForSequenceCase(ProductSequenceConfig productSequence, String format, Integer numberOfCharactersToRetain, StringBuilder result) {
+    productSequence.setSerialCounter(
+        productSequence.getSerialCounter() == null
+            ? 1
+            : (productSequence.getSerialCounter() + 1));
+    Integer numberOfDigits = 0;
+    numberOfDigits = tryParse(format, numberOfCharactersToRetain);
+    if (numberOfDigits == null) {
+      numberOfDigits = 3;
+    }
+    String counter =
+            getNextNumberHelper.padLeft(productSequence.getSerialCounter().toString(), numberOfDigits, '0');
+    result = getAppendedResult(result, counter);
+    return result;
+  }
+
+  private StringBuilder getSequenceNumberForTransportMode(String transportMode, Integer numberOfCharactersToRetain, String format, StringBuilder result) {
+    numberOfCharactersToRetain = tryParse(format, numberOfCharactersToRetain);
+    if (numberOfCharactersToRetain != null) {
+      result = getAppendedResult(result, transportMode.substring(0, Math.min(numberOfCharactersToRetain, transportMode.length())));
+    }
+    return result;
+  }
+
+  private StringBuilder getSequenceNumberForBranchCode(String format, Integer numberOfCharactersToRetain, StringBuilder result) {
+    var user = UserContext.getUser();
+    String tenantCode = user.getCode();
+    if (format.contains("L")) {
+      format = format.replace("L", "");
+      numberOfCharactersToRetain = tryParse(format, numberOfCharactersToRetain);
+      if (numberOfCharactersToRetain != null)
+        result =
+            (result == null ? new StringBuilder("null") : result)
+                .append(
+                    tenantCode.length() >= numberOfCharactersToRetain
+                        ? tenantCode.substring(
+                            tenantCode.length() - numberOfCharactersToRetain)
+                        : tenantCode);
+
+    } else {
+      numberOfCharactersToRetain = tryParse(format, numberOfCharactersToRetain);
+      if (numberOfCharactersToRetain != null) {
+        result = getAppendedResult(result, tenantCode.substring(0, Math.min(numberOfCharactersToRetain, tenantCode.length())));
+      }
+    }
+    return result;
+  }
+
+  private StringBuilder getAppendedResult(StringBuilder result, String segment) {
+    return (result == null ? new StringBuilder("null") : result).append(segment);
   }
 
   TenantProducts checkShipSeaCargoTypeProduct(ShipmentDetails shipment, String type, List<TenantProducts> enabledTenantProducts) {
@@ -464,11 +438,7 @@ public class ProductIdentifierUtility {
               "Shipment_Rail_CrossTrade_ROR");
 
     for (var type : allCargoTypeProducts) {
-      boolean ans = true;
-      if (type.contains("IMP")) ans = ans && isImport(shipment.getDirection());
-      else if (type.contains("EXP")) ans = ans && isExport(shipment.getDirection());
-      else if (type.contains("TransShip")) ans = ans && isTransShip(shipment.getDirection());
-      else if (type.contains("CrossTrade")) ans = ans && isCrossTrade(shipment.getDirection());
+      boolean ans = checkShipmentDirection(shipment, type);
 
       if (type.contains(shipment.getShipmentType()) && ans) {
         Optional<TenantProducts> optional =
@@ -490,6 +460,15 @@ public class ProductIdentifierUtility {
       }
     }
     return product;
+  }
+
+  private boolean checkShipmentDirection(ShipmentDetails shipment, String type) {
+    boolean ans = true;
+    if (type.contains("IMP")) ans = isImport(shipment.getDirection());
+    else if (type.contains("EXP")) ans = isExport(shipment.getDirection());
+    else if (type.contains("TransShip")) ans = isTransShip(shipment.getDirection());
+    else if (type.contains("CrossTrade")) ans = isCrossTrade(shipment.getDirection());
+    return ans;
   }
 
   public TenantProducts getDefaultShipmentProduct(List<TenantProducts> enabledTenantProducts) {
@@ -650,19 +629,7 @@ public class ProductIdentifierUtility {
 
     TenantProducts identifiedProduct = this.IdentifyProduct(shipmentDetails, enabledTenantProducts);
     if (identifiedProduct == null){
-      if(!shipmentDetails.getTransportMode().equalsIgnoreCase("Air")){
-        // to check the commmon sequence
-        String sequenceNumber = GetChildCommonSequenceNumber(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentId(), ProductProcessTypes.HBLNumber);
-        if (StringUtility.isNotEmpty(sequenceNumber)) {
-          return sequenceNumber;
-        }
-      } else {
-        String hawbSequenceNumber = GetChildCommonSequenceNumber(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentId(), ProductProcessTypes.HAWB);
-        if (StringUtility.isNotEmpty(hawbSequenceNumber)) {
-          return hawbSequenceNumber;
-        }
-      }
-      return "";
+      return getBLNumberWhenTenantProductsNotPresent(shipmentDetails);
     }
     ProductProcessTypes processType;
     if(shipmentDetails.getTransportMode().equalsIgnoreCase("Air")) {
@@ -691,6 +658,22 @@ public class ProductIdentifierUtility {
     }
     String prefix = sequenceSettings.getPrefix() == null ? "" : sequenceSettings.getPrefix();
     return getNextNumberHelper.generateCustomSequence(sequenceSettings, prefix, UserContext.getUser().TenantId, true, null, false);
+  }
+
+  private String getBLNumberWhenTenantProductsNotPresent(ShipmentDetails shipmentDetails) {
+    if(!shipmentDetails.getTransportMode().equalsIgnoreCase("Air")){
+      // to check the commmon sequence
+      String sequenceNumber = GetChildCommonSequenceNumber(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentId(), ProductProcessTypes.HBLNumber);
+      if (StringUtility.isNotEmpty(sequenceNumber)) {
+        return sequenceNumber;
+      }
+    } else {
+      String hawbSequenceNumber = GetChildCommonSequenceNumber(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentId(), ProductProcessTypes.HAWB);
+      if (StringUtility.isNotEmpty(hawbSequenceNumber)) {
+        return hawbSequenceNumber;
+      }
+    }
+    return "";
   }
 
   public String GetChildCommonSequenceNumber(String transportMode, String parentNumber, ProductProcessTypes productProcessTypes) {
