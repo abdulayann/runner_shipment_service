@@ -241,11 +241,9 @@ public class EntityTransferService implements IEntityTransferService {
         if(optionalNetworkTransfer.isPresent()) {
             if (NetworkTransferStatus.ACCEPTED.equals(optionalNetworkTransfer.get().getStatus())) {
                 NetworkTransfer oldNetworkTransfer = optionalNetworkTransfer.get();
-                networkTransferService.updateStatusAndCreatedEntityId(oldNetworkTransfer.getId(),
-                    NetworkTransferStatus.RETRANSFER.name(), shipment.getId());
-                networkTransferService.processNetworkTransferEntity(Long.valueOf(tenant),
-                    Long.valueOf(optionalNetworkTransfer.get().getTenantId()), SHIPMENT, shipment,
-                    null, taskPayload.getDirection(), entityPayload, false);
+                oldNetworkTransfer.setStatus(NetworkTransferStatus.RETRANSFER);
+                oldNetworkTransfer.setEntityPayload(entityPayload);
+                networkTransferDao.save(oldNetworkTransfer);
             } else {
                 networkTransferService.updateNetworkTransferTransferred(optionalNetworkTransfer.get(), entityPayload);
             }
