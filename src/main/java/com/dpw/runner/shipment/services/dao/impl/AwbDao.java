@@ -180,6 +180,8 @@ public class AwbDao implements IAwbDao {
                 }
             }
         }
+
+
         if(!errors.isEmpty())
             throw new RunnerException(errors.toString());
     }

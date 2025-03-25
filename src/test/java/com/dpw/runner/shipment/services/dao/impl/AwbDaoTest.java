@@ -11,7 +11,6 @@ import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbOCIInfo;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbOtherChargesInfo;
-import com.dpw.runner.shipment.services.dto.request.awb.PartyContactInfo;
 import com.dpw.runner.shipment.services.dto.response.AwbAirMessagingResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
