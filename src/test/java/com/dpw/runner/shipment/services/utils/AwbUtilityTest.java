@@ -3,10 +3,7 @@ package com.dpw.runner.shipment.services.utils;
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
-import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
-import com.dpw.runner.shipment.services.dto.request.awb.AwbNotifyPartyInfo;
-import com.dpw.runner.shipment.services.dto.request.awb.OtherPartyInfo;
-import com.dpw.runner.shipment.services.dto.request.awb.AirMessagingAdditionalFields;
+import com.dpw.runner.shipment.services.dto.request.awb.*;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.dto.response.AwbShipmentInfoResponse;
 import com.dpw.runner.shipment.services.kafka.dto.AirMessagingEventDto;
@@ -17,8 +14,6 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.dao.impl.ShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
-import com.dpw.runner.shipment.services.dto.request.awb.AwbAddressParam;
-import com.dpw.runner.shipment.services.dto.request.awb.AwbPaymentInfo;
 import com.dpw.runner.shipment.services.dto.response.AwbAirMessagingResponse;
 import com.dpw.runner.shipment.services.dto.response.AwbRoutingInfoResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
@@ -650,6 +645,11 @@ class AwbUtilityTest extends CommonMocks {
         awbAirMessagingResponse.setAwbRoutingInfo(List.of(awbRoutingInfoResponse));
         awbAirMessagingResponse.setAwbShipmentInfo(awbShipmentInfoResponse);
         awbAirMessagingResponse.setAwbNotifyPartyInfo(Collections.singletonList(awbNotifyPartyInfo));
+        OCIInfo ociInfo = new OCIInfo();
+        OtherIdentityInfo otherIdentityInfo = new OtherIdentityInfo();
+        otherIdentityInfo.setIrIpAddress("127.0.0.1");
+        ociInfo.setOtherIdentityInfo(otherIdentityInfo);
+        awbAirMessagingResponse.setOciInfo(ociInfo);
         when(jsonHelper.convertValue(any(), eq(AwbAirMessagingResponse.class))).thenReturn(awbAirMessagingResponse);
 
         //Mock fetchOrgInfoFromV1
@@ -724,6 +724,12 @@ class AwbUtilityTest extends CommonMocks {
 
 
         AwbAirMessagingResponse awbAirMessagingResponse = new AwbAirMessagingResponse();
+        OCIInfo ociInfo = new OCIInfo();
+        OtherIdentityInfo otherIdentityInfo = new OtherIdentityInfo();
+        otherIdentityInfo.setIrIpAddress("127.0.0.1");
+        ociInfo.setOtherIdentityInfo(otherIdentityInfo);
+        mockAwb.setOciInfo(ociInfo);
+        awbAirMessagingResponse.setOciInfo(ociInfo);
         when(jsonHelper.convertValue(any(), eq(AwbAirMessagingResponse.class))).thenReturn(awbAirMessagingResponse);
         when(shipmentSettingsDao.getSettingsByTenantIds(anyList())).thenReturn(List.of());
 
@@ -761,6 +767,11 @@ class AwbUtilityTest extends CommonMocks {
         List<AwbNotifyPartyInfo> awbNotifyPartyInfoList = new ArrayList<>();
         awbNotifyPartyInfoList.add(AwbNotifyPartyInfo.builder().specifiedAddressLocation("XYZ").build());
         mockAwb.setAwbNotifyPartyInfo(awbNotifyPartyInfoList);
+        OCIInfo ociInfo = new OCIInfo();
+        OtherIdentityInfo otherIdentityInfo = new OtherIdentityInfo();
+        otherIdentityInfo.setIrIpAddress("127.0.0.1");
+        ociInfo.setOtherIdentityInfo(otherIdentityInfo);
+        mockAwb.setOciInfo(ociInfo);
 
         var issuingAgent = mockShipment.getShipmentAddresses().get(0);
 
