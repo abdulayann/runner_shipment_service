@@ -7,13 +7,12 @@ import com.dpw.runner.shipment.services.dto.request.CacheRequest;
 import com.dpw.runner.shipment.services.exception.exceptions.CacheEvictionException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import java.util.Objects;
+import javax.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Component;
-
-import javax.annotation.PostConstruct;
-import java.util.Objects;
 
 @Component
 @Slf4j
@@ -37,6 +36,7 @@ public class CacheEvictionService {
             cacheManager.getCache(CacheConstants.CACHE_KEY).clear();
             cacheManager.getCache(CacheConstants.CACHE_KEY_USER).clear();
             cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).clear();
+            cacheManager.getCache(CacheConstants.CUSTOMER_BOOKING).clear();
         } catch (Exception e) {
             log.error("Error during evicting cache {}", e);
             throw new CacheEvictionException(e.getMessage());

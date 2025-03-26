@@ -103,8 +103,8 @@ public class CSDReport extends IReport{
         dictionary.put(ReportConstants.CONSIGNMENT_STATUS, securityStatus);
         dictionary.put(ReportConstants.DEFAULT_RA_NUMBER, getDefaultRANumber());
 
-        dictionary.put(DATE_OF_PRINT, StringUtility.convertToString(ConvertToDPWDateFormat(LocalDateTime.now(), DATE_FORMAT, true)));
-        dictionary.put(TIME_OF_PRINT, StringUtility.convertToString(ConvertToDPWDateFormat(LocalDateTime.now(), TIME_FORMAT, true)));
+        dictionary.put(DATE_OF_PRINT, StringUtility.convertToString(convertToDPWDateFormat(LocalDateTime.now(), DATE_FORMAT, true)));
+        dictionary.put(TIME_OF_PRINT, StringUtility.convertToString(convertToDPWDateFormat(LocalDateTime.now(), TIME_FORMAT, true)));
 
         if (Objects.nonNull(csdModel.getAwb())) {
             dictionary.put(RA_CSD, geteCSDInfo(csdModel.getAwb()));

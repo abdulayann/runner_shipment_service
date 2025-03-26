@@ -4,7 +4,7 @@ package com.dpw.runner.shipment.services.utils;
 import static com.dpw.runner.shipment.services.commons.constants.PartiesConstants.ACTIVE_CLIENT;
 import static com.dpw.runner.shipment.services.commons.constants.PartiesConstants.FULLNAME;
 import static com.dpw.runner.shipment.services.commons.constants.PartiesConstants.ORG_ID;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 import static com.dpw.runner.shipment.services.validator.constants.CustomerBookingConstants.CONSIGNEE_REQUEST;
 import static com.dpw.runner.shipment.services.validator.constants.CustomerBookingConstants.CONSIGNOR_REQUEST;
 import static com.dpw.runner.shipment.services.validator.constants.CustomerBookingConstants.CUSTOMER_REQUEST;
@@ -21,8 +21,6 @@ import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstan
 import com.dpw.runner.shipment.services.commons.constants.EventConstants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
-import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
-import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -60,7 +58,6 @@ import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
@@ -167,13 +164,13 @@ public class BookingIntegrationsUtility {
     private BillingServiceUrlConfig billingServiceUrlConfig;
 
     static Integer maxAttempts = 5;
-    private RetryTemplate retryTemplate = RetryTemplate.builder()
+    private final RetryTemplate retryTemplate = RetryTemplate.builder()
             .maxAttempts(maxAttempts)
             .fixedBackoff(1000)
             .retryOn(Exception.class)
             .build();
 
-    private Map<BookingStatus, String> platformStatusMap = Map.ofEntries(
+    private final Map<BookingStatus, String> platformStatusMap = Map.ofEntries(
             Map.entry(BookingStatus.CANCELLED, "CANCELLED"),
             Map.entry(BookingStatus.READY_FOR_SHIPMENT, "CONFIRMED"),
             Map.entry(BookingStatus.PENDING_FOR_KYC, "BOOKED"),
@@ -303,8 +300,7 @@ public class BookingIntegrationsUtility {
 
     public ResponseEntity<IRunnerResponse> createShipmentInV2(CustomerBookingRequest customerBookingRequest) throws RunnerException {
         try {
-            var response = shipmentService.createShipmentInV2(customerBookingRequest);
-            return response;
+            return shipmentService.createShipmentInV2(customerBookingRequest);
         } catch (Exception ex) {
             log.error("Shipment Creation failed for booking number {} with error message: {}", customerBookingRequest.getBookingNumber(), ex.getMessage());
             throw ex;
@@ -409,7 +405,7 @@ public class BookingIntegrationsUtility {
     }
 
     private String getCarrierSCACCodeFromItemValue(String itemValue) {
-        if(IsStringNullOrEmpty(itemValue))
+        if(isStringNullOrEmpty(itemValue))
             return null;
         Set<String> carrierCodes = new HashSet<>();
         carrierCodes.add(itemValue);
@@ -499,7 +495,7 @@ public class BookingIntegrationsUtility {
                         .is_reefer(container.getIsReefer())
                         .reefer_info(ReeferInfoRequest.builder().temperature(!Objects.isNull(container.getMinTemp()) ? container.getMinTemp().intValue() : null).build())
                         .is_hazardous(container.getHazardous() != null && container.getHazardous())
-                        .hazardous_info(HazardousInfoRequest.builder().product_un_id(container.getUnNumber()).product_class(container.getDgClass()).build()) // TODO
+                        .hazardous_info(HazardousInfoRequest.builder().product_un_id(container.getUnNumber()).product_class(container.getDgClass()).build())
                         .weight(container.getGrossWeight())
                         .weight_uom(container.getGrossWeightUnit())
                         .quantity(container.getContainerCount())
@@ -768,7 +764,7 @@ public class BookingIntegrationsUtility {
                 .build();
     }
 
-    private void setOrgDataInPartiesRequest(String partyType, Map<String, PartiesRequest> requestMap, Map organizationRow, PartiesRequest party,
+    private void setOrgDataInPartiesRequest(String partyType, Map<String, PartiesRequest> requestMap, Map<String, Object> organizationRow, PartiesRequest party,
                                             List<Long> orgIds) {
         if(requestMap.containsKey(partyType) && requestMap.get(partyType).getOrgCode().equals(organizationRow.get(PartiesConstants.ORGANIZATION_CODE))) {
             party.setOrgCode(organizationRow.get(PartiesConstants.ORGANIZATION_CODE).toString());
@@ -780,7 +776,7 @@ public class BookingIntegrationsUtility {
         }
     }
 
-    private void setAddressDataInPartiesRequest(String partyType, Map<String, PartiesRequest> requestMap, Map addressRow, PartiesRequest party) {
+    private void setAddressDataInPartiesRequest(String partyType, Map<String, PartiesRequest> requestMap, Map<String, Object> addressRow, PartiesRequest party) {
         if(addressRow.containsKey(ORG_ID) && party.getOrgId() != null && requestMap.containsKey(partyType) &&
                 Objects.equals(Long.valueOf(addressRow.get(ORG_ID).toString()), Long.valueOf(party.getOrgId())) &&
                 Objects.equals(requestMap.get(partyType).getAddressCode(), addressRow.get(PartiesConstants.ADDRESS_SHORT_CODE))) {
@@ -804,7 +800,7 @@ public class BookingIntegrationsUtility {
             }
             CommonV1ListRequest orgRequest = createCriteriaForTwoFields(PartiesConstants.ORGANIZATION_CODE, "in", List.of(orgCodes), ACTIVE_CLIENT, "=", Boolean.TRUE);
             DependentServiceResponse v1OrgResponse = masterDataFactory.getMasterDataService().fetchOrganizationData(orgRequest);
-            if (v1OrgResponse.getData() == null || ((ArrayList)v1OrgResponse.getData()).isEmpty()) {
+            if (v1OrgResponse.getData() == null || ((List<?>)v1OrgResponse.getData()).isEmpty()) {
                 log.error("Request: {} || No organization exist in Runner V1 with OrgCodes: {}", LoggerHelper.getRequestIdFromMDC() ,orgCodes);
                 throw new DataRetrievalFailureException("No organization exist in Runner V1 with OrgCodes: " + orgCodes);
             }
@@ -815,7 +811,7 @@ public class BookingIntegrationsUtility {
             List<Object> orgRows = jsonHelper.convertValueToList(v1OrgResponse.getData(), Object.class);
             List<Long> orgIds = new ArrayList<>();
             for(Object orgRow: orgRows) {
-                Map organizationRow = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(orgRow));
+                Map<String, Object> organizationRow = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(orgRow));
                 setOrgDataInPartiesRequest(CUSTOMER_REQUEST, requestMap, organizationRow, client, orgIds);
                 setOrgDataInPartiesRequest(CONSIGNOR_REQUEST, requestMap, organizationRow, consignor, orgIds);
                 setOrgDataInPartiesRequest(CONSIGNEE_REQUEST, requestMap, organizationRow, consignee, orgIds);
@@ -852,7 +848,7 @@ public class BookingIntegrationsUtility {
     private void processAddressRows(Map<String, PartiesRequest> requestMap, DependentServiceResponse v1AddressResponse, PartiesRequest client, PartiesRequest consignor, PartiesRequest consignee, PartiesRequest notifyParty) {
         List<Object> addressRows = jsonHelper.convertValueToList(v1AddressResponse.getData(), Object.class);
         for(Object addressRow: addressRows) {
-            Map addressRowMap = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(addressRow));
+            Map<String, Object> addressRowMap = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(addressRow));
             setAddressDataInPartiesRequest(CUSTOMER_REQUEST, requestMap, addressRowMap, client);
             setAddressDataInPartiesRequest(CONSIGNOR_REQUEST, requestMap, addressRowMap, consignor);
             setAddressDataInPartiesRequest(CONSIGNEE_REQUEST, requestMap, addressRowMap, consignee);
@@ -861,7 +857,7 @@ public class BookingIntegrationsUtility {
     }
 
     private void validateV1OrgResponseData(DependentServiceResponse v1OrgResponse, DependentServiceResponse v1AddressResponse, List<String> orgCodes, List<String> addressCodes) {
-        if (v1OrgResponse.getData() == null || ((ArrayList) v1AddressResponse.getData()).isEmpty()) {
+        if (v1OrgResponse.getData() == null || ((List<?>) v1AddressResponse.getData()).isEmpty()) {
             log.error("Request: {} || No Address exist in Runner V1 with OrgCodes: {} with AddressCodes: {}", LoggerHelper.getRequestIdFromMDC(), orgCodes, addressCodes);
             throw new DataRetrievalFailureException("No Address exist in Runner V1 with OrgCodes: " + orgCodes + " with AddressCodes: " + addressCodes);
         }
@@ -871,11 +867,11 @@ public class BookingIntegrationsUtility {
         try {
             CommonV1ListRequest orgRequest = createCriteriaForTwoFields(PartiesConstants.ORGANIZATION_CODE, "=", orgCode, ACTIVE_CLIENT, "=", Boolean.TRUE);
             DependentServiceResponse v1OrgResponse = masterDataFactory.getMasterDataService().fetchOrganizationData(orgRequest);
-            if (v1OrgResponse.getData() == null || ((ArrayList)v1OrgResponse.getData()).isEmpty()) {
+            if (v1OrgResponse.getData() == null || ((List<?>)v1OrgResponse.getData()).isEmpty()) {
                 log.error("Request: {} || No organization exist in Runner V1 with OrgCode: {}", LoggerHelper.getRequestIdFromMDC() ,orgCode);
                 throw new DataRetrievalFailureException("No organization exist in Runner V1 with OrgCode: " + orgCode);
             }
-            Map organizationRow = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(((ArrayList)v1OrgResponse.getData()).get(0)));
+            Map<String, Object> organizationRow = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(((List<?>)v1OrgResponse.getData()).get(0)));
             if(organizationRow.containsKey(PartiesConstants.ID))
                 request.setOrgId(String.valueOf(organizationRow.get(PartiesConstants.ID)));
             request.setOrgData(organizationRow);
@@ -885,11 +881,11 @@ public class BookingIntegrationsUtility {
                     PartiesConstants.ADDRESS_SHORT_CODE, "=", addressCode,
                     "Active", "=", Boolean.TRUE);
             DependentServiceResponse v1AddressResponse = masterDataFactory.getMasterDataService().addressList(addressRequest);
-            if (v1OrgResponse.getData() == null || ((ArrayList)v1AddressResponse.getData()).isEmpty()) {
+            if (v1OrgResponse.getData() == null || ((List<?>)v1AddressResponse.getData()).isEmpty()) {
                 log.error("Request: {} || No Address exist in Runner V1 with OrgCode: {} with AddressCode: {}", LoggerHelper.getRequestIdFromMDC(), orgCode , addressCode);
                 throw new DataRetrievalFailureException("No Address exist in Runner V1 with OrgCode: " + orgCode + " with AddressCode: " + addressCode);
             }
-            Map addressRow = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(((ArrayList)v1AddressResponse.getData()).get(0)));
+            Map<String, Object> addressRow = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(((List<?>)v1AddressResponse.getData()).get(0)));
             if(addressRow.containsKey(PartiesConstants.ID))
                 request.setAddressId(String.valueOf(addressRow.get(PartiesConstants.ID)));
             request.setAddressData(addressRow);
@@ -902,11 +898,11 @@ public class BookingIntegrationsUtility {
     }
 
     private CommonV1ListRequest createCriteriaForTwoFields(String field1, String operator1, Object value1, String field2, String operator2, Object value2) {
-        List<Object> field1_ = new ArrayList<>(List.of(field1));
-        List<Object> criteria1 = new ArrayList<>(List.of(field1_, operator1, value1));
+        List<Object> fieldList1 = new ArrayList<>(List.of(field1));
+        List<Object> criteria1 = new ArrayList<>(List.of(fieldList1, operator1, value1));
 
-        List<Object> field2_ = new ArrayList<>(List.of(field2));
-        List<Object> criteria2 = new ArrayList<>(List.of(field2_, operator2, value2));
+        List<Object> fieldList2 = new ArrayList<>(List.of(field2));
+        List<Object> criteria2 = new ArrayList<>(List.of(fieldList2, operator2, value2));
 
         return CommonV1ListRequest.builder().criteriaRequests(List.of(criteria1, "and", criteria2)).build();
     }
@@ -914,14 +910,14 @@ public class BookingIntegrationsUtility {
     private CommonV1ListRequest createCriteriaForThreeFields(String field1, String operator1, Object value1,
                                                              String field2, String operator2, Object value2,
                                                              String field3, String operator3, Object value3) {
-        List<Object> field1_ = new ArrayList<>(List.of(field1));
-        List<Object> criteria1 = new ArrayList<>(List.of(field1_, operator1, value1));
+        List<Object> fieldList1 = new ArrayList<>(List.of(field1));
+        List<Object> criteria1 = new ArrayList<>(List.of(fieldList1, operator1, value1));
 
-        List<Object> field2_ = new ArrayList<>(List.of(field2));
-        List<Object> criteria2 = new ArrayList<>(List.of(field2_, operator2, value2));
+        List<Object> fieldList2 = new ArrayList<>(List.of(field2));
+        List<Object> criteria2 = new ArrayList<>(List.of(fieldList2, operator2, value2));
 
-        List<Object> field3_ = new ArrayList<>(List.of(field3));
-        List<Object> criteria3 = new ArrayList<>(List.of(field3_, operator3, value3));
+        List<Object> fieldList3 = new ArrayList<>(List.of(field3));
+        List<Object> criteria3 = new ArrayList<>(List.of(fieldList3, operator3, value3));
 
         return CommonV1ListRequest.builder().criteriaRequests(List.of(List.of(criteria1, "and", criteria2), "and", criteria3)).build();
     }
@@ -1030,7 +1026,6 @@ public class BookingIntegrationsUtility {
                     eventsRequest.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
                     eventsRequest.setUserName(payloadData.getUserDisplayName());
                     eventsRequest.setUserEmail(payloadData.getUserEmail());
-                    eventsRequest.setBranchName(payloadData.getBranchDisplayName());
                     eventsRequest.setBranch(payloadData.getBranchCode());
                     if (EventConstants.FNMU.equals(payloadData.getEventCode())) {
                         eventsRequest.setContainerNumber(shipmentDetails.getMasterBill());
@@ -1069,7 +1064,6 @@ public class BookingIntegrationsUtility {
                     event.setEntityType(Constants.SHIPMENT);
                     event.setUserName(payloadData.getUserDisplayName());
                     event.setUserEmail(payloadData.getUserEmail());
-                    event.setBranchName(payloadData.getBranchDisplayName());
                     event.setBranch(payloadData.getBranchCode());
                     if (EventConstants.FNMU.equals(payloadData.getEventCode())) {
                         event.setContainerNumber(shipmentDetails.getMasterBill());

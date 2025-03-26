@@ -86,7 +86,7 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private String lockedBy;
     private Boolean isNotifyConsigneeEqual;
     private String bookingType;
-    private boolean cargoFinanceBooking;
+    private Boolean cargoFinanceBooking = Boolean.FALSE;
     private String bookingNumber;
     private String route;
     private Long sourceTenantId;
@@ -94,10 +94,10 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private List<TriangulationPartnerResponse> triangulationPartnerList;
     private Long triangulationPartner;
     private Long receivingBranch;
-    private boolean intraBranch;
+    private Boolean intraBranch = Boolean.FALSE;
     private Integer prevShipmentStatus;
     @JsonProperty("isShipmentReadOnly")
-    private boolean isShipmentReadOnly;
+    private Boolean isShipmentReadOnly = Boolean.FALSE;
     private String shipmentCompletedBy;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime shipmentCompletedOn;

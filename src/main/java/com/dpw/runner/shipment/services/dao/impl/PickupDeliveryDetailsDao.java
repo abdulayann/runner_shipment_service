@@ -50,12 +50,12 @@ public class PickupDeliveryDetailsDao implements IPickupDeliveryDetailsDao {
         String responseMsg;
         List<PickupDeliveryDetails> responsePickupDeliveryDetails = new ArrayList<>();
         try {
-            // TODO- Handle Transactions here
+            // LATER- Handle Transactions here
             List<PickupDeliveryDetails> pickupDeliveryDetailsPage = findByShipmentId(shipmentId);
             Map<Long, PickupDeliveryDetails> hashMap = pickupDeliveryDetailsPage.stream()
                     .collect(Collectors.toMap(PickupDeliveryDetails::getId, Function.identity()));
             List<PickupDeliveryDetails> pickupDeliveryDetails = new ArrayList<>();
-            if (pickupDeliveryDetailsList != null && pickupDeliveryDetailsList.size() != 0) {
+            if (pickupDeliveryDetailsList != null && !pickupDeliveryDetailsList.isEmpty()) {
                 for (PickupDeliveryDetails request : pickupDeliveryDetailsList) {
                     Long id = request.getId();
                     if (id != null) {

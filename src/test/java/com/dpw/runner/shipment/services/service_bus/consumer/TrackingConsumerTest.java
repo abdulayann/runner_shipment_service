@@ -29,6 +29,8 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.lang.reflect.Field;
+
 @ExtendWith(MockitoExtension.class)
 class TrackingConsumerTest {
 
@@ -61,7 +63,7 @@ class TrackingConsumerTest {
     }
 
     @Test
-    void startReceiver() {
+    void startReceiver() throws NoSuchFieldException, IllegalAccessException {
         ServiceBusConfigProperties.TrackingService config = new ServiceBusConfigProperties.TrackingService();
         config.setConnectionString("");
         config.setTopicName("");
@@ -71,6 +73,11 @@ class TrackingConsumerTest {
 
         when(serviceBusConfigProperties.getTrackingService()).thenReturn(config);
         when(sbConfiguration.getSessionProcessorClient(anyString(), anyString(), anyString(), any(), any())).thenReturn(processorMock);
+
+        // Use reflection to set startConsumer to true
+        Field startConsumerField = TrackingConsumer.class.getDeclaredField("startConsumer");
+        startConsumerField.setAccessible(true);
+        startConsumerField.set(trackingConsumer, true);
 
         trackingConsumer.startReceiver();
 
