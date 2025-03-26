@@ -46,6 +46,7 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterL
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferVessels;
+import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
@@ -533,7 +534,7 @@ public class MasterDataUtils{
                 }
             } catch (Exception e) {
                 log.error("Error in createInBulkMasterListRequest : {}", e.getMessage());
-                throw new RuntimeException(e);
+                throw new GenericException(e);
             }
         }
         fieldNameMainKeyMap.put(code, fieldNameKeyMap);
@@ -739,7 +740,7 @@ public class MasterDataUtils{
                 }
             } catch (Exception e) {
                 log.error("Error in createInBulkUnLocationsRequest : {}", e.getMessage(), e);
-                throw new RuntimeException(e);
+                throw new GenericException(e);
             }
         }
         fieldNameMainKeyMap.put(code, fieldNameKeyMap);
@@ -810,7 +811,7 @@ public class MasterDataUtils{
                     fieldNameKeyMap.put(field, itemValue);
                 }
             } catch (Exception e) {
-                throw new RuntimeException(e);
+                throw new GenericException(e);
             }
         }
         fieldNameMainKeyMap.put(code, fieldNameKeyMap);
@@ -856,7 +857,7 @@ public class MasterDataUtils{
                     fieldNameKeyMap.put(field, itemValue);
                 }
             } catch (Exception e) {
-                throw new RuntimeException(e);
+                throw new GenericException(e);
             }
         }
         fieldNameMainKeyMap.put(code, fieldNameKeyMap);
@@ -902,7 +903,7 @@ public class MasterDataUtils{
                     fieldNameKeyMap.put(field, itemValue);
                 }
             } catch (Exception e) {
-                throw new RuntimeException(e);
+                throw new GenericException(e);
             }
         }
         fieldNameMainKeyMap.put(code, fieldNameKeyMap);
@@ -950,7 +951,7 @@ public class MasterDataUtils{
                 }
             } catch (Exception e) {
                 log.error("Error in createInBulkVesselsRequest : {}", e.getMessage());
-                throw new RuntimeException(e);
+                throw new GenericException(e);
             }
         }
         fieldNameMainKeyMap.put(code, fieldNameKeyMap);
@@ -1074,7 +1075,7 @@ public class MasterDataUtils{
                     fieldNameKeyMap.put(field, itemValue);
                 }
             } catch (Exception e) {
-                throw new RuntimeException(e);
+                throw new GenericException(e);
             }
         }
         fieldNameMainKeyMap.put(code, fieldNameKeyMap);
@@ -1264,7 +1265,7 @@ public class MasterDataUtils{
                     fieldNameKeyMap.put(field, currencyCode);
                 }
             } catch (Exception e) {
-                throw new RuntimeException(e);
+                throw new GenericException(e);
             }
         }
         fieldNameMainKeyMap.put(code, fieldNameKeyMap);
@@ -1404,7 +1405,7 @@ public class MasterDataUtils{
     }
 
     private void handleFieldProcessingError(String fieldName, Exception e) {
-        throw new RuntimeException("Error processing field: " + fieldName, e);
+        throw new GenericException("Error processing field: " + fieldName, e);
     }
 
     public Map<String, TenantModel> fetchInTenantsList(Set<String> requests) {
@@ -1447,7 +1448,7 @@ public class MasterDataUtils{
                     fieldNameKeyMap.put(field, StringUtility.convertToString(dgSubstanceId));
                 }
             } catch (Exception e) {
-                throw new RuntimeException(e);
+                throw new GenericException(e);
             }
         }
         fieldNameMainKeyMap.put(code, fieldNameKeyMap);
@@ -1491,7 +1492,7 @@ public class MasterDataUtils{
                     fieldNameKeyMap.put(field, StringUtility.convertToString(wareHouseId));
                 }
             } catch (Exception e) {
-                throw new RuntimeException(e);
+                throw new GenericException(e);
             }
         }
         fieldNameMainKeyMap.put(code, fieldNameKeyMap);
@@ -1583,7 +1584,7 @@ public class MasterDataUtils{
                     fieldNameKeyMap.put(field, activityId);
                 }
             } catch (Exception e) {
-                throw new RuntimeException(e);
+                throw new GenericException(e);
             }
         }
         fieldNameMainKeyMap.put(code, fieldNameKeyMap);
@@ -1610,7 +1611,7 @@ public class MasterDataUtils{
                     fieldNameKeyMap.put(field, StringUtility.convertToString(salesAgentId));
                 }
             } catch (Exception e) {
-                throw new RuntimeException(e);
+                throw new GenericException(e);
             }
         }
         fieldNameMainKeyMap.put(code, fieldNameKeyMap);

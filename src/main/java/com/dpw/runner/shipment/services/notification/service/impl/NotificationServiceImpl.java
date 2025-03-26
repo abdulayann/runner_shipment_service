@@ -5,7 +5,6 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.MDMServiceResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.NotificationException;
-import com.dpw.runner.shipment.services.exception.exceptions.ReportException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.notification.config.NotificationConfig;
@@ -59,7 +58,7 @@ public class NotificationServiceImpl implements INotificationService {
         try {
             notificationServiceSendEmailRequest = createNotificationServiceRequest(request);
         } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+            throw new NotificationException(e);
         }
 
         NotificationServiceResponse response ;
@@ -78,7 +77,7 @@ public class NotificationServiceImpl implements INotificationService {
         try {
             log.info("Notification Service Response: {}", jsonHelper.convertToJson(response));
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new NotificationException(e);
         }
         log.info("Total time taken from notification service to send email is {} ms", (System.currentTimeMillis() - startTime));
 
