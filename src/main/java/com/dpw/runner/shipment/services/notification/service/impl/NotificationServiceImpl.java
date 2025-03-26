@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.notification.service.impl;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.exception.exceptions.ReportException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.notification.config.NotificationConfig;
@@ -58,7 +59,12 @@ public class NotificationServiceImpl implements INotificationService {
             throw new RuntimeException(e);
         }
 
-        NotificationServiceResponse response = restClient.sendEmail(notificationServiceSendEmailRequest);
+        NotificationServiceResponse response ;
+        try{
+            response = restClient.sendEmail(notificationServiceSendEmailRequest);
+        }catch (Exception e){
+            throw new ReportException(e.getMessage());
+        }
 
         try {
             log.info("Notification Service Response: {}", jsonHelper.convertToJson(response));
