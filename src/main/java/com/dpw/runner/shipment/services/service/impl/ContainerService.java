@@ -23,6 +23,7 @@ import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
+import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -345,13 +346,13 @@ public class ContainerService implements IContainerService {
                 throw new ValidationException("Chargeable unit not in KG at row: " + row);
             }
             var actualChargeable = containersRow.getChargeable();
-            actualChargeable = actualChargeable.setScale(2, BigDecimal.ROUND_HALF_UP);
+            actualChargeable = CommonUtils.roundBigDecimal(actualChargeable, 2, RoundingMode.HALF_UP);
             BigDecimal calculatedChargeable = null;
 
             var vwob = getVolumeWeightChargeable(containersRow);
             if (vwob.getChargeable() != null) {
                 calculatedChargeable = vwob.getChargeable();
-                calculatedChargeable = calculatedChargeable.setScale(2, BigDecimal.ROUND_HALF_UP);
+                calculatedChargeable = CommonUtils.roundBigDecimal(calculatedChargeable, 2, RoundingMode.HALF_UP);
                 if (!Objects.equals(calculatedChargeable, actualChargeable)) {
                     throw new ValidationException("Chargeable is invalid at row: " + row);
                 }
@@ -374,10 +375,10 @@ public class ContainerService implements IContainerService {
                 throw new ValidationException("Gross Volume unit not in M3 at row: " + (row + 1));
             }
             BigDecimal actualVolume = containersRow.getGrossVolume();
-            actualVolume = actualVolume.setScale(2, BigDecimal.ROUND_HALF_UP);
+            actualVolume = CommonUtils.roundBigDecimal(actualVolume, 2, RoundingMode.HALF_UP);
             BigDecimal calculatedVolume = getCalculatedVolume(containersRow.getPackageBreadth(), containersRow.getPackageLength(), containersRow.getPackageHeight());
-            if(calculatedVolume != null) calculatedVolume = calculatedVolume.setScale(2, BigDecimal.ROUND_HALF_UP);
-            if (calculatedVolume != null && actualVolume != calculatedVolume) {
+            if(calculatedVolume != null) calculatedVolume = CommonUtils.roundBigDecimal(calculatedVolume, 2, RoundingMode.HALF_UP);
+            if (calculatedVolume != null && calculatedVolume.compareTo(actualVolume) != 0) {
                 throw new ValidationException("Gross Volume is invalid at row: " + (row + 1));
             }
         } else if (request.getTransportMode() != null && request.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && containersRow.getGrossVolume() != null
@@ -820,7 +821,7 @@ public class ContainerService implements IContainerService {
             else if (Objects.equals(container.getAllocatedWeight(), BigDecimal.ZERO))
                 container.setWeightUtilization("0");
             else
-                container.setWeightUtilization( String.valueOf((container.getAchievedWeight().divide(container.getAllocatedWeight(), 4, BigDecimal.ROUND_HALF_UP)).multiply(new BigDecimal(100)).doubleValue()) );
+                container.setWeightUtilization( String.valueOf(CommonUtils.calculatePercentage(container.getAchievedWeight(), container.getAllocatedWeight(), 4, RoundingMode.HALF_UP)) );
         }
         else
             container.setWeightUtilization("0");
@@ -830,7 +831,7 @@ public class ContainerService implements IContainerService {
             else if (Objects.equals(container.getAllocatedVolume(), BigDecimal.ZERO))
                 container.setVolumeUtilization("0");
             else
-                container.setVolumeUtilization( String.valueOf((container.getAchievedVolume().divide(container.getAllocatedVolume(), 4, BigDecimal.ROUND_HALF_UP)).multiply(new BigDecimal(100)).doubleValue()) );
+                container.setVolumeUtilization( String.valueOf(CommonUtils.calculatePercentage(container.getAchievedVolume(), container.getAllocatedVolume(), 4, RoundingMode.HALF_UP)) );
         }
         else
             container.setVolumeUtilization("0");
@@ -1521,7 +1522,7 @@ public class ContainerService implements IContainerService {
             } else {
                 if (containerRequest.getConsolidationGuid() != null) {
                     Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findByGuid(containerRequest.getConsolidationGuid());
-                    if (!consolidationDetails.isEmpty() && consolidationDetails.get() != null) {
+                    if (consolidationDetails.isPresent()) {
                         containers.setConsolidationId(consolidationDetails.get().getId());
                     }
                 }
@@ -1538,7 +1539,7 @@ public class ContainerService implements IContainerService {
             String responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            throw new RuntimeException(e);
+            throw new GenericException(e);
         }
     }
 
@@ -1571,7 +1572,7 @@ public class ContainerService implements IContainerService {
             String responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            throw new RuntimeException(e);
+            throw new GenericException(e);
         }
     }
 
@@ -1586,12 +1587,12 @@ public class ContainerService implements IContainerService {
 
             List<Containers> containers = consol.get().getContainersList();
             if (containers == null || containers.isEmpty()) {
-                throw new RuntimeException("No containers present for this consol");
+                throw new GenericException("No containers present for this consol");
             }
             containersList = convertEntityListToDtoList(containers);
 
         } else {
-            throw new RuntimeException("Consolidation does not exist, pls save the consol first");
+            throw new GenericException("Consolidation does not exist, pls save the consol first");
         }
 
         try(Workbook workbook = new XSSFWorkbook()) {
@@ -1639,10 +1640,10 @@ public class ContainerService implements IContainerService {
 
     private void validateConsoleAndContainersSize(Optional<ConsolidationDetails> consol) {
         if (consol.isEmpty())
-            throw new RuntimeException("Consolidation does not exist, pls save the consol first");
+            throw new GenericException("Consolidation does not exist, pls save the consol first");
 
         if (consol.get().getContainersList().isEmpty())
-            throw new RuntimeException("No containers found attached to consoliation");
+            throw new GenericException("No containers found attached to consoliation");
     }
 
     private void makeHeadersInSheet(Sheet sheet, Optional<ConsolidationDetails> consol) {
@@ -1695,9 +1696,7 @@ public class ContainerService implements IContainerService {
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<Containers> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
-        lst.forEach(containers -> {
-            responseList.add(convertEntityToDto(containers));
-        });
+        lst.forEach(containers -> responseList.add(convertEntityToDto(containers)));
         return responseList;
     }
     private List<IRunnerResponse> convertEntityListToDtoList(List<Containers> lst, List<String> includeColumns) {

@@ -208,6 +208,7 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferDGSubst
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferVessels;
+import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
@@ -304,7 +305,6 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.modelmapper.ModelMapper;
-import org.modelmapper.PropertyMap;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -598,9 +598,7 @@ public class ConsolidationService implements IConsolidationService {
             res.setPendingActionCount((pendingCount == 0) ? null : pendingCount);
             consolidationListResponses.add(res);
         });
-        consolidationListResponses.forEach(consolidationDetails -> {
-            responseList.add(consolidationDetails);
-        });
+        consolidationListResponses.forEach(responseList::add);
         this.getMasterDataForList(lst, responseList, getMasterData, true);
         return responseList;
     }
@@ -621,9 +619,7 @@ public class ConsolidationService implements IConsolidationService {
 
             consolidationListResponses.add(jsonHelper.convertValue(res, ConsolidationListResponse.class));
         });
-        consolidationListResponses.forEach(consolidationDetails -> {
-            responseList.add(consolidationDetails);
-        });
+        consolidationListResponses.forEach(responseList::add);
         this.getMasterDataForList(lst, responseList, true, false);
         return responseList;
     }
@@ -757,9 +753,9 @@ public class ConsolidationService implements IConsolidationService {
         List<String> shipmentIds = null;
         List<String> houseBills = null;
         if (shipments != null)
-            shipmentIds = shipments.stream().map(shipment -> shipment.getShipmentId()).toList();
+            shipmentIds = shipments.stream().map(ShipmentDetails::getShipmentId).toList();
         if (shipmentIds != null)
-            houseBills = shipments.stream().map(shipment -> shipment.getHouseBill()).filter(houseBill -> Objects.nonNull(houseBill)).toList();
+            houseBills = shipments.stream().map(ShipmentDetails::getHouseBill).filter(Objects::nonNull).toList();
         consolidationRes.setHouseBills(houseBills);
         consolidationRes.setShipmentIds(shipmentIds);
     }
@@ -769,9 +765,9 @@ public class ConsolidationService implements IConsolidationService {
         List<String> shipmentIds = null;
         List<String> houseBills = null;
         if (shipments != null)
-            shipmentIds = shipments.stream().map(shipment -> shipment.getShipmentId()).toList();
+            shipmentIds = shipments.stream().map(ShipmentDetails::getShipmentId).toList();
         if (shipmentIds != null)
-            houseBills = shipments.stream().map(shipment -> shipment.getHouseBill()).filter(houseBill -> Objects.nonNull(houseBill)).toList();
+            houseBills = shipments.stream().map(ShipmentDetails::getHouseBill).filter(Objects::nonNull).toList();
         consolidationRes.setHouseBills(houseBills);
         consolidationRes.setShipmentIds(shipmentIds);
     }
@@ -1950,7 +1946,7 @@ public class ConsolidationService implements IConsolidationService {
             String responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            throw new RuntimeException(e.getMessage());
+            throw new GenericException(e.getMessage());
         }
     }
 
@@ -2296,7 +2292,7 @@ public class ConsolidationService implements IConsolidationService {
                 if(Objects.equals(weight, BigDecimal.ZERO))
                     consolidationDetails.getAchievedQuantities().setWeightUtilization("0");
                 else
-                    consolidationDetails.getAchievedQuantities().setWeightUtilization( String.valueOf( (consolidatedWeight.divide(weight, 4, BigDecimal.ROUND_HALF_UP)).multiply(new BigDecimal(100)).doubleValue() ) );
+                    consolidationDetails.getAchievedQuantities().setWeightUtilization( String.valueOf(CommonUtils.calculatePercentage(consolidatedWeight, weight, 4, RoundingMode.HALF_UP)) );
             }
             if (consolidationDetails.getAchievedQuantities().getConsolidatedVolumeUnit() != null && consolidationDetails.getAllocations().getVolumeUnit() != null) {
                 BigDecimal consolidatedVolume = new BigDecimal(convertUnit(Constants.VOLUME, consolidationDetails.getAchievedQuantities().getConsolidatedVolume(), consolidationDetails.getAchievedQuantities().getConsolidatedVolumeUnit(), Constants.VOLUME_UNIT_M3).toString());
@@ -2304,7 +2300,7 @@ public class ConsolidationService implements IConsolidationService {
                 if(Objects.equals(volume, BigDecimal.ZERO))
                     consolidationDetails.getAchievedQuantities().setVolumeUtilization("0");
                 else
-                    consolidationDetails.getAchievedQuantities().setVolumeUtilization( String.valueOf( (consolidatedVolume.divide(volume, 4, BigDecimal.ROUND_HALF_UP)).multiply(new BigDecimal(100)).doubleValue() ) );
+                    consolidationDetails.getAchievedQuantities().setVolumeUtilization( String.valueOf(CommonUtils.calculatePercentage(consolidatedVolume, volume, 4, RoundingMode.HALF_UP)) );
             }
             return consolidationDetails;
         } catch (Exception e) {
@@ -2395,7 +2391,7 @@ public class ConsolidationService implements IConsolidationService {
                 if (transportMode == Constants.TRANSPORT_MODE_AIR) {
                     BigDecimal charge = consolidationDetails.getAllocations().getChargable();
                     BigDecimal half = new BigDecimal("0.50");
-                    BigDecimal floor = charge.setScale(0, BigDecimal.ROUND_FLOOR);
+                    BigDecimal floor = CommonUtils.roundBigDecimal(charge, 0, RoundingMode.FLOOR);
                     charge = getCharge(charge, half, floor);
                     consolidationDetails.getAllocations().setChargable(charge);
                 }
@@ -2421,7 +2417,7 @@ public class ConsolidationService implements IConsolidationService {
         if (charge.subtract(half).compareTo(floor) <= 0 && charge.compareTo(floor) != 0) {
             charge = floor.add(half);
         } else {
-            charge = charge.setScale(0, BigDecimal.ROUND_CEILING);
+            charge = CommonUtils.roundBigDecimal(charge, 0, RoundingMode.CEILING);
         }
         return charge;
     }
@@ -2536,7 +2532,8 @@ public class ConsolidationService implements IConsolidationService {
                     case Constants.TRANSPORT_MODE_RAI:
                     case Constants.TRANSPORT_MODE_FSA:
                         BigDecimal volInM3 = new BigDecimal(convertUnit(Constants.VOLUME, volume, volumeUnit, Constants.VOLUME_UNIT_M3).toString());
-                        vwOb.setChargeable(volInM3.multiply(BigDecimal.valueOf(10)).setScale(0, BigDecimal.ROUND_CEILING).divide(BigDecimal.valueOf(10)));
+                        volInM3 = CommonUtils.roundBigDecimal(volInM3.multiply(BigDecimal.valueOf(10)), 0, RoundingMode.CEILING);
+                        vwOb.setChargeable(volInM3.divide(BigDecimal.valueOf(10)));
                         vwOb.setChargeableUnit(Constants.VOLUME_UNIT_M3);
 
                         BigDecimal wtInTn = new BigDecimal(convertUnit(Constants.MASS, weight, weightUnit, Constants.WEIGHT_UNIT_KG).toString());
@@ -2558,7 +2555,8 @@ public class ConsolidationService implements IConsolidationService {
                         if (wtInKG.compareTo(wvInKG) < 0) {
                             wtInKG = wvInKG;
                         }
-                        vwOb.setChargeable(wtInKG.multiply(BigDecimal.valueOf(100)).setScale(0, BigDecimal.ROUND_CEILING).divide(BigDecimal.valueOf(100)));
+                        wtInKG = CommonUtils.roundBigDecimal(wtInKG.multiply(BigDecimal.valueOf(100)), 0, RoundingMode.CEILING);
+                        vwOb.setChargeable(wtInKG.divide(BigDecimal.valueOf(100)));
                         vwOb.setChargeableUnit(Constants.WEIGHT_UNIT_KG);
                         BigDecimal wv1 = new BigDecimal(convertUnit(Constants.MASS, wvInKG, Constants.WEIGHT_UNIT_KG, weightUnit).toString());
                         vwOb.setVolumeWeight(wv1);
@@ -2593,7 +2591,7 @@ public class ConsolidationService implements IConsolidationService {
         }
     }
 
-    private void calculateAchievedValues(ConsolidationDetails consolidationDetails, ShipmentGridChangeResponse response, Set<ShipmentDetails> shipmentDetailsList) throws Exception {
+    private void calculateAchievedValues(ConsolidationDetails consolidationDetails, ShipmentGridChangeResponse response, Set<ShipmentDetails> shipmentDetailsList) throws RunnerException {
         // Not to process the achieved values in case of AIR transport mode
         if(Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(consolidationDetails.getTransportMode())) {
             return;
@@ -2855,7 +2853,7 @@ public class ConsolidationService implements IConsolidationService {
         Map<Long, ShipmentDetails> map = new HashMap<>();
         List<Long> shipmentsIncluded = new ArrayList<>();
         if(packings != null && !packings.getContent().isEmpty()) {
-            shipmentsIncluded = packings.getContent().stream().map(e -> e.getShipmentId()).toList();
+            shipmentsIncluded = packings.getContent().stream().map(Packing::getShipmentId).toList();
             size = getSizeForPacking(packings, map, response, size);
         }
         processShipIds(shipIds, shipmentsIncluded, contShipIds, map, size, response);
@@ -4797,6 +4795,7 @@ public class ConsolidationService implements IConsolidationService {
         return oldContainersMap;
     }
 
+    @SuppressWarnings("java:S125")
     private void beforeSave(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, Boolean isCreate) throws Exception {
         if(Objects.isNull(consolidationDetails.getInterBranchConsole()))
             consolidationDetails.setInterBranchConsole(false);
@@ -5784,7 +5783,7 @@ public class ConsolidationService implements IConsolidationService {
         // Check if the specific implication (CONCR) is already present for the current shipment's GUID.
         // If true, throw a RuntimeException with a detailed error message including the shipment ID.
         if (Boolean.TRUE.equals(dpsEventService.isImplicationPresent(Set.of(shipmentRes.get().getGuid().toString()), DpsConstants.CONCR))) {
-            throw new RuntimeException(DpsConstants.DPS_ERROR_2 + " : " + shipmentRes.get().getShipmentId());
+            throw new GenericException(DpsConstants.DPS_ERROR_2 + " : " + shipmentRes.get().getShipmentId());
         }
 
         var shipment = modelMapper.map(shipmentRes.get(), ShipmentDetailsResponse.class);

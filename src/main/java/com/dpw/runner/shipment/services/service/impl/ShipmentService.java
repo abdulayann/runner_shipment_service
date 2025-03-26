@@ -1884,6 +1884,8 @@ public class ShipmentService implements IShipmentService {
             }
         }
     }
+
+    @SuppressWarnings("java:S125")
     private boolean beforeSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, boolean isCreate, ShipmentRequest shipmentRequest, ShipmentSettingsDetails shipmentSettingsDetails, List<Long> removedConsolIds, MutableBoolean isNewConsolAttached, boolean isImportFile) throws RunnerException{
         validateStaleShipmentUpdateError(shipmentDetails, isCreate);
 
