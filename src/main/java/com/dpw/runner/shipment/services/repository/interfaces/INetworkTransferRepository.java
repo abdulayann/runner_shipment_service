@@ -44,6 +44,10 @@ public interface INetworkTransferRepository extends MultiTenancyRepository<Netwo
     List<NetworkTransfer> findByEntityAndTenantList(Long entityId, String entityType, List<Integer> tenantIds);
 
     @ExcludeTenantFilter
+    @Query(value = "SELECT * FROM network_transfer WHERE entity_id = ?1 AND entity_type = ?2", nativeQuery = true)
+    List<NetworkTransfer> findByEntityNTList(Long entityId, String entityType);
+
+    @ExcludeTenantFilter
     @Query(value = "SELECT * FROM network_transfer WHERE entity_id in ?1 AND entity_type = ?2 AND is_inter_branch_entity= true", nativeQuery = true)
     List<NetworkTransfer> getInterConsoleNTList(List<Long> entityIdList, String entityType);
 
