@@ -334,7 +334,9 @@ public class AwbService implements IAwbService {
         List<Awb> awbList = getLinkedAwbFromMawb(mawbId);
         if(awbList != null) {
             for(Awb awb : awbList) {
-                awb.setAwbPackingInfo(dataMap.get(awb.getAwbNumber()));
+                List<AwbPackingInfo> hawbPacks = dataMap.get(awb.getAwbNumber());
+                awb.setAwbPackingInfo(hawbPacks);
+                calculateGoodsDescription(awb.getAwbGoodsDescriptionInfo().get(0), hawbPacks, commonUtils.getShipmentSettingFromContext(), new HashMap<>(), true);
                 awbDao.save(awb);
             }
         }
