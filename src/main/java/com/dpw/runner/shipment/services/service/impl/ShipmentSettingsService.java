@@ -713,7 +713,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         if (Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled())
                 && Boolean.TRUE.equals(tenantSettings.getIsColoadingMAWBStationEnabled())
                 && !Objects.isNull(tenantSettings.getColoadingBranchIds())) {
-            tenantIds.addAll(tenantSettings.getColoadingBranchIds().stream().map(x -> x.toString()).toList());
+            tenantIds.addAll(tenantSettings.getColoadingBranchIds().stream().map(Object::toString).toList());
         }
         Map<String, TenantModel> v1Data = masterDataUtils.fetchInTenantsList(tenantIds);
         List<TenantModel> listOfColoadStations = v1Data.values().stream().sorted(Comparator.comparing(TenantModel::getTenantName)).toList();

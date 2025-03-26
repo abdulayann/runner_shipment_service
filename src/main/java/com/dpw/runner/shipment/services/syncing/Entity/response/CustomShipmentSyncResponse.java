@@ -312,33 +312,21 @@ public class CustomShipmentSyncResponse implements IRunnerResponse {
 
     @JsonProperty("BookingNumber")
     private String BookingNumber;
-    //bookingReference
-    // private String ReferenceNo;
     @JsonProperty("BookingType")
     private String BookingType;
     @JsonProperty("CargoFinanceBooking")
     private Boolean CargoFinanceBooking;
-    // private BigDecimal Chargeable;
-    // private String ChargableUnit;
 
     @JsonProperty("ConsolidationReferenceNumber")
     private String ConsolidationReferenceNumber;
     @JsonProperty("ContainerAutoWeightVolumeUpdate")
     private Boolean ContainerAutoWeightVolumeUpdate;
-    //Direction
-    // private String Custom_ShipType;
     @JsonProperty("DocumentationPartner")
     private Integer DocumentationPartner;
     @JsonProperty("FinanceClosedByUser")
     private String FinanceClosedByUser;
     @JsonProperty("FinanceClosedOn")
     private LocalDateTime FinanceClosedOn;
-    //GoodsDescription
-    // private String Description;
-
-    // private String IncoTerm;
-    //innerPackUnit
-    // private String InnersUnit;
     @JsonProperty("IntraBranch")
     private Boolean IntraBranch;
     @JsonProperty("IsLocked")
@@ -396,9 +384,6 @@ public class CustomShipmentSyncResponse implements IRunnerResponse {
     @JsonProperty("DestinationName")
     private String DestinationName;
 
-
-
-    // private Integer ShipmentCompletedBy;
     @JsonProperty("ShipmentCompletedOn")
     private LocalDateTime ShipmentCompletedOn;
     @JsonProperty("SourceTenantId")

@@ -38,11 +38,11 @@ import com.dpw.runner.shipment.services.utils.ExcludeAuditLog;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.nimbusds.jose.util.Pair;
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -453,14 +453,22 @@ public class AuditLogService implements IAuditLogService {
     private AuditLogChanges getAuditLogChangesForBigDecimalClass(Object newValue, Object prevValue, AuditLogChanges auditLogChanges, String fieldName) {
         BigDecimal number1 = (BigDecimal) newValue;
         BigDecimal number2 = (BigDecimal) prevValue;
-        if((number1 == null) || (number1 != null && compareTo(number1, number2) != 0)) {
-            if (number1 != null && number2 != null && number1.setScale(5, BigDecimal.ROUND_DOWN).compareTo(number2.setScale(5, BigDecimal.ROUND_DOWN)) != 0) {
-                auditLogChanges = createAuditLogChangesObject(fieldName, newValue, prevValue);
-            } else if (!(number1 == null && number2 == null)) {
-                auditLogChanges = createAuditLogChangesObject(fieldName, newValue, prevValue);
-            }
+        if(areBigDecimalsDifferent(number1, number2)) {
+            auditLogChanges = createAuditLogChangesObject(fieldName, newValue, prevValue);
         }
         return auditLogChanges;
+    }
+
+    public boolean areBigDecimalsDifferent(BigDecimal number1, BigDecimal number2) {
+        if (number1 == null && number2 == null) {
+            return false; // Both null, consider them equal
+        }
+        if (number1 == null || number2 == null) {
+            return true; // one is null, the other isn't, they are different.
+        }
+
+        return CommonUtils.roundBigDecimal(number1, 5, RoundingMode.DOWN)
+                .compareTo(CommonUtils.roundBigDecimal(number2, 5, RoundingMode.DOWN)) != 0;
     }
 
     private AuditLogChanges getAuditLogChangesForCreateOperation(BaseEntity newEntity, Field field, String fieldName, Map<String, AuditLogChanges> fieldValueMap, AuditLogChanges auditLogChanges) throws IllegalAccessException, InvocationTargetException, JsonProcessingException, NoSuchMethodException {

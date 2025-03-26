@@ -660,7 +660,7 @@ public class AwbService implements IAwbService {
         BigDecimal totalGrossVolumeOfMawbGood = BigDecimal.ZERO;
         BigDecimal totalGrossWeightOfMawbGood = BigDecimal.ZERO;
         BigDecimal chargeableWeightOfMawbGood = BigDecimal.ZERO;
-        BigDecimal totalAmountOfMawbGood = BigDecimal.ZERO;
+        BigDecimal totalAmountOfMawbGood;
         String grossWeightUnit = WEIGHT_UNIT_KG;
 
         BigDecimal totalVolumetricWeight = BigDecimal.ZERO;
@@ -758,11 +758,12 @@ public class AwbService implements IAwbService {
     }
 
     private static BigDecimal roundOffAirShipment(BigDecimal charge) {
-        if (charge.subtract(new BigDecimal("0.50")).compareTo(charge.setScale(0, BigDecimal.ROUND_FLOOR)) <= 0
-                && charge.compareTo(charge.setScale(0, BigDecimal.ROUND_FLOOR)) != 0) {
-            charge = charge.setScale(0, BigDecimal.ROUND_FLOOR).add(new BigDecimal("0.50"));
+        BigDecimal roundedCharge = CommonUtils.roundBigDecimal(charge, 0, RoundingMode.FLOOR);
+        if (charge.subtract(new BigDecimal("0.50")).compareTo(roundedCharge) <= 0
+                && charge.compareTo(roundedCharge) != 0) {
+            charge = roundedCharge.add(new BigDecimal("0.50"));
         } else {
-            charge = charge.setScale(0, BigDecimal.ROUND_CEILING);
+            charge = CommonUtils.roundBigDecimal(charge, 0, RoundingMode.CEILING);
         }
         return charge;
     }

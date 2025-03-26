@@ -335,9 +335,9 @@ public class PackingService implements IPackingService {
                     throw new ValidationException("Volume unit not in M3 at row: " + row);
                 }
                 BigDecimal actualVolume = packingRow.getVolume();
-                actualVolume = actualVolume.setScale(2, BigDecimal.ROUND_HALF_UP);
+                actualVolume = CommonUtils.roundBigDecimal(actualVolume, 2, RoundingMode.HALF_UP);
                 var calculatedVolume = getCalculatedVolume(packingRow);
-                calculatedVolume = calculatedVolume.setScale(2, BigDecimal.ROUND_HALF_UP);
+                calculatedVolume = CommonUtils.roundBigDecimal(calculatedVolume, 2, RoundingMode.HALF_UP);
                 if (actualVolume.compareTo(calculatedVolume) != 0) { // not equal
                     throw new ValidationException("Volume is invalid at row: " + row);
                 }
@@ -377,7 +377,7 @@ public class PackingService implements IPackingService {
                 throw new ValidationException("Chargeable unit not in KG at row: " + row);
             }
             var actualChargeable = packingRow.getChargeable();
-            actualChargeable = actualChargeable.setScale(2, BigDecimal.ROUND_HALF_UP);
+            actualChargeable = CommonUtils.roundBigDecimal(actualChargeable, 2, RoundingMode.HALF_UP);
 
             var vwob = getVolumeWeightChargeable(packingRow);
             validateChargeable(row, vwob, actualChargeable);
@@ -390,7 +390,7 @@ public class PackingService implements IPackingService {
         BigDecimal calculatedChargeable;
         if (vwob.getChargeable() != null) {
             calculatedChargeable = vwob.getChargeable();
-            calculatedChargeable = calculatedChargeable.setScale(2, BigDecimal.ROUND_HALF_UP);
+            calculatedChargeable = CommonUtils.roundBigDecimal(calculatedChargeable, 2, RoundingMode.HALF_UP);
             if (!Objects.equals(calculatedChargeable, actualChargeable)) {
                 BigDecimal difference = calculatedChargeable.subtract(actualChargeable).abs();
                 BigDecimal threshold = new BigDecimal("0.01");

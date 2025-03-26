@@ -157,6 +157,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
+import java.math.MathContext;
 import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
@@ -854,7 +855,7 @@ public class CommonUtils {
     }
 
     public void sendEmailResponseToDGRequester(EmailTemplatesRequest template,
-                                               OceanDGRequest request, ShipmentDetails shipmentDetails) throws RunnerException {
+                                               OceanDGRequest request, ShipmentDetails shipmentDetails) {
 
 
         Map<String, Object> dictionary = new HashMap<>();
@@ -1869,8 +1870,7 @@ public class CommonUtils {
                 .build();
 
         try {
-            TaskCreateResponse taskCreateResponse = iv1Service.createTask(taskRequest);
-            return taskCreateResponse;
+            return iv1Service.createTask(taskRequest);
         } catch (Exception e) {
             throw new RunnerException(String.format("Task creation failed for shipmentId: %s. Error: %s",
                     shipmentDetails.getId(), e.getMessage()));
@@ -2722,6 +2722,27 @@ public class CommonUtils {
         return Arrays.stream(input.split(","))
                 .map(String::trim)
                 .toList();
+    }
+
+    public static BigDecimal roundBigDecimal(BigDecimal number, int decimalPlaces, RoundingMode roundingMode) {
+        MathContext mathContext = new MathContext(decimalPlaces, roundingMode);
+        return number.round(mathContext);
+    }
+
+    public static BigDecimal divide(BigDecimal consolidatedValue, BigDecimal value, Integer decimalPlaces, RoundingMode roundingMode) {
+        if (value.compareTo(BigDecimal.ZERO) == 0) {
+            return BigDecimal.ZERO; // Handle division by zero
+        }
+        MathContext mathContext = new MathContext(decimalPlaces, roundingMode);
+        return consolidatedValue.divide(value, mathContext);
+    }
+
+    public static double calculatePercentage(BigDecimal consolidatedValue, BigDecimal value, Integer decimalPlaces, RoundingMode roundingMode) {
+        BigDecimal percentage = divide(consolidatedValue, value, decimalPlaces, roundingMode).multiply(BigDecimal.valueOf(100));
+        if (value.compareTo(BigDecimal.ZERO) == 0) {
+            return 0.0;
+        }
+        return percentage.doubleValue();
     }
 
 }

@@ -159,7 +159,7 @@ public class PermissionUtil {
         // so that we don't miss any filter criteria.
         HashMap<String, Boolean> criteriaAppenderMap = (HashMap<String, Boolean>) input.entrySet()
                 .stream()
-                .collect(Collectors.toMap(e -> e.getKey(),
+                .collect(Collectors.toMap(Map.Entry::getKey,
                         e -> false));
 
         String level0 = input.get(TRANSPORT_MODE);
