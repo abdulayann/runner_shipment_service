@@ -376,7 +376,7 @@ public class ContainerService implements IContainerService {
             BigDecimal actualVolume = containersRow.getGrossVolume();
             actualVolume = CommonUtils.roundBigDecimal(actualVolume, 2, RoundingMode.HALF_UP);
             BigDecimal calculatedVolume = getCalculatedVolume(containersRow.getPackageBreadth(), containersRow.getPackageLength(), containersRow.getPackageHeight());
-            if(calculatedVolume != null) calculatedVolume = CommonUtils.roundBigDecimal(calculatedVolume, 2, RoundingMode.HALF_UP);;
+            if(calculatedVolume != null) calculatedVolume = CommonUtils.roundBigDecimal(calculatedVolume, 2, RoundingMode.HALF_UP);
             if (calculatedVolume != null && calculatedVolume.compareTo(actualVolume) != 0) {
                 throw new ValidationException("Gross Volume is invalid at row: " + (row + 1));
             }
@@ -1695,15 +1695,13 @@ public class ContainerService implements IContainerService {
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<Containers> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
-        lst.forEach(containers -> {
-            responseList.add(convertEntityToDto(containers));
-        });
+        lst.forEach(containers -> responseList.add(convertEntityToDto(containers)));
         return responseList;
     }
     private List<IRunnerResponse> convertEntityListToDtoList(List<Containers> lst, List<String> includeColumns) {
         List<IRunnerResponse> responseList = new ArrayList<>();
         long start = System.currentTimeMillis();
-        lst.forEach(containers -> responseList.add((IRunnerResponse) commonUtils.setIncludedFieldsToResponse(containers, includeColumns, new ContainerResponse())));
+        lst.forEach(containers -> responseList.add((IRunnerResponse) commonUtils.setIncludedFieldsToResponse(containers, includeColumns.stream().collect(Collectors.toSet()), new ContainerResponse())));
         log.info("Total time take to set container response {} ms", (System.currentTimeMillis() - start));
         return responseList;
     }

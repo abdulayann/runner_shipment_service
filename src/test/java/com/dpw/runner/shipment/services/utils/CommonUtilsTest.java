@@ -24,25 +24,7 @@ import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
-import com.dpw.runner.shipment.services.dto.response.AdditionalDetailResponse;
-import com.dpw.runner.shipment.services.dto.response.ArrivalDepartureDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.BookingCarriageResponse;
-import com.dpw.runner.shipment.services.dto.response.CarrierDetailResponse;
-import com.dpw.runner.shipment.services.dto.response.ConsolidationListResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.ELDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.EventsResponse;
-import com.dpw.runner.shipment.services.dto.response.JobResponse;
-import com.dpw.runner.shipment.services.dto.response.NotesResponse;
-import com.dpw.runner.shipment.services.dto.response.PackingResponse;
-import com.dpw.runner.shipment.services.dto.response.PartiesResponse;
-import com.dpw.runner.shipment.services.dto.response.PickupDeliveryDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ReferenceNumbersResponse;
-import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
-import com.dpw.runner.shipment.services.dto.response.ServiceDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentOrderResponse;
-import com.dpw.runner.shipment.services.dto.response.TruckDriverDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
@@ -191,14 +173,14 @@ class CommonUtilsTest {
 
     static Stream<Arguments> pTestCases() {
         return Stream.of(
-                Arguments.of("Entity", new ArrayList<>(), "Response"),
-                Arguments.of("Entity", List.of("foo"), "Response"),
-                Arguments.of("Entity", List.of("No such field: {}", "foo"), "Response"),
-                Arguments.of("Entity", Collections.singletonList(null), "Response"),
-                Arguments.of("Entity", Collections.singletonList(""), "Response"),
-                Arguments.of(new HashMap<>(), List.of("foo"), "Response"),
-                Arguments.of(null, List.of("foo"), "Response"),
-                Arguments.of(Map.of("foo", "42"), List.of("foo"), "Response")
+                Arguments.of("Entity", new HashSet<>(), "Response"),
+                Arguments.of("Entity", Set.of("foo"), "Response"),
+                Arguments.of("Entity", Set.of("No such field: {}", "foo"), "Response"),
+                Arguments.of("Entity", Collections.singleton(null), "Response"),
+                Arguments.of("Entity", Collections.singleton(""), "Response"),
+                Arguments.of(new HashMap<>(), Set.of("foo"), "Response"),
+                Arguments.of(null, Set.of("foo"), "Response"),
+                Arguments.of(Map.of("foo", "42"), Set.of("foo"), "Response")
         );
     }
     @AfterEach
@@ -3645,7 +3627,7 @@ class CommonUtilsTest {
     }
     @ParameterizedTest
     @MethodSource("pTestCases")
-    void testSetIncludedFieldsToResponse(Object entity, List<String> includeColumns, Object expectedResponse) {
+    void testSetIncludedFieldsToResponse(Object entity, Set<String> includeColumns, Object expectedResponse) {
         assertEquals(expectedResponse, commonUtils.setIncludedFieldsToResponse(entity, includeColumns, expectedResponse));
     }
     @Test

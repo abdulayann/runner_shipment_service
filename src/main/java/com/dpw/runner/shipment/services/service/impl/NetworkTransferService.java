@@ -35,6 +35,7 @@ import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataKeyUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.nimbusds.jose.util.Pair;
+import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.modelmapper.ModelMapper;
@@ -330,11 +331,13 @@ public class NetworkTransferService implements INetworkTransferService {
                 String auditLogEntityType = getAuditLogEntityType(entityType);
                 optionalNetworkTransfer.ifPresent(dbNetworkTransfer -> {
                     if (dbNetworkTransfer.getStatus() == NetworkTransferStatus.ACCEPTED) {
-                        return; // Return if the status is ACCEPTED
+                        return;
                     }
                     networkTransferDao.deleteAndLog(dbNetworkTransfer, auditLogEntityType);
                 });
             }
+
+
 
             if (!Objects.isNull(networkTransfer) && networkTransfer.getTenantId() != null ) // Won't processing if tenant ID is null
                 createNetworkTransfer(networkTransfer, entityPayload);

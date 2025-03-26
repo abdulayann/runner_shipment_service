@@ -2065,6 +2065,12 @@ public class ConsolidationService implements IConsolidationService {
             }
             if(Objects.equals(console.getTransportMode(), Constants.TRANSPORT_MODE_AIR)) {
                 i.getCarrierDetails().setFlightNumber(console.getCarrierDetails().getFlightNumber());
+                if(!Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled()) && Boolean.FALSE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster())) {
+                    i.getCarrierDetails().setOriginPort(console.getCarrierDetails().getOriginPort());
+                    i.getCarrierDetails().setDestinationPort(console.getCarrierDetails().getDestinationPort());
+                    i.getCarrierDetails().setEtd(console.getCarrierDetails().getEtd());
+                    i.getCarrierDetails().setEta(console.getCarrierDetails().getEta());
+                }
                 i.getCarrierDetails().setAtd(console.getCarrierDetails().getAtd());
                 i.getCarrierDetails().setAta(console.getCarrierDetails().getAta());
             }
@@ -3670,7 +3676,7 @@ public class ConsolidationService implements IConsolidationService {
             List<String> includeColumns = FieldUtils.getMasterDataAnnotationFields(List.of(createFieldClassDto(ConsolidationDetails.class, null), createFieldClassDto(ArrivalDepartureDetails.class, "arrivalDetails."), createFieldClassDto(ArrivalDepartureDetails.class, "departureDetails.")));
             includeColumns.addAll(FieldUtils.getTenantIdAnnotationFields(List.of(createFieldClassDto(ConsolidationDetails.class, null))));
             includeColumns.addAll(ConsolidationConstants.LIST_INCLUDE_COLUMNS);
-            ConsolidationDetailsResponse consolidationDetailsResponse = (ConsolidationDetailsResponse) commonUtils.setIncludedFieldsToResponse(consolidationDetails, includeColumns, new ConsolidationDetailsResponse());
+            ConsolidationDetailsResponse consolidationDetailsResponse = (ConsolidationDetailsResponse) commonUtils.setIncludedFieldsToResponse(consolidationDetails, includeColumns.stream().collect(Collectors.toSet()), new ConsolidationDetailsResponse());
             log.info("Total time taken in setting consol details response {}", (System.currentTimeMillis() - start));
             Map<String, Object> response = fetchAllMasterDataByKey(consolidationDetails, consolidationDetailsResponse);
             return ResponseHelper.buildSuccessResponse(response);

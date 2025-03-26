@@ -184,4 +184,20 @@ public class EntityTransferController {
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
+    @PostMapping(EntityTransferConstants.CHECK_RETRANSFER_ACCEPTED)
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = EntityTransferConstants.RETRANSFER_ACCEPTED, response = AcceptedFileResponse.class)
+    })
+    public ResponseEntity<IRunnerResponse> checkAcceptedFiles(@RequestBody @Valid AcceptedFileRequest request) {
+        String responseMsg;
+        try {
+            return entityTransferService.checkAcceptedFiles(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
 }

@@ -205,7 +205,7 @@ public class MasterDataUtils{
 
     private void addLocCodesFromCarrierDetailsResponse(CarrierDetailResponse carrierDetails, Set<String> locCodes, Map<String, Map<String, String>> fieldNameKeyMap, Map<String, Object> cacheMap) {
         if (carrierDetails != null) {
-            locCodes.addAll(createInBulkUnLocationsRequest(carrierDetails, CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + carrierDetails, cacheMap));
+            locCodes.addAll(createInBulkUnLocationsRequest(carrierDetails, CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() + carrierDetails.getId(), cacheMap));
         }
     }
 

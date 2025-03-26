@@ -2323,7 +2323,7 @@ public class ReportService implements IReportService {
     private String getPartyString(Parties parties) {
         if(Objects.isNull(parties))
             return null;
-        return String.join(", ", ReportHelper.getOrgAddress(modelMapper.map(parties, PartiesModel.class)));
+        return String.join("\n", ReportHelper.getOrgAddress(modelMapper.map(parties, PartiesModel.class)));
     }
 
     private String getContNums(ShipmentDetails shipmentDetails) {

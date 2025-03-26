@@ -53,7 +53,7 @@ public class AuditLogDao implements IAuditLogDao {
             .setParameter(11, auditLog.getCreatedBy())
             .setParameter(12, auditLog.getFlow())
             .setParameter(13, auditLog.getDataType())
-            .setParameter(14, auditLog.getIsIntegrationLog());
+            .setParameter(14, new TypedParameterValue(StandardBasicTypes.BOOLEAN, auditLog.getIsIntegrationLog()));
 
         log.info("Executing native query for AuditLog save");
         query.executeUpdate();

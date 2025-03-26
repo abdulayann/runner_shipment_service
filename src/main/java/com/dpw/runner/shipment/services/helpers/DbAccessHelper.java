@@ -301,9 +301,17 @@ public class DbAccessHelper {
                 return criteriaBuilder.like(criteriaBuilder.lower(path.get(fieldName)),
                         "%" + ((String) input.getValue()).toLowerCase() + "%");
 
+            case "NOTLIKE":
+                return criteriaBuilder.notLike(criteriaBuilder.lower(path.get(fieldName)),
+                        "%" + ((String) input.getValue()).toLowerCase() + "%");
+
             case "STARTSWITH":
                 return criteriaBuilder.like(criteriaBuilder.lower(path.get(fieldName)),
                         ((String) input.getValue()).toLowerCase() + "%");
+
+            case "ENDSWITH":
+                return criteriaBuilder.like(criteriaBuilder.lower(path.get(fieldName)),
+                        "%" + ((String) input.getValue()).toLowerCase());
 
             case "IN":
                 return processInCriteria(dataType, input, path, criteriaBuilder, fieldName);
@@ -315,8 +323,12 @@ public class DbAccessHelper {
                 else
                     throw new RuntimeException("Criteria not supported yet");
             case "ISNULL":
+                if (dataType.isAssignableFrom(List.class) || dataType.isAssignableFrom(Set.class))
+                    return criteriaBuilder.isEmpty(path.get(fieldName));
                 return criteriaBuilder.isNull(path.get(fieldName));
             case "ISNOTNULL":
+                if (dataType.isAssignableFrom(List.class) || dataType.isAssignableFrom(Set.class))
+                    return criteriaBuilder.isNotEmpty(path.get(fieldName));
                 return criteriaBuilder.isNotNull(path.get(fieldName));
             default:
                 throw new RuntimeException("Operation not supported yet");
