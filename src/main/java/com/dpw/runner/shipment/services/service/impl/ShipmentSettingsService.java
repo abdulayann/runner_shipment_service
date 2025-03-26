@@ -16,6 +16,7 @@ import com.dpw.runner.shipment.services.entity.HblTermsConditionTemplate;
 import com.dpw.runner.shipment.services.entity.ProductSequenceConfig;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.TenantProducts;
+import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -155,7 +156,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            throw new RuntimeException(e);
+            throw new GenericException(e);
         }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(shipmentSettingsDetails));
     }
@@ -223,7 +224,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            throw new RuntimeException(e);
+            throw new GenericException(e);
         }
     }
 
@@ -331,7 +332,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
                 responseMsg = e.getMessage() != null ? e.getMessage()
                         : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
                 log.error(responseMsg, e);
-                throw new RuntimeException(e);
+                throw new GenericException(e);
             }
         }
         else {
@@ -341,7 +342,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
                 responseMsg = e.getMessage() != null ? e.getMessage()
                         : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
                 log.error(responseMsg, e);
-                throw new RuntimeException(e);
+                throw new GenericException(e);
             }
         }
     }
@@ -385,7 +386,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            throw new RuntimeException(e);
+            throw new GenericException(e);
         }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(shipmentSettingsDetails));
     }
@@ -457,7 +458,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            throw new RuntimeException(e);
+            throw new GenericException(e);
         }
     }
 
@@ -799,7 +800,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            throw new RuntimeException(e);
+            throw new GenericException(e);
         }
     }
 

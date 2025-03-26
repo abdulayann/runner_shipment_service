@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.kafka.producer;
 
+import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.utils.Generated;
@@ -36,7 +37,7 @@ public class KafkaProducer {
             // LATER;: add entry in FO table
             log.info("Data produced to Kafka successfully");
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new GenericException(e);
         }
     }
 

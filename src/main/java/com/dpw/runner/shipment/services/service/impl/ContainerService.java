@@ -23,6 +23,7 @@ import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
+import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -1521,7 +1522,7 @@ public class ContainerService implements IContainerService {
             } else {
                 if (containerRequest.getConsolidationGuid() != null) {
                     Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findByGuid(containerRequest.getConsolidationGuid());
-                    if (!consolidationDetails.isEmpty() && consolidationDetails.get() != null) {
+                    if (consolidationDetails.isPresent()) {
                         containers.setConsolidationId(consolidationDetails.get().getId());
                     }
                 }
@@ -1538,7 +1539,7 @@ public class ContainerService implements IContainerService {
             String responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            throw new RuntimeException(e);
+            throw new GenericException(e);
         }
     }
 
@@ -1571,7 +1572,7 @@ public class ContainerService implements IContainerService {
             String responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            throw new RuntimeException(e);
+            throw new GenericException(e);
         }
     }
 
@@ -1586,12 +1587,12 @@ public class ContainerService implements IContainerService {
 
             List<Containers> containers = consol.get().getContainersList();
             if (containers == null || containers.isEmpty()) {
-                throw new RuntimeException("No containers present for this consol");
+                throw new GenericException("No containers present for this consol");
             }
             containersList = convertEntityListToDtoList(containers);
 
         } else {
-            throw new RuntimeException("Consolidation does not exist, pls save the consol first");
+            throw new GenericException("Consolidation does not exist, pls save the consol first");
         }
 
         try(Workbook workbook = new XSSFWorkbook()) {
@@ -1639,10 +1640,10 @@ public class ContainerService implements IContainerService {
 
     private void validateConsoleAndContainersSize(Optional<ConsolidationDetails> consol) {
         if (consol.isEmpty())
-            throw new RuntimeException("Consolidation does not exist, pls save the consol first");
+            throw new GenericException("Consolidation does not exist, pls save the consol first");
 
         if (consol.get().getContainersList().isEmpty())
-            throw new RuntimeException("No containers found attached to consoliation");
+            throw new GenericException("No containers found attached to consoliation");
     }
 
     private void makeHeadersInSheet(Sheet sheet, Optional<ConsolidationDetails> consol) {

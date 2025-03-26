@@ -27,6 +27,7 @@ import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.PartyType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.*;
+import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -585,7 +586,7 @@ public class CustomerBookingService implements ICustomerBookingService {
                 }
             } catch (Exception ex){
                 log.error("Error in Updating Org Credit Limit in V1 with error : {} with Request Id {}", ex.getMessage(), LoggerHelper.getRequestIdFromMDC());
-                throw new RuntimeException("Error in Updating Org Credit Limit in V1 with error : "+ ex.getMessage());
+                throw new GenericException("Error in Updating Org Credit Limit in V1 with error : "+ ex.getMessage());
             }
             return ResponseHelper.buildSuccessResponse(checkCreditLimitResponse);
         } else {

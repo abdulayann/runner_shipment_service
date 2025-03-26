@@ -208,6 +208,7 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferDGSubst
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferVessels;
+import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
@@ -304,7 +305,6 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.modelmapper.ModelMapper;
-import org.modelmapper.PropertyMap;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -1946,7 +1946,7 @@ public class ConsolidationService implements IConsolidationService {
             String responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            throw new RuntimeException(e.getMessage());
+            throw new GenericException(e.getMessage());
         }
     }
 
@@ -2591,7 +2591,7 @@ public class ConsolidationService implements IConsolidationService {
         }
     }
 
-    private void calculateAchievedValues(ConsolidationDetails consolidationDetails, ShipmentGridChangeResponse response, Set<ShipmentDetails> shipmentDetailsList) throws Exception {
+    private void calculateAchievedValues(ConsolidationDetails consolidationDetails, ShipmentGridChangeResponse response, Set<ShipmentDetails> shipmentDetailsList) throws RunnerException {
         // Not to process the achieved values in case of AIR transport mode
         if(Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(consolidationDetails.getTransportMode())) {
             return;
@@ -5783,7 +5783,7 @@ public class ConsolidationService implements IConsolidationService {
         // Check if the specific implication (CONCR) is already present for the current shipment's GUID.
         // If true, throw a RuntimeException with a detailed error message including the shipment ID.
         if (Boolean.TRUE.equals(dpsEventService.isImplicationPresent(Set.of(shipmentRes.get().getGuid().toString()), DpsConstants.CONCR))) {
-            throw new RuntimeException(DpsConstants.DPS_ERROR_2 + " : " + shipmentRes.get().getShipmentId());
+            throw new GenericException(DpsConstants.DPS_ERROR_2 + " : " + shipmentRes.get().getShipmentId());
         }
 
         var shipment = modelMapper.map(shipmentRes.get(), ShipmentDetailsResponse.class);
