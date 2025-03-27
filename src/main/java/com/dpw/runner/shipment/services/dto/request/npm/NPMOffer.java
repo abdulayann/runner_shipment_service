@@ -105,13 +105,6 @@ public class NPMOffer implements Serializable {
         public Double chargeable;
 
         public String chargeable_uom;
-        public Notes notes;
-    }
-
-    @Data
-    public static class Notes implements Serializable {
-        public String internal;
-        public String external;
     }
 
     @Data
