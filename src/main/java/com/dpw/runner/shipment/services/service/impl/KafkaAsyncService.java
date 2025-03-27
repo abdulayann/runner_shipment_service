@@ -16,8 +16,8 @@ import com.dpw.runner.shipment.services.service.interfaces.IKafkaAsyncService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -48,7 +48,7 @@ public class KafkaAsyncService implements IKafkaAsyncService {
         this.producer = producer;
     }
 
-    @Async
+    @Transactional
     public void pushToKafkaAwb(Awb awb, boolean isCreate) {
         try {
             if(awb.getTenantId() == null)
@@ -80,7 +80,7 @@ public class KafkaAsyncService implements IKafkaAsyncService {
         }
     }
 
-    @Async
+    @Transactional
     public void pushToKafkaTI(List<IRunnerResponse> pickupDeliveryDetails, boolean isCreate, Long shipmentId) {
         try {
             TIKafkaEventResponse tiKafkaEventResponse = new TIKafkaEventResponse();
