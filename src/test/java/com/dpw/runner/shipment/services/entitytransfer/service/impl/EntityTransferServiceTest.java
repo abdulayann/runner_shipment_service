@@ -2961,4 +2961,27 @@ class EntityTransferServiceTest extends CommonMocks {
         assertThrows(ValidationException.class, () ->
             entityTransferService.checkAcceptedFiles(commonRequestModel));
     }
+    @Test
+    void testImportShipment_Rejection1() throws RunnerException {
+        ImportShipmentRequest importShipmentRequest = ImportShipmentRequest.builder()
+                .taskId(1L)
+                .operation(TaskStatus.REJECTED.getDescription())
+                .rejectRemarks("Test rejection msg")
+                .isFromNte(true)
+                .build();
+        List<UsersDto> usersDtoList = new ArrayList<>();
+        UsersDto usersDto1 = new UsersDto();
+        usersDto1.setUserId(1L);
+        usersDtoList.add(usersDto1);
+
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
+        mockShipmentSettings();
+        NetworkTransfer networkTransfer = new NetworkTransfer();
+        networkTransfer.setUpdatedBy("XYZ");
+        when(networkTransferDao.findById(anyLong())).thenReturn(Optional.of(networkTransfer));
+        when(v1ServiceUtil.getUsersWithGivenPermission(any(), any())).thenReturn(usersDtoList);
+        var response = entityTransferService.importShipment(CommonRequestModel.buildRequest(importShipmentRequest));
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
 }
