@@ -1440,7 +1440,7 @@ public abstract class IReport {
         if(shipmentDetails == null) return null;
         ShipmentModel shipmentModel = modelMapper.map(shipmentDetails, ShipmentModel.class);
         shipmentModel.setVoyage(shipmentDetails.getCarrierDetails().getVoyage());
-        Map<Long, Containers> containersMap = new HashMap();
+        Map<Long, Containers> containersMap = new HashMap<>();
 
         try {
             if(shipmentDetails.getContainersList() != null) {
