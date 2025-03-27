@@ -96,8 +96,8 @@ public class FCRDocumentReport extends IReport{
     private void populateFcrPlaceOfIssue(Map<String, Object> dictionary, Map<String, EntityTransferUnLocations> unLocationsMap) {
         if(StringUtility.isEmpty(this.placeOfIssue)) return;
 
-        EntityTransferUnLocations unLocations = unLocationsMap.get(this.placeOfIssue);
-        StringBuilder sb = new StringBuilder(unLocations.getCityName());
+        EntityTransferUnLocations unLocations = Optional.ofNullable(unLocationsMap.get(this.placeOfIssue)).orElse(new EntityTransferUnLocations());
+        StringBuilder sb = new StringBuilder(Optional.ofNullable(unLocations.getCityName()).orElse(StringUtility.getEmptyString()));
         // USA region -> display city name with state code
         if (unLocations.getLocCode().startsWith(USA_LOC_CODE_PREFIX) && !StringUtility.isEmpty(unLocations.getState())) {
             sb.append(", ").append(unLocations.getState());

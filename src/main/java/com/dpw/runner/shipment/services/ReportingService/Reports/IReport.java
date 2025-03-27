@@ -41,6 +41,7 @@ import com.dpw.runner.shipment.services.dto.response.npm.NPMFetchLangChargeCodeR
 import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.DigitGrouping;
 import com.dpw.runner.shipment.services.entity.enums.GroupingNumber;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
@@ -86,6 +87,7 @@ import java.text.NumberFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
@@ -1438,8 +1440,11 @@ public abstract class IReport {
         if(shipmentDetails == null) return null;
         ShipmentModel shipmentModel = modelMapper.map(shipmentDetails, ShipmentModel.class);
         shipmentModel.setVoyage(shipmentDetails.getCarrierDetails().getVoyage());
+        Map<Long, Containers> containersMap = new HashMap<>();
+
         try {
             if(shipmentDetails.getContainersList() != null) {
+                containersMap = shipmentDetails.getContainersList().stream().collect(Collectors.toMap(BaseEntity::getId, Function.identity()));
                 ContainerSummaryResponse containerSummaryResponse = containerService.calculateContainerSummary(jsonHelper.convertValueToList(shipmentDetails.getContainersList(), Containers.class), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType());
                 if(containerSummaryResponse != null) {
                     shipmentModel.setSummary(containerSummaryResponse.getSummary());
@@ -1448,6 +1453,8 @@ public abstract class IReport {
 
             if(shipmentDetails.getPackingList() != null) {
                 PackSummaryResponse response = packingService.calculatePackSummary(shipmentDetails.getPackingList(), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType(), new ShipmentMeasurementDetailsDto());
+                Map<Long, Containers> finalContainersMap = containersMap;
+                shipmentModel.getPackingList().forEach(i -> i.setContainerNumber(finalContainersMap.get(i.getContainerId()).getContainerNumber()));
                 if(response != null) {
                     shipmentModel.setPackSummary(response.getTotalPacks());
                 }
