@@ -26,6 +26,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IKafkaAsyncService;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.AwbUtility;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 import org.modelmapper.ModelMapper;
@@ -40,6 +41,8 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.persistence.EntityManager;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.EXEMPTION_CARGO;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -82,6 +85,12 @@ public class AwbDao implements IAwbDao {
     private IKafkaAsyncService kafkaAsyncService;
 
     @Autowired
+    private MasterDataUtils masterDataUtils;
+
+    @Autowired
+    private ExecutorService executorService;
+
+    @Autowired
     public void setV1ServiceUtil(V1ServiceUtil v1ServiceUtil) {
         this.v1ServiceUtil = v1ServiceUtil;
     }
@@ -95,7 +104,7 @@ public class AwbDao implements IAwbDao {
         boolean isCreate = awbShipmentInfo.getId() == null;
         applyValidations(awbShipmentInfo);
         Awb awb = awbRepository.save(awbShipmentInfo);
-        kafkaAsyncService.pushToKafkaAwb(awb, isCreate);
+        CompletableFuture.runAsync(masterDataUtils.withMdc(()-> kafkaAsyncService.pushToKafkaAwb(awb, isCreate)), executorService);
         return awb;
     }
 
@@ -160,7 +169,7 @@ public class AwbDao implements IAwbDao {
         List<Awb> entities = awbRepository.saveAll(req);
         for (Awb awb: entities)
         {
-            kafkaAsyncService.pushToKafkaAwb(awb, false);
+            CompletableFuture.runAsync(masterDataUtils.withMdc(()-> kafkaAsyncService.pushToKafkaAwb(awb, false)), executorService);
         }
         return entities;
     }
