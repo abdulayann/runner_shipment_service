@@ -4,8 +4,10 @@ import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
 import com.dpw.runner.shipment.services.commons.constants.MdmConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.requests.LicenseRequest;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.commons.responses.LicenseResponse;
 import com.dpw.runner.shipment.services.commons.responses.MDMServiceResponse;
 import com.dpw.runner.shipment.services.dto.request.mdm.MdmListCriteriaRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.ApprovalPartiesRequest;
@@ -55,6 +57,9 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
 
     @Value("${mdm.createNonBillableCustomer}")
     String createNonBillableCustomer;
+
+    @Value("${mdm.licenseValidateUrl}")
+    String licenseValidateUrl;
 
     @Value("${mdm.departmentListUrl}")
     String departmentListUrl;
@@ -153,6 +158,23 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
             }
             log.error("MDM createNonBillableCustomer Failed due to: {}", jsonHelper.convertToJson(errorMessage));
             return ResponseHelper.buildFailedResponse(errorMessage);
+        }
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> validateLicense(CommonRequestModel commonRequestModel)
+        throws RunnerException {
+        String url = baseUrl + licenseValidateUrl;
+        LicenseRequest request =  jsonHelper.convertValueWithJsonNullable(commonRequestModel.getDependentData(), LicenseRequest.class);
+        try {
+            ResponseEntity<LicenseResponse> response = restTemplate.exchange(
+                RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(request)),
+                LicenseResponse.class
+            );
+            return ResponseHelper.buildSuccessResponse(response.getBody());
+        } catch (Exception ex) {
+            log.error("MDM Credit Details Failed due to: {}", jsonHelper.convertToJson(ex.getMessage()));
+            return ResponseHelper.buildFailedResponse(ex.getMessage());
         }
     }
 
