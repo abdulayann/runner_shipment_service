@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.utils;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
+import com.dpw.runner.shipment.services.aspects.LicenseContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -2355,28 +2356,28 @@ public class CommonUtils {
 
     public static boolean checkAirSecurityForShipment(ShipmentDetails shipmentDetails) {
         if (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipmentDetails.getDirection().equals(DIRECTION_EXP)) {
-            return LicenseContext.getAirSecurityLicense();
+            return LicenseContext.isAirSecurityLicense();
         }
         return true;
     }
 
     public static boolean checkAirSecurityForConsolidation(ConsolidationDetails consolidationDetails) {
         if (consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && consolidationDetails.getShipmentType().equals(DIRECTION_EXP)) {
-            return LicenseContext.getAirSecurityLicense();
+            return LicenseContext.isAirSecurityLicense();
         }
         return true;
     }
 
     public static boolean checkAirSecurityForBooking(CustomerBooking customerBooking) {
         if (customerBooking.getTransportType().equals(Constants.TRANSPORT_MODE_AIR) && customerBooking.getDirection().equals(DIRECTION_EXP)) {
-            return LicenseContext.getAirSecurityLicense();
+            return LicenseContext.isAirSecurityLicense();
         }
         return true;
     }
 
     public static boolean checkAirSecurityForBookingRequest(CustomerBookingRequest customerBooking) {
         if (customerBooking.getTransportType().equals(Constants.TRANSPORT_MODE_AIR) && customerBooking.getDirection().equals(DIRECTION_EXP)) {
-            return LicenseContext.getAirSecurityLicense();
+            return LicenseContext.isAirSecurityLicense();
         }
         return true;
     }
