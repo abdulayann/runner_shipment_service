@@ -37,7 +37,7 @@ class LicenseServiceTest {
     responseA.setHasValidLicense(true);
 
     when(mdmServiceAdapter.validateLicense(any(CommonRequestModel.class)))
-        .thenReturn(ResponseEntity.ok(responseA));
+        .thenReturn(responseA);
 
     Boolean result= licenseService.getLicenseByLicenseName("ABC");
 
@@ -47,7 +47,7 @@ class LicenseServiceTest {
   @Test
   void testGetLicenseByLicenseName_Failure() throws RunnerException {
     when(mdmServiceAdapter.validateLicense(any(CommonRequestModel.class)))
-        .thenThrow(new RuntimeException("API Failure"));
+        .thenReturn(new LicenseResponse());
 
     Boolean result = licenseService.getLicenseByLicenseName("ABC");
 

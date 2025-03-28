@@ -294,7 +294,7 @@ class MDMServiceAdapterTest {
         when(restTemplate.exchange(any(RequestEntity.class), eq(LicenseResponse.class)))
             .thenReturn(responseEntity);
 
-        ResponseEntity<IRunnerResponse> response = mdmServiceAdapter.validateLicense(
+        LicenseResponse response = mdmServiceAdapter.validateLicense(
             commonRequestModel);
 
         assertNotNull(response);
@@ -316,7 +316,7 @@ class MDMServiceAdapterTest {
         when(restTemplate.exchange(any(RequestEntity.class), eq(LicenseResponse.class)))
             .thenThrow(new RuntimeException());
 
-        ResponseEntity<IRunnerResponse> response = mdmServiceAdapter.validateLicense(
+        LicenseResponse response = mdmServiceAdapter.validateLicense(
             commonRequestModel);
 
         assertNotNull(response);

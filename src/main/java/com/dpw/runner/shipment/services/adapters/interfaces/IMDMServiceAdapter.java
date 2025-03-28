@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.adapters.interfaces;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.commons.responses.LicenseResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import org.springframework.http.ResponseEntity;
 
@@ -17,7 +18,7 @@ public interface IMDMServiceAdapter {
 
     ResponseEntity<IRunnerResponse> createNonBillableCustomer(CommonRequestModel commonRequestModel) throws RunnerException;
 
-    ResponseEntity<IRunnerResponse> validateLicense(CommonRequestModel commonRequestModel) throws RunnerException;
+    LicenseResponse validateLicense(CommonRequestModel commonRequestModel) throws RunnerException;
 
     List<Map<String, Object>> getDepartmentList(String transportMode, String shipmentType, String module);
 }

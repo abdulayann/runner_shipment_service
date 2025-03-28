@@ -20,6 +20,7 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -162,19 +163,25 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> validateLicense(CommonRequestModel commonRequestModel)
+    public LicenseResponse validateLicense(CommonRequestModel commonRequestModel)
         throws RunnerException {
         String url = baseUrl + licenseValidateUrl;
         LicenseRequest request =  jsonHelper.convertValueWithJsonNullable(commonRequestModel.getDependentData(), LicenseRequest.class);
         try {
-            ResponseEntity<LicenseResponse> response = restTemplate.exchange(
+            ResponseEntity<DependentServiceResponse> response = restTemplate.exchange(
                 RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(request)),
-                LicenseResponse.class
+                DependentServiceResponse.class
             );
-            return ResponseHelper.buildSuccessResponse(response.getBody());
+
+        List<LicenseResponse> licenseResponses = jsonHelper.convertValue(
+            Objects.requireNonNull(response.getBody()).getData(),
+            new TypeReference<List<LicenseResponse>>() {}
+        );
+
+        return CollectionUtils.isNotEmpty(licenseResponses) ? licenseResponses.get(0) : new LicenseResponse();
         } catch (Exception ex) {
             log.error("MDM Credit Details Failed due to: {}", jsonHelper.convertToJson(ex.getMessage()));
-            return ResponseHelper.buildFailedResponse(ex.getMessage());
+            return new LicenseResponse();
         }
     }
 

@@ -29,8 +29,7 @@ public class LicenseService {
       LicenseResponse licenseResponse = null ;
 
       try {
-        licenseResponse = (LicenseResponse) mdmServiceAdapter.validateLicense(
-            CommonRequestModel.buildDependentDataRequest(request)).getBody();
+        licenseResponse = mdmServiceAdapter.validateLicense(CommonRequestModel.buildDependentDataRequest(request));
       }catch (Exception ex){
         log.error("License API Failed for License: {} : {}", licenseName, ex.getMessage());
       }
