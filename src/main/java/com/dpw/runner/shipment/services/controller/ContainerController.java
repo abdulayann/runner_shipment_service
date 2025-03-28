@@ -22,7 +22,6 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerNumberCh
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerPackADInShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
-import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
 import com.dpw.runner.shipment.services.syncing.Entity.BulkContainerRequestV2;
@@ -56,7 +55,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class ContainerController {
 
     private final IContainerService containerService;
-    private final JsonHelper jsonHelper;
 
     private class MyResponseClass extends RunnerResponse<ContainerResponse> {}
     private class MyListResponseClass extends RunnerListResponse<ContainerResponse> {}
@@ -65,9 +63,8 @@ public class ContainerController {
 
 
     @Autowired
-    public ContainerController(IContainerService containerService, JsonHelper jsonHelper) {
+    public ContainerController(IContainerService containerService) {
         this.containerService = containerService;
-        this.jsonHelper = jsonHelper;
     }
 
     @ApiResponses(value = {
@@ -174,8 +171,8 @@ public class ContainerController {
 
     @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CALCULATION_SUCCESSFUL, response = MyListResponseClass.class) })
     @PostMapping(ApiConstants.API_CHANGE_UNIT_ALLOCATED_ACHIEVED)
-    public ResponseEntity<IRunnerResponse> calculateAchieved_AllocatedForSameUnit(@RequestBody ContainerRequest containerRequest) {
-        return containerService.calculateAchieved_AllocatedForSameUnit(CommonRequestModel.buildRequest(containerRequest));
+    public ResponseEntity<IRunnerResponse> calculateAchievedAllocatedForSameUnit(@RequestBody ContainerRequest containerRequest) {
+        return containerService.calculateAchievedAllocatedForSameUnit(CommonRequestModel.buildRequest(containerRequest));
     }
 
     @ApiResponses(value = { @ApiResponse(code = 200, response = CheckAllocatedDataChangeResponseClass.class ,message = ContainerConstants.CALCULATION_SUCCESSFUL) })
@@ -188,7 +185,7 @@ public class ContainerController {
     @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CONTAINER_DETACH_SUCCESSFUL, response = RunnerListResponse.class) })
     @PostMapping(ApiConstants.API_CALCULATE_ACHIEVED_PACK_DETACH)
     public ResponseEntity<IRunnerResponse> calculateAchievedOnPackDetach(@RequestBody ContainerPackADInShipmentRequest containerPackAssignDetachRequest) {
-        return containerService.calculateAchievedQuantity_onPackDetach(CommonRequestModel.buildRequest(containerPackAssignDetachRequest));
+        return containerService.calculateAchievedQuantityOnPackDetach(CommonRequestModel.buildRequest(containerPackAssignDetachRequest));
     }
 
     @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CONTAINER_VALIDATED, response = ContainerNumberCheckResponseClass.class) })
@@ -230,7 +227,7 @@ public class ContainerController {
     public ResponseEntity<IRunnerResponse> syncContainerToService(@RequestBody @Valid ContainerRequestV2 request, @RequestParam(required = false, defaultValue = "true") boolean checkForSync){
         String responseMsg = "failure executing :(";
         try {
-            return containerService.V1ContainerCreateAndUpdate(CommonRequestModel.buildRequest(request), checkForSync);
+            return containerService.v1ContainerCreateAndUpdate(CommonRequestModel.buildRequest(request), checkForSync);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : "Error syncing provided Container";
@@ -248,7 +245,7 @@ public class ContainerController {
     public ResponseEntity<IRunnerResponse> syncBulkContainerToService(@RequestBody @Valid BulkContainerRequestV2 request) {
         String responseMsg = "failure executing :(";
         try {
-            return containerService.V1BulkContainerCreateAndUpdate(CommonRequestModel.buildRequest(request));
+            return containerService.v1BulkContainerCreateAndUpdate(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : "Error syncing provided Container";
@@ -257,7 +254,7 @@ public class ContainerController {
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = EventConstants.EVENT_LIST_SUCCESS, response = MyListResponseClass.class)})
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_LIST_SUCCESSFUL, response = MyListResponseClass.class)})
     @PostMapping(ContainerConstants.GET_CONTAINERS)
     public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest) {
         return containerService.getContainers(CommonRequestModel.buildRequest(listCommonRequest));

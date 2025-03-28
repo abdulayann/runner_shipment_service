@@ -9,7 +9,8 @@ public enum NetworkTransferStatus {
     TRANSFERRED(2 , "Transferred"),
     REASSIGNED(3 , "Reassigned"),
     ACCEPTED(4 , "Accepted"),
-    NOT_APPLICABLE(5, "Not Applicable");
+    NOT_APPLICABLE(5, "Not Applicable"),
+    RETRANSFER(6, "ReTransfer");
     private final int value;
     private final String description;
 

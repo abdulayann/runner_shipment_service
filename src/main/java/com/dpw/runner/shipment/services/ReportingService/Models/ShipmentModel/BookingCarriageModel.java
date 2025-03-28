@@ -20,7 +20,7 @@ public class BookingCarriageModel implements IDocumentModel {
     private String portOfLoading;
     @JsonProperty("PortOfDischarge")
     private String portOfDischarge;
-    @JsonProperty("Eta") //TODO - check if annotation is needed or not
+    @JsonProperty("Eta") //Later: - check if annotation is needed or not
     private LocalDateTime eta;
     @JsonProperty("Etd")
     private LocalDateTime etd;

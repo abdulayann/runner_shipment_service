@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.validator;
 import com.dpw.runner.shipment.services.dao.interfaces.IValidationsDao;
 import com.dpw.runner.shipment.services.entity.Validations;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
+import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.validator.constants.ErrorConstants;
 import com.dpw.runner.shipment.services.validator.constants.ValidatorConstants;
@@ -11,12 +12,10 @@ import com.dpw.runner.shipment.services.validator.enums.Operators;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.json.*;
-import javax.validation.constraints.Null;
 import java.io.StringReader;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -31,7 +30,7 @@ public class ValidatorUtility {
     private final ObjectMapper objectMapper;
     private final IValidationsDao validationsDao;
 
-    private static Map<String, List<Validations>> validationsMap = new HashMap();
+    private static Map<String, List<Validations>> validationsMap = new HashMap<>();
     @Autowired
     public ValidatorUtility(ObjectMapper objectMapper, IValidationsDao validationsDao) {
         this.objectMapper = objectMapper;
@@ -48,7 +47,7 @@ public class ValidatorUtility {
 
     public Set<String> applyValidation(String json, String entity, LifecycleHooks lifecycleHook, boolean failOnFirst) {
         Set<String> errors = new LinkedHashSet<>();
-        Map jsonMap = new HashMap();
+        Map<String, Object> jsonMap = new HashMap<>();
         long start = System.currentTimeMillis();
         log.info("Initiating Validation Layer with for entity: {} raw data: {}", entity, json);
         try (JsonReader jsonReader = Json.createReader(new StringReader(json))) {
@@ -65,7 +64,7 @@ public class ValidatorUtility {
                         errors.addAll(validateJson(jsonObject, schemaObject, jsonMap, failOnFirst));
                     }
                 } catch (JsonProcessingException e) {
-                    throw new RuntimeException(e);
+                    throw new GenericException(e);
                 }
             }
             log.info("Ending Validation Layer with for entity: {} with time taken: {} ms", entity, System.currentTimeMillis() - start);
@@ -79,13 +78,12 @@ public class ValidatorUtility {
             return validateFields(jsonObject, schemaObject.getJsonObject(ValidatorConstants.PROPERTIES), jsonMap, failOnFirst);
         }
         catch (Exception ex) {
-            log.error("Validation failed due to {}", ex.getMessage());
-            ex.printStackTrace();
+            log.error("Validation failed due to {}", ex.getMessage(), ex);
             throw ex;
         }
     }
 
-    private void generateMap(JsonObject jsonObject, String prefix, Map jsonMap) {
+    private void generateMap(JsonObject jsonObject, String prefix, Map<String, Object> jsonMap) {
         for (String key : jsonObject.keySet()) {
             if (jsonObject.get(key).getValueType() == JsonValue.ValueType.OBJECT) {
                 generateMap(jsonObject.getJsonObject(key), key + ".", jsonMap);
@@ -97,7 +95,7 @@ public class ValidatorUtility {
 
 
     private Set<String> validateFields(JsonObject jsonObject, JsonObject schemaObject, Map<String, Object> jsonMap, boolean failOnFirst) {
-        Set<String> errors = new LinkedHashSet<String>();
+        Set<String> errors = new LinkedHashSet<>();
         if (schemaObject == null) {
             return errors;
         }
@@ -167,7 +165,7 @@ public class ValidatorUtility {
     }
 
     private Set<String> validateRequired(JsonObject jsonObject, JsonObject jsonSchema, String at) {
-        Set<String> errors = new LinkedHashSet();
+        Set<String> errors = new LinkedHashSet<>();
         JsonValue fieldValue = jsonObject.get(at);
         if (jsonSchema.containsKey(ValidatorConstants.REQUIRED) && jsonSchema.getBoolean(ValidatorConstants.REQUIRED)
                 && (fieldValue == null || fieldValue.getValueType() == JsonValue.ValueType.NULL || (fieldValue.getValueType() == JsonValue.ValueType.STRING && StringUtility.isEmpty(jsonObject.getString(at)))) ) {
@@ -177,7 +175,7 @@ public class ValidatorUtility {
     }
 
     private Set<String> validatePattern(JsonObject jsonObject, JsonObject jsonSchema, String at) {
-        Set<String> errors = new LinkedHashSet();
+        Set<String> errors = new LinkedHashSet<>();
         JsonValue fieldValue = jsonObject.get(at);
         if (fieldValue != null) {
             String pattern = jsonSchema.getString(ValidatorConstants.PATTERN);
@@ -193,10 +191,15 @@ public class ValidatorUtility {
     }
 
     private Set<String> validateMinSize(JsonObject jsonObject, JsonObject jsonSchema, String at) {
-        Set<String> errors = new LinkedHashSet();
+        Set<String> errors = new LinkedHashSet<>();
         JsonValue fieldValue = jsonObject.get(at);
         if (fieldValue != null) {
-            Integer size = jsonSchema.getInt(ValidatorConstants.MIN_SIZE);
+            Integer size = null;
+            try {
+                size = jsonSchema.getInt(ValidatorConstants.MIN_SIZE);
+            } catch (JsonException e) {
+                log.error(ErrorConstants.JSON_INT_ERROR, ValidatorConstants.MIN_SIZE);
+            }
             switch (fieldValue.getValueType()) {
                 case STRING:
                     String fieldValueString = jsonObject.getString(at);
@@ -219,10 +222,15 @@ public class ValidatorUtility {
     }
 
     private Set<String> validateMaxSize(JsonObject jsonObject, JsonObject jsonSchema, String at) {
-        Set<String> errors = new LinkedHashSet();
+        Set<String> errors = new LinkedHashSet<>();
         JsonValue fieldValue = jsonObject.get(at);
         if (fieldValue != null) {
-            Integer size = jsonSchema.getInt(ValidatorConstants.MAX_SIZE);
+            Integer size = null;
+            try {
+                size = jsonSchema.getInt(ValidatorConstants.MAX_SIZE);
+            } catch (JsonException e) {
+                log.error(ErrorConstants.JSON_INT_ERROR, ValidatorConstants.MAX_SIZE);
+            }
             switch (fieldValue.getValueType()) {
                 case STRING:
                     String fieldValueString = jsonObject.getString(at);
@@ -247,16 +255,13 @@ public class ValidatorUtility {
     }
 
     private Set<String> validateMinValue(JsonObject jsonObject, JsonObject jsonSchema, String at) {
-        Set<String> errors = new LinkedHashSet();
+        Set<String> errors = new LinkedHashSet<>();
         JsonValue fieldValue = jsonObject.get(at);
-        if (fieldValue != null) {
-
-            if (fieldValue.getValueType() == JsonValue.ValueType.NUMBER) {
-                Integer fieldValueInteger = jsonObject.getInt(at);
-                Integer size = jsonSchema.getInt(ValidatorConstants.MIN_VALUE);
-                if (fieldValueInteger != null && fieldValueInteger < size) {
-                    errors.add(String.format(ErrorConstants.INVALID_MIN_VALUE_VALIDATION, at, fieldValueInteger, size));
-                }
+        if (fieldValue != null && fieldValue.getValueType() == JsonValue.ValueType.NUMBER) {
+            Integer fieldValueInteger = jsonObject.getInt(at);
+            Integer size = jsonSchema.getInt(ValidatorConstants.MIN_VALUE);
+            if (fieldValueInteger < size) {
+                errors.add(String.format(ErrorConstants.INVALID_MIN_VALUE_VALIDATION, at, fieldValueInteger, size));
             }
         }
 
@@ -264,16 +269,13 @@ public class ValidatorUtility {
     }
 
     private Set<String> validateMaxValue(JsonObject jsonObject, JsonObject jsonSchema, String at) {
-        Set<String> errors = new LinkedHashSet();
+        Set<String> errors = new LinkedHashSet<>();
         JsonValue fieldValue = jsonObject.get(at);
-        if (fieldValue != null) {
-
-            if (fieldValue.getValueType() == JsonValue.ValueType.NUMBER) {
-                Integer fieldValueInteger = jsonObject.getInt(at);
-                Integer size = jsonSchema.getInt(ValidatorConstants.MAX_VALUE);
-                if (fieldValueInteger != null && fieldValueInteger > size) {
-                    errors.add(String.format(ErrorConstants.INVALID_MAX_VALUE_VALIDATION, at, fieldValueInteger, size));
-                }
+        if (fieldValue != null && fieldValue.getValueType() == JsonValue.ValueType.NUMBER) {
+            Integer fieldValueInteger = jsonObject.getInt(at);
+            Integer size = jsonSchema.getInt(ValidatorConstants.MAX_VALUE);
+            if (fieldValueInteger > size) {
+                errors.add(String.format(ErrorConstants.INVALID_MAX_VALUE_VALIDATION, at, fieldValueInteger, size));
             }
         }
 
@@ -282,7 +284,7 @@ public class ValidatorUtility {
 
 
     private  Set<String> validateEnum(JsonObject jsonObject, JsonObject jsonSchema, String at) {
-        Set<String> errors = new LinkedHashSet();
+        Set<String> errors = new LinkedHashSet<>();
         JsonValue fieldValue = jsonObject.get(at);
         if (fieldValue != null) {
 
@@ -296,7 +298,7 @@ public class ValidatorUtility {
 
                 case NUMBER:
                     Integer fieldValueInteger = jsonObject.getInt(at);
-                    Set enumIntegerList = enumList.stream().map(c -> Integer.parseInt(c.toString())).collect(Collectors.toSet());
+                    Set<Integer> enumIntegerList = enumList.stream().map(c -> Integer.parseInt(c.toString())).collect(Collectors.toSet());
                     if (!enumIntegerList.isEmpty() && !enumIntegerList.contains(fieldValueInteger))
                         errors.add(String.format(ErrorConstants.INVALID_ENUM_VALIDATION, at, fieldValueInteger, enumIntegerList));
 
@@ -308,7 +310,7 @@ public class ValidatorUtility {
     }
 
     private Set<String> validateType(JsonObject jsonObject, JsonObject jsonSchema, String at) {
-        Set<String> errors = new LinkedHashSet();
+        Set<String> errors = new LinkedHashSet<>();
         JsonValue fieldValue = jsonObject.get(at);
         if (fieldValue != null) {
             JsonTypes schemaValue = JsonTypes.fromValue(jsonSchema.getString(ValidatorConstants.TYPE));
@@ -362,8 +364,8 @@ public class ValidatorUtility {
     }
 
 
-    private Set<String> validateCompare(JsonObject jsonObject, JsonObject jsonSchema, String at, Map jsonMap) {
-        Set<String> errors = new LinkedHashSet();
+    private Set<String> validateCompare(JsonObject jsonObject, JsonObject jsonSchema, String at, Map<String, Object> jsonMap) {
+        Set<String> errors = new LinkedHashSet<>();
         JsonValue fieldValue = jsonObject.get(at);
         if (fieldValue != null) {
             JsonArray compareList = jsonSchema.getJsonArray(ValidatorConstants.COMPARE);
@@ -374,7 +376,7 @@ public class ValidatorUtility {
     }
 
     private Set<String> validateCompare(JsonArray schemaArray, JsonObject jsonObject, String at, Map<String, Object> jsonMap) {
-        Set<String> errors = new LinkedHashSet();
+        Set<String> errors = new LinkedHashSet<>();
 
         JsonValue currentValue = jsonObject.get(at);
         for (JsonValue compare : schemaArray) {
@@ -588,7 +590,7 @@ public class ValidatorUtility {
      *      2. Operations supported: Equals, not-equals & in
      */
     private Set<String> validateConditionalCompare(JsonObject jsonObject, JsonObject jsonSchema, String at, Map<String, Object> jsonMap) {
-        Set<String> errors = new LinkedHashSet();
+        Set<String> errors = new LinkedHashSet<>();
         JsonArray conditionalArray = jsonSchema.getJsonArray(ValidatorConstants.CONDITIONAL_COMPARE);
         JsonValue fieldValue = jsonObject.get(at);
         Boolean isValid = false;
@@ -599,13 +601,13 @@ public class ValidatorUtility {
                 case STRING:
                     String fieldValueString = jsonObject.getString(at);
                     if (StringUtility.isNotEmpty(fieldValueString) && fieldValueString.equals(schema.getString(ValidatorConstants.VALUE)))
-                        isValid = validateAdditionalCompare(jsonObject, compare, at, jsonMap);
+                        isValid = validateAdditionalCompare(compare, jsonMap);
                     break;
 
                 case NUMBER:
-                    Integer fieldValueInteger = jsonObject.getInt(at);
-                    if (fieldValueInteger != null && fieldValueInteger == schema.getInt(ValidatorConstants.VALUE))
-                        isValid = validateAdditionalCompare(jsonObject, compare, at, jsonMap);
+                    int fieldValueInteger = jsonObject.getInt(at);
+                    if (fieldValueInteger == schema.getInt(ValidatorConstants.VALUE))
+                        isValid = validateAdditionalCompare(compare, jsonMap);
                     break;
                 default:
             }
@@ -618,12 +620,11 @@ public class ValidatorUtility {
         return errors;
     }
 
-    private Boolean validateAdditionalCompare(JsonObject jsonObject, JsonArray jsonArray, String at, Map jsonMap) {
+    private Boolean validateAdditionalCompare(JsonArray jsonArray, Map<String, Object> jsonMap) {
         for (JsonValue current : jsonArray) {
             JsonObject schemaObject = (JsonObject) current;
             if (schemaObject.containsKey(ValidatorConstants.COMPARE_TO) && schemaObject.containsKey(ValidatorConstants.OPERATOR) && schemaObject.containsKey(ValidatorConstants.VALUE)) {
                 String compareWith = schemaObject.getString(ValidatorConstants.COMPARE_TO);
-                JsonValue value = schemaObject.get(ValidatorConstants.VALUE);
                 JsonValue compareWithValue = (JsonValue) jsonMap.get(compareWith);
                 if (compareWithValue != null) {
                     Operators operator = Operators.fromValue(schemaObject.getString(ValidatorConstants.OPERATOR));
@@ -645,24 +646,24 @@ public class ValidatorUtility {
         return true;
     }
 
-    private Boolean validateAdditionalNumberCompare(Map jsonMap, String compareWith, Operators operator, JsonObject schemaObject) {
-        Integer fieldValueInteger = Integer.parseInt(String.valueOf(jsonMap.get(compareWith)));
+    private Boolean validateAdditionalNumberCompare(Map<String, Object> jsonMap, String compareWith, Operators operator, JsonObject schemaObject) {
+        int fieldValueInteger = Integer.parseInt(String.valueOf(jsonMap.get(compareWith)));
         switch (operator) {
             case IN:
                 JsonArray enumList = schemaObject.getJsonArray(ValidatorConstants.VALUE);
-                Set enumIntegerList = enumList.stream().map(c -> Integer.parseInt(c.toString())).collect(Collectors.toSet());
+                Set<Integer> enumIntegerList = enumList.stream().map(c -> Integer.parseInt(c.toString())).collect(Collectors.toSet());
                 if (!enumIntegerList.isEmpty() && !enumIntegerList.contains(fieldValueInteger))
                     return false;
 
                 break;
             case EQUALS:
-                Integer compareToValue = schemaObject.getInt(ValidatorConstants.VALUE);
+                int compareToValue = schemaObject.getInt(ValidatorConstants.VALUE);
                 if (compareToValue != fieldValueInteger)
                     return false;
                 break;
 
             case NOT_EQUALS:
-                Integer compareToValue1 = schemaObject.getInt(ValidatorConstants.VALUE);
+                int compareToValue1 = schemaObject.getInt(ValidatorConstants.VALUE);
                 if (compareToValue1 == fieldValueInteger)
                     return false;
                 break;
@@ -671,7 +672,7 @@ public class ValidatorUtility {
         return true;
     }
 
-    private Boolean validateAdditionalStringCompare(Map jsonMap, String compareWith, Operators operator, JsonObject schemaObject) {
+    private Boolean validateAdditionalStringCompare(Map<String, Object> jsonMap, String compareWith, Operators operator, JsonObject schemaObject) {
         String fieldValueString = String.valueOf(jsonMap.get(compareWith)).replace("\"", "");
         switch (operator) {
             case IN:
@@ -703,8 +704,8 @@ public class ValidatorUtility {
      *      1. Array: Type, Min-size, Max-size, Unique (property) * *
      *      2. Array properties: All root level field validation*
      */
-    private Set<String> validateArrayProperties(JsonObject jsonObject, JsonObject jsonSchema, String at, Map jsonMap) {
-        Set<String> errors = new LinkedHashSet();
+    private Set<String> validateArrayProperties(JsonObject jsonObject, JsonObject jsonSchema, String at, Map<String, Object> jsonMap) {
+        Set<String> errors = new LinkedHashSet<>();
         JsonArray fieldValueArray = jsonObject.getJsonArray(at);
 
         for (String key : jsonSchema.keySet()) {
@@ -731,11 +732,11 @@ public class ValidatorUtility {
             Set<JsonValue> set = new HashSet<>();
 
             for (JsonValue currentValue : fieldValueArray) {
-                JsonValue _value = currentValue.asJsonObject().get(uniqueKey);
+                JsonValue value1 = currentValue.asJsonObject().get(uniqueKey);
 
-                if (_value != null && set.contains(_value))
+                if (value1 != null && set.contains(value1))
                     errors.add(String.format(ErrorConstants.INVALID_UNIQUE_CONSTRAINT, uniqueKey, at));
-                set.add(_value);
+                set.add(value1);
 
             }
         }

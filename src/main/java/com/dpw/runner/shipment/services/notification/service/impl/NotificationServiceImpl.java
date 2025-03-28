@@ -3,6 +3,8 @@ package com.dpw.runner.shipment.services.notification.service.impl;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
+import com.dpw.runner.shipment.services.exception.exceptions.ReportException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.notification.config.NotificationConfig;
@@ -20,7 +22,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.*;
 
-import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 
 @Service
 @Slf4j
@@ -55,15 +57,20 @@ public class NotificationServiceImpl implements INotificationService {
         try {
             notificationServiceSendEmailRequest = createNotificationServiceRequest(request);
         } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+            throw new GenericException(e);
         }
 
-        NotificationServiceResponse response = restClient.sendEmail(notificationServiceSendEmailRequest);
+        NotificationServiceResponse response ;
+        try{
+            response = restClient.sendEmail(notificationServiceSendEmailRequest);
+        }catch (Exception e){
+            throw new ReportException(e.getMessage());
+        }
 
         try {
             log.info("Notification Service Response: {}", jsonHelper.convertToJson(response));
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new GenericException(e);
         }
         log.info("Total time taken from notification service to send email is {} ms", (System.currentTimeMillis() - startTime));
 
@@ -108,11 +115,11 @@ public class NotificationServiceImpl implements INotificationService {
     private void handleSendMeCopyCheck(SendEmailBaseRequest request) {
         if (Boolean.TRUE.equals(request.getSendMeCopy())) {
             String userEmail = UserContext.getUser().getEmail();
-            if (!IsStringNullOrEmpty(userEmail)) {
+            if (!isStringNullOrEmpty(userEmail)) {
                 String cc = request.getCc();
                 Set<String> emailList = new HashSet<>();
-                if (!IsStringNullOrEmpty(cc)) {
-                    emailList.addAll(Arrays.asList(cc.split("\\s*,\\s*")));
+                if (!isStringNullOrEmpty(cc)) {
+                    emailList.addAll(CommonUtils.splitAndTrimStrings(cc));
                 }
                 emailList.add(userEmail);
                 request.setCc(String.join(",", emailList));

@@ -77,7 +77,7 @@ public class ConsTruckwayBillReport extends IReport {
     public Map<String, Object> populateDictionary(IDocumentModel documentModel) {
         TruckDriverModel truckDriverModel = (TruckDriverModel) documentModel;
         V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
-        String json = jsonHelper.convertToJsonWithDateTimeFormatter(truckDriverModel.consolidationDetails, GetDPWDateFormatOrDefault(v1TenantSettingsResponse));
+        String json = jsonHelper.convertToJsonWithDateTimeFormatter(truckDriverModel.consolidationDetails, getDPWDateFormatOrDefault(v1TenantSettingsResponse));
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
         populateConsolidationFields(truckDriverModel.consolidationDetails, dictionary);
         populateUserFields(truckDriverModel.usersDto, dictionary);

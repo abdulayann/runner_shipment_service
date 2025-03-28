@@ -8,6 +8,7 @@ import java.util.List;
 
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@SuppressWarnings("java:S1948")
 public class DocumentManagerListResponse<T> implements IRunnerResponse {
 
     private Boolean success;

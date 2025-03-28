@@ -207,7 +207,7 @@ class ContainerControllerTest {
     @Test
     void calculateAchievedOnPackDetach() {
         // Mock
-        when(containerService.calculateAchievedQuantity_onPackDetach(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        when(containerService.calculateAchievedQuantityOnPackDetach(any())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Mock
         var responseEntity = containerController.calculateAchievedOnPackDetach(new ContainerPackADInShipmentRequest());
         // Assert
@@ -225,11 +225,11 @@ class ContainerControllerTest {
     }
 
     @Test
-    void calculateAchieved_AllocatedForSameUnit() {
+    void calculateAchievedAllocatedForSameUnit() {
         // Mock
-        when(containerService.calculateAchieved_AllocatedForSameUnit(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        when(containerService.calculateAchievedAllocatedForSameUnit(any())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Mock
-        var responseEntity = containerController.calculateAchieved_AllocatedForSameUnit(ContainerRequest.builder().build());
+        var responseEntity = containerController.calculateAchievedAllocatedForSameUnit(ContainerRequest.builder().build());
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -287,7 +287,7 @@ class ContainerControllerTest {
     @Test
     void syncBulkContainerToService() {
         // Mock
-        when(containerService.V1BulkContainerCreateAndUpdate(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        when(containerService.v1BulkContainerCreateAndUpdate(any())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
         var responseEntity = containerController.syncBulkContainerToService(BulkContainerRequestV2.builder().build());
         // Assert
@@ -297,7 +297,7 @@ class ContainerControllerTest {
     @Test
     void syncBulkContainerToService2() {
         // Mock
-        when(containerService.V1BulkContainerCreateAndUpdate(any())).thenThrow(new RuntimeException());
+        when(containerService.v1BulkContainerCreateAndUpdate(any())).thenThrow(new RuntimeException());
         // Test
         var responseEntity = containerController.syncBulkContainerToService(BulkContainerRequestV2.builder().build());
         // Assert
@@ -307,7 +307,7 @@ class ContainerControllerTest {
     @Test
     void syncBulkContainerToService3() {
         // Mock
-        when(containerService.V1BulkContainerCreateAndUpdate(any())).thenThrow(new RuntimeException("RuntimeException"));
+        when(containerService.v1BulkContainerCreateAndUpdate(any())).thenThrow(new RuntimeException("RuntimeException"));
         // Test
         var responseEntity = containerController.syncBulkContainerToService(BulkContainerRequestV2.builder().build());
         // Assert
@@ -317,7 +317,7 @@ class ContainerControllerTest {
     @Test
     void syncContainerToService() throws RunnerException {
         // Mock
-        when(containerService.V1ContainerCreateAndUpdate(any(), anyBoolean())).thenReturn(ResponseHelper.buildSuccessResponse());
+        when(containerService.v1ContainerCreateAndUpdate(any(), anyBoolean())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
         var responseEntity = containerController.syncContainerToService(new ContainerRequestV2(), false);
         // Assert
@@ -327,7 +327,7 @@ class ContainerControllerTest {
     @Test
     void syncContainerToService2() throws RunnerException {
         // Mock
-        when(containerService.V1ContainerCreateAndUpdate(any(), anyBoolean())).thenThrow(new RuntimeException());
+        when(containerService.v1ContainerCreateAndUpdate(any(), anyBoolean())).thenThrow(new RuntimeException());
         // Test
         var responseEntity = containerController.syncContainerToService(new ContainerRequestV2(), true);
         // Assert
@@ -337,7 +337,7 @@ class ContainerControllerTest {
     @Test
     void syncContainerToService3() throws RunnerException {
         // Mock
-        when(containerService.V1ContainerCreateAndUpdate(any(), anyBoolean())).thenThrow(new RuntimeException("RuntimeException"));
+        when(containerService.v1ContainerCreateAndUpdate(any(), anyBoolean())).thenThrow(new RuntimeException("RuntimeException"));
         // Test
         var responseEntity = containerController.syncContainerToService(new ContainerRequestV2(), false);
         // Assert

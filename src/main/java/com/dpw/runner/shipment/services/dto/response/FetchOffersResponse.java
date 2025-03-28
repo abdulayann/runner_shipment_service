@@ -94,6 +94,19 @@ public class FetchOffersResponse implements IRunnerResponse {
         private String required_currency;
         @JsonProperty("procured_currency")
         private String procured_currency;
+        @JsonProperty("notes")
+        private Notes notes;
+    }
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class Notes implements Serializable {
+        @JsonProperty("internal")
+        private String internal;
+        @JsonProperty("external")
+        private String external;
     }
 
     @Data

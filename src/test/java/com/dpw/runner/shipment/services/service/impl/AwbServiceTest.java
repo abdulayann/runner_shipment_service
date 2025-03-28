@@ -136,7 +136,6 @@ class AwbServiceTest extends CommonMocks {
     private static Awb testHawb;
     private static Awb testDmawb;
     private static Awb testMawb;
-    private static List<EntityTransferOrganizations> mockEntityTransferOrganizationList;
 
     @BeforeAll
     static void init() throws IOException {
@@ -213,10 +212,7 @@ class AwbServiceTest extends CommonMocks {
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAutomaticTransferEnabled(true);
 
         Mockito.when(shipmentDao.findById(any())).thenReturn(Optional.of(testShipment));
-//        Mockito.when(shipmentService.generateCustomHouseBL(any())).thenReturn("test_hbl_123");
-//        Mockito.when(shipmentDao.save(any(), anyBoolean())).thenReturn(testShipment);
 
-//        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.empty());
         when(awbDao.save(any())).thenReturn(testDmawb);
 
         // UnLocation response mocking
@@ -244,7 +240,6 @@ class AwbServiceTest extends CommonMocks {
                 objectMapper.convertValue(DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_T_HH_MM_SS).format(LocalDateTime.now()), LocalDateTime.class)
         );
         when(v1Service.fetchMasterData(any())).thenReturn(new V1DataResponse());
-//        when(jsonHelper.convertValue(any(), eq(EntityTransferMasterLists.class))).thenReturn(null);
 
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(
                 objectMapper.convertValue(testDmawb, AwbResponse.class)
@@ -587,10 +582,7 @@ class AwbServiceTest extends CommonMocks {
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAutomaticTransferEnabled(true);
 
         Mockito.when(shipmentDao.findById(any())).thenReturn(Optional.of(testShipment));
-//        Mockito.when(shipmentService.generateCustomHouseBL(any())).thenReturn("test_hbl_123");
-//        Mockito.when(shipmentDao.save(any(), anyBoolean())).thenReturn(testShipment);
 
-//        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.empty());
         when(awbDao.save(any())).thenReturn(testDmawb);
 
         // UnLocation response mocking
@@ -602,14 +594,13 @@ class AwbServiceTest extends CommonMocks {
 
         // TenantModel Response mocking
         when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity("").build());
-        when(jsonHelper.convertValue(eq(""), eq(TenantModel.class))).thenReturn(new TenantModel());
+        when(jsonHelper.convertValue("", TenantModel.class)).thenReturn(new TenantModel());
         V1DataResponse mockV1DataResponse = V1DataResponse.builder().entities("").build();
         // OtherInfo Master data mocking
         when(jsonHelper.convertValue(any(), eq(LocalDateTime.class))).thenReturn(
                 objectMapper.convertValue(DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_T_HH_MM_SS).format(LocalDateTime.now()), LocalDateTime.class)
         );
         when(v1Service.fetchMasterData(any())).thenReturn(new V1DataResponse());
-//        when(jsonHelper.convertValue(any(), eq(EntityTransferMasterLists.class))).thenReturn(null);
 
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(
                 objectMapper.convertValue(testDmawb, AwbResponse.class)
@@ -640,7 +631,7 @@ class AwbServiceTest extends CommonMocks {
 
 
     @Test
-    void updateAwbEmptyRequestIdFails() throws RunnerException {
+    void updateAwbEmptyRequestIdFails() {
         AwbRequest request = new AwbRequest();
         request.setAwbNumber("updatedAWBNumber");
         request.setAwbShipmentInfo(testHawb.getAwbShipmentInfo());
@@ -649,7 +640,6 @@ class AwbServiceTest extends CommonMocks {
         Awb mockAwb = testHawb;
         mockAwb.getAwbShipmentInfo().setAwbNumber("updatedAWBNumber");
 
-        AwbResponse mockAwbResponse = objectMapper.convertValue(mockAwb, AwbResponse.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
 
         when(jsonHelper.convertValue(any(), eq(Awb.class))).thenReturn(mockAwb);
@@ -662,13 +652,12 @@ class AwbServiceTest extends CommonMocks {
 
 
     @Test
-    void updateAwbEmptyFailsWhenAwbNotPresent() throws RunnerException {
+    void updateAwbEmptyFailsWhenAwbNotPresent() {
         AwbRequest request = new AwbRequest(); // Provide necessary data for request
         request.setAwbNumber("updatedAWBNumber");
         request.setId(1);
         Awb mockAwb = testHawb;
         mockAwb.getAwbShipmentInfo().setAwbNumber("updatedAWBNumber");
-        AwbResponse mockAwbResponse = objectMapper.convertValue(mockAwb, AwbResponse.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
 
         when(jsonHelper.convertValue(any(), eq(Awb.class))).thenReturn(mockAwb);
@@ -751,14 +740,13 @@ class AwbServiceTest extends CommonMocks {
     }
 
     @Test
-    void updateAwb_shipment_RountingException() throws RunnerException {
+    void updateAwb_shipment_RountingException() {
         AwbRequest request = new AwbRequest(); // Provide necessary data for request
         request.setAwbNumber("updatedAWBNumber");
         request.setId(1);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
         Awb mockAwb = testHawb;
         mockAwb.getAwbShipmentInfo().setAwbNumber("updatedAWBNumber");
-        AwbResponse mockAwbResponse = objectMapper.convertValue(mockAwb, AwbResponse.class);
         mockAwb.getAwbRoutingInfo().get(0).setLeg(1L);
         mockAwb.getAwbRoutingInfo().get(1).setLeg(1L);
         // Mocking
@@ -782,7 +770,6 @@ class AwbServiceTest extends CommonMocks {
 
 
         MawbHawbLink link = MawbHawbLink.builder().hawbId(2L).mawbId(3L).build();
-//        when(awbDao.(id)).thenReturn(List.of(testMawb));
         when(mawbHawbLinkDao.findByMawbId(any())).thenReturn(List.of(link));
         when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(ConsolidationDetails.builder().interBranchConsole(true).build()));
         // Mocking
@@ -812,6 +799,32 @@ class AwbServiceTest extends CommonMocks {
         when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(ConsolidationDetails.builder().intraBranch(false).build()));
         // Mocking
         when(awbDao.findById(1L)).thenReturn(Optional.of(mockAwb));
+        when(jsonHelper.convertValue(any(), eq(Awb.class))).thenReturn(mockAwb);
+        when(awbDao.save(any(Awb.class))).thenReturn(mockAwb);
+        when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
+        // Test
+        ResponseEntity<IRunnerResponse> responseEntity = awbService.updateAwb(commonRequestModel);
+        // Assert
+        assertEquals(ResponseHelper.buildSuccessResponse(mockAwbResponse), responseEntity);
+    }
+
+    @Test
+    void updateAwb_consolidation_updates_hawb_goods_description() throws RunnerException {
+        AwbRequest request = new AwbRequest(); // Provide necessary data for request
+        request.setAwbNumber("updatedAWBNumber");
+        request.setId(1);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        Awb mockAwb = testMawb;
+        mockAwb.getAwbShipmentInfo().setAwbNumber("updatedAWBNumber");
+        AwbResponse mockAwbResponse = objectMapper.convertValue(mockAwb, AwbResponse.class);
+
+
+        MawbHawbLink link = MawbHawbLink.builder().hawbId(2L).mawbId(3L).build();
+        when(mawbHawbLinkDao.findByMawbId(any())).thenReturn(List.of(link));
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(ConsolidationDetails.builder().intraBranch(false).build()));
+        // Mocking
+        when(awbDao.findById(1L)).thenReturn(Optional.of(mockAwb));
+        when(awbDao.findByIds(anyList())).thenReturn(List.of(testHawb));
         when(jsonHelper.convertValue(any(), eq(Awb.class))).thenReturn(mockAwb);
         when(awbDao.save(any(Awb.class))).thenReturn(mockAwb);
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
@@ -1021,7 +1034,6 @@ class AwbServiceTest extends CommonMocks {
 
     @Test
     void testGetMawnLinkPacks() {
-        Long id = 1L;
 
         MawbHawbLink link = MawbHawbLink.builder().hawbId(2L).mawbId(3L).build();
 
@@ -1046,7 +1058,7 @@ class AwbServiceTest extends CommonMocks {
         ResponseEntity<IRunnerResponse> response = awbService.retrieveById(commonRequestModel);
         // Assert
         assertNotNull(response.getBody());
-        assertEquals(response.getStatusCode(), HttpStatus.OK);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
         RunnerResponse runnerResponse = objectMapper.convertValue(response.getBody(), RunnerResponse.class);
         assertEquals(1, objectMapper.convertValue(runnerResponse.getData(), AwbResponse.class).getId());
     }
@@ -1076,7 +1088,7 @@ class AwbServiceTest extends CommonMocks {
         ResponseEntity<IRunnerResponse> response = awbService.retrieveById(commonRequestModel);
         // Assert
         assertNotNull(response.getBody());
-        assertEquals(response.getStatusCode(), HttpStatus.OK);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
         RunnerResponse runnerResponse = objectMapper.convertValue(response.getBody(), RunnerResponse.class);
         assertEquals(3, objectMapper.convertValue(runnerResponse.getData(), AwbResponse.class).getId());
     }
@@ -1089,7 +1101,7 @@ class AwbServiceTest extends CommonMocks {
         ResponseEntity<IRunnerResponse> response = awbService.retrieveById(commonRequestModel);
         // Assert
         assertNotNull(response.getBody());
-        assertEquals(response.getStatusCode(), HttpStatus.BAD_REQUEST);
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
     }
 
     @Test
@@ -1101,7 +1113,7 @@ class AwbServiceTest extends CommonMocks {
         ResponseEntity<IRunnerResponse> response = awbService.retrieveById(commonRequestModel);
         // Assert
         assertNotNull(response.getBody());
-        assertEquals(response.getStatusCode(), HttpStatus.BAD_REQUEST);
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
 
     }
 
@@ -1112,7 +1124,6 @@ class AwbServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(commonGetRequest);
         // Mock
         Mockito.when(awbDao.findById(0L)).thenReturn(Optional.empty());
-        AwbResponse awbResponse = objectMapper.convertValue(testDmawb, AwbResponse.class);
         //Make service call
         ResponseEntity<IRunnerResponse> response = awbService.retrieveById(commonRequestModel);
         // Assert
@@ -1224,10 +1235,9 @@ class AwbServiceTest extends CommonMocks {
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAutomaticTransferEnabled(true);
         Mockito.when(packingService.calculatePackSummary(any(),any(),any(),any())).thenReturn(packSummaryResponse);
 
-        AwbResponse mockMawbResponse = objectMapper.convertValue(testMawb, AwbResponse.class);
 
         Mockito.when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(testConsol));
-        when(awbDao.findByShipmentIdList(Arrays.asList(shipmentId))).thenReturn(List.of(testHawb));
+        when(awbDao.findByShipmentIdList(List.of(shipmentId))).thenReturn(List.of(testHawb));
 
         // TenantModel Response mocking
         TenantModel mockTenantModel = new TenantModel();
@@ -1373,10 +1383,8 @@ class AwbServiceTest extends CommonMocks {
         AwbResponse mockAwbResponse = objectMapper.convertValue(testMawb, AwbResponse.class);
         ShipmentSettingsDetails mockShipmentSettingDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
         MawbHawbLink link = MawbHawbLink.builder().hawbId(2L).mawbId(3L).build();
-        Page<Awb> resultPage = new PageImpl<Awb>(List.of(testHawb));
         when(awbDao.findByConsolidationId(id)).thenReturn(List.of(testMawb));
         when(mawbHawbLinkDao.findByMawbId(any())).thenReturn(List.of(link));
-//        when(awbDao.findAll(any(), any())).thenReturn(resultPage);
 
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(mockShipmentSettingDetails);
         when(awbDao.save(testMawb)).thenReturn(testMawb);
@@ -1389,7 +1397,7 @@ class AwbServiceTest extends CommonMocks {
     }
 
     @Test
-    void testUpdateGoodsAndPacksForMawb3() throws RunnerException {
+    void testUpdateGoodsAndPacksForMawb3() {
         Long id = 1L;
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CreateAwbRequest.builder().ShipmentId(id).ConsolidationId(id).build());
 
@@ -1410,7 +1418,7 @@ class AwbServiceTest extends CommonMocks {
     }
 
     @Test
-    void testUpdateGoodsAndPacksForMawb4() throws RunnerException {
+    void testUpdateGoodsAndPacksForMawb4() {
         Long id = 1L;
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(CreateAwbRequest.builder().ShipmentId(id).ConsolidationId(id).build());
         AwbResponse mockAwbResponse = objectMapper.convertValue(testMawb, AwbResponse.class);
@@ -1420,13 +1428,13 @@ class AwbServiceTest extends CommonMocks {
         when(awbDao.findByConsolidationId(id)).thenReturn(List.of(testMawb));
         when(mawbHawbLinkDao.findByMawbId(any())).thenReturn(List.of(link));
         when(awbDao.findByIds(anyList())).thenReturn(
-                Arrays.asList(
+                Collections.singletonList(
                         Awb.builder()
-                                .awbPackingInfo(Arrays.asList(AwbPackingInfo.builder().build()))
+                                .awbPackingInfo(Collections.singletonList(AwbPackingInfo.builder().build()))
                                 .build()
                 ));
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(mockShipmentSettingDetails);
-        when(awbDao.findAwbByAwbNumbers(anyList())).thenReturn(Arrays.asList(Awb.builder().awbNumber("SHP0001").build()));
+        when(awbDao.findAwbByAwbNumbers(anyList())).thenReturn(Collections.singletonList(Awb.builder().awbNumber("SHP0001").build()));
         when(jsonHelper.convertValue(any(Awb.class), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
 
         var httpResponse = awbService.updateGoodsAndPacksForMawb(commonRequestModel);
@@ -1520,15 +1528,13 @@ class AwbServiceTest extends CommonMocks {
 
         // TenantModel Response mocking
         when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity("").build());
-        when(jsonHelper.convertValue(eq(""), eq(TenantModel.class))).thenReturn(new TenantModel());
-        V1DataResponse mockV1DataResponse = V1DataResponse.builder().entities("").build();
+        when(jsonHelper.convertValue("", TenantModel.class)).thenReturn(new TenantModel());
 
         // OtherInfo Master data mocking
         when(jsonHelper.convertValue(any(), eq(LocalDateTime.class))).thenReturn(
                 objectMapper.convertValue(DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_T_HH_MM_SS).format(LocalDateTime.now()), LocalDateTime.class)
         );
         when(v1Service.fetchMasterData(any())).thenReturn(new V1DataResponse());
-//        when(jsonHelper.convertValue(any(), eq(EntityTransferMasterLists.class))).thenReturn(null);
 
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(
                 objectMapper.convertValue(mockAwb, AwbResponse.class)
@@ -1581,7 +1587,6 @@ class AwbServiceTest extends CommonMocks {
         when(consolidationDetailsDao.findById(any())).thenReturn(Optional.empty());
         when(awbDao.save(any())).thenReturn(testDmawb);
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(objectMapper.convertValue(testDmawb, AwbResponse.class));
-        List<EntityTransferOrganizations> mockOrgList = List.of(EntityTransferOrganizations.builder().build());
         ResponseEntity<IRunnerResponse> httpResponse = awbService.reset(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
@@ -1708,11 +1713,9 @@ class AwbServiceTest extends CommonMocks {
         testShipment.setId(shipmentId);
         testConsol.setShipmentsList(Set.of(testShipment));
 
-        AwbResponse mockMawbResponse = objectMapper.convertValue(testMawb, AwbResponse.class);
-
         when(awbDao.findById(anyLong())).thenReturn(Optional.of(testMawb));
         Mockito.when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(testConsol));
-        when(awbDao.findByShipmentIdList(Arrays.asList(shipmentId))).thenReturn(List.of(testHawb));
+        when(awbDao.findByShipmentIdList(List.of(shipmentId))).thenReturn(List.of(testHawb));
 
         // TenantModel Response mocking
         TenantModel mockTenantModel = new TenantModel();
@@ -1784,8 +1787,6 @@ class AwbServiceTest extends CommonMocks {
 
         MawbHawbLink link = MawbHawbLink.builder().hawbId(2L).mawbId(3L).build();
         when(mawbHawbLinkDao.findByMawbId(any())).thenReturn(List.of(link));
-        Page<Awb> resultPage = new PageImpl<Awb>(List.of(testHawb));
-//        when(awbDao.findAll(any(), any())).thenReturn(resultPage);
 
         when(awbDao.findById(anyLong())).thenReturn(Optional.of(testMawb));
         when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(testConsol));
@@ -1840,8 +1841,7 @@ class AwbServiceTest extends CommonMocks {
 
 
     @Test
-    void partialAutoUpdateAwbThrowsExceptionEmptyRequest() throws RunnerException {
-        Long shipmentId = 1L;
+    void partialAutoUpdateAwbThrowsExceptionEmptyRequest() {
         CreateAwbRequest createAwbRequest = null;
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(createAwbRequest);
 
@@ -1852,8 +1852,7 @@ class AwbServiceTest extends CommonMocks {
     }
 
     @Test
-    void partialAutoUpdateAwbThrowsExceptionEmptyConsolId() throws RunnerException {
-        Long shipmentId = 1L;
+    void partialAutoUpdateAwbThrowsExceptionEmptyConsolId() {
         CreateAwbRequest createAwbRequest = new CreateAwbRequest();
         createAwbRequest.setShipmentId(null);
         createAwbRequest.setAwbType(Constants.HAWB);
@@ -1866,7 +1865,7 @@ class AwbServiceTest extends CommonMocks {
     }
 
     @Test
-    void partialAutoUpdateAwbThrowsExceptionWhenAwbNotPresent() throws RunnerException {
+    void partialAutoUpdateAwbThrowsExceptionWhenAwbNotPresent() {
         Long shipmentId = 1L;
         CreateAwbRequest createAwbRequest = new CreateAwbRequest();
         createAwbRequest.setShipmentId(shipmentId);
@@ -1927,7 +1926,7 @@ class AwbServiceTest extends CommonMocks {
 
         // TenantModel Response mocking
         when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity("").build());
-        when(jsonHelper.convertValue(eq(""), eq(TenantModel.class))).thenReturn(new TenantModel());
+        when(jsonHelper.convertValue("", TenantModel.class)).thenReturn(new TenantModel());
 
         // OtherInfo Master data mocking
         when(jsonHelper.convertValue(any(), eq(LocalDateTime.class))).thenReturn(
@@ -1977,7 +1976,6 @@ class AwbServiceTest extends CommonMocks {
         when(awbDao.findByShipmentId(shipmentId)).thenReturn(List.of(mockAwb));
         when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(testShipment));
         when(awbDao.save(mockAwb)).thenReturn(mockAwb);
-//        when(jsonHelper.convertValue(anyString(), eq(LocalDateTime.class))).thenReturn(LocalDateTime.now());
         when(jsonHelper.convertValue(any(Awb.class), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
         mockShipmentSettings();
 
@@ -2096,7 +2094,6 @@ class AwbServiceTest extends CommonMocks {
         when(awbDao.findByShipmentId(shipmentId)).thenReturn(List.of(mockAwb));
         when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(testShipment));
         when(awbDao.save(mockAwb)).thenReturn(mockAwb);
-//        when(jsonHelper.convertValue(anyString(), eq(LocalDateTime.class))).thenReturn(LocalDateTime.now());
         when(jsonHelper.convertValue(any(Awb.class), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
 
         mockShipmentSettings();
@@ -2148,8 +2145,7 @@ class AwbServiceTest extends CommonMocks {
     }
 
     @Test
-    void partialAutoUpdateMawbThrowsExceptionEmptyRequest() throws RunnerException {
-        Long consolidationId = 1L;
+    void partialAutoUpdateMawbThrowsExceptionEmptyRequest() {
         CreateAwbRequest createAwbRequest = null;
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(createAwbRequest);
 
@@ -2160,8 +2156,7 @@ class AwbServiceTest extends CommonMocks {
     }
 
     @Test
-    void partialAutoUpdateMawbThrowsExceptionEmptyConsolId() throws RunnerException {
-        Long consolidationId = 1L;
+    void partialAutoUpdateMawbThrowsExceptionEmptyConsolId() {
         CreateAwbRequest createAwbRequest = new CreateAwbRequest();
         createAwbRequest.setConsolidationId(null);
         createAwbRequest.setAwbType(Constants.MAWB);
@@ -2174,7 +2169,7 @@ class AwbServiceTest extends CommonMocks {
     }
 
     @Test
-    void partialAutoUpdateMawbThrowsExceptionWhenAwbNotPresent() throws RunnerException {
+    void partialAutoUpdateMawbThrowsExceptionWhenAwbNotPresent(){
         Long consolidationId = 1L;
         CreateAwbRequest createAwbRequest = new CreateAwbRequest();
         createAwbRequest.setConsolidationId(consolidationId);
@@ -2307,7 +2302,6 @@ class AwbServiceTest extends CommonMocks {
                 EntityTransferUnLocations.builder().LocationsReferenceGUID("8F39C4F8-158E-4A10-A9B6-4E8FDF52C3BA").Name("Chennai (ex Madras)").build(),
                 EntityTransferUnLocations.builder().LocationsReferenceGUID("428A59C1-1B6C-4764-9834-4CC81912DAC0").Name("John F. Kennedy Apt/New York, NY").build()
         ));
-//        when(jsonHelper.convertValue(anyString(), eq(LocalDateTime.class))).thenReturn(LocalDateTime.now());
         when(jsonHelper.convertValue(any(Awb.class), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
         mockShipmentSettings();
 
@@ -2326,7 +2320,6 @@ class AwbServiceTest extends CommonMocks {
         PackSummaryResponse packSummaryResponse = new PackSummaryResponse();
         packSummaryResponse.setVolumeUnit("M3");
         packSummaryResponse.setPacksVolume(new BigDecimal("1000.567"));
-        Mockito.when(packingService.calculatePackSummary(any(),any(),any(),any())).thenReturn(packSummaryResponse);
         MawbLockSettings mawbLockSettings = jsonTestUtility.getJson("MAWB_LOCK_SETTINGS_ALL_FALSE", MawbLockSettings.class);
 
         Awb mockAwb = testMawb;
@@ -2367,7 +2360,6 @@ class AwbServiceTest extends CommonMocks {
         PackSummaryResponse packSummaryResponse = new PackSummaryResponse();
         packSummaryResponse.setVolumeUnit("M3");
         packSummaryResponse.setPacksVolume(new BigDecimal("1000.567"));
-        Mockito.when(packingService.calculatePackSummary(any(),any(),any(),any())).thenReturn(packSummaryResponse);
         MawbLockSettings mawbLockSettings = jsonTestUtility.getJson("MAWB_LOCK_SETTINGS_ALL_FALSE", MawbLockSettings.class);
 
         Awb mockAwb = testMawb;
@@ -2414,7 +2406,6 @@ class AwbServiceTest extends CommonMocks {
         PackSummaryResponse packSummaryResponse = new PackSummaryResponse();
         packSummaryResponse.setVolumeUnit("M3");
         packSummaryResponse.setPacksVolume(new BigDecimal("1000.567"));
-        Mockito.when(packingService.calculatePackSummary(any(),any(),any(),any())).thenReturn(packSummaryResponse);
         MawbLockSettings mawbLockSettings = jsonTestUtility.getJson("MAWB_LOCK_SETTINGS_ALL_FALSE", MawbLockSettings.class);
 
         Awb mockAwb = testMawb;
@@ -2449,7 +2440,7 @@ class AwbServiceTest extends CommonMocks {
     }
 
   @Test
-  void generateAwbPaymentInfoWithAllIdentifierFalse() throws JsonProcessingException, RunnerException {
+  void generateAwbPaymentInfoWithAllIdentifierFalse() throws RunnerException {
         GenerateAwbPaymentInfoRequest request = jsonTestUtility.getJson("AWB_GENERATE_PAYMENT_INFO_PAYLOAD", GenerateAwbPaymentInfoRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
 
@@ -2463,7 +2454,7 @@ class AwbServiceTest extends CommonMocks {
     }
 
     @Test
-    void generateAwbPaymentInfoWithAllIdentifierTrue() throws JsonProcessingException, RunnerException {
+    void generateAwbPaymentInfoWithAllIdentifierTrue() throws RunnerException {
         GenerateAwbPaymentInfoRequest request = jsonTestUtility.getJson("AWB_GENERATE_PAYMENT_INFO_PAYLOAD", GenerateAwbPaymentInfoRequest.class);
         request.getChargeDetails().setIdentifier1("true");
         request.getChargeDetails().setIdentifier2("true");
@@ -2484,7 +2475,7 @@ class AwbServiceTest extends CommonMocks {
 
     @ParameterizedTest
     @ValueSource(ints = {1,2,3})
-    void generateAwbPaymentInfoWithChargeBasis(int chargeBasis) throws JsonProcessingException, RunnerException {
+    void generateAwbPaymentInfoWithChargeBasis(int chargeBasis) throws RunnerException {
         GenerateAwbPaymentInfoRequest request = jsonTestUtility.getJson("AWB_GENERATE_PAYMENT_INFO_PAYLOAD", GenerateAwbPaymentInfoRequest.class);
         request.getChargeDetails().setIdentifier1("true");
         request.getChargeDetails().setIdentifier2("true");
@@ -2497,7 +2488,6 @@ class AwbServiceTest extends CommonMocks {
         Mockito.when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(List.of(ShipmentSettingsDetails.builder().volumeChargeableUnit("M3").weightChargeableUnit("KG").build()));
         AwbCalculationResponse generatePaymentResponse = jsonTestUtility.getJson("AWB_CALCULATION_RESPONSE", AwbCalculationResponse.class);
         generatePaymentResponse.getAwbOtherChargesInfo().get(0).setChargeBasis(chargeBasis);
-        BigDecimal zero = new BigDecimal(0);
         var chargeableWt = request.getAwbGoodsDescriptionInfo().get(0).getChargeableWt();
         var grossWt = request.getAwbGoodsDescriptionInfo().get(0).getGrossWt();
         var rate = generatePaymentResponse.getAwbOtherChargesInfo().get(0).getRate();
@@ -2536,7 +2526,7 @@ class AwbServiceTest extends CommonMocks {
         when(jsonHelper.convertValueToList(any(), eq(AwbResponse.class))).thenReturn(awbResponse);
 
         ResponseEntity<IRunnerResponse> response = awbService.retrieveByAwbByMawb(commonRequestModel);
-        assertEquals(response.getStatusCode(), HttpStatus.OK);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
     @Test
@@ -2551,7 +2541,7 @@ class AwbServiceTest extends CommonMocks {
         doReturn(null).when(spyBean).getLinkedAwbFromMawb(anyLong());
 
         ResponseEntity<IRunnerResponse> response = spyBean.retrieveByAwbByMawb(commonRequestModel);
-        assertEquals(response.getStatusCode(), HttpStatus.BAD_REQUEST);
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
     }
 
     @Test
@@ -2564,12 +2554,11 @@ class AwbServiceTest extends CommonMocks {
         ResponseEntity<IRunnerResponse> response = awbService.generateUpdatedNatureAndQuantGoodsField(CommonRequestModel.buildRequest(request));
         assertEquals(HttpStatus.OK, response.getStatusCode());
         RunnerResponse runnerResponse = objectMapper.convertValue(response.getBody(), RunnerResponse.class);
-        assertEquals(
-                "DIMS \r\n" +
-                        "400X300X2 CM X 5,\r\n" +
-                        "100X200X10 CM X 1",
-                runnerResponse.getData());
-      }
+        assertEquals("""
+                DIMS \r
+                400X300X2 CM X 5,\r
+                100X200X10 CM X 1""",runnerResponse.getData());
+    }
 
     @Test
     void getChargeTypeMasterData_fails_when_empty_id() {
@@ -2697,7 +2686,6 @@ class AwbServiceTest extends CommonMocks {
         mockTenantModel.IATAAgent = true;
         mockTenantModel.AgentIATACode = "test-code";
         mockTenantModel.AgentCASSCode = "test-code";
-//        mockTenantModel.PIMAAddress = "test-addr";
         mockTenantModel.DefaultOrgId = 1L;
         when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
         when(jsonHelper.convertValue(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
@@ -2895,14 +2883,6 @@ class AwbServiceTest extends CommonMocks {
         AirMessagingLogs failureLog = new AirMessagingLogs();
         failureLog.setStatus(AirMessagingStatus.FAILED.name());
 
-        Page<ShipmentDetails> shipmentDetailsPage = new PageImpl(List.of(testShipment));
-        List<String> shipmentNumbers = shipmentDetailsPage.getContent().stream().map(i -> i.getShipmentId()).toList();
-        String shipmentNumbersString = String.join(" ", shipmentNumbers);
-
-        String responseMessage = String.format(
-                AirMessagingLogsConstants.CONSOLIDATION_FNM_MAWB_SUCCESS_HAWB_FAILURE_ERROR, shipmentNumbersString);
-        FnmStatusMessageResponse fnmStatusMessageResponse = FnmStatusMessageResponse.builder().fnmStatus(false).response(responseMessage).build();
-
         // Mock
         when(awbDao.findByConsolidationId(consolidationId)).thenReturn(List.of(testMawb));
         when(airMessagingLogsService.getRecentLogForEntityGuid(testMawb.getGuid())).thenReturn(successLog);
@@ -2961,7 +2941,6 @@ class AwbServiceTest extends CommonMocks {
         routing.setLeg(1L);
 
         shipment.setShipmentAddresses(List.of(shipmentAddress));
-//        shipment.setRoutingsList(List.of(routing));
     }
 
     private void addConsolDataForMawbGeneration(ConsolidationDetails consolidationDetails) {
@@ -3048,9 +3027,6 @@ class AwbServiceTest extends CommonMocks {
         Long id = 1L;
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(id);
         boolean isShipment = true;
-
-        Awb mockAwb = testMawb;
-        AwbResponse mockAwbResponse = objectMapper.convertValue(mockAwb, AwbResponse.class);
 
         when(awbDao.findByShipmentId(id)).thenReturn(Collections.emptyList());
 
@@ -3264,7 +3240,6 @@ class AwbServiceTest extends CommonMocks {
                         .message("Value ACC in Carrier is not valid. Please correct and try again")
                         .build()))
                 .build();
-        IataFetchRateResponse iataFetchRateResponse = IataFetchRateResponse.builder().error("IATA did not return any value - please add the rate/ rate class manually").build();
 
 
         BridgeServiceResponse bridgeServiceResponse = BridgeServiceResponse.builder()
@@ -3435,10 +3410,7 @@ class AwbServiceTest extends CommonMocks {
         addShipmentDataForAwbGeneration(testShipment);
 
         Mockito.when(shipmentDao.findById(any())).thenReturn(Optional.of(testShipment));
-//        Mockito.when(shipmentService.generateCustomHouseBL(any())).thenReturn("test_hbl_123");
-//        Mockito.when(shipmentDao.save(any(), anyBoolean())).thenReturn(testShipment);
 
-//        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.empty());
         when(awbDao.save(any())).thenReturn(testDmawb);
 
         // UnLocation response mocking
@@ -3467,7 +3439,6 @@ class AwbServiceTest extends CommonMocks {
         );
         V1DataResponse v1DataResponse = V1DataResponse.builder().entities(List.of(new EntityTransferMasterLists())).build();
         when(v1Service.fetchMasterData(any())).thenReturn(v1DataResponse);
-//        when(jsonHelper.convertValue(any(), eq(EntityTransferMasterLists.class))).thenReturn(null);
 
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(
                 objectMapper.convertValue(testDmawb, AwbResponse.class)
@@ -3619,7 +3590,6 @@ class AwbServiceTest extends CommonMocks {
         when(consoleShipmentMappingDao.findByConsolidationId(testMawb.getConsolidationId())).thenReturn(
             List.of(consoleShipmentMapping)
         );
-        List<String> errors = new ArrayList();
 
         assertThrows(RunnerException.class, () -> awbService.validateAwb(mockAwb));
     }
@@ -3635,7 +3605,7 @@ class AwbServiceTest extends CommonMocks {
             List.of(consoleShipmentMapping)
         );
         when(mawbHawbLinkDao.findByMawbId(mockAwb.getId())).thenReturn(Collections.EMPTY_LIST);
-        when(awbDao.findByShipmentIdList(Arrays.asList(1L))).thenReturn(List.of(testHawb));
+        when(awbDao.findByShipmentIdList(List.of(1L))).thenReturn(List.of(testHawb));
 
         errors.add("Additional Shipments have been attached, please reset data as required.");
 
@@ -3837,10 +3807,7 @@ class AwbServiceTest extends CommonMocks {
         addShipmentDataForAwbGeneration(testShipment);
 
         Mockito.when(shipmentDao.findById(any())).thenReturn(Optional.of(testShipment));
-//        Mockito.when(shipmentService.generateCustomHouseBL(any())).thenReturn("test_hbl_123");
-//        Mockito.when(shipmentDao.save(any(), anyBoolean())).thenReturn(testShipment);
 
-//        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.empty());
         when(awbDao.save(any())).thenReturn(testDmawb);
         V1DataResponse mockV1DataResponse = V1DataResponse.builder().entities("").build();
 
@@ -3869,7 +3836,6 @@ class AwbServiceTest extends CommonMocks {
                 objectMapper.convertValue(DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_T_HH_MM_SS).format(LocalDateTime.now()), LocalDateTime.class)
         );
         when(v1Service.fetchMasterData(any())).thenReturn(new V1DataResponse());
-//        when(jsonHelper.convertValue(any(), eq(EntityTransferMasterLists.class))).thenReturn(null);
 
         when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(
                 objectMapper.convertValue(testDmawb, AwbResponse.class)

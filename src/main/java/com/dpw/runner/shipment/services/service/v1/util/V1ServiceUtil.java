@@ -15,6 +15,7 @@ import com.dpw.runner.shipment.services.dto.v1.request.CreditLimitValidateReques
 import com.dpw.runner.shipment.services.dto.v1.request.TenantDetailsByListRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
 import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
@@ -169,7 +170,7 @@ public class V1ServiceUtil {
         if (bc.getContainersList() == null)
             return new ArrayList<>();
         return bc.getContainersList().stream().filter(Objects::nonNull)
-                .map(container -> container.getGuid()).toList();
+                .map(BaseEntity::getGuid).toList();
     }
 
     private static List<CreateBookingModuleInV1.BookingEntity.LooseCargo> createLooseCarges(List<Packing> packingList) {
@@ -320,10 +321,10 @@ public class V1ServiceUtil {
             return null;
         var list = new ArrayList<CreateBookingModuleInV1.BookingEntity.LastTransactionLoadDetails>();
         containersList.forEach(c -> {
-            var _current = new CreateBookingModuleInV1.BookingEntity.LastTransactionLoadDetails();
-            _current.setLoadKey(generateLoadKeyForContainer(c));
-            _current.setLoadQuantity(Objects.isNull(c.getContainerCount()) ? 1 : c.getContainerCount().intValue());
-            list.add(_current);
+            var currentLoad = new CreateBookingModuleInV1.BookingEntity.LastTransactionLoadDetails();
+            currentLoad.setLoadKey(generateLoadKeyForContainer(c));
+            currentLoad.setLoadQuantity(Objects.isNull(c.getContainerCount()) ? 1 : c.getContainerCount().intValue());
+            list.add(currentLoad);
         });
         return jsonHelper.convertToJson(list);
     }

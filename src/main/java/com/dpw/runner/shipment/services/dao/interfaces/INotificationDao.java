@@ -31,4 +31,6 @@ public interface INotificationDao {
     void deleteAll(List<Notification> notificationList);
 
     List<Long> findEntityIdsByEntityType(String entityType);
+
+    Integer findAllPendingNotificationCount(String entityType, Integer branchId);
 }

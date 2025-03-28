@@ -875,8 +875,6 @@ public class ReportConstants {
 
     public static final String CONSOL_SHIPMENT_TOTAL_PACKAGES = "TotalPackages";
     public static final String CONTAINER_MANIFEST_PRINT = "ContainerManifestPrint";
-//    public static final String SERVICE_MODE = "ServiceMode";
-//    public static final String SHIPMENT_PACKS_UNIT_DESC = "ShipmentPacksUnitDescription";
 
     public static final String SHIPPER = "Shipper";
     public static final String SHIPPER_WC = "ShipperWC";
@@ -945,8 +943,6 @@ public class ReportConstants {
     public static final String FPOD_IN_CAPS = "FPODInCaps";
     public static final String POD_IN_CAPS = "PODInCaps";
     public static final String POR_COUNTRY_NAME_IN_CAPS = "PORCountryNameInCaps";
-    //public static final String POLCountryNameInCaps = "POLCountryNameInCaps";
-    //public static final String PODCountryNameInCaps = "PODCountryNameInCaps";
     public static final String FPOD_COUNTRY_NAME_IN_CAPS = "FPODCountryNameInCaps";
     public static final String WEIGHTS = "weights";
     public static final String CARRIER_IATACODE = "IATACode";
@@ -976,6 +972,7 @@ public class ReportConstants {
     public static final String PICKUP_FROM_ADDRESS_IN_CAPS = "PickupFromAddressInCaps";
     public static final String PICKUP_FROM_IN_CAPS = "PickupFromInCaps";
     public static final String SHIPMENT_PACKING_PACKS_PACKSTYPE = "PacksType";
+    public static final String SHIPMENT_PACKING_PACKS_TYPE_DESCRIPTION = "PacksTypeDescription";
 
 
     public static final String CHARGE_TYPE_CODE = "ChargeTypeCode";
@@ -1336,6 +1333,7 @@ public class ReportConstants {
     public static final String FCR_NO = "FCRNo";
     public static final String PACKS_MARKS_NUMBERS = "PacksMarksNumbers";
     public static final String PACKS_GOODS_DESCRIPTION = "PacksGoodsDescription";
+    public static final String PACKS_CONTAINER_NUMBER = "PacksContainerNumber";
     public static final String PLACE_OF_ISSUE = "PlaceOfIssue";
     public static final String FCR_PLACE_OF_ISSUE = "FCR_Placeofissue";
     public static final String FCR_DATE_OF_ISSUE = "FCR_Dateofissue";
@@ -1365,4 +1363,5 @@ public class ReportConstants {
     public static final String FREIGHT_DOCUMENT_PERMISSION_EXCEPTION = "You do not have permission to print the freight documents.";
     public static final String TIME_TAKE_TO_GET_SHIPMENT_CONSOLE_DATA = "Time taken to get Shipment Console Data for shipmentId :{} is  {}";
 
+    public static final String USA_LOC_CODE_PREFIX = "US";
 }

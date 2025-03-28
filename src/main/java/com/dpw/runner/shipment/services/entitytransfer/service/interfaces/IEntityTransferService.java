@@ -19,4 +19,5 @@ public interface IEntityTransferService {
     ResponseEntity<IRunnerResponse> checkTaskExist(CommonRequestModel commonRequestModel) throws RunnerException;
     ResponseEntity<IRunnerResponse> postArValidation(CommonRequestModel commonRequestModel) throws RunnerException;
     ResponseEntity<IRunnerResponse> checkEntityExists(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> checkAcceptedFiles(CommonRequestModel commonRequestModel);
 }
