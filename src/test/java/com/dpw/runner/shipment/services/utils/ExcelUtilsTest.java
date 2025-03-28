@@ -57,7 +57,7 @@ class ExcelUtilsTest {
         XSSFWorkbook workbook = new XSSFWorkbook();
 
         XSSFSheet sheet = workbook.createSheet("MySheet");
-        excelUtils.writeSimpleHeader(workbook, columnHeaders, sheet);
+        excelUtils.writeSimpleHeader(columnHeaders, sheet);
         assertNotNull(sheet);
     }
 }

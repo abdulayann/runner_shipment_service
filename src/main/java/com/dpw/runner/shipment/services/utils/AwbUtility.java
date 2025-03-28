@@ -351,10 +351,8 @@ public class AwbUtility {
             if(party.getSpecifiedAddressLocation() != null)
                 unlocoRequests.add(party.getSpecifiedAddressLocation());
         });
-        if(awb.getAwbOtherInfo() != null) {
-            if(awb.getAwbOtherInfo().getExecutedAt() != null)
-                unlocoRequests.add(awb.getAwbOtherInfo().getExecutedAt());
-        }
+        if(awb.getAwbOtherInfo() != null && awb.getAwbOtherInfo().getExecutedAt() != null)
+            unlocoRequests.add(awb.getAwbOtherInfo().getExecutedAt());
 
         unlocoRequests.add(consolidationDetails.getCarrierDetails().getOriginPort());
         unlocoRequests.add(consolidationDetails.getCarrierDetails().getDestinationPort());
@@ -888,13 +886,11 @@ public class AwbUtility {
 
     private String getMsgType(AirMessagingStatusDto airMessageStatus, List<ShipmentDetails> shipmentDetailsList) {
         String msgType = airMessageStatus.getMessageType();
-        if(shipmentDetailsList != null && !shipmentDetailsList.isEmpty()) {
-            if(msgType == null){
-                if(Objects.equals(shipmentDetailsList.get(0).getJobType(), Constants.SHIPMENT_TYPE_DRT))
-                    msgType = "FWB";
-                else
-                    msgType = "FZB";
-            }
+        if(shipmentDetailsList != null && !shipmentDetailsList.isEmpty() && msgType == null){
+            if(Objects.equals(shipmentDetailsList.get(0).getJobType(), Constants.SHIPMENT_TYPE_DRT))
+                msgType = "FWB";
+            else
+                msgType = "FZB";
         }
         return msgType;
     }

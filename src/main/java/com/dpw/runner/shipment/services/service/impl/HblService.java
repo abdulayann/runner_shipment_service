@@ -467,7 +467,7 @@ public class HblService implements IHblService {
         AdditionalDetails additionalDetails = shipmentDetail.getAdditionalDetails() != null ? shipmentDetail.getAdditionalDetails() : new AdditionalDetails();
         CarrierDetails carrierDetails = shipmentDetail.getCarrierDetails() != null ? shipmentDetail.getCarrierDetails() : new CarrierDetails();
 
-        Map<String, EntityTransferUnLocations> v1Data = getUnLocationsData(hblData, additionalDetails, carrierDetails);
+        Map<String, EntityTransferUnLocations> v1Data = getUnLocationsData(additionalDetails, carrierDetails);
         setUnLocationsData(v1Data, hblData, additionalDetails, carrierDetails, "All");
         hblData.setCargoDescription(shipmentDetail.getGoodsDescription());
         hblData.setMarksAndNumbers(shipmentDetail.getMarksNum());
@@ -924,7 +924,7 @@ public class HblService implements IHblService {
     }
 
     private void setUnLocationsDataInHblData(HblLockSettings hblLock, HblDataDto hblData, AdditionalDetails additionalDetails, CarrierDetails carrierDetails) {
-        Map<String, EntityTransferUnLocations> v1Data = getUnLocationsData(hblData, additionalDetails, carrierDetails);
+        Map<String, EntityTransferUnLocations> v1Data = getUnLocationsData(additionalDetails, carrierDetails);
         if(!Boolean.TRUE.equals(hblLock.getPlaceOfReceiptLock()))
             setUnLocationsData(v1Data, hblData, additionalDetails, carrierDetails, "PlaceOfReceipt");
         if(!Boolean.TRUE.equals(hblLock.getPortOfLoadLock()))
@@ -1118,7 +1118,7 @@ public class HblService implements IHblService {
         return deleteParty;
     }
 
-    private Map<String, EntityTransferUnLocations> getUnLocationsData(HblDataDto hblDataDto, AdditionalDetails additionalDetails, CarrierDetails carrierDetails) {
+    private Map<String, EntityTransferUnLocations> getUnLocationsData(AdditionalDetails additionalDetails, CarrierDetails carrierDetails) {
         List<String> locCodes = new ArrayList<>();
 
         if (!Objects.isNull(carrierDetails)) {

@@ -754,7 +754,7 @@ public class ShipmentService implements IShipmentService {
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
             if(shipmentSettingsDetails.getAutoEventCreate() != null && shipmentSettingsDetails.getAutoEventCreate())
                 autoGenerateCreateEvent(shipmentDetails);
-            autoGenerateEvents(shipmentDetails, null);
+            autoGenerateEvents(shipmentDetails);
             Long shipmentId = shipmentDetails.getId();
             List<Packing> updatedPackings = getAndSetPackings(request, shipmentId, shipmentDetails);
             List<RoutingsRequest> routingsRequest = request.getRoutingsList();
@@ -1326,7 +1326,7 @@ public class ShipmentService implements IShipmentService {
         return packingRequests;
     }
 
-    private List<EventsRequest> setEventDetails(List<EventsRequest> eventsRequestList, ShipmentDetails shipmentDetails, Long consolidationId) {
+    private List<EventsRequest> setEventDetails(List<EventsRequest> eventsRequestList, ShipmentDetails shipmentDetails) {
         if(eventsRequestList != null && !eventsRequestList.isEmpty()) {
             for (EventsRequest req : eventsRequestList) {
                     req.setShipmentNumber(shipmentDetails.getShipmentId());
@@ -1380,8 +1380,7 @@ public class ShipmentService implements IShipmentService {
         return totalWeight;
     }
 
-    private void callChangeShipmentDGStatusFromPack(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, PackingRequest pack,
-                                                    Map<Long, Packing> oldPacksMap, Packing oldPacking) {
+    private void callChangeShipmentDGStatusFromPack(ShipmentDetails shipmentDetails, PackingRequest pack, Packing oldPacking) {
         boolean isDGClass1 = commonUtils.checkIfDGClass1(pack.getDGClass());
         if(pack.getId() == null) {
             commonUtils.changeShipmentDGStatusToReqd(shipmentDetails, isDGClass1);
@@ -1398,7 +1397,7 @@ public class ShipmentService implements IShipmentService {
             oldPacking = oldPacksMap.get(pack.getId());
         if(Boolean.TRUE.equals(pack.getHazardous())) {
             dgConts.add(pack.getContainerId());
-            callChangeShipmentDGStatusFromPack(shipmentDetails, oldEntity, pack, oldPacksMap, oldPacking);
+            callChangeShipmentDGStatusFromPack(shipmentDetails, pack, oldPacking);
         }
         if(!Objects.isNull(pack.getContainerId()) &&
                 ( (!Objects.isNull(oldPacking) && !Objects.equals(pack.getContainerId(), oldPacking.getContainerId())) || Objects.isNull(oldPacking) ))
@@ -1417,7 +1416,7 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    private void callChangeShipmentDGStatusFromContainer(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, ContainerRequest container,
+    private void callChangeShipmentDGStatusFromContainer(ShipmentDetails shipmentDetails, ContainerRequest container,
                                                          Map<Long, Containers> oldContainersMap, Set<Long> newPackAttachedInConts) {
         Containers oldContainer = null;
         boolean isDGClass1 = commonUtils.checkIfDGClass1(container.getDgClass());
@@ -1443,7 +1442,7 @@ public class ShipmentService implements IShipmentService {
                 throw new ValidationException(OCEAN_DG_CONTAINER_FIELDS_VALIDATION);
         }
         if(Boolean.TRUE.equals(container.getHazardous())) {
-            callChangeShipmentDGStatusFromContainer(shipmentDetails, oldEntity, container, oldContainersMap, newPackAttachedInConts);
+            callChangeShipmentDGStatusFromContainer(shipmentDetails, container, oldContainersMap, newPackAttachedInConts);
         }
     }
 
@@ -2447,12 +2446,10 @@ public class ShipmentService implements IShipmentService {
                 || !Objects.equals(shipmentDetails.getCarrierDetails().getShippingLine(), oldEntity.getCarrierDetails().getShippingLine());
     }
 
-    private void validateBeforeSave(ShipmentDetails shipmentDetails) throws RunnerException {
-        if(shipmentDetails.getConsignee() != null && shipmentDetails.getConsigner() != null)
-        {
-            if(shipmentDetails.getConsignee().getOrgCode() != null && shipmentDetails.getConsigner().getOrgCode() != null && shipmentDetails.getConsigner().getOrgCode().equals(shipmentDetails.getConsignee().getOrgCode()))
-                throw new ValidationException("Consignor & Consignee parties can't be selected as same.");
-        }
+    private void validateBeforeSave(ShipmentDetails shipmentDetails) {
+        if(shipmentDetails.getConsignee() != null && shipmentDetails.getConsigner() != null && shipmentDetails.getConsignee().getOrgCode() != null && shipmentDetails.getConsigner().getOrgCode() != null && shipmentDetails.getConsigner().getOrgCode().equals(shipmentDetails.getConsignee().getOrgCode()))
+            throw new ValidationException("Consignor & Consignee parties can't be selected as same.");
+
         if(!isStringNullOrEmpty(shipmentDetails.getJobType()) && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)){
             if(!isStringNullOrEmpty(shipmentDetails.getTransportMode()) && !shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && !shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)) {
                 shipmentDetails.setHouseBill(shipmentDetails.getMasterBill());
@@ -2775,7 +2772,7 @@ public class ShipmentService implements IShipmentService {
 
     private void processEventsInAfterSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, boolean isCreate, ShipmentSettingsDetails shipmentSettingsDetails, List<EventsRequest> eventsRequestList, Long consolidationId, Long id, Integer previousStatus) throws RunnerException {
         if (eventsRequestList != null) {
-            eventsRequestList = setEventDetails(eventsRequestList, shipmentDetails, consolidationId);
+            eventsRequestList = setEventDetails(eventsRequestList, shipmentDetails);
             List<Events> eventsList = commonUtils.convertToEntityList(eventsRequestList, Events.class, isCreate);
             eventsList = createOrUpdateEvents(shipmentDetails, oldEntity, eventsList, isCreate);
             if (eventsList != null) {
@@ -2793,7 +2790,7 @@ public class ShipmentService implements IShipmentService {
         log.info("shipment afterSave autoGenerateCreateEvent.... ");
 
         // Create events on basis of shipment status Confirmed/Created
-        autoGenerateEvents(shipmentDetails, previousStatus);
+        autoGenerateEvents(shipmentDetails);
         log.info("shipment afterSave generateEvents.... ");
     }
 
@@ -3003,7 +3000,7 @@ public class ShipmentService implements IShipmentService {
         }
 
         if (isCarrierDetailsInvalid(shipmentDetails)) {
-            handleInvalidCarrierDetails(quartzJobInfo, shipmentDetails);
+            handleInvalidCarrierDetails(quartzJobInfo);
             return true;
         }
         return false;
@@ -3026,7 +3023,7 @@ public class ShipmentService implements IShipmentService {
                         ObjectUtils.isEmpty(carrierDetails.getAtd()));
     }
 
-    private void handleInvalidCarrierDetails(QuartzJobInfo quartzJobInfo, ShipmentDetails shipmentDetails) {
+    private void handleInvalidCarrierDetails(QuartzJobInfo quartzJobInfo) {
         if (quartzJobInfo != null && quartzJobInfo.getJobStatus() == JobState.QUEUED) {
             quartzJobInfoService.deleteJobById(quartzJobInfo.getId());
         }
@@ -3182,7 +3179,7 @@ public class ShipmentService implements IShipmentService {
         if (isInterBranchConsole(shipmentDetails)) {
             processReceivingBranchChanges(shipmentDetails, oldEntity);
         } else if ((shipmentDetails.getConsolidationList()==null || shipmentDetails.getConsolidationList().isEmpty()) && oldEntityHasInterBranchConsole(oldEntity)) {
-            deleteOldConsolidationTransfers(oldEntity, shipmentDetails);
+            deleteOldConsolidationTransfers(oldEntity);
         }
     }
 
@@ -3316,7 +3313,7 @@ public class ShipmentService implements IShipmentService {
                 shipmentDetails, null, reverseDirection(shipmentDetails.getDirection()), null, true);
     }
 
-    private void deleteOldConsolidationTransfers(ShipmentDetails oldEntity, ShipmentDetails shipmentDetails) {
+    private void deleteOldConsolidationTransfers(ShipmentDetails oldEntity) {
         List<NetworkTransfer> networkTransferList = networkTransferDao.getInterConsoleNTList(Collections.singletonList(oldEntity.getId()), SHIPMENT);
         if(networkTransferList!=null) {
             for (NetworkTransfer networkTransfer : networkTransferList) {
@@ -3654,13 +3651,11 @@ public class ShipmentService implements IShipmentService {
     }
 
     private void processFNMUEvent(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, Boolean isNewShipment, Map<String, List<Events>> cargoesRunnerDbEvents) {
-        if (isEventChanged(shipmentDetails.getMasterBill(), oldEntity.getMasterBill(), isNewShipment)) {
-            if (ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.FNMU))) {
-                List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.FNMU);
-                for (Events event : dbEvents) {
-                    event.setContainerNumber(shipmentDetails.getMasterBill());
-                    eventDao.updateUserFieldsInEvent(event, true);
-                }
+        if (isEventChanged(shipmentDetails.getMasterBill(), oldEntity.getMasterBill(), isNewShipment) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.FNMU))) {
+            List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.FNMU);
+            for (Events event : dbEvents) {
+                event.setContainerNumber(shipmentDetails.getMasterBill());
+                eventDao.updateUserFieldsInEvent(event, true);
             }
         }
     }
@@ -5063,7 +5058,7 @@ public class ShipmentService implements IShipmentService {
             }
         }
         // Create events on basis of shipment status Confirmed/Created
-        autoGenerateEvents(newShipmentDetails, previousStatus);
+        autoGenerateEvents(newShipmentDetails);
 
         if (notesRequestList != null) {
             List<Notes> updatedNotes = notesDao.updateEntityFromOtherEntity(jsonHelper.convertValueToList(notesRequestList, Notes.class), id, Constants.SHIPMENT);
@@ -6781,7 +6776,8 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    private void autoGenerateEvents(ShipmentDetails shipmentDetails, Integer previousStauts) {
+    @SuppressWarnings({"java:S1066", "java:S2583"})
+    private void autoGenerateEvents(ShipmentDetails shipmentDetails) {
         Events response = null;
         if(shipmentDetails.getStatus() != null) {
             // LATER : remove this
@@ -8910,7 +8906,7 @@ public class ShipmentService implements IShipmentService {
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
             if(shipmentSettingsDetails.getAutoEventCreate() != null && shipmentSettingsDetails.getAutoEventCreate())
                 autoGenerateCreateEvent(shipmentDetails);
-            autoGenerateEvents(shipmentDetails, null);
+            autoGenerateEvents(shipmentDetails);
             createAutomatedEvents(shipmentDetails, EventConstants.BKCR, commonUtils.getUserZoneTime(LocalDateTime.now()), null);
             Long shipmentId = shipmentDetails.getId();
             List<Packing> updatedPackings = getAndSetPackings(request, shipmentId, shipmentDetails);

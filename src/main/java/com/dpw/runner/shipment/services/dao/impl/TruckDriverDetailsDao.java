@@ -68,7 +68,7 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
         truckDriverDetailsRepository.delete(truckDriverDetails);
     }
 
-    void deleteTruckDriverDetails(Map<Long, TruckDriverDetails> hashMap, String entity, Long entityId) {
+    void deleteTruckDriverDetails(Map<Long, TruckDriverDetails> hashMap, String entity) {
         String responseMsg;
         try {
             hashMap.values().forEach(truckDriverDetails -> {
@@ -119,7 +119,7 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
                 }
                 responseTruckDriverDetails = saveEntityFromShipment(truckDriverDetailsRequestList, shipmentId, copyHashMap);
             }
-            deleteTruckDriverDetails(hashMap, ShipmentDetails.class.getSimpleName(), shipmentId);
+            deleteTruckDriverDetails(hashMap, ShipmentDetails.class.getSimpleName());
             return responseTruckDriverDetails;
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -245,7 +245,7 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
             Map<Long, TruckDriverDetails> hashMap = new HashMap<>();
             truckDriverDetailsMap.forEach((s, truckDriverDetail) ->  hashMap.put(truckDriverDetail.getId(), truckDriverDetail));
 
-            deleteTruckDriverDetails(hashMap, ShipmentDetails.class.getSimpleName(), shipmentId);
+            deleteTruckDriverDetails(hashMap, ShipmentDetails.class.getSimpleName());
             return responseTruckDriverDetails;
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -279,7 +279,7 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
                 }
                 responseTruckDriverDetails = saveEntityFromConsole(truckDriverDetailsRequests, consolidationId, copyHashMap);
             }
-            deleteTruckDriverDetails(hashMap, ShipmentDetails.class.getSimpleName(), consolidationId);
+            deleteTruckDriverDetails(hashMap, ShipmentDetails.class.getSimpleName());
             return responseTruckDriverDetails;
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()

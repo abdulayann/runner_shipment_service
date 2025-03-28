@@ -2804,7 +2804,7 @@ public class EntityTransferService implements IEntityTransferService {
 
     private Map<String, Object> getConsolMasterData(ConsolidationDetails consolidationDetails) {
         ConsolidationDetailsResponse consolidationDetailsResponse = jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class);
-        return consolidationService.fetchAllMasterDataByKey(consolidationDetails, consolidationDetailsResponse);
+        return consolidationService.fetchAllMasterDataByKey(consolidationDetailsResponse);
     }
 
     private EntityTransferShipmentDetails prepareShipmentPayload(ShipmentDetails shipmentDetails) {
