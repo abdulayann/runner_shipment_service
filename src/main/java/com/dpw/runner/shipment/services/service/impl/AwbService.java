@@ -1046,7 +1046,7 @@ public class AwbService implements IAwbService {
 
     private Map<Long, AddressDataV1> getIssuingAgentAddressIdToEntityMap(ArrayList<String> issuingAgentAddressList) {
         Map<Long, AddressDataV1> issuingAgentAddressIdToEntityMap = new HashMap<>();
-        if(CommonUtils.listIsNullOrEmpty(issuingAgentAddressList)) {
+        if(!CommonUtils.listIsNullOrEmpty(issuingAgentAddressList)) {
             CommonV1ListRequest issuingAgentAddressRequest = createCriteriaToFetchAddressList(issuingAgentAddressList);
             V1DataResponse issuingAgentAddressResponse = v1Service.addressList(issuingAgentAddressRequest);
             List<AddressDataV1> issuingAgentEntityAddressList = jsonHelper.convertValueToList(issuingAgentAddressResponse.entities, AddressDataV1.class);

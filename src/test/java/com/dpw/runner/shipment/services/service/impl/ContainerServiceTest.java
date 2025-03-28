@@ -1205,6 +1205,104 @@ class ContainerServiceTest extends CommonMocks {
     }
 
     @Test
+    void uploadContainers_ContainerNumberAlreadyExists() throws Exception{
+        BulkUploadRequest request = new BulkUploadRequest();
+        request.setConsolidationId(1L);
+        request.setShipmentId(3L);
+        request.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        testContainer.setGuid(UUID.randomUUID());
+        testContainer.setContainerNumber("CONT0000006");
+        testContainer.setContainerCount(1L);
+        testContainer.setIsOwnContainer(true);
+        testContainer.setIsShipperOwned(false);
+        testContainer.setHazardous(false);
+        testContainer.setIsPart(false);
+        testContainer.setContainerStuffingLocation("unloc");
+        testContainer.setHandlingInfo(null);
+        Containers containers = new Containers();
+        containers.setGuid(UUID.randomUUID());
+        containers.setContainerNumber("CONT0000006");
+        containers.setContainerCount(1L);
+        when(containerDao.findByConsolidationId(any())).thenReturn(List.of(containers));
+        when(containerDao.findByConsolidationId(any())).thenReturn(List.of(containers));
+        ArgumentCaptor captor = ArgumentCaptor.forClass(Map.class);
+        when(parser.parseExcelFile(any(), any(), any(), (Map<String, Set<String>>) captor.capture(), any(), any(), any(), any(), any()))
+                .thenAnswer(invocation -> {
+
+                    Map<String, Set<String>> masterDataMap = (Map<String, Set<String>>) captor.getValue();
+                    masterDataMap.clear();
+                    masterDataMap.putAll(jsonTestUtility.getMasterDataMapWithSameCommodity());
+
+                    return List.of(testContainer);
+                });
+        assertThrows(ValidationException.class, () -> containerService.uploadContainers(request));
+    }
+
+    @Test
+    void uploadContainers_MultipleContainerOwnership() throws IOException {
+        BulkUploadRequest request = new BulkUploadRequest();
+        request.setConsolidationId(1L);
+        request.setShipmentId(3L);
+        request.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        testContainer.setGuid(UUID.randomUUID());
+        testContainer.setContainerNumber("CONT0000006");
+        testContainer.setContainerCount(1L);
+        testContainer.setIsOwnContainer(true);
+        testContainer.setIsShipperOwned(true);
+        testContainer.setContainerStuffingLocation("unloc");
+        testContainer.setCommodityCode("680510");
+        testContainer.setHandlingInfo("handlingInfo");
+        testContainer.setChargeableUnit(Constants.WEIGHT_UNIT_KG);
+        testContainer.setChargeable(new BigDecimal(3453));
+        testContainer.setGrossVolume(new BigDecimal(432));
+        when(containerDao.findByConsolidationId(any())).thenReturn(List.of(testContainer));
+        when(containerDao.findByConsolidationId(any())).thenReturn(List.of(testContainer));
+        ArgumentCaptor captor = ArgumentCaptor.forClass(Map.class);
+        when(parser.parseExcelFile(any(), any(), any(), (Map<String, Set<String>>) captor.capture(), any(), any(), any(), any(), any()))
+                .thenAnswer(invocation -> {
+
+                    Map<String, Set<String>> masterDataMap = (Map<String, Set<String>>) captor.getValue();
+                    masterDataMap.clear();
+                    masterDataMap.putAll(jsonTestUtility.getMasterDataMapWithSameCommodity());
+
+                    return List.of(testContainer);
+                });
+        assertThrows(ValidationException.class, () -> containerService.uploadContainers(request));
+    }
+
+    @Test
+    void uploadContainers_CommodityTypeException() throws IOException {
+        BulkUploadRequest request = new BulkUploadRequest();
+        request.setConsolidationId(1L);
+        request.setShipmentId(3L);
+        request.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        testContainer.setGuid(UUID.randomUUID());
+        testContainer.setContainerNumber("CONT0000006");
+        testContainer.setContainerCount(1L);
+        testContainer.setIsOwnContainer(true);
+        testContainer.setIsShipperOwned(false);
+        testContainer.setContainerStuffingLocation("unloc");
+        testContainer.setCommodityCode("46321");
+        testContainer.setHandlingInfo("handlingInfo");
+        testContainer.setChargeableUnit(Constants.WEIGHT_UNIT_KG);
+        testContainer.setChargeable(new BigDecimal(3453));
+        testContainer.setGrossVolume(new BigDecimal(432));
+        when(containerDao.findByConsolidationId(any())).thenReturn(List.of(testContainer));
+        when(containerDao.findByConsolidationId(any())).thenReturn(List.of(testContainer));
+        ArgumentCaptor captor = ArgumentCaptor.forClass(Map.class);
+        when(parser.parseExcelFile(any(), any(), any(), (Map<String, Set<String>>) captor.capture(), any(), any(), any(), any(), any()))
+                .thenAnswer(invocation -> {
+
+                    Map<String, Set<String>> masterDataMap = (Map<String, Set<String>>) captor.getValue();
+                    masterDataMap.clear();
+                    masterDataMap.putAll(jsonTestUtility.getMasterDataMapWithSameCommodity());
+
+                    return List.of(testContainer);
+                });
+        assertThrows(ValidationException.class, () -> containerService.uploadContainers(request));
+    }
+
+    @Test
     void uploadContainers_SEA() throws Exception{
         BulkUploadRequest request = new BulkUploadRequest();
         request.setConsolidationId(1L);
@@ -1243,6 +1341,44 @@ class ContainerServiceTest extends CommonMocks {
     }
 
     @Test
+    void uploadContainers_SEA2() throws Exception{
+        BulkUploadRequest request = new BulkUploadRequest();
+        request.setConsolidationId(1L);
+        request.setShipmentId(3L);
+        request.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        testContainer.setGuid(UUID.randomUUID());
+        testContainer.setContainerNumber("CONT0000006");
+        testContainer.setContainerCount(1L);
+        testContainer.setIsOwnContainer(false);
+        testContainer.setIsShipperOwned(true);
+        testContainer.setHazardous(false);
+        testContainer.setIsPart(true);
+        testContainer.setContainerStuffingLocation("unloc");
+        testContainer.setHazardousUn("hzUn");
+        testContainer.setCommodityCode(null);
+        testContainer.setHandlingInfo("handlingInfo");
+        testContainer.setChargeableUnit(Constants.WEIGHT_UNIT_KG);
+        testContainer.setChargeable(new BigDecimal(3453));
+        testContainer.setGrossVolume(new BigDecimal(432));
+        testContainer.setDgClass("dgClass");
+        when(containerDao.findByConsolidationId(any())).thenReturn(List.of(testContainer));
+        when(containerDao.findByConsolidationId(any())).thenReturn(List.of(testContainer));
+        ArgumentCaptor captor = ArgumentCaptor.forClass(Map.class);
+        when(parser.parseExcelFile(any(), any(), any(), (Map<String, Set<String>>) captor.capture(), any(), any(), any(), any(), any()))
+                .thenAnswer(invocation -> {
+
+                    Map<String, Set<String>> masterDataMap = (Map<String, Set<String>>) captor.getValue();
+                    masterDataMap.clear();
+                    masterDataMap.putAll(jsonTestUtility.getMasterDataMapWithSameCommodity());
+
+                    return List.of(testContainer);
+                });
+        when(shipmentDao.findById(any())).thenReturn(Optional.empty());
+        when(containerDao.saveAll(any())).thenReturn(List.of(testContainer));
+        assertDoesNotThrow(() -> containerService.uploadContainers(request));
+    }
+
+    @Test
     void uploadContainers_AIR() throws Exception{
         BulkUploadRequest request = new BulkUploadRequest();
         request.setConsolidationId(1L);
@@ -1252,7 +1388,7 @@ class ContainerServiceTest extends CommonMocks {
         testContainer.setContainerNumber("CONT0000006");
         testContainer.setIsOwnContainer(true);
         testContainer.setIsShipperOwned(false);
-        testContainer.setHazardous(true);
+        testContainer.setHazardous(null);
         testContainer.setIsPart(true);
         testContainer.setContainerStuffingLocation("unloc");
         testContainer.setHazardousUn("hzUn");
