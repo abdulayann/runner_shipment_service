@@ -42,6 +42,7 @@ import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IOrderManagementAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
+import com.dpw.runner.shipment.services.aspects.LicenseContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
@@ -6506,7 +6507,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     private boolean isAirDgUser() {
-        return UserContext.isAirDgUser();
+        return  LicenseContext.isDgAirLicense();
     }
 
     private boolean checkForAirDGFlag(ConsolidationDetails consolidationDetails) {
@@ -8130,7 +8131,7 @@ public class ShipmentService implements IShipmentService {
             return ResponseHelper.buildSuccessResponseWithWarning("DG approval not required for Import Shipment");
         }
 
-        boolean isOceanDgUser = UserContext.isOceanDgUser();
+        boolean isOceanDgUser = LicenseContext.isOceanDGLicense();
         OceanDGStatus dgStatus = shipmentDetails.getOceanDGStatus();
         OceanDGStatus updatedDgStatus = determineDgStatusAfterApproval(dgStatus, isOceanDgUser, shipmentDetails);
         DBOperationType operationType = determineOperationType(dgStatus, isOceanDgUser);

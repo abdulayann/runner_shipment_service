@@ -1472,7 +1472,7 @@ public class CommonUtils {
         }
 
         if(Objects.isNull(shipmentDetails.getOceanDGStatus()) ||
-                (!UserContext.isOceanDgUser() && (OceanDGStatus.OCEAN_DG_ACCEPTED.equals(shipmentDetails.getOceanDGStatus()) ||
+                (!LicenseContext.getOceanDGLicense() && (OceanDGStatus.OCEAN_DG_ACCEPTED.equals(shipmentDetails.getOceanDGStatus()) ||
                                                   OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED.equals(shipmentDetails.getOceanDGStatus()) ||
                                                   OceanDGStatus.OCEAN_DG_COMMERCIAL_REJECTED.equals(shipmentDetails.getOceanDGStatus()) ||
                                                   OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED.equals(shipmentDetails.getOceanDGStatus()))))
@@ -2355,28 +2355,28 @@ public class CommonUtils {
 
     public static boolean checkAirSecurityForShipment(ShipmentDetails shipmentDetails) {
         if (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipmentDetails.getDirection().equals(DIRECTION_EXP)) {
-            return UserContext.isAirSecurityUser();
+            return LicenseContext.getAirSecurityLicense();
         }
         return true;
     }
 
     public static boolean checkAirSecurityForConsolidation(ConsolidationDetails consolidationDetails) {
         if (consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && consolidationDetails.getShipmentType().equals(DIRECTION_EXP)) {
-            return UserContext.isAirSecurityUser();
+            return LicenseContext.getAirSecurityLicense();
         }
         return true;
     }
 
     public static boolean checkAirSecurityForBooking(CustomerBooking customerBooking) {
         if (customerBooking.getTransportType().equals(Constants.TRANSPORT_MODE_AIR) && customerBooking.getDirection().equals(DIRECTION_EXP)) {
-            return UserContext.isAirSecurityUser();
+            return LicenseContext.getAirSecurityLicense();
         }
         return true;
     }
 
     public static boolean checkAirSecurityForBookingRequest(CustomerBookingRequest customerBooking) {
         if (customerBooking.getTransportType().equals(Constants.TRANSPORT_MODE_AIR) && customerBooking.getDirection().equals(DIRECTION_EXP)) {
-            return UserContext.isAirSecurityUser();
+            return LicenseContext.getAirSecurityLicense();
         }
         return true;
     }
