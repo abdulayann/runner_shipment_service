@@ -1473,7 +1473,7 @@ public class CommonUtils {
         }
 
         if(Objects.isNull(shipmentDetails.getOceanDGStatus()) ||
-                (!LicenseContext.getOceanDGLicense() && (OceanDGStatus.OCEAN_DG_ACCEPTED.equals(shipmentDetails.getOceanDGStatus()) ||
+                (!LicenseContext.isOceanDGLicense() && (OceanDGStatus.OCEAN_DG_ACCEPTED.equals(shipmentDetails.getOceanDGStatus()) ||
                                                   OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED.equals(shipmentDetails.getOceanDGStatus()) ||
                                                   OceanDGStatus.OCEAN_DG_COMMERCIAL_REJECTED.equals(shipmentDetails.getOceanDGStatus()) ||
                                                   OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED.equals(shipmentDetails.getOceanDGStatus()))))
