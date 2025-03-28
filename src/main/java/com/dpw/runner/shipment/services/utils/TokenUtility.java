@@ -23,7 +23,7 @@ public class TokenUtility {
     public static final String USER_ID_FIELD = "userId";
     public static final String BRANCH_ID_FIELD = "branchId";
     private static final SecureRandom secureRandom = new SecureRandom();
-    public String getUserNameFromToken(String token, HttpServletResponse res) throws ParseException, BadJWTException {
+    public String getUserNameFromToken(String token) throws ParseException, BadJWTException {
         String[] tokenSplits = token.split(" ");
         if(tokenSplits.length>2 || !BEARER.equals(tokenSplits[0])) throw new BadJWTException("Expected 'Bearer token'");
         JWT parse = JWTParser.parse(tokenSplits[tokenSplits.length-1]);

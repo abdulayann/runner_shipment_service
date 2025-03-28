@@ -239,21 +239,18 @@ public class ContainerService implements IContainerService {
         Set<String> hazardousClassMasterData = masterDataMap.get(MasterDataType.DG_CLASS.getDescription());
         for (int row = 0; row < containersList.size(); row++) {
             Containers containersRow = containersList.get(row);
-            if (containersRow.getIsOwnContainer() != null && containersRow.getIsShipperOwned() != null
-                    && containersRow.getIsOwnContainer() == true && containersRow.getIsShipperOwned() == true) {
+            if (Boolean.TRUE.equals(containersRow.getIsOwnContainer()) && Boolean.TRUE.equals(containersRow.getIsShipperOwned())) {
                 String errorMessagePart1 = "Multiple container ownership is selected at row ";
                 String errorMessagePart2 = " - Kindly change and try re-uploading.";
                 throw new ValidationException(errorMessagePart1 + (row + 1) + errorMessagePart2);
             }
             if(containerNumberSet != null && !StringUtils.isEmpty(containersRow.getContainerNumber())
-                    && containerNumberSet.containsKey(containersRow.getContainerNumber())){
-                // if it does not have the same guid
-                if(!Objects.equals(containersRow.getGuid(), containerNumberSet.get(containersRow.getContainerNumber())))
-                    throw new ValidationException("Container Number already exists, please check container number at row : " + row + 1);
-            }
+                    && containerNumberSet.containsKey(containersRow.getContainerNumber()) && !Objects.equals(containersRow.getGuid(), containerNumberSet.get(containersRow.getContainerNumber())))
+                throw new ValidationException("Container Number already exists, please check container number at row : " + row + 1);
+
             checkCalculatedVolumeAndActualVolume(request, row + 1, containersRow);
             applyContainerNumberValidation(transportMode, row + 1, containersRow);
-            applyConatinerCountValidation(request, transportMode, row + 1, containersRow);
+            applyContainerCountValidation(transportMode, row + 1, containersRow);
             applyChargeableValidation(transportMode, row + 1, containersRow);
             checkForHandlingInfo(transportMode, row + 1, containersRow);
             applyCommodityTypeValidation(dicCommodityType, row + 1, containersRow);
@@ -289,17 +286,15 @@ public class ContainerService implements IContainerService {
 
     private static void applyHazardousValidation(Set<String> hazardousClassMasterData, int row, Containers containersRow) {
         Boolean isHazardous = containersRow.getHazardous();
-        if (isHazardous != null) {
-            if (isHazardous) {
-                // DG CLASS(HAZARDOUS CLASS)
-                String dgClass = containersRow.getDgClass();
-                validateDgClass(hazardousClassMasterData, row, dgClass);
+        if (isHazardous != null && isHazardous) {
+            // DG CLASS(HAZARDOUS CLASS)
+            String dgClass = containersRow.getDgClass();
+            validateDgClass(hazardousClassMasterData, row, dgClass);
 
-                //HAZARDOUS UN
-                String hazardousUn = containersRow.getHazardousUn();
-                if (!StringUtils.isEmpty(hazardousUn)) {
-                    containersRow.setHazardousUn(hazardousUn);
-                }
+            //HAZARDOUS UN
+            String hazardousUn = containersRow.getHazardousUn();
+            if (!StringUtils.isEmpty(hazardousUn)) {
+                containersRow.setHazardousUn(hazardousUn);
             }
         }
     }
@@ -321,10 +316,8 @@ public class ContainerService implements IContainerService {
     private static void applyCommodityTypeValidation(Set<String> dicCommodityType, int row, Containers containersRow) {
         String commodityCode = containersRow.getCommodityCode();
         commodityCode = commodityCode == null ? StringUtils.EMPTY : commodityCode.trim();
-        if (!commodityCode.isEmpty()) {
-            if (dicCommodityType == null || !dicCommodityType.contains(commodityCode)) {
-                throw new ValidationException("Commodity Type " + commodityCode + " is not valid at row " + row);
-            }
+        if (!commodityCode.isEmpty() && (dicCommodityType == null || !dicCommodityType.contains(commodityCode))) {
+            throw new ValidationException("Commodity Type " + commodityCode + " is not valid at row " + row);
         }
     }
 
@@ -394,7 +387,7 @@ public class ContainerService implements IContainerService {
         return packageLength.multiply(packageBreadth).multiply(packageHeight);
     }
 
-    private static void applyConatinerCountValidation(BulkUploadRequest request, String transportMode, int row, Containers containersRow) {
+    private static void applyContainerCountValidation(String transportMode, int row, Containers containersRow) {
         if (transportMode != null && !transportMode.equals(Constants.TRANSPORT_MODE_AIR)) {
             try {
                 var containerCount = Integer.parseInt(String.valueOf(containersRow.getContainerCount()));
@@ -586,7 +579,7 @@ public class ContainerService implements IContainerService {
 
         try(XSSFWorkbook workbook = new XSSFWorkbook()) {
             XSSFSheet sheet = workbook.createSheet("Containers_Events");
-            convertModelToExcelForContainersEvent(eventsModelList, sheet, request);
+            convertModelToExcelForContainersEvent(eventsModelList, sheet);
 
             response.setContentType(Constants.CONTENT_TYPE_FOR_EXCEL);
             response.setHeader(Constants.CONTENT_DISPOSITION, Constants.ATTACHMENT_FILENAME + filenameWithTimestamp);
@@ -596,7 +589,7 @@ public class ContainerService implements IContainerService {
             }
         }
     }
-    private void convertModelToExcelForContainersEvent(List<ContainerEventExcelModel> modelList, XSSFSheet sheet, BulkDownloadRequest request) throws IllegalAccessException {
+    private void convertModelToExcelForContainersEvent(List<ContainerEventExcelModel> modelList, XSSFSheet sheet) throws IllegalAccessException {
 
         // Create header row using annotations for order
         Row headerRow = sheet.createRow(0);
@@ -1221,11 +1214,9 @@ public class ContainerService implements IContainerService {
                 return ResponseHelper.buildSuccessResponse(response);
             }
         }
-        if (containerNumber.length() == 11) {
-            if ((int) containerNumber.charAt(10) < 48 || (int) containerNumber.charAt(10) > 57) {
-                response.setSuccess(false);
-                return ResponseHelper.buildSuccessResponse(response);
-            }
+        if (containerNumber.length() == 11 && ((int) containerNumber.charAt(10) < 48 || (int) containerNumber.charAt(10) > 57)) {
+            response.setSuccess(false);
+            return ResponseHelper.buildSuccessResponse(response);
         }
         return null;
     }
@@ -1597,7 +1588,7 @@ public class ContainerService implements IContainerService {
 
         try(Workbook workbook = new XSSFWorkbook()) {
             Sheet sheet = workbook.createSheet("ContainersList");
-            makeHeadersInSheet(sheet, consol);
+            makeHeadersInSheet(sheet);
 
             for (int i = 0; i < containersList.size(); i++) {
                 Row itemRow = sheet.createRow(i + 1);
@@ -1646,7 +1637,7 @@ public class ContainerService implements IContainerService {
             throw new GenericException("No containers found attached to consoliation");
     }
 
-    private void makeHeadersInSheet(Sheet sheet, Optional<ConsolidationDetails> consol) {
+    private void makeHeadersInSheet(Sheet sheet) {
         Row headerRow = sheet.createRow(0);
         List<String> containerHeader = parser.getHeadersForContainer();
         for (int i = 0; i < containerHeader.size(); i++) {

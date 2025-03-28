@@ -35,6 +35,7 @@ import java.util.regex.Pattern;
 
 @Slf4j
 @Component
+@SuppressWarnings("java:S1172")
 public class GetNextNumberHelper {
 
     @Autowired

@@ -546,7 +546,7 @@ public class CommonUtils {
         return Integer.parseInt(s);
     }
 
-    public static String getErrorResponseMessage(Exception e, Class<?> clazz) {
+    public static String getErrorResponseMessage(Exception e) {
         String responseMessage = "";
         responseMessage =
                 switch (e.getClass().getSimpleName()) {
@@ -1661,12 +1661,9 @@ public class CommonUtils {
         try {
             for (Field field : clazz.getDeclaredFields()) {
                 field.setAccessible(true);
-                if (field.isAnnotationPresent(UnlocationData.class)) {
-                    if ((Objects.isNull(oldEntity) || !Objects.equals(field.get(newEntity), field.get(oldEntity))) && !Objects.isNull(field.get(newEntity))) {
-                        unlocationSet.add((String) field.get(newEntity));
-                    }
+                if (field.isAnnotationPresent(UnlocationData.class) && (Objects.isNull(oldEntity) || !Objects.equals(field.get(newEntity), field.get(oldEntity))) && !Objects.isNull(field.get(newEntity))) {
+                    unlocationSet.add((String) field.get(newEntity));
                 }
-
             }
         } catch (Exception e) {
             log.warn("Error while getting un-location fields for class {}", clazz.getSimpleName());

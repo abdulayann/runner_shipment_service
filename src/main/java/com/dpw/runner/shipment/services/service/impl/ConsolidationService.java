@@ -3678,7 +3678,7 @@ public class ConsolidationService implements IConsolidationService {
             includeColumns.addAll(ConsolidationConstants.LIST_INCLUDE_COLUMNS);
             ConsolidationDetailsResponse consolidationDetailsResponse = (ConsolidationDetailsResponse) commonUtils.setIncludedFieldsToResponse(consolidationDetails, includeColumns.stream().collect(Collectors.toSet()), new ConsolidationDetailsResponse());
             log.info("Total time taken in setting consol details response {}", (System.currentTimeMillis() - start));
-            Map<String, Object> response = fetchAllMasterDataByKey(consolidationDetails, consolidationDetailsResponse);
+            Map<String, Object> response = fetchAllMasterDataByKey(consolidationDetailsResponse);
             return ResponseHelper.buildSuccessResponse(response);
         }
         catch (Exception e) {
@@ -3694,18 +3694,18 @@ public class ConsolidationService implements IConsolidationService {
         fieldClassDto.setFieldRef(parentref);
         return fieldClassDto;
     }
-    public Map<String, Object> fetchAllMasterDataByKey(ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse) {
+    public Map<String, Object> fetchAllMasterDataByKey(ConsolidationDetailsResponse consolidationDetailsResponse) {
         Map<String, Object> response = new HashMap<>();
-        var masterListFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllMasterDataInSingleCall(consolidationDetails, consolidationDetailsResponse, response)), executorService);
-        var unLocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllUnlocationDataInSingleCall(consolidationDetails, consolidationDetailsResponse, response)), executorService);
-        var carrierFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllCarrierDataInSingleCall(consolidationDetails, consolidationDetailsResponse, response)), executorService);
-        var currencyFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllCurrencyDataInSingleCall(consolidationDetails, consolidationDetailsResponse, response)), executorService);
-        var commodityTypesFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllCommodityTypesInSingleCall(consolidationDetails, consolidationDetailsResponse, response)), executorService);
-        var tenantDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllTenantDataInSingleCall(consolidationDetails, consolidationDetailsResponse, response)), executorService);
-        var wareHouseDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllWarehouseDataInSingleCall(consolidationDetails, consolidationDetailsResponse, response)), executorService);
-        var vesselDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> addAllVesselDataInSingleCall(consolidationDetails, consolidationDetailsResponse, response)), executorService);
-        var dgSubstanceFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> addAllDGSubstanceDataInSingleCall(consolidationDetails, consolidationDetailsResponse, response)), executorService);
-        var containerTypeFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllContainerTypesInSingleCall(consolidationDetails, consolidationDetailsResponse, response)), executorService);
+        var masterListFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllMasterDataInSingleCall(consolidationDetailsResponse, response)), executorService);
+        var unLocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllUnlocationDataInSingleCall(consolidationDetailsResponse, response)), executorService);
+        var carrierFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllCarrierDataInSingleCall(consolidationDetailsResponse, response)), executorService);
+        var currencyFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllCurrencyDataInSingleCall(consolidationDetailsResponse, response)), executorService);
+        var commodityTypesFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllCommodityTypesInSingleCall(consolidationDetailsResponse, response)), executorService);
+        var tenantDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllTenantDataInSingleCall(consolidationDetailsResponse, response)), executorService);
+        var wareHouseDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllWarehouseDataInSingleCall(consolidationDetailsResponse, response)), executorService);
+        var vesselDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> addAllVesselDataInSingleCall(consolidationDetailsResponse, response)), executorService);
+        var dgSubstanceFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> addAllDGSubstanceDataInSingleCall(consolidationDetailsResponse, response)), executorService);
+        var containerTypeFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllContainerTypesInSingleCall(consolidationDetailsResponse, response)), executorService);
         CompletableFuture.allOf(masterListFuture, unLocationsFuture, carrierFuture, currencyFuture, commodityTypesFuture, tenantDataFuture, wareHouseDataFuture, vesselDataFuture, dgSubstanceFuture, containerTypeFuture).join();
 
         return response;
@@ -3718,7 +3718,7 @@ public class ConsolidationService implements IConsolidationService {
     public void createConsolidationPayload(ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse, boolean getMasterData) {
         try {
             double startTime = System.currentTimeMillis();
-            setMasterDataForCreateConsolePayload(consolidationDetails, consolidationDetailsResponse, getMasterData);
+            setMasterDataForCreateConsolePayload(consolidationDetailsResponse, getMasterData);
             this.calculationsOnRetrieve(consolidationDetails, consolidationDetailsResponse);
             if(consolidationDetails.getBookingStatus() != null && Arrays.stream(CarrierBookingStatus.values()).map(CarrierBookingStatus::name).toList().contains(consolidationDetails.getBookingStatus()))
                 consolidationDetailsResponse.setBookingStatus(CarrierBookingStatus.valueOf(consolidationDetails.getBookingStatus()).getDescription());
@@ -3743,15 +3743,15 @@ public class ConsolidationService implements IConsolidationService {
         }
     }
 
-    private void setMasterDataForCreateConsolePayload(ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse, boolean getMasterData) {
+    private void setMasterDataForCreateConsolePayload(ConsolidationDetailsResponse consolidationDetailsResponse, boolean getMasterData) {
         if(getMasterData) {
-            var masterListFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllMasterDataInSingleCall(consolidationDetails, consolidationDetailsResponse, null)), executorService);
-            var unLocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllUnlocationDataInSingleCall(consolidationDetails, consolidationDetailsResponse, null)), executorService);
-            var carrierFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllCarrierDataInSingleCall(consolidationDetails, consolidationDetailsResponse, null)), executorService);
-            var currencyFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllCurrencyDataInSingleCall(consolidationDetails, consolidationDetailsResponse, null)), executorService);
-            var commodityTypesFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllCommodityTypesInSingleCall(consolidationDetails, consolidationDetailsResponse, null)), executorService);
-            var tenantDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllTenantDataInSingleCall(consolidationDetails, consolidationDetailsResponse, null)), executorService);
-            var wareHouseDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllWarehouseDataInSingleCall(consolidationDetails, consolidationDetailsResponse, null)), executorService);
+            var masterListFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllMasterDataInSingleCall(consolidationDetailsResponse, null)), executorService);
+            var unLocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllUnlocationDataInSingleCall(consolidationDetailsResponse, null)), executorService);
+            var carrierFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllCarrierDataInSingleCall(consolidationDetailsResponse, null)), executorService);
+            var currencyFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllCurrencyDataInSingleCall(consolidationDetailsResponse, null)), executorService);
+            var commodityTypesFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllCommodityTypesInSingleCall(consolidationDetailsResponse, null)), executorService);
+            var tenantDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllTenantDataInSingleCall(consolidationDetailsResponse, null)), executorService);
+            var wareHouseDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllWarehouseDataInSingleCall(consolidationDetailsResponse, null)), executorService);
             CompletableFuture.allOf(masterListFuture, unLocationsFuture, carrierFuture, currencyFuture, commodityTypesFuture, tenantDataFuture, wareHouseDataFuture).join();
         }
     }
@@ -3805,7 +3805,7 @@ public class ConsolidationService implements IConsolidationService {
         }
     }
 
-    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllMasterDataInSingleCall (ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse, Map<String, Object> masterDataResponse) {
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllMasterDataInSingleCall (ConsolidationDetailsResponse consolidationDetailsResponse, Map<String, Object> masterDataResponse) {
         try {
             Map<String, Object> cacheMap = new HashMap<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
@@ -3857,7 +3857,7 @@ public class ConsolidationService implements IConsolidationService {
         }
     }
 
-    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllUnlocationDataInSingleCall (ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse, Map<String, Object> masterDataResponse) {
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllUnlocationDataInSingleCall (ConsolidationDetailsResponse consolidationDetailsResponse, Map<String, Object> masterDataResponse) {
         try {
             Map<String, Object> cacheMap = new HashMap<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
@@ -3896,7 +3896,7 @@ public class ConsolidationService implements IConsolidationService {
         }
     }
 
-    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllCarrierDataInSingleCall (ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse, Map<String, Object> masterDataResponse) {
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllCarrierDataInSingleCall (ConsolidationDetailsResponse consolidationDetailsResponse, Map<String, Object> masterDataResponse) {
         try {
             Map<String, Object> cacheMap = new HashMap<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
@@ -3904,12 +3904,10 @@ public class ConsolidationService implements IConsolidationService {
             if (!Objects.isNull(consolidationDetailsResponse.getCarrierDetails()))
                 carrierList = new HashSet<>(masterDataUtils.createInBulkCarriersRequest(consolidationDetailsResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName(), cacheMap));
 
-            if(masterDataResponse != null) {
-                if(!Objects.isNull(consolidationDetailsResponse.getRoutingsList())) {
-                    Set<String> finalCarrierList = carrierList;
-                    consolidationDetailsResponse.getRoutingsList().forEach(r -> finalCarrierList.addAll(masterDataUtils.createInBulkCarriersRequest(r, Routings.class, fieldNameKeyMap, Routings.class.getSimpleName() + r.getId(), cacheMap)));
-                    carrierList = finalCarrierList;
-                }
+            if(masterDataResponse != null && !Objects.isNull(consolidationDetailsResponse.getRoutingsList())) {
+                Set<String> finalCarrierList = carrierList;
+                consolidationDetailsResponse.getRoutingsList().forEach(r -> finalCarrierList.addAll(masterDataUtils.createInBulkCarriersRequest(r, Routings.class, fieldNameKeyMap, Routings.class.getSimpleName() + r.getId(), cacheMap)));
+                carrierList = finalCarrierList;
             }
 
             Map<String, EntityTransferCarrier> v1Data = masterDataUtils.fetchInBulkCarriers(carrierList);
@@ -3929,7 +3927,7 @@ public class ConsolidationService implements IConsolidationService {
         }
     }
 
-    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllCurrencyDataInSingleCall (ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse, Map<String, Object> masterDataResponse) {
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllCurrencyDataInSingleCall (ConsolidationDetailsResponse consolidationDetailsResponse, Map<String, Object> masterDataResponse) {
         try {
             Map<String, Object> cacheMap = new HashMap<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
@@ -3952,7 +3950,7 @@ public class ConsolidationService implements IConsolidationService {
         }
     }
 
-    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllCommodityTypesInSingleCall(ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse, Map<String, Object> masterDataResponse) {
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllCommodityTypesInSingleCall(ConsolidationDetailsResponse consolidationDetailsResponse, Map<String, Object> masterDataResponse) {
         try {
             Map<String, Object> cacheMap = new HashMap<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
@@ -3960,10 +3958,8 @@ public class ConsolidationService implements IConsolidationService {
             if (!Objects.isNull(consolidationDetailsResponse.getContainersList()))
                 consolidationDetailsResponse.getContainersList().forEach(r -> commodityTypes.addAll(masterDataUtils.createInBulkCommodityTypeRequest(r, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() + r.getId(), cacheMap)));
 
-            if(masterDataResponse != null) {
-                if (!Objects.isNull(consolidationDetailsResponse.getPackingList()))
-                    consolidationDetailsResponse.getPackingList().forEach(r -> commodityTypes.addAll(masterDataUtils.createInBulkCommodityTypeRequest(r, Packing.class, fieldNameKeyMap, Packing.class.getSimpleName() + r.getId(), cacheMap)));
-            }
+            if(masterDataResponse != null && !Objects.isNull(consolidationDetailsResponse.getPackingList()))
+                consolidationDetailsResponse.getPackingList().forEach(r -> commodityTypes.addAll(masterDataUtils.createInBulkCommodityTypeRequest(r, Packing.class, fieldNameKeyMap, Packing.class.getSimpleName() + r.getId(), cacheMap)));
 
             Map<String, EntityTransferCommodityType> v1Data = masterDataUtils.fetchInBulkCommodityTypes(commodityTypes.stream().toList());
             masterDataUtils.pushToCache(v1Data, CacheConstants.COMMODITY, commodityTypes, new EntityTransferCommodityType(), cacheMap);
@@ -3983,7 +3979,7 @@ public class ConsolidationService implements IConsolidationService {
         }
     }
 
-    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllTenantDataInSingleCall (ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse, Map<String, Object> masterDataResponse) {
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllTenantDataInSingleCall (ConsolidationDetailsResponse consolidationDetailsResponse, Map<String, Object> masterDataResponse) {
         try {
             Map<String, Object> cacheMap = new HashMap<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
@@ -4007,7 +4003,7 @@ public class ConsolidationService implements IConsolidationService {
 
     }
 
-    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllWarehouseDataInSingleCall (ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse, Map<String, Object> masterDataResponse) {
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllWarehouseDataInSingleCall (ConsolidationDetailsResponse consolidationDetailsResponse, Map<String, Object> masterDataResponse) {
         try {
             Map<String, Object> cacheMap = new HashMap<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
@@ -4030,7 +4026,7 @@ public class ConsolidationService implements IConsolidationService {
         }
     }
 
-    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllVesselDataInSingleCall(ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse, Map<String, Object> masterDataResponse) {
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllVesselDataInSingleCall(ConsolidationDetailsResponse consolidationDetailsResponse, Map<String, Object> masterDataResponse) {
         try {
             Map<String, Object> cacheMap = new HashMap<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
@@ -4057,7 +4053,7 @@ public class ConsolidationService implements IConsolidationService {
         }
     }
 
-    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllDGSubstanceDataInSingleCall (ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse, Map<String, Object> masterDataResponse) {
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllDGSubstanceDataInSingleCall (ConsolidationDetailsResponse consolidationDetailsResponse, Map<String, Object> masterDataResponse) {
         try {
             Map<String, Object> cacheMap = new HashMap<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
@@ -4082,7 +4078,7 @@ public class ConsolidationService implements IConsolidationService {
         }
     }
 
-    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllContainerTypesInSingleCall(ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse, Map<String, Object> masterDataResponse) {
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllContainerTypesInSingleCall(ConsolidationDetailsResponse consolidationDetailsResponse, Map<String, Object> masterDataResponse) {
         try {
             Map<String, Object> cacheMap = new HashMap<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
@@ -5031,11 +5027,8 @@ public class ConsolidationService implements IConsolidationService {
 
         Long id = consolidationDetails.getId();
 
-        if (Boolean.FALSE.equals(isCreate)) {
-            // Update AWB
-            if(checkForAwbUpdate(consolidationDetails, oldEntity)) {
-                awbDao.updatedAwbInformationEvent(consolidationDetails, oldEntity);
-            }
+        if (Boolean.FALSE.equals(isCreate) && checkForAwbUpdate(consolidationDetails, oldEntity)) {
+            awbDao.updatedAwbInformationEvent(consolidationDetails, oldEntity);
         }
 
         setContainerAndPackingList(consolidationDetails, isCreate, shipmentSettingsDetails, isFromBooking, includeGuid, containerRequestList, id, packingRequestList);
