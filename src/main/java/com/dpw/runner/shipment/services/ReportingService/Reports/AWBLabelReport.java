@@ -30,12 +30,17 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.THIRD_LEG_DESTINATION;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TOTAL_CONSOL_PACKS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TOTAL_PACKS;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.setIsNullOrEmpty;
 
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.ReportingService.Models.AWbLabelModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.CarrierDetailModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ConsolidationModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.RoutingsModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
@@ -68,8 +73,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
-
-import static com.dpw.runner.shipment.services.utils.CommonUtils.setIsNullOrEmpty;
 
 @Component
 @Slf4j
@@ -561,6 +564,7 @@ public class AWBLabelReport extends IReport{
             // DRT SHIPMENT
             dictionary.put(AIRLINE_NAME, dictionary.get(CARRIER));
             dictionary.put(CONSOL_DESTINATION_AIRPORT_CODE, dictionary.get(POD_AIRPORT_CODE_IN_CAPS));
+            dictionary.put(CONSOL_DESTINATION_AIRPORT_CODE_CAPS, dictionary.get(POD_AIRPORT_CODE_IN_CAPS));
             dictionary.put(DESTINATION_PORT_NAME_INCAPS_AIR, dictionary.get(DESTINATION_PORT));
             dictionary.put(CONSOL_ORIGIN_AIRPORT_CODE, dictionary.get(POL_AIRPORT_CODE_IN_CAPS));
             dictionary.put(ORIGIN_PORT_NAME_INCAPS_AIR, dictionary.get(ORIGIN_PORT));
