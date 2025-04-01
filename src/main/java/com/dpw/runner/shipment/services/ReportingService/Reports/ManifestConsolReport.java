@@ -9,13 +9,11 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ManifestConsolMo
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ConsolidationModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.helper.ICarrierMasterData;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.nimbusds.jose.util.Pair;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -25,7 +23,6 @@ import java.util.*;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 
 @Component
-@Slf4j
 public class ManifestConsolReport extends IReport {
 
     @Autowired
@@ -70,9 +67,9 @@ public class ManifestConsolReport extends IReport {
         V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
 
         populateConsolidationFields(model.getConsolidation() , dictionary);
-        List<PackingModel> packingList = getAllShipmentsPacks(model.getShipmentDetailsList());
-        Pair<BigDecimal, String> weightAndUnit = getTotalWeight(packingList);
-        Pair<BigDecimal, String> volumeAndUnit = getTotalVolume(packingList);
+        List<PackingModel> packingList = GetAllShipmentsPacks(model.getShipmentDetailsList());
+        Pair<BigDecimal, String> weightAndUnit = GetTotalWeight(packingList);
+        Pair<BigDecimal, String> volumeAndUnit = GetTotalVolume(packingList);
 
         int totalPacks = 0;
         List<String> allPacksTypes = new ArrayList<>();
@@ -99,27 +96,27 @@ public class ManifestConsolReport extends IReport {
         processPackingList(packingList, totalPacks, allPacksTypes, dictionary);
 
         if (weightAndUnit.getLeft().compareTo(BigDecimal.ZERO) > 0)
-            dictionary.put(TOTAL_PACKS_WEIGHT, convertToWeightNumberFormat(weightAndUnit.getLeft(), v1TenantSettingsResponse));
+            dictionary.put(TOTAL_PACKS_WEIGHT, ConvertToWeightNumberFormat(weightAndUnit.getLeft(), v1TenantSettingsResponse));
         else
             dictionary.put(TOTAL_PACKS_WEIGHT, "-");
 
         dictionary.put(TOTAL_WEIGHT_UNIT, weightAndUnit.getRight());
 
         if (volumeAndUnit.getLeft().compareTo(BigDecimal.ZERO) > 0)
-            dictionary.put(TOTAL_PACKS_VOLUME, convertToVolumeNumberFormat(volumeAndUnit.getLeft(), v1TenantSettingsResponse));
+            dictionary.put(TOTAL_PACKS_VOLUME, ConvertToVolumeNumberFormat(volumeAndUnit.getLeft(), v1TenantSettingsResponse));
         else
             dictionary.put(TOTAL_PACKS_VOLUME, "-");
 
         dictionary.put(TOTAL_VOLUME_UNIT, volumeAndUnit.getRight());
 
         if(totalWeightManifest.getLeft().compareTo(BigDecimal.ZERO) > 0)
-            dictionary.put(TOTAL_WEIGHT_MANIFEST, convertToWeightNumberFormat(totalWeightManifest.getLeft(), v1TenantSettingsResponse));
+            dictionary.put(TOTAL_WEIGHT_MANIFEST, ConvertToWeightNumberFormat(totalWeightManifest.getLeft(), v1TenantSettingsResponse));
         else
             dictionary.put(TOTAL_WEIGHT_MANIFEST, "-");
         dictionary.put(TOTAL_WEIGHT_UNIT_MANIFEST, totalWeightManifest.getRight());
 
         if(totalVolumeManifest.getLeft().compareTo(BigDecimal.ZERO) > 0)
-            dictionary.put(TOTAL_VOLUME_MANIFEST, convertToVolumeNumberFormat(totalVolumeManifest.getLeft(), v1TenantSettingsResponse));
+            dictionary.put(TOTAL_VOLUME_MANIFEST, ConvertToVolumeNumberFormat(totalVolumeManifest.getLeft(), v1TenantSettingsResponse));
         else
             dictionary.put(TOTAL_VOLUME_MANIFEST, "-");
         dictionary.put(TOTAL_VOLUME_UNIT_MANIFEST, totalVolumeManifest.getRight());
@@ -143,9 +140,7 @@ public class ManifestConsolReport extends IReport {
             {
                 try{
                     totalPacks += Integer.parseInt(packing.getPacks());
-                } catch (Exception ignored) {
-                    log.info(Constants.IGNORED_ERROR_MSG);
-                }
+                } catch (Exception ignored){}
 
                 if(!allPacksTypes.contains(packing.getPacksType()))
                     allPacksTypes.add(packing.getPacksType());
@@ -163,7 +158,7 @@ public class ManifestConsolReport extends IReport {
                     .map(i -> jsonHelper.convertJsonToMap(jsonHelper.convertToJson(i)))
                     .toList();
             values.forEach(v -> {
-                v.put(WEIGHT, convertToWeightNumberFormat(v.get(WEIGHT), v1TenantSettingsResponse));
+                v.put(WEIGHT, ConvertToWeightNumberFormat(v.get(WEIGHT), v1TenantSettingsResponse));
                 v.put(TOTAL_PACKS, AmountNumberFormatter.formatWithoutDecimal(v.get(TOTAL_PACKS), v.get(SHIPMENT_BILLCHARGES_FREIGHTOVERSEASCURRENCY) != null ? v.get(SHIPMENT_BILLCHARGES_FREIGHTOVERSEASCURRENCY).toString() : null, v1TenantSettingsResponse));
                 v.put(HSN_NUMBER, AmountNumberFormatter.formatWithoutDecimal(v.get(HSN_NUMBER), v.get(SHIPMENT_BILLCHARGES_FREIGHTOVERSEASCURRENCY) != null ? v.get(SHIPMENT_BILLCHARGES_FREIGHTOVERSEASCURRENCY).toString() : null, v1TenantSettingsResponse));
             });

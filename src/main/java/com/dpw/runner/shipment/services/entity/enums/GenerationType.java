@@ -3,7 +3,6 @@ package com.dpw.runner.shipment.services.entity.enums;
 import com.dpw.runner.shipment.services.utils.Generated;
 
 @Generated
-@SuppressWarnings("java:S115")
 public enum GenerationType {
 
     Random(0, "Generation Type Random"),

@@ -38,6 +38,7 @@ import com.nimbusds.jose.util.Pair;
 import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -78,11 +79,13 @@ public class NetworkTransferService implements INetworkTransferService {
 
     private final INotificationDao notificationDao;
 
+    private final IShipmentSettingsDao shipmentSettingsDao;
+
     @Autowired
     public NetworkTransferService(ModelMapper modelMapper, JsonHelper jsonHelper, INetworkTransferDao networkTransferDao,
                                   MasterDataUtils masterDataUtils, ExecutorService executorService,
                                   CommonUtils commonUtils, MasterDataKeyUtils masterDataKeyUtils, INotificationDao notificationDao,
-                                  IConsoleShipmentMappingDao consoleShipmentMappingDao, IShipmentDao shipmentDao, IConsolidationDetailsDao consolidationDao) {
+                                  IShipmentSettingsDao shipmentSettingsDao, IConsoleShipmentMappingDao consoleShipmentMappingDao, IShipmentDao shipmentDao, IConsolidationDetailsDao consolidationDao) {
         this.modelMapper = modelMapper;
         this.jsonHelper = jsonHelper;
         this.networkTransferDao = networkTransferDao;
@@ -91,6 +94,7 @@ public class NetworkTransferService implements INetworkTransferService {
         this.commonUtils = commonUtils;
         this.masterDataKeyUtils = masterDataKeyUtils;
         this.notificationDao = notificationDao;
+        this.shipmentSettingsDao = shipmentSettingsDao;
         this.consoleShipmentMappingDao = consoleShipmentMappingDao;
         this.consolidationDao = consolidationDao;
         this.shipmentDao = shipmentDao;
@@ -527,6 +531,7 @@ public class NetworkTransferService implements INetworkTransferService {
 
     @Override
     public void updateStatusAndCreatedEntityId(Long id, String status, Long createdEntityId) {
+        var networkTransfer = networkTransferDao.findById(id);
         networkTransferDao.updateStatusAndCreatedEntityId(id, status, createdEntityId);
     }
 

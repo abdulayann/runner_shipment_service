@@ -86,7 +86,7 @@ class RetrieveValidateAspectTest {
         mockUser.setUsername("user");
         mockUser.setPermissions(new HashMap<>());
         UserContext.setUser(mockUser);
-        PermissionsContext.setPermissions(new ArrayList<>(List.of("Shipments:Retrive:Air Shipment:ImportAirShipmentRetrive")));
+        PermissionsContext.setPermissions(new ArrayList<>(Arrays.asList("Shipments:Retrive:Air Shipment:ImportAirShipmentRetrive")));
         ShipmentDetails mockShipment = new ShipmentDetails();
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder().P100Branch(false).build());
@@ -98,8 +98,7 @@ class RetrieveValidateAspectTest {
         mockShipment.setShipmentType("FCL");
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
         retrieveValidateAspect = new RetrieveValidateAspect();
-        ShipmentDetailsResponse shipmentDetailsResponse = objectMapper.convertValue(mockShipment, ShipmentDetailsResponse.class);
-        assertThrows(ValidationException.class, () -> retrieveValidateAspect.validateShipmentRetrieve(shipmentDetailsResponse));
+        assertThrows(ValidationException.class, () -> retrieveValidateAspect.validateShipmentRetrieve(objectMapper.convertValue(mockShipment, ShipmentDetailsResponse.class)));
     }
 
     @Test
@@ -109,7 +108,7 @@ class RetrieveValidateAspectTest {
         mockUser.setUsername("user");
         mockUser.setPermissions(new HashMap<>());
         UserContext.setUser(mockUser);
-        PermissionsContext.setPermissions(new ArrayList<>(List.of("Shipments:Retrive:Air Shipment:ImportAirShipmentRetrive")));
+        PermissionsContext.setPermissions(new ArrayList<>(Arrays.asList("Shipments:Retrive:Air Shipment:ImportAirShipmentRetrive")));
         ShipmentDetails mockShipment = new ShipmentDetails();
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder().P100Branch(false).build());
@@ -121,8 +120,7 @@ class RetrieveValidateAspectTest {
         mockShipment.setShipmentType("FCL");
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
         retrieveValidateAspect = new RetrieveValidateAspect();
-        ShipmentDetailsResponse shipmentDetailsResponse = objectMapper.convertValue(mockShipment, ShipmentDetailsResponse.class);
-        assertThrows(ValidationException.class, () -> retrieveValidateAspect.validateShipmentRetrieve(shipmentDetailsResponse));
+        assertThrows(ValidationException.class, () -> retrieveValidateAspect.validateShipmentRetrieve(objectMapper.convertValue(mockShipment, ShipmentDetailsResponse.class)));
     }
 
     @Test
@@ -132,7 +130,7 @@ class RetrieveValidateAspectTest {
         mockUser.setUsername("user");
         mockUser.setPermissions(new HashMap<>());
         UserContext.setUser(mockUser);
-        PermissionsContext.setPermissions(new ArrayList<>(List.of("Shipments:Retrive:Air Shipment:ImportAirShipmentRetrive")));
+        PermissionsContext.setPermissions(new ArrayList<>(Arrays.asList("Shipments:Retrive:Air Shipment:ImportAirShipmentRetrive")));
         ShipmentDetails mockShipment = new ShipmentDetails();
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder().P100Branch(false).build());
@@ -156,7 +154,7 @@ class RetrieveValidateAspectTest {
         mockUser.setUsername("user");
         mockUser.setPermissions(new HashMap<>());
         UserContext.setUser(mockUser);
-        PermissionsContext.setPermissions(new ArrayList<>(List.of("Shipments:Retrive:Air Shipment:ImportAirShipmentRetrive")));
+        PermissionsContext.setPermissions(new ArrayList<>(Arrays.asList("Shipments:Retrive:Air Shipment:ImportAirShipmentRetrive")));
         ShipmentDetails mockShipment = new ShipmentDetails();
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder().P100Branch(false).build());
@@ -189,8 +187,7 @@ class RetrieveValidateAspectTest {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
         Optional<ShipmentDetails> shipmentDetails = Optional.of(mockShipment);
         retrieveValidateAspect = new RetrieveValidateAspect();
-        ShipmentDetailsResponse shipmentDetailsResponse = objectMapper.convertValue(shipmentDetails, ShipmentDetailsResponse.class);
-        assertThrows(ValidationException.class, () -> retrieveValidateAspect.validateShipmentRetrieve(shipmentDetailsResponse));
+        assertThrows(ValidationException.class, () -> retrieveValidateAspect.validateShipmentRetrieve(objectMapper.convertValue(shipmentDetails, ShipmentDetailsResponse.class)));
     }
 
     @Test
@@ -200,7 +197,7 @@ class RetrieveValidateAspectTest {
         mockUser.setUsername("user");
         mockUser.setPermissions(new HashMap<>());
         UserContext.setUser(mockUser);
-        PermissionsContext.setPermissions(new ArrayList<>(List.of("Consolidations:Retrive:All Consolidation:AllConsolidationRetrive")));
+        PermissionsContext.setPermissions(new ArrayList<>(Arrays.asList("Consolidations:Retrive:All Consolidation:AllConsolidationRetrive")));
         ConsolidationDetails mockConsolidation = new ConsolidationDetails();
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder().P100Branch(false).build());
@@ -224,7 +221,7 @@ class RetrieveValidateAspectTest {
         mockUser.setUsername("user");
         mockUser.setPermissions(new HashMap<>());
         UserContext.setUser(mockUser);
-        PermissionsContext.setPermissions(new ArrayList<>(List.of("Consolidations:Retrive:Air Consolidation:ImportAirConsolidationRetrive")));
+        PermissionsContext.setPermissions(new ArrayList<>(Arrays.asList("Consolidations:Retrive:Air Consolidation:ImportAirConsolidationRetrive")));
         ConsolidationDetails mockConsolidation = new ConsolidationDetails();
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder().P100Branch(false).build());
@@ -236,8 +233,7 @@ class RetrieveValidateAspectTest {
         mockConsolidation.setContainerCategory("FCL");
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
         retrieveValidateAspect = new RetrieveValidateAspect();
-        ConsolidationDetailsResponse consolidationDetailsResponse = objectMapper.convertValue(mockConsolidation, ConsolidationDetailsResponse.class);
-        assertThrows(ValidationException.class, () -> retrieveValidateAspect.validateConsolidationRetrieve(consolidationDetailsResponse));
+        assertThrows(ValidationException.class, () -> retrieveValidateAspect.validateConsolidationRetrieve(objectMapper.convertValue(mockConsolidation, ConsolidationDetailsResponse.class)));
     }
 
     @Test
@@ -247,7 +243,7 @@ class RetrieveValidateAspectTest {
         mockUser.setUsername("user");
         mockUser.setPermissions(new HashMap<>());
         UserContext.setUser(mockUser);
-        PermissionsContext.setPermissions(new ArrayList<>(List.of("Consolidations:Retrive:Air Consolidation:ImportAirConsolidationRetrive")));
+        PermissionsContext.setPermissions(new ArrayList<>(Arrays.asList("Consolidations:Retrive:Air Consolidation:ImportAirConsolidationRetrive")));
         ConsolidationDetails mockConsolidation = new ConsolidationDetails();
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder().P100Branch(false).build());
@@ -259,8 +255,7 @@ class RetrieveValidateAspectTest {
         mockConsolidation.setContainerCategory("FCL");
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
         retrieveValidateAspect = new RetrieveValidateAspect();
-        ConsolidationDetailsResponse consolidationDetailsResponse = objectMapper.convertValue(mockConsolidation, ConsolidationDetailsResponse.class);
-        assertThrows(ValidationException.class, () -> retrieveValidateAspect.validateConsolidationRetrieve(consolidationDetailsResponse));
+        assertThrows(ValidationException.class, () -> retrieveValidateAspect.validateConsolidationRetrieve(objectMapper.convertValue(mockConsolidation, ConsolidationDetailsResponse.class)));
     }
 
     @Test
@@ -270,7 +265,7 @@ class RetrieveValidateAspectTest {
         mockUser.setUsername("user");
         mockUser.setPermissions(new HashMap<>());
         UserContext.setUser(mockUser);
-        PermissionsContext.setPermissions(new ArrayList<>(List.of("Consolidations:Retrive:Air Consolidation:ImportAirConsolidationRetrive")));
+        PermissionsContext.setPermissions(new ArrayList<>(Arrays.asList("Consolidations:Retrive:Air Consolidation:ImportAirConsolidationRetrive")));
         ConsolidationDetails mockConsolidation = new ConsolidationDetails();
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder().P100Branch(false).build());
@@ -294,7 +289,7 @@ class RetrieveValidateAspectTest {
         mockUser.setUsername("user");
         mockUser.setPermissions(new HashMap<>());
         UserContext.setUser(mockUser);
-        PermissionsContext.setPermissions(new ArrayList<>(List.of("Consolidations:Retrive:Air Consolidation:ImportAirConsolidationRetrive")));
+        PermissionsContext.setPermissions(new ArrayList<>(Arrays.asList("Consolidations:Retrive:Air Consolidation:ImportAirConsolidationRetrive")));
         ConsolidationDetails mockConsolidation = new ConsolidationDetails();
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder().P100Branch(false).build());
@@ -325,8 +320,8 @@ class RetrieveValidateAspectTest {
         mockConsolidation.setShipmentType("EXP");
         mockConsolidation.setContainerCategory("FCL");
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
+        Optional<ConsolidationDetails> consolidationDetails = Optional.of(mockConsolidation);
         retrieveValidateAspect = new RetrieveValidateAspect();
-        ConsolidationDetailsResponse consolidationDetailsResponse = objectMapper.convertValue(mockConsolidation, ConsolidationDetailsResponse.class);
-        assertThrows(ValidationException.class, () -> retrieveValidateAspect.validateConsolidationRetrieve(consolidationDetailsResponse));
+        assertThrows(ValidationException.class, () -> retrieveValidateAspect.validateConsolidationRetrieve(objectMapper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class)));
     }
 }

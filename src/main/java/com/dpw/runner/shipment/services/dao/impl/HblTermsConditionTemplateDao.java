@@ -23,7 +23,6 @@ import org.springframework.stereotype.Repository;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
@@ -83,15 +82,19 @@ public class HblTermsConditionTemplateDao implements IHblTermsConditionTemplateD
         String responseMsg;
         List<HblTermsConditionTemplate> responseHblTermsConditionTemplate = new ArrayList<>();
         try {
-            // LATER- Handle Transactions here
+            // TODO- Handle Transactions here
             ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentSettingsId", shipmentSettingsId, "=");
             Pair<Specification<HblTermsConditionTemplate>, Pageable> pair = fetchData(listCommonRequest, HblTermsConditionTemplate.class);
             Page<HblTermsConditionTemplate> hblTermsConditionTemplates = findAll(pair.getLeft(), pair.getRight());
             List<HblTermsConditionTemplate> hashMap = hblTermsConditionTemplates.stream()
-                    .filter(e -> Objects.equals(e.getIsFrontPrint(), isFrontPrint))
+                    .filter(e -> e.getIsFrontPrint() == isFrontPrint)
                     .toList();
-            if (hblTermsConditionTemplateList != null && !hblTermsConditionTemplateList.isEmpty()) {
-                List<HblTermsConditionTemplate> hblTermsConditionTemplatesRequestList = new ArrayList<>(hblTermsConditionTemplateList);
+            List<HblTermsConditionTemplate> hblTermsConditionTemplatesRequestList = new ArrayList<>();
+            if (hblTermsConditionTemplateList != null && hblTermsConditionTemplateList.size() != 0) {
+                for (HblTermsConditionTemplate request : hblTermsConditionTemplateList) {
+                    Long id = request.getId();
+                    hblTermsConditionTemplatesRequestList.add(request);
+                }
                 responseHblTermsConditionTemplate = saveEntityFromSettings(hblTermsConditionTemplatesRequestList, shipmentSettingsId, isFrontPrint);
             }
             deleteHblTermsConditionTemplate(hashMap);
@@ -141,7 +144,7 @@ public class HblTermsConditionTemplateDao implements IHblTermsConditionTemplateD
         Pair<Specification<HblTermsConditionTemplate>, Pageable> pair = fetchData(listCommonRequest, HblTermsConditionTemplate.class);
         Page<HblTermsConditionTemplate> hblTermsConditionTemplates = findAll(pair.getLeft(), pair.getRight());
 
-        if (!hblTermsConditionTemplates.getContent().isEmpty()) {
+        if (hblTermsConditionTemplates.getContent().size() > 0) {
             return hblTermsConditionTemplates.getContent().get(0);
         }
 

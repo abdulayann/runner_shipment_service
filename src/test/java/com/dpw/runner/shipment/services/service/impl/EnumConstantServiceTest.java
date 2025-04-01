@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
-class EnumConstantServiceTest {
+public class EnumConstantServiceTest {
 
     @InjectMocks
     private EnumConstantService enumConstantService;

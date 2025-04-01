@@ -47,7 +47,7 @@ public class BridgeServiceAdapter implements IBridgeServiceAdapter {
         BridgeRequest request = BridgeRequest.builder().requestCode(bridgeServiceConfig.getTactIntegrationRequestCode())
             .payload(tactBridgePayload).build();
 
-        HttpEntity<String> httpEntity = new HttpEntity<>(jsonHelper.convertToJson(request), headers);
+        HttpEntity httpEntity = new HttpEntity(jsonHelper.convertToJson(request), headers);
 
         try {
             var bridgeResponse = restTemplate.postForEntity(url, httpEntity, BridgeServiceResponse.class);

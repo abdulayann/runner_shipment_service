@@ -54,32 +54,33 @@ public class GetNextNumberHelper {
         String prefix =
             startPosition == -1 ? regexPattern : regexPattern.substring(0, startPosition); // prefix
         String suffix = "";
+        //        CompaniesRow companiesRow = null;
         if (sequenceSettings.getGenerationType() == GenerationType.Regex) {
             Pattern p = Pattern.compile("\\{([^}]*)\\}"); // original v1 regex @"(?<={)[\w;]{1,}(?=})"
             Matcher matches = p.matcher(regexPattern);
-            var valueOf = new HashMap<String, String>();
+            var ValueOf = new HashMap<String, String>();
             LocalDateTime currDate = LocalDateTime.now();
 
-            valueOf.put(Constants.BRANCH, "BR"); // branch is not clear
-            valueOf.put("dd", DateTimeFormatter.ofPattern("dd").format(currDate));
-            valueOf.put("yy", Integer.valueOf(currDate.getYear()).toString().substring(2)); // last 2 digits
-            valueOf.put("mm", padLeft(Integer.valueOf(currDate.getMonthValue()).toString(), 2, '0'));
-            valueOf.put("yyyy", Integer.valueOf(currDate.getYear()).toString());
-            valueOf.put("mon", currDate.getMonth().getDisplayName(TextStyle.SHORT, Locale.ROOT));
+            ValueOf.put(Constants.BRANCH, "BR"); // branch is not clear
+            ValueOf.put("dd", DateTimeFormatter.ofPattern("dd").format(currDate));
+            ValueOf.put("yy", Integer.valueOf(currDate.getYear()).toString().substring(2)); // last 2 digits
+            ValueOf.put("mm", padLeft(Integer.valueOf(currDate.getMonthValue()).toString(), 2, '0'));
+            ValueOf.put("yyyy", Integer.valueOf(currDate.getYear()).toString());
+            ValueOf.put("mon", currDate.getMonth().getDisplayName(TextStyle.SHORT, Locale.ROOT));
             DateTimeFormatter df = DateTimeFormatter.ofPattern("MMMM");
             // Format the date to get the month in "MMMM" format
             String monthName = df.format(currDate);
-            valueOf.put("month", monthName);
-            valueOf.put("cc", ""); // Empty string
-            valueOf.put("seq", ""); // Empty string
+            ValueOf.put("month", monthName);
+            ValueOf.put("cc", ""); // Empty string
+            ValueOf.put("seq", ""); // Empty string
 
             while (matches.find()) {
                 String word = matches.group(1);
                 List<String> wordSplit = List.of(word.split(";"));
-                if (valueOf.get(wordSplit.get(0).toLowerCase()) == null) {
+                if (ValueOf.get(wordSplit.get(0).toLowerCase()) == null) {
                     throw new ValidationException("CONFIGURED_SEQUENCE_REGEX_VALIDATION");
                 }
-                suffix = getSuffixValue(sequenceSettings, user, updateBranchCode, wordSplit, suffix, valueOf);
+                suffix = getSuffixValue(sequenceSettings, user, updateBranchCode, wordSplit, suffix, ValueOf);
             }
         }
         else if (sequenceSettings.getGenerationType() == GenerationType.Random) {
@@ -105,38 +106,37 @@ public class GetNextNumberHelper {
     }
 
     @NotNull
-    private String getSuffixValue(ProductSequenceConfig sequenceSettings, UsersDto user, boolean updateBranchCode, List<String> wordSplit, String suffix, HashMap<String, String> valueOf) throws RunnerException {
+    private String getSuffixValue(ProductSequenceConfig sequenceSettings, UsersDto user, boolean updateBranchCode, List<String> wordSplit, String suffix, HashMap<String, String> ValueOf) throws RunnerException {
         if (wordSplit.size() > 1) {
             if (wordSplit.get(0).equalsIgnoreCase("seq")) {
                 String resetFreq = wordSplit.size() > 2 ? wordSplit.get(2) : "Never";
                 suffix += padLeft(
-                    getNextRegexSequenceNumber(sequenceSettings, resetFreq),
+                    GetNextRegexSequenceNumber(sequenceSettings, resetFreq),
                     Integer.parseInt(wordSplit.get(1)),
                     '0');
             }
             else {
                 suffix += padLeft(
-                    valueOf.get(wordSplit.get(0).toLowerCase()),
+                    ValueOf.get(wordSplit.get(0).toLowerCase()),
                     Integer.parseInt(wordSplit.get(1)),
                     '0');
             }
         }
         else if (updateBranchCode && wordSplit.get(0).equalsIgnoreCase(Constants.BRANCH)) {
             if (user != null) {
-                valueOf.put(Constants.BRANCH, user.getCode());
+                ValueOf.put(Constants.BRANCH, user.getCode());
             }
-            suffix += valueOf.get(wordSplit.get(0).toLowerCase());
+            suffix += ValueOf.get(wordSplit.get(0).toLowerCase());
         }
-        else suffix += valueOf.get(wordSplit.get(0).toLowerCase());
+        else suffix += ValueOf.get(wordSplit.get(0).toLowerCase());
         return suffix;
     }
 
-    public String getNextRegexSequenceNumber(ProductSequenceConfig sequenceSettings, String resetFreq) throws RunnerException {
+    public String GetNextRegexSequenceNumber(ProductSequenceConfig sequenceSettings, String resetFreq) throws RunnerException {
         LocalDateTime seqStartTime = sequenceSettings.getSequenceStartTime();
         boolean resetCounter = seqStartTime == null;
         if (resetFreq.equalsIgnoreCase("daily")) {
-            LocalDateTime localTimeStart;
-            LocalDateTime localTimeNow;
+            LocalDateTime localTimeStart, localTimeNow;
 
             String timeZoneId = UserContext.getUser().TimeZoneId;
             if (timeZoneId == null || timeZoneId.isEmpty())

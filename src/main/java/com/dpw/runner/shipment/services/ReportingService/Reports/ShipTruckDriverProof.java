@@ -32,7 +32,7 @@ public class ShipTruckDriverProof extends IReport {
         TruckDriverModel truckDriverModel = new TruckDriverModel();
         truckDriverModel.shipmentDetails = getShipment(id);
         validateAirAndOceanDGCheck(truckDriverModel.shipmentDetails);
-        if(truckDriverModel.shipmentDetails != null && truckDriverModel.shipmentDetails.getContainersList() != null && !truckDriverModel.shipmentDetails.getContainersList().isEmpty()) {
+        if(truckDriverModel.shipmentDetails != null && truckDriverModel.shipmentDetails.getContainersList() != null && truckDriverModel.shipmentDetails.getContainersList().size() > 0) {
             List<ShipmentContainers> shipmentContainers = new ArrayList<>();
             for(var container: truckDriverModel.shipmentDetails.getContainersList())
             {
@@ -40,7 +40,7 @@ public class ShipTruckDriverProof extends IReport {
             }
             truckDriverModel.shipmentDetails.setShipmentContainersList(shipmentContainers);
         }
-        if(truckDriverModel.shipmentDetails != null && truckDriverModel.shipmentDetails.getTruckDriverDetails() != null && !truckDriverModel.shipmentDetails.getTruckDriverDetails().isEmpty())
+        if(truckDriverModel.shipmentDetails != null && truckDriverModel.shipmentDetails.getTruckDriverDetails() != null && truckDriverModel.shipmentDetails.getTruckDriverDetails().size() > 0)
         {
             truckDriverModel.setTruckDriverDetails(truckDriverModel.shipmentDetails.getTruckDriverDetails());
         }
@@ -53,7 +53,7 @@ public class ShipTruckDriverProof extends IReport {
     public Map<String, Object> populateDictionary(IDocumentModel documentModel) {
         TruckDriverModel truckDriverModel = (TruckDriverModel) documentModel;
         V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
-        String json = jsonHelper.convertToJsonWithDateTimeFormatter(truckDriverModel.shipmentDetails, getDPWDateFormatOrDefault(v1TenantSettingsResponse));
+        String json = jsonHelper.convertToJsonWithDateTimeFormatter(truckDriverModel.shipmentDetails, GetDPWDateFormatOrDefault(v1TenantSettingsResponse));
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
         populateShipmentFields(truckDriverModel.shipmentDetails, dictionary);
         populateUserFields(truckDriverModel.usersDto, dictionary);
@@ -62,7 +62,7 @@ public class ShipTruckDriverProof extends IReport {
         {
             if(StringUtility.isEmpty(truckDriver.getSelfTransporterName()))
             {
-                truckDriver.setTransporterName(""); //LATER - fetch transporter real name
+                truckDriver.setTransporterName(""); //TODO - fetch transporter real name
             }
             else
                 truckDriver.setTransporterName(truckDriver.getSelfTransporterName());

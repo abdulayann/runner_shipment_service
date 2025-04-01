@@ -54,8 +54,8 @@ public class ShippingRequestAirReport extends IReport{
             dict.put(ReportConstants.WIDTH, pack.getWidth());
             dict.put(ReportConstants.HEIGHT, pack.getHeight());
             dict.put(ReportConstants.PACK_COUNT, pack.getPacks());
-            dict.put(ReportConstants.GROSS_WEIGHT, convertToWeightNumberFormat(pack.getWeight(), v1TenantSettingsResponse));
-            dict.put(ReportConstants.VOLUME, convertToVolumeNumberFormat(pack.getVolume(), v1TenantSettingsResponse));
+            dict.put(ReportConstants.GROSS_WEIGHT, ConvertToWeightNumberFormat(pack.getWeight(), v1TenantSettingsResponse));
+            dict.put(ReportConstants.VOLUME, ConvertToVolumeNumberFormat(pack.getVolume(), v1TenantSettingsResponse));
 
             packDictionary.add(dict);
 
@@ -82,7 +82,7 @@ public class ShippingRequestAirReport extends IReport{
         }
         dictionary.put(ReportConstants.LIST_OF_PACKINGS, packDictionary);
         dictionary.put(ReportConstants.COMMODITIES, commodities);
-        dictionary.put(ReportConstants.PRINT_DATE, convertToDPWDateFormat(LocalDateTime.now()));
+        dictionary.put(ReportConstants.PRINT_DATE, ConvertToDPWDateFormat(LocalDateTime.now()));
 
         return dictionary;
     }

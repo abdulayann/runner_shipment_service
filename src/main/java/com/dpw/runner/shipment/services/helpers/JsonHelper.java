@@ -186,7 +186,7 @@ public class JsonHelper {
         try {
             map = mapper.readValue(json, Map.class);
         } catch (JsonProcessingException e) {
-            log.error("An error occurred: {}", e.getMessage(), e);
+            e.printStackTrace();
         }
         return map;
     }

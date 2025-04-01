@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 
 @Data
 public class AwbOtherChargesInfoV2 implements IRunnerRequest {
+    // public Integer entityId;
     public String entityType;
     public String chargeTypeId;
     public BigDecimal rate;

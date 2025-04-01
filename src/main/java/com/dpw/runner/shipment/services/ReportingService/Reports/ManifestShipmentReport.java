@@ -57,9 +57,9 @@ public class ManifestShipmentReport extends IReport{
         populateConsolidationFields(manifestShipmentModel.consolidationDetails, dictionary);
         V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
 
-        List<PackingModel> packings = getAllShipmentsPacks(List.of(manifestShipmentModel.shipmentDetails));
-        Pair<BigDecimal, String> weightAndUnit = getTotalWeight(packings);
-        Pair<BigDecimal, String> volumeAndUnit = getTotalVolume(packings);
+        List<PackingModel> packings = GetAllShipmentsPacks(List.of(manifestShipmentModel.shipmentDetails));
+        Pair<BigDecimal, String> weightAndUnit = GetTotalWeight(packings);
+        Pair<BigDecimal, String> volumeAndUnit = GetTotalVolume(packings);
 
         if (manifestShipmentModel.shipmentDetails != null) {
             dictionary.put(ReportConstants.OBJECT_TYPE, manifestShipmentModel.shipmentDetails.getTransportMode());
@@ -74,7 +74,7 @@ public class ManifestShipmentReport extends IReport{
             List<Map<String, Object>> values = jsonHelper.convertValue(listShipmentReponse, new TypeReference<>() {});
             values.forEach(v -> {
                 if (v.containsKey(ReportConstants.WEIGHT))
-                    v.put(ReportConstants.WEIGHT, convertToWeightNumberFormat(v.get(ReportConstants.WEIGHT), v1TenantSettingsResponse));
+                    v.put(ReportConstants.WEIGHT, ConvertToWeightNumberFormat(v.get(ReportConstants.WEIGHT), v1TenantSettingsResponse));
                 if (v.containsKey(ReportConstants.TOTAL_PACKS))
                     v.put(ReportConstants.TOTAL_PACKS, addCommas(v.get(ReportConstants.TOTAL_PACKS).toString()));
             });

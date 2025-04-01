@@ -170,6 +170,11 @@ class CommonUtilsTest {
     private BaseFont font;
     private Rectangle realPageSize;
     private Rectangle rect;
+    private PdfReader reader;
+    private PdfStamper stamper;
+    private ByteArrayOutputStream outputStream;
+    private PrintStream originalOut;
+    private byte[] pdfBytes;
 
     static Stream<Arguments> pTestCases() {
         return Stream.of(
@@ -194,6 +199,10 @@ class CommonUtilsTest {
         font = BaseFont.createFont(BaseFont.HELVETICA, BaseFont.WINANSI, BaseFont.EMBEDDED);
         realPageSize = new Rectangle(0, 0, 595, 842); // A4 size
         rect = new Rectangle(100, 100, 500, 742);
+        reader = mock(PdfReader.class);
+        stamper = mock(PdfStamper.class);
+        outputStream = new ByteArrayOutputStream();
+        pdfBytes = new byte[0];
 
         MockitoAnnotations.initMocks(this);
         commonUtils.syncExecutorService = Executors.newFixedThreadPool(2);
@@ -408,7 +417,7 @@ class CommonUtilsTest {
         inOrder.verify(dc).restoreState();
     }
 
-    private byte[] createSamplePdf() throws DocumentException{
+    private byte[] createSamplePdf() throws DocumentException, IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         Document document = new Document();
         PdfWriter.getInstance(document, baos);
@@ -463,21 +472,21 @@ class CommonUtilsTest {
     }
 
     @Test
-    void isStringNullOrEmpty_NullInput_ReturnsTrue() {
-        boolean result = CommonUtils.isStringNullOrEmpty(null);
+    void IsStringNullOrEmpty_NullInput_ReturnsTrue() {
+        boolean result = CommonUtils.IsStringNullOrEmpty(null);
         assertTrue(result);
     }
 
     @Test
-    void isStringNullOrEmpty_EmptyStringInput_ReturnsTrue() {
-        boolean result = CommonUtils.isStringNullOrEmpty("");
+    void IsStringNullOrEmpty_EmptyStringInput_ReturnsTrue() {
+        boolean result = CommonUtils.IsStringNullOrEmpty("");
         assertTrue(result);
     }
 
     @Test
-    void isStringNullOrEmpty_NonEmptyStringInput_ReturnsFalse() {
+    void IsStringNullOrEmpty_NonEmptyStringInput_ReturnsFalse() {
         String input = "Hello";
-        boolean result = CommonUtils.isStringNullOrEmpty(input);
+        boolean result = CommonUtils.IsStringNullOrEmpty(input);
         assertFalse(result);
     }
 
@@ -504,7 +513,7 @@ class CommonUtilsTest {
     @Test
     void testImageToByte() throws IOException {
         BufferedImage img = new BufferedImage(100, 100, BufferedImage.TYPE_INT_RGB);
-        byte[] result = CommonUtils.imageToByte(img);
+        byte[] result = CommonUtils.ImageToByte(img);
 
         assertNotNull(result);
     }
@@ -512,12 +521,12 @@ class CommonUtilsTest {
     @Test
     void testHasUnsupportedCharacters() {
         String input = "ValidString123";
-        boolean result = CommonUtils.hasUnsupportedCharacters(input);
+        boolean result = CommonUtils.HasUnsupportedCharacters(input);
 
         assertFalse(result);
 
         input = "InvalidString\u001F";
-        result = CommonUtils.hasUnsupportedCharacters(input);
+        result = CommonUtils.HasUnsupportedCharacters(input);
 
         assertTrue(result);
     }
@@ -595,7 +604,7 @@ class CommonUtilsTest {
         assertEquals("Generic exception message", result);
     }
 
-    private byte[] createSamplePdfWithMultiplePages() throws DocumentException{
+    private byte[] createSamplePdfWithMultiplePages() throws DocumentException, IOException {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         Document document = new Document();
         PdfWriter.getInstance(document, baos);
@@ -2144,7 +2153,7 @@ class CommonUtilsTest {
     }
 
     @Test
-    void testCheckIfAnyDGClass3(){
+    void testCheckIfAnyDGClass3() throws RunnerException {
         assertThrows(RunnerException.class, () -> commonUtils.checkIfAnyDGClass("7.1"));
     }
 

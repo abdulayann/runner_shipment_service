@@ -49,6 +49,16 @@ public class RunnerShipmentServicesApplication {
         return modelMapper;
     }
 
+//    @Bean
+//    public CommonsRequestLoggingFilter requestLoggingFilter() {
+//        CommonsRequestLoggingFilter loggingFilter = new CommonsRequestLoggingFilter();
+//        loggingFilter.setIncludeQueryString(true);
+//        loggingFilter.setIncludePayload(true);
+//        loggingFilter.setMaxPayloadLength(1000);
+//        loggingFilter.setIncludeHeaders(false);
+//        return loggingFilter;
+//    }
+
 }
 
 

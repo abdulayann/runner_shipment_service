@@ -80,13 +80,13 @@ public class BookingCarriageDao implements IBookingCarriageDao {
         String responseMsg;
         List<BookingCarriage> responseBookingCarriage = new ArrayList<>();
         try {
-            // LATER- Handle Transactions here
+            // TODO- Handle Transactions here
             List<BookingCarriage> bookingCarriages = findByShipmentId(shipmentId);
             Map<Long, BookingCarriage> hashMap = bookingCarriages.stream()
                         .collect(Collectors.toMap(BookingCarriage::getId, Function.identity()));
             Map<Long, BookingCarriage> copyHashMap = new HashMap<>(hashMap);
             List<BookingCarriage> bookingCarriagesRequestList = new ArrayList<>();
-            if (bookingCarriageList != null && !bookingCarriageList.isEmpty()) {
+            if (bookingCarriageList != null && bookingCarriageList.size() != 0) {
                 for (BookingCarriage request : bookingCarriageList) {
                     Long id = request.getId();
                     if (id != null) {
@@ -228,7 +228,7 @@ public class BookingCarriageDao implements IBookingCarriageDao {
         String responseMsg;
         List<BookingCarriage> responseBookingCarriage = new ArrayList<>();
         Map<UUID, BookingCarriage> bookingMap = new HashMap<>();
-        if(oldEntityList != null && !oldEntityList.isEmpty()) {
+        if(oldEntityList != null && oldEntityList.size() > 0) {
             for (BookingCarriage entity:
                     oldEntityList) {
                 bookingMap.put(entity.getGuid(), entity);
@@ -238,7 +238,7 @@ public class BookingCarriageDao implements IBookingCarriageDao {
 
             BookingCarriage oldEntity;
             List<BookingCarriage> bookingCarriagesRequestList = new ArrayList<>();
-            if (bookingCarriageList != null && !bookingCarriageList.isEmpty()) {
+            if (bookingCarriageList != null && bookingCarriageList.size() != 0) {
                 for (BookingCarriage request : bookingCarriageList) {
                     oldEntity = bookingMap.get(request.getGuid());
                     if(oldEntity != null) {

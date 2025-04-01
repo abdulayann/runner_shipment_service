@@ -223,6 +223,7 @@ class RoutingsDaoTest extends CommonMocks {
 
     @Test
     void testUpdateEntityFromShipment_NullRoutings() throws RunnerException {
+        List<Routings> routingsList = Collections.singletonList(testRoutings);
         RoutingsDao spyService = spy(routingsDao);
         List<Routings> routingsList1 = spyService.updateEntityFromShipment(null, 1L);
         assertNotNull(routingsList1);
@@ -242,7 +243,31 @@ class RoutingsDaoTest extends CommonMocks {
     }
 
     @Test
-    void testUpdateEntityFromShipment_Failure() {
+    void testUpdateEntityFromShipment_DeleteRoutingsCases_Failures() throws Exception {
+        List<Routings> routingsList = Collections.singletonList(testRoutings);
+        List<Routings> oldRoutingsList = Arrays.asList(testRoutings, objectMapperTest.convertValue(testRoutings, Routings.class));
+        oldRoutingsList.get(1).setId(5L);
+        RoutingsDao spyService = spy(routingsDao);
+        doReturn(routingsList).when(spyService).saveEntityFromShipment(anyList(), anyLong(), any());
+        List<Routings> routingsList1 = spyService.updateEntityFromShipment(routingsList, 1L);
+        assertNotNull(routingsList1);
+        assertEquals(routingsList, routingsList1);
+    }
+
+    @Test
+    void testUpdateEntityFromShipment_DeleteRoutingsCases_AuditLogFailure() throws Exception {
+        List<Routings> routingsList = Collections.singletonList(testRoutings);
+        List<Routings> oldRoutingsList = Arrays.asList(testRoutings, objectMapperTest.convertValue(testRoutings, Routings.class));
+        oldRoutingsList.get(1).setId(5L);
+        RoutingsDao spyService = spy(routingsDao);
+        doReturn(routingsList).when(spyService).saveEntityFromShipment(anyList(), anyLong(), any());
+        List<Routings> routingsList1 = spyService.updateEntityFromShipment(routingsList, 1L);
+        assertNotNull(routingsList1);
+        assertEquals(routingsList, routingsList1);
+    }
+
+    @Test
+    void testUpdateEntityFromShipment_Failure() throws RunnerException {
         List<Routings> routingsList = Collections.singletonList(testRoutings);
         RoutingsDao spyService = spy(routingsDao);
         assertThrows(RunnerException.class, () -> spyService.updateEntityFromShipment(routingsList, 1L));
@@ -272,7 +297,7 @@ class RoutingsDaoTest extends CommonMocks {
     }
 
     @Test
-    void testSaveEntityFromShipment_RetrievalFailure() {
+    void testSaveEntityFromShipment_RetrievalFailure() throws Exception {
         List<Routings> routingsList = Collections.singletonList(testRoutings);
         RoutingsDao spyService = spy(routingsDao);
         doReturn(Optional.empty()).when(spyService).findById(anyLong());
@@ -363,7 +388,7 @@ class RoutingsDaoTest extends CommonMocks {
     }
 
     @Test
-    void testUpdateEntityFromBooking_Failure() {
+    void testUpdateEntityFromBooking_Failure() throws RunnerException {
         List<Routings> routingsList = Collections.singletonList(testRoutings);
         RoutingsDao spyService = spy(routingsDao);
         doReturn(new PageImpl<>(new ArrayList<>())).when(spyService).findAll(any(), any());
@@ -395,7 +420,7 @@ class RoutingsDaoTest extends CommonMocks {
     }
 
     @Test
-    void testSaveEntityFromBooking_RetrievalFailure() {
+    void testSaveEntityFromBooking_RetrievalFailure() throws Exception {
         List<Routings> routingsList = Collections.singletonList(testRoutings);
         RoutingsDao spyService = spy(routingsDao);
         doReturn(new PageImpl<>(new ArrayList<>())).when(spyService).findAll(any(), any());
@@ -426,6 +451,7 @@ class RoutingsDaoTest extends CommonMocks {
 
     @Test
     void testUpdateEntityFromConsole_NullRoutings() throws RunnerException {
+        List<Routings> routingsList = Collections.singletonList(testRoutings);
         RoutingsDao spyService = spy(routingsDao);
         List<Routings> routingsList1 = spyService.updateEntityFromConsole(null, 1L);
         assertNotNull(routingsList1);
@@ -433,7 +459,7 @@ class RoutingsDaoTest extends CommonMocks {
     }
 
     @Test
-    void testUpdateEntityFromConsole_Failure() {
+    void testUpdateEntityFromConsole_Failure() throws RunnerException {
         List<Routings> routingsList = Collections.singletonList(testRoutings);
         RoutingsDao spyService = spy(routingsDao);
         assertThrows(RunnerException.class, () -> spyService.updateEntityFromConsole(routingsList, 1L));
@@ -469,7 +495,17 @@ class RoutingsDaoTest extends CommonMocks {
     }
 
     @Test
-    void testUpdateEntityFromConsole_WithOldEntity_Failure() {
+    void testUpdateEntityFromConsole_WithOldEntity_AuditLogFailure() throws Exception{
+        List<Routings> routingsList = Collections.singletonList(testRoutings);
+        RoutingsDao spyService = spy(routingsDao);
+        doReturn(routingsList).when(spyService).saveEntityFromConsole(any(), anyLong());
+        List<Routings> routings = spyService.updateEntityFromConsole(routingsList, 1L, routingsList);
+        assertNotNull(routings);
+        assertEquals(routingsList, routings);
+    }
+
+    @Test
+    void testUpdateEntityFromConsole_WithOldEntity_Failure() throws RunnerException {
         List<Routings> routingsList = Collections.singletonList(testRoutings);
         RoutingsDao spyService = spy(routingsDao);
         doThrow(RuntimeException.class).when(spyService).saveEntityFromConsole(anyList(), anyLong());
@@ -477,7 +513,7 @@ class RoutingsDaoTest extends CommonMocks {
     }
 
     @Test
-    void testSaveEntityFromConsole() {
+    void testSaveEntityFromConsole() throws Exception {
         List<Routings> routingsList = Collections.singletonList(testRoutings);
         RoutingsDao spyService = spy(routingsDao);
         doReturn(Optional.of(testRoutings)).when(spyService).findById(anyLong());
@@ -488,7 +524,7 @@ class RoutingsDaoTest extends CommonMocks {
     }
 
     @Test
-    void testSaveEntityFromConsole_NullId() {
+    void testSaveEntityFromConsole_NullId() throws Exception {
         List<Routings> routingsList = Collections.singletonList(testNewRoutings);
         RoutingsDao spyService = spy(routingsDao);
         doReturn(testRoutings).when(spyService).save(any());
@@ -498,7 +534,7 @@ class RoutingsDaoTest extends CommonMocks {
     }
 
     @Test
-    void testSaveEntityFromConsole_RetrievalFailure(){
+    void testSaveEntityFromConsole_RetrievalFailure() throws Exception {
         List<Routings> routingsList = Collections.singletonList(testRoutings);
         RoutingsDao spyService = spy(routingsDao);
         doReturn(Optional.empty()).when(spyService).findById(anyLong());
@@ -506,7 +542,7 @@ class RoutingsDaoTest extends CommonMocks {
     }
 
     @Test
-    void testSaveEntityFromConsole_WithOldEntity(){
+    void testSaveEntityFromConsole_WithOldEntity() throws Exception{
         List<Routings> routingsList = Collections.singletonList(testRoutings);
         RoutingsDao spyService = spy(routingsDao);
         doReturn(routingsList).when(spyService).saveAll(any());
@@ -518,7 +554,7 @@ class RoutingsDaoTest extends CommonMocks {
     }
 
     @Test
-    void testSaveEntityFromConsole_WithOldEntity_NullId(){
+    void testSaveEntityFromConsole_WithOldEntity_NullId() throws Exception{
         List<Routings> routingsList = Collections.singletonList(testNewRoutings);
         RoutingsDao spyService = spy(routingsDao);
         doReturn(routingsList).when(spyService).saveAll(any());
@@ -559,7 +595,7 @@ class RoutingsDaoTest extends CommonMocks {
     }
 
     @Test
-    void testUpdateEntityFromShipment_WithOldEntity_Failure(){
+    void testUpdateEntityFromShipment_WithOldEntity_Failure() throws Exception{
         List<Routings> routingsList = Collections.singletonList(testRoutings);
         RoutingsDao spyService = spy(routingsDao);
         doThrow(RuntimeException.class).when(spyService).saveEntityFromShipment(any(), anyLong());

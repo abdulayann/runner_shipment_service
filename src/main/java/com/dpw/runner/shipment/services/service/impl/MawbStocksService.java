@@ -355,4 +355,13 @@ public class MawbStocksService implements IMawbStocksService {
             return true;
         return false;
     }
+
+//    private void setManyToOneRelationships(MawbStocks mawbStocks){
+//        if(mawbStocks.getMawbStocksLinkRows() !=null){
+//            List<MawbStocksLink> mawbStocksLinks = mawbStocks.getMawbStocksLinkRows();
+//            for (MawbStocksLink mawbStocksLink: mawbStocksLinks) {
+//                mawbStocksLink.setMawbStocks(mawbStocks);
+//            }
+//        }
+//    }
 }

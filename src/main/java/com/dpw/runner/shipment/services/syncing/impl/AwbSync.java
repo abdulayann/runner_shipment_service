@@ -26,6 +26,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.retry.support.RetryTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
@@ -66,6 +67,12 @@ public class AwbSync implements IAwbSync {
 
     @Autowired
     private IMawbHawbLinkDao mawbHawbLinkDao;
+
+    private RetryTemplate retryTemplate = RetryTemplate.builder()
+            .maxAttempts(3)
+            .fixedBackoff(1000)
+            .retryOn(Exception.class)
+            .build();
 
     @Value("${v1service.url.base}${v1service.url.awbSync}")
     private String AWB_V1_SYNC_URL;

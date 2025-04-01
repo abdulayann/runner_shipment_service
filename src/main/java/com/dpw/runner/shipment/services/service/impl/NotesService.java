@@ -290,7 +290,7 @@ public class NotesService implements INotesService {
 
     private List<IRunnerResponse> convertEntityListToDtoList(final List<Notes> lst) {
         return lst.stream()
-                .map(this::convertEntityToDto)
+                .map(item -> convertEntityToDto(item))
                 .collect(Collectors.toList());
     }
 }

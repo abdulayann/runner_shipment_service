@@ -75,11 +75,11 @@ public class CargoManifestAirShipmentReport extends IReport{
         CarrierDetailModel carrierDetailModel = cargoManifestAirShipmentModel.getShipmentDetails().getCarrierDetails();
         if(!airRoutingTagsAdded) {
             Map<String, CarrierMasterData> carriersMap = new HashMap<>();
-            if(!CommonUtils.isStringNullOrEmpty(carrierDetailModel.getShippingLine()))
+            if(!CommonUtils.IsStringNullOrEmpty(carrierDetailModel.getShippingLine()))
                 carriersMap = masterDataUtils.getCarriersData(Set.of(carrierDetailModel.getShippingLine()));
             dictionary.put(SHIPMENT_FIRST_FLIGHT_AND_DAY, getFlightAndDayString(carriersMap, carrierDetailModel.getShippingLine(), carrierDetailModel.getFlightNumber(), carrierDetailModel.getEtd()));
         }
-        dictionary.put(CURRENT_DATE, convertToDPWDateFormat(LocalDateTime.now()));
+        dictionary.put(CURRENT_DATE, ConvertToDPWDateFormat(LocalDateTime.now()));
         ReportHelper.addTenantDetails(dictionary, cargoManifestAirShipmentModel.getTenantModel());
         PartiesModel originAgent = cargoManifestAirShipmentModel.getShipmentDetails().getAdditionalDetails().getExportBroker();
         PartiesModel destinationAgent = cargoManifestAirShipmentModel.getShipmentDetails().getAdditionalDetails().getImportBroker();

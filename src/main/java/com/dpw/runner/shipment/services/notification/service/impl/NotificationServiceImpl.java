@@ -3,7 +3,6 @@ package com.dpw.runner.shipment.services.notification.service.impl;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.ReportException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -22,7 +21,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.*;
 
-import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 
 @Service
 @Slf4j
@@ -57,7 +56,7 @@ public class NotificationServiceImpl implements INotificationService {
         try {
             notificationServiceSendEmailRequest = createNotificationServiceRequest(request);
         } catch (JsonProcessingException e) {
-            throw new GenericException(e);
+            throw new RuntimeException(e);
         }
 
         NotificationServiceResponse response ;
@@ -70,7 +69,7 @@ public class NotificationServiceImpl implements INotificationService {
         try {
             log.info("Notification Service Response: {}", jsonHelper.convertToJson(response));
         } catch (Exception e) {
-            throw new GenericException(e);
+            throw new RuntimeException(e);
         }
         log.info("Total time taken from notification service to send email is {} ms", (System.currentTimeMillis() - startTime));
 
@@ -115,11 +114,11 @@ public class NotificationServiceImpl implements INotificationService {
     private void handleSendMeCopyCheck(SendEmailBaseRequest request) {
         if (Boolean.TRUE.equals(request.getSendMeCopy())) {
             String userEmail = UserContext.getUser().getEmail();
-            if (!isStringNullOrEmpty(userEmail)) {
+            if (!IsStringNullOrEmpty(userEmail)) {
                 String cc = request.getCc();
                 Set<String> emailList = new HashSet<>();
-                if (!isStringNullOrEmpty(cc)) {
-                    emailList.addAll(CommonUtils.splitAndTrimStrings(cc));
+                if (!IsStringNullOrEmpty(cc)) {
+                    emailList.addAll(Arrays.asList(cc.split("\\s*,\\s*")));
                 }
                 emailList.add(userEmail);
                 request.setCc(String.join(",", emailList));

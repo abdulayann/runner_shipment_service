@@ -42,7 +42,7 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
-class FCRDocumentReportTest {
+public class FCRDocumentReportTest {
 
     @InjectMocks
     private FCRDocumentReport fcrDocumentReport;
@@ -66,6 +66,7 @@ class FCRDocumentReportTest {
     @BeforeAll
     static void init() throws IOException {
         jsonTestUtility = new JsonTestUtility();
+        objectMapper = JsonTestUtility.getMapper();
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
