@@ -1456,7 +1456,10 @@ public abstract class IReport {
             if(shipmentDetails.getPackingList() != null) {
                 PackSummaryResponse response = packingService.calculatePackSummary(shipmentDetails.getPackingList(), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType(), new ShipmentMeasurementDetailsDto());
                 Map<Long, Containers> finalContainersMap = containersMap;
-                shipmentModel.getPackingList().forEach(i -> i.setContainerNumber(finalContainersMap.get(i.getContainerId()).getContainerNumber()));
+                shipmentModel.getPackingList().forEach(i -> i.setContainerNumber(
+                        Optional.ofNullable(finalContainersMap.get(i.getContainerId()))
+                                .map(Containers::getContainerNumber).orElse(null)
+                        ));
                 if(response != null) {
                     shipmentModel.setPackSummary(response.getTotalPacks());
                 }
