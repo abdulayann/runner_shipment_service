@@ -383,6 +383,7 @@ public class NetworkTransferService implements INetworkTransferService {
         if(entityPayload!=null){
             networkTransfer.setStatus(NetworkTransferStatus.TRANSFERRED);
             networkTransfer.setEntityPayload(entityPayload);
+            networkTransfer.setTransferredDate(LocalDateTime.now());
         }
         networkTransferDao.save(networkTransfer);
     }
@@ -390,6 +391,7 @@ public class NetworkTransferService implements INetworkTransferService {
     public void updateNetworkTransferTransferred(NetworkTransfer networkTransfer, Map<String, Object> entityPayload) {
         networkTransfer.setEntityPayload(entityPayload);
         networkTransfer.setStatus(NetworkTransferStatus.TRANSFERRED);
+        networkTransfer.setTransferredDate(LocalDateTime.now());
         networkTransferDao.save(networkTransfer);
     }
 
