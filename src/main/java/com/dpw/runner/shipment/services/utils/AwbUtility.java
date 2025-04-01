@@ -1101,6 +1101,7 @@ public class AwbUtility {
     }
 
     private String getBodyForShipmentIds(List<Awb> awbsList, List<Long> shipmentIds, String body) {
+        StringBuilder bodyStringBuilder = new StringBuilder(body);
         var shipmentDetailsList = shipmentDao.getShipmentNumberFromId(shipmentIds);
         Map<Long, String> map = shipmentDetailsList.stream().collect(Collectors.toMap(ShipmentDetails::getId, ShipmentDetails::getShipmentId));
         for (var x : awbsList) {
@@ -1109,14 +1110,14 @@ public class AwbUtility {
                 AirMessagingLogs shipAirMessagingLogs = airMessagingLogsService.getRecentLogForEntityGuid(x.getGuid());
                 if (shipAirMessagingLogs != null) {
                     if (Objects.equals(shipAirMessagingLogs.getStatus(), AirMessagingStatus.SUCCESS.name())) {
-                        body = body + "FZB for \"" + shipNumber + "\" : Success\n";
+                        bodyStringBuilder = new StringBuilder(body + "FZB for \"" + shipNumber + "\" : Success\n");
                     } else if (Objects.equals(shipAirMessagingLogs.getStatus(), AirMessagingStatus.FAILED.name())) {
-                        body = body + "FZB for \"" + shipNumber + "\" : Failed. Failure reason is \"" + shipAirMessagingLogs.getErrorMessage() + "\"\n\n";
+                        bodyStringBuilder = new StringBuilder(body + "FZB for \"" + shipNumber + "\" : Failed. Failure reason is \"" + shipAirMessagingLogs.getErrorMessage() + "\"\n\n");
                     }
                 }
             }
         }
-        return body;
+        return bodyStringBuilder.toString();
     }
 
     private void updateAwbStatusForFsuUpdate(Awb awb, String eventCode, List<ConsoleShipmentMapping> consoleShipmentMappings) {

@@ -2419,9 +2419,11 @@ public abstract class IReport {
 
     public static String appendZero(String value, int length){
         int size = value.length();
-        for(int i=0; i<length-size; i++){
-            value = "0" + value;
+        StringBuilder valueBuilder = new StringBuilder(value);
+        for(int i = 0; i < length-size; i++){
+            valueBuilder.insert(0, "0");
         }
+        value = valueBuilder.toString();
         return value;
     }
 

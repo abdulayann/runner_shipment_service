@@ -9,8 +9,6 @@ import com.nimbusds.jwt.proc.BadJWTException;
 import com.nimbusds.jwt.proc.DefaultJWTClaimsVerifier;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import javax.servlet.http.HttpServletResponse;
 import java.security.SecureRandom;
 import java.text.ParseException;
 import java.util.Objects;
