@@ -56,7 +56,7 @@ public class ReportController {
             responseMsg = e.getMessage();
             httpStatus = HttpStatus.PRECONDITION_REQUIRED;
         } catch (UnexpectedRollbackException e) {
-            responseMsg = "Error occurred while printing the report. Please connect with administration.";
+            responseMsg = "An error occurred while printing the report. Please contact the support system.";
             log.error(responseMsg, e);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
