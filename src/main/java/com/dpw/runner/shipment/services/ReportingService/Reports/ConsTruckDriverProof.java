@@ -79,7 +79,7 @@ public class ConsTruckDriverProof extends IReport {
         {
             if(StringUtility.isEmpty(truckDriver.getSelfTransporterName()))
             {
-                truckDriver.setTransporterName(""); //Later: - fetch transporter real name
+                truckDriver.setTransporterName(""); //TODO - fetch transporter real name
             }
             else
                 truckDriver.setTransporterName(truckDriver.getSelfTransporterName());

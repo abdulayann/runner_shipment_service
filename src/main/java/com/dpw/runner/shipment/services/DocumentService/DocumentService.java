@@ -133,7 +133,7 @@ public class DocumentService {
         return restTemplate.exchange(url, HttpMethod.PUT, request, String.class);
     }
     public ResponseEntity<byte[]> downloadDocumentTemplate(Object json, String templateId){
-        // Later: Provide json object with proper format
+        // TODO Provide json object with proper format
         String url = templateBaseUrl+templateId+"/document";
 
         HttpHeaders headers = new HttpHeaders();

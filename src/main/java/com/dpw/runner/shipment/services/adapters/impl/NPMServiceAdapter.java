@@ -279,7 +279,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             ResponseEntity<DependentServiceResponse> response = npmServiceRestTemplate.exchange(RequestEntity.post(URI.create(url)).body(req), DependentServiceResponse.class);
             return ResponseHelper.buildDependentServiceResponse(response.getBody().getData(), 0, 0);
         } catch (HttpStatusCodeException ex) {
-            RunnerResponse<?> npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), RunnerResponse.class);
+            RunnerResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), RunnerResponse.class);
             log.error("NPM awb auto sell failed due to: {}", jsonHelper.convertToJson(npmErrorResponse.getError()));
             throw new NPMException("Error from NPM : " + npmErrorResponse.getError().getMessage());
         }
@@ -297,7 +297,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             awbDao.save(npmAwbImportRateResponse.updatedAwb);
             return ResponseHelper.buildDependentServiceResponse(response.getBody().getData(),0,0);
         } catch (HttpStatusCodeException ex) {
-            RunnerResponse<?> npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), RunnerResponse.class);
+            RunnerResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), RunnerResponse.class);
             log.error("NPM awb import rates failed due to: {}", jsonHelper.convertToJson(npmErrorResponse.getError() ));
             throw new NPMException("Error from NPM : " + npmErrorResponse.getError().getMessage());
         }
@@ -559,7 +559,10 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         if(request.getBookingId() != null){
             customerBooking = customerBookingDao.findById(request.getBookingId());
         }
-        boolean isAlteration = customerBooking.isPresent() && !customerBooking.get().getBookingCharges().isEmpty();
+        boolean isAlteration = false;
+        if (customerBooking!= null && customerBooking.isPresent() && !customerBooking.get().getBookingCharges().isEmpty()) {
+            isAlteration = true;
+        }
 
         RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
         String xBrowserTimeZone = TimeZoneConstants.DEFAULT_TIME_ZONE_ID;
@@ -594,11 +597,11 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                 .preferred_date(preferredDateInUTC)
                 .preferred_date_type(request.getPreferredDateType())
                 .carrier(NPMConstants.ANY) //hardcoded
-                .loads_information(createLoadsInfo(request, customerBooking.orElse(null), isAlteration, NPMConstants.OFFERS_V2))
+                .loads_information(createLoadsInfo(request, customerBooking.isPresent() ? customerBooking.get() : null, isAlteration, NPMConstants.OFFERS_V2))
                 .mode_of_transport(request.getModeOfTransport())
-                .product_name(request.getCargoType())
+                .product_name(request.getCargoType()) // {TODO :: have to keep a mapping which is not present}
                 .contract_details(createContractDetails(request))
-                .shipment_type(request.getDirection() != null ? request.getDirection() : customerBooking.map(CustomerBooking::getDirection).orElse(null))
+                .shipment_type(request.getDirection() != null ? request.getDirection() : customerBooking.map(cb -> cb.getDirection()).orElse(null))
                 .service_mode(request.getServiceMode())
                 .fetch_default_rates(request.isFetchDefaultRates())
                 .slab_rates(false)
@@ -615,15 +618,19 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         if(request.getBookingId() != null){
             customerBooking = customerBookingDao.findById(request.getBookingId());
         }
+        boolean isAlteration = false;
+        if (customerBooking!= null && customerBooking.isPresent() && !customerBooking.get().getBookingCharges().isEmpty()) {
+            isAlteration = true;
+        }
 
         return NPMFetchOffersRequest.builder()
                 .origin(request.getOrigin())
                 .destination(request.getDestination())
                 .preferred_date(request.getPreferredDate())
                 .preferred_date_type(request.getPreferredDateType())
-                .loads_info(createLoadsInfo(request, customerBooking.orElse(null), false, NPMConstants.OFFERS_V8))
+                .loads_info(createLoadsInfo(request, customerBooking.isPresent() ? customerBooking.get() : null, false, NPMConstants.OFFERS_V8)) // TODO -; loads_info instead of loads_information
                 .mode_of_transport(request.getModeOfTransport())
-                .shipment_movement(customerBooking.map(CustomerBooking::getDirection).orElse(null))
+                .shipment_movement(customerBooking.map(cb -> cb.getDirection()).orElse(null))
                 .service_mode(request.getServiceMode())
                 .business_info(createBusinessInfo(request))
                 .contracts_info(createContractInfo(request))
@@ -863,12 +870,13 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         if(contractResponse.getMeta() != null && contractResponse.getMeta().getRoute() != null)
         {
             AtomicLong index = new AtomicLong(1L);
-            return contractResponse.getMeta().getRoute().stream().filter(route -> route != null && route.getType() != null && route.getType().equals("LEG")).map(route -> RoutingsResponse.builder()
+            var routes = contractResponse.getMeta().getRoute().stream().filter(route -> route != null && route.getType() != null && route.getType().equals("LEG")).map(route -> RoutingsResponse.builder()
                     .leg(index.getAndIncrement())
                     .pol(route.getOrigin() != null ? route.getOrigin().getCode() : null)
                     .pod(route.getDestination() != null ? route.getDestination().getCode() : null)
                     .mode(contractResponse.getMeta().getMode_of_transport())
                     .build()).toList();
+            return routes;
         }
         return null;
     }

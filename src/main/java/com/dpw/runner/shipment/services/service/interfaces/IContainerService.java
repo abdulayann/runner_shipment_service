@@ -18,6 +18,8 @@ public interface IContainerService extends ICommonService {
     ResponseEntity<IRunnerResponse> calculateAchieved_AllocatedForSameUnit(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> calculateAllocatedData(CommonRequestModel commonRequestModel);
 
+//    ResponseEntity<?> calculateAchievedQuantity_onPackAssign(CommonRequestModel commonRequestModel);
+
     ResponseEntity<IRunnerResponse> calculateAchievedQuantity_onPackDetach(CommonRequestModel commonRequestModel);
 
     ResponseEntity<IRunnerResponse> getContainersForSelection(CommonRequestModel commonRequestModel);

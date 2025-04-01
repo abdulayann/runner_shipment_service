@@ -285,6 +285,7 @@ public class ShipmentCANReport extends IReport {
             if(v.containsKey(CALCULATED_VALUE) && v.get(CALCULATED_VALUE) != null) {
                 String[] split = v.get(CALCULATED_VALUE).toString().split(" ");
                 BigDecimal count = getCount(split);
+//                        v.put(TOTAL_UNIT_COUNT, twoDecimalPlacesFormatDecimal(count));
                 v.put(TOTAL_UNIT_COUNT, GetDPWWeightVolumeFormat(count, 0, v1TenantSettingsResponse));
             }
         }

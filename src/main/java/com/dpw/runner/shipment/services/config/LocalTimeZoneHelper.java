@@ -5,14 +5,12 @@ import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.utils.DateUtils;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import com.dpw.runner.shipment.services.utils.Generated;
-import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 
 import java.lang.reflect.Field;
 import java.time.LocalDateTime;
 
 @Generated
-@Slf4j
 public class LocalTimeZoneHelper {
 
     private LocalTimeZoneHelper(){}
@@ -52,7 +50,7 @@ public class LocalTimeZoneHelper {
                     if(value != null)
                         field.set(obj, getDateTime(value));
                 } catch (IllegalAccessException e) {
-                    log.error("An error occurred: {}", e.getMessage(), e);
+                    e.printStackTrace();
                 }
             }
             else if(!(field.get(obj) instanceof Enum<?>) && field.get(obj) != null && field.get(obj).getClass().getName().startsWith("com.dpw"))

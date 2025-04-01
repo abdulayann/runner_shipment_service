@@ -320,10 +320,10 @@ public class V1ServiceUtil {
             return null;
         var list = new ArrayList<CreateBookingModuleInV1.BookingEntity.LastTransactionLoadDetails>();
         containersList.forEach(c -> {
-            var currentLoad = new CreateBookingModuleInV1.BookingEntity.LastTransactionLoadDetails();
-            currentLoad.setLoadKey(generateLoadKeyForContainer(c));
-            currentLoad.setLoadQuantity(Objects.isNull(c.getContainerCount()) ? 1 : c.getContainerCount().intValue());
-            list.add(currentLoad);
+            var _current = new CreateBookingModuleInV1.BookingEntity.LastTransactionLoadDetails();
+            _current.setLoadKey(generateLoadKeyForContainer(c));
+            _current.setLoadQuantity(Objects.isNull(c.getContainerCount()) ? 1 : c.getContainerCount().intValue());
+            list.add(_current);
         });
         return jsonHelper.convertToJson(list);
     }

@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 
 @Data
 public class AwbPaymentInfoV2 implements IRunnerRequest {
+    // public Int32 entityId;
     public String entityType;
     public BigDecimal weightCharges;
     public BigDecimal valuationCharge;

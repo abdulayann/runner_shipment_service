@@ -82,7 +82,7 @@ public class HblTermsConditionTemplateDao implements IHblTermsConditionTemplateD
         String responseMsg;
         List<HblTermsConditionTemplate> responseHblTermsConditionTemplate = new ArrayList<>();
         try {
-            // LATER- Handle Transactions here
+            // TODO- Handle Transactions here
             ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentSettingsId", shipmentSettingsId, "=");
             Pair<Specification<HblTermsConditionTemplate>, Pageable> pair = fetchData(listCommonRequest, HblTermsConditionTemplate.class);
             Page<HblTermsConditionTemplate> hblTermsConditionTemplates = findAll(pair.getLeft(), pair.getRight());
@@ -90,7 +90,7 @@ public class HblTermsConditionTemplateDao implements IHblTermsConditionTemplateD
                     .filter(e -> e.getIsFrontPrint() == isFrontPrint)
                     .toList();
             List<HblTermsConditionTemplate> hblTermsConditionTemplatesRequestList = new ArrayList<>();
-            if (hblTermsConditionTemplateList != null && !hblTermsConditionTemplateList.isEmpty()) {
+            if (hblTermsConditionTemplateList != null && hblTermsConditionTemplateList.size() != 0) {
                 for (HblTermsConditionTemplate request : hblTermsConditionTemplateList) {
                     Long id = request.getId();
                     hblTermsConditionTemplatesRequestList.add(request);
@@ -144,7 +144,7 @@ public class HblTermsConditionTemplateDao implements IHblTermsConditionTemplateD
         Pair<Specification<HblTermsConditionTemplate>, Pageable> pair = fetchData(listCommonRequest, HblTermsConditionTemplate.class);
         Page<HblTermsConditionTemplate> hblTermsConditionTemplates = findAll(pair.getLeft(), pair.getRight());
 
-        if (!hblTermsConditionTemplates.getContent().isEmpty()) {
+        if (hblTermsConditionTemplates.getContent().size() > 0) {
             return hblTermsConditionTemplates.getContent().get(0);
         }
 

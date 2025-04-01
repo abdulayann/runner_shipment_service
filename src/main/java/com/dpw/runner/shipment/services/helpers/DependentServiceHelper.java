@@ -54,10 +54,10 @@ public class DependentServiceHelper {
         try {
             if(shipmentDetails.getStatus() != null && !Objects.equals(shipmentDetails.getStatus(), ShipmentStatus.Completed.getValue()) || shipmentDetails.getStatus() != null && !Objects.equals(shipmentDetails.getStatus(), ShipmentStatus.Cancelled.getValue())
                     && trackingServiceAdapter.checkIfConsolAttached(shipmentDetails)|| (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipmentDetails.getShipmentType().equals(Constants.SHIPMENT_TYPE_DRT) && !Objects.isNull(shipmentDetails.getMasterBill()))) {
-                UniversalTrackingPayload utPayload = trackingServiceAdapter.mapShipmentDataToTrackingServiceData(shipmentDetails);
+                UniversalTrackingPayload _utPayload = trackingServiceAdapter.mapShipmentDataToTrackingServiceData(shipmentDetails);
                 List<UniversalTrackingPayload> trackingPayloads = new ArrayList<>();
-                if(utPayload != null) {
-                    trackingPayloads.add(utPayload);
+                if(_utPayload != null) {
+                    trackingPayloads.add(_utPayload);
                     var jsonBody = jsonHelper.convertToJson(trackingPayloads);
                     log.info("Producing tracking service payload from shipment with RequestId: {} and payload: {}",LoggerHelper.getRequestIdFromMDC(), jsonBody);
                     trackingServiceAdapter.publishUpdatesToTrackingServiceQueue(jsonBody, false);

@@ -118,7 +118,7 @@ public class NotificationServiceImpl implements INotificationService {
                 String cc = request.getCc();
                 Set<String> emailList = new HashSet<>();
                 if (!IsStringNullOrEmpty(cc)) {
-                    emailList.addAll(CommonUtils.splitAndTrimStrings(cc));
+                    emailList.addAll(Arrays.asList(cc.split("\\s*,\\s*")));
                 }
                 emailList.add(userEmail);
                 request.setCc(String.join(",", emailList));

@@ -134,7 +134,7 @@ public class CSVParsingUtil<T> {
     public Map<Integer, Map<String, MasterData>> fetchInBulkMasterList(MasterListRequestV2 requests) {
         Map<String, MasterData> keyMasterDataMap = new HashMap<>();
         Map<Integer, Map<String, MasterData>> dataMap = new HashMap<>();
-        if (requests.getMasterListRequests() != null && !requests.getMasterListRequests().isEmpty()) {
+        if (requests.getMasterListRequests() != null && requests.getMasterListRequests().size() > 0) {
             V1DataResponse response = v1Service.fetchMultipleMasterData(requests);
             List<MasterData> masterLists = jsonHelper.convertValueToList(response.entities, MasterData.class);
             masterLists.forEach(masterData -> {
@@ -345,7 +345,7 @@ public class CSVParsingUtil<T> {
     }
 
     public List<T> parseExcelFile(MultipartFile file, BulkUploadRequest request, Map<UUID, T> mapOfEntity, Map<String, Set<String>> masterDataMap,
-                                  Class<T> entityType, Class<?> modelClass, Map<Long, Long> undg, Map<Long, String> flashpoint, Map<String, String> locCodeToLocationReferenceGuidMap) throws IOException {
+                                  Class<T> entityType, Class modelClass, Map<Long, Long> undg, Map<Long, String> flashpoint, Map<String, String> locCodeToLocationReferenceGuidMap) throws IOException {
         if (entityType.equals(Packing.class)) {
             return parseExcelFilePacking(file, request, mapOfEntity, masterDataMap, entityType, undg, flashpoint, locCodeToLocationReferenceGuidMap);
         }

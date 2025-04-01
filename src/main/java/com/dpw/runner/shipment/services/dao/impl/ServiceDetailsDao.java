@@ -75,13 +75,13 @@ public class ServiceDetailsDao implements IServiceDetailsDao {
         String responseMsg;
         List<ServiceDetails> responseServiceDetails = new ArrayList<>();
         try {
-            // LATER- Handle Transactions here
+            // TODO- Handle Transactions here
             List<ServiceDetails> serviceDetailsPage = findByShipmentId(shipmentId);
             Map<Long, ServiceDetails> hashMap = serviceDetailsPage.stream()
                         .collect(Collectors.toMap(ServiceDetails::getId, Function.identity()));
             Map<Long, ServiceDetails> copyHashMap = new HashMap<>(hashMap);
             List<ServiceDetails> serviceDetailsRequests = new ArrayList<>();
-            if (serviceDetailsList != null && !serviceDetailsList.isEmpty()) {
+            if (serviceDetailsList != null && serviceDetailsList.size() != 0) {
                 for (ServiceDetails request : serviceDetailsList) {
                     Long id = request.getId();
                     if (id != null) {
@@ -219,7 +219,7 @@ public class ServiceDetailsDao implements IServiceDetailsDao {
         String responseMsg;
         List<ServiceDetails> responseServiceDetails = new ArrayList<>();
         Map<UUID, ServiceDetails> serviceDetailsMap = new HashMap<>();
-        if(oldEntityList != null && !oldEntityList.isEmpty()) {
+        if(oldEntityList != null && oldEntityList.size() > 0) {
             for (ServiceDetails entity:
                     oldEntityList) {
                 serviceDetailsMap.put(entity.getGuid(), entity);
@@ -229,7 +229,7 @@ public class ServiceDetailsDao implements IServiceDetailsDao {
         try {
             ServiceDetails oldEntity;
             List<ServiceDetails> serviceDetailsRequests = new ArrayList<>();
-            if (serviceDetailsList != null && !serviceDetailsList.isEmpty()) {
+            if (serviceDetailsList != null && serviceDetailsList.size() != 0) {
                 for (ServiceDetails request : serviceDetailsList) {
                     oldEntity = serviceDetailsMap.get(request.getGuid());
                     if(oldEntity != null) {

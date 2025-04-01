@@ -71,7 +71,7 @@ public class ContainerManifestPrint extends IReport {
 
         var exportAgentAddress = ReportHelper.getOrgAddress(consol.getSendingAgent());
         var importAgentAddress = ReportHelper.getOrgAddress(consol.getReceivingAgent());
-        var ctoAddress = consol.getArrivalDetails() == null ? new ArrayList<>(): ReportHelper.getOrgAddress(consol.getArrivalDetails().getCTOId());
+        var ctoAddress = consol.getArrivalDetails() == null ? new ArrayList(): ReportHelper.getOrgAddress(consol.getArrivalDetails().getCTOId());
         List<String> exportAgentFreeTextAddress;
         List<String> importAgentFreeTextAddress;
 

@@ -16,7 +16,7 @@ public class ManifestConsolModel extends BaseDocumentModel implements IDocumentM
     private int containerCount;
     private int shipmentCount;
     private CarrierMasterData carrierMasterData;
-    //Later:    private VesselRow ?? clarifcation required
+    //TODO    private VesselRow ?? clarifcation required
     private List<ShipmentModel> shipmentDetailsList;
     private List<ShipmentContainers> containersList;
 }

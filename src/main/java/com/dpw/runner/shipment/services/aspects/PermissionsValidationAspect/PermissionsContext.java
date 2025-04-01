@@ -17,7 +17,7 @@ public class PermissionsContext {
         return Permissions.get().get(key);
     }
 
-    public static void setPermissions(List<String> userPermissions) {
+    public static void setPermissions(List<String> UserPermissions) {
         List<String> shipmentListPermission = new ArrayList<>();
         List<String> shipmentRetrievePermission = new ArrayList<>();
         List<String> shipmentCreatePermission = new ArrayList<>();
@@ -31,7 +31,7 @@ public class PermissionsContext {
         List<String> carrierBookingCreate = new ArrayList<>();
         List<String> carrierBookingView = new ArrayList<>();
 
-        for (String permission : userPermissions) {
+        for (String permission : UserPermissions) {
             // Older permission context setting
             setShipmentPermissions(permission, shipmentListPermission, shipmentRetrievePermission, shipmentCreatePermission, shipmentUpdatePermission);
             setConsolidationPermissions(permission, consolidationListPermission, consolidationRetrievePermission, consolidationCreatePermission, consolidationUpdatePermission);

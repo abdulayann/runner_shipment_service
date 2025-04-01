@@ -208,7 +208,7 @@ public class HblService implements IHblService {
         Hbl hbl = null;
         if(allContainerAssigned) {
             List<Hbl> hbls = hblDao.findByShipmentId(shipmentId);
-            if(!hbls.isEmpty()) {
+            if(hbls.size() > 0) {
                 hbl = hbls.get(0);
                 hbl = getHblWithContainerAndCargoData(shipment, containersList, packings, hbl);
             }
@@ -239,7 +239,7 @@ public class HblService implements IHblService {
 
     private Hbl getHblWithContainerAndCargoData(ShipmentDetails shipment, Set<Containers> containersList, List<Packing> packings, Hbl hbl) {
         boolean isContainerWithoutNumberOrNoContainer = false;
-        if(hbl.getHblContainer() != null && !hbl.getHblContainer().isEmpty()) {
+        if(hbl.getHblContainer() != null && hbl.getHblContainer().size() > 0) {
             for(HblContainerDto hblContainerDto: hbl.getHblContainer()) {
                 if(hblContainerDto.getContainerNumber() == null || hblContainerDto.getContainerNumber().isEmpty()) {
                     isContainerWithoutNumberOrNoContainer = true;
@@ -503,13 +503,14 @@ public class HblService implements IHblService {
         }
         mapDeliveryDataInHbl(additionalDetails, hblData);
         UnlocationsResponse destination = masterDataUtil.getUNLocRow(carrierDetails.getDestination());
-        // LATER: This needs to re-visit after incorporating this setting in service
+        // TODO: This needs to re-visit after incorporating this setting in service
         if (/*Unico HBL*/true) {
             hblData.setTransportType(shipmentDetail.getTransportMode());
             hblData.setShipmentType(shipmentDetail.getDirection());
             hblData.setShippingTime(carrierDetails.getEtd() == null ? null : carrierDetails.getEtd().toLocalTime().toString());
             hblData.setEtd(carrierDetails.getEtd());
             hblData.setIncoTerms(shipmentDetail.getIncoterms());
+//            hblData.setIncoTermPlace(shipmentDetail.incotermsDesctiption);
             hblData.setFinalDestination(carrierDetails.getDestination());
             hblData.setQuantity(shipmentDetail.getInnerPacks());
             hblData.setQuantityCode(shipmentDetail.getInnerPackUnit());
@@ -623,7 +624,7 @@ public class HblService implements IHblService {
         String volumeUnit = null;
         BigDecimal volume = BigDecimal.valueOf(0);
         BigDecimal weight = BigDecimal.valueOf(0);
-        if(shipment.getPackingList() != null && !shipment.getPackingList().isEmpty())
+        if(shipment.getPackingList() != null && shipment.getPackingList().size() > 0)
         {
             for(Packing packing: shipment.getPackingList())
             {
@@ -646,7 +647,7 @@ public class HblService implements IHblService {
     }
 
     private List<ReferenceNumbers> getReferenceNumber(ShipmentDetails shipment) {
-        return (shipment.getReferenceNumbersList() != null && !shipment.getReferenceNumbersList().isEmpty()) ? shipment.getReferenceNumbersList().stream().filter(x -> Objects.equals(x.getType(), "Container")).toList() : null;
+        return (shipment.getReferenceNumbersList() != null && shipment.getReferenceNumbersList().size() > 0) ? shipment.getReferenceNumbersList().stream().filter(x -> Objects.equals(x.getType(), "Container")).toList() : null;
     }
 
     private String getPacksType(ShipmentDetails shipment) {
@@ -698,7 +699,7 @@ public class HblService implements IHblService {
     }
 
     private List<HblContainerDto> getHblContainerDtos(ShipmentDetails shipment, List<ReferenceNumbers> referenceNumber, CompanySettingsResponse companySettingsResponse, Long noOfPackage, String packsType, BigDecimal volume, BigDecimal weight, String volumeUnit, String weightUnit) {
-        if(referenceNumber != null && !referenceNumber.isEmpty() && (shipment.getContainersList() == null || shipment.getContainersList().isEmpty()) && Objects.equals(shipment.getTransportMode(), "SEA") && Objects.equals(shipment.getShipmentType(), "LCL") && Boolean.TRUE.equals(companySettingsResponse.getSeaLclContainerFlag()))
+        if(referenceNumber != null && referenceNumber.size() > 0 && (shipment.getContainersList() == null || shipment.getContainersList().isEmpty()) && Objects.equals(shipment.getTransportMode(), "SEA") && Objects.equals(shipment.getShipmentType(), "LCL") && companySettingsResponse.getSeaLclContainerFlag())
         {
             return List.of(HblContainerDto.builder().
                     containerNumber(referenceNumber.get(0).getReferenceNumber()).
@@ -717,7 +718,7 @@ public class HblService implements IHblService {
     private List<HblCargoDto> mapShipmentCargoToHBL(List<Packing> packings, Set<Containers> containers) {
         List<HblCargoDto> hblCargoes = new ArrayList<>();
         Map<Long, String> map = new HashMap<>();
-        if(containers != null && !containers.isEmpty())
+        if(containers != null && containers.size() > 0)
             map = containers.stream().filter(e -> !IsStringNullOrEmpty(e.getContainerNumber())).collect(Collectors.toMap(Containers::getId, Containers::getContainerNumber));
         Map<Long, String> finalMap = map;
         if(Objects.equals(packings, null)) {
@@ -766,7 +767,7 @@ public class HblService implements IHblService {
             log.error("Request Id and Shipment Guid is null for Hbl update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
-        if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !Boolean.TRUE.equals(syncConfig.IS_REVERSE_SYNC_ACTIVE)) {
+        if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
             return ResponseHelper.buildSuccessResponse();
         }
 
@@ -823,29 +824,29 @@ public class HblService implements IHblService {
         CarrierDetails carrierDetails = shipmentDetail.getCarrierDetails() != null ? shipmentDetail.getCarrierDetails() : new CarrierDetails();
 
         setUnLocationsDataInHblData(hblLock, hblData, additionalDetails, carrierDetails);
-        if(!Boolean.TRUE.equals(hblLock.getCargoDescriptionLock()))
+        if(!hblLock.getCargoDescriptionLock())
             hblData.setCargoDescription(shipmentDetail.getGoodsDescription());
-        if(!Boolean.TRUE.equals(hblLock.getMarksAndNumbersLock()))
+        if(!hblLock.getMarksAndNumbersLock())
             hblData.setMarksAndNumbers(shipmentDetail.getMarksNum());
-        if(!Boolean.TRUE.equals(hblLock.getPackageCountLock()))
+        if(!hblLock.getPackageCountLock())
             hblData.setPackageCount(shipmentDetail.getNoOfPacks());
-        if(!Boolean.TRUE.equals(hblLock.getPackageTypeLock()))
+        if(!hblLock.getPackageTypeLock())
             hblData.setPackageType(shipmentDetail.getPacksUnit());
-        if(!Boolean.TRUE.equals(hblLock.getBlReferenceNumberLock()))
+        if(!hblLock.getBlReferenceNumberLock())
             hblData.setBlReferenceNumber(shipmentDetail.getBookingReference());
-        if(!Boolean.TRUE.equals(hblLock.getCargoNetWeightLock()))
+        if(!hblLock.getCargoNetWeightLock())
             hblData.setCargoNetWeight(shipmentDetail.getNetWeight());
-        if(!Boolean.TRUE.equals(hblLock.getCargoGrossWeightLock()))
+        if(!hblLock.getCargoGrossWeightLock())
             hblData.setCargoGrossWeight(shipmentDetail.getWeight());
-        if(!Boolean.TRUE.equals(hblLock.getCargoGrossVolumeLock()))
+        if(!hblLock.getCargoGrossVolumeLock())
             hblData.setCargoGrossVolume(shipmentDetail.getVolume());
-        if(!Boolean.TRUE.equals(hblLock.getCargoNetWeightUnitLock()))
+        if(!hblLock.getCargoNetWeightUnitLock())
             hblData.setCargoNetWeightUnit(shipmentDetail.getNetWeightUnit());
-        if(!Boolean.TRUE.equals(hblLock.getCargoGrossWeightUnitLock()))
+        if(!hblLock.getCargoGrossWeightUnitLock())
             hblData.setCargoGrossWeightUnit(shipmentDetail.getWeightUnit());
-        if(!Boolean.TRUE.equals(hblLock.getCargoGrossVolumeUnitLock()))
+        if(!hblLock.getCargoGrossVolumeUnitLock())
             hblData.setCargoGrossVolumeUnit(shipmentDetail.getVolumeUnit());
-        if(!Boolean.TRUE.equals(hblLock.getHouseBillLock()))
+        if(!hblLock.getHouseBillLock())
             hblData.setHouseBill(shipmentDetail.getHouseBill());
         setVesselNameInHblData(hblLock, routing, hblData, carrierDetails);
         setVoyageInHblData(hblLock, routing, hblData, carrierDetails);
@@ -856,22 +857,22 @@ public class HblService implements IHblService {
 
     /*Unico HBL*/
     private void processUnicoHblData(ShipmentDetails shipmentDetail, HblLockSettings hblLock, HblDataDto hblData, CarrierDetails carrierDetails) {
-        // LATER: This needs to re-visit after incorporating this setting in service
-        if (!Boolean.TRUE.equals(hblLock.getTransportTypeLock()))
+        // TODO: This needs to re-visit after incorporating this setting in service
+        if (!hblLock.getTransportTypeLock())
             hblData.setTransportType(shipmentDetail.getTransportMode());
-        if(!Boolean.TRUE.equals(hblLock.getShipmentTypeLock()))
+        if(!hblLock.getShipmentTypeLock())
             hblData.setShipmentType(shipmentDetail.getDirection());
-        if(!Boolean.TRUE.equals(hblLock.getShippingTime()))
+        if(!hblLock.getShippingTime())
             hblData.setShippingTime(carrierDetails.getEtd() == null ? null : carrierDetails.getEtd().toLocalTime().toString());
-        if(!Boolean.TRUE.equals(hblLock.getEtd()))
+        if(!hblLock.getEtd())
             hblData.setEtd(carrierDetails.getEtd());
-        if(!Boolean.TRUE.equals(hblLock.getIncoTerms()))
+        if(!hblLock.getIncoTerms())
             hblData.setIncoTerms(shipmentDetail.getIncoterms());
-        if(!Boolean.TRUE.equals(hblLock.getFinalDestination()))
+        if(!hblLock.getFinalDestination())
             hblData.setFinalDestination(carrierDetails.getDestination());
-        if(!Boolean.TRUE.equals(hblLock.getQuantity()))
+        if(!hblLock.getQuantity())
             hblData.setQuantity(shipmentDetail.getInnerPacks());
-        if(!Boolean.TRUE.equals(hblLock.getQuantityCode()))
+        if(!hblLock.getQuantityCode())
             hblData.setQuantityCode(shipmentDetail.getInnerPackUnit());
         setElDetailsListInHbl(shipmentDetail, hblLock, hblData);
         processReferenceNumbersListInHbl(shipmentDetail, hblLock, hblData);
@@ -880,26 +881,26 @@ public class HblService implements IHblService {
 
     private void setConsignerConsigneeDataInHbl(ShipmentDetails shipmentDetail, HblLockSettings hblLock, HblDataDto hblData) {
         if(shipmentDetail.getConsigner() != null) {
-            if(!Boolean.TRUE.equals(hblLock.getConsignorNameLock()))
+            if(!hblLock.getConsignorNameLock())
                 hblData.setConsignorName(StringUtility.convertToString(shipmentDetail.getConsigner().getOrgData().get(PartiesConstants.FULLNAME)) );
-            if(!Boolean.TRUE.equals(hblLock.getConsignorAddressLock()))
+            if(!hblLock.getConsignorAddressLock())
                 hblData.setConsignorAddress(constructAddress(shipmentDetail.getConsigner().getAddressData()));
         }
         if(shipmentDetail.getConsignee() != null) {
-            if(!Boolean.TRUE.equals(hblLock.getConsigneeNameLock()))
+            if(!hblLock.getConsigneeNameLock())
                 hblData.setConsigneeName(StringUtility.convertToString(shipmentDetail.getConsignee().getOrgData().get(PartiesConstants.FULLNAME)));
-            if(!Boolean.TRUE.equals(hblLock.getConsigneeAddressLock()))
+            if(!hblLock.getConsigneeAddressLock())
                 hblData.setConsigneeAddress(constructAddress(shipmentDetail.getConsignee().getAddressData()));
         }
     }
 
     private void processReferenceNumbersListInHbl(ShipmentDetails shipmentDetail, HblLockSettings hblLock, HblDataDto hblData) {
         if(shipmentDetail.getReferenceNumbersList() != null) {
-            if(!Boolean.TRUE.equals(hblLock.getInvoiceNumbers()))
+            if(!hblLock.getInvoiceNumbers())
                 hblData.setInvoiceNumbers(String.join(",",
                     shipmentDetail.getReferenceNumbersList().stream().filter(c -> Objects.equals(c.getType(), Constants.INVNO))
                             .map(c -> c.getReferenceNumber()).collect(Collectors.toList())));
-            if(!Boolean.TRUE.equals(hblLock.getLcNumber()))
+            if(!hblLock.getLcNumber())
                 hblData.setLcNumber(String.join(",",
                     shipmentDetail.getReferenceNumbersList().stream().filter(c -> Objects.equals(c.getType(), Constants.CON))
                             .map(c -> c.getReferenceNumber()).collect(Collectors.toList())));
@@ -908,10 +909,10 @@ public class HblService implements IHblService {
 
     private void setElDetailsListInHbl(ShipmentDetails shipmentDetail, HblLockSettings hblLock, HblDataDto hblData) {
         if(shipmentDetail.getElDetailsList() != null) {
-            if(!Boolean.TRUE.equals(hblLock.getElNumber()))
+            if(!hblLock.getElNumber())
                 hblData.setElNumber(String.join(",",
                     shipmentDetail.getElDetailsList().stream().map(c -> c.getElNumber()).collect(Collectors.toList())));
-            if(!Boolean.TRUE.equals((hblLock.getElDate())))
+            if(!hblLock.getElDate())
                 hblData.setElDate(String.join(",",
                     shipmentDetail.getElDetailsList().stream().map(c -> c.getCreatedAt().toString()).collect(Collectors.toList())));
         }
@@ -927,7 +928,7 @@ public class HblService implements IHblService {
     }
 
     private void setVesselNameInHblData(HblLockSettings hblLock, Routings routing, HblDataDto hblData, CarrierDetails carrierDetails) {
-        if(!Boolean.TRUE.equals(hblLock.getVesselNameLock())) {
+        if(!hblLock.getVesselNameLock()) {
             if (Objects.nonNull(routing))
                 hblData.setVesselName(masterDataUtil.getVesselName(routing.getVesselName()));
             else
@@ -937,13 +938,13 @@ public class HblService implements IHblService {
 
     private void setUnLocationsDataInHblData(HblLockSettings hblLock, HblDataDto hblData, AdditionalDetails additionalDetails, CarrierDetails carrierDetails) {
         Map<String, EntityTransferUnLocations> v1Data = getUnLocationsData(hblData, additionalDetails, carrierDetails);
-        if(!Boolean.TRUE.equals(hblLock.getPlaceOfReceiptLock()))
+        if(!hblLock.getPlaceOfReceiptLock())
             setUnLocationsData(v1Data, hblData, additionalDetails, carrierDetails, "PlaceOfReceipt");
-        if(!Boolean.TRUE.equals(hblLock.getPortOfLoadLock()))
+        if(!hblLock.getPortOfLoadLock())
             setUnLocationsData(v1Data, hblData, additionalDetails, carrierDetails, "PortOfLoad");
-        if(!Boolean.TRUE.equals(hblLock.getPortOfDischargeLock()))
+        if(!hblLock.getPortOfDischargeLock())
             setUnLocationsData(v1Data, hblData, additionalDetails, carrierDetails, "PortOfDischarge");
-        if(!Boolean.TRUE.equals(hblLock.getPlaceOfDeliveryLock()))
+        if(!hblLock.getPlaceOfDeliveryLock())
             setUnLocationsData(v1Data, hblData, additionalDetails, carrierDetails, "PlaceOfDelivery");
     }
 
@@ -954,7 +955,7 @@ public class HblService implements IHblService {
         });
         List<HblCargoDto> deletedList = new ArrayList<>();
         Map<Long, String> map = new HashMap<>();
-        if(containers != null && !containers.isEmpty())
+        if(containers != null && containers.size() > 0)
             map = containers.stream().collect(Collectors.toMap(Containers::getId, Containers::getContainerNumber));
         Map<Long, String> finalMap = map;
         if(hbl.getHblCargo() != null && !hbl.getHblCargo().isEmpty()) {
@@ -1000,27 +1001,27 @@ public class HblService implements IHblService {
     }
 
     private void updateShipmentCargoFieldToHbl(Packing pack, HblCargoDto cargo, HblLockSettings hblLock, String containerNumber) {
-        if(!Boolean.TRUE.equals(hblLock.getBlContainerIdLock()))
+        if(!hblLock.getBlContainerIdLock())
             cargo.setBlContainerContainerNumber(containerNumber);
-        if(!Boolean.TRUE.equals(hblLock.getCargoDescriptionLock()))
+        if(!hblLock.getCargoDescriptionLock())
             cargo.setCargoDesc(pack.getGoodsDescription());
-        if(!Boolean.TRUE.equals(hblLock.getCargoGrossVolumeLock()))
+        if(!hblLock.getCargoGrossVolumeLock())
             cargo.setCargoGrossVolume(pack.getVolume());
-        if(!Boolean.TRUE.equals(hblLock.getCargoGrossVolumeUnitLock()))
+        if(!hblLock.getCargoGrossVolumeUnitLock())
             cargo.setCargoGrossVolumeUnit(pack.getVolumeUnit());
-        if(!Boolean.TRUE.equals(hblLock.getCargoGrossWeightLock()))
+        if(!hblLock.getCargoGrossWeightLock())
             cargo.setCargoGrossWeight(pack.getWeight());
-        if(!Boolean.TRUE.equals(hblLock.getCargoGrossWeightUnitLock()))
+        if(!hblLock.getCargoGrossWeightUnitLock())
             cargo.setCargoGrossWeightUnit(pack.getWeightUnit());
-        if(!Boolean.TRUE.equals(hblLock.getHsCodeLock()))
+        if(!hblLock.getHsCodeLock())
             cargo.setHsCode(pack.getHSCode());
-        if(!Boolean.TRUE.equals(hblLock.getHazmatDetailsLock()))
+        if(!hblLock.getHazmatDetailsLock())
             cargo.setHazmatDetails(pack.getHazardous());
-        if(!Boolean.TRUE.equals(hblLock.getMarksAndNumbersLock()))
+        if(!hblLock.getMarksAndNumbersLock())
             cargo.setMarksAndNumbers(pack.getMarksnNums());
-        if(!Boolean.TRUE.equals(hblLock.getPackageCountLock()))
+        if(!hblLock.getPackageCountLock())
             cargo.setPackageCount(Integer.parseInt(pack.getPacks() == null ? "0" : pack.getPacks()));
-        if(!Boolean.TRUE.equals(hblLock.getPackageTypeLock()))
+        if(!hblLock.getPackageTypeLock())
             cargo.setPackageType(pack.getPacksType());
     }
     private void updateShipmentContainersToHBL(Set<Containers> containers, Hbl hbl, HblLockSettings hblLock) {
@@ -1067,25 +1068,25 @@ public class HblService implements IHblService {
 
     }
     private void updateShipmentContainersToHBL(Containers container, HblContainerDto hblContainer, HblLockSettings hblLock) {
-        if(!Boolean.TRUE.equals(hblLock.getCarrierSealNumberLock()))
+        if(!hblLock.getCarrierSealNumberLock())
             hblContainer.setCarrierSealNumber(container.getCarrierSealNumber());
-        if(!Boolean.TRUE.equals(hblLock.getContainerGrossVolumeLock()))
+        if(!hblLock.getContainerGrossVolumeLock())
             hblContainer.setContainerGrossVolume(container.getGrossVolume());
-        if(!Boolean.TRUE.equals(hblLock.getContainerGrossVolumeUnitLock()))
+        if(!hblLock.getContainerGrossVolumeUnitLock())
             hblContainer.setContainerGrossVolumeUnit(container.getGrossVolumeUnit());
-        if(!Boolean.TRUE.equals(hblLock.getContainerGrossWeightLock()))
+        if(!hblLock.getContainerGrossWeightLock())
             hblContainer.setContainerGrossWeight(container.getGrossWeight());
-        if(!Boolean.TRUE.equals(hblLock.getContainerGrossWeightUnitLock()))
+        if(!hblLock.getContainerGrossWeightUnitLock())
             hblContainer.setContainerGrossWeightUnit(container.getGrossWeightUnit());
-        if(!Boolean.TRUE.equals(hblLock.getContainerNumberLock()))
+        if(!hblLock.getContainerNumberLock())
             hblContainer.setContainerNumber(container.getContainerNumber());
-        if(!Boolean.TRUE.equals(hblLock.getContainerTypeLock()))
+        if(!hblLock.getContainerTypeLock())
             hblContainer.setContainerType(container.getContainerCode());
-        if(!Boolean.TRUE.equals(hblLock.getShipperSealNumberLock()))
+        if(!hblLock.getShipperSealNumberLock())
             hblContainer.setShipperSealNumber(container.getShipperSealNumber());
-        if(!Boolean.TRUE.equals(hblLock.getContainerDescLock()))
+        if(!hblLock.getContainerDescLock())
             hblContainer.setContainerDesc(container.getDescriptionOfGoods());
-        if(!Boolean.TRUE.equals(hblLock.getQuantity()))
+        if(!hblLock.getQuantity())
             hblContainer.setQuantity(container.getContainerCount());
     }
 
@@ -1118,11 +1119,11 @@ public class HblService implements IHblService {
 
     private HblPartyDto getDeleteParty(Parties party, HblLockSettings hblLock, HblPartyDto hblParty, HblPartyDto deleteParty) {
         if (party != null) {
-            if (!Boolean.TRUE.equals(hblLock.getNotifyPartyNameLock()))
+            if (!hblLock.getNotifyPartyNameLock())
                 hblParty.setName(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.FULLNAME)));
-            if (!Boolean.TRUE.equals(hblLock.getNotifyPartyAddressLock()))
+            if (!hblLock.getNotifyPartyAddressLock())
                 hblParty.setAddress(constructAddress(party.getAddressData()));
-            if (!Boolean.TRUE.equals(hblLock.getNotifyPartyEmailLock()))
+            if (!hblLock.getNotifyPartyEmailLock())
                 hblParty.setEmail(StringUtility.convertToString(party.getOrgData().get(PartiesConstants.EMAIL)));
         } else {
             deleteParty = hblParty;

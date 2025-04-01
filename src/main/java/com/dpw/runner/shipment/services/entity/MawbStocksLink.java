@@ -39,4 +39,8 @@ public class MawbStocksLink extends MultiTenancy {
 
     @Column(name = "ship_cons_number")
     private String shipConsNumber;
+
+//    @ManyToOne(fetch = FetchType.LAZY)
+//    @JoinColumn(name = "parent_id", referencedColumnName = "id")
+//    private MawbStocks mawbStocks;
 }

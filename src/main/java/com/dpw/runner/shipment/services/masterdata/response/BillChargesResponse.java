@@ -37,7 +37,7 @@ public class BillChargesResponse {
     @JsonProperty("LocalTax")
     private BigDecimal localTax;
     @JsonProperty("MeasurementBasis")
-    private String measurementBasis; //LATER: SUBHAM doubt which value is this
+    private String measurementBasis; //TODO: SUBHAM doubt which value is this
     @JsonProperty("LocalCostCurrency")
     private String localCostCurrency;
 

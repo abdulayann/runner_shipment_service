@@ -17,6 +17,9 @@ import java.util.Map;
 
 @Data
 public class HblModel implements IDocumentModel{
+    //public List<BillChargesRow> billCharges;
+    //public BigDecimal prepaidTotalAmount;
+    //public BigDecimal collectTotalAmount;
     public ShipmentModel shipment;
     public ConsolidationModel consolidation;
     public TenantModel tenant;

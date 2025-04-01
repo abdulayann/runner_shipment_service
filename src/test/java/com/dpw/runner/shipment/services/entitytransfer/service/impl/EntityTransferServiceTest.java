@@ -53,8 +53,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -120,16 +118,16 @@ class EntityTransferServiceTest extends CommonMocks {
     private EmailTemplatesRequest template;
 
     @Mock
-    private ConsolidationDetails consoleDetails;
+    private ConsolidationDetails consolidationDetails;
 
     @Mock
-    private ConsolidationDetailsResponse consoleDetailsResponse;
+    private ConsolidationDetailsResponse consolidationDetailsResponse;
     @Mock
-    private ShipmentDetails shipmentData;
+    private ShipmentDetails shipmentDetails;
     @Mock
     private V1TenantResponse v1TenantResponse;
     @Mock
-    private TenantModel mockedTenantModel;
+    private TenantModel tenantModel;
     @Mock
     private UsersDto usersDto;
     @Mock
@@ -182,6 +180,7 @@ class EntityTransferServiceTest extends CommonMocks {
 
     @BeforeEach
     void setUp() {
+//        testairMessagingLogs = jsonTestUtility.getTestAirMessagingLogs();
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder().P100Branch(false).build());
         UsersDto mockUser = new UsersDto();
@@ -232,8 +231,12 @@ class EntityTransferServiceTest extends CommonMocks {
 
         ShipmentDetails mockShipmentDetails = jsonTestUtility.getCompleteShipment();
         mockShipmentDetails.setTenantId(mockTenantId);
+        EntityTransferShipmentDetails mockETPayload = objectMapperTest.convertValue(mockShipmentDetails, EntityTransferShipmentDetails.class);
         V1TenantResponse mockV1TenantResponse = V1TenantResponse.builder().TenantName("mockTenant").build();
         mockShipmentSettings();
+        Map<Integer, Object> mockTenantNameMap = Map.ofEntries(
+                Map.entry(mockTenantId, mockV1TenantResponse)
+        );
 
         // Mocking
         when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(mockShipmentDetails));
@@ -276,6 +279,7 @@ class EntityTransferServiceTest extends CommonMocks {
         var httpResponse = entityTransferService.sendShipment(commonRequestModel);
 
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+//        verify(eventDao, atLeast(1)).generateEvents(any());
         verify(shipmentDao, times(1)).saveEntityTransfer(any(), any());
         verify(tasksService, times(3)).createTask(any());
 
@@ -367,8 +371,9 @@ class EntityTransferServiceTest extends CommonMocks {
         int mockTenantId = 10;
         ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
         consolidationDetails.setTenantId(mockTenantId);
-        consolidationDetails.getShipmentsList().forEach(i -> i.setTenantId(mockTenantId));
+        consolidationDetails.getShipmentsList().stream().forEach(i -> i.setTenantId(mockTenantId));
         EntityTransferOrganizations organizations = jsonTestUtility.getOrganizationData();
+        V1DataResponse v1DataResponseOrg = V1DataResponse.builder().entities(List.of(organizations)).build();
 
         Map<String, List<String>> shipAdditionalDocs = new HashMap<>();
         shipAdditionalDocs.put(consolidationDetails.getShipmentsList().iterator().next().getGuid().toString(), List.of(UUID.randomUUID().toString()));
@@ -472,8 +477,9 @@ class EntityTransferServiceTest extends CommonMocks {
         ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
         consolidationDetails.setReceivingBranch(66L);
         consolidationDetails.setTenantId(mockTenantId);
-        consolidationDetails.getShipmentsList().forEach(i -> i.setTenantId(mockTenantId));
+        consolidationDetails.getShipmentsList().stream().forEach(i -> i.setTenantId(mockTenantId));
         EntityTransferOrganizations organizations = jsonTestUtility.getOrganizationData();
+        V1DataResponse v1DataResponseOrg = V1DataResponse.builder().entities(List.of(organizations)).build();
 
         Map<String, List<String>> shipAdditionalDocs = new HashMap<>();
         shipAdditionalDocs.put(consolidationDetails.getShipmentsList().iterator().next().getGuid().toString(), List.of(UUID.randomUUID().toString()));
@@ -1526,20 +1532,19 @@ class EntityTransferServiceTest extends CommonMocks {
         assertEquals(expected, result);
     }
 
-    @ParameterizedTest
-    @CsvSource({
-            "Branch001, <p>Branch: {GS_ConsolidationBranch}</p><p>Shipment: {SD_ShipmentNumber}</p><p>Branch: {SD_SendingBranch}</p>, <p>Branch: Branch001</p><p>Shipment: {SD_ShipmentNumber}</p><p>Branch: {SD_SendingBranch}</p>",
-            "Branch001, <p>Branch: GS_ConsolidationBranch</p><p>Shipment: SD_ShipmentNumber</p>, <p>Branch: GS_ConsolidationBranch</p><p>Shipment: SD_ShipmentNumber</p>"
-    })
-    void testReplaceTagsValues_SomeTagsMissing(Object branch, String htmlElement, String expected) {
+    @Test
+    void testReplaceTagsValues_SomeTagsMissing() {
         // Arrange
         Map<String, Object> tagDetails = new HashMap<>();
-        tagDetails.put("GS_ConsolidationBranch", branch);
+        tagDetails.put("GS_ConsolidationBranch", "Branch001");
+
+        String htmlElement = "<p>Branch: {GS_ConsolidationBranch}</p><p>Shipment: {SD_ShipmentNumber}</p><p>Branch: {SD_SendingBranch}</p>";
 
         // Act
         String result = entityTransferService.replaceTagsValues(tagDetails, htmlElement);
 
         // Assert
+        String expected = "<p>Branch: Branch001</p><p>Shipment: {SD_ShipmentNumber}</p><p>Branch: {SD_SendingBranch}</p>";
         assertEquals(expected, result);
     }
 
@@ -1571,6 +1576,22 @@ class EntityTransferServiceTest extends CommonMocks {
 
         // Assert
         String expected = "<p>Branch: </p><p>Shipment: {SD_ShipmentNumber}</p>";
+        assertEquals(expected, result);
+    }
+
+    @Test
+    void testReplaceTagsValues_NoTagsInHtmlElement() {
+        // Arrange
+        Map<String, Object> tagDetails = new HashMap<>();
+        tagDetails.put("GS_ConsolidationBranch", "Branch001");
+
+        String htmlElement = "<p>Branch: GS_ConsolidationBranch</p><p>Shipment: SD_ShipmentNumber</p>";
+
+        // Act
+        String result = entityTransferService.replaceTagsValues(tagDetails, htmlElement);
+
+        // Assert
+        String expected = "<p>Branch: GS_ConsolidationBranch</p><p>Shipment: SD_ShipmentNumber</p>";
         assertEquals(expected, result);
     }
 
@@ -1929,11 +1950,11 @@ class EntityTransferServiceTest extends CommonMocks {
         shipmentDetailsResponse.setTenantId(entityTransferShipmentDetails.getSendToBranch());
 
         ConsolidationDetailsRequest consolidationDetailsRequest = objectMapperTest.convertValue(entityTransferConsolidationDetails, ConsolidationDetailsRequest.class);
-        ConsolidationDetailsResponse consolidationDetailsResponse = new ConsolidationDetailsResponse();
-        consolidationDetailsResponse.setId(3L);
-        consolidationDetailsResponse.setGuid(UUID.randomUUID());
-        consolidationDetailsResponse.setTenantId(entityTransferConsolidationDetails.getSendToBranch());
-        consolidationDetailsResponse.setConsolidationNumber(entityTransferConsolidationDetails.getConsolidationNumber());
+        ConsolidationDetailsResponse consoleDetailsResponse = new ConsolidationDetailsResponse();
+        consoleDetailsResponse.setId(3L);
+        consoleDetailsResponse.setGuid(UUID.randomUUID());
+        consoleDetailsResponse.setTenantId(entityTransferConsolidationDetails.getSendToBranch());
+        consoleDetailsResponse.setConsolidationNumber(entityTransferConsolidationDetails.getConsolidationNumber());
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
 
         List<UsersDto> usersDtoList = new ArrayList<>();
@@ -1945,9 +1966,9 @@ class EntityTransferServiceTest extends CommonMocks {
         when(modelMapper.map(any(), eq(ShipmentRequest.class))).thenReturn(objectMapperTest.convertValue(entityTransferShipmentDetails, ShipmentRequest.class));
         when(shipmentDao.findShipmentBySourceGuidAndTenantId(entityTransferShipmentDetails.getGuid(), entityTransferShipmentDetails.getSendToBranch())).thenReturn(List.of());
         when(shipmentService.createShipmentFromEntityTransfer(any())).thenReturn(shipmentDetailsResponse);
-        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consoleDetails));
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(consolidationDetails));
         when(modelMapper.map(any(), eq(ConsolidationDetailsRequest.class))).thenReturn(consolidationDetailsRequest);
-        when(consolidationService.createConsolidationFromEntityTransfer(any())).thenReturn(consolidationDetailsResponse);
+        when(consolidationService.createConsolidationFromEntityTransfer(any())).thenReturn(consoleDetailsResponse);
         when(v1ServiceUtil.getUsersWithGivenPermission(any(), any())).thenReturn(usersDtoList);
         mockShipmentSettings();
 
@@ -1972,11 +1993,11 @@ class EntityTransferServiceTest extends CommonMocks {
         shipmentDetailsResponse.setTenantId(entityTransferShipmentDetails.getSendToBranch());
 
         ConsolidationDetailsRequest consolidationDetailsRequest = objectMapperTest.convertValue(entityTransferConsolidationDetails, ConsolidationDetailsRequest.class);
-        ConsolidationDetailsResponse consolidationDetailsResponse = new ConsolidationDetailsResponse();
-        consolidationDetailsResponse.setId(3L);
-        consolidationDetailsResponse.setGuid(UUID.randomUUID());
-        consolidationDetailsResponse.setTenantId(entityTransferConsolidationDetails.getSendToBranch());
-        consolidationDetailsResponse.setConsolidationNumber(entityTransferConsolidationDetails.getConsolidationNumber());
+        ConsolidationDetailsResponse consoleDetailsResponse = new ConsolidationDetailsResponse();
+        consoleDetailsResponse.setId(3L);
+        consoleDetailsResponse.setGuid(UUID.randomUUID());
+        consoleDetailsResponse.setTenantId(entityTransferConsolidationDetails.getSendToBranch());
+        consoleDetailsResponse.setConsolidationNumber(entityTransferConsolidationDetails.getConsolidationNumber());
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(false);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(importConsolidationRequest);
 
@@ -1985,7 +2006,7 @@ class EntityTransferServiceTest extends CommonMocks {
         when(shipmentDao.findShipmentBySourceGuidAndTenantId(entityTransferShipmentDetails.getGuid(), entityTransferShipmentDetails.getSendToBranch())).thenReturn(List.of());
         when(shipmentService.createShipmentFromEntityTransfer(any())).thenReturn(shipmentDetailsResponse);
         when(modelMapper.map(any(), eq(ConsolidationDetailsRequest.class))).thenReturn(consolidationDetailsRequest);
-        when(consolidationService.createConsolidationFromEntityTransfer(any())).thenReturn(consolidationDetailsResponse);
+        when(consolidationService.createConsolidationFromEntityTransfer(any())).thenReturn(consoleDetailsResponse);
         mockShipmentSettings();
 
         assertThrows(ValidationException.class, () -> entityTransferService.importConsolidation(commonRequestModel));
@@ -2167,16 +2188,16 @@ class EntityTransferServiceTest extends CommonMocks {
         // Given
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
         String consoleSourceBranchTenantName = "consoleBranch";
-        when(shipmentData.getTenantId()).thenReturn(100);
-        when(shipmentData.getSourceTenantId()).thenReturn(123L);
-        when(shipmentData.getShipmentId()).thenReturn("1");
-        when(shipmentData.getHouseBill()).thenReturn("hbn");
-        when(shipmentData.getMasterBill()).thenReturn("mbn");
-        when(shipmentData.getShipmentCreatedOn()).thenReturn(LocalDateTime.now());
+        when(shipmentDetails.getTenantId()).thenReturn(100);
+        when(shipmentDetails.getSourceTenantId()).thenReturn(123L);
+        when(shipmentDetails.getShipmentId()).thenReturn("1");
+        when(shipmentDetails.getHouseBill()).thenReturn("hbn");
+        when(shipmentDetails.getMasterBill()).thenReturn("mbn");
+        when(shipmentDetails.getShipmentCreatedOn()).thenReturn(LocalDateTime.now());
 
         List<ShipmentDetails> shipmentDetailsList = List.of(
-                shipmentData,
-                shipmentData
+                shipmentDetails,
+                shipmentDetails
         );
 
         // Mocks
@@ -2222,17 +2243,17 @@ class EntityTransferServiceTest extends CommonMocks {
         mockUser.setEmail("test@dpworld.com");
         UserContext.setUser(mockUser);
         when(v1ServiceUtil.getTenantDetails(anyList())).thenReturn(mockV1Map);
-        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(mockedTenantModel);
-        when(consoleDetails.getConsolidationNumber()).thenReturn("1");
-        when(consoleDetails.getShipmentsList()).thenReturn(Set.of(shipmentData));
-        when(consoleDetails.getTransportMode()).thenReturn("SEA");
-        when(consoleDetails.getBol()).thenReturn("bol");
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(tenantModel);
+        when(consolidationDetails.getConsolidationNumber()).thenReturn("1");
+        when(consolidationDetails.getShipmentsList()).thenReturn(Set.of(shipmentDetails));
+        when(consolidationDetails.getTransportMode()).thenReturn("SEA");
+        when(consolidationDetails.getBol()).thenReturn("bol");
         when(v1Service.getUsersWithGivenPermissions(any())).thenReturn(List.of(mockUser));
         mockShipmentSettings();
 
         Map<String, List<Integer>> shipmentGuidSendToBranch = new HashMap<>();
         shipmentGuidSendToBranch.put("1", List.of(1,2,3));
-        entityTransferService.sendConsolidationEmailNotification(consoleDetails, destinationBranches, shipmentGuidSendToBranch, false);
+        entityTransferService.sendConsolidationEmailNotification(consolidationDetails, destinationBranches, shipmentGuidSendToBranch, false);
 
         verify(v1ServiceUtil, times(1)).getTenantDetails(anyList());
 
@@ -2248,16 +2269,16 @@ class EntityTransferServiceTest extends CommonMocks {
         TenantContext.setCurrentTenant(1);
         mockV1Map.put(1, new Object());
         when(v1ServiceUtil.getTenantDetails(anyList())).thenReturn(mockV1Map);
-        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(mockedTenantModel);
-        when(consoleDetails.getConsolidationNumber()).thenReturn("1");
-        when(consoleDetails.getShipmentsList()).thenReturn(Set.of(shipmentData));
-        when(consoleDetails.getTransportMode()).thenReturn("SEA");
-        when(consoleDetails.getBol()).thenReturn("bol");
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(tenantModel);
+        when(consolidationDetails.getConsolidationNumber()).thenReturn("1");
+        when(consolidationDetails.getShipmentsList()).thenReturn(Set.of(shipmentDetails));
+        when(consolidationDetails.getTransportMode()).thenReturn("SEA");
+        when(consolidationDetails.getBol()).thenReturn("bol");
         when(v1Service.getUsersWithGivenPermissions(any())).thenReturn(new ArrayList<>());
         mockShipmentSettings();
 
         Map<String, List<Integer>> shipmentGuidSendToBranch = null;
-        entityTransferService.sendConsolidationEmailNotification(consoleDetails, destinationBranches, shipmentGuidSendToBranch, false);
+        entityTransferService.sendConsolidationEmailNotification(consolidationDetails, destinationBranches, shipmentGuidSendToBranch, false);
 
         verify(v1ServiceUtil, times(1)).getTenantDetails(anyList());
 
@@ -2275,14 +2296,14 @@ class EntityTransferServiceTest extends CommonMocks {
         mockUser.setEmail("test@dpworld.com");
         UserContext.setUser(mockUser);
         when(v1ServiceUtil.getTenantDetails(anyList())).thenReturn(mockV1Map);
-        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(mockedTenantModel);
-        when(shipmentData.getShipmentId()).thenReturn("1");
-        when(shipmentData.getHouseBill()).thenReturn("hbn");
-        when(shipmentData.getMasterBill()).thenReturn("mbn");
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(tenantModel);
+        when(shipmentDetails.getShipmentId()).thenReturn("1");
+        when(shipmentDetails.getHouseBill()).thenReturn("hbn");
+        when(shipmentDetails.getMasterBill()).thenReturn("mbn");
         when(v1Service.getUsersWithGivenPermissions(any())).thenReturn(List.of(mockUser));
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
         mockShipmentSettings();
-        entityTransferService.sendShipmentEmailNotification(shipmentData, destinationBranches, false);
+        entityTransferService.sendShipmentEmailNotification(shipmentDetails, destinationBranches, false);
 
         verify(v1Service, times(3)).getUsersWithGivenPermissions(any());
 
@@ -2299,13 +2320,13 @@ class EntityTransferServiceTest extends CommonMocks {
         mockV1Map.put(1, new Object());
 
         when(v1ServiceUtil.getTenantDetails(anyList())).thenReturn(mockV1Map);
-        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(mockedTenantModel);
-        when(shipmentData.getShipmentId()).thenReturn("1");
-        when(shipmentData.getHouseBill()).thenReturn("hbn");
-        when(shipmentData.getMasterBill()).thenReturn("mbn");
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(tenantModel);
+        when(shipmentDetails.getShipmentId()).thenReturn("1");
+        when(shipmentDetails.getHouseBill()).thenReturn("hbn");
+        when(shipmentDetails.getMasterBill()).thenReturn("mbn");
         when(v1Service.getUsersWithGivenPermissions(any())).thenReturn(new ArrayList<>());
         mockShipmentSettings();
-        entityTransferService.sendShipmentEmailNotification(shipmentData, destinationBranches, false);
+        entityTransferService.sendShipmentEmailNotification(shipmentDetails, destinationBranches, false);
 
         verify(v1Service, times(3)).getUsersWithGivenPermissions(any());
 
@@ -2521,6 +2542,7 @@ class EntityTransferServiceTest extends CommonMocks {
         consolidationDetails.setTriangulationPartnerList(List.of(triangulationPartner));  // Mock triangulation partner
 
         EntityTransferOrganizations organizations = jsonTestUtility.getOrganizationData();
+        V1DataResponse v1DataResponseOrg = V1DataResponse.builder().entities(List.of(organizations)).build();
 
         Map<String, List<String>> shipAdditionalDocs = new HashMap<>();
         shipAdditionalDocs.put(consolidationDetails.getShipmentsList().iterator().next().getGuid().toString(), List.of(UUID.randomUUID().toString()));
@@ -2961,4 +2983,5 @@ class EntityTransferServiceTest extends CommonMocks {
         assertThrows(ValidationException.class, () ->
             entityTransferService.checkAcceptedFiles(commonRequestModel));
     }
+
 }

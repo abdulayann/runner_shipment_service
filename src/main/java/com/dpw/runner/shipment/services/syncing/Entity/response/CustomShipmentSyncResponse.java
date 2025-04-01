@@ -164,7 +164,7 @@ public class CustomShipmentSyncResponse implements IRunnerResponse {
     @JsonProperty("Betype")
     private String Betype;
     @JsonProperty("BlchargesDisplay")
-    private String BlchargesDisplay;
+    private String BlchargesDisplay;//TODO : REMOVE
     @JsonProperty("BlexporterShipment")
     private String BlexporterShipment;
     @JsonProperty("Boedate")
@@ -193,7 +193,7 @@ public class CustomShipmentSyncResponse implements IRunnerResponse {
     @JsonProperty("DateOfReceipt")
     private LocalDateTime DateOfReceipt;
     @JsonProperty("DeliveryMode")
-    private String DeliveryMode;
+    private String DeliveryMode; // TODO : REMOVE
     @JsonProperty("DraftPrinted")
     private Boolean DraftPrinted;
 

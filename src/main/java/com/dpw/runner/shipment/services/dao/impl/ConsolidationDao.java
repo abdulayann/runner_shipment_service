@@ -453,7 +453,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
 
     private void setMawbStock(ConsolidationDetails consolidationDetails) {
         List<MawbStocksLink> mawbStocksLinks = mawbStocksLinkDao.findByMawbNumber(consolidationDetails.getMawb());
-        if(mawbStocksLinks != null && !mawbStocksLinks.isEmpty()) {
+        if(mawbStocksLinks != null && mawbStocksLinks.size() > 0) {
             MawbStocksLink res = mawbStocksLinks.get(0);
             if(!res.getStatus().equalsIgnoreCase(CONSUMED)) {
                 res.setEntityId(consolidationDetails.getId());
@@ -587,20 +587,20 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     }
 
     public Boolean isMAWBNumberValid(String masterBill) {
-        boolean mAWBNumberValidity = true;
+        Boolean MAWBNumberValidity = true;
         if (masterBill.length() == 12) {
             String mawbSeqNum = masterBill.substring(4, 11);
             String checkDigit = masterBill.substring(11, 12);
-            long imawbSeqNum;
-            long icheckDigit;
+            Long imawbSeqNum = 0L;
+            Long icheckDigit = 0L;
             if (areAllCharactersDigits(masterBill, 4, 12)) {
-                imawbSeqNum = Long.parseLong(mawbSeqNum);
-                icheckDigit = Long.parseLong(checkDigit);
+                imawbSeqNum = Long.valueOf(mawbSeqNum);
+                icheckDigit = Long.valueOf(checkDigit);
                 if (imawbSeqNum % 7 != icheckDigit)
-                    mAWBNumberValidity = false;
-            } else mAWBNumberValidity = false;
-        } else mAWBNumberValidity = false;
-        return mAWBNumberValidity;
+                    MAWBNumberValidity = false;
+            } else MAWBNumberValidity = false;
+        } else MAWBNumberValidity = false;
+        return MAWBNumberValidity;
     }
 
     private boolean areAllCharactersDigits(String input, int startIndex, int endIndex) {
