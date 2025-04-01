@@ -106,7 +106,7 @@ class ProductIdentifierUtilityTest {
         when(productSequenceConfigDao.findAndLock(any(Specification.class), any(Pageable.class)))
                 .thenReturn(productSequenceConfig);
 
-        String seqNumber = productIdentifierUtility.getCommonSequenceNumber(Constants.TRANSPORT_MODE_SEA, ProductProcessTypes.HAWB);
+        String seqNumber = productIdentifierUtility.GetCommonSequenceNumber(Constants.TRANSPORT_MODE_SEA, ProductProcessTypes.HAWB);
         assertNotNull(seqNumber);
     }
 
@@ -477,7 +477,7 @@ class ProductIdentifierUtilityTest {
     }
 
     @Test
-    void identifyProduct() {
+    void IdentifyProduct() {
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
         consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
 
@@ -488,12 +488,12 @@ class ProductIdentifierUtilityTest {
         tenantProduct.setTransportModes(Arrays.asList(Constants.TRANSPORT_MODE_SEA));
         tenantProductsList.add(tenantProduct);
 
-        TenantProducts tenantProducts = productIdentifierUtility.identifyProduct(consolidationDetails, tenantProductsList);
+        TenantProducts tenantProducts = productIdentifierUtility.IdentifyProduct(consolidationDetails, tenantProductsList);
         assertNotNull(tenantProducts);
     }
 
     @Test
-    void identifyProductAirConsol() {
+    void IdentifyProductAirConsol() {
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
         consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
 
@@ -504,12 +504,12 @@ class ProductIdentifierUtilityTest {
         tenantProduct.setTransportModes(Arrays.asList(Constants.TRANSPORT_MODE_AIR));
         tenantProductsList.add(tenantProduct);
 
-        TenantProducts tenantProducts = productIdentifierUtility.identifyProduct(consolidationDetails, tenantProductsList);
+        TenantProducts tenantProducts = productIdentifierUtility.IdentifyProduct(consolidationDetails, tenantProductsList);
         assertNotNull(tenantProducts);
     }
 
     @Test
-    void identifyProductConsolidation_All() {
+    void IdentifyProductConsolidation_All() {
         ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
         consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
 
@@ -520,7 +520,7 @@ class ProductIdentifierUtilityTest {
         tenantProduct.setTransportModes(Arrays.asList(Constants.TRANSPORT_MODE_AIR));
         tenantProductsList.add(tenantProduct);
 
-        TenantProducts tenantProducts = productIdentifierUtility.identifyProduct(consolidationDetails, tenantProductsList);
+        TenantProducts tenantProducts = productIdentifierUtility.IdentifyProduct(consolidationDetails, tenantProductsList);
         assertNotNull(tenantProducts);
     }
 
@@ -731,7 +731,7 @@ class ProductIdentifierUtilityTest {
         when(tenantProductsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(tenantProductsPage);
         when(productSequenceConfigDao.findAndLock(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfig);
 
-        String seqNumber = productIdentifierUtility.getCommonSequenceNumber(Constants.TRANSPORT_MODE_SEA, ProductProcessTypes.HAWB);
+        String seqNumber = productIdentifierUtility.GetCommonSequenceNumber(Constants.TRANSPORT_MODE_SEA, ProductProcessTypes.HAWB);
         assertNotNull(seqNumber);
     }
 
@@ -868,7 +868,7 @@ class ProductIdentifierUtilityTest {
     }
 
     @Test
-    void identifyProductShipSea() {
+    void IdentifyProductShipSea() {
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
         shipmentDetails.setDirection("EXP");
@@ -888,12 +888,12 @@ class ProductIdentifierUtilityTest {
         productSequenceConfig.setTenantProducts(tenantProduct);
         productSequenceConfigList.add(productSequenceConfig);
 
-        TenantProducts tenantProducts = productIdentifierUtility.identifyProduct(shipmentDetails, tenantProductsList);
+        TenantProducts tenantProducts = productIdentifierUtility.IdentifyProduct(shipmentDetails, tenantProductsList);
         assertNotNull(tenantProducts);
     }
 
     @Test
-    void identifyProductShipAll() {
+    void IdentifyProductShipAll() {
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         shipmentDetails.setDirection("CTS");
@@ -913,7 +913,7 @@ class ProductIdentifierUtilityTest {
         productSequenceConfig.setTenantProducts(tenantProduct);
         productSequenceConfigList.add(productSequenceConfig);
 
-        TenantProducts tenantProducts = productIdentifierUtility.identifyProduct(shipmentDetails, tenantProductsList);
+        TenantProducts tenantProducts = productIdentifierUtility.IdentifyProduct(shipmentDetails, tenantProductsList);
         assertNotNull(tenantProducts);
     }
 }

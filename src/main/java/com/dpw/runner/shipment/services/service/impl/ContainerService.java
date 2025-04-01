@@ -82,6 +82,7 @@ import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -207,12 +208,12 @@ public class ContainerService implements IContainerService {
         if (request == null || request.getConsolidationId() == null) {
             throw new ValidationException("Please add the consolidation and then try again.");
         }
-        Map<UUID, Containers> containerMap;
-        Map<String, UUID> containerNumbersSet;
+        Map<UUID, Containers> containerMap = new HashMap<>();
+        Map<String, UUID> containerNumbersSet = new HashMap<>();
         Map<String, String> locCodeToLocationReferenceGuidMap = new HashMap<>();
-        List<Containers> consolContainers = containerDao.findByConsolidationId(request.getConsolidationId());
-        containerMap = consolContainers.stream().filter(Objects::nonNull).collect(Collectors.toMap(Containers::getGuid, Function.identity()));
-        containerNumbersSet = consolContainers.stream().filter(Objects::nonNull).filter(c -> c.getContainerNumber() != null).collect(Collectors.toMap(Containers::getContainerNumber, Containers::getGuid));
+            List<Containers> consolContainers = containerDao.findByConsolidationId(request.getConsolidationId());
+            containerMap = consolContainers.stream().filter(Objects::nonNull).collect(Collectors.toMap(Containers::getGuid, Function.identity()));
+            containerNumbersSet = consolContainers.stream().filter(Objects::nonNull).filter(c -> c.getContainerNumber() != null).collect(Collectors.toMap(Containers::getContainerNumber, Containers::getGuid));
 
         Map<String, Set<String>> masterDataMap = new HashMap<>();
         List<Containers> containersList = parser.parseExcelFile(request.getFile(), request, containerMap, masterDataMap, Containers.class, ContainersExcelModel.class, null, null, locCodeToLocationReferenceGuidMap);
@@ -223,8 +224,10 @@ public class ContainerService implements IContainerService {
 
         applyContainerValidations(containerNumbersSet, locCodeToLocationReferenceGuidMap, containersList, request, masterDataMap);
         containersList = containerDao.saveAll(containersList);
-        if (request.getShipmentId() != null && !CommonUtils.listIsNullOrEmpty(containersList)) {
-            containersList.forEach(container -> shipmentsContainersMappingDao.updateShipmentsMappings(container.getId(), List.of(request.getShipmentId())));
+        if (request.getShipmentId() != null) {
+            containersList.stream().forEach(container -> {
+                shipmentsContainersMappingDao.updateShipmentsMappings(container.getId(), List.of(request.getShipmentId()));
+            });
         }
         containerSync.sync(containersList, request.getConsolidationId(), request.getShipmentId());
         afterSaveList(containersList, true);
@@ -630,11 +633,11 @@ public class ContainerService implements IContainerService {
                 Object value = field.get(model);
                 if(actualFieldIdx != -1 && cellIndex == actualFieldIdx){
                     assert value instanceof LocalDateTime;
-                    value = ReportHelper.generateFormattedDate((LocalDateTime) value, format);
+                    value = ReportHelper.GenerateFormattedDate((LocalDateTime) value, format);
                 }
                 if(estimatedFieldIdx != -1 && cellIndex == estimatedFieldIdx){
                     assert value instanceof LocalDateTime;
-                    value = ReportHelper.generateFormattedDate((LocalDateTime) value, format);
+                    value = ReportHelper.GenerateFormattedDate((LocalDateTime) value, format);
                 }
                 Cell cell = row.createCell(cellIndex++);
                 cell.setCellValue(value != null ? value.toString() : "");
@@ -789,11 +792,11 @@ public class ContainerService implements IContainerService {
 
     private Containers changeAchievedUnit(Containers container) throws RunnerException{
         try {
-            if(!isStringNullOrEmpty(container.getAchievedVolumeUnit()) && !isStringNullOrEmpty(container.getAllocatedVolumeUnit()) && !container.getAchievedVolumeUnit().equals(container.getAllocatedVolumeUnit())) {
+            if(!IsStringNullOrEmpty(container.getAchievedVolumeUnit()) && !IsStringNullOrEmpty(container.getAllocatedVolumeUnit()) && !container.getAchievedVolumeUnit().equals(container.getAllocatedVolumeUnit())) {
                 BigDecimal val = new BigDecimal(convertUnit(Constants.VOLUME, container.getAchievedVolume(), container.getAchievedVolumeUnit(), container.getAllocatedVolumeUnit()).toString());
                 container.setAchievedVolume(val);
             }
-            if(!isStringNullOrEmpty(container.getAchievedWeightUnit()) && !isStringNullOrEmpty(container.getAllocatedWeightUnit()) && !container.getAchievedWeightUnit().equals(container.getAllocatedWeightUnit())) {
+            if(!IsStringNullOrEmpty(container.getAchievedWeightUnit()) && !IsStringNullOrEmpty(container.getAllocatedWeightUnit()) && !container.getAchievedWeightUnit().equals(container.getAllocatedWeightUnit())) {
                 BigDecimal val = new BigDecimal(convertUnit(Constants.MASS, container.getAchievedWeight(), container.getAchievedWeightUnit(), container.getAllocatedWeightUnit()).toString());
                 container.setAchievedWeight(val);
             }
@@ -838,7 +841,7 @@ public class ContainerService implements IContainerService {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> calculateAchievedAllocatedForSameUnit(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> calculateAchieved_AllocatedForSameUnit(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ContainerRequest containerRequest = (ContainerRequest) commonRequestModel.getData();
@@ -861,7 +864,7 @@ public class ContainerService implements IContainerService {
             CheckAllocatedDataChangeResponse response = new CheckAllocatedDataChangeResponse();
             response.setVolumeAllowed(true);
             response.setWeightAllowed(true);
-            if(request != null && !isStringNullOrEmpty(request.getContainerCode())) {
+            if(request != null && !IsStringNullOrEmpty(request.getContainerCode())) {
                 CommonV1ListRequest listRequest = new CommonV1ListRequest();
                 List<Object> criteria = Arrays.asList(
                         Arrays.asList(EntityTransferConstants.CODE),
@@ -888,14 +891,14 @@ public class ContainerService implements IContainerService {
     }
 
     private void setWeightVolumeInReseponse(CheckAllocatedDataChangesRequest request, EntityTransferContainerType containerType, CheckAllocatedDataChangeResponse response) throws RunnerException {
-        if(request.getAllocatedVolume() != null && !isStringNullOrEmpty(request.getAllocatedVolumeUnit())
-                && !isStringNullOrEmpty(containerType.getCubicCapacityUnit()) && containerType.getCubicCapacity() != null) {
+        if(request.getAllocatedVolume() != null && !IsStringNullOrEmpty(request.getAllocatedVolumeUnit())
+                && !IsStringNullOrEmpty(containerType.getCubicCapacityUnit()) && containerType.getCubicCapacity() != null) {
             Double volume = (Double) convertUnit(Constants.VOLUME, request.getAllocatedVolume(), request.getAllocatedVolumeUnit(), containerType.getCubicCapacityUnit());
             if(volume > containerType.CubicCapacity)
                 response.setVolumeAllowed(false);
         }
-        if(request.getAllocatedWeight() != null && !isStringNullOrEmpty(request.getAllocatedWeightUnit())
-                && !isStringNullOrEmpty(containerType.getMaxCargoGrossWeightUnit()) && containerType.getMaxCargoGrossWeight() != null) {
+        if(request.getAllocatedWeight() != null && !IsStringNullOrEmpty(request.getAllocatedWeightUnit())
+                && !IsStringNullOrEmpty(containerType.getMaxCargoGrossWeightUnit()) && containerType.getMaxCargoGrossWeight() != null) {
             Double weight = (Double) convertUnit(Constants.MASS, request.getAllocatedWeight(), request.getAllocatedWeightUnit(), containerType.getMaxCargoGrossWeightUnit());
             if(weight > containerType.MaxCargoGrossWeight)
                 response.setWeightAllowed(false);
@@ -903,11 +906,11 @@ public class ContainerService implements IContainerService {
     }
 
     public void changeContainerWtVolForSeaLCLDetach(Containers container, Packing packing) throws RunnerException {
-        if(packing.getWeight() != null && !isStringNullOrEmpty(packing.getWeightUnit()) && !isStringNullOrEmpty(container.getAchievedWeightUnit())) {
+        if(packing.getWeight() != null && !IsStringNullOrEmpty(packing.getWeightUnit()) && !IsStringNullOrEmpty(container.getAchievedWeightUnit())) {
             BigDecimal val = new BigDecimal(convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), container.getAchievedWeightUnit()).toString());
             container.setAchievedWeight(container.getAchievedWeight().subtract(val));
         }
-        if(packing.getVolume() != null && !isStringNullOrEmpty(packing.getVolumeUnit()) && !isStringNullOrEmpty(container.getAchievedVolumeUnit())) {
+        if(packing.getVolume() != null && !IsStringNullOrEmpty(packing.getVolumeUnit()) && !IsStringNullOrEmpty(container.getAchievedVolumeUnit())) {
             BigDecimal val = new BigDecimal(convertUnit(Constants.VOLUME, packing.getVolume(), packing.getVolumeUnit(), container.getAchievedVolumeUnit()).toString());
             container.setAchievedVolume(container.getAchievedVolume().subtract(val));
         }
@@ -985,7 +988,7 @@ public class ContainerService implements IContainerService {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> calculateAchievedQuantityOnPackDetach(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> calculateAchievedQuantity_onPackDetach(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             ContainerPackADInShipmentRequest request = (ContainerPackADInShipmentRequest) commonRequestModel.getData();
@@ -1316,9 +1319,9 @@ public class ContainerService implements IContainerService {
             String toVolumeUnit = Constants.VOLUME_UNIT_M3;
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
             V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
-            if(!isStringNullOrEmpty(shipmentSettingsDetails.getWeightChargeableUnit()))
+            if(!IsStringNullOrEmpty(shipmentSettingsDetails.getWeightChargeableUnit()))
                 toWeightUnit = shipmentSettingsDetails.getWeightChargeableUnit();
-            if(!isStringNullOrEmpty(shipmentSettingsDetails.getVolumeChargeableUnit()))
+            if(!IsStringNullOrEmpty(shipmentSettingsDetails.getVolumeChargeableUnit()))
                 toVolumeUnit = shipmentSettingsDetails.getVolumeChargeableUnit();
             if(containersList != null) {
                 for (Containers containers : containersList) {
@@ -1335,19 +1338,20 @@ public class ContainerService implements IContainerService {
                 }
             }
             ContainerSummaryResponse response = new ContainerSummaryResponse();
-            response.setTotalPackages(IReport.getDPWWeightVolumeFormat(BigDecimal.valueOf(totalPacks), 0, v1TenantSettingsResponse));
-            response.setTotalContainers(IReport.getDPWWeightVolumeFormat(BigDecimal.valueOf(totalContainerCount), 0, v1TenantSettingsResponse));
-            response.setTotalWeight(String.format(Constants.STRING_FORMAT, IReport.convertToWeightNumberFormat(BigDecimal.valueOf(totalWeight), v1TenantSettingsResponse), toWeightUnit));
-            response.setTotalTareWeight(String.format(Constants.STRING_FORMAT, IReport.convertToWeightNumberFormat(BigDecimal.valueOf(tareWeight), v1TenantSettingsResponse), toWeightUnit));
-            if(!isStringNullOrEmpty(transportMode) && transportMode.equals(Constants.TRANSPORT_MODE_SEA) &&
-                    !isStringNullOrEmpty(containerCategory) && containerCategory.equals(Constants.SHIPMENT_TYPE_LCL)) {
+            DecimalFormat decimalFormat = new DecimalFormat("#");
+            response.setTotalPackages(IReport.GetDPWWeightVolumeFormat(BigDecimal.valueOf(totalPacks), 0, v1TenantSettingsResponse));
+            response.setTotalContainers(IReport.GetDPWWeightVolumeFormat(BigDecimal.valueOf(totalContainerCount), 0, v1TenantSettingsResponse));
+            response.setTotalWeight(String.format(Constants.STRING_FORMAT, IReport.ConvertToWeightNumberFormat(BigDecimal.valueOf(totalWeight), v1TenantSettingsResponse), toWeightUnit));
+            response.setTotalTareWeight(String.format(Constants.STRING_FORMAT, IReport.ConvertToWeightNumberFormat(BigDecimal.valueOf(tareWeight), v1TenantSettingsResponse), toWeightUnit));
+            if(!IsStringNullOrEmpty(transportMode) && transportMode.equals(Constants.TRANSPORT_MODE_SEA) &&
+                    !IsStringNullOrEmpty(containerCategory) && containerCategory.equals(Constants.SHIPMENT_TYPE_LCL)) {
                 double volInM3 = convertUnit(Constants.VOLUME, BigDecimal.valueOf(totalVolume), toVolumeUnit, Constants.VOLUME_UNIT_M3).doubleValue();
                 double wtInKg = convertUnit(Constants.MASS, BigDecimal.valueOf(totalWeight), toWeightUnit, Constants.WEIGHT_UNIT_KG).doubleValue();
                 double chargeableWeight = Math.max(wtInKg/1000, volInM3);
                 chargeableWeight = BigDecimal.valueOf(chargeableWeight).setScale(2, RoundingMode.HALF_UP).doubleValue();
-                response.setChargeableWeight(IReport.convertToWeightNumberFormat(BigDecimal.valueOf(chargeableWeight), v1TenantSettingsResponse) + " " + Constants.VOLUME_UNIT_M3);
+                response.setChargeableWeight(IReport.ConvertToWeightNumberFormat(BigDecimal.valueOf(chargeableWeight), v1TenantSettingsResponse) + " " + Constants.VOLUME_UNIT_M3);
             }
-            response.setTotalContainerVolume(String.format(Constants.STRING_FORMAT, IReport.convertToVolumeNumberFormat(BigDecimal.valueOf(totalVolume), v1TenantSettingsResponse), toVolumeUnit));
+            response.setTotalContainerVolume(String.format(Constants.STRING_FORMAT, IReport.ConvertToVolumeNumberFormat(BigDecimal.valueOf(totalVolume), v1TenantSettingsResponse), toVolumeUnit));
             if(response.getSummary() == null)
                 response.setSummary("");
             try {
@@ -1365,7 +1369,7 @@ public class ContainerService implements IContainerService {
     }
 
     private double getTotalPacks(Containers containers, double totalPacks) {
-        if(!isStringNullOrEmpty(containers.getPacks()))
+        if(!IsStringNullOrEmpty(containers.getPacks()))
             totalPacks = totalPacks + Long.parseLong(containers.getPacks());
         return totalPacks;
     }
@@ -1505,7 +1509,7 @@ public class ContainerService implements IContainerService {
      */
     
     @Override
-    public ResponseEntity<IRunnerResponse> v1ContainerCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws RunnerException {
+    public ResponseEntity<IRunnerResponse> V1ContainerCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws RunnerException {
         ContainerRequestV2 containerRequest = (ContainerRequestV2) commonRequestModel.getData();
         try {
             if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
@@ -1558,12 +1562,12 @@ public class ContainerService implements IContainerService {
      * Create bulk containers from V1 in V2
      */
     @Override
-    public ResponseEntity<IRunnerResponse> v1BulkContainerCreateAndUpdate(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> V1BulkContainerCreateAndUpdate(CommonRequestModel commonRequestModel) {
         BulkContainerRequestV2 bulkContainerRequest = (BulkContainerRequestV2) commonRequestModel.getData();
         try {
             List<ResponseEntity<?>> responses = new ArrayList<>();
             for (ContainerRequestV2 containerRequest : bulkContainerRequest.getBulkContainers())
-                responses.add(this.v1ContainerCreateAndUpdate(CommonRequestModel.builder()
+                responses.add(this.V1ContainerCreateAndUpdate(CommonRequestModel.builder()
                         .data(containerRequest)
                         .build(), true));
             return ResponseHelper.buildSuccessResponse(responses);
@@ -1577,6 +1581,7 @@ public class ContainerService implements IContainerService {
 
     @Override
     public void exportContainers(HttpServletResponse response, ExportContainerListRequest request) throws RunnerException, IOException, IllegalAccessException {
+        List<ShipmentsContainersMapping> mappings;
         Optional<ConsolidationDetails> consol = Optional.empty();
         List<IRunnerResponse> containersList = null;
         if (request.getConsolidationId() != null) {

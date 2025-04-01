@@ -19,7 +19,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.*;
 
-import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 @Component
 @Slf4j
 public class DependentServiceHelper {
@@ -84,7 +84,7 @@ public class DependentServiceHelper {
         try {
             if(shipmentDetails.getTenantId() == null)
                 shipmentDetails.setTenantId(TenantContext.getCurrentTenant());
-            if (isStringNullOrEmpty(shipmentDetails.getUpdatedBy()))
+            if (IsStringNullOrEmpty(shipmentDetails.getUpdatedBy()))
                 shipmentDetails.setUpdatedBy(UserContext.getUser().getUsername());
             ShipmentRequest shipmentRequest = jsonHelper.convertValue(shipmentDetails, ShipmentRequest.class);
             shipmentRequest.setIsAutoSellRequired(isAutoSellRequired);

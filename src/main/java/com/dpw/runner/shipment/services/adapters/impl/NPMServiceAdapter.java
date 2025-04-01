@@ -60,7 +60,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
-import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 
 @Service
 @Slf4j
@@ -438,7 +438,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         if(Objects.isNull(response) || Objects.isNull(response.getOffers()) || response.getOffers().isEmpty())
             return;
         FetchOffersResponse.Offer offer = response.getOffers().get(0);
-        if(!isStringNullOrEmpty(offer.getCarrier())) {
+        if(!IsStringNullOrEmpty(offer.getCarrier())) {
             List<String> carrierCodes = new ArrayList<>();
             carrierCodes.add(offer.getCarrier());
             Map<String, EntityTransferCarrier> map = masterDataUtils.fetchInBulkCarriersBySCACCode(carrierCodes);

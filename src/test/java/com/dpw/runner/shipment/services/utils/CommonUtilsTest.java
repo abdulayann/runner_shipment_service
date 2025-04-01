@@ -463,21 +463,21 @@ class CommonUtilsTest {
     }
 
     @Test
-    void isStringNullOrEmpty_NullInput_ReturnsTrue() {
-        boolean result = CommonUtils.isStringNullOrEmpty(null);
+    void IsStringNullOrEmpty_NullInput_ReturnsTrue() {
+        boolean result = CommonUtils.IsStringNullOrEmpty(null);
         assertTrue(result);
     }
 
     @Test
-    void isStringNullOrEmpty_EmptyStringInput_ReturnsTrue() {
-        boolean result = CommonUtils.isStringNullOrEmpty("");
+    void IsStringNullOrEmpty_EmptyStringInput_ReturnsTrue() {
+        boolean result = CommonUtils.IsStringNullOrEmpty("");
         assertTrue(result);
     }
 
     @Test
-    void isStringNullOrEmpty_NonEmptyStringInput_ReturnsFalse() {
+    void IsStringNullOrEmpty_NonEmptyStringInput_ReturnsFalse() {
         String input = "Hello";
-        boolean result = CommonUtils.isStringNullOrEmpty(input);
+        boolean result = CommonUtils.IsStringNullOrEmpty(input);
         assertFalse(result);
     }
 
@@ -504,7 +504,7 @@ class CommonUtilsTest {
     @Test
     void testImageToByte() throws IOException {
         BufferedImage img = new BufferedImage(100, 100, BufferedImage.TYPE_INT_RGB);
-        byte[] result = CommonUtils.imageToByte(img);
+        byte[] result = CommonUtils.ImageToByte(img);
 
         assertNotNull(result);
     }
@@ -512,12 +512,12 @@ class CommonUtilsTest {
     @Test
     void testHasUnsupportedCharacters() {
         String input = "ValidString123";
-        boolean result = CommonUtils.hasUnsupportedCharacters(input);
+        boolean result = CommonUtils.HasUnsupportedCharacters(input);
 
         assertFalse(result);
 
         input = "InvalidString\u001F";
-        result = CommonUtils.hasUnsupportedCharacters(input);
+        result = CommonUtils.HasUnsupportedCharacters(input);
 
         assertTrue(result);
     }

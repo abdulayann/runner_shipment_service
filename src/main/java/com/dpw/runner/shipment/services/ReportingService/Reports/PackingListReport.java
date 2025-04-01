@@ -66,7 +66,7 @@ public class PackingListReport extends IReport {
         var shipment = model.getShipmentDetails();
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(shipment));
 
-        jsonDateFormat(dictionary);
+        JsonDateFormat(dictionary);
         populateTenantFields(dictionary, model.getTenant());
         populateShipmentFields(shipment, dictionary);
 
@@ -75,13 +75,13 @@ public class PackingListReport extends IReport {
         List<String> consignee = getConsignee(shipment, dictionary);
 
         if(shipment.getWeight() != null) {
-            dictionary.put(ReportConstants.WEIGHT, convertToWeightNumberFormat(shipment.getWeight()));
+            dictionary.put(ReportConstants.WEIGHT, ConvertToWeightNumberFormat(shipment.getWeight()));
         }
         if(shipment.getVolume() != null) {
-            dictionary.put(ReportConstants.VOLUME, convertToVolumeNumberFormat(shipment.getVolume()));
+            dictionary.put(ReportConstants.VOLUME, ConvertToVolumeNumberFormat(shipment.getVolume()));
         }
         if(shipment.getChargable() != null) {
-            dictionary.put(ReportConstants.CHARGEABLE, convertToWeightNumberFormat(shipment.getChargable()));
+            dictionary.put(ReportConstants.CHARGEABLE, ConvertToWeightNumberFormat(shipment.getChargable()));
         }
 
         addConsignorConsigneeTags(dictionary, consigner, consignee, shipment);
@@ -100,7 +100,7 @@ public class PackingListReport extends IReport {
         dictionary.put(ReportConstants.AIRWAY_BILL_NUMBER, shipment.getHouseBill());
         dictionary.put(ReportConstants.SPECIAL_INSTRUCTION, shipment.getAdditionalTerms());
 
-        dictionary.put(ReportConstants.SHIP_DATE, convertToDPWDateFormat(shipment.getShipmentCreatedOn()));
+        dictionary.put(ReportConstants.SHIP_DATE, ConvertToDPWDateFormat(shipment.getShipmentCreatedOn()));
 
         processShipmentPackingList(shipment, v1TenantSettingsResponse, dictionary);
 
@@ -124,13 +124,13 @@ public class PackingListReport extends IReport {
 
     private void addCarrierDetailsTags(ShipmentModel shipment, Map<String, Object> dictionary) {
         if (shipment.getCarrierDetails() != null && shipment.getCarrierDetails().getEtd() != null) {
-            dictionary.put(ReportConstants.ETD, convertToDPWDateFormat(shipment.getCarrierDetails().getEtd()));
+            dictionary.put(ReportConstants.ETD, ConvertToDPWDateFormat(shipment.getCarrierDetails().getEtd()));
         } else {
             dictionary.put(ReportConstants.ETD, null);
         }
 
         if (shipment.getCarrierDetails() != null && shipment.getCarrierDetails().getEta() != null) {
-            dictionary.put(ReportConstants.ETA, convertToDPWDateFormat(shipment.getCarrierDetails().getEta()));
+            dictionary.put(ReportConstants.ETA, ConvertToDPWDateFormat(shipment.getCarrierDetails().getEta()));
         } else {
             dictionary.put(ReportConstants.ETA, null);
         }
@@ -174,7 +174,7 @@ public class PackingListReport extends IReport {
             );
 
             for(var v : values) {
-                jsonDateFormat(v);
+                JsonDateFormat(v);
                 totalPacks += Long.parseLong(stringValueOf(v.get("Packs")));
 
                 if (!breakFlagNetWeight && v.containsKey(ReportConstants.NET_WEIGHT) && v.get(ReportConstants.NET_WEIGHT) != null
@@ -205,12 +205,14 @@ public class PackingListReport extends IReport {
 
     private void formatWeightAndPacks(V1TenantSettingsResponse v1TenantSettingsResponse, Map<String, Object> v) {
         if (v.containsKey(ReportConstants.NET_WEIGHT) && v.get(ReportConstants.NET_WEIGHT) != null) {
-            v.put(ReportConstants.NET_WEIGHT, convertToWeightNumberFormat(
+            v.put(ReportConstants.NET_WEIGHT, ConvertToWeightNumberFormat(
                             new BigDecimal(ReportHelper.twoDecimalPlacesFormat(stringValueOf(v.get(ReportConstants.NET_WEIGHT))))));
         }
 
-        v.computeIfPresent(ReportConstants.WEIGHT, (key, value) -> convertToWeightNumberFormat(new BigDecimal(stringValueOf(value))));
-        v.computeIfPresent(ReportConstants.PACKS, (key, value) -> getDPWWeightVolumeFormat(new BigDecimal(stringValueOf(value)), 0, v1TenantSettingsResponse));
+        if(v.get(ReportConstants.WEIGHT) != null)
+            v.put(ReportConstants.WEIGHT, ConvertToWeightNumberFormat(new BigDecimal(stringValueOf(v.get(ReportConstants.WEIGHT)))));
+        if(v.get(PACKS) != null)
+            v.put(ReportConstants.PACKS, GetDPWWeightVolumeFormat(new BigDecimal(stringValueOf(v.get(PACKS))), 0, v1TenantSettingsResponse));
     }
 
     private void processPacksType(Map<String, Object> v) {
@@ -222,7 +224,7 @@ public class PackingListReport extends IReport {
 
     private void addTotalPackTags(ShipmentModel shipment, V1TenantSettingsResponse v1TenantSettingsResponse, Map<String, Object> dictionary, long totalPacks) {
         if (totalPacks != 0) {
-            dictionary.put(ReportConstants.TOTAL_PACKS, AmountNumberFormatter.format(BigDecimal.valueOf(totalPacks), shipment.getFreightLocalCurrency(), v1TenantSettingsResponse));
+            dictionary.put(ReportConstants.TOTAL_PACKS, AmountNumberFormatter.Format(BigDecimal.valueOf(totalPacks), shipment.getFreightLocalCurrency(), v1TenantSettingsResponse));
         } else {
             dictionary.put(ReportConstants.TOTAL_PACKS, null);
         }

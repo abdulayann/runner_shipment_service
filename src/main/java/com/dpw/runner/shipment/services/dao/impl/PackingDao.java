@@ -34,7 +34,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 @Repository
@@ -470,7 +470,7 @@ public class PackingDao implements IPackingDao {
         try {
             Map<String, Long> contMap = new HashMap<>();
             if(containers != null) {
-                contMap = containers.stream().filter(container -> !isStringNullOrEmpty(container.getContainerNumber())).collect(Collectors.toMap(Containers::getContainerNumber, Containers::getId));
+                contMap = containers.stream().filter(container -> !IsStringNullOrEmpty(container.getContainerNumber())).collect(Collectors.toMap(Containers::getContainerNumber, Containers::getId));
             }
             List<Packing> packingRequestList = new ArrayList<>();
             if (packingList != null && !packingList.isEmpty()) {
@@ -505,7 +505,7 @@ public class PackingDao implements IPackingDao {
                     request.setId(oldEntity.getId());
                 }
             }
-            if(packMap.containsKey(request.getGuid()) && !isStringNullOrEmpty(packMap.get(request.getGuid())) && contMap.containsKey(packMap.get(request.getGuid())))
+            if(packMap.containsKey(request.getGuid()) && !IsStringNullOrEmpty(packMap.get(request.getGuid())) && contMap.containsKey(packMap.get(request.getGuid())))
                 request.setContainerId(contMap.get(packMap.get(request.getGuid())));
             packingRequestList.add(request);
         }

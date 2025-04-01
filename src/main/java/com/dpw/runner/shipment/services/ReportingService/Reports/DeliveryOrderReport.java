@@ -126,7 +126,7 @@ public class DeliveryOrderReport extends IReport{
         List<String> orgWithoutTranslation = new ArrayList<>();
         List<String> chargeTypesWithoutTranslation = new ArrayList<>();
         V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
-        String json = jsonHelper.convertToJsonWithDateTimeFormatter(deliveryOrderModel.shipmentDetails, getDPWDateFormatOrDefault(v1TenantSettingsResponse));
+        String json = jsonHelper.convertToJsonWithDateTimeFormatter(deliveryOrderModel.shipmentDetails, GetDPWDateFormatOrDefault(v1TenantSettingsResponse));
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
         deliveryOrderModel.shipmentDetails.setTransportInstructionId(deliveryOrderModel.getTransportInstructionId());
         populateShipmentFields(deliveryOrderModel.shipmentDetails, dictionary);
@@ -142,10 +142,10 @@ public class DeliveryOrderReport extends IReport{
         if(deliveryOrderModel.shipmentDetails.getAdditionalDetails() != null) {
             dictionary.put(NOTIFY_PARTY, ReportHelper.getOrgAddressDetails(deliveryOrderModel.shipmentDetails.getAdditionalDetails().getNotifyParty()));
         }
-        dictionary.put(ReportConstants.WEIGHT, convertToWeightNumberFormat(deliveryOrderModel.shipmentDetails.getWeight(), v1TenantSettingsResponse));
-        dictionary.put(ReportConstants.VOLUME, convertToVolumeNumberFormat(deliveryOrderModel.shipmentDetails.getVolume(), v1TenantSettingsResponse));
-        dictionary.put(ReportConstants.CHARGEABLE, convertToWeightNumberFormat(deliveryOrderModel.shipmentDetails.getChargable(), v1TenantSettingsResponse));
-        dictionary.put(ReportConstants.NET_WEIGHT_CAMELCASE, convertToWeightNumberFormat(deliveryOrderModel.shipmentDetails.getNetWeight(), v1TenantSettingsResponse));
+        dictionary.put(ReportConstants.WEIGHT, ConvertToWeightNumberFormat(deliveryOrderModel.shipmentDetails.getWeight(), v1TenantSettingsResponse));
+        dictionary.put(ReportConstants.VOLUME, ConvertToVolumeNumberFormat(deliveryOrderModel.shipmentDetails.getVolume(), v1TenantSettingsResponse));
+        dictionary.put(ReportConstants.CHARGEABLE, ConvertToWeightNumberFormat(deliveryOrderModel.shipmentDetails.getChargable(), v1TenantSettingsResponse));
+        dictionary.put(ReportConstants.NET_WEIGHT_CAMELCASE, ConvertToWeightNumberFormat(deliveryOrderModel.shipmentDetails.getNetWeight(), v1TenantSettingsResponse));
         if(deliveryOrderModel.getContainers() != null && !deliveryOrderModel.getContainers().isEmpty()) {
             processShipmentContainers(deliveryOrderModel, v1TenantSettingsResponse, dictionary);
         }
@@ -159,7 +159,7 @@ public class DeliveryOrderReport extends IReport{
             List<Map<String, Object>> values = (List<Map<String, Object>>)dictionary.get(CHARGES_SMALL);
             for (Map<String, Object> v: values) {
                 if(v.containsKey(CHARGE_TYPE_CODE) && v.get(CHARGE_TYPE_CODE) != null) {
-                    v.put(CHARGE_TYPE_DESCRIPTION_LL, getChargeTypeDescriptionLL((String)v.get(CHARGE_TYPE_CODE), chargeTypesWithoutTranslation));
+                    v.put(CHARGE_TYPE_DESCRIPTION_LL, GetChargeTypeDescriptionLL((String)v.get(CHARGE_TYPE_CODE), chargeTypesWithoutTranslation));
                 }
             }
         }
@@ -175,7 +175,7 @@ public class DeliveryOrderReport extends IReport{
 
 
         populateRaKcData(dictionary, deliveryOrderModel.getShipmentDetails());
-        handleTranslationErrors(printWithoutTranslation, orgWithoutTranslation, chargeTypesWithoutTranslation);
+        HandleTranslationErrors(printWithoutTranslation, orgWithoutTranslation, chargeTypesWithoutTranslation);
 
         return dictionary;
     }
@@ -183,13 +183,13 @@ public class DeliveryOrderReport extends IReport{
     private void processShipmentWeightVolume(DeliveryOrderModel deliveryOrderModel, Integer decimalPlaces, V1TenantSettingsResponse v1TenantSettingsResponse, Map<String, Object> dictionary) {
         if (!Objects.isNull(deliveryOrderModel.shipmentDetails.getWeight())) {
             BigDecimal weight = deliveryOrderModel.shipmentDetails.getWeight().setScale(decimalPlaces, RoundingMode.HALF_UP);
-            String weightString = convertToWeightNumberFormat(weight, v1TenantSettingsResponse);
+            String weightString = ConvertToWeightNumberFormat(weight, v1TenantSettingsResponse);
             dictionary.put(WEIGHT, weightString);
             dictionary.put(WEIGHT_AND_UNIT, String.format(REGEX_S_S, weightString, deliveryOrderModel.shipmentDetails.getWeightUnit()));
         }
         if (!Objects.isNull(deliveryOrderModel.shipmentDetails.getVolume())) {
             BigDecimal volume = deliveryOrderModel.shipmentDetails.getVolume().setScale(decimalPlaces, RoundingMode.HALF_UP);
-            String volumeString = convertToVolumeNumberFormat(volume, v1TenantSettingsResponse);
+            String volumeString = ConvertToVolumeNumberFormat(volume, v1TenantSettingsResponse);
             dictionary.put(VOLUME, volumeString);
             dictionary.put(VOLUME_AND_UNIT, String.format(REGEX_S_S, volumeString, deliveryOrderModel.shipmentDetails.getVolumeUnit()));
         }
@@ -212,7 +212,7 @@ public class DeliveryOrderReport extends IReport{
     private void processShipmentChargable(DeliveryOrderModel deliveryOrderModel, Integer decimalPlaces, V1TenantSettingsResponse v1TenantSettingsResponse, Map<String, Object> dictionary) {
         if (!Objects.isNull(deliveryOrderModel.shipmentDetails.getChargable())) {
             BigDecimal chargeable = deliveryOrderModel.shipmentDetails.getChargable().setScale(decimalPlaces, RoundingMode.HALF_UP);
-            String chargeableString = convertToWeightNumberFormat(chargeable, v1TenantSettingsResponse);
+            String chargeableString = ConvertToWeightNumberFormat(chargeable, v1TenantSettingsResponse);
             dictionary.put(CHARGEABLE, chargeableString);
             dictionary.put(CHARGABLE_AND_UNIT, String.format(REGEX_S_S, chargeableString, deliveryOrderModel.shipmentDetails.getChargeableUnit()));
             dictionary.put(CHARGEABLE_AND_UNIT, dictionary.get(CHARGABLE_AND_UNIT));
@@ -262,15 +262,15 @@ public class DeliveryOrderReport extends IReport{
         }
         for (Map<String, Object> v : valuesContainer) {
             if(v.containsKey(ReportConstants.GROSS_VOLUME) && v.get(ReportConstants.GROSS_VOLUME) != null)
-                v.put(ReportConstants.GROSS_VOLUME, convertToVolumeNumberFormat(v.get(ReportConstants.GROSS_VOLUME), v1TenantSettingsResponse));
+                v.put(ReportConstants.GROSS_VOLUME, ConvertToVolumeNumberFormat(v.get(ReportConstants.GROSS_VOLUME), v1TenantSettingsResponse));
             if (v.containsKey(ReportConstants.GROSS_WEIGHT) && v.get(ReportConstants.GROSS_WEIGHT) != null) {
-                String grossWeight = convertToWeightNumberFormat(v.get(ReportConstants.GROSS_WEIGHT), v1TenantSettingsResponse);
+                String grossWeight = ConvertToWeightNumberFormat(v.get(ReportConstants.GROSS_WEIGHT), v1TenantSettingsResponse);
                 v.put(ReportConstants.GROSS_WEIGHT, grossWeight);
                 v.put(CARGO_GROSS_WEIGHT_UNIT, grossWeight + " " + v.get(GROSS_WEIGHT_UNIT));
             }
 
             if (v.containsKey(ReportConstants.NET_WEIGHT_CAMELCASE) && v.get(ReportConstants.NET_WEIGHT_CAMELCASE) != null)
-                v.put(ReportConstants.NET_WEIGHT_CAMELCASE, convertToWeightNumberFormat(v.get(ReportConstants.NET_WEIGHT_CAMELCASE), v1TenantSettingsResponse));
+                v.put(ReportConstants.NET_WEIGHT_CAMELCASE, ConvertToWeightNumberFormat(v.get(ReportConstants.NET_WEIGHT_CAMELCASE), v1TenantSettingsResponse));
         }
         dictionary.put(ReportConstants.SHIPMENT_CONTAINERS, valuesContainer);
     }

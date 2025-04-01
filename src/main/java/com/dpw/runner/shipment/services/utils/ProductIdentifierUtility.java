@@ -76,19 +76,19 @@ public class ProductIdentifierUtility {
     return tenantProducts.get().sorted(Comparator.comparing(TenantProducts::getPriority)).toList();
   }
 
-  public String getCommonSequenceNumber(
+  public String GetCommonSequenceNumber(
       String transportMode, ProductProcessTypes productProcessTypes) {
     var sequenceNumber = "";
-    var productSequence = getCommonProductSequence(transportMode, productProcessTypes);
+    var productSequence = GetCommonProductSequence(transportMode, productProcessTypes);
     if (productSequence != null) {
       var regexPrefix = productSequence.getPrefix();
       log.info("CR-ID {} || prefix for common sequence {}", LoggerHelper.getRequestIdFromMDC(), regexPrefix);
-      sequenceNumber = regexToSequenceNumber(productSequence, transportMode);
+      sequenceNumber = RegexToSequenceNumber(productSequence, transportMode);
     }
     return sequenceNumber;
   }
 
-  private ProductSequenceConfig getCommonProductSequence(
+  private ProductSequenceConfig GetCommonProductSequence(
       String transportMode, ProductProcessTypes productProcessTypes) {
     ProductSequenceConfig returnProduct = null;
     ListCommonRequest listRequest =
@@ -124,7 +124,7 @@ public class ProductIdentifierUtility {
     shipmentsRow1.setTransportMode(shipmentDetails.getTransportMode());
     shipmentsRow1.setDirection(shipmentDetails.getDirection());
     shipmentsRow1.setShipmentType("null");
-    TenantProducts identifiedProduct = this.identifyProduct(shipmentsRow1, tenantProducts);
+    TenantProducts identifiedProduct = this.IdentifyProduct(shipmentsRow1, tenantProducts);
     if (identifiedProduct == null) {
       return null;
     } else {
@@ -132,8 +132,8 @@ public class ProductIdentifierUtility {
     }
   }
 
-  public TenantProducts identifyProduct(ConsolidationDetails consolidation, List<TenantProducts> enabledTenantProducts) {
-    Optional<TenantProducts> res;
+  public TenantProducts IdentifyProduct(ConsolidationDetails consolidation, List<TenantProducts> enabledTenantProducts) {
+    Optional<TenantProducts> res = Optional.empty();
 
     if (isConsolSea(consolidation, enabledTenantProducts)) {
       res =
@@ -155,7 +155,7 @@ public class ProductIdentifierUtility {
     return res.orElse(null);
   }
 
-  public TenantProducts identifyProduct(ShipmentDetails shipment, List<TenantProducts> enabledTenantProducts) {
+  public TenantProducts IdentifyProduct(ShipmentDetails shipment, List<TenantProducts> enabledTenantProducts) {
     String[] allCargoTypeProducts = {
       "Shipment_Sea_EXP_BBK",
       "Shipment_Sea_EXP_BLK",
@@ -272,7 +272,7 @@ public class ProductIdentifierUtility {
       return res;
   }
 
-  private String regexToSequenceNumber(
+  private String RegexToSequenceNumber(
       ProductSequenceConfig productSequence, String transportMode) {
     StringBuilder result = new StringBuilder();
     var regexValue = productSequence.getPrefix();
@@ -322,7 +322,7 @@ public class ProductIdentifierUtility {
               log.error("Error performing sync on shipment settings product sequence entity, {}", e);
             }
           }
-          default -> { break; }
+          default -> {}
         }
       } else {
         result = getAppendedResult(result, segment);
@@ -625,14 +625,14 @@ public class ProductIdentifierUtility {
   public String getCustomizedBLNumber(ShipmentDetails shipmentDetails) throws RunnerException {
     List<TenantProducts> enabledTenantProducts = this.populateEnabledTenantProducts();
 
-    TenantProducts identifiedProduct = this.identifyProduct(shipmentDetails, enabledTenantProducts);
+    TenantProducts identifiedProduct = this.IdentifyProduct(shipmentDetails, enabledTenantProducts);
     if (identifiedProduct == null){
       return getBLNumberWhenTenantProductsNotPresent(shipmentDetails);
     }
     ProductProcessTypes processType;
     if(shipmentDetails.getTransportMode().equalsIgnoreCase("Air")) {
       processType = ProductProcessTypes.HAWB;
-      String sequenceNumber = getChildCommonSequenceNumber(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentId(), processType);
+      String sequenceNumber = GetChildCommonSequenceNumber(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentId(), processType);
       if (StringUtility.isNotEmpty(sequenceNumber)) {
         return sequenceNumber;
       }
@@ -641,7 +641,7 @@ public class ProductIdentifierUtility {
     {
       processType = ProductProcessTypes.HBLNumber;
       // to check the commmon sequence
-      String sequenceNumber = getChildCommonSequenceNumber(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentId(), processType);
+      String sequenceNumber = GetChildCommonSequenceNumber(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentId(), processType);
       if (StringUtility.isNotEmpty(sequenceNumber)) {
         return sequenceNumber;
       }
@@ -661,12 +661,12 @@ public class ProductIdentifierUtility {
   private String getBLNumberWhenTenantProductsNotPresent(ShipmentDetails shipmentDetails) {
     if(!shipmentDetails.getTransportMode().equalsIgnoreCase("Air")){
       // to check the commmon sequence
-      String sequenceNumber = getChildCommonSequenceNumber(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentId(), ProductProcessTypes.HBLNumber);
+      String sequenceNumber = GetChildCommonSequenceNumber(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentId(), ProductProcessTypes.HBLNumber);
       if (StringUtility.isNotEmpty(sequenceNumber)) {
         return sequenceNumber;
       }
     } else {
-      String hawbSequenceNumber = getChildCommonSequenceNumber(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentId(), ProductProcessTypes.HAWB);
+      String hawbSequenceNumber = GetChildCommonSequenceNumber(shipmentDetails.getTransportMode(), shipmentDetails.getShipmentId(), ProductProcessTypes.HAWB);
       if (StringUtility.isNotEmpty(hawbSequenceNumber)) {
         return hawbSequenceNumber;
       }
@@ -674,9 +674,9 @@ public class ProductIdentifierUtility {
     return "";
   }
 
-  public String getChildCommonSequenceNumber(String transportMode, String parentNumber, ProductProcessTypes productProcessTypes) {
+  public String GetChildCommonSequenceNumber(String transportMode, String parentNumber, ProductProcessTypes productProcessTypes) {
     String sequenceNumber = "";
-    ProductSequenceConfig productSequence = getCommonProductSequence(transportMode, productProcessTypes);
+    ProductSequenceConfig productSequence = GetCommonProductSequence(transportMode, productProcessTypes);
     if (productSequence != null) {
       sequenceNumber = parentNumber;
       if (productProcessTypes == ProductProcessTypes.HBLNumber || productProcessTypes == ProductProcessTypes.HAWB) {

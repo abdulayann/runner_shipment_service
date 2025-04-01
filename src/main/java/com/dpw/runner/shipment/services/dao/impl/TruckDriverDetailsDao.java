@@ -72,6 +72,7 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
         String responseMsg;
         try {
             hashMap.values().forEach(truckDriverDetails -> {
+                String json = jsonHelper.convertToJson(truckDriverDetails);
                 delete(truckDriverDetails);
                 if(entity != null)
                 {

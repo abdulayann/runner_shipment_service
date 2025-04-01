@@ -44,7 +44,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 @Repository
@@ -293,7 +293,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
 
     private void addCarrierDetailsValidationErrors(ConsolidationDetails request, ShipmentSettingsDetails shipmentSettingsDetails, Set<String> errors) {
         if((shipmentSettingsDetails.getConsolidationLite() == null || !shipmentSettingsDetails.getConsolidationLite().booleanValue())
-                && (request.getCarrierDetails() == null || isStringNullOrEmpty(request.getCarrierDetails().getOrigin()) || isStringNullOrEmpty(request.getCarrierDetails().getDestination()))) {
+                && (request.getCarrierDetails() == null || IsStringNullOrEmpty(request.getCarrierDetails().getOrigin()) || IsStringNullOrEmpty(request.getCarrierDetails().getDestination()))) {
             errors.add("First load or Last Discharge can not be null.");
         }
     }
@@ -302,7 +302,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         if (request.getContainersList() != null && !request.getContainersList().isEmpty()) {
             HashSet<String> hashSet = new HashSet<>();
             for (Containers containers : request.getContainersList()) {
-                if (!isStringNullOrEmpty(containers.getContainerNumber())) {
+                if (!IsStringNullOrEmpty(containers.getContainerNumber())) {
                     if (hashSet.contains(containers.getContainerNumber())) {
                         errors.add("Container Number cannot be same for two different containers");
                         break;
@@ -314,7 +314,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     }
 
     private void addReferenceNumberValidationErrors(ConsolidationDetails request, Set<String> errors) {
-        if(!isStringNullOrEmpty(request.getReferenceNumber())) {
+        if(!IsStringNullOrEmpty(request.getReferenceNumber())) {
             List<ConsolidationDetails> consolidationDetails = findByReferenceNumber(request.getReferenceNumber());
             if(!consolidationDetails.isEmpty() && (request.getId() == null || consolidationDetails.get(0).getId().longValue() != request.getId().longValue())) {
                 errors.add("Consolidation with ReferenceNo " + request.getReferenceNumber() + " already exists.");
@@ -324,6 +324,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
 
     private void addUnLocationValidationErrors(ConsolidationDetails request, ShipmentSettingsDetails shipmentSettingsDetails, Set<String> errors) {
         if (Boolean.TRUE.equals(shipmentSettingsDetails.getRestrictedLocationsEnabled()) && request.getCarrierDetails() != null) {
+            String unLoc = null;
             if (request.getShipmentType().equals(Constants.DIRECTION_EXP)) {
                 addEXPValidationErrors(request, shipmentSettingsDetails, errors);
             } else if (request.getShipmentType().equals(Constants.IMP)) {
@@ -377,7 +378,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     }
 
     private void addMBLNumberValidationErrors(ConsolidationDetails request, Set<String> errors) {
-        if(!isStringNullOrEmpty(request.getBol())) {
+        if(!IsStringNullOrEmpty(request.getBol())) {
             List<ConsolidationDetails> consolidationDetails = findByBol(request.getBol());
             if(checkSameMblExists(consolidationDetails, request)) {
                 errors.add(String.format("The MBL Number %s is already used. Please use a different MBL Number", request.getBol()));
@@ -581,7 +582,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
             entryForMawbStocksLinkRow.setSeqNumber(consolidationRequest.getMawb().substring(4, 10));
             entryForMawbStocksLinkRow.setMawbNumber(consolidationRequest.getMawb());
             entryForMawbStocksLinkRow.setStatus(UNUSED);
-            mawbStocksLinkDao.save(entryForMawbStocksLinkRow);
+            entryForMawbStocksLinkRow = mawbStocksLinkDao.save(entryForMawbStocksLinkRow);
         }
     }
 

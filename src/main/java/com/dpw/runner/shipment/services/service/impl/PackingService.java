@@ -194,9 +194,9 @@ public class PackingService implements IPackingService {
 
     private static Containers addWeightVolume(Packing request, Containers newContainer) throws RunnerException {
         if(newContainer != null && request != null) {
-            if(isStringNullOrEmpty(newContainer.getAchievedWeightUnit()))
+            if(IsStringNullOrEmpty(newContainer.getAchievedWeightUnit()))
                 newContainer.setAchievedWeightUnit(newContainer.getAllocatedWeightUnit());
-            if(isStringNullOrEmpty(newContainer.getAchievedVolumeUnit()))
+            if(IsStringNullOrEmpty(newContainer.getAchievedVolumeUnit()))
                 newContainer.setAchievedVolumeUnit(newContainer.getAllocatedVolumeUnit());
             BigDecimal finalWeight = new BigDecimal(convertUnit(Constants.MASS, request.getWeight(), request.getWeightUnit(), newContainer.getAchievedWeightUnit()).toString());
             BigDecimal finalVolume = new BigDecimal(convertUnit(VOLUME, request.getVolume(), request.getVolumeUnit(), newContainer.getAchievedVolumeUnit()).toString());
@@ -212,9 +212,9 @@ public class PackingService implements IPackingService {
 
     private static Containers subtractWeightVolume(Packing request, Containers oldContainer) throws RunnerException {
         if(oldContainer != null && request != null) {
-            if(isStringNullOrEmpty(oldContainer.getAchievedWeightUnit()))
+            if(IsStringNullOrEmpty(oldContainer.getAchievedWeightUnit()))
                 oldContainer.setAchievedWeightUnit(oldContainer.getAllocatedWeightUnit());
-            if(isStringNullOrEmpty(oldContainer.getAchievedVolumeUnit()))
+            if(IsStringNullOrEmpty(oldContainer.getAchievedVolumeUnit()))
                 oldContainer.setAchievedVolumeUnit(oldContainer.getAllocatedVolumeUnit());
             BigDecimal finalWeight = new BigDecimal(convertUnit(Constants.MASS, request.getWeight(), request.getWeightUnit(), oldContainer.getAchievedWeightUnit()).toString());
             BigDecimal finalVolume = new BigDecimal(convertUnit(VOLUME, request.getVolume(), request.getVolumeUnit(), oldContainer.getAchievedVolumeUnit()).toString());
@@ -378,6 +378,7 @@ public class PackingService implements IPackingService {
             }
             var actualChargeable = packingRow.getChargeable();
             actualChargeable = actualChargeable.setScale(2, BigDecimal.ROUND_HALF_UP);
+            BigDecimal calculatedChargeable = null;
 
             var vwob = getVolumeWeightChargeable(packingRow);
             validateChargeable(row, vwob, actualChargeable);
@@ -463,7 +464,7 @@ public class PackingService implements IPackingService {
         Field[] fields = PackingExcelModel.class.getDeclaredFields();
 
         Map<String, Field> fieldNameMap = Arrays.stream(fields).filter(f->f.isAnnotationPresent(ExcelCell.class)).collect(Collectors.toMap(Field::getName, c-> c));
-        columnsToIgnore(fieldNameMap);
+        ColumnsToIgnore(fieldNameMap, request);
 
         processOriginFieldNameMap(modelList, fieldNameMap);
         List<Field> fieldsList = reorderFields(fieldNameMap, columnsSequenceForExcelDownloadForCargo);
@@ -505,7 +506,7 @@ public class PackingService implements IPackingService {
         }
     }
 
-    private void columnsToIgnore(Map<String, Field> fieldNameMap) {
+    private void ColumnsToIgnore(Map<String, Field> fieldNameMap, BulkDownloadRequest request) {
         for(var field : Constants.ColumnsToBeDeletedForConsolidationCargo) {
             if (fieldNameMap.containsKey(field)) {
                 fieldNameMap.remove(field);
@@ -651,9 +652,9 @@ public class PackingService implements IPackingService {
             String toVolumeUnit = Constants.VOLUME_UNIT_M3;
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
             V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
-            if(!isStringNullOrEmpty(shipmentSettingsDetails.getWeightChargeableUnit()))
+            if(!IsStringNullOrEmpty(shipmentSettingsDetails.getWeightChargeableUnit()))
                 toWeightUnit = shipmentSettingsDetails.getWeightChargeableUnit();
-            if(!isStringNullOrEmpty(shipmentSettingsDetails.getVolumeChargeableUnit()))
+            if(!IsStringNullOrEmpty(shipmentSettingsDetails.getVolumeChargeableUnit()))
                 toVolumeUnit = shipmentSettingsDetails.getVolumeChargeableUnit();
             if(packingList != null) {
                 for (Packing packing: packingList) {
@@ -664,7 +665,7 @@ public class PackingService implements IPackingService {
                     totalVolume = totalVolume + volDef;
                     netWeight = netWeight + netWtDif;
                     packsUnit = getPacksUnit(packing, packsUnit, map);
-                    if(!isStringNullOrEmpty(packing.getPacks())) {
+                    if(!IsStringNullOrEmpty(packing.getPacks())) {
                         int packs = Integer.parseInt(packing.getPacks());
                         totalPacks = totalPacks + packs;
                         dgPacks = getDgPacks(packing, map, packs, dgPacks);
@@ -693,8 +694,8 @@ public class PackingService implements IPackingService {
             response.setDgPacks(dgPacks);
             response.setTotalPacksWithUnit(totalPacks + " " + (packsUnit != null? packsUnit : ""));
             response.setTotalPacks(packsCount.toString());
-            response.setTotalPacksWeight(String.format(Constants.STRING_FORMAT, IReport.convertToWeightNumberFormat(BigDecimal.valueOf(totalWeight), v1TenantSettingsResponse), toWeightUnit));
-            response.setTotalPacksVolume(String.format(Constants.STRING_FORMAT, IReport.convertToVolumeNumberFormat(BigDecimal.valueOf(totalVolume), v1TenantSettingsResponse), toVolumeUnit));
+            response.setTotalPacksWeight(String.format(Constants.STRING_FORMAT, IReport.ConvertToWeightNumberFormat(BigDecimal.valueOf(totalWeight), v1TenantSettingsResponse), toWeightUnit));
+            response.setTotalPacksVolume(String.format(Constants.STRING_FORMAT, IReport.ConvertToVolumeNumberFormat(BigDecimal.valueOf(totalVolume), v1TenantSettingsResponse), toVolumeUnit));
             response.setPacksVolume(BigDecimal.valueOf(totalVolume));
             response.setPacksVolumeUnit(toVolumeUnit);
             setPacksVolumetricWeightInResponse(transportMode, response, volumetricWeight, v1TenantSettingsResponse);
@@ -725,13 +726,13 @@ public class PackingService implements IPackingService {
 
     private void setPacksVolumetricWeightInResponse(String transportMode, PackSummaryResponse response, double volumetricWeight, V1TenantSettingsResponse v1TenantSettingsResponse) {
         if(Objects.equals(transportMode, TRANSPORT_MODE_SEA))
-            response.setPacksVolumetricWeight(String.format(Constants.STRING_FORMAT, IReport.convertToWeightNumberFormat(BigDecimal.valueOf(volumetricWeight), v1TenantSettingsResponse), VOLUME_UNIT_M3));
+            response.setPacksVolumetricWeight(String.format(Constants.STRING_FORMAT, IReport.ConvertToWeightNumberFormat(BigDecimal.valueOf(volumetricWeight), v1TenantSettingsResponse), VOLUME_UNIT_M3));
         else
-            response.setPacksVolumetricWeight(String.format(Constants.STRING_FORMAT, IReport.convertToWeightNumberFormat(BigDecimal.valueOf(volumetricWeight), v1TenantSettingsResponse), WEIGHT_UNIT_KG));
+            response.setPacksVolumetricWeight(String.format(Constants.STRING_FORMAT, IReport.ConvertToWeightNumberFormat(BigDecimal.valueOf(volumetricWeight), v1TenantSettingsResponse), WEIGHT_UNIT_KG));
     }
 
     private String getPacksUnit(Packing packing, String packsUnit, Map<String, Long> map) {
-        if(!isStringNullOrEmpty(packing.getPacksType())) {
+        if(!IsStringNullOrEmpty(packing.getPacksType())) {
             packsUnit = getPacksUnit(packing, packsUnit);
             if(!map.containsKey(packing.getPacksType()))
                 map.put(packing.getPacksType(), 0L);
@@ -741,7 +742,7 @@ public class PackingService implements IPackingService {
 
     private void setChargeableWeightAndUnit(String transportMode, double chargeableWeight, double totalVolume, String toVolumeUnit, double totalWeight, String toWeightUnit, PackSummaryResponse response, V1TenantSettingsResponse v1TenantSettingsResponse) throws RunnerException {
         String packChargeableWeightUnit = WEIGHT_UNIT_KG;
-        if (!isStringNullOrEmpty(transportMode) && transportMode.equals(Constants.TRANSPORT_MODE_AIR))
+        if (!IsStringNullOrEmpty(transportMode) && transportMode.equals(Constants.TRANSPORT_MODE_AIR))
             chargeableWeight = roundOffAirShipment(chargeableWeight);
         if (Objects.equals(transportMode, Constants.TRANSPORT_MODE_SEA)) {
             double volInM3 = convertUnit(VOLUME, BigDecimal.valueOf(totalVolume), toVolumeUnit, Constants.VOLUME_UNIT_M3).doubleValue();
@@ -750,7 +751,7 @@ public class PackingService implements IPackingService {
             packChargeableWeightUnit = Constants.VOLUME_UNIT_M3;
         }
         chargeableWeight = BigDecimal.valueOf(chargeableWeight).setScale(2, RoundingMode.HALF_UP).doubleValue();
-        response.setPacksChargeableWeight(String.format(Constants.STRING_FORMAT, IReport.convertToWeightNumberFormat(BigDecimal.valueOf(chargeableWeight), v1TenantSettingsResponse), packChargeableWeightUnit));
+        response.setPacksChargeableWeight(String.format(Constants.STRING_FORMAT, IReport.ConvertToWeightNumberFormat(BigDecimal.valueOf(chargeableWeight), v1TenantSettingsResponse), packChargeableWeightUnit));
         response.setChargeableWeight(BigDecimal.valueOf(chargeableWeight));
         response.setPacksChargeableWeightUnit(packChargeableWeightUnit);
     }
@@ -758,14 +759,14 @@ public class PackingService implements IPackingService {
     private void updatePacksCount(List<String> sortedKeys, Map<String, Long> map, StringBuilder packsCount, V1TenantSettingsResponse v1TenantSettingsResponse) {
         for (int i = 0; i< sortedKeys.size(); i++) {
             Long value = map.get(sortedKeys.get(i));
-            packsCount.append(IReport.getDPWWeightVolumeFormat(BigDecimal.valueOf(value), 0, v1TenantSettingsResponse)).append(" ").append(sortedKeys.get(i));
+            packsCount.append(IReport.GetDPWWeightVolumeFormat(BigDecimal.valueOf(value), 0, v1TenantSettingsResponse)).append(" ").append(sortedKeys.get(i));
             if (i + 1 < sortedKeys.size())
                 packsCount.append(", ");
         }
     }
 
     private int getDgPacks(Packing packing, Map<String, Long> map, int packs, int dgPacks) {
-        if(!isStringNullOrEmpty(packing.getPacksType())) {
+        if(!IsStringNullOrEmpty(packing.getPacksType())) {
             map.put(packing.getPacksType(), map.get(packing.getPacksType()) + packs);
         }
         if(Boolean.TRUE.equals(packing.getHazardous()))
@@ -784,7 +785,7 @@ public class PackingService implements IPackingService {
     }
 
     private int getTotalInnerPacks(Packing packing, int totalInnerPacks) {
-        if(!isStringNullOrEmpty(packing.getInnerPackageNumber())) {
+        if(!IsStringNullOrEmpty(packing.getInnerPackageNumber())) {
             int innerPacks = Integer.parseInt(packing.getInnerPackageNumber());
             totalInnerPacks = totalInnerPacks + innerPacks;
         }
@@ -792,7 +793,7 @@ public class PackingService implements IPackingService {
     }
 
     private String getInnerPacksUnit(Packing packing, String innerPacksUnit) {
-        if(!isStringNullOrEmpty(packing.getInnerPackageType())) {
+        if(!IsStringNullOrEmpty(packing.getInnerPackageType())) {
             if(innerPacksUnit == null)
                 innerPacksUnit = packing.getInnerPackageType();
             else if(!innerPacksUnit.equals(packing.getInnerPackageType()))
@@ -803,9 +804,9 @@ public class PackingService implements IPackingService {
 
     public void calculateVolume(AutoCalculatePackingRequest request, AutoCalculatePackingResponse pack) throws RunnerException {
 
-        if (isStringNullOrEmpty(request.getWidthUnit()) || isStringNullOrEmpty(request.getLengthUnit()) || isStringNullOrEmpty(request.getHeightUnit()))
+        if (IsStringNullOrEmpty(request.getWidthUnit()) || IsStringNullOrEmpty(request.getLengthUnit()) || IsStringNullOrEmpty(request.getHeightUnit()))
             return;
-        if (isStringNullOrEmpty(request.getPacks()) || request.getLength() == null || request.getWidth() == null || request.getHeight() == null)
+        if (IsStringNullOrEmpty(request.getPacks()) || request.getLength() == null || request.getWidth() == null || request.getHeight() == null)
             return;
 
         BigDecimal volume = BigDecimal.valueOf(calculateVolume(request));
@@ -900,7 +901,7 @@ public class PackingService implements IPackingService {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> v1PackingCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws RunnerException {
+    public ResponseEntity<IRunnerResponse> V1PackingCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws RunnerException {
         PackingRequestV2 packingRequestV2 = (PackingRequestV2) commonRequestModel.getData();
         try {
             if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !Boolean.TRUE.equals(syncConfig.IS_REVERSE_SYNC_ACTIVE)) {
@@ -940,12 +941,12 @@ public class PackingService implements IPackingService {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> v1BulkPackingCreateAndUpdate(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> V1BulkPackingCreateAndUpdate(CommonRequestModel commonRequestModel) {
         BulkPackingRequestV2 bulkContainerRequest = (BulkPackingRequestV2) commonRequestModel.getData();
         try {
             List<ResponseEntity<?>> responses = new ArrayList<>();
             for (PackingRequestV2 containerRequest : bulkContainerRequest.getBulkPacking())
-                responses.add(this.v1PackingCreateAndUpdate(CommonRequestModel.builder()
+                responses.add(this.V1PackingCreateAndUpdate(CommonRequestModel.builder()
                         .data(containerRequest)
                         .build(), true));
             return ResponseHelper.buildSuccessResponse(responses);

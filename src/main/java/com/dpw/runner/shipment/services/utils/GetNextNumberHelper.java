@@ -110,7 +110,7 @@ public class GetNextNumberHelper {
             if (wordSplit.get(0).equalsIgnoreCase("seq")) {
                 String resetFreq = wordSplit.size() > 2 ? wordSplit.get(2) : "Never";
                 suffix += padLeft(
-                    getNextRegexSequenceNumber(sequenceSettings, resetFreq),
+                    GetNextRegexSequenceNumber(sequenceSettings, resetFreq),
                     Integer.parseInt(wordSplit.get(1)),
                     '0');
             }
@@ -131,12 +131,11 @@ public class GetNextNumberHelper {
         return suffix;
     }
 
-    public String getNextRegexSequenceNumber(ProductSequenceConfig sequenceSettings, String resetFreq) throws RunnerException {
+    public String GetNextRegexSequenceNumber(ProductSequenceConfig sequenceSettings, String resetFreq) throws RunnerException {
         LocalDateTime seqStartTime = sequenceSettings.getSequenceStartTime();
         boolean resetCounter = seqStartTime == null;
         if (resetFreq.equalsIgnoreCase("daily")) {
-            LocalDateTime localTimeStart;
-            LocalDateTime localTimeNow;
+            LocalDateTime localTimeStart, localTimeNow;
 
             String timeZoneId = UserContext.getUser().TimeZoneId;
             if (timeZoneId == null || timeZoneId.isEmpty())

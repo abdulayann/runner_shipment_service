@@ -55,7 +55,7 @@ public class ReportHelper {
         temp = getCommaSeparatedAddress(partiesModel.getAddressData(), ReportConstants.COUNTRY, temp);
         temp = getCommaSeparatedAddress(partiesModel.getAddressData(), ReportConstants.ZIP_POST_CODE, temp);
 
-        if (!CommonUtils.isStringNullOrEmpty(temp)) {
+        if (!CommonUtils.IsStringNullOrEmpty(temp)) {
             if (response == null) {
                 response = temp;
             } else {
@@ -69,7 +69,7 @@ public class ReportHelper {
 
     public static String getNextLineAddress(Map<String, Object> map, String key, String response) {
         String x = getValueFromMap(map, key);
-        if(!CommonUtils.isStringNullOrEmpty(x)){
+        if(!CommonUtils.IsStringNullOrEmpty(x)){
             if(response == null)
                 response = x;
             else
@@ -80,7 +80,7 @@ public class ReportHelper {
 
     public static String getCommaSeparatedAddress(Map<String, Object> map, String key, String response) {
         String x = getValueFromMap(map, key);
-        if(!CommonUtils.isStringNullOrEmpty(x)){
+        if(!CommonUtils.IsStringNullOrEmpty(x)){
             if(response == null)
                 response = x;
             else
@@ -363,7 +363,7 @@ public class ReportHelper {
         return df.format(Double.valueOf(value));
     }
 
-    public static String generateFormattedDate(LocalDateTime localDateTime, String pattern){
+    public static String GenerateFormattedDate(LocalDateTime localDateTime, String pattern){
         if(localDateTime == null || pattern == null)
             return null;
         DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(pattern);
