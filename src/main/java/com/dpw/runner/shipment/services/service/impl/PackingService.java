@@ -23,7 +23,6 @@ import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
-import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -336,9 +335,9 @@ public class PackingService implements IPackingService {
                     throw new ValidationException("Volume unit not in M3 at row: " + row);
                 }
                 BigDecimal actualVolume = packingRow.getVolume();
-                actualVolume = CommonUtils.roundBigDecimal(actualVolume, 2, RoundingMode.HALF_UP);
+                actualVolume = actualVolume.setScale(2, BigDecimal.ROUND_HALF_UP);
                 var calculatedVolume = getCalculatedVolume(packingRow);
-                calculatedVolume = CommonUtils.roundBigDecimal(calculatedVolume, 2, RoundingMode.HALF_UP);
+                calculatedVolume = calculatedVolume.setScale(2, BigDecimal.ROUND_HALF_UP);
                 if (actualVolume.compareTo(calculatedVolume) != 0) { // not equal
                     throw new ValidationException("Volume is invalid at row: " + row);
                 }
@@ -378,7 +377,7 @@ public class PackingService implements IPackingService {
                 throw new ValidationException("Chargeable unit not in KG at row: " + row);
             }
             var actualChargeable = packingRow.getChargeable();
-            actualChargeable = CommonUtils.roundBigDecimal(actualChargeable, 2, RoundingMode.HALF_UP);
+            actualChargeable = actualChargeable.setScale(2, BigDecimal.ROUND_HALF_UP);
 
             var vwob = getVolumeWeightChargeable(packingRow);
             validateChargeable(row, vwob, actualChargeable);
@@ -391,7 +390,7 @@ public class PackingService implements IPackingService {
         BigDecimal calculatedChargeable;
         if (vwob.getChargeable() != null) {
             calculatedChargeable = vwob.getChargeable();
-            calculatedChargeable = CommonUtils.roundBigDecimal(calculatedChargeable, 2, RoundingMode.HALF_UP);
+            calculatedChargeable = calculatedChargeable.setScale(2, BigDecimal.ROUND_HALF_UP);
             if (!Objects.equals(calculatedChargeable, actualChargeable)) {
                 BigDecimal difference = calculatedChargeable.subtract(actualChargeable).abs();
                 BigDecimal threshold = new BigDecimal("0.01");
@@ -923,7 +922,7 @@ public class PackingService implements IPackingService {
             String responseMsg = ex.getMessage() != null ? ex.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, ex);
-            throw new GenericException(ex);
+            throw new RuntimeException(ex);
         }
     }
 
@@ -954,7 +953,7 @@ public class PackingService implements IPackingService {
             String responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            throw new GenericException(e);
+            throw new RuntimeException(e);
         }
     }
 

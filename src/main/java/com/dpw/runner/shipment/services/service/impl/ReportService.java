@@ -1579,7 +1579,7 @@ public class ReportService implements IReportService {
     {
         DocPages docPages = new DocPages();
         if (StringUtility.isNotEmpty(multiTemplateCode) && StringUtility.isNotEmpty(entityType)) {
-            log.info("Continue the process.");
+            //docPages.MainPageId = getMultiTemplateCode(multiTemplateCode, entityType);
         } else {
             docPages.setMainPageId(MainPageId);
         }

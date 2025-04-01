@@ -16,7 +16,6 @@ import com.dpw.runner.shipment.services.entity.HblTermsConditionTemplate;
 import com.dpw.runner.shipment.services.entity.ProductSequenceConfig;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.TenantProducts;
-import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -156,7 +155,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            throw new GenericException(e);
+            throw new RuntimeException(e);
         }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(shipmentSettingsDetails));
     }
@@ -224,7 +223,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            throw new GenericException(e);
+            throw new RuntimeException(e);
         }
     }
 
@@ -332,7 +331,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
                 responseMsg = e.getMessage() != null ? e.getMessage()
                         : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
                 log.error(responseMsg, e);
-                throw new GenericException(e);
+                throw new RuntimeException(e);
             }
         }
         else {
@@ -342,7 +341,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
                 responseMsg = e.getMessage() != null ? e.getMessage()
                         : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
                 log.error(responseMsg, e);
-                throw new GenericException(e);
+                throw new RuntimeException(e);
             }
         }
     }
@@ -386,7 +385,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            throw new GenericException(e);
+            throw new RuntimeException(e);
         }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(shipmentSettingsDetails));
     }
@@ -458,7 +457,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            throw new GenericException(e);
+            throw new RuntimeException(e);
         }
     }
 
@@ -714,7 +713,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         if (Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled())
                 && Boolean.TRUE.equals(tenantSettings.getIsColoadingMAWBStationEnabled())
                 && !Objects.isNull(tenantSettings.getColoadingBranchIds())) {
-            tenantIds.addAll(tenantSettings.getColoadingBranchIds().stream().map(Object::toString).toList());
+            tenantIds.addAll(tenantSettings.getColoadingBranchIds().stream().map(x -> x.toString()).toList());
         }
         Map<String, TenantModel> v1Data = masterDataUtils.fetchInTenantsList(tenantIds);
         List<TenantModel> listOfColoadStations = v1Data.values().stream().sorted(Comparator.comparing(TenantModel::getTenantName)).toList();
@@ -800,7 +799,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            throw new GenericException(e);
+            throw new RuntimeException(e);
         }
     }
 

@@ -2,7 +2,6 @@ package com.dpw.runner.shipment.services.helpers;
 
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.config.LocalTimeZoneHelper;
-import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.utils.ObjectUtility;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.nimbusds.jose.util.Pair;
@@ -322,7 +321,7 @@ public class DbAccessHelper {
                 if (dataType.isAssignableFrom(List.class) || dataType.isAssignableFrom(Set.class))
                     return criteriaBuilder.isMember(input.getValue(), path.get(fieldName));
                 else
-                    throw new GenericException("Criteria not supported yet");
+                    throw new RuntimeException("Criteria not supported yet");
             case "ISNULL":
                 if (dataType.isAssignableFrom(List.class) || dataType.isAssignableFrom(Set.class))
                     return criteriaBuilder.isEmpty(path.get(fieldName));
@@ -332,7 +331,7 @@ public class DbAccessHelper {
                     return criteriaBuilder.isNotEmpty(path.get(fieldName));
                 return criteriaBuilder.isNotNull(path.get(fieldName));
             default:
-                throw new GenericException("Operation not supported yet");
+                throw new RuntimeException("Operation not supported yet");
         }
     }
 

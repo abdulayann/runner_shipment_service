@@ -123,7 +123,6 @@ public class CSVParsingUtil<T> {
         return WordUtils.uncapitalize(name);
     }
 
-    @SuppressWarnings("java:S1874")
     private T createEntityInstance(Class<T> entityType) throws InstantiationException, IllegalAccessException {
         return entityType.newInstance();
     }

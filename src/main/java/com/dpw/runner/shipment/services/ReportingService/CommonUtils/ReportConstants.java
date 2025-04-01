@@ -943,6 +943,8 @@ public class ReportConstants {
     public static final String FPOD_IN_CAPS = "FPODInCaps";
     public static final String POD_IN_CAPS = "PODInCaps";
     public static final String POR_COUNTRY_NAME_IN_CAPS = "PORCountryNameInCaps";
+    //public static final String POLCountryNameInCaps = "POLCountryNameInCaps";
+    //public static final String PODCountryNameInCaps = "PODCountryNameInCaps";
     public static final String FPOD_COUNTRY_NAME_IN_CAPS = "FPODCountryNameInCaps";
     public static final String WEIGHTS = "weights";
     public static final String CARRIER_IATACODE = "IATACode";

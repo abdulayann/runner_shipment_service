@@ -9,7 +9,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.time.LocalDateTime;
@@ -468,7 +467,7 @@ public class ReportHelper {
             if(decimalPlaces == null)
                 decimalPlaces = 2;
             try {
-                BigDecimal roundedNumber = CommonUtils.roundBigDecimal(number, decimalPlaces, RoundingMode.HALF_UP);
+                BigDecimal roundedNumber = number.setScale(decimalPlaces, BigDecimal.ROUND_HALF_UP);
                 Locale customLocale = Locale.US;
                 NumberFormat numberInstance = NumberFormat.getNumberInstance(customLocale);
                 numberInstance.setMinimumFractionDigits(decimalPlaces);
