@@ -3504,6 +3504,7 @@ public class AwbService implements IAwbService {
 
     private String getPacksDescriptionValue(GenerateAwbPaymentInfoRequest request, String packsDescriptionValue, String newLine) {
         int counter = 0;
+        StringBuilder packsDescriptionValueBuilder = new StringBuilder(packsDescriptionValue);
         for (AwbPackingInfo packings : request.getAwbPackingInfo()) {
             String pcs = " ";
             String len = " ";
@@ -3532,13 +3533,13 @@ public class AwbService implements IAwbService {
                 height = packings.getHeight().toString();
             }
 
-            packsDescriptionValue += len + width + height + " " + packings.getLengthUnit() + " " + cross + " " +pcs;
+            packsDescriptionValueBuilder.append(len).append(width).append(height).append(" ").append(packings.getLengthUnit()).append(" ").append(cross).append(" ").append(pcs);
             if (counter < request.getAwbPackingInfo().size()-1) {
-                packsDescriptionValue += ","+ newLine;
+                packsDescriptionValueBuilder.append(",").append(newLine);
             }
             counter++;
         }
-        return packsDescriptionValue;
+        return packsDescriptionValueBuilder.toString();
     }
 
     @Override

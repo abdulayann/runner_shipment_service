@@ -261,12 +261,12 @@ public class MawbStocksService implements IMawbStocksService {
         String startingNum = mawbStocksRequest.getMawbNumber();
         for (int i = 0; i < count; i++) {
             int val = (Integer.parseInt(startingNum) + i) % 7;
-            String stNum = Integer.parseInt(startingNum) + i + "" + val;
+            StringBuilder stNum = new StringBuilder(Integer.parseInt(startingNum) + i + "" + val);
             int appendLeadingZeros = 8 - stNum.length();
             for (int ind = 0; ind < appendLeadingZeros; ind++) {
-                stNum = "0" + stNum;
+                stNum = new StringBuilder("0" + stNum);
             }
-            nums.add(stNum);
+            nums.add(stNum.toString());
         }
         List<String> mawbNumbers = new ArrayList<>();
         for (int i = 0; i < count; i++) {

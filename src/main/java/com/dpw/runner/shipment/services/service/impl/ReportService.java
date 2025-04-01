@@ -1609,21 +1609,21 @@ public class ReportService implements IReportService {
     }
 
     public String getSerialCount(int copyNumber, int totalCopies){
-        String _copy_count = Integer.toString(copyNumber);
-        String _total_copies = Integer.toString(totalCopies);
-        String ans = _copy_count;
-        int size = _copy_count.length();
-        if(_copy_count.length() < 5 && _total_copies.length() < 5){
-            for(int i=0; i<5-size; i++){
-                ans = "0" + ans;
+        String copyCount = Integer.toString(copyNumber);
+        String totalCopiesStr = Integer.toString(totalCopies);
+        StringBuilder ans = new StringBuilder(copyCount);
+        int size = copyCount.length();
+        if(copyCount.length() < 5 && totalCopiesStr.length() < 5){
+            for(int i = 0; i < (5 - size); i++){
+                ans = new StringBuilder("0" + ans);
             }
-        }else if(_copy_count.length() < 5){
-            int total_copies_size = _total_copies.length();
-            for(int i=0; i<total_copies_size-size; i++){
-                ans = "0" + ans;
+        }else if(copyCount.length() < 5){
+            int totalCopiesSize = totalCopiesStr.length();
+            for(int i = 0; i< (totalCopiesSize - size); i++){
+                ans = new StringBuilder("0" + ans);
             }
         }
-        return ans;
+        return ans.toString();
     }
 
     public byte[] addBarCodeForCombiReport(byte[] bytes, String hawbNumber) {
