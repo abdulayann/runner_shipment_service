@@ -1948,7 +1948,7 @@ public class ReportService implements IReportService {
         }
         String filename = uploadRequest.getDocType() + "_" + printType + "_" + uploadRequest.getId() + "_" + fileVersion + ".pdf";
 
-        CompletableFuture.runAsync(masterDataUtils.withMdc(() -> saddFilesFromReport(new BASE64DecodedMultipartFile(document), filename, uploadRequest, shipmentGuid)), executorService);
+        CompletableFuture.runAsync(masterDataUtils.withMdc(() -> addFilesFromReport(new BASE64DecodedMultipartFile(document), filename, uploadRequest, shipmentGuid)), executorService);
 
     }
 
