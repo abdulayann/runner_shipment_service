@@ -79,4 +79,5 @@ public class CustomerBookingRequest extends CommonRequest implements IRunnerRequ
     private String orderManagementId;
     private String orderManagementNumber;
     private Boolean isDg;
+    private String rejectionRemarks;
 }

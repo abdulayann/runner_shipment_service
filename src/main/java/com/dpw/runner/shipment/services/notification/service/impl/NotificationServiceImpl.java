@@ -3,6 +3,9 @@ package com.dpw.runner.shipment.services.notification.service.impl;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.commons.responses.MDMServiceResponse;
+import com.dpw.runner.shipment.services.exception.exceptions.NotificationException;
+import com.dpw.runner.shipment.services.exception.exceptions.ReportException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.notification.config.NotificationConfig;
@@ -19,6 +22,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import org.springframework.web.client.HttpClientErrorException;
 
 import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 
@@ -58,7 +62,18 @@ public class NotificationServiceImpl implements INotificationService {
             throw new RuntimeException(e);
         }
 
-        NotificationServiceResponse response = restClient.sendEmail(notificationServiceSendEmailRequest);
+        NotificationServiceResponse response ;
+        try{
+            response = restClient.sendEmail(notificationServiceSendEmailRequest);
+        }catch (Exception ex){
+            String errorMessage = ex.getMessage();
+            if(ex instanceof HttpClientErrorException) {
+                String json = ((HttpClientErrorException) ex).getResponseBodyAsString();
+                String msg = jsonHelper.readFromJson(json, MDMServiceResponse.class).getMessage();
+                errorMessage = msg != null ? msg : errorMessage;
+            }
+            throw new NotificationException(errorMessage);
+        }
 
         try {
             log.info("Notification Service Response: {}", jsonHelper.convertToJson(response));

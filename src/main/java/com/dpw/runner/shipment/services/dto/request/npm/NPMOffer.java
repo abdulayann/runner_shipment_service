@@ -131,4 +131,5 @@ public class NPMOffer implements Serializable {
         public String pack_type;
     }
 
+
 }

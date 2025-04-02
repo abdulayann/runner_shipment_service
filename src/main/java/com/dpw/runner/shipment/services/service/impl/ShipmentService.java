@@ -164,6 +164,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -510,7 +511,7 @@ public class ShipmentService implements IShipmentService {
             Map.entry("routingPol", RunnerEntityMapping.builder().tableName(Constants.ROUTING_LIST).dataType(String.class).fieldName("pol").build()),
             Map.entry("routingPolCode", RunnerEntityMapping.builder().tableName(Constants.ROUTING_LIST).dataType(String.class).fieldName(ShipmentConstants.ORIGIN_PORT_LOC_CODE).build()),
             Map.entry("routingPod", RunnerEntityMapping.builder().tableName(Constants.ROUTING_LIST).dataType(String.class).fieldName("pod").build()),
-            Map.entry("routingPodCode", RunnerEntityMapping.builder().tableName(Constants.ROUTING_LIST).dataType(String.class).fieldName(ShipmentConstants.DESTINATION_PORT_LOC_CODE).build()),
+            Map.entry("routingPodCode", RunnerEntityMapping.builder().tableName(Constants.ROUTING_LIST).dataType(String.class).fieldName("destinationPortLocCode").build()),
             Map.entry("routingCarriage", RunnerEntityMapping.builder().tableName(Constants.ROUTING_LIST).dataType(RoutingCarriage.class).fieldName("carriage").build())
     );
 
@@ -1048,7 +1049,7 @@ public class ShipmentService implements IShipmentService {
                     consolidationDetailsRequest.getTransportMode(), consolidationDetailsRequest.getShipmentType(), MdmConstants.CONSOLIDATION_MODULE
             ));
             // Generate default routes based on O-D pairs
-            if(Boolean.FALSE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled()) && Boolean.FALSE.equals(isRouteMasterEnabled)) {
+            if(!Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled()) && Boolean.FALSE.equals(isRouteMasterEnabled)) {
                 var routingList = routingsDao.generateDefaultRouting(jsonHelper.convertValue(consolidationDetailsRequest.getCarrierDetails(), CarrierDetails.class), consolidationDetailsRequest.getTransportMode());
                 consolidationDetailsRequest.setRoutingsList(commonUtils.convertToList(routingList, RoutingsRequest.class));
             }
@@ -1197,6 +1198,8 @@ public class ShipmentService implements IShipmentService {
                     BigDecimal wvInKG = obj.getVolume().multiply(BigDecimal.valueOf(factor));
                     obj.setVolumeWeight(wvInKG);
                     obj.setVolumeWeightUnit(Constants.WEIGHT_UNIT_KG);
+                    obj.setChargeable(wvInKG.max(obj.getWeight()));
+                    obj.setChargeableUnit(WEIGHT_UNIT_KG);
                 }
             }
             catch (Exception e) {
@@ -4649,14 +4652,6 @@ public class ShipmentService implements IShipmentService {
         shipmentList.forEach(c -> c.setConsignee(partyMap.get(c.getConsigneeId())));
         shipmentList.forEach(c -> c.setConsigner(partyMap.get(c.getConsignerId())));
 
-        List<Long> carrierIds = shipmentList.stream().map(ShipmentDetails::getCarrierDetailId).collect(Collectors.toList());
-        Map<Long, CarrierDetails> carrierMap = carrierDetailsDao.findByIds(carrierIds).stream().collect(Collectors.toMap(CarrierDetails::getId, Function.identity()));
-        shipmentList.forEach(c -> c.setCarrierDetails(carrierMap.get(c.getCarrierDetailId())));
-
-        List<Long> additionalDetails = shipmentList.stream().map(ShipmentDetails::getAdditionalDetailId).collect(Collectors.toList());
-        Map<Long, AdditionalDetails> additionalDetailsMap = additionalDetailDao.findByIds(additionalDetails).stream().collect(Collectors.toMap(AdditionalDetails::getId, Function.identity()));
-        shipmentList.forEach(c -> c.setAdditionalDetails(additionalDetailsMap.get(c.getAdditionalDetailId())));
-
         List<Long> pickupDetailsId = new ArrayList<>();
         pickupDetailsId.addAll(shipmentList.stream().map(ShipmentDetails::getPickupDetailsId).collect(Collectors.toList()));
         pickupDetailsId.addAll(shipmentList.stream().map(ShipmentDetails::getDeliveryDetailsId).collect(Collectors.toList()));
@@ -4880,21 +4875,25 @@ public class ShipmentService implements IShipmentService {
             log.debug("Shipment Details is null for the input with Request Id {}", request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
-        List<Notes> notes = notesDao.findByEntityIdAndEntityType(request.getId(), Constants.CUSTOMER_BOOKING);
         double current = System.currentTimeMillis();
         log.info("Shipment details fetched successfully for Id {} with Request Id {} within: {}ms", id, LoggerHelper.getRequestIdFromMDC(), current - start);
+        AtomicInteger pendingCount = new AtomicInteger(0);
+        Long shipmentId = shipmentDetails.get().getId();
+        UUID guid = shipmentDetails.get().getGuid();
+        List<NotesResponse> notesResponses = new ArrayList<>();
+        List<String> implications = new ArrayList<>();
+        var pendingNotificationFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> setPendingCount(shipmentId, pendingCount)), executorService);
+        var notesFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> setNotesResponse(request.getId(), notesResponses)), executorService);
+        var implicationListFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> setImplicationsResponse(guid, implications)), executorService);
         ShipmentDetailsResponse response = modelMapper.map(shipmentDetails.get(), ShipmentDetailsResponse.class);
+        log.info("Request: {} || Time taken for model mapper: {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - current);
+        CompletableFuture.allOf(pendingNotificationFuture, notesFuture, implicationListFuture).join();
         if (response.getStatus() != null && response.getStatus() < ShipmentStatus.values().length)
             response.setShipmentStatus(ShipmentStatus.values()[response.getStatus()].toString());
-        var map = consoleShipmentMappingDao.pendingStateCountBasedOnShipmentId(Arrays.asList(shipmentDetails.get().getId()), ShipmentRequestedType.SHIPMENT_PULL_REQUESTED.ordinal());
-        var notificationMap = notificationDao.pendingNotificationCountBasedOnEntityIdsAndEntityType(Arrays.asList(shipmentDetails.get().getId()), SHIPMENT);
-        int pendingCount = map.getOrDefault(shipmentDetails.get().getId(), 0) + notificationMap.getOrDefault(shipmentDetails.get().getId(), 0);
-        response.setPendingActionCount((pendingCount == 0) ? null : pendingCount);
-        log.info("Request: {} || Time taken for model mapper: {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - current);
-        response.setCustomerBookingNotesList(jsonHelper.convertValueToList(notes,NotesResponse.class));
-
+        response.setPendingActionCount((pendingCount.get() == 0) ? null : pendingCount.get());
+        response.setCustomerBookingNotesList(notesResponses);
         // set dps implications
-        response.setImplicationList(dpsEventService.getImplicationsForShipment(shipmentDetails.get().getGuid().toString()));
+        response.setImplicationList(implications);
 
         if(measurmentBasis) {
             calculatePacksAndPacksUnit(shipmentDetails.get().getPackingList(), response);
@@ -4902,6 +4901,22 @@ public class ShipmentService implements IShipmentService {
             createShipmentPayload(shipmentDetails.get(), response, getMasterData);
         }
         return response;
+    }
+
+    private void setImplicationsResponse(UUID guid, List<String> implications) {
+        implications.addAll(dpsEventService.getImplicationsForShipment(guid.toString()));
+    }
+
+    private void setNotesResponse(Long id,  List<NotesResponse> notesResponses) {
+        List<Notes> notes = notesDao.findByEntityIdAndEntityType(id, Constants.CUSTOMER_BOOKING);
+        notesResponses.addAll(jsonHelper.convertValueToList(notes,NotesResponse.class));
+    }
+
+    private void setPendingCount(Long shipmentId, AtomicInteger pendingCount) {
+        var map = consoleShipmentMappingDao.pendingStateCountBasedOnShipmentId(Arrays.asList(shipmentId), ShipmentRequestedType.SHIPMENT_PULL_REQUESTED.ordinal());
+        var notificationMap = notificationDao.pendingNotificationCountBasedOnEntityIdsAndEntityType(Arrays.asList(shipmentId), SHIPMENT);
+        int value = map.getOrDefault(shipmentId, 0) + notificationMap.getOrDefault(shipmentId, 0);
+        pendingCount.set(value);
     }
 
     public ResponseEntity<IRunnerResponse> retrieveByIdWithBookingNotes(CommonRequestModel commonRequestModel) {
@@ -4930,6 +4945,7 @@ public class ShipmentService implements IShipmentService {
             log.info("Shipment details async fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
             ShipmentDetailsResponse response = jsonHelper.convertValue(shipmentDetails.get(), ShipmentDetailsResponse.class);
             response.setCustomerBookingNotesList(commonUtils.convertToDtoList(notesDao.findByEntityIdAndEntityType(request.getId(), Constants.CUSTOMER_BOOKING),NotesResponse.class));
+            this.fetchNTEstatusForReceivingBranch(response);
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -5578,7 +5594,7 @@ public class ShipmentService implements IShipmentService {
             List<String> includeColumns = FieldUtils.getMasterDataAnnotationFields(List.of(createFieldClassDto(ShipmentDetails.class, null), createFieldClassDto(AdditionalDetails.class, "additionalDetails.")));
             includeColumns.addAll(FieldUtils.getTenantIdAnnotationFields(List.of(createFieldClassDto(ShipmentDetails.class, null))));
             includeColumns.addAll(ShipmentConstants.LIST_INCLUDE_COLUMNS);
-            ShipmentDetailsResponse shipmentDetailsResponse = (ShipmentDetailsResponse) commonUtils.setIncludedFieldsToResponse(shipmentDetails, includeColumns, new ShipmentDetailsResponse());
+            ShipmentDetailsResponse shipmentDetailsResponse = (ShipmentDetailsResponse) commonUtils.setIncludedFieldsToResponse(shipmentDetails, includeColumns.stream().collect(Collectors.toSet()), new ShipmentDetailsResponse());
             log.info("Total time taken in setting shipment details response {}", (System.currentTimeMillis() - start));
             Map<String, Object> response = fetchAllMasterDataByKey(shipmentDetails, shipmentDetailsResponse);
             return ResponseHelper.buildSuccessResponse(response);

@@ -551,7 +551,7 @@ class DeliveryOrderReportTest extends CommonMocks {
         BillChargesResponse billChargesResponse = new BillChargesResponse();
         billChargesResponse.setOverseasSellAmount(BigDecimal.TEN);
         billChargesResponse.setLocalTax(BigDecimal.TEN);
-        billChargesResponse.setMeasurementBasis(Integer.toString(MeasurementBasis.CHARGEABLE.getValue()));
+        billChargesResponse.setMeasurementBasis(Integer.toString(MeasurementBasis.Chargeable.getValue()));
         billChargesResponse.setLocalCostCurrency("INR");
         billChargesResponse.setPaymentType("PPD");
         billChargesResponse.setChargeTypeCode("AGENT");
@@ -560,7 +560,7 @@ class DeliveryOrderReportTest extends CommonMocks {
         billChargesResponse = new BillChargesResponse();
         billChargesResponse.setOverseasSellAmount(BigDecimal.TEN);
         billChargesResponse.setLocalTax(BigDecimal.TEN);
-        billChargesResponse.setMeasurementBasis(Integer.toString(MeasurementBasis.CHARGEABLE.getValue()));
+        billChargesResponse.setMeasurementBasis(Integer.toString(MeasurementBasis.Chargeable.getValue()));
         billChargesResponse.setLocalCostCurrency("INR");
         billChargesResponse.setPaymentType("CPP");
         billChargesResponse.setChargeTypeCode("AGENT");
@@ -569,7 +569,7 @@ class DeliveryOrderReportTest extends CommonMocks {
         billChargesResponse = new BillChargesResponse();
         billChargesResponse.setOverseasSellAmount(BigDecimal.TEN);
         billChargesResponse.setLocalTax(BigDecimal.TEN);
-        billChargesResponse.setMeasurementBasis(Integer.toString(MeasurementBasis.CHARGEABLE.getValue()));
+        billChargesResponse.setMeasurementBasis(Integer.toString(MeasurementBasis.Chargeable.getValue()));
         billChargesResponse.setLocalCostCurrency("INR");
         billChargesResponse.setPaymentType("CAL");
         billChargesResponse.setChargeTypeCode("AGENT");
@@ -578,7 +578,7 @@ class DeliveryOrderReportTest extends CommonMocks {
         billChargesResponse = new BillChargesResponse();
         billChargesResponse.setOverseasSellAmount(BigDecimal.TEN);
         billChargesResponse.setLocalTax(BigDecimal.TEN);
-        billChargesResponse.setMeasurementBasis(Integer.toString(MeasurementBasis.CHARGEABLE.getValue()));
+        billChargesResponse.setMeasurementBasis(Integer.toString(MeasurementBasis.Chargeable.getValue()));
         billChargesResponse.setLocalCostCurrency("INR");
         billChargesResponse.setPaymentType("SHW");
         billChargesResponse.setChargeTypeCode("AGENT");
@@ -587,7 +587,7 @@ class DeliveryOrderReportTest extends CommonMocks {
         billChargesResponse = new BillChargesResponse();
         billChargesResponse.setOverseasSellAmount(BigDecimal.TEN);
         billChargesResponse.setLocalTax(BigDecimal.TEN);
-        billChargesResponse.setMeasurementBasis(Integer.toString(MeasurementBasis.CHARGEABLE.getValue()));
+        billChargesResponse.setMeasurementBasis(Integer.toString(MeasurementBasis.Chargeable.getValue()));
         billChargesResponse.setLocalCostCurrency("INR");
         billChargesResponse.setPaymentType("ALL");
         billChargesResponse.setChargeTypeCode("AGENT");
@@ -596,7 +596,7 @@ class DeliveryOrderReportTest extends CommonMocks {
         billChargesResponse = new BillChargesResponse();
         billChargesResponse.setOverseasSellAmount(BigDecimal.TEN);
         billChargesResponse.setLocalTax(BigDecimal.TEN);
-        billChargesResponse.setMeasurementBasis(Integer.toString(MeasurementBasis.CHARGEABLE.getValue()));
+        billChargesResponse.setMeasurementBasis(Integer.toString(MeasurementBasis.Chargeable.getValue()));
         billChargesResponse.setLocalCostCurrency("INR");
         billChargesResponse.setPaymentType("CCL");
         billChargesResponse.setChargeTypeCode("AGENT");

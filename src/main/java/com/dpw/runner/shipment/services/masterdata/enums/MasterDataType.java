@@ -4,6 +4,7 @@ import java.util.Objects;
 import lombok.Getter;
 
 @Getter
+@SuppressWarnings("java:S115") //Suppressing Rename this constant name to match the regular expression
 public enum MasterDataType {
     ORDER_STATUS(1, "OrderStatus"),
     QUOTE_STATUS(2, "QuoteStatus"),
@@ -41,10 +42,10 @@ public enum MasterDataType {
     CARRIER(34, "Carrier"),
     DOC_TYPES(35, "DocTypes"),
     COUNTRY_STATES(60, "CountryStates"),
-    ADDITIONAL_SERVICES(61, "AdditionalServices"),
+    AdditionalServices(61, "AdditionalServices"),
     PAY_TYPES(62, "PayTypes"),
     INVOICE_TYPE(63, "InvoiceType"),
-    CONSOLIDATION_TYPE(36, "ConsolidationType"),
+    CONSOlIDATION_TYPE(36, "ConsolidationType"),
     PAYMENT(37, "Payment"),
     ROUTING_STATUS(38, "RoutingStatus"),
     MODE(39, "Mode"),
@@ -117,7 +118,7 @@ public enum MasterDataType {
     BROKER_CODE(114, "BrokerCode"),
     KCS_CODE(115, "KcsCode"),
     BL_TERMS_AND_CONDITIONS(116, "BLTermsandConditions"),
-    PAYMENT_NUMBER_PATTERN(117, "PaymentNumberPattern"),
+    PaymentNumberPattern(117, "PaymentNumberPattern"),
     TAX_NUMBER_PATTERN(118, "TaxNumberPattern"),
     INTEGRATION_STATUS(119, "IntegrationSystems"),
     TERMINATE(120, "Terminals"),

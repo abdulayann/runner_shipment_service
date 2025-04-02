@@ -103,7 +103,7 @@ public class NotificationRestClient {
                     .moduleName(getModuleType(module))
                     .item(item)
                     .sentTime(LocalDateTime.now())
-                    .emailAck(responseEntity.getBody() != null
+                    .emailAck((responseEntity != null && responseEntity.getBody() != null)
                             ? responseEntity.getBody().getAcknowledgementId() : null)
                     .build();
             reportServiceAdapter.postRequest(request, null);

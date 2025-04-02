@@ -292,6 +292,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -309,6 +310,7 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.modelmapper.ModelMapper;
+import org.modelmapper.PropertyMap;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -2106,6 +2108,12 @@ public class ConsolidationService implements IConsolidationService {
             }
             if(Objects.equals(console.getTransportMode(), Constants.TRANSPORT_MODE_AIR)) {
                 i.getCarrierDetails().setFlightNumber(console.getCarrierDetails().getFlightNumber());
+                if(!Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled()) && Boolean.FALSE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster())) {
+                    i.getCarrierDetails().setOriginPort(console.getCarrierDetails().getOriginPort());
+                    i.getCarrierDetails().setDestinationPort(console.getCarrierDetails().getDestinationPort());
+                    i.getCarrierDetails().setEtd(console.getCarrierDetails().getEtd());
+                    i.getCarrierDetails().setEta(console.getCarrierDetails().getEta());
+                }
                 i.getCarrierDetails().setAtd(console.getCarrierDetails().getAtd());
                 i.getCarrierDetails().setAta(console.getCarrierDetails().getAta());
             }
@@ -3645,14 +3653,22 @@ public class ConsolidationService implements IConsolidationService {
             consolidationDetails.get().setContainersList(mergeContainers(consolidationDetails.get().getContainersList(), shipmentSettingsDetails));
         }
         calculateAchievedValuesForRetrieve(consolidationDetails.get());
-        ConsolidationDetailsResponse response = jsonHelper.convertValue(consolidationDetails.get(), ConsolidationDetailsResponse.class);
-        var map = consoleShipmentMappingDao.pendingStateCountBasedOnConsolidation(Arrays.asList(consolidationDetails.get().getId()), ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED.ordinal());
-        var notificationMap = notificationDao.pendingNotificationCountBasedOnEntityIdsAndEntityType(Arrays.asList(consolidationDetails.get().getId()), CONSOLIDATION);
-        int pendingCount = map.getOrDefault(consolidationDetails.get().getId(), 0) + notificationMap.getOrDefault(consolidationDetails.get().getId(), 0);
-        response.setPendingActionCount((pendingCount == 0) ? null : pendingCount);
+        AtomicInteger pendingCount = new AtomicInteger(0);
+        Long consoleId = consolidationDetails.get().getId();
+        var pendingNotificationFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> setPendingCount(consoleId, pendingCount)), executorService);
+        ConsolidationDetailsResponse response = jsonHelper.convertValueForConsole(consolidationDetails.get(), ConsolidationDetailsResponse.class);
+        pendingNotificationFuture.join();
+        response.setPendingActionCount((pendingCount.get() == 0) ? null : pendingCount.get());
         createConsolidationPayload(consolidationDetails.get(), response, getMasterData);
 
         return response;
+    }
+
+    private void setPendingCount(Long consoleId, AtomicInteger pendingCount) {
+        var map = consoleShipmentMappingDao.pendingStateCountBasedOnConsolidation(Arrays.asList(consoleId), ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED.ordinal());
+        var notificationMap = notificationDao.pendingNotificationCountBasedOnEntityIdsAndEntityType(Arrays.asList(consoleId), CONSOLIDATION);
+        int value = map.getOrDefault(consoleId, 0) + notificationMap.getOrDefault(consoleId, 0);
+         pendingCount.set(value);
     }
 
     private void calculateAchievedValuesForRetrieve(ConsolidationDetails consolidationDetails) {
@@ -3711,7 +3727,7 @@ public class ConsolidationService implements IConsolidationService {
             List<String> includeColumns = FieldUtils.getMasterDataAnnotationFields(List.of(createFieldClassDto(ConsolidationDetails.class, null), createFieldClassDto(ArrivalDepartureDetails.class, "arrivalDetails."), createFieldClassDto(ArrivalDepartureDetails.class, "departureDetails.")));
             includeColumns.addAll(FieldUtils.getTenantIdAnnotationFields(List.of(createFieldClassDto(ConsolidationDetails.class, null))));
             includeColumns.addAll(ConsolidationConstants.LIST_INCLUDE_COLUMNS);
-            ConsolidationDetailsResponse consolidationDetailsResponse = (ConsolidationDetailsResponse) commonUtils.setIncludedFieldsToResponse(consolidationDetails, includeColumns, new ConsolidationDetailsResponse());
+            ConsolidationDetailsResponse consolidationDetailsResponse = (ConsolidationDetailsResponse) commonUtils.setIncludedFieldsToResponse(consolidationDetails, includeColumns.stream().collect(Collectors.toSet()), new ConsolidationDetailsResponse());
             log.info("Total time taken in setting consol details response {}", (System.currentTimeMillis() - start));
             Map<String, Object> response = fetchAllMasterDataByKey(consolidationDetails, consolidationDetailsResponse);
             return ResponseHelper.buildSuccessResponse(response);

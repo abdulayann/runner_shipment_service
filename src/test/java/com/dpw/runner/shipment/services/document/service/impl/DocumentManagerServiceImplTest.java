@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.document.service.impl;
 
+import com.dpw.runner.shipment.services.ReportingService.Models.DocUploadRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
@@ -298,6 +299,46 @@ class DocumentManagerServiceImplTest {
         assertEquals(mockResponse, responseEntity);
     }
 
+    @Test
+    void testListDocTypes() {
+        var mockResponse = createMockResponse();
+        when(documentManagerRestClient.listDocTypes(any())).thenReturn(mockResponse);
+        var responseEntity = documentManagerServiceImpl.listDocTypes(CommonRequestModel.builder().dependentData(new DocumentManagerUpdateFileEntitiesRequest()).build());
+        assertNotNull(responseEntity);
+        assertTrue(responseEntity.getBody() instanceof DependentServiceResponse);
+        assertEquals(mockResponse.getData(), ((DependentServiceResponse) responseEntity.getBody()).getData());
+    }
+
+
+    @Test
+    void testPushSystemGeneratedDocumentToDocMaster() {
+
+        DocumentManagerResponse<DocumentManagerDataResponse> documentManagerResponse = new DocumentManagerResponse<>();
+        documentManagerResponse.setCount(3L);
+        documentManagerResponse.setData(new DocumentManagerDataResponse());
+        when(documentManagerRestClient.temporaryFileUpload(Mockito.<DocumentManagerTempFileUploadRequest>any()))
+                .thenReturn(documentManagerResponse);
+
+        documentManagerServiceImpl.pushSystemGeneratedDocumentToDocMaster(new BASE64DecodedMultipartFile(new byte[]{'A', -1, 'A', -1, 'A', -1}), "test.txt", new DocUploadRequest());
+        verify(documentManagerRestClient).temporaryFileUpload(isA(DocumentManagerTempFileUploadRequest.class));
+    }
+
+    @Test
+    void testPushSystemGeneratedDocumentToDocMaster2() {
+
+        DocumentManagerResponse<DocumentManagerDataResponse> documentManagerResponse = new DocumentManagerResponse<>();
+        documentManagerResponse.setCount(3L);
+        documentManagerResponse.setData(new DocumentManagerDataResponse());
+        documentManagerResponse.setSuccess(Boolean.FALSE);
+        when(documentManagerRestClient.temporaryFileUpload(Mockito.<DocumentManagerTempFileUploadRequest>any()))
+                .thenReturn(documentManagerResponse);
+
+        documentManagerServiceImpl.pushSystemGeneratedDocumentToDocMaster(new BASE64DecodedMultipartFile(new byte[]{'A', -1, 'A', -1, 'A', -1}), "test.txt", new DocUploadRequest());
+        verify(documentManagerRestClient).temporaryFileUpload(isA(DocumentManagerTempFileUploadRequest.class));
+    }
+
+
+
 
 
     private DocumentManagerResponse<T> createMockResponse() {
@@ -305,6 +346,7 @@ class DocumentManagerServiceImplTest {
         mockResponse.setData(new T());
         mockResponse.setPageNo(1);
         mockResponse.setPageSize(2);
+        mockResponse.setCount(2l);
 
         return mockResponse;
     }

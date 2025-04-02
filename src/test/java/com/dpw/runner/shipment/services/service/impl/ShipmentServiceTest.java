@@ -3750,6 +3750,12 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     void retrieveByIdTest() {
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+            Runnable argument = invocation.getArgument(0);
+            argument.run();
+            return mockRunnable;
+        });
         var shipId = 1L;
         CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(shipId).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(commonGetRequest).build();
@@ -9118,6 +9124,12 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     void retrieveByIdWithShipmentStatusTest() {
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+            Runnable argument = invocation.getArgument(0);
+            argument.run();
+            return mockRunnable;
+        });
         var shipId = 1L;
         CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(shipId).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(commonGetRequest).build();
@@ -9135,6 +9147,12 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     void retrieveByIdWithInvalidStatusTest() {
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+            Runnable argument = invocation.getArgument(0);
+            argument.run();
+            return mockRunnable;
+        });
         var shipId = 1L;
         CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(shipId).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(commonGetRequest).build();
@@ -10304,6 +10322,12 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     void testRetrieveByIdV3() {
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+            Runnable argument = invocation.getArgument(0);
+            argument.run();
+            return mockRunnable;
+        });
         var shipId = 1L;
         CommonGetRequest commonGetRequest = CommonGetRequest.builder().id(shipId).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(commonGetRequest).build();
