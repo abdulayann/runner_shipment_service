@@ -177,7 +177,7 @@ class HblReportTest extends CommonMocks {
     void setup() {
         shipmentDetails = jsonTestUtility.getCompleteShipment();
         TenantSettingsDetailsContext.setCurrentTenantSettings(
-                V1TenantSettingsResponse.builder().P100Branch(false).WVDigitGrouping(2).WVGroupingNumber(GroupingNumber.DOT_AND_COMMA.getValue()).build());
+                V1TenantSettingsResponse.builder().P100Branch(false).WVDigitGrouping(2).WVGroupingNumber(GroupingNumber.DotAndComma.getValue()).build());
     }
 
     @Test

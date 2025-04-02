@@ -559,7 +559,7 @@ class ArrivalNoticeReportTest extends CommonMocks {
         BillChargesResponse billChargesResponse = new BillChargesResponse();
         billChargesResponse.setOverseasSellAmount(BigDecimal.TEN);
         billChargesResponse.setLocalTax(BigDecimal.TEN);
-        billChargesResponse.setMeasurementBasis(Integer.toString(MeasurementBasis.CHARGEABLE.getValue()));
+        billChargesResponse.setMeasurementBasis(Integer.toString(MeasurementBasis.Chargeable.getValue()));
         billChargesResponse.setLocalCostCurrency("INR");
 
         List<BillChargesResponse> billChargesResponseList = Arrays.asList(billChargesResponse);
