@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentGridChangeResponse;
 import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentAttachDetachV3Request;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
@@ -19,13 +20,18 @@ import com.dpw.runner.shipment.services.service.interfaces.IConsolidationV3Servi
 import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+import java.util.Optional;
+import javax.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import javax.validation.Valid;
-import java.util.Optional;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping(ConsolidationConstants.CONSOLIDATION_V3_API_HANDLE)
@@ -89,6 +95,13 @@ public class ConsolidationV3Controller {
         log.info("Received attachShipments request: {}", request);
         String warning = consolidationV3Service.attachShipments(request);
         return ResponseHelper.buildSuccessResponseWithWarning(warning);
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ConsolidationConstants.CONSOLIDATION_CALCULATION_SUCCESSFUL)})
+    @PostMapping(ApiConstants.API_CALCULATE_ACHIEVED_VALUES)
+    public ResponseEntity<IRunnerResponse> calculateAchievedValues(@RequestParam Long consolidationId) throws RunnerException {
+        ShipmentGridChangeResponse response = consolidationV3Service.calculateAchievedValues(consolidationId);
+        return ResponseHelper.buildSuccessResponse(response);
     }
 
 }
