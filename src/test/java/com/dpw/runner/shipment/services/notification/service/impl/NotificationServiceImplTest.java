@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.notification.service.impl;
 
+import com.dpw.runner.shipment.services.commons.responses.MDMServiceResponse;
 import com.dpw.runner.shipment.services.document.util.BASE64DecodedMultipartFile;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -23,6 +24,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.io.UnsupportedEncodingException;
+import org.springframework.web.client.HttpClientErrorException;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.isA;
@@ -83,7 +85,9 @@ class NotificationServiceImplTest {
         // Arrange
         when(jsonHelper.convertToJson(Mockito.<Object>any())).thenReturn("42");
         when(notificationRestClient.sendEmail(Mockito.<NotificationServiceSendEmailRequest>any()))
-                .thenThrow(new RuntimeException("high"));
+                .thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST, "high"));
+
+        when(jsonHelper.readFromJson(anyString(), eq(MDMServiceResponse.class))).thenReturn(new MDMServiceResponse());
 
         SendEmailBaseRequest request = new SendEmailBaseRequest();
         request.setBcc("ada.lovelace@example.org");

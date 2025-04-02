@@ -110,6 +110,9 @@ public class ConsolidationDetailsRequest extends CommonRequest implements IRunne
     private PartiesRequest borrowedFrom;
     private PartiesRequest creditor;
     private PartiesRequest coLoadWith;
+    private PartiesRequest bookingAgent;
+    private String bookingAgentNumber;
+    private String bookingAgentBlNumber;
     private List<PackingRequest> packingList;
     private List<ReferenceNumbersRequest> referenceNumbersList;
     private List<RoutingsRequest> routingsList;

@@ -1,9 +1,10 @@
 package com.dpw.runner.shipment.services.entity.enums;
 
+@SuppressWarnings("java:S115")
 public enum GroupingNumber {
 
-    DOT_AND_COMMA(0, "Use . and ,"),
-    COMMA_AND_DOT(1, "Use , and .");
+    DotAndComma(0, "Use . and ,"),
+    CommaAndDot(1, "Use , and .");
     private final int value;
     private final String description;
 

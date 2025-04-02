@@ -4,13 +4,14 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.dto.request.*;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
-import java.time.LocalDateTime;
-import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.openapitools.jackson.nullable.JsonNullable;
+
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Builder
@@ -117,6 +118,9 @@ public class ConsolidationPatchRequest extends CommonRequest implements IRunnerR
     private JsonNullable<PartiesRequest> borrowedFrom;
     private JsonNullable<PartiesRequest> creditor;
     private JsonNullable<PartiesRequest> coLoadWith;
+    private JsonNullable<PartiesRequest> bookingAgent;
+    private JsonNullable<String> bookingAgentNumber;
+    private JsonNullable<String> bookingAgentBlNumber;
     private List<PackingRequest> packingList;
     private List<ReferenceNumbersRequest> referenceNumbersList;
     private List<RoutingsRequest> routingsList;

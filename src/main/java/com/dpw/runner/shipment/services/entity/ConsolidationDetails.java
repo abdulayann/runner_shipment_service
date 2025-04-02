@@ -39,7 +39,7 @@ public class ConsolidationDetails extends MultiTenancy {
 
     @Column(name = "consolidation_type")
     @Size(max=100, message = "max size is 100 for consolidation_type")
-    @MasterData(type = MasterDataType.CONSOLIDATION_TYPE)
+    @MasterData(type = MasterDataType.CONSOlIDATION_TYPE)
     private String consolidationType;
 
     @Column(name = "transport_mode")
@@ -94,11 +94,11 @@ public class ConsolidationDetails extends MultiTenancy {
 
     @Column(name = "co_load_mbl")
     @Size(max=64, message = "max size is 64 for co_load_mbl")
-    private String coLoadMBL;
+    private String coLoadMBL; // Coloader BL No.
 
     @Column(name = "co_load_booking_reference")
     @Size(max=64, message = "max size is 64 for co_load_booking_reference")
-    private String coLoadBookingReference;
+    private String coLoadBookingReference; // Coloader Booking Number
 
     @Column(name = "manifest_print")
     @MasterData(type = MasterDataType.PRINT_OPTIONS)
@@ -338,7 +338,20 @@ public class ConsolidationDetails extends MultiTenancy {
     @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "co_load_with_id", referencedColumnName = "id")
     @OrganizationData
-    private Parties coLoadWith;
+    private Parties coLoadWith; // Coloader
+
+    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JoinColumn(name = "booking_agent_id", referencedColumnName = "id")
+    @OrganizationData
+    private Parties bookingAgent;
+
+    @Column(name = "booking_agent_number")
+    @Size(max=50, message = "max size is 50 for booking_agent_number")
+    private String bookingAgentNumber;
+
+    @Column(name = "booking_agent_bl_number")
+    @Size(max=50, message = "max size is 50 for booking_agent_bl_number")
+    private String bookingAgentBlNumber;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "consolidationId")
     @BatchSize(size = 50)

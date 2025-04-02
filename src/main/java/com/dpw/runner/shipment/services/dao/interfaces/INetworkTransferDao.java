@@ -25,6 +25,8 @@ public interface INetworkTransferDao {
 
     List<NetworkTransfer> findByEntityAndTenantList(Long entityId, String entityType, List<Integer> tenantIds);
 
+    List<NetworkTransfer> findByEntityNTList(Long entityId, String entityType);
+
     List<NetworkTransfer> getInterConsoleNTList(List<Long> entityId, String entityType);
 
     void delete(NetworkTransfer networkTransfer);

@@ -822,6 +822,32 @@ class AwbServiceTest extends CommonMocks {
     }
 
     @Test
+    void updateAwb_consolidation_updates_hawb_goods_description() throws RunnerException {
+        AwbRequest request = new AwbRequest(); // Provide necessary data for request
+        request.setAwbNumber("updatedAWBNumber");
+        request.setId(1);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        Awb mockAwb = testMawb;
+        mockAwb.getAwbShipmentInfo().setAwbNumber("updatedAWBNumber");
+        AwbResponse mockAwbResponse = objectMapper.convertValue(mockAwb, AwbResponse.class);
+
+
+        MawbHawbLink link = MawbHawbLink.builder().hawbId(2L).mawbId(3L).build();
+        when(mawbHawbLinkDao.findByMawbId(any())).thenReturn(List.of(link));
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(ConsolidationDetails.builder().intraBranch(false).build()));
+        // Mocking
+        when(awbDao.findById(1L)).thenReturn(Optional.of(mockAwb));
+        when(awbDao.findByIds(anyList())).thenReturn(List.of(testHawb));
+        when(jsonHelper.convertValue(any(), eq(Awb.class))).thenReturn(mockAwb);
+        when(awbDao.save(any(Awb.class))).thenReturn(mockAwb);
+        when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
+        // Test
+        ResponseEntity<IRunnerResponse> responseEntity = awbService.updateAwb(commonRequestModel);
+        // Assert
+        assertEquals(ResponseHelper.buildSuccessResponse(mockAwbResponse), responseEntity);
+    }
+
+    @Test
     void listShipmentAwb() {
         // adding special handiling codes in awb
         List<AwbSpecialHandlingCodesMappingInfo> sph = new ArrayList<>();

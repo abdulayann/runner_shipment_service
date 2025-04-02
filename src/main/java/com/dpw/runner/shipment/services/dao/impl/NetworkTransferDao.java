@@ -125,6 +125,11 @@ public class NetworkTransferDao implements INetworkTransferDao {
     }
 
     @Override
+    public List<NetworkTransfer> findByEntityNTList(Long entityId, String entityType) {
+        return networkTransferRepository.findByEntityNTList(entityId, entityType);
+    }
+
+    @Override
     public List<NetworkTransfer> getInterConsoleNTList(List<Long> entityIdList, String entityType) {
         return networkTransferRepository.getInterConsoleNTList(entityIdList, entityType);
     }

@@ -19,6 +19,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IKafkaAsyncService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,6 +42,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
 
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -65,6 +67,10 @@ class PickupDeliveryDetailsServiceTest {
 
     @Mock
     private IV1Service v1Service;
+    @Mock
+    private MasterDataUtils masterDataUtils;
+    @Mock
+    private ExecutorService executorService;
 
     @InjectMocks
     private PickupDeliveryDetailsService pickupDeliveryDetailsService;
@@ -88,6 +94,12 @@ class PickupDeliveryDetailsServiceTest {
         when(jsonHelper.convertValue(any(), eq(PickupDeliveryDetailsResponse.class))).thenReturn(new PickupDeliveryDetailsResponse());
         when(pickupDeliveryDetailsDao.findByShipmentId(anyLong())).thenReturn(List.of(entity));
         doNothing().when(kafkaAsyncService).pushToKafkaTI(anyList(), anyBoolean(), anyLong());
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+            Runnable argument = invocation.getArgument(0);
+            argument.run();
+            return mockRunnable;
+        });
 
         ResponseEntity<IRunnerResponse> response = pickupDeliveryDetailsService.create(commonRequestModel);
 
@@ -136,6 +148,12 @@ class PickupDeliveryDetailsServiceTest {
         when(pickupDeliveryDetailsDao.findByShipmentId(anyLong())).thenReturn(List.of(newEntity));
         when(jsonHelper.convertToJson(any())).thenReturn("");
         doNothing().when(kafkaAsyncService).pushToKafkaTI(anyList(), anyBoolean(), anyLong());
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+            Runnable argument = invocation.getArgument(0);
+            argument.run();
+            return mockRunnable;
+        });
 
         ResponseEntity<IRunnerResponse> response = pickupDeliveryDetailsService.update(commonRequestModel);
 

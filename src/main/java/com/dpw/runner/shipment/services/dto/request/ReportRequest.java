@@ -54,6 +54,8 @@ public class ReportRequest implements IRunnerRequest {
     String hawbNumber;
     Integer totalHawbPieces;
     List<HawbInfo> hawbInfo;
+    String entityGuid;
+    String entityName;
 
     @Getter
     @Setter

@@ -41,4 +41,5 @@ public interface IConsoleShipmentMappingDao {
     void deletePendingStateByConsoleIdAndShipmentId(Long consoleId, Long shipmentId);
     Map<Long, Integer> pendingStateCountBasedOnShipmentId(List<Long> shipmentIds, Integer requestedType);
     Map<Long, Integer> pendingStateCountBasedOnConsolidation(List<Long> consoleIds, Integer requestedType);
+    Integer pendingStateCountBasedOnRequestType(Integer requestType, Integer tenantId);
 }

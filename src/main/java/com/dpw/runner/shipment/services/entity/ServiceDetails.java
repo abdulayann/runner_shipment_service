@@ -34,7 +34,7 @@ public class ServiceDetails extends MultiTenancy {
     private Long consolidationId;
 
     @Column(name = "service_type")
-    @MasterData(type = MasterDataType.ADDITIONAL_SERVICES)
+    @MasterData(type = MasterDataType.AdditionalServices)
     private String serviceType;
 
     @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
