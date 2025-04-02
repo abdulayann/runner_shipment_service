@@ -2635,8 +2635,10 @@ class V1ServiceImplTest {
         when(cacheManager.getCache(CacheConstants.COUSIN_BRANCHES_CACHE)).thenReturn(mockCache);
         when(mockCache.get(expectedCacheKey, V1DataResponse.class)).thenReturn(cachedResponse);
 
+        CommonV1ListRequest request1 = new CommonV1ListRequest();
+
         // Act
-        V1DataResponse result = v1ServiceImpl.listCousinBranches("SomeRequest");
+        V1DataResponse result = v1ServiceImpl.listCousinBranches(request1);
 
         // Assert
         assertNotNull(result);
