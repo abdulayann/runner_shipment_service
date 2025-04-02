@@ -148,7 +148,6 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.RestTemplate;
 
-import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletResponse;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
@@ -515,8 +514,6 @@ public class ShipmentService implements IShipmentService {
             Map.entry("routingPodCode", RunnerEntityMapping.builder().tableName(Constants.ROUTING_LIST).dataType(String.class).fieldName("destinationPortLocCode").build()),
             Map.entry("routingCarriage", RunnerEntityMapping.builder().tableName(Constants.ROUTING_LIST).dataType(RoutingCarriage.class).fieldName("carriage").build())
     );
-
-    private Set<String> defaultIncludeColumns;
 
     @Override
     @Transactional
@@ -1820,15 +1817,7 @@ public class ShipmentService implements IShipmentService {
             MutableBoolean isNewConsolAttached = new MutableBoolean(false);
 
             mid = System.currentTimeMillis();
-            ShipmentDetails shipmentDetails = oldEntity.get();
-            ShipmentDetailsResponse shipmentDetailsResponse =  (ShipmentDetailsResponse)commonUtils.setIncludedFieldsToResponse(shipmentDetails, defaultIncludeColumns, new ShipmentDetailsResponse());
-
-            ShipmentDetails oldShipment = jsonHelper.convertValue(shipmentDetailsResponse, ShipmentDetails.class);
-            oldShipment.setConsignerId(shipmentDetails.getConsignerId());
-            oldShipment.setClientId(shipmentDetails.getClientId());
-            oldShipment.setAdditionalDetailId(shipmentDetails.getAdditionalDetailId());
-            oldShipment.setCarrierDetailId(shipmentDetails.getCarrierDetailId());
-            oldShipment.setConsigneeId(shipmentDetails.getConsigneeId());
+            ShipmentDetails oldConvertedShipment = jsonHelper.convertValue(oldEntity.get(), ShipmentDetails.class);
             log.info("{} | completeUpdateShipment object mapper old entity.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
 
             if(Objects.equals(Constants.SHIPMENT_TYPE_DRT, entity.getJobType()) && !Objects.equals(oldEntity.get().getJobType(), entity.getJobType()) &&  checkIfAlreadyPushRequested(oldEntity.get())) {
@@ -1847,7 +1836,7 @@ public class ShipmentService implements IShipmentService {
                         AuditLogMetaData.builder()
                                 .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                 .newData(entity)
-                                .prevData(oldShipment)
+                                .prevData(oldConvertedShipment)
                                 .parent(ShipmentDetails.class.getSimpleName())
                                 .parentId(entity.getId())
                                 .operation(DBOperationType.UPDATE.name()).build()
@@ -1859,7 +1848,7 @@ public class ShipmentService implements IShipmentService {
             log.info("{} | completeUpdateShipment auditLog.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
 
             mid = System.currentTimeMillis();
-            afterSave(entity, shipmentDetails, false, shipmentRequest, shipmentSettingsDetails, syncConsole, removedConsolIds, isNewConsolAttached, false, isFromET);
+            afterSave(entity, oldConvertedShipment, false, shipmentRequest, shipmentSettingsDetails, syncConsole, removedConsolIds, isNewConsolAttached, false, isFromET);
             log.info("{} | completeUpdateShipment after save.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
             ShipmentDetails finalEntity1 = entity;
             String entityPayload = jsonHelper.convertToJson(finalEntity1);
@@ -9308,16 +9297,6 @@ public class ShipmentService implements IShipmentService {
                 throw new ValidationException("You do not have necessary permissions for this.");
         }
     }
-    @PostConstruct
-    public void setDefaultIncludeColumns() {
-        defaultIncludeColumns = new HashSet<>(FieldUtils.getNonRelationshipFields(ShipmentDetails.class));
-        defaultIncludeColumns.addAll(List.of("id","guid","tenantId"));
-        defaultIncludeColumns.remove("serialVersionUID");
-        defaultIncludeColumns.remove("consignerId");
-        defaultIncludeColumns.remove("clientId");
-        defaultIncludeColumns.remove("additionalDetailId");
-        defaultIncludeColumns.remove("carrierDetailId");
-        defaultIncludeColumns.remove("consigneeId");
-    }
+
 
 }

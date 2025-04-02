@@ -117,7 +117,6 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -1074,7 +1073,6 @@ ShipmentServiceTest extends CommonMocks {
                     shipmentDetails
                         .setConsolidationList(new HashSet<>())
                         .setContainersList(new HashSet<>())));
-        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
         when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
 
         when(shipmentDao.update(any(), eq(false))).thenReturn(mockShipment);
@@ -1114,7 +1112,6 @@ ShipmentServiceTest extends CommonMocks {
                                 .setConsolidationList(new HashSet<>())
                                 .setContainersList(new HashSet<>())
                 ));
-        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
         when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
         when(shipmentDao.update(any(), eq(false))).thenReturn(shipmentDetails);
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
@@ -1177,8 +1174,6 @@ ShipmentServiceTest extends CommonMocks {
                                         .setConsolidationList(new HashSet<>())
                                         .setContainersList(new HashSet<>())));
         when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
-        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
-
         when(shipmentDao.update(any(), eq(false))).thenReturn(mockShipment);
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
         when(shipmentDetailsMapper.map((ShipmentDetails) any())).thenReturn(mockShipmentResponse);
@@ -10313,7 +10308,6 @@ ShipmentServiceTest extends CommonMocks {
                                         .setConsolidationList(new HashSet<>())
                                         .setContainersList(new HashSet<>())));
         when(mockObjectMapper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
-        when(jsonHelper.convertValue(any(), eq(ShipmentDetails.class))).thenReturn(shipmentDetails);
 
         when(shipmentDao.update(any(), eq(false))).thenReturn(mockShipment);
         when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
@@ -10459,20 +10453,6 @@ ShipmentServiceTest extends CommonMocks {
 
         var eventsResponse = shipmentService.createOrUpdateEvents(mockShipment, null, events, true);
         assertNotNull(eventsResponse);
-    }
-
-    @Test
-    void testSetDefaultIncludeColumns() throws NoSuchFieldException, IllegalAccessException {
-        shipmentService.setDefaultIncludeColumns();
-        Field field = ShipmentService.class.getDeclaredField("defaultIncludeColumns");
-        field.setAccessible(true);
-        Set<String> actualFields = (Set<String>) field.get(shipmentService);
-        assertFalse(actualFields.contains("serialVersionUID"));
-        assertFalse(actualFields.contains("consignerId"));
-        assertFalse(actualFields.contains("clientId"));
-        assertFalse(actualFields.contains("additionalDetailId"));
-        assertFalse(actualFields.contains("carrierDetailId"));
-        assertFalse(actualFields.contains("consigneeId"));
     }
 
 }
