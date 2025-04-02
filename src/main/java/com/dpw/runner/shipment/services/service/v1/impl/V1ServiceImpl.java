@@ -1456,7 +1456,7 @@ public class V1ServiceImpl implements IV1Service {
         String cacheKeyTenantId = keyGenerator.customCacheKey(UserContext.getUser().getTenantId());
         Cache cache = cacheManager.getCache(CacheConstants.COUSIN_BRANCHES_CACHE);
 
-        if(request instanceof CommonV1ListRequest etRequest && etRequest.getContainsText() == null) {
+        if(!(request instanceof CommonV1ListRequest etRequest && etRequest.getContainsText() != null)) {
             V1DataResponse cachedResponse = getFromCache(cache, cacheKeyTenantId);
             if (cachedResponse != null) {
                 return cachedResponse;
