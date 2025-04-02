@@ -2622,7 +2622,7 @@ public abstract class IReport {
             if(v1TenantSettingsResponse.getCurrencyDigitGrouping() != null) {
                 char customThousandsSeparator = ',';
                 char customDecimalSeparator = '.';
-                if(v1TenantSettingsResponse.getCurrencyGroupingNumber() != null && v1TenantSettingsResponse.getCurrencyGroupingNumber() == GroupingNumber.DOT_AND_COMMA.getValue()) {
+                if(v1TenantSettingsResponse.getCurrencyGroupingNumber() != null && v1TenantSettingsResponse.getCurrencyGroupingNumber() == GroupingNumber.DotAndComma.getValue()) {
                     customThousandsSeparator = '.';
                     customDecimalSeparator = ',';
                 }
@@ -2642,7 +2642,7 @@ public abstract class IReport {
             if(v1TenantSettingsResponse.getWVDigitGrouping() != null) {
                 char customThousandsSeparator = ',';
                 char customDecimalSeparator = '.';
-                if(v1TenantSettingsResponse.getWVGroupingNumber() != null && v1TenantSettingsResponse.getWVGroupingNumber() == GroupingNumber.DOT_AND_COMMA.getValue()) {
+                if(v1TenantSettingsResponse.getWVGroupingNumber() != null && v1TenantSettingsResponse.getWVGroupingNumber() == GroupingNumber.DotAndComma.getValue()) {
                     customThousandsSeparator = '.';
                     customDecimalSeparator = ',';
                 }
