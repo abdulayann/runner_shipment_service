@@ -1740,7 +1740,7 @@ public class ContainerService implements IContainerService {
 
 
     private IRunnerResponse convertEntityToDto(Containers container) {
-        return jsonHelper.convertValue(container, ContainerResponse.class);
+        return (IRunnerResponse) commonUtils.setIncludedFieldsToResponse(container,new HashSet<>(defaultIncludeColumns), new ContainerResponse());
     }
 
     private Containers convertRequestToEntity(ContainerRequest request) {
