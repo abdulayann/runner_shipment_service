@@ -375,12 +375,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
     @Override
     @Transactional
-    public ConsolidationDetailsResponse completeUpdate(CommonRequestModel commonRequestModel) throws RunnerException {
-        ConsolidationDetailsRequest consolidationDetailsRequest = (ConsolidationDetailsRequest) commonRequestModel.getData();
-
-        ConsolidationDetailsResponse response = this.completeUpdateConsolidation(consolidationDetailsRequest, false);
-
-        return response;
+    public ConsolidationDetailsResponse completeUpdate(ConsolidationDetailsRequest consolidationDetailsRequest) throws RunnerException {
+        return this.completeUpdateConsolidation(consolidationDetailsRequest, false);
     }
 
     private ConsolidationDetailsResponse completeUpdateConsolidation(ConsolidationDetailsRequest consolidationDetailsRequest, boolean isFromET) throws RunnerException {
@@ -421,7 +417,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             afterSave(entity, oldConvertedConsolidation, consolidationDetailsRequest, false, shipmentSettingsDetails, false, isFromET);
             ConsolidationDetails finalEntity1 = entity;
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.createLogHistoryForConsole(finalEntity1)), executorService);
-            ConsolidationDetails finalEntity = entity;
             return jsonHelper.convertValue(entity, ConsolidationDetailsResponse.class);
         } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage()
@@ -432,13 +427,11 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     }
 
     public Optional<ConsolidationDetails> retrieveByIdOrGuid(ConsolidationDetailsRequest request) throws RunnerException {
-        String responseMsg;
-
         if (request == null) {
             log.error("Request is empty for Consolidation update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
 
-        Optional<ConsolidationDetails> oldEntity = Optional.ofNullable(null);
+        Optional<ConsolidationDetails> oldEntity;
 
         if(request.getId()!=null){
             long id = request.getId();
@@ -472,9 +465,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     }
 
     private void beforeSave(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, Boolean isCreate) throws Exception {
-        CarrierDetails oldCarrierDetails = null;
-        if(!Boolean.TRUE.equals(isCreate))
-            oldCarrierDetails = jsonHelper.convertValue(oldEntity.getCarrierDetails(), CarrierDetails.class);
         if(Objects.isNull(consolidationDetails.getInterBranchConsole()))
             consolidationDetails.setInterBranchConsole(false);
         /* Future to populate unloc code in consoliation child entities*/
@@ -484,11 +474,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             consolidationDetails.setSourceTenantId(Long.valueOf(UserContext.getUser().TenantId));
         log.info("Executing consolidation before save");
         List<ShipmentDetails> shipmentDetails = null;
-        if(!isCreate){
-            // This method will only work for non air transport modes , validation check moved inside the method
-            calculateAchievedValues(consolidationDetails, new ShipmentGridChangeResponse(), oldEntity.getShipmentsList());
-            shipmentDetails = updateLinkedShipmentData(consolidationDetails, oldEntity, false);
-        }
         checkCFSValidation(consolidationDetails, isCreate, shipmentDetails);
 
         if(consolidationDetails.getCarrierDetails() != null) {
@@ -584,11 +569,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
         Long id = consolidationDetails.getId();
 
-        if (Boolean.FALSE.equals(isCreate)) {
-            // Update AWB
-            if(checkForAwbUpdate(consolidationDetails, oldEntity)) {
+        if (Boolean.FALSE.equals(isCreate) && (checkForAwbUpdate(consolidationDetails, oldEntity))) {
                 awbDao.updatedAwbInformationEvent(consolidationDetails, oldEntity);
-            }
         }
 
         processRequestLists(consolidationDetails, isCreate, isFromBooking, referenceNumbersRequestList, id, truckDriverDetailsRequestList, routingsRequestList);
@@ -602,7 +584,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             this.pushAllShipmentDataToDependentService(consolidationDetails);
         }
         try {
-            if (!isFromBooking)
+            if (Boolean.FALSE.equals(isFromBooking))
                 consolidationSync.sync(consolidationDetails, StringUtility.convertToString(consolidationDetails.getGuid()), isFromBooking);
         } catch (Exception e){
             log.error("Error performing sync on consolidation entity, {}", e);
@@ -630,8 +612,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             consolidationDetails.setReferenceNumbersList(updatedReferenceNumbers);
         }
         if (truckDriverDetailsRequestList != null) {
-            List<TruckDriverDetails> updatedTruckDriverDetails = truckDriverDetailsDao.updateEntityFromConsole(commonUtils.convertToEntityList(truckDriverDetailsRequestList, TruckDriverDetails.class, isFromBooking ? false : isCreate), id);
-//            consolidationDetails.setTruckDriverDetails(updatedTruckDriverDetails);
+            truckDriverDetailsDao.updateEntityFromConsole(commonUtils.convertToEntityList(truckDriverDetailsRequestList, TruckDriverDetails.class, isFromBooking ? false : isCreate), id);
         }
         if (routingsRequestList != null) {
             List<Routings> updatedRoutings = routingsDao.updateEntityFromConsole(commonUtils.convertToEntityList(routingsRequestList, Routings.class, isFromBooking ? false : isCreate), id);
@@ -652,12 +633,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     }
 
     private String getConsolidationSerialNumber() {
-        String maxId = v1Service.getMaxConsolidationId();
-//        Long maxId = consolidationDetailsDao.findMaxId();
-//        if(maxId == null)
-//            maxId = 0L;
-//        maxId += 1;
-        return maxId;
+        return v1Service.getMaxConsolidationId();
     }
 
     public String generateCustomBolNumber() {
@@ -738,13 +714,11 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 CompletableFuture.runAsync(() -> commonUtils.getChangedUnLocationFields(entity.getCarrierDetails(), finalOldCarrierDetails, unlocationsSet), executorService),
                 CompletableFuture.runAsync(() -> commonUtils.getChangedUnLocationFields(entity.getRoutingsList(), finalOldRoutings, unlocationsSet), executorService)
         ).join();
-        CompletableFuture<Void> fetchUnlocationDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.getLocationDataFromCache(unlocationsSet, unLocationsMap)), executorService)
+        return CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataUtils.getLocationDataFromCache(unlocationsSet, unLocationsMap)), executorService)
                 .thenCompose(v -> CompletableFuture.allOf(
                         CompletableFuture.runAsync(() -> commonUtils.updateCarrierUnLocData(entity.getCarrierDetails(), unLocationsMap), executorService),
                         CompletableFuture.runAsync(() -> commonUtils.updateRoutingUnLocData(entity.getRoutingsList(), unLocationsMap), executorService)
                 ));
-
-        return fetchUnlocationDataFuture;
     }
 
     private void calculateAchievedValues(ConsolidationDetails consolidationDetails, ShipmentGridChangeResponse response, Set<ShipmentDetails> shipmentDetailsList)
@@ -2539,8 +2513,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     }
 
     @Override
-    public ConsolidationDetailsResponse retrieveById(CommonRequestModel commonRequestModel, boolean getMasterData) throws RunnerException {
-        CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
+    public ConsolidationDetailsResponse retrieveById(CommonGetRequest request, boolean getMasterData) throws RunnerException {
         if (request.getId() == null && request.getGuid() == null) {
             log.error("Request Id and Guid are null for Consolidation retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             throw new RunnerException("Id and GUID can't be null. Please provide any one !");
@@ -2646,8 +2619,6 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
     private void calculationsOnRetrieve(ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse) {
         try {
-            consolidationDetailsResponse.setContainerSummary(containerService.calculateContainerSummary(consolidationDetails.getContainersList(), consolidationDetails.getTransportMode(), consolidationDetails.getContainerCategory()));
-            consolidationDetailsResponse.setPackSummary(packingService.calculatePackSummary(consolidationDetails.getPackingList(), consolidationDetails.getTransportMode(), consolidationDetails.getContainerCategory(), new ShipmentMeasurementDetailsDto()));
             calculateChargeable(CommonRequestModel.buildRequest(jsonHelper.convertValue(consolidationDetailsResponse, ConsoleCalculationsRequest.class)));
             calculateDescOfGoodsAndHandlingInfo(consolidationDetails, consolidationDetailsResponse, false);
         }
@@ -2812,8 +2783,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     }
 
     @Override
-    public Map<String, Object> getAllMasterData(CommonRequestModel commonRequestModel) {
-        Long id = commonRequestModel.getId();
+    public Map<String, Object> getAllMasterData(CommonGetRequest commonGetRequest) {
+        Long id = commonGetRequest.getId();
         Optional<ConsolidationDetails> consolidationDetailsOptional = consolidationDetailsDao.findConsolidationByIdWithQuery(id);
         if(!consolidationDetailsOptional.isPresent()) {
             log.debug(ConsolidationConstants.CONSOLIDATION_DETAILS_NULL_FOR_GIVEN_ID_ERROR, id);
