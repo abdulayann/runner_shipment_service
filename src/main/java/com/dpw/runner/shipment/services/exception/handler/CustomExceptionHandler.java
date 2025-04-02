@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.DpsException;
 import com.dpw.runner.shipment.services.exception.exceptions.FileNotFoundException;
 import com.dpw.runner.shipment.services.exception.exceptions.InvalidAccessTokenException;
 import com.dpw.runner.shipment.services.exception.exceptions.InvalidAuthenticationException;
+import com.dpw.runner.shipment.services.exception.exceptions.NotificationException;
 import com.dpw.runner.shipment.services.exception.exceptions.ReportException;
 import com.dpw.runner.shipment.services.exception.exceptions.RoutingException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -37,7 +38,8 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler({
             BillingException.class,
             ReportException.class,
-            RoutingException.class})
+            RoutingException.class,
+            NotificationException.class})
     private ResponseEntity<IRunnerResponse> handleCustomExceptions(final RuntimeException ex) {
         return ResponseHelper.buildFailedResponse(ex.getMessage(), HttpStatus.BAD_REQUEST);
     }
