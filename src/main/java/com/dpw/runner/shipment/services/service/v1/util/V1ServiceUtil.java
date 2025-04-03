@@ -162,6 +162,8 @@ public class V1ServiceUtil {
                         .PerMeasurementBasis(bc.getMeasurementBasis())
                         .MeasurementsUnit(bc.getMeasurementUnit())
                         .TotalUnitsCount(bc.getTotalUnitCount())
+                        .internalRemarks(bc.getInternalRemarks())
+                        .externalRemarks(bc.getExternalRemarks())
                         .build()).collect(Collectors.toList());
     }
 
