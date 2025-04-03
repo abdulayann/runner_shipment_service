@@ -1460,9 +1460,9 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     /**
      * Returns shipment TEU count if shipment list is present.
      */
-    private Double getShipmentTeu(Containers containers, Double shipmentTeu, EntityTransferContainerType typeData) {
+    private Double getShipmentTeu(Containers containers, Double shipmentTeu, EntityTransferContainerType entityTransferContainerType) {
         if (ObjectUtils.isNotEmpty(containers.getShipmentsList())) {
-            shipmentTeu += containers.getContainerCount() * typeData.getTeu();
+            shipmentTeu += containers.getContainerCount() * entityTransferContainerType.getTeu();
         }
         return shipmentTeu;
     }
