@@ -747,69 +747,119 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         return fetchUnlocationDataFuture;
     }
 
+    /**
+     * Calculates the achieved weight, volume, and chargeable quantities for the given consolidation details. Updates the response object with the calculated values.
+     *
+     * @param consolidationDetails the consolidation details
+     * @param response             the response object to be updated
+     * @param shipmentDetailsList  the set of shipment details to process
+     * @throws RunnerException if any exception occurs during the calculation
+     */
     private void calculateAchievedValues(ConsolidationDetails consolidationDetails, ShipmentGridChangeResponse response, Set<ShipmentDetails> shipmentDetailsList)
             throws RunnerException {
-        // Not to process the achieved values in case of AIR transport mode
-        if(Constants.TRANSPORT_MODE_AIR.equalsIgnoreCase(consolidationDetails.getTransportMode())) {
+
+        // Skip processing if consolidation is set to override mode
+        if (Boolean.TRUE.equals(consolidationDetails.getOverride())) {
             return;
         }
-        if (consolidationDetails.getOverride() != null && consolidationDetails.getOverride()) {
-            return;
-        }
+
+        // Retrieve shipment settings and tenant settings from the context
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
+
+        // Set default units for weight and volume chargeable quantities
         String weightChargeableUnit = Constants.WEIGHT_UNIT_KG;
-        if(!IsStringNullOrEmpty(shipmentSettingsDetails.getWeightChargeableUnit()))
+        if (ObjectUtils.isNotEmpty(shipmentSettingsDetails.getWeightChargeableUnit())) {
             weightChargeableUnit = shipmentSettingsDetails.getWeightChargeableUnit();
+        }
+
         String volumeChargeableUnit = Constants.VOLUME_UNIT_M3;
-        if(!IsStringNullOrEmpty(shipmentSettingsDetails.getVolumeChargeableUnit()))
+        if (ObjectUtils.isNotEmpty(shipmentSettingsDetails.getVolumeChargeableUnit())) {
             volumeChargeableUnit = shipmentSettingsDetails.getVolumeChargeableUnit();
+        }
+
+        // Initialize total weight and volume as zero
         BigDecimal sumWeight = new BigDecimal(0);
         BigDecimal sumVolume = new BigDecimal(0);
-        if (shipmentDetailsList != null && !shipmentDetailsList.isEmpty()) {
+
+        // Accumulate weight and volume from the shipment details list
+        if (ObjectUtils.isNotEmpty(shipmentDetailsList)) {
             for (ShipmentDetails shipmentDetails : shipmentDetailsList) {
-                sumWeight = sumWeight.add(new BigDecimal(convertUnit(Constants.MASS, shipmentDetails.getWeight(), shipmentDetails.getWeightUnit(), weightChargeableUnit).toString()));
-                sumVolume = sumVolume.add(new BigDecimal(convertUnit(Constants.VOLUME, shipmentDetails.getVolume(), shipmentDetails.getVolumeUnit(), volumeChargeableUnit).toString()));
+                // Convert weight to the chargeable unit and add to the sum
+                sumWeight = sumWeight.add(new BigDecimal(convertUnit(Constants.MASS, shipmentDetails.getWeight(),
+                        shipmentDetails.getWeightUnit(), weightChargeableUnit).toString()));
+
+                // Convert volume to the chargeable unit and add to the sum
+                sumVolume = sumVolume.add(new BigDecimal(convertUnit(Constants.VOLUME, shipmentDetails.getVolume(),
+                        shipmentDetails.getVolumeUnit(), volumeChargeableUnit).toString()));
             }
+            // Update the response with the count of processed shipments
             response.setSummaryShipmentsCount(shipmentDetailsList.size());
-        }
-        else {
+        } else {
+            // Set the shipment count to zero if the list is empty
             response.setSummaryShipmentsCount(0);
         }
+
+        // Calculate the TEU count for the consolidation and update the response
         calculateConsoleShipmentTeuCount(consolidationDetails, response, v1TenantSettingsResponse);
 
-        if(consolidationDetails.getAchievedQuantities() == null)
+        // Initialize achieved quantities if not already set
+        if (consolidationDetails.getAchievedQuantities() == null) {
             consolidationDetails.setAchievedQuantities(new AchievedQuantities());
+        }
+
+        // Update the consolidation details with calculated weight and volume
         consolidationDetails.getAchievedQuantities().setConsolidatedWeight(sumWeight);
         consolidationDetails.getAchievedQuantities().setConsolidatedWeightUnit(weightChargeableUnit);
         consolidationDetails.getAchievedQuantities().setConsolidatedVolume(sumVolume);
         consolidationDetails.getAchievedQuantities().setConsolidatedVolumeUnit(volumeChargeableUnit);
 
+        // Calculate utilization for the consolidation
         consolidationDetails = calculateConsolUtilization(consolidationDetails);
 
+        // Retrieve the transport mode from consolidation details
         String transportMode = consolidationDetails.getTransportMode();
-        if(consolidationDetails.getAllocations() == null)
+
+        // Initialize allocations if not already set
+        if (consolidationDetails.getAllocations() == null) {
             consolidationDetails.setAllocations(new Allocations());
+        }
+
+        // Calculate the volume-weight-based chargeable quantity
         VolumeWeightChargeable vwOb = calculateVolumeWeight(transportMode, weightChargeableUnit, volumeChargeableUnit, sumWeight, sumVolume);
 
+        // Update the achieved quantities with chargeable weight and unit
         consolidationDetails.getAchievedQuantities().setConsolidationChargeQuantity(vwOb.getChargeable());
         consolidationDetails.getAchievedQuantities().setConsolidationChargeQuantityUnit(vwOb.getChargeableUnit());
+
+        // Handle special case for SEA transport mode with LCL container category
         if (transportMode.equals(Constants.TRANSPORT_MODE_SEA) &&
-                consolidationDetails.getContainerCategory() != null && consolidationDetails.getContainerCategory().equals(Constants.SHIPMENT_TYPE_LCL)) {
-            BigDecimal winKg = new BigDecimal(convertUnit(Constants.MASS, consolidationDetails.getAllocations().getWeight(), consolidationDetails.getAllocations().getWeightUnit(), Constants.WEIGHT_UNIT_KG).toString());
-            BigDecimal vinM3 = new BigDecimal(convertUnit(Constants.VOLUME, consolidationDetails.getAllocations().getVolume(), consolidationDetails.getAllocations().getVolumeUnit(), Constants.VOLUME_UNIT_M3).toString());
+                Constants.SHIPMENT_TYPE_LCL.equals(consolidationDetails.getContainerCategory())) {
+
+            // Convert weight to KG and volume to M3
+            BigDecimal winKg = new BigDecimal(convertUnit(Constants.MASS, consolidationDetails.getAllocations().getWeight(),
+                    consolidationDetails.getAllocations().getWeightUnit(), Constants.WEIGHT_UNIT_KG).toString());
+            BigDecimal vinM3 = new BigDecimal(convertUnit(Constants.VOLUME, consolidationDetails.getAllocations().getVolume(),
+                    consolidationDetails.getAllocations().getVolumeUnit(), Constants.VOLUME_UNIT_M3).toString());
+
+            // Set the charge quantity as the maximum of weight (in tonnes) or volume (in M3)
             consolidationDetails.getAchievedQuantities().setConsolidationChargeQuantity(winKg.divide(BigDecimal.valueOf(1000)).max(vinM3));
             consolidationDetails.getAchievedQuantities().setConsolidationChargeQuantityUnit(Constants.VOLUME_UNIT_M3);
         }
+
+        // Update the weight-volume ratio in the achieved quantities
         consolidationDetails.getAchievedQuantities().setWeightVolume(vwOb.getVolumeWeight());
         consolidationDetails.getAchievedQuantities().setWeightVolumeUnit(vwOb.getVolumeWeightUnit());
         consolidationDetails.getAllocations().setChargeableUnit(vwOb.getChargeableUnit());
 
+        // Update the response object with allocation and achieved quantities data
         response.setAllocations(jsonHelper.convertValue(consolidationDetails.getAllocations(), AllocationsResponse.class));
         response.setAchievedQuantities(jsonHelper.convertValue(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class));
         response.setSummaryWeight(IReport.ConvertToWeightNumberFormat(sumWeight, v1TenantSettingsResponse) + " " + weightChargeableUnit);
         response.setSummaryVolume(IReport.ConvertToVolumeNumberFormat(sumVolume, v1TenantSettingsResponse) + " " + volumeChargeableUnit);
-        if(canSetChargableWeight(consolidationDetails)) {
+
+        // Calculate and set the chargeable weight if applicable
+        if (canSetChargableWeight(consolidationDetails)) {
             double volInM3 = convertUnit(Constants.VOLUME, sumVolume, volumeChargeableUnit, Constants.VOLUME_UNIT_M3).doubleValue();
             double wtInKg = convertUnit(Constants.MASS, sumWeight, weightChargeableUnit, Constants.WEIGHT_UNIT_KG).doubleValue();
             double chargeableWeight = Math.max(wtInKg / 1000, volInM3);
@@ -819,29 +869,53 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     }
 
     private void calculateConsoleShipmentTeuCount(ConsolidationDetails consolidationDetails, ShipmentGridChangeResponse response, V1TenantSettingsResponse v1TenantSettingsResponse) {
+        // Initialize the TEU (Twenty-foot Equivalent Unit) and container counters for console and shipment.
         Double consoleTeu = 0.0;
         Double shipmentTeu = 0.0;
-        long consoleCont = 0l;
-        long shipmentCont = 0l;
-        if(consolidationDetails.getContainersList() != null && consolidationDetails.getContainersList().size() > 0) {
-            Map<String, Object> cacheMap = new HashMap<String, Object>();
+        long consoleCont = 0L;
+        long shipmentCont = 0L;
+
+        // Check if the containers list is not null or empty before proceeding.
+        if (consolidationDetails.getContainersList() != null && !consolidationDetails.getContainersList().isEmpty()) {
+
+            // Initialize cache maps for storing container-related data and mappings.
+            Map<String, Object> cacheMap = new HashMap<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
             Set<String> containerTypes = new HashSet<>();
+
+            // Populate cacheMap and containerTypes using the provided process method.
             processCacheAndContainerResponseList(consolidationDetails, containerTypes, fieldNameKeyMap, cacheMap);
 
-            for(Containers containers : consolidationDetails.getContainersList()) {
+            // Iterate over each container to calculate relevant counts and TEUs.
+            for (Containers containers : consolidationDetails.getContainersList()) {
+
+                // Retrieve the cached container type object for the current container.
                 Object cache = getEntityTransferObjectCache(containers, cacheMap);
                 EntityTransferContainerType object = (EntityTransferContainerType) cache;
-                if(containers.getContainerCount() != null) {
-                    consoleCont = consoleCont + containers.getContainerCount();
+
+                // Process only if the container count is not null.
+                if (containers.getContainerCount() != null) {
+
+                    // Accumulate total console container count.
+                    consoleCont += containers.getContainerCount();
+
+                    // Calculate shipment container count using a helper method.
                     shipmentCont = getShipmentCont(containers, shipmentCont);
-                    if(object != null && object.getTeu() != null) {
-                        consoleTeu = consoleTeu + (containers.getContainerCount() * object.getTeu());
+
+                    // Calculate TEU values if the cached object is present and has a valid TEU value.
+                    if (object != null && object.getTeu() != null) {
+
+                        // Update the console TEU count by multiplying container count with the TEU value.
+                        consoleTeu += (containers.getContainerCount() * object.getTeu());
+
+                        // Update the shipment TEU count using a separate method.
                         shipmentTeu = getShipmentTeu(containers, shipmentTeu, object);
                     }
                 }
             }
         }
+
+        // Format and set the calculated TEU and container counts in the response.
         response.setSummaryConsoleTEU(IReport.GetDPWWeightVolumeFormat(BigDecimal.valueOf(consoleTeu), 0, v1TenantSettingsResponse));
         response.setSummaryConsolContainer(IReport.GetDPWWeightVolumeFormat(BigDecimal.valueOf(consoleCont), 0, v1TenantSettingsResponse));
         response.setSummaryShipmentTEU(IReport.GetDPWWeightVolumeFormat(BigDecimal.valueOf(shipmentTeu), 0, v1TenantSettingsResponse));
@@ -1354,20 +1428,27 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         return totalVolume;
     }
 
-
     /**
-     * Determines whether chargeable weight logic applies (only for LCL Sea shipments).
+     * Checks if chargeable weight can be set based on container category and transport mode.
+     *
+     * @param consolidationDetails the details to evaluate
+     * @return true if the conditions are met, false otherwise
      */
     private boolean canSetChargableWeight(ConsolidationDetails consolidationDetails) {
-        return Constants.SHIPMENT_TYPE_LCL.equals(consolidationDetails.getContainerCategory())
-                && Constants.TRANSPORT_MODE_SEA.equals(consolidationDetails.getTransportMode());
+        String transportMode = consolidationDetails.getTransportMode();
+        String containerCategory = consolidationDetails.getContainerCategory();
+
+        // Valid if LCL + SEA or any AIR transport
+        return (Constants.SHIPMENT_TYPE_LCL.equals(containerCategory)
+                && Constants.TRANSPORT_MODE_SEA.equals(transportMode))
+                || Constants.TRANSPORT_MODE_AIR.equals(transportMode);
     }
 
     /**
      * Returns shipment container count if shipment list is present.
      */
     private long getShipmentCont(Containers containers, long shipmentCont) {
-        if (isShipmentListPresent(containers)) {
+        if (ObjectUtils.isNotEmpty(containers.getShipmentsList())) {
             shipmentCont += containers.getContainerCount();
         }
         return shipmentCont;
@@ -1377,17 +1458,10 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
      * Returns shipment TEU count if shipment list is present.
      */
     private Double getShipmentTeu(Containers containers, Double shipmentTeu, EntityTransferContainerType typeData) {
-        if (isShipmentListPresent(containers)) {
+        if (ObjectUtils.isNotEmpty(containers.getShipmentsList())) {
             shipmentTeu += containers.getContainerCount() * typeData.getTeu();
         }
         return shipmentTeu;
-    }
-
-    /**
-     * Checks if the shipment list exists and is non-empty.
-     */
-    private boolean isShipmentListPresent(Containers containers) {
-        return containers.getShipmentsList() != null && !containers.getShipmentsList().isEmpty();
     }
 
     /**
