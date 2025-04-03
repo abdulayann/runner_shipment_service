@@ -14,9 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 public interface IConsolidationV3Service {
-
     ShipmentGridChangeResponse calculateAchievedValues(Long consolidationId) throws RunnerException;
-
     ConsolidationDetailsResponse create(ConsolidationDetailsRequest request);
     ConsolidationDetailsResponse createConsolidationForBooking(CommonRequestModel commonRequestModel);
     ConsolidationDetailsResponse createConsolidationFromEntityTransfer(ConsolidationDetailsRequest request);
