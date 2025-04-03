@@ -33,6 +33,17 @@ public class FieldUtils {
 
         return fields;
     }
+    public static List<String> getRelationshipFields(Class<?> clazz) {
+        List<String> fields = new ArrayList<>();
+        // Get all declared fields (including private ones)
+        for (Field field : clazz.getDeclaredFields()) {
+            // Check if the field has any Hibernate relationship annotation
+            if (isRelationshipField(field)) {
+                fields.add(field.getName());
+            }
+        }
+        return fields;
+    }
 
     private static boolean isRelationshipField(Field field) {
         return field.isAnnotationPresent(OneToOne.class) ||

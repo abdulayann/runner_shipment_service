@@ -116,6 +116,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import com.nimbusds.jose.util.Pair;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -124,6 +125,7 @@ import org.apache.http.auth.AuthenticationException;
 import org.apache.poi.ss.formula.functions.T;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.hibernate.Hibernate;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -152,6 +154,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -1815,17 +1818,20 @@ public class ShipmentService implements IShipmentService {
             entity.setId(oldEntity.get().getId());
             List<Long> removedConsolIds = new ArrayList<>();
             MutableBoolean isNewConsolAttached = new MutableBoolean(false);
-
             mid = System.currentTimeMillis();
-            ShipmentDetails oldConvertedShipment = jsonHelper.convertValue(oldEntity.get(), ShipmentDetails.class);
-            log.info("{} | completeUpdateShipment object mapper old entity.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
+            ShipmentDetails shipmentDetails = oldEntity.get();
+            CompletableFuture[] completableFutures = loadLazyLoadedEntityInParallel(shipmentDetails);
 
-            if(Objects.equals(Constants.SHIPMENT_TYPE_DRT, entity.getJobType()) && !Objects.equals(oldEntity.get().getJobType(), entity.getJobType()) &&  checkIfAlreadyPushRequested(oldEntity.get())) {
+            if(Objects.equals(Constants.SHIPMENT_TYPE_DRT, entity.getJobType()) && !Objects.equals(shipmentDetails.getJobType(), entity.getJobType()) &&  checkIfAlreadyPushRequested(shipmentDetails)) {
                 throw new ValidationException(ErrorConstants.VALIDATE_JOB_TYPE_CHANGE);
             }
             mid = System.currentTimeMillis();
-            boolean syncConsole = beforeSave(entity, oldEntity.get(), false, shipmentRequest, shipmentSettingsDetails, removedConsolIds, isNewConsolAttached, false);
+            boolean syncConsole = beforeSave(entity, shipmentDetails, false, shipmentRequest, shipmentSettingsDetails, removedConsolIds, isNewConsolAttached, false);
             log.info("{} | completeUpdateShipment before save.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
+            CompletableFuture.allOf(completableFutures).join();
+            mid = System.currentTimeMillis();
+            ShipmentDetails oldConvertedShipment = jsonHelper.convertValue(shipmentDetails, ShipmentDetails.class);
+            log.info("{} | completeUpdateShipment object mapper old entity.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
             mid = System.currentTimeMillis();
             entity = shipmentDao.update(entity, false);
             log.info("{} | completeUpdateShipment Update.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
@@ -1862,6 +1868,35 @@ public class ShipmentService implements IShipmentService {
             log.error("Error occurred due to: " + e.getStackTrace());
             log.error(responseMsg, e);
             throw new ValidationException(e.getMessage());
+        }
+    }
+
+    private CompletableFuture[] loadLazyLoadedEntityInParallel(ShipmentDetails shipmentDetails) {
+        List<String> includeColumns = FieldUtils.getRelationshipFields(ShipmentDetails.class);
+        List<CompletableFuture<Void>> futures = includeColumns.stream()
+                .map(column -> loadFieldAsync(column, shipmentDetails))
+                .filter(Objects::nonNull) // Filter out failed attempts
+                .collect(Collectors.toList());
+        return futures.toArray(new CompletableFuture[0]);
+    }
+
+    private CompletableFuture<Void> loadFieldAsync(String column, ShipmentDetails shipmentDetails) {
+        try {
+            Field field = ShipmentDetails.class.getDeclaredField(column);
+            field.setAccessible(true);
+            return CompletableFuture.runAsync(() -> loadEntity(field, shipmentDetails), executorService);
+        } catch (NoSuchFieldException e) {
+            log.warn("Invalid column: {}", column);
+            return null;
+        }
+    }
+
+
+    @SneakyThrows
+    private void loadEntity(Field field, ShipmentDetails shipmentDetails) {
+        Object value = field.get(shipmentDetails); // Get the field value (lazy collection)
+        if (value != null) {
+            Hibernate.initialize(value);
         }
     }
 
@@ -4882,12 +4917,18 @@ public class ShipmentService implements IShipmentService {
         UUID guid = shipmentDetails.get().getGuid();
         List<NotesResponse> notesResponses = new ArrayList<>();
         List<String> implications = new ArrayList<>();
+        current = System.currentTimeMillis();
+        CompletableFuture[] completableFutures = loadLazyLoadedEntityInParallel(shipmentDetails.get());
         var pendingNotificationFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> setPendingCount(shipmentId, pendingCount)), executorService);
         var notesFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> setNotesResponse(request.getId(), notesResponses)), executorService);
         var implicationListFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> setImplicationsResponse(guid, implications)), executorService);
-        ShipmentDetailsResponse response = modelMapper.map(shipmentDetails.get(), ShipmentDetailsResponse.class);
-        log.info("Request: {} || Time taken for model mapper: {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - current);
+        CompletableFuture.allOf(completableFutures).join();
+        log.info("Request: {} || Time taken for parallel thread: {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - current);
         CompletableFuture.allOf(pendingNotificationFuture, notesFuture, implicationListFuture).join();
+        current = System.currentTimeMillis();
+        log.info("Request: {} || Time taken for model mapper start");
+        ShipmentDetailsResponse response = shipmentDetailsMapper.map(shipmentDetails.get());
+        log.info("Request: {} || Time taken for model mapper: {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - current);
         if (response.getStatus() != null && response.getStatus() < ShipmentStatus.values().length)
             response.setShipmentStatus(ShipmentStatus.values()[response.getStatus()].toString());
         response.setPendingActionCount((pendingCount.get() == 0) ? null : pendingCount.get());
