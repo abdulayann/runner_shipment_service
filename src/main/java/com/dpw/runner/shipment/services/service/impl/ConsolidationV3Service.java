@@ -1968,6 +1968,17 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         return new ArrayList<>(page.getContent());
     }
 
+    /**
+     * Determines whether the provided console should be processed by comparing it with a previous version.
+     * <p>
+     * Returns true if: - The console is new (oldEntity is null). - Any significant field has changed between the console and the oldEntity.
+     * <p>
+     * Fields compared include: general details, carrier details, routing information, parties, and triangulation partners.
+     *
+     * @param console   The new or updated `ConsolidationDetails` object.
+     * @param oldEntity The existing `ConsolidationDetails` object.
+     * @return true if the console should be processed; false otherwise.
+     */
     private boolean canProcessConsole(ConsolidationDetails console, ConsolidationDetails oldEntity) {
         return console != null && (oldEntity == null || !Objects.equals(console.getBol(), oldEntity.getBol()) ||
                 !Objects.equals(console.getShipmentType(), oldEntity.getShipmentType()) ||
@@ -2070,16 +2081,16 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         }
     }
 
-    private void setBookingNumberInShipment(ConsolidationDetails console, ConsolidationDetails oldEntity, Boolean fromAttachShipment, ShipmentDetails i) {
+    private void setBookingNumberInShipment(ConsolidationDetails console, ConsolidationDetails oldConsolEntity, Boolean fromAttachShipment, ShipmentDetails sd) {
         if (fromAttachShipment != null && fromAttachShipment) {
             if (!CommonUtils.IsStringNullOrEmpty(console.getBookingNumber())) {
-                i.setBookingNumber(console.getBookingNumber());
+                sd.setBookingNumber(console.getBookingNumber());
             } else {
-                i.setBookingNumber(console.getCarrierBookingRef());
+                sd.setBookingNumber(console.getCarrierBookingRef());
             }
         } else {
-            if (CommonUtils.IsStringNullOrEmpty(oldEntity.getBookingNumber())) {
-                i.setBookingNumber(console.getCarrierBookingRef());
+            if (CommonUtils.IsStringNullOrEmpty(oldConsolEntity.getBookingNumber())) {
+                sd.setBookingNumber(console.getCarrierBookingRef());
             }
         }
     }
@@ -2141,6 +2152,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         shipmentDetails.setConsolRef(console.getReferenceNumber());
         shipmentDetails.setMasterBill(console.getBol());
         shipmentDetails.setDirection(console.getShipmentType());
+        shipmentDetails.setTransportMode(console.getTransportMode());
+        shipmentDetails.setCoLoadBlNumber(console.getCoLoadMBL());
 
         // Set new booking number and create BOCO event if changed
         String oldBookingNumber = shipmentDetails.getBookingNumber();
@@ -2176,7 +2189,14 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             throw new RunnerException("Cut Off Date entered is lesser than the Shipment Cargo Gate In Date, please check and enter correct dates.");
         }
 
-        // Determine if routing sync is required based on shipment type and settings
+        // Sync main carriage routing from console to shipment
+        syncMainCarriageRoutingToShipment(console.getRoutingsList(), shipmentDetails, true);
+
+        // Update export/import brokers if inter-branch logic applies
+        updateInterBranchConsoleData(console, shipmentDetails);
+    }
+
+    private boolean isDesiredShipmenTypeForReverseSyncFromConsol(ShipmentDetails shipmentDetails) {
         boolean isDesiredShipmenTypeForReverseSyncFromConsol = false;
         if (Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled())
                 && Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster())
@@ -2185,12 +2205,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
                 || shipmentDetails.getShipmentType().equals("SCN"))) {
             isDesiredShipmenTypeForReverseSyncFromConsol = true;
         }
-
-        // Sync main carriage routing from console to shipment
-        syncMainCarriageRoutingToShipment(console.getRoutingsList(), shipmentDetails, true, isDesiredShipmenTypeForReverseSyncFromConsol);
-
-        // Update export/import brokers if inter-branch logic applies
-        updateInterBranchConsoleData(console, shipmentDetails);
+        return isDesiredShipmenTypeForReverseSyncFromConsol;
     }
 
     /**
@@ -2201,32 +2216,32 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
      * different - If `AdditionalDetails` is null, initializes it before setting brokers
      *
      * @param console The consolidation object containing sending and receiving agents
-     * @param i       The shipment details to update with broker info
+     * @param sd       The shipment details to update with broker info
      */
-    private void updateInterBranchConsoleData(ConsolidationDetails console, ShipmentDetails i) {
+    private void updateInterBranchConsoleData(ConsolidationDetails console, ShipmentDetails sd) {
         // Proceed only if it's NOT an inter-branch console
         if (!Boolean.TRUE.equals(console.getInterBranchConsole())) {
 
             // Check and update Export Broker from Sending Agent
-            if (i.getAdditionalDetails() != null &&
-                    !CommonUtils.checkSameParties(console.getSendingAgent(), i.getAdditionalDetails().getExportBroker())) {
+            if (sd.getAdditionalDetails() != null &&
+                    !CommonUtils.checkSameParties(console.getSendingAgent(), sd.getAdditionalDetails().getExportBroker())) {
                 // If export broker doesn't match, update it from sending agent
-                i.getAdditionalDetails().setExportBroker(commonUtils.removeIdFromParty(console.getSendingAgent()));
-            } else if (i.getAdditionalDetails() == null) {
+                sd.getAdditionalDetails().setExportBroker(commonUtils.removeIdFromParty(console.getSendingAgent()));
+            } else if (sd.getAdditionalDetails() == null) {
                 // If no AdditionalDetails exist, initialize and set export broker
-                i.setAdditionalDetails(new AdditionalDetails());
-                i.getAdditionalDetails().setExportBroker(commonUtils.removeIdFromParty(console.getSendingAgent()));
+                sd.setAdditionalDetails(new AdditionalDetails());
+                sd.getAdditionalDetails().setExportBroker(commonUtils.removeIdFromParty(console.getSendingAgent()));
             }
 
             // Check and update Import Broker from Receiving Agent
-            if (i.getAdditionalDetails() != null &&
-                    !CommonUtils.checkSameParties(console.getReceivingAgent(), i.getAdditionalDetails().getImportBroker())) {
+            if (sd.getAdditionalDetails() != null &&
+                    !CommonUtils.checkSameParties(console.getReceivingAgent(), sd.getAdditionalDetails().getImportBroker())) {
                 // If import broker doesn't match, update it from receiving agent
-                i.getAdditionalDetails().setImportBroker(commonUtils.removeIdFromParty(console.getReceivingAgent()));
-            } else if (i.getAdditionalDetails() == null) {
+                sd.getAdditionalDetails().setImportBroker(commonUtils.removeIdFromParty(console.getReceivingAgent()));
+            } else if (sd.getAdditionalDetails() == null) {
                 // If still null (shouldn't happen here), initialize and set import broker
-                i.setAdditionalDetails(new AdditionalDetails());
-                i.getAdditionalDetails().setImportBroker(commonUtils.removeIdFromParty(console.getReceivingAgent()));
+                sd.setAdditionalDetails(new AdditionalDetails());
+                sd.getAdditionalDetails().setImportBroker(commonUtils.removeIdFromParty(console.getReceivingAgent()));
             }
         }
     }
@@ -2239,13 +2254,11 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
      *
      * @param consolidationRoutings           List of routing legs from consolidation.
      * @param shipmentDetails                 Shipment entity to which the routings should be applied.
-     * @param saveRoutes                      Flag to persist the routings to DB.
-     * @param reverseSyncFromConsolToShipment If true, retain existing non-inherited MAIN_CARRIAGE routes.
+     * @param saveRoutes                      Flag to persist the routings to DB
      * @throws RunnerException If any failure occurs during processing.
      */
     @Override
-    public void syncMainCarriageRoutingToShipment(List<Routings> consolidationRoutings, ShipmentDetails shipmentDetails, boolean saveRoutes,
-            boolean reverseSyncFromConsolToShipment) throws RunnerException {
+    public void syncMainCarriageRoutingToShipment(List<Routings> consolidationRoutings, ShipmentDetails shipmentDetails, boolean saveRoutes) throws RunnerException {
 
         // Exit early if no consolidation routings or route master feature is disabled
         if (CollectionUtils.isEmpty(consolidationRoutings)
@@ -2258,15 +2271,18 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         shipmentDetails.setRoutingsList(shipmentRoutingList);
         List<Routings> existingOriginalShipmentMainCarriageRoutings = new ArrayList<>();
 
-        if (reverseSyncFromConsolToShipment) {
+        // Determine if routing sync is required based on shipment type and settings
+        boolean isDesiredShipmenTypeForReverseSyncFromConsol = isDesiredShipmenTypeForReverseSyncFromConsol(shipmentDetails);
+        if (isDesiredShipmenTypeForReverseSyncFromConsol) {
             // Preserve original MAIN_CARRIAGE legs from shipment that were not inherited from consolidation
             shipmentRoutingList.stream()
-                    .filter(r -> RoutingCarriage.MAIN_CARRIAGE.equals(r.getCarriage()) && Boolean.FALSE.equals(r.getInheritedFromConsolidation()))
+                    .filter(shipmentRouting -> RoutingCarriage.MAIN_CARRIAGE.equals(shipmentRouting.getCarriage()) && Boolean.FALSE.equals(
+                            shipmentRouting.getInheritedFromConsolidation()))
                     .forEach(existingOriginalShipmentMainCarriageRoutings::add);
         }
 
         consolidationRoutings.stream()
-                .filter(i -> RoutingCarriage.MAIN_CARRIAGE.equals(i.getCarriage()))
+                .filter(consolRoutings -> RoutingCarriage.MAIN_CARRIAGE.equals(consolRoutings.getCarriage()))
                 .forEach(consolRoute -> {
                     // Look for this POL POD main carriage routing in shipment routings list
                     // update/create
