@@ -58,7 +58,6 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackUtil
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ConsoleCalculationsRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ConsoleCalculationsResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentGridChangeResponse;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentMeasurementDetailsDto;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
@@ -856,6 +855,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             Map<String, Object> cacheMap = new HashMap<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
             Set<String> containerTypes = new HashSet<>();
+            Set<String> uniqueContainerNumbers = new HashSet<>();
 
             // Populate cacheMap and containerTypes using the provided process method.
             processCacheAndContainerResponseList(consolidationDetails, containerTypes, fieldNameKeyMap, cacheMap);
@@ -863,27 +863,27 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             // Iterate over each container to calculate relevant counts and TEUs.
             for (Containers containers : consolidationDetails.getContainersList()) {
 
-                // Retrieve the cached container type object for the current container.
+                // Retrieve the cached container type entityTransferContainerType for the current container.
                 Object cache = getEntityTransferObjectCache(containers, cacheMap);
-                EntityTransferContainerType object = (EntityTransferContainerType) cache;
+                EntityTransferContainerType entityTransferContainerType = (EntityTransferContainerType) cache;
 
                 // Process only if the container count is not null.
                 if (containers.getContainerCount() != null) {
 
-                    // Accumulate total console container count.
-                    consoleCont += containers.getContainerCount();
+                    // Calculate console container count based on category
+                    consoleCont = getConsoleContainerCount(consolidationDetails, containers, uniqueContainerNumbers, consoleCont);
 
                     // Calculate shipment container count using a helper method.
-                    shipmentCont = getShipmentCont(containers, shipmentCont);
+                    shipmentCont = getShipmentContainerCount(containers, shipmentCont);
 
-                    // Calculate TEU values if the cached object is present and has a valid TEU value.
-                    if (object != null && object.getTeu() != null) {
+                    // Calculate TEU values if the cached entityTransferContainerType is present and has a valid TEU value.
+                    if (entityTransferContainerType != null && entityTransferContainerType.getTeu() != null) {
 
                         // Update the console TEU count by multiplying container count with the TEU value.
-                        consoleTeu += (containers.getContainerCount() * object.getTeu());
+                        consoleTeu += (containers.getContainerCount() * entityTransferContainerType.getTeu());
 
                         // Update the shipment TEU count using a separate method.
-                        shipmentTeu = getShipmentTeu(containers, shipmentTeu, object);
+                        shipmentTeu = getShipmentTeu(containers, shipmentTeu, entityTransferContainerType);
                     }
                 }
             }
@@ -894,6 +894,35 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         response.setSummaryConsolContainer(IReport.GetDPWWeightVolumeFormat(BigDecimal.valueOf(consoleCont), 0, v1TenantSettingsResponse));
         response.setSummaryShipmentTEU(IReport.GetDPWWeightVolumeFormat(BigDecimal.valueOf(shipmentTeu), 0, v1TenantSettingsResponse));
         response.setSummaryShipmentContainer(IReport.GetDPWWeightVolumeFormat(BigDecimal.valueOf(shipmentCont), 0, v1TenantSettingsResponse));
+    }
+
+    /**
+     * Calculates the total console container count based on the container category. If the category is LCL (Less than Container Load), it counts unique container numbers.
+     * Otherwise, it sums up the container count directly.
+     *
+     * @param consolidationDetails   The details of the consolidation, including container category.
+     * @param container              The individual container to be processed.
+     * @param uniqueContainerNumbers A set storing unique container numbers for LCL shipments.
+     * @param consoleCont            The current console container count to be updated.
+     * @return The updated console container count after processing the current container.
+     */
+    private long getConsoleContainerCount(ConsolidationDetails consolidationDetails, Containers container, Set<String> uniqueContainerNumbers, long consoleCont) {
+
+        // Check if the container category is LCL (Less than Container Load).
+        if (Constants.SHIPMENT_TYPE_LCL.equals(consolidationDetails.getContainerCategory())) {
+
+            // For LCL, count unique container numbers only.
+            if (ObjectUtils.isNotEmpty(container.getContainerNumber())) {
+                uniqueContainerNumbers.add(container.getContainerNumber()); // Add to the unique set if it's not empty.
+                return uniqueContainerNumbers.size(); // Return the size of the unique set.
+            }
+        } else {
+            // For other categories, simply add the container count to the total.
+            return consoleCont + container.getContainerCount();
+        }
+
+        // Return the existing console count if no conditions are met.
+        return consoleCont;
     }
 
     public VolumeWeightChargeable calculateVolumeWeight(String transportMode, String weightUnit, String volumeUnit, BigDecimal weight, BigDecimal volume) throws RunnerException {
@@ -1421,7 +1450,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     /**
      * Returns shipment container count if shipment list is present.
      */
-    private long getShipmentCont(Containers containers, long shipmentCont) {
+    private long getShipmentContainerCount(Containers containers, long shipmentCont) {
         if (ObjectUtils.isNotEmpty(containers.getShipmentsList())) {
             shipmentCont += containers.getContainerCount();
         }
