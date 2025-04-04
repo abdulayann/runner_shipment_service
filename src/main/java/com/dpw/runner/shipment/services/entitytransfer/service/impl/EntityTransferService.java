@@ -151,7 +151,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -329,7 +328,7 @@ public class EntityTransferService implements IEntityTransferService {
                 Math.toIntExact(tenant), shipment.getId(), SHIPMENT);
         Map<String, Object> entityPayload = getNetworkTransferEntityPayload(taskPayload);
         if(optionalNetworkTransfer.isPresent()) {
-            if (EntityTransferConstants.retransferSet.contains(optionalNetworkTransfer.get().getStatus())) {
+            if (EntityTransferConstants.RETRANSFER_SET.contains(optionalNetworkTransfer.get().getStatus())) {
                 NetworkTransfer oldNetworkTransfer = optionalNetworkTransfer.get();
                 oldNetworkTransfer.setStatus(NetworkTransferStatus.RETRANSFERRED);
                 oldNetworkTransfer.setEntityPayload(entityPayload);
@@ -556,7 +555,7 @@ public class EntityTransferService implements IEntityTransferService {
         boolean isInterBranchConsole = Boolean.TRUE.equals(consolidationPayload.getInterBranchConsole());
 
         if (optionalNetworkTransfer.isPresent()) {
-            if (NetworkTransferStatus.ACCEPTED.equals(optionalNetworkTransfer.get().getStatus())) {
+            if (EntityTransferConstants.RETRANSFER_SET.contains(optionalNetworkTransfer.get().getStatus())) {
                 NetworkTransfer oldNetworkTransfer = optionalNetworkTransfer.get();
                 oldNetworkTransfer.setStatus(NetworkTransferStatus.RETRANSFERRED);
                 oldNetworkTransfer.setEntityPayload(entityPayload);
@@ -2712,7 +2711,7 @@ public class EntityTransferService implements IEntityTransferService {
 
         networkTransfers = ObjectUtils.isNotEmpty(networkTransfers) ?
             networkTransfers.stream().filter(
-                    networkTransfer -> EntityTransferConstants.retransferSet.contains(networkTransfer.getStatus()))
+                    networkTransfer -> EntityTransferConstants.RETRANSFER_SET.contains(networkTransfer.getStatus()))
                 .toList() : Collections.emptyList();
 
         String acceptedBranches = "";

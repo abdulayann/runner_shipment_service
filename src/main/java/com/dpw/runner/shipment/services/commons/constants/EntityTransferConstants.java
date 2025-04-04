@@ -58,5 +58,5 @@ public class EntityTransferConstants {
     public static final String TO_TRANSFER_THE_FILES = " to transfer the files.";
     public static final String SELECT_BRANCH_FOR_ET = "one of the branches in the entity transfer details section";
 
-    public static final EnumSet<NetworkTransferStatus> retransferSet = EnumSet.of(NetworkTransferStatus.RETRANSFERRED, NetworkTransferStatus.ACCEPTED);
+    public static final EnumSet<NetworkTransferStatus> RETRANSFER_SET = EnumSet.of(NetworkTransferStatus.RETRANSFERRED, NetworkTransferStatus.ACCEPTED);
 }
