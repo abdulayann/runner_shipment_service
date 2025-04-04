@@ -1042,25 +1042,14 @@ public class ContainerService implements IContainerService {
             if(removeAllPacks)
                 shipmentsContainersMappingDao.detachShipments(container.getId(), List.of(shipmentId), false);
             else {
-                try {
-                    log.info("Call sync containers from detachContainer with ids: " + containers.toString());
-                    containersSync.sync(List.of(containers.getId()), shipmentsContainersMappingDao.findAllByContainerIds(List.of(containers.getId())));
-                }
-                catch (Exception e) {
-                    log.error("Error syncing containers");
-                }
+                containerSync(containers);
             }
             if(packingList != null && !packingList.isEmpty()) {
                 for (Packing packing: packingList) {
                     packing.setContainerId(null);
                 }
                 packingDao.saveAll(packingList);
-                try {
-                    packingsADSync.sync(packingList, UUID.randomUUID().toString());
-                }
-                catch (Exception e) {
-                    log.error("Error syncing packings");
-                }
+                packingADSync(packingList);
             }
             afterSave(containers, false);
             return ResponseHelper.buildSuccessResponse(convertEntityToDto(containers));
@@ -1069,6 +1058,25 @@ public class ContainerService implements IContainerService {
                     : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    private void packingADSync(List<Packing> packingList) {
+        try {
+            packingsADSync.sync(packingList, UUID.randomUUID().toString());
+        }
+        catch (Exception e) {
+            log.error("Error syncing packings");
+        }
+    }
+
+    private void containerSync(Containers containers) {
+        try {
+            log.info("Call sync containers from detachContainer with ids: " + containers.toString());
+            containersSync.sync(List.of(containers.getId()), shipmentsContainersMappingDao.findAllByContainerIds(List.of(containers.getId())));
+        }
+        catch (Exception e) {
+            log.error("Error syncing containers");
         }
     }
 
@@ -1342,17 +1350,21 @@ public class ContainerService implements IContainerService {
             response.setTotalContainerVolume(String.format(Constants.STRING_FORMAT, IReport.convertToVolumeNumberFormat(BigDecimal.valueOf(totalVolume), v1TenantSettingsResponse), toVolumeUnit));
             if(response.getSummary() == null)
                 response.setSummary("");
-            try {
-                response.setSummary(calculateContainerSummary(containersList));
-            }
-            catch (Exception e) {
-                log.error("Error calculating summary");
-            }
+            setContainerSummary(containersList, response);
             response.setDgContainers(dgContainers);
             return response;
         }
         catch (Exception e) {
             throw new RunnerException(e.getMessage());
+        }
+    }
+
+    private void setContainerSummary(List<Containers> containersList, ContainerSummaryResponse response) {
+        try {
+            response.setSummary(calculateContainerSummary(containersList));
+        }
+        catch (Exception e) {
+            log.error("Error calculating summary");
         }
     }
 

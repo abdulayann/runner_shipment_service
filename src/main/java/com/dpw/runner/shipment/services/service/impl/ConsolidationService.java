@@ -1608,11 +1608,7 @@ public class ConsolidationService implements IConsolidationService {
     private void syncPackingConsoleAndShipment(ConsolidationDetails consol, List<Packing> packingList, List<ShipmentDetails> shipmentDetailsToSave) {
         String transactionId = consol.getGuid().toString();
         if(packingList != null) {
-            try {
-                packingsADSync.sync(packingList, transactionId);
-            } catch (Exception e) {
-                log.error(SyncingConstants.ERROR_SYNCING_PACKS);
-            }
+            packingADSync(packingList, transactionId);
         }
         try {
             consolidationSync.sync(consol, transactionId, false);
@@ -1874,11 +1870,7 @@ public class ConsolidationService implements IConsolidationService {
                 entity.setConsolidationAddresses(updatedFileRepos);
             }
             if(fromV1 == null || !fromV1) {
-                try {
-                    consolidationSync.sync(entity, StringUtility.convertToString(entity.getGuid()), false);
-                } catch (Exception e){
-                    log.error("Error performing sync on consolidation entity, {}", e);
-                }
+                syncConsole(entity, false);
             }
             pushShipmentDataToDependentService(entity, false, oldEntity.get());
 
@@ -1922,21 +1914,9 @@ public class ConsolidationService implements IConsolidationService {
             beforeSave(entity, oldEntity.get(), false);
 
             entity = consolidationDetailsDao.update(entity, false);
-            try {
-                // audit logs
-                auditLogService.addAuditLog(
-                        AuditLogMetaData.builder()
-                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
-                                .newData(entity)
-                                .prevData(jsonHelper.readFromJson(oldEntityJsonString, ConsolidationDetails.class))
-                                .parent(ConsolidationDetails.class.getSimpleName())
-                                .parentId(entity.getId())
-                                .operation(DBOperationType.UPDATE.name()).build()
-                );
-            }
-            catch (Exception e) {
-                log.error("Error writing audit service log", e);
-            }
+            ConsolidationDetails prevEntity = jsonHelper.readFromJson(oldEntityJsonString, ConsolidationDetails.class);
+
+            addAuditLogConsolidation(entity, prevEntity, DBOperationType.UPDATE.name());
 
             afterSave(entity, oldConvertedConsolidation, consolidationDetailsRequest, false, shipmentSettingsDetails, false, false, isFromET);
             ConsolidationDetails finalEntity1 = entity;
@@ -1947,6 +1927,24 @@ public class ConsolidationService implements IConsolidationService {
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
             throw new GenericException(e.getMessage());
+        }
+    }
+
+    private void addAuditLogConsolidation(ConsolidationDetails entity, ConsolidationDetails prevEntity, String operationName) {
+        try {
+            // audit logs
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
+                            .newData(entity)
+                            .prevData(prevEntity)
+                            .parent(ConsolidationDetails.class.getSimpleName())
+                            .parentId(entity.getId())
+                            .operation(operationName).build()
+            );
+        }
+        catch (Exception e) {
+            log.error("Error writing audit service log", e);
         }
     }
 
@@ -3153,12 +3151,7 @@ public class ConsolidationService implements IConsolidationService {
         container = containerService.calculateUtilization(container);
         containerDao.save(container);
         shipmentsContainersMappingDao.assignShipments(container.getId(), newShipmentsIncluded.stream().toList(), false);
-        try {
-            packingsADSync.sync(packingList, UUID.randomUUID().toString());
-        }
-        catch (Exception e) {
-            log.error(SyncingConstants.ERROR_SYNCING_PACKS);
-        }
+        packingADSync(packingList, UUID.randomUUID().toString());
         return container;
     }
 
@@ -3197,12 +3190,7 @@ public class ConsolidationService implements IConsolidationService {
                 container = containerDao.save(container);
                 shipmentsContainersMappingDao.detachShipments(container.getId(), removeShipmentIds.stream().toList(), false);
                 containerService.afterSave(container, false);
-                try {
-                    packingsADSync.sync(packingList, UUID.randomUUID().toString());
-                }
-                catch (Exception e) {
-                    log.error(SyncingConstants.ERROR_SYNCING_PACKS);
-                }
+                packingADSync(packingList, UUID.randomUUID().toString());
                 response = jsonHelper.convertValue(container, ContainerResponse.class);
             }
             return ResponseHelper.buildSuccessResponse(response);
@@ -3211,6 +3199,14 @@ public class ConsolidationService implements IConsolidationService {
             responseMsg = getResponseMsg(e);
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    private void packingADSync(List<Packing> packingList, String transactionId) {
+        try {
+            packingsADSync.sync(packingList, transactionId);
+        } catch (Exception e) {
+            log.error(SyncingConstants.ERROR_SYNCING_PACKS);
         }
     }
 
@@ -6234,22 +6230,7 @@ public class ConsolidationService implements IConsolidationService {
             response.setPacksList(new ArrayList<>());
             List<ConsoleShipmentMapping> consoleShipmentMappingList = consoleShipmentMappingDao.findByConsolidationId(id);
             updateConsoleShipmentMappingList(consoleShipmentMappingList, response);
-            try {
-                Map<String, Object> cacheMap = new HashMap<>();
-                Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-                Set<MasterListRequest> listRequests = new HashSet<>();
-                if(!Objects.isNull(response.getPacksList()))
-                    response.getPacksList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, ContainerPackSummaryDto.PacksList.class, fieldNameKeyMap, ContainerPackSummaryDto.PacksList.class.getSimpleName(), cacheMap)));
-                MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
-                masterListRequestV2.setMasterListRequests(listRequests.stream().toList());
-                masterListRequestV2.setIncludeCols(Arrays.asList(MasterDataConstants.ITEM_TYPE, MasterDataConstants.ITEM_VALUE, MasterDataConstants.ITEM_DESCRIPTION, MasterDataConstants.VALUE_N_DESC, MasterDataConstants.CASCADE));
-                Map<String, EntityTransferMasterLists> keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(masterListRequestV2);
-                Set<String> keys = new HashSet<>();
-                commonUtils.createMasterDataKeysList(listRequests, keys);
-                masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST, keys, new EntityTransferMasterLists(), cacheMap);
-                if(!Objects.isNull(response.getPacksList()))
-                    response.getPacksList().forEach(r -> r.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(ContainerPackSummaryDto.PacksList.class.getSimpleName()), CacheConstants.MASTER_LIST, cacheMap)));
-            } catch (Exception e) { }
+            setPackSummary(response);
             return ResponseHelper.buildSuccessResponse(response);
         }
         catch (Exception e) {
@@ -6257,6 +6238,27 @@ public class ConsolidationService implements IConsolidationService {
                     : DaoConstants.DAO_DATA_RETRIEVAL_FAILURE;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    private void setPackSummary(ContainerPackSummaryDto response) {
+        try {
+            Map<String, Object> cacheMap = new HashMap<>();
+            Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+            Set<MasterListRequest> listRequests = new HashSet<>();
+            if(!Objects.isNull(response.getPacksList()))
+                response.getPacksList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, ContainerPackSummaryDto.PacksList.class, fieldNameKeyMap, ContainerPackSummaryDto.PacksList.class.getSimpleName(), cacheMap)));
+            MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
+            masterListRequestV2.setMasterListRequests(listRequests.stream().toList());
+            masterListRequestV2.setIncludeCols(Arrays.asList(MasterDataConstants.ITEM_TYPE, MasterDataConstants.ITEM_VALUE, MasterDataConstants.ITEM_DESCRIPTION, MasterDataConstants.VALUE_N_DESC, MasterDataConstants.CASCADE));
+            Map<String, EntityTransferMasterLists> keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(masterListRequestV2);
+            Set<String> keys = new HashSet<>();
+            commonUtils.createMasterDataKeysList(listRequests, keys);
+            masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST, keys, new EntityTransferMasterLists(), cacheMap);
+            if(!Objects.isNull(response.getPacksList()))
+                response.getPacksList().forEach(r -> r.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(ContainerPackSummaryDto.PacksList.class.getSimpleName()), CacheConstants.MASTER_LIST, cacheMap)));
+        } catch (Exception e) {
+            log.info(Constants.IGNORED_ERROR_MSG, e);
         }
     }
 
@@ -6319,26 +6321,7 @@ public class ConsolidationService implements IConsolidationService {
                     response.getTransportMode(), response.getShipmentType(), MdmConstants.CONSOLIDATION_MODULE
             ));
 
-            try {
-                log.info("Fetching Tenant Model");
-                TenantModel tenantModel = modelMapper.map(v1Service.retrieveTenant().getEntity(), TenantModel.class);
-                Optional.ofNullable(masterDataUtils.fetchUnlocationByOneIdentifier(
-                        EntityTransferConstants.ID,
-                        StringUtility.convertToString(tenantModel.getUnloco())
-                    ))
-                    .filter(list -> !list.isEmpty())
-                    .map(list -> list.get(0).getLocationsReferenceGUID())
-                    .ifPresent(response::setPlaceOfIssue);
-
-                PartiesResponse partiesResponse = v1ServiceUtil.getDefaultAgentOrg(tenantModel);
-                if(Constants.DIRECTION_EXP.equals(response.getShipmentType())) {
-                    response.setSendingAgent(partiesResponse);
-                } else if(Constants.DIRECTION_IMP.equals(response.getShipmentType())) {
-                    response.setReceivingAgent(partiesResponse);
-                }
-            } catch (Exception e){
-                log.error("Failed in fetching tenant data from V1 with error : {}", e);
-            }
+            setTenantAndDefaultAgent(response);
             this.createConsolidationPayload(null, response);
 
             return ResponseHelper.buildSuccessResponse(response);
@@ -6347,6 +6330,29 @@ public class ConsolidationService implements IConsolidationService {
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    private void setTenantAndDefaultAgent(ConsolidationDetailsResponse response) {
+        try {
+            log.info("Fetching Tenant Model");
+            TenantModel tenantModel = modelMapper.map(v1Service.retrieveTenant().getEntity(), TenantModel.class);
+            Optional.ofNullable(masterDataUtils.fetchUnlocationByOneIdentifier(
+                    EntityTransferConstants.ID,
+                    StringUtility.convertToString(tenantModel.getUnloco())
+                ))
+                .filter(list -> !list.isEmpty())
+                .map(list -> list.get(0).getLocationsReferenceGUID())
+                .ifPresent(response::setPlaceOfIssue);
+
+            PartiesResponse partiesResponse = v1ServiceUtil.getDefaultAgentOrg(tenantModel);
+            if(Constants.DIRECTION_EXP.equals(response.getShipmentType())) {
+                response.setSendingAgent(partiesResponse);
+            } else if(Constants.DIRECTION_IMP.equals(response.getShipmentType())) {
+                response.setReceivingAgent(partiesResponse);
+            }
+        } catch (Exception e){
+            log.error("Failed in fetching tenant data from V1 with error : {}", e);
         }
     }
 
