@@ -189,7 +189,7 @@ public class PackingService implements IPackingService {
         }
     }
 
-    private static Containers addWeightVolume(Packing request, Containers newContainer) throws RunnerException {
+    private void addWeightVolume(Packing request, Containers newContainer) throws RunnerException {
         if(newContainer != null && request != null) {
             if(isStringNullOrEmpty(newContainer.getAchievedWeightUnit()))
                 newContainer.setAchievedWeightUnit(newContainer.getAllocatedWeightUnit());
@@ -204,10 +204,9 @@ public class PackingService implements IPackingService {
             newContainer.setAchievedWeight(finalWeight);
             newContainer.setAchievedVolume(finalVolume);
         }
-        return newContainer;
     }
 
-    private static Containers subtractWeightVolume(Packing request, Containers oldContainer) throws RunnerException {
+    private void subtractWeightVolume(Packing request, Containers oldContainer) throws RunnerException {
         if(oldContainer != null && request != null) {
             if(isStringNullOrEmpty(oldContainer.getAchievedWeightUnit()))
                 oldContainer.setAchievedWeightUnit(oldContainer.getAllocatedWeightUnit());
@@ -224,7 +223,6 @@ public class PackingService implements IPackingService {
                 oldContainer.setAchievedVolume(finalVolume);
             }
         }
-        return oldContainer;
     }
 
     @Transactional
@@ -603,17 +601,17 @@ public class PackingService implements IPackingService {
                 oldPacking = jsonHelper.convertValue(request.getOldPack(), Packing.class);
 
             if(request.getNewPack() == null) { // delete pack scenario
-                oldContainer = subtractWeightVolume(oldPacking, oldContainer);
+                subtractWeightVolume(oldPacking, oldContainer);
             }
             else {
                 if(request.getOldContainer() != null && request.getNewContainer() != null && Objects.equals(request.getOldContainer().getId(), request.getNewContainer().getId())) {
-                    newContainer = subtractWeightVolume(oldPacking, newContainer);
+                    subtractWeightVolume(oldPacking, newContainer);
                     oldContainer = null;
                 }
                 else {
-                    oldContainer = subtractWeightVolume(oldPacking, oldContainer);
+                    subtractWeightVolume(oldPacking, oldContainer);
                 }
-                newContainer = addWeightVolume(newPacking, newContainer);
+                addWeightVolume(newPacking, newContainer);
             }
         }
         if(oldContainer != null) {

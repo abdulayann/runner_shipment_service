@@ -5075,7 +5075,7 @@ public class ConsolidationService implements IConsolidationService {
 
     private void setEventsForConsole(ConsolidationDetails consolidationDetails, Boolean isCreate, ShipmentSettingsDetails shipmentSettingsDetails, Boolean isFromBooking, List<EventsRequest> eventsRequestList, Long id) throws RunnerException {
         if (eventsRequestList != null && !Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEventsRevampEnabled())) {
-            eventsRequestList = setEventDetails(eventsRequestList, consolidationDetails);
+            setEventDetails(eventsRequestList, consolidationDetails);
             List<Events> eventsList = new ArrayList<>(commonUtils.convertToEntityList(eventsRequestList, Events.class, !Boolean.TRUE.equals(isFromBooking) && isCreate));
             commonUtils.removeDuplicateTrackingEvents(eventsList);
             commonUtils.updateEventWithMasterData(eventsList);
