@@ -5815,6 +5815,12 @@ ShipmentServiceTest extends CommonMocks {
         );
         mockShipmentSettings();
         mockTenantSettings();
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+            Runnable argument = invocation.getArgument(0);
+            argument.run();
+            return mockRunnable;
+        });
         ResponseEntity<IRunnerResponse> result = shipmentService.attachListShipment(commonRequestModel);
         assertEquals(expectedResponse, result);
     }
@@ -6652,6 +6658,12 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     void testConsoleShipmentList_Success_InterBranchFalse() throws AuthenticationException {
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+            Runnable argument = invocation.getArgument(0);
+            argument.run();
+            return mockRunnable;
+        });
         Criteria criteria = Criteria.builder().fieldName("wayBillNumber").value(1).build();
         ListCommonRequest listCommonRequest = ListCommonRequest.builder().filterCriteria(Arrays.asList(FilterCriteria.builder().criteria(criteria).innerFilter(new ArrayList<>()).build())).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(listCommonRequest).build();
