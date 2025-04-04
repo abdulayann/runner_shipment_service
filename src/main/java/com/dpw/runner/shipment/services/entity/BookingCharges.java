@@ -198,10 +198,10 @@ public class BookingCharges extends MultiTenancy {
     @Column(name = "revenue_line_total")
     private BigDecimal revenueLineTotal;
 
-    @Column(name ="internal_remarks")
+    @Column(name = "internal_remarks", length = 5000)
     private String internalRemarks;
 
-    @Column(name ="external_remarks")
+    @Column(name = "external_remarks", length = 5000)
     private String externalRemarks;
 
     @ManyToMany(fetch = FetchType.LAZY)

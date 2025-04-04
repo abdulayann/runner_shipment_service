@@ -330,7 +330,7 @@ public class EntityTransferService implements IEntityTransferService {
         if(optionalNetworkTransfer.isPresent()) {
             if (NetworkTransferStatus.ACCEPTED.equals(optionalNetworkTransfer.get().getStatus())) {
                 NetworkTransfer oldNetworkTransfer = optionalNetworkTransfer.get();
-                oldNetworkTransfer.setStatus(NetworkTransferStatus.RETRANSFER);
+                oldNetworkTransfer.setStatus(NetworkTransferStatus.RETRANSFERRED);
                 oldNetworkTransfer.setEntityPayload(entityPayload);
                 oldNetworkTransfer.setUpdatedBy(UserContext.getUser().Username);
                 networkTransferDao.save(oldNetworkTransfer);
@@ -557,7 +557,7 @@ public class EntityTransferService implements IEntityTransferService {
         if (optionalNetworkTransfer.isPresent()) {
             if (NetworkTransferStatus.ACCEPTED.equals(optionalNetworkTransfer.get().getStatus())) {
                 NetworkTransfer oldNetworkTransfer = optionalNetworkTransfer.get();
-                oldNetworkTransfer.setStatus(NetworkTransferStatus.RETRANSFER);
+                oldNetworkTransfer.setStatus(NetworkTransferStatus.RETRANSFERRED);
                 oldNetworkTransfer.setEntityPayload(entityPayload);
                 oldNetworkTransfer.setUpdatedBy(UserContext.getUser().Username);
                 networkTransferDao.save(oldNetworkTransfer);

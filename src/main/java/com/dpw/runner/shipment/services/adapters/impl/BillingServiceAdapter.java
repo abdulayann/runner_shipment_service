@@ -617,7 +617,10 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
                                     .overseasSellCurrency(Optional.ofNullable(billCharge.getOverseasSellCurrency()).filter(ObjectUtils::isNotEmpty)
                                             .orElse(tenantModel.getCurrencyCode()))
                                     .noTax(false)
-                                    .isRcm(false).build())
+                                    .isRcm(false)
+                                    .internalRemarks(billCharge.getInternalRemarks())
+                                    .externalRemarks(billCharge.getExternalRemarks())
+                                    .build())
                             .build())
                     .build();
             externalBillChargeRequests.add(externalBillChargeRequest);
