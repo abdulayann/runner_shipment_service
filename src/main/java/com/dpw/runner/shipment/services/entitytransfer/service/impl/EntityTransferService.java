@@ -2712,7 +2712,7 @@ public class EntityTransferService implements IEntityTransferService {
 
         networkTransfers = ObjectUtils.isNotEmpty(networkTransfers) ?
             networkTransfers.stream().filter(
-                    networkTransfer -> NetworkTransferStatus.ACCEPTED == networkTransfer.getStatus())
+                    networkTransfer -> EntityTransferConstants.retransferSet.contains(networkTransfer.getStatus()))
                 .toList() : Collections.emptyList();
 
         String acceptedBranches = "";
