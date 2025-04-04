@@ -2113,6 +2113,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             shipmentDetails.getCarrierDetails().setShippingLine(console.getCarrierDetails().getShippingLine());
             shipmentDetails.getCarrierDetails().setAircraftType(console.getCarrierDetails().getAircraftType());
             shipmentDetails.getCarrierDetails().setCfs(console.getCarrierDetails().getCfs());
+            shipmentDetails.getCarrierDetails().setShippingLine(console.getCarrierDetails().getShippingLine());
 
             // Only update ETA, ETD, and flight number if attached from shipment screen
             if (fromAttachShipment != null && fromAttachShipment) {
@@ -2154,6 +2155,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         shipmentDetails.setDirection(console.getShipmentType());
         shipmentDetails.setTransportMode(console.getTransportMode());
         shipmentDetails.setCoLoadBlNumber(console.getCoLoadMBL());
+        shipmentDetails.setOceanBlNumber(console.getBol());
 
         // Set new booking number and create BOCO event if changed
         String oldBookingNumber = shipmentDetails.getBookingNumber();
