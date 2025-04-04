@@ -1819,10 +1819,12 @@ public class ContainerService implements IContainerService {
                 Set<ShipmentDetails> shipmentDetailsList = containers.getShipmentsList();
                 for(ShipmentDetails shipmentDetail: shipmentDetailsList) {
                     String platformBookingRef = shipmentDetail.getBookingReference();
-                    log.info("Platform Booking reference obtained: {}", platformBookingRef);
-                    log.info("Preparing platform payload for container ID: {} with container number: {}",
-                            containers.getId(), containers.getContainerNumber());
-                    payloadDetails.add(prepareQueuePayload(containers, platformBookingRef));
+                    if (StringUtility.isNotEmpty(platformBookingRef)) {
+                        log.info("Platform Booking reference obtained: {}", platformBookingRef);
+                        log.info("Preparing platform payload for container ID: {} with container number: {}",
+                                containers.getId(), containers.getContainerNumber());
+                        payloadDetails.add(prepareQueuePayload(containers, platformBookingRef));
+                    }
                 }
             }
         }
