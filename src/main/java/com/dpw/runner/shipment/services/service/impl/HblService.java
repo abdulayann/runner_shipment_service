@@ -116,12 +116,7 @@ public class HblService implements IHblService {
         Hbl hbl = convertRequestToEntity(request);
         try {
             hbl = hblDao.save(hbl);
-            try {
-                hblSync.sync(hbl, UUID.randomUUID().toString());
-            }
-            catch (Exception e) {
-                log.error(SyncingConstants.ERROR_PERFORMING_HBL_SYNC, e);
-            }
+            hblSync(hbl);
             log.info("Hbl Details created successfully for Id {} with Request Id {}", hbl.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -130,6 +125,15 @@ public class HblService implements IHblService {
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(hbl));
+    }
+
+    private void hblSync(Hbl hbl) {
+        try {
+            hblSync.sync(hbl, UUID.randomUUID().toString());
+        }
+        catch (Exception e) {
+            log.error(SyncingConstants.ERROR_PERFORMING_HBL_SYNC, e);
+        }
     }
 
     @Override
@@ -150,12 +154,7 @@ public class HblService implements IHblService {
         old.setHblNotifyParty(hbl.getHblNotifyParty());
         try {
             hbl = hblDao.save(old);
-            try {
-                hblSync.sync(hbl, UUID.randomUUID().toString());
-            }
-            catch (Exception e) {
-                log.error(SyncingConstants.ERROR_PERFORMING_HBL_SYNC, e);
-            }
+            hblSync(hbl);
             log.info("Updated the Hbl details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -310,13 +309,7 @@ public class HblService implements IHblService {
         HblGenerateRequest request = (HblGenerateRequest) commonRequestModel.getData();
         Hbl hbl = getHblFromShipmentId(request.getShipmentId());
 
-        try {
-            hblSync.sync(hbl, UUID.randomUUID().toString());
-
-        }
-        catch (Exception e) {
-            log.error(SyncingConstants.ERROR_PERFORMING_HBL_SYNC, e);
-        }
+        hblSync(hbl);
 
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(hbl));
     }
@@ -341,12 +334,7 @@ public class HblService implements IHblService {
             hbl = hblDao.save(hbl);
         }
 
-        try {
-            hblSync.sync(hbl, UUID.randomUUID().toString());
-        }
-        catch (Exception e) {
-            log.error(SyncingConstants.ERROR_PERFORMING_HBL_SYNC, e);
-        }
+        hblSync(hbl);
 
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(hbl));
     }

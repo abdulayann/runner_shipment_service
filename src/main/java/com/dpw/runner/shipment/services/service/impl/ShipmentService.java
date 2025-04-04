@@ -774,12 +774,7 @@ public class ShipmentService implements IShipmentService {
 
             List<NotesRequest> notesRequest = getNotesRequests(request, shipmentId);
             dependentServiceHelper.pushShipmentDataToDependentService(shipmentDetails, true, false, null);
-            try {
-                shipmentDetails.setNotesList(null);
-                shipmentSync.syncFromBooking(shipmentDetails, null, notesRequest);
-            } catch (Exception e){
-                log.error(SyncingConstants.ERROR_SYNCING_SHIPMENTS, e);
-            }
+            setShipmentFromBooking(shipmentDetails, notesRequest);
 
             auditLogService.addAuditLog(
                 AuditLogMetaData.builder()
@@ -878,19 +873,7 @@ public class ShipmentService implements IShipmentService {
             if(shipmentDetails.getContainersList() != null && !shipmentDetails.getContainersList().isEmpty())
             {
                 for (Containers container: shipmentDetails.getContainersList()) {
-                    try {
-                        auditLogService.addAuditLog(
-                                AuditLogMetaData.builder()
-                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
-                                        .newData(container)
-                                        .prevData(null)
-                                        .parent(ShipmentDetails.class.getSimpleName())
-                                        .parentId(shipmentId)
-                                        .operation(DBOperationType.CREATE.name()).build()
-                        );
-                    } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
-                        log.error(e.getMessage());
-                    }
+                    addAuditLogContainers(container, null, shipmentId, DBOperationType.CREATE.name());
                 }
             }
 
@@ -916,6 +899,22 @@ public class ShipmentService implements IShipmentService {
             throw new ValidationException(e.getMessage());
         }
         return jsonHelper.convertValue(shipmentDetails, ShipmentDetailsResponse.class);
+    }
+
+    private void addAuditLogContainers(Containers container, Containers prev, Long shipmentId, String operationName) throws RunnerException {
+        try {
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                    .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
+                            .newData(container)
+                            .prevData(prev)
+                            .parent(ShipmentDetails.class.getSimpleName())
+                            .parentId(shipmentId)
+                            .operation(operationName).build()
+            );
+        } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+            log.error(e.getMessage());
+        }
     }
 
     @Override
@@ -1790,21 +1789,7 @@ public class ShipmentService implements IShipmentService {
             entity = shipmentDao.update(entity, false);
             log.info("{} | completeUpdateShipment Update.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
             mid = System.currentTimeMillis();
-            try {
-                // audit logs
-                auditLogService.addAuditLog(
-                        AuditLogMetaData.builder()
-                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
-                                .newData(entity)
-                                .prevData(oldConvertedShipment)
-                                .parent(ShipmentDetails.class.getSimpleName())
-                                .parentId(entity.getId())
-                                .operation(DBOperationType.UPDATE.name()).build()
-                );
-            }
-            catch (Exception e) {
-                log.error("Error creating audit service log", e);
-            }
+            createAuditLog(entity, jsonHelper.convertToJson(oldConvertedShipment), DBOperationType.UPDATE.name());
             log.info("{} | completeUpdateShipment auditLog.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - mid);
 
             mid = System.currentTimeMillis();
@@ -6132,26 +6117,7 @@ public class ShipmentService implements IShipmentService {
                     response.getTransportMode(), response.getDirection(), MdmConstants.SHIPMENT_MODULE
             ));
 
-            try {
-                log.info("Fetching Tenant Model");
-                TenantModel tenantModel = modelMapper.map(v1Service.retrieveTenant().getEntity(), TenantModel.class);
-                String currencyCode = tenantModel.currencyCode;
-                response.setFreightLocalCurrency(currencyCode);
-                List<UnlocationsResponse> unlocationsResponse = masterDataUtils.fetchUnlocationByOneIdentifier(EntityTransferConstants.ID, StringUtility.convertToString(tenantModel.getUnloco()));
-                if (!Objects.isNull(unlocationsResponse) && !unlocationsResponse.isEmpty()) {
-                    response.getAdditionalDetails().setPlaceOfIssue(unlocationsResponse.get(0).getLocationsReferenceGUID());
-                    response.getAdditionalDetails().setPaidPlace(unlocationsResponse.get(0).getLocationsReferenceGUID());
-                    response.getAdditionalDetails().setPlaceOfSupply(unlocationsResponse.get(0).getLocationsReferenceGUID());
-                }
-                PartiesResponse partiesResponse = v1ServiceUtil.getDefaultAgentOrg(tenantModel);
-                if(Constants.DIRECTION_EXP.equals(response.getDirection())) {
-                    response.getAdditionalDetails().setExportBroker(partiesResponse);
-                } else if(Constants.DIRECTION_IMP.equals(response.getDirection())) {
-                    response.getAdditionalDetails().setImportBroker(partiesResponse);
-                }
-            } catch (Exception e){
-                log.error("Failed in fetching tenant data from V1 with error : {}", e);
-            }
+            setTenantAndDefaultAgent(response);
 
             if(Constants.TRANSPORT_MODE_SEA.equals(response.getTransportMode()) && Constants.DIRECTION_EXP.equals(response.getDirection()))
                 response.setHouseBill(generateCustomHouseBL(null));
@@ -6164,6 +6130,29 @@ public class ShipmentService implements IShipmentService {
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    private void setTenantAndDefaultAgent(ShipmentDetailsResponse response) {
+        try {
+            log.info("Fetching Tenant Model");
+            TenantModel tenantModel = modelMapper.map(v1Service.retrieveTenant().getEntity(), TenantModel.class);
+            String currencyCode = tenantModel.currencyCode;
+            response.setFreightLocalCurrency(currencyCode);
+            List<UnlocationsResponse> unlocationsResponse = masterDataUtils.fetchUnlocationByOneIdentifier(EntityTransferConstants.ID, StringUtility.convertToString(tenantModel.getUnloco()));
+            if (!Objects.isNull(unlocationsResponse) && !unlocationsResponse.isEmpty()) {
+                response.getAdditionalDetails().setPlaceOfIssue(unlocationsResponse.get(0).getLocationsReferenceGUID());
+                response.getAdditionalDetails().setPaidPlace(unlocationsResponse.get(0).getLocationsReferenceGUID());
+                response.getAdditionalDetails().setPlaceOfSupply(unlocationsResponse.get(0).getLocationsReferenceGUID());
+            }
+            PartiesResponse partiesResponse = v1ServiceUtil.getDefaultAgentOrg(tenantModel);
+            if(Constants.DIRECTION_EXP.equals(response.getDirection())) {
+                response.getAdditionalDetails().setExportBroker(partiesResponse);
+            } else if(Constants.DIRECTION_IMP.equals(response.getDirection())) {
+                response.getAdditionalDetails().setImportBroker(partiesResponse);
+            }
+        } catch (Exception e) {
+            log.error("Failed in fetching tenant data from V1 with error : {}", e);
         }
     }
 
@@ -8930,16 +8919,7 @@ public class ShipmentService implements IShipmentService {
             dependentServiceHelper.pushShipmentDataToDependentService(shipmentDetails, true, false, null);
 
             setShipmentFromBooking(shipmentDetails, notesRequest);
-
-            auditLogService.addAuditLog(
-                    AuditLogMetaData.builder()
-                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
-                            .newData(shipmentDetails)
-                            .prevData(null)
-                            .parent(ShipmentDetails.class.getSimpleName())
-                            .parentId(shipmentDetails.getId())
-                            .operation(DBOperationType.CREATE.name()).build()
-            );
+            createAuditLog(shipmentDetails, null, DBOperationType.CREATE.name());
         } catch (Exception e) {
             log.error(e.getMessage());
             throw new ValidationException(e.getMessage());

@@ -113,7 +113,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 @Slf4j
 @EnableAsync(proxyTargetClass = true)
-@SuppressWarnings("java:S1066")
+@SuppressWarnings({"java:S1066", "java:S1141"})
 public class BookingIntegrationsUtility {
 
     @Autowired
