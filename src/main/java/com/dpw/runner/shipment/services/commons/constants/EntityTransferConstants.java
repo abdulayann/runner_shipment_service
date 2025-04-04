@@ -1,6 +1,10 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 
+import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
+import java.util.EnumSet;
+import java.util.Set;
+
 public class EntityTransferConstants {
     private EntityTransferConstants(){}
     public static final String ENTITY_TRANSFER_API_HANDLE = "/api/v2/entity-transfer";
@@ -54,4 +58,6 @@ public class EntityTransferConstants {
     public static final String TO_RE_TRIGGER_THE_TRANSFER = " to retrigger the transfer.";
     public static final String TO_TRANSFER_THE_FILES = " to transfer the files.";
     public static final String SELECT_BRANCH_FOR_ET = "one of the branches in the entity transfer details section";
+
+    public static final Set<NetworkTransferStatus> RETRANSFER_SET = EnumSet.of(NetworkTransferStatus.RETRANSFERRED, NetworkTransferStatus.ACCEPTED);
 }

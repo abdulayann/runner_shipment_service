@@ -328,7 +328,7 @@ public class EntityTransferService implements IEntityTransferService {
                 Math.toIntExact(tenant), shipment.getId(), SHIPMENT);
         Map<String, Object> entityPayload = getNetworkTransferEntityPayload(taskPayload);
         if(optionalNetworkTransfer.isPresent()) {
-            if (NetworkTransferStatus.ACCEPTED.equals(optionalNetworkTransfer.get().getStatus())) {
+            if (EntityTransferConstants.RETRANSFER_SET.contains(optionalNetworkTransfer.get().getStatus())) {
                 NetworkTransfer oldNetworkTransfer = optionalNetworkTransfer.get();
                 oldNetworkTransfer.setStatus(NetworkTransferStatus.RETRANSFERRED);
                 oldNetworkTransfer.setEntityPayload(entityPayload);
@@ -555,7 +555,7 @@ public class EntityTransferService implements IEntityTransferService {
         boolean isInterBranchConsole = Boolean.TRUE.equals(consolidationPayload.getInterBranchConsole());
 
         if (optionalNetworkTransfer.isPresent()) {
-            if (NetworkTransferStatus.ACCEPTED.equals(optionalNetworkTransfer.get().getStatus())) {
+            if (EntityTransferConstants.RETRANSFER_SET.contains(optionalNetworkTransfer.get().getStatus())) {
                 NetworkTransfer oldNetworkTransfer = optionalNetworkTransfer.get();
                 oldNetworkTransfer.setStatus(NetworkTransferStatus.RETRANSFERRED);
                 oldNetworkTransfer.setEntityPayload(entityPayload);
@@ -2711,7 +2711,7 @@ public class EntityTransferService implements IEntityTransferService {
 
         networkTransfers = ObjectUtils.isNotEmpty(networkTransfers) ?
             networkTransfers.stream().filter(
-                    networkTransfer -> NetworkTransferStatus.ACCEPTED == networkTransfer.getStatus())
+                    networkTransfer -> EntityTransferConstants.RETRANSFER_SET.contains(networkTransfer.getStatus()))
                 .toList() : Collections.emptyList();
 
         String acceptedBranches = "";
