@@ -2676,4 +2676,15 @@ public class CommonUtils {
         includeColumns.add("guid");
     }
 
+    public void sendEmailNotification(EmailTemplatesRequest emailTemplateModel, List<String> to, List<String> cc) {
+        if(!to.isEmpty()) {
+            try {
+                notificationService.sendEmail(emailTemplateModel.getBody(),
+                        emailTemplateModel.getSubject(), to, cc);
+            } catch (Exception ex) {
+                log.error(ex.getMessage());
+            }
+        }
+    }
+
 }

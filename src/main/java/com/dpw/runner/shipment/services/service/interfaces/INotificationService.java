@@ -9,4 +9,5 @@ public interface INotificationService {
     ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> acceptNotification(Long id);
     ResponseEntity<IRunnerResponse> confirmationMessage(Long id);
+    ResponseEntity<IRunnerResponse> rejectNotification(CommonRequestModel commonRequestModel);
 }
