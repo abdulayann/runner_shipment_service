@@ -241,6 +241,7 @@ class TruckDriverDetailsDaoTest {
 
     @Test
     void delete_ValidTruckDriverDetails_ThrowsException() {
+
         assertDoesNotThrow(() ->truckDriverDetailsDao.deleteTruckDriverDetails(Map.of(1L , testData),"truckDriverDetails"));
     }
 
