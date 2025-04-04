@@ -47,6 +47,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.emptyIfNull;
 
+@SuppressWarnings("java:S2259")
 @Component
 @Slf4j
 public class HawbReport extends IReport{

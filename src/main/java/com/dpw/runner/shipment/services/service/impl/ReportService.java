@@ -1282,6 +1282,7 @@ public class ReportService implements IReportService {
                 docKey.equals(ReportConstants.FCR_DOCUMENT);
     }
 
+    @SuppressWarnings("java:S3516")
     private DocPages handleSimpleDocument(ShipmentSettingsDetails row, ShipmentSettingsDetails adminRow, String docKey) {
         String mainPageId;
         boolean isLogoFixed;

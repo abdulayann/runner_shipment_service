@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 
 import static org.springframework.data.jpa.domain.Specification.where;
 
-@SuppressWarnings("ALL")
+@SuppressWarnings({"ALL", "java:S2259"})
 @Slf4j
 public class DbAccessHelper {
     private DbAccessHelper(){}

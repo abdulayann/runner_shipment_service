@@ -142,7 +142,7 @@ public class AuthFilter extends OncePerRequestFilter {
         SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
         SyncingContext.setContext(true);
         filterChain.doFilter(servletRequest, servletResponse);
-        double timeTaken = System.currentTimeMillis() - time;
+        double timeTaken = (double) System.currentTimeMillis() - time;
         log.info(String.format("Request Finished , Total Time in milis:- %s | Request ID: %s", (timeTaken), LoggerHelper.getRequestIdFromMDC()));
         if (timeTaken > 500)
             log.info(" RequestId: {} || {} for event: {} Actual time taken: {} ms for API :{}",LoggerHelper.getRequestIdFromMDC(), LoggerEvent.MORE_TIME_TAKEN, LoggerEvent.COMPLETE_API_TIME, timeTaken, servletRequest.getRequestURI());
