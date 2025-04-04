@@ -503,8 +503,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         if (Boolean.FALSE.equals(isMAWBNumberValid(consolidationRequest.getMawb())))
             throw new ValidationException("Please enter a valid MAWB number.");
 
-        CarrierResponse correspondingCarrier = null;
-        correspondingCarrier = getCorrespondingCarrier(consolidationRequest, oldMawb, correspondingCarrier);
+        CarrierResponse correspondingCarrier = getCorrespondingCarrier(consolidationRequest, oldMawb);
 
         if (consolidationRequest.getShipmentType().equals(Constants.IMP)) {
             return;
@@ -533,7 +532,8 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         }
     }
 
-    private CarrierResponse getCorrespondingCarrier(ConsolidationDetails consolidationRequest, String oldMawb, CarrierResponse correspondingCarrier) {
+    private CarrierResponse getCorrespondingCarrier(ConsolidationDetails consolidationRequest, String oldMawb) {
+        CarrierResponse correspondingCarrier = null;
         if(consolidationRequest.getCarrierDetails() == null || StringUtility.isEmpty(consolidationRequest.getCarrierDetails().getShippingLine()) ||
             !Objects.equals(consolidationRequest.getMawb(), oldMawb) ) {
             String mawbAirlineCode = consolidationRequest.getMawb().substring(0, 3);

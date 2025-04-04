@@ -1334,7 +1334,7 @@ public class ShipmentService implements IShipmentService {
         return eventsRequestList;
     }
 
-    private Set<ContainerRequest> calculateAutoContainerWeightAndVolume(Set<ContainerRequest> containersList, List<PackingRequest> packingList) throws RunnerException {
+    private void calculateAutoContainerWeightAndVolume(Set<ContainerRequest> containersList, List<PackingRequest> packingList) throws RunnerException {
         if(containersList != null && !containersList.isEmpty()) {
             for (ContainerRequest containers : containersList) {
                 if(packingList != null) {
@@ -1343,7 +1343,6 @@ public class ShipmentService implements IShipmentService {
                 }
             }
         }
-        return containersList;
     }
 
     private void setGrossWeightVolInContainers(ContainerRequest containers, List<PackingRequest> packings) throws RunnerException {
@@ -1504,13 +1503,13 @@ public class ShipmentService implements IShipmentService {
         List<Containers> containersList = new ArrayList<>();
         if(request.getContainersList() != null)
             containersList = jsonHelper.convertValueToList(request.getContainersList(), Containers.class);
-        response = calculatePacksAndPacksUnit(packingList, response);
+        calculatePacksAndPacksUnit(packingList, response);
         response = calculateWeightAndVolumeUnit(request, packingList, response);
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         boolean isPacksPresent = packingList != null && !packingList.isEmpty();
         if(!isPacksPresent)
             response = updateShipmentDetails(response, containersList);
-        response = calculateVW(request, response, true);
+        calculateVW(request, response, true);
         if(shipmentSettingsDetails.getIsShipmentLevelContainer() == null || !shipmentSettingsDetails.getIsShipmentLevelContainer().booleanValue()
                 || Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR) || isPacksPresent) {
             ShipmentMeasurementDetailsDto dto = new ShipmentMeasurementDetailsDto();
@@ -1519,7 +1518,7 @@ public class ShipmentService implements IShipmentService {
         }
         V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
         if(Boolean.TRUE.equals(v1TenantSettingsResponse.getP100Branch()) && Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_SEA)) {
-            response = calculatePacksAndPacksUnitFromContainer(response, containersList);
+            calculatePacksAndPacksUnitFromContainer(response, containersList);
         }
         return response;
     }
@@ -1591,7 +1590,7 @@ public class ShipmentService implements IShipmentService {
         return response;
     }
 
-    private AutoUpdateWtVolResponse calculatePacksAndPacksUnitFromContainer(AutoUpdateWtVolResponse response, List<Containers> containersList) {
+    private void calculatePacksAndPacksUnitFromContainer(AutoUpdateWtVolResponse response, List<Containers> containersList) {
         if(containersList != null && !containersList.isEmpty()) {
             String packsUnit = "";
             long packageCount = 0;
@@ -1606,7 +1605,6 @@ public class ShipmentService implements IShipmentService {
             response.setNoOfPacks(totalPacks == 0 ? null : String.valueOf(totalPacks));
             response.setPacksUnit(packsUnit);
         }
-        return response;
     }
 
     private String setPacksUnit(List<Containers> containersList, String packsUnit) {
@@ -1988,7 +1986,7 @@ public class ShipmentService implements IShipmentService {
         if (shipmentDetails.getContainerAutoWeightVolumeUpdate() != null && shipmentDetails.getContainerAutoWeightVolumeUpdate().booleanValue() && packingRequest != null) {
             if (Objects.isNull(containerRequest) && !Objects.isNull(oldEntity))
                 containerRequest = new HashSet<>(jsonHelper.convertValueToList(oldEntity.getContainersList().stream().toList(), ContainerRequest.class));
-            containerRequest = calculateAutoContainerWeightAndVolume(containerRequest, packingRequest);
+            calculateAutoContainerWeightAndVolume(containerRequest, packingRequest);
         }
         return containerRequest;
     }
