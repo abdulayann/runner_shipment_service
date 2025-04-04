@@ -1460,7 +1460,7 @@ public class V1ServiceImpl implements IV1Service {
             HttpEntity<Object> entity = new HttpEntity<>(request, V1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.LIST_COUSIN_BRANCH_URL, entity, V1DataResponse.class);
             log.info("Token time taken in listCousinBranches() function: {} ms", System.currentTimeMillis() - time);
-            return (V1DataResponse) masterDataResponse.getBody();
+            return masterDataResponse.getBody();
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
             throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
