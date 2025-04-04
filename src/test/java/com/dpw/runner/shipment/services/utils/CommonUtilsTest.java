@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.utils;
 
+import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
@@ -25,6 +26,7 @@ import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
 import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.SendEmailDto;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
@@ -70,6 +72,7 @@ import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.*;
@@ -4054,5 +4057,341 @@ class CommonUtilsTest {
 
         // Then
         assertNull(result);
+    }
+
+    @Test
+    void sendEmailShipmentPullWithdraw() {
+        // Arrange
+        SendEmailDto sendEmailDto = new SendEmailDto();
+        sendEmailDto.setEmailTemplatesRequestMap(new HashMap<>());
+        sendEmailDto.setShipmentRequestedTypes(new HashSet<>());
+
+        // Act
+        commonUtils.sendEmailShipmentPullWithdraw(sendEmailDto);
+
+        // Assert
+        assertTrue(sendEmailDto.getShipmentRequestedTypes().contains(SHIPMENT_PULL_WITHDRAW));
+        verify(notificationService, never()).sendEmail(anyString(), anyString(), anyList(), anyList());
+    }
+
+    @Test
+    void sendEmailShipmentPullWithdraw1() {
+        // Arrange
+        SendEmailDto sendEmailDto = new SendEmailDto();
+        sendEmailDto.setEmailTemplatesRequestMap(Map.of(SHIPMENT_PULL_WITHDRAW, EmailTemplatesRequest.builder().body("body").subject("subject").build()));
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        shipmentDetails1.setTenantId(1);
+        shipmentDetails1.setAssignedTo("Assigned");
+        sendEmailDto.setShipmentDetails(shipmentDetails1);
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder().build();
+        consolidationDetails1.setTenantId(1);
+        sendEmailDto.setConsolidationDetails(consolidationDetails1);
+        TenantModel tenantModel = new TenantModel();
+        tenantModel.setCode("Tenant");
+        sendEmailDto.setTenantModelMap(Map.of(1, tenantModel));
+        sendEmailDto.setUsernameEmailsMap(Map.of("Assigned", "Email"));
+        V1TenantSettingsResponse tenantSettingsResponse = new V1TenantSettingsResponse();
+        tenantSettingsResponse.setShipmentAttachDefaultToMailId("to1@example.com,to2@example.com");
+        tenantSettingsResponse.setConsolidationAttachDefaultToMailId("cc1@example.com,cc2@example.com");
+
+        sendEmailDto.setV1TenantSettingsMap(Map.of(1, tenantSettingsResponse));
+
+        // Assert
+        assertDoesNotThrow(() -> commonUtils.sendEmailShipmentPullWithdraw(sendEmailDto));
+    }
+
+    @Test
+    void sendEmailShipmentPullWithdraw2() {
+        // Arrange
+        SendEmailDto sendEmailDto = new SendEmailDto();
+        sendEmailDto.setEmailTemplatesRequestMap(Map.of(SHIPMENT_PULL_WITHDRAW, EmailTemplatesRequest.builder().body("body").subject("subject").build()));
+        V1TenantSettingsResponse tenantSettingsResponse = new V1TenantSettingsResponse();
+        tenantSettingsResponse.setConsolidationAttachDefaultCCMailId("cc1@example.com,cc2@example.com");
+
+        sendEmailDto.setV1TenantSettingsMap(Map.of(1, tenantSettingsResponse));
+
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        shipmentDetails1.setTenantId(1);
+        shipmentDetails1.setAssignedTo("Assigned");
+        sendEmailDto.setShipmentDetails(shipmentDetails1);
+
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder().build();
+        consolidationDetails1.setTenantId(1);
+        sendEmailDto.setConsolidationDetails(consolidationDetails1);
+        TenantModel tenantModel = new TenantModel();
+        tenantModel.setCode("Tenant");
+        sendEmailDto.setTenantModelMap(Map.of(1, tenantModel));
+        sendEmailDto.setUsernameEmailsMap(Map.of("Assigned", "Email"));
+
+        assertDoesNotThrow(() -> commonUtils.sendEmailShipmentPullWithdraw(sendEmailDto));
+    }
+
+    @Test
+    void sendEmailShipmentPushWithdraw() {
+        // Arrange
+        SendEmailDto sendEmailDto = new SendEmailDto();
+        sendEmailDto.setEmailTemplatesRequestMap(new HashMap<>());
+        sendEmailDto.setShipmentRequestedTypes(new HashSet<>());
+
+        // Act
+        commonUtils.sendEmailShipmentPushWithdraw(sendEmailDto);
+
+        // Assert
+        assertTrue(sendEmailDto.getShipmentRequestedTypes().contains(SHIPMENT_PUSH_WITHDRAW));
+    }
+
+    @Test
+    void sendEmailShipmentPushWithdraw1() {
+        // Arrange
+        SendEmailDto sendEmailDto = new SendEmailDto();
+        sendEmailDto.setEmailTemplatesRequestMap(Map.of(SHIPMENT_PUSH_WITHDRAW, EmailTemplatesRequest.builder().body("body").subject("subject").build()));
+
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        shipmentDetails1.setTenantId(1);
+        shipmentDetails1.setAssignedTo("Assigned");
+
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder().build();
+        consolidationDetails1.setTenantId(1);
+
+        V1TenantSettingsResponse tenantSettingsResponse = new V1TenantSettingsResponse();
+        tenantSettingsResponse.setShipmentAttachDefaultToMailId("to1@example.com,to1@example.com");
+        tenantSettingsResponse.setConsolidationAttachDefaultToMailId("to1@example.com,to1@example.com");
+
+        sendEmailDto.setV1TenantSettingsMap(Map.of(1, tenantSettingsResponse));
+
+        sendEmailDto.setShipmentDetails(shipmentDetails1);
+        sendEmailDto.setConsolidationDetails(consolidationDetails1);
+        TenantModel tenantModel = new TenantModel();
+        tenantModel.setCode("Tenant");
+        sendEmailDto.setTenantModelMap(Map.of(1, tenantModel));
+        sendEmailDto.setUsernameEmailsMap(Map.of("Assigned", "assigned@example.com"));
+
+        // Assert
+        assertDoesNotThrow(() -> commonUtils.sendEmailShipmentPushWithdraw(sendEmailDto));
+    }
+
+    @Test
+    void sendEmailShipmentPushWithdraw2() {
+        // Arrange
+        SendEmailDto sendEmailDto = new SendEmailDto();
+        sendEmailDto.setEmailTemplatesRequestMap(Map.of(SHIPMENT_PUSH_WITHDRAW, EmailTemplatesRequest.builder().body("body").subject("subject").build()));
+
+        V1TenantSettingsResponse tenantSettingsResponse = new V1TenantSettingsResponse();
+        tenantSettingsResponse.setConsolidationAttachDefaultCCMailId("cc1@example.com,cc2@example.com");
+        tenantSettingsResponse.setShipmentAttachDefaultCCMailId("cc1@example.com,cc2@example.com");
+
+        sendEmailDto.setV1TenantSettingsMap(Map.of(1, tenantSettingsResponse));
+
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        shipmentDetails1.setTenantId(1);
+        sendEmailDto.setShipmentDetails(shipmentDetails1);
+
+        ConsolidationDetails consolidationDetails1 = new ConsolidationDetails();
+        consolidationDetails1.setTenantId(1);
+        sendEmailDto.setConsolidationDetails(consolidationDetails1);
+        TenantModel tenantModel = new TenantModel();
+        tenantModel.setCode("Tenant");
+        sendEmailDto.setTenantModelMap(Map.of(1, tenantModel));
+        sendEmailDto.setUsernameEmailsMap(Map.of("Assigned", "assigned@example.com"));
+
+        assertDoesNotThrow(() -> commonUtils.sendEmailShipmentPushWithdraw(sendEmailDto));
+    }
+
+    @Test
+    void populateDictionaryForEmailFromShipment() {
+        // Arrange
+        Map<String, Object> dictionary = new HashMap<>();
+        ShipmentDetails shipmentDetails1 = getMockShipmentDetails();
+        ConsolidationDetails consolidationDetails1 = getMockConsolidationDetails();
+        Map<String, UnlocationsResponse> unLocMap = new HashMap<>();
+        Map<String, CarrierMasterData> carrierMasterDataMap = new HashMap<>();
+
+        when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(getMockTenantSettings());
+
+        // Act
+        commonUtils.populateDictionaryForEmailFromShipment(dictionary, shipmentDetails1, consolidationDetails1, unLocMap, carrierMasterDataMap);
+        commonUtils.populateDictionaryForEmailFromConsolidation(dictionary, shipmentDetails1, consolidationDetails1, unLocMap, carrierMasterDataMap);
+        commonUtils.populateShipmentImportPushAttachmentTemplate(dictionary, shipmentDetails1, consolidationDetails1, carrierMasterDataMap, unLocMap);
+        commonUtils.populateShipmentImportPullAttachmentTemplate(dictionary, shipmentDetails1, consolidationDetails1, carrierMasterDataMap, unLocMap);
+
+        // Assert
+        assertEquals(consolidationDetails1.getCreatedBy(), dictionary.get(CONSOLIDATION_CREATE_USER));
+        assertEquals(shipmentDetails1.getShipmentId(), dictionary.get(SHIPMENT_NUMBER));
+        assertEquals(shipmentDetails1.getHouseBill(), dictionary.get(HAWB_NUMBER));
+    }
+
+    @Test
+    void populateDictionaryForEmailFromShipment2() {
+        // Arrange
+        Map<String, Object> dictionary = new HashMap<>();
+        ShipmentDetails shipmentDetails1 = getMockShipmentDetails();
+        shipmentDetails1.getCarrierDetails().setShippingLine("ABC");
+
+        ConsolidationDetails consolidationDetails1 = getMockConsolidationDetails();
+        consolidationDetails1.getCarrierDetails().setShippingLine("ABC");
+
+        CarrierMasterData carrierMasterData = new CarrierMasterData();
+        carrierMasterData.setIataCode("XYZ");
+        carrierMasterData.setItemDescription("Test Carrier");
+
+        Map<String, CarrierMasterData> carrierMasterDataMap = Map.of("ABC", carrierMasterData);
+        Map<String, UnlocationsResponse> unLocMap = new HashMap<>();
+
+        when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(getMockTenantSettings());
+
+        // Act
+        commonUtils.populateDictionaryForEmailFromShipment(dictionary, shipmentDetails1, consolidationDetails1, unLocMap, carrierMasterDataMap);
+        commonUtils.populateDictionaryForEmailFromConsolidation(dictionary, shipmentDetails1, consolidationDetails1, unLocMap, carrierMasterDataMap);
+        commonUtils.populateShipmentImportPushAttachmentTemplate(dictionary, shipmentDetails1, consolidationDetails1, carrierMasterDataMap, unLocMap);
+        commonUtils.populateShipmentImportPullAttachmentTemplate(dictionary, shipmentDetails1, consolidationDetails1, carrierMasterDataMap, unLocMap);
+
+        // Assert
+        assertEquals("XYZ", dictionary.get(CARRIER_CODE));
+        assertEquals("Test Carrier", dictionary.get(CARRIER_NAME));
+    }
+
+    @Test
+    void populateDictionaryForEmailFromShipment3() {
+        // Arrange
+        Map<String, Object> dictionary = new HashMap<>();
+        ShipmentDetails shipmentDetails1 = getMockShipmentDetails();
+        shipmentDetails1.getCarrierDetails().setOriginPort("JFK");
+        shipmentDetails1.getCarrierDetails().setDestinationPort("LAX");
+        shipmentDetails1.getCarrierDetails().setShippingLine("ABC");
+
+        ConsolidationDetails consolidationDetails1 = getMockConsolidationDetails();
+        consolidationDetails1.getCarrierDetails().setOriginPort("JFK");
+        consolidationDetails1.getCarrierDetails().setDestinationPort("LAX");
+        consolidationDetails1.getCarrierDetails().setShippingLine("ABC");
+
+        CarrierMasterData carrierMasterData = new CarrierMasterData();
+        carrierMasterData.setItemValue("XYZ");
+        carrierMasterData.setItemDescription("Test Carrier");
+
+        UnlocationsResponse origin = new UnlocationsResponse();
+        origin.setLocCode("JFK_CODE");
+        origin.setName("New York");
+
+        UnlocationsResponse destination = new UnlocationsResponse();
+        destination.setLocCode("LAX_CODE");
+        destination.setName("Los Angeles");
+
+        Map<String, UnlocationsResponse> unLocMap = Map.of("JFK", origin, "LAX", destination);
+        Map<String, CarrierMasterData> carrierMasterDataMap = Map.of("ABC", carrierMasterData);
+
+        when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(getMockTenantSettings());
+
+        // Act
+        commonUtils.populateDictionaryForEmailFromShipment(dictionary, shipmentDetails1, consolidationDetails1, unLocMap, carrierMasterDataMap);
+        commonUtils.populateDictionaryForEmailFromConsolidation(dictionary, shipmentDetails1, consolidationDetails1, unLocMap, carrierMasterDataMap);
+        commonUtils.populateShipmentImportPushAttachmentTemplate(dictionary, shipmentDetails1, consolidationDetails1, carrierMasterDataMap, unLocMap);
+        commonUtils.populateShipmentImportPullAttachmentTemplate(dictionary, shipmentDetails1, consolidationDetails1, carrierMasterDataMap, unLocMap);
+
+        // Assert
+        assertEquals("JFK_CODE", dictionary.get(ReportConstants.POL));
+        assertEquals("New York", dictionary.get(POL_NAME));
+        assertEquals("LAX_CODE", dictionary.get(ReportConstants.POD));
+        assertEquals("Los Angeles", dictionary.get(POD_NAME));
+    }
+
+    @Test
+    void populateDictionaryForEmailFromShipment4() {
+        // Arrange
+        Map<String, Object> dictionary = new HashMap<>();
+        ShipmentDetails shipmentDetails1 = getMockShipmentDetails();
+        ConsolidationDetails consolidationDetails1 = getMockConsolidationDetails();
+        shipmentDetails1.getCarrierDetails().setShippingLine("NON_EXISTENT");
+        consolidationDetails1.getCarrierDetails().setShippingLine("NON_EXISTENT");
+
+        Map<String, CarrierMasterData> carrierMasterDataMap = new HashMap<>();
+        Map<String, UnlocationsResponse> unLocMap = new HashMap<>();
+
+        when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(getMockTenantSettings());
+
+        // Act
+        commonUtils.populateDictionaryForEmailFromShipment(dictionary, shipmentDetails1, consolidationDetails1, unLocMap, carrierMasterDataMap);
+        commonUtils.populateDictionaryForEmailFromConsolidation(dictionary, shipmentDetails1, consolidationDetails1, unLocMap, carrierMasterDataMap);
+        commonUtils.populateShipmentImportPushAttachmentTemplate(dictionary, shipmentDetails1, consolidationDetails1, carrierMasterDataMap, unLocMap);
+        commonUtils.populateShipmentImportPullAttachmentTemplate(dictionary, shipmentDetails1, consolidationDetails1, carrierMasterDataMap, unLocMap);
+
+        // Assert
+        assertNull(dictionary.get(CARRIER_CODE));
+        assertNull(dictionary.get(CARRIER_NAME));
+    }
+
+    @Test
+    void populateDictionaryForEmailFromShipment5() {
+        // Arrange
+        Map<String, Object> dictionary = new HashMap<>();
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        ConsolidationDetails consolidationDetails1 = new ConsolidationDetails();
+        consolidationDetails1.setAllocations(new Allocations());
+        Map<String, UnlocationsResponse> unLocMap = new HashMap<>();
+        Map<String, CarrierMasterData> carrierMasterDataMap = new HashMap<>();
+        shipmentDetails1.setCarrierDetails(new CarrierDetails());
+        consolidationDetails1.setCarrierDetails(new CarrierDetails());
+
+        when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(getMockTenantSettings());
+
+        // Act
+        commonUtils.populateDictionaryForEmailFromShipment(dictionary, shipmentDetails1, consolidationDetails1, unLocMap, carrierMasterDataMap);
+        commonUtils.populateDictionaryForEmailFromConsolidation(dictionary, shipmentDetails1, consolidationDetails1, unLocMap, carrierMasterDataMap);
+        commonUtils.populateShipmentImportPushAttachmentTemplate(dictionary, shipmentDetails1, consolidationDetails1, carrierMasterDataMap, unLocMap);
+        commonUtils.populateShipmentImportPullAttachmentTemplate(dictionary, shipmentDetails1, consolidationDetails1, carrierMasterDataMap, unLocMap);
+
+        // Assert
+        assertNull(dictionary.get(SHIPMENT_NUMBER));
+        assertNull(dictionary.get(HAWB_NUMBER));
+    }
+
+
+    private ShipmentDetails getMockShipmentDetails() {
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setShipmentId("SHIP123");
+        shipment.setHouseBill("HAWB456");
+        shipment.setWeight(BigDecimal.valueOf(100));
+        shipment.setWeightUnit("KG");
+        shipment.setVolume(BigDecimal.valueOf(10));
+        shipment.setVolumeUnit("CBM");
+
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setEtd(LocalDateTime.now());
+        carrierDetails.setEta(LocalDateTime.now());
+        carrierDetails.setShippingLine("LINE001");
+        carrierDetails.setOriginPort("JFK");
+        carrierDetails.setDestinationPort("LAX");
+        shipment.setCarrierDetails(carrierDetails);
+
+        return shipment;
+    }
+
+    private ConsolidationDetails getMockConsolidationDetails() {
+        ConsolidationDetails consolidation = new ConsolidationDetails();
+        consolidation.setCreatedBy("admin@example.com");
+        consolidation.setConsolidationNumber("CONSOL123");
+
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setEtd(LocalDateTime.now());
+        carrierDetails.setEta(LocalDateTime.now());
+        carrierDetails.setShippingLine("LINE001");
+        carrierDetails.setOriginPort("JFK");
+        carrierDetails.setDestinationPort("LAX");
+        consolidation.setCarrierDetails(carrierDetails);
+
+        Allocations allocations1 = new Allocations();
+        allocations1.setWeight(BigDecimal.valueOf(100));
+        allocations1.setWeightUnit("KG");
+        allocations1.setVolume(BigDecimal.valueOf(10));
+        allocations1.setVolumeUnit("CBM");
+
+        consolidation.setAllocations(allocations1);
+
+        return consolidation;
+    }
+
+    private V1TenantSettingsResponse getMockTenantSettings() {
+        V1TenantSettingsResponse settings = new V1TenantSettingsResponse();
+        settings.setDPWDateFormat("yyyy-MM-dd HH:mm:ss");
+        return settings;
     }
 }

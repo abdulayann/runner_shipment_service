@@ -16,6 +16,7 @@ import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.json.JsonParseException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -57,7 +58,7 @@ public class NotificationServiceImpl implements INotificationService {
         NotificationServiceSendEmailRequest notificationServiceSendEmailRequest = null;
         try {
             notificationServiceSendEmailRequest = createNotificationServiceRequest(request);
-        } catch (JsonProcessingException e) {
+        } catch (JsonParseException e) {
             throw new NotificationException(e);
         }
 
@@ -76,7 +77,7 @@ public class NotificationServiceImpl implements INotificationService {
 
         try {
             log.info("Notification Service Response: {}", jsonHelper.convertToJson(response));
-        } catch (Exception e) {
+        } catch (JsonParseException e) {
             throw new NotificationException(e);
         }
         log.info("Total time taken from notification service to send email is {} ms", (System.currentTimeMillis() - startTime));
@@ -84,7 +85,7 @@ public class NotificationServiceImpl implements INotificationService {
         return response;
     }
 
-    private NotificationServiceSendEmailRequest createNotificationServiceRequest(SendEmailBaseRequest request) throws JsonProcessingException {
+    private NotificationServiceSendEmailRequest createNotificationServiceRequest(SendEmailBaseRequest request) throws JsonParseException {
         NotificationServiceSendEmailRequest notificationServiceSendEmailRequest = new NotificationServiceSendEmailRequest();
         notificationServiceSendEmailRequest.setBccEmails(request.getBcc());
         notificationServiceSendEmailRequest.setModuleName(request.getModuleName());
