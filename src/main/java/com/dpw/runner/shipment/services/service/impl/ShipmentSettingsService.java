@@ -16,7 +16,6 @@ import com.dpw.runner.shipment.services.entity.HblTermsConditionTemplate;
 import com.dpw.runner.shipment.services.entity.ProductSequenceConfig;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.TenantProducts;
-import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -134,7 +133,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
                 shipmentSettingsDetails.setTenantProducts(tenantProductsDao.saveEntityFromSettings(shipmentSettingsDetails.getTenantProducts(), shipmentSettingsDetails.getId()));
             }
             if(shipmentSettingsDetails.getProductSequenceConfig() != null) {
-                if(!shipmentSettingsDetails.getProductSequenceConfig().isEmpty()) {
+                if(shipmentSettingsDetails.getProductSequenceConfig().size() > 0) {
                     for (ProductSequenceConfig productSequenceConfig: shipmentSettingsDetails.getProductSequenceConfig()) {
                         ListCommonRequest listCommonRequest = constructListCommonRequest(ShipmentSettingsConstants.PRODUCT_TYPE, productSequenceConfig.getTenantProducts().getProductType(), "=");
                         Pair<Specification<TenantProducts>, Pageable> pair = fetchData(listCommonRequest, TenantProducts.class);
@@ -156,7 +155,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            throw new GenericException(e);
+            throw new RuntimeException(e);
         }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(shipmentSettingsDetails));
     }
@@ -224,7 +223,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            throw new GenericException(e);
+            throw new RuntimeException(e);
         }
     }
 
@@ -237,7 +236,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             newRequest.setFilterCriteria(new ArrayList<>());
             Pair<Specification<ShipmentSettingsDetails>, Pageable> tuple = fetchData(newRequest, ShipmentSettingsDetails.class);
             Page<ShipmentSettingsDetails> shipmentSettingsPage = shipmentSettingsDao.list(tuple.getLeft(), tuple.getRight());
-            if(shipmentSettingsPage.get().toList() != null && !shipmentSettingsPage.get().toList().isEmpty())
+            if(shipmentSettingsPage.get().toList() != null && shipmentSettingsPage.get().toList().size() > 0)
                 oldEntity = Optional.ofNullable(shipmentSettingsPage.get().toList().get(0));
         }
         else {
@@ -292,7 +291,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
 
     private void processProductSequenceConfigList(List<ProductSequenceConfigRequest> productSequenceConfigList, ShipmentSettingsDetails shipmentSettingsDetails, ShipmentSettingsDetailsResponse response) throws RunnerException {
         if(productSequenceConfigList != null) {
-            if(!productSequenceConfigList.isEmpty()) {
+            if(productSequenceConfigList.size() > 0) {
                 for (ProductSequenceConfigRequest productSequenceConfig: productSequenceConfigList) {
                     if(productSequenceConfig.getTenantProducts() != null && productSequenceConfig.getTenantProducts().getProductType() != null) {
                         ListCommonRequest listCommonRequest = constructListCommonRequest(ShipmentSettingsConstants.PRODUCT_TYPE, stringValueOf(productSequenceConfig.getTenantProducts().getProductType()), "=");
@@ -332,7 +331,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
                 responseMsg = e.getMessage() != null ? e.getMessage()
                         : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
                 log.error(responseMsg, e);
-                throw new GenericException(e);
+                throw new RuntimeException(e);
             }
         }
         else {
@@ -342,7 +341,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
                 responseMsg = e.getMessage() != null ? e.getMessage()
                         : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
                 log.error(responseMsg, e);
-                throw new GenericException(e);
+                throw new RuntimeException(e);
             }
         }
     }
@@ -386,7 +385,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            throw new GenericException(e);
+            throw new RuntimeException(e);
         }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(shipmentSettingsDetails));
     }
@@ -395,7 +394,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         if(shipmentSettingsDetails.getProductSequenceConfig() == null) {
             return;
         }
-        if(!shipmentSettingsDetails.getProductSequenceConfig().isEmpty()) {
+        if(shipmentSettingsDetails.getProductSequenceConfig().size() > 0) {
             for (ProductSequenceConfig productSequenceConfig: shipmentSettingsDetails.getProductSequenceConfig()) {
                 if(productSequenceConfig.getTenantProducts() != null && productSequenceConfig.getTenantProducts().getProductType() != null) {
                     ListCommonRequest listCommonRequest = constructListCommonRequest(ShipmentSettingsConstants.PRODUCT_TYPE, String.valueOf(productSequenceConfig.getTenantProducts().getProductType()), "=");
@@ -458,7 +457,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            throw new GenericException(e);
+            throw new RuntimeException(e);
         }
     }
 
@@ -536,7 +535,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
     private void processProductSequenceConfigListForV1Update(List<ProductSequenceConfigRequest> productSequenceConfigList, ShipmentSettingsDetails shipmentSettingsDetails, List<ProductSequenceConfig> oldProductSequenceConfigList, ShipmentSettingsDetailsResponse response) throws RunnerException {
         ListCommonRequest listCommonRequest;
         List<ProductSequenceConfigRequest> productSequenceConfigRequests = new ArrayList<>();
-        if(!productSequenceConfigList.isEmpty()) {
+        if(productSequenceConfigList.size() > 0) {
             for (ProductSequenceConfigRequest productSequenceConfig: productSequenceConfigList) {
                 if(productSequenceConfig.getTenantProducts() != null && productSequenceConfig.getTenantProducts().getProductType() != null) {
                     listCommonRequest = constructListCommonRequest(ShipmentSettingsConstants.PRODUCT_TYPE, stringValueOf(productSequenceConfig.getTenantProducts().getProductType()), "=");
@@ -714,7 +713,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         if (Boolean.TRUE.equals(tenantSettings.getIsMAWBColoadingEnabled())
                 && Boolean.TRUE.equals(tenantSettings.getIsColoadingMAWBStationEnabled())
                 && !Objects.isNull(tenantSettings.getColoadingBranchIds())) {
-            tenantIds.addAll(tenantSettings.getColoadingBranchIds().stream().map(Object::toString).toList());
+            tenantIds.addAll(tenantSettings.getColoadingBranchIds().stream().map(x -> x.toString()).toList());
         }
         Map<String, TenantModel> v1Data = masterDataUtils.fetchInTenantsList(tenantIds);
         List<TenantModel> listOfColoadStations = v1Data.values().stream().sorted(Comparator.comparing(TenantModel::getTenantName)).toList();
@@ -800,7 +799,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
-            throw new GenericException(e);
+            throw new RuntimeException(e);
         }
     }
 

@@ -17,7 +17,7 @@ import javax.validation.Valid;
 import org.springframework.http.ResponseEntity;
 
 public interface IEventService extends ICommonService {
-    ResponseEntity<IRunnerResponse> v1EventsCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws RunnerException;
+    ResponseEntity<IRunnerResponse> V1EventsCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws RunnerException;
     ResponseEntity<IRunnerResponse> trackEvents(TrackingEventsRequest request) throws RunnerException;
     void updateAtaAtdInShipment(List<Events> events, ShipmentDetails shipmentDetails, ShipmentSettingsDetails tenantSettings);
     boolean processUpstreamTrackingMessage(Container container, String messageId);

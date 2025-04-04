@@ -8,6 +8,8 @@ import java.util.UUID;
 
 @Data
 public class FileRepoRequestV2 implements IRunnerRequest {
+//    public String EntityType;
+//    public Long EntityId;
     @JsonProperty("Guid")
     private UUID Guid;
     @JsonProperty("DocType")

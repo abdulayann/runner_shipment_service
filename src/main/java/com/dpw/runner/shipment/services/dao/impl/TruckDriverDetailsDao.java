@@ -72,6 +72,7 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
         String responseMsg;
         try {
             hashMap.values().forEach(truckDriverDetails -> {
+                String json = jsonHelper.convertToJson(truckDriverDetails);
                 delete(truckDriverDetails);
                 if(entity != null)
                 {
@@ -103,13 +104,13 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
         String responseMsg;
         List<TruckDriverDetails> responseTruckDriverDetails = new ArrayList<>();
         try {
-            // LATER- Handle Transactions here
+            // TODO- Handle Transactions here
             List<TruckDriverDetails> truckDriverDetails = findByShipmentId(shipmentId);
             Map<Long, TruckDriverDetails> hashMap = truckDriverDetails.stream()
                         .collect(Collectors.toMap(TruckDriverDetails::getId, Function.identity()));
             Map<Long, TruckDriverDetails> copyHashMap = new HashMap<>(hashMap);
             List<TruckDriverDetails> truckDriverDetailsRequestList = new ArrayList<>();
-            if (truckDriverDetailsList != null && !truckDriverDetailsList.isEmpty()) {
+            if (truckDriverDetailsList != null && truckDriverDetailsList.size() != 0) {
                 for (TruckDriverDetails request : truckDriverDetailsList) {
                     Long id = request.getId();
                     if (id != null) {
@@ -221,7 +222,7 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
         String responseMsg;
         List<TruckDriverDetails> responseTruckDriverDetails = new ArrayList<>();
         Map<UUID, TruckDriverDetails> truckDriverDetailsMap = new HashMap<>();
-        if(oldEntityList != null && !oldEntityList.isEmpty()) {
+        if(oldEntityList != null && oldEntityList.size() > 0) {
             for (TruckDriverDetails entity:
                     oldEntityList) {
                 truckDriverDetailsMap.put(entity.getGuid(), entity);
@@ -231,7 +232,7 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
 
             TruckDriverDetails oldEntity;
             List<TruckDriverDetails> truckDriverDetailsRequestList = new ArrayList<>();
-            if (truckDriverDetailsList != null && !truckDriverDetailsList.isEmpty()) {
+            if (truckDriverDetailsList != null && truckDriverDetailsList.size() != 0) {
                 for (TruckDriverDetails request : truckDriverDetailsList) {
                     oldEntity = truckDriverDetailsMap.get(request.getGuid());
                     if(oldEntity != null) {
@@ -302,6 +303,7 @@ public class TruckDriverDetailsDao implements ITruckDriverDetailsDao {
                 req.setCreatedAt(oldEntityMap.get(id).getCreatedAt());
                 req.setCreatedBy(oldEntityMap.get(id).getCreatedBy());
             }
+//            req.setConsolidationId(consolidationId);
             res.add(req);
         }
         res = saveAll(res);

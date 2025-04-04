@@ -8,6 +8,7 @@ import java.util.UUID;
 
 @Data
 public class AwbGoodsDescriptionInfoV2 implements IRunnerRequest {
+    // public Int64 entityId;
     public UUID guid;
     public String entityType;
     public Integer piecesNo;

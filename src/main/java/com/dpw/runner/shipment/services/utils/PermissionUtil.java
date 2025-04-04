@@ -31,7 +31,7 @@ public class PermissionUtil {
         List<String> mappedPermission = V1PermissionMapUtil.getPermissionNames(permissionList);
 
         for (String v1MappedPermission : mappedPermission) {
-            List<FilterCriteria> innerFilters = new ArrayList<>();
+            List<FilterCriteria> innerFilters = new ArrayList();
             HashMap<String, String> criteriaMap = new HashMap<>();
             if(v1MappedPermission == null)
                 continue;
@@ -159,7 +159,7 @@ public class PermissionUtil {
         // so that we don't miss any filter criteria.
         HashMap<String, Boolean> criteriaAppenderMap = (HashMap<String, Boolean>) input.entrySet()
                 .stream()
-                .collect(Collectors.toMap(Map.Entry::getKey,
+                .collect(Collectors.toMap(e -> e.getKey(),
                         e -> false));
 
         String level0 = input.get(TRANSPORT_MODE);

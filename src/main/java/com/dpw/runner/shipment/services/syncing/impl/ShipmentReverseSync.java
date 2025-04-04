@@ -28,7 +28,7 @@ import org.springframework.stereotype.Service;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 
 @Service
 @Slf4j
@@ -53,7 +53,7 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
             CustomShipmentSyncRequest cs = (CustomShipmentSyncRequest) commonRequestModel.getData();
             ShipmentDetails sd = modelMapper.map(cs, ShipmentDetails.class);
 
-            if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !Boolean.TRUE.equals(syncConfig.IS_REVERSE_SYNC_ACTIVE)) {
+            if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
                 return ResponseHelper.buildSuccessResponse();
             }
             mapCarrierDetailsReverse(cs, sd);
@@ -61,6 +61,10 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
             mapReverseShipmentGuids(sd, cs);
             mapShipmentServiceReverse(cs, sd);
 
+//            // Clarity required
+//            if(cs.getStatusString() != null && !cs.getStatusString().isEmpty()){
+//                sd.setStatus(Integer.parseInt(cs.getStatusString())); // ENUM MAPPING ?
+//            }
             sd.setLockedBy(cs.getLockedByUser());
             sd.setSourceGuid(cs.getSourceGuid());
 
@@ -84,9 +88,9 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
             sd.setCreatedAt(cs.getInsertDate());
             sd.setVolumetricWeight(cs.getVolumeWeight());
             sd.setVolumetricWeightUnit(cs.getWeightVolumeUnit());
-            if(!isStringNullOrEmpty(cs.getPrevShipmentStatusString()))
+            if(!IsStringNullOrEmpty(cs.getPrevShipmentStatusString()))
                 sd.setPrevShipmentStatus(ShipmentStatus.valueOf(cs.getPrevShipmentStatusString()).getValue());
-            if(!isStringNullOrEmpty(cs.getStatusString()))
+            if(!IsStringNullOrEmpty(cs.getStatusString()))
                 sd.setStatus(ShipmentStatus.valueOf(cs.getStatusString()).getValue());
 
             sd.setConsigner(mapPartyObjectWithFreetext(cs.getConsignerParty(), cs.getIsConsignerFreeTextAddress(), cs.getConsignerFreeTextAddress()));
@@ -163,16 +167,16 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
         additionalDetails.setSendingForwarder(mapPartyObject(cs.getSendingForwarderParty()));
         additionalDetails.setTraderOrSupplier(mapPartyObject(cs.getTraderOrSupplierParty()));
         additionalDetails.setNotifyParty(mapPartyObjectWithFreetext(cs.getNotifyParty(), cs.getIsNotifyPartyFreeTextAddress(), cs.getNotifyPartyFreeTextAddress()));
-        if(!isStringNullOrEmpty(cs.getAndesStatusString()))
+        if(!IsStringNullOrEmpty(cs.getAndesStatusString()))
             additionalDetails.setAndesStatus(AndesStatus.valueOf(cs.getAndesStatusString()));
-        if(!isStringNullOrEmpty(cs.getOwnershipString())) {
+        if(!IsStringNullOrEmpty(cs.getOwnershipString())) {
             additionalDetails.setOwnership(Ownership.valueOf(cs.getOwnershipString()));
             if(additionalDetails.getOwnership().equals(Ownership.Self))
                 additionalDetails.setOwnershipName(cs.getOwnershipName());
             else
                 additionalDetails.setOwnershipOrg(mapPartyObject(cs.getOwnershipParty()));
         }
-        if(!isStringNullOrEmpty(cs.getPassedByString()))
+        if(!IsStringNullOrEmpty(cs.getPassedByString()))
             additionalDetails.setPassedBy(Ownership.valueOf(cs.getPassedByString()));
         additionalDetails.setBOEDate(cs.getBoedate());
         additionalDetails.setBOENumber(cs.getBoenumber());
@@ -203,9 +207,9 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
             return;
         List<ServiceDetails> res = cs.getServicesList().stream().map(
                 i -> {
-                    var serviceDetails = modelMapper.map(i, ServiceDetails.class);
-                    serviceDetails.setServiceDuration(i.getServiceDurationSpan());
-                    return serviceDetails;
+                    var _service = modelMapper.map(i, ServiceDetails.class);
+                    _service.setServiceDuration(i.getServiceDurationSpan());
+                    return _service;
                 }
         ).toList();
         sd.setServicesList(res);

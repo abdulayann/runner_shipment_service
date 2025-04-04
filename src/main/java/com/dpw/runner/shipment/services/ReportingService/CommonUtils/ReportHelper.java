@@ -5,11 +5,9 @@ import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.google.common.base.Strings;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.time.LocalDateTime;
@@ -19,7 +17,6 @@ import java.util.*;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 
 @Component
-@Slf4j
 public class ReportHelper {
     public static String getCityCountry(String city, String country)
     {
@@ -56,7 +53,7 @@ public class ReportHelper {
         temp = getCommaSeparatedAddress(partiesModel.getAddressData(), ReportConstants.COUNTRY, temp);
         temp = getCommaSeparatedAddress(partiesModel.getAddressData(), ReportConstants.ZIP_POST_CODE, temp);
 
-        if (!CommonUtils.isStringNullOrEmpty(temp)) {
+        if (!CommonUtils.IsStringNullOrEmpty(temp)) {
             if (response == null) {
                 response = temp;
             } else {
@@ -70,7 +67,7 @@ public class ReportHelper {
 
     public static String getNextLineAddress(Map<String, Object> map, String key, String response) {
         String x = getValueFromMap(map, key);
-        if(!CommonUtils.isStringNullOrEmpty(x)){
+        if(!CommonUtils.IsStringNullOrEmpty(x)){
             if(response == null)
                 response = x;
             else
@@ -81,7 +78,7 @@ public class ReportHelper {
 
     public static String getCommaSeparatedAddress(Map<String, Object> map, String key, String response) {
         String x = getValueFromMap(map, key);
-        if(!CommonUtils.isStringNullOrEmpty(x)){
+        if(!CommonUtils.IsStringNullOrEmpty(x)){
             if(response == null)
                 response = x;
             else
@@ -90,17 +87,17 @@ public class ReportHelper {
         return response;
     }
 
-    public static List<String> getOrgAddressWithPhoneEmail(String name, String address1, String address2, String cityCountry, String email, String phone, String pincode)
+    public static List<String> getOrgAddressWithPhoneEmail(String name, String address1, String address2, String city_country, String email, String phone, String pincode)
     {
-        List<String> list = new ArrayList<>();
+        List<String> list = new ArrayList<String>();
         if(name != null)
             list.add(name);
         if(address1 != null)
             list.add(address1);
         if(address2 != null)
             list.add(address2);
-        if(cityCountry != null)
-            list.add(cityCountry);
+        if(city_country != null)
+            list.add(city_country);
         if(email != null)
             list.add(email);
         if(phone != null)
@@ -155,7 +152,7 @@ public class ReportHelper {
         if(party == null || party.getAddressData() == null)
             return new ArrayList<>();
         Map<String, Object> partyAddress = party.getAddressData();
-        List<String> list = new ArrayList<>();
+        List<String> list = new ArrayList<String>();
         if(getValueFromMap(partyAddress,ReportConstants.COMPANY_NAME) != null)
             list.add(getValueFromMap(partyAddress,ReportConstants.COMPANY_NAME));
         if(getValueFromMap(partyAddress,ReportConstants.ADDRESS1) != null)
@@ -173,7 +170,7 @@ public class ReportHelper {
         if(party == null || party.getAddressData() == null)
             return new ArrayList<>();
         Map<String, Object> partyAddress = party.getAddressData();
-        List<String> list = new ArrayList<>();
+        List<String> list = new ArrayList<String>();
         if(getValueFromMap(partyAddress,ReportConstants.COMPANY_NAME) != null)
             list.add(getValueFromMap(partyAddress,ReportConstants.COMPANY_NAME));
         if(getValueFromMap(partyAddress,ReportConstants.ADDRESS1) != null)
@@ -195,7 +192,7 @@ public class ReportHelper {
         if(party == null || party.getAddressData() == null)
             return new ArrayList<>();
         Map<String, Object> partyAddress = party.getAddressData();
-        List<String> list = new ArrayList<>();
+        List<String> list = new ArrayList<String>();
         if(getValueFromMap(partyAddress,ReportConstants.COMPANY_NAME) != null)
             list.add(getValueFromMap(partyAddress,ReportConstants.COMPANY_NAME));
         if(getValueFromMap(partyAddress,ReportConstants.ADDRESS1) != null)
@@ -216,7 +213,7 @@ public class ReportHelper {
         return list;
     }
 
-    public static List<String> getOrgAddress(String name, String address1, String address2, String cityCountry, String cityZipcode, String stateCountry)
+    public static List<String> getOrgAddress(String name, String address1, String address2, String city_country, String city_zipcode, String state_country)
     {
         List<String> list = new ArrayList<>();
         if(name != null)
@@ -225,17 +222,17 @@ public class ReportHelper {
             list.add(address1);
         if(address2 != null)
             list.add(address2);
-        if(cityCountry != null)
-            list.add(cityCountry);
-        if(cityZipcode != null)
-            list.add(cityZipcode);
-        if(stateCountry != null)
-            list.add(stateCountry);
+        if(city_country != null)
+            list.add(city_country);
+        if(city_zipcode != null)
+            list.add(city_zipcode);
+        if(state_country != null)
+            list.add(state_country);
         return list;
 
     }
 
-    public static List<String> getOrgAddressForLesserLines(String address1, String address2, String state, String city, String stateCountry, String pincode)
+    public static List<String> getOrgAddressForLesserLines(String address1, String address2, String state, String city, String state_country, String pincode)
     {
         List<String> list = new ArrayList<>();
         if(StringUtility.isNotEmpty(address1))
@@ -251,8 +248,8 @@ public class ReportHelper {
             sb.append(state).append(" ");
         if (StringUtility.isNotEmpty(pincode))
             sb.append(pincode).append(" ");
-        if (StringUtility.isNotEmpty(stateCountry))
-            sb.append(stateCountry).append(" ");
+        if (StringUtility.isNotEmpty(state_country))
+            sb.append(state_country).append(" ");
 
         if (StringUtility.isNotEmpty(sb.toString()))
             list.add(sb.toString());
@@ -265,7 +262,7 @@ public class ReportHelper {
         if(party == null || party.getAddressData() == null)
             return new ArrayList<>();
         Map<String, Object> partyAddress = party.getAddressData();
-        List<String> list = new ArrayList<>();
+        List<String> list = new ArrayList<String>();
         if(getValueFromMap(partyAddress,ReportConstants.COMPANY_NAME) != null)
             list.add(getValueFromMap(partyAddress,ReportConstants.COMPANY_NAME));
         if(getValueFromMap(partyAddress,ReportConstants.ADDRESS1) != null)
@@ -326,7 +323,7 @@ public class ReportHelper {
         if (dataMap == null)
             return null;
         Object value = dataMap.get(key);
-        if (!(value instanceof String)) {
+        if (value == null || !(value instanceof String)) {
             return null;
         }
         return value.toString();
@@ -339,14 +336,17 @@ public class ReportHelper {
     }
 
     public static List<String> getListOfStrings(String... strings) {
-        return new ArrayList<>(Arrays.asList(strings));
+        List<String> stringList = new ArrayList<>();
+        stringList.addAll(Arrays.asList(strings));
+        return stringList;
     }
 
     public static String combineStringsWithComma(String str1, String str2)
     {
         if (str1 == null)
         {
-            return str2;
+            if (str2 == null) return null;
+            else return str2;
         }
         else
         {
@@ -364,7 +364,7 @@ public class ReportHelper {
         return df.format(Double.valueOf(value));
     }
 
-    public static String generateFormattedDate(LocalDateTime localDateTime, String pattern){
+    public static String GenerateFormattedDate(LocalDateTime localDateTime, String pattern){
         if(localDateTime == null || pattern == null)
             return null;
         DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(pattern);
@@ -468,7 +468,7 @@ public class ReportHelper {
             if(decimalPlaces == null)
                 decimalPlaces = 2;
             try {
-                BigDecimal roundedNumber = CommonUtils.roundBigDecimal(number, decimalPlaces, RoundingMode.HALF_UP);
+                BigDecimal roundedNumber = number.setScale(decimalPlaces, BigDecimal.ROUND_HALF_UP);
                 Locale customLocale = Locale.US;
                 NumberFormat numberInstance = NumberFormat.getNumberInstance(customLocale);
                 numberInstance.setMinimumFractionDigits(decimalPlaces);
@@ -476,7 +476,7 @@ public class ReportHelper {
 
                 return numberInstance.format(roundedNumber);
             } catch (Exception e) {
-                log.error("An error occurred: {}", e.getMessage(), e);
+                e.printStackTrace();  // Handle the exception appropriately
             }
         }
 

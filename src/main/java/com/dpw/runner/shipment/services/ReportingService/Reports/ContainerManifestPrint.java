@@ -11,7 +11,6 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
-import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.nimbusds.jose.util.Pair;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +20,7 @@ import java.math.BigDecimal;
 import java.util.*;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.EMPTY_STRING;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 
 @Component
 public class ContainerManifestPrint extends IReport {
@@ -54,9 +54,9 @@ public class ContainerManifestPrint extends IReport {
 
         populateConsolidationFields(consol, dictionary);
 
-        List<PackingModel> packings = getAllShipmentsPacks(List.of(manifestPrintModel.getShipments().toArray(new ShipmentModel[0])));
-        Pair<BigDecimal, String> weightAndUnit = getTotalWeight(packings);
-        Pair<BigDecimal, String> volumeAndUnit = getTotalVolume(packings);
+        List<PackingModel> packings = GetAllShipmentsPacks(List.of(manifestPrintModel.getShipments().toArray(new ShipmentModel[0])));
+        Pair<BigDecimal, String> weightAndUnit = GetTotalWeight(packings);
+        Pair<BigDecimal, String> volumeAndUnit = GetTotalVolume(packings);
 
 
         processConsoleAchievedQuantities(consol, dictionary, v1TenantSettingsResponse);
@@ -71,7 +71,7 @@ public class ContainerManifestPrint extends IReport {
 
         var exportAgentAddress = ReportHelper.getOrgAddress(consol.getSendingAgent());
         var importAgentAddress = ReportHelper.getOrgAddress(consol.getReceivingAgent());
-        var ctoAddress = consol.getArrivalDetails() == null ? new ArrayList<>(): ReportHelper.getOrgAddress(consol.getArrivalDetails().getCTOId());
+        var ctoAddress = consol.getArrivalDetails() == null ? new ArrayList(): ReportHelper.getOrgAddress(consol.getArrivalDetails().getCTOId());
         List<String> exportAgentFreeTextAddress;
         List<String> importAgentFreeTextAddress;
 
@@ -90,9 +90,9 @@ public class ContainerManifestPrint extends IReport {
         processConsolShipmentType(consol, dictionary, exportAgentAddress, importAgentAddress, exportAgentFreeTextAddress, importAgentFreeTextAddress);
 
         dictionary.put(ReportConstants.CTO_ADDRESS, ctoAddress);
-        dictionary.put(ReportConstants.TOTAL_PACKS_WEIGHT, convertToWeightNumberFormat(weightAndUnit.getLeft(), v1TenantSettingsResponse));
+        dictionary.put(ReportConstants.TOTAL_PACKS_WEIGHT, ConvertToWeightNumberFormat(weightAndUnit.getLeft(), v1TenantSettingsResponse));
         dictionary.put(ReportConstants.TOTAL_WEIGHT_UNIT, weightAndUnit.getRight());
-        dictionary.put(ReportConstants.TOTAL_PACKS_VOLUME, convertToVolumeNumberFormat(volumeAndUnit.getLeft(), v1TenantSettingsResponse));
+        dictionary.put(ReportConstants.TOTAL_PACKS_VOLUME, ConvertToVolumeNumberFormat(volumeAndUnit.getLeft(), v1TenantSettingsResponse));
         dictionary.put(ReportConstants.TOTAL_VOLUME_UNIT, volumeAndUnit.getRight());
         var user = UserContext.getUser();
         dictionary.put(ReportConstants.UN, user.getUsername());
@@ -109,13 +109,13 @@ public class ContainerManifestPrint extends IReport {
 
     private void processConsoleAchievedQuantities(ConsolidationModel consol, Map<String, Object> dictionary, V1TenantSettingsResponse v1TenantSettingsResponse) {
         if (consol.getAchievedQuantities() != null && consol.getAchievedQuantities().getConsolidatedWeight() != null) {
-            dictionary.put(ReportConstants.PWEIGHT_UNIT, convertToWeightNumberFormat(consol.getAchievedQuantities().getConsolidatedWeight(), v1TenantSettingsResponse) + " " + consol.getAchievedQuantities().getConsolidatedWeightUnit());
+            dictionary.put(ReportConstants.PWEIGHT_UNIT, ConvertToWeightNumberFormat(consol.getAchievedQuantities().getConsolidatedWeight(), v1TenantSettingsResponse) + " " + consol.getAchievedQuantities().getConsolidatedWeightUnit());
         } else {
             dictionary.put(ReportConstants.PWEIGHT_UNIT, EMPTY_STRING);
         }
 
         if (consol.getAchievedQuantities() != null && consol.getAchievedQuantities().getConsolidatedVolume() != null) {
-            dictionary.put(ReportConstants.PVOLUME_UNIT, convertToVolumeNumberFormat(consol.getAchievedQuantities().getConsolidatedVolume(), v1TenantSettingsResponse) + " " + consol.getAchievedQuantities().getConsolidatedVolumeUnit());
+            dictionary.put(ReportConstants.PVOLUME_UNIT, ConvertToVolumeNumberFormat(consol.getAchievedQuantities().getConsolidatedVolume(), v1TenantSettingsResponse) + " " + consol.getAchievedQuantities().getConsolidatedVolumeUnit());
         } else {
             dictionary.put(ReportConstants.PVOLUME_UNIT, EMPTY_STRING);
         }
@@ -149,7 +149,7 @@ public class ContainerManifestPrint extends IReport {
             totalPackages =
                     containersList.stream()
                             .filter(Objects::nonNull) // Filter out null values
-                            .map(c -> CommonUtils.isStringNullOrEmpty(c.getPacks()) ? 0 : Long.parseLong(c.getPacks()))
+                            .map(c -> IsStringNullOrEmpty(c.getPacks()) ? 0 : Long.parseLong(c.getPacks()))
                             .reduce(Long::sum)
                             .orElse(0L); // Default value if the stream is empty
         }

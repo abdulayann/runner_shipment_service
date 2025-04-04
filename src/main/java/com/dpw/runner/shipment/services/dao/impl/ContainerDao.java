@@ -39,7 +39,7 @@ import java.util.stream.Collectors;
 import org.springframework.util.CollectionUtils;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 
@@ -70,7 +70,7 @@ public class ContainerDao implements IContainerDao {
     @Override
     public Containers save(Containers containers) {
         Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(containers) , Constants.CONTAINER, LifecycleHooks.ON_CREATE, false);
-        if(Boolean.TRUE.equals(containers.getHazardous()) && isStringNullOrEmpty(containers.getDgClass())) {
+        if(Boolean.TRUE.equals(containers.getHazardous()) && IsStringNullOrEmpty(containers.getDgClass())) {
             errors.add("DG class is mandatory for Hazardous Goods Containers");
         }
         if (! errors.isEmpty())
@@ -138,7 +138,7 @@ public class ContainerDao implements IContainerDao {
     }
 
     private void deleteByIds(List<Long> ids) {
-        if(ids != null && !ids.isEmpty()) {
+        if(ids != null && ids.size() > 0) {
             for (Long id: ids)
                 deleteById(id);
         }
@@ -158,7 +158,7 @@ public class ContainerDao implements IContainerDao {
             Map<Long, Containers> hashMap = containers.stream()
                     .collect(Collectors.toMap(Containers::getId, Function.identity()));
             List<Containers> containersRequestList = new ArrayList<>();
-            if (containersList != null && !containersList.isEmpty()) {
+            if (containersList != null && containersList.size() != 0) {
                 for (Containers request : containersList) {
                     Long id = request.getId();
                     if (id != null) {
@@ -254,7 +254,7 @@ public class ContainerDao implements IContainerDao {
         String responseMsg;
         List<Containers> responseContainers = new ArrayList<>();
         try {
-            // LATER- Handle Transactions here
+            // TODO- Handle Transactions here
             if (containersList != null) {
                 List<Containers> containerList = new ArrayList<>(containersList);
                 if(fromConsolidation) {
@@ -365,7 +365,7 @@ public class ContainerDao implements IContainerDao {
         processOldEntityList(oldEntityList, containersMap, deleteContIds);
         Containers oldContainer;
         try {
-            // LATER- Handle Transactions here
+            // TODO- Handle Transactions here
             if (containersList != null && !containersList.isEmpty()) {
                 List<Containers> containerList = new ArrayList<>(containersList);
                 for (Containers containers: containerList) {
@@ -407,7 +407,7 @@ public class ContainerDao implements IContainerDao {
         String responseMsg;
         List<Containers> responseContainers = new ArrayList<>();
         Map<UUID, Containers> containersMap = new HashMap<>();
-        if(oldEntityList != null && !oldEntityList.isEmpty()) {
+        if(oldEntityList != null && oldEntityList.size() > 0) {
             for (Containers containers:
                     oldEntityList) {
                 containersMap.put(containers.getGuid(), containers);
@@ -415,8 +415,8 @@ public class ContainerDao implements IContainerDao {
         }
         Containers oldContainer;
         try {
-            // LATER- Handle Transactions here
-            if (containersList != null && !containersList.isEmpty()) {
+            // TODO- Handle Transactions here
+            if (containersList != null && containersList.size() != 0) {
                 List<Containers> containerList = new ArrayList<>(containersList);
                 for (Containers containers: containerList) {
                     if(containersMap.containsKey(containers.getGuid())) {

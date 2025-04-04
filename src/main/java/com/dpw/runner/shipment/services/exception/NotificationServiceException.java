@@ -1,4 +1,4 @@
-package com.dpw.runner.shipment.services.exception.exceptions;
+package com.dpw.runner.shipment.services.exception;
 
 public class NotificationServiceException extends RuntimeException {
     public NotificationServiceException() {

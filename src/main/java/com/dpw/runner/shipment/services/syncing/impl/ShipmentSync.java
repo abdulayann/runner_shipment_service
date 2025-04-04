@@ -322,9 +322,9 @@ public class ShipmentSync implements IShipmentSync {
             return;
         List<ShipmentServiceRequestV2> res = sd.getServicesList().stream().map(
                 i -> {
-                    var serviceRequestV2 = modelMapper.map(i, ShipmentServiceRequestV2.class);
-                    serviceRequestV2.setServiceDurationSpan(i.getServiceDuration());
-                    return serviceRequestV2;
+                    var _service = modelMapper.map(i, ShipmentServiceRequestV2.class);
+                    _service.setServiceDurationSpan(i.getServiceDuration());
+                    return _service;
                 }
         ).toList();
         cs.setServicesList(res);

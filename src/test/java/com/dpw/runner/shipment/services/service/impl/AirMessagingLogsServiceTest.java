@@ -16,6 +16,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -56,12 +57,14 @@ class AirMessagingLogsServiceTest {
     private AirMessagingLogsService airMessagingLogsService;
 
     private static JsonTestUtility jsonTestUtility;
+    private static ObjectMapper objectMapper;
     private AirMessagingLogs testAirMessagingLogs;
-    private static final ModelMapper modelMapperTest = new ModelMapper();
+    private static ModelMapper modelMapperTest = new ModelMapper();
 
     @BeforeAll
     static void init() throws IOException {
         jsonTestUtility = new JsonTestUtility();
+        objectMapper = JsonTestUtility.getMapper();
     }
 
     @BeforeEach
@@ -126,8 +129,7 @@ class AirMessagingLogsServiceTest {
         AirMessagingLogsRequest airMessagingLogsRequest = modelMapperTest.map(testAirMessagingLogs, AirMessagingLogsRequest.class);
 
         when(airMessagingLogsDao.findById(any())).thenReturn(Optional.empty());
-        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(airMessagingLogsRequest);
-        assertThrows(DataRetrievalFailureException.class, () -> airMessagingLogsService.update(commonRequestModel));
+        assertThrows(DataRetrievalFailureException.class, () -> airMessagingLogsService.update(CommonRequestModel.buildRequest(airMessagingLogsRequest)));
     }
 
     @Test
@@ -143,7 +145,7 @@ class AirMessagingLogsServiceTest {
     }
 
     @Test
-    void testUpdate_Failure_GuidNotMatch() {
+    void testUpdate_Failure_GuidNotMatch() throws RunnerException {
         AirMessagingLogsRequest airMessagingLogsRequest = modelMapperTest.map(testAirMessagingLogs, AirMessagingLogsRequest.class);
         AirMessagingLogs airMessagingLogs = testAirMessagingLogs;
         AirMessagingLogs oldEntity = jsonTestUtility.getTestAirMessagingLogs();
@@ -161,7 +163,7 @@ class AirMessagingLogsServiceTest {
         AirMessagingLogsResponse airMessagingLogsResponse = modelMapperTest.map(testAirMessagingLogs, AirMessagingLogsResponse.class);
         when(airMessagingLogsDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(airMessagingLogs)));
         when(jsonHelper.convertValue(airMessagingLogs, AirMessagingLogsResponse.class)).thenReturn(airMessagingLogsResponse);
-        airMessagingLogsService.list(CommonRequestModel.buildRequest(listCommonRequest));
+        ResponseEntity<IRunnerResponse> responseEntity = airMessagingLogsService.list(CommonRequestModel.buildRequest(listCommonRequest));
         verify(airMessagingLogsDao, times(1)).findAll(any(), any());
     }
 

@@ -46,7 +46,7 @@ public class ReportServiceAdapter implements IReportService {
             return uri.getRawQuery();
 
         } catch (URISyntaxException e) {
-            log.error("An error occurred: {}", e.getMessage(), e);
+            e.printStackTrace();
             return null;
         }
     }
