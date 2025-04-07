@@ -20,7 +20,7 @@ public class PartialFetchUtils {
 
     public <T> Object fetchPartialData(RunnerResponse<T> object, List<String> includeColumns) {
 
-        if (includeColumns == null || includeColumns.size() == 0) {
+        if (includeColumns == null || includeColumns.isEmpty()) {
             return object;
         }
         ObjectMapper objectMapper = new ObjectMapper();
@@ -32,7 +32,7 @@ public class PartialFetchUtils {
 
     public <T> Object fetchPartialListData(IRunnerResponse object, List<String> includeColumns) {
 
-        if (includeColumns == null || includeColumns.size() == 0) {
+        if (includeColumns == null || includeColumns.isEmpty()) {
             return object;
         }
         ObjectMapper objectMapper = new ObjectMapper();

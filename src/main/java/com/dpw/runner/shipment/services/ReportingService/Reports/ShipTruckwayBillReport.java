@@ -30,7 +30,7 @@ public class ShipTruckwayBillReport extends IReport {
         TruckDriverModel truckDriverModel = new TruckDriverModel();
         truckDriverModel.shipmentDetails = getShipment(id);
         validateAirAndOceanDGCheck(truckDriverModel.shipmentDetails);
-        if(truckDriverModel.shipmentDetails != null && truckDriverModel.shipmentDetails.getContainersList() != null && truckDriverModel.shipmentDetails.getContainersList().size() > 0) {
+        if(truckDriverModel.shipmentDetails != null && truckDriverModel.shipmentDetails.getContainersList() != null && !truckDriverModel.shipmentDetails.getContainersList().isEmpty()) {
             List<ShipmentContainers> shipmentContainers = new ArrayList<>();
             for(var container: truckDriverModel.shipmentDetails.getContainersList())
             {
@@ -46,7 +46,7 @@ public class ShipTruckwayBillReport extends IReport {
     public Map<String, Object> populateDictionary(IDocumentModel documentModel) {
         TruckDriverModel truckDriverModel = (TruckDriverModel) documentModel;
         V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
-        String json = jsonHelper.convertToJsonWithDateTimeFormatter(truckDriverModel.shipmentDetails, GetDPWDateFormatOrDefault(v1TenantSettingsResponse));
+        String json = jsonHelper.convertToJsonWithDateTimeFormatter(truckDriverModel.shipmentDetails, getDPWDateFormatOrDefault(v1TenantSettingsResponse));
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
         populateShipmentFields(truckDriverModel.shipmentDetails, dictionary);
         populateUserFields(truckDriverModel.usersDto, dictionary);

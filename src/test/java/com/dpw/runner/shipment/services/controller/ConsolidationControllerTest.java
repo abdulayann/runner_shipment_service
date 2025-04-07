@@ -190,11 +190,11 @@ class ConsolidationControllerTest {
     }
 
     @Test
-    void calculateAchieved_AllocatedForSameUnit() {
+    void calculateAchievedAllocatedForSameUnit() {
         // Mock
-        when(consolidationService.calculateAchieved_AllocatedForSameUnit(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        when(consolidationService.calculateAchievedAllocatedForSameUnit(any())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
-        var responseEntity = consolidationController.calculateAchieved_AllocatedForSameUnit( new ConsoleCalculationsRequest());
+        var responseEntity = consolidationController.calculateAchievedAllocatedForSameUnit( new ConsoleCalculationsRequest());
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }

@@ -1230,7 +1230,7 @@ public class EntityTransferService implements IEntityTransferService {
             eventsRequest.setEntityId(entityId);
             eventsRequest.setEntityType(entityType);
             eventsRequest.setEventCode(eventCode);
-            if (tenantDetails != null && !CommonUtils.IsStringNullOrEmpty(tenantDetails.getCode()))
+            if (tenantDetails != null && !CommonUtils.isStringNullOrEmpty(tenantDetails.getCode()))
                 eventsRequest.setPlaceName(tenantDetails.getCode());
             eventsRequest.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
             if (isAutomaticTransfer()) {
@@ -1489,7 +1489,7 @@ public class EntityTransferService implements IEntityTransferService {
 
         DependentServiceResponse dependentServiceResponse = masterDataFactory.getMasterDataService().retrieveTenant();
         TenantModel tenantModel = modelMapper.map(dependentServiceResponse.getData(), TenantModel.class);
-        // TODO Need to set that.tenant.IATAAgent = true condition for Air
+        // LATER Need to set that.tenant.IATAAgent = true condition for Air
         if (shipment.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) &&
                 shipment.getDirection().equals(Constants.DIRECTION_EXP) && tenantModel.IATAAgent &&
                 Objects.equals(shipment.getJobType(), SHIPMENT_TYPE_STD)) {
@@ -2236,11 +2236,11 @@ public class EntityTransferService implements IEntityTransferService {
 
     private void processDrtShipmentTypeForEmptyAgent(Map<UUID, List<ShipmentDetails>> destinationShipmentsMap, ShipmentDetails shipmentDetails, ShipmentDetails originShipment, ArValidationResponse arValidationResponse, Long receivingAgent) {
         if (Objects.isNull(receivingAgent) && Objects.equals(shipmentDetails.getJobType(), Constants.SHIPMENT_TYPE_DRT)) {
-            Long receiving_agent = shipmentDetails.getReceivingBranch();
+            Long receivingBranch = shipmentDetails.getReceivingBranch();
             if (destinationShipmentsMap.containsKey(originShipment.getGuid())) {
                 var ships = destinationShipmentsMap.get(originShipment.getGuid());
                 var isShips = ships.stream()
-                        .filter(x -> !x.getTenantId().equals(receiving_agent != null ? receiving_agent.intValue() : 0))
+                        .filter(x -> !x.getTenantId().equals(receivingBranch != null ? receivingBranch.intValue() : 0))
                         .toList();
 
                 if (!isShips.isEmpty()) {
@@ -3208,7 +3208,7 @@ public class EntityTransferService implements IEntityTransferService {
         List<String> userEmailIds = new ArrayList<>();
         if(!CommonUtils.listIsNullOrEmpty(usersDtoList)) {
             for(UsersDto user: usersDtoList) {
-                if (!CommonUtils.IsStringNullOrEmpty(user.getEmail())) {
+                if (!CommonUtils.isStringNullOrEmpty(user.getEmail())) {
                     userEmailIds.add(user.getEmail());
                 }
             }

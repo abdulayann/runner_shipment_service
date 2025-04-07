@@ -44,7 +44,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 @Repository
@@ -293,7 +293,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
 
     private void addCarrierDetailsValidationErrors(ConsolidationDetails request, ShipmentSettingsDetails shipmentSettingsDetails, Set<String> errors) {
         if((shipmentSettingsDetails.getConsolidationLite() == null || !shipmentSettingsDetails.getConsolidationLite().booleanValue())
-                && (request.getCarrierDetails() == null || IsStringNullOrEmpty(request.getCarrierDetails().getOrigin()) || IsStringNullOrEmpty(request.getCarrierDetails().getDestination()))) {
+                && (request.getCarrierDetails() == null || isStringNullOrEmpty(request.getCarrierDetails().getOrigin()) || isStringNullOrEmpty(request.getCarrierDetails().getDestination()))) {
             errors.add("First load or Last Discharge can not be null.");
         }
     }
@@ -302,7 +302,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         if (request.getContainersList() != null && !request.getContainersList().isEmpty()) {
             HashSet<String> hashSet = new HashSet<>();
             for (Containers containers : request.getContainersList()) {
-                if (!IsStringNullOrEmpty(containers.getContainerNumber())) {
+                if (!isStringNullOrEmpty(containers.getContainerNumber())) {
                     if (hashSet.contains(containers.getContainerNumber())) {
                         errors.add("Container Number cannot be same for two different containers");
                         break;
@@ -314,7 +314,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     }
 
     private void addReferenceNumberValidationErrors(ConsolidationDetails request, Set<String> errors) {
-        if(!IsStringNullOrEmpty(request.getReferenceNumber())) {
+        if(!isStringNullOrEmpty(request.getReferenceNumber())) {
             List<ConsolidationDetails> consolidationDetails = findByReferenceNumber(request.getReferenceNumber());
             if(!consolidationDetails.isEmpty() && (request.getId() == null || consolidationDetails.get(0).getId().longValue() != request.getId().longValue())) {
                 errors.add("Consolidation with ReferenceNo " + request.getReferenceNumber() + " already exists.");
@@ -324,7 +324,6 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
 
     private void addUnLocationValidationErrors(ConsolidationDetails request, ShipmentSettingsDetails shipmentSettingsDetails, Set<String> errors) {
         if (Boolean.TRUE.equals(shipmentSettingsDetails.getRestrictedLocationsEnabled()) && request.getCarrierDetails() != null) {
-            String unLoc = null;
             if (request.getShipmentType().equals(Constants.DIRECTION_EXP)) {
                 addEXPValidationErrors(request, shipmentSettingsDetails, errors);
             } else if (request.getShipmentType().equals(Constants.IMP)) {
@@ -378,7 +377,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
     }
 
     private void addMBLNumberValidationErrors(ConsolidationDetails request, Set<String> errors) {
-        if(!IsStringNullOrEmpty(request.getBol())) {
+        if(!isStringNullOrEmpty(request.getBol())) {
             List<ConsolidationDetails> consolidationDetails = findByBol(request.getBol());
             if(checkSameMblExists(consolidationDetails, request)) {
                 errors.add(String.format("The MBL Number %s is already used. Please use a different MBL Number", request.getBol()));
@@ -453,7 +452,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
 
     private void setMawbStock(ConsolidationDetails consolidationDetails) {
         List<MawbStocksLink> mawbStocksLinks = mawbStocksLinkDao.findByMawbNumber(consolidationDetails.getMawb());
-        if(mawbStocksLinks != null && mawbStocksLinks.size() > 0) {
+        if(mawbStocksLinks != null && !mawbStocksLinks.isEmpty()) {
             MawbStocksLink res = mawbStocksLinks.get(0);
             if(!res.getStatus().equalsIgnoreCase(CONSUMED)) {
                 res.setEntityId(consolidationDetails.getId());
@@ -582,25 +581,25 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
             entryForMawbStocksLinkRow.setSeqNumber(consolidationRequest.getMawb().substring(4, 10));
             entryForMawbStocksLinkRow.setMawbNumber(consolidationRequest.getMawb());
             entryForMawbStocksLinkRow.setStatus(UNUSED);
-            entryForMawbStocksLinkRow = mawbStocksLinkDao.save(entryForMawbStocksLinkRow);
+            mawbStocksLinkDao.save(entryForMawbStocksLinkRow);
         }
     }
 
     public Boolean isMAWBNumberValid(String masterBill) {
-        Boolean MAWBNumberValidity = true;
+        boolean mAWBNumberValidity = true;
         if (masterBill.length() == 12) {
             String mawbSeqNum = masterBill.substring(4, 11);
             String checkDigit = masterBill.substring(11, 12);
-            Long imawbSeqNum = 0L;
-            Long icheckDigit = 0L;
+            long imawbSeqNum;
+            long icheckDigit;
             if (areAllCharactersDigits(masterBill, 4, 12)) {
-                imawbSeqNum = Long.valueOf(mawbSeqNum);
-                icheckDigit = Long.valueOf(checkDigit);
+                imawbSeqNum = Long.parseLong(mawbSeqNum);
+                icheckDigit = Long.parseLong(checkDigit);
                 if (imawbSeqNum % 7 != icheckDigit)
-                    MAWBNumberValidity = false;
-            } else MAWBNumberValidity = false;
-        } else MAWBNumberValidity = false;
-        return MAWBNumberValidity;
+                    mAWBNumberValidity = false;
+            } else mAWBNumberValidity = false;
+        } else mAWBNumberValidity = false;
+        return mAWBNumberValidity;
     }
 
     private boolean areAllCharactersDigits(String input, int startIndex, int endIndex) {
