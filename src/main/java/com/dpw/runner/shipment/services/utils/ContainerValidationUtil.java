@@ -1,0 +1,39 @@
+package com.dpw.runner.shipment.services.utils;
+
+import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
+import java.util.List;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+
+@Slf4j
+@Component
+public class ContainerValidationUtil {
+
+
+    /**
+     * Validates a bulk update request for containers.
+     * <p>
+     * Ensures that each {@link ContainerRequest} in the provided list contains a non-null ID. Throws a {@link IllegalArgumentException} if any request item is missing the required
+     * identifier.
+     * </p>
+     *
+     * @param requests the list of {@link ContainerRequest} objects to validate
+     * @throws IllegalArgumentException if the list is null, empty, or any item has a null ID
+     */
+    public void validateUpdateBulkRequest(List<ContainerRequest> requests) {
+        if (requests == null || requests.isEmpty()) {
+            throw new IllegalArgumentException("Bulk update request cannot be null or empty.");
+        }
+
+        for (int index = 0; index < requests.size(); index++) {
+            ContainerRequest container = requests.get(index);
+            if (container.getId() == null) {
+                throw new IllegalArgumentException(
+                        String.format("Container ID is missing for item at index %d. All items must have a valid ID.", index)
+                );
+            }
+        }
+    }
+
+
+}
