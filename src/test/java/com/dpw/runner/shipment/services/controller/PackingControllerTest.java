@@ -246,7 +246,7 @@ class PackingControllerTest {
     @Test
     void syncPackingToService() throws RunnerException {
         // Mock
-        when(packingService.V1PackingCreateAndUpdate(any(), anyBoolean())).thenReturn(ResponseHelper.buildSuccessResponse());
+        when(packingService.v1PackingCreateAndUpdate(any(), anyBoolean())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
         var responseEntity = packingController.syncPackingToService(new PackingRequestV2());
         // Assert
@@ -256,7 +256,7 @@ class PackingControllerTest {
     @Test
     void syncPackingToService2() throws RunnerException {
         // Mock
-        when(packingService.V1PackingCreateAndUpdate(any(), anyBoolean())).thenThrow(new RuntimeException());
+        when(packingService.v1PackingCreateAndUpdate(any(), anyBoolean())).thenThrow(new RuntimeException());
         // Test
         var responseEntity = packingController.syncPackingToService(new PackingRequestV2());
         // Assert
@@ -266,7 +266,7 @@ class PackingControllerTest {
     @Test
     void syncPackingToService3() throws RunnerException {
         // Mock
-        when(packingService.V1PackingCreateAndUpdate(any(), anyBoolean())).thenThrow(new RuntimeException("RuntimeException"));
+        when(packingService.v1PackingCreateAndUpdate(any(), anyBoolean())).thenThrow(new RuntimeException("RuntimeException"));
         // Test
         var responseEntity = packingController.syncPackingToService(new PackingRequestV2());
         // Assert
@@ -276,7 +276,7 @@ class PackingControllerTest {
     @Test
     void syncBulkPackingToService() {
         // Mock
-        when(packingService.V1BulkPackingCreateAndUpdate(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        when(packingService.v1BulkPackingCreateAndUpdate(any())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
         var responseEntity = packingController.syncBulkPackingToService(BulkPackingRequestV2.builder().build());
         // Assert
@@ -286,7 +286,7 @@ class PackingControllerTest {
     @Test
     void syncBulkPackingToService2() {
         // Mock
-        when(packingService.V1BulkPackingCreateAndUpdate(any())).thenThrow(new RuntimeException());
+        when(packingService.v1BulkPackingCreateAndUpdate(any())).thenThrow(new RuntimeException());
         // Test
         var responseEntity = packingController.syncBulkPackingToService(BulkPackingRequestV2.builder().build());
         // Assert
@@ -296,7 +296,7 @@ class PackingControllerTest {
     @Test
     void syncBulkPackingToService3() {
         // Mock
-        when(packingService.V1BulkPackingCreateAndUpdate(any())).thenThrow(new RuntimeException("RuntimeException"));
+        when(packingService.v1BulkPackingCreateAndUpdate(any())).thenThrow(new RuntimeException("RuntimeException"));
         // Test
         var responseEntity = packingController.syncBulkPackingToService(BulkPackingRequestV2.builder().build());
         // Assert

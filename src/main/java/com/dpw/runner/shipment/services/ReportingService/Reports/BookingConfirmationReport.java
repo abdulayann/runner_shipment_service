@@ -27,13 +27,11 @@ public class BookingConfirmationReport extends IReport{
     @Autowired
     private HblReport hblReport;
 
-    private Long id;
     public Boolean printWithoutTranslation;
 
     @Override
     public Map<String, Object> getData(Long id) {
         BookingConfirmationModel bookingConfirmationModel = (BookingConfirmationModel) getDocumentModel(id);
-        this.id = id;
         return populateDictionary(bookingConfirmationModel);
     }
 
@@ -60,7 +58,7 @@ public class BookingConfirmationReport extends IReport{
             List<Map<String, Object>> values = (List<Map<String, Object>>) dictionary.get(CHARGES_SMALL);
             for (Map<String, Object> v: values) {
                 if(v.containsKey(CHARGE_TYPE_CODE) && v.get(CHARGE_TYPE_CODE) != null) {
-                    v.put(CHARGE_TYPE_DESCRIPTION_LL, GetChargeTypeDescriptionLL((String)v.get(CHARGE_TYPE_CODE), chargeTypesWithoutTranslation));
+                    v.put(CHARGE_TYPE_DESCRIPTION_LL, getChargeTypeDescriptionLL((String)v.get(CHARGE_TYPE_CODE), chargeTypesWithoutTranslation));
                 }
             }
         }
@@ -89,7 +87,7 @@ public class BookingConfirmationReport extends IReport{
         }
 
         dictionary.put(ReportConstants.PAYMENT, bookingConfirmationModel.hblModel.shipment.getPaymentTerms());
-        HandleTranslationErrors(printWithoutTranslation, orgWithoutTranslation, chargeTypesWithoutTranslation);
+        handleTranslationErrors(printWithoutTranslation, orgWithoutTranslation, chargeTypesWithoutTranslation);
 
         return dictionary;
     }

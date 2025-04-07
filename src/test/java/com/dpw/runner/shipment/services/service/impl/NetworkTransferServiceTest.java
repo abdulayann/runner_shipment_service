@@ -465,7 +465,6 @@ class NetworkTransferServiceTest extends CommonMocks{
 
     @Test
     void testUpdateStatusAndCreatedEntityId() {
-        when(networkTransferDao.findById(1L)).thenReturn(Optional.of(networkTransfer));
         assertDoesNotThrow(() -> networkTransferService.updateStatusAndCreatedEntityId(1L, NetworkTransferStatus.ACCEPTED.name(), 2L));
     }
 
