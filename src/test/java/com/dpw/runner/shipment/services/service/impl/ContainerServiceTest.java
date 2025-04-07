@@ -1361,6 +1361,31 @@ class ContainerServiceTest extends CommonMocks {
     }
 
     @Test
+    void testPushContainersToDependentServicesWithEmptyBookingRef() {
+        // Arrange
+        Containers c1 = new Containers();
+        c1.setId(1L);
+        c1.setConsolidationId(1L);
+        c1.setContainerNumber("C123");
+        c1.setShipmentsList(new HashSet<>(Collections.singletonList(ShipmentDetails.builder().bookingReference("").build())));
+        Containers c2 = new Containers();
+        c2.setId(2L);
+        c2.setContainerNumber("C456");
+
+        List<Containers> containersList = Arrays.asList(c1,c2);
+        List<Containers> oldContainers = Arrays.asList(c1);
+
+        V1TenantSettingsResponse v1TenantSettingsResponse = new V1TenantSettingsResponse();
+        v1TenantSettingsResponse.setLogicAppIntegrationEnabled(true);
+        v1TenantSettingsResponse.setTransportOrchestratorEnabled(true);
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(v1TenantSettingsResponse);
+        // Act
+        containerService.pushContainersToDependentServices(containersList, oldContainers);
+        verify(producer, times(0)).produceToKafka(eq("jsonBody"), any(), anyString());
+        verify(sbUtils, times(0)).sendMessagesToTopic(eq(isbProperties), any(), anyList());
+    }
+
+    @Test
     void getByModuleGuidAndModuleType_ValidShipmentGuid_ShouldReturnSuccessResponse() {
         UUID validGuid = UUID.randomUUID();
         // Given
