@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.Commons.Shipment
 import com.dpw.runner.shipment.services.ReportingService.Models.HawbModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.aspects.LicenseContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -56,6 +57,7 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 
@@ -1691,93 +1693,110 @@ class HawbReportTest extends CommonMocks {
 
     @Test
     void getDocumentModel() {
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
-        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
-        ShipmentModel shipmentModel = new ShipmentModel();
-        PackingModel packingModel = new PackingModel();
-        packingModel.setHazardous(true);
-        shipmentModel.setPackingList(List.of(packingModel));
-        shipmentModel.setTransportMode(Constants.TRANSPORT_MODE_AIR);
-        shipmentModel.setContainsHazardous(true);
-        shipmentModel.setConsolidationList(Arrays.asList(new ConsolidationModel()));
-        when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
-        when(awbDao.findByConsolidationId(any())).thenReturn(Arrays.asList(new Awb()));
-        mockShipmentSettings();
-        assertNotNull(hawbReport.getDocumentModel(123L));
+        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
+            mockedLicenseContext.when(LicenseContext::isDgAirLicense).thenReturn(true);
+            ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
+            when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+            ShipmentModel shipmentModel = new ShipmentModel();
+            PackingModel packingModel = new PackingModel();
+            packingModel.setHazardous(true);
+            shipmentModel.setPackingList(List.of(packingModel));
+            shipmentModel.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+            shipmentModel.setContainsHazardous(true);
+            shipmentModel.setConsolidationList(Arrays.asList(new ConsolidationModel()));
+            when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
+            when(awbDao.findByConsolidationId(any())).thenReturn(Arrays.asList(new Awb()));
+            mockShipmentSettings();
+            assertNotNull(hawbReport.getDocumentModel(123L));
+        }
     }
 
     @Test
     void getDocumentModel_dgUserError() {
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
-        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
-        ShipmentModel shipmentModel = new ShipmentModel();
-        PackingModel packingModel = new PackingModel();
-        packingModel.setHazardous(true);
-        shipmentModel.setPackingList(List.of(packingModel));
-        shipmentModel.setTransportMode(Constants.TRANSPORT_MODE_AIR);
-        shipmentModel.setContainsHazardous(true);
-        shipmentModel.setConsolidationList(Arrays.asList(new ConsolidationModel()));
-        when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
-        UserContext.getUser().setPermissions(new HashMap<>());
-        mockShipmentSettings();
-        assertThrows(ValidationException.class, () -> hawbReport.getDocumentModel(123L));
+        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
+            mockedLicenseContext.when(LicenseContext::isOceanDGLicense).thenReturn(true);
+            ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
+            when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+            ShipmentModel shipmentModel = new ShipmentModel();
+            PackingModel packingModel = new PackingModel();
+            packingModel.setHazardous(true);
+            shipmentModel.setPackingList(List.of(packingModel));
+            shipmentModel.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+            shipmentModel.setContainsHazardous(true);
+            shipmentModel.setConsolidationList(Arrays.asList(new ConsolidationModel()));
+            when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
+            mockShipmentSettings();
+            assertThrows(ValidationException.class, () -> hawbReport.getDocumentModel(123L));
+        }
     }
 
     @Test
     void getDocumentModel_CountryAirCargoSecurity() {
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setCountryAirCargoSecurity(true);
-        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
-        ShipmentModel shipmentModel = new ShipmentModel();
-        PackingModel packingModel = new PackingModel();
-        packingModel.setHazardous(true);
-        shipmentModel.setPackingList(List.of(packingModel));
-        shipmentModel.setTransportMode(Constants.TRANSPORT_MODE_AIR);
-        shipmentModel.setDirection(Constants.DIRECTION_EXP);
-        shipmentModel.setConsolidationList(Arrays.asList(new ConsolidationModel()));
-        when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
+        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
+            mockedLicenseContext.when(LicenseContext::isAirSecurityLicense).thenReturn(false);
+            ShipmentSettingsDetailsContext.getCurrentTenantSettings()
+                .setCountryAirCargoSecurity(true);
+            when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+            ShipmentModel shipmentModel = new ShipmentModel();
+            PackingModel packingModel = new PackingModel();
+            packingModel.setHazardous(true);
+            shipmentModel.setPackingList(List.of(packingModel));
+            shipmentModel.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+            shipmentModel.setDirection(Constants.DIRECTION_EXP);
+            shipmentModel.setConsolidationList(Arrays.asList(new ConsolidationModel()));
+            when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
 
-        mockShipmentSettings();
+            mockShipmentSettings();
 
-        hawbReport.printType = ORIGINAL;
-        assertThrows(ValidationException.class, () -> hawbReport.getDocumentModel(123L));
+            hawbReport.printType = ORIGINAL;
+            assertThrows(ValidationException.class, () -> hawbReport.getDocumentModel(123L));
+        }
     }
 
     @Test
     void getDocumentModel_CountryAirCargoSecurity2() {
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setCountryAirCargoSecurity(true);
-        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
-        ShipmentModel shipmentModel = new ShipmentModel();
-        PackingModel packingModel = new PackingModel();
-        packingModel.setHazardous(true);
-        shipmentModel.setPackingList(List.of(packingModel));
-        shipmentModel.setTransportMode(Constants.TRANSPORT_MODE_AIR);
-        shipmentModel.setDirection(Constants.DIRECTION_EXP);
-        shipmentModel.setConsolidationList(Arrays.asList(new ConsolidationModel()));
-        when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
+        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
+            mockedLicenseContext.when(LicenseContext::isAirSecurityLicense).thenReturn(false);
+            ShipmentSettingsDetailsContext.getCurrentTenantSettings()
+                .setCountryAirCargoSecurity(true);
+            when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+            ShipmentModel shipmentModel = new ShipmentModel();
+            PackingModel packingModel = new PackingModel();
+            packingModel.setHazardous(true);
+            shipmentModel.setPackingList(List.of(packingModel));
+            shipmentModel.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+            shipmentModel.setDirection(Constants.DIRECTION_EXP);
+            shipmentModel.setConsolidationList(Arrays.asList(new ConsolidationModel()));
+            when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
 
-        mockShipmentSettings();
+            mockShipmentSettings();
 
-        hawbReport.printType = DRAFT;
-        assertThrows(ValidationException.class, () -> hawbReport.getDocumentModel(123L));
+            hawbReport.printType = DRAFT;
+            assertThrows(ValidationException.class, () -> hawbReport.getDocumentModel(123L));
+        }
     }
 
     @Test
     void getDocumentModel_CountryAirCargoSecurity3() {
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setCountryAirCargoSecurity(true);
-        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
-        ShipmentModel shipmentModel = new ShipmentModel();
-        PackingModel packingModel = new PackingModel();
-        packingModel.setHazardous(true);
-        shipmentModel.setPackingList(List.of(packingModel));
-        shipmentModel.setTransportMode(Constants.TRANSPORT_MODE_AIR);
-        shipmentModel.setDirection(Constants.DIRECTION_EXP);
-        shipmentModel.setContainsHazardous(true);
-        shipmentModel.setConsolidationList(Arrays.asList(new ConsolidationModel()));
-        when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
+        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
+            mockedLicenseContext.when(LicenseContext::isAirSecurityLicense).thenReturn(false);
+            ShipmentSettingsDetailsContext.getCurrentTenantSettings()
+                .setCountryAirCargoSecurity(true);
+            when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+            ShipmentModel shipmentModel = new ShipmentModel();
+            PackingModel packingModel = new PackingModel();
+            packingModel.setHazardous(true);
+            shipmentModel.setPackingList(List.of(packingModel));
+            shipmentModel.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+            shipmentModel.setDirection(Constants.DIRECTION_EXP);
+            shipmentModel.setContainsHazardous(true);
+            shipmentModel.setConsolidationList(Arrays.asList(new ConsolidationModel()));
+            when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
 
-        mockShipmentSettings();
+            mockShipmentSettings();
 
-        hawbReport.printType = ORIGINAL;
-        assertThrows(ValidationException.class, () -> hawbReport.getDocumentModel(123L));
+            hawbReport.printType = ORIGINAL;
+            assertThrows(ValidationException.class, () -> hawbReport.getDocumentModel(123L));
+        }
     }
 }
