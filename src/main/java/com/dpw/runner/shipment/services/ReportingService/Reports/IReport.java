@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.interfaces.IBillingServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
+import com.dpw.runner.shipment.services.aspects.LicenseContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
@@ -4053,11 +4054,11 @@ public abstract class IReport {
     }
 
     private static boolean isAirDgUser() {
-        return UserContext.isAirDgUser();
+        return  LicenseContext.isDgAirLicense();
     }
 
     private static boolean isAirSecurityUser() {
-        return UserContext.isAirSecurityUser();
+        return LicenseContext.isAirSecurityLicense();
     }
 
     public void validateAirDGCheckConsolidations(ConsolidationModel consolidationModel) {

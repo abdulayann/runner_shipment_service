@@ -4,8 +4,10 @@ import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
 import com.dpw.runner.shipment.services.commons.constants.MdmConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.requests.LicenseRequest;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.commons.responses.LicenseResponse;
 import com.dpw.runner.shipment.services.commons.responses.MDMServiceResponse;
 import com.dpw.runner.shipment.services.dto.request.mdm.MdmListCriteriaRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.ApprovalPartiesRequest;
@@ -18,6 +20,7 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -55,6 +58,9 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
 
     @Value("${mdm.createNonBillableCustomer}")
     String createNonBillableCustomer;
+
+    @Value("${mdm.licenseValidateUrl}")
+    String licenseValidateUrl;
 
     @Value("${mdm.departmentListUrl}")
     String departmentListUrl;
@@ -153,6 +159,29 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
             }
             log.error("MDM createNonBillableCustomer Failed due to: {}", jsonHelper.convertToJson(errorMessage));
             return ResponseHelper.buildFailedResponse(errorMessage);
+        }
+    }
+
+    @Override
+    public LicenseResponse validateLicense(CommonRequestModel commonRequestModel)
+        throws RunnerException {
+        String url = baseUrl + licenseValidateUrl;
+        LicenseRequest request =  jsonHelper.convertValueWithJsonNullable(commonRequestModel.getDependentData(), LicenseRequest.class);
+        try {
+            ResponseEntity<DependentServiceResponse> response = restTemplate.exchange(
+                RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(request)),
+                DependentServiceResponse.class
+            );
+
+        List<LicenseResponse> licenseResponses = jsonHelper.convertValue(
+            Objects.requireNonNull(response.getBody()).getData(),
+            new TypeReference<List<LicenseResponse>>() {}
+        );
+
+        return CollectionUtils.isNotEmpty(licenseResponses) ? licenseResponses.get(0) : new LicenseResponse();
+        } catch (Exception ex) {
+            log.error("MDM Credit Details Failed due to: {}", jsonHelper.convertToJson(ex.getMessage()));
+            return new LicenseResponse();
         }
     }
 
