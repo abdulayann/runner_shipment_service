@@ -1,8 +1,6 @@
 package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.commons.constants.Constants;
-import org.apache.tomcat.util.bcel.Const;
-
 import java.security.SecureRandom;
 
 /**

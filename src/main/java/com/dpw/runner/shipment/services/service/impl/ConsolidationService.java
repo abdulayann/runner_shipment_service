@@ -5887,6 +5887,7 @@ public class ConsolidationService implements IConsolidationService {
                 .build();
     }
 
+    @SuppressWarnings({"java:S2583", "java:S3516"})
     @Override
     public ResponseEntity<IRunnerResponse> getAutoAttachConsolidationDetails(CommonRequestModel commonRequestModel){
         AutoAttachConsolidationRequest request = (AutoAttachConsolidationRequest) commonRequestModel.getData();
@@ -5930,6 +5931,7 @@ public class ConsolidationService implements IConsolidationService {
         return null;
     }
 
+    @SuppressWarnings("java:S3516")
     private ResponseEntity<IRunnerResponse> getAutoAttachResponse(ListCommonRequest consolListRequest, AutoAttachConsolidationRequest request, V1TenantSettingsResponse tenantSettings, boolean isConditionSatisfied, boolean isMasterBillPresent, AutoAttachConsolidationResponse response, List<EntityTransferMasterLists> masterLists) {
         consolListRequest = CommonUtils.andCriteria("transportMode", request.getTransportMode(), "=", consolListRequest);
         consolListRequest = CommonUtils.andCriteria(Constants.OPEN_FOR_ATTACHMENT, true, "=", consolListRequest);
