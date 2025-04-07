@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -1551,7 +1552,7 @@ class MasterDataUtilsTest {
     @Test
     void getMasterListData4() {
 
-        var responseEntity = masterDataUtils.getMasterListData(MasterDataType.COMMODITY_GROUP, StringUtility.getEmptyString());
+        var responseEntity = masterDataUtils.getMasterListData(MasterDataType.COMMODITY_GROUP, Constants.EMPTY_STRING);
         assertNull(responseEntity);
     }
 

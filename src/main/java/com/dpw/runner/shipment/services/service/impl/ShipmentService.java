@@ -1600,7 +1600,7 @@ public class ShipmentService implements IShipmentService {
                     packageCount = packageCount + Integer.parseInt(container.getPacks());
                     totalPacks = totalPacks + Integer.parseInt(container.getPacks());
                 }
-            };
+            }
             packsUnit = setPacksUnit(containersList, packsUnit);
             response.setNoOfPacks(totalPacks == 0 ? null : String.valueOf(totalPacks));
             response.setPacksUnit(packsUnit);
@@ -2912,9 +2912,7 @@ public class ShipmentService implements IShipmentService {
         List<Long> oldPartners = oldEntity != null ? commonUtils.getTriangulationPartnerList(oldEntity.getTriangulationPartnerList())
                 : Collections.emptyList();
         Set<Long> oldTenantIds = new HashSet<>(oldPartners);
-        oldTenantIds.forEach(oldTenantId -> {
-            processNetworkTransferEntity(null, oldTenantId, shipmentDetails, Constants.DIRECTION_CTS);
-        });
+        oldTenantIds.forEach(oldTenantId -> processNetworkTransferEntity(null, oldTenantId, shipmentDetails, Constants.DIRECTION_CTS));
     }
 
     private void processTriangulationPartnerList(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
@@ -2932,14 +2930,10 @@ public class ShipmentService implements IShipmentService {
         oldTenantIds.removeAll(currentPartners);
 
         // Process new tenant IDs for network transfer
-        newTenantIds.forEach(newTenantId -> {
-            processNetworkTransferEntity(newTenantId, null, shipmentDetails, Constants.DIRECTION_CTS);
-        });
+        newTenantIds.forEach(newTenantId -> processNetworkTransferEntity(newTenantId, null, shipmentDetails, Constants.DIRECTION_CTS));
 
         // Process old tenant IDs for removal from network transfer
-        oldTenantIds.forEach(oldTenantId -> {
-            processNetworkTransferEntity(null, oldTenantId, shipmentDetails, Constants.DIRECTION_CTS);
-        });
+        oldTenantIds.forEach(oldTenantId -> processNetworkTransferEntity(null, oldTenantId, shipmentDetails, Constants.DIRECTION_CTS));
     }
 
     public void triggerAutomaticTransfer(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, Boolean isDocAdded) {
@@ -6201,14 +6195,10 @@ public class ShipmentService implements IShipmentService {
                 shipmentDetailsPage.getTotalElements());
     }
     public static Specification<ShipmentDetails> notInConsoleMappingTable() {
-        return (root, query, criteriaBuilder) -> {
-            return criteriaBuilder.isEmpty(root.get(Constants.CONSOLIDATION_LIST));
-        };
+        return (root, query, criteriaBuilder) -> criteriaBuilder.isEmpty(root.get(Constants.CONSOLIDATION_LIST));
     }
     public static Specification<ShipmentDetails> notInContainerMappingTable() {
-        return (root, query, criteriaBuilder) -> {
-            return criteriaBuilder.isEmpty(root.get(Constants.CONTAINERS_LIST));
-        };
+        return (root, query, criteriaBuilder) -> criteriaBuilder.isEmpty(root.get(Constants.CONTAINERS_LIST));
     }
 
     private ListCommonRequest setCrieteriaForAttachShipment(AttachListShipmentRequest request, ConsolidationDetails consolidationDetails) {
@@ -7222,15 +7212,14 @@ public class ShipmentService implements IShipmentService {
         Long currentTenant = TenantContext.getCurrentTenant().longValue();
         if(Objects.equals(currentTenant, consolidationDetails.getTenantId()))
             return false;
-        if ((triangulationPartners == null
-                || triangulationPartners.stream()
-                .filter(Objects::nonNull)
-                .noneMatch(tp -> Objects.equals(tp.getTriangulationPartner(), currentTenant)))
-                && !Objects.equals(consolidationDetails.getReceivingBranch(), currentTenant)) {
-            throw new AuthenticationException(Constants.NOT_ALLOWED_TO_VIEW_CONSOLIDATION_FOR_NTE);
-        } else if (triangulationPartners == null
+        if (
+                (triangulationPartners == null
                 && !Objects.equals(consolidationDetails.getTriangulationPartner(), TenantContext.getCurrentTenant().longValue())
-                && !Objects.equals(consolidationDetails.getReceivingBranch(), TenantContext.getCurrentTenant().longValue())) {
+                && !Objects.equals(consolidationDetails.getReceivingBranch(), TenantContext.getCurrentTenant().longValue()))
+                ||
+                ((triangulationPartners == null || triangulationPartners.stream().filter(Objects::nonNull).noneMatch(tp -> Objects.equals(tp.getTriangulationPartner(), currentTenant)))
+                && !Objects.equals(consolidationDetails.getReceivingBranch(), currentTenant))
+        ) {
             throw new AuthenticationException(Constants.NOT_ALLOWED_TO_VIEW_CONSOLIDATION_FOR_NTE);
         }
         return true;
@@ -8313,9 +8302,8 @@ public class ShipmentService implements IShipmentService {
     private Map<UUID, ShipmentOrder> getShipmentOrderMap(List<ShipmentOrder> shipmentOrders) {
         Map<UUID, ShipmentOrder> shipmentOrderMap = new HashMap<>();
         if(shipmentOrders != null && !shipmentOrders.isEmpty()) {
-            shipmentOrderMap = shipmentOrders.stream().filter(shipmentOrder -> {
-                return shipmentOrder.getOrderGuid() != null;
-            }).collect(Collectors.toMap(ShipmentOrder::getOrderGuid, shipmentorder -> shipmentorder));
+            shipmentOrderMap = shipmentOrders.stream().filter(shipmentOrder -> shipmentOrder.getOrderGuid() != null).collect(
+                    Collectors.toMap(ShipmentOrder::getOrderGuid, shipmentorder -> shipmentorder));
         }
         return shipmentOrderMap;
     }

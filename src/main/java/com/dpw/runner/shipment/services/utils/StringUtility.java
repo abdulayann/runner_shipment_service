@@ -1,5 +1,8 @@
 package com.dpw.runner.shipment.services.utils;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import org.apache.tomcat.util.bcel.Const;
+
 import java.security.SecureRandom;
 
 /**
@@ -35,13 +38,10 @@ public class StringUtility {
                 .toString();
     }
 
-    public static String getEmptyString() {
-        return "";
-    }
 
     public static String convertToString(Object object) {
         if (object == null)
-            return getEmptyString();
+            return Constants.EMPTY_STRING;
 
         return String.valueOf(object);
     }

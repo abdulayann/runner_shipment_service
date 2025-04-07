@@ -30,7 +30,7 @@ public class PartialFetchUtils {
         return jsonHelper.readFromJson(jsonString,Object.class);
     }
 
-    public <T> Object fetchPartialListData(IRunnerResponse object, List<String> includeColumns) {
+    public Object fetchPartialListData(IRunnerResponse object, List<String> includeColumns) {
 
         if (includeColumns == null || includeColumns.isEmpty()) {
             return object;

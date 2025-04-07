@@ -174,7 +174,7 @@ public class CargoManifestReport extends IReport{
             dictionary.put(ReportConstants.SCI, cargoInfoRows.getSci());
             dictionary.put(RA_CSD, geteCSDInfo(cargoManifestModel.awb));
             dictionary.put(ORIGINAL_PRINT_DATE, getPrintOriginalDate(cargoManifestModel.awb));
-            dictionary.put(USER_INITIALS, Optional.ofNullable(cargoInfoRows.getUserInitials()).map(StringUtility::toUpperCase).orElse(StringUtility.getEmptyString()));
+            dictionary.put(USER_INITIALS, Optional.ofNullable(cargoInfoRows.getUserInitials()).map(StringUtility::toUpperCase).orElse(Constants.EMPTY_STRING));
         }
     }
 

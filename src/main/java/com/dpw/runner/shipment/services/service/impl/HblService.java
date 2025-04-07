@@ -415,24 +415,21 @@ public class HblService implements IHblService {
         List<HblContainerDto> hblContainers = mapShipmentContainersToHBL(shipmentDetails);
         List<HblPartyDto> hblParties = mapShipmentPartiesToHBL(shipmentDetails.getAdditionalDetails() != null ? shipmentDetails.getAdditionalDetails().getNotifyParty() : null);
 
-        Hbl hbl = Hbl.builder().shipmentId(shipmentDetails.getId())
+        return Hbl.builder().shipmentId(shipmentDetails.getId())
                 .hblData(hblData).hblCargo(hblCargos)
                 .hblContainer(hblContainers).hblNotifyParty(hblParties)
                 .build();
-
-        return hbl;
     }
 
     private Hbl convertRequestToEntity(HblRequest request) {
         if (Objects.isNull(request))
             return Hbl.builder().build();
         HblDataDto hblData = jsonHelper.convertValue(request, HblDataDto.class);
-        Hbl hbl = Hbl.builder().shipmentId(request.getShipmentId())
+        return Hbl.builder().shipmentId(request.getShipmentId())
                 .hblData(hblData).hblCargo(request.getCargoes())
                 .hblContainer(request.getContainers())
                 .hblNotifyParty(request.getNotifyParties())
                 .build();
-        return hbl;
     }
 
     private IRunnerResponse convertEntityToDto(Hbl hbl) {
@@ -461,7 +458,7 @@ public class HblService implements IHblService {
         hblData.setMarksAndNumbers(shipmentDetail.getMarksNum());
         hblData.setPackageCount(shipmentDetail.getNoOfPacks());
         hblData.setPackageType(shipmentDetail.getPacksUnit());
-        hblData.setReason(StringUtility.getEmptyString());
+        hblData.setReason(Constants.EMPTY_STRING);
         hblData.setBlType(HblConstants.ORIGINAL_HBL);
         hblData.setStatus(Constants.PENDING);
         hblData.setPurchaseOrderNumber(null);
@@ -925,9 +922,7 @@ public class HblService implements IHblService {
 
     private void updateShipmentCargoToHBL(List<Packing> packings, Hbl hbl, HblLockSettings hblLock, Set<Containers> containers) {
         Map<UUID, Packing> packMap = new HashMap<>();
-        packings.forEach(pack -> {
-            packMap.put(pack.getGuid(), pack);
-        });
+        packings.forEach(pack -> packMap.put(pack.getGuid(), pack));
         List<HblCargoDto> deletedList = new ArrayList<>();
         Map<Long, String> map = new HashMap<>();
         if(containers != null && !containers.isEmpty())
@@ -1001,9 +996,7 @@ public class HblService implements IHblService {
     }
     private void updateShipmentContainersToHBL(Set<Containers> containers, Hbl hbl, HblLockSettings hblLock) {
         Map<UUID, Containers> contMap = new HashMap<>();
-        containers.forEach(cont -> {
-            contMap.put(cont.getGuid(), cont);
-        });
+        containers.forEach(cont -> contMap.put(cont.getGuid(), cont));
         List<HblContainerDto> deletedList = new ArrayList<>();
         if(hbl.getHblContainer() != null && !hbl.getHblContainer().isEmpty()) {
             hbl.getHblContainer().forEach(hblCont -> {
@@ -1156,7 +1149,7 @@ public class HblService implements IHblService {
 
     private String getUnLocationsName(Map<String, EntityTransferUnLocations> v1Data, String key) {
         if (Objects.isNull(key) || !v1Data.containsKey(key))
-            return StringUtility.getEmptyString();
+            return Constants.EMPTY_STRING;
 
         return v1Data.get(key).getLocCode() + " " + v1Data.get(key).getNameWoDiacritics();
     }

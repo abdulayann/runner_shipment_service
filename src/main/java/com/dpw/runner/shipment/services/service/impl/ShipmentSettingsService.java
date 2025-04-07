@@ -327,7 +327,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         Optional<ShipmentSettingsDetails> oldEntity = getSettingsDetailsOptional(request);
         if(!oldEntity.isPresent()) {
             try{
-                return (ResponseEntity<IRunnerResponse>) completeCreateFromV1(commonRequestModel);
+                return completeCreateFromV1(commonRequestModel);
             } catch (Exception e) {
                 responseMsg = e.getMessage() != null ? e.getMessage()
                         : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;

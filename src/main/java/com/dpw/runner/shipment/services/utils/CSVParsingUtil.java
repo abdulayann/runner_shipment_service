@@ -81,6 +81,7 @@ public class CSVParsingUtil<T> {
         this.executorService = executorService;
     }
 
+    @SuppressWarnings("java:S1126")
     public List<String> getHeadersForContainer() {
         List<String> headers = new ArrayList<>();
         List<Field> containerFields = Arrays.stream(ContainerResponse.class.getDeclaredFields()).toList();
@@ -99,6 +100,7 @@ public class CSVParsingUtil<T> {
         return headers;
     }
 
+    @SuppressWarnings("java:S1126")
     public List<String> getAllAttributeValuesAsListContainer(ContainerResponse response) throws IllegalAccessException {
         List<Field> containerFields = Arrays.stream(ContainerResponse.class.getDeclaredFields()).toList();
         final Set<String> requiredFields = Set.of(Constants.CONTAINER_NUMBER, "volumeUtilization", "weightUtilization", "achievedVolume",

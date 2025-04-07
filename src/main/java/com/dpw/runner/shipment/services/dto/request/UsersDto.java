@@ -15,7 +15,7 @@ import java.util.Map;
 @AllArgsConstructor
 @Data
 @Builder
-@SuppressWarnings("java:S1948")
+@SuppressWarnings({"java:S1948", "java:S1319"})
 public class UsersDto implements Serializable {
     private static final long serialVersionUID = 1L;
     private Integer Id;
@@ -23,7 +23,7 @@ public class UsersDto implements Serializable {
     public String DisplayName;
     public String Email;
     public String Phone;
-    public Boolean IsAdmin;;
+    public Boolean IsAdmin;
     public Integer TenantId;
     public String Code; //Tenant Code
     public String CompanyCode;

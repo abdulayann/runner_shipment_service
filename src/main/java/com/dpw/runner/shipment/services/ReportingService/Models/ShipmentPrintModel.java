@@ -6,8 +6,6 @@ import lombok.Data;
 @Data
 public class ShipmentPrintModel implements IDocumentModel{
 
-    private final String basePath = "Upload/";
-
     public ShipmentModel shipmentDetails;
     public String noOfPackagesWord;
     public String userDisplayName;

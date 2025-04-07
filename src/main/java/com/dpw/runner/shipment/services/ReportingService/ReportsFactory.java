@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Component
+@SuppressWarnings("java:S6539")
 public class ReportsFactory {
 
     private final Map<String, IReport> reportsMap;

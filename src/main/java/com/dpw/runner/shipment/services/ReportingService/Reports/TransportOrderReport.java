@@ -120,10 +120,10 @@ public class TransportOrderReport extends IReport{
     private void processReferenceNumbersListTags(ShipmentModel shipmentModel, Map<String, Object> dictionary) {
         if(shipmentModel.getReferenceNumbersList() != null && !shipmentModel.getReferenceNumbersList().isEmpty()) {
             for (ReferenceNumbersModel referenceNumbersModel: shipmentModel.getReferenceNumbersList()) {
-                if(Objects.equals(referenceNumbersModel.getType(), ReferenceNumbersConstants.REF_NUM_TYPE_ETN) && !dictionary.containsKey(ReportConstants.ENTRY_NUMBER))
-                    dictionary.put(ReportConstants.ENTRY_NUMBER, referenceNumbersModel.getReferenceNumber());
-                if(Objects.equals(referenceNumbersModel.getType(), ReferenceNumbersConstants.REF_NUM_TYPE_CRR) && !dictionary.containsKey(ReportConstants.CUSTOMER_REFERENCE))
-                    dictionary.put(ReportConstants.CUSTOMER_REFERENCE, referenceNumbersModel.getReferenceNumber());
+                if(Objects.equals(referenceNumbersModel.getType(), ReferenceNumbersConstants.REF_NUM_TYPE_ETN))
+                    dictionary.computeIfAbsent(ReportConstants.ENTRY_NUMBER, k -> referenceNumbersModel.getReferenceNumber());
+                if(Objects.equals(referenceNumbersModel.getType(), ReferenceNumbersConstants.REF_NUM_TYPE_CRR))
+                    dictionary.computeIfAbsent(ReportConstants.CUSTOMER_REFERENCE, k -> referenceNumbersModel.getReferenceNumber());
             }
         }
     }

@@ -239,7 +239,8 @@ public class ContainerService implements IContainerService {
         Set<String> hazardousClassMasterData = masterDataMap.get(MasterDataType.DG_CLASS.getDescription());
         for (int row = 0; row < containersList.size(); row++) {
             Containers containersRow = containersList.get(row);
-            if (Boolean.TRUE.equals(containersRow.getIsOwnContainer()) && Boolean.TRUE.equals(containersRow.getIsShipperOwned())) {
+            if (Boolean.TRUE.equals(containersRow.getIsOwnContainer() != null && containersRow.getIsShipperOwned() != null
+                    && containersRow.getIsOwnContainer()) && Boolean.TRUE.equals(containersRow.getIsShipperOwned())) {
                 String errorMessagePart1 = "Multiple container ownership is selected at row ";
                 String errorMessagePart2 = " - Kindly change and try re-uploading.";
                 throw new ValidationException(errorMessagePart1 + (row + 1) + errorMessagePart2);
@@ -1193,7 +1194,7 @@ public class ContainerService implements IContainerService {
             if (checkDigit == 10)
                 checkDigit = 0;
             if (containerNumber.length() == 11) {
-                if (checkDigit != (int) containerNumber.charAt(10) - 48) {
+                if (checkDigit != containerNumber.charAt(10) - 48) {
                     response.setSuccess(false);
                     response.setLastDigit(-2);
                     return ResponseHelper.buildSuccessResponse(response);
@@ -1211,18 +1212,18 @@ public class ContainerService implements IContainerService {
 
     private ResponseEntity<IRunnerResponse> validateContainerNumberFormat(String containerNumber, ContainerNumberCheckResponse response) {
         for (int i = 0; i < 4; i++) {
-            if ((int) containerNumber.charAt(i) < 65 || (int) containerNumber.charAt(i) > 90) {
+            if (containerNumber.charAt(i) < 65 || containerNumber.charAt(i) > 90) {
                 response.setSuccess(false);
                 return ResponseHelper.buildSuccessResponse(response);
             }
         }
         for (int i = 4; i < 10; i++) {
-            if ((int) containerNumber.charAt(i) < 48 || (int) containerNumber.charAt(i) > 57) {
+            if (containerNumber.charAt(i) < 48 || containerNumber.charAt(i) > 57) {
                 response.setSuccess(false);
                 return ResponseHelper.buildSuccessResponse(response);
             }
         }
-        if (containerNumber.length() == 11 && ((int) containerNumber.charAt(10) < 48 || (int) containerNumber.charAt(10) > 57)) {
+        if (containerNumber.length() == 11 && (containerNumber.charAt(10) < 48 || containerNumber.charAt(10) > 57)) {
             response.setSuccess(false);
             return ResponseHelper.buildSuccessResponse(response);
         }
@@ -1232,10 +1233,10 @@ public class ContainerService implements IContainerService {
     private int getExpandedVal(String containerNumber, List<Integer> eqvNumValue) {
         int expandedVal = 0;
         for (int i = 0; i < 4; i++) {
-            expandedVal = expandedVal + (int) Math.pow(2, i) * eqvNumValue.get((int) containerNumber.charAt(i) - 65);
+            expandedVal = expandedVal + (int) Math.pow(2, i) * eqvNumValue.get(containerNumber.charAt(i) - 65);
         }
         for (int i = 4; i < 10; i++) {
-            expandedVal = expandedVal + (int) Math.pow(2, i) * ((int) containerNumber.charAt(i) - 48);
+            expandedVal = expandedVal + (int) Math.pow(2, i) * (containerNumber.charAt(i) - 48);
         }
         return expandedVal;
     }
@@ -1277,9 +1278,10 @@ public class ContainerService implements IContainerService {
         try {
             Long id = commonRequestModel.getId();
             List<ShipmentsContainersMapping> shipmentsContainersMappings = shipmentsContainersMappingDao.findByContainerId(id);
+            var data = false;
             if(shipmentsContainersMappings != null && shipmentsContainersMappings.size() > 1)
-                return ResponseHelper.buildSuccessResponse(true);
-            return ResponseHelper.buildSuccessResponse(false);
+                data = true;
+            return ResponseHelper.buildSuccessResponse(data);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
@@ -1427,6 +1429,7 @@ public class ContainerService implements IContainerService {
         return null;
     }
 
+    @SuppressWarnings("java:S127")
     private void updateSummaryForCountPart(List<Containers> response, StringBuilder summary) {
         for (int i = 0; i < response.size(); i++) {
             Containers container = response.get(i);
@@ -1454,6 +1457,7 @@ public class ContainerService implements IContainerService {
         return containerCount;
     }
 
+    @SuppressWarnings("java:S127")
     private void updateSummaryForCountNoPart(List<Containers> response, StringBuilder summary) {
         for (int i = 0; i < response.size(); i++) {
             Containers container = response.get(i);

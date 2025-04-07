@@ -485,8 +485,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         CarrierListObject carrierListObject = new CarrierListObject();
         carrierListObject.setListObject(request);
         carrierListObject.setType(agentType);
-        V1DataResponse response = v1Service.fetchCarrierMasterData(carrierListObject, false);
-        return response;
+        return v1Service.fetchCarrierMasterData(carrierListObject, false);
     }
 
     private void consolidationMAWBCheck(ConsolidationDetails consolidationRequest, String oldMawb) {

@@ -21,6 +21,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 @Component
 @Slf4j
 public class ReportHelper {
+    private ReportHelper(){}
     public static String getCityCountry(String city, String country)
     {
         if (city == null)

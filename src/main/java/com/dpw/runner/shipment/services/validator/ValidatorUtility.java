@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.validator;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dao.interfaces.IValidationsDao;
 import com.dpw.runner.shipment.services.entity.Validations;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
@@ -52,7 +53,7 @@ public class ValidatorUtility {
         log.info("Initiating Validation Layer with for entity: {} raw data: {}", entity, json);
         try (JsonReader jsonReader = Json.createReader(new StringReader(json))) {
             JsonObject jsonObject = jsonReader.readObject();
-            generateMap(jsonObject, StringUtility.getEmptyString(), jsonMap);
+            generateMap(jsonObject, Constants.EMPTY_STRING, jsonMap);
             String key = String.format("%s-%s", entity, lifecycleHook);
 
             if (!validationsMap.containsKey(key))

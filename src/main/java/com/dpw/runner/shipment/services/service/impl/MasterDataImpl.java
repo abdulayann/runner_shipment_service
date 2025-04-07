@@ -427,6 +427,7 @@ public class MasterDataImpl implements IMasterDataService {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().listCousinBranches(v1ListRequest));
     }
 
+    @SuppressWarnings("java:S4838")
     public List<Object> convertToV1NotInCriteria(String filterValue, List<?> values, List<Long> existingTenantIds) {
         List<String> itemType = new ArrayList<>();
         itemType.add(filterValue);

@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.utils;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.google.common.base.Strings;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -14,8 +15,10 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrE
 @Component
 public class CountryListHelper {
 
+    private CountryListHelper(){}
     public static class ISO3166 {
 
+        private ISO3166(){}
         public static String getAlpha3FromAlpha2(String alpha2) {
             if(isStringNullOrEmpty(alpha2))
                 return null;
@@ -59,7 +62,7 @@ public class CountryListHelper {
                 return fromAlpha2(countryCode.toUpperCase()).getName();
             if (countryCode.length() == 3)
                 return fromAlpha3(countryCode.toUpperCase()).getName();
-            return StringUtility.getEmptyString();
+            return Constants.EMPTY_STRING;
         }
 
         private static List<ISO3166Country> buildCollection()

@@ -16,14 +16,6 @@ public class CarrierMasterDataFactory {
     private String source;
 
     public ICarrierMasterData getCarrierMasterDataService() {
-        if(StringUtility.isEmpty(source))
-            return carrierMasterData;  // LATER- throw exception?
-        switch (source)
-        {
-            case MAPPER_MASTER_DATA:
-                return carrierMasterData;
-            default:
-                return carrierMasterData;  // LATER- throw exception?
-        }
+        return carrierMasterData;  // LATER - throw exception?
     }
 }

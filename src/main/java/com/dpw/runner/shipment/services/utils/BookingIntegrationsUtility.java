@@ -432,7 +432,7 @@ public class BookingIntegrationsUtility {
             List<Containers> containers = customerBooking.getContainersList();
             if(Objects.isNull(containers) || containers.isEmpty())
                 return loadRequests;
-            containers.forEach(container -> {
+            containers.forEach(container ->
                 loadRequests.add(LoadRequest.builder()
                         .load_uuid(container.getGuid())
                         .load_type(customerBooking.getCargoType())
@@ -447,15 +447,15 @@ public class BookingIntegrationsUtility {
                         .volume(container.getGrossVolume())
                         .volume_uom(container.getGrossVolumeUnit())
                         .dimensions(null) // Resolved
-                        .build());
-            });
+                        .build())
+            );
         }
 
         if (customerBooking.getCargoType() != null && (customerBooking.getCargoType().equals("LCL") || customerBooking.getCargoType().equals("LSE"))) {
             List<Packing> packings = customerBooking.getPackingList();
             if(Objects.isNull(packings) || packings.isEmpty())
                 return loadRequests;
-            packings.forEach(packing -> {
+            packings.forEach(packing ->
                 loadRequests.add(LoadRequest.builder()
                         .load_uuid(packing.getGuid())
                         .load_type(customerBooking.getCargoType())
@@ -470,8 +470,8 @@ public class BookingIntegrationsUtility {
                         .volume(packing.getVolume())
                         .volume_uom(packing.getVolumeUnit())
                         .dimensions(getDimension(customerBooking.getCargoType(), packing))
-                        .build());
-            });
+                        .build())
+            );
         }
 
         return loadRequests;
@@ -484,7 +484,7 @@ public class BookingIntegrationsUtility {
             Set<Containers> containers = shipmentDetails.getContainersList();
             if(Objects.isNull(containers) || containers.isEmpty())
                 return loadRequests;
-            containers.forEach(container -> {
+            containers.forEach(container ->
                 loadRequests.add(LoadRequest.builder()
                         .load_uuid(container.getGuid())
                         .load_type(shipmentDetails.getShipmentType())
@@ -503,15 +503,15 @@ public class BookingIntegrationsUtility {
                         .quantity_uom(CustomerBookingConstants.UNIT)
                         .volume(container.getGrossVolume())
                         .volume_uom(container.getGrossVolumeUnit())
-                        .build());
-            });
+                        .build())
+            );
         }
 
         if (Objects.equals(shipmentDetails.getShipmentType(), Constants.SHIPMENT_TYPE_LCL) || Objects.equals(shipmentDetails.getShipmentType(), Constants.SHIPMENT_TYPE_LSE)) {
             List<Packing> packings = shipmentDetails.getPackingList();
             if(Objects.isNull(packings) || packings.isEmpty())
                 return loadRequests;
-            packings.forEach(packing -> {
+            packings.forEach(packing ->
                 loadRequests.add(LoadRequest.builder()
                         .load_uuid(packing.getGuid())
                         .load_type(shipmentDetails.getShipmentType())
@@ -527,8 +527,8 @@ public class BookingIntegrationsUtility {
                         .volume_uom(packing.getVolumeUnit())
                         .dimensions(getDimension(shipmentDetails.getShipmentType(), packing))
                         .is_hazardous(packing.getHazardous() != null && packing.getHazardous())
-                        .build());
-            });
+                        .build())
+            );
         }
 
         return loadRequests;
@@ -615,7 +615,7 @@ public class BookingIntegrationsUtility {
         log.info("ChargeTypeMap from V1 Charge Codes: "+ jsonHelper.convertToJson(chargeTypeMap));
 
         bookingCharges.forEach(
-                bookingCharge -> {
+                bookingCharge ->
                     charges.add(
                             ChargesRequest.builder()
                                     .load_uuid(Objects.isNull(bookingCharge.getContainersList()) || bookingCharge.getContainersList().isEmpty() ? null : bookingCharge.getContainersList().stream().map(c -> c.getGuid()).collect(Collectors.toList()))
@@ -631,8 +631,7 @@ public class BookingIntegrationsUtility {
                                     .taxes(null) // optional
                                     .charge_id(bookingCharge.getGuid().toString())
                                     .build()
-                    );
-                }
+                    )
         );
 
         return charges;

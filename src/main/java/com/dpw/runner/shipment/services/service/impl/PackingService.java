@@ -955,9 +955,7 @@ public class PackingService implements IPackingService {
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<Packing> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
-        lst.forEach(packing -> {
-            responseList.add(convertEntityToDto(packing));
-        });
+        lst.forEach(packing -> responseList.add(convertEntityToDto(packing)));
         return responseList;
     }
 

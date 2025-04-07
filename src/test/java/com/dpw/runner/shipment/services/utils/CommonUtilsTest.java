@@ -3186,7 +3186,7 @@ class CommonUtilsTest {
 
     @Test
     void testGetShipmentDetailsResponseWithEmptyString() {
-        List<String> includeColumns = List.of(StringUtility.getEmptyString());
+        List<String> includeColumns = List.of(Constants.EMPTY_STRING);
         Object response = commonUtils.getShipmentDetailsResponse(shipmentDetails, includeColumns);
         assertNotNull(response);
     }

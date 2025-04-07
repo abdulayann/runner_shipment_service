@@ -13,8 +13,7 @@ public class DateUtils {
     private DateUtils(){}
     public static String getDateAsString(LocalDateTime dateTime){
         DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(Constants.DEFAULT_DATE_FORMAT);
-        String formattedDateTime = dateTime.format(dateTimeFormatter);
-        return formattedDateTime;
+        return dateTime.format(dateTimeFormatter);
     }
 
     public static LocalDateTime convertDateFromUserTimeZone(LocalDateTime date, String browserTZ, String tenantTZ, boolean enableTimeZone) {

@@ -338,7 +338,7 @@ public class MawbStocksService implements IMawbStocksService {
             log.error(e.getMessage());
             throw new RunnerException(e.getMessage());
         }
-        return (ResponseEntity<IRunnerResponse>) ResponseHelper.buildSuccessResponse(convertEntityToDto(mawbStocks));
+        return ResponseHelper.buildSuccessResponse(convertEntityToDto(mawbStocks));
     }
 
     private void beforeSave(MawbStocksRequest mawbStocks, List<String> mawbNumbers) throws ValidationException {
@@ -351,8 +351,9 @@ public class MawbStocksService implements IMawbStocksService {
     }
 
     private boolean isValidMawb(String mawb) {
+        boolean isMawbValid = false;
         if(!StringUtility.isEmpty(mawb) && mawb.contains("-") && (mawb.length() - mawb.indexOf("-") == 9))
-            return true;
-        return false;
+            isMawbValid =  true;
+        return isMawbValid;
     }
 }
