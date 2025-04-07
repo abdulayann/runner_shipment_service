@@ -30,12 +30,17 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.THIRD_LEG_DESTINATION;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TOTAL_CONSOL_PACKS;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TOTAL_PACKS;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.setIsNullOrEmpty;
 
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.ReportingService.Models.AWbLabelModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
-import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.CarrierDetailModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ConsolidationModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.RoutingsModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
@@ -68,8 +73,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
-
-import static com.dpw.runner.shipment.services.utils.CommonUtils.setIsNullOrEmpty;
 
 @Component
 @Slf4j
@@ -227,7 +230,7 @@ public class AWBLabelReport extends IReport{
             addUnlocations(awbLabelModel.shipment.getCarrierDetails(), unlocations);
         }
 
-        dictionary.put(GROSS_WEIGHT_AND_UNIT, IReport.convertToWeightNumberFormat(awbLabelModel.shipment.getWeight(), v1TenantSettingsResponse) + " " + convertToSingleCharWeightFormat(awbLabelModel.shipment.getWeightUnit()));
+        dictionary.put(GROSS_WEIGHT_AND_UNIT, IReport.ConvertToWeightNumberFormat(awbLabelModel.shipment.getWeight(), v1TenantSettingsResponse) + " " + convertToSingleCharWeightFormat(awbLabelModel.shipment.getWeightUnit()));
     }
 
     private boolean isMawbCondition(AWbLabelModel awbLabelModel) {
@@ -238,14 +241,14 @@ public class AWBLabelReport extends IReport{
     private void processInnerPacks(AWbLabelModel awbLabelModel, Map<String, Object> dictionary, V1TenantSettingsResponse v1TenantSettingsResponse) {
         if (awbLabelModel.shipment.getInnerPacks() != null) {
             String inners = padWithZeros(awbLabelModel.shipment.getInnerPacks().toString());
-            dictionary.put(ReportConstants.INNERS, getDPWWeightVolumeFormat(BigDecimal.valueOf(Long.parseLong(inners)), 0, v1TenantSettingsResponse));
+            dictionary.put(ReportConstants.INNERS, GetDPWWeightVolumeFormat(BigDecimal.valueOf(Long.parseLong(inners)), 0, v1TenantSettingsResponse));
         }
     }
 
     private void processNoOfPacks(AWbLabelModel awbLabelModel, Map<String, Object> dictionary, V1TenantSettingsResponse v1TenantSettingsResponse) {
         if (awbLabelModel.shipment.getNoOfPacks() != null) {
             String packs = padWithZeros(awbLabelModel.shipment.getNoOfPacks().toString());
-            dictionary.put(ReportConstants.PACKS, getDPWWeightVolumeFormat(BigDecimal.valueOf(Long.parseLong(packs)), 0, v1TenantSettingsResponse));
+            dictionary.put(ReportConstants.PACKS, GetDPWWeightVolumeFormat(BigDecimal.valueOf(Long.parseLong(packs)), 0, v1TenantSettingsResponse));
         }
     }
 
@@ -280,7 +283,7 @@ public class AWBLabelReport extends IReport{
 
     private void processConsolidation(AWbLabelModel awbLabelModel, Map<String, Object> dictionary, List<String> unlocations) {
         String shippingLine = awbLabelModel.getConsolidation().getCarrierDetails() != null ? awbLabelModel.getConsolidation().getCarrierDetails().getShippingLine() : "";
-        if (!CommonUtils.isStringNullOrEmpty(shippingLine)) {
+        if (!CommonUtils.IsStringNullOrEmpty(shippingLine)) {
             dictionary.put(AIRLINE_NAME, shippingLine);
         }
 
@@ -327,7 +330,7 @@ public class AWBLabelReport extends IReport{
 
         if (awbLabelModel.shipment != null) {
             String shippingLine = awbLabelModel.getShipment().getCarrierDetails() != null ? awbLabelModel.getShipment().getCarrierDetails().getShippingLine() : "";
-            if (!CommonUtils.isStringNullOrEmpty(shippingLine)) {
+            if (!CommonUtils.IsStringNullOrEmpty(shippingLine)) {
                 dictionary.put(CARRIER, shippingLine);
             }
 
@@ -561,6 +564,7 @@ public class AWBLabelReport extends IReport{
             // DRT SHIPMENT
             dictionary.put(AIRLINE_NAME, dictionary.get(CARRIER));
             dictionary.put(CONSOL_DESTINATION_AIRPORT_CODE, dictionary.get(POD_AIRPORT_CODE_IN_CAPS));
+            dictionary.put(CONSOL_DESTINATION_AIRPORT_CODE_CAPS, dictionary.get(POD_AIRPORT_CODE_IN_CAPS));
             dictionary.put(DESTINATION_PORT_NAME_INCAPS_AIR, dictionary.get(DESTINATION_PORT));
             dictionary.put(CONSOL_ORIGIN_AIRPORT_CODE, dictionary.get(POL_AIRPORT_CODE_IN_CAPS));
             dictionary.put(ORIGIN_PORT_NAME_INCAPS_AIR, dictionary.get(ORIGIN_PORT));

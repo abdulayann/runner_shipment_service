@@ -8,7 +8,6 @@ import lombok.Data;
 import java.util.List;
 
 @Data
-@SuppressWarnings("java:S125")
 public class NPMAutoSellRequest implements IRunnerRequest {
     @JsonProperty("awb")
     private Awb awb;

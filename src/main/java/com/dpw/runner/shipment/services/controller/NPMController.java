@@ -12,6 +12,7 @@ import com.dpw.runner.shipment.services.dto.request.ListContractsWithFilterReque
 import com.dpw.runner.shipment.services.dto.request.npm.NPMAutoSellRequest;
 import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchOffersRequestFromUI;
 import com.dpw.runner.shipment.services.dto.request.npm.NPMImportRatesRequest;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import io.swagger.annotations.ApiResponse;
@@ -28,10 +29,12 @@ import javax.validation.Valid;
 @RestController
 @RequestMapping(value = NPMConstants.NPM_API_HANDLE)
 public class NPMController {
+    private final JsonHelper jsonHelper;
     private final INPMServiceAdapter npmService;
 
     @Autowired
-    public NPMController(INPMServiceAdapter npmService) {
+    public NPMController(JsonHelper jsonHelper, INPMServiceAdapter npmService) {
+        this.jsonHelper = jsonHelper;
         this.npmService = npmService;
     }
 

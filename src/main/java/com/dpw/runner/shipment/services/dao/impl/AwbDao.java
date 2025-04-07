@@ -26,6 +26,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IKafkaAsyncService;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.AwbUtility;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 import org.modelmapper.ModelMapper;
@@ -40,10 +41,12 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.persistence.EntityManager;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.EXEMPTION_CARGO;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 
 @Repository
 @Slf4j
@@ -82,6 +85,12 @@ public class AwbDao implements IAwbDao {
     private IKafkaAsyncService kafkaAsyncService;
 
     @Autowired
+    private MasterDataUtils masterDataUtils;
+
+    @Autowired
+    private ExecutorService executorService;
+
+    @Autowired
     public void setV1ServiceUtil(V1ServiceUtil v1ServiceUtil) {
         this.v1ServiceUtil = v1ServiceUtil;
     }
@@ -95,7 +104,7 @@ public class AwbDao implements IAwbDao {
         boolean isCreate = awbShipmentInfo.getId() == null;
         applyValidations(awbShipmentInfo);
         Awb awb = awbRepository.save(awbShipmentInfo);
-        kafkaAsyncService.pushToKafkaAwb(awb, isCreate);
+        CompletableFuture.runAsync(masterDataUtils.withMdc(()-> kafkaAsyncService.pushToKafkaAwb(awb, isCreate)), executorService);
         return awb;
     }
 
@@ -160,7 +169,7 @@ public class AwbDao implements IAwbDao {
         List<Awb> entities = awbRepository.saveAll(req);
         for (Awb awb: entities)
         {
-            kafkaAsyncService.pushToKafkaAwb(awb, false);
+            CompletableFuture.runAsync(masterDataUtils.withMdc(()-> kafkaAsyncService.pushToKafkaAwb(awb, false)), executorService);
         }
         return entities;
     }
@@ -402,7 +411,7 @@ public class AwbDao implements IAwbDao {
     private void getAwbSphEntity(String eFreightStatus, String securityStatus, Long id, Awb awb) {
         awb.setAwbSpecialHandlingCodesMappings(null);
         List<AwbSpecialHandlingCodesMappingInfo> sphs = new ArrayList<>();
-        if(!isStringNullOrEmpty(eFreightStatus) && !Constants.NON.equals(eFreightStatus)) {
+        if(!IsStringNullOrEmpty(eFreightStatus) && !Constants.NON.equals(eFreightStatus)) {
             AwbSpecialHandlingCodesMappingInfo sph = AwbSpecialHandlingCodesMappingInfo.builder()
                     .shcId(eFreightStatus)
                     .entityId(id)
@@ -411,7 +420,7 @@ public class AwbDao implements IAwbDao {
             sph.setEntityType(awb.getAwbShipmentInfo().getEntityType());
             sphs.add(sph);
         }
-        if(!isStringNullOrEmpty(securityStatus) && !Constants.INSECURE.equals(securityStatus)) {
+        if(!IsStringNullOrEmpty(securityStatus) && !Constants.INSECURE.equals(securityStatus)) {
             if(securityStatus.equalsIgnoreCase(EXEMPTION_CARGO) || securityStatus.equalsIgnoreCase(ReportConstants.EXEMPTION_CARGO))
                 securityStatus = Constants.SPX;
             AwbSpecialHandlingCodesMappingInfo sph = AwbSpecialHandlingCodesMappingInfo.builder()
@@ -430,6 +439,7 @@ public class AwbDao implements IAwbDao {
     public void updatedAwbInformationEvent(Object newEntity, Object oldEntity) throws RunnerException {
         // fetch Awb
         Awb awb = null;
+        AwbSpecialHandlingCodesMappingInfo sph = null;
 
         if(newEntity instanceof ShipmentDetails shipmentDetails) {
             awb = getAwbFromShipment((ShipmentDetails) oldEntity, shipmentDetails);

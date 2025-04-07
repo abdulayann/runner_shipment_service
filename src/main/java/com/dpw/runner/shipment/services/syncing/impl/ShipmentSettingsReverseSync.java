@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -53,11 +52,11 @@ public class ShipmentSettingsReverseSync implements IShipmentSettingsReverseSync
             ShipmentSettingRequest dest = modelMapper.map(req, ShipmentSettingRequest.class);
             TenantContext.setCurrentTenant(dest.getTenantId().intValue());
             // Non Enums entities
-            if(req.getHblLock() != null && !req.getHblLock().isEmpty())
+            if(req.getHblLock() != null && req.getHblLock().size() > 0)
                 dest.setHblLockSettings(convertToClass(req.getHblLock().get(0), HblLockSettingsRequest.class));
-            if(req.getHawbLock() != null && !req.getHawbLock().isEmpty())
+            if(req.getHawbLock() != null && req.getHawbLock().size() > 0)
                 dest.setHawbLockSettings(convertToClass(req.getHawbLock().get(0), HawbLockSettingsRequest.class));
-            if(req.getMawbLock() != null && !req.getMawbLock().isEmpty())
+            if(req.getMawbLock() != null && req.getMawbLock().size() > 0)
                 dest.setMawbLockSettings(convertToClass(req.getMawbLock().get(0), MawbLockSettingsRequest.class));
 
             // Entities with enums
@@ -112,9 +111,7 @@ public class ShipmentSettingsReverseSync implements IShipmentSettingsReverseSync
         // Setting ENUMS
         try {
             res.setTypeOfHblPrint(TypeOfHblPrint.valueOf(req.getTypeOfHblPrint()));
-        } catch (Exception ignored) {
-            log.info(Constants.IGNORED_ERROR_MSG);
-        }
+        } catch (Exception ignored) {}
 
         return res;
     }
@@ -127,9 +124,7 @@ public class ShipmentSettingsReverseSync implements IShipmentSettingsReverseSync
         // Setting ENUMS
         try {
             res.setProductType(ProductType.valueOf(req.getProductType()));
-        } catch (Exception ignored) {
-            log.info(Constants.IGNORED_ERROR_MSG);
-        }
+        } catch (Exception ignored) {}
 
         return res;
     }
@@ -143,9 +138,7 @@ public class ShipmentSettingsReverseSync implements IShipmentSettingsReverseSync
         try {
             res.setProductProcessTypes(ProductProcessTypes.valueOf(req.getProductProcessTypes()));
             res.setGenerationType(GenerationType.valueOf(req.getGenerationType()));
-        } catch (Exception ignored) {
-            log.info(Constants.IGNORED_ERROR_MSG);
-        }
+        } catch (Exception ignored) {}
 
         return res;
     }

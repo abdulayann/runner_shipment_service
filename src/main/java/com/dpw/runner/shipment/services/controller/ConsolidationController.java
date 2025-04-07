@@ -213,8 +213,8 @@ public class ConsolidationController {
 
     @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ConsolidationConstants.CONSOLIDATION_CALCULATION_SUCCESSFUL)})
     @PostMapping(ApiConstants.API_CHANGE_UNIT_ALLOCATED_ACHIEVED)
-    public ResponseEntity<IRunnerResponse> calculateAchievedAllocatedForSameUnit(@RequestBody ConsoleCalculationsRequest request) {
-        return consolidationService.calculateAchievedAllocatedForSameUnit(CommonRequestModel.buildRequest(request));
+    public ResponseEntity<IRunnerResponse> calculateAchieved_AllocatedForSameUnit(@RequestBody ConsoleCalculationsRequest request) {
+        return consolidationService.calculateAchieved_AllocatedForSameUnit(CommonRequestModel.buildRequest(request));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ConsolidationConstants.CONSOLIDATION_CALCULATION_SUCCESSFUL)})

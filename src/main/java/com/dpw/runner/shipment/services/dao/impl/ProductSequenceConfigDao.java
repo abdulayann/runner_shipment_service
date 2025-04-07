@@ -87,14 +87,14 @@ public class ProductSequenceConfigDao implements IProductSequenceConfigDao {
         String responseMsg;
         List<ProductSequenceConfig> responseProductSequenceConfig = new ArrayList<>();
         try {
-            // LATER- Handle Transactions here
+            // TODO- Handle Transactions here
             ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentSettingsId", shipmentSettingsId, "=");
             Pair<Specification<ProductSequenceConfig>, Pageable> pair = fetchData(listCommonRequest, ProductSequenceConfig.class);
             Page<ProductSequenceConfig> productSequenceConfigs = findAll(pair.getLeft(), pair.getRight());
             Map<Long, ProductSequenceConfig> hashMap = productSequenceConfigs.stream()
                     .collect(Collectors.toMap(ProductSequenceConfig::getId, Function.identity()));
             List<ProductSequenceConfig> productSequenceConfigRequestList = new ArrayList<>();
-            if (productSequenceConfigList != null && !productSequenceConfigList.isEmpty()) {
+            if (productSequenceConfigList != null && productSequenceConfigList.size() != 0) {
                 for (ProductSequenceConfig request : productSequenceConfigList) {
                     Long id = request.getId();
                     if (id != null) {
@@ -120,10 +120,10 @@ public class ProductSequenceConfigDao implements IProductSequenceConfigDao {
         List<ProductSequenceConfig> responseProductSequenceConfig = new ArrayList<>();
         try {
             Map<UUID, ProductSequenceConfig> hashMap = new HashMap<>();
-            if(oldProductSequenceConfig != null && !oldProductSequenceConfig.isEmpty())
+            if(oldProductSequenceConfig != null && oldProductSequenceConfig.size() > 0)
                 hashMap = oldProductSequenceConfig.stream().collect(Collectors.toMap(ProductSequenceConfig::getGuid, Function.identity()));
             List<ProductSequenceConfig> productSequenceConfigRequestList = new ArrayList<>();
-            if (productSequenceConfigList != null && !productSequenceConfigList.isEmpty()) {
+            if (productSequenceConfigList != null && productSequenceConfigList.size() != 0) {
                 for (ProductSequenceConfig request : productSequenceConfigList) {
                     UUID guid = request.getGuid();
                     if(hashMap.containsKey(guid)) {

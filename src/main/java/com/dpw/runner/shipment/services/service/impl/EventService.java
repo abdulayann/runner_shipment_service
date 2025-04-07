@@ -202,7 +202,7 @@ public class EventService implements IEventService {
         }
         long id = request.getId();
         Optional<Events> oldEntity = eventDao.findById(id);
-        if (oldEntity.isEmpty()) {
+        if (!oldEntity.isPresent()) {
             log.debug(EventConstants.EVENT_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
@@ -385,10 +385,10 @@ public class EventService implements IEventService {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> v1EventsCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws RunnerException {
+    public ResponseEntity<IRunnerResponse> V1EventsCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws RunnerException {
         EventsRequestV2 eventsRequestV2 = (EventsRequestV2) commonRequestModel.getData();
         try {
-            if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !Boolean.TRUE.equals(syncConfig.IS_REVERSE_SYNC_ACTIVE)) {
+            if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
                 return ResponseHelper.buildSuccessResponse();
             }
             Optional<Events> existingEvent = eventDao.findByGuid(eventsRequestV2.getGuid());
@@ -425,8 +425,8 @@ public class EventService implements IEventService {
     public ResponseEntity<IRunnerResponse> trackEvents(TrackingEventsRequest request) throws RunnerException {
         var shipmentId = request.getShipmentId();
         var consolidationId = request.getConsolidationId();
-        Optional<ShipmentDetails> optionalShipmentDetails;
-        Optional<ConsolidationDetails> optionalConsolidationDetails;
+        Optional<ShipmentDetails> optionalShipmentDetails = Optional.empty();
+        Optional<ConsolidationDetails> optionalConsolidationDetails = Optional.empty();
         String referenceNumber = null;
         Long entityId = null;
         String entityType = null;
@@ -434,7 +434,7 @@ public class EventService implements IEventService {
             optionalShipmentDetails = shipmentDao.findById(shipmentId);
             if (optionalShipmentDetails.isEmpty()) {
                 log.debug(
-                    "No Shipment present for the current Event with RequestId : {}",
+                    "No Shipment present for the current Event ",
                     LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
@@ -462,7 +462,7 @@ public class EventService implements IEventService {
             optionalConsolidationDetails = consolidationDao.findById(consolidationId);
             if (optionalConsolidationDetails.isEmpty()) {
                 log.debug(
-                    "No Consolidation present for the current Event with RequestId : {}",
+                    "No Consolidation present for the current Event",
                     LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
@@ -1288,6 +1288,8 @@ public class EventService implements IEventService {
     private void saveAndSyncShipment(ShipmentDetails shipmentDetails, String messageId) throws RunnerException {
         log.info("Saving shipment entity: {} messageId {}", shipmentDetails.getShipmentId(), messageId);
         shipmentDao.saveWithoutValidation(shipmentDetails);
+//        log.info("Synchronizing shipment: {}", shipmentDetails.getShipmentId());
+//        shipmentSync.sync(shipmentDetails, null, null, UUID.randomUUID().toString(), false);
     }
 
     @Override

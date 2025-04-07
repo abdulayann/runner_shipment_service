@@ -15,10 +15,12 @@ import javax.servlet.http.HttpServletResponse;
 import org.springframework.http.ResponseEntity;
 
 public interface IContainerService extends ICommonService {
-    ResponseEntity<IRunnerResponse> calculateAchievedAllocatedForSameUnit(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> calculateAchieved_AllocatedForSameUnit(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> calculateAllocatedData(CommonRequestModel commonRequestModel);
 
-    ResponseEntity<IRunnerResponse> calculateAchievedQuantityOnPackDetach(CommonRequestModel commonRequestModel);
+//    ResponseEntity<?> calculateAchievedQuantity_onPackAssign(CommonRequestModel commonRequestModel);
+
+    ResponseEntity<IRunnerResponse> calculateAchievedQuantity_onPackDetach(CommonRequestModel commonRequestModel);
 
     ResponseEntity<IRunnerResponse> getContainersForSelection(CommonRequestModel commonRequestModel);
 
@@ -31,7 +33,7 @@ public interface IContainerService extends ICommonService {
     void downloadContainerEvents(HttpServletResponse response, BulkDownloadRequest request) throws RunnerException, IOException, IllegalAccessException;
 
 
-    ResponseEntity<IRunnerResponse> v1ContainerCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws RunnerException;
+    ResponseEntity<IRunnerResponse> V1ContainerCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws RunnerException;
 
     void afterSave(Containers containers, boolean isCreate);
 
@@ -39,7 +41,7 @@ public interface IContainerService extends ICommonService {
 
     void exportContainers(HttpServletResponse response, ExportContainerListRequest request) throws RunnerException, IOException, IllegalAccessException;
 
-    ResponseEntity<IRunnerResponse> v1BulkContainerCreateAndUpdate(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> V1BulkContainerCreateAndUpdate(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> validateContainerNumber(String containerNumber);
 
     ResponseEntity<IRunnerResponse> getContainers(CommonRequestModel commonRequestModel);

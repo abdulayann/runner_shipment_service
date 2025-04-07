@@ -63,7 +63,7 @@ public class PartiesDao implements IPartiesDao {
     public Parties updateEntityFromShipment(Parties parties) throws RunnerException {
         String responseMsg;
         try {
-            // LATER- Handle Transactions here
+            // TODO- Handle Transactions here
             if (parties.getId() != null) {
                 long id = parties.getId();
                 Optional<Parties> oldEntity = findById(id);
@@ -86,13 +86,13 @@ public class PartiesDao implements IPartiesDao {
         String responseMsg;
         List<Parties> responseParties = new ArrayList<>();
         try {
-            // LATER- Handle Transactions here
+            // TODO- Handle Transactions here
             List<Parties> parties = findByEntityIdAndEntityType(entityId, entityType);
             Map<Long, Parties> hashMap = parties.stream()
                         .collect(Collectors.toMap(Parties::getId, Function.identity()));
             Map<Long, Parties> copyHashMap = new HashMap<>(hashMap);
             List<Parties> partiesRequestList = new ArrayList<>();
-            if (partiesList != null && !partiesList.isEmpty()) {
+            if (partiesList != null && partiesList.size() != 0) {
                 for (Parties request : partiesList) {
                     Long id = request.getId();
                     if (id != null) {
@@ -235,7 +235,7 @@ public class PartiesDao implements IPartiesDao {
         String responseMsg;
         List<Parties> responseParties = new ArrayList<>();
         Map<UUID, Parties> partiesMap = new HashMap<>();
-        if(oldEntityList != null && !oldEntityList.isEmpty()) {
+        if(oldEntityList != null && oldEntityList.size() > 0) {
             for (Parties entity:
                     oldEntityList) {
                 partiesMap.put(entity.getGuid(), entity);
@@ -244,7 +244,7 @@ public class PartiesDao implements IPartiesDao {
         try {
             Parties oldEntity;
             List<Parties> partiesRequestList = new ArrayList<>();
-            if (partiesList != null && !partiesList.isEmpty()) {
+            if (partiesList != null && partiesList.size() != 0) {
                 for (Parties request : partiesList) {
                     oldEntity = partiesMap.get(request.getGuid());
                     if(oldEntity != null) {

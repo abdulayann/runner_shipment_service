@@ -106,7 +106,9 @@ public class EventsController {
     @PostMapping(ApiConstants.SYNC)
     @ExcludeTimeZone
     public ResponseEntity<IRunnerResponse> syncEventsToService(@RequestBody @Valid EventsRequestV2 request, @RequestParam(required = false, defaultValue = "true") boolean checkForSync) {
+        String responseMsg = "failure executing :(";
         return ResponseHelper.buildSuccessResponse();
+//      return eventService.V1EventsCreateAndUpdate(CommonRequestModel.buildRequest(request), checkForSync);
     }
 
     @ApiResponses(value = {

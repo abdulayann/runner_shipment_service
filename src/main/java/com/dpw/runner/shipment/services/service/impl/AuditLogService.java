@@ -195,7 +195,7 @@ public class AuditLogService implements IAuditLogService {
     private void prepareAuditLogOfLog(AuditLogMetaData auditLogMetaData, AuditLog auditLog, String ops)
             throws JsonProcessingException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
         Map<String, AuditLogChanges> auditLogChangesMap = getChanges(auditLogMetaData.getNewData(), null, ops);
-        if (!auditLogChangesMap.isEmpty()) {
+        if (auditLogChangesMap.size() > 0) {
             addBaseEntityFields(auditLogChangesMap, null, auditLogMetaData.getNewData(), auditLogMetaData.getUserName());
         }
         auditLog.setChanges(auditLogChangesMap);
@@ -205,7 +205,7 @@ public class AuditLogService implements IAuditLogService {
     private void prepareAuditLogOfDelete(AuditLogMetaData auditLogMetaData, AuditLog auditLog, String ops)
             throws JsonProcessingException, IllegalAccessException, InvocationTargetException, NoSuchMethodException, NoSuchFieldException {
         Map<String, AuditLogChanges> auditLogChangesMap = getChanges(null, auditLogMetaData.getPrevData(), ops);
-        if(!auditLogChangesMap.isEmpty())
+        if(auditLogChangesMap.size() > 0)
             addBaseEntityFields(auditLogChangesMap, auditLogMetaData.getPrevData(), null, auditLogMetaData.getUserName());
         auditLog.setChanges(auditLogChangesMap);
         auditLog.setEntity(auditLogMetaData.getPrevData().getClass().getSimpleName());
@@ -215,7 +215,7 @@ public class AuditLogService implements IAuditLogService {
     private void prepareAuditLogOfUpdate(AuditLogMetaData auditLogMetaData, AuditLog auditLog, String ops)
             throws JsonProcessingException, IllegalAccessException, InvocationTargetException, NoSuchMethodException, NoSuchFieldException {
         Map<String, AuditLogChanges> auditLogChangesMap = getChanges(auditLogMetaData.getNewData(), auditLogMetaData.getPrevData(), ops);
-        if(!auditLogChangesMap.isEmpty())
+        if(auditLogChangesMap.size() > 0)
             addBaseEntityFields(auditLogChangesMap, auditLogMetaData.getPrevData(), auditLogMetaData.getNewData(), auditLogMetaData.getUserName());
         auditLog.setChanges(auditLogChangesMap);
         auditLog.setEntity(auditLogMetaData.getNewData().getClass().getSimpleName());
@@ -225,7 +225,7 @@ public class AuditLogService implements IAuditLogService {
     private void prepareAuditLogOfCreate(AuditLogMetaData auditLogMetaData, AuditLog auditLog, String ops)
             throws JsonProcessingException, IllegalAccessException, InvocationTargetException, NoSuchMethodException, NoSuchFieldException {
         Map<String, AuditLogChanges> auditLogChangesMap = getChanges(auditLogMetaData.getNewData(), null, ops);
-        if(!auditLogChangesMap.isEmpty())
+        if(auditLogChangesMap.size() > 0)
             addBaseEntityFields(auditLogChangesMap, null, auditLogMetaData.getNewData(), auditLogMetaData.getUserName());
         auditLog.setChanges(auditLogChangesMap);
         auditLog.setEntity(auditLogMetaData.getNewData().getClass().getSimpleName());
@@ -297,6 +297,7 @@ public class AuditLogService implements IAuditLogService {
     }
 
     public AuditLogResponse convertEntityToDto(AuditLog auditLog) {
+        // return jsonHelper.convertValue(auditLog, AuditLogResponse.class);
         AuditLogResponse response = new AuditLogResponse();
         response.setId(auditLog.getId());
         response.setOperation(auditLog.getOperation());
@@ -468,9 +469,7 @@ public class AuditLogService implements IAuditLogService {
         Object temp = field.get(newEntity);
         try{
             temp  = PropertyUtils.getProperty(newEntity, fieldName);
-        } catch(NoSuchMethodException e) {
-            log.info(Constants.IGNORED_ERROR_MSG);
-        }
+        } catch(NoSuchMethodException e){}
         if (field.getType() == LocalDateTime.class && !ObjectUtils.isEmpty(temp)) {
             newValue = temp.toString();
         } else {
@@ -478,6 +477,7 @@ public class AuditLogService implements IAuditLogService {
         }
         if(Arrays.stream(field.getDeclaredAnnotations()).anyMatch(annotation -> annotation.annotationType() == OneToOne.class))
         {
+            // fieldValueMap.putAll(getChanges((BaseEntity) temp, null, DBOperationType.CREATE.name()));
             // Handle related entities (one-to-one or one-to-many relationships)
             Map<String, AuditLogChanges> childChanges = getChanges((BaseEntity) temp, null, DBOperationType.CREATE.name());
 

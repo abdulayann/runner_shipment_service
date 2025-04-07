@@ -12,13 +12,13 @@ import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 class ObjectUtilityTest {
 
     class TestClassA {
-        protected String field1;
+        private String field1;
         protected Integer field2;
         Boolean field3;
     }
 
     class TestClassB extends TestClassA {
-        protected Double field4;
+        private Double field4;
     }
     class TestClassC extends TestClassB {
         Long field5;
@@ -29,7 +29,7 @@ class ObjectUtilityTest {
 
     @Test
     void testGetAllFields_ClassWithNoSuperClass() {
-        Map<String, Class<Object>> fields = ObjectUtility.getAllFields(TestClassA.class, null);
+        Map<String, Class> fields = ObjectUtility.getAllFields(TestClassA.class, null);
         assertNotNull(fields);
         assertEquals(4, fields.size());
         assertEquals(String.class, fields.get("field1"));
@@ -39,7 +39,7 @@ class ObjectUtilityTest {
 
     @Test
     void testGetAllFields_ClassWithSuperClass() {
-        Map<String, Class<Object>> fields = ObjectUtility.getAllFields(TestClassB.class, null);
+        Map<String, Class> fields = ObjectUtility.getAllFields(TestClassB.class, null);
         assertNotNull(fields);
         assertEquals(5, fields.size());
         assertEquals(String.class, fields.get("field1"));
@@ -50,7 +50,7 @@ class ObjectUtilityTest {
 
     @Test
     void testGetAllFields_ClassWithMultipleSuperClasses() {
-        Map<String, Class<Object>> fields = ObjectUtility.getAllFields(TestClassC.class, null);
+        Map<String, Class> fields = ObjectUtility.getAllFields(TestClassC.class, null);
         assertNotNull(fields);
         assertEquals(7, fields.size());
         assertEquals(String.class, fields.get("field1"));
@@ -63,8 +63,8 @@ class ObjectUtilityTest {
 
     @Test
     void testGetAllFields_EmptyClass() {
-        Map<String, Class<Object>> fields = ObjectUtility.getAllFields(EmptyClass.class, null);
+        Map<String, Class> fields = ObjectUtility.getAllFields(EmptyClass.class, null);
         assertNotNull(fields);
-        assertEquals(1, fields.size());
+        assertTrue(fields.size() == 1);
     }
 }

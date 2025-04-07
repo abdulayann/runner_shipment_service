@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.entity.MawbHawbLink;
+import com.dpw.runner.shipment.services.entity.Validations;
 import com.dpw.runner.shipment.services.repository.interfaces.IMawbHawbLinkRepository;
 import com.nimbusds.jose.util.Pair;
 import org.junit.jupiter.api.Test;
@@ -46,7 +47,7 @@ class MawbHawbLinkDaoTest {
     @Test
     void findAll() {
         ListCommonRequest listReq = constructListCommonRequest("id", 1, "=");
-        Pair<Specification<MawbHawbLink>, Pageable> pair = fetchData(listReq, MawbHawbLink.class);
+        Pair<Specification<MawbHawbLink>, Pageable> pair = fetchData(listReq, Validations.class);
 
         MawbHawbLink mawbHawbLink = MawbHawbLink.builder().build();
         List<MawbHawbLink> mawbHawbLinkList = new ArrayList<>();

@@ -31,7 +31,7 @@ public class PermissionUtil {
         List<String> mappedPermission = V1PermissionMapUtil.getPermissionNames(permissionList);
 
         for (String v1MappedPermission : mappedPermission) {
-            List<FilterCriteria> innerFilters = new ArrayList<>();
+            List<FilterCriteria> innerFilters = new ArrayList();
             HashMap<String, String> criteriaMap = new HashMap<>();
             if(v1MappedPermission == null)
                 continue;

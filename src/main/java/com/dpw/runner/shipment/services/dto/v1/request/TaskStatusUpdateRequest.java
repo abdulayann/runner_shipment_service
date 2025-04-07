@@ -11,7 +11,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Data
 @Builder
-@SuppressWarnings("java:S1948")
 public class TaskStatusUpdateRequest implements IRunnerRequest {
 
   @JsonProperty("EntityId")

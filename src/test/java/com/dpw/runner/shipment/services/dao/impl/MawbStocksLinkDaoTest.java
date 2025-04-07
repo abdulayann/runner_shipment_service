@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.dao.impl;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.entity.MawbStocks;
 import com.dpw.runner.shipment.services.entity.MawbStocksLink;
+import com.dpw.runner.shipment.services.entity.Validations;
 import com.dpw.runner.shipment.services.repository.interfaces.IMawbStocksLinkRepository;
 import com.nimbusds.jose.util.Pair;
 import org.junit.jupiter.api.*;
@@ -42,7 +43,7 @@ class MawbStocksLinkDaoTest {
     @Test
     void findAll() {
         ListCommonRequest listReq = constructListCommonRequest("id", 1, "=");
-        Pair<Specification<MawbStocksLink>, Pageable> pair = fetchData(listReq, MawbStocksLink.class);
+        Pair<Specification<MawbStocksLink>, Pageable> pair = fetchData(listReq, Validations.class);
 
         MawbStocksLink mawbStocksLink = MawbStocksLink.builder().build();
         List<MawbStocksLink> mawbStocksLinkList = new ArrayList<>();

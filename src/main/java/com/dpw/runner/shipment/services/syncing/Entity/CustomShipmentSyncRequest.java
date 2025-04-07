@@ -350,17 +350,27 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     private String BookingType;
     @JsonProperty("CargoFinanceBooking")
     private boolean CargoFinanceBooking;
+    // private BigDecimal Chargeable;
+    // private String ChargableUnit;
 
     @JsonProperty("ConsolidationReferenceNumber")
     private String ConsolidationReferenceNumber;
     @JsonProperty("ContainerAutoWeightVolumeUpdate")
     private boolean ContainerAutoWeightVolumeUpdate;
+    //Direction
+    // private String Custom_ShipType;
     @JsonProperty("DocumentationPartner")
     private Integer DocumentationPartner;
     @JsonProperty("FinanceClosedByUser")
     private String FinanceClosedByUser;
     @JsonProperty("FinanceClosedOn")
     private LocalDateTime FinanceClosedOn;
+    //GoodsDescription
+    // private String Description;
+
+    // private String IncoTerm;
+    //innerPackUnit
+    // private String InnersUnit;
     @JsonProperty("IntraBranch")
     private boolean IntraBranch;
     @JsonProperty("IsLocked")
@@ -369,6 +379,11 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     private boolean IsNotifyConsigneeEqual;
     @JsonProperty("IsShipmentReadOnly")
     private boolean IsShipmentReadOnly;
+
+    // LockedBy is username in v2 and user id in v1 ,
+    // keeping lockedByUser to sync this info and fetching info from repos in v1
+//    @JsonProperty("LockedBy")
+//    private Integer LockedBy;
 
     @JsonProperty("MarksnNums")
     private String MarksnNums;
@@ -414,10 +429,15 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     @JsonProperty("DestinationName")
     private String DestinationName;
 
+
+
+    // private Integer ShipmentCompletedBy;
     @JsonProperty("ShipmentCompletedOn")
     private LocalDateTime ShipmentCompletedOn;
     @JsonProperty("SourceTenantId")
     private Integer SourceTenantId;
+
+
 
     //Jobs
     @JsonProperty("JobsList")

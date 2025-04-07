@@ -70,8 +70,8 @@ public class IntegrationResponseService implements IIntegrationResponseService {
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<IntegrationResponse> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
-        lst.forEach(integrationResponse -> {
-            IntegrationResponsesResponse response = jsonHelper.convertValue(integrationResponse, IntegrationResponsesResponse.class);
+        lst.forEach(_response -> {
+            IntegrationResponsesResponse response = jsonHelper.convertValue(_response, IntegrationResponsesResponse.class);
             responseList.add(response);
         });
         return responseList;

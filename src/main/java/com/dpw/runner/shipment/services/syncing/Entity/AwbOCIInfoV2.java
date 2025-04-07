@@ -5,6 +5,7 @@ import lombok.Data;
 
 @Data
 public class AwbOCIInfoV2 implements IRunnerRequest {
+    // public Integer entityId;
     public String entityType;
     public Integer informationIdentifier;
     public Integer tradeIdentificationCode;

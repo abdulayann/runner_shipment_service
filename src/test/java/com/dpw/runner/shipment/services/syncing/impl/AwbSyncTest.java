@@ -95,7 +95,7 @@ class AwbSyncTest {
         mock(CommonUtils.class);
         when(iAwbDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(new Awb())));
         doNothing().when(iSyncService).pushToKafka(any(), any(), any(), any(), any());
-        when(modelMapper.map(any(), eq(HblDataRequestV2.class))).thenReturn(new HblRequestV2());
+
         // Act
         awbSync.sync(awb, SaveStatus.CREATE);
 
@@ -119,7 +119,6 @@ class AwbSyncTest {
         when(iAwbDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of()));
         doNothing().when(iSyncService).pushToKafka(any(), any(), any(), any(), any());
 
-        when(modelMapper.map(any(), eq(HblDataRequestV2.class))).thenReturn(new HblRequestV2());
         // Act
         awbSync.sync(awb, SaveStatus.CREATE);
 
@@ -139,7 +138,6 @@ class AwbSyncTest {
 
         doNothing().when(iSyncService).pushToKafka(any(), any(), any(), any(), any());
 
-        when(modelMapper.map(any(), eq(HblDataRequestV2.class))).thenReturn(new HblRequestV2());
         // Act
         awbSync.sync(awb, SaveStatus.CREATE);
 

@@ -14,6 +14,7 @@ import com.dpw.runner.shipment.services.dto.request.AutoCalculatePackingRequest;
 import com.dpw.runner.shipment.services.dto.request.PackingRequest;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
 import com.dpw.runner.shipment.services.syncing.Entity.BulkPackingRequestV2;
@@ -38,13 +39,15 @@ import java.util.Objects;
 @RequestMapping(value = PackingConstants.PACKING_API_HANDLE)
 public class PackingController {
     private final IPackingService packingService;
+    private final JsonHelper jsonHelper;
 
     private static class MyResponseClass extends RunnerResponse<PackingResponse>{}
     private static class MyListResponseClass extends RunnerListResponse<PackingResponse>{}
 
     @Autowired
-    public PackingController(IPackingService packingService) {
+    public PackingController(IPackingService packingService, JsonHelper jsonHelper) {
         this.packingService = packingService;
+        this.jsonHelper = jsonHelper;
     }
 
     @ApiResponses(value = {
@@ -164,7 +167,7 @@ public class PackingController {
     public ResponseEntity<IRunnerResponse> syncPackingToService(@RequestBody @Valid PackingRequestV2 request) {
         String responseMsg = Constants.FAILURE_EXECUTING;
         try {
-            return packingService.v1PackingCreateAndUpdate(CommonRequestModel.buildRequest(request), true);
+            return packingService.V1PackingCreateAndUpdate(CommonRequestModel.buildRequest(request), true);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : "Error syncing provided Packings";
@@ -182,7 +185,7 @@ public class PackingController {
     public ResponseEntity<IRunnerResponse> syncBulkPackingToService(@RequestBody @Valid BulkPackingRequestV2 request) {
         String responseMsg = Constants.FAILURE_EXECUTING;
         try {
-            return packingService.v1BulkPackingCreateAndUpdate(CommonRequestModel.buildRequest(request));
+            return packingService.V1BulkPackingCreateAndUpdate(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : "Error syncing provided Container";

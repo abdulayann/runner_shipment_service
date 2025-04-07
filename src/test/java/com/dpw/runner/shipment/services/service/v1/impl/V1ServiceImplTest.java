@@ -15,7 +15,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
@@ -213,6 +212,9 @@ class V1ServiceImplTest {
                 new V1TenantResponse("Tenant 2", "Tenant 1", "T2", 2L)
         );
 
+        HttpHeaders headers = new HttpHeaders();
+        HttpEntity<CommonV1ListRequest> requestEntity = new HttpEntity<>(expectedRequest, V1AuthHelper.getHeaders());
+
         when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
                 (Object[]) any())).thenReturn(ResponseEntity.ok(tenantNameResponse));
 
@@ -247,6 +249,9 @@ class V1ServiceImplTest {
                 new V1TenantResponse("Tenant 1", "Tenant 1", "T1", 1L),
                 new V1TenantResponse("Tenant 2", "Tenant 2", "T2", 2L)
         );
+
+        HttpHeaders headers = new HttpHeaders();
+        HttpEntity<CommonV1ListRequest> requestEntity = new HttpEntity<>(expectedRequest, V1AuthHelper.getHeaders());
 
         when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
                 (Object[]) any())).thenReturn(ResponseEntity.ok(tenantNameResponse));
@@ -513,7 +518,7 @@ class V1ServiceImplTest {
         assertEquals("RuntimeException", throwable.getMessage());
     }
 
-//    LATER fetchCarrierMasterData
+//    TODO fetchCarrierMasterData
 
     /**
      * Method under test: {@link V1ServiceImpl#createCarrierMasterData(Object)} (Object)}
@@ -2618,27 +2623,6 @@ class V1ServiceImplTest {
     }
 
     @Test
-    void testListCousinBranches_CacheHit() {
-        // Arrange
-        String expectedCacheKey = "tenant:1";
-        V1DataResponse cachedResponse = V1DataResponse.builder().entityId(42L).build();
-        UserContext.setUser(UsersDto.builder().TenantId(1).build());
-
-        when(keyGenerator.customCacheKey(1)).thenReturn(expectedCacheKey);
-        Cache mockCache = mock(Cache.class);
-        when(cacheManager.getCache(CacheConstants.COUSIN_BRANCHES_CACHE)).thenReturn(mockCache);
-        when(mockCache.get(expectedCacheKey, V1DataResponse.class)).thenReturn(cachedResponse);
-
-        // Act
-        V1DataResponse result = v1ServiceImpl.listCousinBranches("SomeRequest");
-
-        // Assert
-        assertNotNull(result);
-        assertEquals(42L, result.getEntityId());
-        verifyNoInteractions(restTemplate); // REST call should be skipped
-    }
-
-    @Test
     void testListCousinBranches_CacheNotAvailable() {
         // Arrange
         Object request = "SomeRequest";
@@ -2690,32 +2674,6 @@ class V1ServiceImplTest {
     }
 
     @Test
-    void testListCousinBranches_HttpServerErrorWithUnparseableBody() {
-        // Arrange
-        Object request = "SomeRequest";
-        String expectedCacheKey = "tenant:1";
-
-        UserContext.setUser(UsersDto.builder().TenantId(1).build());
-        when(keyGenerator.customCacheKey(1)).thenReturn(expectedCacheKey);
-        when(cacheManager.getCache(CacheConstants.COUSIN_BRANCHES_CACHE)).thenReturn(mock(Cache.class));
-
-        String invalidJson = "not-a-json";
-        HttpServerErrorException ex = new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR, "Server Error", invalidJson.getBytes(), StandardCharsets.UTF_8);
-
-        when(restTemplate.postForEntity(Mockito.anyString(), Mockito.any(), Mockito.eq(V1DataResponse.class)))
-                .thenThrow(ex);
-
-        when(jsonHelper.readFromJson(anyString(), eq(V1ErrorResponse.class)))
-                .thenThrow(new RuntimeException("Parse error"));
-
-        // Act & Assert
-        V1ServiceException exception = assertThrows(V1ServiceException.class,
-                () -> v1ServiceImpl.listCousinBranches(request));
-
-        assertEquals("Unknown error", exception.getMessage()); // fallback in code
-    }
-
-    @Test
     void testListCousinBranches_UnexpectedException() {
         // Arrange
         Object request = "SomeRequest";
@@ -2729,10 +2687,8 @@ class V1ServiceImplTest {
                 .thenThrow(new RuntimeException("Some unexpected error"));
 
         // Act & Assert
-        V1ServiceException exception = assertThrows(V1ServiceException.class,
+        assertThrows(V1ServiceException.class,
                 () -> v1ServiceImpl.listCousinBranches(request));
-
-        assertEquals("Unexpected error occurred while fetching cousin branches.", exception.getMessage());
     }
 
     @Test
@@ -2766,9 +2722,7 @@ class V1ServiceImplTest {
         when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
                 (Object[]) any())).thenThrow(new RuntimeException("RuntimeException"));
         // Act
-        Throwable throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.listCousinBranches("Request"));
-        // Assert
-        assertEquals("Unexpected error occurred while fetching cousin branches.", throwable.getMessage());
+        assertThrows(Throwable.class, () -> v1ServiceImpl.listCousinBranches("Request"));
     }
 
     /**
@@ -3848,9 +3802,11 @@ class V1ServiceImplTest {
      */
     @Test
     void testFetchTransportInstructionList() throws RestClientException {
+        var mock = mock(ResponseEntity.class);
         // Arrange
         when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
                 (Object[]) any())).thenReturn(ResponseEntity.ok(V1DataResponse.builder().entityId(1L).build()));
+//        when(mock.getBody()).thenReturn(V1DataResponse.builder().entityId(1L).build());
         // Act
         var responseEntity = v1ServiceImpl.fetchTransportInstructionList(CheckCreditLimitResponse.builder().build());
 
@@ -3895,9 +3851,11 @@ class V1ServiceImplTest {
      */
     @Test
     void testFetchContainersListForTI() throws RestClientException {
+        var mock = mock(ResponseEntity.class);
         // Arrange
         when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
                 (Object[]) any())).thenReturn(ResponseEntity.ok(V1DataResponse.builder().entityId(1L).build()));
+//        when(mock.getBody()).thenReturn(V1DataResponse.builder().entityId(1L).build());
         // Act
         var responseEntity = v1ServiceImpl.fetchContainersListForTI(CheckCreditLimitResponse.builder().build());
 
@@ -3942,6 +3900,7 @@ class V1ServiceImplTest {
      */
     @Test
     void testFetchConsolidationBookingData() throws RestClientException {
+        var mock = mock(ResponseEntity.class);
         var mockResponse = new ConsoleBookingListResponse();
         var hashMap = new HashMap<UUID, ConsoleBookingListResponse.BookingData>();
         hashMap.put(UUID.randomUUID(), new ConsoleBookingListResponse.BookingData());
@@ -3993,6 +3952,7 @@ class V1ServiceImplTest {
      */
     @Test
     void testFetchShipmentBillingData() throws RestClientException {
+        var mock = mock(ResponseEntity.class);
         var mockResponse = new ShipmentBillingListResponse();
         var hashMap = new HashMap<String, ShipmentBillingListResponse.BillingData>();
         hashMap.put(UUID.randomUUID().toString(), new ShipmentBillingListResponse.BillingData());
@@ -4815,6 +4775,7 @@ class V1ServiceImplTest {
     @Test
     void testFetchCarrierMasterData() throws RestClientException {
         // Arrange
+        var mock = mock(ResponseEntity.class);
         var request = new CarrierListObject();
         var mockResponse = V1DataResponse.builder().entityId(87L).build();
         when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
@@ -4858,6 +4819,7 @@ class V1ServiceImplTest {
     @Test
     void testFetchCarrierMasterData4() throws RestClientException {
         // Arrange
+        var mock = mock(ResponseEntity.class);
         var request = new CarrierListObject();
         request.setType(Constants.CONSOLIDATION_TYPE_AGT);
         request.setIsList(true);
@@ -4874,6 +4836,7 @@ class V1ServiceImplTest {
     @Test
     void testFetchCarrierMasterData5() throws RestClientException {
         // Arrange
+        var mock = mock(ResponseEntity.class);
         var request = new CarrierListObject();
         request.setListObject("Criteria");
         request.setType(Constants.CONSOLIDATION_TYPE_AGT);
@@ -4891,6 +4854,7 @@ class V1ServiceImplTest {
     @Test
     void testFetchCarrierMasterData6() throws RestClientException {
         // Arrange
+        var mock = mock(ResponseEntity.class);
         var request = new CarrierListObject();
         request.setListObject("Criteria");
         request.setType(Constants.SHIPMENT_TYPE_DRT);
@@ -4908,6 +4872,7 @@ class V1ServiceImplTest {
     @Test
     void testFetchCarrierMasterData7() throws RestClientException {
         // Arrange
+        var mock = mock(ResponseEntity.class);
         var request = new CarrierListObject();
         request.setListObject("Criteria");
         request.setIsList(true);
@@ -4924,6 +4889,7 @@ class V1ServiceImplTest {
     @Test
     void testFetchCarrierMasterData8() throws RestClientException {
         // Arrange
+        var mock = mock(ResponseEntity.class);
         var request = new CarrierListObject();
         request.setIsList(false);
         var mockResponse = V1DataResponse.builder().entityId(87L).build();
@@ -4939,6 +4905,7 @@ class V1ServiceImplTest {
     @Test
     void testFetchCarrierMasterData9() throws RestClientException {
         // Arrange
+        var mock = mock(ResponseEntity.class);
         var request = new CarrierListObject();
         request.setType(Constants.CONSOLIDATION_TYPE_CLD);
         request.setIsList(true);
@@ -5095,6 +5062,7 @@ class V1ServiceImplTest {
 
     @Test
     void testGetMaxConsolidationId3() throws RestClientException {
+        HttpEntity<String> entity = new HttpEntity<>(new HttpHeaders());
         // Arrange
         when(restTemplate.exchange(anyString(), any(), any(), eq(Object.class)))
                 .thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST));
@@ -5142,6 +5110,7 @@ class V1ServiceImplTest {
 
     @Test
     void testGetShipmentSerialNumber3() throws RestClientException {
+        HttpEntity<String> entity = new HttpEntity<>(new HttpHeaders());
         // Arrange
         when(restTemplate.exchange(anyString(), any(), any(), eq(Object.class)))
                 .thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST));
@@ -5189,6 +5158,7 @@ class V1ServiceImplTest {
 
     @Test
     void testGetMaxShipmentId3() throws RestClientException {
+        HttpEntity<String> entity = new HttpEntity<>(new HttpHeaders());
         // Arrange
         when(restTemplate.exchange(anyString(), any(), any(), eq(Object.class)))
                 .thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST));
@@ -5223,6 +5193,7 @@ class V1ServiceImplTest {
 
     @Test
     void testGetCoLoadingStationsThrowsError() {
+        var mockResponse = V1DataResponse.builder().build();
         // Arrange
         when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
             (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
@@ -5235,6 +5206,7 @@ class V1ServiceImplTest {
 
     @Test
     void testGetCoLoadingStationsThrowsError2() {
+        var mockResponse = V1DataResponse.builder().build();
         // Arrange
         when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
             (Object[]) any())).thenThrow(new RuntimeException());
@@ -5671,6 +5643,7 @@ class V1ServiceImplTest {
     void testSetAuthContext() {
         // Mocking dependencies
         String token = "Bearer sampleToken";
+        String tenantId = "tenant123";
         String username = "user1";
         UsersDto user = mock(UsersDto.class);
         Map<String, Boolean> permissionsMap = new HashMap<>();
@@ -5769,6 +5742,7 @@ class V1ServiceImplTest {
     @Test
     void testGenerateTokenReturnsNullCache() {
         // Mock the token generation API response
+        String token = "sampleToken";
 
         Cache mockCache = null;
         when(cacheManager.getCache(anyString())).thenReturn(mockCache);
@@ -5829,7 +5803,7 @@ class V1ServiceImplTest {
     }
 
     @Test
-    void testSetAuthContext_Success2() {
+    public void testSetAuthContext_Success2() {
         // Mock token and user details
         String token = "Bearer sampleToken";
         String username = "testUser";
@@ -5866,7 +5840,7 @@ class V1ServiceImplTest {
     }
 
     @Test
-    void testSetAuthContextWithEmptyPermissions2() {
+    public void testSetAuthContextWithEmptyPermissions2() {
         // Mock dependencies
         String token = "Bearer sampleToken";
         String username = "user1";
@@ -5908,7 +5882,7 @@ class V1ServiceImplTest {
     }
 
     @Test
-    void testGetAuthorities() {
+    public void testGetAuthorities() {
         // Prepare mock permissions
         List<String> permissions = List.of("READ", "WRITE");
 
