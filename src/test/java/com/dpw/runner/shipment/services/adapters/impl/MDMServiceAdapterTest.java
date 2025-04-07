@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.net.URI;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -285,17 +286,16 @@ class MDMServiceAdapterTest {
         LicenseRequest licenseRequest = new LicenseRequest();
         when(commonRequestModel.getDependentData()).thenReturn(licenseRequest);
 
-        when(jsonHelper.convertValueWithJsonNullable(any(), eq(LicenseRequest.class))).thenReturn(
-            licenseRequest);
+        when(jsonHelper.convertValueWithJsonNullable(any(), eq(LicenseRequest.class))).thenReturn(licenseRequest);
         when(jsonHelper.convertToJson(licenseRequest)).thenReturn("{} ");
         LicenseResponse licenseResponse = new LicenseResponse();
-        ResponseEntity<LicenseResponse> responseEntity = new ResponseEntity<>(licenseResponse,
-            HttpStatus.OK);
-        when(restTemplate.exchange(any(RequestEntity.class), eq(LicenseResponse.class)))
-            .thenReturn(responseEntity);
 
-        LicenseResponse response = mdmServiceAdapter.validateLicense(
-            commonRequestModel);
+        ResponseEntity<DependentServiceResponse> dependentResponse = new ResponseEntity<>(new DependentServiceResponse(), HttpStatus.OK);
+        when(restTemplate.exchange(any(), eq(DependentServiceResponse.class))).thenReturn(dependentResponse);
+
+        ResponseEntity<LicenseResponse> responseEntity = new ResponseEntity<>(licenseResponse, HttpStatus.OK);
+
+        LicenseResponse response = mdmServiceAdapter.validateLicense(commonRequestModel);
 
         assertNotNull(response);
     }
