@@ -256,13 +256,13 @@ public class ConsolidationSync implements IConsolidationSync {
         response.setIsTemparatureControlled(request.getAllocations().getIsTemperatureControlled());
     }
 
-    private void mapArrivalDepartureDetails(CustomConsolidationRequest response_, ConsolidationDetails request_) {
+    private void mapArrivalDepartureDetails(CustomConsolidationRequest customConsolidationRequest, ConsolidationDetails consolidationDetails) {
 
-        response_.setArrivalDepartureDetails(new ArrivalDepartureDetails());
-        ArrivalDepartureDetails response = response_.getArrivalDepartureDetails();
+        customConsolidationRequest.setArrivalDepartureDetails(new ArrivalDepartureDetails());
+        ArrivalDepartureDetails response = customConsolidationRequest.getArrivalDepartureDetails();
 
         // Arrival Details
-        com.dpw.runner.shipment.services.entity.ArrivalDepartureDetails request1 = request_.getArrivalDetails();
+        com.dpw.runner.shipment.services.entity.ArrivalDepartureDetails request1 = consolidationDetails.getArrivalDetails();
 
         if(request1 != null) {
             if(request1.getContainerYardId() != null)
@@ -284,7 +284,7 @@ public class ConsolidationSync implements IConsolidationSync {
         }
 
         // Departure Details
-        com.dpw.runner.shipment.services.entity.ArrivalDepartureDetails request2 = request_.getDepartureDetails();
+        com.dpw.runner.shipment.services.entity.ArrivalDepartureDetails request2 = consolidationDetails.getDepartureDetails();
 
         processRequest2(request2, response);
     }

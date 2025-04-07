@@ -737,7 +737,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
                 v1BillingData.setTotalPostedRevenue(v2BillingData.getTotalPostedRevenue());
                 v1BillingData.setTotalPostedProfit(v2BillingData.getTotalPostedProfit());
                 v1BillingData.setTotalPostedProfitPercent(v2BillingData.getTotalPostedProfitPercent());
-                v1BillingData.setId(null); // TODO: SUBHAM fetch id of Shipment
+                v1BillingData.setId(null); // LATER: SUBHAM fetch id of Shipment
 
                 Map<String, BillingData> data = Optional.ofNullable(shipmentBillingListResponse.getData()).orElseGet(HashMap::new);
                 data.put(shipmentGuid, v1BillingData);

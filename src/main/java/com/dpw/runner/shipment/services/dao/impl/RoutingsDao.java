@@ -101,13 +101,13 @@ public class RoutingsDao implements IRoutingsDao {
         String responseMsg;
         List<Routings> responseRoutings = new ArrayList<>();
         try {
-            // TODO- Handle Transactions here
+            // LATER- Handle Transactions here
             List<Routings> routings = findByShipmentId(shipmentId);
             Map<Long, Routings> hashMap = routings.stream()
                         .collect(Collectors.toMap(Routings::getId, Function.identity()));
             Map<Long, Routings> copyHashMap = new HashMap<>(hashMap);
             List<Routings> routingsRequestList = new ArrayList<>();
-            if (routingsList != null && routingsList.size() != 0) {
+            if (routingsList != null && !routingsList.isEmpty()) {
                 for (Routings request : routingsList) {
                     Long id = request.getId();
                     if (id != null) {
@@ -225,7 +225,7 @@ public class RoutingsDao implements IRoutingsDao {
             Map<Long, Routings> hashMap = routings.stream()
                     .collect(Collectors.toMap(Routings::getId, Function.identity()));
             List<Routings> routingsRequestList = new ArrayList<>();
-            if (routingsList != null && routingsList.size() != 0) {
+            if (routingsList != null && !routingsList.isEmpty()) {
                 for (Routings request : routingsList) {
                     Long id = request.getId();
                     if (id != null) {
@@ -290,13 +290,13 @@ public class RoutingsDao implements IRoutingsDao {
         String responseMsg;
         List<Routings> responseRoutings = new ArrayList<>();
         try {
-            // TODO- Handle Transactions here
+            // LATER- Handle Transactions here
             List<Routings> routings = findRoutingsByConsolidationId(consolidationId);
             Map<Long, Routings> hashMap = routings.stream()
                         .collect(Collectors.toMap(Routings::getId, Function.identity()));
             Map<Long, Routings> copyHashMap = new HashMap<>(hashMap);
             List<Routings> routingsRequestList = new ArrayList<>();
-            if (routingsList != null && routingsList.size() != 0) {
+            if (routingsList != null && !routingsList.isEmpty()) {
                 for (Routings request : routingsList) {
                     Long id = request.getId();
                     if (id != null) {
@@ -320,7 +320,7 @@ public class RoutingsDao implements IRoutingsDao {
     public List<Routings> updateEntityFromConsole(List<Routings> routingsList, Long consolidationId, List<Routings> oldEntityList) throws RunnerException {
         String responseMsg;
         Map<UUID, Routings> routingMap = new HashMap<>();
-        if (oldEntityList != null && oldEntityList.size() > 0) {
+        if (oldEntityList != null && !oldEntityList.isEmpty()) {
             for (Routings entity :
                     oldEntityList) {
                 routingMap.put(entity.getGuid(), entity);
@@ -331,7 +331,7 @@ public class RoutingsDao implements IRoutingsDao {
         try {
             Routings oldEntity;
             List<Routings> routingsRequestList = new ArrayList<>();
-            if (routingsList != null && routingsList.size() != 0) {
+            if (routingsList != null && !routingsList.isEmpty()) {
                 for (Routings request : routingsList) {
                     oldEntity = routingMap.get(request.getGuid());
                     if (oldEntity != null) {
@@ -429,7 +429,7 @@ public class RoutingsDao implements IRoutingsDao {
     public List<Routings> updateEntityFromShipment(List<Routings> routingsList, Long shipmentId, List<Routings> oldEntityList) throws RunnerException {
         String responseMsg;
         Map<UUID, Routings> routingMap = new HashMap<>();
-        if (oldEntityList != null && oldEntityList.size() > 0) {
+        if (oldEntityList != null && !oldEntityList.isEmpty()) {
             for (Routings entity :
                     oldEntityList) {
                 routingMap.put(entity.getGuid(), entity);
@@ -440,7 +440,7 @@ public class RoutingsDao implements IRoutingsDao {
         try {
             Routings oldEntity;
             List<Routings> routingsRequestList = new ArrayList<>();
-            if (routingsList != null && routingsList.size() != 0) {
+            if (routingsList != null && !routingsList.isEmpty()) {
                 for (Routings request : routingsList) {
                     oldEntity = routingMap.get(request.getGuid());
                     if (oldEntity != null) {

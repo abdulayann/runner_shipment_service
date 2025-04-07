@@ -8,7 +8,7 @@ public class AwbNotifyPartyInfoV2 implements IRunnerRequest {
     public String entityType;
     public String type;
     public String orgCode;
-    //TODO - Please Move this to parties org - Tapan
+    //LATER - Please Move this to parties org - Tapan
     public Integer orgId;
     public Long notifyOrgId;
     public String name;

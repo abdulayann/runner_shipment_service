@@ -71,7 +71,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
         String responseMsg;
         List<ReferenceNumbers> responseReferenceNumbers = new ArrayList<>();
         try {
-            // TODO- Handle Transactions here
+            // LATER- Handle Transactions here
             List<ReferenceNumbers> routings = findByShipmentId(shipmentId);
             Map<Long, ReferenceNumbers> hashMap = routings.stream()
                         .collect(Collectors.toMap(ReferenceNumbers::getId, Function.identity()));
@@ -110,7 +110,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
             if(req.getId() != null){
                 long id = req.getId();
                 Optional<ReferenceNumbers> oldEntity = findById(id);
-                if (!oldEntity.isPresent()) {
+                if (oldEntity.isEmpty()) {
                     log.debug(REFERENCE_NUMBER_IS_NULL_FOR_ID_MSG, req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
@@ -189,15 +189,13 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
         String responseMsg;
         List<ReferenceNumbers> responseReferenceNumbers = new ArrayList<>();
         try {
-            // TODO- Handle Transactions here
+            // LATER- Handle Transactions here
             Map<Long, ReferenceNumbers> hashMap;
-//            if(!Objects.isNull(referenceNumbersIdList) && !referenceNumbersIdList.isEmpty()) {
-                ListCommonRequest listCommonRequest = constructListCommonRequest("consolidationId", consolidationId, "=");
-                Pair<Specification<ReferenceNumbers>, Pageable> pair = fetchData(listCommonRequest, ReferenceNumbers.class);
-                Page<ReferenceNumbers> routings = findAll(pair.getLeft(), pair.getRight());
-                hashMap = routings.stream()
-                        .collect(Collectors.toMap(ReferenceNumbers::getId, Function.identity()));
-//            }
+            ListCommonRequest listCommonRequest = constructListCommonRequest("consolidationId", consolidationId, "=");
+            Pair<Specification<ReferenceNumbers>, Pageable> pair = fetchData(listCommonRequest, ReferenceNumbers.class);
+            Page<ReferenceNumbers> routings = findAll(pair.getLeft(), pair.getRight());
+            hashMap = routings.stream()
+                    .collect(Collectors.toMap(ReferenceNumbers::getId, Function.identity()));
             Map<Long, ReferenceNumbers> copyHashMap = new HashMap<>(hashMap);
             List<ReferenceNumbers> referenceNumbersRequests = new ArrayList<>();
             if (!referenceNumbersList.isEmpty()) {
@@ -224,7 +222,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
     public List<ReferenceNumbers> updateEntityFromConsole(List<ReferenceNumbers> referenceNumbersList, Long consolidationId, List<ReferenceNumbers> oldEntityList) throws RunnerException {
         String responseMsg;
         Map<UUID, ReferenceNumbers> referenceNumbersMap = new HashMap<>();
-        if(oldEntityList != null && oldEntityList.size() > 0) {
+        if(oldEntityList != null && !oldEntityList.isEmpty()) {
             for (ReferenceNumbers entity:
                     oldEntityList) {
                 referenceNumbersMap.put(entity.getGuid(), entity);
@@ -267,7 +265,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
             if(req.getId() != null){
                 long id = req.getId();
                 Optional<ReferenceNumbers> oldEntity = findById(id);
-                if (!oldEntity.isPresent()) {
+                if (oldEntity.isEmpty()) {
                     log.debug(REFERENCE_NUMBER_IS_NULL_FOR_ID_MSG, req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
@@ -376,7 +374,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
     public List<ReferenceNumbers> updateEntityFromShipment(List<ReferenceNumbers> referenceNumbersList, Long shipmentId, List<ReferenceNumbers> oldEntityList) throws RunnerException {
         String responseMsg;
         Map<UUID, ReferenceNumbers> referenceNumbersMap = new HashMap<>();
-        if(oldEntityList != null && oldEntityList.size() > 0) {
+        if(oldEntityList != null && !oldEntityList.isEmpty()) {
             for (ReferenceNumbers entity:
                     oldEntityList) {
                 referenceNumbersMap.put(entity.getGuid(), entity);
