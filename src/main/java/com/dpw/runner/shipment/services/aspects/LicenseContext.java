@@ -1,5 +1,7 @@
 package com.dpw.runner.shipment.services.aspects;
 
+import static com.dpw.runner.shipment.services.commons.constants.LicenseConstants.LICENSE_CONTEXT_NOT_INITALIZED;
+
 import com.dpw.runner.shipment.services.commons.constants.LicenseConstants;
 import com.dpw.runner.shipment.services.service.impl.LicenseService;
 import javax.annotation.PostConstruct;
@@ -24,14 +26,14 @@ public class LicenseContext {
 
   public static boolean isDgAirLicense() {
       if(licenseService == null){
-        throw new IllegalStateException("LicenseContext is not initialized properly by Spring.");
+        throw new IllegalStateException(LICENSE_CONTEXT_NOT_INITALIZED);
       }
       return licenseService.getLicenseByLicenseName(LicenseConstants.DG_AIR);
   }
 
   public static boolean isOceanDGLicense() {
     if(licenseService == null){
-      throw new IllegalStateException("LicenseContext is not initialized properly by Spring.");
+      throw new IllegalStateException(LICENSE_CONTEXT_NOT_INITALIZED);
     }
 
     return licenseService.getLicenseByLicenseName(LicenseConstants.OCEAN_DG_PERMISSION);
@@ -39,7 +41,7 @@ public class LicenseContext {
 
   public static boolean isAirSecurityLicense() {
     if(licenseService == null){
-      throw new IllegalStateException("LicenseContext is not initialized properly by Spring.");
+      throw new IllegalStateException(LICENSE_CONTEXT_NOT_INITALIZED);
     }
     return licenseService.getLicenseByLicenseName(LicenseConstants.AIR_SECURITY);
   }
