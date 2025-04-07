@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1ContainerTypeResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
@@ -68,9 +69,6 @@ public class CSVParsingUtil<T> {
 
     private IConsolidationDetailsDao consolidationDetailsDao;
 
-    private final Set<String> hiddenFields = Set.of("pickupAddress",
-            "deliveryAddress", "eventsList", "packsList", "shipmentsList", "bookingCharges");
-
     ExecutorService executorService;
 
     @Autowired
@@ -83,6 +81,7 @@ public class CSVParsingUtil<T> {
         this.executorService = executorService;
     }
 
+    @SuppressWarnings("java:S1126")
     public List<String> getHeadersForContainer() {
         List<String> headers = new ArrayList<>();
         List<Field> containerFields = Arrays.stream(ContainerResponse.class.getDeclaredFields()).toList();
@@ -101,8 +100,8 @@ public class CSVParsingUtil<T> {
         return headers;
     }
 
+    @SuppressWarnings("java:S1126")
     public List<String> getAllAttributeValuesAsListContainer(ContainerResponse response) throws IllegalAccessException {
-        Class<?> clazz = response.getClass();
         List<Field> containerFields = Arrays.stream(ContainerResponse.class.getDeclaredFields()).toList();
         final Set<String> requiredFields = Set.of(Constants.CONTAINER_NUMBER, "volumeUtilization", "weightUtilization", "achievedVolume",
                 "achievedVolumeUnit", "achievedWeight", "achievedWeightUnit", "grossVolume", "grossVolumeUnit",
@@ -127,14 +126,14 @@ public class CSVParsingUtil<T> {
         return WordUtils.uncapitalize(name);
     }
 
+    @SuppressWarnings("java:S1874")
     private T createEntityInstance(Class<T> entityType) throws InstantiationException, IllegalAccessException {
         return entityType.newInstance();
     }
 
     public Map<Integer, Map<String, MasterData>> fetchInBulkMasterList(MasterListRequestV2 requests) {
-        Map<String, MasterData> keyMasterDataMap = new HashMap<>();
         Map<Integer, Map<String, MasterData>> dataMap = new HashMap<>();
-        if (requests.getMasterListRequests() != null && requests.getMasterListRequests().size() > 0) {
+        if (requests.getMasterListRequests() != null && !requests.getMasterListRequests().isEmpty()) {
             V1DataResponse response = v1Service.fetchMultipleMasterData(requests);
             List<MasterData> masterLists = jsonHelper.convertValueToList(response.entities, MasterData.class);
             masterLists.forEach(masterData -> {
@@ -201,7 +200,6 @@ public class CSVParsingUtil<T> {
 
             setUNDGContactMasterDataAndFlashPointMasterData(dgSubstanceIdList, undg, flashpoint);
 
-            Map<String, String> existingContainerNumbers = new HashMap<>();
             processLastRowNumForExcelFilePacking(request, mapOfEntity, entityType, sheet, guidPos, shipmentNumberPos, dicShipmentId, header, masterListsMap, entityList);
         } catch (ValidationException e1) {
             log.error(e1.getMessage());
@@ -264,12 +262,8 @@ public class CSVParsingUtil<T> {
     private void processLastRowNumForExcelFilePacking(BulkUploadRequest request, Map<UUID, T> mapOfEntity, Class<T> entityType, Sheet sheet, int guidPos, int shipmentNumberPos, Map<String, Long> dicShipmentId, String[] header, Map<String, Set<String>> masterListsMap, List<T> entityList) throws InstantiationException, IllegalAccessException, NoSuchFieldException {
         for (int i = 1; i <= sheet.getLastRowNum(); i++) {
             Row row = sheet.getRow(i);
-            boolean isUpdate = false;
             validateGuidPos(mapOfEntity, guidPos, row, i);
             T entity = guidPos != -1 && mapOfEntity != null ? mapOfEntity.get(UUID.fromString(getCellValueAsString(row.getCell(guidPos)))) : createEntityInstance(entityType);
-            if (mapOfEntity != null && guidPos != -1 && mapOfEntity.containsKey(UUID.fromString(getCellValueAsString(row.getCell(guidPos))))) {
-                isUpdate = true;
-            }
 
             validateShipmentNumberPos(shipmentNumberPos, dicShipmentId, row, (Packing) entity, i);
 
@@ -345,12 +339,12 @@ public class CSVParsingUtil<T> {
     }
 
     public List<T> parseExcelFile(MultipartFile file, BulkUploadRequest request, Map<UUID, T> mapOfEntity, Map<String, Set<String>> masterDataMap,
-                                  Class<T> entityType, Class modelClass, Map<Long, Long> undg, Map<Long, String> flashpoint, Map<String, String> locCodeToLocationReferenceGuidMap) throws IOException {
+                                  Class<T> entityType, Class<?> modelClass, Map<Long, Long> undg, Map<Long, String> flashpoint, Map<String, String> locCodeToLocationReferenceGuidMap) throws IOException {
         if (entityType.equals(Packing.class)) {
             return parseExcelFilePacking(file, request, mapOfEntity, masterDataMap, entityType, undg, flashpoint, locCodeToLocationReferenceGuidMap);
         }
         if (entityType.equals(Events.class)) {
-            return parseExcelFileEvents(file, request, mapOfEntity, masterDataMap, entityType);
+            return parseExcelFileEvents(file, request, masterDataMap, entityType);
         }
         List<T> entityList = new ArrayList<>();
         List<String> unlocationsList = new ArrayList<>();
@@ -489,7 +483,7 @@ public class CSVParsingUtil<T> {
         }
     }
 
-    public List<T> parseExcelFileEvents(MultipartFile file, BulkUploadRequest request, Map<UUID, T> mapOfEntity,
+    public List<T> parseExcelFileEvents(MultipartFile file, BulkUploadRequest request,
                                          Map<String, Set<String>> masterDataMap, Class<T> entityType) throws IOException {
         if (request.getConsolidationId() == null) {
             throw new ValidationException("Please save the consolidation and then try again.");
@@ -507,8 +501,6 @@ public class CSVParsingUtil<T> {
         mandatoryColumns.add("containerNumber");
         mandatoryColumns.add(Constants.CONTAINER_NUMBER);
 
-        int containerNumberPos = -1;
-
         try (Workbook workbook = new XSSFWorkbook(file.getInputStream())) {
             Sheet sheet = workbook.getSheetAt(0); // Assuming data is in the first sheet
             validateExcel(sheet);
@@ -519,9 +511,6 @@ public class CSVParsingUtil<T> {
                 validateExcelColumn(headerRow, i);
                 header[i] = getCamelCase(headerRow.getCell(i).getStringCellValue());
                 headerSet.add(header[i]);
-                if (header[i].equalsIgnoreCase(Constants.CONTAINER_NUMBER)) {
-                    containerNumberPos = i;
-                }
 
                 if (mandatoryColumns.contains(header[i])) {
                     mandatoryColumns.remove(header[i]);
@@ -539,15 +528,13 @@ public class CSVParsingUtil<T> {
                 throw new ValidationException(ContainerConstants.INVALID_EXCEL_COLUMNS);
             }
 
-            Set<String> guidSet = new HashSet<>();
             Set<String> orderEventsDictionary = masterListsMap.get(MasterDataType.ORDER_EVENTS.getDescription());
             Set<String> existingContainerNumberSet = consol.getContainersList()
-                    .stream().map(containers -> containers.getContainerNumber())
+                    .stream().map(Containers::getContainerNumber)
                     .filter(Objects::nonNull)
                     .collect(Collectors.toSet());
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
-                boolean isUpdate = false;
                 T entity = createEntityInstance(entityType);
                 processHeader(header, row, i, existingContainerNumberSet, containerNumberList, orderEventsDictionary, entity);
 
@@ -606,11 +593,9 @@ public class CSVParsingUtil<T> {
                                                             int rowNum, boolean isUpdate,
                                                             Map<String, String> existingContainerNumbers) throws ValidationException {
         String guid = guidPos == -1 ? "" : getCellValueAsString(row.getCell(guidPos));
-        if (isUpdate && !StringUtility.isEmpty(containerNumber)) {
-            if (existingContainerNumbers.containsKey(containerNumber)
+        if (isUpdate && !StringUtility.isEmpty(containerNumber) && existingContainerNumbers.containsKey(containerNumber)
                     && !existingContainerNumbers.get(containerNumber).equals(guid)) {
-                throw new ValidationException("Duplicate container number " + containerNumber + " found at row: " + rowNum + ". In a booking all container numbers must be Unique.");
-            }
+            throw new ValidationException("Duplicate container number " + containerNumber + " found at row: " + rowNum + ". In a booking all container numbers must be Unique.");
         }
         if (existingContainerNumbers.containsKey(containerNumber) && !isUpdate) {
             throw new ValidationException("Duplicate container number " + containerNumber + " found at row: " + rowNum + ". In a booking all container numbers must be Unique.");
@@ -967,7 +952,6 @@ public class CSVParsingUtil<T> {
         var hblModeMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchMasterLists(MasterDataType.HBL_DELIVERY_MODE, masterDataMap)), executorService);
         var dimensionUnitMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchMasterLists(MasterDataType.DIMENSION_UNIT, masterDataMap)), executorService);
         var dgClassMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchMasterLists(MasterDataType.DG_CLASS, masterDataMap)), executorService);
-        var countryCodeMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchMasterLists(MasterDataType.COUNTRIES, masterDataMap)), executorService);
         var packUnitMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchMasterLists(MasterDataType.PACKS_UNIT, masterDataMap)), executorService);
         var containerTypeMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchContainerType(masterDataMap)), executorService);
         var unlocationMasterData = CompletableFuture.runAsync(withMdc(() -> this.fetchUnlocationData(unlocationsList, masterDataMap, locCodeToLocationReferenceGuidMap)), executorService);
@@ -991,13 +975,11 @@ public class CSVParsingUtil<T> {
             List<Object> criteria = List.of(field, operator, masterDataType.getId());
             request.setCriteriaRequests(criteria);
             V1DataResponse v1DataResponse = v1Service.fetchMasterData(request);
-            if (v1DataResponse != null) {
-                if (v1DataResponse.entities instanceof List<?>) {
-                    List<MasterData> masterDataList = jsonHelper.convertValueToList(v1DataResponse.entities, MasterData.class);
-                    if (masterDataList != null && !masterDataList.isEmpty()) {
-                        Set<String> masterDataSet = masterDataList.stream().filter(Objects::nonNull).map(MasterData::getItemValue).collect(Collectors.toSet());
-                        masterDataMap.put(masterDataType.getDescription(), masterDataSet);
-                    }
+            if (v1DataResponse != null && v1DataResponse.entities instanceof List<?>) {
+                List<MasterData> masterDataList = jsonHelper.convertValueToList(v1DataResponse.entities, MasterData.class);
+                if (masterDataList != null && !masterDataList.isEmpty()) {
+                    Set<String> masterDataSet = masterDataList.stream().filter(Objects::nonNull).map(MasterData::getItemValue).collect(Collectors.toSet());
+                    masterDataMap.put(masterDataType.getDescription(), masterDataSet);
                 }
             }
         } catch (Exception ex) {
@@ -1009,13 +991,11 @@ public class CSVParsingUtil<T> {
         try {
             CommonV1ListRequest request = new CommonV1ListRequest();
             V1DataResponse v1DataResponse = v1Service.fetchContainerTypeData(request);
-            if (v1DataResponse != null) {
-                if (v1DataResponse.entities instanceof List<?>) {
-                    List<V1ContainerTypeResponse> containerTypeList = jsonHelper.convertValueToList(v1DataResponse.entities, V1ContainerTypeResponse.class);
-                    if (containerTypeList != null && !containerTypeList.isEmpty()) {
-                        Set<String> containerTypeSet = containerTypeList.stream().filter(Objects::nonNull).map(V1ContainerTypeResponse::getCode).collect(Collectors.toSet());
-                        masterDataMap.put(Constants.CONTAINER_TYPES, containerTypeSet);
-                    }
+            if (v1DataResponse != null && v1DataResponse.entities instanceof List<?>) {
+                List<V1ContainerTypeResponse> containerTypeList = jsonHelper.convertValueToList(v1DataResponse.entities, V1ContainerTypeResponse.class);
+                if (containerTypeList != null && !containerTypeList.isEmpty()) {
+                    Set<String> containerTypeSet = containerTypeList.stream().filter(Objects::nonNull).map(V1ContainerTypeResponse::getCode).collect(Collectors.toSet());
+                    masterDataMap.put(Constants.CONTAINER_TYPES, containerTypeSet);
                 }
             }
         } catch (Exception ex) {
@@ -1034,14 +1014,12 @@ public class CSVParsingUtil<T> {
             List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(unlocationsList)));
             request.setCriteriaRequests(criteria);
             V1DataResponse v1DataResponse = v1Service.fetchUnlocation(request);
-            if (v1DataResponse != null) {
-                if (v1DataResponse.entities instanceof List<?>) {
-                    List<UnlocationsResponse> unlocationList = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
-                    if (unlocationList != null && !unlocationList.isEmpty()) {
-                        Set<String> unlocationSet = unlocationList.stream().filter(Objects::nonNull).map(UnlocationsResponse::getLocCode).collect(Collectors.toSet());
-                        locCodeToLocationReferenceGuidMap.putAll(unlocationList.stream().filter(Objects::nonNull).collect(Collectors.toMap(UnlocationsResponse::getLocCode, UnlocationsResponse::getLocationsReferenceGUID)));
-                        masterDataMap.put(Constants.UNLOCATIONS, unlocationSet);
-                    }
+            if (v1DataResponse != null && v1DataResponse.entities instanceof List<?>) {
+                List<UnlocationsResponse> unlocationList = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
+                if (unlocationList != null && !unlocationList.isEmpty()) {
+                    Set<String> unlocationSet = unlocationList.stream().filter(Objects::nonNull).map(UnlocationsResponse::getLocCode).collect(Collectors.toSet());
+                    locCodeToLocationReferenceGuidMap.putAll(unlocationList.stream().filter(Objects::nonNull).collect(Collectors.toMap(UnlocationsResponse::getLocCode, UnlocationsResponse::getLocationsReferenceGUID)));
+                    masterDataMap.put(Constants.UNLOCATIONS, unlocationSet);
                 }
             }
         } catch (Exception ex) {
@@ -1059,13 +1037,11 @@ public class CSVParsingUtil<T> {
             List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(commodityCodesList)));
             request.setCriteriaRequests(criteria);
             V1DataResponse response = v1Service.fetchCommodityData(request);
-            if (response != null) {
-                if (response.entities instanceof List<?>) {
-                    List<CommodityResponse> commodityList = jsonHelper.convertValueToList(response.entities, CommodityResponse.class);
-                    if (commodityList != null && !commodityList.isEmpty()) {
-                        Set<String> commoditySet = commodityList.stream().filter(Objects::nonNull).map(CommodityResponse::getCode).collect(Collectors.toSet());
-                        masterDataMap.put("CommodityCodes", commoditySet);
-                    }
+            if (response != null && response.entities instanceof List<?>) {
+                List<CommodityResponse> commodityList = jsonHelper.convertValueToList(response.entities, CommodityResponse.class);
+                if (commodityList != null && !commodityList.isEmpty()) {
+                    Set<String> commoditySet = commodityList.stream().filter(Objects::nonNull).map(CommodityResponse::getCode).collect(Collectors.toSet());
+                    masterDataMap.put("CommodityCodes", commoditySet);
                 }
             }
         } catch (Exception ex) {
@@ -1083,13 +1059,11 @@ public class CSVParsingUtil<T> {
         List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(dgSubstanceIdList)));
         request.setCriteriaRequests(criteria);
         V1DataResponse response = v1Service.fetchDangerousGoodData(request);
-        if (response != null) {
-            if (response.entities instanceof List<?>) {
-                List<EntityTransferDGSubstance> list = jsonHelper.convertValueToList(response.entities, EntityTransferDGSubstance.class);
-                if (list != null && !list.isEmpty()) {
-                    undg.putAll(list.stream().filter(Objects::nonNull).collect(Collectors.toMap(EntityTransferDGSubstance::getId, EntityTransferDGSubstance::getUNIDNo)));
-                    flashpoint.putAll(list.stream().filter(Objects::nonNull).collect(Collectors.toMap(EntityTransferDGSubstance::getId, EntityTransferDGSubstance::getFlashPoint)));
-                }
+        if (response != null && response.entities instanceof List<?>) {
+            List<EntityTransferDGSubstance> list = jsonHelper.convertValueToList(response.entities, EntityTransferDGSubstance.class);
+            if (list != null && !list.isEmpty()) {
+                undg.putAll(list.stream().filter(Objects::nonNull).collect(Collectors.toMap(EntityTransferDGSubstance::getId, EntityTransferDGSubstance::getUNIDNo)));
+                flashpoint.putAll(list.stream().filter(Objects::nonNull).collect(Collectors.toMap(EntityTransferDGSubstance::getId, EntityTransferDGSubstance::getFlashPoint)));
             }
         }
     }

@@ -152,8 +152,7 @@ public class CustomerBookingController {
         CommonGetRequest request = CommonGetRequest.builder().build();
         id.ifPresent(request::setId);
         guid.ifPresent(request::setGuid);
-        ResponseEntity<IRunnerResponse> response = customerBookingService.retrieveById(CommonRequestModel.buildRequest(request));
-        return response;
+        return customerBookingService.retrieveById(CommonRequestModel.buildRequest(request));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = CustomerBookingConstants.UPDATE_SUCCESSFUL, response = MyResponseClass.class)})

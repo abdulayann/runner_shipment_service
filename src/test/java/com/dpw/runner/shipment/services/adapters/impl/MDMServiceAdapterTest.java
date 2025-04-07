@@ -1,8 +1,10 @@
 package com.dpw.runner.shipment.services.adapters.impl;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.requests.LicenseRequest;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.commons.responses.LicenseResponse;
 import com.dpw.runner.shipment.services.dto.request.mdm.MdmListCriteriaRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.ApprovalPartiesRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.CompanyDetailsRequest;
@@ -11,6 +13,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.net.URI;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -276,4 +279,47 @@ class MDMServiceAdapterTest {
         var response = mdmServiceAdapter.getDepartmentList(transportMode, shipmentType, module);
         assertEquals(0, response.size());
     }
+
+    @Test
+    void testValidateLicense_Success() throws RunnerException {
+        CommonRequestModel commonRequestModel = mock(CommonRequestModel.class);
+        LicenseRequest licenseRequest = new LicenseRequest();
+        when(commonRequestModel.getDependentData()).thenReturn(licenseRequest);
+
+        when(jsonHelper.convertValueWithJsonNullable(any(), eq(LicenseRequest.class))).thenReturn(licenseRequest);
+        when(jsonHelper.convertToJson(licenseRequest)).thenReturn("{} ");
+        LicenseResponse licenseResponse = new LicenseResponse();
+
+        ResponseEntity<DependentServiceResponse> dependentResponse = new ResponseEntity<>(new DependentServiceResponse(), HttpStatus.OK);
+        when(restTemplate.exchange(any(), eq(DependentServiceResponse.class))).thenReturn(dependentResponse);
+
+        ResponseEntity<LicenseResponse> responseEntity = new ResponseEntity<>(licenseResponse, HttpStatus.OK);
+
+        LicenseResponse response = mdmServiceAdapter.validateLicense(commonRequestModel);
+
+        assertNotNull(response);
+    }
+
+
+    @Test
+    void testValidateLicense_Exception() throws RunnerException {
+        CommonRequestModel commonRequestModel = mock(CommonRequestModel.class);
+        LicenseRequest licenseRequest = new LicenseRequest();
+        when(commonRequestModel.getDependentData()).thenReturn(licenseRequest);
+
+        when(jsonHelper.convertValueWithJsonNullable(any(), eq(LicenseRequest.class))).thenReturn(
+            licenseRequest);
+        when(jsonHelper.convertToJson(licenseRequest)).thenReturn("{} ");
+        LicenseResponse licenseResponse = new LicenseResponse();
+        ResponseEntity<LicenseResponse> responseEntity = new ResponseEntity<>(licenseResponse,
+            HttpStatus.OK);
+        when(restTemplate.exchange(any(RequestEntity.class), eq(LicenseResponse.class)))
+            .thenThrow(new RuntimeException());
+
+        LicenseResponse response = mdmServiceAdapter.validateLicense(
+            commonRequestModel);
+
+        assertNotNull(response);
+    }
+
 }

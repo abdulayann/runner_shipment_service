@@ -97,11 +97,8 @@ public class CustomerBookingValidations {
 
         V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
 
-        if(Boolean.TRUE.equals(v1TenantSettingsResponse.getFetchRatesMandate()))
-        {
-            if (Objects.isNull(entity.getBookingCharges()) || entity.getBookingCharges().isEmpty())
-                throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Bill charge"));
-        }
+        if(Boolean.TRUE.equals(v1TenantSettingsResponse.getFetchRatesMandate()) && (Objects.isNull(entity.getBookingCharges()) || entity.getBookingCharges().isEmpty()))
+            throw new MandatoryFieldException(String.format(CustomerBookingConstants.MANDATORY_FIELD, "Bill charge"));
     }
 
     private void validateOnPendingForCreditCheck(CustomerBooking entity) {

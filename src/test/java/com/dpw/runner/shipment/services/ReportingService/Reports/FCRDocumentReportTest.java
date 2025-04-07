@@ -22,7 +22,6 @@ import com.dpw.runner.shipment.services.service.impl.PackingService;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.hibernate.annotations.Source;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,7 +47,7 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
-public class FCRDocumentReportTest {
+class FCRDocumentReportTest {
 
     @InjectMocks
     private FCRDocumentReport fcrDocumentReport;
@@ -74,14 +73,12 @@ public class FCRDocumentReportTest {
     @Mock
     private PackingService packingService;
 
-    private static ObjectMapper objectMapper;
     private static JsonTestUtility jsonTestUtility;
     private static ShipmentDetails shipmentDetails;
 
     @BeforeAll
     static void init() throws IOException {
         jsonTestUtility = new JsonTestUtility();
-        objectMapper = JsonTestUtility.getMapper();
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
@@ -243,7 +240,7 @@ public class FCRDocumentReportTest {
         mockGetUnlocation(getUnlocationResponse());
         when(modelMapper.map(any(), eq(ShipmentModel.class))).thenReturn(shipmentModel);
         when(commonUtils.getCurrentTenantSettings()).thenReturn(V1TenantSettingsResponse.builder().build());
-        fcrDocumentReport.setPackIds(new ArrayList<>(List.of(1L)));;
+        fcrDocumentReport.setPackIds(new ArrayList<>(List.of(1L)));
         fcrDocumentReport.setPlaceOfIssue("LOCAB");
         Map<String, Object> data = fcrDocumentReport.getData(id);
         assertNotNull(data);

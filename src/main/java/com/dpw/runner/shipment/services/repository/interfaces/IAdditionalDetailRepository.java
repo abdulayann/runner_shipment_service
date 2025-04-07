@@ -6,10 +6,10 @@ import com.dpw.runner.shipment.services.utils.Generated;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.data.jpa.repository.Query;
-
 import java.util.List;
 import java.util.Optional;
+
+
 @Generated
 public interface IAdditionalDetailRepository extends MultiTenancyRepository<AdditionalDetails> {
     List<AdditionalDetails> findAll();

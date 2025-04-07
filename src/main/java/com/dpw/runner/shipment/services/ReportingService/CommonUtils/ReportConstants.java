@@ -875,8 +875,6 @@ public class ReportConstants {
 
     public static final String CONSOL_SHIPMENT_TOTAL_PACKAGES = "TotalPackages";
     public static final String CONTAINER_MANIFEST_PRINT = "ContainerManifestPrint";
-//    public static final String SERVICE_MODE = "ServiceMode";
-//    public static final String SHIPMENT_PACKS_UNIT_DESC = "ShipmentPacksUnitDescription";
 
     public static final String SHIPPER = "Shipper";
     public static final String SHIPPER_WC = "ShipperWC";
@@ -945,8 +943,6 @@ public class ReportConstants {
     public static final String FPOD_IN_CAPS = "FPODInCaps";
     public static final String POD_IN_CAPS = "PODInCaps";
     public static final String POR_COUNTRY_NAME_IN_CAPS = "PORCountryNameInCaps";
-    //public static final String POLCountryNameInCaps = "POLCountryNameInCaps";
-    //public static final String PODCountryNameInCaps = "PODCountryNameInCaps";
     public static final String FPOD_COUNTRY_NAME_IN_CAPS = "FPODCountryNameInCaps";
     public static final String WEIGHTS = "weights";
     public static final String CARRIER_IATACODE = "IATACode";
@@ -1368,4 +1364,5 @@ public class ReportConstants {
     public static final String TIME_TAKE_TO_GET_SHIPMENT_CONSOLE_DATA = "Time taken to get Shipment Console Data for shipmentId :{} is  {}";
 
     public static final String USA_LOC_CODE_PREFIX = "US";
+    public static final String DPW_DATE_FORMAT_OR_DEFAULT_STRING = "MM/dd/yyyy";
 }

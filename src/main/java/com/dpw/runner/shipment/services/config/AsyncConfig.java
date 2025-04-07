@@ -69,7 +69,7 @@ public class AsyncConfig implements AsyncConfigurer {
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                log.error("Task interrupted while waiting for queue space", e);
+                log.error("Task interrupted while waiting for the queue space", e);
             }
         };
         return new ThreadPoolExecutor(corePoolSize, maximumPoolSize, keepAliveTime, unit, workQueue, handler);
