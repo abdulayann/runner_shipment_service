@@ -8,6 +8,7 @@ import javax.annotation.PostConstruct;
 import org.springframework.stereotype.Component;
 
 @Component
+@SuppressWarnings("java:S2696")
 public class LicenseContext {
 
   private static LicenseService licenseService;
