@@ -595,6 +595,9 @@ public class ShipmentDetails extends MultiTenancy {
     @Column(name = "customer_booking_guid")
     private UUID customerBookingGuid;
 
+    @Column(name = "is_frob")
+    private Boolean isFrob;
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
