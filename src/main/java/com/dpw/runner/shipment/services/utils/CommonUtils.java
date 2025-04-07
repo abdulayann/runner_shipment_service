@@ -379,7 +379,7 @@ public class CommonUtils {
         int minSupportedAscii = 32;
         int maxSupportedAscii = 126;
         for (char c : input.toCharArray()) {
-            if ((int) c < minSupportedAscii || (int) c > maxSupportedAscii) {
+            if ( c < minSupportedAscii || c > maxSupportedAscii) {
                 return true;
             }
         }
@@ -547,7 +547,7 @@ public class CommonUtils {
         return Integer.parseInt(s);
     }
 
-    public static String getErrorResponseMessage(Exception e, Class<?> clazz) {
+    public static String getErrorResponseMessage(Exception e) {
         String responseMessage = "";
         responseMessage =
                 switch (e.getClass().getSimpleName()) {
@@ -591,9 +591,18 @@ public class CommonUtils {
         str.append((n[0] != 0) ? getTwoDigitWordConversion(a, b, n, 0) + "Crore " : "");
         str.append((n[1] != 0) ? getTwoDigitWordConversion(a, b, n, 1) + "Lakh " : "");
         str.append((n[2] != 0) ? getTwoDigitWordConversion(a, b, n, 2) + "Thousand " : "");
-        str.append((n[3] != 0) ? (!a[n[3]].equals("") ? a[n[3]] : b[n[3] / 10] + " " + a[n[3] % 10]) + "Hundred " : "");
-        str.append((n[4] != 0) ? ((str.length() != 0) ? "and " : "") +
-                getTwoDigitWordConversion(a, b, n, 4) + " " : "");
+        String value = "";
+        if (n[3] != 0) {
+            value = !a[n[3]].isEmpty() ? a[n[3]] : b[n[3] / 10] + " " + a[n[3] % 10];
+            value += " Hundred ";
+        }
+        str.append(value);
+
+        value = "";
+        if (n[4] != 0) {
+            value = (!str.isEmpty() ? "and " : "") + getTwoDigitWordConversion(a, b, n, 4) + " ";
+        }
+        str.append(value);
 
         return str.toString().trim();
     }
@@ -1393,6 +1402,7 @@ public class CommonUtils {
         return HTML_HREF_TAG_PREFIX + link + "'>" + consolidationId + HTML_HREF_TAG_SUFFIX;
     }
 
+    @SuppressWarnings("java:S5857")
     public String replaceTagsFromData(Map<String, Object> map, String val) {
         for (Map.Entry<String, Object> entry : map.entrySet()) {
             if (!Objects.isNull(entry.getValue()) && !Objects.isNull(entry.getKey()))
@@ -1662,12 +1672,9 @@ public class CommonUtils {
         try {
             for (Field field : clazz.getDeclaredFields()) {
                 field.setAccessible(true);
-                if (field.isAnnotationPresent(UnlocationData.class)) {
-                    if ((Objects.isNull(oldEntity) || !Objects.equals(field.get(newEntity), field.get(oldEntity))) && !Objects.isNull(field.get(newEntity))) {
-                        unlocationSet.add((String) field.get(newEntity));
-                    }
+                if (field.isAnnotationPresent(UnlocationData.class) && (Objects.isNull(oldEntity) || !Objects.equals(field.get(newEntity), field.get(oldEntity))) && !Objects.isNull(field.get(newEntity))) {
+                    unlocationSet.add((String) field.get(newEntity));
                 }
-
             }
         } catch (Exception e) {
             log.warn("Error while getting un-location fields for class {}", clazz.getSimpleName());

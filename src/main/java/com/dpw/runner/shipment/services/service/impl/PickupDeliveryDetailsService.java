@@ -124,7 +124,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(pickupDeliveryDetails));
     }
 
-    private void beforeSave(PickupDeliveryDetailsRequest request, PickupDeliveryDetails entity, PickupDeliveryDetails oldEntity) {
+    private void beforeSave(PickupDeliveryDetails entity) {
         Long id = entity.getId();
         // Set proper references
         CommonUtils.emptyIfNull(entity.getTiLegsList()).forEach(leg -> {
@@ -183,7 +183,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
         pickupDeliveryDetails.setId(oldEntity.get().getId());
         try {
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
-            beforeSave(request, pickupDeliveryDetails, oldEntity.get());
+            beforeSave(pickupDeliveryDetails);
             pickupDeliveryDetails = pickupDeliveryDetailsDao.save(pickupDeliveryDetails);
 
             // audit logs

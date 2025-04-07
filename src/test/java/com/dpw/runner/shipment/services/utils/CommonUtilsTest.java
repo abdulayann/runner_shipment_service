@@ -587,7 +587,7 @@ class CommonUtilsTest {
         TransactionSystemException transactionSystemException = new TransactionSystemException("Transaction failed");
         transactionSystemException.initCause(rootCause);
 
-        String result = CommonUtils.getErrorResponseMessage(transactionSystemException, CommonUtilsTest.class);
+        String result = CommonUtils.getErrorResponseMessage(transactionSystemException);
 
         assertEquals("Root cause message", result);
     }
@@ -595,7 +595,7 @@ class CommonUtilsTest {
     @Test
     void testGetErrorResponseMessage_WithGenericException() {
         Exception genericException = new Exception("Generic exception message");
-        String result = CommonUtils.getErrorResponseMessage(genericException, CommonUtilsTest.class);
+        String result = CommonUtils.getErrorResponseMessage(genericException);
         assertEquals("Generic exception message", result);
     }
 
@@ -3251,7 +3251,7 @@ class CommonUtilsTest {
 
     @Test
     void testGetShipmentDetailsResponseWithEmptyString() {
-        List<String> includeColumns = List.of(StringUtility.getEmptyString());
+        List<String> includeColumns = List.of(Constants.EMPTY_STRING);
         Object response = commonUtils.getShipmentDetailsResponse(shipmentDetails, includeColumns);
         assertNotNull(response);
     }

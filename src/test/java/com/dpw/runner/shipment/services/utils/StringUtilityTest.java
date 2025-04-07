@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.utils;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 
@@ -74,7 +75,7 @@ class StringUtilityTest {
 
     @Test
     void testGetEmptyString() {
-        assertEquals("", StringUtility.getEmptyString());
+        assertEquals("", Constants.EMPTY_STRING);
     }
 
     @Test

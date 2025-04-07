@@ -593,19 +593,6 @@ public class EntityTransferService implements IEntityTransferService {
     }
 
 
-    private void checkForAcceptedNetworkTransfer(Long entityId, String entityType, List<Integer> tenantIds) {
-        List<NetworkTransfer> networkTransfers = networkTransferDao.findByEntityAndTenantList(entityId, entityType, tenantIds);
-        networkTransfers = ObjectUtils.isNotEmpty(networkTransfers) ?
-                networkTransfers.stream().filter(networkTransfer -> NetworkTransferStatus.ACCEPTED == networkTransfer.getStatus()).toList() : null;
-
-        if (ObjectUtils.isNotEmpty(networkTransfers)) {
-            List<Integer> tenantIdList = networkTransfers.stream().map(NetworkTransfer::getTenantId).toList();
-            log.debug("One or more network transfer requests are already in the ACCEPTED status for request Id: {}", LoggerHelper.getRequestIdFromMDC());
-            throw new ValidationException(ALREADY_ACCEPTED_NETWORK_TRANSFER + String.join(", ", getTenantName(tenantIdList)));
-        }
-    }
-
-
     private void interBranchValidation(ConsolidationDetails consol, SendConsolidationRequest sendConsolidationRequest) {
         if(Boolean.TRUE.equals(consol.getInterBranchConsole())) {
             var shipmentGuidSendToBranch = sendConsolidationRequest.getShipmentGuidSendToBranch();
@@ -2279,11 +2266,9 @@ public class EntityTransferService implements IEntityTransferService {
     }
 
     private void processTriangulationPartnerList(Map<UUID, List<ShipmentDetails>> destinationShipmentsMap, ShipmentDetails shipmentDetails, ShipmentDetails originShipment, ArValidationResponse arValidationResponse, List<Long> triangulationList, List<TriangulationPartner> triangulationPartnerList) {
-        if (triangulationPartnerList.stream()
+        if (destinationShipmentsMap.containsKey(originShipment.getGuid()) || triangulationPartnerList.stream()
                 .filter(Objects::nonNull)
                 .anyMatch(tp -> Objects.equals(tp.getTriangulationPartner(), shipmentDetails.getTenantId().longValue()))) {
-            setTriangulationDataInResponse(destinationShipmentsMap, originShipment, triangulationPartnerList, arValidationResponse);
-        } else if (destinationShipmentsMap.containsKey(originShipment.getGuid())) {
             setTriangulationDataInResponse(destinationShipmentsMap, originShipment, triangulationPartnerList, arValidationResponse);
         }
         Set<Integer> branchIds = new HashSet<>();
@@ -2804,7 +2789,7 @@ public class EntityTransferService implements IEntityTransferService {
 
     private Map<String, Object> getConsolMasterData(ConsolidationDetails consolidationDetails) {
         ConsolidationDetailsResponse consolidationDetailsResponse = jsonHelper.convertValue(consolidationDetails, ConsolidationDetailsResponse.class);
-        return consolidationService.fetchAllMasterDataByKey(consolidationDetails, consolidationDetailsResponse);
+        return consolidationService.fetchAllMasterDataByKey(consolidationDetailsResponse);
     }
 
     private EntityTransferShipmentDetails prepareShipmentPayload(ShipmentDetails shipmentDetails) {
@@ -2949,8 +2934,8 @@ public class EntityTransferService implements IEntityTransferService {
         String blNumbers = (consolidationDetails.getShipmentsList() == null) ? "" :
                 consolidationDetails.getShipmentsList().stream()
                         .map(c -> {
-                            var branch = shipmentGuidSendToBranch.containsKey(StringUtility.convertToString(c.getGuid())) ? shipmentGuidSendToBranch.get(StringUtility.convertToString(c.getGuid())).get(index) : destinationBranches.get(index);
-                            return StringUtility.convertToString(c.getHouseBill()) + " - " + (tenantMap.containsKey(branch) ? tenantMap.get(branch).getTenantName() : StringUtility.getEmptyString());
+                            var branch = getBranch(shipmentGuidSendToBranch, index, destinationBranches, c);
+                            return StringUtility.convertToString(c.getHouseBill()) + " - " + getTenantName(tenantMap, branch);
                         })
                         .collect(Collectors.joining(","));
 
@@ -2981,6 +2966,14 @@ public class EntityTransferService implements IEntityTransferService {
 
         return EmailTemplatesRequest.builder().body(body).subject(subject).build();
 
+    }
+
+    private String getTenantName(Map<Integer, TenantModel> tenantMap, Integer branch) {
+        return tenantMap.containsKey(branch) ? tenantMap.get(branch).getTenantName() : Constants.EMPTY_STRING;
+    }
+
+    private Integer getBranch(Map<String, List<Integer>> shipmentGuidSendToBranch, int index, List<Integer> destinationBranches, ShipmentDetails c) {
+        return shipmentGuidSendToBranch.containsKey(StringUtility.convertToString(c.getGuid())) ? shipmentGuidSendToBranch.get(StringUtility.convertToString(c.getGuid())).get(index) : destinationBranches.get(index);
     }
 
     public List<String> getRoleListByRoleId(Integer roleId) {
@@ -3108,7 +3101,7 @@ public class EntityTransferService implements IEntityTransferService {
         for (ShipmentDetails shipment : shipmentDetailsList) {
             Element newRow = rowTemplate.clone();
             var sourceTenantId = Objects.isNull(shipment.getSourceTenantId()) ? null : Integer.parseInt(StringUtility.convertToString(shipment.getSourceTenantId()));
-            String sourceBranchName = Objects.isNull(sourceTenantId) && tenantMap.containsKey(sourceTenantId) ? StringUtility.getEmptyString() : tenantMap.get(sourceTenantId).getTenantName();
+            String sourceBranchName = Objects.isNull(sourceTenantId) && tenantMap.containsKey(sourceTenantId) ? Constants.EMPTY_STRING : tenantMap.get(sourceTenantId).getTenantName();
             newRow.select("td").get(0).text(shipment.getShipmentId()).attr(styleAttribute, paddingValue);
             newRow.select("td").get(1).text(sourceBranchName).attr(styleAttribute, paddingValue);
             newRow.select("td").get(2).text(shipment.getHouseBill()).attr(styleAttribute, paddingValue);

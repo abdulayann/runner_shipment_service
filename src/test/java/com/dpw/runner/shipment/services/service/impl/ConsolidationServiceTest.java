@@ -3681,7 +3681,7 @@ import static org.mockito.Mockito.*;
         Map<String, Object> response = new HashMap<>();
         var spyService = Mockito.spy(consolidationService);
         when(consolidationDetailsDao.findConsolidationByIdWithQuery(anyLong())).thenReturn(Optional.of(consolidationDetails));
-        Mockito.doReturn(response).when(spyService).fetchAllMasterDataByKey(any(), any());
+        Mockito.doReturn(response).when(spyService).fetchAllMasterDataByKey(any());
 
         ResponseEntity<IRunnerResponse> responseEntity = spyService.getAllMasterData(CommonRequestModel.buildRequest(1L));
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
@@ -4387,7 +4387,7 @@ import static org.mockito.Mockito.*;
             return mockRunnable;
         });
 
-        Map<String, Object> response = spyService.fetchAllMasterDataByKey(consolidationDetails, consolidationDetailsResponse);
+        Map<String, Object> response = spyService.fetchAllMasterDataByKey(consolidationDetailsResponse);
         assertEquals(new HashMap<>(), response);
     }
 

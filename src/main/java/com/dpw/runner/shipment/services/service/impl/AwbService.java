@@ -201,11 +201,7 @@ public class AwbService implements IAwbService {
         Awb awb = new Awb();
         try {
             awb = awbDao.save(generateAwb(request));
-            try {
-                awbSync.sync(awb, SaveStatus.CREATE);
-            } catch (Exception e) {
-                log.error(SyncingConstants.ERROR_PERFORMING_AWB_SYNC, e);
-            }
+            syncAwb(awb, SaveStatus.CREATE);
 
             // audit logs
             auditLogService.addAuditLog(
@@ -226,6 +222,14 @@ public class AwbService implements IAwbService {
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(awb));
+    }
+
+    private void syncAwb(Awb awb, SaveStatus saveStatus) {
+        try {
+            awbSync.sync(awb, saveStatus);
+        } catch (Exception e) {
+            log.error(SyncingConstants.ERROR_PERFORMING_AWB_SYNC, e);
+        }
     }
 
     public ResponseEntity<IRunnerResponse> updateAwb(CommonRequestModel commonRequestModel) {
@@ -264,11 +268,7 @@ public class AwbService implements IAwbService {
             }
             awb = awbDao.save(awb);
 
-            try {
-                awbSync.sync(awb, SaveStatus.UPDATE);
-            } catch (Exception e) {
-                log.error(SyncingConstants.ERROR_PERFORMING_AWB_SYNC, e);
-            }
+            syncAwb(awb, SaveStatus.UPDATE);
 
             // audit logs
             auditLogService.addAuditLog(
@@ -292,7 +292,7 @@ public class AwbService implements IAwbService {
     }
 
     private void setAwbNumberFromPackingInfo(Awb awb) {
-        if(awb.getAwbPackingInfo() != null && awb.getAwbPackingInfo().size() > 0) {
+        if(awb.getAwbPackingInfo() != null && !awb.getAwbPackingInfo().isEmpty()) {
             for(var i : awb.getAwbPackingInfo()) {
                 i.setAwbNumber(awb.getAwbNumber());
             }
@@ -566,11 +566,7 @@ public class AwbService implements IAwbService {
             if(awbList != null && !awbList.isEmpty())
                 updateSciFieldFromMawb(awb, awbList);
             awb = awbDao.save(awb);
-            try {
-                awbSync.sync(awb, SaveStatus.CREATE);
-            } catch (Exception e) {
-                log.error(SyncingConstants.ERROR_PERFORMING_AWB_SYNC, e);
-            }
+            syncAwb(awb, SaveStatus.CREATE);
 
             // map mawb and hawb affter suuccessful save
             linkHawbMawb(awb, awbList, consolidationDetails.getInterBranchConsole());
@@ -652,7 +648,7 @@ public class AwbService implements IAwbService {
 
             // Can there be a scenario of multiple Goods information ?
             mawb.setAwbGoodsDescriptionInfo(List.of(pair.getRight()));
-            saveHawbPacks(mawb, hawbPacksMap);
+            saveHawbPacks(hawbPacksMap);
             awbDao.save(mawb);
         }
     }
@@ -727,6 +723,7 @@ public class AwbService implements IAwbService {
         }
     }
 
+    @SuppressWarnings("java:S2209")
     private BigDecimal getTotalGrossWeightOfMawbGood(ShipmentSettingsDetails tenantSettings, AwbPackingInfo i, BigDecimal totalGrossWeightOfMawbGood) throws RunnerException {
         if (i.getWeight() != null) {
             if (i.getWeightUnit() == null || i.getWeightUnit().isEmpty())
@@ -737,6 +734,7 @@ public class AwbService implements IAwbService {
         return totalGrossWeightOfMawbGood;
     }
 
+    @SuppressWarnings("java:S2209")
     private BigDecimal getTotalGrossVolumeOfMawbGood(ShipmentSettingsDetails tenantSettings, AwbPackingInfo i, BigDecimal totalGrossVolumeOfMawbGood) throws RunnerException {
         if (i.getVolume() != null) {
             if (i.getVolumeUnit() == null || i.getVolumeUnit().isEmpty())
@@ -748,7 +746,7 @@ public class AwbService implements IAwbService {
         return totalGrossVolumeOfMawbGood;
     }
 
-    private void saveHawbPacks(Awb mawb, Map<String, List<AwbPackingInfo>> hawbPacksMap) {
+    private void saveHawbPacks(Map<String, List<AwbPackingInfo>> hawbPacksMap) {
         List<String> awbNumbers = hawbPacksMap.keySet().stream().toList();
 
         commonUtils.setInterBranchContextForHub();
@@ -1032,10 +1030,8 @@ public class AwbService implements IAwbService {
     }
 
     private void setAwbIssuingAgentTaxRegistrationNumber(Parties orgRow, Map<Long, AddressDataV1> issuingAgentAddressIdToEntityMap, AwbShipmentInfo awbShipmentInfo) {
-        if(orgRow.getAddressId()!=null && !orgRow.getAddressId().isEmpty()){
-            if(issuingAgentAddressIdToEntityMap.containsKey(Long.valueOf(orgRow.getAddressId()))){
-                awbShipmentInfo.setIssuingAgentTaxRegistrationNumber(issuingAgentAddressIdToEntityMap.get(Long.valueOf(orgRow.getAddressId())).getTaxRegNumber()!=null ? StringUtility.toUpperCase(StringUtility.convertToString(issuingAgentAddressIdToEntityMap.get(Long.valueOf(orgRow.getAddressId())).getTaxRegNumber())) : null);
-            }
+        if(orgRow.getAddressId()!=null && !orgRow.getAddressId().isEmpty() && issuingAgentAddressIdToEntityMap.containsKey(Long.valueOf(orgRow.getAddressId()))){
+            awbShipmentInfo.setIssuingAgentTaxRegistrationNumber(issuingAgentAddressIdToEntityMap.get(Long.valueOf(orgRow.getAddressId())).getTaxRegNumber()!=null ? StringUtility.toUpperCase(StringUtility.convertToString(issuingAgentAddressIdToEntityMap.get(Long.valueOf(orgRow.getAddressId())).getTaxRegNumber())) : null);
         }
     }
 
@@ -1048,7 +1044,7 @@ public class AwbService implements IAwbService {
 
     private Map<Long, AddressDataV1> getIssuingAgentAddressIdToEntityMap(ArrayList<String> issuingAgentAddressList) {
         Map<Long, AddressDataV1> issuingAgentAddressIdToEntityMap = new HashMap<>();
-        if(CommonUtils.listIsNullOrEmpty(issuingAgentAddressList)) {
+        if(!CommonUtils.listIsNullOrEmpty(issuingAgentAddressList)) {
             CommonV1ListRequest issuingAgentAddressRequest = createCriteriaToFetchAddressList(issuingAgentAddressList);
             V1DataResponse issuingAgentAddressResponse = v1Service.addressList(issuingAgentAddressRequest);
             List<AddressDataV1> issuingAgentEntityAddressList = jsonHelper.convertValueToList(issuingAgentAddressResponse.entities, AddressDataV1.class);
@@ -1232,12 +1228,8 @@ public class AwbService implements IAwbService {
     }
 
     private void setTaxRegistrationNumber(AwbNotifyPartyInfo notifyParty, Map<Long, AddressDataV1> notifyPartyAddressIdToEntityOrgMap) {
-        if(notifyParty.getAddressId()!=null){
-            if(notifyPartyAddressIdToEntityOrgMap.containsKey(Long.valueOf(notifyParty.getAddressId()))) {
-                if (notifyPartyAddressIdToEntityOrgMap.get(Long.valueOf(notifyParty.getAddressId())).getTaxRegNumber()!=null) {
-                    notifyParty.setTaxRegistrationNumber(StringUtility.toUpperCase(StringUtility.convertToString(notifyPartyAddressIdToEntityOrgMap.get(Long.valueOf(notifyParty.getAddressId())).getTaxRegNumber())));
-                }
-            }
+        if(notifyParty.getAddressId()!=null && notifyPartyAddressIdToEntityOrgMap.containsKey(Long.valueOf(notifyParty.getAddressId())) && notifyPartyAddressIdToEntityOrgMap.get(Long.valueOf(notifyParty.getAddressId())).getTaxRegNumber()!=null) {
+            notifyParty.setTaxRegistrationNumber(StringUtility.toUpperCase(StringUtility.convertToString(notifyPartyAddressIdToEntityOrgMap.get(Long.valueOf(notifyParty.getAddressId())).getTaxRegNumber())));
         }
     }
 
@@ -1571,11 +1563,10 @@ public class AwbService implements IAwbService {
                 (String) orgRow.getOrgData().get(COUNTRY) : null;
         if (country != null)
             awbCargoInfo.setCustomOriginCode(getCountryCode(country));
-        if(orgRow.getAddressId()!=null&& !orgRow.getAddressId().isEmpty()){
-            if(issuingAgentAddressIdToEntityMap.containsKey(Long.valueOf(orgRow.getAddressId()))){
-                awbShipmentInfo.setIssuingAgentTaxRegistrationNumber(issuingAgentAddressIdToEntityMap.get(Long.valueOf(orgRow.getAddressId())).getTaxRegNumber()!=null ? StringUtility.toUpperCase(StringUtility.convertToString(issuingAgentAddressIdToEntityMap.get(Long.valueOf(orgRow.getAddressId())).getTaxRegNumber())) : null);
-            }
+        if(orgRow.getAddressId()!=null&& !orgRow.getAddressId().isEmpty() && issuingAgentAddressIdToEntityMap.containsKey(Long.valueOf(orgRow.getAddressId()))){
+            awbShipmentInfo.setIssuingAgentTaxRegistrationNumber(issuingAgentAddressIdToEntityMap.get(Long.valueOf(orgRow.getAddressId())).getTaxRegNumber()!=null ? StringUtility.toUpperCase(StringUtility.convertToString(issuingAgentAddressIdToEntityMap.get(Long.valueOf(orgRow.getAddressId())).getTaxRegNumber())) : null);
         }
+
         awbShipmentInfo.setIataCode(StringUtility.isEmpty(awbShipmentInfo.getIataCode())
                 ? StringUtility.convertToString(shipmentDetails.getConsignee().getOrgData().get(PartiesConstants.AGENT_IATA_CODE))
                 : awbShipmentInfo.getIataCode());
@@ -1838,7 +1829,7 @@ public class AwbService implements IAwbService {
         awbGoodsDescriptionInfo.setGrossVolumeUnit(shipmentDetails.getVolumeUnit());
         awbGoodsDescriptionInfo.setPiecesNo(shipmentDetails.getNoOfPacks());
         awbGoodsDescriptionInfo.setChargeableWt(shipmentDetails.getChargable() != null ?
-                AwbUtility.roundOffAirShipment((double) shipmentDetails.getChargable().doubleValue()) : null);
+                AwbUtility.roundOffAirShipment(shipmentDetails.getChargable().doubleValue()) : null);
         awbGoodsDescriptionInfo.setGuid(UUID.randomUUID());
         awbGoodsDescriptionInfo.setNtrQtyGoods(shipmentDetails.getGoodsDescription() != null ? StringUtility.toUpperCase(shipmentDetails.getGoodsDescription()) : "");
         int noOfPacks = 0;
@@ -2030,11 +2021,7 @@ public class AwbService implements IAwbService {
         awb.setAirMessageResubmitted(false);
         awb.setOriginalPrintedAt(originalPrintedAt);
         awb = awbDao.save(awb);
-        try {
-            awbSync.sync(awb, SaveStatus.RESET);
-        } catch (Exception e) {
-            log.error(SyncingConstants.ERROR_PERFORMING_AWB_SYNC, e);
-        }
+        syncAwb(awb, SaveStatus.RESET);
 
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(awb));
     }
@@ -2083,7 +2070,7 @@ public class AwbService implements IAwbService {
         // Link
         linkHawbMawb(awb, awbList, consolidationDetails.getInterBranchConsole());
         awb.setPrintType(printType);
-        if(awbList != null && !awbList.isEmpty())
+        if(!awbList.isEmpty())
             updateSciFieldFromMawb(awb, awbList);
     }
 
@@ -2156,15 +2143,13 @@ public class AwbService implements IAwbService {
         updateShipmentNotifyPartyinfoToAwb(shipmentDetails, request, awb, hawbLockSettings, mawbLockSettings);
         updateShipmemtRoutingInfoToAwb(shipmentDetails, request, awb, hawbLockSettings, mawbLockSettings);
         updateAwbGoodsDescriptionInfoFromShipment(shipmentDetails, request, awb, hawbLockSettings, mawbLockSettings);
-        updateAwbCargoInfoFromShipment(shipmentDetails, request, awb, hawbLockSettings, mawbLockSettings);
+        updateAwbCargoInfoFromShipment(request, awb, hawbLockSettings, mawbLockSettings);
         updateAwbOtherInfoFromShipment(shipmentDetails, request, awb, hawbLockSettings, mawbLockSettings);
     }
 
     private void updateShipmentPackingInfoToAwb(ShipmentDetails shipmentDetails, List<Packing> packings, Awb awb, CreateAwbRequest request, HawbLockSettings hawbLockSettings, MawbLockSettings mawbLockSettings, Integer totalPacksCount) {
         Map<UUID, Packing> packMap = new HashMap<>();
-        packings.forEach(pack -> {
-            packMap.put(pack.getGuid(), pack);
-        });
+        packings.forEach(pack -> packMap.put(pack.getGuid(), pack));
         totalPacksCount = getTotalPacksCount(awb, request, hawbLockSettings, mawbLockSettings, totalPacksCount, packMap);
 
         Map<Long, String> map = new HashMap<>();
@@ -2590,7 +2575,7 @@ public class AwbService implements IAwbService {
             awbGoodsDescriptionInfo.setGrossVolume(shipmentDetails.getVolume()!=null?shipmentDetails.getVolume().setScale(3, RoundingMode.HALF_UP):BigDecimal.ZERO.setScale(3,RoundingMode.HALF_UP));
             awbGoodsDescriptionInfo.setGrossVolumeUnit(shipmentDetails.getVolumeUnit());
             awbGoodsDescriptionInfo.setChargeableWt(shipmentDetails.getChargable() != null ?
-                    AwbUtility.roundOffAirShipment((double) shipmentDetails.getChargable().doubleValue()) : null);
+                    AwbUtility.roundOffAirShipment(shipmentDetails.getChargable().doubleValue()) : null);
             awbGoodsDescriptionInfo.setGuid(UUID.randomUUID());
             awbGoodsDescriptionInfo.setNtrQtyGoods(shipmentDetails.getGoodsDescription() != null ? shipmentDetails.getGoodsDescription() : "");
             totalPacksCount = getPacksCountForPackingInfo(awb, awbGoodsDescriptionInfo, totalPacksCount);
@@ -2633,7 +2618,7 @@ public class AwbService implements IAwbService {
 
         if (isFieldLocked(request, hawbLockSettings.getChargeableWtLock(), mawbLockSettings.getChargeableWtLock())) {
             awbGoodsDescriptionInfo.setChargeableWt(shipmentDetails.getChargable() != null ?
-                    AwbUtility.roundOffAirShipment((double) shipmentDetails.getChargable().doubleValue()) : null);
+                    AwbUtility.roundOffAirShipment( shipmentDetails.getChargable().doubleValue()) : null);
         }
 
         if (isFieldLocked(request, hawbLockSettings.getPackingVolumeLock(), mawbLockSettings.getPackingVolumeLock())) {
@@ -2665,7 +2650,7 @@ public class AwbService implements IAwbService {
             awbGoodsDescriptionInfo.setPiecesNo(totalPacksCount);
     }
 
-    private void updateAwbCargoInfoFromShipment(ShipmentDetails shipmentDetails, CreateAwbRequest request, Awb awb, HawbLockSettings hawbLockSettings, MawbLockSettings mawbLockSettings) {
+    private void updateAwbCargoInfoFromShipment(CreateAwbRequest request, Awb awb, HawbLockSettings hawbLockSettings, MawbLockSettings mawbLockSettings) {
         AwbCargoInfo awbCargoInfo = awb.getAwbCargoInfo();
 
 
@@ -2790,11 +2775,11 @@ public class AwbService implements IAwbService {
             awb.setAwbPackingInfo(new ArrayList<>());
         }
         awb.setAwbPackingInfo(updateMawbPackingInfoFromShipment(consolidationDetails));
-        updateMawbShipmentInfoFromShipment(consolidationDetails, request, awb, mawbLockSettings);
+        updateMawbShipmentInfoFromShipment(consolidationDetails, awb, mawbLockSettings);
         generateMawbNotifyPartyinfo(consolidationDetails, request, awb, mawbLockSettings);
         updateMawbRoutingInfoFromShipment(consolidationDetails, request, awb, mawbLockSettings);
-        updateMawbCargoInfoFromShipment(consolidationDetails, request, awb, mawbLockSettings);
-        generateMawbOtherInfo(consolidationDetails, request, awb, mawbLockSettings);
+        updateMawbCargoInfoFromShipment(consolidationDetails, awb, mawbLockSettings);
+        generateMawbOtherInfo(consolidationDetails, awb, mawbLockSettings);
     }
     private List<AwbPackingInfo> updateMawbPackingInfoFromShipment(ConsolidationDetails consolidationDetails) {
 
@@ -2830,7 +2815,7 @@ public class AwbService implements IAwbService {
         }
     }
 
-    private void updateMawbShipmentInfoFromShipment(ConsolidationDetails consolidationDetails, CreateAwbRequest request, Awb awb, MawbLockSettings mawbLockSettings) {
+    private void updateMawbShipmentInfoFromShipment(ConsolidationDetails consolidationDetails, Awb awb, MawbLockSettings mawbLockSettings) {
         AwbShipmentInfo awbShipmentInfo = awb.getAwbShipmentInfo();
         Map<String, String> alpha2DigitToCountry = masterDataUtils.consolidationAddressCountryMasterData(consolidationDetails);
         var shipperName = StringUtility.convertToString(consolidationDetails.getSendingAgent().getOrgData().get(PartiesConstants.FULLNAME));
@@ -2988,7 +2973,7 @@ public class AwbService implements IAwbService {
             awbRoute.setFlightNumber(consolidationDetails.getCarrierDetails().getFlightNumber());
     }
 
-    private void updateMawbCargoInfoFromShipment(ConsolidationDetails consolidationDetails, CreateAwbRequest request, Awb awb, MawbLockSettings mawbLockSettings) throws RunnerException {
+    private void updateMawbCargoInfoFromShipment(ConsolidationDetails consolidationDetails, Awb awb, MawbLockSettings mawbLockSettings) {
         AwbCargoInfo awbCargoInfo = awb.getAwbCargoInfo();
         if(!Boolean.TRUE.equals(mawbLockSettings.getNtrQtyGoodsLock())) {
             GenerateAwbPaymentInfoRequest generateAwbPaymentInfoRequest = new GenerateAwbPaymentInfoRequest();
@@ -3015,7 +3000,7 @@ public class AwbService implements IAwbService {
         }
 
     }
-    private void generateMawbOtherInfo(ConsolidationDetails consolidationDetails, CreateAwbRequest request, Awb awb, MawbLockSettings mawbLockSettings) {
+    private void generateMawbOtherInfo(ConsolidationDetails consolidationDetails, Awb awb, MawbLockSettings mawbLockSettings) {
         AwbOtherInfo awbOtherInfo = awb.getAwbOtherInfo();
         var shipperName = StringUtility.convertToString(consolidationDetails.getSendingAgent() != null ? consolidationDetails.getSendingAgent().getOrgData().get(PartiesConstants.FULLNAME) : "");
         awbOtherInfo.setShipper(shipperName == null ? null : shipperName.toUpperCase());
@@ -3094,7 +3079,7 @@ public class AwbService implements IAwbService {
             AwbResponse awbResponse = jsonHelper.convertValue(awb, AwbResponse.class);
 
             generateDefaultAwbInformation(awb,awbResponse);
-            Map<String, Object> response = fetchAllMasterDataByKey(awb, awbResponse);
+            Map<String, Object> response = fetchAllMasterDataByKey(awbResponse);
             return ResponseHelper.buildSuccessResponse(response);
         }
         catch (Exception e) {
@@ -3105,16 +3090,16 @@ public class AwbService implements IAwbService {
         }
     }
 
-    private Map<String, Object> fetchAllMasterDataByKey(Awb awb, AwbResponse awbResponse) {
+    private Map<String, Object> fetchAllMasterDataByKey(AwbResponse awbResponse) {
         Map<String, Object> masterDataResponse = new HashMap<>();
-        var masterListFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllMasterDataInSingleCall(awb, awbResponse, masterDataResponse)), executorService);
-        var unLocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllUnlocationDataInSingleCall(awb, awbResponse, masterDataResponse)), executorService);
-        var commodityTypesFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllCommodityTypesInSingleCallPacksList(awb, awbResponse, masterDataResponse)), executorService);
+        var masterListFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllMasterDataInSingleCall(awbResponse, masterDataResponse)), executorService);
+        var unLocationsFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllUnlocationDataInSingleCall(awbResponse, masterDataResponse)), executorService);
+        var commodityTypesFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllCommodityTypesInSingleCallPacksList(awbResponse, masterDataResponse)), executorService);
         CompletableFuture.allOf(masterListFuture, unLocationsFuture, commodityTypesFuture).join();
         return masterDataResponse;
     }
 
-    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllMasterDataInSingleCall (Awb awb, AwbResponse awbResponse, Map<String, Object> masterDataResponse) {
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllMasterDataInSingleCall (AwbResponse awbResponse, Map<String, Object> masterDataResponse) {
         try {
             Map<String, Object> cacheMap = new HashMap<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
@@ -3164,7 +3149,7 @@ public class AwbService implements IAwbService {
 
     }
 
-    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllUnlocationDataInSingleCall (Awb awb, AwbResponse awbResponse, Map<String, Object> masterDataResponse) {
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllUnlocationDataInSingleCall (AwbResponse awbResponse, Map<String, Object> masterDataResponse) {
         try {
             Map<String, Object> cacheMap = new HashMap<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
@@ -3206,7 +3191,7 @@ public class AwbService implements IAwbService {
             return CompletableFuture.completedFuture(null);
         }
     }
-    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllCommodityTypesInSingleCallPacksList(Awb awb, AwbResponse awbResponse, Map<String, Object> masterDataResponse) {
+    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllCommodityTypesInSingleCallPacksList(AwbResponse awbResponse, Map<String, Object> masterDataResponse) {
         try {
             Map<String, Object> cacheMap = new HashMap<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
@@ -3512,13 +3497,14 @@ public class AwbService implements IAwbService {
             return "";
         }
 
-        StringBuilder responseBuilder = new StringBuilder(StringUtility.isEmpty(dimensionText) ? StringUtility.getEmptyString() : dimensionText);
+        StringBuilder responseBuilder = new StringBuilder(StringUtility.isEmpty(dimensionText) ? Constants.EMPTY_STRING : dimensionText);
         responseBuilder.append(newLine).append(packsDescriptionValue);
         return responseBuilder.toString();
     }
 
     private String getPacksDescriptionValue(GenerateAwbPaymentInfoRequest request, String packsDescriptionValue, String newLine) {
         int counter = 0;
+        StringBuilder packsDescriptionValueBuilder = new StringBuilder(packsDescriptionValue);
         for (AwbPackingInfo packings : request.getAwbPackingInfo()) {
             String pcs = " ";
             String len = " ";
@@ -3547,13 +3533,13 @@ public class AwbService implements IAwbService {
                 height = packings.getHeight().toString();
             }
 
-            packsDescriptionValue += len + width + height + " " + packings.getLengthUnit() + " " + cross + " " +pcs;
+            packsDescriptionValueBuilder.append(len).append(width).append(height).append(" ").append(packings.getLengthUnit()).append(" ").append(cross).append(" ").append(pcs);
             if (counter < request.getAwbPackingInfo().size()-1) {
-                packsDescriptionValue += ","+ newLine;
+                packsDescriptionValueBuilder.append(",").append(newLine);
             }
             counter++;
         }
-        return packsDescriptionValue;
+        return packsDescriptionValueBuilder.toString();
     }
 
     @Override
@@ -3747,14 +3733,12 @@ public class AwbService implements IAwbService {
         try {
             v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
         } catch (Exception e) {
-            return StringUtility.getEmptyString();
+            return Constants.EMPTY_STRING;
         }
 
         List<EntityTransferUnLocations> locationDataList = jsonHelper.convertValueToList(v1DataResponse.entities, EntityTransferUnLocations.class);
         var locMap = locationDataList.stream().collect(Collectors.toMap(EntityTransferUnLocations::getNameWoDiacritics, EntityTransferUnLocations::getLocationsReferenceGUID,
-                (locationguid1, locationguid2) -> {
-            return locationguid1;
-        }));
+                (locationguid1, locationguid2) -> locationguid1));
         return locMap.get(name);
     }
 
@@ -3989,7 +3973,7 @@ public class AwbService implements IAwbService {
                 awbShipmentInfo.setIataCode(getIataCode(awbShipmentInfo, orgList));
                 awbShipmentInfo.setAgentCASSCode(getAgentCASSCode(awbShipmentInfo, orgList));
                 List<String> alpha3CountriesList = new ArrayList<>();
-                if(addressList == null || addressList.isEmpty()) {
+                if(addressList.isEmpty()) {
                     awbShipmentInfo.setIssuingAgentAddress(StringUtility.toUpperCase(getFormattedAddress(orgList.get(0))));
                     awbShipmentInfo.setIssuingAgentCity(StringUtility.convertToString(orgList.get(0).getCity()));
                     awbShipmentInfo.setIssuingAgentState(orgList.get(0).getState());
@@ -4104,6 +4088,7 @@ public class AwbService implements IAwbService {
             errors.add(Constants.DMAWB.equalsIgnoreCase(awbType) ? AwbConstants.RESUBMIT_FWB_VALIDATION : AwbConstants.RESUBMIT_FZB_VALIDATION);
     }
 
+    @SuppressWarnings("java:S135")
     private boolean isAllHawbsGenerated(List<Long> shipmentIdList, boolean allHawbsGenerated, Set<Long> shipmentAwbIdSet, List<String> errors) {
         for(var shipmentId : shipmentIdList) {
             List<Awb> response = awbDao.findByShipmentIdList(Arrays.asList(shipmentId));

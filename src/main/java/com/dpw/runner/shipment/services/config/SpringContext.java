@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Generated
 public class SpringContext {
+    private SpringContext(){}
     private static ApplicationContext context;
 
     public static void setApplicationContext(ApplicationContext applicationContext) {

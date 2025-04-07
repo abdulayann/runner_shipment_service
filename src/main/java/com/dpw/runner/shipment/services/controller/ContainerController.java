@@ -178,7 +178,7 @@ public class ContainerController {
     @ApiResponses(value = { @ApiResponse(code = 200, response = CheckAllocatedDataChangeResponseClass.class ,message = ContainerConstants.CALCULATION_SUCCESSFUL) })
     @PostMapping(ApiConstants.API_CHECK_ALLOCATED_DATA_CHANGE)
     public ResponseEntity<IRunnerResponse> calculateAllocatedData(@RequestBody CheckAllocatedDataChangesRequest containerRequest) {
-        return (ResponseEntity<IRunnerResponse>) containerService.calculateAllocatedData(CommonRequestModel.buildRequest(containerRequest));
+        return containerService.calculateAllocatedData(CommonRequestModel.buildRequest(containerRequest));
     }
 
 

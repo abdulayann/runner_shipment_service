@@ -31,6 +31,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
+import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.ReportException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -203,11 +204,11 @@ public class ReportService implements IReportService {
 
         Map<String, Object> dataRetrived;
 
-        if(report instanceof AWBLabelReport awbLabelReport) {
-            awbLabelReport.setMawb(reportRequest.isFromConsolidation());
-            awbLabelReport.setRemarks(reportRequest.getRemarks());
-            awbLabelReport.setCombi(reportRequest.isCombiLabel());
-            awbLabelReport.setCustomLabel(reportRequest.getPrintCustomLabel() != null && reportRequest.getPrintCustomLabel());
+        if(report instanceof AWBLabelReport awbLabelReport1) {
+            awbLabelReport1.setMawb(reportRequest.isFromConsolidation());
+            awbLabelReport1.setRemarks(reportRequest.getRemarks());
+            awbLabelReport1.setCombi(reportRequest.isCombiLabel());
+            awbLabelReport1.setCustomLabel(reportRequest.getPrintCustomLabel() != null && reportRequest.getPrintCustomLabel());
         }
         if(report instanceof FCRDocumentReport fcrDocumentReport) {
             fcrDocumentReport.setFcrShipper(reportRequest.getFcrShipper());
@@ -459,7 +460,7 @@ public class ReportService implements IReportService {
         if (reportRequest.getDisplayFreightAmount() != null && !reportRequest.getDisplayFreightAmount())
         {
             dataRetrived.put(ReportConstants.PACKING_LIST, dataRetrived.get(ReportConstants.PACKING_LIST_FAT));
-            dataRetrived.put(ReportConstants.SUM_OF_TOTAL_AMOUNT, StringUtility.getEmptyString());
+            dataRetrived.put(ReportConstants.SUM_OF_TOTAL_AMOUNT, Constants.EMPTY_STRING);
             dataRetrived.put(ReportConstants.WT_CHARGE_P, dataRetrived.get(ReportConstants.FREIGHT_AMOUNT_TEXT_P));
             dataRetrived.put(ReportConstants.WT_CHARGE_C, dataRetrived.get(ReportConstants.FREIGHT_AMOUNT_TEXT_C));
             dataRetrived.put(ReportConstants.TOTAL_PREPAID, dataRetrived.get(ReportConstants.TOTAL_OTHERS_P));
@@ -604,7 +605,7 @@ public class ReportService implements IReportService {
         if(reportRequest.getDisplayFreightAmount()!=null && !reportRequest.getDisplayFreightAmount())
         {
             dataRetrived.put(ReportConstants.PACKING_LIST, dataRetrived.get(ReportConstants.PACKING_LIST_FAT));
-            dataRetrived.put(ReportConstants.SUM_OF_TOTAL_AMOUNT, StringUtility.getEmptyString());
+            dataRetrived.put(ReportConstants.SUM_OF_TOTAL_AMOUNT, Constants.EMPTY_STRING);
             dataRetrived.put(ReportConstants.WT_CHARGE_P, dataRetrived.get(ReportConstants.FREIGHT_AMOUNT_TEXT_P));
             dataRetrived.put(ReportConstants.WT_CHARGE_C, dataRetrived.get(ReportConstants.FREIGHT_AMOUNT_TEXT_C));
             dataRetrived.put(ReportConstants.TOTAL_PREPAID, dataRetrived.get(ReportConstants.TOTAL_OTHERS_P));
@@ -1140,8 +1141,8 @@ public class ReportService implements IReportService {
         byte[] mainDocPage = getFromDocumentService(dataRetrived, pages.getMainPageId());
         if (mainDocPage == null)
             throw new ValidationException(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE);
-        String mawbNumber = StringUtility.getEmptyString();
-        String hawbNumber = StringUtility.getEmptyString();
+        String mawbNumber = Constants.EMPTY_STRING;
+        String hawbNumber = Constants.EMPTY_STRING;
         if(reportRequest.isFromConsolidation() || dataRetrived.get(ReportConstants.HAWB_NUMBER) == null ||
                 StringUtility.isEmpty(dataRetrived.get(ReportConstants.HAWB_NUMBER).toString()) || isCombi)
             mawbNumber = dataRetrived.get(ReportConstants.MAWB_NUMBER) != null ? dataRetrived.get(ReportConstants.MAWB_NUMBER) + packsCount : packsCount;
@@ -1609,21 +1610,21 @@ public class ReportService implements IReportService {
     }
 
     public String getSerialCount(int copyNumber, int totalCopies){
-        String _copy_count = Integer.toString(copyNumber);
-        String _total_copies = Integer.toString(totalCopies);
-        String ans = _copy_count;
-        int size = _copy_count.length();
-        if(_copy_count.length() < 5 && _total_copies.length() < 5){
-            for(int i=0; i<5-size; i++){
-                ans = "0" + ans;
+        String copyCount = Integer.toString(copyNumber);
+        String totalCopiesStr = Integer.toString(totalCopies);
+        StringBuilder ans = new StringBuilder(copyCount);
+        int size = copyCount.length();
+        if(copyCount.length() < 5 && totalCopiesStr.length() < 5){
+            for(int i = 0; i < (5 - size); i++){
+                ans = new StringBuilder("0" + ans);
             }
-        }else if(_copy_count.length() < 5){
-            int total_copies_size = _total_copies.length();
-            for(int i=0; i<total_copies_size-size; i++){
-                ans = "0" + ans;
+        }else if(copyCount.length() < 5){
+            int totalCopiesSize = totalCopiesStr.length();
+            for(int i = 0; i< (totalCopiesSize - size); i++){
+                ans = new StringBuilder("0" + ans);
             }
         }
-        return ans;
+        return ans.toString();
     }
 
     public byte[] addBarCodeForCombiReport(byte[] bytes, String hawbNumber) {
@@ -1775,7 +1776,7 @@ public class ReportService implements IReportService {
                         try {
                             mainDocCurrent = printForPartiesAndBarcode(reportRequest, new ArrayList<>(), json.get(ReportConstants.HAWB_NO) == null? "" : json.get(ReportConstants.HAWB_NO).toString(), jsonDictClone, pages);
                         } catch (DocumentException | IOException e) {
-                            throw new RuntimeException(e);
+                            throw new GenericException(e);
                         }
                     }else{
                         mainDocCurrent = getFromDocumentService(jsonDictClone, pages.getMainPageId());
@@ -1788,29 +1789,6 @@ public class ReportService implements IReportService {
             byte[] pdfByteContentCurrent = mergeDocumentBytes(mainDocParallel.get(i), firstpage, backprint, logopath, reportInfo, pages.getShipmentSettingsDetails());
             pdfBytes.add(pdfByteContentCurrent);
         }
-    }
-
-    private Map<Integer, byte[]> getMainDocParallel(DocPages pages, Map<String, Object> json, ReportRequest reportRequest, int originalCount) {
-        Map<Integer, byte[]> mainDocParallel = new ConcurrentHashMap<>();
-        // Call document service in parallel
-        IntStream.range(1, originalCount + 1).parallel().forEach(i -> {
-                    // make a deep clone of jsonDict to avoid race cases
-                    Map<String, Object> jsonDictClone = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(json));
-                    jsonDictClone.put(ReportConstants.INCREMENTAL_ORIGINALS, i);
-                    byte[] mainDocCurrent;
-                    if(reportRequest.isPrintForParties()){
-                        try {
-                            mainDocCurrent = printForPartiesAndBarcode(reportRequest, new ArrayList<>(), json.get(ReportConstants.HAWB_NO) == null? "" : json.get(ReportConstants.HAWB_NO).toString(), jsonDictClone, pages);
-                        } catch (DocumentException | IOException e) {
-                            throw new RuntimeException(e);
-                        }
-                    }else{
-                        mainDocCurrent = getFromDocumentService(jsonDictClone, pages.getMainPageId());
-                    }
-                    mainDocParallel.put(i, mainDocCurrent);
-                }
-        );
-        return mainDocParallel;
     }
 
     public byte[] mergeDocumentBytes(byte[] mainDoc, byte[] firstPage, byte[] backPrint, String logoPath, String reportInfo, ShipmentSettingsDetails tenantRow) throws DocumentException, IOException {

@@ -15,7 +15,6 @@ import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
@@ -36,12 +35,7 @@ public class PermissionsAspect {
         List<String> permissionList = PermissionsContext.getPermissions(SHIPMENT_LIST_PERMISSION);
         if(permissionList == null || permissionList.isEmpty())
             throw new RunnerException("Unable to list shipments due to insufficient list permissions");
-        permissionList.sort(new Comparator<String>() {
-            @Override
-            public int compare(String o1, String o2) {
-                return Integer.compare(o1.length(), o2.length());
-            }
-        });
+        permissionList.sort((o1, o2) -> Integer.compare(o1.length(), o2.length()));
         List<FilterCriteria> criterias = PermissionUtil.generateFilterCriteriaFromPermissions(permissionList, true);
 
         FilterCriteria criteria1 = null;
@@ -67,12 +61,7 @@ public class PermissionsAspect {
         List<String> permissionList = PermissionsContext.getPermissions(CONSOLIDATION_LIST_PERMISSION);
         if(permissionList == null || permissionList.isEmpty())
             throw new RunnerException("Unable to list consolidations due to insufficient list permissions.");
-        permissionList.sort(new Comparator<String>() {
-            @Override
-            public int compare(String o1, String o2) {
-                return Integer.compare(o1.length(), o2.length());
-            }
-        });
+        permissionList.sort((o1, o2) -> Integer.compare(o1.length(), o2.length()));
         List<FilterCriteria> criterias = PermissionUtil.generateFilterCriteriaFromPermissions(permissionList, false);
 
         FilterCriteria criteria1 = null;
@@ -85,7 +74,7 @@ public class PermissionsAspect {
                 criteria2.setLogicOperator("AND");
                 listCommonRequest.setFilterCriteria(Arrays.asList(criteria1, criteria2));
             } else
-                listCommonRequest.setFilterCriteria(Arrays.asList(criteria2));
+                listCommonRequest.setFilterCriteria(List.of(criteria2));
         }
     }
 

@@ -266,8 +266,6 @@ public class HblReport extends IReport {
     @Autowired
     private HblService hblService;
 
-    private V1TenantSettingsResponse tenantSettings;
-
     @Override
     public Map<String, Object> getData(Long id) {
         HblModel hblModel = (HblModel) getDocumentModel(id);
@@ -281,6 +279,7 @@ public class HblReport extends IReport {
     }
 
     public void validatePrinting(Long shipmentId, String printType) {
+        V1TenantSettingsResponse tenantSettings;
         tenantSettings = getCurrentTenantSettings();
 
         if (ReportConstants.ORIGINAL.equalsIgnoreCase(printType)) {
@@ -759,7 +758,7 @@ public class HblReport extends IReport {
 
     private void addActualDeliveryTag(HblModel hblModel, Map<String, Object> dictionary) {
         if (hblModel.shipment.getDeliveryDetails() != null && hblModel.shipment.getDeliveryDetails().getActualPickupOrDelivery() != null)
-            dictionary.put(ACTUAL_DELIVERY, DateTimeFormatter.ofPattern(getDPWDateFormatOrDefaultString() + " hh:mm ss")
+            dictionary.put(ACTUAL_DELIVERY, DateTimeFormatter.ofPattern(ReportConstants.DPW_DATE_FORMAT_OR_DEFAULT_STRING + " hh:mm ss")
                     .format(hblModel.shipment.getDeliveryDetails().getActualPickupOrDelivery()));
     }
 

@@ -829,27 +829,19 @@ public class CustomerBookingService implements ICustomerBookingService {
         Map<UUID, Long> guidVsIdRoutingMap = new HashMap<>();
         Map<UUID, Long> guidVsIdChargesMap = new HashMap<>();
         if (customerBooking.getContainersList() != null) {
-            customerBooking.getContainersList().forEach(cont -> {
-                guidVsIdContainerMap.put(cont.getGuid(), cont.getId());
-            });
+            customerBooking.getContainersList().forEach(cont -> guidVsIdContainerMap.put(cont.getGuid(), cont.getId()));
         }
 
         if (customerBooking.getPackingList() != null) {
-            customerBooking.getPackingList().forEach(pack -> {
-                guidVsIdPackingMap.put(pack.getGuid(), pack.getId());
-            });
+            customerBooking.getPackingList().forEach(pack -> guidVsIdPackingMap.put(pack.getGuid(), pack.getId()));
         }
 
         if (customerBooking.getRoutingList() != null) {
-            customerBooking.getRoutingList().forEach(route -> {
-                guidVsIdRoutingMap.put(route.getGuid(), route.getId());
-            });
+            customerBooking.getRoutingList().forEach(route -> guidVsIdRoutingMap.put(route.getGuid(), route.getId()));
         }
 
         if (customerBooking.getBookingCharges() != null) {
-            customerBooking.getBookingCharges().forEach(charge -> {
-                guidVsIdChargesMap.put(charge.getGuid(), charge.getId());
-            });
+            customerBooking.getBookingCharges().forEach(charge -> guidVsIdChargesMap.put(charge.getGuid(), charge.getId()));
         }
 
         setCountWithContainersList(customerBookingRequest, guidVsIdContainerMap);
@@ -1301,12 +1293,12 @@ public class CustomerBookingService implements ICustomerBookingService {
     public Runnable withMdc(Runnable runnable) {
         Map<String, String> mdc = MDC.getCopyOfContextMap();
         String token = RequestAuthContext.getAuthToken();
-        var userContext = UserContext.getUser();
+        var userContext1 = UserContext.getUser();
         return () -> {
             try {
                 MDC.setContextMap(mdc);
                 RequestAuthContext.setAuthToken(token);
-                UserContext.setUser(userContext);
+                UserContext.setUser(userContext1);
                 runnable.run();
             } finally {
                 RequestAuthContext.removeToken();
@@ -1621,6 +1613,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         return customerBooking;
     }
 
+    @SuppressWarnings("java:S135")
     public boolean checkForCreditLimitManagement(CustomerBooking booking) throws RunnerException {
         ApprovalPartiesRequest approvalPartiesRequest = ApprovalPartiesRequest.builder().build();
         List<Object[]> parties = List.of(

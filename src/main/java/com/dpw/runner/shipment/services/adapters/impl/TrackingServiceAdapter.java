@@ -270,7 +270,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
 
         var entityDetails = getEntityDetails(inputConsol, inputShipment, isRequestFromShipment);
         var consolNumber = inputConsol !=null ? inputConsol.getConsolidationNumber() : null;
-        var masterBill = inputConsol !=null ? inputConsol.getBol() : (inputShipment != null ? inputShipment.getMasterBill() : null);
+        var masterBill = inputConsol !=null ? inputConsol.getBol() : getDefaultMasterBill(inputShipment);
         var shipmentNumber =  inputShipment !=null ? inputShipment.getShipmentId() : null;
 
 
@@ -286,6 +286,10 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
         setCarrierInTrackingPayload(inputConsol, inputShipment, trackingPayload);
 
         return trackingPayload;
+    }
+
+    private String getDefaultMasterBill(ShipmentDetails inputShipment) {
+        return inputShipment != null ? inputShipment.getMasterBill() : null;
     }
 
     private void setBookingReferenceNumberInTrackingPayload(ConsolidationDetails inputConsol, ShipmentDetails inputShipment, boolean isRequestFromShipment, UniversalTrackingPayload trackingPayload) {

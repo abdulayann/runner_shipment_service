@@ -351,10 +351,8 @@ public class AwbUtility {
             if(party.getSpecifiedAddressLocation() != null)
                 unlocoRequests.add(party.getSpecifiedAddressLocation());
         });
-        if(awb.getAwbOtherInfo() != null) {
-            if(awb.getAwbOtherInfo().getExecutedAt() != null)
-                unlocoRequests.add(awb.getAwbOtherInfo().getExecutedAt());
-        }
+        if(awb.getAwbOtherInfo() != null && awb.getAwbOtherInfo().getExecutedAt() != null)
+            unlocoRequests.add(awb.getAwbOtherInfo().getExecutedAt());
 
         unlocoRequests.add(consolidationDetails.getCarrierDetails().getOriginPort());
         unlocoRequests.add(consolidationDetails.getCarrierDetails().getDestinationPort());
@@ -888,13 +886,11 @@ public class AwbUtility {
 
     private String getMsgType(AirMessagingStatusDto airMessageStatus, List<ShipmentDetails> shipmentDetailsList) {
         String msgType = airMessageStatus.getMessageType();
-        if(shipmentDetailsList != null && !shipmentDetailsList.isEmpty()) {
-            if(msgType == null){
-                if(Objects.equals(shipmentDetailsList.get(0).getJobType(), Constants.SHIPMENT_TYPE_DRT))
-                    msgType = "FWB";
-                else
-                    msgType = "FZB";
-            }
+        if(shipmentDetailsList != null && !shipmentDetailsList.isEmpty() && msgType == null){
+            if(Objects.equals(shipmentDetailsList.get(0).getJobType(), Constants.SHIPMENT_TYPE_DRT))
+                msgType = "FWB";
+            else
+                msgType = "FZB";
         }
         return msgType;
     }
@@ -1105,6 +1101,7 @@ public class AwbUtility {
     }
 
     private String getBodyForShipmentIds(List<Awb> awbsList, List<Long> shipmentIds, String body) {
+        StringBuilder bodyStringBuilder = new StringBuilder(body);
         var shipmentDetailsList = shipmentDao.getShipmentNumberFromId(shipmentIds);
         Map<Long, String> map = shipmentDetailsList.stream().collect(Collectors.toMap(ShipmentDetails::getId, ShipmentDetails::getShipmentId));
         for (var x : awbsList) {
@@ -1113,14 +1110,14 @@ public class AwbUtility {
                 AirMessagingLogs shipAirMessagingLogs = airMessagingLogsService.getRecentLogForEntityGuid(x.getGuid());
                 if (shipAirMessagingLogs != null) {
                     if (Objects.equals(shipAirMessagingLogs.getStatus(), AirMessagingStatus.SUCCESS.name())) {
-                        body = body + "FZB for \"" + shipNumber + "\" : Success\n";
+                        bodyStringBuilder = new StringBuilder(body + "FZB for \"" + shipNumber + "\" : Success\n");
                     } else if (Objects.equals(shipAirMessagingLogs.getStatus(), AirMessagingStatus.FAILED.name())) {
-                        body = body + "FZB for \"" + shipNumber + "\" : Failed. Failure reason is \"" + shipAirMessagingLogs.getErrorMessage() + "\"\n\n";
+                        bodyStringBuilder = new StringBuilder(body + "FZB for \"" + shipNumber + "\" : Failed. Failure reason is \"" + shipAirMessagingLogs.getErrorMessage() + "\"\n\n");
                     }
                 }
             }
         }
-        return body;
+        return bodyStringBuilder.toString();
     }
 
     private void updateAwbStatusForFsuUpdate(Awb awb, String eventCode, List<ConsoleShipmentMapping> consoleShipmentMappings) {

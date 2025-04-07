@@ -565,7 +565,7 @@ public class MasterDataUtils{
             List<EntityTransferMasterLists> masterLists = fetchMultipleMasterData(missingRequestV2);
             Map<String, EntityTransferMasterLists> v1Datamap = new HashMap<>();
             masterLists.forEach(masterData -> {
-                String key = (Objects.isNull(MasterDataType.masterData(masterData.ItemType)) ? StringUtility.getEmptyString() : MasterDataType.masterData(masterData.ItemType).name()) + '#' + masterData.ItemValue;
+                String key = (Objects.isNull(MasterDataType.masterData(masterData.ItemType)) ? Constants.EMPTY_STRING : MasterDataType.masterData(masterData.ItemType).name()) + '#' + masterData.ItemValue;
                 v1Datamap.put(key, masterData);
                 responseMap.put(key, masterData);
             });
@@ -579,7 +579,7 @@ public class MasterDataUtils{
     private void populateMasterDataKeys(MasterListRequestV2 missingRequestV2, Set<String> masterDataKeys) {
         List<MasterListRequest> missingMasterListRequests = missingRequestV2.getMasterListRequests();
         missingMasterListRequests.forEach(
-                masterListRequest -> masterDataKeys.add((Objects.isNull(masterListRequest.ItemType) ? StringUtility.getEmptyString(): masterListRequest.ItemType) + '#' + (Objects.isNull(masterListRequest.ItemValue) ? StringUtility.getEmptyString(): masterListRequest.ItemValue))
+                masterListRequest -> masterDataKeys.add((Objects.isNull(masterListRequest.ItemType) ? Constants.EMPTY_STRING: masterListRequest.ItemType) + '#' + (Objects.isNull(masterListRequest.ItemValue) ? Constants.EMPTY_STRING: masterListRequest.ItemValue))
         );
     }
 
@@ -617,7 +617,7 @@ public class MasterDataUtils{
                 List<EntityTransferMasterLists> masterLists = fetchMultipleMasterData(batchRequest);
 
                 masterLists.forEach(masterData -> {
-                    String key = masterData.ItemValue + '#' + (Objects.isNull(MasterDataType.masterData(masterData.ItemType)) ? StringUtility.getEmptyString() : MasterDataType.masterData(masterData.ItemType).name());
+                    String key = masterData.ItemValue + '#' + (Objects.isNull(MasterDataType.masterData(masterData.ItemType)) ? Constants.EMPTY_STRING : MasterDataType.masterData(masterData.ItemType).name());
                     keyMasterDataMap.put(key, masterData);
                 });
             }
@@ -1284,9 +1284,7 @@ public class MasterDataUtils{
 
             V1DataResponse response = v1Service.fetchCurrenciesData(request);
             List<EntityTransferCurrency> currencyList = jsonHelper.convertValueToList(response.entities, EntityTransferCurrency.class);
-            currencyList.forEach(currency -> {
-                keyMasterDataMap.put(currency.getCurrenyCode(), currency);
-            });
+            currencyList.forEach(currency -> keyMasterDataMap.put(currency.getCurrenyCode(), currency));
         }
         return keyMasterDataMap;
     }

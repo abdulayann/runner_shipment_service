@@ -115,7 +115,7 @@ public class CSDReport extends IReport{
 
     private String getMainCarriageAirPorts(List<RoutingsModel> routingsModelList, String pol, String pod) {
         if (CollectionUtils.isEmpty(routingsModelList))
-            return StringUtility.getEmptyString();
+            return Constants.EMPTY_STRING;
         var airMainCarriageRouting = routingsModelList.stream().filter(i -> ReportConstants.AIR.equalsIgnoreCase(i.getMode()))
                 .filter(i -> RoutingCarriage.MAIN_CARRIAGE.equals(i.getCarriage())).toList();
         List<String> airPorts = new ArrayList<>();

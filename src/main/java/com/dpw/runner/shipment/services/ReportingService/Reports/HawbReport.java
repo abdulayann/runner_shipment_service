@@ -922,7 +922,7 @@ public class HawbReport extends IReport{
 
             dictionary.put(RA_CSD, geteCSDInfo(hawbModel.awb));
             dictionary.put(ORIGINAL_PRINT_DATE, getPrintOriginalDate(hawbModel.awb));
-            dictionary.put(USER_INITIALS, Optional.ofNullable(cargoInfoRows.getUserInitials()).map(StringUtility::toUpperCase).orElse(StringUtility.getEmptyString()));
+            dictionary.put(USER_INITIALS, Optional.ofNullable(cargoInfoRows.getUserInitials()).map(StringUtility::toUpperCase).orElse(Constants.EMPTY_STRING));
             dictionary.put(SLAC, cargoInfoRows.getSlac());
             dictionary.put(OTHER_INFO_CODE, cargoInfoRows.getOtherInfoCode());
         }

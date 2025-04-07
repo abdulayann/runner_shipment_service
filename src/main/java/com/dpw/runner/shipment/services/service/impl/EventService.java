@@ -995,18 +995,16 @@ public class EventService implements IEventService {
         CarrierDetails carrierDetails = shipment.getCarrierDetails();
 
         Optional<ShipmentSettingsDetails> shipmentSettingsDetailsOptional = shipmentSettingsDao.findByTenantId(TenantContext.getCurrentTenant());
-        if (shipmentSettingsDetailsOptional.isPresent() && Boolean.TRUE.equals(shipmentSettingsDetailsOptional.get().getIsAtdAtaAutoPopulateEnabled())) {
-            if (carrierDetails != null) {
-                if (shipmentAta != null) {
-                    carrierDetails.setAta(shipmentAta);
-                    createDateTimeChangeLog(DateType.ATA, shipmentAta, shipment.getId());
-                    carrierDetailsDao.updateAta(carrierDetails.getId(), shipmentAta);
-                }
-                if (shipmentAtd != null) {
-                    carrierDetails.setAtd(shipmentAtd);
-                    createDateTimeChangeLog(DateType.ATD, shipmentAtd, shipment.getId());
-                    carrierDetailsDao.updateAtd(carrierDetails.getId(), shipmentAtd);
-                }
+        if (shipmentSettingsDetailsOptional.isPresent() && Boolean.TRUE.equals(shipmentSettingsDetailsOptional.get().getIsAtdAtaAutoPopulateEnabled()) && carrierDetails != null) {
+            if (shipmentAta != null) {
+                carrierDetails.setAta(shipmentAta);
+                createDateTimeChangeLog(DateType.ATA, shipmentAta, shipment.getId());
+                carrierDetailsDao.updateAta(carrierDetails.getId(), shipmentAta);
+            }
+            if (shipmentAtd != null) {
+                carrierDetails.setAtd(shipmentAtd);
+                createDateTimeChangeLog(DateType.ATD, shipmentAtd, shipment.getId());
+                carrierDetailsDao.updateAtd(carrierDetails.getId(), shipmentAtd);
             }
         }
     }

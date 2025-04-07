@@ -14,6 +14,7 @@ import javax.persistence.Column;
 import javax.persistence.EntityListeners;
 import javax.persistence.MappedSuperclass;
 
+@SuppressWarnings({"java:S1710", "ALL"})
 @Data
 @MappedSuperclass
 @FilterDef(name = MultiTenancy.TENANT_FILTER_NAME,

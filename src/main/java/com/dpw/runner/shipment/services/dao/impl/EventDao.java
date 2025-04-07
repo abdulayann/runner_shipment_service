@@ -274,20 +274,7 @@ public class EventDao implements IEventDao {
                 delete(event);
                 if(entityType != null)
                 {
-                    try {
-                        auditLogService.addAuditLog(
-                                AuditLogMetaData.builder()
-                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
-                                        .newData(null)
-                                        .prevData(jsonHelper.readFromJson(json, Events.class))
-                                        .parent(Objects.equals(entityType, Constants.SHIPMENT) ? ShipmentDetails.class.getSimpleName() : entityType)
-                                        .parentId(entityId)
-                                        .operation(DBOperationType.DELETE.name()).build()
-                        );
-                    } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
-                             InvocationTargetException | NoSuchMethodException | RunnerException e) {
-                        log.error(e.getMessage());
-                    }
+                    addAuditLogForEvent(entityType, entityId, null, jsonHelper.readFromJson(json, Events.class), DBOperationType.DELETE.name());
                 }
             });
         } catch (Exception e) {
@@ -403,22 +390,26 @@ public class EventDao implements IEventDao {
 
             updateEventDetails(eventsRow);
 
-            try {
-                auditLogService.addAuditLog(
-                        AuditLogMetaData.builder()
-                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
-                                .newData(eventsRow)
-                                .prevData(null)
-                                .parent(Objects.equals(entityType, Constants.SHIPMENT) ? ShipmentDetails.class.getSimpleName() : entityType)
-                                .parentId(entityId)
-                                .operation(DBOperationType.CREATE.name()).build()
-                );
-            } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
-                log.error(e.getMessage());
-            }
+            addAuditLogForEvent(entityType, entityId, eventsRow, null, DBOperationType.CREATE.name());
             eventRepository.save(eventsRow);
         } catch (Exception e) {
             log.error("Error occured while trying to create runner event, Exception raised is: " + e);
+        }
+    }
+
+    private void addAuditLogForEvent(String entityType, long entityId, Events eventsRow, Events prev, String operationName) {
+        try {
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                            .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
+                            .newData(eventsRow)
+                            .prevData(prev)
+                            .parent(Objects.equals(entityType, Constants.SHIPMENT) ? ShipmentDetails.class.getSimpleName() : entityType)
+                            .parentId(entityId)
+                            .operation(operationName).build()
+            );
+        } catch (RunnerException | IllegalAccessException | NoSuchFieldException | JsonProcessingException | InvocationTargetException | NoSuchMethodException e) {
+            log.error(e.getMessage());
         }
     }
 

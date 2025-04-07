@@ -683,8 +683,7 @@ public class ShipmentDao implements IShipmentDao {
         request.setCriteriaRequests(criteria);
         CarrierListObject carrierListObject = new CarrierListObject();
         carrierListObject.setListObject(request);
-        V1DataResponse response = v1Service.fetchCarrierMasterData(carrierListObject, true);
-        return response;
+        return v1Service.fetchCarrierMasterData(carrierListObject, true);
     }
     @Transactional
     public void saveJobStatus(Long id, String jobStatus) {

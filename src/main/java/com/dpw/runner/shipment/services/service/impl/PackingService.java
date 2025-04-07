@@ -148,11 +148,10 @@ public class PackingService implements IPackingService {
         }
     }
 
+    @SuppressWarnings("java:S2175")
     private static void valiadteDGSubstanceId(Map<Long, Long> dicDGSubstanceUNDGContact, int row, Packing packingRow) {
-        if (packingRow.getDGSubstanceId() != null) {
-            if (!dicDGSubstanceUNDGContact.containsKey(packingRow.getDGSubstanceId())) {
-                throw new ValidationException("DG Substance Id is invalid at row: " + row);
-            }
+        if (packingRow.getDGSubstanceId() != null && !dicDGSubstanceUNDGContact.containsKey(packingRow.getDGSubstanceId())) {
+            throw new ValidationException("DG Substance Id is invalid at row: " + row);
         }
     }
 
@@ -186,14 +185,12 @@ public class PackingService implements IPackingService {
     private static void applyCommodityTypeValidation(Set<String> dicCommodityType, int row, Packing packingRow) {
         String commodityType = packingRow.getCommodity();
         commodityType = commodityType == null ? StringUtils.EMPTY : commodityType.trim();
-        if (!StringUtils.isEmpty(commodityType)) {
-            if (dicCommodityType != null && dicCommodityType.contains(commodityType) == false) {
-                throw new ValidationException("Commodity Type " + commodityType + " is not valid at row " + row);
-            }
+        if (!StringUtils.isEmpty(commodityType) && dicCommodityType != null && !dicCommodityType.contains(commodityType)) {
+            throw new ValidationException("Commodity Type " + commodityType + " is not valid at row " + row);
         }
     }
 
-    private static Containers addWeightVolume(Packing request, Containers newContainer) throws RunnerException {
+    private void addWeightVolume(Packing request, Containers newContainer) throws RunnerException {
         if(newContainer != null && request != null) {
             if(isStringNullOrEmpty(newContainer.getAchievedWeightUnit()))
                 newContainer.setAchievedWeightUnit(newContainer.getAllocatedWeightUnit());
@@ -208,10 +205,9 @@ public class PackingService implements IPackingService {
             newContainer.setAchievedWeight(finalWeight);
             newContainer.setAchievedVolume(finalVolume);
         }
-        return newContainer;
     }
 
-    private static Containers subtractWeightVolume(Packing request, Containers oldContainer) throws RunnerException {
+    private void subtractWeightVolume(Packing request, Containers oldContainer) throws RunnerException {
         if(oldContainer != null && request != null) {
             if(isStringNullOrEmpty(oldContainer.getAchievedWeightUnit()))
                 oldContainer.setAchievedWeightUnit(oldContainer.getAllocatedWeightUnit());
@@ -228,7 +224,6 @@ public class PackingService implements IPackingService {
                 oldContainer.setAchievedVolume(finalVolume);
             }
         }
-        return oldContainer;
     }
 
     @Transactional
@@ -269,16 +264,14 @@ public class PackingService implements IPackingService {
 
     private void validateConsolidationAchievedQuantities(BulkUploadRequest request, PackSummaryResponse utilizationResponse) {
         if(utilizationResponse != null && utilizationResponse.getConsolidationAchievedQuantities() != null) {
-            Double wtUtilization = utilizationResponse.getConsolidationAchievedQuantities().getWeightUtilization() != null ? Double.valueOf(utilizationResponse.getConsolidationAchievedQuantities().getWeightUtilization()) : 0;
-            Double volUtilization = utilizationResponse.getConsolidationAchievedQuantities().getVolumeUtilization() != null ? Double.valueOf(utilizationResponse.getConsolidationAchievedQuantities().getVolumeUtilization()) : 0;
+            double wtUtilization = utilizationResponse.getConsolidationAchievedQuantities().getWeightUtilization() != null ? Double.parseDouble(utilizationResponse.getConsolidationAchievedQuantities().getWeightUtilization()) : 0;
+            double volUtilization = utilizationResponse.getConsolidationAchievedQuantities().getVolumeUtilization() != null ? Double.parseDouble(utilizationResponse.getConsolidationAchievedQuantities().getVolumeUtilization()) : 0;
             if(wtUtilization >= 100) {
                 if(!Boolean.TRUE.equals(request.getOverride()))
                     throw new ValidationException((String.format("Entered Pack weight %s exceeds the allocated weight %s", utilizationResponse.getAchievedWeight(), utilizationResponse.getAllocatedWeight())));
             }
-            else if(volUtilization >= 100) {
-                if(!Boolean.TRUE.equals(request.getOverride()))
-                    throw new ValidationException(String.format("Entered Pack Volume %s exceeds the allocated volume %s", utilizationResponse.getAchievedVolume(), utilizationResponse.getAllocatedVolume()));
-            }
+            else if(volUtilization >= 100 && !Boolean.TRUE.equals(request.getOverride()))
+                throw new ValidationException(String.format("Entered Pack Volume %s exceeds the allocated volume %s", utilizationResponse.getAchievedVolume(), utilizationResponse.getAllocatedVolume()));
 
         }
     }
@@ -366,11 +359,10 @@ public class PackingService implements IPackingService {
     }
 
     private void applyChargeableValidation(String transportMode, int row, Packing packingRow, Map<String, Set<String>> masterDataMap) throws RunnerException {
-        if (!StringUtils.isEmpty(packingRow.getChargeableUnit())) {
-            if (masterDataMap.containsKey(MasterDataType.WEIGHT_UNIT.getDescription()) &&
+        if (!StringUtils.isEmpty(packingRow.getChargeableUnit()) && masterDataMap.containsKey(MasterDataType.WEIGHT_UNIT.getDescription()) &&
                     !masterDataMap.get(MasterDataType.WEIGHT_UNIT.getDescription()).contains(packingRow.getChargeableUnit()))
-                throw new ValidationException("Chargeable unit is invalid at row: " + row);
-        }
+            throw new ValidationException("Chargeable unit is invalid at row: " + row);
+
         if (packingRow.getChargeableUnit() != null && !packingRow.getChargeableUnit().isEmpty() &&
                 transportMode != null && transportMode.equalsIgnoreCase(Constants.TRANSPORT_MODE_AIR) &&
                 packingRow.getChargeable() != null) {
@@ -442,7 +434,7 @@ public class PackingService implements IPackingService {
                 XSSFSheet sheet = workbook.createSheet("CargoDetails");
 
                 List<PackingExcelModel> modelList = commonUtils.convertToList(result, PackingExcelModel.class);
-                convertModelToExcel(modelList, sheet, request);
+                convertModelToExcel(modelList, sheet);
 
                 response.setContentType(CONTENT_TYPE_FOR_EXCEL);
                 response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
@@ -457,7 +449,7 @@ public class PackingService implements IPackingService {
         }
     }
 
-    private void convertModelToExcel(List<PackingExcelModel> modelList, XSSFSheet sheet, BulkDownloadRequest request) throws IllegalAccessException {
+    private void convertModelToExcel(List<PackingExcelModel> modelList, XSSFSheet sheet) throws IllegalAccessException {
 
         // Create header row using annotations for order
         Row headerRow = sheet.createRow(0);
@@ -610,17 +602,17 @@ public class PackingService implements IPackingService {
                 oldPacking = jsonHelper.convertValue(request.getOldPack(), Packing.class);
 
             if(request.getNewPack() == null) { // delete pack scenario
-                oldContainer = subtractWeightVolume(oldPacking, oldContainer);
+                subtractWeightVolume(oldPacking, oldContainer);
             }
             else {
                 if(request.getOldContainer() != null && request.getNewContainer() != null && Objects.equals(request.getOldContainer().getId(), request.getNewContainer().getId())) {
-                    newContainer = subtractWeightVolume(oldPacking, newContainer);
+                    subtractWeightVolume(oldPacking, newContainer);
                     oldContainer = null;
                 }
                 else {
-                    oldContainer = subtractWeightVolume(oldPacking, oldContainer);
+                    subtractWeightVolume(oldPacking, oldContainer);
                 }
-                newContainer = addWeightVolume(newPacking, newContainer);
+                addWeightVolume(newPacking, newContainer);
             }
         }
         if(oldContainer != null) {
@@ -964,9 +956,7 @@ public class PackingService implements IPackingService {
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<Packing> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
-        lst.forEach(packing -> {
-            responseList.add(convertEntityToDto(packing));
-        });
+        lst.forEach(packing -> responseList.add(convertEntityToDto(packing)));
         return responseList;
     }
 
