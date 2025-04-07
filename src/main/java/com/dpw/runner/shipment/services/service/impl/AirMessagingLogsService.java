@@ -221,7 +221,7 @@ public class AirMessagingLogsService implements IAirMessagingLogsService {
             return null;
 
         List<AirMessagingLogs> logs = airMessagingLogsDao.findByEntityGuidByQuery(guid);
-        if (logs.size() == 0) {
+        if (logs.isEmpty()) {
             return null;
         }
         List<AirMessagingLogs> sortedList = logs.stream()

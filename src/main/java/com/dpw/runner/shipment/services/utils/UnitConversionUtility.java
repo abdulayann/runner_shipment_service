@@ -15,7 +15,7 @@ import javax.measure.quantity.Mass;
 import javax.measure.quantity.Volume;
 import java.math.BigDecimal;
 
-import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 
 @Slf4j
 @Component
@@ -26,7 +26,7 @@ public class UnitConversionUtility {
         try {
             if(value == null)
                 return 0;
-            if(IsStringNullOrEmpty(fromUnit) || IsStringNullOrEmpty(toUnit)) {
+            if(isStringNullOrEmpty(fromUnit) || isStringNullOrEmpty(toUnit)) {
                 return value;
             }
             Unit<?> sourceUnit = getUnitType(type, fromUnit);

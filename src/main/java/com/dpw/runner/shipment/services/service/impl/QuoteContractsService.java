@@ -31,7 +31,7 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 
 @Service
 @Slf4j
@@ -104,7 +104,7 @@ public class QuoteContractsService implements IQuoteContractsService {
             } catch (Exception e) {
                 log.error("Contract Id is null for Quote Contracts update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             }
-            if(IsStringNullOrEmpty(contractId)) {
+            if(isStringNullOrEmpty(contractId)) {
                 log.error("Contract Id is null for Quote Contracts update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
                 return;
             }

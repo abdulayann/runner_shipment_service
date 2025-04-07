@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
+import com.nimbusds.jose.proc.SecurityContext;
 import com.nimbusds.jwt.JWT;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.JWTParser;
@@ -10,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import javax.servlet.http.HttpServletResponse;
+import java.security.SecureRandom;
 import java.text.ParseException;
 import java.util.Objects;
 
@@ -20,6 +22,7 @@ public class TokenUtility {
     public static final String NAME_FIELD = "nameid";
     public static final String USER_ID_FIELD = "userId";
     public static final String BRANCH_ID_FIELD = "branchId";
+    private static final SecureRandom secureRandom = new SecureRandom();
     public String getUserNameFromToken(String token, HttpServletResponse res) throws ParseException, BadJWTException {
         String[] tokenSplits = token.split(" ");
         if(tokenSplits.length>2 || !BEARER.equals(tokenSplits[0])) throw new BadJWTException("Expected 'Bearer token'");
@@ -31,7 +34,7 @@ public class TokenUtility {
     }
 
     public void validateValidity(JWTClaimsSet claimsSet) throws BadJWTException {
-        DefaultJWTClaimsVerifier defaultJWTClaimsVerifier=new DefaultJWTClaimsVerifier(claimsSet,null);
+        DefaultJWTClaimsVerifier<SecurityContext> defaultJWTClaimsVerifier = new DefaultJWTClaimsVerifier<>(claimsSet,null);
         defaultJWTClaimsVerifier.verify(claimsSet,null);
     }
 
@@ -50,7 +53,7 @@ public class TokenUtility {
         } catch (Exception ex) {
             log.error("Request- {} || Error occurred during token decryption with exception: {} token: {}", LoggerHelper.getRequestIdFromMDC(), ex.getMessage(), token);
         }
-        return StringUtility.convertToString(Math.random());
+        return StringUtility.convertToString(secureRandom.nextDouble());
     }
 
 }

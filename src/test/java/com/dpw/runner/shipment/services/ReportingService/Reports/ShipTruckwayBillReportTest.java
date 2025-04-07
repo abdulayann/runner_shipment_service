@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConst
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.TransportOrderModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.TruckDriverModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
@@ -42,6 +43,7 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.springframework.cache.Cache;
@@ -56,6 +58,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.EXP;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -321,6 +324,18 @@ class ShipTruckwayBillReportTest extends CommonMocks {
         when(cache.get(any())).thenReturn(null);
         when(keyGenerator.customCacheKeyForMasterData(any(),any())).thenReturn(new StringBuilder());
         assertNotNull(shipTruckwayBillReport.populateDictionary(truckDriverModel));
+    }
+
+    @Test
+    void testGetData_ShipTruckBillReportId() {
+        var spyService = Mockito.spy(shipTruckwayBillReport);
+        Map<String, Object> dictionary = new HashMap<String, Object>();
+        TruckDriverModel model = new TruckDriverModel();
+        populateModel(model);
+        doReturn(model).when(spyService).getDocumentModel(any());
+        doReturn(dictionary).when(spyService).populateDictionary(any());
+        Map<String, Object> result = spyService.getData(1L);
+        assertNotNull(result, "The result should not be null");
     }
 
     private void mockCarrier() {

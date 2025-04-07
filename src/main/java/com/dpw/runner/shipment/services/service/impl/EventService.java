@@ -48,6 +48,7 @@ import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.DateType;
 import com.dpw.runner.shipment.services.entity.enums.EventType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
+import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
 import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
@@ -202,7 +203,7 @@ public class EventService implements IEventService {
         }
         long id = request.getId();
         Optional<Events> oldEntity = eventDao.findById(id);
-        if (!oldEntity.isPresent()) {
+        if (oldEntity.isEmpty()) {
             log.debug(EventConstants.EVENT_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
@@ -385,10 +386,10 @@ public class EventService implements IEventService {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> V1EventsCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws RunnerException {
+    public ResponseEntity<IRunnerResponse> v1EventsCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws RunnerException {
         EventsRequestV2 eventsRequestV2 = (EventsRequestV2) commonRequestModel.getData();
         try {
-            if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
+            if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !Boolean.TRUE.equals(syncConfig.IS_REVERSE_SYNC_ACTIVE)) {
                 return ResponseHelper.buildSuccessResponse();
             }
             Optional<Events> existingEvent = eventDao.findByGuid(eventsRequestV2.getGuid());
@@ -418,15 +419,15 @@ public class EventService implements IEventService {
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
-            throw new RuntimeException(e);
+            throw new GenericException(e);
         }
     }
 
     public ResponseEntity<IRunnerResponse> trackEvents(TrackingEventsRequest request) throws RunnerException {
         var shipmentId = request.getShipmentId();
         var consolidationId = request.getConsolidationId();
-        Optional<ShipmentDetails> optionalShipmentDetails = Optional.empty();
-        Optional<ConsolidationDetails> optionalConsolidationDetails = Optional.empty();
+        Optional<ShipmentDetails> optionalShipmentDetails;
+        Optional<ConsolidationDetails> optionalConsolidationDetails;
         String referenceNumber = null;
         Long entityId = null;
         String entityType = null;
@@ -434,7 +435,7 @@ public class EventService implements IEventService {
             optionalShipmentDetails = shipmentDao.findById(shipmentId);
             if (optionalShipmentDetails.isEmpty()) {
                 log.debug(
-                    "No Shipment present for the current Event ",
+                    "No Shipment present for the current Event with RequestId : {}",
                     LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
@@ -462,7 +463,7 @@ public class EventService implements IEventService {
             optionalConsolidationDetails = consolidationDao.findById(consolidationId);
             if (optionalConsolidationDetails.isEmpty()) {
                 log.debug(
-                    "No Consolidation present for the current Event",
+                    "No Consolidation present for the current Event with RequestId : {}",
                     LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
@@ -1288,8 +1289,6 @@ public class EventService implements IEventService {
     private void saveAndSyncShipment(ShipmentDetails shipmentDetails, String messageId) throws RunnerException {
         log.info("Saving shipment entity: {} messageId {}", shipmentDetails.getShipmentId(), messageId);
         shipmentDao.saveWithoutValidation(shipmentDetails);
-//        log.info("Synchronizing shipment: {}", shipmentDetails.getShipmentId());
-//        shipmentSync.sync(shipmentDetails, null, null, UUID.randomUUID().toString(), false);
     }
 
     @Override

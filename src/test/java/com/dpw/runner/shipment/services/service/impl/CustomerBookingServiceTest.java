@@ -32,6 +32,7 @@ import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
+import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -1123,7 +1124,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         when(modelMapper.map(any(), eq(CheckCreditBalanceFusionResponse.class))).thenReturn(mockCheckCreditBalanceFusionResponse);
         mockTenantSettings();
         var t = assertThrows(Throwable.class, () -> customerBookingService.checkCreditLimitFromFusion(CommonRequestModel.buildRequest(creditLimitRequest)));
-        assertEquals(RuntimeException.class.getSimpleName(), t.getClass().getSimpleName());
+        assertEquals(GenericException.class.getSimpleName(), t.getClass().getSimpleName());
     }
 
     @Test
