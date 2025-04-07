@@ -231,4 +231,5 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private String oceanBlNumber;
     private UUID customerBookingGuid;
     private Boolean isFrob;
+    private String consolidationNumber;
 }
