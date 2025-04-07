@@ -103,6 +103,9 @@ public class CustomerBookingService implements ICustomerBookingService {
     private IPackingDao packingDao;
 
     @Autowired
+    private IReferenceNumbersDao referenceNumbersDao;
+
+    @Autowired
     private IRoutingsDao routingsDao;
 
     @Autowired
@@ -226,6 +229,10 @@ public class CustomerBookingService implements ICustomerBookingService {
         List<PackingRequest> packingRequest = request.getPackingList();
         if (packingRequest != null)
             customerBooking.setPackingList(packingDao.saveEntityFromBooking(commonUtils.convertToEntityList(packingRequest, Packing.class), bookingId));
+
+        List<ReferenceNumbersRequest> referenceNumbersRequests = request.getReferenceNumbersList();
+        if (referenceNumbersRequests != null)
+            customerBooking.setReferenceNumbersList(referenceNumbersDao.saveEntityFromBooking(commonUtils.convertToEntityList(referenceNumbersRequests, ReferenceNumbers.class), bookingId));
 
         List<RoutingsRequest> routingsRequest = request.getRoutingList();
         if (routingsRequest != null)
@@ -356,6 +363,10 @@ public class CustomerBookingService implements ICustomerBookingService {
         List<PackingRequest> packingRequest = request.getPackingList();
         if (packingRequest != null)
             customerBooking.setPackingList(packingDao.updateEntityFromBooking(commonUtils.convertToEntityList(packingRequest, Packing.class), bookingId));
+
+        List<ReferenceNumbersRequest> referenceNumbersRequests = request.getReferenceNumbersList();
+        if (referenceNumbersRequests != null)
+            customerBooking.setReferenceNumbersList(referenceNumbersDao.updateEntityFromBooking(commonUtils.convertToEntityList(referenceNumbersRequests, ReferenceNumbers.class), bookingId));
 
         List<RoutingsRequest> routingsRequest = request.getRoutingList();
         if (routingsRequest != null)

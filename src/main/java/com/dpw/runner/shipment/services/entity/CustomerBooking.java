@@ -143,6 +143,10 @@ public class CustomerBooking extends MultiTenancy {
     @BatchSize(size = 50)
     private List<Routings> routingList;
 
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "bookingId")
+    @BatchSize(size = 50)
+    private List<ReferenceNumbers> referenceNumbersList;
+
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
     @Where(clause = "entity_type = 'BOOKING'")
     @BatchSize(size = 50)
