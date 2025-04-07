@@ -4185,7 +4185,7 @@ public class ShipmentService implements IShipmentService {
                 throw new ValidationException(ShipmentConstants.SHIPMENT_LIST_REQUEST_NULL_ERROR);
             }
             Pair<Specification<ShipmentDetails>, Pageable> tuple = fetchData(request, ShipmentDetails.class, tableNames);
-            Page<ShipmentDetails> shipmentDetailsPage = this.findAllWithOutIncludeColumn(tuple.getLeft(), tuple.getRight());
+            Page<ShipmentDetails> shipmentDetailsPage = shipmentDao.findAll(tuple.getLeft(), tuple.getRight());
             log.info(ShipmentConstants.SHIPMENT_LIST_RESPONSE_SUCCESS, LoggerHelper.getRequestIdFromMDC());
             if(request.getIncludeColumns()==null || request.getIncludeColumns().isEmpty()) {
                 throw new ValidationException("Include Columns field is mandatory");
@@ -4194,6 +4194,13 @@ public class ShipmentService implements IShipmentService {
 
             for( var curr:shipmentDetailsPage.getContent()){
                 ShipmentDetailsResponse shipmentDetailsResponse = commonUtils.getShipmentDetailsResponse(curr, request.getIncludeColumns());
+                if (request.getIncludeColumns().contains(ShipmentConstants.CONSOLIDATION_NUMBER)) {
+                    Set<ConsolidationDetails> consolidationDetailsSet = curr.getConsolidationList();
+                    if(!CollectionUtils.isEmpty(consolidationDetailsSet)) {
+                        ConsolidationDetails consolidationDetails = consolidationDetailsSet.stream().findFirst().get();
+                        shipmentDetailsResponse.setConsolidationNumber(consolidationDetails.getConsolidationNumber());
+                    }
+                }
                 // from dps we will receive one guid at a time
                 if (request.getIncludeColumns().contains(ShipmentConstants.IMPLICATIONS_LIST_COLUMN)) {
                     shipmentDetailsResponse.setImplicationList(dpsEventService.getImplicationsForShipment(shipmentDetailsResponse.getGuid().toString()));
