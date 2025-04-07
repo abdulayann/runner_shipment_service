@@ -148,6 +148,7 @@ public class PackingService implements IPackingService {
         }
     }
 
+    @SuppressWarnings("java:S2175")
     private static void valiadteDGSubstanceId(Map<Long, Long> dicDGSubstanceUNDGContact, int row, Packing packingRow) {
         if (packingRow.getDGSubstanceId() != null && !dicDGSubstanceUNDGContact.containsKey(packingRow.getDGSubstanceId().longValue())) {
             throw new ValidationException("DG Substance Id is invalid at row: " + row);
