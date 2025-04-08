@@ -1,6 +1,9 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
+import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.response.BulkContainerUpdateResponse;
@@ -10,13 +13,20 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
+import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
 import com.dpw.runner.shipment.services.utils.ContainerValidationUtil;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -37,6 +47,9 @@ public class ContainerV3Service implements IContainerV3Service {
 
     @Autowired
     private ContainerValidationUtil containerValidationUtil;
+
+    @Autowired
+    private IAuditLogService auditLogService;
 
     @Autowired
     private KafkaProducer producer;
@@ -78,6 +91,9 @@ public class ContainerV3Service implements IContainerV3Service {
         // Ensure all asynchronous tasks are completed before proceeding
         CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
 
+        // Audit log for all the containers
+        addAuditLogsForUpdatedContainers(containersToUpdate, savedContainers, DBOperationType.UPDATE);
+
         // Convert persisted entities back to response DTOs
         List<ContainerResponse> containerResponses = jsonHelper.convertValueToList(savedContainers, ContainerResponse.class);
 
@@ -86,6 +102,49 @@ public class ContainerV3Service implements IContainerV3Service {
                 .containerResponseList(containerResponses)
                 .message(prepareBulkUpdateMessage(containerResponses))
                 .build();
+    }
+
+    private void addAuditLogsForUpdatedContainers(List<Containers> oldContainers, List<Containers> newContainers, DBOperationType operationType) {
+        Map<Long, Containers> oldContainerMap = Optional.ofNullable(oldContainers).orElse(List.of()).stream()
+                .filter(container -> container.getId() != null)
+                .collect(Collectors.toMap(Containers::getId, Function.identity()));
+
+        Map<Long, Containers> newContainerMap = Optional.ofNullable(newContainers).orElse(List.of()).stream()
+                .filter(container -> container.getId() != null)
+                .collect(Collectors.toMap(Containers::getId, Function.identity()));
+
+        // Decide the relevant set of IDs based on operation
+        Set<Long> idsToProcess = switch (operationType) {
+            case CREATE -> newContainerMap.keySet();
+            case DELETE -> oldContainerMap.keySet();
+            case UPDATE -> {
+                Set<Long> ids = new HashSet<>(oldContainerMap.keySet());
+                ids.retainAll(newContainerMap.keySet()); // only intersecting IDs
+                yield ids;
+            }
+            default -> throw new IllegalStateException("Unexpected value: " + operationType);
+        };
+
+        for (Long id : idsToProcess) {
+            try {
+                Containers oldData = oldContainerMap.get(id);
+                Containers newData = newContainerMap.get(id);
+
+                auditLogService.addAuditLog(
+                        AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId())
+                                .userName(UserContext.getUser().getUsername())
+                                .prevData(oldData)
+                                .newData(newData)
+                                .parent(Containers.class.getSimpleName())
+                                .parentId(id)
+                                .operation(operationType.name())
+                                .build()
+                );
+            } catch (Exception ex) {
+                log.error("Failed to add audit log for container ID {} and operation [{}]: {}", id, operationType, ex.getMessage(), ex);
+            }
+        }
     }
 
     private String prepareBulkUpdateMessage(List<ContainerResponse> containerResponses) {
