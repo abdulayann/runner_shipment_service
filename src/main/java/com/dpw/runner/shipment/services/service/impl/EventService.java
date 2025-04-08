@@ -995,18 +995,16 @@ public class EventService implements IEventService {
         CarrierDetails carrierDetails = shipment.getCarrierDetails();
 
         Optional<ShipmentSettingsDetails> shipmentSettingsDetailsOptional = shipmentSettingsDao.findByTenantId(TenantContext.getCurrentTenant());
-        if (shipmentSettingsDetailsOptional.isPresent() && Boolean.TRUE.equals(shipmentSettingsDetailsOptional.get().getIsAtdAtaAutoPopulateEnabled())) {
-            if (carrierDetails != null) {
-                if (shipmentAta != null) {
-                    carrierDetails.setAta(shipmentAta);
-                    createDateTimeChangeLog(DateType.ATA, shipmentAta, shipment.getId());
-                    carrierDetailsDao.updateAta(carrierDetails.getId(), shipmentAta);
-                }
-                if (shipmentAtd != null) {
-                    carrierDetails.setAtd(shipmentAtd);
-                    createDateTimeChangeLog(DateType.ATD, shipmentAtd, shipment.getId());
-                    carrierDetailsDao.updateAtd(carrierDetails.getId(), shipmentAtd);
-                }
+        if (shipmentSettingsDetailsOptional.isPresent() && Boolean.TRUE.equals(shipmentSettingsDetailsOptional.get().getIsAtdAtaAutoPopulateEnabled()) && carrierDetails != null) {
+            if (shipmentAta != null) {
+                carrierDetails.setAta(shipmentAta);
+                createDateTimeChangeLog(DateType.ATA, shipmentAta, shipment.getId());
+                carrierDetailsDao.updateAta(carrierDetails.getId(), shipmentAta);
+            }
+            if (shipmentAtd != null) {
+                carrierDetails.setAtd(shipmentAtd);
+                createDateTimeChangeLog(DateType.ATD, shipmentAtd, shipment.getId());
+                carrierDetailsDao.updateAtd(carrierDetails.getId(), shipmentAtd);
             }
         }
     }
@@ -1284,11 +1282,6 @@ public class EventService implements IEventService {
         updateShipmentDetails(shipmentDetails, eventSaved, shipmentAta, shipmentAtd, container, messageId);
         log.info("Finished updating shipment with tracking events. Success: {} messageId {}", isSuccess, messageId);
         return isSuccess;
-    }
-
-    private void saveAndSyncShipment(ShipmentDetails shipmentDetails, String messageId) throws RunnerException {
-        log.info("Saving shipment entity: {} messageId {}", shipmentDetails.getShipmentId(), messageId);
-        shipmentDao.saveWithoutValidation(shipmentDetails);
     }
 
     @Override

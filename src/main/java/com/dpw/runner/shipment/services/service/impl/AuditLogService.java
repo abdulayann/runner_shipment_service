@@ -79,12 +79,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
+@SuppressWarnings({"java:S1444", "java:S3008"})
 public class AuditLogService implements IAuditLogService {
     private static final Set<Class<?>> annotationClassList = new HashSet<>(Arrays.asList(Id.class, OneToMany.class, ManyToOne.class, ManyToMany.class, ExcludeAuditLog.class));
 
     public static Map<String, String> COLUMN_HEADERS_TO_FIELD_NAME = null;
 
-    private Set<DBOperationType> operationTypeEnumSet = EnumSet.of(
+    private final Set<DBOperationType> operationTypeEnumSet = EnumSet.of(
         DBOperationType.LOG,
         DBOperationType.DG_REQUEST,
         DBOperationType.DG_APPROVE,
@@ -121,8 +122,7 @@ public class AuditLogService implements IAuditLogService {
         try {
             var triplet = fetchList(commonRequestModel);
             List<Map<String, Object>> listAsMap = getData(triplet.getLeft());
-            Resource fileResource = excelUtils.createExcelAsResource(listAsMap, COLUMN_HEADERS_TO_FIELD_NAME, "Audit_Logs");
-            return fileResource;
+            return excelUtils.createExcelAsResource(listAsMap, COLUMN_HEADERS_TO_FIELD_NAME, "Audit_Logs");
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
@@ -564,7 +564,15 @@ public class AuditLogService implements IAuditLogService {
     }
 
     public static <T extends Comparable<T>> int compareTo(final T c1, final T c2) {
-        final boolean f1, f2;
-        return (f1 = c1 == null) ^ (f2 = c2 == null) ? f1 ? -1 : 1 : f1 && f2 ? 0 : c1.compareTo(c2);
+        if (c1 == null && c2 == null) {
+            return 0;
+        }
+        if (c1 == null) {
+            return -1;
+        }
+        if (c2 == null) {
+            return 1;
+        }
+        return c1.compareTo(c2);
     }
 }

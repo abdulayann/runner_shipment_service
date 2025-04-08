@@ -250,7 +250,7 @@ public class V1ServiceUtil {
                     .shipmentGuid(StringUtility.convertToString(shipmentGuid))
                     .taskCreation(taskCreation)
                     .build());
-            if (!response.getIsValid()){
+            if (!Boolean.TRUE.equals(response.getIsValid())){
                 if(response.getTaskRequiredMessage() != null){
                     creditLimitResponse.setIsValid(response.getIsValid());
                     creditLimitResponse.setTaskRequiredMessage(response.getTaskRequiredMessage());
@@ -312,9 +312,7 @@ public class V1ServiceUtil {
 
     public OrgAddressResponse fetchOrgInfoFromV1(List<Parties> parties) {
         var orgRequest = new ArrayList<AddressTranslationRequest.OrgAddressCode>();
-        parties.forEach(p -> {
-            orgRequest.add(createV1OrgRequest(p));
-        });
+        parties.forEach(p -> orgRequest.add(createV1OrgRequest(p)));
         return v1Service.fetchOrgAddresses(AddressTranslationRequest.builder().OrgAddressCodeList(orgRequest.stream().filter(Objects::nonNull).toList()).build());
     }
 

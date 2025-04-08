@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import com.dpw.runner.shipment.services.aspects.LicenseContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
@@ -403,7 +403,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         if (!fromV1Sync && checkForDGConsoleAndAirDGFlag(request, shipmentSettingsDetails)) {
 
             // Non dg user cannot save dg consolidation
-            if (!UserContext.isAirDgUser())
+            if (! LicenseContext.isDgAirLicense())
                 errors.add("You don't have permission to update DG Consolidation");
 
             // Dg consolidation must have at least one dg shipment
@@ -485,8 +485,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         CarrierListObject carrierListObject = new CarrierListObject();
         carrierListObject.setListObject(request);
         carrierListObject.setType(agentType);
-        V1DataResponse response = v1Service.fetchCarrierMasterData(carrierListObject, false);
-        return response;
+        return v1Service.fetchCarrierMasterData(carrierListObject, false);
     }
 
     private void consolidationMAWBCheck(ConsolidationDetails consolidationRequest, String oldMawb) {
@@ -503,8 +502,7 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         if (Boolean.FALSE.equals(isMAWBNumberValid(consolidationRequest.getMawb())))
             throw new ValidationException("Please enter a valid MAWB number.");
 
-        CarrierResponse correspondingCarrier = null;
-        correspondingCarrier = getCorrespondingCarrier(consolidationRequest, oldMawb, correspondingCarrier);
+        CarrierResponse correspondingCarrier = getCorrespondingCarrier(consolidationRequest, oldMawb);
 
         if (consolidationRequest.getShipmentType().equals(Constants.IMP)) {
             return;
@@ -533,7 +531,8 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         }
     }
 
-    private CarrierResponse getCorrespondingCarrier(ConsolidationDetails consolidationRequest, String oldMawb, CarrierResponse correspondingCarrier) {
+    private CarrierResponse getCorrespondingCarrier(ConsolidationDetails consolidationRequest, String oldMawb) {
+        CarrierResponse correspondingCarrier = null;
         if(consolidationRequest.getCarrierDetails() == null || StringUtility.isEmpty(consolidationRequest.getCarrierDetails().getShippingLine()) ||
             !Objects.equals(consolidationRequest.getMawb(), oldMawb) ) {
             String mawbAirlineCode = consolidationRequest.getMawb().substring(0, 3);

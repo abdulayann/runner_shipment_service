@@ -1364,5 +1364,6 @@ public class ReportConstants {
     public static final String TIME_TAKE_TO_GET_SHIPMENT_CONSOLE_DATA = "Time taken to get Shipment Console Data for shipmentId :{} is  {}";
 
     public static final String USA_LOC_CODE_PREFIX = "US";
+    public static final String DPW_DATE_FORMAT_OR_DEFAULT_STRING = "MM/dd/yyyy";
     public static final String HTML_BREAK = "<br/>";
 }

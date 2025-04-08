@@ -78,7 +78,7 @@ public class ExcelUtils {
         });
     }
 
-    public void writeSimpleHeader(XSSFWorkbook workbook, Set<String> columnHeaders, XSSFSheet sheet) {
+    public void writeSimpleHeader(Set<String> columnHeaders, XSSFSheet sheet) {
         Row row = sheet.createRow(0);
         int i = 0;
         for (var c : columnHeaders) {
@@ -117,6 +117,7 @@ public class ExcelUtils {
         return new XSSFWorkbook();
     }
 
+    @SuppressWarnings("java:S4042")
     public Resource getResource(XSSFWorkbook workbook) throws RunnerException {
         Resource fileResource;
         try {
@@ -138,8 +139,7 @@ public class ExcelUtils {
         XSSFSheet sheet = createSheet(workbook, sheetName);
         writeHeader(workbook, columnHeadersToFieldName.keySet(), sheet);
         writeDataToSheet(workbook, sheet, listAsMap, columnHeadersToFieldName);
-        Resource fileResource = getResource(workbook);
-        return fileResource;
+        return getResource(workbook);
     }
 
 }

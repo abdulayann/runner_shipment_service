@@ -24,6 +24,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @ValidCargoDeliveryDate
+@SuppressWarnings("java:S6539")
 public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private AdditionalDetailRequest additionalDetails;
     private String additionalTerms;

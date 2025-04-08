@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1ContainerTypeResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
@@ -80,6 +81,7 @@ public class CSVParsingUtil<T> {
         this.executorService = executorService;
     }
 
+    @SuppressWarnings("java:S1126")
     public List<String> getHeadersForContainer() {
         List<String> headers = new ArrayList<>();
         List<Field> containerFields = Arrays.stream(ContainerResponse.class.getDeclaredFields()).toList();
@@ -98,6 +100,7 @@ public class CSVParsingUtil<T> {
         return headers;
     }
 
+    @SuppressWarnings("java:S1126")
     public List<String> getAllAttributeValuesAsListContainer(ContainerResponse response) throws IllegalAccessException {
         List<Field> containerFields = Arrays.stream(ContainerResponse.class.getDeclaredFields()).toList();
         final Set<String> requiredFields = Set.of(Constants.CONTAINER_NUMBER, "volumeUtilization", "weightUtilization", "achievedVolume",
@@ -341,7 +344,7 @@ public class CSVParsingUtil<T> {
             return parseExcelFilePacking(file, request, mapOfEntity, masterDataMap, entityType, undg, flashpoint, locCodeToLocationReferenceGuidMap);
         }
         if (entityType.equals(Events.class)) {
-            return parseExcelFileEvents(file, request, mapOfEntity, masterDataMap, entityType);
+            return parseExcelFileEvents(file, request, masterDataMap, entityType);
         }
         List<T> entityList = new ArrayList<>();
         List<String> unlocationsList = new ArrayList<>();
@@ -480,7 +483,7 @@ public class CSVParsingUtil<T> {
         }
     }
 
-    public List<T> parseExcelFileEvents(MultipartFile file, BulkUploadRequest request, Map<UUID, T> mapOfEntity,
+    public List<T> parseExcelFileEvents(MultipartFile file, BulkUploadRequest request,
                                          Map<String, Set<String>> masterDataMap, Class<T> entityType) throws IOException {
         if (request.getConsolidationId() == null) {
             throw new ValidationException("Please save the consolidation and then try again.");
@@ -527,7 +530,7 @@ public class CSVParsingUtil<T> {
 
             Set<String> orderEventsDictionary = masterListsMap.get(MasterDataType.ORDER_EVENTS.getDescription());
             Set<String> existingContainerNumberSet = consol.getContainersList()
-                    .stream().map(containers -> containers.getContainerNumber())
+                    .stream().map(Containers::getContainerNumber)
                     .filter(Objects::nonNull)
                     .collect(Collectors.toSet());
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
@@ -590,11 +593,9 @@ public class CSVParsingUtil<T> {
                                                             int rowNum, boolean isUpdate,
                                                             Map<String, String> existingContainerNumbers) throws ValidationException {
         String guid = guidPos == -1 ? "" : getCellValueAsString(row.getCell(guidPos));
-        if (isUpdate && !StringUtility.isEmpty(containerNumber)) {
-            if (existingContainerNumbers.containsKey(containerNumber)
+        if (isUpdate && !StringUtility.isEmpty(containerNumber) && existingContainerNumbers.containsKey(containerNumber)
                     && !existingContainerNumbers.get(containerNumber).equals(guid)) {
-                throw new ValidationException("Duplicate container number " + containerNumber + " found at row: " + rowNum + ". In a booking all container numbers must be Unique.");
-            }
+            throw new ValidationException("Duplicate container number " + containerNumber + " found at row: " + rowNum + ". In a booking all container numbers must be Unique.");
         }
         if (existingContainerNumbers.containsKey(containerNumber) && !isUpdate) {
             throw new ValidationException("Duplicate container number " + containerNumber + " found at row: " + rowNum + ". In a booking all container numbers must be Unique.");
@@ -829,7 +830,7 @@ public class CSVParsingUtil<T> {
         }
     }
 
-    private void setField(T entity, String attributeName, String attributeValue, int rowNum) throws NoSuchFieldException, IllegalAccessException {
+    private void setField(T entity, String attributeName, String attributeValue, int rowNum) {
 
         Map<String, Field> fieldMap = new HashMap<>();
         for (Field v : entity.getClass().getDeclaredFields()) {
@@ -974,13 +975,11 @@ public class CSVParsingUtil<T> {
             List<Object> criteria = List.of(field, operator, masterDataType.getId());
             request.setCriteriaRequests(criteria);
             V1DataResponse v1DataResponse = v1Service.fetchMasterData(request);
-            if (v1DataResponse != null) {
-                if (v1DataResponse.entities instanceof List<?>) {
-                    List<MasterData> masterDataList = jsonHelper.convertValueToList(v1DataResponse.entities, MasterData.class);
-                    if (masterDataList != null && !masterDataList.isEmpty()) {
-                        Set<String> masterDataSet = masterDataList.stream().filter(Objects::nonNull).map(MasterData::getItemValue).collect(Collectors.toSet());
-                        masterDataMap.put(masterDataType.getDescription(), masterDataSet);
-                    }
+            if (v1DataResponse != null && v1DataResponse.entities instanceof List<?>) {
+                List<MasterData> masterDataList = jsonHelper.convertValueToList(v1DataResponse.entities, MasterData.class);
+                if (masterDataList != null && !masterDataList.isEmpty()) {
+                    Set<String> masterDataSet = masterDataList.stream().filter(Objects::nonNull).map(MasterData::getItemValue).collect(Collectors.toSet());
+                    masterDataMap.put(masterDataType.getDescription(), masterDataSet);
                 }
             }
         } catch (Exception ex) {
@@ -992,13 +991,11 @@ public class CSVParsingUtil<T> {
         try {
             CommonV1ListRequest request = new CommonV1ListRequest();
             V1DataResponse v1DataResponse = v1Service.fetchContainerTypeData(request);
-            if (v1DataResponse != null) {
-                if (v1DataResponse.entities instanceof List<?>) {
-                    List<V1ContainerTypeResponse> containerTypeList = jsonHelper.convertValueToList(v1DataResponse.entities, V1ContainerTypeResponse.class);
-                    if (containerTypeList != null && !containerTypeList.isEmpty()) {
-                        Set<String> containerTypeSet = containerTypeList.stream().filter(Objects::nonNull).map(V1ContainerTypeResponse::getCode).collect(Collectors.toSet());
-                        masterDataMap.put(Constants.CONTAINER_TYPES, containerTypeSet);
-                    }
+            if (v1DataResponse != null && v1DataResponse.entities instanceof List<?>) {
+                List<V1ContainerTypeResponse> containerTypeList = jsonHelper.convertValueToList(v1DataResponse.entities, V1ContainerTypeResponse.class);
+                if (containerTypeList != null && !containerTypeList.isEmpty()) {
+                    Set<String> containerTypeSet = containerTypeList.stream().filter(Objects::nonNull).map(V1ContainerTypeResponse::getCode).collect(Collectors.toSet());
+                    masterDataMap.put(Constants.CONTAINER_TYPES, containerTypeSet);
                 }
             }
         } catch (Exception ex) {
@@ -1017,14 +1014,12 @@ public class CSVParsingUtil<T> {
             List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(unlocationsList)));
             request.setCriteriaRequests(criteria);
             V1DataResponse v1DataResponse = v1Service.fetchUnlocation(request);
-            if (v1DataResponse != null) {
-                if (v1DataResponse.entities instanceof List<?>) {
-                    List<UnlocationsResponse> unlocationList = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
-                    if (unlocationList != null && !unlocationList.isEmpty()) {
-                        Set<String> unlocationSet = unlocationList.stream().filter(Objects::nonNull).map(UnlocationsResponse::getLocCode).collect(Collectors.toSet());
-                        locCodeToLocationReferenceGuidMap.putAll(unlocationList.stream().filter(Objects::nonNull).collect(Collectors.toMap(UnlocationsResponse::getLocCode, UnlocationsResponse::getLocationsReferenceGUID)));
-                        masterDataMap.put(Constants.UNLOCATIONS, unlocationSet);
-                    }
+            if (v1DataResponse != null && v1DataResponse.entities instanceof List<?>) {
+                List<UnlocationsResponse> unlocationList = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
+                if (unlocationList != null && !unlocationList.isEmpty()) {
+                    Set<String> unlocationSet = unlocationList.stream().filter(Objects::nonNull).map(UnlocationsResponse::getLocCode).collect(Collectors.toSet());
+                    locCodeToLocationReferenceGuidMap.putAll(unlocationList.stream().filter(Objects::nonNull).collect(Collectors.toMap(UnlocationsResponse::getLocCode, UnlocationsResponse::getLocationsReferenceGUID)));
+                    masterDataMap.put(Constants.UNLOCATIONS, unlocationSet);
                 }
             }
         } catch (Exception ex) {
@@ -1042,13 +1037,11 @@ public class CSVParsingUtil<T> {
             List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(commodityCodesList)));
             request.setCriteriaRequests(criteria);
             V1DataResponse response = v1Service.fetchCommodityData(request);
-            if (response != null) {
-                if (response.entities instanceof List<?>) {
-                    List<CommodityResponse> commodityList = jsonHelper.convertValueToList(response.entities, CommodityResponse.class);
-                    if (commodityList != null && !commodityList.isEmpty()) {
-                        Set<String> commoditySet = commodityList.stream().filter(Objects::nonNull).map(CommodityResponse::getCode).collect(Collectors.toSet());
-                        masterDataMap.put("CommodityCodes", commoditySet);
-                    }
+            if (response != null && response.entities instanceof List<?>) {
+                List<CommodityResponse> commodityList = jsonHelper.convertValueToList(response.entities, CommodityResponse.class);
+                if (commodityList != null && !commodityList.isEmpty()) {
+                    Set<String> commoditySet = commodityList.stream().filter(Objects::nonNull).map(CommodityResponse::getCode).collect(Collectors.toSet());
+                    masterDataMap.put("CommodityCodes", commoditySet);
                 }
             }
         } catch (Exception ex) {
@@ -1066,13 +1059,11 @@ public class CSVParsingUtil<T> {
         List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(dgSubstanceIdList)));
         request.setCriteriaRequests(criteria);
         V1DataResponse response = v1Service.fetchDangerousGoodData(request);
-        if (response != null) {
-            if (response.entities instanceof List<?>) {
-                List<EntityTransferDGSubstance> list = jsonHelper.convertValueToList(response.entities, EntityTransferDGSubstance.class);
-                if (list != null && !list.isEmpty()) {
-                    undg.putAll(list.stream().filter(Objects::nonNull).collect(Collectors.toMap(EntityTransferDGSubstance::getId, EntityTransferDGSubstance::getUNIDNo)));
-                    flashpoint.putAll(list.stream().filter(Objects::nonNull).collect(Collectors.toMap(EntityTransferDGSubstance::getId, EntityTransferDGSubstance::getFlashPoint)));
-                }
+        if (response != null && response.entities instanceof List<?>) {
+            List<EntityTransferDGSubstance> list = jsonHelper.convertValueToList(response.entities, EntityTransferDGSubstance.class);
+            if (list != null && !list.isEmpty()) {
+                undg.putAll(list.stream().filter(Objects::nonNull).collect(Collectors.toMap(EntityTransferDGSubstance::getId, EntityTransferDGSubstance::getUNIDNo)));
+                flashpoint.putAll(list.stream().filter(Objects::nonNull).collect(Collectors.toMap(EntityTransferDGSubstance::getId, EntityTransferDGSubstance::getFlashPoint)));
             }
         }
     }

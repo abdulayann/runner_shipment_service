@@ -30,7 +30,7 @@ public class MawbReport extends IReport {
     private ConsolidationService consolidationService;
 
     public boolean isDMawb;
-    private V1TenantSettingsResponse tenantSettings;
+
 
     public String printType;
 
@@ -49,6 +49,7 @@ public class MawbReport extends IReport {
     }
 
     public void validatePrinting(Long id) {
+        V1TenantSettingsResponse tenantSettings;
         tenantSettings = getCurrentTenantSettings();
 
         if (Boolean.TRUE.equals(tenantSettings.getIsModuleValidationEnabled())) {

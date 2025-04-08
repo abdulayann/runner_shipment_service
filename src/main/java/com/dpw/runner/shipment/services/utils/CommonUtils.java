@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.utils;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
+import com.dpw.runner.shipment.services.aspects.LicenseContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -378,7 +379,7 @@ public class CommonUtils {
         int minSupportedAscii = 32;
         int maxSupportedAscii = 126;
         for (char c : input.toCharArray()) {
-            if ((int) c < minSupportedAscii || (int) c > maxSupportedAscii) {
+            if ( c < minSupportedAscii || c > maxSupportedAscii) {
                 return true;
             }
         }
@@ -546,7 +547,7 @@ public class CommonUtils {
         return Integer.parseInt(s);
     }
 
-    public static String getErrorResponseMessage(Exception e, Class<?> clazz) {
+    public static String getErrorResponseMessage(Exception e) {
         String responseMessage = "";
         responseMessage =
                 switch (e.getClass().getSimpleName()) {
@@ -590,9 +591,18 @@ public class CommonUtils {
         str.append((n[0] != 0) ? getTwoDigitWordConversion(a, b, n, 0) + "Crore " : "");
         str.append((n[1] != 0) ? getTwoDigitWordConversion(a, b, n, 1) + "Lakh " : "");
         str.append((n[2] != 0) ? getTwoDigitWordConversion(a, b, n, 2) + "Thousand " : "");
-        str.append((n[3] != 0) ? (!a[n[3]].equals("") ? a[n[3]] : b[n[3] / 10] + " " + a[n[3] % 10]) + "Hundred " : "");
-        str.append((n[4] != 0) ? ((str.length() != 0) ? "and " : "") +
-                getTwoDigitWordConversion(a, b, n, 4) + " " : "");
+        String value = "";
+        if (n[3] != 0) {
+            value = !a[n[3]].isEmpty() ? a[n[3]] : b[n[3] / 10] + " " + a[n[3] % 10];
+            value += " Hundred ";
+        }
+        str.append(value);
+
+        value = "";
+        if (n[4] != 0) {
+            value = (!str.isEmpty() ? "and " : "") + getTwoDigitWordConversion(a, b, n, 4) + " ";
+        }
+        str.append(value);
 
         return str.toString().trim();
     }
@@ -1392,6 +1402,7 @@ public class CommonUtils {
         return HTML_HREF_TAG_PREFIX + link + "'>" + consolidationId + HTML_HREF_TAG_SUFFIX;
     }
 
+    @SuppressWarnings("java:S5857")
     public String replaceTagsFromData(Map<String, Object> map, String val) {
         for (Map.Entry<String, Object> entry : map.entrySet()) {
             if (!Objects.isNull(entry.getValue()) && !Objects.isNull(entry.getKey()))
@@ -1506,7 +1517,7 @@ public class CommonUtils {
         }
 
         if (Objects.isNull(shipmentDetails.getOceanDGStatus()) ||
-                (!UserContext.isOceanDgUser() && (OceanDGStatus.OCEAN_DG_ACCEPTED.equals(shipmentDetails.getOceanDGStatus()) ||
+                (!LicenseContext.isOceanDGLicense() && (OceanDGStatus.OCEAN_DG_ACCEPTED.equals(shipmentDetails.getOceanDGStatus()) ||
                         OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED.equals(shipmentDetails.getOceanDGStatus()) ||
                         OceanDGStatus.OCEAN_DG_COMMERCIAL_REJECTED.equals(shipmentDetails.getOceanDGStatus()) ||
                         OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED.equals(shipmentDetails.getOceanDGStatus()))))
@@ -1661,12 +1672,9 @@ public class CommonUtils {
         try {
             for (Field field : clazz.getDeclaredFields()) {
                 field.setAccessible(true);
-                if (field.isAnnotationPresent(UnlocationData.class)) {
-                    if ((Objects.isNull(oldEntity) || !Objects.equals(field.get(newEntity), field.get(oldEntity))) && !Objects.isNull(field.get(newEntity))) {
-                        unlocationSet.add((String) field.get(newEntity));
-                    }
+                if (field.isAnnotationPresent(UnlocationData.class) && (Objects.isNull(oldEntity) || !Objects.equals(field.get(newEntity), field.get(oldEntity))) && !Objects.isNull(field.get(newEntity))) {
+                    unlocationSet.add((String) field.get(newEntity));
                 }
-
             }
         } catch (Exception e) {
             log.warn("Error while getting un-location fields for class {}", clazz.getSimpleName());
@@ -2146,7 +2154,7 @@ public class CommonUtils {
                 Method setter = ShipmentDetailsResponse.class.getMethod("set" + capitalizedField, paramType);
                 setter.invoke(shipmentDetailsResponse, dtoValue != null ? dtoValue : value);
             } catch (Exception e) {
-                log.error("No such field: {}", field, e);
+                log.error("No such field: {}", field, e.getMessage());
             }
         });
         return shipmentDetailsResponse;
@@ -2397,28 +2405,28 @@ public class CommonUtils {
 
     public static boolean checkAirSecurityForShipment(ShipmentDetails shipmentDetails) {
         if (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipmentDetails.getDirection().equals(DIRECTION_EXP)) {
-            return UserContext.isAirSecurityUser();
+            return LicenseContext.isAirSecurityLicense();
         }
         return true;
     }
 
     public static boolean checkAirSecurityForConsolidation(ConsolidationDetails consolidationDetails) {
         if (consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && consolidationDetails.getShipmentType().equals(DIRECTION_EXP)) {
-            return UserContext.isAirSecurityUser();
+            return LicenseContext.isAirSecurityLicense();
         }
         return true;
     }
 
     public static boolean checkAirSecurityForBooking(CustomerBooking customerBooking) {
         if (customerBooking.getTransportType().equals(Constants.TRANSPORT_MODE_AIR) && customerBooking.getDirection().equals(DIRECTION_EXP)) {
-            return UserContext.isAirSecurityUser();
+            return LicenseContext.isAirSecurityLicense();
         }
         return true;
     }
 
     public static boolean checkAirSecurityForBookingRequest(CustomerBookingRequest customerBooking) {
         if (customerBooking.getTransportType().equals(Constants.TRANSPORT_MODE_AIR) && customerBooking.getDirection().equals(DIRECTION_EXP)) {
-            return UserContext.isAirSecurityUser();
+            return LicenseContext.isAirSecurityLicense();
         }
         return true;
     }
@@ -2471,7 +2479,7 @@ public class CommonUtils {
                 Object dtoValue = mapToDTO(value); // Convert to DTO if necessary
                 setNestedFieldValue(response, field, dtoValue != null ? dtoValue : value);
             } catch (Exception e) {
-                log.error("No such field: {}", field, e);
+                log.error("No such field: {}", field, e.getMessage());
             }
         });
 
@@ -2690,6 +2698,17 @@ public class CommonUtils {
             return 0.0;
         }
         return percentage.doubleValue();
+    }
+
+    public void sendEmailNotification(EmailTemplatesRequest emailTemplateModel, List<String> to, List<String> cc) {
+        if(!to.isEmpty()) {
+            try {
+                notificationService.sendEmail(emailTemplateModel.getBody(),
+                        emailTemplateModel.getSubject(), to, cc);
+            } catch (Exception ex) {
+                log.error(ex.getMessage());
+            }
+        }
     }
 
 }

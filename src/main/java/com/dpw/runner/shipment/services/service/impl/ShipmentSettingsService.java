@@ -145,11 +145,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
                 shipmentSettingsDetails.setProductSequenceConfig(productSequenceConfigDao.saveEntityFromSettings(shipmentSettingsDetails.getProductSequenceConfig(), shipmentSettingsDetails.getId()));
             }
 
-            try{
-                shipmentSettingsSync.sync(shipmentSettingsDetails);
-            } catch (Exception e) {
-                log.error("Error Syncing Tenant Settings");
-            }
+            shipmentSettingsSync(shipmentSettingsDetails);
 
             log.info("Shipment Setting Details created successfully for Id {} with Request Id {}", shipmentSettingsDetails.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
@@ -159,6 +155,14 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             throw new GenericException(e);
         }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(shipmentSettingsDetails));
+    }
+
+    private void shipmentSettingsSync(ShipmentSettingsDetails shipmentSettingsDetails) {
+        try{
+            shipmentSettingsSync.sync(shipmentSettingsDetails);
+        } catch (Exception e) {
+            log.error("Error Syncing Tenant Settings");
+        }
     }
 
     @Transactional
@@ -213,11 +217,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             processListUpdates(hblTermsConditionTemplateList, response, oldHblTermsConditionTemplateList, hblHawbBackPrintTemplateList, oldHblHawbBackPrintTemplateList, tenantProductsList, oldTenantProductsList, productSequenceConfigList, oldProductSequenceConfigList, shipmentSettingsDetails);
             processProductSequenceConfigList(productSequenceConfigList, shipmentSettingsDetails, response);
 
-            try{
-                shipmentSettingsSync.sync(shipmentSettingsDetails);
-            } catch (Exception e) {
-                log.error("Error Syncing Tenant Settings");
-            }
+            shipmentSettingsSync(shipmentSettingsDetails);
 
             return ResponseHelper.buildSuccessResponse(response);
         } catch (Exception e) {
@@ -327,7 +327,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         Optional<ShipmentSettingsDetails> oldEntity = getSettingsDetailsOptional(request);
         if(!oldEntity.isPresent()) {
             try{
-                return (ResponseEntity<IRunnerResponse>) completeCreateFromV1(commonRequestModel);
+                return completeCreateFromV1(commonRequestModel);
             } catch (Exception e) {
                 responseMsg = e.getMessage() != null ? e.getMessage()
                         : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;

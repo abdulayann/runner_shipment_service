@@ -631,6 +631,7 @@ public class Constants {
 
     public static final String OUTBOUND = "Outbound";
     public static final String IGNORED_ERROR_MSG = "Ignored error.";
+    public static final String EMPTY_STRING = "";
 
     private Constants() {
     }
