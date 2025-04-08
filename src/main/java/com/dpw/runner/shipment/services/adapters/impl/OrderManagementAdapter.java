@@ -68,8 +68,7 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
         try {
             String url = baseUrl + getOrderUrl + orderId;
             var response = restTemplate.exchange(url, HttpMethod.GET, null, OrderManagementResponse.class);
-            var shipment = generateShipmentFromOrder(Objects.requireNonNull(response.getBody()).getOrder());
-            return shipment;
+            return generateShipmentFromOrder(Objects.requireNonNull(response.getBody()).getOrder());
         } catch (Exception e) {
             log.error(e.getMessage());
             throw new RunnerException(e.getMessage());
@@ -96,8 +95,7 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
         try {
             String url = baseUrl + getOrderUrl + orderId;
             var response = restTemplate.exchange(url, HttpMethod.GET, null, OrderManagementResponse.class);
-            var bookingResponse = mapOrderToBooking(Objects.requireNonNull(response.getBody()).getOrder());
-            return bookingResponse;
+            return mapOrderToBooking(Objects.requireNonNull(response.getBody()).getOrder());
         } catch (Exception e) {
             log.error(e.getMessage());
             throw new RunnerException(e.getMessage());
@@ -184,7 +182,7 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
         shipmentDetails.setTransportMode(order.getTransportMode());
         shipmentDetails.setIncoterms(order.getIncoTerm());
 
-        // TODO : to revert this change once order team gets back on this
+        // LATER : to revert this change once order team gets back on this
         // Skipping this fields for now as integration for LocationReferenceGuid is pending from order team
         shipmentDetails.getCarrierDetails().setOrigin(order.getOrigin());
         shipmentDetails.getCarrierDetails().setOriginPort(order.getOriginPort());

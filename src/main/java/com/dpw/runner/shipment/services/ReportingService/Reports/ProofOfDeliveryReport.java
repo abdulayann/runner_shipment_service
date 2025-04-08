@@ -4,10 +4,8 @@ import com.dpw.runner.shipment.services.ReportingService.Models.HblModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ProofOfDeliveryModel;
 import java.util.ArrayList;
-import java.util.Collections;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
 import java.util.Map;
 
 @Component

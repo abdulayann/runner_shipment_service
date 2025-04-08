@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.kafka.consumer;
 
+import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.kafka.dto.AirMessagingEventDto;
 import com.dpw.runner.shipment.services.kafka.dto.AirMessagingStatusDto;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -48,7 +49,7 @@ public class AirMessagingConsumer {
                             AirMessagingStatusDto obj = objectMapper.readValue(message.value(), AirMessagingStatusDto.class);
                             awbUtility.createStatusUpdateForAirMessaging(obj);
                         } catch (RunnerException | MessagingException | IOException e) {
-                            throw new RuntimeException(e);
+                            throw new GenericException(e);
                         }
 
                     } else if (Objects.equals(value.toLowerCase(), Constants.EVENT)) {
@@ -56,7 +57,7 @@ public class AirMessagingConsumer {
                             AirMessagingEventDto obj = objectMapper.readValue(message.value(), AirMessagingEventDto.class);
                             awbUtility.createEventUpdateForAirMessaging(obj);
                         } catch (JsonProcessingException | RunnerException e) {
-                            throw new RuntimeException(e);
+                            throw new GenericException(e);
                         }
                     }
                 }

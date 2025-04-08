@@ -38,11 +38,11 @@ import com.dpw.runner.shipment.services.utils.ExcludeAuditLog;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.nimbusds.jose.util.Pair;
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -79,12 +79,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
+@SuppressWarnings("java:S1444")
 public class AuditLogService implements IAuditLogService {
     private static final Set<Class<?>> annotationClassList = new HashSet<>(Arrays.asList(Id.class, OneToMany.class, ManyToOne.class, ManyToMany.class, ExcludeAuditLog.class));
 
     public static Map<String, String> COLUMN_HEADERS_TO_FIELD_NAME = null;
 
-    private Set<DBOperationType> operationTypeEnumSet = EnumSet.of(
+    private final Set<DBOperationType> operationTypeEnumSet = EnumSet.of(
         DBOperationType.LOG,
         DBOperationType.DG_REQUEST,
         DBOperationType.DG_APPROVE,
@@ -121,8 +122,7 @@ public class AuditLogService implements IAuditLogService {
         try {
             var triplet = fetchList(commonRequestModel);
             List<Map<String, Object>> listAsMap = getData(triplet.getLeft());
-            Resource fileResource = excelUtils.createExcelAsResource(listAsMap, COLUMN_HEADERS_TO_FIELD_NAME, "Audit_Logs");
-            return fileResource;
+            return excelUtils.createExcelAsResource(listAsMap, COLUMN_HEADERS_TO_FIELD_NAME, "Audit_Logs");
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
@@ -195,7 +195,7 @@ public class AuditLogService implements IAuditLogService {
     private void prepareAuditLogOfLog(AuditLogMetaData auditLogMetaData, AuditLog auditLog, String ops)
             throws JsonProcessingException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
         Map<String, AuditLogChanges> auditLogChangesMap = getChanges(auditLogMetaData.getNewData(), null, ops);
-        if (auditLogChangesMap.size() > 0) {
+        if (!auditLogChangesMap.isEmpty()) {
             addBaseEntityFields(auditLogChangesMap, null, auditLogMetaData.getNewData(), auditLogMetaData.getUserName());
         }
         auditLog.setChanges(auditLogChangesMap);
@@ -205,7 +205,7 @@ public class AuditLogService implements IAuditLogService {
     private void prepareAuditLogOfDelete(AuditLogMetaData auditLogMetaData, AuditLog auditLog, String ops)
             throws JsonProcessingException, IllegalAccessException, InvocationTargetException, NoSuchMethodException, NoSuchFieldException {
         Map<String, AuditLogChanges> auditLogChangesMap = getChanges(null, auditLogMetaData.getPrevData(), ops);
-        if(auditLogChangesMap.size() > 0)
+        if(!auditLogChangesMap.isEmpty())
             addBaseEntityFields(auditLogChangesMap, auditLogMetaData.getPrevData(), null, auditLogMetaData.getUserName());
         auditLog.setChanges(auditLogChangesMap);
         auditLog.setEntity(auditLogMetaData.getPrevData().getClass().getSimpleName());
@@ -215,7 +215,7 @@ public class AuditLogService implements IAuditLogService {
     private void prepareAuditLogOfUpdate(AuditLogMetaData auditLogMetaData, AuditLog auditLog, String ops)
             throws JsonProcessingException, IllegalAccessException, InvocationTargetException, NoSuchMethodException, NoSuchFieldException {
         Map<String, AuditLogChanges> auditLogChangesMap = getChanges(auditLogMetaData.getNewData(), auditLogMetaData.getPrevData(), ops);
-        if(auditLogChangesMap.size() > 0)
+        if(!auditLogChangesMap.isEmpty())
             addBaseEntityFields(auditLogChangesMap, auditLogMetaData.getPrevData(), auditLogMetaData.getNewData(), auditLogMetaData.getUserName());
         auditLog.setChanges(auditLogChangesMap);
         auditLog.setEntity(auditLogMetaData.getNewData().getClass().getSimpleName());
@@ -225,7 +225,7 @@ public class AuditLogService implements IAuditLogService {
     private void prepareAuditLogOfCreate(AuditLogMetaData auditLogMetaData, AuditLog auditLog, String ops)
             throws JsonProcessingException, IllegalAccessException, InvocationTargetException, NoSuchMethodException, NoSuchFieldException {
         Map<String, AuditLogChanges> auditLogChangesMap = getChanges(auditLogMetaData.getNewData(), null, ops);
-        if(auditLogChangesMap.size() > 0)
+        if(!auditLogChangesMap.isEmpty())
             addBaseEntityFields(auditLogChangesMap, null, auditLogMetaData.getNewData(), auditLogMetaData.getUserName());
         auditLog.setChanges(auditLogChangesMap);
         auditLog.setEntity(auditLogMetaData.getNewData().getClass().getSimpleName());
@@ -297,7 +297,6 @@ public class AuditLogService implements IAuditLogService {
     }
 
     public AuditLogResponse convertEntityToDto(AuditLog auditLog) {
-        // return jsonHelper.convertValue(auditLog, AuditLogResponse.class);
         AuditLogResponse response = new AuditLogResponse();
         response.setId(auditLog.getId());
         response.setOperation(auditLog.getOperation());
@@ -454,14 +453,22 @@ public class AuditLogService implements IAuditLogService {
     private AuditLogChanges getAuditLogChangesForBigDecimalClass(Object newValue, Object prevValue, AuditLogChanges auditLogChanges, String fieldName) {
         BigDecimal number1 = (BigDecimal) newValue;
         BigDecimal number2 = (BigDecimal) prevValue;
-        if((number1 == null) || (number1 != null && compareTo(number1, number2) != 0)) {
-            if (number1 != null && number2 != null && number1.setScale(5, BigDecimal.ROUND_DOWN).compareTo(number2.setScale(5, BigDecimal.ROUND_DOWN)) != 0) {
-                auditLogChanges = createAuditLogChangesObject(fieldName, newValue, prevValue);
-            } else if (!(number1 == null && number2 == null)) {
-                auditLogChanges = createAuditLogChangesObject(fieldName, newValue, prevValue);
-            }
+        if(areBigDecimalsDifferent(number1, number2)) {
+            auditLogChanges = createAuditLogChangesObject(fieldName, newValue, prevValue);
         }
         return auditLogChanges;
+    }
+
+    public boolean areBigDecimalsDifferent(BigDecimal number1, BigDecimal number2) {
+        if (number1 == null && number2 == null) {
+            return false; // Both null, consider them equal
+        }
+        if (number1 == null || number2 == null) {
+            return true; // one is null, the other isn't, they are different.
+        }
+
+        return CommonUtils.roundBigDecimal(number1, 5, RoundingMode.DOWN)
+                .compareTo(CommonUtils.roundBigDecimal(number2, 5, RoundingMode.DOWN)) != 0;
     }
 
     private AuditLogChanges getAuditLogChangesForCreateOperation(BaseEntity newEntity, Field field, String fieldName, Map<String, AuditLogChanges> fieldValueMap, AuditLogChanges auditLogChanges) throws IllegalAccessException, InvocationTargetException, JsonProcessingException, NoSuchMethodException {
@@ -469,7 +476,9 @@ public class AuditLogService implements IAuditLogService {
         Object temp = field.get(newEntity);
         try{
             temp  = PropertyUtils.getProperty(newEntity, fieldName);
-        } catch(NoSuchMethodException e){}
+        } catch(NoSuchMethodException e) {
+            log.info(Constants.IGNORED_ERROR_MSG);
+        }
         if (field.getType() == LocalDateTime.class && !ObjectUtils.isEmpty(temp)) {
             newValue = temp.toString();
         } else {
@@ -477,7 +486,6 @@ public class AuditLogService implements IAuditLogService {
         }
         if(Arrays.stream(field.getDeclaredAnnotations()).anyMatch(annotation -> annotation.annotationType() == OneToOne.class))
         {
-            // fieldValueMap.putAll(getChanges((BaseEntity) temp, null, DBOperationType.CREATE.name()));
             // Handle related entities (one-to-one or one-to-many relationships)
             Map<String, AuditLogChanges> childChanges = getChanges((BaseEntity) temp, null, DBOperationType.CREATE.name());
 
@@ -556,7 +564,15 @@ public class AuditLogService implements IAuditLogService {
     }
 
     public static <T extends Comparable<T>> int compareTo(final T c1, final T c2) {
-        final boolean f1, f2;
-        return (f1 = c1 == null) ^ (f2 = c2 == null) ? f1 ? -1 : 1 : f1 && f2 ? 0 : c1.compareTo(c2);
+        if (c1 == null && c2 == null) {
+            return 0;
+        }
+        if (c1 == null) {
+            return -1;
+        }
+        if (c2 == null) {
+            return 1;
+        }
+        return c1.compareTo(c2);
     }
 }

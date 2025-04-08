@@ -24,7 +24,7 @@ import com.dpw.runner.shipment.services.entity.TriangulationPartner;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
 import com.dpw.runner.shipment.services.entity.enums.NotificationRequestType;
-import com.dpw.runner.shipment.services.exception.NotificationServiceException;
+import com.dpw.runner.shipment.services.exception.exceptions.NotificationServiceException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;

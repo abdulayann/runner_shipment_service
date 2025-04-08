@@ -241,9 +241,9 @@ public class ShippingRequestOutReport extends IReport {
         V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         valuesContainer.forEach(v -> {
             if (v.containsKey(ReportConstants.WEIGHT))
-                v.put(ReportConstants.WEIGHT, ConvertToWeightNumberFormat(v.get(ReportConstants.WEIGHT), v1TenantSettingsResponse));
+                v.put(ReportConstants.WEIGHT, convertToWeightNumberFormat(v.get(ReportConstants.WEIGHT), v1TenantSettingsResponse));
             if (v.containsKey(ReportConstants.VOLUME))
-                v.put(ReportConstants.VOLUME, ConvertToVolumeNumberFormat(v.get(ReportConstants.VOLUME), v1TenantSettingsResponse));
+                v.put(ReportConstants.VOLUME, convertToVolumeNumberFormat(v.get(ReportConstants.VOLUME), v1TenantSettingsResponse));
             if (v.containsKey(ReportConstants.PACKS))
                 v.put(ReportConstants.PACKS, addCommas(v.get(ReportConstants.PACKS).toString()));
             if (model.getShipment() != null && model.getShipment().getPacksUnit() != null)

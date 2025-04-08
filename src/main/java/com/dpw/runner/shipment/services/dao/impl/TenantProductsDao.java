@@ -72,14 +72,14 @@ public class TenantProductsDao implements ITenantProductsDao {
         String responseMsg;
         List<TenantProducts> responseTenantProducts = new ArrayList<>();
         try {
-            // TODO- Handle Transactions here
+            // LATER- Handle Transactions here
             ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentSettingsId", shipmentSettingsId, "=");
             Pair<Specification<TenantProducts>, Pageable> pair = fetchData(listCommonRequest, TenantProducts.class);
             Page<TenantProducts> tenantProducts = findAll(pair.getLeft(), pair.getRight());
             Map<Long, TenantProducts> hashMap = tenantProducts.stream()
                     .collect(Collectors.toMap(TenantProducts::getId, Function.identity()));
             List<TenantProducts> tenantProductsRequestList = new ArrayList<>();
-            if (tenantProductsList != null && tenantProductsList.size() != 0) {
+            if (tenantProductsList != null && !tenantProductsList.isEmpty()) {
                 for (TenantProducts request : tenantProductsList) {
                     Long id = request.getId();
                     if (id != null) {
@@ -105,10 +105,10 @@ public class TenantProductsDao implements ITenantProductsDao {
         List<TenantProducts> responseTenantProducts = new ArrayList<>();
         try {
             Map<UUID, TenantProducts> hashMap = new HashMap<>();
-            if(oldTenantProducts != null && oldTenantProducts.size() > 0)
+            if(oldTenantProducts != null && !oldTenantProducts.isEmpty())
                 hashMap = oldTenantProducts.stream().collect(Collectors.toMap(TenantProducts::getGuid, Function.identity()));
             List<TenantProducts> tenantProductsRequestList = new ArrayList<>();
-            if (tenantProductsList != null && tenantProductsList.size() != 0) {
+            if (tenantProductsList != null && !tenantProductsList.isEmpty()) {
                 for (TenantProducts request : tenantProductsList) {
                     UUID guid = request.getGuid();
                     if(hashMap.containsKey(guid)) {

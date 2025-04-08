@@ -7,6 +7,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.HblModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.PickUpOrderReportModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.aspects.LicenseContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -34,6 +35,7 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 
@@ -340,51 +342,60 @@ class PickupOrderReportTest extends CommonMocks {
 
     @Test
     void getDocumentModel_CountryAirCargoSecurity() {
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setCountryAirCargoSecurity(true);
-        ShipmentModel shipmentModel = new ShipmentModel();
-        shipmentModel.setTransportMode(AIR);
-        shipmentModel.setTransportInstructionId(12L);
-        shipmentModel.setPickupDeliveryDetailsInstructions(List.of(PickupDeliveryDetailsModel.builder()
-                .id(12L)
-                .agentDetail(new PartiesModel())
-                .actualPickup(LocalDateTime.now())
-                .actualDelivery(LocalDateTime.now())
-                .build()));
-        shipmentModel.setDirection(EXP);
-        shipmentModel.setContainersList(Arrays.asList(new ContainerModel()));
-        shipmentModel.setPickupDetails(new PickupDeliveryDetailsModel());
-        HblModel hblModel = new HblModel();
-        hblModel.setShipment(shipmentModel);
+        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
+            mockedLicenseContext.when(LicenseContext::isAirSecurityLicense).thenReturn(false);
+            ShipmentSettingsDetailsContext.getCurrentTenantSettings()
+                .setCountryAirCargoSecurity(true);
+            ShipmentModel shipmentModel = new ShipmentModel();
+            shipmentModel.setTransportMode(AIR);
+            shipmentModel.setTransportInstructionId(12L);
+            shipmentModel.setPickupDeliveryDetailsInstructions(
+                List.of(PickupDeliveryDetailsModel.builder()
+                    .id(12L)
+                    .agentDetail(new PartiesModel())
+                    .actualPickup(LocalDateTime.now())
+                    .actualDelivery(LocalDateTime.now())
+                    .build()));
+            shipmentModel.setDirection(EXP);
+            shipmentModel.setContainersList(Arrays.asList(new ContainerModel()));
+            shipmentModel.setPickupDetails(new PickupDeliveryDetailsModel());
+            HblModel hblModel = new HblModel();
+            hblModel.setShipment(shipmentModel);
 
-        when(hblReport.getDocumentModel(any())).thenReturn(hblModel);
-        mockShipmentSettings();
+            when(hblReport.getDocumentModel(any())).thenReturn(hblModel);
+            mockShipmentSettings();
 
-        assertThrows(ValidationException.class, () -> pickupOrderReport.getDocumentModel(123L));
+            assertThrows(ValidationException.class, () -> pickupOrderReport.getDocumentModel(123L));
+        }
     }
 
     @Test
     void getDocumentModel_CountryAirCargoSecurity2() {
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setCountryAirCargoSecurity(true);
-        UserContext.getUser().getPermissions().put(PermissionConstants.AIR_DG, true);
-        ShipmentModel shipmentModel = new ShipmentModel();
-        shipmentModel.setTransportMode(AIR);
-        shipmentModel.setTransportInstructionId(12L);
-        shipmentModel.setPickupDeliveryDetailsInstructions(List.of(PickupDeliveryDetailsModel.builder()
-                .id(12L)
-                .agentDetail(new PartiesModel())
-                .actualPickup(LocalDateTime.now())
-                .actualDelivery(LocalDateTime.now())
-                .build()));
-        shipmentModel.setDirection(EXP);
-        shipmentModel.setContainersList(Arrays.asList(new ContainerModel()));
-        shipmentModel.setPickupDetails(new PickupDeliveryDetailsModel());
-        shipmentModel.setContainsHazardous(true);
-        HblModel hblModel = new HblModel();
-        hblModel.setShipment(shipmentModel);
+        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
+            mockedLicenseContext.when(LicenseContext::isDgAirLicense).thenReturn(true);
+            ShipmentSettingsDetailsContext.getCurrentTenantSettings()
+                .setCountryAirCargoSecurity(true);
+            ShipmentModel shipmentModel = new ShipmentModel();
+            shipmentModel.setTransportMode(AIR);
+            shipmentModel.setTransportInstructionId(12L);
+            shipmentModel.setPickupDeliveryDetailsInstructions(
+                List.of(PickupDeliveryDetailsModel.builder()
+                    .id(12L)
+                    .agentDetail(new PartiesModel())
+                    .actualPickup(LocalDateTime.now())
+                    .actualDelivery(LocalDateTime.now())
+                    .build()));
+            shipmentModel.setDirection(EXP);
+            shipmentModel.setContainersList(Arrays.asList(new ContainerModel()));
+            shipmentModel.setPickupDetails(new PickupDeliveryDetailsModel());
+            shipmentModel.setContainsHazardous(true);
+            HblModel hblModel = new HblModel();
+            hblModel.setShipment(shipmentModel);
 
-        when(hblReport.getDocumentModel(any())).thenReturn(hblModel);
-        mockShipmentSettings();
+            when(hblReport.getDocumentModel(any())).thenReturn(hblModel);
+            mockShipmentSettings();
 
-        assertThrows(ValidationException.class, () -> pickupOrderReport.getDocumentModel(123L));
+            assertThrows(ValidationException.class, () -> pickupOrderReport.getDocumentModel(123L));
+        }
     }
 }

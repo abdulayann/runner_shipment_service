@@ -1,9 +1,7 @@
 package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.commons.constants.*;
-import com.dpw.runner.shipment.services.dto.request.awb.AirMessagingAdditionalFields;
-import com.dpw.runner.shipment.services.dto.request.awb.AwbNotifyPartyInfo;
-import com.dpw.runner.shipment.services.dto.request.awb.OtherPartyInfo;
+import com.dpw.runner.shipment.services.dto.request.awb.*;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.kafka.dto.AirMessagingEventDto;
@@ -13,7 +11,6 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.dao.impl.ShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
-import com.dpw.runner.shipment.services.dto.request.awb.AwbAddressParam;
 import com.dpw.runner.shipment.services.dto.response.AwbAirMessagingResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
@@ -39,8 +36,11 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import javax.mail.MessagingException;
+import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -282,6 +282,9 @@ public class AwbUtility {
 
         // Rounding off Currencies fields
         this.roundOffCurrencyFields(awbResponse);
+
+        checkAcasFlagInAwbForConsole(awbResponse, consolidationDetails);
+
         // Rounding off Weight fields
         this.roundOffWeightFields(awbResponse);
         this.roundOffVolumeFields(awbResponse);
@@ -351,10 +354,8 @@ public class AwbUtility {
             if(party.getSpecifiedAddressLocation() != null)
                 unlocoRequests.add(party.getSpecifiedAddressLocation());
         });
-        if(awb.getAwbOtherInfo() != null) {
-            if(awb.getAwbOtherInfo().getExecutedAt() != null)
-                unlocoRequests.add(awb.getAwbOtherInfo().getExecutedAt());
-        }
+        if(awb.getAwbOtherInfo() != null && awb.getAwbOtherInfo().getExecutedAt() != null)
+            unlocoRequests.add(awb.getAwbOtherInfo().getExecutedAt());
 
         unlocoRequests.add(consolidationDetails.getCarrierDetails().getOriginPort());
         unlocoRequests.add(consolidationDetails.getCarrierDetails().getDestinationPort());
@@ -525,6 +526,9 @@ public class AwbUtility {
         if(masterAwb != null) {
             this.populateMasterAwbData(awbResponse, masterAwb);
         }
+
+        checkAcasFlagInAwbForShipment(awbResponse, shipmentDetails);
+
         // Rounding off Currencies fields
         this.roundOffCurrencyFields(awbResponse);
         // Rounding off Weight fields
@@ -532,6 +536,60 @@ public class AwbUtility {
         this.roundOffVolumeFields(awbResponse);
         setCustomOriginCodeInResponse(awbResponse);
         return awbResponse;
+    }
+
+    private void checkAcasFlagInAwbForShipment(AwbAirMessagingResponse awbResponse, ShipmentDetails shipmentDetails) {
+        awbResponse.setAcasEnabled(shipmentDetails.getRoutingsList().stream()
+                .map(Routings::getPod) // Extract POD
+                .filter(Objects::nonNull) // Ignore null PODs
+                .anyMatch(pod -> pod.startsWith("US"))); // Check if starts with "US"
+
+        checkOciInfoInAwb(awbResponse);
+    }
+
+    private void checkAcasFlagInAwbForConsole(AwbAirMessagingResponse awbResponse, ConsolidationDetails consolidationDetails) {
+        awbResponse.setAcasEnabled(consolidationDetails.getRoutingsList().stream()
+                .map(Routings::getPod) // Extract POD
+                .filter(Objects::nonNull) // Ignore null PODs
+                .anyMatch(pod -> pod.startsWith("US"))); // Check if starts with "US"
+
+        checkOciInfoInAwb(awbResponse);
+    }
+
+    private void checkOciInfoInAwb(AwbAirMessagingResponse awbResponse) {
+        if(awbResponse.getOciInfo() != null) {
+            if (awbResponse.getOciInfo().getOtherIdentityInfo() != null) {
+                awbResponse.getOciInfo().getOtherIdentityInfo().setIrIpAddress(convertIpFormat(getClientIp()));
+            }
+            else {
+                OtherIdentityInfo otherIdentityInfo = new OtherIdentityInfo();
+                otherIdentityInfo.setIrIpAddress(convertIpFormat(getClientIp()));
+                awbResponse.getOciInfo().setOtherIdentityInfo(otherIdentityInfo);
+            }
+        }
+    }
+
+    private String getClientIp() {
+        ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        if (attrs != null) {
+            HttpServletRequest request = attrs.getRequest();
+            String ip = request.getHeader("X-Forwarded-For"); // Handle proxies
+            if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+                ip = request.getRemoteAddr(); // Get direct IP
+            }
+            return ip;
+        }
+        return "UNKNOWN";
+    }
+
+    public static String convertIpFormat(String ip) {
+        if (ip == null || ip.isEmpty()) {
+            return "";
+        }
+        // Replace "::" with a single "-"
+        String formattedIp = ip.replace("::", "-");
+        // Replace remaining "." and ":" with "-"
+        return formattedIp.replaceAll("[.:]", "-");
     }
 
     private void setShipperConsgineeDetailsInResponse(Awb awb, ShipmentDetails shipmentDetails, OrgAddressResponse response, AwbAirMessagingResponse awbResponse) {
@@ -888,13 +946,11 @@ public class AwbUtility {
 
     private String getMsgType(AirMessagingStatusDto airMessageStatus, List<ShipmentDetails> shipmentDetailsList) {
         String msgType = airMessageStatus.getMessageType();
-        if(shipmentDetailsList != null && !shipmentDetailsList.isEmpty()) {
-            if(msgType == null){
-                if(Objects.equals(shipmentDetailsList.get(0).getJobType(), Constants.SHIPMENT_TYPE_DRT))
-                    msgType = "FWB";
-                else
-                    msgType = "FZB";
-            }
+        if(shipmentDetailsList != null && !shipmentDetailsList.isEmpty() && msgType == null){
+            if(Objects.equals(shipmentDetailsList.get(0).getJobType(), Constants.SHIPMENT_TYPE_DRT))
+                msgType = "FWB";
+            else
+                msgType = "FZB";
         }
         return msgType;
     }
@@ -1105,6 +1161,7 @@ public class AwbUtility {
     }
 
     private String getBodyForShipmentIds(List<Awb> awbsList, List<Long> shipmentIds, String body) {
+        StringBuilder bodyStringBuilder = new StringBuilder(body);
         var shipmentDetailsList = shipmentDao.getShipmentNumberFromId(shipmentIds);
         Map<Long, String> map = shipmentDetailsList.stream().collect(Collectors.toMap(ShipmentDetails::getId, ShipmentDetails::getShipmentId));
         for (var x : awbsList) {
@@ -1113,14 +1170,14 @@ public class AwbUtility {
                 AirMessagingLogs shipAirMessagingLogs = airMessagingLogsService.getRecentLogForEntityGuid(x.getGuid());
                 if (shipAirMessagingLogs != null) {
                     if (Objects.equals(shipAirMessagingLogs.getStatus(), AirMessagingStatus.SUCCESS.name())) {
-                        body = body + "FZB for \"" + shipNumber + "\" : Success\n";
+                        bodyStringBuilder = new StringBuilder(body + "FZB for \"" + shipNumber + "\" : Success\n");
                     } else if (Objects.equals(shipAirMessagingLogs.getStatus(), AirMessagingStatus.FAILED.name())) {
-                        body = body + "FZB for \"" + shipNumber + "\" : Failed. Failure reason is \"" + shipAirMessagingLogs.getErrorMessage() + "\"\n\n";
+                        bodyStringBuilder = new StringBuilder(body + "FZB for \"" + shipNumber + "\" : Failed. Failure reason is \"" + shipAirMessagingLogs.getErrorMessage() + "\"\n\n");
                     }
                 }
             }
         }
-        return body;
+        return bodyStringBuilder.toString();
     }
 
     private void updateAwbStatusForFsuUpdate(Awb awb, String eventCode, List<ConsoleShipmentMapping> consoleShipmentMappings) {

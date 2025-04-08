@@ -173,9 +173,8 @@ class TruckDriverDetailsDaoTest {
         TruckDriverDetails truckDriverDetails2 = new TruckDriverDetails();
         hashMap.put(1L, truckDriverDetails1);
         hashMap.put(2L, truckDriverDetails2);
-        when(jsonHelper.convertToJson(any(TruckDriverDetails.class))).thenReturn("{}");
 
-        truckDriverDetailsDao.deleteTruckDriverDetails(hashMap, "entityType", 1L);
+        truckDriverDetailsDao.deleteTruckDriverDetails(hashMap, "entityType");
 
         verify(truckDriverDetailsRepository, times(2)).delete(any(TruckDriverDetails.class));
         verify(auditLogService, times(2)).addAuditLog(any());
@@ -242,8 +241,7 @@ class TruckDriverDetailsDaoTest {
 
     @Test
     void delete_ValidTruckDriverDetails_ThrowsException() {
-        doThrow(new RuntimeException("test")).when(jsonHelper).convertToJson(any(TruckDriverDetails.class));
-        assertDoesNotThrow(() ->truckDriverDetailsDao.deleteTruckDriverDetails(Map.of(1L , testData),"truckDriverDetails", 1L));
+        assertDoesNotThrow(() ->truckDriverDetailsDao.deleteTruckDriverDetails(Map.of(1L , testData),"truckDriverDetails"));
     }
 
     @Test

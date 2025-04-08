@@ -41,6 +41,7 @@ import java.util.UUID;
 @TypeDef(name = "jsonb", typeClass = JsonBinaryType.class)
 @SQLDelete(sql = "UPDATE shipment_details SET is_deleted = true WHERE id=?")
 @Where(clause = "is_deleted = false")
+@SuppressWarnings("java:S6539")
 public class ShipmentDetails extends MultiTenancy {
 
     private static final long serialVersionUID = 190794279984274725L;
@@ -594,6 +595,9 @@ public class ShipmentDetails extends MultiTenancy {
 
     @Column(name = "customer_booking_guid")
     private UUID customerBookingGuid;
+
+    @Column(name = "is_frob")
+    private Boolean isFrob;
 
     @Override
     public boolean equals(Object o) {
