@@ -266,8 +266,7 @@ public class AwbUtility {
 
         processConsoleUnLoc(awb, consolidationDetails, unlocationsMap, awbResponse);
         processAwbRoutingInfo(awbResponse, unlocationsMap, carriersMap);
-        if(awbResponse.getAwbPaymentInfo() != null && awbResponse.getAwbPaymentInfo().getTotalCollect() != null
-                && awbResponse.getAwbPaymentInfo().getTotalPrepaid() != null)
+        if(checkAwbPaymentInfoForNullValues(awbResponse))
             awbResponse.getMeta().setTotalAmount(awbResponse.getAwbPaymentInfo().getTotalCollect().max(awbResponse.getAwbPaymentInfo().getTotalPrepaid()));
         awbResponse.getMeta().setTenantInfo(populateTenantInfoFields(tenantModel, shipmentSettingsDetails));
         awbResponse.getMeta().setAdditionalSecurityInfo(consolidationDetails.getAdditionalSecurityInformation());
@@ -290,6 +289,11 @@ public class AwbUtility {
         this.roundOffVolumeFields(awbResponse);
 
         return awbResponse;
+    }
+
+    private boolean checkAwbPaymentInfoForNullValues(AwbAirMessagingResponse awbResponse) {
+        return awbResponse.getAwbPaymentInfo() != null && awbResponse.getAwbPaymentInfo().getTotalCollect() != null
+                && awbResponse.getAwbPaymentInfo().getTotalPrepaid() != null;
     }
 
     private void setShipperAndConsigneeForConsole(Awb awb, ConsolidationDetails consolidationDetails, OrgAddressResponse response, AwbAirMessagingResponse awbResponse) {
