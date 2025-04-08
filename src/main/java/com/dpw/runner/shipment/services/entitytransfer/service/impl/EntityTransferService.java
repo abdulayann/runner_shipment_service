@@ -707,7 +707,7 @@ public class EntityTransferService implements IEntityTransferService {
         if(isNetworkTransferFeatureEnabled) {
             var networkTransfer = networkTransferDao.findById(taskId);
             if(networkTransfer.isPresent()) {
-                if(!Objects.equals(networkTransfer.get().getStatus(), NetworkTransferStatus.RETRANSFER)){
+                if(!Objects.equals(networkTransfer.get().getStatus(), NetworkTransferStatus.RETRANSFERRED)){
                     throw new ValidationException(EntityTransferConstants.CANCELLATION_FAILURE_MSG);
                 }
                 // Update status back to accepted

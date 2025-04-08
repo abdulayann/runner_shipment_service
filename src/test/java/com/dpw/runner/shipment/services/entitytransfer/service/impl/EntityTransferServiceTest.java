@@ -2978,6 +2978,7 @@ class EntityTransferServiceTest extends CommonMocks {
         mockShipmentSettings();
         NetworkTransfer networkTransfer = new NetworkTransfer();
         networkTransfer.setUpdatedBy("XYZ");
+        networkTransfer.setStatus(NetworkTransferStatus.RETRANSFERRED);
         when(networkTransferDao.findById(anyLong())).thenReturn(Optional.of(networkTransfer));
         when(v1ServiceUtil.getUsersWithGivenPermission(any(), any())).thenReturn(usersDtoList);
         var response = entityTransferService.importShipment(CommonRequestModel.buildRequest(importShipmentRequest));
