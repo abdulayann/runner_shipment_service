@@ -2154,7 +2154,7 @@ public class CommonUtils {
                 Method setter = ShipmentDetailsResponse.class.getMethod("set" + capitalizedField, paramType);
                 setter.invoke(shipmentDetailsResponse, dtoValue != null ? dtoValue : value);
             } catch (Exception e) {
-                log.error("No such field: {}", field, e);
+                log.error("No such field: {}", field, e.getMessage());
             }
         });
         return shipmentDetailsResponse;
@@ -2479,7 +2479,7 @@ public class CommonUtils {
                 Object dtoValue = mapToDTO(value); // Convert to DTO if necessary
                 setNestedFieldValue(response, field, dtoValue != null ? dtoValue : value);
             } catch (Exception e) {
-                log.error("No such field: {}", field, e);
+                log.error("No such field: {}", field, e.getMessage());
             }
         });
 
