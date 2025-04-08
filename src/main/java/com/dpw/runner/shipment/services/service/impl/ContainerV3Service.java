@@ -5,16 +5,19 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.response.BulkContainerUpdateResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
+import com.dpw.runner.shipment.services.syncing.interfaces.IContainersSync;
 import com.dpw.runner.shipment.services.utils.ContainerValidationUtil;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import java.util.HashSet;
@@ -30,6 +33,7 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -61,6 +65,12 @@ public class ContainerV3Service implements IContainerV3Service {
     private MasterDataUtils masterDataUtils;
 
     @Autowired
+    private IContainersSync containersSync;
+
+    @Autowired
+    private IShipmentsContainersMappingDao shipmentsContainersMappingDao;
+
+    @Autowired
     private ExecutorService executorService;
 
     @Override
@@ -72,32 +82,46 @@ public class ContainerV3Service implements IContainerV3Service {
 
     @Override
     public BulkContainerUpdateResponse updateBulk(List<ContainerRequest> containerRequestList) {
-        // Validate the incoming request to ensure all mandatory fields (like container ID) are present
+        // Validate the incoming request to ensure all mandatory fields are present
         containerValidationUtil.validateUpdateBulkRequest(containerRequestList);
 
-        // Convert request DTOs to entity models for persistence
-        List<Containers> containersToUpdate = jsonHelper.convertValueToList(containerRequestList, Containers.class);
+        // Convert the request DTOs to entity models for persistence
+        List<Containers> originalContainers = jsonHelper.convertValueToList(containerRequestList, Containers.class);
 
-        // Persist the updated container entities in the database
-        List<Containers> savedContainers = containerDao.saveAll(containersToUpdate);
+        // Save the updated containers to the database
+        List<Containers> updatedContainers = containerDao.saveAll(originalContainers);
 
-        // Trigger post-persistence operations (e.g., Kafka publishing) asynchronously
-        List<CompletableFuture<Void>> futures = savedContainers.stream()
-                .map(container -> CompletableFuture.runAsync(
-                        masterDataUtils.withMdc(() -> afterSave(container, false)),
-                        executorService)
-                ).toList();
+        // Execute post-save processing for each container asynchronously
+        CompletableFuture<Void> afterSaveFuture = CompletableFuture.allOf(
+                updatedContainers.stream()
+                        .map(container -> CompletableFuture.runAsync(masterDataUtils.withMdc(() ->
+                                        afterSave(container, false)),
+                                executorService)
+                        ).toArray(CompletableFuture[]::new)
+        );
 
-        // Ensure all asynchronous tasks are completed before proceeding
-        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+        // Run container sync operations in parallel for each updated container
+        CompletableFuture<Void> containerSyncFuture = CompletableFuture.allOf(
+                updatedContainers.stream()
+                        .map(container -> CompletableFuture.runAsync(masterDataUtils.withMdc(() -> {
+                                            Long containerId = container.getId();
+                                            List<ShipmentsContainersMapping> mappings = shipmentsContainersMappingDao.findByContainerIdIn(List.of(containerId));
+                                            containersSync.sync(List.of(containerId), new PageImpl<>(mappings));
+                                        }),
+                                        executorService)
+                        ).toArray(CompletableFuture[]::new)
+        );
 
-        // Audit log for all the containers
-        addAuditLogsForUpdatedContainers(containersToUpdate, savedContainers, DBOperationType.UPDATE);
+        // Wait for both async operations to complete
+        CompletableFuture.allOf(afterSaveFuture, containerSyncFuture).join();
 
-        // Convert persisted entities back to response DTOs
-        List<ContainerResponse> containerResponses = jsonHelper.convertValueToList(savedContainers, ContainerResponse.class);
+        // Add audit logs for all updated containers
+        addAuditLogsForUpdatedContainers(originalContainers, updatedContainers, DBOperationType.UPDATE);
 
-        // Return the response with result list and message
+        // Convert saved entities into response DTOs
+        List<ContainerResponse> containerResponses = jsonHelper.convertValueToList(updatedContainers, ContainerResponse.class);
+
+        // Build and return the response
         return BulkContainerUpdateResponse.builder()
                 .containerResponseList(containerResponses)
                 .message(prepareBulkUpdateMessage(containerResponses))
