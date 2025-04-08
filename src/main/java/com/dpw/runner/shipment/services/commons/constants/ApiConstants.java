@@ -41,6 +41,7 @@ public class ApiConstants {
     public static final String API_LIST_WITHOUT_FILTER = "/listWithoutFilter";
     public static final String API_CONSOLE_SHIPMENT_LIST = "/console-shipment-list";
     public static final String API_DELETE = "/delete";
+    public static final String API_DELETE_BULK = "/delete/bulk";
     public static final String API_SAVE_FROM_V1 = "/save/v1";
     public static final String API_PARTIAL_UPDATE = "/patch";
     public static final String TOGGLE_LOCK = "/toggleLock";

@@ -5,9 +5,10 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
-import com.dpw.runner.shipment.services.dto.response.BulkContainerUpdateResponse;
+import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
@@ -53,6 +54,9 @@ public class ContainerV3Service implements IContainerV3Service {
     private ContainerValidationUtil containerValidationUtil;
 
     @Autowired
+    private IPackingDao packingDao;
+
+    @Autowired
     private IAuditLogService auditLogService;
 
     @Autowired
@@ -81,7 +85,7 @@ public class ContainerV3Service implements IContainerV3Service {
     }
 
     @Override
-    public BulkContainerUpdateResponse updateBulk(List<ContainerRequest> containerRequestList) {
+    public BulkContainerResponse updateBulk(List<ContainerRequest> containerRequestList) {
         // Validate the incoming request to ensure all mandatory fields are present
         containerValidationUtil.validateUpdateBulkRequest(containerRequestList);
 
@@ -116,19 +120,52 @@ public class ContainerV3Service implements IContainerV3Service {
         CompletableFuture.allOf(afterSaveFuture, containerSyncFuture).join();
 
         // Add audit logs for all updated containers
-        addAuditLogsForUpdatedContainers(originalContainers, updatedContainers, DBOperationType.UPDATE);
+        recordAuditLogs(originalContainers, updatedContainers, DBOperationType.UPDATE);
 
         // Convert saved entities into response DTOs
         List<ContainerResponse> containerResponses = jsonHelper.convertValueToList(updatedContainers, ContainerResponse.class);
 
         // Build and return the response
-        return BulkContainerUpdateResponse.builder()
+        return BulkContainerResponse.builder()
                 .containerResponseList(containerResponses)
                 .message(prepareBulkUpdateMessage(containerResponses))
                 .build();
     }
 
-    private void addAuditLogsForUpdatedContainers(List<Containers> oldContainers, List<Containers> newContainers, DBOperationType operationType) {
+    @Override
+    public BulkContainerResponse deleteBulk(List<ContainerRequest> containerRequestList) {
+        // Validate that all necessary container IDs are present in the request
+        containerValidationUtil.validateUpdateBulkRequest(containerRequestList);
+
+        // Extract unique container IDs from the request
+        List<Long> containerIds = containerRequestList.stream()
+                .map(ContainerRequest::getId)
+                .distinct()
+                .toList();
+
+        // Fetch containers from DB to ensure they exist before deletion
+        List<Containers> containersToDelete = containerDao.findByIdIn(containerIds);
+
+        if (containersToDelete.isEmpty()) {
+            throw new IllegalArgumentException("No containers found for the given IDs.");
+        }
+
+        // Remove associations with packings (if any)
+        packingDao.removeContainersFromPacking(containerIds);
+
+        // Delete containers from DB
+        containerDao.deleteAllById(containerIds);
+
+        // Record audit logs for the deletion operation
+        recordAuditLogs(containersToDelete, null, DBOperationType.DELETE);
+
+        // Return the response with status message
+        return BulkContainerResponse.builder()
+                .message(prepareBulkDeleteMessage(containersToDelete))
+                .build();
+    }
+
+    private void recordAuditLogs(List<Containers> oldContainers, List<Containers> newContainers, DBOperationType operationType) {
         Map<Long, Containers> oldContainerMap = Optional.ofNullable(oldContainers).orElse(List.of()).stream()
                 .filter(container -> container.getId() != null)
                 .collect(Collectors.toMap(Containers::getId, Function.identity()));
@@ -186,6 +223,26 @@ public class ContainerV3Service implements IContainerV3Service {
             message = containerNumber != null
                     ? String.format("Container %s - %s updated successfully!", containerCode, containerNumber)
                     : String.format("Container %s updated successfully!", containerCode);
+        }
+
+        return message;
+    }
+
+    private String prepareBulkDeleteMessage(List<Containers> containers) {
+        String message;
+
+        // If more than one container was deleted, return a generic bulk success message
+        if (containers.size() > 1) {
+            message = "Containers deleted successfully!";
+        } else {
+            // For a single container delete, include container code and optionally its containerNumber
+            Containers response = containers.get(0);
+            String containerCode = response.getContainerCode();
+            String containerNumber = response.getContainerNumber();
+
+            message = containerNumber != null
+                    ? String.format("Container %s - %s deleted successfully!", containerCode, containerNumber)
+                    : String.format("Container %s deleted successfully!", containerCode);
         }
 
         return message;
