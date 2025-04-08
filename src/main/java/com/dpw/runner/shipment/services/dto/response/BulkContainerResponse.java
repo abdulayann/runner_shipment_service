@@ -10,11 +10,11 @@ import lombok.ToString;
 
 @Data
 @Builder
-@ApiModel("Bulk Container Update Response Model")
+@ApiModel("Bulk Container Response Model")
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class BulkContainerUpdateResponse {
+public class BulkContainerResponse {
     private String message;
     private List<ContainerResponse> containerResponseList;
 }

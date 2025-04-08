@@ -43,6 +43,7 @@ public interface IPackingDao {
 
     void deleteEntityFromContainer(Long id);
 
+    void removeContainersFromPacking(List<Long> containerIds);
     List<Packing> updateEntityFromShipment(List<Packing> packingList, Long shipmentId, List<Packing> oldEntityList, List<Packing> oldConsoleEntityList, Set<Containers> containers, Map<UUID, String> map) throws RunnerException;
 
     List<Packing> findByConsolidationId(Long consolidationId);
