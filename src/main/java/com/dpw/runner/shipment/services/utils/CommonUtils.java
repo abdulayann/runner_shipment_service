@@ -2154,7 +2154,7 @@ public class CommonUtils {
                 Method setter = ShipmentDetailsResponse.class.getMethod("set" + capitalizedField, paramType);
                 setter.invoke(shipmentDetailsResponse, dtoValue != null ? dtoValue : value);
             } catch (Exception e) {
-                log.error("No such field: {}", field, e);
+                log.error("No such field: {}", field, e.getMessage());
             }
         });
         return shipmentDetailsResponse;
@@ -2479,7 +2479,7 @@ public class CommonUtils {
                 Object dtoValue = mapToDTO(value); // Convert to DTO if necessary
                 setNestedFieldValue(response, field, dtoValue != null ? dtoValue : value);
             } catch (Exception e) {
-                log.error("No such field: {}", field, e);
+                log.error("No such field: {}", field, e.getMessage());
             }
         });
 
@@ -2698,6 +2698,17 @@ public class CommonUtils {
             return 0.0;
         }
         return percentage.doubleValue();
+    }
+
+    public void sendEmailNotification(EmailTemplatesRequest emailTemplateModel, List<String> to, List<String> cc) {
+        if(!to.isEmpty()) {
+            try {
+                notificationService.sendEmail(emailTemplateModel.getBody(),
+                        emailTemplateModel.getSubject(), to, cc);
+            } catch (Exception ex) {
+                log.error(ex.getMessage());
+            }
+        }
     }
 
 }

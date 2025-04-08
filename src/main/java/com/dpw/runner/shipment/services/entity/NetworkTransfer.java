@@ -13,6 +13,7 @@ import org.hibernate.annotations.TypeDef;
 
 import javax.persistence.*;
 import javax.validation.constraints.Size;
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.UUID;
 
@@ -73,5 +74,8 @@ public class NetworkTransfer extends MultiTenancy {
 
     @Column(name = "is_inter_branch_entity")
     private Boolean isInterBranchEntity = false;
+
+    @Column(name = "transferred_date")
+    private LocalDateTime transferredDate;
 
 }

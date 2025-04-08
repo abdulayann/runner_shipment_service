@@ -148,6 +148,7 @@ public class ShipmentConstants {
     );
     public static final String LIST = "/list";
     public static final String SHIPMENT_LIST_V3_RESPONSE_SUCCESS = "Shipment list from db retrieved successfully for Request Id {}: {}";
+    public static final String CONSOLIDATION_NUMBER = "consolidationNumber";
 
     private ShipmentConstants() {
     }

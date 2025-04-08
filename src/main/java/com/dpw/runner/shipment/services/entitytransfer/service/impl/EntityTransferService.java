@@ -655,9 +655,13 @@ public class EntityTransferService implements IEntityTransferService {
         this.validateApprovalRoleForImport();
         ImportShipmentRequest importShipmentRequest = (ImportShipmentRequest) commonRequestModel.getData();
 
+        boolean isNetworkTransferFeatureEnabled = Boolean.TRUE.equals(getIsNetworkTransferFeatureEnabled());
         // Update task status rejected
-        if(!Boolean.TRUE.equals(importShipmentRequest.getIsFromNte()) && Objects.equals(importShipmentRequest.getOperation(), TaskStatus.REJECTED.getDescription())) {
-            updateTaskStatus(importShipmentRequest.getTaskId(), TaskStatus.REJECTED, importShipmentRequest.getRejectRemarks());
+        if(Objects.equals(importShipmentRequest.getOperation(), TaskStatus.REJECTED.getDescription())) {
+            if(Boolean.TRUE.equals(importShipmentRequest.getIsFromNte()))
+                rejectionForReTransferNte(importShipmentRequest.getTaskId(), importShipmentRequest.getRejectRemarks(), isNetworkTransferFeatureEnabled, Constants.SHIPMENT);
+            else
+                updateTaskStatus(importShipmentRequest.getTaskId(), TaskStatus.REJECTED, importShipmentRequest.getRejectRemarks());
             return ResponseHelper.buildSuccessResponse();
         }
 
@@ -666,7 +670,7 @@ public class EntityTransferService implements IEntityTransferService {
         }
         CopyDocumentsRequest copyDocumentsRequest = CopyDocumentsRequest.builder().documents(new ArrayList<>()).build();
         EntityTransferShipmentDetails entityTransferShipmentDetails = importShipmentRequest.getEntityData();
-        boolean isNetworkTransferFeatureEnabled = Boolean.TRUE.equals(getIsNetworkTransferFeatureEnabled());
+
         if(isNetworkTransferFeatureEnabled && importShipmentRequest.getAssignedTo()!=null)
             entityTransferShipmentDetails.setAssignedTo(importShipmentRequest.getAssignedTo());
         MutableBoolean isCreateShip = new MutableBoolean(false);
@@ -697,6 +701,24 @@ public class EntityTransferService implements IEntityTransferService {
                 .message("Shipment Imported Successfully with Shipment Number: " + shipmentId)
                 .build();
         return ResponseHelper.buildSuccessResponse(response);
+    }
+
+    private void rejectionForReTransferNte(Long taskId, String rejectionRemarks, boolean isNetworkTransferFeatureEnabled, String entityType) {
+        if(isNetworkTransferFeatureEnabled) {
+            var networkTransfer = networkTransferDao.findById(taskId);
+            if(networkTransfer.isPresent()) {
+                if(!Objects.equals(networkTransfer.get().getStatus(), NetworkTransferStatus.RETRANSFERRED)){
+                    throw new ValidationException(EntityTransferConstants.CANCELLATION_FAILURE_MSG);
+                }
+                // Update status back to accepted
+                networkTransferDao.updateStatus(taskId, NetworkTransferStatus.ACCEPTED.name());
+                // Trigger Rejection Email
+                sendRejectionEmail(networkTransfer.get().getUpdatedBy(), rejectionRemarks, entityType, networkTransfer.get().getEntityNumber());
+            }
+        }
+        else{
+            throw new ValidationException(EntityTransferConstants.NETWORK_TRANSFER_NOT_ENABLED_ERROR);
+        }
     }
 
     private void updateNteStatus(boolean isNetworkTransferFeatureEnabled, ImportShipmentRequest importShipmentRequest, ShipmentDetailsResponse shipmentDetailsResponse) {
@@ -751,9 +773,13 @@ public class EntityTransferService implements IEntityTransferService {
         this.validateApprovalRoleForImport();
         ImportConsolidationRequest importConsolidationRequest = (ImportConsolidationRequest) commonRequestModel.getData();
 
+        boolean isNetworkTransferFeatureEnabled = Boolean.TRUE.equals(getIsNetworkTransferFeatureEnabled());
         // Update task status rejected
-        if(!Boolean.TRUE.equals(importConsolidationRequest.getIsFromNte()) && Objects.equals(importConsolidationRequest.getOperation(), TaskStatus.REJECTED.getDescription())) {
-            updateTaskStatus(importConsolidationRequest.getTaskId(), TaskStatus.REJECTED, importConsolidationRequest.getRejectRemarks());
+        if(Objects.equals(importConsolidationRequest.getOperation(), TaskStatus.REJECTED.getDescription())) {
+            if(Boolean.TRUE.equals(importConsolidationRequest.getIsFromNte()))
+                rejectionForReTransferNte(importConsolidationRequest.getTaskId(), importConsolidationRequest.getRejectRemarks(), isNetworkTransferFeatureEnabled, CONSOLIDATION);
+            else
+                updateTaskStatus(importConsolidationRequest.getTaskId(), TaskStatus.REJECTED, importConsolidationRequest.getRejectRemarks());
             return ResponseHelper.buildSuccessResponse();
         }
         if (importConsolidationRequest.getEntityData() == null) {
@@ -761,7 +787,6 @@ public class EntityTransferService implements IEntityTransferService {
         }
         EntityTransferConsolidationDetails entityTransferConsolidationDetails = importConsolidationRequest.getEntityData();
 
-        boolean isNetworkTransferFeatureEnabled = Boolean.TRUE.equals(getIsNetworkTransferFeatureEnabled());
         setAssignedToOfShipments(isNetworkTransferFeatureEnabled, entityTransferConsolidationDetails, importConsolidationRequest);
         Map<UUID, Long> oldVsNewShipIds = new HashMap<>();
 
@@ -2837,6 +2862,45 @@ public class EntityTransferService implements IEntityTransferService {
         else
             taskCreateRequest.setTaskType(TaskType.SHIPMENT_IMPORTER.getDescription());
         tasksService.createTask(CommonRequestModel.buildRequest(taskCreateRequest));
+    }
+
+    public void sendRejectionEmail(String username, String rejectionRemarks, String entityType, String entityNumber) {
+        if(username != null) {
+            List<String> emailList = new ArrayList<>();
+            Map<String, String> usernameEmailsMap = new HashMap<>();
+            commonUtils.getUserDetails(new HashSet<>(Set.of(username)), usernameEmailsMap);
+            if (usernameEmailsMap.containsKey(username))
+                emailList.add(usernameEmailsMap.get(username));
+            if (!emailList.isEmpty()) {
+                EmailTemplatesRequest template = createRejectionEmailBody(rejectionRemarks, entityType, entityNumber);
+                sendEmailNotification(template, emailList, new ArrayList<>());
+            }
+        }
+    }
+
+    private EmailTemplatesRequest createRejectionEmailBody(String rejectionRemarks, String entityType, String entityNumber){
+        UsersDto user = UserContext.getUser();
+        var branchIdVsTenantModelMap = convertToTenantModel(v1ServiceUtil.getTenantDetails(List.of(TenantContext.getCurrentTenant())));
+        String body;
+        String subject;
+        if(SHIPMENT.equals(entityType)) {
+            body = EntityTransferConstants.SHIPMENT_REJECTION_EMAIL_BODY;
+            subject = EntityTransferConstants.SHIPMENT_REJECTION_EMAIL_SUBJECT;
+            subject = subject.replace(EntityTransferConstants.SHIPMENT_NUMBER_PLACEHOLDER, entityNumber);
+            body = body.replace(EntityTransferConstants.SHIPMENT_NUMBER_PLACEHOLDER, entityNumber);
+        } else {
+            body = EntityTransferConstants.CONSOLIDATION_REJECTION_EMAIL_BODY;
+            subject = EntityTransferConstants.CONSOLIDATION_REJECTION_EMAIL_SUBJECT;
+            subject = subject.replace(EntityTransferConstants.CONSOLIDATION_NUMBER_PLACEHOLDER, entityNumber);
+            body = body.replace(EntityTransferConstants.CONSOLIDATION_NUMBER_PLACEHOLDER, entityNumber);
+        }
+
+        body = body.replace(EntityTransferConstants.USER_NAME_PLACEHOLDER, user.getDisplayName());
+        body = body.replace(EntityTransferConstants.BRANCH_NAME_PLACEHOLDER, StringUtility.convertToString(branchIdVsTenantModelMap.get(TenantContext.getCurrentTenant()).tenantName));
+        body = body.replace(EntityTransferConstants.CANCELLATION_REASON_PLACEHOLDER, rejectionRemarks);
+        body = body.replace(EntityTransferConstants.CANCELLED_USER_EMAIL_PLACEHOLDER, user.getEmail());
+
+        return EmailTemplatesRequest.builder().body(body).subject(subject).build();
     }
 
     public void sendConsolidationEmailNotification(ConsolidationDetails consolidationDetails, List<Integer> destinationBranches, Map<String, List<Integer>> shipmentGuidSendToBranch, Boolean isAutomaticTransfer) {

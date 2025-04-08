@@ -3699,6 +3699,11 @@ class CommonUtilsTest {
         assertEquals(expectedResponse, commonUtils.setIncludedFieldsToResponse(entity, includeColumns, expectedResponse));
     }
     @Test
+    void testSetIncludedFieldsToResponseInvalidColumn() {
+        ShipmentDetailsResponse response = new ShipmentDetailsResponse();
+        assertEquals(response, commonUtils.setIncludedFieldsToResponse(new ShipmentDetails(), Set.of("invalidColumns"), response));
+    }
+    @Test
     void testMapListToDTO_EmptyList() {
         List<Containers> emptyList = new ArrayList<>();
         Object result = commonUtils.mapListToDTO(emptyList);

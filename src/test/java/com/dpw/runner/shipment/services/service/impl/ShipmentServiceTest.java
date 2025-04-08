@@ -4293,20 +4293,59 @@ ShipmentServiceTest extends CommonMocks {
     @Test
     void testFullShipmentExternalList() {
         ListCommonRequest listCommonRequest = new ListCommonRequest();
-        listCommonRequest.setIncludeColumns(List.of("abc", "def"));
+        listCommonRequest.setIncludeColumns(List.of("abc", "def", "guid","id","consolidationNumber","implicationList"));
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(listCommonRequest).build();
 
         List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
-        shipmentDetailsList.add(ShipmentDetails.builder().build());
-
+        ConsolidationDetails consolidationDetails1 = new ConsolidationDetails();
+        consolidationDetails1.setConsolidationNumber("consol1234");
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        shipmentDetails1.setGuid(UUID.randomUUID());
+        shipmentDetails1.setConsolidationList(Set.of(consolidationDetails1));
+        shipmentDetailsList.add(shipmentDetails1);
+        ShipmentDetailsResponse response = new ShipmentDetailsResponse();
+        response.setGuid(UUID.randomUUID());
         PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(shipmentDetailsList);
         when(shipmentDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
-          when(commonUtils.getShipmentDetailsResponse(any(), anyList())).thenReturn(ShipmentDetailsResponse.builder().build());
+        when(commonUtils.setIncludedFieldsToResponse(any(), anySet(), any())).thenReturn(response);
+
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.fullShipmentsExternalList(commonRequestModel);
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+    }
+    @Test
+    void testFullShipmentExternalListWithoutConsolNumber() {
+        ListCommonRequest listCommonRequest = new ListCommonRequest();
+        listCommonRequest.setIncludeColumns(List.of("abc", "def", "guid","id","implicationList"));
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(listCommonRequest).build();
+
+        List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
+        ConsolidationDetails consolidationDetails1 = new ConsolidationDetails();
+        consolidationDetails1.setConsolidationNumber("consol1234");
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        shipmentDetails1.setGuid(UUID.randomUUID());
+        shipmentDetails1.setConsolidationList(Set.of(consolidationDetails1));
+        shipmentDetailsList.add(shipmentDetails1);
+        ShipmentDetailsResponse response = new ShipmentDetailsResponse();
+        response.setGuid(UUID.randomUUID());
+        PageImpl<ShipmentDetails> shipmentDetailsPage = new PageImpl<>(shipmentDetailsList);
+        when(shipmentDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
+        when(commonUtils.setIncludedFieldsToResponse(any(), anySet(), any())).thenReturn(response);
 
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.fullShipmentsExternalList(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
 
+    @Test
+    void testFullShipmentExternalListWithNullRequestWithException() {
+        ListCommonRequest listCommonRequest = new ListCommonRequest();
+        listCommonRequest.setIncludeColumns(List.of("abc", "def", "guid","id","implicationList"));
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(listCommonRequest).build();
+
+        when(shipmentDao.findAll(any(Specification.class), any(Pageable.class))).thenThrow(new RuntimeException("test"));
+        ResponseEntity<IRunnerResponse> httpResponse = shipmentService.fullShipmentsExternalList(commonRequestModel);
+        RunnerResponse runnerResponse = (RunnerResponse) httpResponse.getBody();
+        assertEquals("test",runnerResponse.getError().getMessage());
+    }
     @Test
     void testFullShipmentExternalListWithNullRequest() {
         CommonRequestModel commonRequestModel = mock(CommonRequestModel.class);
@@ -4314,7 +4353,6 @@ ShipmentServiceTest extends CommonMocks {
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.fullShipmentsExternalList(commonRequestModel);
         assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
     }
-
 
     @Test
     void testFullShipmentExternalListWithNullIncludeColumn() {

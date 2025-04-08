@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.dto.DeclineNotificationRequest;
 import com.dpw.runner.shipment.services.dto.response.NotificationListResponse;
 import com.dpw.runner.shipment.services.dto.response.NotificationResponse;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -59,6 +60,20 @@ public class NotificationsController {
         String responseMsg;
         try {
             return notificationService.acceptNotification(id);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, response = NotificationsController.MyResponseClass.class, message = NotificationConstants.NOTIFICATION_REJECT_SUCCESSFUL)})
+    @PostMapping(NotificationConstants.NOTIFICATION_REJECT)
+    public ResponseEntity<IRunnerResponse> rejectNotification(@RequestBody @Valid DeclineNotificationRequest declineNotificationRequest) {
+        String responseMsg;
+        try {
+            return notificationService.rejectNotification(CommonRequestModel.buildRequest(declineNotificationRequest));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
