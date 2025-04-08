@@ -11,7 +11,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPM
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.APPROVE;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_REQUESTED;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.andCriteria;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.listIsNullOrEmpty;
@@ -663,12 +663,12 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         List<TenantProducts> enabledTenantProducts = productEngine.populateEnabledTenantProducts();
         if (productProcessTypes == ProductProcessTypes.ReferenceNumber) {
             // to check the commmon sequence
-            var sequenceNumber = productEngine.GetCommonSequenceNumber(consolidationDetails.getTransportMode(), ProductProcessTypes.Consol_Shipment_TI);
+            var sequenceNumber = productEngine.getCommonSequenceNumber(consolidationDetails.getTransportMode(), ProductProcessTypes.Consol_Shipment_TI);
             if (sequenceNumber != null && !sequenceNumber.isEmpty()) {
                 return sequenceNumber;
             }
         }
-        var identifiedProduct = productEngine.IdentifyProduct(consolidationDetails, enabledTenantProducts);
+        var identifiedProduct = productEngine.identifyProduct(consolidationDetails, enabledTenantProducts);
         if (identifiedProduct == null){
             return "";
         }
@@ -828,8 +828,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         // Update the response object with allocation and achieved quantities data
         response.setAllocations(jsonHelper.convertValue(consolidationDetails.getAllocations(), AllocationsResponse.class));
         response.setAchievedQuantities(jsonHelper.convertValue(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class));
-        response.setSummaryWeight(IReport.ConvertToWeightNumberFormat(sumWeight, v1TenantSettingsResponse) + " " + weightChargeableUnit);
-        response.setSummaryVolume(IReport.ConvertToVolumeNumberFormat(sumVolume, v1TenantSettingsResponse) + " " + volumeChargeableUnit);
+        response.setSummaryWeight(IReport.convertToWeightNumberFormat(sumWeight, v1TenantSettingsResponse) + " " + weightChargeableUnit);
+        response.setSummaryVolume(IReport.convertToVolumeNumberFormat(sumVolume, v1TenantSettingsResponse) + " " + volumeChargeableUnit);
 
         // Calculate and set the chargeable weight if applicable
         if (canSetChargableWeight(consolidationDetails)) {
@@ -890,10 +890,10 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         }
 
         // Format and set the calculated TEU and container counts in the response.
-        response.setSummaryConsoleTEU(IReport.GetDPWWeightVolumeFormat(BigDecimal.valueOf(consoleTeu), 0, v1TenantSettingsResponse));
-        response.setSummaryConsolContainer(IReport.GetDPWWeightVolumeFormat(BigDecimal.valueOf(consoleCont), 0, v1TenantSettingsResponse));
-        response.setSummaryShipmentTEU(IReport.GetDPWWeightVolumeFormat(BigDecimal.valueOf(shipmentTeu), 0, v1TenantSettingsResponse));
-        response.setSummaryShipmentContainer(IReport.GetDPWWeightVolumeFormat(BigDecimal.valueOf(shipmentCont), 0, v1TenantSettingsResponse));
+        response.setSummaryConsoleTEU(IReport.getDPWWeightVolumeFormat(BigDecimal.valueOf(consoleTeu), 0, v1TenantSettingsResponse));
+        response.setSummaryConsolContainer(IReport.getDPWWeightVolumeFormat(BigDecimal.valueOf(consoleCont), 0, v1TenantSettingsResponse));
+        response.setSummaryShipmentTEU(IReport.getDPWWeightVolumeFormat(BigDecimal.valueOf(shipmentTeu), 0, v1TenantSettingsResponse));
+        response.setSummaryShipmentContainer(IReport.getDPWWeightVolumeFormat(BigDecimal.valueOf(shipmentCont), 0, v1TenantSettingsResponse));
     }
 
     /**
@@ -1212,8 +1212,8 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         response.setAchievedQuantities(jsonHelper.convertValue(consolidationDetails.getAchievedQuantities(), AchievedQuantitiesResponse.class));
 
         // Format and set total weight and volume
-        response.setSummaryWeight(IReport.ConvertToWeightNumberFormat(totalWeight, v1TenantSettingsResponse) + " " + weightChargeableUnit);
-        response.setSummaryVolume(IReport.ConvertToVolumeNumberFormat(totalVolume, v1TenantSettingsResponse) + " " + volumeChargeableUnit);
+        response.setSummaryWeight(IReport.convertToWeightNumberFormat(totalWeight, v1TenantSettingsResponse) + " " + weightChargeableUnit);
+        response.setSummaryVolume(IReport.convertToVolumeNumberFormat(totalVolume, v1TenantSettingsResponse) + " " + volumeChargeableUnit);
 
         // For LCL Sea shipments, calculate chargeable weight (max of volume and weight)
         if (canSetChargableWeight(consolidationDetails)) {
@@ -2083,13 +2083,13 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
     private void setBookingNumberInShipment(ConsolidationDetails console, ConsolidationDetails oldConsolEntity, Boolean fromAttachShipment, ShipmentDetails sd) {
         if (fromAttachShipment != null && fromAttachShipment) {
-            if (!CommonUtils.IsStringNullOrEmpty(console.getBookingNumber())) {
+            if (!CommonUtils.isStringNullOrEmpty(console.getBookingNumber())) {
                 sd.setBookingNumber(console.getBookingNumber());
             } else {
                 sd.setBookingNumber(console.getCarrierBookingRef());
             }
         } else {
-            if (CommonUtils.IsStringNullOrEmpty(oldConsolEntity.getBookingNumber())) {
+            if (CommonUtils.isStringNullOrEmpty(oldConsolEntity.getBookingNumber())) {
                 sd.setBookingNumber(console.getCarrierBookingRef());
             }
         }
@@ -2799,7 +2799,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     }
 
     private void updateDescGoodsAndhandlingInfoMap(ShipmentDetails shipmentDetails, boolean setContData, Set<Long> containerSelfDataAdded, boolean lcl, Map<Long, String> descOfGoodsMap, Map<Long, String> handlingInfoMap, Map<Long, String> hblNumberMap) {
-        if((setContData || !IsStringNullOrEmpty(shipmentDetails.getHouseBill())) && shipmentDetails.getContainersList() != null && shipmentDetails.getContainersList().size() > 0) {
+        if((setContData || !isStringNullOrEmpty(shipmentDetails.getHouseBill())) && shipmentDetails.getContainersList() != null && shipmentDetails.getContainersList().size() > 0) {
             for(Containers containers : shipmentDetails.getContainersList()) {
                 if(setContData && !containerSelfDataAdded.contains(containers.getId()) && lcl) {
                     containerSelfDataAdded.add(containers.getId());
@@ -2813,19 +2813,19 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
     }
 
     private void setDescGoodsAndhandlingInfoMap(Map<Long, String> descOfGoodsMap, Map<Long, String> handlingInfoMap, Map<Long, String> hblNumberMap, Long containerId, String goodsDesc, String handlingInfo, String hblNumber) {
-        if(!IsStringNullOrEmpty(goodsDesc)) {
+        if(!isStringNullOrEmpty(goodsDesc)) {
             if(descOfGoodsMap.containsKey(containerId))
                 descOfGoodsMap.put(containerId, descOfGoodsMap.get(containerId) + "\n" + goodsDesc);
             else
                 descOfGoodsMap.put(containerId, goodsDesc);
         }
-        if(!IsStringNullOrEmpty(handlingInfo)) {
+        if(!isStringNullOrEmpty(handlingInfo)) {
             if(handlingInfoMap.containsKey(containerId))
                 handlingInfoMap.put(containerId, handlingInfoMap.get(containerId) + "\n" + handlingInfo);
             else
                 handlingInfoMap.put(containerId, handlingInfo);
         }
-        if(!IsStringNullOrEmpty(hblNumber)) {
+        if(!isStringNullOrEmpty(hblNumber)) {
             if(hblNumberMap.containsKey(containerId))
                 hblNumberMap.put(containerId, hblNumberMap.get(containerId) + ", " + hblNumber);
             else

@@ -12,6 +12,7 @@ public class ApiConstants {
 
 
     public static final String API_UPDATE = "/update";
+    public static final String API_UPDATE_BULK = "/update/bulk";
 
     public static final String API_RETRIEVE = "/retrieve";
 
