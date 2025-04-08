@@ -227,6 +227,7 @@ public class AwbUtility {
         AwbAirMessagingResponse awbResponse = jsonHelper.convertValue(awb, AwbAirMessagingResponse.class);
         awbResponse.setMeta(AwbAirMessagingResponse.Meta.builder().build());
         this.populateEnums(awbResponse);
+        checkAcasFlagInAwbForConsole(awbResponse, consolidationDetails);
         awbResponse.getMeta().setWeightDecimalPlaces(Objects.isNull(v1TenantSettingsResponse.getWeightDecimalPlace()) ? 2 : v1TenantSettingsResponse.getWeightDecimalPlace());
         awbResponse.getMeta().setCurrencyDecimalPlaces(Objects.isNull(v1TenantSettingsResponse.getCurrencyDecimalPlace()) ? 2 : v1TenantSettingsResponse.getCurrencyDecimalPlace());
         awbResponse.getMeta().setVolumeDecimalPlaces(Objects.isNull(v1TenantSettingsResponse.getVolumeDecimalPlace()) ? 3 : v1TenantSettingsResponse.getVolumeDecimalPlace());
@@ -265,7 +266,7 @@ public class AwbUtility {
 
         processConsoleUnLoc(awb, consolidationDetails, unlocationsMap, awbResponse);
         processAwbRoutingInfo(awbResponse, unlocationsMap, carriersMap);
-        if(awbResponse.getAwbPaymentInfo() != null)
+        if(checkAwbPaymentInfoForNullValues(awbResponse))
             awbResponse.getMeta().setTotalAmount(awbResponse.getAwbPaymentInfo().getTotalCollect().max(awbResponse.getAwbPaymentInfo().getTotalPrepaid()));
         awbResponse.getMeta().setTenantInfo(populateTenantInfoFields(tenantModel, shipmentSettingsDetails));
         awbResponse.getMeta().setAdditionalSecurityInfo(consolidationDetails.getAdditionalSecurityInformation());
@@ -283,13 +284,16 @@ public class AwbUtility {
         // Rounding off Currencies fields
         this.roundOffCurrencyFields(awbResponse);
 
-        checkAcasFlagInAwbForConsole(awbResponse, consolidationDetails);
-
         // Rounding off Weight fields
         this.roundOffWeightFields(awbResponse);
         this.roundOffVolumeFields(awbResponse);
 
         return awbResponse;
+    }
+
+    private boolean checkAwbPaymentInfoForNullValues(AwbAirMessagingResponse awbResponse) {
+        return awbResponse.getAwbPaymentInfo() != null && awbResponse.getAwbPaymentInfo().getTotalCollect() != null
+                && awbResponse.getAwbPaymentInfo().getTotalPrepaid() != null;
     }
 
     private void setShipperAndConsigneeForConsole(Awb awb, ConsolidationDetails consolidationDetails, OrgAddressResponse response, AwbAirMessagingResponse awbResponse) {
@@ -476,6 +480,7 @@ public class AwbUtility {
         AwbAirMessagingResponse awbResponse = jsonHelper.convertValue(awb, AwbAirMessagingResponse.class);
         awbResponse.setMeta(AwbAirMessagingResponse.Meta.builder().build());
         this.populateEnums(awbResponse);
+        checkAcasFlagInAwbForShipment(awbResponse, shipmentDetails);
         awbResponse.getMeta().setWeightDecimalPlaces(Objects.isNull(v1TenantSettingsResponse.getWeightDecimalPlace()) ? 2 : v1TenantSettingsResponse.getWeightDecimalPlace());
         awbResponse.getMeta().setCurrencyDecimalPlaces(Objects.isNull(v1TenantSettingsResponse.getCurrencyDecimalPlace()) ? 2 : v1TenantSettingsResponse.getCurrencyDecimalPlace());
         awbResponse.getMeta().setVolumeDecimalPlaces(Objects.isNull(v1TenantSettingsResponse.getVolumeDecimalPlace()) ? 3 : v1TenantSettingsResponse.getVolumeDecimalPlace());
@@ -526,8 +531,6 @@ public class AwbUtility {
         if(masterAwb != null) {
             this.populateMasterAwbData(awbResponse, masterAwb);
         }
-
-        checkAcasFlagInAwbForShipment(awbResponse, shipmentDetails);
 
         // Rounding off Currencies fields
         this.roundOffCurrencyFields(awbResponse);
