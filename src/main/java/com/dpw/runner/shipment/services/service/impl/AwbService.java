@@ -177,7 +177,6 @@ public class AwbService implements IAwbService {
 
     private static final String RA_KC_VALIDATION_MESSAGE = "You cannot generate the AWB without adding the screening/ Security status for RA KC %s";
 
-    private Integer totalPacks = 0;
     private List<String> attachedShipmentDescriptions = new ArrayList<>();
     private BigDecimal totalVolumetricWeightOfAwbPacks = new BigDecimal(0);
 
@@ -1865,7 +1864,6 @@ public class AwbService implements IAwbService {
                 awbPacking.setDgClassAir(packing.getDgClassAir());
                 awbPacking.setDgClassAirDescription(packing.getDgClassAirDescription());
                 awbPacking.setAwbNumber(shipmentDetails.getHouseBill());
-                totalPacks += Integer.parseInt(packing.getPacks());
                 awbPackingList.add(awbPacking);
             }
 

@@ -4220,7 +4220,7 @@ public class ShipmentService implements IShipmentService {
 
     private void updateContainerMap(ShipmentDetails shipmentDetails, Page<Containers> containers, Map<Long, Containers> containersMap) {
         boolean isFCL = shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL) && (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA) || shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_ROA));
-        if(containers != null && containers.getContent() != null) {
+        if(containers != null) {
             List<Containers> containersList = containers.getContent();
             if(!containers.getContent().isEmpty()) {
                 for (Containers container : containersList) {
