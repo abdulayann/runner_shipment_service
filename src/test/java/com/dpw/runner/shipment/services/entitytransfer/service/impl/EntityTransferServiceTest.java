@@ -2973,15 +2973,103 @@ class EntityTransferServiceTest extends CommonMocks {
         UsersDto usersDto1 = new UsersDto();
         usersDto1.setUserId(1L);
         usersDtoList.add(usersDto1);
+        UserContext.getUser().setDisplayName("abc");
+        UserContext.getUser().setEmail("abc@xyz.com");
 
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
         mockShipmentSettings();
         NetworkTransfer networkTransfer = new NetworkTransfer();
         networkTransfer.setUpdatedBy("XYZ");
+        networkTransfer.setEntityNumber("SHP123");
         networkTransfer.setStatus(NetworkTransferStatus.RETRANSFERRED);
+
+        Map<Integer, Object> tenantModelMap = new HashMap<>(Map.of(1, new Object()));
+
+        doAnswer(invocation -> {
+            Map<String, String> mapArg = invocation.getArgument(1);
+            mapArg.put("XYZ", "xyz@example.com");
+            return null;
+        }).when(commonUtils).getUserDetails(eq(Set.of("XYZ")), anyMap());
         when(networkTransferDao.findById(anyLong())).thenReturn(Optional.of(networkTransfer));
         when(v1ServiceUtil.getUsersWithGivenPermission(any(), any())).thenReturn(usersDtoList);
+        when(v1ServiceUtil.getTenantDetails(anyList())).thenReturn(tenantModelMap);
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(new TenantModel());
         var response = entityTransferService.importShipment(CommonRequestModel.buildRequest(importShipmentRequest));
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testImportShipment_Rejection2() {
+        ImportShipmentRequest importShipmentRequest = ImportShipmentRequest.builder()
+                .taskId(1L)
+                .operation(TaskStatus.REJECTED.getDescription())
+                .rejectRemarks("Test rejection msg")
+                .isFromNte(true)
+                .build();
+        List<UsersDto> usersDtoList = new ArrayList<>();
+        UsersDto usersDto1 = new UsersDto();
+        usersDto1.setUserId(1L);
+        usersDtoList.add(usersDto1);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(importShipmentRequest);
+
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
+        mockShipmentSettings();
+        NetworkTransfer networkTransfer = new NetworkTransfer();
+        networkTransfer.setUpdatedBy("XYZ");
+        when(networkTransferDao.findById(anyLong())).thenReturn(Optional.of(networkTransfer));
+        when(v1ServiceUtil.getUsersWithGivenPermission(any(), any())).thenReturn(usersDtoList);
+        assertThrows(ValidationException.class, () -> entityTransferService.importShipment(commonRequestModel));
+    }
+
+    @Test
+    void testImportShipment_Rejection3() {
+        ImportShipmentRequest importShipmentRequest = ImportShipmentRequest.builder()
+                .taskId(1L)
+                .operation(TaskStatus.REJECTED.getDescription())
+                .rejectRemarks("Test rejection msg")
+                .isFromNte(true)
+                .build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(importShipmentRequest);
+
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(false);
+        mockShipmentSettings();
+        assertThrows(ValidationException.class, () -> entityTransferService.importShipment(commonRequestModel));
+    }
+
+    @Test
+    void testImportConsolidation_Rejection() throws RunnerException {
+        ImportConsolidationRequest importConsolidationRequest = ImportConsolidationRequest.builder()
+                .taskId(1L)
+                .operation(TaskStatus.REJECTED.getDescription())
+                .rejectRemarks("Test rejection msg")
+                .isFromNte(true)
+                .build();
+        List<UsersDto> usersDtoList = new ArrayList<>();
+        UsersDto usersDto1 = new UsersDto();
+        usersDto1.setUserId(1L);
+        usersDtoList.add(usersDto1);
+        UserContext.getUser().setDisplayName("abc");
+        UserContext.getUser().setEmail("abc@xyz.com");
+
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsNetworkTransferEntityEnabled(true);
+        mockShipmentSettings();
+        NetworkTransfer networkTransfer = new NetworkTransfer();
+        networkTransfer.setUpdatedBy("XYZ");
+        networkTransfer.setEntityNumber("SHP123");
+        networkTransfer.setStatus(NetworkTransferStatus.RETRANSFERRED);
+
+        Map<Integer, Object> tenantModelMap = new HashMap<>(Map.of(1, new Object()));
+
+        doAnswer(invocation -> {
+            Map<String, String> mapArg = invocation.getArgument(1);
+            mapArg.put("XYZ", "xyz@example.com");
+            return null;
+        }).when(commonUtils).getUserDetails(eq(Set.of("XYZ")), anyMap());
+        when(networkTransferDao.findById(anyLong())).thenReturn(Optional.of(networkTransfer));
+        when(v1ServiceUtil.getUsersWithGivenPermission(any(), any())).thenReturn(usersDtoList);
+        when(v1ServiceUtil.getTenantDetails(anyList())).thenReturn(tenantModelMap);
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(new TenantModel());
+        var response = entityTransferService.importConsolidation(CommonRequestModel.buildRequest(importConsolidationRequest));
         assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
