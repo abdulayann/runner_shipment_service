@@ -982,7 +982,7 @@ public class AwbUtility {
                 masterAwb = awbsList.get(0);
             }
         }
-        if(masterAwb == null) {
+        if(masterAwb == null && awb.isPresent()) {
             consoleStatus = awb.get().getAirMessageStatus();
             masterAwb = awb.get();
         }

@@ -121,11 +121,15 @@ public class AwbSync implements IAwbSync {
         AwbRequestV2 awbRequest = convertEntityToDto(awb);
         if(awb.getShipmentId() != null){
             Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(awb.getShipmentId());
-            awbRequest.setShipmentGuid(shipmentDetails.get().getGuid());
+            if (shipmentDetails.isPresent()) {
+                awbRequest.setShipmentGuid(shipmentDetails.get().getGuid());
+            }
         }
         if(awb.getConsolidationId() != null){
             Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(awb.getConsolidationId());
-            awbRequest.setConsolidationGuid(consolidationDetails.get().getGuid());
+            if (consolidationDetails.isPresent()) {
+                awbRequest.setConsolidationGuid(consolidationDetails.get().getGuid());
+            }
         }
         return  awbRequest;
     }

@@ -167,8 +167,10 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
         List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(consolidationDetails.getId());
         if(consoleShipmentMappings != null && !consoleShipmentMappings.isEmpty()){
             Optional<ShipmentDetails> optional = shipmentDao.findById(consoleShipmentMappings.get(0).getShipmentId());
-            var shipment = optional.get();
-            return (shipment.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipment.getHouseBill() != null);
+            if (optional.isPresent()) {
+                var shipment = optional.get();
+                return (shipment.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipment.getHouseBill() != null);
+            }
         }
         return false;
     }

@@ -1917,6 +1917,7 @@ public class AwbService implements IAwbService {
         }
     }
 
+    @SuppressWarnings("java:S3655")
     private ResponseEntity<IRunnerResponse> resetAwb(CommonRequestModel commonRequestModel) throws RunnerException {
         ResetAwbRequest resetAwbRequest = (ResetAwbRequest) commonRequestModel.getData();
         Optional<Awb> awbOptional = awbDao.findById(resetAwbRequest.getId());
@@ -1997,6 +1998,7 @@ public class AwbService implements IAwbService {
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(awb));
     }
 
+    @SuppressWarnings("java:S3655")
     private void processAwbPacksAndGoods(ResetAwbRequest resetAwbRequest, Optional<ConsolidationDetails> consolidationDetails, Awb awb, CreateAwbRequest createAwbRequest, Long awbId, Optional<ShipmentDetails> shipmentDetails) throws RunnerException {
         if (resetAwbRequest.getAwbType().equals(Constants.MAWB)) {
             PackSummaryResponse packSummary = packingService.calculatePackSummary(consolidationDetails.get().getPackingList(), consolidationDetails.get().getTransportMode(), consolidationDetails.get().getContainerCategory(), new ShipmentMeasurementDetailsDto());
@@ -2774,7 +2776,10 @@ public class AwbService implements IAwbService {
 
     private void processAwbList(List<Awb> awbList, List<AwbPackingInfo> hawbPacksLinkedToMawb) {
         if (awbList != null && !awbList.isEmpty()) {
-            var awb = awbList.stream().findFirst().get();
+            Optional<Awb> awbOptional = awbList.stream().findFirst();
+            if (awbOptional.isEmpty())
+                return;
+            var awb = awbOptional.get();
             if (awb.getAwbPackingInfo() != null && !awb.getAwbPackingInfo().isEmpty()) {
                 for (var awbPack : awb.getAwbPackingInfo()) {
                     if (awbPack.getVolume() != null && !StringUtility.isEmpty(awbPack.getVolumeUnit()) &&

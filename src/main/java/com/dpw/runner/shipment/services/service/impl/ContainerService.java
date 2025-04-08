@@ -438,7 +438,10 @@ public class ContainerService implements IContainerService {
             List<ShipmentsContainersMapping> mappings;
             List<Containers> result = new ArrayList<>();
             if (request.getShipmentId() != null) {
-                ShipmentDetails shipmentDetails = shipmentDao.findById(Long.valueOf(request.getShipmentId())).get();
+                Optional<ShipmentDetails> shipmentDetailsOptional = shipmentDao.findById(Long.valueOf(request.getShipmentId()));
+                if (shipmentDetailsOptional.isEmpty())
+                    return;
+                ShipmentDetails shipmentDetails = shipmentDetailsOptional.get();
                 request.setTransportMode(shipmentDetails.getTransportMode());
                 request.setExport(shipmentDetails.getDirection() != null && shipmentDetails.getDirection().equalsIgnoreCase(Constants.DIRECTION_EXP));
                 mappings = shipmentsContainersMappingDao.findByShipmentId(Long.valueOf(request.getShipmentId()));
@@ -452,7 +455,10 @@ public class ContainerService implements IContainerService {
             }
 
             if (request.getConsolidationId() != null) {
-                ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(Long.valueOf(request.getConsolidationId())).get();
+                Optional<ConsolidationDetails> consolidationDetailsOptional = consolidationDetailsDao.findById(Long.valueOf(request.getConsolidationId()));
+                if (consolidationDetailsOptional.isEmpty())
+                    return;
+                ConsolidationDetails consolidationDetails = consolidationDetailsOptional.get();
                 request.setTransportMode(consolidationDetails.getTransportMode());
                 request.setExport(consolidationDetails.getShipmentType() != null && consolidationDetails.getShipmentType().equalsIgnoreCase(Constants.DIRECTION_EXP));
                 ListCommonRequest req2 = constructListCommonRequest(Constants.CONSOLIDATION_ID, Long.valueOf(request.getConsolidationId()), "=");
@@ -640,14 +646,12 @@ public class ContainerService implements IContainerService {
 
     @Transactional
     public ResponseEntity<IRunnerResponse> attachPacks(Long containerId, List<Long> packsId) {
-        Containers containers = containerDao.findById(containerId).get();
-
-        if (containers != null) {
+        Optional<Containers> optional = containerDao.findById(containerId);
+        if (optional.isPresent()) {
+            Containers containers = optional.get();
             for (Long packid : packsId) {
                 Optional<Packing> packing = packingDao.findById(packid);
-                if (packing.isPresent() && packing.get() != null) {
-                    containers.getPacksList().add(packing.get());
-                }
+                packing.ifPresent(value -> containers.getPacksList().add(value));
             }
             Containers entity = containerDao.save(containers);
             afterSave(entity, false);

@@ -1713,7 +1713,7 @@ public class ConsolidationService implements IConsolidationService {
             if (mawb.getAwbCargoInfo() != null && !Objects.equals(mawb.getAirMessageStatus(), AwbStatus.AWB_FSU_LOCKED) && Objects.equals(mawb.getAwbCargoInfo().getSci(),
                     AwbConstants.T1)) {
                 if (!shipIdList.isEmpty()) {
-                    processNonEmptyShipIdList(shipIdList, mawb, consol);
+                    processNonEmptyShipIdList(shipIdList, mawb, consol.get());
                 } else {
                     mawb.getAwbCargoInfo().setSci(null);
                     mawb.setAirMessageResubmitted(false);
@@ -1725,7 +1725,7 @@ public class ConsolidationService implements IConsolidationService {
         }
     }
 
-    private void processNonEmptyShipIdList(List<Long> shipIdList, Awb mawb, Optional<ConsolidationDetails> consol) throws RunnerException {
+    private void processNonEmptyShipIdList(List<Long> shipIdList, Awb mawb, ConsolidationDetails consol) throws RunnerException {
         List<Awb> awbs = awbDao.findByShipmentIdList(shipIdList);
         if (awbs != null && !awbs.isEmpty()) {
             var isShipmentSciT1 = awbs.stream().filter(x -> Objects.equals(x.getAwbCargoInfo().getSci(), AwbConstants.T1)).findAny();
@@ -1733,8 +1733,8 @@ public class ConsolidationService implements IConsolidationService {
                 mawb.setAirMessageResubmitted(false);
                 mawb.getAwbCargoInfo().setSci(null);
                 awbDao.save(mawb);
-                consol.get().setSci(null);
-                consolidationDetailsDao.save(consol.get(), false);
+                consol.setSci(null);
+                consolidationDetailsDao.save(consol, false);
             }
         }
     }
@@ -4257,7 +4257,10 @@ public class ConsolidationService implements IConsolidationService {
     public ResponseEntity<IRunnerResponse> toggleLock(CommonRequestModel commonRequestModel) throws RunnerException {
         CommonGetRequest commonGetRequest = (CommonGetRequest) commonRequestModel.getData();
         Long id = commonGetRequest.getId();
-        ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(id).get();
+        Optional<ConsolidationDetails> optional = consolidationDetailsDao.findById(id);
+        if (optional.isEmpty())
+            return ResponseHelper.buildSuccessResponse();
+        ConsolidationDetails consolidationDetails = optional.get();
         String lockingUser = consolidationDetails.getLockedBy();
         String currentUser = UserContext.getUser().getUsername();
 
@@ -6483,7 +6486,7 @@ public class ConsolidationService implements IConsolidationService {
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
             log.info(ConsolidationConstants.CONSOLIDATION_DETAILS_FETCHED_SUCCESSFULLY, request.getGuid(), LoggerHelper.getRequestIdFromMDC());
-            Map<Long, Boolean> containerIdDgAllowedMap = getContainerIdDgAllowedMap(consolidationDetails);
+            Map<Long, Boolean> containerIdDgAllowedMap = getContainerIdDgAllowedMap(consolidationDetails.get());
             return ResponseHelper.buildSuccessResponse(containerIdDgAllowedMap);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -6494,11 +6497,11 @@ public class ConsolidationService implements IConsolidationService {
 
     }
 
-    private Map<Long, Boolean> getContainerIdDgAllowedMap(Optional<ConsolidationDetails> consolidationDetails) {
+    private Map<Long, Boolean> getContainerIdDgAllowedMap(ConsolidationDetails consolidationDetails) {
         Map<Long, Boolean> containerIdDgAllowedMap = new HashMap<>();
-        if(consolidationDetails.get().getContainersList() != null)
+        if(consolidationDetails.getContainersList() != null)
         {
-            for(Containers containers: consolidationDetails.get().getContainersList()) {
+            for(Containers containers: consolidationDetails.getContainersList()) {
                 boolean allowEdit = true;
                 if(containers.getShipmentsList() != null)
                 {

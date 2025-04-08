@@ -1488,8 +1488,9 @@ public abstract class IReport {
     {
         List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByShipmentIdByQuery(shipmentId);
         if(consoleShipmentMappings != null && !consoleShipmentMappings.isEmpty()) {
-            Long id = consoleShipmentMappings.stream().map(ConsoleShipmentMapping::getConsolidationId).max(Comparator.naturalOrder()).get();
-            return getConsolidation(id);
+            Optional<Long> maxConsolidationId = consoleShipmentMappings.stream().map(ConsoleShipmentMapping::getConsolidationId).max(Comparator.naturalOrder());
+            Long consoleId = maxConsolidationId.orElse(null);
+            return getConsolidation(consoleId);
         }
         return null;
     }
@@ -1510,6 +1511,8 @@ public abstract class IReport {
     }
 
     public ConsolidationModel getConsolidation(Long id) {
+        if (id == null)
+            return null;
         ConsolidationDetails consolidationDetails = getConsolidationsById(id);
         return getConsolidationModel(consolidationDetails);
     }
