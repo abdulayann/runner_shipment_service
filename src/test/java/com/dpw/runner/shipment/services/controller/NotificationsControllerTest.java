@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.dto.DeclineNotificationRequest;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.INotificationService;
 import org.junit.jupiter.api.Test;
@@ -79,6 +80,27 @@ class NotificationsControllerTest {
     void confirmationMessage3() {
         when(notificationService.confirmationMessage(anyLong())).thenThrow(new RuntimeException("test"));
         var responseEntity = notificationsController.confirmationMessage(anyLong());
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void rejectNotification1() {
+        when(notificationService.rejectNotification(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        var responseEntity = notificationsController.rejectNotification(DeclineNotificationRequest.builder().build());
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void rejectNotification2() {
+        when(notificationService.rejectNotification(any())).thenThrow(new RuntimeException());
+        var responseEntity = notificationsController.rejectNotification(DeclineNotificationRequest.builder().build());
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void rejectNotification3() {
+        when(notificationService.rejectNotification(any())).thenThrow(new RuntimeException("test"));
+        var responseEntity = notificationsController.rejectNotification(DeclineNotificationRequest.builder().build());
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
