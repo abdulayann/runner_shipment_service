@@ -36,6 +36,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Slf4j
@@ -85,6 +86,7 @@ public class ContainerV3Service implements IContainerV3Service {
     }
 
     @Override
+    @Transactional
     public BulkContainerResponse updateBulk(List<ContainerRequest> containerRequestList) {
         // Validate the incoming request to ensure all mandatory fields are present
         containerValidationUtil.validateUpdateBulkRequest(containerRequestList);
@@ -133,6 +135,7 @@ public class ContainerV3Service implements IContainerV3Service {
     }
 
     @Override
+    @Transactional
     public BulkContainerResponse deleteBulk(List<ContainerRequest> containerRequestList) {
         // Validate that all necessary container IDs are present in the request
         containerValidationUtil.validateUpdateBulkRequest(containerRequestList);
