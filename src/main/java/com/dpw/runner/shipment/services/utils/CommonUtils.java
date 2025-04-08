@@ -2700,4 +2700,15 @@ public class CommonUtils {
         return percentage.doubleValue();
     }
 
+    public void sendEmailNotification(EmailTemplatesRequest emailTemplateModel, List<String> to, List<String> cc) {
+        if(!to.isEmpty()) {
+            try {
+                notificationService.sendEmail(emailTemplateModel.getBody(),
+                        emailTemplateModel.getSubject(), to, cc);
+            } catch (Exception ex) {
+                log.error(ex.getMessage());
+            }
+        }
+    }
+
 }
