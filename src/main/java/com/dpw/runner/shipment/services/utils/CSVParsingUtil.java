@@ -259,6 +259,7 @@ public class CSVParsingUtil<T> {
         }
     }
 
+    @SuppressWarnings("java:S1130") // Suppressing NoSuchFieldException sonar issue
     private void processLastRowNumForExcelFilePacking(BulkUploadRequest request, Map<UUID, T> mapOfEntity, Class<T> entityType, Sheet sheet, int guidPos, int shipmentNumberPos, Map<String, Long> dicShipmentId, String[] header, Map<String, Set<String>> masterListsMap, List<T> entityList) throws InstantiationException, IllegalAccessException, NoSuchFieldException {
         for (int i = 1; i <= sheet.getLastRowNum(); i++) {
             Row row = sheet.getRow(i);
@@ -438,6 +439,7 @@ public class CSVParsingUtil<T> {
         }
     }
 
+    @SuppressWarnings("java:S1130") // Suppressing NoSuchFieldException sonar issue
     private void processSheetLastRowNum(BulkUploadRequest request, Map<UUID, T> mapOfEntity, Class<T> entityType, Sheet sheet, int guidPos, String[] header, Map<String, Set<String>> masterListsMap, Map<String, String> existingContainerNumbers, List<T> entityList) throws InstantiationException, IllegalAccessException, NoSuchFieldException {
         for (int i = 1; i <= sheet.getLastRowNum(); i++) {
             Row row = sheet.getRow(i);
@@ -469,7 +471,7 @@ public class CSVParsingUtil<T> {
         }
     }
 
-    private void processHeaderForExcel(BulkUploadRequest request, String[] header, Row row, Map<String, Set<String>> masterListsMap, int i, int guidPos, boolean isUpdate, Map<String, String> existingContainerNumbers, T entity) throws NoSuchFieldException, IllegalAccessException {
+    private void processHeaderForExcel(BulkUploadRequest request, String[] header, Row row, Map<String, Set<String>> masterListsMap, int i, int guidPos, boolean isUpdate, Map<String, String> existingContainerNumbers, T entity) {
         for (int j = 0; j < header.length; j++) {
             Cell cell = row.getCell(j);
             String cellValue = getCellValueAsString(cell);
