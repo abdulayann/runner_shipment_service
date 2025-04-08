@@ -1,7 +1,9 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
@@ -34,4 +36,6 @@ public class NetworkTransferResponse implements IRunnerResponse {
     private LocalDateTime createdAt;
     private Boolean isInterBranchEntity;
     private Boolean isHidden;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime transferredDate;
 }
