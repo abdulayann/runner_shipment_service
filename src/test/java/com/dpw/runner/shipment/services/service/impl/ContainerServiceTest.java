@@ -26,6 +26,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
+import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
@@ -46,6 +47,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -450,14 +453,6 @@ class ContainerServiceTest extends CommonMocks {
     void testValidateContainerNumber_InvalidLength() {
         String invalidLengthContainerNumber = "ABC123";
         ResponseEntity<IRunnerResponse> responseEntity = containerService.validateContainerNumber(invalidLengthContainerNumber);
-        Assertions.assertNotNull(responseEntity);
-        assertFalse(((ContainerNumberCheckResponse)((RunnerResponse)responseEntity.getBody()).getData()).isSuccess());
-    }
-
-    @Test
-    void testValidateContainerNumber_InvalidCharacters() {
-        String invalidCharactersContainerNumber = "1234ABCD56";
-        ResponseEntity<IRunnerResponse> responseEntity = containerService.validateContainerNumber(invalidCharactersContainerNumber);
         Assertions.assertNotNull(responseEntity);
         assertFalse(((ContainerNumberCheckResponse)((RunnerResponse)responseEntity.getBody()).getData()).isSuccess());
     }
@@ -1734,7 +1729,6 @@ class ContainerServiceTest extends CommonMocks {
         testContainer.setChargeableUnit(Constants.WEIGHT_UNIT_KG);
         testContainer.setChargeable(new BigDecimal(3453));
         testContainer.setGrossVolume(new BigDecimal(432));
-        testContainer.setDgClass("dgClass");
         testContainer.setContainerCount(1L);
         when(containerDao.findByConsolidationId(any())).thenReturn(List.of(testContainer));
         when(containerDao.findByConsolidationId(any())).thenReturn(List.of(testContainer));
@@ -1891,52 +1885,87 @@ class ContainerServiceTest extends CommonMocks {
         assertNotNull(responseEntity);
     }
 
-    @Test
-    void testValidateContainerNumber_InvalidCharacters2() {
-        String invalidCharactersContainerNumber = "ABCD12345A";
+    @ParameterizedTest
+    @ValueSource(strings = {"1234ABCD56", "ABCD12345A", "ABCD12345%", "aBCD12345%", "ABCD123456%", "ABCD123456A", "ABCD1234561"})  // Runs test for both true and false cases
+    void testValidateContainerNumber_InvalidCharacters(String invalidCharactersContainerNumber) {
         ResponseEntity<IRunnerResponse> responseEntity = containerService.validateContainerNumber(invalidCharactersContainerNumber);
         Assertions.assertNotNull(responseEntity);
         assertFalse(((ContainerNumberCheckResponse)((RunnerResponse)responseEntity.getBody()).getData()).isSuccess());
     }
 
     @Test
-    void testValidateContainerNumber_InvalidCharacters3() {
-        String invalidCharactersContainerNumber = "ABCD12345%";
-        ResponseEntity<IRunnerResponse> responseEntity = containerService.validateContainerNumber(invalidCharactersContainerNumber);
-        Assertions.assertNotNull(responseEntity);
-        assertFalse(((ContainerNumberCheckResponse)((RunnerResponse)responseEntity.getBody()).getData()).isSuccess());
+    void uploadContainers_SEA9() throws Exception{
+        BulkUploadRequest request = new BulkUploadRequest();
+        request.setConsolidationId(1L);
+        request.setShipmentId(3L);
+        request.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        testContainer.setGuid(UUID.randomUUID());
+        testContainer.setContainerNumber("CONT0000006");
+        testContainer.setIsOwnContainer(true);
+        testContainer.setIsShipperOwned(false);
+        testContainer.setHazardous(true);
+        testContainer.setIsPart(false);
+        testContainer.setContainerStuffingLocation("unloc");
+        testContainer.setHazardousUn("hzUn");
+        testContainer.setCommodityCode("680510");
+        testContainer.setHandlingInfo("handlingInfo");
+        testContainer.setChargeableUnit(Constants.WEIGHT_UNIT_KG);
+        testContainer.setChargeable(new BigDecimal(3453));
+        testContainer.setGrossVolume(new BigDecimal(432));
+        testContainer.setDgClass("dgClass1");
+        testContainer.setContainerCount(1L);
+        when(containerDao.findByConsolidationId(any())).thenReturn(List.of(testContainer));
+        when(containerDao.findByConsolidationId(any())).thenReturn(List.of(testContainer));
+        ArgumentCaptor<Map> captor = ArgumentCaptor.forClass(Map.class);
+        when(parser.parseExcelFile(any(), any(), any(), (Map<String, Set<String>>) captor.capture(), any(), any(), any(), any(), any()))
+                .thenAnswer(invocation -> {
+
+                    Map<String, Set<String>> masterDataMap = (Map<String, Set<String>>) captor.getValue();
+                    masterDataMap.clear();
+                    masterDataMap.putAll(jsonTestUtility.getMasterDataMapWithSameCommodity());
+
+                    return List.of(testContainer);
+                });
+        assertThrows(RuntimeException.class ,() -> containerService.uploadContainers(request));
     }
 
     @Test
-    void testValidateContainerNumber_InvalidCharacters4() {
-        String invalidCharactersContainerNumber = "aBCD12345%";
-        ResponseEntity<IRunnerResponse> responseEntity = containerService.validateContainerNumber(invalidCharactersContainerNumber);
-        Assertions.assertNotNull(responseEntity);
-        assertFalse(((ContainerNumberCheckResponse)((RunnerResponse)responseEntity.getBody()).getData()).isSuccess());
-    }
+    void uploadContainers_SEA10() throws Exception{
+        BulkUploadRequest request = new BulkUploadRequest();
+        request.setConsolidationId(1L);
+        request.setShipmentId(3L);
+        request.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        testContainer.setGuid(UUID.randomUUID());
+        testContainer.setContainerNumber("CONT0000006");
+        testContainer.setIsOwnContainer(true);
+        testContainer.setIsShipperOwned(false);
+        testContainer.setHazardous(true);
+        testContainer.setIsPart(false);
+        testContainer.setContainerStuffingLocation("unloc");
+        testContainer.setHazardousUn("hzUn");
+        testContainer.setCommodityCode("680510");
+        testContainer.setHandlingInfo("handlingInfo");
+        testContainer.setChargeableUnit(Constants.WEIGHT_UNIT_KG);
+        testContainer.setChargeable(new BigDecimal(3453));
+        testContainer.setGrossVolume(new BigDecimal(432));
+        testContainer.setDgClass("dgClass1");
+        testContainer.setContainerCount(1L);
+        when(containerDao.findByConsolidationId(any())).thenReturn(List.of(testContainer));
+        when(containerDao.findByConsolidationId(any())).thenReturn(List.of(testContainer));
+        ArgumentCaptor<Map> captor = ArgumentCaptor.forClass(Map.class);
+        when(parser.parseExcelFile(any(), any(), any(), (Map<String, Set<String>>) captor.capture(), any(), any(), any(), any(), any()))
+                .thenAnswer(invocation -> {
 
-    @Test
-    void testValidateContainerNumber_InvalidCharacters5() {
-        String invalidCharactersContainerNumber = "ABCD123456%";
-        ResponseEntity<IRunnerResponse> responseEntity = containerService.validateContainerNumber(invalidCharactersContainerNumber);
-        Assertions.assertNotNull(responseEntity);
-        assertFalse(((ContainerNumberCheckResponse)((RunnerResponse)responseEntity.getBody()).getData()).isSuccess());
-    }
+                    Map<String, Set<String>> masterDataMap = (Map<String, Set<String>>) captor.getValue();
+                    masterDataMap.clear();
+                    var a = jsonTestUtility.getMasterDataMapWithSameCommodity();
+                    a.remove(MasterDataType.DG_CLASS.getDescription());
+                    masterDataMap.putAll(a);
 
-    @Test
-    void testValidateContainerNumber_InvalidCharacters6() {
-        String invalidCharactersContainerNumber = "ABCD123456A";
-        ResponseEntity<IRunnerResponse> responseEntity = containerService.validateContainerNumber(invalidCharactersContainerNumber);
-        Assertions.assertNotNull(responseEntity);
-        assertFalse(((ContainerNumberCheckResponse)((RunnerResponse)responseEntity.getBody()).getData()).isSuccess());
-    }
-
-    @Test
-    void testValidateContainerNumber_InvalidCharacters7() {
-        String invalidCharactersContainerNumber = "ABCD1234561";
-        ResponseEntity<IRunnerResponse> responseEntity = containerService.validateContainerNumber(invalidCharactersContainerNumber);
-        Assertions.assertNotNull(responseEntity);
-        assertFalse(((ContainerNumberCheckResponse)((RunnerResponse)responseEntity.getBody()).getData()).isSuccess());
+                    return List.of(testContainer);
+                });
+        when(containerDao.saveAll(any())).thenReturn(List.of(testContainer));
+        assertDoesNotThrow(() -> containerService.uploadContainers(request));
     }
 
 }
