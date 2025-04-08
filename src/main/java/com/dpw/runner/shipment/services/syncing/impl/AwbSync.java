@@ -95,7 +95,7 @@ public class AwbSync implements IAwbSync {
             String finalHawb = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(hawbSyncRequest).module(SyncingConstants.AWB).build());
             syncService.pushToKafka(finalHawb, String.valueOf(i.getId()), String.valueOf(i.getGuid()), SyncingConstants.AWB, transactionId);
         });
-        log.info("Completed AWB Sync with data: {}", modelMapper.map(finalAwb, HblDataRequestV2.class));
+        log.info("Completed AWB Sync with data: {}", awbRequest);
     }
 
     private AwbRequestV2 convertEntityToDto(Awb awb) {

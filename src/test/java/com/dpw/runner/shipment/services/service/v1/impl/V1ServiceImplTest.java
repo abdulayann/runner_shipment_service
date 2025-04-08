@@ -73,6 +73,7 @@ import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.impl.GetUserServiceFactory;
+import com.dpw.runner.shipment.services.service.impl.UserServiceV1;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
@@ -95,10 +96,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
+import org.mockito.*;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -169,6 +167,9 @@ class V1ServiceImplTest {
 
     @MockBean
     private UserContext userContext;
+
+    @MockBean
+    UserServiceV1 userServiceV1;
 
     private V1UsersEmailRequest request;
     private UsersRoleListResponse userRole;
@@ -2629,8 +2630,10 @@ class V1ServiceImplTest {
         when(cacheManager.getCache(CacheConstants.COUSIN_BRANCHES_CACHE)).thenReturn(mockCache);
         when(mockCache.get(expectedCacheKey, V1DataResponse.class)).thenReturn(cachedResponse);
 
+        CommonV1ListRequest request1 = new CommonV1ListRequest();
+
         // Act
-        V1DataResponse result = v1ServiceImpl.listCousinBranches("SomeRequest");
+        V1DataResponse result = v1ServiceImpl.listCousinBranches(request1);
 
         // Assert
         assertNotNull(result);
@@ -6086,5 +6089,18 @@ class V1ServiceImplTest {
         );
 
         assertEquals("Unexpected error", thrown.getMessage());
+    }
+
+    @Test
+    void testSetAuthContext1(){
+        String token = "sampleToken";
+
+        Cache mockCache = mock(Cache.class);
+        when(cacheManager.getCache(anyString())).thenReturn(mockCache);
+        when(mockCache.get(anyString())).thenReturn(() -> token);
+        when(getUserServiceFactory.returnUserService()).thenReturn(userServiceV1);
+        when(userServiceV1.getUserByToken(token)).thenReturn(UsersDto.builder().build());
+        v1ServiceImpl.setAuthContext();
+        verify(userServiceV1, times(1)).getUserByToken(any());
     }
 }

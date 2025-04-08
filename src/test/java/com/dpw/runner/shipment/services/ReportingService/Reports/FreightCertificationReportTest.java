@@ -411,7 +411,7 @@ class FreightCertificationReportTest extends CommonMocks {
         BillChargesResponse billChargesResponse = new BillChargesResponse();
         billChargesResponse.setOverseasSellAmount(BigDecimal.TEN);
         billChargesResponse.setLocalTax(BigDecimal.TEN);
-        billChargesResponse.setMeasurementBasis(Integer.toString(MeasurementBasis.CHARGEABLE.getValue()));
+        billChargesResponse.setMeasurementBasis(Integer.toString(MeasurementBasis.Chargeable.getValue()));
         billChargesResponse.setLocalCostCurrency("INR");
         billChargesResponse.setPaymentType("PPD");
         billChargesResponse.setChargeTypeCode("AGENT");
@@ -422,7 +422,7 @@ class FreightCertificationReportTest extends CommonMocks {
         billChargesResponse = new BillChargesResponse();
         billChargesResponse.setOverseasSellAmount(BigDecimal.TEN);
         billChargesResponse.setLocalTax(BigDecimal.TEN);
-        billChargesResponse.setMeasurementBasis(Integer.toString(MeasurementBasis.CHARGEABLE.getValue()));
+        billChargesResponse.setMeasurementBasis(Integer.toString(MeasurementBasis.Chargeable.getValue()));
         billChargesResponse.setLocalCostCurrency("INR");
         billChargesResponse.setPaymentType("PPD");
         billChargesResponse.setChargeTypeCode("AGENT");

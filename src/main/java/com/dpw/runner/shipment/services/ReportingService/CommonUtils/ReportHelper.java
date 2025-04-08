@@ -21,6 +21,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 @Component
 @Slf4j
 public class ReportHelper {
+    private ReportHelper(){}
     public static String getCityCountry(String city, String country)
     {
         if (city == null)
@@ -415,44 +416,44 @@ public class ReportHelper {
     }
 
     public static String concatGroupedContainerCount(Map<String, Long> containerCountGrouped) {
-        String containerCount = "";
+        StringBuilder containerCount = new StringBuilder();
         if (Objects.isNull(containerCountGrouped))
             return "0";
         for (Map.Entry<String, Long> entry : containerCountGrouped.entrySet()) {
             if (!containerCount.isEmpty()) {
-                containerCount += " & ";
+                containerCount.append(" & ");
             }
-            containerCount += entry.getValue() + " X " + entry.getKey();
+            containerCount.append(entry.getValue()).append(" X ").append(entry.getKey());
         }
-        return containerCount.isEmpty() ? "0" : containerCount;
+        return containerCount.isEmpty() ? "0" : containerCount.toString();
     }
 
     public static String concatGroupedFieldValues(Map<String, Double> fieldValuesGrouped, int decimalPlaces) {
-        String fieldValue = "";
+        StringBuilder fieldValue = new StringBuilder();
         if (Objects.isNull(fieldValuesGrouped))
             return "0";
         for (Map.Entry<String, Double> entry : fieldValuesGrouped.entrySet()) {
             double value = Math.round(entry.getValue() * Math.pow(10, decimalPlaces)) / Math.pow(10, decimalPlaces);
             if (!fieldValue.isEmpty()) {
-                fieldValue += " & ";
+                fieldValue.append(" & ");
             }
-            fieldValue += value + " X " + entry.getKey();
+            fieldValue.append(value).append(" X ").append(entry.getKey());
         }
-        return fieldValue.isEmpty() ? "0" : fieldValue;
+        return fieldValue.isEmpty() ? "0" : fieldValue.toString();
     }
 
     public static String concatGroupedFields(Map<String, Double> fieldMap, int decimalPlaces) {
-        String fieldValue = "";
+        StringBuilder fieldValue = new StringBuilder();
         if (Objects.isNull(fieldMap))
             return "0";
         for (Map.Entry<String, Double> entry : fieldMap.entrySet()) {
             double value = Math.round(entry.getValue() * Math.pow(10, decimalPlaces)) / Math.pow(10, decimalPlaces);
             if (!fieldValue.isEmpty()) {
-                fieldValue += " & ";
+                fieldValue.append(" & ");
             }
-            fieldValue += value + " " + entry.getKey();
+            fieldValue.append(value).append(" ").append(entry.getKey());
         }
-        return fieldValue.isEmpty() ? "0" : fieldValue;
+        return fieldValue.isEmpty() ? "0" : fieldValue.toString();
     }
 
     public static String addCommaWithoutDecimal(BigDecimal amount)

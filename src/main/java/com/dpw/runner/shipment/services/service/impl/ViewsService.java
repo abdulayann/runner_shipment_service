@@ -266,9 +266,7 @@ public class ViewsService implements IViewsService {
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<Views> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
-        lst.forEach(view -> {
-            responseList.add(convertEntityToDto(view));
-        });
+        lst.forEach(view -> responseList.add(convertEntityToDto(view)));
         return responseList;
     }
 

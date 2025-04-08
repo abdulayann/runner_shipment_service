@@ -124,7 +124,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(pickupDeliveryDetails));
     }
 
-    private void beforeSave(PickupDeliveryDetailsRequest request, PickupDeliveryDetails entity, PickupDeliveryDetails oldEntity) {
+    private void beforeSave(PickupDeliveryDetails entity) {
         Long id = entity.getId();
         // Set proper references
         CommonUtils.emptyIfNull(entity.getTiLegsList()).forEach(leg -> {
@@ -149,7 +149,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
             List<PickupDeliveryDetails> pickupDeliveryDetailsList = pickupDeliveryDetailsDao.findByShipmentId(pickupDeliveryDetails.getShipmentId());
             if (!CommonUtils.listIsNullOrEmpty(pickupDeliveryDetailsList)) {
                 List<IRunnerResponse> pickupDeliveryDetailsResponses = convertEntityListToDtoList(pickupDeliveryDetailsList, false);
-                kafkaAsyncService.pushToKafkaTI(pickupDeliveryDetailsResponses, isCreate, pickupDeliveryDetails.getShipmentId());
+                CompletableFuture.runAsync(masterDataUtils.withMdc(()-> kafkaAsyncService.pushToKafkaTI(pickupDeliveryDetailsResponses, isCreate, pickupDeliveryDetails.getShipmentId())), executorService);
             }
         }
     }
@@ -183,7 +183,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
         pickupDeliveryDetails.setId(oldEntity.get().getId());
         try {
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
-            beforeSave(request, pickupDeliveryDetails, oldEntity.get());
+            beforeSave(pickupDeliveryDetails);
             pickupDeliveryDetails = pickupDeliveryDetailsDao.save(pickupDeliveryDetails);
 
             // audit logs
@@ -264,7 +264,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
                 List<PickupDeliveryDetails> pickupDeliveryDetailsList = pickupDeliveryDetailsDao.findByShipmentId(pickupDeliveryDetails.get().getShipmentId());
                 if (!CommonUtils.listIsNullOrEmpty(pickupDeliveryDetailsList)) {
                     List<IRunnerResponse> pickupDeliveryDetailsResponses = convertEntityListToDtoList(pickupDeliveryDetailsList, false);
-                    kafkaAsyncService.pushToKafkaTI(pickupDeliveryDetailsResponses, false, pickupDeliveryDetails.get().getShipmentId());
+                    CompletableFuture.runAsync(masterDataUtils.withMdc(()-> kafkaAsyncService.pushToKafkaTI(pickupDeliveryDetailsResponses, false, pickupDeliveryDetails.get().getShipmentId())), executorService);
                 }
             }
             auditLogService.addAuditLog(

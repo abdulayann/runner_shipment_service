@@ -68,7 +68,7 @@ public interface IConsolidationService extends ICommonService{
     ResponseEntity<IRunnerResponse> assignPacksAndShipments(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> detachPacksAndShipments(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> getAllMasterData(CommonRequestModel commonRequestModel);
-    Map<String, Object> fetchAllMasterDataByKey(ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse consolidationDetailsResponse);
+    Map<String, Object> fetchAllMasterDataByKey(ConsolidationDetailsResponse consolidationDetailsResponse);
     ResponseEntity<IRunnerResponse> getAutoAttachConsolidationDetails(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> getAutoUpdateGoodsAndHandlingInfo(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> getIdFromGuid(CommonRequestModel commonRequestModel);

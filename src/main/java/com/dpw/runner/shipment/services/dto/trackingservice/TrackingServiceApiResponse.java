@@ -137,6 +137,7 @@ public class TrackingServiceApiResponse {
     @Builder
     @AllArgsConstructor
     @NoArgsConstructor
+    @SuppressWarnings("java:S1700") // A field should not duplicate the name of its containing class
     public static class Source
     {
         private LocalDateTime dateTime;

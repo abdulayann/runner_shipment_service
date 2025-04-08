@@ -828,7 +828,7 @@ public class V1ServiceImpl implements IV1Service {
             long time = System.currentTimeMillis();
             HttpEntity<Object> entity = new HttpEntity<>(request, V1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.VESSEL_DATA_URL, entity, V1DataResponse.class, new Object[0]);
-            double timeTaken = System.currentTimeMillis() - time;
+            double timeTaken = (double) System.currentTimeMillis() - time;
             log.info("Token time taken in getVesselData() function {} with Request ID: {}", timeTaken, LoggerHelper.getRequestIdFromMDC());
             return masterDataResponse.getBody();
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
@@ -1457,8 +1457,12 @@ public class V1ServiceImpl implements IV1Service {
         String cacheKeyTenantId = keyGenerator.customCacheKey(UserContext.getUser().getTenantId());
         Cache cache = cacheManager.getCache(CacheConstants.COUSIN_BRANCHES_CACHE);
 
-        V1DataResponse cachedResponse = getFromCache(cache, cacheKeyTenantId);
-        if (cachedResponse != null) return cachedResponse;
+        if(!(request instanceof CommonV1ListRequest etRequest && etRequest.getContainsText() != null)) {
+            V1DataResponse cachedResponse = getFromCache(cache, cacheKeyTenantId);
+            if (cachedResponse != null) {
+                return cachedResponse;
+            }
+        }
 
         V1DataResponse responseBody = callCousinBranchAPI(request, cacheKeyTenantId);
 

@@ -98,12 +98,7 @@ public class QuoteContractsService implements IQuoteContractsService {
                 log.error("Request is empty for Quote Contracts update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
                 return;
             }
-            String contractId = null;
-            try {
-                contractId = request.getContracts().get(0).getContract_id();
-            } catch (Exception e) {
-                log.error("Contract Id is null for Quote Contracts update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            }
+            String contractId = getContractId(request);
             if(isStringNullOrEmpty(contractId)) {
                 log.error("Contract Id is null for Quote Contracts update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
                 return;
@@ -121,6 +116,16 @@ public class QuoteContractsService implements IQuoteContractsService {
         } catch (Exception e) {
             log.error("Error while updating quote Contracts with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
+    }
+
+    private static String getContractId(ListContractResponse request) {
+        String contractId = null;
+        try {
+            contractId = request.getContracts().get(0).getContract_id();
+        } catch (Exception e) {
+            log.error("Contract Id is null for Quote Contracts update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
+        return contractId;
     }
 
     private void getQuoteContractsData(QuoteContracts quoteContracts, ListContractResponse request, String contractId) {

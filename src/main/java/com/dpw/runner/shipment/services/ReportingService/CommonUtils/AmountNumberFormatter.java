@@ -105,7 +105,7 @@ public class AmountNumberFormatter {
         if(tenantSettings.getCurrencyDigitGrouping() != null && tenantSettings.getCurrencyGroupingNumber() != null) {
             char customThousandsSeparator = ',';
             char customDecimalSeparator = '.';
-            if(tenantSettings.getCurrencyGroupingNumber() != null && tenantSettings.getCurrencyGroupingNumber() == GroupingNumber.DOT_AND_COMMA.getValue()) {
+            if(tenantSettings.getCurrencyGroupingNumber() != null && tenantSettings.getCurrencyGroupingNumber() == GroupingNumber.DotAndComma.getValue()) {
                 customThousandsSeparator = '.';
                 customDecimalSeparator = ',';
             }

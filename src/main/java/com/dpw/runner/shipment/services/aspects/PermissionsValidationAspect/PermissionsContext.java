@@ -9,6 +9,7 @@ import java.util.Map;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 
 @Component
+@SuppressWarnings("java:S3008")
 public class PermissionsContext {
     private PermissionsContext(){}
     private static ThreadLocal<Map<String,List<String>>> Permissions = new InheritableThreadLocal<>();

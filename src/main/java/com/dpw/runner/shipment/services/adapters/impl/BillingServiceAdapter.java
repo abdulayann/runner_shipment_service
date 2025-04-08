@@ -481,32 +481,32 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
         try {
             MeasurementBasis revenueMeasurementBasis = MeasurementBasis.valueOf(billCharge.getPerMeasurementBasis());
             revenueMeasurementBasisV2 = switch (revenueMeasurementBasis) {
-                case CONTAINERCONT, CONTAINER_COUNT -> MeasurementBasis.CONTAINERCONT.getBillingValue();
-                case WEIGHT -> MeasurementBasis.WEIGHT.getBillingValue();
-                case VOLUME -> MeasurementBasis.VOLUME.getBillingValue();
-                case CHARGEABLE -> MeasurementBasis.CHARGEABLE.getBillingValue();
-                case LOWEST_BILL -> MeasurementBasis.LOWEST_BILL.getBillingValue();
-                case PACKAGE -> MeasurementBasis.PACKAGE.getBillingValue();
-                case SHIPMENT -> MeasurementBasis.SHIPMENT.getBillingValue();
+                case ContainerCount, Container_Count -> MeasurementBasis.ContainerCount.getBillingValue();
+                case Weight -> MeasurementBasis.Weight.getBillingValue();
+                case Volume -> MeasurementBasis.Volume.getBillingValue();
+                case Chargeable -> MeasurementBasis.Chargeable.getBillingValue();
+                case LowestBill -> MeasurementBasis.LowestBill.getBillingValue();
+                case Package -> MeasurementBasis.Package.getBillingValue();
+                case Shipment -> MeasurementBasis.Shipment.getBillingValue();
                 case TEU -> MeasurementBasis.TEU.getBillingValue();
-                case CHARGE_PERCENTAGE -> MeasurementBasis.CHARGE_PERCENTAGE.getBillingValue();
-                case CUSTOM -> MeasurementBasis.CUSTOM.getBillingValue();
-                case CONTAINER_TYPE -> MeasurementBasis.CONTAINER_TYPE.getBillingValue();
+                case ChargePercentage -> MeasurementBasis.ChargePercentage.getBillingValue();
+                case Custom -> MeasurementBasis.Custom.getBillingValue();
+                case ContainerType -> MeasurementBasis.ContainerType.getBillingValue();
             };
 
             if (ObjectUtils.isEmpty(measurementBasisUnit)) {
                 measurementBasisUnit = switch (revenueMeasurementBasis) {
-                    case CONTAINERCONT -> "Containers";
-                    case WEIGHT -> "KG";
-                    case VOLUME -> "M3";
-                    case CHARGEABLE -> "KG";
-                    case LOWEST_BILL -> "LB";
-                    case PACKAGE -> "Packages";
-                    case SHIPMENT -> "SHIPMENT";
+                    case ContainerCount -> "Containers";
+                    case Weight -> "KG";
+                    case Volume -> "M3";
+                    case Chargeable -> "KG";
+                    case LowestBill -> "LB";
+                    case Package -> "Packages";
+                    case Shipment -> "SHIPMENT";
                     case TEU -> "TEU";
-                    case CHARGE_PERCENTAGE -> "%";
-                    case CUSTOM -> "Custom";
-                    case CONTAINER_TYPE -> "Containers";
+                    case ChargePercentage -> "%";
+                    case Custom -> "Custom";
+                    case ContainerType -> "Containers";
                     default -> "";
                 };
             }
@@ -617,7 +617,10 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
                                     .overseasSellCurrency(Optional.ofNullable(billCharge.getOverseasSellCurrency()).filter(ObjectUtils::isNotEmpty)
                                             .orElse(tenantModel.getCurrencyCode()))
                                     .noTax(false)
-                                    .isRcm(false).build())
+                                    .isRcm(false)
+                                    .internalRemarks(billCharge.getInternalRemarks())
+                                    .externalRemarks(billCharge.getExternalRemarks())
+                                    .build())
                             .build())
                     .build();
             externalBillChargeRequests.add(externalBillChargeRequest);

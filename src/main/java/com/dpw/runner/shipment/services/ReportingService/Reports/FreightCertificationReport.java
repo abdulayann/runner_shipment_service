@@ -244,13 +244,11 @@ public class FreightCertificationReport extends IReport{
         summary.resetAmountAndCurrency();
         for (BillChargesResponse billCharge : billChargesList) {
             ChargeTypesResponse chargeTypesResponse = getChargeTypesData(billCharge);
-            if (chargeTypesResponse != null && "Freight".equals(chargeTypesResponse.getServices())) {
-                if (billCharge.getLocalSellAmount() != null) {
-                    if (summary.getCurrency() == null) {
-                        summary.setCurrency(billCharge.getLocalSellCurrency());
-                    }
-                    summary.addToTotalAmount(billCharge.getLocalSellAmount().doubleValue());
+            if (chargeTypesResponse != null && "Freight".equals(chargeTypesResponse.getServices()) && billCharge.getLocalSellAmount() != null) {
+                if (summary.getCurrency() == null) {
+                    summary.setCurrency(billCharge.getLocalSellCurrency());
                 }
+                summary.addToTotalAmount(billCharge.getLocalSellAmount().doubleValue());
             }
         }
     }

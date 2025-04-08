@@ -163,6 +163,8 @@ public class V1ServiceUtil {
                         .PerMeasurementBasis(bc.getMeasurementBasis())
                         .MeasurementsUnit(bc.getMeasurementUnit())
                         .TotalUnitsCount(bc.getTotalUnitCount())
+                        .internalRemarks(bc.getInternalRemarks())
+                        .externalRemarks(bc.getExternalRemarks())
                         .build()).collect(Collectors.toList());
     }
 
@@ -310,9 +312,7 @@ public class V1ServiceUtil {
 
     public OrgAddressResponse fetchOrgInfoFromV1(List<Parties> parties) {
         var orgRequest = new ArrayList<AddressTranslationRequest.OrgAddressCode>();
-        parties.forEach(p -> {
-            orgRequest.add(createV1OrgRequest(p));
-        });
+        parties.forEach(p -> orgRequest.add(createV1OrgRequest(p)));
         return v1Service.fetchOrgAddresses(AddressTranslationRequest.builder().OrgAddressCodeList(orgRequest.stream().filter(Objects::nonNull).toList()).build());
     }
 

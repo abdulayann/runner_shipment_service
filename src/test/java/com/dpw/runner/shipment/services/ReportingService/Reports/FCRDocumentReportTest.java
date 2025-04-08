@@ -16,6 +16,9 @@ import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.service.impl.ContainerService;
+import com.dpw.runner.shipment.services.service.impl.PackingService;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -25,6 +28,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -59,7 +64,15 @@ class FCRDocumentReportTest {
     @Mock
     private MasterDataUtils masterDataUtils;
 
-    private static ObjectMapper objectMapper;
+    @Mock
+    private JsonHelper jsonHelper;
+
+    @Mock
+    private ContainerService containerService;
+
+    @Mock
+    private PackingService packingService;
+
     private static JsonTestUtility jsonTestUtility;
     private static ShipmentDetails shipmentDetails;
 
@@ -227,13 +240,15 @@ class FCRDocumentReportTest {
         mockGetUnlocation(getUnlocationResponse());
         when(modelMapper.map(any(), eq(ShipmentModel.class))).thenReturn(shipmentModel);
         when(commonUtils.getCurrentTenantSettings()).thenReturn(V1TenantSettingsResponse.builder().build());
-        fcrDocumentReport.setPackIds(new ArrayList<>(List.of(1L)));;
+        fcrDocumentReport.setPackIds(new ArrayList<>(List.of(1L)));
+        fcrDocumentReport.setPlaceOfIssue("LOCAB");
         Map<String, Object> data = fcrDocumentReport.getData(id);
         assertNotNull(data);
     }
 
-    @Test
-    void testGetDataWithUSAPlaceOfIssue() throws RunnerException {
+    @ParameterizedTest
+    @ValueSource(strings = {"USMIA", "USMIA2"})
+    void testGetDataWithUSAPlaceOfIssue(String placeOfIssue) throws RunnerException {
         Long id = 1L;
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
         ShipmentModel shipmentModel = new ShipmentModel();
@@ -367,7 +382,7 @@ class FCRDocumentReportTest {
         when(modelMapper.map(any(), eq(ShipmentModel.class))).thenReturn(shipmentModel);
         when(commonUtils.getCurrentTenantSettings()).thenReturn(V1TenantSettingsResponse.builder().build());
         fcrDocumentReport.setPackIds(new ArrayList<>(List.of(1L)));
-        fcrDocumentReport.setPlaceOfIssue("USMIA");
+        fcrDocumentReport.setPlaceOfIssue(placeOfIssue);
         Map<String, Object> data = fcrDocumentReport.getData(id);
         assertNotNull(data);
     }
@@ -382,6 +397,12 @@ class FCRDocumentReportTest {
         unLocations1.setCityName("Miami");
         unLocations1.setLocCode("USMIA");
         responseMap.put("USMIA", unLocations1);
+
+        EntityTransferUnLocations unLocations2 = new EntityTransferUnLocations();
+        unLocations2.setCityName("Miami");
+        unLocations2.setLocCode("USMIA2");
+        responseMap.put("USMIA2", unLocations2);
+
         return responseMap;
     }
 

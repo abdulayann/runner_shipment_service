@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConst
 import com.dpw.runner.shipment.services.ReportingService.Models.FCRDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
@@ -96,10 +97,10 @@ public class FCRDocumentReport extends IReport{
     private void populateFcrPlaceOfIssue(Map<String, Object> dictionary, Map<String, EntityTransferUnLocations> unLocationsMap) {
         if(StringUtility.isEmpty(this.placeOfIssue)) return;
 
-        EntityTransferUnLocations unLocations = unLocationsMap.get(this.placeOfIssue);
-        StringBuilder sb = new StringBuilder(unLocations.getCityName());
+        EntityTransferUnLocations unLocations = Optional.ofNullable(unLocationsMap.get(this.placeOfIssue)).orElse(new EntityTransferUnLocations());
+        StringBuilder sb = new StringBuilder(Optional.ofNullable(unLocations.getCityName()).orElse(Constants.EMPTY_STRING));
         // USA region -> display city name with state code
-        if (unLocations.getLocCode().startsWith(USA_LOC_CODE_PREFIX) && !StringUtility.isEmpty(unLocations.getState())) {
+        if (StringUtility.convertToString(unLocations.getLocCode()).startsWith(USA_LOC_CODE_PREFIX) && !StringUtility.isEmpty(unLocations.getState())) {
             sb.append(", ").append(unLocations.getState());
         }
 

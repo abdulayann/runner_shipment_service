@@ -35,6 +35,7 @@ import java.util.regex.Pattern;
 
 @Slf4j
 @Component
+@SuppressWarnings("java:S1172")
 public class GetNextNumberHelper {
 
     @Autowired
@@ -62,9 +63,9 @@ public class GetNextNumberHelper {
 
             valueOf.put(Constants.BRANCH, "BR"); // branch is not clear
             valueOf.put("dd", DateTimeFormatter.ofPattern("dd").format(currDate));
-            valueOf.put("yy", Integer.valueOf(currDate.getYear()).toString().substring(2)); // last 2 digits
-            valueOf.put("mm", padLeft(Integer.valueOf(currDate.getMonthValue()).toString(), 2, '0'));
-            valueOf.put("yyyy", Integer.valueOf(currDate.getYear()).toString());
+            valueOf.put("yy", Integer.toString(currDate.getYear()).substring(2)); // last 2 digits
+            valueOf.put("mm", padLeft(Integer.toString(currDate.getMonthValue()), 2, '0'));
+            valueOf.put("yyyy", Integer.toString(currDate.getYear()));
             valueOf.put("mon", currDate.getMonth().getDisplayName(TextStyle.SHORT, Locale.ROOT));
             DateTimeFormatter df = DateTimeFormatter.ofPattern("MMMM");
             // Format the date to get the month in "MMMM" format

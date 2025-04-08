@@ -27,8 +27,7 @@ public class TenantSettingsService {
         V1RetrieveResponse dependentServiceResponse = v1Service.retrieveTenantSettings();
         if(dependentServiceResponse != null)
         {
-            var tenantSettings = modelMapper.map(dependentServiceResponse.getEntity(), V1TenantSettingsResponse.class);
-            return tenantSettings;
+            return modelMapper.map(dependentServiceResponse.getEntity(), V1TenantSettingsResponse.class);
         }
         return null;
     }

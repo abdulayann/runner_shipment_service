@@ -116,12 +116,7 @@ public class HblService implements IHblService {
         Hbl hbl = convertRequestToEntity(request);
         try {
             hbl = hblDao.save(hbl);
-            try {
-                hblSync.sync(hbl, UUID.randomUUID().toString());
-            }
-            catch (Exception e) {
-                log.error(SyncingConstants.ERROR_PERFORMING_HBL_SYNC, e);
-            }
+            hblSync(hbl);
             log.info("Hbl Details created successfully for Id {} with Request Id {}", hbl.getId(), LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -130,6 +125,15 @@ public class HblService implements IHblService {
             return ResponseHelper.buildFailedResponse(responseMsg);
         }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(hbl));
+    }
+
+    private void hblSync(Hbl hbl) {
+        try {
+            hblSync.sync(hbl, UUID.randomUUID().toString());
+        }
+        catch (Exception e) {
+            log.error(SyncingConstants.ERROR_PERFORMING_HBL_SYNC, e);
+        }
     }
 
     @Override
@@ -150,12 +154,7 @@ public class HblService implements IHblService {
         old.setHblNotifyParty(hbl.getHblNotifyParty());
         try {
             hbl = hblDao.save(old);
-            try {
-                hblSync.sync(hbl, UUID.randomUUID().toString());
-            }
-            catch (Exception e) {
-                log.error(SyncingConstants.ERROR_PERFORMING_HBL_SYNC, e);
-            }
+            hblSync(hbl);
             log.info("Updated the Hbl details for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -310,13 +309,7 @@ public class HblService implements IHblService {
         HblGenerateRequest request = (HblGenerateRequest) commonRequestModel.getData();
         Hbl hbl = getHblFromShipmentId(request.getShipmentId());
 
-        try {
-            hblSync.sync(hbl, UUID.randomUUID().toString());
-
-        }
-        catch (Exception e) {
-            log.error(SyncingConstants.ERROR_PERFORMING_HBL_SYNC, e);
-        }
+        hblSync(hbl);
 
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(hbl));
     }
@@ -341,12 +334,7 @@ public class HblService implements IHblService {
             hbl = hblDao.save(hbl);
         }
 
-        try {
-            hblSync.sync(hbl, UUID.randomUUID().toString());
-        }
-        catch (Exception e) {
-            log.error(SyncingConstants.ERROR_PERFORMING_HBL_SYNC, e);
-        }
+        hblSync(hbl);
 
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(hbl));
     }
@@ -427,24 +415,21 @@ public class HblService implements IHblService {
         List<HblContainerDto> hblContainers = mapShipmentContainersToHBL(shipmentDetails);
         List<HblPartyDto> hblParties = mapShipmentPartiesToHBL(shipmentDetails.getAdditionalDetails() != null ? shipmentDetails.getAdditionalDetails().getNotifyParty() : null);
 
-        Hbl hbl = Hbl.builder().shipmentId(shipmentDetails.getId())
+        return Hbl.builder().shipmentId(shipmentDetails.getId())
                 .hblData(hblData).hblCargo(hblCargos)
                 .hblContainer(hblContainers).hblNotifyParty(hblParties)
                 .build();
-
-        return hbl;
     }
 
     private Hbl convertRequestToEntity(HblRequest request) {
         if (Objects.isNull(request))
             return Hbl.builder().build();
         HblDataDto hblData = jsonHelper.convertValue(request, HblDataDto.class);
-        Hbl hbl = Hbl.builder().shipmentId(request.getShipmentId())
+        return Hbl.builder().shipmentId(request.getShipmentId())
                 .hblData(hblData).hblCargo(request.getCargoes())
                 .hblContainer(request.getContainers())
                 .hblNotifyParty(request.getNotifyParties())
                 .build();
-        return hbl;
     }
 
     private IRunnerResponse convertEntityToDto(Hbl hbl) {
@@ -467,13 +452,13 @@ public class HblService implements IHblService {
         AdditionalDetails additionalDetails = shipmentDetail.getAdditionalDetails() != null ? shipmentDetail.getAdditionalDetails() : new AdditionalDetails();
         CarrierDetails carrierDetails = shipmentDetail.getCarrierDetails() != null ? shipmentDetail.getCarrierDetails() : new CarrierDetails();
 
-        Map<String, EntityTransferUnLocations> v1Data = getUnLocationsData(hblData, additionalDetails, carrierDetails);
+        Map<String, EntityTransferUnLocations> v1Data = getUnLocationsData(additionalDetails, carrierDetails);
         setUnLocationsData(v1Data, hblData, additionalDetails, carrierDetails, "All");
         hblData.setCargoDescription(shipmentDetail.getGoodsDescription());
         hblData.setMarksAndNumbers(shipmentDetail.getMarksNum());
         hblData.setPackageCount(shipmentDetail.getNoOfPacks());
         hblData.setPackageType(shipmentDetail.getPacksUnit());
-        hblData.setReason(StringUtility.getEmptyString());
+        hblData.setReason(Constants.EMPTY_STRING);
         hblData.setBlType(HblConstants.ORIGINAL_HBL);
         hblData.setStatus(Constants.PENDING);
         hblData.setPurchaseOrderNumber(null);
@@ -924,7 +909,7 @@ public class HblService implements IHblService {
     }
 
     private void setUnLocationsDataInHblData(HblLockSettings hblLock, HblDataDto hblData, AdditionalDetails additionalDetails, CarrierDetails carrierDetails) {
-        Map<String, EntityTransferUnLocations> v1Data = getUnLocationsData(hblData, additionalDetails, carrierDetails);
+        Map<String, EntityTransferUnLocations> v1Data = getUnLocationsData(additionalDetails, carrierDetails);
         if(!Boolean.TRUE.equals(hblLock.getPlaceOfReceiptLock()))
             setUnLocationsData(v1Data, hblData, additionalDetails, carrierDetails, "PlaceOfReceipt");
         if(!Boolean.TRUE.equals(hblLock.getPortOfLoadLock()))
@@ -937,9 +922,7 @@ public class HblService implements IHblService {
 
     private void updateShipmentCargoToHBL(List<Packing> packings, Hbl hbl, HblLockSettings hblLock, Set<Containers> containers) {
         Map<UUID, Packing> packMap = new HashMap<>();
-        packings.forEach(pack -> {
-            packMap.put(pack.getGuid(), pack);
-        });
+        packings.forEach(pack -> packMap.put(pack.getGuid(), pack));
         List<HblCargoDto> deletedList = new ArrayList<>();
         Map<Long, String> map = new HashMap<>();
         if(containers != null && !containers.isEmpty())
@@ -1013,9 +996,7 @@ public class HblService implements IHblService {
     }
     private void updateShipmentContainersToHBL(Set<Containers> containers, Hbl hbl, HblLockSettings hblLock) {
         Map<UUID, Containers> contMap = new HashMap<>();
-        containers.forEach(cont -> {
-            contMap.put(cont.getGuid(), cont);
-        });
+        containers.forEach(cont -> contMap.put(cont.getGuid(), cont));
         List<HblContainerDto> deletedList = new ArrayList<>();
         if(hbl.getHblContainer() != null && !hbl.getHblContainer().isEmpty()) {
             hbl.getHblContainer().forEach(hblCont -> {
@@ -1118,7 +1099,7 @@ public class HblService implements IHblService {
         return deleteParty;
     }
 
-    private Map<String, EntityTransferUnLocations> getUnLocationsData(HblDataDto hblDataDto, AdditionalDetails additionalDetails, CarrierDetails carrierDetails) {
+    private Map<String, EntityTransferUnLocations> getUnLocationsData(AdditionalDetails additionalDetails, CarrierDetails carrierDetails) {
         List<String> locCodes = new ArrayList<>();
 
         if (!Objects.isNull(carrierDetails)) {
@@ -1168,7 +1149,7 @@ public class HblService implements IHblService {
 
     private String getUnLocationsName(Map<String, EntityTransferUnLocations> v1Data, String key) {
         if (Objects.isNull(key) || !v1Data.containsKey(key))
-            return StringUtility.getEmptyString();
+            return Constants.EMPTY_STRING;
 
         return v1Data.get(key).getLocCode() + " " + v1Data.get(key).getNameWoDiacritics();
     }

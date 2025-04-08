@@ -183,7 +183,7 @@ public class EventsController {
     public ResponseEntity<IRunnerResponse> getEvents(@RequestBody @Valid List<Events> request) {
         String responseMsg;
         try {
-            return (ResponseEntity<IRunnerResponse>) eventsSync.sync(request);
+            return eventsSync.sync(request);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;

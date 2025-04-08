@@ -59,5 +59,7 @@ public class BookingChargesResponse implements IRunnerResponse {
     private BigDecimal taxType3;
     private BigDecimal taxType4;
     private BigDecimal revenueLineTotal;
+    private String externalRemarks;
+    private String internalRemarks;
     private Map<String, String> chargeTypeMasterData;
 }

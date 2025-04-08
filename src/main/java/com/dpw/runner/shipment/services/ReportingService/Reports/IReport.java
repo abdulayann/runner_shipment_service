@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.interfaces.IBillingServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
+import com.dpw.runner.shipment.services.aspects.LicenseContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
@@ -41,6 +42,7 @@ import com.dpw.runner.shipment.services.dto.response.npm.NPMFetchLangChargeCodeR
 import com.dpw.runner.shipment.services.dto.v1.request.AddressTranslationRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.DigitGrouping;
 import com.dpw.runner.shipment.services.entity.enums.GroupingNumber;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
@@ -86,6 +88,7 @@ import java.text.NumberFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
@@ -304,12 +307,12 @@ public abstract class IReport {
         if (blObjectContainer.getContainerGrossWeight() != null)
             shipmentContainer.BL_GrossWeight = getDPWWeightVolumeFormat(blObjectContainer.getContainerGrossWeight(), decimalPlaces, tenantSettings);
         else
-            shipmentContainer.BL_GrossWeight = StringUtility.getEmptyString();
+            shipmentContainer.BL_GrossWeight = Constants.EMPTY_STRING;
         shipmentContainer.BL_GrossWeightUnit = blObjectContainer.getContainerGrossWeightUnit();
         if (blObjectContainer.getContainerGrossVolume() != null)
             shipmentContainer.BL_GrossVolume = getDPWWeightVolumeFormat(blObjectContainer.getContainerGrossVolume(), decimalPlaces, tenantSettings);
         else
-            shipmentContainer.BL_GrossVolume = StringUtility.getEmptyString();
+            shipmentContainer.BL_GrossVolume = Constants.EMPTY_STRING;
         shipmentContainer.BL_GrossVolumeUnit = blObjectContainer.getContainerGrossVolumeUnit();
         shipmentContainer.BL_NoofPackages = blObjectContainer.getNoOfPackages();
         shipmentContainer.BL_CarrierSealNumber = blObjectContainer.getCarrierSealNumber();
@@ -520,9 +523,13 @@ public abstract class IReport {
             dictionary.put(CARRIER_NAME, carrierData.getItemDescription());
             String iataCode = carrierData.getIataCode();
             dictionary.put(ReportConstants.FLIGHT_IATA_CODE, iataCode);
-            dictionary.put(ReportConstants.IATA_CODE, StringUtility.isEmpty(iataCode) ? shipment.getCarrierDetails().getFlightNumber() : iataCode + (StringUtility.isEmpty(shipment.getCarrierDetails().getFlightNumber()) ? "" :(" " + shipment.getCarrierDetails().getFlightNumber())));
-            dictionary.put(ReportConstants.SHIPMENT_FLIGHT_NUMBER_WITH_IATACODE, StringUtility.isEmpty(iataCode) ? shipment.getCarrierDetails().getFlightNumber() : iataCode + (StringUtility.isEmpty(shipment.getCarrierDetails().getFlightNumber()) ? "" :(" " + shipment.getCarrierDetails().getFlightNumber())));
+            dictionary.put(ReportConstants.IATA_CODE, StringUtility.isEmpty(iataCode) ? shipment.getCarrierDetails().getFlightNumber() : iataCode + getShipmentFlightNumber(shipment));
+            dictionary.put(ReportConstants.SHIPMENT_FLIGHT_NUMBER_WITH_IATACODE, StringUtility.isEmpty(iataCode) ? shipment.getCarrierDetails().getFlightNumber() : iataCode + getShipmentFlightNumber(shipment));
         }
+    }
+
+    private String getShipmentFlightNumber(ShipmentModel shipment) {
+        return StringUtility.isEmpty(shipment.getCarrierDetails().getFlightNumber()) ? "" : (" " + shipment.getCarrierDetails().getFlightNumber());
     }
 
     private void processOriginTags(Map<String, Object> dictionary, UnlocationsResponse origin, Map<Integer, Map<String, MasterData>> masterListsMap) {
@@ -1223,10 +1230,7 @@ public abstract class IReport {
             getPackingDetails(shipmentModel, dict);
             dict.put(VOLUME_WEIGHT, convertToWeightNumberFormat(shipmentModel.getVolumetricWeight()));
             dict.put(VOLUME_WEIGHT_UNIT, shipmentModel.getVolumetricWeightUnit());
-            if(isSecurity)
-                dict.put(IS_SECURITY, true);
-            else
-                dict.put(IS_SECURITY, false);
+            dict.put(IS_SECURITY, Boolean.TRUE.equals(isSecurity));
             dictionary.put(SCI, shipmentModel.getAdditionalDetails().getSci());
             populateRaKcData(dict, shipmentModel);
             populateAwbDetails(dictionary, awb, dict);
@@ -1251,8 +1255,8 @@ public abstract class IReport {
     private void processReferenceNumbersListTag(ShipmentModel shipmentModel, Map<String, Object> dict) {
         if(shipmentModel.getReferenceNumbersList() != null && !shipmentModel.getReferenceNumbersList().isEmpty()) {
             for (ReferenceNumbersModel referenceNumbersModel: shipmentModel.getReferenceNumbersList()) {
-                if(Objects.equals(referenceNumbersModel.getType(), ReportConstants.MRN) && !dict.containsKey(ReportConstants.MO_RN))
-                    dict.put(ReportConstants.MO_RN, referenceNumbersModel.getReferenceNumber());
+                if(Objects.equals(referenceNumbersModel.getType(), ReportConstants.MRN))
+                    dict.computeIfAbsent(ReportConstants.MO_RN, k -> referenceNumbersModel.getReferenceNumber());
             }
         }
     }
@@ -1284,8 +1288,8 @@ public abstract class IReport {
 
                 dict.put(ORIGINAL_PRINT_DATE, getPrintOriginalDate(awb));
                 dictionary.put(ORIGINAL_PRINT_DATE, getPrintOriginalDate(awb));
-                dict.put(USER_INITIALS, Optional.ofNullable(cargoInfoRows.getUserInitials()).map(StringUtility::toUpperCase).orElse(StringUtility.getEmptyString()));
-                dictionary.put(USER_INITIALS, Optional.ofNullable(cargoInfoRows.getUserInitials()).map(StringUtility::toUpperCase).orElse(StringUtility.getEmptyString()));
+                dict.put(USER_INITIALS, Optional.ofNullable(cargoInfoRows.getUserInitials()).map(StringUtility::toUpperCase).orElse(Constants.EMPTY_STRING));
+                dictionary.put(USER_INITIALS, Optional.ofNullable(cargoInfoRows.getUserInitials()).map(StringUtility::toUpperCase).orElse(Constants.EMPTY_STRING));
             }
         }
     }
@@ -1438,8 +1442,11 @@ public abstract class IReport {
         if(shipmentDetails == null) return null;
         ShipmentModel shipmentModel = modelMapper.map(shipmentDetails, ShipmentModel.class);
         shipmentModel.setVoyage(shipmentDetails.getCarrierDetails().getVoyage());
+        Map<Long, Containers> containersMap = new HashMap<>();
+
         try {
             if(shipmentDetails.getContainersList() != null) {
+                containersMap = shipmentDetails.getContainersList().stream().collect(Collectors.toMap(BaseEntity::getId, Function.identity()));
                 ContainerSummaryResponse containerSummaryResponse = containerService.calculateContainerSummary(jsonHelper.convertValueToList(shipmentDetails.getContainersList(), Containers.class), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType());
                 if(containerSummaryResponse != null) {
                     shipmentModel.setSummary(containerSummaryResponse.getSummary());
@@ -1448,6 +1455,11 @@ public abstract class IReport {
 
             if(shipmentDetails.getPackingList() != null) {
                 PackSummaryResponse response = packingService.calculatePackSummary(shipmentDetails.getPackingList(), shipmentDetails.getTransportMode(), shipmentDetails.getShipmentType(), new ShipmentMeasurementDetailsDto());
+                Map<Long, Containers> finalContainersMap = containersMap;
+                shipmentModel.getPackingList().forEach(i -> i.setContainerNumber(
+                        Optional.ofNullable(finalContainersMap.get(i.getContainerId()))
+                                .map(Containers::getContainerNumber).orElse(null)
+                        ));
                 if(response != null) {
                     shipmentModel.setPackSummary(response.getTotalPacks());
                 }
@@ -1923,13 +1935,17 @@ public abstract class IReport {
             if (carriersData != null) {
                 String iataCode = carriersData.getIataCode();
                 dictionary.put(ReportConstants.CONSOL_FLIGHT_NUMBER_WITH_IATACODE,StringUtility.isEmpty(iataCode) ? consolidation.getCarrierDetails().getFlightNumber() : iataCode + " " + consolidation.getCarrierDetails().getFlightNumber());
-                dictionary.put(ReportConstants.IATA_CODE, StringUtility.isEmpty(iataCode) ? consolidation.getCarrierDetails().getFlightNumber() : iataCode + (StringUtility.isEmpty(consolidation.getCarrierDetails().getFlightNumber()) ? "" :(" " + consolidation.getCarrierDetails().getFlightNumber())));
+                dictionary.put(ReportConstants.IATA_CODE, StringUtility.isEmpty(iataCode) ? consolidation.getCarrierDetails().getFlightNumber() : iataCode + getConsolidationFlightNumber(consolidation));
                 dictionary.put(ReportConstants.CARRIER_IATACODE, iataCode);
                 dictionary.put(CARRIER_NAME, StringUtility.toUpperCase(carriersData.getItemDescription()));
                 dictionary.put(CARRIER_CONTACT_PERSON, StringUtility.toUpperCase(carriersData.getCarrierContactPerson()));
                 addDefaultOrgTags(dictionary, carriersData);
             }
         }
+    }
+
+    private String getConsolidationFlightNumber(ConsolidationModel consolidation) {
+        return StringUtility.isEmpty(consolidation.getCarrierDetails().getFlightNumber()) ? "" : (" " + consolidation.getCarrierDetails().getFlightNumber());
     }
 
     private void addDefaultOrgTags(Map<String, Object> dictionary, CarrierMasterData carriersData) {
@@ -2419,9 +2435,11 @@ public abstract class IReport {
 
     public static String appendZero(String value, int length){
         int size = value.length();
-        for(int i=0; i<length-size; i++){
-            value = "0" + value;
+        StringBuilder valueBuilder = new StringBuilder(value);
+        for(int i = 0; i < length-size; i++){
+            valueBuilder.insert(0, "0");
         }
+        value = valueBuilder.toString();
         return value;
     }
 
@@ -2454,7 +2472,7 @@ public abstract class IReport {
     {
         if(!CommonUtils.isStringNullOrEmpty(v1TenantSettingsResponse.getDPWDateFormat()))
             return DateTimeFormatter.ofPattern(v1TenantSettingsResponse.getDPWDateFormat());
-        return DateTimeFormatter.ofPattern(getDPWDateFormatOrDefaultString());
+        return DateTimeFormatter.ofPattern(ReportConstants.DPW_DATE_FORMAT_OR_DEFAULT_STRING);
     }
 
     public static DateTimeFormatter getDPWDateFormatWithTime(String tsDatetimeFormat, boolean withoutSec)
@@ -2469,12 +2487,7 @@ public abstract class IReport {
         if(StringUtility.isNotEmpty(tsDatetimeFormat)) {
             return DateTimeFormatter.ofPattern(tsDatetimeFormat+" " +timeString);
         }
-        return DateTimeFormatter.ofPattern(getDPWDateFormatOrDefaultString() +" "+timeString);
-    }
-
-    public static String getDPWDateFormatOrDefaultString()
-    {
-        return "MM/dd/yyyy";
+        return DateTimeFormatter.ofPattern(ReportConstants.DPW_DATE_FORMAT_OR_DEFAULT_STRING +" "+timeString);
     }
 
     public String convertToDPWDateFormat(LocalDateTime date) {
@@ -2620,7 +2633,7 @@ public abstract class IReport {
             if(v1TenantSettingsResponse.getCurrencyDigitGrouping() != null) {
                 char customThousandsSeparator = ',';
                 char customDecimalSeparator = '.';
-                if(v1TenantSettingsResponse.getCurrencyGroupingNumber() != null && v1TenantSettingsResponse.getCurrencyGroupingNumber() == GroupingNumber.DOT_AND_COMMA.getValue()) {
+                if(v1TenantSettingsResponse.getCurrencyGroupingNumber() != null && v1TenantSettingsResponse.getCurrencyGroupingNumber() == GroupingNumber.DotAndComma.getValue()) {
                     customThousandsSeparator = '.';
                     customDecimalSeparator = ',';
                 }
@@ -2640,7 +2653,7 @@ public abstract class IReport {
             if(v1TenantSettingsResponse.getWVDigitGrouping() != null) {
                 char customThousandsSeparator = ',';
                 char customDecimalSeparator = '.';
-                if(v1TenantSettingsResponse.getWVGroupingNumber() != null && v1TenantSettingsResponse.getWVGroupingNumber() == GroupingNumber.DOT_AND_COMMA.getValue()) {
+                if(v1TenantSettingsResponse.getWVGroupingNumber() != null && v1TenantSettingsResponse.getWVGroupingNumber() == GroupingNumber.DotAndComma.getValue()) {
                     customThousandsSeparator = '.';
                     customDecimalSeparator = ',';
                 }
@@ -2730,7 +2743,7 @@ public abstract class IReport {
             return null;
 
         Object value = dataMap.get(key);
-        if(value == null || ! (value instanceof String)) {
+        if(!(value instanceof String)) {
             return null;
         }
         return value.toString();
@@ -3348,7 +3361,9 @@ public abstract class IReport {
         try {
             billingsList = getBillingData(shipment.getGuid());
         }
-        catch (Exception e) { }
+        catch (Exception e) {
+            log.error(e.getMessage());
+        }
         List<BillChargesResponse> charges = getBillChargesResponses(dictionary, billingsList);
 
         List<BillChargesResponse> originalChargesRows = new ArrayList<>();
@@ -3495,7 +3510,9 @@ public abstract class IReport {
         AddressTranslationListResponse response = null;
         try {
             response = v1Service.getAddressTranslation(request);
-        } catch (Exception ex) { }
+        } catch (Exception ex) {
+            log.error(ex.getMessage());
+        }
         Map<String, AddressTranslationListResponse.AddressTranslationResponse> orgVsAddressTranslationMap = new HashMap<>();
         if(!Objects.isNull(response) && !Objects.isNull(response.getAddressTranslationList()) && !response.getAddressTranslationList().isEmpty()){
             orgVsAddressTranslationMap =
@@ -3659,7 +3676,7 @@ public abstract class IReport {
         var shipmentContainerList = shipmentModel.getContainersList();
         if (!shipmentContainerList.isEmpty()) {
             StringBuilder containerEtcCount = new StringBuilder(String.format("ETC %d CNTR", countAllContainers(shipmentContainerList) - 1));
-            StringBuilder containerTypeValues = new StringBuilder(StringUtility.getEmptyString());
+            StringBuilder containerTypeValues = new StringBuilder(Constants.EMPTY_STRING);
             var containerNumbers = shipmentContainerList.stream().filter(x -> !Objects.isNull(x.getContainerNumber()))
                     .map(ContainerModel::getContainerNumber).toList();
             String containerNumber = "";
@@ -4035,11 +4052,11 @@ public abstract class IReport {
     }
 
     private static boolean isAirDgUser() {
-        return UserContext.isAirDgUser();
+        return  LicenseContext.isDgAirLicense();
     }
 
     private static boolean isAirSecurityUser() {
-        return UserContext.isAirSecurityUser();
+        return LicenseContext.isAirSecurityLicense();
     }
 
     public void validateAirDGCheckConsolidations(ConsolidationModel consolidationModel) {
@@ -4190,7 +4207,7 @@ public abstract class IReport {
     public String geteCSDInfo(Awb awb) {
 
         if (StringUtility.isEmpty(awb.getAwbCargoInfo().getRaNumber()))
-            return StringUtility.getEmptyString();
+            return Constants.EMPTY_STRING;
 
         List<String> eCsdInfoList = new ArrayList<>();
         eCsdInfoList.add(awb.getAwbCargoInfo().getCountryCode());
@@ -4216,7 +4233,7 @@ public abstract class IReport {
             return (StringUtility.toUpperCase(convertToDPWDateFormat(awb.getAwbCargoInfo().getScreeningTime(), "ddMMMyy HHmm", true)));
         else if (Objects.nonNull(awb.getOriginalPrintedAt()))
             return (StringUtility.toUpperCase(convertToDPWDateFormat(awb.getOriginalPrintedAt(), "ddMMMyy HHmm", true)));
-        return StringUtility.getEmptyString();
+        return Constants.EMPTY_STRING;
     }
 
     public void populateRaKcDataWithShipmentDetails(Map<String, Object> dictionary, ShipmentDetails shipmentDetails) {

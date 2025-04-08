@@ -210,7 +210,7 @@ class HblServiceTest extends CommonMocks {
 
         // Shipment, Lis<Container>, List<Packing>
         ShipmentDetails inputShipment = testShipment;
-        Set<Containers> inputContainers = Set.of(Containers.builder().containerNumber(StringUtility.getEmptyString()).build());
+        Set<Containers> inputContainers = Set.of(Containers.builder().containerNumber(Constants.EMPTY_STRING).build());
         // Test
         Hbl responseHbl = hblService.checkAllContainerAssigned(inputShipment, inputContainers, null);
         // Assert

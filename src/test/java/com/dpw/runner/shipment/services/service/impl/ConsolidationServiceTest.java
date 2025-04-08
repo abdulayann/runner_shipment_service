@@ -312,6 +312,7 @@ import static org.mockito.Mockito.*;
         testConsolResponse = objectMapperTest.convertValue(testConsol , ConsolidationDetailsResponse.class);
         testConsolRequest = objectMapperTest.convertValue(testConsol , ConsolidationDetailsRequest.class);
         consolidationService.executorService = Executors.newFixedThreadPool(2);
+        consolidationService.executorServiceMasterData = Executors.newFixedThreadPool(2);
         shipmentDetails = jsonTestUtility.getCompleteShipment();
         consolidationDetails = new ConsolidationDetails();
         missingFields = new ArrayList<>();
@@ -320,6 +321,7 @@ import static org.mockito.Mockito.*;
     @AfterEach
     void tearDown() {
         consolidationService.executorService.shutdown();
+        consolidationService.executorServiceMasterData.shutdown();
     }
 
     @Test
@@ -3679,7 +3681,7 @@ import static org.mockito.Mockito.*;
         Map<String, Object> response = new HashMap<>();
         var spyService = Mockito.spy(consolidationService);
         when(consolidationDetailsDao.findConsolidationByIdWithQuery(anyLong())).thenReturn(Optional.of(consolidationDetails));
-        Mockito.doReturn(response).when(spyService).fetchAllMasterDataByKey(any(), any());
+        Mockito.doReturn(response).when(spyService).fetchAllMasterDataByKey(any());
 
         ResponseEntity<IRunnerResponse> responseEntity = spyService.getAllMasterData(CommonRequestModel.buildRequest(1L));
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
@@ -3714,16 +3716,22 @@ import static org.mockito.Mockito.*;
 
     @Test
     void testExportExcel_Success() throws IOException, IllegalAccessException, RunnerException {
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+            Runnable argument = invocation.getArgument(0);
+            argument.run();
+            return mockRunnable;
+        });
         ListCommonRequest listCommonRequest = constructListCommonRequest("id", 1, "=");
         MockHttpServletResponse response = new MockHttpServletResponse();
-        ConsolidationDetails consolidationDetails = testConsol;
+        ConsolidationDetails consolidationDetails1 = testConsol;
         ConsolidationLiteResponse liteResponse = new ConsolidationLiteResponse();
         UsersDto usersDto = UserContext.getUser();
         usersDto.setEnableTimeZone(false);
         UserContext.setUser(usersDto);
         PermissionsContext.setPermissions(List.of("Operations:Consolidations:AIR:Create"));
 
-        ConsolidationListResponse consolidationListResponse = modelMapperTest.map(consolidationDetails, ConsolidationListResponse.class);
+        ConsolidationListResponse consolidationListResponse = modelMapperTest.map(consolidationDetails1, ConsolidationListResponse.class);
 
         when(customConsolidationDetailsRepository.findAllLiteConsol(any(), any())).thenReturn(new PageImpl<>(List.of(liteResponse)));
         ShipmentSettingsDetails shipmentSettingsDetails = new ShipmentSettingsDetails();
@@ -4379,7 +4387,7 @@ import static org.mockito.Mockito.*;
             return mockRunnable;
         });
 
-        Map<String, Object> response = spyService.fetchAllMasterDataByKey(consolidationDetails, consolidationDetailsResponse);
+        Map<String, Object> response = spyService.fetchAllMasterDataByKey(consolidationDetailsResponse);
         assertEquals(new HashMap<>(), response);
     }
 
@@ -5258,6 +5266,12 @@ import static org.mockito.Mockito.*;
     @ParameterizedTest
     @ValueSource(booleans = {true, false})  // Runs test for both true and false cases
     void testListRequestedConsolidationForShipment(boolean isMAWBColoadingEnabled) {
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+            Runnable argument = invocation.getArgument(0);
+            argument.run();
+            return mockRunnable;
+        });
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(
                 CommonGetRequest.builder().id(1L).build()
         );
