@@ -1424,7 +1424,134 @@ class EntityTransferServiceTest extends CommonMocks {
         ResponseEntity<IRunnerResponse> responseEntity = entityTransferService.postArValidation(commonRequestModel);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
+    @Test
+    void testPostArValidation_SuccessWithoutConsol() throws RunnerException {
+        ShipmentDetails shipmentDetails1 = jsonTestUtility.getCompleteShipment();
+        shipmentDetails1.setTenantId(33);
+        shipmentDetails1.setConsolidationList(Set.of());
+        ShipmentDetails shipmentDetailsDrt = jsonTestUtility.getCompleteShipment();
+        shipmentDetailsDrt.setGuid(UUID.randomUUID());
+        shipmentDetailsDrt.setJobType(Constants.SHIPMENT_TYPE_DRT);
+        shipmentDetailsDrt.setTenantId(33);
+        shipmentDetailsDrt.setConsolidationList(Set.of());
 
+        ShipmentDetails shipmentDetailsImp = jsonTestUtility.getCompleteShipment();
+        shipmentDetailsImp.setGuid(UUID.randomUUID());
+        shipmentDetailsImp.setDirection(Constants.DIRECTION_IMP);
+        shipmentDetailsImp.setSourceGuid(UUID.randomUUID());
+        shipmentDetailsImp.setTenantId(33);
+        shipmentDetailsImp.setConsolidationList(Set.of());
+
+        ShipmentDetails shipmentDetailsImp1 = jsonTestUtility.getCompleteShipment();
+        shipmentDetailsImp1.setGuid(UUID.randomUUID());
+        shipmentDetailsImp1.setDirection(Constants.DIRECTION_IMP);
+        shipmentDetailsImp1.setSourceGuid(UUID.randomUUID());
+        shipmentDetailsImp1.setTenantId(33);
+        shipmentDetailsImp1.setConsolidationList(Set.of());
+
+        ShipmentDetails shipmentDetailsImp2 = new ShipmentDetails();
+        shipmentDetailsImp2.setGuid(UUID.randomUUID());
+        shipmentDetailsImp2.setDirection(Constants.DIRECTION_IMP);
+        shipmentDetailsImp2.setSourceGuid(UUID.randomUUID());
+        shipmentDetailsImp2.setTenantId(33);
+
+        ShipmentDetails shipmentDetailsImp3 = new ShipmentDetails();
+        shipmentDetailsImp3.setGuid(UUID.randomUUID());
+        shipmentDetailsImp3.setDirection(Constants.DIRECTION_IMP);
+        shipmentDetailsImp3.setSourceGuid(UUID.randomUUID());
+        shipmentDetailsImp3.setTenantId(33);
+
+        ShipmentDetails shipmentDetailsExp = jsonTestUtility.getCompleteShipment();
+        shipmentDetailsExp.setGuid(UUID.randomUUID());
+        shipmentDetailsExp.setDirection(Constants.DIRECTION_EXP);
+        shipmentDetailsExp.setTenantId(33);
+        shipmentDetailsExp.setConsolidationList(Set.of());
+
+        LocalDateTime timeStamp = LocalDateTime.now();
+        PostArValidationRequest postArValidationRequest = new PostArValidationRequest(List.of(shipmentDetails1.getGuid(), shipmentDetailsDrt.getGuid(), shipmentDetailsImp.getGuid(), shipmentDetailsImp1.getGuid(), shipmentDetailsExp.getGuid(), shipmentDetailsImp2.getGuid(), shipmentDetailsImp3.getGuid()), timeStamp);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(postArValidationRequest);
+
+        ShipmentDetails destShipment = new ShipmentDetails();
+        destShipment.setGuid(UUID.randomUUID());
+        destShipment.setSourceGuid(shipmentDetails1.getGuid());
+        destShipment.setTenantId(123);
+
+        ShipmentDetails destShipmentForTriangulation = new ShipmentDetails();
+        destShipmentForTriangulation.setGuid(UUID.randomUUID());
+        destShipmentForTriangulation.setSourceGuid(shipmentDetails1.getGuid());
+        destShipmentForTriangulation.setTenantId(231);
+
+        ShipmentDetails originShipment = new ShipmentDetails();
+        originShipment.setGuid(shipmentDetailsImp.getSourceGuid());
+        originShipment.setTenantId(432);
+        ConsolidationDetails originShipConsole = new ConsolidationDetails();
+        originShipConsole.setGuid(UUID.randomUUID());
+        originShipConsole.setShipmentType(Constants.DIRECTION_IMP);
+        originShipConsole.setReceivingBranch(33L);
+        originShipConsole.setTriangulationPartner(33L);
+        originShipment.setConsolidationList(new HashSet<>(List.of(originShipConsole)));
+
+        ShipmentDetails originShipment1 = new ShipmentDetails();
+        originShipment1.setGuid(shipmentDetailsImp1.getSourceGuid());
+        originShipment1.setTenantId(432);
+        ConsolidationDetails originShipConsole1 = new ConsolidationDetails();
+        originShipConsole1.setGuid(UUID.randomUUID());
+        originShipConsole1.setShipmentType(Constants.DIRECTION_IMP);
+        originShipConsole1.setReceivingBranch(null);
+        originShipConsole1.setTriangulationPartner(33L);
+        originShipment1.setConsolidationList(new HashSet<>(List.of(originShipConsole1)));
+
+        ShipmentDetails originShipment2 = new ShipmentDetails();
+        originShipment2.setGuid(shipmentDetailsImp2.getSourceGuid());
+        originShipment2.setTenantId(432);
+        ConsolidationDetails originShipConsole2 = new ConsolidationDetails();
+        originShipConsole2.setGuid(UUID.randomUUID());
+        originShipConsole2.setShipmentType(Constants.DIRECTION_EXP);
+        originShipConsole2.setReceivingBranch(33L);
+        originShipConsole1.setTriangulationPartner(33L);
+        originShipment2.setConsolidationList(new HashSet<>(List.of(originShipConsole2)));
+
+        ShipmentDetails triangulationShipment = new ShipmentDetails();
+        triangulationShipment.setGuid(UUID.randomUUID());
+        triangulationShipment.setSourceGuid(originShipment2.getGuid());
+        triangulationShipment.setTenantId(35);
+
+        ShipmentDetails originShipment3 = new ShipmentDetails();
+        originShipment3.setGuid(shipmentDetailsImp3.getSourceGuid());
+        originShipment3.setTenantId(432);
+        ConsolidationDetails originShipConsole3 = new ConsolidationDetails();
+        originShipConsole3.setGuid(UUID.randomUUID());
+        originShipConsole3.setShipmentType(Constants.DIRECTION_EXP);
+        originShipConsole3.setReceivingBranch(35L);
+        originShipConsole3.setTriangulationPartner(33L);
+        originShipment3.setConsolidationList(new HashSet<>(List.of(originShipConsole3)));
+
+        ShipmentDetails receivingShipment = new ShipmentDetails();
+        receivingShipment.setGuid(UUID.randomUUID());
+        receivingShipment.setSourceGuid(originShipment3.getGuid());
+        receivingShipment.setTenantId(35);
+
+
+
+        String locationRefGuid = shipmentDetailsExp.getCarrierDetails().getDestination();
+        Map<String, UnlocationsResponse> unlocationsResponseMap = new HashMap<>();
+        UnlocationsResponse unlocationsResponse = new UnlocationsResponse();
+        unlocationsResponse.setLocationsReferenceGUID(locationRefGuid);
+        unlocationsResponse.setCountry("IND");
+        unlocationsResponseMap.put(locationRefGuid, unlocationsResponse);
+
+        LogHistoryResponse logHistoryResponse = LogHistoryResponse.builder().entityGuid(shipmentDetails1.getGuid()).entityPayload(jsonTestUtility.convertToJson(shipmentDetails1)).build();
+        List<UUID> shipGuids = new ArrayList<>(List.of(shipmentDetails1.getGuid(), shipmentDetailsDrt.getGuid(), shipmentDetailsImp.getGuid(), shipmentDetailsImp1.getGuid(), shipmentDetailsExp.getGuid(), shipmentDetailsImp2.getGuid(), shipmentDetailsImp3.getGuid()));
+        Set<UUID> shipGuidSet = new HashSet<>(shipGuids);
+        Set<UUID> shipGuidSet1 = new HashSet<>(shipGuidSet);
+        shipGuidSet1.remove(shipmentDetails1.getGuid());
+
+        when(shipmentDao.findShipmentsByGuids(shipGuidSet1)).thenReturn(List.of(shipmentDetailsDrt, shipmentDetailsImp, shipmentDetailsImp1, shipmentDetailsExp, shipmentDetailsImp2, shipmentDetailsImp3));
+        when(logsHistoryService.findByEntityGuidsAndTimeStamp(shipGuidSet.stream().toList(), timeStamp)).thenReturn(List.of(logHistoryResponse));
+        when(jsonHelper.readFromJson(logHistoryResponse.getEntityPayload(), ShipmentDetails.class)).thenReturn(shipmentDetails1);
+        ResponseEntity<IRunnerResponse> responseEntity = entityTransferService.postArValidation(commonRequestModel);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
     @Test
     void testPostArValidation_Failure() {
         PostArValidationRequest request = new PostArValidationRequest();

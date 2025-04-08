@@ -2138,12 +2138,13 @@ public class EntityTransferService implements IEntityTransferService {
 
         List<ShipmentDetails> shipmentDetailsList = findShipmentsFromLogsHistory(requestGuids.stream().toList(), request.getTimestamp());
 
-        Map<UUID, ConsolidationDetails> consolidationDetailsMap;
+        Map<UUID, ConsolidationDetails> consolidationDetailsMap = new HashMap<>();
         if (!shipmentDetailsList.isEmpty()){
             Set<UUID> consoleGuids = getConsoleGuids(shipmentDetailsList);
-
-            List<ConsolidationDetails> consolidationDetailsList = findConsolidationFromLogsHistory(consoleGuids.stream().toList(), request.getTimestamp());
-            consolidationDetailsMap = consolidationDetailsList.stream().collect(Collectors.toMap(ConsolidationDetails::getGuid, Function.identity()));
+            if (!CollectionUtils.isEmpty(consoleGuids)) {
+                List<ConsolidationDetails> consolidationDetailsList = findConsolidationFromLogsHistory(consoleGuids.stream().toList(), request.getTimestamp());
+                consolidationDetailsMap = consolidationDetailsList.stream().collect(Collectors.toMap(ConsolidationDetails::getGuid, Function.identity()));
+            }
 
             Set<UUID> sourceGuids = new HashSet<>();
             Set<UUID> shipmentGuids = new HashSet<>();

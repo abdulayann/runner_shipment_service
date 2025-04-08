@@ -268,8 +268,7 @@ class ContainerServiceTest extends CommonMocks {
         Page<Containers> page = new PageImpl<>(List.of(testContainer) , PageRequest.of(0 , 10) , 1);
 
         when(containerDao.findAll(any(), any())).thenReturn(page);
-        when(jsonHelper.convertValue(any(Containers.class), eq(ContainerResponse.class))).thenReturn((ContainerResponse) containerResponse);
-
+        when(commonUtils.setIncludedFieldsToResponse(any(), anySet(),any())).thenReturn(containerResponse);
         ResponseEntity<IRunnerResponse> responseEntity = containerService.list(commonRequestModel);
 
         assertNotNull(responseEntity);
@@ -284,7 +283,7 @@ class ContainerServiceTest extends CommonMocks {
         Page<Containers> page = new PageImpl<>(List.of(testContainer) , PageRequest.of(0 , 10) , 1);
 
         when(containerDao.findAll(any(), any())).thenReturn(page);
-        when(jsonHelper.convertValue(any(Containers.class), eq(ContainerResponse.class))).thenReturn((ContainerResponse) containerResponse);
+        when(commonUtils.setIncludedFieldsToResponse(any(), anySet(),any())).thenReturn(containerResponse);
 
         CompletableFuture<ResponseEntity<IRunnerResponse>> responseEntity = containerService.listAsync(request);
 
@@ -317,7 +316,7 @@ class ContainerServiceTest extends CommonMocks {
         ContainerResponse containerResponse = objectMapper.convertValue(testContainer, ContainerResponse.class);
 
         when(containerDao.findById(anyLong())).thenReturn(Optional.of(testContainer));
-        when(jsonHelper.convertValue(any(Containers.class), eq(ContainerResponse.class))).thenReturn(containerResponse);
+        when(commonUtils.setIncludedFieldsToResponse(any(), anySet(),any())).thenReturn(containerResponse);
 
         ResponseEntity<IRunnerResponse> responseEntity = containerService.retrieveById(commonRequestModel);
 
@@ -393,7 +392,7 @@ class ContainerServiceTest extends CommonMocks {
         ContainerResponse containerResponse = objectMapper.convertValue(containerRequest, ContainerResponse.class);
 
         when(jsonHelper.convertValue(any(ContainerRequest.class), eq(Containers.class))).thenReturn(testContainer);
-        when(jsonHelper.convertValue(any(Containers.class), eq(ContainerResponse.class))).thenReturn(containerResponse);
+        when(commonUtils.setIncludedFieldsToResponse(any(), anySet(),any())).thenReturn(containerResponse);
 
         ResponseEntity<IRunnerResponse> responseEntity = containerService.calculateAchievedAllocatedForSameUnit(commonRequestModel);
 
@@ -426,7 +425,7 @@ class ContainerServiceTest extends CommonMocks {
         when(containerDao.save(any(Containers.class))).thenReturn(testContainer);
         when(producer.getKafkaResponse(any() , anyBoolean())).thenReturn(new KafkaResponse());
         when(jsonHelper.convertToJson(any(KafkaResponse.class))).thenReturn(StringUtils.EMPTY);
-        when(jsonHelper.convertValue(any(Containers.class), eq(ContainerResponse.class))).thenReturn(containerResponse);
+        when(commonUtils.setIncludedFieldsToResponse(any(), anySet(),any())).thenReturn(containerResponse);
 
         Packing packing = jsonTestUtility.getTestPacking();
         List<Packing> packingList = List.of(packing);
@@ -602,7 +601,7 @@ class ContainerServiceTest extends CommonMocks {
         testContainer.setAchievedWeightUnit(Constants.WEIGHT_UNIT_KG);
         testContainer.setAchievedVolumeUnit(Constants.VOLUME_UNIT_M3);
         when(containerDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testContainer)));
-        when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(objectMapper.convertValue(testContainer, ContainerResponse.class));
+        when(commonUtils.setIncludedFieldsToResponse(any(), anySet(),any())).thenReturn(objectMapper.convertValue(testContainer, ContainerResponse.class));
         when(masterDataUtils.createInBulkCommodityTypeRequest(any(), any(), any(), any(), any())).thenReturn(new ArrayList<>());
         mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = containerService.getContainersForSelection(CommonRequestModel.buildRequest(containerAssignListRequest));
@@ -621,7 +620,7 @@ class ContainerServiceTest extends CommonMocks {
         testShipment.setShipmentType(Constants.CARGO_TYPE_FCL);
         testContainer.setShipmentsList(Set.of(testShipment));
         when(containerDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testContainer)));
-        when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(objectMapper.convertValue(testContainer, ContainerResponse.class));
+        when(commonUtils.setIncludedFieldsToResponse(any(), anySet(),any())).thenReturn(objectMapper.convertValue(testContainer, ContainerResponse.class));
         when(masterDataUtils.createInBulkCommodityTypeRequest(any(), any(), any(), any(), any())).thenReturn(new ArrayList<>());
         mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = containerService.getContainersForSelection(CommonRequestModel.buildRequest(containerAssignListRequest));
@@ -661,7 +660,7 @@ class ContainerServiceTest extends CommonMocks {
         testShipment.setShipmentType(Constants.CARGO_TYPE_FCL);
         testContainer.setShipmentsList(Set.of(testShipment));
         when(containerDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testContainer)));
-        when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(objectMapper.convertValue(testContainer, ContainerResponse.class));
+        when(commonUtils.setIncludedFieldsToResponse(any(), anySet(),any())).thenReturn(objectMapper.convertValue(testContainer, ContainerResponse.class));
         when(masterDataUtils.createInBulkCommodityTypeRequest(any(), any(), any(), any(), any())).thenReturn(new ArrayList<>());
         mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = containerService.getContainersForSelection(CommonRequestModel.buildRequest(containerAssignListRequest));
@@ -862,7 +861,7 @@ class ContainerServiceTest extends CommonMocks {
 
         Optional<ConsolidationDetails> consol = Optional.of(consolidationDetails);
         when(consolidationDetailsDao.findById(1L)).thenReturn(consol);
-        when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(objectMapper.convertValue(testContainer, ContainerResponse.class));
+        when(commonUtils.setIncludedFieldsToResponse(any(), anySet(),any())).thenReturn(objectMapper.convertValue(testContainer, ContainerResponse.class));
 
         List<String> contHeaders = new ArrayList<>();
         contHeaders.add("containerNumber");
