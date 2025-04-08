@@ -1153,9 +1153,9 @@ public class CustomerBookingService implements ICustomerBookingService {
             // Only current operation, no comparison
             if(current.getContainersList() != null)
             {
-                current.getContainersList().forEach(cont -> {
-                    loadInfoRequestList.add(containerLoadConstruct(cont, operation, cont.getContainerCount()));
-                });
+                current.getContainersList().forEach(cont ->
+                    loadInfoRequestList.add(containerLoadConstruct(cont, operation, cont.getContainerCount()))
+                );
             }
         }  else {
             // Find delta

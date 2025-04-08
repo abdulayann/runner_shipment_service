@@ -636,51 +636,6 @@ public class ShipmentService implements IShipmentService {
         return responseList;
     }
 
-    private void containerCountUpdate(ShipmentDetails shipmentDetail, ShipmentListResponse response) {
-        Long container20Count = 0L;
-        Long container40Count = 0L;
-        Long container20GPCount = 0L;
-        Long container20RECount = 0L;
-        Long container40GPCount = 0L;
-        Long container40RECount = 0L;
-        Set<String> containerNumber = new HashSet<>();
-        if (shipmentDetail.getContainersList() != null) {
-            for (Containers container : shipmentDetail.getContainersList()) {
-                if(container.getContainerCode() != null) {
-                    if (container.getContainerCode().contains(Constants.CONT_20)) {
-                        ++container20Count;
-                    } else if (container.getContainerCode().contains(Constants.CONT_40)) {
-                        ++container40Count;
-                    }
-
-                    switch (container.getContainerCode()) {
-                        case Constants.CONT_20_GP:
-                            ++container20GPCount;
-                            break;
-                        case Constants.CONT_20_RE:
-                            ++container20RECount;
-                            break;
-                        case Constants.CONT_40_GP:
-                            ++container40GPCount;
-                            break;
-                        case Constants.CONT_40_RE:
-                            ++container40RECount;
-                            break;
-                        default:
-                            break;
-                    }
-                }
-                addContainerNumber(container, containerNumber);
-            }
-        }
-        response.setContainer20Count(container20Count);
-        response.setContainer40Count(container40Count);
-        response.setContainer20GPCount(container20GPCount);
-        response.setContainer20RECount(container20RECount);
-        response.setContainer40GPCount(container40GPCount);
-        response.setContainer40RECount(container40RECount);
-        response.setContainerNumbers(containerNumber);
-    }
 
     private void addContainerNumber(Containers container, Set<String> containerNumber) {
         if (StringUtility.isNotEmpty(container.getContainerNumber())) {
@@ -1391,7 +1346,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     private void changeShipmentDGValuesFromPack(PackingRequest pack, Set<Long> dgConts, ShipmentDetails shipmentDetails,
-                                                Map<Long, Packing> oldPacksMap, ShipmentDetails oldEntity, Set<Long> newPackAttachedInConts) throws RunnerException {
+                                                Map<Long, Packing> oldPacksMap, Set<Long> newPackAttachedInConts) {
         Packing oldPacking = null;
         if(oldPacksMap.containsKey(pack.getId()))
             oldPacking = oldPacksMap.get(pack.getId());
@@ -1412,7 +1367,7 @@ public class ShipmentService implements IShipmentService {
         if(Objects.isNull(packingList))
             return;
         for(PackingRequest pack: packingList) {
-            changeShipmentDGValuesFromPack(pack, dgConts, shipmentDetails, oldPacksMap, oldEntity, newPackAttachedInConts);
+            changeShipmentDGValuesFromPack(pack, dgConts, shipmentDetails, oldPacksMap, newPackAttachedInConts);
         }
     }
 
@@ -1434,8 +1389,8 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    private void changeShipmentDGValuesFromContainer(Set<Long> dgConts, ShipmentDetails shipmentDetails, ShipmentDetails oldEntity,
-                                                     Set<Long> newPackAttachedInConts, ContainerRequest container, Map<Long, Containers> oldContainersMap) throws RunnerException {
+    private void changeShipmentDGValuesFromContainer(Set<Long> dgConts, ShipmentDetails shipmentDetails,
+                                                     Set<Long> newPackAttachedInConts, ContainerRequest container, Map<Long, Containers> oldContainersMap) {
         if(!Objects.isNull(container.getId()) && dgConts.contains(container.getId())) {
             container.setHazardous(true);
             if(isStringNullOrEmpty(container.getDgClass()) || isStringNullOrEmpty(container.getUnNumber()) || isStringNullOrEmpty(container.getProperShippingName()))
@@ -1455,7 +1410,7 @@ public class ShipmentService implements IShipmentService {
         if(Objects.isNull(containersList))
             return;
         for(ContainerRequest container: containersList) {
-            changeShipmentDGValuesFromContainer(dgConts, shipmentDetails, oldEntity, newPackAttachedInConts, container, oldContainersMap);
+            changeShipmentDGValuesFromContainer(dgConts, shipmentDetails, newPackAttachedInConts, container, oldContainersMap);
         }
     }
 
@@ -2622,7 +2577,7 @@ public class ShipmentService implements IShipmentService {
         // Sci status update for attach and detach in console mawb
         checkSciForAttachDetachConsole(shipmentDetails, removedConsolIds, isNewConsolAttached, consolidationId);
         log.info("shipment afterSave checkSciForAttachConsole.... ");
-        processEventsInAfterSave(shipmentDetails, oldEntity, isCreate, shipmentSettingsDetails, eventsRequestList, consolidationId, id, previousStatus);
+        processEventsInAfterSave(shipmentDetails, oldEntity, isCreate, shipmentSettingsDetails, eventsRequestList, id);
 
         updatedPackings = getUpdatedPackingList(shipmentDetails, isCreate, includeGuid, packingRequestList, consolidationId, updatedPackings, id, deleteContainerIds);
         processListRequests(shipmentDetails, isCreate, referenceNumbersRequestList, id, routingsRequestList, serviceDetailsRequestList, notesRequestList, shipmentAddressList, pickupDeliveryDetailsRequests, shipmentOrderRequestList);
@@ -2755,7 +2710,7 @@ public class ShipmentService implements IShipmentService {
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> triggerAutomaticTransfer(shipmentDetails, oldEntity, false)), executorService);
     }
 
-    private void processEventsInAfterSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, boolean isCreate, ShipmentSettingsDetails shipmentSettingsDetails, List<EventsRequest> eventsRequestList, Long consolidationId, Long id, Integer previousStatus) throws RunnerException {
+    private void processEventsInAfterSave(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, boolean isCreate, ShipmentSettingsDetails shipmentSettingsDetails, List<EventsRequest> eventsRequestList, Long id) throws RunnerException {
         if (eventsRequestList != null) {
             eventsRequestList = setEventDetails(eventsRequestList, shipmentDetails);
             List<Events> eventsList = commonUtils.convertToEntityList(eventsRequestList, Events.class, isCreate);
@@ -4274,7 +4229,7 @@ public class ShipmentService implements IShipmentService {
 
     private void updateContainerMap(ShipmentDetails shipmentDetails, Page<Containers> containers, Map<Long, Containers> containersMap) {
         boolean isFCL = shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL) && (shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA) || shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_ROA));
-        if(containers != null && containers.getContent() != null) {
+        if(containers != null) {
             List<Containers> containersList = containers.getContent();
             if(!containers.getContent().isEmpty()) {
                 for (Containers container : containersList) {
@@ -4986,7 +4941,7 @@ public class ShipmentService implements IShipmentService {
             if (carrierDetailRequest != null) {
                 newShipmentDetails.setCarrierDetails(updatedCarrierDetails);
             }
-            processListTypeRequests(id, newShipmentDetails, oldEntity, shipmentSettingsDetails, previousStatus, shipmentRequest);
+            processListTypeRequests(id, newShipmentDetails, oldEntity, shipmentSettingsDetails, shipmentRequest);
 
             syncShipmentInV1(fromV1, newShipmentDetails, consolidationDetails);
 
@@ -5002,7 +4957,7 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    private void processListTypeRequests(Long id, ShipmentDetails newShipmentDetails, ShipmentDetails oldEntity, ShipmentSettingsDetails shipmentSettingsDetails, Integer previousStatus, ShipmentPatchRequest shipmentRequest) throws RunnerException {
+    private void processListTypeRequests(Long id, ShipmentDetails newShipmentDetails, ShipmentDetails oldEntity, ShipmentSettingsDetails shipmentSettingsDetails, ShipmentPatchRequest shipmentRequest) throws RunnerException {
         List<BookingCarriageRequest> bookingCarriageRequestList = shipmentRequest.getBookingCarriagesList();
         List<TruckDriverDetailsRequest> truckDriverDetailsRequestList = shipmentRequest.getTruckDriverDetails();
         List<PackingRequest> packingRequestList = shipmentRequest.getPackingList();
@@ -9045,6 +9000,7 @@ public class ShipmentService implements IShipmentService {
 
     @Override
     @Transactional
+    @SuppressWarnings("java:S4144") //Supressing this identical method because it will be updated in v3
     public ResponseEntity<IRunnerResponse> createV3(CommonRequestModel commonRequestModel) {
         ShipmentRequest request = (ShipmentRequest) commonRequestModel.getData();
         this.setColoadingStation(request);
@@ -9055,6 +9011,7 @@ public class ShipmentService implements IShipmentService {
 
     @Override
     @Transactional
+    @SuppressWarnings("java:S4144") //Supressing this identical method because it will be updated in v3
     public ResponseEntity<IRunnerResponse> completeUpdateV3(CommonRequestModel commonRequestModel) throws RunnerException {
         ShipmentRequest shipmentRequest = (ShipmentRequest) commonRequestModel.getData();
         this.setColoadingStation(shipmentRequest);
@@ -9063,6 +9020,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Override
+    @SuppressWarnings("java:S4144") //Supressing this identical method because it will be updated in v3
     public ResponseEntity<IRunnerResponse> retrieveByIdV3(CommonRequestModel commonRequestModel, boolean getMasterData) {
         String responseMsg;
         try {
@@ -9076,6 +9034,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Override
+    @SuppressWarnings("java:S4144") //Supressing this identical method because it will be updated in v3
     public ResponseEntity<IRunnerResponse> fullShipmentsListV3(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
@@ -9115,6 +9074,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     @Override
+    @SuppressWarnings("java:S4144") //Supressing this identical method because it will be updated in v3
     public ResponseEntity<IRunnerResponse> listV3(CommonRequestModel commonRequestModel, boolean getMasterData) {
         String responseMsg;
         int totalPage = 0;

@@ -177,7 +177,6 @@ public class AwbService implements IAwbService {
 
     private static final String RA_KC_VALIDATION_MESSAGE = "You cannot generate the AWB without adding the screening/ Security status for RA KC %s";
 
-    private Integer totalPacks = 0;
     private List<String> attachedShipmentDescriptions = new ArrayList<>();
     private BigDecimal totalVolumetricWeightOfAwbPacks = new BigDecimal(0);
 
@@ -996,7 +995,7 @@ public class AwbService implements IAwbService {
                 awbShipmentInfo.setIssuingAgentAddress(StringUtility.toUpperCase(issuingAgentAddress));
                 constructIssuingAgentAddress(awbShipmentInfo, orgRow.getAddressData(), alpha2DigitToCountry);
                 issuingAgentAddressList.add(orgRow.getAddressId());
-                Map<Long, AddressDataV1> issuingAgentAddressIdToEntityMap = getIssuingAgentAddressIdToEntityMap(issuingAgentAddressList);
+                Map<Long, AddressDataV1> issuingAgentAddressIdToEntityMap = getAddressDataV1Map(issuingAgentAddressList);
                 setAwbCustomOriginCode(awbCargoInfo, orgRow);
                 setAwbIssuingAgentTaxRegistrationNumber(orgRow, issuingAgentAddressIdToEntityMap, awbShipmentInfo);
                 setIataAndCassCode(orgRow, awbShipmentInfo);
@@ -1040,18 +1039,6 @@ public class AwbService implements IAwbService {
                 (String) orgRow.getOrgData().get(COUNTRY) : null;
         if (country != null)
             awbCargoInfo.setCustomOriginCode(getCountryCode(country));
-    }
-
-    private Map<Long, AddressDataV1> getIssuingAgentAddressIdToEntityMap(ArrayList<String> issuingAgentAddressList) {
-        Map<Long, AddressDataV1> issuingAgentAddressIdToEntityMap = new HashMap<>();
-        if(!CommonUtils.listIsNullOrEmpty(issuingAgentAddressList)) {
-            CommonV1ListRequest issuingAgentAddressRequest = createCriteriaToFetchAddressList(issuingAgentAddressList);
-            V1DataResponse issuingAgentAddressResponse = v1Service.addressList(issuingAgentAddressRequest);
-            List<AddressDataV1> issuingAgentEntityAddressList = jsonHelper.convertValueToList(issuingAgentAddressResponse.entities, AddressDataV1.class);
-            issuingAgentAddressIdToEntityMap = issuingAgentEntityAddressList.stream()
-                    .collect(Collectors.toMap(AddressDataV1::getId, entity -> entity));
-        }
-        return issuingAgentAddressIdToEntityMap;
     }
 
     private void processConsoleSendingAgentAndReceivingAgent(ConsolidationDetails consolidationDetails, AwbShipmentInfo awbShipmentInfo, Map<String, String> alpha2DigitToCountry) {
@@ -1733,22 +1720,6 @@ public class AwbService implements IAwbService {
         }
     }
 
-    private String formatCSDInfo(String raNumber, String securityStatus, String screeningStatus) {
-        StringBuilder csdInfo = new StringBuilder();
-
-        if (!Strings.isNullOrEmpty(raNumber)) {
-            csdInfo.append(raNumber).append("/");
-        }
-        if (!Strings.isNullOrEmpty(securityStatus)) {
-            csdInfo.append(securityStatus).append("/");
-        }
-        if (!Strings.isNullOrEmpty(screeningStatus)) {
-            csdInfo.append(screeningStatus).append("/");
-        }
-
-        return csdInfo.toString();
-    }
-
     private String getCountryCode(String country) {
         CommonV1ListRequest request = new CommonV1ListRequest();
         List<Object> criteria = new ArrayList<>();
@@ -1893,7 +1864,6 @@ public class AwbService implements IAwbService {
                 awbPacking.setDgClassAir(packing.getDgClassAir());
                 awbPacking.setDgClassAirDescription(packing.getDgClassAirDescription());
                 awbPacking.setAwbNumber(shipmentDetails.getHouseBill());
-                totalPacks += Integer.parseInt(packing.getPacks());
                 awbPackingList.add(awbPacking);
             }
 
@@ -2768,7 +2738,7 @@ public class AwbService implements IAwbService {
         }
     }
 
-    private void updateMawbFromShipment(CreateAwbRequest request, ConsolidationDetails consolidationDetails, Awb awb, ShipmentSettingsDetails shipmentSettingsDetails) throws RunnerException {
+    private void updateMawbFromShipment(CreateAwbRequest request, ConsolidationDetails consolidationDetails, Awb awb, ShipmentSettingsDetails shipmentSettingsDetails) {
 
         MawbLockSettings mawbLockSettings = shipmentSettingsDetails.getMawbLockSettings();
         attachedShipmentDescriptions = new ArrayList<>();

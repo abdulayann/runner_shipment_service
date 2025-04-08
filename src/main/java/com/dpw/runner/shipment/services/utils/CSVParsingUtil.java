@@ -830,7 +830,7 @@ public class CSVParsingUtil<T> {
         }
     }
 
-    private void setField(T entity, String attributeName, String attributeValue, int rowNum) throws NoSuchFieldException, IllegalAccessException {
+    private void setField(T entity, String attributeName, String attributeValue, int rowNum) {
 
         Map<String, Field> fieldMap = new HashMap<>();
         for (Field v : entity.getClass().getDeclaredFields()) {

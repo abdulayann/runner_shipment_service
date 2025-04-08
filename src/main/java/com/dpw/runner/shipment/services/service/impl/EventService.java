@@ -1284,11 +1284,6 @@ public class EventService implements IEventService {
         return isSuccess;
     }
 
-    private void saveAndSyncShipment(ShipmentDetails shipmentDetails, String messageId) throws RunnerException {
-        log.info("Saving shipment entity: {} messageId {}", shipmentDetails.getShipmentId(), messageId);
-        shipmentDao.saveWithoutValidation(shipmentDetails);
-    }
-
     @Override
     public ResponseEntity<IRunnerResponse> listV2(CommonRequestModel commonRequestModel) {
         TrackingEventsRequest request = (TrackingEventsRequest) commonRequestModel.getData();
