@@ -679,7 +679,8 @@ public class AwbUtility {
 
             String number = null;
             String expiry = null;
-            Boolean isRA = false, isKC = false;
+            Boolean isRA = false;
+            Boolean isKC = false;
             if(addressList != null && !addressList.isEmpty()){
                 EntityTransferAddress address = addressList.stream().findFirst().orElse(EntityTransferAddress.builder().build());
                 number = address.getKCRANumber();

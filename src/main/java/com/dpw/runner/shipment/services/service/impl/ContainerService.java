@@ -266,7 +266,7 @@ public class ContainerService implements IContainerService {
         boolean isPartValue = containersRow.getIsPart() != null && containersRow.getIsPart();
         if (isPartValue) {
             var shipmentRecordOpt = shipmentDao.findById(request.getShipmentId());
-            if (shipmentRecordOpt.isPresent() && Constants.CARGO_TYPE_FCL.equals(shipmentRecordOpt.get().getShipmentType()) && isPartValue) {
+            if (shipmentRecordOpt.isPresent() && Constants.CARGO_TYPE_FCL.equals(shipmentRecordOpt.get().getShipmentType())) {
                 throw new ValidationException("Shipment cargo type is FCL, Part containers are not allowed to be attached with FCL Shipment");
             }
         }
@@ -1516,7 +1516,7 @@ public class ContainerService implements IContainerService {
     public ResponseEntity<IRunnerResponse> v1ContainerCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws RunnerException {
         ContainerRequestV2 containerRequest = (ContainerRequestV2) commonRequestModel.getData();
         try {
-            if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
+            if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !Boolean.TRUE.equals(syncConfig.IS_REVERSE_SYNC_ACTIVE)) {
                 return ResponseHelper.buildSuccessResponse();
             }
             List<Containers> existingCont = containerDao.findByGuid(containerRequest.getGuid());
@@ -1555,7 +1555,7 @@ public class ContainerService implements IContainerService {
             ListCommonRequest listCommonRequest = constructListCommonRequest("guid", containerRequest.getShipmentGuids(), "IN");
             Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listCommonRequest, ShipmentDetails.class);
             Page<ShipmentDetails> shipmentDetails = shipmentDao.findAll(pair.getLeft(), pair.getRight());
-            if (shipmentDetails.get() != null && shipmentDetails.get().count() > 0) {
+            if (shipmentDetails.get().findAny().isPresent()) {
                 shipIds = shipmentDetails.get().map(e -> e.getId()).toList();
             }
         }
@@ -1692,11 +1692,9 @@ public class ContainerService implements IContainerService {
         });
         Map<String, EntityTransferCommodityType> v1Data = masterDataUtils.fetchInBulkCommodityTypes(commodityTypes.stream().toList());
         masterDataUtils.pushToCache(v1Data, CacheConstants.COMMODITY, commodityTypes, new EntityTransferCommodityType(), cacheMap);
-        if (!Objects.isNull(responseList)) {
-            for (IRunnerResponse containerResponse : responseList) {
-                ContainerResponse containerResponse1 = (ContainerResponse) containerResponse;
-                containerResponse1.setCommodityTypeData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Containers.class.getSimpleName() + containerResponse1.getId()), CacheConstants.COMMODITY, cacheMap));
-            }
+        for (IRunnerResponse containerResponse : responseList) {
+            ContainerResponse containerResponse1 = (ContainerResponse) containerResponse;
+            containerResponse1.setCommodityTypeData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Containers.class.getSimpleName() + containerResponse1.getId()), CacheConstants.COMMODITY, cacheMap));
         }
         return responseList;
     }
@@ -1775,16 +1773,6 @@ public class ContainerService implements IContainerService {
         details.setBookingRef(bookingRef);
         details.setContainer(containerBoomiUniversalJson);
         return details;
-    }
-
-    private String getRefNum(Containers containers) {
-        if(containers.getConsolidationId() != null) {
-            Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(containers.getConsolidationId());
-            if(consolidationDetails.isPresent()) {
-                return consolidationDetails.get().getReferenceNumber();
-            }
-        }
-        return null;
     }
 
     @PostConstruct

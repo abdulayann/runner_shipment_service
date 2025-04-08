@@ -2655,7 +2655,7 @@ public class ConsolidationService implements IConsolidationService {
         long consoleCont = 0l;
         long shipmentCont = 0l;
         if(consolidationDetails.getContainersList() != null && !consolidationDetails.getContainersList().isEmpty()) {
-            Map<String, Object> cacheMap = new HashMap<String, Object>();
+            Map<String, Object> cacheMap = new HashMap<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
             Set<String> containerTypes = new HashSet<>();
             processCacheAndContainerResponseList(consolidationDetails, containerTypes, fieldNameKeyMap, cacheMap);
