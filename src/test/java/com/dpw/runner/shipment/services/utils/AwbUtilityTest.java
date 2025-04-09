@@ -957,40 +957,28 @@ class AwbUtilityTest extends CommonMocks {
         when(v1Service.retrieveTenant()).thenReturn(V1RetrieveResponse.builder().entity(mockTenantModel).build());
         when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
 
-        // Arrange
-        HttpServletRequest mockRequest = mock(HttpServletRequest.class);
-        ServletRequestAttributes mockAttributes = mock(ServletRequestAttributes.class);
+        AwbAirMessagingResponse awbAirMessagingResponse = new AwbAirMessagingResponse();
+        when(jsonHelper.convertValue(any(), eq(AwbAirMessagingResponse.class))).thenReturn(awbAirMessagingResponse);
+        when(shipmentSettingsDao.getSettingsByTenantIds(anyList())).thenReturn(List.of());
 
-        try (MockedStatic<RequestContextHolder> mockedContextHolder = mockStatic(RequestContextHolder.class)) {
-            // Setup request with expected IP
-            mockedContextHolder.when(RequestContextHolder::getRequestAttributes)
-                    .thenReturn(mockAttributes);
-            when(mockAttributes.getRequest()).thenReturn(mockRequest);
-            when(mockRequest.getHeader("X-Forwarded-For")).thenReturn("123.45.67.89");
+        //Mock fetchOrgInfoFromV1
+        HashMap<String, Map<String, Object>> responseOrgs = new HashMap<>();
+        HashMap<String, Map<String, Object>> responseAddrs = new HashMap<>();
 
-            AwbAirMessagingResponse awbAirMessagingResponse = objectMapper.convertValue(mockAwb, AwbAirMessagingResponse.class);
-            when(jsonHelper.convertValue(any(), eq(AwbAirMessagingResponse.class))).thenReturn(awbAirMessagingResponse);
-            when(shipmentSettingsDao.getSettingsByTenantIds(anyList())).thenReturn(List.of());
+        responseOrgs.put(issuingAgent.getOrgCode(), Collections.emptyMap());
+        responseAddrs.put(issuingAgent.getOrgCode() + '#' + issuingAgent.getAddressCode(), Collections.emptyMap());
 
-            //Mock fetchOrgInfoFromV1
-            HashMap<String, Map<String, Object>> responseOrgs = new HashMap<>();
-            HashMap<String, Map<String, Object>> responseAddrs = new HashMap<>();
+        OrgAddressResponse mockOrgAddressResponse = OrgAddressResponse.builder()
+                .organizations(responseOrgs).addresses(responseAddrs).build();
+        when(v1ServiceUtil.fetchOrgInfoFromV1(anyList())).thenReturn(mockOrgAddressResponse);
+        mockTenantSettings();
+        mockShipmentSettings();
+        var expectedResponse = awbUtility.createAirMessagingRequestForShipment(mockAwb, mockShipment, null, null);
 
-            responseOrgs.put(issuingAgent.getOrgCode(), Collections.emptyMap());
-            responseAddrs.put(issuingAgent.getOrgCode() + '#' + issuingAgent.getAddressCode(), Collections.emptyMap());
-
-            OrgAddressResponse mockOrgAddressResponse = OrgAddressResponse.builder()
-                    .organizations(responseOrgs).addresses(responseAddrs).build();
-            when(v1ServiceUtil.fetchOrgInfoFromV1(anyList())).thenReturn(mockOrgAddressResponse);
-            mockTenantSettings();
-            mockShipmentSettings();
-            var expectedResponse = awbUtility.createAirMessagingRequestForShipment(mockAwb, mockShipment, null, null);
-
-            assertNotNull(expectedResponse);
-            assertEquals(2, expectedResponse.getMeta().getIssueingAgent().getCountry().length());
-            assertEquals(2, expectedResponse.getMeta().getTenantInfo().getCountry().length());
+        assertNotNull(expectedResponse);
+        assertEquals(2, expectedResponse.getMeta().getIssueingAgent().getCountry().length());
+        assertEquals(2, expectedResponse.getMeta().getTenantInfo().getCountry().length());
         }
-    }
 
     @Test
     void createAirMessagingRequestForShipmentWithShipAddress1() throws RunnerException {

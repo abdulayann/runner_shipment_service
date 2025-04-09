@@ -63,7 +63,10 @@ import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
+import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
@@ -265,6 +268,7 @@ public class AwbService implements IAwbService {
                 setAwbNumberFromPackingInfo(awb);
                 awbDao.updateSciFieldFromHawb(awb, oldEntity.get(), false, id);
             }
+            setOciInfoInAwb(awb);
             awb = awbDao.save(awb);
 
             syncAwb(awb, SaveStatus.UPDATE);
@@ -289,6 +293,46 @@ public class AwbService implements IAwbService {
         }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(awb));
     }
+
+
+    private void setOciInfoInAwb(Awb awb) {
+        if(awb.getOciInfo() != null) {
+            if (awb.getOciInfo().getOtherIdentityInfo() != null) {
+                if(Strings.isNullOrEmpty(awb.getOciInfo().getOtherIdentityInfo().getIrIpAddress())) {
+                    awb.getOciInfo().getOtherIdentityInfo().setIrIpAddress(convertIpFormat(getClientIp()));
+                }
+            }
+            else {
+                OtherIdentityInfo otherIdentityInfo = new OtherIdentityInfo();
+                otherIdentityInfo.setIrIpAddress(convertIpFormat(getClientIp()));
+                awb.getOciInfo().setOtherIdentityInfo(otherIdentityInfo);
+            }
+        }
+    }
+
+    private String getClientIp() {
+        ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        if (attrs != null) {
+            HttpServletRequest request = attrs.getRequest();
+            String ip = request.getHeader("X-Forwarded-For"); // Handle proxies
+            if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+                ip = request.getRemoteAddr(); // Get direct IP
+            }
+            return ip;
+        }
+        return "UNKNOWN";
+    }
+
+    public static String convertIpFormat(String ip) {
+        if (ip == null || ip.isEmpty()) {
+            return "";
+        }
+        // Replace "::" with a single "-"
+        String formattedIp = ip.replace("::", "-");
+        // Replace remaining "." and ":" with "-"
+        return formattedIp.replaceAll("[.:]", "-");
+    }
+
 
     private void setAwbNumberFromPackingInfo(Awb awb) {
         if(awb.getAwbPackingInfo() != null && !awb.getAwbPackingInfo().isEmpty()) {

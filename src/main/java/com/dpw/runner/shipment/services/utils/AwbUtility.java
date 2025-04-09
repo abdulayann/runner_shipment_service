@@ -547,7 +547,6 @@ public class AwbUtility {
                 .filter(Objects::nonNull) // Ignore null PODs
                 .anyMatch(pod -> pod.startsWith("US"))); // Check if starts with "US"
 
-        checkOciInfoInAwb(awbResponse);
     }
 
     private void checkAcasFlagInAwbForConsole(AwbAirMessagingResponse awbResponse, ConsolidationDetails consolidationDetails) {
@@ -556,44 +555,8 @@ public class AwbUtility {
                 .filter(Objects::nonNull) // Ignore null PODs
                 .anyMatch(pod -> pod.startsWith("US"))); // Check if starts with "US"
 
-        checkOciInfoInAwb(awbResponse);
     }
 
-    private void checkOciInfoInAwb(AwbAirMessagingResponse awbResponse) {
-        if(awbResponse.getOciInfo() != null) {
-            if (awbResponse.getOciInfo().getOtherIdentityInfo() != null) {
-                awbResponse.getOciInfo().getOtherIdentityInfo().setIrIpAddress(convertIpFormat(getClientIp()));
-            }
-            else {
-                OtherIdentityInfo otherIdentityInfo = new OtherIdentityInfo();
-                otherIdentityInfo.setIrIpAddress(convertIpFormat(getClientIp()));
-                awbResponse.getOciInfo().setOtherIdentityInfo(otherIdentityInfo);
-            }
-        }
-    }
-
-    private String getClientIp() {
-        ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-        if (attrs != null) {
-            HttpServletRequest request = attrs.getRequest();
-            String ip = request.getHeader("X-Forwarded-For"); // Handle proxies
-            if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-                ip = request.getRemoteAddr(); // Get direct IP
-            }
-            return ip;
-        }
-        return "UNKNOWN";
-    }
-
-    public static String convertIpFormat(String ip) {
-        if (ip == null || ip.isEmpty()) {
-            return "";
-        }
-        // Replace "::" with a single "-"
-        String formattedIp = ip.replace("::", "-");
-        // Replace remaining "." and ":" with "-"
-        return formattedIp.replaceAll("[.:]", "-");
-    }
 
     private void setShipperConsgineeDetailsInResponse(Awb awb, ShipmentDetails shipmentDetails, OrgAddressResponse response, AwbAirMessagingResponse awbResponse) {
         if(shipmentDetails.getConsigner() != null && (response.getOrganizations().containsKey(shipmentDetails.getConsigner().getOrgCode())

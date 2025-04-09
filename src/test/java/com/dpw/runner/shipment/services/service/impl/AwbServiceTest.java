@@ -58,13 +58,17 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
+import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -677,6 +681,48 @@ class AwbServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
         Awb mockAwb = testHawb;
         mockAwb.getAwbShipmentInfo().setAwbNumber("updatedAWBNumber");
+        OCIInfo ociInfo = new OCIInfo();
+        OtherIdentityInfo otherIdentityInfo = new OtherIdentityInfo();
+        otherIdentityInfo.setIrIpAddress(null);
+        ociInfo.setOtherIdentityInfo(otherIdentityInfo);
+        mockAwb.setOciInfo(ociInfo);
+        AwbResponse mockAwbResponse = objectMapper.convertValue(mockAwb, AwbResponse.class);
+        // Mocking
+        when(awbDao.findById(1L)).thenReturn(Optional.of(mockAwb));
+        when(jsonHelper.convertValue(any(), eq(Awb.class))).thenReturn(mockAwb);
+        when(awbDao.save(any(Awb.class))).thenReturn(mockAwb);
+        when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
+
+        // Arrange
+        HttpServletRequest mockRequest = mock(HttpServletRequest.class);
+        ServletRequestAttributes mockAttributes = mock(ServletRequestAttributes.class);
+        try (MockedStatic<RequestContextHolder> mockedContextHolder = mockStatic(RequestContextHolder.class)) {
+            // Setup request with expected IP
+            mockedContextHolder.when(RequestContextHolder::getRequestAttributes)
+                    .thenReturn(mockAttributes);
+            when(mockAttributes.getRequest()).thenReturn(mockRequest);
+            when(mockRequest.getHeader("X-Forwarded-For")).thenReturn("123.45.67.89");
+
+            // Test
+            ResponseEntity<IRunnerResponse> responseEntity = awbService.updateAwb(commonRequestModel);
+            // Assert
+            assertEquals(ResponseHelper.buildSuccessResponse(mockAwbResponse), responseEntity);
+        }
+    }
+
+    @Test
+    void updateAwb_shipment3() throws RunnerException {
+        AwbRequest request = new AwbRequest(); // Provide necessary data for request
+        request.setAwbNumber("updatedAWBNumber");
+        request.setId(1);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        Awb mockAwb = testHawb;
+        mockAwb.getAwbShipmentInfo().setAwbNumber("updatedAWBNumber");
+        OCIInfo ociInfo = new OCIInfo();
+        OtherIdentityInfo otherIdentityInfo = new OtherIdentityInfo();
+        otherIdentityInfo.setIrIpAddress("127.0.0.1");
+        ociInfo.setOtherIdentityInfo(otherIdentityInfo);
+        mockAwb.setOciInfo(ociInfo);
         AwbResponse mockAwbResponse = objectMapper.convertValue(mockAwb, AwbResponse.class);
         // Mocking
         when(awbDao.findById(1L)).thenReturn(Optional.of(mockAwb));
@@ -687,6 +733,65 @@ class AwbServiceTest extends CommonMocks {
         ResponseEntity<IRunnerResponse> responseEntity = awbService.updateAwb(commonRequestModel);
         // Assert
         assertEquals(ResponseHelper.buildSuccessResponse(mockAwbResponse), responseEntity);
+
+    }
+
+    @Test
+    void updateAwb_shipment1() throws RunnerException {
+        AwbRequest request = new AwbRequest(); // Provide necessary data for request
+        request.setAwbNumber("updatedAWBNumber");
+        request.setId(1);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        Awb mockAwb = testHawb;
+        mockAwb.getAwbShipmentInfo().setAwbNumber("updatedAWBNumber");
+        mockAwb.setOciInfo(null);
+        AwbResponse mockAwbResponse = objectMapper.convertValue(mockAwb, AwbResponse.class);
+        // Mocking
+        when(awbDao.findById(1L)).thenReturn(Optional.of(mockAwb));
+        when(jsonHelper.convertValue(any(), eq(Awb.class))).thenReturn(mockAwb);
+        when(awbDao.save(any(Awb.class))).thenReturn(mockAwb);
+        when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
+
+        // Test
+        ResponseEntity<IRunnerResponse> responseEntity = awbService.updateAwb(commonRequestModel);
+        // Assert
+        assertEquals(ResponseHelper.buildSuccessResponse(mockAwbResponse), responseEntity);
+
+    }
+
+    @Test
+    void updateAwb_shipment2() throws RunnerException {
+        AwbRequest request = new AwbRequest(); // Provide necessary data for request
+        request.setAwbNumber("updatedAWBNumber");
+        request.setId(1);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        Awb mockAwb = testHawb;
+        mockAwb.getAwbShipmentInfo().setAwbNumber("updatedAWBNumber");
+        OCIInfo ociInfo = new OCIInfo();
+        ociInfo.setOtherIdentityInfo(null);
+        mockAwb.setOciInfo(ociInfo);
+        AwbResponse mockAwbResponse = objectMapper.convertValue(mockAwb, AwbResponse.class);
+        // Mocking
+        when(awbDao.findById(1L)).thenReturn(Optional.of(mockAwb));
+        when(jsonHelper.convertValue(any(), eq(Awb.class))).thenReturn(mockAwb);
+        when(awbDao.save(any(Awb.class))).thenReturn(mockAwb);
+        when(jsonHelper.convertValue(any(), eq(AwbResponse.class))).thenReturn(mockAwbResponse);
+
+        // Arrange
+        HttpServletRequest mockRequest = mock(HttpServletRequest.class);
+        ServletRequestAttributes mockAttributes = mock(ServletRequestAttributes.class);
+        try (MockedStatic<RequestContextHolder> mockedContextHolder = mockStatic(RequestContextHolder.class)) {
+            // Setup request with expected IP
+            mockedContextHolder.when(RequestContextHolder::getRequestAttributes)
+                    .thenReturn(mockAttributes);
+            when(mockAttributes.getRequest()).thenReturn(mockRequest);
+            when(mockRequest.getHeader("X-Forwarded-For")).thenReturn("123.45.67.89");
+
+            // Test
+            ResponseEntity<IRunnerResponse> responseEntity = awbService.updateAwb(commonRequestModel);
+            // Assert
+            assertEquals(ResponseHelper.buildSuccessResponse(mockAwbResponse), responseEntity);
+        }
     }
 
     @Test
