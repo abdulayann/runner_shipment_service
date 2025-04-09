@@ -2562,6 +2562,9 @@ public class CommonUtils {
         } else if (list.get(0) instanceof ShipmentOrder) {
             return modelMapper.map(value, new TypeToken<List<ShipmentOrderResponse>>() {
             }.getType());
+        } else if (list.get(0) instanceof TriangulationPartner) {
+            return modelMapper.map(value, new TypeToken<List<TriangulationPartnerResponse>>() {
+            }.getType());
         }
         return checkForTriangulationPartnerList(value, list);
     }
