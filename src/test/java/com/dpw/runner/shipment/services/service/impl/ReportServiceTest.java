@@ -3880,6 +3880,89 @@ class ReportServiceTest extends CommonMocks {
         assertNotNull(data);
     }
 
+    @Test
+    void testAddHouseBillToRepo() {
+        DocUploadRequest uploadRequest = new DocUploadRequest();
+        uploadRequest.setReportId("123");
+        uploadRequest.setDocType("HB");
+        uploadRequest.setId(456L);
+
+        HblDataDto hblData = new HblDataDto();
+        hblData.setVersion(2);
+
+        Hbl hbl = new Hbl();
+        hbl.setHblData(hblData);
+
+        when(hblDao.findByShipmentId(123L)).thenReturn(List.of(hbl));
+        when(masterDataUtils.withMdc(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        byte[] document = "dummy".getBytes();
+
+        reportService.addHouseBillToRepo(uploadRequest, "Duplicate", document, new ShipmentSettingsDetails(), "RELEASE", "shipment-guid");
+
+        assertEquals(3, hbl.getHblData().getVersion());
+        verify(hblDao).save(hbl);
+    }
+
+    @Test
+    void testAddHouseBillToRepo2() {
+        DocUploadRequest uploadRequest = new DocUploadRequest();
+        uploadRequest.setReportId("123");
+        uploadRequest.setDocType("HB");
+        uploadRequest.setId(456L);
+
+        HblDataDto hblData = new HblDataDto();
+        hblData.setVersion(null);
+
+        Hbl hbl = new Hbl();
+        hbl.setHblData(hblData);
+
+        when(hblDao.findByShipmentId(123L)).thenReturn(List.of(hbl));
+        when(masterDataUtils.withMdc(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        byte[] document = "dummy".getBytes();
+
+        reportService.addHouseBillToRepo(uploadRequest, "Duplicate", document, new ShipmentSettingsDetails(), "RELEASE", "shipment-guid");
+
+        assertNull(hbl.getHblData().getVersion());
+        verify(hblDao, never()).save(any());
+    }
+
+    @Test
+    void testAddHouseBillToRepo3() {
+        DocUploadRequest uploadRequest = new DocUploadRequest();
+        uploadRequest.setReportId("123");
+
+        Hbl hbl = new Hbl();
+        hbl.setHblData(null);
+
+        when(hblDao.findByShipmentId(123L)).thenReturn(List.of(hbl));
+        when(masterDataUtils.withMdc(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        byte[] document = "dummy".getBytes();
+
+        reportService.addHouseBillToRepo(uploadRequest, "Duplicate", document, new ShipmentSettingsDetails(), "RELEASE", "shipment-guid");
+
+        verify(hblDao, never()).save(any());
+    }
+
+    @Test
+    void testAddHouseBillToRepo4() {
+        DocUploadRequest uploadRequest = new DocUploadRequest();
+        uploadRequest.setReportId("123");
+
+        List<Hbl> hblListWithNulls = new ArrayList<>();
+        hblListWithNulls.add(null);
+        hblListWithNulls.add(null);
+
+        when(hblDao.findByShipmentId(123L)).thenReturn(hblListWithNulls);
+        when(masterDataUtils.withMdc(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        reportService.addHouseBillToRepo(uploadRequest, "Duplicate", "doc".getBytes(), new ShipmentSettingsDetails(), "RELEASE", "shipment-guid");
+
+        verify(hblDao, never()).save(any());
+    }
+
     private Runnable mockRunnable() {
         return null;
     }
