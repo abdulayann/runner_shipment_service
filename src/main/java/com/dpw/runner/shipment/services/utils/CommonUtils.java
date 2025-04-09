@@ -2563,7 +2563,15 @@ public class CommonUtils {
             return modelMapper.map(value, new TypeToken<List<ShipmentOrderResponse>>() {
             }.getType());
         }
-        return value; // Return as is if no mapping exists
+        return checkForTriangulationPartnerList(value, list);
+    }
+
+    private Object checkForTriangulationPartnerList(Object value, List<?> list) {
+        if (list.get(0) instanceof TriangulationPartner) {
+            return modelMapper.map(value, new TypeToken<List<TriangulationPartnerResponse>>() {
+            }.getType());
+        }
+        return value;
     }
 
     public void setNestedFieldValue(Object object, String fieldPath, Object value) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException, InstantiationException {
