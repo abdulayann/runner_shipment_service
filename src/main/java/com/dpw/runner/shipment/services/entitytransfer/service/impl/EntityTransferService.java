@@ -87,25 +87,10 @@ import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.TriangulationPartner;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
-import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
-import com.dpw.runner.shipment.services.entity.enums.NotificationRequestType;
-import com.dpw.runner.shipment.services.entity.enums.PrintType;
-import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
-import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
-import com.dpw.runner.shipment.services.entity.enums.TaskStatus;
-import com.dpw.runner.shipment.services.entity.enums.TaskType;
+import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferConsolidationDetails;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferShipmentDetails;
-import com.dpw.runner.shipment.services.entitytransfer.dto.request.AcceptedFileRequest;
-import com.dpw.runner.shipment.services.entitytransfer.dto.request.CheckEntityExistRequest;
-import com.dpw.runner.shipment.services.entitytransfer.dto.request.CheckTaskExistRequest;
-import com.dpw.runner.shipment.services.entitytransfer.dto.request.ImportConsolidationRequest;
-import com.dpw.runner.shipment.services.entitytransfer.dto.request.ImportShipmentRequest;
-import com.dpw.runner.shipment.services.entitytransfer.dto.request.PostArValidationRequest;
-import com.dpw.runner.shipment.services.entitytransfer.dto.request.SendConsolidationRequest;
-import com.dpw.runner.shipment.services.entitytransfer.dto.request.SendShipmentRequest;
-import com.dpw.runner.shipment.services.entitytransfer.dto.request.ValidateSendConsolidationRequest;
-import com.dpw.runner.shipment.services.entitytransfer.dto.request.ValidateSendShipmentRequest;
+import com.dpw.runner.shipment.services.entitytransfer.dto.request.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.AcceptedFileResponse;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.ArValidationResponse;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.CheckEntityExistResponse;
@@ -461,6 +446,61 @@ public class EntityTransferService implements IEntityTransferService {
 
     }
 
+    public ResponseEntity<IRunnerResponse> sendFileToExternalSystem(CommonRequestModel commonRequestModel) {
+        SendFileToExternalRequest sendFileToExternalRequest = (SendFileToExternalRequest) commonRequestModel.getData();
+        if(Objects.equals(sendFileToExternalRequest.getEntityType(), SHIPMENT)){
+            sendShipmentToExternalSystem(sendFileToExternalRequest);
+        } else if(Objects.equals(sendFileToExternalRequest.getEntityType(), CONSOLIDATION)){
+            sendConsolidationToExternalSystem(sendFileToExternalRequest);
+        }
+        return ResponseHelper.buildSuccessResponse();
+    }
+
+    private void sendShipmentToExternalSystem(SendFileToExternalRequest sendFileToExternalRequest) {
+        Long shipId = sendFileToExternalRequest.getEntityId();
+        Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(shipId);
+        if (shipmentDetails.isEmpty()) {
+            log.debug(SHIPMENT_DETAILS_IS_NULL_FOR_ID_WITH_REQUEST_ID, shipId, LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+        ShipmentDetails shipment = shipmentDetails.get();
+        var entityTransferPayload = prepareShipmentPayload(shipment);
+        entityTransferPayload.setDirection(Constants.IMP);
+        Map<String, Object> entityPayload = getNetworkTransferEntityPayload(entityTransferPayload);
+        prepareBridgePayload(entityPayload, entityTransferPayload.getShipmentId(), SHIPMENT, entityTransferPayload.getTransportMode(), entityTransferPayload.getDirection(), sendFileToExternalRequest);
+
+    }
+    private void sendConsolidationToExternalSystem(SendFileToExternalRequest sendFileToExternalRequest) {
+        Long consoleId = sendFileToExternalRequest.getEntityId();
+        Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(consoleId);
+        if (consolidationDetails.isEmpty()) {
+            log.debug(CONSOLIDATION_DETAILS_IS_NULL_FOR_ID_WITH_REQUEST_ID, consoleId, LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+
+        ConsolidationDetails console = consolidationDetails.get();
+
+        EntityTransferConsolidationDetails entityTransferPayload = prepareConsolidationPayload(console, new SendConsolidationRequest());
+        entityTransferPayload.setShipmentType(Constants.IMP);
+        if(!entityTransferPayload.getShipmentsList().isEmpty()) {
+            for (var ship : console.getShipmentsList()) {
+                ship.setDirection(Constants.IMP);
+            }
+        }
+        Map<String, Object> entityPayload = getNetworkTransferEntityPayload(entityTransferPayload);
+        prepareBridgePayload(entityPayload, entityTransferPayload.getConsolidationNumber(), CONSOLIDATION, entityTransferPayload.getTransportMode(), entityTransferPayload.getShipmentType(), sendFileToExternalRequest);
+    }
+
+    private void prepareBridgePayload(Map<String, Object> entityPayload, String entityNumber, String entityType, String transportMode, String jobType, SendFileToExternalRequest sendFileToExternalRequest) {
+        NetworkTransfer networkTransfer = new NetworkTransfer();
+        networkTransfer.setEntityPayload(entityPayload);
+        networkTransfer.setStatus(NetworkTransferStatus.TRANSFERRED);
+        networkTransfer.setEntityType(entityType);
+        networkTransfer.setEntityNumber(entityNumber);
+        networkTransfer.setTransportMode(transportMode);
+        networkTransfer.setJobType(jobType);
+    }
+
     private boolean shouldSaveShipment(ShipmentDetails shipment) {
         return Objects.equals(shipment.getTransportMode(), Constants.TRANSPORT_MODE_SEA) && Objects.equals(shipment.getDirection(), Constants.DIRECTION_EXP);
     }
@@ -725,7 +765,7 @@ public class EntityTransferService implements IEntityTransferService {
         if(isNetworkTransferFeatureEnabled) {
             networkTransferService.updateStatusAndCreatedEntityId(importShipmentRequest.getTaskId(), NetworkTransferStatus.ACCEPTED.name(), shipmentDetailsResponse.getId());
             var nte = networkTransferDao.findById(importShipmentRequest.getTaskId());
-            if(nte.isPresent()) {
+            if(nte.isPresent() && !Objects.equals(nte.get().getSource(), NetworkTransferSource.EXTERNAL)) {
                 Long tenantId = Long.valueOf(TenantContext.getCurrentTenant());
                 if (tenantId.equals(shipmentDetailsResponse.getReceivingBranch()))
                     shipmentDao.saveIsTransferredToReceivingBranch(nte.get().getEntityId(), Boolean.TRUE);
@@ -799,7 +839,7 @@ public class EntityTransferService implements IEntityTransferService {
             if (isNetworkTransferFeatureEnabled) {
                 networkTransferService.updateStatusAndCreatedEntityId(importConsolidationRequest.getTaskId(), NetworkTransferStatus.ACCEPTED.name(), Optional.ofNullable(consolidationDetailsResponse).map(ConsolidationDetailsResponse::getId).orElse(null));
                 var nte = networkTransferDao.findById(importConsolidationRequest.getTaskId());
-                if(nte.isPresent()) {
+                if(nte.isPresent() && !Objects.equals(nte.get().getSource(), NetworkTransferSource.EXTERNAL)) {
                     updateNteStatus(nte.get(), consolidationDetailsResponse, oldVsNewShipIds);
                 }
             } else {
@@ -1082,6 +1122,9 @@ public class EntityTransferService implements IEntityTransferService {
         ShipmentRequest shipmentRequest = modelMapper.map(entityTransferShipmentDetails, ShipmentRequest.class);
         var tenantId = UserContext.getUser().getTenantId();
         shipmentRequest.setDepartment(department);
+        if(entityTransferShipmentDetails.getSendToBranch() == null) {
+            entityTransferShipmentDetails.setSendToBranch(tenantId);
+        }
         // Set Inter Branch TenantId in TenantContext for inter branch Shipment
         if(Objects.equals(shipmentRequest.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && !Objects.equals(shipmentRequest.getJobType(), Constants.SHIPMENT_TYPE_DRT) && !Objects.equals(entityTransferShipmentDetails.getSendToBranch(), tenantId)){
             commonUtils.setInterBranchContextForHub();
