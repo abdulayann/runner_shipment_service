@@ -1407,7 +1407,7 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    private void makeDGOceanChangesFromPacksAndContainers(Set<ContainerRequest> containersList, List<PackingRequest> packingList, ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) throws RunnerException {
+    private void makeDGOceanChangesFromPacksAndContainers(Set<ContainerRequest> containersList, List<PackingRequest> packingList, ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
         Set<Long> dgConts = new HashSet<>();
         Set<Long> newPackAttachedInConts = new HashSet<>();
         changeDGStatusFromPacks(packingList, dgConts, shipmentDetails, oldEntity, newPackAttachedInConts);
