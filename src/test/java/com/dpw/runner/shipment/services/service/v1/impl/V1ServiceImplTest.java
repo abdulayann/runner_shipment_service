@@ -6052,6 +6052,33 @@ class V1ServiceImplTest {
     }
 
     @Test
+    void testGetUsersWithGivenPermissions_Success2() {
+        UserWithPermissionRequestV1 mockRequest = new UserWithPermissionRequestV1();
+
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(new ResponseEntity<>(null, HttpStatus.OK));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(new ArrayList<>());
+
+        List<UsersDto> result = v1ServiceImpl.getUsersWithGivenPermissions(mockRequest);
+
+        assertNotNull(result);
+    }
+
+    @Test
+    void testGetUsersWithGivenPermissions_Success3() {
+        UserWithPermissionRequestV1 mockRequest = new UserWithPermissionRequestV1();
+        V1DataResponse mockResponse = V1DataResponse.builder().entities(null).build();
+
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(new ResponseEntity<>(mockResponse, HttpStatus.OK));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(new ArrayList<>());
+
+        List<UsersDto> result = v1ServiceImpl.getUsersWithGivenPermissions(mockRequest);
+
+        assertNotNull(result);
+    }
+
+    @Test
     void testGetUsersWithGivenPermissions_ClientError() {
         UserWithPermissionRequestV1 mockRequest = new UserWithPermissionRequestV1();
         HttpClientErrorException exception = HttpClientErrorException.create(
