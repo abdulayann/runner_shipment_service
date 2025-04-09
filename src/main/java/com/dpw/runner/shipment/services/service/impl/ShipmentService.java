@@ -1527,7 +1527,7 @@ public class ShipmentService implements IShipmentService {
             }
         }
         if (!containersList.isEmpty() ) {
-            packsUnit = setPacksUnit(containersList, packsUnit);
+            packsUnit = setPacksUnit(containersList);
         }
         response.setWeight(BigDecimal.valueOf(totalWeight));
         response.setVolume(BigDecimal.valueOf(totalVolume));
@@ -1551,24 +1551,23 @@ public class ShipmentService implements IShipmentService {
                     totalPacks = totalPacks + Integer.parseInt(container.getPacks());
                 }
             }
-            packsUnit = setPacksUnit(containersList, packsUnit);
+            packsUnit = setPacksUnit(containersList);
             response.setNoOfPacks(totalPacks == 0 ? null : String.valueOf(totalPacks));
             response.setPacksUnit(packsUnit);
         }
     }
 
-    private String setPacksUnit(List<Containers> containersList, String packsUnit) {
+    private String setPacksUnit(List<Containers> containersList) {
         String firstPacksType = containersList.get(0).getPacksType();
         boolean isSame = containersList.stream()
                 .map(Containers::getPacksType)
                 .allMatch(packsType -> packsType == null || packsType.equals(firstPacksType));
 
         if (isSame) {
-            packsUnit = firstPacksType;
+            return firstPacksType;
         } else {
-            packsUnit = Constants.MPK;
+            return Constants.MPK;
         }
-        return packsUnit;
     }
 
     private AutoUpdateWtVolResponse calculateWeightAndVolumeUnit(AutoUpdateWtVolRequest request, List<Packing> packings, AutoUpdateWtVolResponse response) throws RunnerException {
@@ -4314,7 +4313,7 @@ public class ShipmentService implements IShipmentService {
             List<ShipmentsContainersMapping> shipmentsContainersMappings = shipmentsContainersMappingDao.findByContainerId(container.getId());
             if(!shipmentsContainersMappings.stream().map(ShipmentsContainersMapping::getShipmentId).toList().contains(shipmentId)) {
 
-                if(container.getAllocatedWeight() != null && container.getAchievedWeight() != null && container.getAllocatedVolume() != null && container.getAchievedWeight() != null
+                if(container.getAllocatedWeight() != null && container.getAchievedWeight() != null && container.getAllocatedVolume() != null
                         && isNotEmpty(container.getAllocatedWeightUnit()) && isNotEmpty(container.getAllocatedVolumeUnit()) && isNotEmpty(container.getAchievedWeightUnit()) && isNotEmpty(container.getAchievedVolumeUnit())) {
 
                     BigDecimal achievedWeight = new BigDecimal(convertUnit(Constants.MASS, container.getAchievedWeight(), container.getAchievedWeightUnit(), container.getAllocatedWeightUnit()).toString());
@@ -4849,7 +4848,7 @@ public class ShipmentService implements IShipmentService {
     public ResponseEntity<IRunnerResponse> partialUpdate(CommonRequestModel commonRequestModel, Boolean fromV1) throws RunnerException {
 
         ShipmentPatchRequest shipmentRequest = (ShipmentPatchRequest) commonRequestModel.getData();
-        if ((shipmentRequest.getId() == null && shipmentRequest.getGuid() == null) && (shipmentRequest.getShipmentId() == null || shipmentRequest.getShipmentId().get() == "")) {
+        if ((shipmentRequest.getId() == null && shipmentRequest.getGuid() == null) && (shipmentRequest.getShipmentId() == null || "".equals(shipmentRequest.getShipmentId().get()))) {
             log.error("Request Id is null for update request with Id {}", LoggerHelper.getRequestIdFromMDC());
             throw new RunnerException("Request Id is null");
         }
@@ -6514,7 +6513,7 @@ public class ShipmentService implements IShipmentService {
     private void processShipmentIdList(ShipmentDetails shipment, List<Long> shipmentIdList, Boolean interBranchConsole, AtomicBoolean makeConsoleNonDG, AtomicBoolean makeConsoleSciT1) throws RunnerException {
         List<ShipmentDetails> shipments = shipmentDao.findShipmentsByIds(shipmentIdList.stream().collect(
             Collectors.toSet()));
-        shipments.stream()
+        var a = shipments.stream()
             .map(i -> {
                 i.setMasterBill(shipment.getMasterBill());
                 i.setDirection(shipment.getDirection());
@@ -6539,7 +6538,7 @@ public class ShipmentService implements IShipmentService {
                 }
                 return i;
             }).toList();
-        shipmentDao.saveAll(shipments);
+        shipmentDao.saveAll(a);
     }
 
     private boolean isExportOrImportBrokerPresent(ShipmentDetails shipment) {

@@ -1674,7 +1674,7 @@ public class ReportService implements IReportService {
             } else {
                 image1.scaleAbsolute(300, 30);
             }
-            image1.setAbsolutePosition((int) realPageSize.getLeft() + x, realPageSize.getTop() + y);
+            image1.setAbsolutePosition(realPageSize.getLeft() + x, realPageSize.getTop() + y);
             dc.addImage(image1);
 
             dc.restoreState();

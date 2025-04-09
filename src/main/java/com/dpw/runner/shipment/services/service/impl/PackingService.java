@@ -344,8 +344,7 @@ public class PackingService implements IPackingService {
     private BigDecimal getCalculatedVolume(Packing packingRow) throws RunnerException {
         if (!StringUtils.isEmpty(packingRow.getPacks()) && packingRow.getLength() != null
                 && packingRow.getHeight() != null && packingRow.getWidth() != null
-                && !StringUtils.isEmpty(packingRow.getWidthUnit()) && !StringUtils.isEmpty(packingRow.getHeightUnit())
-                && !StringUtils.isEmpty(packingRow.getHeightUnit())) {
+                && !StringUtils.isEmpty(packingRow.getWidthUnit()) && !StringUtils.isEmpty(packingRow.getHeightUnit())) {
             String lengthUnit = packingRow.getLengthUnit().equals(FT) ? FOOT_FT : packingRow.getLengthUnit();
             String widthUnit = packingRow.getWidthUnit().equals(FT) ? FOOT_FT : packingRow.getWidthUnit();
             String heightUnit = packingRow.getHeightUnit().equals(FT) ? FOOT_FT : packingRow.getHeightUnit();

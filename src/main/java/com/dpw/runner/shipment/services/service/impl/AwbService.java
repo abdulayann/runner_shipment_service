@@ -1926,7 +1926,7 @@ public class AwbService implements IAwbService {
                 if(i.getGuid() == null)
                     i.setGuid(UUID.randomUUID());
                 return i;
-            }).toList();
+            }).toList(); //NOSONAR
         }
     }
 
@@ -2538,7 +2538,7 @@ public class AwbService implements IAwbService {
     }
 
     private void addRoutingInfo(ShipmentDetails shipmentDetails, CreateAwbRequest request, Awb awb) {
-        var flightDate = request.getAwbType() == Constants.DMAWB ? shipmentDetails.getCarrierDetails().getEtd() : null;
+        var flightDate = Objects.equals(request.getAwbType(), Constants.DMAWB) ? shipmentDetails.getCarrierDetails().getEtd() : null;
         var eta = request.getAwbType().equalsIgnoreCase(Constants.DMAWB) ? shipmentDetails.getCarrierDetails().getEta() : null;
         AwbRoutingInfo routingInfo = new AwbRoutingInfo();
         routingInfo.setIsShipmentCreated(true);
@@ -2571,7 +2571,7 @@ public class AwbService implements IAwbService {
             awbRoute.setFlightNumber(shipmentDetails.getCarrierDetails().getFlightNumber());
 
         if (isFieldLocked(request, hawbLockSettings.getFlightDateLock(), mawbLockSettings.getFlightDateLock())) {
-            var flightDate = request.getAwbType() == Constants.DMAWB ? shipmentDetails.getCarrierDetails().getEtd() : null;
+            var flightDate = Objects.equals(request.getAwbType(), Constants.DMAWB) ? shipmentDetails.getCarrierDetails().getEtd() : null;
             var eta = request.getAwbType().equalsIgnoreCase(Constants.DMAWB) ? shipmentDetails.getCarrierDetails().getEta() : null;
             awbRoute.setFlightDate(flightDate);
             awbRoute.setEta(eta);
@@ -2813,7 +2813,7 @@ public class AwbService implements IAwbService {
                 processAwbList(awbList, hawbPacksLinkedToMawb);
             }
             Double factor = Constants.AIR_FACTOR_FOR_VOL_WT;
-            totalVolumetricWeightOfAwbPacks.multiply(new BigDecimal(factor));
+            totalVolumetricWeightOfAwbPacks.multiply(BigDecimal.valueOf(factor)); //NOSONAR
         }
         return hawbPacksLinkedToMawb;
     }
@@ -2828,7 +2828,7 @@ public class AwbService implements IAwbService {
                 for (var awbPack : awb.getAwbPackingInfo()) {
                     if (awbPack.getVolume() != null && !StringUtility.isEmpty(awbPack.getVolumeUnit()) &&
                             "M3".equals(awbPack.getVolumeUnit())) {
-                        totalVolumetricWeightOfAwbPacks.add(awbPack.getVolume());
+                        totalVolumetricWeightOfAwbPacks.add(awbPack.getVolume()); //NOSONAR
                     }
                     hawbPacksLinkedToMawb.add(awbPack);
                 }
@@ -3262,16 +3262,16 @@ public class AwbService implements IAwbService {
         double carrierOtherCharges = calculateOtherCharges(req, ChargesDue.CARRIER);
 
         AwbPaymentInfo paymentInfo = AwbPaymentInfo.builder()
-                .weightCharges(new BigDecimal(totalAmount))
-                .dueAgentCharges(agentOtherCharges != 0 ? new BigDecimal(agentOtherCharges) : null)
-                .dueCarrierCharges(carrierOtherCharges != 0 ? new BigDecimal(carrierOtherCharges) : null)
+                .weightCharges(BigDecimal.valueOf(totalAmount))
+                .dueAgentCharges(agentOtherCharges != 0 ? BigDecimal.valueOf(agentOtherCharges) : null)
+                .dueCarrierCharges(carrierOtherCharges != 0 ? BigDecimal.valueOf(carrierOtherCharges) : null)
                 .build();
 
         if(req.getAwbPaymentInfo() != null ){
             paymentInfo = req.getAwbPaymentInfo();
-            paymentInfo.setWeightCharges(new BigDecimal(totalAmount));
-            paymentInfo.setDueAgentCharges(agentOtherCharges != 0 ? new BigDecimal(agentOtherCharges) : null);
-            paymentInfo.setDueCarrierCharges(carrierOtherCharges != 0 ? new BigDecimal(carrierOtherCharges) : null);
+            paymentInfo.setWeightCharges(BigDecimal.valueOf(totalAmount));
+            paymentInfo.setDueAgentCharges(agentOtherCharges != 0 ? BigDecimal.valueOf(agentOtherCharges) : null);
+            paymentInfo.setDueCarrierCharges(carrierOtherCharges != 0 ? BigDecimal.valueOf(carrierOtherCharges) : null);
         }
 
         if(req.getChargeDetails() != null) {

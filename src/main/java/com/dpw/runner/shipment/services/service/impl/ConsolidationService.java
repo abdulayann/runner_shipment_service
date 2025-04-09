@@ -2341,12 +2341,12 @@ public class ConsolidationService implements IConsolidationService {
                 consolidationDetails.setAllocations(new Allocations());
             if(consolidationDetails.getAchievedQuantities() == null)
                 consolidationDetails.setAchievedQuantities(new AchievedQuantities());
-            if (consolidationDetails.getAchievedQuantities().getConsolidatedWeightUnit() != consolidationDetails.getAllocations().getWeightUnit()) {
+            if (!Objects.equals(consolidationDetails.getAchievedQuantities().getConsolidatedWeightUnit(), consolidationDetails.getAllocations().getWeightUnit())) {
                 BigDecimal val = new BigDecimal(convertUnit(Constants.MASS, consolidationDetails.getAchievedQuantities().getConsolidatedWeight(), consolidationDetails.getAchievedQuantities().getConsolidatedWeightUnit(), consolidationDetails.getAllocations().getWeightUnit()).toString());
                 consolidationDetails.getAchievedQuantities().setConsolidatedWeight(val);
                 consolidationDetails.getAchievedQuantities().setConsolidatedWeightUnit(consolidationDetails.getAllocations().getWeightUnit());
             }
-            if (consolidationDetails.getAchievedQuantities().getConsolidatedVolumeUnit() != consolidationDetails.getAllocations().getVolumeUnit()) {
+            if (!Objects.equals(consolidationDetails.getAchievedQuantities().getConsolidatedVolumeUnit(), consolidationDetails.getAllocations().getVolumeUnit())) {
                 BigDecimal val = new BigDecimal(convertUnit(Constants.VOLUME, consolidationDetails.getAchievedQuantities().getConsolidatedVolume(), consolidationDetails.getAchievedQuantities().getConsolidatedVolumeUnit(), consolidationDetails.getAllocations().getVolumeUnit()).toString());
                 consolidationDetails.getAchievedQuantities().setConsolidatedVolume(val);
                 consolidationDetails.getAchievedQuantities().setConsolidatedVolumeUnit(consolidationDetails.getAllocations().getVolumeUnit());
@@ -2377,7 +2377,7 @@ public class ConsolidationService implements IConsolidationService {
             if (weightUnit != null && volumeUnit != null) {
                 VolumeWeightChargeable vwOb = calculateVolumeWeight(transportMode, weightUnit, volumeUnit, weight, volume);
                 consolidationDetails.getAllocations().setChargable(vwOb.getChargeable());
-                if (transportMode == Constants.TRANSPORT_MODE_AIR) {
+                if (Objects.equals(transportMode, Constants.TRANSPORT_MODE_AIR)) {
                     BigDecimal charge = consolidationDetails.getAllocations().getChargable();
                     BigDecimal half = new BigDecimal("0.50");
                     BigDecimal floor = CommonUtils.roundBigDecimal(charge, 0, RoundingMode.FLOOR);
@@ -3275,7 +3275,7 @@ public class ConsolidationService implements IConsolidationService {
             containers = map.get(id);
         else {
             Optional<Containers> containers1 = containerDao.findById(id);
-            if(containers1 != null && containers1.isPresent()) {
+            if(containers1.isPresent()) {
                 containers = containers1.get();
                 map.put(containers.getId(), containers);
             }
