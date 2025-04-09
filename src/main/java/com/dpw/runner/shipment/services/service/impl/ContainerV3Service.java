@@ -302,88 +302,83 @@ public class ContainerV3Service implements IContainerV3Service {
     }
 
     public ContainerSummaryResponse calculateContainerSummary(List<Containers> containersList, String transportMode, String containerCategory) throws RunnerException {
-        try {
-            double totalWeight = 0;
-            double packageCount = 0;
-            double tareWeight = 0;
-            double totalVolume = 0;
-            double totalContainerCount = 0;
-            double totalPacks = 0;
-            int dgContainers = 0;
-            double netWeight = 0;
-            long assignedContainers = 0;
-            List<ContainerSummaryResponse.GroupedContainerSummary> groupedContainerSummaryList = new ArrayList<>();
-            String toWeightUnit = Constants.WEIGHT_UNIT_KG;
-            String toVolumeUnit = Constants.VOLUME_UNIT_M3;
-            ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
-            V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
-            if(!isStringNullOrEmpty(shipmentSettingsDetails.getWeightChargeableUnit()))
-                toWeightUnit = shipmentSettingsDetails.getWeightChargeableUnit();
-            if(!isStringNullOrEmpty(shipmentSettingsDetails.getVolumeChargeableUnit()))
-                toVolumeUnit = shipmentSettingsDetails.getVolumeChargeableUnit();
-            String finalToWeightUnit = toWeightUnit;
-            if(containersList != null) {
-                Map<String, ContainerSummaryResponse.GroupedContainerSummary> summaryMap = new TreeMap<>();
-                for (Containers containers : containersList) {
-                    dgContainers = getDgContainers(containers, dgContainers);
-                    double wInDef = convertUnit(Constants.MASS, containers.getGrossWeight(), containers.getGrossWeightUnit(), toWeightUnit).doubleValue();
-                    double tarDef = convertUnit(Constants.MASS, containers.getTareWeight(), containers.getTareWeightUnit(), toWeightUnit).doubleValue();
-                    double netWtDef = convertUnit(Constants.MASS, containers.getNetWeight(), containers.getNetWeightUnit(), toWeightUnit).doubleValue();
-                    double volume = convertUnit(Constants.VOLUME, containers.getGrossVolume(), containers.getGrossVolumeUnit(), toVolumeUnit).doubleValue();
-                    totalWeight = totalWeight + wInDef;
-                    tareWeight = tareWeight + tarDef;
-                    netWeight = netWeight + netWtDef;
-                    packageCount = getTotalPacks(containers, packageCount);
-                    totalVolume = totalVolume + volume;
-                    totalContainerCount = getTotalContainerCount(containers, totalContainerCount);
-                    totalPacks = getTotalPacks(containers, totalPacks);
+        double totalWeight = 0;
+        double packageCount = 0;
+        double tareWeight = 0;
+        double totalVolume = 0;
+        double totalContainerCount = 0;
+        double totalPacks = 0;
+        int dgContainers = 0;
+        double netWeight = 0;
+        long assignedContainers = 0;
+        List<ContainerSummaryResponse.GroupedContainerSummary> groupedContainerSummaryList = new ArrayList<>();
+        String toWeightUnit = Constants.WEIGHT_UNIT_KG;
+        String toVolumeUnit = Constants.VOLUME_UNIT_M3;
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+        V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
+        if(!isStringNullOrEmpty(shipmentSettingsDetails.getWeightChargeableUnit()))
+            toWeightUnit = shipmentSettingsDetails.getWeightChargeableUnit();
+        if(!isStringNullOrEmpty(shipmentSettingsDetails.getVolumeChargeableUnit()))
+            toVolumeUnit = shipmentSettingsDetails.getVolumeChargeableUnit();
+        String finalToWeightUnit = toWeightUnit;
+        if(containersList != null) {
+            Map<String, ContainerSummaryResponse.GroupedContainerSummary> summaryMap = new TreeMap<>();
+            for (Containers containers : containersList) {
+                dgContainers = getDgContainers(containers, dgContainers);
+                double wInDef = convertUnit(Constants.MASS, containers.getGrossWeight(), containers.getGrossWeightUnit(), toWeightUnit).doubleValue();
+                double tarDef = convertUnit(Constants.MASS, containers.getTareWeight(), containers.getTareWeightUnit(), toWeightUnit).doubleValue();
+                double netWtDef = convertUnit(Constants.MASS, containers.getNetWeight(), containers.getNetWeightUnit(), toWeightUnit).doubleValue();
+                double volume = convertUnit(Constants.VOLUME, containers.getGrossVolume(), containers.getGrossVolumeUnit(), toVolumeUnit).doubleValue();
+                totalWeight = totalWeight + wInDef;
+                tareWeight = tareWeight + tarDef;
+                netWeight = netWeight + netWtDef;
+                packageCount = getTotalPacks(containers, packageCount);
+                totalVolume = totalVolume + volume;
+                totalContainerCount = getTotalContainerCount(containers, totalContainerCount);
+                totalPacks = getTotalPacks(containers, totalPacks);
 
-                    ContainerSummaryResponse.GroupedContainerSummary summary = summaryMap.computeIfAbsent(containers.getContainerCode(), k -> {
-                        ContainerSummaryResponse.GroupedContainerSummary s = new ContainerSummaryResponse.GroupedContainerSummary();
-                        s.setContainerCode(k);
-                        s.setContainerCount("0");
-                        s.setTotalWeight(0);
-                        s.setTotalNetWeight(0);
-                        s.setTotalWeightUnit(finalToWeightUnit);
-                        s.setTotalNetWeightUnit(finalToWeightUnit);
-                        return s;
-                    });
+                ContainerSummaryResponse.GroupedContainerSummary summary = summaryMap.computeIfAbsent(containers.getContainerCode(), k -> {
+                    ContainerSummaryResponse.GroupedContainerSummary s = new ContainerSummaryResponse.GroupedContainerSummary();
+                    s.setContainerCode(k);
+                    s.setContainerCount("0");
+                    s.setTotalWeight(0);
+                    s.setTotalNetWeight(0);
+                    s.setTotalWeightUnit(finalToWeightUnit);
+                    s.setTotalNetWeightUnit(finalToWeightUnit);
+                    return s;
+                });
 
-                    summary.setContainerCount(String.valueOf(Long.parseLong(summary.getContainerCount()) +
-                            (containers.getContainerCount() != null ? containers.getContainerCount() : 0)));
-                    summary.setTotalWeight(summary.getTotalWeight() + wInDef);
-                    summary.setTotalNetWeight(summary.getTotalNetWeight() + netWtDef);
-                }
-                List<ShipmentsContainersMapping> shipmentsContainersMappings = shipmentsContainersMappingDao.findByContainerIdIn(containersList.stream().map(BaseEntity::getId).toList());
-                assignedContainers = shipmentsContainersMappings.stream().map(ShipmentsContainersMapping::getContainerId).distinct().count();
-                groupedContainerSummaryList = new ArrayList<>(summaryMap.values());
+                summary.setContainerCount(String.valueOf(Long.parseLong(summary.getContainerCount()) +
+                        (containers.getContainerCount() != null ? containers.getContainerCount() : 0)));
+                summary.setTotalWeight(summary.getTotalWeight() + wInDef);
+                summary.setTotalNetWeight(summary.getTotalNetWeight() + netWtDef);
             }
-            ContainerSummaryResponse response = new ContainerSummaryResponse();
-            response.setTotalPackages(IReport.getDPWWeightVolumeFormat(BigDecimal.valueOf(totalPacks), 0, v1TenantSettingsResponse));
-            response.setTotalContainers(IReport.getDPWWeightVolumeFormat(BigDecimal.valueOf(totalContainerCount), 0, v1TenantSettingsResponse));
-            response.setTotalWeight(String.format(Constants.STRING_FORMAT, IReport.convertToWeightNumberFormat(BigDecimal.valueOf(totalWeight), v1TenantSettingsResponse), toWeightUnit));
-            response.setTotalTareWeight(String.format(Constants.STRING_FORMAT, IReport.convertToWeightNumberFormat(BigDecimal.valueOf(tareWeight), v1TenantSettingsResponse), toWeightUnit));
-            response.setTotalNetWeight(String.format(Constants.STRING_FORMAT, IReport.convertToWeightNumberFormat(BigDecimal.valueOf(netWeight), v1TenantSettingsResponse), toWeightUnit));
-            if(!isStringNullOrEmpty(transportMode) && transportMode.equals(Constants.TRANSPORT_MODE_SEA) &&
-                    !isStringNullOrEmpty(containerCategory) && containerCategory.equals(Constants.SHIPMENT_TYPE_LCL)) {
-                double volInM3 = convertUnit(Constants.VOLUME, BigDecimal.valueOf(totalVolume), toVolumeUnit, Constants.VOLUME_UNIT_M3).doubleValue();
-                double wtInKg = convertUnit(Constants.MASS, BigDecimal.valueOf(totalWeight), toWeightUnit, Constants.WEIGHT_UNIT_KG).doubleValue();
-                double chargeableWeight = Math.max(wtInKg/1000, volInM3);
-                chargeableWeight = BigDecimal.valueOf(chargeableWeight).setScale(2, RoundingMode.HALF_UP).doubleValue();
-                response.setChargeableWeight(IReport.convertToWeightNumberFormat(BigDecimal.valueOf(chargeableWeight), v1TenantSettingsResponse) + " " + Constants.VOLUME_UNIT_M3);
-            }
-            response.setTotalContainerVolume(String.format(Constants.STRING_FORMAT, IReport.convertToVolumeNumberFormat(BigDecimal.valueOf(totalVolume), v1TenantSettingsResponse), toVolumeUnit));
-            if(response.getSummary() == null)
-                response.setSummary("");
-            setContainerSummary(containersList, response);
-            response.setDgContainers(dgContainers);
-            response.setAssignedContainersCount(IReport.getDPWWeightVolumeFormat(BigDecimal.valueOf(assignedContainers), 0, v1TenantSettingsResponse));
-            response.setGroupedContainersSummary(groupedContainerSummaryList);
-            return response;
+            List<ShipmentsContainersMapping> shipmentsContainersMappings = shipmentsContainersMappingDao.findByContainerIdIn(containersList.stream().map(BaseEntity::getId).toList());
+            assignedContainers = shipmentsContainersMappings.stream().map(ShipmentsContainersMapping::getContainerId).distinct().count();
+            groupedContainerSummaryList = new ArrayList<>(summaryMap.values());
         }
-        catch (Exception e) {
-            throw new RunnerException(e.getMessage());
+        ContainerSummaryResponse response = new ContainerSummaryResponse();
+        response.setTotalPackages(IReport.getDPWWeightVolumeFormat(BigDecimal.valueOf(totalPacks), 0, v1TenantSettingsResponse));
+        response.setTotalContainers(IReport.getDPWWeightVolumeFormat(BigDecimal.valueOf(totalContainerCount), 0, v1TenantSettingsResponse));
+        response.setTotalWeight(String.format(Constants.STRING_FORMAT, IReport.convertToWeightNumberFormat(BigDecimal.valueOf(totalWeight), v1TenantSettingsResponse), toWeightUnit));
+        response.setTotalTareWeight(String.format(Constants.STRING_FORMAT, IReport.convertToWeightNumberFormat(BigDecimal.valueOf(tareWeight), v1TenantSettingsResponse), toWeightUnit));
+        response.setTotalNetWeight(String.format(Constants.STRING_FORMAT, IReport.convertToWeightNumberFormat(BigDecimal.valueOf(netWeight), v1TenantSettingsResponse), toWeightUnit));
+        if(!isStringNullOrEmpty(transportMode) && transportMode.equals(Constants.TRANSPORT_MODE_SEA) &&
+                !isStringNullOrEmpty(containerCategory) && containerCategory.equals(Constants.SHIPMENT_TYPE_LCL)) {
+            double volInM3 = convertUnit(Constants.VOLUME, BigDecimal.valueOf(totalVolume), toVolumeUnit, Constants.VOLUME_UNIT_M3).doubleValue();
+            double wtInKg = convertUnit(Constants.MASS, BigDecimal.valueOf(totalWeight), toWeightUnit, Constants.WEIGHT_UNIT_KG).doubleValue();
+            double chargeableWeight = Math.max(wtInKg/1000, volInM3);
+            chargeableWeight = BigDecimal.valueOf(chargeableWeight).setScale(2, RoundingMode.HALF_UP).doubleValue();
+            response.setChargeableWeight(IReport.convertToWeightNumberFormat(BigDecimal.valueOf(chargeableWeight), v1TenantSettingsResponse) + " " + Constants.VOLUME_UNIT_M3);
         }
+        response.setTotalContainerVolume(String.format(Constants.STRING_FORMAT, IReport.convertToVolumeNumberFormat(BigDecimal.valueOf(totalVolume), v1TenantSettingsResponse), toVolumeUnit));
+        if(response.getSummary() == null)
+            response.setSummary("");
+        setContainerSummary(containersList, response);
+        response.setDgContainers(dgContainers);
+        response.setAssignedContainersCount(IReport.getDPWWeightVolumeFormat(BigDecimal.valueOf(assignedContainers), 0, v1TenantSettingsResponse));
+        response.setGroupedContainersSummary(groupedContainerSummaryList);
+        return response;
     }
 
     private void setContainerSummary(List<Containers> containersList, ContainerSummaryResponse response) {
@@ -416,7 +411,7 @@ public class ContainerV3Service implements IContainerV3Service {
     public String calculateContainerSummary(List<Containers> response) {
         if (response == null || response.isEmpty()) return null;
 
-        // Sort if needed
+        // Sort
         response.sort(Comparator.comparing(Containers::getContainerCode));
 
         // Group by containerCode and sum counts
