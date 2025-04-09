@@ -3313,10 +3313,13 @@ public class ShipmentService implements IShipmentService {
         Map<String, List<Events>> cargoesRunnerDbEvents = groupCargoesRunnerEventsByCode(events);
         oldEntity = Optional.ofNullable(oldEntity).orElse(new ShipmentDetails());
         oldEntity.setAdditionalDetails(Optional.ofNullable(oldEntity.getAdditionalDetails()).orElse(new AdditionalDetails()));
+        oldEntity.setCarrierDetails(Optional.ofNullable(oldEntity.getCarrierDetails()).orElse(new CarrierDetails()));
 
         processLclOrFclOrAirEvents(shipmentDetails, oldEntity, events, isNewShipment, cargoesRunnerDbEvents);
 
         processLclOrAirEvents(shipmentDetails, oldEntity, events, isNewShipment, cargoesRunnerDbEvents);
+
+        processLclEvents(shipmentDetails, oldEntity, events, isNewShipment, cargoesRunnerDbEvents);
 
         processEMCREvent(shipmentDetails, oldEntity, events, isNewShipment, cargoesRunnerDbEvents);
 
@@ -3346,6 +3349,15 @@ public class ShipmentService implements IShipmentService {
             processPRDEEvent(shipmentDetails, oldEntity, events, isNewShipment, cargoesRunnerDbEvents);
 
             processSEPUEvent(shipmentDetails, oldEntity, events, isNewShipment, cargoesRunnerDbEvents);
+        }
+    }
+
+    private void processLclEvents(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, List<Events> events, Boolean isNewShipment, Map<String, List<Events>> cargoesRunnerDbEvents) {
+        if (isLcl(shipmentDetails)) {
+
+            processPUEDEvent(shipmentDetails, oldEntity, events, isNewShipment, cargoesRunnerDbEvents);
+
+            processTREDEvent(shipmentDetails, oldEntity, events, isNewShipment, cargoesRunnerDbEvents);
         }
     }
 
@@ -3476,6 +3488,42 @@ public class ShipmentService implements IShipmentService {
             }else{
                 events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.SEPU,
                         commonUtils.getUserZoneTime(LocalDateTime.now()), null));
+            }
+        }
+    }
+
+    private void processPUEDEvent(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, List<Events> events, Boolean isNewShipment, Map<String, List<Events>> cargoesRunnerDbEvents) {
+        if (ObjectUtils.isNotEmpty(shipmentDetails.getCarrierDetails()) &&
+                isEventChanged(shipmentDetails.getCarrierDetails().getEtd(),
+                        oldEntity.getCarrierDetails().getEtd(), isNewShipment)) {
+
+            if(ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.PUED))){
+                List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.PUED);
+                for(Events event: dbEvents){
+                    event.setActual(shipmentDetails.getCarrierDetails().getEtd());
+                    eventDao.updateUserFieldsInEvent(event, true);
+                }
+            }else{
+                events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.PUED,
+                        shipmentDetails.getCarrierDetails().getEtd(), null));
+            }
+        }
+    }
+
+    private void processTREDEvent(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, List<Events> events, Boolean isNewShipment, Map<String, List<Events>> cargoesRunnerDbEvents) {
+        if (ObjectUtils.isNotEmpty(shipmentDetails.getCarrierDetails()) &&
+                isEventChanged(shipmentDetails.getCarrierDetails().getEta(),
+                        oldEntity.getCarrierDetails().getEta(), isNewShipment)) {
+
+            if(ObjectUtils.isNotEmpty(cargoesRunnerDbEvents) && ObjectUtils.isNotEmpty(cargoesRunnerDbEvents.get(EventConstants.TRED))){
+                List<Events> dbEvents = cargoesRunnerDbEvents.get(EventConstants.TRED);
+                for(Events event: dbEvents){
+                    event.setActual(shipmentDetails.getCarrierDetails().getEta());
+                    eventDao.updateUserFieldsInEvent(event, true);
+                }
+            }else{
+                events.add(initializeAutomatedEvents(shipmentDetails, EventConstants.TRED,
+                        shipmentDetails.getCarrierDetails().getEta(), null));
             }
         }
     }
@@ -3633,6 +3681,10 @@ public class ShipmentService implements IShipmentService {
 
     private boolean isFcl(ShipmentDetails shipmentDetails) {
         return CARGO_TYPE_FCL.equalsIgnoreCase(shipmentDetails.getShipmentType());
+    }
+
+    private boolean isLcl(ShipmentDetails shipmentDetails) {
+        return SHIPMENT_TYPE_LCL.equalsIgnoreCase(shipmentDetails.getShipmentType());
     }
 
     private boolean checkForAwbUpdate(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
