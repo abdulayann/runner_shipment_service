@@ -3239,6 +3239,7 @@ public class AwbService implements IAwbService {
         }
     }
 
+    @SuppressWarnings("java:S2111")
     @Override
     public ResponseEntity<IRunnerResponse> generateAwbPaymentInfo(CommonRequestModel commonRequestModel) throws RunnerException {
 
@@ -3262,16 +3263,16 @@ public class AwbService implements IAwbService {
         double carrierOtherCharges = calculateOtherCharges(req, ChargesDue.CARRIER);
 
         AwbPaymentInfo paymentInfo = AwbPaymentInfo.builder()
-                .weightCharges(BigDecimal.valueOf(totalAmount))
-                .dueAgentCharges(agentOtherCharges != 0 ? BigDecimal.valueOf(agentOtherCharges) : null)
-                .dueCarrierCharges(carrierOtherCharges != 0 ? BigDecimal.valueOf(carrierOtherCharges) : null)
+                .weightCharges(new BigDecimal(totalAmount))
+                .dueAgentCharges(agentOtherCharges != 0 ? new BigDecimal(agentOtherCharges) : null)
+                .dueCarrierCharges(carrierOtherCharges != 0 ? new BigDecimal(carrierOtherCharges) : null)
                 .build();
 
         if(req.getAwbPaymentInfo() != null ){
             paymentInfo = req.getAwbPaymentInfo();
-            paymentInfo.setWeightCharges(BigDecimal.valueOf(totalAmount));
-            paymentInfo.setDueAgentCharges(agentOtherCharges != 0 ? BigDecimal.valueOf(agentOtherCharges) : null);
-            paymentInfo.setDueCarrierCharges(carrierOtherCharges != 0 ? BigDecimal.valueOf(carrierOtherCharges) : null);
+            paymentInfo.setWeightCharges(new BigDecimal(totalAmount));
+            paymentInfo.setDueAgentCharges(agentOtherCharges != 0 ? new BigDecimal(agentOtherCharges) : null);
+            paymentInfo.setDueCarrierCharges(carrierOtherCharges != 0 ? new BigDecimal(carrierOtherCharges) : null);
         }
 
         if(req.getChargeDetails() != null) {
