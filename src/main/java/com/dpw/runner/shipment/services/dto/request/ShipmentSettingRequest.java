@@ -196,4 +196,5 @@ public class ShipmentSettingRequest extends CommonRequest implements IRunnerRequ
     private Boolean countryAirCargoSecurity;
     private Boolean preAlertEmailAndLogs;
     private Boolean isAmrAirFreightEnabled;
+    private Boolean isExternalFileTransferEnabled;
 }
