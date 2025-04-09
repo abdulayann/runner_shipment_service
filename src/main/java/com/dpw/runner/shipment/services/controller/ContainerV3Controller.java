@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
 import com.dpw.runner.shipment.services.commons.constants.ContainerConstants;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
@@ -13,6 +14,7 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+import java.util.ArrayList;
 import java.util.List;
 import javax.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
@@ -55,6 +57,17 @@ public class ContainerV3Controller {
     @DeleteMapping(value = ApiConstants.API_DELETE_BULK)
     public ResponseEntity<IRunnerResponse> deleteBulk(@RequestBody List<ContainerRequest> request) {
         return ResponseHelper.buildSuccessResponse(containerV3Service.deleteBulk(request));
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_LIST_SUCCESSFUL, response = BulkContainerResponse.class)})
+    @PostMapping(ContainerConstants.GET_CONTAINERS)
+    public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest) {
+        BulkContainerResponse response = containerV3Service.getContainers(listCommonRequest);
+
+        return ResponseHelper.buildListSuccessResponse(
+                new ArrayList<>(response.getContainerResponseList()),
+                response.getTotalPages(),
+                response.getNumberOfRecords());
     }
 
 

@@ -17,4 +17,6 @@ import lombok.ToString;
 public class BulkContainerResponse {
     private String message;
     private List<ContainerResponse> containerResponseList;
+    private int totalPages;
+    private long numberOfRecords;
 }
