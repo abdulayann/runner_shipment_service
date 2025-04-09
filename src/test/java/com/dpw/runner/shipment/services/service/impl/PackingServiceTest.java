@@ -1357,6 +1357,24 @@ class PackingServiceTest extends CommonMocks {
     }
 
     @Test
+    void calculateWeightVolume2() {
+        ContainerRequest containerRequest = objectMapperTest.convertValue(testContainer, ContainerRequest.class);
+        packingRequest.setShipmentId(1L);
+        PackContainerNumberChangeRequest request = PackContainerNumberChangeRequest.builder()
+                .newContainer(containerRequest)
+                .oldPack(null)
+                .newPack(packingRequest)
+                .oldContainer(containerRequest).build();
+
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
+
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.empty());
+        when(jsonHelper.convertValue(any(ContainerRequest.class) , eq(Containers.class))).thenReturn(testContainer);
+        mockShipmentSettings();
+        assertThrows(NullPointerException.class, () -> packingService.calculateWeightVolumne(commonRequestModel));
+    }
+
+    @Test
     void calculateWeightVolumne_NewPackNull() throws RunnerException {
         ContainerRequest containerRequest = objectMapperTest.convertValue(testContainer, ContainerRequest.class);
         packingRequest.setShipmentId(1L);
@@ -1371,6 +1389,24 @@ class PackingServiceTest extends CommonMocks {
         mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = packingService.calculateWeightVolumne(CommonRequestModel.builder().data(request).build());
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void calculateWeightVolume_NewPackNull2() {
+        ContainerRequest containerRequest = objectMapperTest.convertValue(testContainer, ContainerRequest.class);
+        packingRequest.setShipmentId(1L);
+        PackContainerNumberChangeRequest request = PackContainerNumberChangeRequest.builder()
+                .newContainer(null)
+                .oldPack(packingRequest)
+                .newPack(null)
+                .oldContainer(containerRequest).build();
+
+        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
+
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.empty());
+        when(jsonHelper.convertValue(any(ContainerRequest.class) , eq(Containers.class))).thenReturn(testContainer);
+        mockShipmentSettings();
+        assertThrows(NullPointerException.class, () -> packingService.calculateWeightVolumne(commonRequestModel));
     }
 
     @Test

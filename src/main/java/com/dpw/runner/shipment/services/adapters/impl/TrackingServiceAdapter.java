@@ -294,7 +294,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
         return inputShipment != null ? inputShipment.getMasterBill() : null;
     }
 
-    private void setBookingReferenceNumberInTrackingPayload(ConsolidationDetails inputConsol, ShipmentDetails inputShipment, boolean isRequestFromShipment, UniversalTrackingPayload trackingPayload) {
+     public void setBookingReferenceNumberInTrackingPayload(ConsolidationDetails inputConsol, ShipmentDetails inputShipment, boolean isRequestFromShipment, UniversalTrackingPayload trackingPayload) {
         if(inputShipment != null && "API".equals(inputShipment.getSource())) {
             if(!isRequestFromShipment) {
                 var referenceNumber = inputConsol !=  null ? inputConsol.getReferenceNumber() : null;

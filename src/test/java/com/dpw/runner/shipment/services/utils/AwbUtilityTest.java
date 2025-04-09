@@ -1327,6 +1327,8 @@ class AwbUtilityTest extends CommonMocks {
         Awb mockAwb = testDmawb;
         mockAwb.setShipmentId(1L);
         mockAwb.setTenantId(1);
+        Awb mockAwb2 = testDmawb;
+        mockAwb.setShipmentId(2L);
 
         ShipmentDetails mockShipment = testShipment;
         mockShipment.setJobType(Constants.SHIPMENT_TYPE_DRT);
@@ -1334,7 +1336,8 @@ class AwbUtilityTest extends CommonMocks {
         when(awbDao.findAwbByGuidByQuery(guid)).thenReturn(mockAwb);
         when(shipmentDao.getShipmentNumberFromId(anyList())).thenReturn(List.of(mockShipment));
         when(awbDao.findAllLinkedAwbs(guid)).thenReturn(List.of(
-                mockAwb.setAirMessageStatus(AwbStatus.AIR_MESSAGE_SUCCESS)
+                mockAwb.setAirMessageStatus(AwbStatus.AIR_MESSAGE_SUCCESS),
+                mockAwb2
         ));
 
         awbUtility.createStatusUpdateForAirMessaging(airMessagingStatusDto);
