@@ -2585,6 +2585,7 @@ public class EntityTransferService implements IEntityTransferService {
         return tenantIds;
     }
 
+    @SuppressWarnings("java:S2259")
     private Set<Integer> retrieveTaskFromNte(Long entityId, String entityType, List<Integer> tenantIds) {
         List<NetworkTransfer> networkTransfers = networkTransferDao.findByEntityAndTenantList(entityId, entityType, tenantIds);
         networkTransfers = ObjectUtils.isNotEmpty(networkTransfers) ?

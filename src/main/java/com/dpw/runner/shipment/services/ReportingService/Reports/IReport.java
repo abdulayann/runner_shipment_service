@@ -265,7 +265,8 @@ public abstract class IReport {
         if(StringUtility.isEmpty(value))
             return value;
         String key = value + "#" + type;
-        var valueMapper = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).get(keyGenerator.customCacheKeyForMasterData(CacheConstants.MASTER_LIST, key));
+        Optional<Cache> cacheOptional = Optional.ofNullable(cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA));
+        var valueMapper = cacheOptional.map(c -> c.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.MASTER_LIST, key))).orElse(null);
         if(!Objects.isNull(valueMapper)) {
             EntityTransferMasterLists object = (EntityTransferMasterLists) valueMapper.get();
             if(isValueNDesc)
@@ -1231,6 +1232,8 @@ public abstract class IReport {
             dict.put(VOLUME_WEIGHT, convertToWeightNumberFormat(shipmentModel.getVolumetricWeight()));
             dict.put(VOLUME_WEIGHT_UNIT, shipmentModel.getVolumetricWeightUnit());
             dict.put(IS_SECURITY, Boolean.TRUE.equals(isSecurity));
+            if(dictionary == null)
+                dictionary = new HashMap<>();
             dictionary.put(SCI, shipmentModel.getAdditionalDetails().getSci());
             populateRaKcData(dict, shipmentModel);
             populateAwbDetails(dictionary, awb, dict);
@@ -3336,14 +3339,14 @@ public abstract class IReport {
     private void processPackingMasterData(PackingModel pack) {
         try {
             Set<MasterListRequest> requests = new HashSet<>();
-            Cache cache = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA);
-            Cache.ValueWrapper value1 = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.MASTER_LIST, pack.getDGClass()));
+            Optional<Cache> cacheOptional = Optional.ofNullable(cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA));
+            Cache.ValueWrapper value1 = cacheOptional.map(c -> c.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.MASTER_LIST, pack.getDGClass()))).orElse(null);
             if(Objects.isNull(value1))
                 requests.add(MasterListRequest.builder().ItemType(MasterDataType.DG_CLASS.getDescription()).ItemValue(pack.getDGClass()).Cascade(null).build());
-            Cache.ValueWrapper value2 = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.MASTER_LIST, pack.getPackingGroup()));
+            Cache.ValueWrapper value2 = cacheOptional.map(c -> c.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.MASTER_LIST, pack.getPackingGroup()))).orElse(null);
             if(Objects.isNull(value2))
                 requests.add(MasterListRequest.builder().ItemType(MasterDataType.PACKING_GROUP.getDescription()).ItemValue(pack.getPackingGroup()).Cascade(null).build());
-            Cache.ValueWrapper value3 = cache.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.MASTER_LIST, pack.getPacksType()));
+            Cache.ValueWrapper value3 = cacheOptional.map(c -> c.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.MASTER_LIST, pack.getPacksType()))).orElse(null);
             if(Objects.isNull(value3))
                 requests.add(MasterListRequest.builder().ItemType(MasterDataType.PACKS_UNIT.getDescription()).ItemValue(pack.getPacksType()).Cascade(null).build());
 

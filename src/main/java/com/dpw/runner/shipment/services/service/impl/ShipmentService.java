@@ -1958,7 +1958,9 @@ public class ShipmentService implements IShipmentService {
                 if (Objects.isNull(containerRequest) && !Objects.isNull(oldEntity)) {
                     containerRequest = new HashSet<>(jsonHelper.convertValueToList(oldEntity.getContainersList().stream().toList(),ContainerRequest.class));
                 }
-                containerRequest.removeIf(obj2 -> allConsolConts.stream().anyMatch(obj1 -> obj1.getId().equals(obj2.getId())));
+                if (Objects.nonNull(containerRequest)) {
+                    containerRequest.removeIf(obj2 -> allConsolConts.stream().anyMatch(obj1 -> obj1.getId().equals(obj2.getId())));
+                }
                 changeContainerWtVolOnDetach(shipmentRequest, allConsolConts);
             }
 

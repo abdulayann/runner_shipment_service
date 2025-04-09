@@ -401,6 +401,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         return customerBooking;
     }
 
+    @SuppressWarnings("java:S2259")
     private CustomerBooking processReadyForShipmentBooking(CustomerBooking customerBooking, CustomerBookingRequest request, V1TenantSettingsResponse tenantSettingsResponse) throws RunnerException {
         if(Boolean.TRUE.equals(tenantSettingsResponse.getShipmentServiceV2Enabled()))
         {

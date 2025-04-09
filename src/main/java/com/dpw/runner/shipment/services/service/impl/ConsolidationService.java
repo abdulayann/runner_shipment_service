@@ -263,7 +263,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -298,6 +297,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -1280,7 +1280,9 @@ public class ConsolidationService implements IConsolidationService {
 
     private ResponseEntity<IRunnerResponse> sendImportShipmentPullAttachmentEmail(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails, List<EmailTemplatesRequest> emailTemplatesRequestsModel) {
 
-        var emailTemplateModel = emailTemplatesRequestsModel.stream().findFirst().orElse(new EmailTemplatesRequest());
+        var emailTemplateModel = (emailTemplatesRequestsModel != null)
+                ? emailTemplatesRequestsModel.stream().findFirst().orElse(new EmailTemplatesRequest())
+                : new EmailTemplatesRequest();
         List<String> toEmailsList = new ArrayList<>();
         List<String> ccEmailsList = new ArrayList<>();
         if(shipmentDetails.getCreatedBy() != null)
@@ -2045,7 +2047,7 @@ public class ConsolidationService implements IConsolidationService {
             i.getCarrierDetails().setShippingLine(console.getCarrierDetails().getShippingLine());
             i.getCarrierDetails().setAircraftType(console.getCarrierDetails().getAircraftType());
             i.getCarrierDetails().setCfs(console.getCarrierDetails().getCfs());
-            if(fromAttachShipment != null && fromAttachShipment){
+            if(Boolean.TRUE.equals(fromAttachShipment)){
                 i.getCarrierDetails().setEta(console.getCarrierDetails().getEta());
                 i.getCarrierDetails().setEtd(console.getCarrierDetails().getEtd());
                 i.getCarrierDetails().setFlightNumber(console.getCarrierDetails().getFlightNumber());
@@ -2708,7 +2710,8 @@ public class ConsolidationService implements IConsolidationService {
     private Object getEntityTransferObjectCache(Containers containers, Map<String, Object> cacheMap) {
         Object cache = null;
         if(cacheMap.isEmpty()) {
-            var resp = cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA).get(keyGenerator.customCacheKeyForMasterData(CacheConstants.CONTAINER_TYPE, containers.getContainerCode()));
+            Optional<Cache> masterDataCacheOptional = Optional.ofNullable(cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA));
+            Cache.ValueWrapper resp = masterDataCacheOptional.map(cache1 -> cache1.get(keyGenerator.customCacheKeyForMasterData(CacheConstants.CONTAINER_TYPE, containers.getContainerCode()))).orElse(null);
             if(!Objects.isNull(resp)) cache = resp.get();
         } else {
             cache = cacheMap.get(containers.getContainerCode());
@@ -5244,8 +5247,11 @@ public class ConsolidationService implements IConsolidationService {
         Long consolidationReceivingBranch = consolidationDetails.getReceivingBranch();
 
         if (existingNteNotValid(consolidationReceivingBranch, shipmentNetworkTransferMap)) {
-            List<NetworkTransfer> allNetworkTransfers = shipmentNetworkTransferMap.values().stream()
-                    .flatMap(innerMap -> innerMap.values().stream()).toList();
+            List<NetworkTransfer> allNetworkTransfers = Optional.ofNullable(shipmentNetworkTransferMap)
+                    .map(map -> map.values().stream()
+                            .flatMap(innerMap -> innerMap.values().stream()))
+                    .orElseGet(Stream::empty)
+                    .toList();
             nteToDelete.addAll(allNetworkTransfers);
         }
 
