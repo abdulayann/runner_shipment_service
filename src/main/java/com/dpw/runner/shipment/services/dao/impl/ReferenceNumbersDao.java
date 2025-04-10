@@ -142,11 +142,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
     @Override
     public List<ReferenceNumbers> saveEntityFromBooking(List<ReferenceNumbers> referenceNumbersRequests, Long bookingId) {
         List<ReferenceNumbers> res = new ArrayList<>();
-        ListCommonRequest listCommonRequest = constructListCommonRequest("bookingId", bookingId, "=");
-        Pair<Specification<ReferenceNumbers>, Pageable> pair = fetchData(listCommonRequest, ReferenceNumbers.class);
-        Page<ReferenceNumbers> referenceNumbersPage = findAll(pair.getLeft(), pair.getRight());
-        Map<Long, ReferenceNumbers> hashMap = referenceNumbersPage.stream()
-                .collect(Collectors.toMap(ReferenceNumbers::getId, Function.identity()));
+        Map<Long, ReferenceNumbers> hashMap = referenceNumberMap(bookingId);
         for (ReferenceNumbers req : referenceNumbersRequests) {
             String oldEntityJsonString = null;
             String operation = DBOperationType.CREATE.name();
@@ -186,11 +182,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
         String responseMsg;
         List<ReferenceNumbers> responsePackings = new ArrayList<>();
         try {
-            ListCommonRequest listCommonRequest = constructListCommonRequest("bookingId", bookingId, "=");
-            Pair<Specification<ReferenceNumbers>, Pageable> pair = fetchData(listCommonRequest, ReferenceNumbers.class);
-            Page<ReferenceNumbers> referenceNumbers = findAll(pair.getLeft(), pair.getRight());
-            Map<Long, ReferenceNumbers> hashMap = referenceNumbers.stream()
-                    .collect(Collectors.toMap(ReferenceNumbers::getId, Function.identity()));
+            Map<Long, ReferenceNumbers> hashMap = referenceNumberMap(bookingId);
             List<ReferenceNumbers> referernceNumbersRequestList = new ArrayList<>();
             if (referenceNumbersList != null && !referenceNumbersList.isEmpty()) {
                 for (ReferenceNumbers request : referenceNumbersList) {
@@ -209,6 +201,14 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
             log.error(responseMsg, e);
             throw new RunnerException(e.getMessage());
         }
+    }
+
+    private Map<Long, ReferenceNumbers> referenceNumberMap(Long bookingId) {
+        ListCommonRequest listCommonRequest = constructListCommonRequest("bookingId", bookingId, "=");
+        Pair<Specification<ReferenceNumbers>, Pageable> pair = fetchData(listCommonRequest, ReferenceNumbers.class);
+        Page<ReferenceNumbers> referenceNumbersPage = findAll(pair.getLeft(), pair.getRight());
+        return referenceNumbersPage.stream()
+                .collect(Collectors.toMap(ReferenceNumbers::getId, Function.identity()));
     }
 
 

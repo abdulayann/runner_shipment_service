@@ -86,6 +86,8 @@ class CustomerBookingServiceTest extends CommonMocks {
     @Mock
     private ICustomerBookingDao customerBookingDao;
     @Mock
+    private IReferenceNumbersDao referenceNumbersDao;
+    @Mock
     private BillingServiceUrlConfig billingServiceUrlConfig;
     @Mock
     private JsonHelper jsonHelper;
