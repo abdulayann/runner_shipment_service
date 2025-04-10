@@ -377,6 +377,7 @@ class AwbUtilityTest extends CommonMocks {
         AwbAirMessagingResponse awbAirMessagingResponse = new AwbAirMessagingResponse();
 
         AwbRoutingInfoResponse awbRoutingInfoResponse = new AwbRoutingInfoResponse();
+        awbRoutingInfoResponse.setDestinationPortName("US123");
         AwbPaymentInfo awbPaymentInfo = new AwbPaymentInfo();
         awbPaymentInfo.setTotalPrepaid(BigDecimal.ZERO);
         awbPaymentInfo.setTotalCollect(BigDecimal.ZERO);
@@ -463,6 +464,7 @@ class AwbUtilityTest extends CommonMocks {
         AwbAirMessagingResponse awbAirMessagingResponse = new AwbAirMessagingResponse();
 
         AwbRoutingInfoResponse awbRoutingInfoResponse = new AwbRoutingInfoResponse();
+        awbRoutingInfoResponse.setDestinationPortName("US123");
         AwbPaymentInfo awbPaymentInfo = new AwbPaymentInfo();
         awbPaymentInfo.setTotalPrepaid(BigDecimal.ZERO);
         awbPaymentInfo.setTotalCollect(BigDecimal.ZERO);
@@ -550,6 +552,7 @@ class AwbUtilityTest extends CommonMocks {
         AwbAirMessagingResponse awbAirMessagingResponse = new AwbAirMessagingResponse();
 
         AwbRoutingInfoResponse awbRoutingInfoResponse = new AwbRoutingInfoResponse();
+        awbRoutingInfoResponse.setDestinationPortName("US123");
         AwbPaymentInfo awbPaymentInfo = new AwbPaymentInfo();
         awbPaymentInfo.setTotalPrepaid(BigDecimal.ZERO);
         awbPaymentInfo.setTotalCollect(BigDecimal.ZERO);
@@ -624,6 +627,7 @@ class AwbUtilityTest extends CommonMocks {
         AwbAirMessagingResponse awbAirMessagingResponse = new AwbAirMessagingResponse();
 
         AwbRoutingInfoResponse awbRoutingInfoResponse = new AwbRoutingInfoResponse();
+        awbRoutingInfoResponse.setDestinationPortName("US123");
         AwbPaymentInfo awbPaymentInfo = new AwbPaymentInfo();
         if(args == 1) awbPaymentInfo.setTotalPrepaid(BigDecimal.ZERO);
         if(args == 2) awbPaymentInfo.setTotalCollect(BigDecimal.ZERO);

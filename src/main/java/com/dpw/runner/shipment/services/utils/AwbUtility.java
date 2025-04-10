@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.dto.request.awb.*;
+import com.dpw.runner.shipment.services.dto.response.AwbRoutingInfoResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.kafka.dto.AirMessagingEventDto;
@@ -283,7 +284,7 @@ public class AwbUtility {
         // Rounding off Currencies fields
         this.roundOffCurrencyFields(awbResponse);
 
-        checkAcasFlagInAwbForConsole(awbResponse, consolidationDetails);
+        checkAcasFlagInAwb(awbResponse);
 
         // Rounding off Weight fields
         this.roundOffWeightFields(awbResponse);
@@ -527,7 +528,7 @@ public class AwbUtility {
             this.populateMasterAwbData(awbResponse, masterAwb);
         }
 
-        checkAcasFlagInAwbForShipment(awbResponse, shipmentDetails);
+        checkAcasFlagInAwb(awbResponse);
 
         // Rounding off Currencies fields
         this.roundOffCurrencyFields(awbResponse);
@@ -538,20 +539,10 @@ public class AwbUtility {
         return awbResponse;
     }
 
-    private void checkAcasFlagInAwbForShipment(AwbAirMessagingResponse awbResponse, ShipmentDetails shipmentDetails) {
-        awbResponse.setAcasEnabled(shipmentDetails.getRoutingsList().stream()
-                .map(Routings::getPod) // Extract POD
-                .filter(Objects::nonNull) // Ignore null PODs
-                .anyMatch(pod -> pod.startsWith("US"))); // Check if starts with "US"
 
-        checkOciInfoInAwb(awbResponse);
-    }
-
-    private void checkAcasFlagInAwbForConsole(AwbAirMessagingResponse awbResponse, ConsolidationDetails consolidationDetails) {
-        awbResponse.setAcasEnabled(consolidationDetails.getRoutingsList().stream()
-                .map(Routings::getPod) // Extract POD
-                .filter(Objects::nonNull) // Ignore null PODs
-                .anyMatch(pod -> pod.startsWith("US"))); // Check if starts with "US"
+    private void checkAcasFlagInAwb(AwbAirMessagingResponse awbResponse) {
+        awbResponse.setAcasEnabled(awbResponse.getAwbRoutingInfo().stream().map(AwbRoutingInfoResponse::getDestinationPortName)
+                .anyMatch(destinationPort -> destinationPort.startsWith("US"))); // Check if starts with "US"
 
         checkOciInfoInAwb(awbResponse);
     }
