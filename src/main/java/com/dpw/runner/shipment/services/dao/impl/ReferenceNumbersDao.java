@@ -38,7 +38,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
     @Autowired
     private JsonHelper jsonHelper;
     @Autowired
-    private IAuditLogService auditLogService;
+    private IAuditLogService logService;
 
     @Override
     public ReferenceNumbers save(ReferenceNumbers referenceNumbers) {
@@ -109,7 +109,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
             req.setShipmentId(shipmentId);
             req = save(req);
             try {
-                auditLogService.addAuditLog(
+                logService.addAuditLog(
                         AuditLogMetaData.builder()
                                 .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                 .newData(req)
@@ -132,28 +132,28 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
         List<ReferenceNumbers> res = new ArrayList<>();
         Map<Long, ReferenceNumbers> hashMap = referenceNumberMap(bookingId);
         for (ReferenceNumbers req : referenceNumbersRequests) {
-            String oldEntityJsonString = null;
-            String operation = DBOperationType.CREATE.name();
+            String oldEntityJson = null;
+            String dbOperation = DBOperationType.CREATE.name();
             if (req.getId() != null) {
                 long id = req.getId();
                 if (hashMap.get(id) == null) {
                     log.debug(REFERENCE_NUMBER_IS_NULL_FOR_ID_MSG, req.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
-                oldEntityJsonString = jsonHelper.convertToJson(hashMap.get(id));
-                operation = DBOperationType.UPDATE.name();
+                oldEntityJson = jsonHelper.convertToJson(hashMap.get(id));
+                dbOperation = DBOperationType.UPDATE.name();
             }
             req.setBookingId(bookingId);
             req = save(req);
             try {
-                auditLogService.addAuditLog(
+                logService.addAuditLog(
                         AuditLogMetaData.builder()
                                 .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                 .newData(req)
-                                .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Packing.class) : null)
+                                .prevData(oldEntityJson != null ? jsonHelper.readFromJson(oldEntityJson, Packing.class) : null)
                                 .parent(CustomerBooking.class.getSimpleName())
                                 .parentId(bookingId)
-                                .operation(operation).build()
+                                .operation(dbOperation).build()
                 );
             } catch (IllegalAccessException | NoSuchFieldException | JsonProcessingException |
                      InvocationTargetException | NoSuchMethodException | RunnerException e) {
@@ -204,20 +204,20 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
     public List<ReferenceNumbers> saveEntityFromShipment(List<ReferenceNumbers> referenceNumbersRequests, Long shipmentId, Map<Long, ReferenceNumbers> hashMap) {
         List<ReferenceNumbers> res = new ArrayList<>();
         Map<Long, String> oldEntityJsonStringMap = new HashMap<>();
-        for(ReferenceNumbers req : referenceNumbersRequests){
-            if(req.getId() != null){
-                long id = req.getId();
+        for(ReferenceNumbers referenceNumbers : referenceNumbersRequests){
+            if(referenceNumbers.getId() != null){
+                long id = referenceNumbers.getId();
                 if (!hashMap.containsKey(id)) {
-                    log.debug(REFERENCE_NUMBER_IS_NULL_FOR_ID_MSG, req.getId());
+                    log.debug(REFERENCE_NUMBER_IS_NULL_FOR_ID_MSG, referenceNumbers.getId());
                     throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
                 }
-                req.setCreatedAt(hashMap.get(id).getCreatedAt());
-                req.setCreatedBy(hashMap.get(id).getCreatedBy());
-                String oldEntityJsonString = jsonHelper.convertToJson(hashMap.get(id));
-                oldEntityJsonStringMap.put(id, oldEntityJsonString);
+                referenceNumbers.setCreatedAt(hashMap.get(id).getCreatedAt());
+                referenceNumbers.setCreatedBy(hashMap.get(id).getCreatedBy());
+                String oldEntityStringJson = jsonHelper.convertToJson(hashMap.get(id));
+                oldEntityJsonStringMap.put(id, oldEntityStringJson);
             }
-            req.setShipmentId(shipmentId);
-            res.add(req);
+            referenceNumbers.setShipmentId(shipmentId);
+            res.add(referenceNumbers);
         }
         res = saveAll(res);
         for (var req : res) {
@@ -228,7 +228,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
                 operation = DBOperationType.UPDATE.name();
             }
             try {
-                auditLogService.addAuditLog(
+                logService.addAuditLog(
                         AuditLogMetaData.builder()
                                 .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                 .newData(req)
@@ -327,7 +327,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
             req.setConsolidationId(consolidationId);
             req = save(req);
             try {
-                auditLogService.addAuditLog(
+                logService.addAuditLog(
                         AuditLogMetaData.builder()
                                 .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                 .newData(req)
@@ -372,7 +372,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
                 operation = DBOperationType.UPDATE.name();
             }
             try {
-                auditLogService.addAuditLog(
+                logService.addAuditLog(
                         AuditLogMetaData.builder()
                                 .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                 .newData(req)
@@ -398,7 +398,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
                 if(entityType != null)
                 {
                     try {
-                        auditLogService.addAuditLog(
+                        logService.addAuditLog(
                                 AuditLogMetaData.builder()
                                 .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                         .newData(null)
