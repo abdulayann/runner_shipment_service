@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.dto.request.awb.*;
+import com.dpw.runner.shipment.services.dto.response.AwbRoutingInfoResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.kafka.dto.AirMessagingEventDto;
@@ -227,7 +228,7 @@ public class AwbUtility {
         AwbAirMessagingResponse awbResponse = jsonHelper.convertValue(awb, AwbAirMessagingResponse.class);
         awbResponse.setMeta(AwbAirMessagingResponse.Meta.builder().build());
         this.populateEnums(awbResponse);
-        checkAcasFlagInAwbForConsole(awbResponse, consolidationDetails);
+        checkAcasFlagInAwb(awbResponse);
         awbResponse.getMeta().setWeightDecimalPlaces(Objects.isNull(v1TenantSettingsResponse.getWeightDecimalPlace()) ? 2 : v1TenantSettingsResponse.getWeightDecimalPlace());
         awbResponse.getMeta().setCurrencyDecimalPlaces(Objects.isNull(v1TenantSettingsResponse.getCurrencyDecimalPlace()) ? 2 : v1TenantSettingsResponse.getCurrencyDecimalPlace());
         awbResponse.getMeta().setVolumeDecimalPlaces(Objects.isNull(v1TenantSettingsResponse.getVolumeDecimalPlace()) ? 3 : v1TenantSettingsResponse.getVolumeDecimalPlace());
@@ -480,7 +481,7 @@ public class AwbUtility {
         AwbAirMessagingResponse awbResponse = jsonHelper.convertValue(awb, AwbAirMessagingResponse.class);
         awbResponse.setMeta(AwbAirMessagingResponse.Meta.builder().build());
         this.populateEnums(awbResponse);
-        checkAcasFlagInAwbForShipment(awbResponse, shipmentDetails);
+        checkAcasFlagInAwb(awbResponse);
         awbResponse.getMeta().setWeightDecimalPlaces(Objects.isNull(v1TenantSettingsResponse.getWeightDecimalPlace()) ? 2 : v1TenantSettingsResponse.getWeightDecimalPlace());
         awbResponse.getMeta().setCurrencyDecimalPlaces(Objects.isNull(v1TenantSettingsResponse.getCurrencyDecimalPlace()) ? 2 : v1TenantSettingsResponse.getCurrencyDecimalPlace());
         awbResponse.getMeta().setVolumeDecimalPlaces(Objects.isNull(v1TenantSettingsResponse.getVolumeDecimalPlace()) ? 3 : v1TenantSettingsResponse.getVolumeDecimalPlace());
@@ -541,19 +542,10 @@ public class AwbUtility {
         return awbResponse;
     }
 
-    private void checkAcasFlagInAwbForShipment(AwbAirMessagingResponse awbResponse, ShipmentDetails shipmentDetails) {
-        awbResponse.setAcasEnabled(shipmentDetails.getRoutingsList().stream()
-                .map(Routings::getPod) // Extract POD
-                .filter(Objects::nonNull) // Ignore null PODs
-                .anyMatch(pod -> pod.startsWith("US"))); // Check if starts with "US"
 
-    }
-
-    private void checkAcasFlagInAwbForConsole(AwbAirMessagingResponse awbResponse, ConsolidationDetails consolidationDetails) {
-        awbResponse.setAcasEnabled(consolidationDetails.getRoutingsList().stream()
-                .map(Routings::getPod) // Extract POD
-                .filter(Objects::nonNull) // Ignore null PODs
-                .anyMatch(pod -> pod.startsWith("US"))); // Check if starts with "US"
+    private void checkAcasFlagInAwb(AwbAirMessagingResponse awbResponse) {
+        awbResponse.setAcasEnabled(awbResponse.getAwbRoutingInfo().stream().map(AwbRoutingInfoResponse::getDestinationPortName)
+                .anyMatch(destinationPort -> destinationPort.startsWith("US"))); // Check if starts with "US"
 
     }
 

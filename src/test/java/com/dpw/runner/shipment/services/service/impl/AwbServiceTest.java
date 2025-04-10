@@ -684,6 +684,7 @@ class AwbServiceTest extends CommonMocks {
         OCIInfo ociInfo = new OCIInfo();
         OtherIdentityInfo otherIdentityInfo = new OtherIdentityInfo();
         otherIdentityInfo.setIrIpAddress(null);
+        otherIdentityInfo.setIaIpAddress(null);
         ociInfo.setOtherIdentityInfo(otherIdentityInfo);
         mockAwb.setOciInfo(ociInfo);
         AwbResponse mockAwbResponse = objectMapper.convertValue(mockAwb, AwbResponse.class);
@@ -721,6 +722,7 @@ class AwbServiceTest extends CommonMocks {
         OCIInfo ociInfo = new OCIInfo();
         OtherIdentityInfo otherIdentityInfo = new OtherIdentityInfo();
         otherIdentityInfo.setIrIpAddress("127.0.0.1");
+        otherIdentityInfo.setIaIpAddress("120.0.0.1");
         ociInfo.setOtherIdentityInfo(otherIdentityInfo);
         mockAwb.setOciInfo(ociInfo);
         AwbResponse mockAwbResponse = objectMapper.convertValue(mockAwb, AwbResponse.class);

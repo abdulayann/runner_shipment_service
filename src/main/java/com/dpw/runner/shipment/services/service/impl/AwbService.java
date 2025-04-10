@@ -301,6 +301,9 @@ public class AwbService implements IAwbService {
                 if(Strings.isNullOrEmpty(awb.getOciInfo().getOtherIdentityInfo().getIrIpAddress())) {
                     awb.getOciInfo().getOtherIdentityInfo().setIrIpAddress(convertIpFormat(getClientIp()));
                 }
+                if(Strings.isNullOrEmpty(awb.getOciInfo().getOtherIdentityInfo().getIaIpAddress())) {
+                    awb.getOciInfo().getOtherIdentityInfo().setIaIpAddress(convertIpFormat(getClientIp()));
+                }
             }
             else {
                 OtherIdentityInfo otherIdentityInfo = new OtherIdentityInfo();
