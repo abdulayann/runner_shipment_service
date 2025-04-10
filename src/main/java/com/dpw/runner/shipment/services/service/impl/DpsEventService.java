@@ -24,12 +24,8 @@ import com.dpw.runner.shipment.services.repository.interfaces.IDpsEventRepositor
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IDpsEventService;
 import com.google.common.base.Strings;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+
+import java.util.*;
 import java.util.stream.Collectors;
 import javax.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
@@ -316,11 +312,12 @@ public class DpsEventService implements IDpsEventService {
     public DpsEventResponse constructDpsEventResponse(DpsEvent dpsEvent) {
         try {
             List<DpsEventResponse.DpsFieldDataResponse> dpsFieldDataResponseList =
-                    dpsEvent.getDpsFieldData() != null
-                            ? dpsEvent.getDpsFieldData().stream()
-                            .map(dpsFieldData -> new DpsEventResponse.DpsFieldDataResponse(dpsFieldData.getKey(), dpsFieldData.getValue()))
-                            .collect(Collectors.toList())
-                            : Collections.emptyList();
+                    Optional.ofNullable(dpsEvent.getDpsFieldData())
+                            .orElse(Collections.emptyList())
+                            .stream()
+                            .distinct()
+                            .map(d -> new DpsEventResponse.DpsFieldDataResponse(d.getKey(), d.getValue()))
+                            .collect(Collectors.toList());
 
             List<DpsApprovalDetailResponse> dpsApprovalDetailResponseList =
                     dpsEvent.getDpsApprovalDetailList() != null
