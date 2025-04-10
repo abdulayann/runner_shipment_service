@@ -500,16 +500,6 @@ class ReferenceNumbersDaoTest {
         assertEquals(referenceNumbersList, referenceNumbersList1);
     }
 
-   // @Test
-    void testSaveEntityFromBooking_RetrievalFailure() {
-        List<ReferenceNumbers> referenceNumbersList = Collections.singletonList(testData);
-        ReferenceNumbersDao spyService = spy(referenceNumbersDao);
-        doReturn(new PageImpl<>(new ArrayList<>())).when(spyService).findAll(any(), any());
-        doReturn(testData).when(spyService).save(any());
-        List<ReferenceNumbers> referenceNumbersList1 = spyService.saveEntityFromBooking(referenceNumbersList, 1L);
-        assertEquals(referenceNumbersList, referenceNumbersList1);
-    }
-
     @Test
     void testSaveEntityFromBooking_AuditLogFailure() throws Exception {
         List<ReferenceNumbers> referenceNumbersList = Collections.singletonList(testData);
