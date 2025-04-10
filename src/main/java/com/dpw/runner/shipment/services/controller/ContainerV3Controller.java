@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.commons.constants.ContainerConstants;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
+import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -40,7 +41,7 @@ public class ContainerV3Controller {
     @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_CREATE_SUCCESSFUL, response = ConsolidationDetailsResponse.class),
             @ApiResponse(code = 404, message = ContainerConstants.NO_DATA, response = RunnerResponse.class)})
     @PostMapping(ApiConstants.API_CREATE)
-    public ResponseEntity<IRunnerResponse> create(@Valid @RequestBody ContainerRequest containerRequest) {
+    public ResponseEntity<IRunnerResponse> create(@Valid @RequestBody ContainerV3Request containerRequest) {
         log.info("Received Container Create request with RequestId: {} and payload : {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(containerRequest));
         return ResponseHelper.buildSuccessResponse(containerV3Service.create(containerRequest));
     }

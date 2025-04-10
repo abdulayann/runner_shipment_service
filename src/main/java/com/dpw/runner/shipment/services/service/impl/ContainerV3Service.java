@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
+import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
@@ -91,7 +92,7 @@ public class ContainerV3Service implements IContainerV3Service {
     private CommonUtils commonUtils;
 
     @Override
-    public ContainerResponse create(ContainerRequest containerRequest) {
+    public ContainerResponse create(ContainerV3Request containerRequest) {
         Containers container = jsonHelper.convertValue(containerRequest, Containers.class);
         Containers savedContainer = containerRepository.save(container);
         return jsonHelper.convertValue(savedContainer, ContainerResponse.class);
