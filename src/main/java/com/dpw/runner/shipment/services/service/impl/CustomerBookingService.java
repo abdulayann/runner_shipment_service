@@ -246,9 +246,7 @@ public class CustomerBookingService implements ICustomerBookingService {
             notesDao.saveEntityFromOtherEntity(commonUtils.convertToEntityList(notesRequests, Notes.class), bookingId, Constants.CUSTOMER_BOOKING);
         }
 
-        // create booking acknowledged event for Tesla
-        if(Constants.TESLA.equalsIgnoreCase(request.getIntegrationSource()))
-            createAutomatedEvents(request, EventConstants.BKAC, LocalDateTime.now(), null, EventConstants.BKAC_DESCRIPTION);
+        generateBookingAcknowledgementEvent(request);
 
         List<Containers> containers = customerBooking.getContainersList();
         Map<UUID, Containers> containerMap = new HashMap<>();
@@ -280,6 +278,13 @@ public class CustomerBookingService implements ICustomerBookingService {
             log.error(e.getMessage());
         }
     }
+
+    private void generateBookingAcknowledgementEvent(CustomerBookingRequest request) {
+        // create booking acknowledged event for Tesla
+        if(Constants.TESLA.equalsIgnoreCase(request.getIntegrationSource()))
+            createAutomatedEvents(request, EventConstants.BKAC, LocalDateTime.now(), null, EventConstants.BKAC_DESCRIPTION);
+    }
+
 
     private void processBookingChargesRequest(CustomerBooking customerBooking, List<BookingChargesRequest> bookingChargesRequest, Map<UUID, Containers> containerMap) throws RunnerException {
         if (bookingChargesRequest != null && !bookingChargesRequest.isEmpty()) {
