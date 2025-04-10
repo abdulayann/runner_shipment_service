@@ -533,8 +533,6 @@ public class AwbUtility {
             this.populateMasterAwbData(awbResponse, masterAwb);
         }
 
-        checkAcasFlagInAwb(awbResponse);
-
         // Rounding off Currencies fields
         this.roundOffCurrencyFields(awbResponse);
         // Rounding off Weight fields
