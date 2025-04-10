@@ -1175,39 +1175,6 @@ public abstract class IReport {
         }
     }
 
-
-    public Map<String, Object> populateFromRouting(List<RoutingsModel> routingsList, CarrierDetailModel carrierDetails,
-                                                   Map<String, Object> dictionary){
-        RoutingsModel routingSelectedForDocument = null;
-        if(ObjectUtils.isNotEmpty(routingsList)){
-            for (RoutingsModel routing: routingsList){
-                if(Boolean.TRUE.equals(routing.getIsSelectedForDocument())){
-                    routingSelectedForDocument = routing;
-                    break;
-                }
-            }
-        }
-        if(routingSelectedForDocument!=null) {
-            dictionary.put(ReportConstants.TI_FLIGHT_NUMBER, routingSelectedForDocument.getFlightNumber());
-            dictionary.put(ReportConstants.VOYAGE, routingSelectedForDocument.getVoyage());
-            dictionary.put(ReportConstants.FLIGHT_NUMBER, routingSelectedForDocument.getFlightNumber());
-            dictionary.put(VESSEL_NAME, routingSelectedForDocument.getVesselName());
-            var array = new String[] {"" + routingSelectedForDocument.getVesselName(), routingSelectedForDocument.getVoyage()};
-            dictionary.put(ReportConstants.VESSEL_NAME_AND_VOYAGE, array[0] + " & " + array[1]);
-        } else if (carrierDetails != null) {
-            dictionary.put(ReportConstants.TI_FLIGHT_NUMBER, carrierDetails.getFlightNumber());
-            dictionary.put(ReportConstants.VOYAGE, carrierDetails.getVoyage());
-            dictionary.put(ReportConstants.FLIGHT_NUMBER, carrierDetails.getFlightNumber());
-            VesselsResponse vesselsResponse = getVesselsData(carrierDetails.getVessel());
-            if(vesselsResponse!=null){
-                dictionary.put(VESSEL_NAME, vesselsResponse.getName());
-            }
-            var array = new String[] {"" + dictionary.get(VESSEL_NAME), carrierDetails.getVoyage()};
-            dictionary.put(ReportConstants.VESSEL_NAME_AND_VOYAGE, array[0] + " & " + array[1]);
-        }
-        return dictionary;
-    }
-
     private String getConcatenatedContact(String code, String number) {
         return Objects.toString(code, "") + " " + Objects.toString(number, "");
     }

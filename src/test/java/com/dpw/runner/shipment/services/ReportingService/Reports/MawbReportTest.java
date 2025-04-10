@@ -379,12 +379,16 @@ class MawbReportTest extends CommonMocks {
             mockedLicenseContext.when(LicenseContext::isAirSecurityLicense).thenReturn(false);
             ShipmentSettingsDetailsContext.getCurrentTenantSettings()
                 .setCountryAirCargoSecurity(true);
+
             when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
             ShipmentModel shipmentModel = new ShipmentModel();
             shipmentModel.setTransportMode(Constants.TRANSPORT_MODE_AIR);
             shipmentModel.setDirection(Constants.DIRECTION_EXP);
             shipmentModel.setConsolidationList(Arrays.asList(new ConsolidationModel()));
+            shipmentModel.setContainsHazardous(true);
             when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
+            when(LicenseContext.isAirSecurityLicense()).thenReturn(true);
+            when(LicenseContext.isDgAirLicense()).thenReturn(false);
             mawbReport.isDMawb = true;
             mawbReport.printType = ReportConstants.ORIGINAL;
 
@@ -394,6 +398,56 @@ class MawbReportTest extends CommonMocks {
                 () -> mawbReport.getDocumentModel(123L));
         }
     }
+
+    @Test
+    void getDocumentModel_CountryAirCargoSecurity_DMAWB4() {
+        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
+            mockedLicenseContext.when(LicenseContext::isAirSecurityLicense).thenReturn(false);
+            ShipmentSettingsDetailsContext.getCurrentTenantSettings()
+                    .setCountryAirCargoSecurity(true);
+
+            when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+            ShipmentModel shipmentModel = new ShipmentModel();
+            shipmentModel.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+            shipmentModel.setDirection(Constants.DIRECTION_EXP);
+            shipmentModel.setConsolidationList(Arrays.asList(new ConsolidationModel()));
+            shipmentModel.setContainsHazardous(true);
+            when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
+            when(LicenseContext.isAirSecurityLicense()).thenReturn(true);
+            when(LicenseContext.isDgAirLicense()).thenReturn(true);
+            mawbReport.isDMawb = true;
+            mawbReport.printType = ReportConstants.ORIGINAL;
+
+            mockShipmentSettings();
+
+            Assertions.assertDoesNotThrow(() -> mawbReport.getDocumentModel(123L));
+        }
+    }
+
+    @Test
+    void getDocumentModel_CountryAirCargoSecurity_DMAWB5() {
+        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
+            mockedLicenseContext.when(LicenseContext::isAirSecurityLicense).thenReturn(false);
+            ShipmentSettingsDetailsContext.getCurrentTenantSettings()
+                    .setCountryAirCargoSecurity(true);
+
+            when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+            ShipmentModel shipmentModel = new ShipmentModel();
+            shipmentModel.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+            shipmentModel.setDirection(Constants.DIRECTION_EXP);
+            shipmentModel.setConsolidationList(Arrays.asList(new ConsolidationModel()));
+            when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
+            when(LicenseContext.isAirSecurityLicense()).thenReturn(true);
+            when(LicenseContext.isDgAirLicense()).thenReturn(false);
+            mawbReport.isDMawb = true;
+            mawbReport.printType = ReportConstants.ORIGINAL;
+
+            mockShipmentSettings();
+
+            Assertions.assertDoesNotThrow(() -> mawbReport.getDocumentModel(123L));
+        }
+    }
+
 
     @Test
     void getDocumentModel_CountryAirCargoSecurity_DMAWB3() {
