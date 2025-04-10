@@ -56,6 +56,7 @@ public class CustomerBookingRequest extends CommonRequest implements IRunnerRequ
     private List<RoutingsRequest> routingList;
     private List<BookingChargesRequest> bookingCharges;
     private List<FileRepoRequest> fileRepoList;
+    private List<NotesRequest> notesList;
     private Boolean isAutoWeightVolumeUpdate;
     private String fmcTlcId;
     private Boolean isPackageManual;
@@ -80,4 +81,6 @@ public class CustomerBookingRequest extends CommonRequest implements IRunnerRequ
     private String orderManagementNumber;
     private Boolean isDg;
     private String rejectionRemarks;
+    private String shipmentReferenceNumber;
+    private String integrationSource;
 }

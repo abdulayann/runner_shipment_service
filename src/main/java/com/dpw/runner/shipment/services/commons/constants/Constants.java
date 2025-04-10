@@ -633,6 +633,8 @@ public class Constants {
     public static final String IGNORED_ERROR_MSG = "Ignored error.";
     public static final String EMPTY_STRING = "";
 
+    public static final String TESLA = "Tesla";
+
     private Constants() {
     }
 

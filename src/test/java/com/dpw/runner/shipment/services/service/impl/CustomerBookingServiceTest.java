@@ -130,6 +130,9 @@ class CustomerBookingServiceTest extends CommonMocks {
     @Mock
     private IQuoteContractsService quoteContractsService;
 
+    @Mock
+    private INotesDao notesDao;
+
     private static JsonTestUtility jsonTestUtility;
     private static ObjectMapper objectMapper;
     private static CustomerBookingRequest customerBookingRequest;
@@ -561,6 +564,97 @@ class CustomerBookingServiceTest extends CommonMocks {
         when(customerBookingDao.save(any())).thenReturn(customerBooking);
         when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
 
+        // Test
+        ResponseEntity<IRunnerResponse> httpResponse = customerBookingService.platformCreateBooking(commonRequestModel);
+
+        // Assert
+        verify(customerBookingDao, times(1)).save(customerBooking);
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+
+    }
+
+    @Test
+    void testPlatformCreateBookingForTeslaIntegration() throws RunnerException {
+        PlatformToRunnerCustomerBookingRequest request = new PlatformToRunnerCustomerBookingRequest();
+        var container = BookingContainerRequest.builder().containerCode("20FR").containerCount(12L).commodityGroup("FAK").build();
+        container.setGuid(UUID.randomUUID());
+        var addressDataMap = customerBooking.getCustomer().getAddressData();
+        var orgDataMap = customerBooking.getCustomer().getOrgData();
+        addressDataMap.put(PartiesConstants.ADDRESS2, "delhi");
+        addressDataMap.put(PartiesConstants.CITY, "New Delhi");
+        addressDataMap.put(PartiesConstants.STATE, "New Delhi");
+        addressDataMap.put(PartiesConstants.ZIP_POST_CODE, "110011");
+        addressDataMap.put(PartiesConstants.MOBILE, "9871413293");
+        addressDataMap.put(PartiesConstants.PHONE, "01198765432");
+        var containersList = List.of(
+                BookingContainerRequest.builder().containerCode("20GP").containerCount(1L).commodityGroup("FAK").runner_guid(UUID.randomUUID()).build(),
+                BookingContainerRequest.builder().containerCode("20FR").containerCount(12L).commodityGroup("FAK").build(),
+                container
+        );
+        var pack = BookingPackingRequest.builder().dimensionUnit("M").isDimension(true).commodityGroup("FAK").build();
+        pack.setGuid(UUID.randomUUID());
+        var packingList = List.of(
+                BookingPackingRequest.builder().dimensionUnit("M").isDimension(true).commodityGroup("FAK").build(),
+                BookingPackingRequest.builder().dimensionUnit("M").isDimension(false).commodityGroup("FAK").build(),
+                pack
+        );
+        var route = BookingRoutingsRequest.builder().reference_id(UUID.randomUUID().toString()).carrier("UIHJK").build();
+        route.setGuid(UUID.randomUUID());
+        var routingList = List.of(
+                BookingRoutingsRequest.builder().reference_id(UUID.randomUUID().toString()).carrier("APLU").build(),
+                route
+        );
+        var chargesList = List.of(
+                PlatformBookingChargesRequest.builder()
+                        .creditor(PartiesRequest.builder().orgCode("FRC0001").addressCode("FRC0002").orgData(orgDataMap).addressData(addressDataMap).build())
+                        .debtor(PartiesRequest.builder().orgCode("FRC0001").addressCode("FRC0002").orgData(orgDataMap).addressData(addressDataMap).build())
+                        .build()
+        );
+        List<NotesRequest> notesList = List.of(NotesRequest.builder().label("ShipmentReference").text("SH01231-12313").build());
+
+        request.setIntegrationSource(Constants.TESLA);
+        request.setContainersList(containersList);
+        request.setPackingList(packingList);
+        request.setRoutingList(routingList);
+        request.setBookingCharges(chargesList);
+        request.setVessel("Vessel");
+        request.setIsSingleUsageContract(true);
+        request.setIsConsignorFreeText(true);
+        request.setIsConsigneeFreeText(true);
+        request.setIsNotifyPartyFreeText(true);
+        request.setCustomer(PartiesRequest.builder().orgCode("FRC0001").addressCode("FRC0002").build());
+        request.setConsignor(PartiesRequest.builder().orgCode("FRC0001").addressCode("FRC0002").orgData(orgDataMap).addressData(addressDataMap).build());
+        request.setConsignee(PartiesRequest.builder().orgCode("FRC0001").addressCode("FRC0002").orgData(orgDataMap).addressData(addressDataMap).build());
+        request.setNotifyParty(PartiesRequest.builder().orgCode("FRC0001").addressCode("FRC0002").orgData(orgDataMap).addressData(addressDataMap).build());
+        request.setShippingLine("code");
+        request.setNotesList(notesList);
+
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+
+        CustomerBookingRequest customerBookingRequest = new CustomerBookingRequest();
+        customerBookingRequest.setIntegrationSource(Constants.TESLA);
+        customerBookingRequest.setNotesList(notesList);
+
+        CustomerBooking customerBooking = new CustomerBooking();
+        customerBooking.setId(1L);
+        customerBooking.setBookingNumber("DBAR-5586091-311749");
+        customerBooking.setIsConsigneeAddressFreeText(customerBooking.getIsConsigneeFreeText() != null && customerBooking.getIsConsigneeFreeText());
+        customerBooking.setIsConsignorAddressFreeText(customerBooking.getIsConsignorFreeText() != null && customerBooking.getIsConsignorFreeText());
+        customerBooking.setIsCustomerAddressFreeText(false);
+        customerBooking.setIsNotifyPartyAddressFreeText(customerBooking.getIsNotifyPartyFreeText() != null && customerBooking.getIsNotifyPartyFreeText());
+        customerBooking.setSource(BookingSource.Platform);
+        customerBooking.setIsPlatformBookingCreated(Boolean.TRUE);
+
+        CustomerBookingResponse customerBookingResponse = objectMapper.convertValue(customerBooking, CustomerBookingResponse.class);
+
+        // Mock
+        when(customerBookingDao.findByShipmentReferenceNumber(any())).thenReturn(Optional.empty());
+        when(modelMapper.map(any(), eq(CustomerBookingRequest.class))).thenReturn(customerBookingRequest);
+        when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(customerBooking);
+        when(customerBookingDao.save(any())).thenReturn(customerBooking);
+        when(v1Service.fetchVesselData(any())).thenReturn(V1DataResponse.builder().entities(List.of()).build());
+        when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
+        when(jsonHelper.convertValueToList(any(), eq(VesselsResponse.class))).thenReturn(List.of(new VesselsResponse()));
         // Test
         ResponseEntity<IRunnerResponse> httpResponse = customerBookingService.platformCreateBooking(commonRequestModel);
 
