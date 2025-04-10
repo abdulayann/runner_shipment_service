@@ -456,6 +456,7 @@ class AwbUtilityTest extends CommonMocks {
         AwbAirMessagingResponse awbAirMessagingResponse = new AwbAirMessagingResponse();
 
         AwbRoutingInfoResponse awbRoutingInfoResponse = new AwbRoutingInfoResponse();
+        awbRoutingInfoResponse.setDestinationPortName("US123");
         awbAirMessagingResponse.setAwbPaymentInfo(null);
         awbAirMessagingResponse.setAwbRoutingInfo(List.of(awbRoutingInfoResponse));
         when(jsonHelper.convertValue(any(), eq(AwbAirMessagingResponse.class))).thenReturn(awbAirMessagingResponse);
@@ -531,6 +532,7 @@ class AwbUtilityTest extends CommonMocks {
         AwbAirMessagingResponse awbAirMessagingResponse = new AwbAirMessagingResponse();
 
         AwbRoutingInfoResponse awbRoutingInfoResponse = new AwbRoutingInfoResponse();
+        awbRoutingInfoResponse.setDestinationPortName("US123");
         AwbPaymentInfo awbPaymentInfo = new AwbPaymentInfo();
         awbPaymentInfo.setTotalPrepaid(null);
         awbPaymentInfo.setTotalCollect(BigDecimal.ZERO);
@@ -609,6 +611,7 @@ class AwbUtilityTest extends CommonMocks {
         AwbAirMessagingResponse awbAirMessagingResponse = new AwbAirMessagingResponse();
 
         AwbRoutingInfoResponse awbRoutingInfoResponse = new AwbRoutingInfoResponse();
+        awbRoutingInfoResponse.setDestinationPortName("US123");
         AwbPaymentInfo awbPaymentInfo = new AwbPaymentInfo();
         awbPaymentInfo.setTotalPrepaid(BigDecimal.ZERO);
         awbPaymentInfo.setTotalCollect(null);
@@ -962,6 +965,9 @@ class AwbUtilityTest extends CommonMocks {
         when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(mockTenantModel);
 
         AwbAirMessagingResponse awbAirMessagingResponse = new AwbAirMessagingResponse();
+        AwbRoutingInfoResponse awbRoutingInfoResponse = new AwbRoutingInfoResponse();
+        awbRoutingInfoResponse.setDestinationPortName("US123");
+        awbAirMessagingResponse.setAwbRoutingInfo(List.of(awbRoutingInfoResponse));
         when(jsonHelper.convertValue(any(), eq(AwbAirMessagingResponse.class))).thenReturn(awbAirMessagingResponse);
         when(shipmentSettingsDao.getSettingsByTenantIds(anyList())).thenReturn(List.of());
 
