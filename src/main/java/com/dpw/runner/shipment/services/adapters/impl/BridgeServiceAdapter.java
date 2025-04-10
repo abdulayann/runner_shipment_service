@@ -38,7 +38,7 @@ public class BridgeServiceAdapter implements IBridgeServiceAdapter {
 
     @Override
     public IRunnerResponse requestTactResponse(CommonRequestModel commonRequestModel) throws RunnerException {
-        String authToken = generateToken();
+        String authToken = generateToken(bridgeServiceConfig.getUserName(), bridgeServiceConfig.getPassword());
         HttpHeaders headers = new HttpHeaders();
         headers.add(HttpHeaders.AUTHORIZATION, "Bearer " + authToken);
         var url = bridgeServiceConfig.getBaseUrl() + bridgeServiceConfig.getRequestUrl();
@@ -47,7 +47,7 @@ public class BridgeServiceAdapter implements IBridgeServiceAdapter {
         BridgeRequest request = BridgeRequest.builder().requestCode(bridgeServiceConfig.getTactIntegrationRequestCode())
             .payload(tactBridgePayload).build();
 
-        HttpEntity httpEntity = new HttpEntity(jsonHelper.convertToJson(request), headers);
+        HttpEntity<String> httpEntity = new HttpEntity<>(jsonHelper.convertToJson(request), headers);
 
         try {
             var bridgeResponse = restTemplate.postForEntity(url, httpEntity, BridgeServiceResponse.class);
@@ -61,11 +61,11 @@ public class BridgeServiceAdapter implements IBridgeServiceAdapter {
 
     }
 
-    private String generateToken() throws RunnerException {
+    private String generateToken(String userName, String password) throws RunnerException {
         AuthLoginRequest authLoginRequest = AuthLoginRequest.builder()
             .tenantCode(bridgeServiceConfig.getTenantCode())
-            .username(bridgeServiceConfig.getUserName())
-            .password(bridgeServiceConfig.getPassword())
+            .username(userName)
+            .password(password)
             .build();
         var url = bridgeServiceConfig.getBaseUrl() + bridgeServiceConfig.getAuthLoginUrl();
         try {
@@ -77,5 +77,28 @@ public class BridgeServiceAdapter implements IBridgeServiceAdapter {
             log.error("Error while generating token for bridge service", e);
             throw new RunnerException(e.getMessage());
         }
+    }
+
+    @Override
+    public IRunnerResponse requestOutBoundFileTransfer(CommonRequestModel commonRequestModel) throws RunnerException {
+        String authToken = generateToken(bridgeServiceConfig.getOutBoundTransferUserName(), bridgeServiceConfig.getOutBoundTransferPassword());
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(HttpHeaders.AUTHORIZATION, "Bearer " + authToken);
+        var url = bridgeServiceConfig.getBaseUrl() + bridgeServiceConfig.getRequestUrl();
+
+        BridgeRequest request  = (BridgeRequest) commonRequestModel.getData();
+
+        HttpEntity<String> httpEntity = new HttpEntity<>(jsonHelper.convertToJson(request), headers);
+
+        try {
+            var bridgeResponse = restTemplate.postForEntity(url, httpEntity, BridgeServiceResponse.class);
+            log.info("Received data from bridge service for file transfer outbound integration: {}", jsonHelper.convertToJson(bridgeResponse));
+            return bridgeResponse.getBody();
+        }
+        catch (Exception e) {
+            log.error("Error while hitting bridge service request endpoint", e);
+            throw new RunnerException(e.getMessage());
+        }
+
     }
 }

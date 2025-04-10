@@ -106,9 +106,7 @@ public class EventsController {
     @PostMapping(ApiConstants.SYNC)
     @ExcludeTimeZone
     public ResponseEntity<IRunnerResponse> syncEventsToService(@RequestBody @Valid EventsRequestV2 request, @RequestParam(required = false, defaultValue = "true") boolean checkForSync) {
-        String responseMsg = "failure executing :(";
         return ResponseHelper.buildSuccessResponse();
-//      return eventService.V1EventsCreateAndUpdate(CommonRequestModel.buildRequest(request), checkForSync);
     }
 
     @ApiResponses(value = {
@@ -185,7 +183,7 @@ public class EventsController {
     public ResponseEntity<IRunnerResponse> getEvents(@RequestBody @Valid List<Events> request) {
         String responseMsg;
         try {
-            return (ResponseEntity<IRunnerResponse>) eventsSync.sync(request);
+            return eventsSync.sync(request);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;

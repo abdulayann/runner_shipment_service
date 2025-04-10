@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConst
 import com.dpw.runner.shipment.services.ReportingService.Models.FCRDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
@@ -84,12 +85,12 @@ public class FCRDocumentReport extends IReport{
         unlocationCodeSet.add(fcrDocumentModel.getShipmentModel().getAdditionalDetails().getPlaceOfIssue());
         unlocationCodeSet.add(this.placeOfIssue);
         Map<String, EntityTransferUnLocations> unLocationsMap = masterDataUtils.getLocationDataFromCache(unlocationCodeSet, EntityTransferConstants.LOCATION_SERVICE_GUID);
-        if(!CommonUtils.IsStringNullOrEmpty(fcrDocumentModel.getShipmentModel().getAdditionalDetails().getPlaceOfIssue())) {
+        if(!CommonUtils.isStringNullOrEmpty(fcrDocumentModel.getShipmentModel().getAdditionalDetails().getPlaceOfIssue())) {
             dictionary.put(PLACE_OF_ISSUE, unLocationsMap.get(fcrDocumentModel.getShipmentModel().getAdditionalDetails().getPlaceOfIssue()).Name);
         }
         populateFcrPlaceOfIssue(dictionary, unLocationsMap);
-        dictionary.put(SHIPMENT_DETAIL_DATE_OF_ISSUE, ConvertToDPWDateFormat(fcrDocumentModel.getShipmentModel().getAdditionalDetails().getDateOfIssue()));
-        dictionary.put(FCR_DATE_OF_ISSUE, ConvertToDPWDateFormat(this.issueDate));
+        dictionary.put(SHIPMENT_DETAIL_DATE_OF_ISSUE, convertToDPWDateFormat(fcrDocumentModel.getShipmentModel().getAdditionalDetails().getDateOfIssue()));
+        dictionary.put(FCR_DATE_OF_ISSUE, convertToDPWDateFormat(this.issueDate));
         return convertValuesToUpperCase(dictionary);
     }
 
@@ -97,7 +98,7 @@ public class FCRDocumentReport extends IReport{
         if(StringUtility.isEmpty(this.placeOfIssue)) return;
 
         EntityTransferUnLocations unLocations = Optional.ofNullable(unLocationsMap.get(this.placeOfIssue)).orElse(new EntityTransferUnLocations());
-        StringBuilder sb = new StringBuilder(Optional.ofNullable(unLocations.getCityName()).orElse(StringUtility.getEmptyString()));
+        StringBuilder sb = new StringBuilder(Optional.ofNullable(unLocations.getCityName()).orElse(Constants.EMPTY_STRING));
         // USA region -> display city name with state code
         if (StringUtility.convertToString(unLocations.getLocCode()).startsWith(USA_LOC_CODE_PREFIX) && !StringUtility.isEmpty(unLocations.getState())) {
             sb.append(", ").append(unLocations.getState());

@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.impl.NPMServiceAdapter;
+import com.dpw.runner.shipment.services.aspects.LicenseContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -60,6 +61,7 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.springframework.cache.Cache;
@@ -551,7 +553,7 @@ class DeliveryOrderReportTest extends CommonMocks {
         BillChargesResponse billChargesResponse = new BillChargesResponse();
         billChargesResponse.setOverseasSellAmount(BigDecimal.TEN);
         billChargesResponse.setLocalTax(BigDecimal.TEN);
-        billChargesResponse.setMeasurementBasis(Integer.toString(MeasurementBasis.CHARGEABLE.getValue()));
+        billChargesResponse.setMeasurementBasis(Integer.toString(MeasurementBasis.Chargeable.getValue()));
         billChargesResponse.setLocalCostCurrency("INR");
         billChargesResponse.setPaymentType("PPD");
         billChargesResponse.setChargeTypeCode("AGENT");
@@ -560,7 +562,7 @@ class DeliveryOrderReportTest extends CommonMocks {
         billChargesResponse = new BillChargesResponse();
         billChargesResponse.setOverseasSellAmount(BigDecimal.TEN);
         billChargesResponse.setLocalTax(BigDecimal.TEN);
-        billChargesResponse.setMeasurementBasis(Integer.toString(MeasurementBasis.CHARGEABLE.getValue()));
+        billChargesResponse.setMeasurementBasis(Integer.toString(MeasurementBasis.Chargeable.getValue()));
         billChargesResponse.setLocalCostCurrency("INR");
         billChargesResponse.setPaymentType("CPP");
         billChargesResponse.setChargeTypeCode("AGENT");
@@ -569,7 +571,7 @@ class DeliveryOrderReportTest extends CommonMocks {
         billChargesResponse = new BillChargesResponse();
         billChargesResponse.setOverseasSellAmount(BigDecimal.TEN);
         billChargesResponse.setLocalTax(BigDecimal.TEN);
-        billChargesResponse.setMeasurementBasis(Integer.toString(MeasurementBasis.CHARGEABLE.getValue()));
+        billChargesResponse.setMeasurementBasis(Integer.toString(MeasurementBasis.Chargeable.getValue()));
         billChargesResponse.setLocalCostCurrency("INR");
         billChargesResponse.setPaymentType("CAL");
         billChargesResponse.setChargeTypeCode("AGENT");
@@ -578,7 +580,7 @@ class DeliveryOrderReportTest extends CommonMocks {
         billChargesResponse = new BillChargesResponse();
         billChargesResponse.setOverseasSellAmount(BigDecimal.TEN);
         billChargesResponse.setLocalTax(BigDecimal.TEN);
-        billChargesResponse.setMeasurementBasis(Integer.toString(MeasurementBasis.CHARGEABLE.getValue()));
+        billChargesResponse.setMeasurementBasis(Integer.toString(MeasurementBasis.Chargeable.getValue()));
         billChargesResponse.setLocalCostCurrency("INR");
         billChargesResponse.setPaymentType("SHW");
         billChargesResponse.setChargeTypeCode("AGENT");
@@ -587,7 +589,7 @@ class DeliveryOrderReportTest extends CommonMocks {
         billChargesResponse = new BillChargesResponse();
         billChargesResponse.setOverseasSellAmount(BigDecimal.TEN);
         billChargesResponse.setLocalTax(BigDecimal.TEN);
-        billChargesResponse.setMeasurementBasis(Integer.toString(MeasurementBasis.CHARGEABLE.getValue()));
+        billChargesResponse.setMeasurementBasis(Integer.toString(MeasurementBasis.Chargeable.getValue()));
         billChargesResponse.setLocalCostCurrency("INR");
         billChargesResponse.setPaymentType("ALL");
         billChargesResponse.setChargeTypeCode("AGENT");
@@ -596,7 +598,7 @@ class DeliveryOrderReportTest extends CommonMocks {
         billChargesResponse = new BillChargesResponse();
         billChargesResponse.setOverseasSellAmount(BigDecimal.TEN);
         billChargesResponse.setLocalTax(BigDecimal.TEN);
-        billChargesResponse.setMeasurementBasis(Integer.toString(MeasurementBasis.CHARGEABLE.getValue()));
+        billChargesResponse.setMeasurementBasis(Integer.toString(MeasurementBasis.Chargeable.getValue()));
         billChargesResponse.setLocalCostCurrency("INR");
         billChargesResponse.setPaymentType("CCL");
         billChargesResponse.setChargeTypeCode("AGENT");
@@ -743,33 +745,42 @@ class DeliveryOrderReportTest extends CommonMocks {
 
     @Test
     void getDocumentModel_CountryAirCargoSecurity() {
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setCountryAirCargoSecurity(true);
-        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
-        ShipmentModel shipmentModel = new ShipmentModel();
-        shipmentModel.setTransportMode(AIR);
-        shipmentModel.setDirection(EXP);
-        shipmentModel.setContainersList(List.of(new ContainerModel()));
+        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
+            mockedLicenseContext.when(LicenseContext::isAirSecurityLicense).thenReturn(false);
+            ShipmentSettingsDetailsContext.getCurrentTenantSettings()
+                .setCountryAirCargoSecurity(true);
+            when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+            ShipmentModel shipmentModel = new ShipmentModel();
+            shipmentModel.setTransportMode(AIR);
+            shipmentModel.setDirection(EXP);
+            shipmentModel.setContainersList(List.of(new ContainerModel()));
 
-        when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
-        mockShipmentSettings();
+            when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
+            mockShipmentSettings();
 
-        assertThrows(ValidationException.class, () -> deliveryOrderReport.getDocumentModel(123L));
+            assertThrows(ValidationException.class,
+                () -> deliveryOrderReport.getDocumentModel(123L));
+        }
     }
 
     @Test
     void getDocumentModel_CountryAirCargoSecurity2() {
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setCountryAirCargoSecurity(true);
-        UserContext.getUser().getPermissions().put(PermissionConstants.AIR_SECURITY_PERMISSION, true);
-        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
-        ShipmentModel shipmentModel = new ShipmentModel();
-        shipmentModel.setTransportMode(AIR);
-        shipmentModel.setDirection(EXP);
-        shipmentModel.setContainersList(List.of(new ContainerModel()));
-        shipmentModel.setContainsHazardous(true);
+        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
+            mockedLicenseContext.when(LicenseContext::isAirSecurityLicense).thenReturn(true);
+            ShipmentSettingsDetailsContext.getCurrentTenantSettings()
+                .setCountryAirCargoSecurity(true);
+            when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+            ShipmentModel shipmentModel = new ShipmentModel();
+            shipmentModel.setTransportMode(AIR);
+            shipmentModel.setDirection(EXP);
+            shipmentModel.setContainersList(List.of(new ContainerModel()));
+            shipmentModel.setContainsHazardous(true);
 
-        when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
-        mockShipmentSettings();
+            when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
+            mockShipmentSettings();
 
-        assertThrows(ValidationException.class, () -> deliveryOrderReport.getDocumentModel(123L));
+            assertThrows(ValidationException.class,
+                () -> deliveryOrderReport.getDocumentModel(123L));
+        }
     }
 }

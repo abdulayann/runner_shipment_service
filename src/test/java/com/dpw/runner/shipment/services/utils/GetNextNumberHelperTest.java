@@ -98,7 +98,7 @@ class GetNextNumberHelperTest {
 
         try {
             var spyBean = Mockito.spy(getNextNumberHelper);
-            doReturn("").when(spyBean).GetNextRegexSequenceNumber(any(), any());
+            doReturn("").when(spyBean).getNextRegexSequenceNumber(any(), any());
             var res = spyBean.generateCustomSequence(
                 sequenceSettings, regexPattern, tenantId, updateCounter, user, updateBranchCode
             );
@@ -203,16 +203,16 @@ class GetNextNumberHelperTest {
     }
 
     @Test
-    void GetNextRegexSequenceNumberThrowsExceptionForNullTimeZoneId() {
+    void getNextRegexSequenceNumberThrowsExceptionForNullTimeZoneId() {
         ProductSequenceConfig sequenceSettings = new ProductSequenceConfig();
         String resetFreq = "daily";
 
         assertThrows(RunnerException.class,  () ->
-            getNextNumberHelper.GetNextRegexSequenceNumber(sequenceSettings, resetFreq));
+            getNextNumberHelper.getNextRegexSequenceNumber(sequenceSettings, resetFreq));
     }
 
     @Test
-    void GetNextRegexSequenceNumberWithSequenceStartTimeWithOlderDate() {
+    void getNextRegexSequenceNumberWithSequenceStartTimeWithOlderDate() {
         var user = UserContext.getUser();
         user.setTimeZoneId("IND");
 
@@ -223,7 +223,7 @@ class GetNextNumberHelperTest {
 
 
         try {
-            var nextSeq = getNextNumberHelper.GetNextRegexSequenceNumber(sequenceSettings, resetFreq);
+            var nextSeq = getNextNumberHelper.getNextRegexSequenceNumber(sequenceSettings, resetFreq);
             assertNotNull(nextSeq);
         }
         catch(Exception e) {
@@ -232,7 +232,7 @@ class GetNextNumberHelperTest {
     }
 
     @Test
-    void GetNextRegexSequenceNumber() {
+    void getNextRegexSequenceNumber() {
         var user = UserContext.getUser();
         user.setTimeZoneId("IND");
 
@@ -243,7 +243,7 @@ class GetNextNumberHelperTest {
         String resetFreq = "daily";
 
         try {
-            var nextSeq = getNextNumberHelper.GetNextRegexSequenceNumber(sequenceSettings, resetFreq);
+            var nextSeq = getNextNumberHelper.getNextRegexSequenceNumber(sequenceSettings, resetFreq);
             assertNotNull(nextSeq);
         }
         catch(Exception e) {

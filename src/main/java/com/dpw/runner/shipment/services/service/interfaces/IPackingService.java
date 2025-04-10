@@ -21,9 +21,9 @@ public interface IPackingService extends ICommonService {
 
     ResponseEntity<IRunnerResponse> calculateWeightVolumne(CommonRequestModel commonRequestModel) throws RunnerException;
 
-    ResponseEntity<IRunnerResponse> V1PackingCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws RunnerException;
+    ResponseEntity<IRunnerResponse> v1PackingCreateAndUpdate(CommonRequestModel commonRequestModel, boolean checkForSync) throws RunnerException;
 
-    ResponseEntity<IRunnerResponse> V1BulkPackingCreateAndUpdate(CommonRequestModel commonRequestModel);
+    ResponseEntity<IRunnerResponse> v1BulkPackingCreateAndUpdate(CommonRequestModel commonRequestModel);
 
     ResponseEntity<IRunnerResponse> listPacksToDetach(CommonRequestModel commonRequestModel) throws RunnerException;
 

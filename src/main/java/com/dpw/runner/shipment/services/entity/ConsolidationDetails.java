@@ -39,7 +39,7 @@ public class ConsolidationDetails extends MultiTenancy {
 
     @Column(name = "consolidation_type")
     @Size(max=100, message = "max size is 100 for consolidation_type")
-    @MasterData(type = MasterDataType.CONSOLIDATION_TYPE)
+    @MasterData(type = MasterDataType.CONSOlIDATION_TYPE)
     private String consolidationType;
 
     @Column(name = "transport_mode")
@@ -357,10 +357,6 @@ public class ConsolidationDetails extends MultiTenancy {
     @JsonIgnoreProperties(value = "shipmentsList", allowSetters = true)
     @BatchSize(size = 50)
     private List<Containers> containersList;
-
-//    @OneToMany(fetch = FetchType.LAZY, mappedBy = "consolidationId")
-//    @BatchSize(size = 50)
-//    private List<TruckDriverDetails> truckDriverDetails;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "consolidationId")
     @BatchSize(size = 50)

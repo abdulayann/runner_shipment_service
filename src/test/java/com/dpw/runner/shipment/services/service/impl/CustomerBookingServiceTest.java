@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.adapters.impl.OrderManagementAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IFusionServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
+import com.dpw.runner.shipment.services.aspects.LicenseContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -32,6 +33,7 @@ import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
+import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -55,6 +57,7 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -1125,7 +1128,7 @@ class CustomerBookingServiceTest extends CommonMocks {
         when(modelMapper.map(any(), eq(CheckCreditBalanceFusionResponse.class))).thenReturn(mockCheckCreditBalanceFusionResponse);
         mockTenantSettings();
         var t = assertThrows(Throwable.class, () -> customerBookingService.checkCreditLimitFromFusion(CommonRequestModel.buildRequest(creditLimitRequest)));
-        assertEquals(RuntimeException.class.getSimpleName(), t.getClass().getSimpleName());
+        assertEquals(GenericException.class.getSimpleName(), t.getClass().getSimpleName());
     }
 
     @Test
@@ -1261,161 +1264,217 @@ class CustomerBookingServiceTest extends CommonMocks {
 
     @Test
     void testBookingUpdateWithSuccessWithReadyForShipmentWithV2ShipmentEnabled() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
-        // Arrange
-        TenantSettingsDetailsContext.setCurrentTenantSettings(
+        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
+            mockedLicenseContext.when(LicenseContext::isDgAirLicense).thenReturn(true);
+
+            // Arrange
+            TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder()
-                        .ShipmentServiceV2Enabled(true)
-                        .build()
-        );
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(true).setHasNoUtilization(false);
-        var inputCustomerBooking = customerBooking;
-        inputCustomerBooking.setGuid(UUID.randomUUID());
-        inputCustomerBooking.setBookingStatus(BookingStatus.PENDING_FOR_CREDIT_LIMIT);
-        CustomerBookingRequest request = objectMapper.convertValue(inputCustomerBooking, CustomerBookingRequest.class);
-        request.setBookingStatus(BookingStatus.READY_FOR_SHIPMENT);
-        CustomerBookingResponse customerBookingResponse = objectMapper.convertValue(inputCustomerBooking, CustomerBookingResponse.class);
-        // Mock
-        when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(inputCustomerBooking);
-        when(customerBookingDao.findById(any())).thenReturn(Optional.of(inputCustomerBooking));
-        when(customerBookingDao.save(any())).thenReturn(objectMapper.convertValue(request, CustomerBooking.class));
-        when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
-        when(containerDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(inputCustomerBooking.getContainersList());
-        when(bookingIntegrationsUtility.createShipmentInV2(any())).thenReturn(ResponseHelper.buildSuccessResponse(ShipmentDetailsResponse.builder().guid(UUID.randomUUID()).build()));
-        mockTenantSettings();
-        mockShipmentSettings();
-        // Test
-        var responseEntity = customerBookingService.update(CommonRequestModel.builder().data(request).build());
-        // Assert
-        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-        //verify(mdmServiceAdapter,times(1)).createShipmentTaskFromBooking(any());
+                    .ShipmentServiceV2Enabled(true)
+                    .build()
+            );
+            ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(true)
+                .setHasNoUtilization(false);
+            var inputCustomerBooking = customerBooking;
+            inputCustomerBooking.setGuid(UUID.randomUUID());
+            inputCustomerBooking.setBookingStatus(BookingStatus.PENDING_FOR_CREDIT_LIMIT);
+            CustomerBookingRequest request = objectMapper.convertValue(inputCustomerBooking,
+                CustomerBookingRequest.class);
+            request.setBookingStatus(BookingStatus.READY_FOR_SHIPMENT);
+            CustomerBookingResponse customerBookingResponse = objectMapper.convertValue(
+                inputCustomerBooking, CustomerBookingResponse.class);
+            // Mock
+            when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(
+                inputCustomerBooking);
+            when(customerBookingDao.findById(any())).thenReturn(Optional.of(inputCustomerBooking));
+            when(customerBookingDao.save(any())).thenReturn(
+                objectMapper.convertValue(request, CustomerBooking.class));
+            when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(
+                customerBookingResponse);
+            when(containerDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(
+                inputCustomerBooking.getContainersList());
+            when(bookingIntegrationsUtility.createShipmentInV2(any())).thenReturn(
+                ResponseHelper.buildSuccessResponse(
+                    ShipmentDetailsResponse.builder().guid(UUID.randomUUID()).build()));
+            mockTenantSettings();
+            mockShipmentSettings();
+            // Test
+            var responseEntity = customerBookingService.update(
+                CommonRequestModel.builder().data(request).build());
+            // Assert
+            assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+            //verify(mdmServiceAdapter,times(1)).createShipmentTaskFromBooking(any());
+        }
     }
 
     @Test
     void testBookingUpdateWithSuccessWithReadyForShipmentWithV2ShipmentEnabled_AirShipment_AIRDGPermission_AirDgTrue_AirPermissionTrue_CreatesBooking() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
-        // Arrange
-        TenantSettingsDetailsContext.setCurrentTenantSettings(
+        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
+            mockedLicenseContext.when(LicenseContext::isDgAirLicense).thenReturn(true);
+
+            // Arrange
+            TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder()
-                        .ShipmentServiceV2Enabled(true)
-                        .build()
-        );
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(true).setHasNoUtilization(false);
-        var inputCustomerBooking = customerBooking;
-        inputCustomerBooking.setGuid(UUID.randomUUID());
-        inputCustomerBooking.setBookingStatus(BookingStatus.PENDING_FOR_CREDIT_LIMIT);
-        CustomerBookingRequest request = objectMapper.convertValue(inputCustomerBooking, CustomerBookingRequest.class);
-        request.setTransportType("AIR");
-        request.setIsDg(true);
-        UserContext.getUser().setPermissions(Map.of(PermissionConstants.AIR_DG, true));
-        request.setBookingStatus(BookingStatus.READY_FOR_SHIPMENT);
-        CustomerBookingResponse customerBookingResponse = objectMapper.convertValue(inputCustomerBooking, CustomerBookingResponse.class);
-        // Mock
-        when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(inputCustomerBooking);
-        when(customerBookingDao.findById(any())).thenReturn(Optional.of(inputCustomerBooking));
-        when(customerBookingDao.save(any())).thenReturn(objectMapper.convertValue(request, CustomerBooking.class));
-        when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
-        when(containerDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(inputCustomerBooking.getContainersList());
-        when(bookingIntegrationsUtility.createShipmentInV2(any())).thenReturn(ResponseHelper.buildSuccessResponse(ShipmentDetailsResponse.builder().guid(UUID.randomUUID()).build()));
-        mockTenantSettings();
-        mockShipmentSettings();
-        // Test
-        var responseEntity = customerBookingService.update(CommonRequestModel.builder().data(request).build());
-        // Assert
-        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-        //verify(mdmServiceAdapter,times(1)).createShipmentTaskFromBooking(any());
+                    .ShipmentServiceV2Enabled(true)
+                    .build()
+            );
+            ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(true)
+                .setHasNoUtilization(false);
+            var inputCustomerBooking = customerBooking;
+            inputCustomerBooking.setGuid(UUID.randomUUID());
+            inputCustomerBooking.setBookingStatus(BookingStatus.PENDING_FOR_CREDIT_LIMIT);
+            CustomerBookingRequest request = objectMapper.convertValue(inputCustomerBooking,
+                CustomerBookingRequest.class);
+            request.setTransportType("AIR");
+            request.setIsDg(true);
+            UserContext.getUser().setPermissions(Map.of(PermissionConstants.AIR_DG, true));
+            request.setBookingStatus(BookingStatus.READY_FOR_SHIPMENT);
+            CustomerBookingResponse customerBookingResponse = objectMapper.convertValue(
+                inputCustomerBooking, CustomerBookingResponse.class);
+            // Mock
+            when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(
+                inputCustomerBooking);
+            when(customerBookingDao.findById(any())).thenReturn(Optional.of(inputCustomerBooking));
+            when(customerBookingDao.save(any())).thenReturn(
+                objectMapper.convertValue(request, CustomerBooking.class));
+            when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(
+                customerBookingResponse);
+            when(containerDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(
+                inputCustomerBooking.getContainersList());
+            when(bookingIntegrationsUtility.createShipmentInV2(any())).thenReturn(
+                ResponseHelper.buildSuccessResponse(
+                    ShipmentDetailsResponse.builder().guid(UUID.randomUUID()).build()));
+            mockTenantSettings();
+            mockShipmentSettings();
+            // Test
+            var responseEntity = customerBookingService.update(
+                CommonRequestModel.builder().data(request).build());
+            // Assert
+            assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+            //verify(mdmServiceAdapter,times(1)).createShipmentTaskFromBooking(any());
+        }
     }
 
     @Test
     void testBookingUpdateWithSuccessWithReadyForShipmentWithV2ShipmentEnabled_AirShipment_AIRDGPermission_AirDgTrue_AirPermissionFalse_throwsException() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
-        // Arrange
-        TenantSettingsDetailsContext.setCurrentTenantSettings(
+        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
+            mockedLicenseContext.when(LicenseContext::isDgAirLicense).thenReturn(false);
+
+            // Arrange
+            TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder()
-                        .ShipmentServiceV2Enabled(true)
-                        .build()
-        );
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(true).setHasNoUtilization(false);
-        var inputCustomerBooking = customerBooking;
-        inputCustomerBooking.setGuid(UUID.randomUUID());
-        inputCustomerBooking.setBookingStatus(BookingStatus.PENDING_FOR_CREDIT_LIMIT);
-        CustomerBookingRequest request = objectMapper.convertValue(inputCustomerBooking, CustomerBookingRequest.class);
-        request.setTransportType("AIR");
-        UserContext.getUser().setPermissions(Map.of(PermissionConstants.AIR_DG, false));
-        request.setIsDg(true);
-        request.setBookingStatus(BookingStatus.READY_FOR_SHIPMENT);
-        CustomerBookingResponse customerBookingResponse = objectMapper.convertValue(inputCustomerBooking, CustomerBookingResponse.class);
-        // Mock
-        when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(inputCustomerBooking);
-        when(customerBookingDao.findById(any())).thenReturn(Optional.of(inputCustomerBooking));
-        when(customerBookingDao.save(any())).thenReturn(objectMapper.convertValue(request, CustomerBooking.class));
+                    .ShipmentServiceV2Enabled(true)
+                    .build()
+            );
+            ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAlwaysUtilization(true)
+                .setHasNoUtilization(false);
+            var inputCustomerBooking = customerBooking;
+            inputCustomerBooking.setGuid(UUID.randomUUID());
+            inputCustomerBooking.setBookingStatus(BookingStatus.PENDING_FOR_CREDIT_LIMIT);
+            CustomerBookingRequest request = objectMapper.convertValue(inputCustomerBooking,
+                CustomerBookingRequest.class);
+            request.setTransportType("AIR");
+            UserContext.getUser().setPermissions(Map.of(PermissionConstants.AIR_DG, false));
+            request.setIsDg(true);
+            request.setBookingStatus(BookingStatus.READY_FOR_SHIPMENT);
+            CustomerBookingResponse customerBookingResponse = objectMapper.convertValue(
+                inputCustomerBooking, CustomerBookingResponse.class);
+            // Mock
+            when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(
+                inputCustomerBooking);
+            when(customerBookingDao.findById(any())).thenReturn(Optional.of(inputCustomerBooking));
+            when(customerBookingDao.save(any())).thenReturn(
+                objectMapper.convertValue(request, CustomerBooking.class));
 //        when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
-        when(containerDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(inputCustomerBooking.getContainersList());
+            when(containerDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(
+                inputCustomerBooking.getContainersList());
 //        when(bookingIntegrationsUtility.createShipmentInV2(any())).thenReturn(ResponseHelper.buildSuccessResponse(ShipmentDetailsResponse.builder().guid(UUID.randomUUID()).build()));
-        mockTenantSettings();
-        mockShipmentSettings();
-        // Test
-        var req = CommonRequestModel.builder().data(request).build();
-        assertThrows(ValidationException.class, () -> customerBookingService.update(req));
+            mockTenantSettings();
+            mockShipmentSettings();
+            // Test
+            var req = CommonRequestModel.builder().data(request).build();
+            assertThrows(ValidationException.class, () -> customerBookingService.update(req));
+        }
     }
 
     @Test
     void testBookingUpdateWithSuccessWithReadyForShipmentWithV2ShipmentEnabled_AIRDGPermission_AirDgFalse_AirPermissionTrue_throwsException() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
-        // Arrange
-        TenantSettingsDetailsContext.setCurrentTenantSettings(
+        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
+            mockedLicenseContext.when(LicenseContext::isOceanDGLicense).thenReturn(true);
+
+            // Arrange
+            TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder()
-                        .ShipmentServiceV2Enabled(true)
-                        .build()
-        );
-        var inputCustomerBooking = customerBooking;
-        inputCustomerBooking.setGuid(UUID.randomUUID());
-        inputCustomerBooking.setBookingStatus(BookingStatus.PENDING_FOR_CREDIT_LIMIT);
-        CustomerBookingRequest request = objectMapper.convertValue(inputCustomerBooking, CustomerBookingRequest.class);
-        request.setTransportType("AIR");
-        request.setIsDg(false);
-        UserContext.getUser().setPermissions(Map.of(PermissionConstants.AIR_DG, true));
-        request.setBookingStatus(BookingStatus.READY_FOR_SHIPMENT);
-        CustomerBookingResponse customerBookingResponse = objectMapper.convertValue(inputCustomerBooking, CustomerBookingResponse.class);
-        // Mock
-        when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(inputCustomerBooking);
-        when(customerBookingDao.findById(any())).thenReturn(Optional.of(inputCustomerBooking));
-        when(customerBookingDao.save(any())).thenReturn(objectMapper.convertValue(request, CustomerBooking.class));
+                    .ShipmentServiceV2Enabled(true)
+                    .build()
+            );
+            var inputCustomerBooking = customerBooking;
+            inputCustomerBooking.setGuid(UUID.randomUUID());
+            inputCustomerBooking.setBookingStatus(BookingStatus.PENDING_FOR_CREDIT_LIMIT);
+            CustomerBookingRequest request = objectMapper.convertValue(inputCustomerBooking,
+                CustomerBookingRequest.class);
+            request.setTransportType("AIR");
+            request.setIsDg(false);
+            UserContext.getUser().setPermissions(Map.of(PermissionConstants.AIR_DG, true));
+            request.setBookingStatus(BookingStatus.READY_FOR_SHIPMENT);
+            CustomerBookingResponse customerBookingResponse = objectMapper.convertValue(
+                inputCustomerBooking, CustomerBookingResponse.class);
+            // Mock
+            when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(
+                inputCustomerBooking);
+            when(customerBookingDao.findById(any())).thenReturn(Optional.of(inputCustomerBooking));
+            when(customerBookingDao.save(any())).thenReturn(
+                objectMapper.convertValue(request, CustomerBooking.class));
 //        when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
-        when(containerDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(inputCustomerBooking.getContainersList());
+            when(containerDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(
+                inputCustomerBooking.getContainersList());
 //        when(bookingIntegrationsUtility.createShipmentInV2(any())).thenReturn(ResponseHelper.buildSuccessResponse(ShipmentDetailsResponse.builder().guid(UUID.randomUUID()).build()));
-        mockTenantSettings();
-        mockShipmentSettings();
-        // Test
-        var req = CommonRequestModel.builder().data(request).build();
-        assertThrows(NullPointerException.class, () -> customerBookingService.update(req));
+            mockTenantSettings();
+            mockShipmentSettings();
+            // Test
+            var req = CommonRequestModel.builder().data(request).build();
+            assertThrows(NullPointerException.class, () -> customerBookingService.update(req));
+        }
     }
 
     @Test
     void testBookingUpdateWithSuccessWithReadyForShipmentWithV2ShipmentEnabled_AIRDGPermission_AirDgFalse_AirPermissionFalse_throwsException() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
-        // Arrange
-        TenantSettingsDetailsContext.setCurrentTenantSettings(
+        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
+            mockedLicenseContext.when(LicenseContext::isDgAirLicense).thenReturn(true);
+
+            // Arrange
+            TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder()
-                        .ShipmentServiceV2Enabled(true)
-                        .build()
-        );
-        var inputCustomerBooking = customerBooking;
-        inputCustomerBooking.setGuid(UUID.randomUUID());
-        inputCustomerBooking.setBookingStatus(BookingStatus.PENDING_FOR_CREDIT_LIMIT);
-        CustomerBookingRequest request = objectMapper.convertValue(inputCustomerBooking, CustomerBookingRequest.class);
-        request.setTransportType("AIR");
-        request.setIsDg(false);
-        UserContext.getUser().setPermissions(Map.of(PermissionConstants.AIR_DG, false));
-        request.setBookingStatus(BookingStatus.READY_FOR_SHIPMENT);
-        CustomerBookingResponse customerBookingResponse = objectMapper.convertValue(inputCustomerBooking, CustomerBookingResponse.class);
-        // Mock
-        when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(inputCustomerBooking);
-        when(customerBookingDao.findById(any())).thenReturn(Optional.of(inputCustomerBooking));
-        when(customerBookingDao.save(any())).thenReturn(objectMapper.convertValue(request, CustomerBooking.class));
+                    .ShipmentServiceV2Enabled(true)
+                    .build()
+            );
+            var inputCustomerBooking = customerBooking;
+            inputCustomerBooking.setGuid(UUID.randomUUID());
+            inputCustomerBooking.setBookingStatus(BookingStatus.PENDING_FOR_CREDIT_LIMIT);
+            CustomerBookingRequest request = objectMapper.convertValue(inputCustomerBooking,
+                CustomerBookingRequest.class);
+            request.setTransportType("AIR");
+            request.setIsDg(false);
+            UserContext.getUser().setPermissions(Map.of(PermissionConstants.AIR_DG, false));
+            request.setBookingStatus(BookingStatus.READY_FOR_SHIPMENT);
+            CustomerBookingResponse customerBookingResponse = objectMapper.convertValue(
+                inputCustomerBooking, CustomerBookingResponse.class);
+            // Mock
+            when(jsonHelper.convertValue(any(), eq(CustomerBooking.class))).thenReturn(
+                inputCustomerBooking);
+            when(customerBookingDao.findById(any())).thenReturn(Optional.of(inputCustomerBooking));
+            when(customerBookingDao.save(any())).thenReturn(
+                objectMapper.convertValue(request, CustomerBooking.class));
 //        when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
-        when(containerDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(inputCustomerBooking.getContainersList());
+            when(containerDao.updateEntityFromBooking(anyList(), anyLong())).thenReturn(
+                inputCustomerBooking.getContainersList());
 //        when(bookingIntegrationsUtility.createShipmentInV2(any())).thenReturn(ResponseHelper.buildSuccessResponse(ShipmentDetailsResponse.builder().guid(UUID.randomUUID()).build()));
-        mockTenantSettings();
-        mockShipmentSettings();
-        // Test
-        var req = CommonRequestModel.builder().data(request).build();
-        assertThrows(NullPointerException.class, () -> customerBookingService.update(req));
+            mockTenantSettings();
+            mockShipmentSettings();
+            // Test
+            var req = CommonRequestModel.builder().data(request).build();
+            assertThrows(NullPointerException.class, () -> customerBookingService.update(req));
+        }
     }
 
     @Test
@@ -1669,21 +1728,29 @@ class CustomerBookingServiceTest extends CommonMocks {
     }
 
     @Test
-    void testClone2()
-    {
-        CustomerBooking customerBooking1 = new CustomerBooking();
-        customerBooking1.setTransportType(TRANSPORT_MODE_AIR);
-        customerBooking1.setDirection(DIRECTION_EXP);
-        CustomerBookingResponse customerBookingResponse = objectMapper.convertValue(customerBooking1, CustomerBookingResponse.class);
-        when(customerBookingDao.findById(any())).thenReturn(Optional.of(customerBooking1));
-        when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(customerBookingResponse);
-        CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(CommonGetRequest.builder().id(1L).build()).build();
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setCountryAirCargoSecurity(true);
-        UserContext.getUser().setPermissions(new HashMap<>());
-        UserContext.getUser().getPermissions().put(PermissionConstants.AIR_SECURITY_PERMISSION, true);
-        mockShipmentSettings();
-        customerBookingService.cloneBooking(commonRequestModel);
-        assertNotNull(commonRequestModel);
+    void testClone2() {
+        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
+            mockedLicenseContext.when(LicenseContext::isAirSecurityLicense).thenReturn(true);
+
+            CustomerBooking customerBooking1 = new CustomerBooking();
+            customerBooking1.setTransportType(TRANSPORT_MODE_AIR);
+            customerBooking1.setDirection(DIRECTION_EXP);
+            CustomerBookingResponse customerBookingResponse = objectMapper.convertValue(
+                customerBooking1, CustomerBookingResponse.class);
+            when(customerBookingDao.findById(any())).thenReturn(Optional.of(customerBooking1));
+            when(jsonHelper.convertValue(any(), eq(CustomerBookingResponse.class))).thenReturn(
+                customerBookingResponse);
+            CommonRequestModel commonRequestModel = CommonRequestModel.builder()
+                .data(CommonGetRequest.builder().id(1L).build()).build();
+            ShipmentSettingsDetailsContext.getCurrentTenantSettings()
+                .setCountryAirCargoSecurity(true);
+            UserContext.getUser().setPermissions(new HashMap<>());
+            UserContext.getUser().getPermissions()
+                .put(PermissionConstants.AIR_SECURITY_PERMISSION, true);
+            mockShipmentSettings();
+            customerBookingService.cloneBooking(commonRequestModel);
+            assertNotNull(commonRequestModel);
+        }
     }
 
     @Test

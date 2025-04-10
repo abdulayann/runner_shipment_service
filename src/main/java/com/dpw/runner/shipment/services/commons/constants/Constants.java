@@ -630,6 +630,8 @@ public class Constants {
     public static final String AUTO_OFFSET_RESET_CONFIG_LATEST = "latest";
 
     public static final String OUTBOUND = "Outbound";
+    public static final String IGNORED_ERROR_MSG = "Ignored error.";
+    public static final String EMPTY_STRING = "";
 
     private Constants() {
     }

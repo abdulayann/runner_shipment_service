@@ -37,7 +37,7 @@ public class UserServiceV1 implements IUserService {
             return null;
         token = token.split(" ")[1];
         headers.setBearerAuth(token);
-        HttpEntity<String> entity = new HttpEntity<String>(headers);
+        HttpEntity<String> entity = new HttpEntity<>(headers);
         ResponseEntity<UsersDto> responseEntity = restTemplate.exchange(url, HttpMethod.POST, entity, UsersDto.class);
         log.info("Request: {} || User retrieved from V1: {}", LoggerHelper.getRequestIdFromMDC(), responseEntity.getBody());
         return responseEntity.getBody();

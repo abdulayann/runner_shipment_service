@@ -15,7 +15,6 @@ import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
@@ -36,12 +35,7 @@ public class PermissionsAspect {
         List<String> permissionList = PermissionsContext.getPermissions(SHIPMENT_LIST_PERMISSION);
         if(permissionList == null || permissionList.isEmpty())
             throw new RunnerException("Unable to list shipments due to insufficient list permissions");
-        permissionList.sort(new Comparator<String>() {
-            @Override
-            public int compare(String o1, String o2) {
-                return Integer.compare(o1.length(), o2.length());
-            }
-        });
+        permissionList.sort((o1, o2) -> Integer.compare(o1.length(), o2.length()));
         List<FilterCriteria> criterias = PermissionUtil.generateFilterCriteriaFromPermissions(permissionList, true);
 
         FilterCriteria criteria1 = null;
@@ -65,27 +59,22 @@ public class PermissionsAspect {
         }
         ListCommonRequest listCommonRequest = (ListCommonRequest) commonRequestModel.getData();
         List<String> permissionList = PermissionsContext.getPermissions(CONSOLIDATION_LIST_PERMISSION);
-        if(permissionList == null || permissionList.size() == 0)
+        if(permissionList == null || permissionList.isEmpty())
             throw new RunnerException("Unable to list consolidations due to insufficient list permissions.");
-        permissionList.sort(new Comparator<String>() {
-            @Override
-            public int compare(String o1, String o2) {
-                return Integer.compare(o1.length(), o2.length());
-            }
-        });
+        permissionList.sort((o1, o2) -> Integer.compare(o1.length(), o2.length()));
         List<FilterCriteria> criterias = PermissionUtil.generateFilterCriteriaFromPermissions(permissionList, false);
 
         FilterCriteria criteria1 = null;
-        if(listCommonRequest.getFilterCriteria() != null && listCommonRequest.getFilterCriteria().size() > 0) {
+        if(listCommonRequest.getFilterCriteria() != null && !listCommonRequest.getFilterCriteria().isEmpty()) {
             criteria1 = FilterCriteria.builder().innerFilter(listCommonRequest.getFilterCriteria()).build();
         }
         FilterCriteria criteria2 = FilterCriteria.builder().innerFilter(criterias).build();
-        if(criteria2 != null && (criteria2.getCriteria() != null || (criteria2.getInnerFilter() != null && criteria2.getInnerFilter().size() > 0))) {
-            if (criteria1 != null && criteria1.getInnerFilter().size() > 0) {
+        if(criteria2 != null && (criteria2.getCriteria() != null || (criteria2.getInnerFilter() != null && !criteria2.getInnerFilter().isEmpty()))) {
+            if (criteria1 != null && !criteria1.getInnerFilter().isEmpty()) {
                 criteria2.setLogicOperator("AND");
                 listCommonRequest.setFilterCriteria(Arrays.asList(criteria1, criteria2));
             } else
-                listCommonRequest.setFilterCriteria(Arrays.asList(criteria2));
+                listCommonRequest.setFilterCriteria(List.of(criteria2));
         }
     }
 

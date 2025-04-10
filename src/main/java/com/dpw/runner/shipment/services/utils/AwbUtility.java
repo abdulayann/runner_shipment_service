@@ -1,9 +1,8 @@
 package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.commons.constants.*;
-import com.dpw.runner.shipment.services.dto.request.awb.AirMessagingAdditionalFields;
-import com.dpw.runner.shipment.services.dto.request.awb.AwbNotifyPartyInfo;
-import com.dpw.runner.shipment.services.dto.request.awb.OtherPartyInfo;
+import com.dpw.runner.shipment.services.dto.request.awb.*;
+import com.dpw.runner.shipment.services.dto.response.AwbRoutingInfoResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.kafka.dto.AirMessagingEventDto;
@@ -13,7 +12,6 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.dao.impl.ShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
-import com.dpw.runner.shipment.services.dto.request.awb.AwbAddressParam;
 import com.dpw.runner.shipment.services.dto.response.AwbAirMessagingResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
@@ -39,8 +37,11 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import javax.mail.MessagingException;
+import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -227,6 +228,7 @@ public class AwbUtility {
         AwbAirMessagingResponse awbResponse = jsonHelper.convertValue(awb, AwbAirMessagingResponse.class);
         awbResponse.setMeta(AwbAirMessagingResponse.Meta.builder().build());
         this.populateEnums(awbResponse);
+        checkAcasFlagInAwb(awbResponse);
         awbResponse.getMeta().setWeightDecimalPlaces(Objects.isNull(v1TenantSettingsResponse.getWeightDecimalPlace()) ? 2 : v1TenantSettingsResponse.getWeightDecimalPlace());
         awbResponse.getMeta().setCurrencyDecimalPlaces(Objects.isNull(v1TenantSettingsResponse.getCurrencyDecimalPlace()) ? 2 : v1TenantSettingsResponse.getCurrencyDecimalPlace());
         awbResponse.getMeta().setVolumeDecimalPlaces(Objects.isNull(v1TenantSettingsResponse.getVolumeDecimalPlace()) ? 3 : v1TenantSettingsResponse.getVolumeDecimalPlace());
@@ -265,7 +267,7 @@ public class AwbUtility {
 
         processConsoleUnLoc(awb, consolidationDetails, unlocationsMap, awbResponse);
         processAwbRoutingInfo(awbResponse, unlocationsMap, carriersMap);
-        if(awbResponse.getAwbPaymentInfo() != null)
+        if(checkAwbPaymentInfoForNullValues(awbResponse))
             awbResponse.getMeta().setTotalAmount(awbResponse.getAwbPaymentInfo().getTotalCollect().max(awbResponse.getAwbPaymentInfo().getTotalPrepaid()));
         awbResponse.getMeta().setTenantInfo(populateTenantInfoFields(tenantModel, shipmentSettingsDetails));
         awbResponse.getMeta().setAdditionalSecurityInfo(consolidationDetails.getAdditionalSecurityInformation());
@@ -282,11 +284,17 @@ public class AwbUtility {
 
         // Rounding off Currencies fields
         this.roundOffCurrencyFields(awbResponse);
+
         // Rounding off Weight fields
         this.roundOffWeightFields(awbResponse);
         this.roundOffVolumeFields(awbResponse);
 
         return awbResponse;
+    }
+
+    private boolean checkAwbPaymentInfoForNullValues(AwbAirMessagingResponse awbResponse) {
+        return awbResponse.getAwbPaymentInfo() != null && awbResponse.getAwbPaymentInfo().getTotalCollect() != null
+                && awbResponse.getAwbPaymentInfo().getTotalPrepaid() != null;
     }
 
     private void setShipperAndConsigneeForConsole(Awb awb, ConsolidationDetails consolidationDetails, OrgAddressResponse response, AwbAirMessagingResponse awbResponse) {
@@ -351,10 +359,8 @@ public class AwbUtility {
             if(party.getSpecifiedAddressLocation() != null)
                 unlocoRequests.add(party.getSpecifiedAddressLocation());
         });
-        if(awb.getAwbOtherInfo() != null) {
-            if(awb.getAwbOtherInfo().getExecutedAt() != null)
-                unlocoRequests.add(awb.getAwbOtherInfo().getExecutedAt());
-        }
+        if(awb.getAwbOtherInfo() != null && awb.getAwbOtherInfo().getExecutedAt() != null)
+            unlocoRequests.add(awb.getAwbOtherInfo().getExecutedAt());
 
         unlocoRequests.add(consolidationDetails.getCarrierDetails().getOriginPort());
         unlocoRequests.add(consolidationDetails.getCarrierDetails().getDestinationPort());
@@ -475,6 +481,7 @@ public class AwbUtility {
         AwbAirMessagingResponse awbResponse = jsonHelper.convertValue(awb, AwbAirMessagingResponse.class);
         awbResponse.setMeta(AwbAirMessagingResponse.Meta.builder().build());
         this.populateEnums(awbResponse);
+        checkAcasFlagInAwb(awbResponse);
         awbResponse.getMeta().setWeightDecimalPlaces(Objects.isNull(v1TenantSettingsResponse.getWeightDecimalPlace()) ? 2 : v1TenantSettingsResponse.getWeightDecimalPlace());
         awbResponse.getMeta().setCurrencyDecimalPlaces(Objects.isNull(v1TenantSettingsResponse.getCurrencyDecimalPlace()) ? 2 : v1TenantSettingsResponse.getCurrencyDecimalPlace());
         awbResponse.getMeta().setVolumeDecimalPlaces(Objects.isNull(v1TenantSettingsResponse.getVolumeDecimalPlace()) ? 3 : v1TenantSettingsResponse.getVolumeDecimalPlace());
@@ -525,6 +532,7 @@ public class AwbUtility {
         if(masterAwb != null) {
             this.populateMasterAwbData(awbResponse, masterAwb);
         }
+
         // Rounding off Currencies fields
         this.roundOffCurrencyFields(awbResponse);
         // Rounding off Weight fields
@@ -533,6 +541,14 @@ public class AwbUtility {
         setCustomOriginCodeInResponse(awbResponse);
         return awbResponse;
     }
+
+
+    private void checkAcasFlagInAwb(AwbAirMessagingResponse awbResponse) {
+        awbResponse.setAcasEnabled(awbResponse.getAwbRoutingInfo().stream().map(AwbRoutingInfoResponse::getDestinationPortName)
+                .anyMatch(destinationPort -> destinationPort.startsWith("US"))); // Check if starts with "US"
+
+    }
+
 
     private void setShipperConsgineeDetailsInResponse(Awb awb, ShipmentDetails shipmentDetails, OrgAddressResponse response, AwbAirMessagingResponse awbResponse) {
         if(shipmentDetails.getConsigner() != null && (response.getOrganizations().containsKey(shipmentDetails.getConsigner().getOrgCode())
@@ -681,7 +697,8 @@ public class AwbUtility {
 
             String number = null;
             String expiry = null;
-            Boolean isRA = false, isKC = false;
+            Boolean isRA = false;
+            Boolean isKC = false;
             if(addressList != null && !addressList.isEmpty()){
                 EntityTransferAddress address = addressList.stream().findFirst().orElse(EntityTransferAddress.builder().build());
                 number = address.getKCRANumber();
@@ -888,13 +905,11 @@ public class AwbUtility {
 
     private String getMsgType(AirMessagingStatusDto airMessageStatus, List<ShipmentDetails> shipmentDetailsList) {
         String msgType = airMessageStatus.getMessageType();
-        if(shipmentDetailsList != null && !shipmentDetailsList.isEmpty()) {
-            if(msgType == null){
-                if(Objects.equals(shipmentDetailsList.get(0).getJobType(), Constants.SHIPMENT_TYPE_DRT))
-                    msgType = "FWB";
-                else
-                    msgType = "FZB";
-            }
+        if(shipmentDetailsList != null && !shipmentDetailsList.isEmpty() && msgType == null){
+            if(Objects.equals(shipmentDetailsList.get(0).getJobType(), Constants.SHIPMENT_TYPE_DRT))
+                msgType = "FWB";
+            else
+                msgType = "FZB";
         }
         return msgType;
     }
@@ -1105,6 +1120,7 @@ public class AwbUtility {
     }
 
     private String getBodyForShipmentIds(List<Awb> awbsList, List<Long> shipmentIds, String body) {
+        StringBuilder bodyStringBuilder = new StringBuilder(body);
         var shipmentDetailsList = shipmentDao.getShipmentNumberFromId(shipmentIds);
         Map<Long, String> map = shipmentDetailsList.stream().collect(Collectors.toMap(ShipmentDetails::getId, ShipmentDetails::getShipmentId));
         for (var x : awbsList) {
@@ -1113,14 +1129,14 @@ public class AwbUtility {
                 AirMessagingLogs shipAirMessagingLogs = airMessagingLogsService.getRecentLogForEntityGuid(x.getGuid());
                 if (shipAirMessagingLogs != null) {
                     if (Objects.equals(shipAirMessagingLogs.getStatus(), AirMessagingStatus.SUCCESS.name())) {
-                        body = body + "FZB for \"" + shipNumber + "\" : Success\n";
+                        bodyStringBuilder = new StringBuilder(body + "FZB for \"" + shipNumber + "\" : Success\n");
                     } else if (Objects.equals(shipAirMessagingLogs.getStatus(), AirMessagingStatus.FAILED.name())) {
-                        body = body + "FZB for \"" + shipNumber + "\" : Failed. Failure reason is \"" + shipAirMessagingLogs.getErrorMessage() + "\"\n\n";
+                        bodyStringBuilder = new StringBuilder(body + "FZB for \"" + shipNumber + "\" : Failed. Failure reason is \"" + shipAirMessagingLogs.getErrorMessage() + "\"\n\n");
                     }
                 }
             }
         }
-        return body;
+        return bodyStringBuilder.toString();
     }
 
     private void updateAwbStatusForFsuUpdate(Awb awb, String eventCode, List<ConsoleShipmentMapping> consoleShipmentMappings) {

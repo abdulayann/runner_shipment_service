@@ -147,6 +147,10 @@ public class NetworkTransferDao implements INetworkTransferDao {
         networkTransferRepository.updateStatusAndCreatedEntityId(id, status, createdEntityId);
     }
     @Override
+    public void updateStatus(Long id, String status) {
+        networkTransferRepository.updateStatus(id, status);
+    }
+    @Override
     public List<NetworkTransfer> findByEntityIdAndEntityTypeAndIsInterBranchEntity(List<Long> entityIds, String entityType, Boolean isInterBranchEntity, List<String> status, String jobType) {
         return networkTransferRepository.findByEntityIdAndEntityTypeAndIsInterBranchEntity(entityIds, entityType, isInterBranchEntity, status, jobType);
     }
