@@ -22,7 +22,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
 import java.lang.reflect.InvocationTargetException;
-import java.sql.Ref;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -104,20 +103,9 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
     public List<ReferenceNumbers> saveEntityFromShipment(List<ReferenceNumbers> referenceNumbersRequests, Long shipmentId) {
         List<ReferenceNumbers> res = new ArrayList<>();
         for(ReferenceNumbers req : referenceNumbersRequests){
-            String oldEntityJsonString = null;
-            String operation = DBOperationType.CREATE.name();
-            if(req.getId() != null){
-                long id = req.getId();
-                Optional<ReferenceNumbers> oldEntity = findById(id);
-                if (oldEntity.isEmpty()) {
-                    log.debug(REFERENCE_NUMBER_IS_NULL_FOR_ID_MSG, req.getId());
-                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-                }
-                oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
-                operation = DBOperationType.UPDATE.name();
-                req.setCreatedAt(oldEntity.get().getCreatedAt());
-                req.setCreatedBy(oldEntity.get().getCreatedBy());
-            }
+            Pair<String, String> result = prepareReferenceNumberDataForSave(req);
+            String operation = result.getLeft();
+            String oldEntityJsonString = result.getRight();
             req.setShipmentId(shipmentId);
             req = save(req);
             try {
@@ -333,20 +321,9 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
     public List<ReferenceNumbers> saveEntityFromConsole(List<ReferenceNumbers> referenceNumbersRequests, Long consolidationId) {
         List<ReferenceNumbers> res = new ArrayList<>();
         for(ReferenceNumbers req : referenceNumbersRequests){
-            String oldEntityJsonString = null;
-            String operation = DBOperationType.CREATE.name();
-            if(req.getId() != null){
-                long id = req.getId();
-                Optional<ReferenceNumbers> oldEntity = findById(id);
-                if (oldEntity.isEmpty()) {
-                    log.debug(REFERENCE_NUMBER_IS_NULL_FOR_ID_MSG, req.getId());
-                    throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-                }
-                oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
-                operation = DBOperationType.UPDATE.name();
-                req.setCreatedAt(oldEntity.get().getCreatedAt());
-                req.setCreatedBy(oldEntity.get().getCreatedBy());
-            }
+            Pair<String, String> result = prepareReferenceNumberDataForSave(req);
+            String operation = result.getLeft();
+            String oldEntityJsonString = result.getRight();
             req.setConsolidationId(consolidationId);
             req = save(req);
             try {
@@ -479,5 +456,24 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
             log.error(responseMsg, e);
             throw new RunnerException(e.getMessage());
         }
+    }
+
+    private Pair<String, String> prepareReferenceNumberDataForSave(ReferenceNumbers req) {
+        String oldEntityJsonString = null;
+        String operation = DBOperationType.CREATE.name();
+        if(req.getId() != null){
+            long id = req.getId();
+            Optional<ReferenceNumbers> oldEntity = findById(id);
+            if (oldEntity.isEmpty()) {
+                log.debug(REFERENCE_NUMBER_IS_NULL_FOR_ID_MSG, req.getId());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+            ReferenceNumbers existing = oldEntity.get();
+            oldEntityJsonString = jsonHelper.convertToJson(existing);
+            operation = DBOperationType.UPDATE.name();
+            req.setCreatedAt(oldEntity.get().getCreatedAt());
+            req.setCreatedBy(oldEntity.get().getCreatedBy());
+        }
+        return Pair.of(operation, oldEntityJsonString);
     }
 }
