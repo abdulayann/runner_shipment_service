@@ -28,18 +28,12 @@ import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.adapters.interfaces.IBridgeServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.sync.SyncingContext;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
-import com.dpw.runner.shipment.services.commons.constants.EventConstants;
-import com.dpw.runner.shipment.services.commons.constants.LoggingConstants;
-import com.dpw.runner.shipment.services.commons.constants.MdmConstants;
-import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
@@ -64,9 +58,11 @@ import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.UserWithPermissionRequestV1;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.request.bridgeService.BridgeRequest;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.LogHistoryResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.bridgeService.BridgeServiceResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.TaskCreateRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TaskUpdateRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.V1UsersEmailRequest;
@@ -208,11 +204,12 @@ public class EntityTransferService implements IEntityTransferService {
     private INetworkTransferDao networkTransferDao;
     private INotificationDao notificationDao;
     private DependentServiceHelper dependentServiceHelper;
+    private IBridgeServiceAdapter bridgeServiceAdapter;
 
     @Autowired
     public EntityTransferService(IShipmentSettingsDao shipmentSettingsDao, IShipmentDao shipmentDao, IShipmentService shipmentService, IConsolidationService consolidationService
             , IConsolidationDetailsDao consolidationDetailsDao, IShipmentsContainersMappingDao shipmentsContainersMappingDao, ModelMapper modelMapper, IV1Service v1Service, JsonHelper jsonHelper, IHblDao hblDao, IAwbDao awbDao, IEventDao eventDao, MasterDataUtils masterDataUtils, ILogsHistoryService logsHistoryService, IContainerDao containerDao, IPackingDao packingDao, MasterDataFactory masterDataFactory, CommonUtils commonUtils, IV1Service iv1Service, V1ServiceUtil v1ServiceUtil, ITasksService tasksService, INotificationService notificationService, ExecutorService executorService, DocumentManagerRestClient documentManagerRestClient, IConsoleShipmentMappingDao consoleShipmentMappingDao, ConsolidationSync consolidationSync, ShipmentSync shipmentSync, INetworkTransferService networkTransferService, INetworkTransferDao networkTransferDao, IEventService eventService, INotificationDao notificationDao,
-                                 DependentServiceHelper dependentServiceHelper) {
+                                 DependentServiceHelper dependentServiceHelper, IBridgeServiceAdapter bridgeServiceAdapter) {
         this.shipmentSettingsDao = shipmentSettingsDao;
         this.shipmentDao = shipmentDao;
         this.shipmentService = shipmentService;
@@ -245,6 +242,7 @@ public class EntityTransferService implements IEntityTransferService {
         this.notificationDao = notificationDao;
         this.eventService = eventService;
         this.dependentServiceHelper = dependentServiceHelper;
+        this.bridgeServiceAdapter = bridgeServiceAdapter;
     }
 
     @Transactional
@@ -446,7 +444,7 @@ public class EntityTransferService implements IEntityTransferService {
 
     }
 
-    public ResponseEntity<IRunnerResponse> sendFileToExternalSystem(CommonRequestModel commonRequestModel) {
+    public ResponseEntity<IRunnerResponse> sendFileToExternalSystem(CommonRequestModel commonRequestModel) throws RunnerException {
         SendFileToExternalRequest sendFileToExternalRequest = (SendFileToExternalRequest) commonRequestModel.getData();
         if(Objects.equals(sendFileToExternalRequest.getEntityType(), SHIPMENT)){
             sendShipmentToExternalSystem(sendFileToExternalRequest);
@@ -456,7 +454,7 @@ public class EntityTransferService implements IEntityTransferService {
         return ResponseHelper.buildSuccessResponse();
     }
 
-    private void sendShipmentToExternalSystem(SendFileToExternalRequest sendFileToExternalRequest) {
+    private void sendShipmentToExternalSystem(SendFileToExternalRequest sendFileToExternalRequest) throws RunnerException {
         Long shipId = sendFileToExternalRequest.getEntityId();
         Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(shipId);
         if (shipmentDetails.isEmpty()) {
@@ -470,7 +468,7 @@ public class EntityTransferService implements IEntityTransferService {
         prepareBridgePayload(entityPayload, entityTransferPayload.getShipmentId(), SHIPMENT, entityTransferPayload.getTransportMode(), entityTransferPayload.getDirection(), sendFileToExternalRequest);
 
     }
-    private void sendConsolidationToExternalSystem(SendFileToExternalRequest sendFileToExternalRequest) {
+    private void sendConsolidationToExternalSystem(SendFileToExternalRequest sendFileToExternalRequest) throws RunnerException {
         Long consoleId = sendFileToExternalRequest.getEntityId();
         Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(consoleId);
         if (consolidationDetails.isEmpty()) {
@@ -491,7 +489,7 @@ public class EntityTransferService implements IEntityTransferService {
         prepareBridgePayload(entityPayload, entityTransferPayload.getConsolidationNumber(), CONSOLIDATION, entityTransferPayload.getTransportMode(), entityTransferPayload.getShipmentType(), sendFileToExternalRequest);
     }
 
-    private void prepareBridgePayload(Map<String, Object> entityPayload, String entityNumber, String entityType, String transportMode, String jobType, SendFileToExternalRequest sendFileToExternalRequest) {
+    private void prepareBridgePayload(Map<String, Object> entityPayload, String entityNumber, String entityType, String transportMode, String jobType, SendFileToExternalRequest sendFileToExternalRequest) throws RunnerException {
         NetworkTransfer networkTransfer = new NetworkTransfer();
         networkTransfer.setEntityPayload(entityPayload);
         networkTransfer.setStatus(NetworkTransferStatus.TRANSFERRED);
@@ -499,6 +497,15 @@ public class EntityTransferService implements IEntityTransferService {
         networkTransfer.setEntityNumber(entityNumber);
         networkTransfer.setTransportMode(transportMode);
         networkTransfer.setJobType(jobType);
+
+        BridgeRequest request = BridgeRequest.builder()
+                .requestCode(sendFileToExternalRequest.getSendToBranch())
+                .transactionId(UUID.randomUUID().toString())
+                .payload(networkTransfer)
+                .build();
+        log.info("OutBound File Transfer Bridge Service Request: {}", jsonHelper.convertToJson(request));
+        BridgeServiceResponse bridgeServiceResponse = (BridgeServiceResponse) bridgeServiceAdapter.requestOutBoundFileTransfer(CommonRequestModel.buildRequest(request));
+        log.info("OutBound File Transfer Bridge Service Response: {}", jsonHelper.convertToJson(bridgeServiceResponse));
     }
 
     private boolean shouldSaveShipment(ShipmentDetails shipment) {
