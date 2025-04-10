@@ -228,6 +228,7 @@ public class AwbUtility {
         AwbAirMessagingResponse awbResponse = jsonHelper.convertValue(awb, AwbAirMessagingResponse.class);
         awbResponse.setMeta(AwbAirMessagingResponse.Meta.builder().build());
         this.populateEnums(awbResponse);
+        checkAcasFlagInAwbForConsole(awbResponse, consolidationDetails);
         awbResponse.getMeta().setWeightDecimalPlaces(Objects.isNull(v1TenantSettingsResponse.getWeightDecimalPlace()) ? 2 : v1TenantSettingsResponse.getWeightDecimalPlace());
         awbResponse.getMeta().setCurrencyDecimalPlaces(Objects.isNull(v1TenantSettingsResponse.getCurrencyDecimalPlace()) ? 2 : v1TenantSettingsResponse.getCurrencyDecimalPlace());
         awbResponse.getMeta().setVolumeDecimalPlaces(Objects.isNull(v1TenantSettingsResponse.getVolumeDecimalPlace()) ? 3 : v1TenantSettingsResponse.getVolumeDecimalPlace());
@@ -266,7 +267,7 @@ public class AwbUtility {
 
         processConsoleUnLoc(awb, consolidationDetails, unlocationsMap, awbResponse);
         processAwbRoutingInfo(awbResponse, unlocationsMap, carriersMap);
-        if(awbResponse.getAwbPaymentInfo() != null)
+        if(checkAwbPaymentInfoForNullValues(awbResponse))
             awbResponse.getMeta().setTotalAmount(awbResponse.getAwbPaymentInfo().getTotalCollect().max(awbResponse.getAwbPaymentInfo().getTotalPrepaid()));
         awbResponse.getMeta().setTenantInfo(populateTenantInfoFields(tenantModel, shipmentSettingsDetails));
         awbResponse.getMeta().setAdditionalSecurityInfo(consolidationDetails.getAdditionalSecurityInformation());
@@ -291,6 +292,11 @@ public class AwbUtility {
         this.roundOffVolumeFields(awbResponse);
 
         return awbResponse;
+    }
+
+    private boolean checkAwbPaymentInfoForNullValues(AwbAirMessagingResponse awbResponse) {
+        return awbResponse.getAwbPaymentInfo() != null && awbResponse.getAwbPaymentInfo().getTotalCollect() != null
+                && awbResponse.getAwbPaymentInfo().getTotalPrepaid() != null;
     }
 
     private void setShipperAndConsigneeForConsole(Awb awb, ConsolidationDetails consolidationDetails, OrgAddressResponse response, AwbAirMessagingResponse awbResponse) {
@@ -477,6 +483,7 @@ public class AwbUtility {
         AwbAirMessagingResponse awbResponse = jsonHelper.convertValue(awb, AwbAirMessagingResponse.class);
         awbResponse.setMeta(AwbAirMessagingResponse.Meta.builder().build());
         this.populateEnums(awbResponse);
+        checkAcasFlagInAwbForShipment(awbResponse, shipmentDetails);
         awbResponse.getMeta().setWeightDecimalPlaces(Objects.isNull(v1TenantSettingsResponse.getWeightDecimalPlace()) ? 2 : v1TenantSettingsResponse.getWeightDecimalPlace());
         awbResponse.getMeta().setCurrencyDecimalPlaces(Objects.isNull(v1TenantSettingsResponse.getCurrencyDecimalPlace()) ? 2 : v1TenantSettingsResponse.getCurrencyDecimalPlace());
         awbResponse.getMeta().setVolumeDecimalPlaces(Objects.isNull(v1TenantSettingsResponse.getVolumeDecimalPlace()) ? 3 : v1TenantSettingsResponse.getVolumeDecimalPlace());
@@ -544,44 +551,8 @@ public class AwbUtility {
         awbResponse.setAcasEnabled(awbResponse.getAwbRoutingInfo().stream().map(AwbRoutingInfoResponse::getDestinationPortName)
                 .anyMatch(destinationPort -> destinationPort.startsWith("US"))); // Check if starts with "US"
 
-        checkOciInfoInAwb(awbResponse);
     }
 
-    private void checkOciInfoInAwb(AwbAirMessagingResponse awbResponse) {
-        if(awbResponse.getOciInfo() != null) {
-            if (awbResponse.getOciInfo().getOtherIdentityInfo() != null) {
-                awbResponse.getOciInfo().getOtherIdentityInfo().setIrIpAddress(convertIpFormat(getClientIp()));
-            }
-            else {
-                OtherIdentityInfo otherIdentityInfo = new OtherIdentityInfo();
-                otherIdentityInfo.setIrIpAddress(convertIpFormat(getClientIp()));
-                awbResponse.getOciInfo().setOtherIdentityInfo(otherIdentityInfo);
-            }
-        }
-    }
-
-    private String getClientIp() {
-        ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-        if (attrs != null) {
-            HttpServletRequest request = attrs.getRequest();
-            String ip = request.getHeader("X-Forwarded-For"); // Handle proxies
-            if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-                ip = request.getRemoteAddr(); // Get direct IP
-            }
-            return ip;
-        }
-        return "UNKNOWN";
-    }
-
-    public static String convertIpFormat(String ip) {
-        if (ip == null || ip.isEmpty()) {
-            return "";
-        }
-        // Replace "::" with a single "-"
-        String formattedIp = ip.replace("::", "-");
-        // Replace remaining "." and ":" with "-"
-        return formattedIp.replaceAll("[.:]", "-");
-    }
 
     private void setShipperConsgineeDetailsInResponse(Awb awb, ShipmentDetails shipmentDetails, OrgAddressResponse response, AwbAirMessagingResponse awbResponse) {
         if(shipmentDetails.getConsigner() != null && (response.getOrganizations().containsKey(shipmentDetails.getConsigner().getOrgCode())
@@ -730,7 +701,8 @@ public class AwbUtility {
 
             String number = null;
             String expiry = null;
-            Boolean isRA = false, isKC = false;
+            Boolean isRA = false;
+            Boolean isKC = false;
             if(addressList != null && !addressList.isEmpty()){
                 EntityTransferAddress address = addressList.stream().findFirst().orElse(EntityTransferAddress.builder().build());
                 number = address.getKCRANumber();

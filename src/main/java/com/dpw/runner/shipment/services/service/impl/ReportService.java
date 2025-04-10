@@ -496,9 +496,9 @@ public class ReportService implements IReportService {
     }
 
     private byte[] getPdfByteContentForHawb(ReportRequest reportRequest, Map<String, Object> dataRetrived, Boolean isOriginalPrint, List<byte[]> pdfBytesHawb) throws DocumentException, IOException {
-        byte[] pdfByte_Content;
-        pdfByte_Content = CommonUtils.concatAndAddContent(pdfBytesHawb);
-        if (pdfByte_Content == null) throw new ValidationException(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE);
+        byte[] pdfByteContent;
+        pdfByteContent = CommonUtils.concatAndAddContent(pdfBytesHawb);
+        if (pdfByteContent == null) throw new ValidationException(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE);
         var shc = dataRetrived.getOrDefault(ReportConstants.SPECIAL_HANDLING_CODE, null);
         boolean addWaterMarkForEaw = false;
         if(shc != null){
@@ -508,15 +508,15 @@ public class ReportService implements IReportService {
             }
         }
         if(addWaterMarkForEaw && reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.Draft.name())) {
-            pdfByte_Content = CommonUtils.addWatermarkToPdfBytes(pdfByte_Content, BaseFont.createFont(BaseFont.TIMES_BOLD, BaseFont.WINANSI, BaseFont.EMBEDDED), ReportConstants.DRAFT_EAW_WATERMARK);
+            pdfByteContent = CommonUtils.addWatermarkToPdfBytes(pdfByteContent, BaseFont.createFont(BaseFont.TIMES_BOLD, BaseFont.WINANSI, BaseFont.EMBEDDED), ReportConstants.DRAFT_EAW_WATERMARK);
         }
         else if (reportRequest.getPrintType().equalsIgnoreCase(TypeOfHblPrint.Draft.name()))
         {
-            pdfByte_Content = CommonUtils.addWatermarkToPdfBytes(pdfByte_Content, BaseFont.createFont(BaseFont.TIMES_BOLD, BaseFont.WINANSI, BaseFont.EMBEDDED), ReportConstants.DRAFT_WATERMARK);
+            pdfByteContent = CommonUtils.addWatermarkToPdfBytes(pdfByteContent, BaseFont.createFont(BaseFont.TIMES_BOLD, BaseFont.WINANSI, BaseFont.EMBEDDED), ReportConstants.DRAFT_WATERMARK);
         } else if(addWaterMarkForEaw && Boolean.TRUE.equals(isOriginalPrint)) {
-            pdfByte_Content = CommonUtils.addWatermarkToPdfBytes(pdfByte_Content, BaseFont.createFont(BaseFont.TIMES_BOLD, BaseFont.WINANSI, BaseFont.EMBEDDED), ReportConstants.ORIGINAL_EAW_WATERMARK);
+            pdfByteContent = CommonUtils.addWatermarkToPdfBytes(pdfByteContent, BaseFont.createFont(BaseFont.TIMES_BOLD, BaseFont.WINANSI, BaseFont.EMBEDDED), ReportConstants.ORIGINAL_EAW_WATERMARK);
         }
-        return pdfByte_Content;
+        return pdfByteContent;
     }
 
     private void updateDateAndStatusForHawbPrint(ReportRequest reportRequest, Map<String, Object> dataRetrived, Boolean isOriginalPrint, Boolean isSurrenderPrint, Boolean isNeutralPrint) throws RunnerException {
@@ -1576,18 +1576,18 @@ public class ReportService implements IReportService {
         }
     }
 
-    public static DocPages setDocPages(String FirstPageId, String MainPageId, String LastPageId, boolean isLogoFixed,
+    public static DocPages setDocPages(String firstPageId, String mainPageId, String lastPageId, boolean isLogoFixed,
                                        String multiTemplateCode, String entityType, ShipmentSettingsDetails tenantRow)
     {
         DocPages docPages = new DocPages();
         if (StringUtility.isNotEmpty(multiTemplateCode) && StringUtility.isNotEmpty(entityType)) {
             log.info("Continue the process.");
         } else {
-            docPages.setMainPageId(MainPageId);
+            docPages.setMainPageId(mainPageId);
         }
 
-        docPages.setFirstPageId(FirstPageId);
-        docPages.setBackPrintId(LastPageId);
+        docPages.setFirstPageId(firstPageId);
+        docPages.setBackPrintId(lastPageId);
         if (docPages.getMainPageId() != null) {
             isLogoFixed = true;
         }
@@ -2250,14 +2250,14 @@ public class ReportService implements IReportService {
         map.put(SHIPMENT_NUMBER, shipmentDetails.getShipmentId());
         try {
             map.put(OA_BRANCH, shipmentDetails.getAdditionalDetails().getExportBroker().getOrgData().get(FULL_NAME));
-            map.put(OA_BRANCH_ADD, String.join(", ", IReport.getPartyAddress(modelMapper.map(shipmentDetails.getAdditionalDetails().getExportBroker(), PartiesModel.class))));
+            map.put(OA_BRANCH_ADD, String.join(HTML_BREAK, IReport.getPartyAddress(modelMapper.map(shipmentDetails.getAdditionalDetails().getExportBroker(), PartiesModel.class))));
             map.put(OA_NAME, shipmentDetails.getAdditionalDetails().getExportBroker().getAddressData().get(CONTACT_PERSON));
             map.put(OA_PHONE, shipmentDetails.getAdditionalDetails().getExportBroker().getOrgData().get(PHONE));
             map.put(OA_EMAIL, shipmentDetails.getAdditionalDetails().getExportBroker().getOrgData().get(EMAIL));
         } catch (Exception e) {log.error("Error while getting origin Agent Data");}
         try {
             map.put(DA_BRANCH, shipmentDetails.getAdditionalDetails().getImportBroker().getOrgData().get(FULL_NAME));
-            map.put(DA_BRANCH_ADD, String.join(", ", IReport.getPartyAddress(modelMapper.map(shipmentDetails.getAdditionalDetails().getImportBroker(), PartiesModel.class))));
+            map.put(DA_BRANCH_ADD, String.join(HTML_BREAK, IReport.getPartyAddress(modelMapper.map(shipmentDetails.getAdditionalDetails().getImportBroker(), PartiesModel.class))));
             map.put(DA_NAME, shipmentDetails.getAdditionalDetails().getImportBroker().getAddressData().get(CONTACT_PERSON));
             map.put(DA_PHONE, shipmentDetails.getAdditionalDetails().getImportBroker().getOrgData().get(PHONE));
             map.put(DA_EMAIL, shipmentDetails.getAdditionalDetails().getImportBroker().getOrgData().get(EMAIL));
@@ -2302,7 +2302,7 @@ public class ReportService implements IReportService {
     private String getPartyString(Parties parties) {
         if(Objects.isNull(parties))
             return null;
-        return String.join("\n", ReportHelper.getOrgAddress(modelMapper.map(parties, PartiesModel.class)));
+        return String.join(HTML_BREAK, ReportHelper.getOrgAddress(modelMapper.map(parties, PartiesModel.class)));
     }
 
     private String getContNums(ShipmentDetails shipmentDetails) {

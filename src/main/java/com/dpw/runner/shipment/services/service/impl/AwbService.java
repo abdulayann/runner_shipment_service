@@ -63,7 +63,10 @@ import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
+import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
@@ -177,7 +180,6 @@ public class AwbService implements IAwbService {
 
     private static final String RA_KC_VALIDATION_MESSAGE = "You cannot generate the AWB without adding the screening/ Security status for RA KC %s";
 
-    private Integer totalPacks = 0;
     private List<String> attachedShipmentDescriptions = new ArrayList<>();
     private BigDecimal totalVolumetricWeightOfAwbPacks = new BigDecimal(0);
 
@@ -266,6 +268,7 @@ public class AwbService implements IAwbService {
                 setAwbNumberFromPackingInfo(awb);
                 awbDao.updateSciFieldFromHawb(awb, oldEntity.get(), false, id);
             }
+            setOciInfoInAwb(awb);
             awb = awbDao.save(awb);
 
             syncAwb(awb, SaveStatus.UPDATE);
@@ -290,6 +293,46 @@ public class AwbService implements IAwbService {
         }
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(awb));
     }
+
+
+    private void setOciInfoInAwb(Awb awb) {
+        if(awb.getOciInfo() != null) {
+            if (awb.getOciInfo().getOtherIdentityInfo() != null) {
+                if(Strings.isNullOrEmpty(awb.getOciInfo().getOtherIdentityInfo().getIrIpAddress())) {
+                    awb.getOciInfo().getOtherIdentityInfo().setIrIpAddress(convertIpFormat(getClientIp()));
+                }
+            }
+            else {
+                OtherIdentityInfo otherIdentityInfo = new OtherIdentityInfo();
+                otherIdentityInfo.setIrIpAddress(convertIpFormat(getClientIp()));
+                awb.getOciInfo().setOtherIdentityInfo(otherIdentityInfo);
+            }
+        }
+    }
+
+    private String getClientIp() {
+        ServletRequestAttributes attrs = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        if (attrs != null) {
+            HttpServletRequest request = attrs.getRequest();
+            String ip = request.getHeader("X-Forwarded-For"); // Handle proxies
+            if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+                ip = request.getRemoteAddr(); // Get direct IP
+            }
+            return ip;
+        }
+        return "UNKNOWN";
+    }
+
+    public static String convertIpFormat(String ip) {
+        if (ip == null || ip.isEmpty()) {
+            return "";
+        }
+        // Replace "::" with a single "-"
+        String formattedIp = ip.replace("::", "-");
+        // Replace remaining "." and ":" with "-"
+        return formattedIp.replaceAll("[.:]", "-");
+    }
+
 
     private void setAwbNumberFromPackingInfo(Awb awb) {
         if(awb.getAwbPackingInfo() != null && !awb.getAwbPackingInfo().isEmpty()) {
@@ -996,7 +1039,7 @@ public class AwbService implements IAwbService {
                 awbShipmentInfo.setIssuingAgentAddress(StringUtility.toUpperCase(issuingAgentAddress));
                 constructIssuingAgentAddress(awbShipmentInfo, orgRow.getAddressData(), alpha2DigitToCountry);
                 issuingAgentAddressList.add(orgRow.getAddressId());
-                Map<Long, AddressDataV1> issuingAgentAddressIdToEntityMap = getIssuingAgentAddressIdToEntityMap(issuingAgentAddressList);
+                Map<Long, AddressDataV1> issuingAgentAddressIdToEntityMap = getAddressDataV1Map(issuingAgentAddressList);
                 setAwbCustomOriginCode(awbCargoInfo, orgRow);
                 setAwbIssuingAgentTaxRegistrationNumber(orgRow, issuingAgentAddressIdToEntityMap, awbShipmentInfo);
                 setIataAndCassCode(orgRow, awbShipmentInfo);
@@ -1040,18 +1083,6 @@ public class AwbService implements IAwbService {
                 (String) orgRow.getOrgData().get(COUNTRY) : null;
         if (country != null)
             awbCargoInfo.setCustomOriginCode(getCountryCode(country));
-    }
-
-    private Map<Long, AddressDataV1> getIssuingAgentAddressIdToEntityMap(ArrayList<String> issuingAgentAddressList) {
-        Map<Long, AddressDataV1> issuingAgentAddressIdToEntityMap = new HashMap<>();
-        if(!CommonUtils.listIsNullOrEmpty(issuingAgentAddressList)) {
-            CommonV1ListRequest issuingAgentAddressRequest = createCriteriaToFetchAddressList(issuingAgentAddressList);
-            V1DataResponse issuingAgentAddressResponse = v1Service.addressList(issuingAgentAddressRequest);
-            List<AddressDataV1> issuingAgentEntityAddressList = jsonHelper.convertValueToList(issuingAgentAddressResponse.entities, AddressDataV1.class);
-            issuingAgentAddressIdToEntityMap = issuingAgentEntityAddressList.stream()
-                    .collect(Collectors.toMap(AddressDataV1::getId, entity -> entity));
-        }
-        return issuingAgentAddressIdToEntityMap;
     }
 
     private void processConsoleSendingAgentAndReceivingAgent(ConsolidationDetails consolidationDetails, AwbShipmentInfo awbShipmentInfo, Map<String, String> alpha2DigitToCountry) {
@@ -1733,22 +1764,6 @@ public class AwbService implements IAwbService {
         }
     }
 
-    private String formatCSDInfo(String raNumber, String securityStatus, String screeningStatus) {
-        StringBuilder csdInfo = new StringBuilder();
-
-        if (!Strings.isNullOrEmpty(raNumber)) {
-            csdInfo.append(raNumber).append("/");
-        }
-        if (!Strings.isNullOrEmpty(securityStatus)) {
-            csdInfo.append(securityStatus).append("/");
-        }
-        if (!Strings.isNullOrEmpty(screeningStatus)) {
-            csdInfo.append(screeningStatus).append("/");
-        }
-
-        return csdInfo.toString();
-    }
-
     private String getCountryCode(String country) {
         CommonV1ListRequest request = new CommonV1ListRequest();
         List<Object> criteria = new ArrayList<>();
@@ -1893,7 +1908,6 @@ public class AwbService implements IAwbService {
                 awbPacking.setDgClassAir(packing.getDgClassAir());
                 awbPacking.setDgClassAirDescription(packing.getDgClassAirDescription());
                 awbPacking.setAwbNumber(shipmentDetails.getHouseBill());
-                totalPacks += Integer.parseInt(packing.getPacks());
                 awbPackingList.add(awbPacking);
             }
 
@@ -2768,7 +2782,7 @@ public class AwbService implements IAwbService {
         }
     }
 
-    private void updateMawbFromShipment(CreateAwbRequest request, ConsolidationDetails consolidationDetails, Awb awb, ShipmentSettingsDetails shipmentSettingsDetails) throws RunnerException {
+    private void updateMawbFromShipment(CreateAwbRequest request, ConsolidationDetails consolidationDetails, Awb awb, ShipmentSettingsDetails shipmentSettingsDetails) {
 
         MawbLockSettings mawbLockSettings = shipmentSettingsDetails.getMawbLockSettings();
         attachedShipmentDescriptions = new ArrayList<>();

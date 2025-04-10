@@ -29,7 +29,9 @@ public class UpdateValidateAspect {
         int retrieveValidationFields = 4;
         Set<String> validatedFields = new HashSet<>();
         if(shipment != null){
-            String transportMode = null, direction = null, shipmentType = null;
+            String transportMode = null;
+            String direction = null;
+            String shipmentType = null;
             Boolean domesticType = null;
             if(shipment.getTransportMode() != null)
                 transportMode = shipment.getTransportMode().toLowerCase();
@@ -92,7 +94,9 @@ public class UpdateValidateAspect {
         Set<String> validatedFields = new HashSet<>();
         ConsolidationDetailsRequest consolidation = (ConsolidationDetailsRequest) commonRequestModel.getData();
         if(consolidation != null){
-            String transportMode = null, direction = null, shipmentType = null;
+            String transportMode = null;
+            String direction = null;
+            String shipmentType = null;
             Boolean domesticType = null;
             if(consolidation.getTransportMode() != null)
                 transportMode = consolidation.getTransportMode().toLowerCase();
