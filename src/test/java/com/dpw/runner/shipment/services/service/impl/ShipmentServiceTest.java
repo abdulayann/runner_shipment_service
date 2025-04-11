@@ -7849,7 +7849,7 @@ ShipmentServiceTest extends CommonMocks {
     }
 
     @Test
-    void updatePuedTredEventsTets() throws RunnerException {
+    void updatePuedTredEventsTestsForLCLOrFCL() throws RunnerException {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
         EventsRequest eventsRequest = new EventsRequest();
         eventsRequest.setEventCode(EventConstants.EMCR);

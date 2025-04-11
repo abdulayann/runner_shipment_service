@@ -3345,7 +3345,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     private void processLclEvents(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, List<Events> events, Boolean isNewShipment, Map<String, List<Events>> cargoesRunnerDbEvents) {
-        if (isLcl(shipmentDetails)) {
+        if (isLcl(shipmentDetails) || isFcl(shipmentDetails)) {
 
             processPUEDEvent(shipmentDetails, oldEntity, events, isNewShipment, cargoesRunnerDbEvents);
 
