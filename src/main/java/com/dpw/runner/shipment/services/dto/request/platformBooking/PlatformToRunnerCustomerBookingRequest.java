@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dto.request.platformBooking;
 
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.dpw.runner.shipment.services.dto.request.NotesRequest;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
@@ -85,4 +86,7 @@ public class PlatformToRunnerCustomerBookingRequest implements IRunnerRequest {
     private String maxTransitHours;
     @JsonProperty("isDg")
     private Boolean isDg;
+    private String shipmentReferenceNumber;
+    private List<NotesRequest> notesList;
+    private String integrationSource;
 }

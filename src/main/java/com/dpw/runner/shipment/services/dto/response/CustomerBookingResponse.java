@@ -97,4 +97,5 @@ public class CustomerBookingResponse implements IRunnerResponse {
     private LocalDateTime createdAt;
     private String rejectionRemarks;
     private List<ReferenceNumbersResponse> referenceNumbersList;
+    private String shipmentReferenceNumber;
 }
