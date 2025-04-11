@@ -38,6 +38,7 @@ import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataKeyUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.dpw.runner.shipment.services.validator.constants.ErrorConstants;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
@@ -295,19 +296,23 @@ public class NotificationService implements INotificationService {
         }
     }
     private void triggerCancellationEmail(Notification notification, String reason, String entityNumber) {
-        List<String> emailList = new ArrayList<>();
-        Map<String, String> usernameEmailsMap = new HashMap<>();
-        commonUtils.getUserDetails(new HashSet<>(Set.of(notification.getRequestedUser())), usernameEmailsMap);
-        if (usernameEmailsMap.containsKey(notification.getRequestedUser()))
-            emailList.add(usernameEmailsMap.get(notification.getRequestedUser()));
-        EmailTemplatesRequest template = new EmailTemplatesRequest();
-        if(Objects.equals(notification.getNotificationRequestType(), NotificationRequestType.REASSIGN) && !emailList.isEmpty()) {
-            template = createReassignmentCancellationEmailBody(notification, reason, entityNumber);
-        } else if(Objects.equals(notification.getNotificationRequestType(), NotificationRequestType.REQUEST_TRANSFER) && !emailList.isEmpty()) {
-            template = createRequestToTranferCancellationEmailBody(notification, reason, entityNumber);
-        }
-        if(!emailList.isEmpty() && template.getBody() != null) {
-            commonUtils.sendEmailNotification(template, emailList, List.of(UserContext.getUser().getEmail()));
+        try {
+            List<String> emailList = new ArrayList<>();
+            Map<String, String> usernameEmailsMap = new HashMap<>();
+            commonUtils.getUserDetails(new HashSet<>(Set.of(notification.getRequestedUser())), usernameEmailsMap);
+            if (usernameEmailsMap.containsKey(notification.getRequestedUser()))
+                emailList.add(usernameEmailsMap.get(notification.getRequestedUser()));
+            EmailTemplatesRequest template = new EmailTemplatesRequest();
+            if(Objects.equals(notification.getNotificationRequestType(), NotificationRequestType.REASSIGN) && !emailList.isEmpty()) {
+                template = createReassignmentCancellationEmailBody(notification, reason, entityNumber);
+            } else if(Objects.equals(notification.getNotificationRequestType(), NotificationRequestType.REQUEST_TRANSFER) && !emailList.isEmpty()) {
+                template = createRequestToTranferCancellationEmailBody(notification, reason, entityNumber);
+            }
+            if(!emailList.isEmpty() && template.getBody() != null) {
+                commonUtils.sendEmailNotification(template, emailList, List.of(UserContext.getUser().getEmail()));
+            }
+        } catch (Exception ex) {
+            log.error(String.format(ErrorConstants.ERROR_WHILE_EMAIL, ex.getMessage()));
         }
     }
 
@@ -337,7 +342,7 @@ public class NotificationService implements INotificationService {
 
     private EmailTemplatesRequest createRequestToTranferCancellationEmailBody(Notification notification, String reason, String entityNumber){
         UsersDto user = UserContext.getUser();
-        var branchIdVsTenantModelMap = convertToTenantModel(v1ServiceUtil.getTenantDetails(List.of(TenantContext.getCurrentTenant(), notification.getReassignedToBranchId())));
+        var branchIdVsTenantModelMap = convertToTenantModel(v1ServiceUtil.getTenantDetails(List.of(TenantContext.getCurrentTenant())));
         String body = "";
         String subject = "";
         if(SHIPMENT.equals(notification.getEntityType())) {

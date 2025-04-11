@@ -636,13 +636,6 @@ public class ShipmentService implements IShipmentService {
         return responseList;
     }
 
-
-    private void addContainerNumber(Containers container, Set<String> containerNumber) {
-        if (StringUtility.isNotEmpty(container.getContainerNumber())) {
-            containerNumber.add(container.getContainerNumber());
-        }
-    }
-
     private void setEventData(ShipmentListResponse response) {
         if (response.getEventsList() != null) {
             for (EventsResponse events : response.getEventsList()) {
@@ -1360,7 +1353,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     private void changeDGStatusFromPacks(List<PackingRequest> packingList, Set<Long> dgConts, ShipmentDetails shipmentDetails,
-                                         ShipmentDetails oldEntity, Set<Long> newPackAttachedInConts) throws RunnerException {
+                                         ShipmentDetails oldEntity, Set<Long> newPackAttachedInConts) {
         Map<Long, Packing> oldPacksMap = new HashMap<>();
         if(!Objects.isNull(oldEntity))
             oldPacksMap = oldEntity.getPackingList().stream().collect(Collectors.toMap(e -> e.getId(), c -> c));
@@ -1403,7 +1396,7 @@ public class ShipmentService implements IShipmentService {
 
     private void changeDGStatusFromContainers(Set<ContainerRequest> containersList, Set<Long> dgConts,
                                               ShipmentDetails shipmentDetails, ShipmentDetails oldEntity,
-                                              Set<Long> newPackAttachedInConts) throws RunnerException {
+                                              Set<Long> newPackAttachedInConts) {
         Map<Long, Containers> oldContainersMap = new HashMap<>();
         if(!Objects.isNull(oldEntity))
             oldContainersMap = oldEntity.getContainersList().stream().collect(Collectors.toMap(e -> e.getId(), c -> c));
@@ -1414,7 +1407,7 @@ public class ShipmentService implements IShipmentService {
         }
     }
 
-    private void makeDGOceanChangesFromPacksAndContainers(Set<ContainerRequest> containersList, List<PackingRequest> packingList, ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) throws RunnerException {
+    private void makeDGOceanChangesFromPacksAndContainers(Set<ContainerRequest> containersList, List<PackingRequest> packingList, ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
         Set<Long> dgConts = new HashSet<>();
         Set<Long> newPackAttachedInConts = new HashSet<>();
         changeDGStatusFromPacks(packingList, dgConts, shipmentDetails, oldEntity, newPackAttachedInConts);
@@ -2523,7 +2516,6 @@ public class ShipmentService implements IShipmentService {
 
         Long id = shipmentDetails.getId();
         Long consolidationId = getConsolidationIdFromShipment(shipmentDetails);
-        Integer previousStatus = !Objects.isNull(oldEntity) ? oldEntity.getStatus() : null;
 
         Set<Containers> updatedContainers = shipmentDetails.getContainersList();
         List<Packing> updatedPackings = new ArrayList<>();
@@ -4949,7 +4941,7 @@ public class ShipmentService implements IShipmentService {
     private ResponseEntity<IRunnerResponse> getPartialUpdateResponse(Boolean fromV1, Optional<ShipmentDetails> oldShipmentDetails, ShipmentPatchRequest shipmentRequest, List<ContainerRequest> containerRequestList, Long id, AdditionalDetailRequest additionalDetailRequest, CarrierPatchRequest carrierDetailRequest) throws RunnerException {
         try {
             ShipmentDetails newShipmentDetails = oldShipmentDetails.get();
-            Integer previousStatus = oldShipmentDetails.get().getStatus();
+
             ShipmentDetails oldEntity = jsonHelper.convertValue(newShipmentDetails, ShipmentDetails.class);
             shipmentDetailsMapper.update(shipmentRequest, newShipmentDetails);
             ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
