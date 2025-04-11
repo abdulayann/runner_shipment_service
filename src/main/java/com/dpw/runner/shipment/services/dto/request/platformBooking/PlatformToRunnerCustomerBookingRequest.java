@@ -62,6 +62,7 @@ public class PlatformToRunnerCustomerBookingRequest implements IRunnerRequest {
     private String contractId;
     private String contractStatus;
     private Boolean isSingleUsageContract;
+    private List<ReferenceNumbersRequest> referenceNumbersList;
     @JsonProperty("containers")
     private List<BookingContainerRequest> containersList;
     @JsonProperty("packs")
@@ -86,7 +87,6 @@ public class PlatformToRunnerCustomerBookingRequest implements IRunnerRequest {
     @JsonProperty("isDg")
     private Boolean isDg;
     private String shipmentReferenceNumber;
-    private List<ReferenceNumbersRequest> referenceList;
     private List<NotesRequest> notesList;
     private String integrationSource;
 }

@@ -39,6 +39,9 @@ public class ReferenceNumbers extends MultiTenancy {
     @Column(name = "shipment_id")
     private Long shipmentId;
 
+    @Column(name = "booking_id")
+    private Long bookingId;
+
     @Column(name = "is_portal_enable")
     private Boolean isPortalEnable;
 }
