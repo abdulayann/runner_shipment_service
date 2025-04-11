@@ -230,29 +230,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         Long bookingId = customerBooking.getId();
         request.setId(bookingId);
 
-        List<PackingRequest> packingRequest = request.getPackingList();
-        if (packingRequest != null)
-            customerBooking.setPackingList(packingDao.saveEntityFromBooking(commonUtils.convertToEntityList(packingRequest, Packing.class), bookingId));
-
-        List<ReferenceNumbersRequest> referenceNumbersRequests = request.getReferenceNumbersList();
-        if (referenceNumbersRequests != null)
-            customerBooking.setReferenceNumbersList(referenceNumbersDao.saveEntityFromBooking(commonUtils.convertToEntityList(referenceNumbersRequests, ReferenceNumbers.class), bookingId));
-
-        List<RoutingsRequest> routingsRequest = request.getRoutingList();
-        if (routingsRequest != null)
-            customerBooking.setRoutingList(routingsDao.saveEntityFromBooking(commonUtils.convertToEntityList(routingsRequest, Routings.class), bookingId));
-
-        List<ContainerRequest> containerRequest = request.getContainersList();
-        if (containerRequest != null) {
-            List<Containers> containers = containerDao.updateEntityFromBooking(commonUtils.convertToEntityList(containerRequest, Containers.class), bookingId);
-            customerBooking.setContainersList(containers);
-        }
-
-        List<NotesRequest> notesRequests = request.getNotesList();
-        if (notesRequests != null) {
-            notesDao.saveEntityFromOtherEntity(commonUtils.convertToEntityList(notesRequests, Notes.class), bookingId, Constants.CUSTOMER_BOOKING);
-        }
-
+        saveChildEntities(customerBooking, request);
         generateBookingAcknowledgementEvent(request);
 
         List<Containers> containers = customerBooking.getContainersList();
@@ -283,6 +261,32 @@ public class CustomerBookingService implements ICustomerBookingService {
             );
         } catch (Exception e) {
             log.error(e.getMessage());
+        }
+    }
+
+    private void saveChildEntities(CustomerBooking customerBooking, CustomerBookingRequest request) throws RunnerException {
+        Long bookingId = customerBooking.getId();
+        List<PackingRequest> packingRequest = request.getPackingList();
+        if (packingRequest != null)
+            customerBooking.setPackingList(packingDao.saveEntityFromBooking(commonUtils.convertToEntityList(packingRequest, Packing.class), bookingId));
+
+        List<ReferenceNumbersRequest> referenceNumbersRequests = request.getReferenceNumbersList();
+        if (referenceNumbersRequests != null)
+            customerBooking.setReferenceNumbersList(referenceNumbersDao.saveEntityFromBooking(commonUtils.convertToEntityList(referenceNumbersRequests, ReferenceNumbers.class), bookingId));
+
+        List<RoutingsRequest> routingsRequest = request.getRoutingList();
+        if (routingsRequest != null)
+            customerBooking.setRoutingList(routingsDao.saveEntityFromBooking(commonUtils.convertToEntityList(routingsRequest, Routings.class), bookingId));
+
+        List<ContainerRequest> containerRequest = request.getContainersList();
+        if (containerRequest != null) {
+            List<Containers> containers = containerDao.updateEntityFromBooking(commonUtils.convertToEntityList(containerRequest, Containers.class), bookingId);
+            customerBooking.setContainersList(containers);
+        }
+
+        List<NotesRequest> notesRequests = request.getNotesList();
+        if (notesRequests != null) {
+            notesDao.saveEntityFromOtherEntity(commonUtils.convertToEntityList(notesRequests, Notes.class), bookingId, Constants.CUSTOMER_BOOKING);
         }
     }
 

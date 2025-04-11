@@ -633,6 +633,7 @@ class CustomerBookingServiceTest extends CommonMocks {
 
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
 
+
         CustomerBookingRequest customerBookingRequest = new CustomerBookingRequest();
         customerBookingRequest.setIntegrationSource(Constants.TESLA);
         customerBookingRequest.setNotesList(notesList);
