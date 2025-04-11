@@ -38,7 +38,7 @@ public class BridgeServiceAdapter implements IBridgeServiceAdapter {
 
     @Override
     public IRunnerResponse requestTactResponse(CommonRequestModel commonRequestModel) throws RunnerException {
-        String authToken = generateToken(bridgeServiceConfig.getUserName(), bridgeServiceConfig.getPassword());
+        String authToken = generateToken(bridgeServiceConfig.getUserName(), bridgeServiceConfig.getPassword(), bridgeServiceConfig.getTenantCode());
         HttpHeaders headers = new HttpHeaders();
         headers.add(HttpHeaders.AUTHORIZATION, "Bearer " + authToken);
         var url = bridgeServiceConfig.getBaseUrl() + bridgeServiceConfig.getRequestUrl();
@@ -61,9 +61,9 @@ public class BridgeServiceAdapter implements IBridgeServiceAdapter {
 
     }
 
-    private String generateToken(String userName, String password) throws RunnerException {
+    private String generateToken(String userName, String password, String tenantCode) throws RunnerException {
         AuthLoginRequest authLoginRequest = AuthLoginRequest.builder()
-            .tenantCode(bridgeServiceConfig.getTenantCode())
+            .tenantCode(tenantCode)
             .username(userName)
             .password(password)
             .build();
@@ -81,7 +81,7 @@ public class BridgeServiceAdapter implements IBridgeServiceAdapter {
 
     @Override
     public IRunnerResponse requestOutBoundFileTransfer(CommonRequestModel commonRequestModel) throws RunnerException {
-        String authToken = generateToken(bridgeServiceConfig.getOutBoundTransferUserName(), bridgeServiceConfig.getOutBoundTransferPassword());
+        String authToken = generateToken(bridgeServiceConfig.getOutBoundTransferUserName(), bridgeServiceConfig.getOutBoundTransferPassword(), null);
         HttpHeaders headers = new HttpHeaders();
         headers.add(HttpHeaders.AUTHORIZATION, "Bearer " + authToken);
         var url = bridgeServiceConfig.getBaseUrl() + bridgeServiceConfig.getRequestUrl();
