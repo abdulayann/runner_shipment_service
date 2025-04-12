@@ -465,8 +465,6 @@ public class DpsEventService implements IDpsEventService {
                     .collect(Collectors.toList());
 
             dpsEvent.setDpsFieldData(fieldDataList);
-        } else {
-            dpsEvent.setDpsFieldData(Collections.emptyList());
         }
     }
 
