@@ -933,8 +933,7 @@ public class EventService implements IEventService {
         Map<String, Event> containerEventMapFromTracking = trackingContainer.getEvents().stream()
                 .filter(Objects::nonNull)
                 .map(event -> {
-                    String eventCode = trackingServiceAdapter.convertTrackingEventCodeToShortCode(
-                            event.getLocationRole(), event.getEventType(), event.getDescription());
+                    String eventCode = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event);
                     String placeName = Optional.ofNullable(trackingContainer.getPlaces()).orElse(Collections.emptyList()).stream()
                             .filter(place -> Objects.equals(place.getId(), event.getLocation()))
                             .map(Place::getCode).map(StringUtils::defaultString).findFirst()
