@@ -114,4 +114,6 @@ public class ContainerRequest extends CommonRequest implements IRunnerRequest {
     private String minimumFlashPointUnit;
     private Boolean marinePollutant = false;
     private ContainerPraStatus praStatus;
+    private BigDecimal humidity;
+    private BigDecimal vents;
 }

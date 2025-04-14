@@ -129,4 +129,6 @@ public class ContainerResponse implements IRunnerResponse {
     private String minimumFlashPointUnit;
     private Boolean marinePollutant;
     private ContainerPraStatus praStatus;
+    private BigDecimal humidity;
+    private BigDecimal vents;
 }
