@@ -1,5 +1,7 @@
 package com.dpw.runner.shipment.services.service.interfaces;
 
+import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerNumberCheckResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
@@ -8,6 +10,7 @@ import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 
+import javax.servlet.http.HttpServletResponse;
 import java.util.List;
 
 public interface IContainerV3Service {
@@ -15,4 +18,6 @@ public interface IContainerV3Service {
     BulkContainerResponse updateBulk(List<ContainerRequest> request);
     BulkContainerResponse deleteBulk(List<ContainerRequest> request);
     ContainerSummaryResponse calculateContainerSummary(List<Containers> containersList, String transportMode, String containerCategory) throws RunnerException;
+    ContainerNumberCheckResponse validateContainerNumber(String containerNumber);
+    void downloadContainers(HttpServletResponse response, BulkDownloadRequest request) throws RunnerException;
 }
