@@ -46,6 +46,7 @@ import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.DigitGrouping;
 import com.dpw.runner.shipment.services.entity.enums.GroupingNumber;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
+import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.TranslationException;
@@ -1299,6 +1300,7 @@ public abstract class IReport {
             return false;
         TreeMap<Long, RoutingsModel> map = routingsModels.stream()
                 .filter(e -> Constants.TRANSPORT_MODE_AIR.equals(e.getMode()))
+                .filter(e -> RoutingCarriage.MAIN_CARRIAGE.equals(e.getCarriage()))
                 .collect(Collectors.toMap(
                         RoutingsModel::getLeg,
                         e -> e,
