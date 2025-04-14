@@ -159,6 +159,10 @@ public class ShipmentDao implements IShipmentDao {
             }
             oldShipment = oldEntity.get();
             shipmentDetails.setCreatedBy(oldShipment.getCreatedBy());
+            if (UserContext.getUser() != null){
+                shipmentDetails.setUpdatedBy(UserContext.getUser().getUsername());
+            }
+            shipmentDetails.setUpdatedAt(LocalDateTime.now());
         }
         onSave(shipmentDetails, errors, oldShipment, fromV1Sync);
         return shipmentDetails;
