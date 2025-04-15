@@ -58,7 +58,6 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -69,7 +68,6 @@ import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 @Service
@@ -354,7 +352,17 @@ public class ContainerV3Service implements IContainerV3Service {
         }
     }
 
-    public ContainerSummaryResponse calculateContainerSummary(List<Containers> containersList, String transportMode, String containerCategory) throws RunnerException {
+    @Override
+    public ContainerSummaryResponse calculateContainerSummary(Long shipmentId, Long consolidationId) throws RunnerException {
+        if(shipmentId == null && consolidationId == null) {
+            throw new RunnerException("Please provide shipmentId and consolidationId for containers summary");
+        }
+        if(shipmentId != null)
+            return calculateContainerSummary(containerDao.findByShipmentId(shipmentId));
+        return calculateContainerSummary(containerDao.findByConsolidationId(consolidationId));
+    }
+
+    public ContainerSummaryResponse calculateContainerSummary(List<Containers> containersList) throws RunnerException {
         double totalWeight = 0;
         double packageCount = 0;
         double tareWeight = 0;
@@ -416,14 +424,6 @@ public class ContainerV3Service implements IContainerV3Service {
         response.setTotalWeight(String.format(Constants.STRING_FORMAT, IReport.convertToWeightNumberFormat(BigDecimal.valueOf(totalWeight), v1TenantSettingsResponse), toWeightUnit));
         response.setTotalTareWeight(String.format(Constants.STRING_FORMAT, IReport.convertToWeightNumberFormat(BigDecimal.valueOf(tareWeight), v1TenantSettingsResponse), toWeightUnit));
         response.setTotalNetWeight(String.format(Constants.STRING_FORMAT, IReport.convertToWeightNumberFormat(BigDecimal.valueOf(netWeight), v1TenantSettingsResponse), toWeightUnit));
-        if(!isStringNullOrEmpty(transportMode) && transportMode.equals(Constants.TRANSPORT_MODE_SEA) &&
-                !isStringNullOrEmpty(containerCategory) && containerCategory.equals(Constants.SHIPMENT_TYPE_LCL)) {
-            double volInM3 = convertUnit(Constants.VOLUME, BigDecimal.valueOf(totalVolume), toVolumeUnit, Constants.VOLUME_UNIT_M3).doubleValue();
-            double wtInKg = convertUnit(Constants.MASS, BigDecimal.valueOf(totalWeight), toWeightUnit, Constants.WEIGHT_UNIT_KG).doubleValue();
-            double chargeableWeight = Math.max(wtInKg/1000, volInM3);
-            chargeableWeight = BigDecimal.valueOf(chargeableWeight).setScale(2, RoundingMode.HALF_UP).doubleValue();
-            response.setChargeableWeight(IReport.convertToWeightNumberFormat(BigDecimal.valueOf(chargeableWeight), v1TenantSettingsResponse) + " " + Constants.VOLUME_UNIT_M3);
-        }
         response.setTotalContainerVolume(String.format(Constants.STRING_FORMAT, IReport.convertToVolumeNumberFormat(BigDecimal.valueOf(totalVolume), v1TenantSettingsResponse), toVolumeUnit));
         if(response.getSummary() == null)
             response.setSummary("");
@@ -436,7 +436,7 @@ public class ContainerV3Service implements IContainerV3Service {
 
     private void setContainerSummary(List<Containers> containersList, ContainerSummaryResponse response) {
         try {
-            response.setSummary(calculateContainerSummary(containersList));
+            response.setSummary(getContainerSummary(containersList));
         }
         catch (Exception e) {
             log.error("Error calculating summary");
@@ -461,7 +461,7 @@ public class ContainerV3Service implements IContainerV3Service {
         return dgContainers;
     }
 
-    public String calculateContainerSummary(List<Containers> response) {
+    public String getContainerSummary(List<Containers> response) {
         if (response == null || response.isEmpty()) return null;
 
         // Sort

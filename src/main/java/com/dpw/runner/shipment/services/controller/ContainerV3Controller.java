@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
@@ -66,8 +67,14 @@ public class ContainerV3Controller {
     }
 
     @GetMapping(ApiConstants.API_DOWNLOAD)
-    public void downloadCSV(HttpServletResponse response, @ModelAttribute BulkDownloadRequest request) throws Exception{
+    public void downloadCSV(HttpServletResponse response, @ModelAttribute BulkDownloadRequest request) throws RunnerException {
         containerV3Service.downloadContainers(response, request);
+    }
+
+    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CALCULATION_SUCCESSFUL, response = RunnerResponse.class) })
+    @PostMapping(ApiConstants.CALCULATE_CONTAINER_SUMMARY)
+    public ResponseEntity<IRunnerResponse> calculateContainerSummary(@RequestParam (required = false) Long shipmentId, @RequestParam (required = false) Long consolidationId) throws RunnerException {
+        return ResponseHelper.buildSuccessResponse(containerV3Service.calculateContainerSummary(shipmentId, consolidationId));
     }
 
 }
