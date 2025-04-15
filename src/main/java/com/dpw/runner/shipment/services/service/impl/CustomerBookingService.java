@@ -804,6 +804,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         Optional<CustomerBooking> optional;
         if (Constants.TESLA.equalsIgnoreCase(request.getIntegrationSource())) {
             optional = customerBookingDao.findByShipmentReferenceNumber(shipmentReferenceNumber);
+            request.setBookingNumber(optional.map(CustomerBooking::getBookingNumber).orElse(null));
         }
         else {
             optional = customerBookingDao.findByBookingNumber(bookingNumber);
