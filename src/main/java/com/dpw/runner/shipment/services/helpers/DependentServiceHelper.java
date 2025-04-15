@@ -84,8 +84,6 @@ public class DependentServiceHelper {
         try {
             if(shipmentDetails.getTenantId() == null)
                 shipmentDetails.setTenantId(TenantContext.getCurrentTenant());
-            if (IsStringNullOrEmpty(shipmentDetails.getUpdatedBy()))
-                shipmentDetails.setUpdatedBy(UserContext.getUser().getUsername());
             ShipmentRequest shipmentRequest = jsonHelper.convertValue(shipmentDetails, ShipmentRequest.class);
             shipmentRequest.setIsAutoSellRequired(isAutoSellRequired);
             if (shipmentDetails.getStatus() != null && shipmentDetails.getStatus() < ShipmentStatus.values().length)
