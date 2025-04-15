@@ -1,11 +1,13 @@
 package com.dpw.runner.shipment.services.DocumentService;
 
+import com.dpw.runner.shipment.services.commons.constants.LoggingConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentSettingsConstants;
 import com.dpw.runner.shipment.services.dto.request.TemplateUploadRequest;
 import com.dpw.runner.shipment.services.dto.response.TemplateUploadResponse;
 import com.dpw.runner.shipment.services.dto.response.UploadDocumentResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
+import com.dpw.runner.shipment.services.utils.Generated;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
@@ -21,6 +23,7 @@ import java.net.URI;
 import java.util.Arrays;
 
 @Component
+@Generated
 public class DocumentService {
     @Value("${DocumentService.BaseUrl}")
     private String baseUrl;
@@ -135,6 +138,7 @@ public class DocumentService {
 
         HttpHeaders headers = new HttpHeaders();
         headers.add(X_API_KEY, templatexApiKey);
+        headers.add(LoggingConstants.REQUEST_ID, LoggerHelper.getRequestIdFromMDC());
         headers.setContentType(MediaType.APPLICATION_JSON);
 
         HttpEntity<Object> request = new HttpEntity<>(json,headers);

@@ -1,9 +1,6 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
-import com.dpw.runner.shipment.services.utils.MasterData;
-import com.dpw.runner.shipment.services.utils.UnlocationData;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -56,7 +53,10 @@ public class AwbPackingInfoResponse implements IRunnerResponse {
     private String awbNumber;
     private Long mawbGoodsDescId;
     private UUID awbGoodsDescriptionInfoGuid;
-
+    private String unNumberAir;
+    private String dgClassAir;
+    private String dgClassAirDescription;
+    private Integer tenantId;
     //Master Data
     private Map<String, String> masterData;
     private Map<String, String> unlocationData;

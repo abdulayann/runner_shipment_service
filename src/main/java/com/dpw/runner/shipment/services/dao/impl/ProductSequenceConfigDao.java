@@ -4,7 +4,9 @@ import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IProductSequenceConfigDao;
 import com.dpw.runner.shipment.services.entity.ProductSequenceConfig;
+import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IProductSequenceConfigRepository;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -36,7 +38,10 @@ public class ProductSequenceConfigDao implements IProductSequenceConfigDao {
 
     @Override
     public ProductSequenceConfig save(ProductSequenceConfig productSequenceConfig) {
-        return productSequenceConfigRepository.save(productSequenceConfig);
+        long start = System.currentTimeMillis();
+        productSequenceConfig =  productSequenceConfigRepository.save(productSequenceConfig);
+        log.info("CR-ID {} || {} for event {} | Time: {} ms", LoggerHelper.getRequestIdFromMDC(),  LoggerEvent.TIME_TAKEN, LoggerEvent.PRODUCT_SEQ_SAVE, System.currentTimeMillis() - start);
+        return productSequenceConfig;
     }
 
     @Override
@@ -46,7 +51,10 @@ public class ProductSequenceConfigDao implements IProductSequenceConfigDao {
 
     @Override
     public List<ProductSequenceConfig> saveAll(List<ProductSequenceConfig> productSequenceConfigList) {
-        return productSequenceConfigRepository.saveAll(productSequenceConfigList);
+        long start = System.currentTimeMillis();
+        productSequenceConfigList = productSequenceConfigRepository.saveAll(productSequenceConfigList);
+        log.info("CR-ID {} || {} for event {} | Time: {} ms", LoggerHelper.getRequestIdFromMDC(),  LoggerEvent.TIME_TAKEN, LoggerEvent.PRODUCT_SEQ_SAVE_ALL, System.currentTimeMillis() - start);
+        return productSequenceConfigList;
     }
 
     @Override
@@ -62,10 +70,11 @@ public class ProductSequenceConfigDao implements IProductSequenceConfigDao {
                 }
             }
             req.setShipmentSettingsId(shipmentSettingsId);
-            req = save(req);
+
             res.add(req);
         }
-        return res;
+
+        return saveAll(res);
     }
 
     @Override

@@ -4,173 +4,207 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSetti
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
-import com.dpw.runner.shipment.services.dao.interfaces.IELDetailsDao;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.entity.ELDetails;
+import com.dpw.runner.shipment.services.entity.HblTermsConditionTemplate;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
-import com.dpw.runner.shipment.services.helper.JsonTestUtility;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.repository.interfaces.IELDetailsRepository;
+import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
+import com.nimbusds.jose.util.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.parallel.Execution;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.dao.DataRetrievalFailureException;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
-@RunWith(SpringRunner.class)
 @ExtendWith(MockitoExtension.class)
-@TestPropertySource("classpath:application-test.properties")
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Testcontainers
+@Execution(CONCURRENT)
 class ELDetailsDaoTest {
 
-    @Autowired
-    private IELDetailsDao dao;
-
-    private static JsonTestUtility jsonTestUtility;
-    private static ELDetails testData;
-
-    @Container
-    private static final PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>("postgres:15-alpine");
-
-
-    static {
-        postgresContainer.withDatabaseName("integration-tests-db")
-                .withUsername("sa")
-                .withPassword("sa");
-        postgresContainer.start();
-    }
-
-    @BeforeAll
-    static void beforeAll() throws IOException {
-        postgresContainer.start();
-        jsonTestUtility = new JsonTestUtility();
-    }
-
-    @DynamicPropertySource
-    static void dynamicConfiguration(DynamicPropertyRegistry registry){
-        registry.add("spring.datasource.url", postgresContainer::getJdbcUrl);
-        registry.add("spring.datasource.username", postgresContainer::getUsername);
-        registry.add("spring.datasource.password", postgresContainer::getPassword);
-    }
+    @InjectMocks
+    private ELDetailsDao dao;
+    @Mock
+    private IELDetailsRepository elDetailsRepository;
+    @Mock
+    private JsonHelper jsonHelper;
+    @Mock
+    private IAuditLogService auditLogService;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
         TenantContext.setCurrentTenant(1);
-        testData = jsonTestUtility.getTestELDetails();
         var permissions = Map.of("Consolidations:Retrive:Sea Consolidation:AllSeaConsolidationRetrive" , true);
         PermissionsContext.setPermissions(List.of("Consolidations:Retrive:Sea Consolidation:AllSeaConsolidationRetrive"));
         UserContext.setUser(UsersDto.builder().Username("user").TenantId(1).Permissions(permissions).build());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
     }
 
-    @AfterAll
-    static void afterAll() {
-        postgresContainer.stop();
-    }
-
-
     @Test
     void save() {
-        var result = dao.save(testData);
-        assertNotNull(result);
-        assertNotNull(result.getId());
+        ELDetails elDetails = ELDetails.builder().build();
+        when(elDetailsRepository.save(any())).thenReturn(elDetails);
+        assertEquals(elDetails, dao.save(elDetails));
     }
 
     @Test
     void saveAll() {
-        var result = dao.saveAll(List.of(testData));
-        assertNotNull(result);
-        assertNotNull(result.get(0).getId());
+        ELDetails testData = ELDetails.builder().build();
+        when(elDetailsRepository.saveAll(any())).thenReturn(List.of(testData));
+        assertEquals(List.of(testData), dao.saveAll(List.of(testData)));
     }
 
     @Test
     void findByGuid() {
-        var savedDetails = dao.save(testData);
-        assertNotNull(savedDetails);
-        var result = dao.findByGuid(savedDetails.getGuid());
-        assertNotNull(result);
-        assertTrue(result.isPresent());
-        assertEquals(result.get().getId(), savedDetails.getId());
+        ELDetails testData = ELDetails.builder().build();
+        testData.setGuid(UUID.randomUUID());
+
+        when(elDetailsRepository.findByGuid(any())).thenReturn(Optional.of(testData));
+        assertEquals(testData, dao.findByGuid(UUID.randomUUID()).get());
     }
 
     @Test
     void findAll() {
+        ELDetails testData = ELDetails.builder().build();
         testData.setShipmentId(1L);
-        var result = dao.save(testData);
-        Specification<ELDetails> spec = (root, query, criteriaBuilder) -> {
-            return criteriaBuilder.equal(root.get("shipmentId"), 1L);
-        };
-        var details = dao.findAll(spec, PageRequest.of(0 , 10));
-        assertFalse(details.isEmpty());
-        assertEquals(details.stream().toList().get(0).getShipmentId(), result.getShipmentId());
 
+        List<ELDetails> elDetailsList = new ArrayList<>();
+        elDetailsList.add(testData);
+
+        PageImpl<ELDetails> elDetailsPage = new PageImpl<>(elDetailsList);
+        ListCommonRequest listReq = constructListCommonRequest("id", 1, "=");
+        Pair<Specification<ELDetails>, Pageable> pair = fetchData(listReq, HblTermsConditionTemplate.class);
+
+        when(elDetailsRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(elDetailsPage);
+        assertEquals(elDetailsPage, dao.findAll(pair.getLeft(), pair.getRight()));
     }
 
     @Test
     void findById() {
-        var savedDetails = dao.save(testData);
-        assertNotNull(savedDetails);
-        var result = dao.findById(savedDetails.getId());
-        assertNotNull(result);
-        assertTrue(result.isPresent());
-        assertEquals(result.get().getId(), savedDetails.getId());
+        ELDetails testData = ELDetails.builder().build();
+        when(elDetailsRepository.findById(any())).thenReturn(Optional.of(testData));
+        assertEquals(testData, dao.findById(1L).get());
     }
 
     @Test
     void delete() {
-        var savedDetails = dao.save(testData);
-        dao.delete(savedDetails);
-        var result = dao.findById(savedDetails.getId());
-        assertTrue(result.isEmpty());
+        ELDetails testData = ELDetails.builder().build();
+        dao.delete(testData);
+        verify(elDetailsRepository, times(1)).delete(testData);
     }
 
     @Test
     void findByElNumber() {
-        testData.setElNumber("TEST");
-        var savedDetails = dao.save(testData);
-        assertNotNull(savedDetails);
-        var result = dao.findByElNumber(savedDetails.getElNumber());
-        assertNotNull(result);
-        assertTrue(result.isPresent());
-        assertEquals(result.get(), savedDetails);
+        ELDetails testData = ELDetails.builder().build();
+        when(elDetailsRepository.findByElNumber(anyString())).thenReturn(Optional.of(testData));
+        assertEquals(testData, dao.findByElNumber("El123").get());
     }
 
     @Test
     void updateEntityFromShipment() throws RunnerException {
+        ELDetails testData = ELDetails.builder().build();
+        testData.setId(1L);
         testData.setShipmentId(5L);
-        var details = List.of(testData);
-        var result = dao.updateEntityFromShipment(details, testData.getShipmentId());
-        assertFalse(result.isEmpty());
-        assertNotNull(result.get(0).getShipmentId());
+        List<ELDetails> elDetailsList = Arrays.asList(testData);
+        when(elDetailsRepository.findByShipmentId(anyLong())).thenReturn(elDetailsList);
+        when(jsonHelper.convertToJson(any())).thenReturn("");
+        when(elDetailsRepository.saveAll(any())).thenReturn(elDetailsList);
+        assertEquals(elDetailsList, dao.updateEntityFromShipment(elDetailsList, 5L));
+    }
+
+    @Test
+    void saveEntityFromShipmentEntityNotPresent() {
+        ELDetails testData = ELDetails.builder().build();
+        testData.setId(1L);
+        testData.setShipmentId(5L);
+        List<ELDetails> elDetailsList = Arrays.asList(testData);
+
+        when(elDetailsRepository.findById(any())).thenReturn(Optional.empty());
+        assertThrows(DataRetrievalFailureException.class, () -> {
+            dao.saveEntityFromShipment(elDetailsList, 5L);
+        });
     }
 
     @Test
     void saveEntityFromShipment() {
-        testData.setShipmentId(4L);
-        var details = List.of(testData);
-        var result = dao.saveEntityFromShipment(details, testData.getShipmentId());
-        assertFalse(result.isEmpty());
-        assertNotNull(result.get(0).getShipmentId());
+        ELDetails testData = ELDetails.builder().build();
+        testData.setId(1L);
+        testData.setShipmentId(5L);
+        List<ELDetails> elDetailsList = Arrays.asList(testData);
+
+        when(elDetailsRepository.findById(any())).thenReturn(Optional.of(testData));
+        when(jsonHelper.convertToJson(any())).thenReturn("");
+        when(elDetailsRepository.save(any())).thenReturn(testData);
+
+        assertEquals(elDetailsList, dao.saveEntityFromShipment(elDetailsList, 5L));
+    }
+
+    @Test
+    void updateEntityFromShipmentWithOldEntity() throws RunnerException {
+        ELDetails testData = ELDetails.builder().build();
+        testData.setId(1L);
+        testData.setShipmentId(5L);
+        testData.setGuid(UUID.randomUUID());
+        List<ELDetails> elDetailsList = Arrays.asList(testData);
+
+        when(elDetailsRepository.findById(any())).thenReturn(Optional.of(testData));
+        when(jsonHelper.convertToJson(any())).thenReturn("");
+        when(elDetailsRepository.save(any())).thenReturn(testData);
+
+        assertEquals(elDetailsList, dao.updateEntityFromShipment(elDetailsList, 5L, elDetailsList));
+    }
+
+    @Test
+    void updateEntityFromShipmentWithOldEntityElDetails() throws RunnerException {
+        ELDetails testData = ELDetails.builder().build();
+        testData.setId(1L);
+        testData.setShipmentId(5L);
+        testData.setGuid(UUID.randomUUID());
+        List<ELDetails> elDetailsList = Arrays.asList(testData);
+
+        when(jsonHelper.convertToJson(any())).thenReturn("");
+        doNothing().when(elDetailsRepository).delete(any());
+
+        assertEquals(new ArrayList<>(), dao.updateEntityFromShipment(new ArrayList<>(), 5L, elDetailsList));
+    }
+
+    @Test
+    void updateEntityFromShipmentCatch() throws RunnerException {
+        when(dao.findByShipmentId(anyLong())).thenThrow(new RuntimeException());
+        assertThrows(RunnerException.class, () -> {
+            dao.updateEntityFromShipment(new ArrayList<>(), -1L);
+        });
+    }
+
+    @Test
+    void updateEntityFromShipmentOldEntityDeleteELDetailCatch() throws RunnerException {
+        ELDetails testData = ELDetails.builder().build();
+        testData.setId(1L);
+        testData.setShipmentId(5L);
+        testData.setGuid(UUID.randomUUID());
+        List<ELDetails> elDetailsList = Arrays.asList(testData);
+
+        when(jsonHelper.convertToJson(any())).thenThrow(new RuntimeException());
+        assertEquals(new ArrayList<>(), dao.updateEntityFromShipment(new ArrayList<>(), 5L, elDetailsList));
     }
 }

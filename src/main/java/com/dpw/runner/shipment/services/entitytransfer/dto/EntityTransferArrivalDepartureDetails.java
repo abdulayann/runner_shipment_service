@@ -1,14 +1,8 @@
 package com.dpw.runner.shipment.services.entitytransfer.dto;
 
-import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entitytransfer.common.request.IEntityTranferBaseEntity;
-import com.dpw.runner.shipment.services.utils.MasterData;
 import lombok.*;
 
-import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.JoinColumn;
-import javax.persistence.OneToOne;
 import java.time.LocalDateTime;
 import java.util.Map;
 @Data

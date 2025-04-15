@@ -1,14 +1,19 @@
 package com.dpw.runner.shipment.services.service.v1.impl;
 
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
+import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
+import com.dpw.runner.shipment.services.dto.request.UserWithPermissionRequestV1;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.*;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
-import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.CheckTaskExistResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.UnAuthorizedException;
@@ -16,25 +21,38 @@ import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
 import com.dpw.runner.shipment.services.exception.response.V1ErrorResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
+import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
+import com.dpw.runner.shipment.services.service.impl.GetUserServiceFactory;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.dpw.runner.shipment.services.utils.TokenUtility;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
+import com.dpw.runner.shipment.services.validator.enums.Operators;
+import org.apache.commons.lang3.StringUtils;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
+
 
 @Service
 //@EnableAsync
@@ -50,6 +68,8 @@ public class V1ServiceImpl implements IV1Service {
     public static final String JOIN_REGEX = "{} {}";
 
     private RestTemplate restTemplate;
+    private GetUserServiceFactory getUserServiceFactory;
+    private TokenUtility tokenUtility;
 
     @Value("${v1service.url.base}${v1service.url.customerBooking}")
     private String CUSTOMER_BOOKING_URL;
@@ -161,6 +181,9 @@ public class V1ServiceImpl implements IV1Service {
 
     @Value("${v1service.url.base}${v1service.url.unlocation}")
     private String UNLOCATION_URL;
+
+    @Value("${v1service.url.base}${v1service.url.stateBasedList}")
+    private String stateBasedListUrl;
 
     @Value("${v1service.url.base}${v1service.url.organization}")
     private String ORGANIZATION_API;
@@ -317,20 +340,77 @@ public class V1ServiceImpl implements IV1Service {
     private String ORG_ADDRESS_LIST;
     @Value("${v1service.url.base}${v1service.url.addressRetrieve}")
     private String ADDRESS_RETRIEVE;
+    @Value("${v1service.url.base}${v1service.url.getColoadingStations}")
+    private String GET_CO_LOAD_STATIONS;
+    @Value("${v1service.url.base}${v1service.url.getTenantDetails}")
+    private String getTenantInfoUrl;
+    @Value("${v1service.url.base}${v1service.url.getEmailTemplates}")
+    private String getEmailTemplates;
+    @Value("${v1service.url.base}${v1service.url.getEmailTemplatesWithTenantId}")
+    private String getEmailTemplatesWithTenantId;
+    @Value("${v1service.url.base}${v1service.url.getMasterDetails}")
+    private String getMasterDetails;
+    @Value("${v1service.url.base}${v1service.url.getUserDetails}")
+    private String getUserDetails;
+    @Value("${v1service.url.base}${v1service.url.createTask}")
+    private String createTaskUrl;
+    @Value("${v1service.url.base}${v1service.url.updateTask}")
+    private String updateTaskUrl;
+    @Value("${v1service.url.base}${v1service.url.retrieveTask}")
+    private String retrieveTaskUrl;
+    @Value("${v1service.url.base}${v1service.url.listTask}")
+    private String listTaskUrl;
+    @Value("${v1service.url.base}${v1service.url.userEmails}")
+    private String getUserEmailsByRoleId;
+
+    @Value("${v1service.url.base}${v1service.url.rolesIdByRoleName}")
+    private String getRolesIdByRoleName;
+
+    @Value("${v1service.url.base}${v1service.url.generateToken}")
+    private String v1GenerateTokenUrl;
+
+    @Value("${v1service.serviceAccount.username}")
+    private String serviceAccountUsername;
+
+    @Value("${v1service.serviceAccount.password}")
+    private String serviceAccountPassword;
+
+    @Value("${v1service.url.base}${v1service.url.listCompaniesForCreditLimit}")
+    private String getCompaniesDetails;
+
+    @Value("${v1service.url.base}${v1service.url.listOrgs}")
+    private String listOrgs;
+
+    @Value("${v1service.url.base}${v1service.url.listBranchesByDefaultOrgAndAddress}")
+    private String listBranchesByDefaultOrgAndAddress;
+
+    @Value("${v1service.url.base}${v1service.url.getUserWithGivenPermission}")
+    private String getUserWithGivenPermission;
+
     @Autowired
     private JsonHelper jsonHelper;
     @Autowired
     private V1AuthHelper v1AuthHelper;
+    @Autowired
+    private CommonUtils commonUtils;
 
     @Autowired
-    public V1ServiceImpl(@Qualifier("restTemplateForV1") RestTemplate restTemplate) {
+    public V1ServiceImpl(@Qualifier("restTemplateForV1") RestTemplate restTemplate,
+            GetUserServiceFactory getUserServiceFactory, TokenUtility tokenUtility, CacheManager cacheManager) {
         this.restTemplate = restTemplate;
+        this.getUserServiceFactory = getUserServiceFactory;
+        this.tokenUtility = tokenUtility;
+        this.cacheManager = cacheManager;
     }
 
     @Autowired
     private V1ServiceUtil v1ServiceUtil;
     @Autowired
     private ModelMapper modelMapper;
+    private final CacheManager cacheManager;
+
+    @Value("${env.name}-${v1service.serviceAccount.username}")
+    private String serviceTokenCacheKey;
 
     @Override
     public ResponseEntity<V1ShipmentCreationResponse> createBooking(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled, UUID shipmentGuid, HttpHeaders headers) {
@@ -364,6 +444,171 @@ public class V1ServiceImpl implements IV1Service {
             }
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    /**
+     * Sets the authentication context for the current request.
+     * This method generates a token and retrieves the user associated with the token.
+     * If the user is valid, it sets the necessary authentication and authorization contexts
+     * such as tenant, user, and permissions for the current session.
+     */
+    @Override
+    public void setAuthContext() {
+        log.info("Starting setAuthContext process.");
+
+        // Generate the Bearer token
+        String token = "Bearer " + StringUtils.defaultString(generateToken());
+
+        // Retrieve user by token
+        UsersDto user = getUserServiceFactory.returnUserService().getUserByToken(token);
+        if (user != null) {
+            log.info("User found for token, setting auth context for user: {}", user.getUsername());
+            setAuthContext(token, user);
+        } else {
+            log.warn("No user found for the provided token.");
+        }
+
+        log.info("Completed setAuthContext.");
+    }
+
+    /**
+     * Sets the authentication and authorization contexts such as token, tenant, user, and permissions.
+     *
+     * @param token The JWT token used for authentication.
+     * @param user  The user details object containing the user's information.
+     */
+    @Override
+    public void setAuthContext(String token, UsersDto user) {
+        // Set the authentication token
+        RequestAuthContext.setAuthToken(token);
+        log.debug("Set auth token in RequestAuthContext: {}", token);
+
+        // Set the tenant context for the user
+        TenantContext.setCurrentTenant(user.getTenantId());
+        log.debug("Set tenant context for tenant ID: {}", user.getTenantId());
+
+        // Set the user context for the current request
+        UserContext.setUser(user);
+        log.debug("Set user context for user: {}", user.getUsername());
+
+        // Set the permissions for the user
+        List<String> grantedPermissions = new ArrayList<>(user.getPermissions().keySet());
+        UsernamePasswordAuthenticationToken authenticationToken =
+                new UsernamePasswordAuthenticationToken(user, null, getAuthorities(grantedPermissions));
+
+        // Set the authentication in the security context
+        SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+        log.debug("Security context set for user: {}", user.getUsername());
+
+        // Set permissions context for the current user
+        PermissionsContext.setPermissions(grantedPermissions);
+        log.debug("Granted permissions set for user: {}", grantedPermissions);
+    }
+
+    /**
+     * Converts a list of permission strings into GrantedAuthority objects.
+     *
+     * @param permissions The list of permissions assigned to the user.
+     * @return A collection of GrantedAuthority objects for Spring Security.
+     */
+    @Override
+    public List<SimpleGrantedAuthority> getAuthorities(List<String> permissions) {
+        // Map the list of permissions to GrantedAuthority objects
+        return permissions.stream().map(SimpleGrantedAuthority::new).toList();
+    }
+
+    /**
+     * Clears the authentication context by removing tenant, user, permissions, and security details.
+     * This ensures the next request will not retain any authentication state from the current request.
+     */
+    @Override
+    public void clearAuthContext() {
+        log.info("Clearing authentication and authorization contexts.");
+
+        // Clear tenant context
+        TenantContext.removeTenant();
+        log.debug("Removed tenant context.");
+
+        // Clear authentication token
+        RequestAuthContext.removeToken();
+        log.debug("Removed auth token from RequestAuthContext.");
+
+        // Clear permissions context
+        PermissionsContext.removePermissions();
+        log.debug("Removed permissions from PermissionsContext.");
+
+        // Clear the security context
+        SecurityContextHolder.clearContext();
+        log.debug("Cleared SecurityContextHolder.");
+
+        // Clear user context
+        UserContext.removeUser();
+        log.debug("Removed user context.");
+
+        log.info("Completed clearing of authentication context.");
+    }
+
+    /**
+     * Generates a token by calling the V1 API with the service account credentials.
+     * The credentials are stored securely and used to retrieve a new token for service requests.
+     *
+     * @return The generated token as a String.
+     * @throws V1ServiceException If there is an error during token generation or if the response is invalid.
+     */
+    @Override
+    public String generateToken() {
+        log.info("Starting token generation process.");
+
+        try {
+            long startTime = System.currentTimeMillis();
+
+            // Set headers for the API request
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            // Create the request body with username and decoded password
+            Map<String, String> requestBody = new HashMap<>();
+            requestBody.put("UserName", serviceAccountUsername);
+            requestBody.put("Password", new String(Base64.getDecoder().decode(serviceAccountPassword)));
+            log.debug("Request body prepared with service account username.");
+
+            // Create HttpEntity with headers and body
+            HttpEntity<Map<String, String>> entity = new HttpEntity<>(requestBody, headers);
+
+            // Search cache for the token of service account
+            Cache userCache = cacheManager.getCache(CacheConstants.CACHE_KEY_USER);
+            Objects.requireNonNull(userCache);
+            Cache.ValueWrapper cachedToken = userCache.get(serviceTokenCacheKey);
+            if (Objects.isNull(cachedToken) || Objects.isNull(cachedToken.get())) {
+                // Call the API to get the token
+                ResponseEntity<Map<String, Object>> response = restTemplate.exchange(v1GenerateTokenUrl, HttpMethod.POST, entity, new ParameterizedTypeReference<>() {
+                });
+
+                long timeTaken = System.currentTimeMillis() - startTime;
+                log.info("Time taken to fetch token: {} ms", timeTaken);
+
+                // Extract token from the API response
+                Map<String, Object> responseBody = response.getBody();
+                if (responseBody != null && responseBody.containsKey("token")) {
+                    String token = (String) responseBody.get("token");
+                    log.info("Token successfully retrieved from API.");
+                    userCache.put(serviceTokenCacheKey, token);
+                    return token;
+                }
+                else {
+                    log.error("Token not found in response.");
+                    throw new V1ServiceException("Token not found in response");
+                }
+            }
+            return StringUtility.convertToString(cachedToken.get());
+
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            log.error("HTTP error during token generation: {}", ex.getMessage());
+            String errorMessage = jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage();
+            throw new V1ServiceException(errorMessage);
+        } catch (Exception ex) {
+            throw new V1ServiceException("Error fetching token: " + ex.getMessage());
         }
     }
 
@@ -972,6 +1217,23 @@ public class V1ServiceImpl implements IV1Service {
     }
 
     @Override
+    public V1DataResponse fetchOrganization(Object request, HttpHeaders headers) {
+        ResponseEntity orgResponse = null;
+
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, headers);
+            orgResponse = this.restTemplate.postForEntity(this.ORGANIZATION_API, entity, V1DataResponse.class, new Object[0]);
+            log.info("Token time taken in getOrganization() function {}", (System.currentTimeMillis() - time));
+            return (V1DataResponse) orgResponse.getBody();
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
     public V1DataResponse updateOrganizationData(Object request) {
         ResponseEntity masterDataResponse = null;
 
@@ -1016,11 +1278,30 @@ public class V1ServiceImpl implements IV1Service {
             log.info("Token time taken in fetchUnlocation() function {} with Request ID: {}", System.currentTimeMillis() - time, LoggerHelper.getRequestIdFromMDC());
             return (V1DataResponse) locationResponse.getBody();
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            log.error(ex.getStatusCode().value() + StringUtility.getEmptyString() + ex.getRawStatusCode() + ex.getResponseBodyAsString());
             throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
             throw new V1ServiceException(var7.getMessage());
         }
     }
+    @Override
+    public V1DataResponse stateBasedList(Object request) {
+        ResponseEntity<V1DataResponse> locationResponse = null;
+
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<Object> entity = new HttpEntity<>(request, V1AuthHelper.getHeaders());
+            locationResponse = this.restTemplate.postForEntity(this.stateBasedListUrl, entity, V1DataResponse.class);
+            log.info("Token time taken in stateBasedList() function {} with Request ID: {}", System.currentTimeMillis() - time, LoggerHelper.getRequestIdFromMDC());
+            return locationResponse.getBody() != null? locationResponse.getBody(): new V1DataResponse();
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+
 
     @Override
     public V1DataResponse updateUnlocationData(Object request) {
@@ -1346,6 +1627,39 @@ public class V1ServiceImpl implements IV1Service {
     }
 
     @Override
+    public V1DataResponse addressList(Object request, HttpHeaders headers) {
+        ResponseEntity masterDataResponse = null;
+
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<V1DataResponse> entity = new HttpEntity(request, headers);
+            masterDataResponse = this.restTemplate.postForEntity(this.ADDRESS_LIST, entity, V1DataResponse.class, new Object[0]);
+            log.info("Token time taken in addressList() function " + (System.currentTimeMillis() - time));
+            return (V1DataResponse) masterDataResponse.getBody();
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public List<String> getTenantName(List<Integer> tenantIds) {
+        CommonV1ListRequest request = new CommonV1ListRequest();
+        List<Object> field = new ArrayList<>(List.of(Constants.TENANTID));
+        String operator = Operators.IN.getValue();
+        List<Object> criteria = new ArrayList<>(List.of(field, operator, List.of(tenantIds)));
+        request.setCriteriaRequests(criteria);
+        V1DataResponse tenantName = tenantNameByTenantId(request);
+
+        List<V1TenantResponse> v1TenantResponse = jsonHelper.convertValueToList(tenantName.entities, V1TenantResponse.class);
+        if (v1TenantResponse != null) {
+            return v1TenantResponse.stream().map(V1TenantResponse::getTenantName).toList();
+        }
+        return Collections.emptyList();
+    }
+
+    @Override
     public V1DataResponse tenantNameByTenantId(Object request) {
         ResponseEntity masterDataResponse = null;
 
@@ -1456,7 +1770,7 @@ public class V1ServiceImpl implements IV1Service {
             long time = System.currentTimeMillis();
             HttpEntity<V1DataResponse> entity = new HttpEntity(V1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.RETRIEVE_TENANT_SETTINGS, entity, V1RetrieveResponse.class, new Object[0]);
-            log.info("Token time taken in tenantNameByTenantId() function " + (System.currentTimeMillis() - time));
+            log.info("RequestId: {} || Token time taken in tenantNameByTenantId() function: {} || Response: {}", LoggerHelper.getRequestIdFromMDC(), (System.currentTimeMillis() - time), jsonHelper.convertToJson(masterDataResponse.getBody()));
             return (V1RetrieveResponse) masterDataResponse.getBody();
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
             throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
@@ -1500,6 +1814,23 @@ public class V1ServiceImpl implements IV1Service {
     }
 
     @Override
+    public V1RetrieveResponse retrieveTenant(HttpHeaders headers) {
+        ResponseEntity masterDataResponse = null;
+
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<V1DataResponse> entity = new HttpEntity(headers);
+            masterDataResponse = this.restTemplate.postForEntity(this.RETRIEVE_TENANT, entity, V1RetrieveResponse.class, new Object[0]);
+            log.info("Token time taken in retrieveTenant() function " + (System.currentTimeMillis() - time));
+            return (V1RetrieveResponse) masterDataResponse.getBody();
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
     public PartyRequestV2 getDefaultOrg() {
         ResponseEntity masterDataResponse = null;
 
@@ -1508,7 +1839,14 @@ public class V1ServiceImpl implements IV1Service {
             HttpEntity<V1DataResponse> entity = new HttpEntity(V1AuthHelper.getHeaders());
             masterDataResponse = this.restTemplate.postForEntity(this.GET_DEFAULT_ORG, entity, PartyRequestV2.class, new Object[0]);
             log.info("Token time taken in getDefaultOrg() function " + (System.currentTimeMillis() - time));
-            return (PartyRequestV2) masterDataResponse.getBody();
+            PartyRequestV2 partyRequestV2 = (PartyRequestV2) masterDataResponse.getBody();
+            if(partyRequestV2 != null) {
+                if (partyRequestV2.getOrgData() != null && partyRequestV2.getOrgData().containsKey("Id"))
+                    partyRequestV2.setOrgId(String.valueOf(partyRequestV2.getOrgData().get("Id")));
+                if (partyRequestV2.getAddressData() != null && partyRequestV2.getAddressData().containsKey("Id"))
+                    partyRequestV2.setAddressId(String.valueOf(partyRequestV2.getAddressData().get("Id")));
+            }
+            return partyRequestV2;
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
             throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {
@@ -1614,15 +1952,14 @@ public class V1ServiceImpl implements IV1Service {
     }
 
     @Override
-    public ShipmentBillingListResponse fetchShipmentBillingData(Object request) {
+    public ShipmentBillingListResponse fetchShipmentBillingData(ShipmentBillingListRequest request) {
         ResponseEntity<ShipmentBillingListResponse> shipmentResponse = null;
-
         try {
             long time = System.currentTimeMillis();
             HttpEntity<V1DataResponse> entity = new HttpEntity(request, V1AuthHelper.getHeaders());
-            shipmentResponse = this.restTemplate.postForEntity(this.SHIPMENT_BILLING_DATA, entity, ShipmentBillingListResponse.class, new Object[0]);
+            shipmentResponse = this.restTemplate.postForEntity(this.SHIPMENT_BILLING_DATA, entity, ShipmentBillingListResponse.class);
             log.info(JOIN_REGEX, TOKEN_TIME_TAKEN_IN_FETCH_SHIPMENT_BILLING_DATA_FUNCTION_MSG, (System.currentTimeMillis() - time));
-            return (ShipmentBillingListResponse) shipmentResponse.getBody();
+            return shipmentResponse.getBody();
         } catch (HttpStatusCodeException var6) {
             if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
                 throw new UnAuthorizedException(UN_AUTHORIZED_EXCEPTION_STRING);
@@ -1941,7 +2278,7 @@ public class V1ServiceImpl implements IV1Service {
     public CheckActiveInvoiceResponse getActiveInvoices(CheckActiveInvoiceRequest request) {
         ResponseEntity masterDataResponse = null;
         try {
-            if(Objects.equals(ShipmentSettingsDetailsContext.getCurrentTenantSettings().getShipmentLite(), false))
+            if(Objects.equals(commonUtils.getShipmentSettingFromContext().getShipmentLite(), false))
             {
                 return CheckActiveInvoiceResponse.builder().IsAnyActiveInvoiceFound(false).build();
             }
@@ -2020,4 +2357,275 @@ public class V1ServiceImpl implements IV1Service {
         }
     }
 
+    @Override
+    public V1DataResponse getCoLoadingStations(Object request) {
+        ResponseEntity<V1DataResponse> masterDataResponse = null;
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<Object> entity = new HttpEntity<>(request, V1AuthHelper.getHeaders());
+            masterDataResponse = this.restTemplate.postForEntity(this.GET_CO_LOAD_STATIONS, entity, V1DataResponse.class);
+            long elapsedTime = System.currentTimeMillis() - time;
+            if(log.isInfoEnabled()) {
+                log.info(String.format("Token time taken in getColoadingStations() function: %d ms", elapsedTime));
+            }
+            return masterDataResponse.getBody();
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public TenantDetailsByListResponse getTenantDetails(Object request) {
+        ResponseEntity<TenantDetailsByListResponse> responseEntity = null;
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<Object> entity = new HttpEntity<>(jsonHelper.convertToJson(request), V1AuthHelper.getHeaders());
+            responseEntity = this.restTemplate.postForEntity(this.getTenantInfoUrl, entity, TenantDetailsByListResponse.class);
+            log.info("Token time taken in getTenantDetails() function {} ms", System.currentTimeMillis() - time);
+            return responseEntity.getBody();
+            } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public V1DataResponse getEmailTemplates(Object request) {
+        ResponseEntity<V1DataResponse> masterDataResponse = null;
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<Object> entity = new HttpEntity<>(jsonHelper.convertToJson(request), V1AuthHelper.getHeaders());
+             masterDataResponse = this.restTemplate.postForEntity(this.getEmailTemplates, entity, V1DataResponse.class, V1DataResponse.class);
+            log.info("Token time taken in getEmailTemplates() function {} ms", (System.currentTimeMillis() - time));
+            return masterDataResponse.getBody();
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+    @Override
+    public V1DataResponse getEmailTemplatesWithTenantId(Object request) {
+        ResponseEntity<V1DataResponse> masterDataResponse = null;
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<Object> entity = new HttpEntity<>(jsonHelper.convertToJson(request), V1AuthHelper.getHeaders());
+            masterDataResponse = this.restTemplate.postForEntity(this.getEmailTemplatesWithTenantId, entity, V1DataResponse.class, V1DataResponse.class);
+            log.info("Token time taken in getEmailTemplatesWithTenantId() function {} ms", (System.currentTimeMillis() - time));
+            return masterDataResponse.getBody();
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public V1DataResponse getMasterDetails(Object request) {
+        ResponseEntity<V1DataResponse> masterDataResponse = null;
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<Object> entity = new HttpEntity<>(jsonHelper.convertToJson(request), V1AuthHelper.getHeaders());
+            masterDataResponse = this.restTemplate.postForEntity(this.getMasterDetails, entity, V1DataResponse.class, V1DataResponse.class);
+            log.info("Token time taken in getMasterDetails() function {} ms", (System.currentTimeMillis() - time));
+            return masterDataResponse.getBody();
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public V1DataResponse getUserDetails(Object request) {
+        ResponseEntity<V1DataResponse> masterDataResponse = null;
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<Object> entity = new HttpEntity<>(jsonHelper.convertToJson(request), V1AuthHelper.getHeaders());
+            masterDataResponse = this.restTemplate.postForEntity(this.getUserDetails, entity, V1DataResponse.class, V1DataResponse.class);
+            log.info("Token time taken in getUserDetails() function {} ms", (System.currentTimeMillis() - time));
+            return masterDataResponse.getBody();
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public TaskCreateResponse createTask(Object request) {
+        ResponseEntity<TaskCreateResponse> response;
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<Object> entity = new HttpEntity<>(jsonHelper.convertToJson(request), V1AuthHelper.getHeaders());
+            response = this.restTemplate.postForEntity(this.createTaskUrl, entity, TaskCreateResponse.class);
+            log.info("Token time taken in createTask() function {}", (System.currentTimeMillis() - time));
+            return response.getBody();
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public V1DataResponse updateTask(Object request) {
+        ResponseEntity<V1DataResponse> response;
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<Object> entity = new HttpEntity<>(jsonHelper.convertToJson(request), V1AuthHelper.getHeaders());
+            response = this.restTemplate.postForEntity(this.updateTaskUrl, entity, V1DataResponse.class);
+            log.info("Token time taken in updateTask() function {}", (System.currentTimeMillis() - time));
+            return response.getBody();
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public V1RetrieveResponse retrieveTask(Object request) {
+        ResponseEntity<V1RetrieveResponse> response;
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<Object> entity = new HttpEntity<>(jsonHelper.convertToJson(request), V1AuthHelper.getHeaders());
+            response = this.restTemplate.postForEntity(this.retrieveTaskUrl, entity, V1RetrieveResponse.class);
+            log.info("Token time taken in retrieveTask() function {}", (System.currentTimeMillis() - time));
+            return response.getBody();
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+    @Override
+    public V1DataResponse listTask(Object request) {
+        ResponseEntity<V1DataResponse> response;
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<Object> entity = new HttpEntity<>(jsonHelper.convertToJson(request), V1AuthHelper.getHeaders());
+            response = this.restTemplate.postForEntity(this.listTaskUrl, entity, V1DataResponse.class);
+            log.info("Token time taken in retrieveTask() function {}", (System.currentTimeMillis() - time));
+            return response.getBody();
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+
+    @Override
+    public List<UsersRoleListResponse> getUserEmailsByRoleId(V1UsersEmailRequest request) {
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<Object> entity = new HttpEntity<>(request, V1AuthHelper.getHeaders());
+            ResponseEntity<List<UsersRoleListResponse>> response = this.restTemplate.exchange(
+                    this.getUserEmailsByRoleId,
+                    HttpMethod.POST,
+                    entity,
+                    new ParameterizedTypeReference<List<UsersRoleListResponse>>() {}
+            );
+
+            log.info("Token time taken in getUserEmailsByRoleId() function {} ms", (System.currentTimeMillis() - time));
+            return response.getBody();
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public Integer getRoleIdsByRoleName(V1RoleIdRequest request) {
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<Object> entity = new HttpEntity<>(request, V1AuthHelper.getHeaders());
+            ResponseEntity<V1RoleIdResponse> response = this.restTemplate.exchange(
+                this.getRolesIdByRoleName,
+                HttpMethod.POST,
+                entity,
+                new ParameterizedTypeReference<V1RoleIdResponse>() {}
+            );
+            log.info("Token time taken in getRoleIdsByRoleName() function {}", (System.currentTimeMillis() - time));
+            return Objects.requireNonNull(response.getBody()).getRoleId();
+        } catch (HttpStatusCodeException var6) {
+            if (var6.getStatusCode() == HttpStatus.UNAUTHORIZED) {
+                throw new UnAuthorizedException(UN_AUTHORIZED_EXCEPTION_STRING);
+            } else {
+                throw new V1ServiceException(jsonHelper.readFromJson(var6.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
+            }
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public V1DataResponse getCompaniesDetails(Object request) {
+        ResponseEntity<V1DataResponse> response;
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<Object> entity = new HttpEntity<>(jsonHelper.convertToJson(request), V1AuthHelper.getHeaders());
+            response = this.restTemplate.postForEntity(this.getCompaniesDetails, entity, V1DataResponse.class);
+            log.info("Token time taken in getCompaniesDetails() function {}", (System.currentTimeMillis() - time));
+            return response.getBody();
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public V1DataResponse listOrgs(Object request) {
+        ResponseEntity<V1DataResponse> response;
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<Object> entity = new HttpEntity<>(jsonHelper.convertToJson(request), V1AuthHelper.getHeaders());
+            response = this.restTemplate.postForEntity(this.listOrgs, entity, V1DataResponse.class);
+            log.info("Token time taken in listOrgs() function {}", (System.currentTimeMillis() - time));
+            return response.getBody();
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public V1DataResponse listBranchesByDefaultOrgAndAddress(Object request) {
+        ResponseEntity<V1DataResponse> response;
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<Object> entity = new HttpEntity<>(jsonHelper.convertToJson(request), V1AuthHelper.getHeaders());
+            response = this.restTemplate.postForEntity(this.listBranchesByDefaultOrgAndAddress, entity, V1DataResponse.class);
+            log.info("Token time taken in listBranchesByDefaultOrgAndAddress() function {}", (System.currentTimeMillis() - time));
+            return response.getBody();
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public List<UsersDto> getUsersWithGivenPermissions(UserWithPermissionRequestV1 request) {
+        ResponseEntity<V1DataResponse> response;
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<Object> entity = new HttpEntity<>(request, V1AuthHelper.getHeaders());
+            response = this.restTemplate.postForEntity(this.getUserWithGivenPermission, entity, V1DataResponse.class);
+
+            log.info("Token time taken in getUsersWithGivenPermissions() function {} ms", (System.currentTimeMillis() - time));
+            return jsonHelper.convertValueToList(response.getBody().getEntities(), UsersDto.class);
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
 }

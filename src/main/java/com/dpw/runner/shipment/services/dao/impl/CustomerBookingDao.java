@@ -4,14 +4,11 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
-import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
-import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.ICustomerBookingRepository;
-import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.dpw.runner.shipment.services.validator.custom.validations.CustomerBookingValidations;
 import lombok.extern.slf4j.Slf4j;
@@ -20,14 +17,12 @@ import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.HttpStatus;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 @Repository
 @Slf4j
@@ -81,6 +76,16 @@ public class CustomerBookingDao implements ICustomerBookingDao {
     }
 
     @Override
+    public Optional<CustomerBooking> findByGuid(UUID id) {
+        return customerBookingRepository.findByGuid(id);
+    }
+
+    @Override
+    public Optional<CustomerBooking> findByOrderManagementId(String orderId) {
+        return customerBookingRepository.findByOrderManagementId(orderId);
+    }
+
+    @Override
     public void delete(CustomerBooking customerBooking) {
         customerBookingRepository.delete(customerBooking);
     }
@@ -120,5 +125,9 @@ public class CustomerBookingDao implements ICustomerBookingDao {
     @Transactional
     public int updateBillStatus(Long id, Boolean isBillCreated){
         return customerBookingRepository.updateBillingStatus(id, isBillCreated);
+    }
+
+    public Optional<CustomerBooking> findByBookingNumberQuery(String bookingNumber) {
+        return customerBookingRepository.findByBookingNumberQuery(bookingNumber);
     }
 }

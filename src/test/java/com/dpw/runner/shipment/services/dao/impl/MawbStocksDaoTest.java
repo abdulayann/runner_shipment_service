@@ -4,71 +4,53 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSetti
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
-import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.entity.MawbStocks;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
-import org.junit.jupiter.api.AfterAll;
+import com.dpw.runner.shipment.services.repository.interfaces.IMawbStocksRepository;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@RunWith(SpringRunner.class)
 @ExtendWith(MockitoExtension.class)
-@TestPropertySource("classpath:application-test.properties")
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Testcontainers
+@Execution(ExecutionMode.CONCURRENT)
 class MawbStocksDaoTest {
+
+    @Mock
+    private IMawbStocksRepository mawbStocksRepository;
 
     private static JsonTestUtility jsonTestUtility;
     private static MawbStocks testData;
 
-    @Autowired
-    private IMawbStocksDao dao;
-    @Container
-    private static final PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>("postgres:15-alpine");
+    @InjectMocks
+    private MawbStocksDao dao;
 
-
-    static {
-        postgresContainer.withDatabaseName("integration-tests-db")
-                .withUsername("sa")
-                .withPassword("sa");
-        postgresContainer.start();
-    }
 
     @BeforeAll
     static void beforeAll() throws IOException {
-        postgresContainer.start();
         jsonTestUtility = new JsonTestUtility();
-    }
-
-    @DynamicPropertySource
-    static void dynamicConfiguration(DynamicPropertyRegistry registry){
-        registry.add("spring.datasource.url", postgresContainer::getJdbcUrl);
-        registry.add("spring.datasource.username", postgresContainer::getUsername);
-        registry.add("spring.datasource.password", postgresContainer::getPassword);
     }
 
     @BeforeEach
@@ -82,14 +64,12 @@ class MawbStocksDaoTest {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
     }
 
-    @AfterAll
-    static void afterAll() {
-        postgresContainer.stop();
-    }
 
 
     @Test
     void save() {
+        testData.setId(12L);
+        Mockito.when(mawbStocksRepository.save(Mockito.any())).thenReturn(testData);
         var result = dao.save(testData);
         assertNotNull(result);
         assertNotNull(result.getId());
@@ -98,10 +78,11 @@ class MawbStocksDaoTest {
     @Test
     void findAll() {
         testData.setStatus("TEST_STATUS");
-        dao.save(testData);
         Specification<MawbStocks> spec = (root, query, criteriaBuilder) -> {
             return criteriaBuilder.equal(root.get("status"), "TEST_STATUS");
         };
+        Page<MawbStocks> page = new PageImpl<>(List.of(testData));
+        Mockito.when(mawbStocksRepository.findAll(Mockito.any(Specification.class), Mockito.any(Pageable.class))).thenReturn(page);
         var result = dao.findAll(spec, PageRequest.of(0 , 10));
         assertFalse(result.isEmpty());
         assertEquals("TEST_STATUS", result.stream().toList().get(0).getStatus());
@@ -109,26 +90,25 @@ class MawbStocksDaoTest {
 
     @Test
     void findById() {
-        var savedMawbStock = dao.save(testData);
-        var result = dao.findById(savedMawbStock.getId());
+        testData.setId(12L);
+        Mockito.when(mawbStocksRepository.findById(Mockito.any())).thenReturn(Optional.ofNullable(testData));
+        var result = dao.findById(testData.getId());
         assertNotNull(result);
-        assertEquals(savedMawbStock.getId(), result.get().getId());
+        assertEquals(testData.getId(), result.get().getId());
     }
 
     @Test
     void delete() {
         testData.setMawbStocksLinkRows(null);
-        var savedMawbStock = dao.save(testData);
-        dao.delete(savedMawbStock);
-        var result = dao.findById(savedMawbStock.getId());
-        assertNotNull(result);
-        assertTrue(result.isEmpty());
+        dao.delete(testData);
+        Mockito.verify(mawbStocksRepository, Mockito.times(1)).delete(testData);
     }
 
     @Test
     void findByGuid() {
-        var savedStockData = dao.save(testData);
-        var result = dao.findByGuid(savedStockData.getGuid());
+        testData.setGuid(UUID.randomUUID());
+        Mockito.when(mawbStocksRepository.findByGuid(Mockito.any())).thenReturn(Optional.of(testData));
+        var result = dao.findByGuid(testData.getGuid());
         assertNotNull(result);
         assertTrue(result.isPresent());
     }

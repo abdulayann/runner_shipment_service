@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
 import com.dpw.runner.shipment.services.commons.requests.BulkUploadRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackUtilizationRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentMeasurementDetailsDto;
 import com.dpw.runner.shipment.services.entity.Packing;
@@ -28,11 +29,7 @@ public interface IPackingService extends ICommonService {
 
     PackSummaryResponse calculatePackSummary(List<Packing> packingList, String transportMode, String containerCategory, ShipmentMeasurementDetailsDto dto) throws RunnerException;
 
-    ResponseEntity<IRunnerResponse> autoCalculateVolumetricWeight(CommonRequestModel commonRequestModel);
-
-    ResponseEntity<IRunnerResponse> autoCalculateChargable(CommonRequestModel commonRequestModel) throws RunnerException;
-
-    ResponseEntity<IRunnerResponse> autoCalculateVolume(CommonRequestModel commonRequestModel) throws RunnerException;
-
-    ResponseEntity<IRunnerResponse> calculateVolumetricWeightForAirAndChargeable(CommonRequestModel commonRequestModel) throws RunnerException;
+    ResponseEntity<IRunnerResponse> autoCalculatePacksData(CommonRequestModel commonRequestModel);
+    PackSummaryResponse calculatePacksUtilisationForConsolidation(CalculatePackUtilizationRequest calculatePackUtilizationRequest) throws RunnerException;
+    void savePackUtilisationCalculationInConsole(CalculatePackUtilizationRequest calculatePackUtilizationRequest);
 }

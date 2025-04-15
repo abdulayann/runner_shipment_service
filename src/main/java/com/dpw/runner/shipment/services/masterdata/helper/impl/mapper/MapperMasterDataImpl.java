@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.dto.v1.request.CreateShipmentTaskRequest
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.helper.IMasterDataService;
+import com.dpw.runner.shipment.services.utils.Generated;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -15,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 @Service
+@Generated
 public class MapperMasterDataImpl implements IMasterDataService {
 
     Map<MasterDataType , List<MasterData>> masterDataMap;
@@ -221,6 +223,11 @@ public class MapperMasterDataImpl implements IMasterDataService {
     }
 
     @Override
+    public DependentServiceResponse stateBasedList(Object request) {
+        return null;
+    }
+
+    @Override
     public DependentServiceResponse createUnlocationData(Object request) {
         return null;
     }
@@ -374,4 +381,5 @@ public class MapperMasterDataImpl implements IMasterDataService {
     public DependentServiceResponse getDefaultOrg(Object request) {
         return null;
     }
+
 }

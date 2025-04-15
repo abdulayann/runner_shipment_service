@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.ReportingService.Models;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ConsolidationModel;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

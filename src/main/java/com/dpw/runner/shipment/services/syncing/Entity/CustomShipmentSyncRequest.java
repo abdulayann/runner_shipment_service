@@ -3,12 +3,12 @@ package com.dpw.runner.shipment.services.syncing.Entity;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Data;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import lombok.Data;
 
 @Data
 public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerResponse {
@@ -18,7 +18,7 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     @JsonProperty("SourceGuid")
     private UUID SourceGuid;
     @JsonProperty("ConsolidationGuids")
-    private List<UUID> ConsolidationGuids;
+    private Map<UUID, Integer> consolidationGuids;
     @JsonProperty("HouseBill")
     private String HouseBill;
     @JsonProperty("TransportMode")
@@ -436,8 +436,6 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     private LocalDateTime ShipmentCompletedOn;
     @JsonProperty("SourceTenantId")
     private Integer SourceTenantId;
-    @JsonProperty("TriangulationPartner")
-    private Integer TriangulationPartner;
 
 
 
@@ -535,10 +533,28 @@ public class CustomShipmentSyncRequest implements IRunnerRequest, IRunnerRespons
     private String primarySalesAgentEmail;
     @JsonProperty("SecondarySalesAgentEmail")
     private String secondarySalesAgentEmail;
+    @JsonProperty("SalesBranch")
+    private String salesBranch;
+    @JsonProperty("CurrentPartyForQuote")
+    private String currentPartyForQuote;
     @JsonProperty("Custom_DeclType")
     private String custom_DeclType;
     @JsonProperty("ContainsHazardous")
     private Boolean ContainsHazardous;
     @JsonProperty("ChangeLogs")
     private List<AuditLogRequestV2> ChangeLogs;
+    @JsonProperty("EmergencyContactNumber")
+    private String emergencyContactNumber;
+    @JsonProperty("EmergencyContactNumberCode")
+    private String emergencyContactNumberCode;
+
+    // InsertDate/ UpdateDate
+    @JsonProperty("InsertDate")
+    private LocalDateTime insertDate;
+    @JsonProperty("UpdateDate")
+    private LocalDateTime updateDate;
+    @JsonProperty("OrderNumber")
+    private String orderNumber;
+    @JsonProperty("OrderManagementNumber")
+    private String orderManagementNumber;
 }

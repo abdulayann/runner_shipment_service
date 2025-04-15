@@ -11,6 +11,6 @@ import java.util.List;
 @Builder
 @ToString
 public class AutoAttachConsolidationResponse implements IRunnerResponse {
-    private List<ConsolidationDetailsResponse> consolidationDetailsList;
+    private List<IRunnerResponse> consolidationDetailsList;
     private String filteredDetailName;
 }

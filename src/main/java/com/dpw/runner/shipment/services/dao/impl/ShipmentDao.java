@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
@@ -15,22 +16,22 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.CarrierResponse;
+import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
-import com.dpw.runner.shipment.services.service_bus.AzureServiceBusTopic;
-import com.dpw.runner.shipment.services.service_bus.ISBProperties;
-import com.dpw.runner.shipment.services.service_bus.ISBUtils;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
+import com.google.common.base.Strings;
 import com.nimbusds.jose.util.Pair;
-import io.netty.util.internal.StringUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -39,7 +40,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
+import javax.persistence.EntityManager;
 import javax.validation.ConstraintViolationException;
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -63,15 +66,6 @@ public class ShipmentDao implements IShipmentDao {
     private JsonHelper jsonHelper;
 
     @Autowired
-    private ISBUtils sbUtils;
-
-    @Autowired
-    private ISBProperties isbProperties;
-
-    @Autowired
-    private AzureServiceBusTopic azureServiceBusTopic;
-
-    @Autowired
     private IConsolidationDetailsDao consolidationDetailsDao;
 
 
@@ -83,6 +77,19 @@ public class ShipmentDao implements IShipmentDao {
 
     @Autowired
     private IV1Service v1Service;
+
+    @Autowired
+    private CommonUtils commonUtils;
+
+    @Autowired
+    private ConsoleShipmentMappingDao consoleShipmentMappingDao;
+
+    private final EntityManager entityManager;
+
+    @Autowired
+    public ShipmentDao(EntityManager entityManager) {
+        this.entityManager = entityManager;
+    }
 
     @Override
     public ShipmentDetails save(ShipmentDetails shipmentDetails, boolean fromV1Sync) throws RunnerException {
@@ -98,7 +105,8 @@ public class ShipmentDao implements IShipmentDao {
             if(shipmentDetails.getContainersList() == null) {
                 shipmentDetails.setContainersList(oldEntity.get().getContainersList());
             }
-            if(shipmentDetails.getConsolidationList() == null) {
+            if(shipmentDetails.getConsolidationList() == null ||
+                    (!CollectionUtils.isEmpty(shipmentDetails.getConsolidationList()) && !CollectionUtils.isEmpty(oldEntity.get().getConsolidationList()) && (Objects.equals(oldEntity.get().getConsolidationList().iterator().next().getId(), shipmentDetails.getConsolidationList().iterator().next().getId())))) {
                 shipmentDetails.setConsolidationList(oldEntity.get().getConsolidationList());
             }
             oldShipment = oldEntity.get();
@@ -106,9 +114,9 @@ public class ShipmentDao implements IShipmentDao {
         }
         else {
             if(shipmentDetails.getConsolidationList() == null)
-                shipmentDetails.setConsolidationList(new ArrayList<>());
+                shipmentDetails.setConsolidationList(new HashSet<>());
             if(shipmentDetails.getContainersList() == null)
-                shipmentDetails.setContainersList(new ArrayList<>());
+                shipmentDetails.setContainersList(new HashSet<>());
         }
         try {
             onSave(shipmentDetails, errors, oldShipment, fromV1Sync);
@@ -145,7 +153,8 @@ public class ShipmentDao implements IShipmentDao {
             if(shipmentDetails.getContainersList() == null) {
                 shipmentDetails.setContainersList(oldEntity.get().getContainersList());
             }
-            if(shipmentDetails.getConsolidationList() == null) {
+            if(shipmentDetails.getConsolidationList() == null ||
+                    (!CollectionUtils.isEmpty(shipmentDetails.getConsolidationList()) && !CollectionUtils.isEmpty(oldEntity.get().getConsolidationList()) && (Objects.equals(oldEntity.get().getConsolidationList().iterator().next().getId(), shipmentDetails.getConsolidationList().iterator().next().getId())))) {
                 shipmentDetails.setConsolidationList(oldEntity.get().getConsolidationList());
             }
             oldShipment = oldEntity.get();
@@ -156,9 +165,9 @@ public class ShipmentDao implements IShipmentDao {
     }
 
     private void onSave(ShipmentDetails shipmentDetails, Set<String> errors, ShipmentDetails oldShipment, boolean fromV1Sync) {
-        if (!StringUtil.isNullOrEmpty(shipmentDetails.getHouseBill()) && (oldShipment != null && !Objects.equals(oldShipment.getStatus(), shipmentDetails.getStatus())) &&
+        if (!StringUtility.isEmpty(shipmentDetails.getHouseBill()) && (oldShipment != null && !Objects.equals(oldShipment.getStatus(), shipmentDetails.getStatus())) &&
                 Objects.equals(shipmentDetails.getStatus(), ShipmentStatus.Cancelled.getValue())) {
-            ShipmentSettingsDetails tenantSettings = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+            ShipmentSettingsDetails tenantSettings = commonUtils.getShipmentSettingFromContext();
             if (tenantSettings != null) {
                 String suffix = tenantSettings.getCancelledBLSuffix();
                 if (suffix != null) {
@@ -167,11 +176,7 @@ public class ShipmentDao implements IShipmentDao {
                 }
             }
         }
-        if(!StringUtil.isNullOrEmpty(shipmentDetails.getHouseBill()))
-            shipmentDetails.setHouseBill(shipmentDetails.getHouseBill().trim());
-        if(!StringUtil.isNullOrEmpty(shipmentDetails.getMasterBill()))
-            shipmentDetails.setMasterBill(shipmentDetails.getMasterBill().trim());
-        errors.addAll(applyShipmentValidations(shipmentDetails, oldShipment));
+        errors.addAll(applyShipmentValidations(shipmentDetails, fromV1Sync));
         if (!errors.isEmpty())
             throw new ValidationException(String.join(",", errors));
         if (shipmentDetails.getTransportMode() != null && shipmentDetails.getCarrierDetails() != null) {
@@ -192,20 +197,25 @@ public class ShipmentDao implements IShipmentDao {
                 }
             }
         }
-        if (!fromV1Sync && shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)
-                && shipmentDetails.getJobType() != null && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT))
-            directShipmentMAWBCheck(shipmentDetails, oldShipment != null ? oldShipment.getMasterBill() : null);
+
+        if (!fromV1Sync && shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
+            if (!Strings.isNullOrEmpty(shipmentDetails.getMasterBill()) && Boolean.FALSE.equals(isMAWBNumberValid(shipmentDetails.getMasterBill())))
+                throw new ValidationException("Please enter a valid MAWB number.");
+            if ((shipmentDetails.getJobType() != null && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)) || (oldShipment != null && oldShipment.getJobType() != null && oldShipment.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)))
+                directShipmentMAWBCheck(shipmentDetails, oldShipment != null ? oldShipment.getMasterBill() : null, oldShipment != null ? oldShipment.getJobType():null);
+        }
+
 
         validateIataCode(shipmentDetails);
-
+        long start = System.currentTimeMillis();
         shipmentDetails = shipmentRepository.save(shipmentDetails);
+        log.info("{} | Time taken to update shipment query: {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - start);
         if (!fromV1Sync && shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipmentDetails.getJobType() != null && shipmentDetails.getJobType().equals(Constants.SHIPMENT_TYPE_DRT)) {
             if (shipmentDetails.getMasterBill() != null && !shipmentDetails.getDirection().equals(Constants.IMP)) {
                 setMawbStock(shipmentDetails);
             }
         }
-//        EventMessage eventMessage = EventMessage.builder().messageType(Constants.SERVICE).entity(Constants.SHIPMENT).request(shipmentDetails).build();
-//        sbUtils.sendMessagesToTopic(isbProperties, azureServiceBusTopic.getTopic(), Arrays.asList(new ServiceBusMessage(jsonHelper.convertToJson(eventMessage))));
+
     }
 
     @Override
@@ -219,6 +229,11 @@ public class ShipmentDao implements IShipmentDao {
     }
 
     @Override
+    public List<ShipmentDetails> findByShipmentId(String shipmentNumber) {
+        return shipmentRepository.findByShipmentId(shipmentNumber);
+    }
+
+    @Override
     public void delete(ShipmentDetails shipmentDetails) {
         validateLockStatus(shipmentDetails);
         shipmentRepository.delete(shipmentDetails);
@@ -229,30 +244,79 @@ public class ShipmentDao implements IShipmentDao {
             throw new ValidationException(ShipmentConstants.SHIPMENT_LOCKED);
         }
     }
-
+    @Override
+    public List<ShipmentDetails> findByGuids(List<UUID> guids) {
+        return shipmentRepository.findAllByGuids(guids);
+    }
     @Override
     public Optional<ShipmentDetails> findByGuid(UUID id) {
         return shipmentRepository.findByGuid(id);
     }
     @Override
-    public List<ShipmentDetails> findByHouseBill(String Hbl){
-        return shipmentRepository.findByHouseBill(Hbl);
+    public List<ShipmentDetails> findByHouseBill(String hbl, Integer tenantId){
+        return shipmentRepository.findByHouseBill(hbl, tenantId);
     }
     @Override
-    public List<ShipmentDetails> findByBookingReference(String ref){
-        return shipmentRepository.findByBookingReference(ref);
+    public List<ShipmentDetails> findByBookingReference(String ref, Integer tenantId){
+        return shipmentRepository.findByBookingReference(ref, tenantId);
     }
 
     @Override
     public Long findMaxId() { return shipmentRepository.findMaxId(); }
 
-    public Set<String> applyShipmentValidations(ShipmentDetails request, ShipmentDetails oldEntity) {
+    private boolean checkForNonAirDGFlag(ShipmentDetails request, ShipmentSettingsDetails shipmentSettingsDetails) {
+        if(!Constants.TRANSPORT_MODE_AIR.equals(request.getTransportMode()))
+            return true;
+        return !Boolean.TRUE.equals(shipmentSettingsDetails.getAirDGFlag());
+    }
+
+    private boolean checkForDGShipmentAndAirDGFlag(ShipmentDetails request, ShipmentSettingsDetails shipmentSettingsDetails) {
+        if(checkForNonAirDGFlag(request, shipmentSettingsDetails))
+            return false;
+        return Boolean.TRUE.equals(request.getContainsHazardous());
+    }
+
+    private boolean checkForNonDGShipmentAndAirDGFlag(ShipmentDetails request, ShipmentSettingsDetails shipmentSettingsDetails) {
+        if(checkForNonAirDGFlag(request, shipmentSettingsDetails))
+            return false;
+        return !Boolean.TRUE.equals(request.getContainsHazardous());
+    }
+
+    public Set<String> applyShipmentValidations(ShipmentDetails request, boolean fromV1Sync) {
         Set<String> errors = new LinkedHashSet<>();
 
+        if(Boolean.TRUE.equals(request.getContainsHazardous()) &&
+                Constants.TRANSPORT_MODE_SEA.equals(request.getTransportMode()) &&
+                Constants.SHIPMENT_TYPE_LCL.equals(request.getShipmentType()) &&
+                !Constants.CONSOLIDATION_TYPE_AGT.equals(request.getJobType()) &&
+                !Constants.CONSOLIDATION_TYPE_CLD.equals(request.getJobType()) ) {
+            errors.add("For Ocean DG shipments LCL Cargo Type, we can have only AGT and Co Load Master");
+        }
         if(request.getConsolidationList() != null && request.getConsolidationList().size() > 1) {
             errors.add("Multiple consolidations are attached to the shipment, please verify.");
         }
-        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+
+        Boolean countryAirCargoSecurity = shipmentSettingsDetails.getCountryAirCargoSecurity();
+        if (Boolean.TRUE.equals(countryAirCargoSecurity)) {
+            if (!fromV1Sync && !CommonUtils.checkAirSecurityForShipment(request)) {
+                errors.add("You don't have Air Security permission to create or update AIR EXP Shipment.");
+            }
+            // Non dg Shipments can not have dg packs
+            if (!Boolean.TRUE.equals(request.getContainsHazardous()) && checkContainsDGPackage(request)) {
+                errors.add("The shipment contains DG package. Marking the shipment as non DG is not allowed");
+            }
+        } else {
+            // Non dg Shipments can not have dg packs
+            if (checkForNonDGShipmentAndAirDGFlag(request, shipmentSettingsDetails) && checkContainsDGPackage(request)) {
+                errors.add("The shipment contains DG package. Marking the shipment as non DG is not allowed");
+            }
+
+            // Non dg user cannot save dg shipment
+            if(!fromV1Sync && checkForDGShipmentAndAirDGFlag(request, shipmentSettingsDetails) && !UserContext.isAirDgUser())
+                errors.add("You don't have permission to update DG Shipment");
+        }
+        
         // Routings leg no can not be repeated
         if (request.getRoutingsList() != null && request.getRoutingsList().size() > 0) {
             HashSet<Long> hashSet = new HashSet<>();
@@ -311,11 +375,9 @@ public class ShipmentDao implements IShipmentDao {
 
         // Shipment must be attached to consolidation with same master bill
         if (!IsStringNullOrEmpty(request.getMasterBill())) {
-            ListCommonRequest listCommonRequest = constructListCommonRequest("bol", request.getMasterBill(), "=");
-            Pair<Specification<ConsolidationDetails>, Pageable> consolidationPage = fetchData(listCommonRequest, ConsolidationDetails.class);
-            Page<ConsolidationDetails> consolidationDetailsPage = consolidationDetailsDao.findAll(consolidationPage.getLeft(), consolidationPage.getRight());
-            if (!consolidationDetailsPage.isEmpty()) {
-                ConsolidationDetails console = consolidationDetailsPage.get().toList().get(0);
+            var consoleList = consolidationDetailsDao.findByBol(request.getMasterBill());
+            if (!consoleList.isEmpty()) {
+                ConsolidationDetails console = consoleList.get(0);
 
                 if ((request.getConsolidationList() != null && !request.getConsolidationList().stream().map(ConsolidationDetails::getId).toList().contains(console.getId())) ||
                         (request.getConsolidationList() == null &&
@@ -351,7 +413,7 @@ public class ShipmentDao implements IShipmentDao {
 //                    "=",
 //                    oldEntity.getLockedBy()
 //            );
-//            CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
+//            CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).criteriaRequests(criteria).build();
 //            V1DataResponse v1DataResponse = v1Service.fetchUsersData(commonV1ListRequest);
 //            List<UsersDto> usersDtos = jsonHelper.convertValueToList(v1DataResponse.entities, UsersDto.class);
 //            String username = "";
@@ -362,7 +424,7 @@ public class ShipmentDao implements IShipmentDao {
 
         // BL# and Reference No can not be repeated
         if(!IsStringNullOrEmpty(request.getHouseBill())) {
-            List<ShipmentDetails> shipmentDetails = findByHouseBill(request.getHouseBill());
+            List<ShipmentDetails> shipmentDetails = findByHouseBill(request.getHouseBill(), TenantContext.getCurrentTenant());
             if(shipmentDetails != null && shipmentDetails.size() > 0 && (request.getId() == null || shipmentDetails.get(0).getId().longValue() != request.getId().longValue())) {
                 if (Objects.equals(request.getStatus(), ShipmentStatus.Cancelled.getValue()))
                     errors.add("Canceled HBL is already available in the application. Please remove/ modify the HBL number to proceed further");
@@ -371,7 +433,7 @@ public class ShipmentDao implements IShipmentDao {
             }
         }
         if(!IsStringNullOrEmpty(request.getBookingReference())) {
-            List<ShipmentDetails> shipmentDetails = findByBookingReference(request.getBookingReference());
+            List<ShipmentDetails> shipmentDetails = findByBookingReference(request.getBookingReference(), TenantContext.getCurrentTenant());
             if(!shipmentDetails.isEmpty() && (request.getId() == null || shipmentDetails.get(0).getId().longValue() != request.getId().longValue())) {
                 errors.add("Shipment with ReferenceNo " + request.getBookingReference() + " already exists.");
             }
@@ -421,7 +483,7 @@ public class ShipmentDao implements IShipmentDao {
         return null;
     }
 
-    private void directShipmentMAWBCheck(ShipmentDetails shipmentRequest, String oldMasterBill) {
+    private void directShipmentMAWBCheck(ShipmentDetails shipmentRequest, String oldMasterBill, String oldJobType) {
 
         if (StringUtility.isEmpty(shipmentRequest.getMasterBill())) {
             if(!shipmentRequest.getDirection().equals("IMP")) {
@@ -429,12 +491,11 @@ public class ShipmentDao implements IShipmentDao {
             }
             return;
         }
-        if (!Objects.equals(shipmentRequest.getMasterBill(), oldMasterBill) && !shipmentRequest.getDirection().equals("IMP")) {
+        if (!shipmentRequest.getDirection().equals("IMP") &&
+                (!Objects.equals(shipmentRequest.getMasterBill(), oldMasterBill) ||
+                (!StringUtility.isEmpty(oldMasterBill) && Constants.SHIPMENT_TYPE_DRT.equals(oldJobType) && !Constants.SHIPMENT_TYPE_DRT.equals(shipmentRequest.getJobType())))) {
             mawbStocksLinkDao.deLinkExistingMawbStockLink(oldMasterBill);
         }
-
-        if (Boolean.FALSE.equals(isMAWBNumberValid(shipmentRequest.getMasterBill())))
-            throw new ValidationException("Please enter a valid MAWB number.");
 
         CarrierResponse correspondingCarrier = null;
         if(shipmentRequest.getCarrierDetails() == null || StringUtility.isEmpty(shipmentRequest.getCarrierDetails().getShippingLine()) ||
@@ -561,8 +622,7 @@ public class ShipmentDao implements IShipmentDao {
 
     private V1DataResponse fetchCarrier(String shippingLine) {
         CommonV1ListRequest request = new CommonV1ListRequest();
-        List<Object> criteria = new ArrayList<>();
-        criteria.addAll(List.of(List.of("ItemValue"), "=", shippingLine));
+        List<Object> criteria = new ArrayList<>(List.of(List.of("ItemValue"), "=", shippingLine));
         request.setCriteriaRequests(criteria);
         CarrierListObject carrierListObject = new CarrierListObject();
         carrierListObject.setListObject(request);
@@ -575,6 +635,11 @@ public class ShipmentDao implements IShipmentDao {
     }
 
     @Transactional
+    public void saveStatus(Long id, Integer status) {
+        shipmentRepository.saveStatus(id, status);
+    }
+
+    @Transactional
     public void saveCreatedDateAndUser(Long id, String createdBy, LocalDateTime createdDate) {shipmentRepository.saveCreatedDateAndUser(id, createdBy, createdDate);}
 
     @Override
@@ -582,4 +647,132 @@ public class ShipmentDao implements IShipmentDao {
         return shipmentRepository.getShipmentNumberFromId(shipmentIds);
     }
 
+    @Override
+    @Transactional
+    public void saveEntityTransfer(Long id, Boolean entityTransfer){
+        shipmentRepository.saveEntityTransfer(id, entityTransfer);
+    }
+
+    @Override
+    @Transactional
+    public List<ShipmentDetails> findShipmentsByGuids(Set<UUID> guids) {
+        return shipmentRepository.findShipmentsByGuids(guids);
+    }
+
+    @Override
+    @Transactional
+    public List<ShipmentDetails> findShipmentsBySourceGuids(Set<UUID> sourceGuid) {
+        return shipmentRepository.findShipmentsBySourceGuids(sourceGuid);
+    }
+
+    @Override
+    public List<ShipmentDetails> findShipmentBySourceGuidAndTenantId(UUID sourceGuid, Integer tenantId) {
+        return shipmentRepository.findShipmentBySourceGuidAndTenantId(sourceGuid, tenantId);
+    }
+
+    @Override
+    @Transactional
+    public List<ShipmentDetails> findShipmentsByIds(Set<Long> ids) {
+        return shipmentRepository.findShipmentsByIds(ids);
+    }
+
+    @Override
+    @Transactional
+    public Optional<ShipmentDetails> findShipmentByIdWithQuery(Long id) {
+        return shipmentRepository.findShipmentByIdWithQuery(id);
+    }
+
+    @Override
+    @Transactional
+    public void entityDetach(List<ShipmentDetails> shipmentDetails) {
+        for(ShipmentDetails shipmentDetails1 : shipmentDetails) {
+            entityManager.detach(shipmentDetails1);
+        }
+    }
+
+    @Override
+    public List<ShipmentDetails> findBySourceGuid(UUID guid) {
+        return shipmentRepository.findBySourceGuid(guid);
+    }
+    @Override
+    public Page<Long> getIdWithPendingActions(ShipmentRequestedType shipmentRequestedType, Pageable pageable) {
+        return shipmentRepository.getIdWithPendingActions(shipmentRequestedType, pageable);
+    }
+
+    @Override
+    public List<ShipmentDetailsProjection> findByHblNumberAndExcludeShipmentId(String hblNumber, String shipmentId) {
+        return shipmentRepository.findByHblNumberAndExcludeShipmentId(hblNumber, shipmentId);
+    }
+
+    @Override
+    public Page<ShipmentDetails> findAllWithoutTenantFilter(Specification<ShipmentDetails> spec, Pageable pageable) {
+        return shipmentRepository.findAllWithoutTenantFilter(spec, pageable);
+    }
+
+    @Override
+    public ShipmentDetails saveWithoutValidation(ShipmentDetails shipmentDetails) {
+        return shipmentRepository.save(shipmentDetails);
+    }
+
+    @Override
+    public void updateAdditionalDetailsByShipmentId(Long id, boolean emptyContainerReturned) {
+        shipmentRepository.updateAdditionalDetailsByShipmentId(id, emptyContainerReturned);
+    }
+
+    @Override
+    public List<ShipmentDetails> findByShipmentIdInAndContainsHazardous(List<Long> shipmentIdList,
+        boolean containsHazardous) {
+       return shipmentRepository.findByShipmentIdInAndContainsHazardous(shipmentIdList, containsHazardous);
+    }
+
+    @Override
+    public List<ShipmentDetails> findByShipmentIdIn(List<String> shipmentIds) {
+        return shipmentRepository.findByShipmentIdIn(shipmentIds);
+    }
+
+    @Override
+    @Transactional
+    public void saveIsTransferredToReceivingBranch(Long id, Boolean entityTransferred) {
+        shipmentRepository.saveIsTransferredToReceivingBranch(id, entityTransferred);
+    }
+
+    @Override
+    @Transactional
+    public void updateIsAcceptedTriangulationPartner(Long shipmentId, Long triangulationPartner, Boolean isAccepted) {
+        shipmentRepository.updateIsAcceptedTriangulationPartner(shipmentId, triangulationPartner, isAccepted);
+    }
+    
+    @Override
+    @Transactional
+    public void updateFCRNo(Long id) {
+        shipmentRepository.updateFCRNo(id);
+    }
+
+    @Override
+    @Transactional
+    public Optional<ShipmentDetails> findShipmentByGuidWithQuery(UUID guid) {
+        return shipmentRepository.findShipmentByGuidWithQuery(guid);
+    }
+
+    @Override
+    @Transactional
+    public int updateShipmentsBookingNumber(List<UUID> guids, String bookingNumber) {
+        return shipmentRepository.updateShipmentsBookingNumber(guids, bookingNumber);
+    }
+
+    @Override
+    public Integer findReceivingByGuid(UUID guid) {
+        return shipmentRepository.findReceivingByGuid(guid);
+    }
+
+    private boolean checkContainsDGPackage(ShipmentDetails request) {
+        if (CommonUtils.listIsNullOrEmpty(request.getPackingList()))
+            return false;
+        for (Packing packing : request.getPackingList()) {
+            if (Boolean.TRUE.equals(packing.getHazardous())) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

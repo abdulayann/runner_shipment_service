@@ -12,14 +12,15 @@ public interface IShipmentsContainersMappingDao {
     Page<ShipmentsContainersMapping> findAll(Specification<ShipmentsContainersMapping> spec, Pageable pageable);
     Page<ShipmentsContainersMapping> findAllByContainerIds(List<Long> containerIds);
     List<ShipmentsContainersMapping> findByContainerId(Long containerId);
+    List<ShipmentsContainersMapping> findByContainerIdIn(List<Long> containerIds);
 
     List<ShipmentsContainersMapping> findByShipmentId(Long shipmentId);
 
-    void assignContainers(Long shipmentId, List<Long> containerIds);
+    void assignContainers(Long shipmentId, List<Long> containerIds, String transactionId);
     void assignShipments(Long containerId, List<Long> shipIds, boolean fromV1);
 
     void detachShipments(Long containerId, List<Long> shipIds, boolean fromV1);
-
+    void detachListShipments(List<Long> containerId, List<Long> shipIds, boolean fromV1);
     void updateShipmentsMappings(Long containerId, List<Long> shipIds);
 
 }

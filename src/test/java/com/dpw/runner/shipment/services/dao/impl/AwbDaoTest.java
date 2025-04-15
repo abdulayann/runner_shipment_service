@@ -1,18 +1,13 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
-import com.dpw.runner.shipment.services.Kafka.Dto.AwbShipConsoleDto;
-import com.dpw.runner.shipment.services.Kafka.Dto.KafkaResponse;
-import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
+import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IEventDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbOCIInfo;
 import com.dpw.runner.shipment.services.dto.request.awb.AwbOtherChargesInfo;
@@ -20,63 +15,49 @@ import com.dpw.runner.shipment.services.dto.request.awb.AwbShipmentInfo;
 import com.dpw.runner.shipment.services.dto.response.AwbAirMessagingResponse;
 import com.dpw.runner.shipment.services.dto.response.AwbResponse;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
+import com.dpw.runner.shipment.services.entity.enums.PrintType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.kafka.dto.AwbShipConsoleDto;
+import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
+import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.repository.interfaces.IAwbRepository;
+import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.AwbUtility;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
+import javax.persistence.EntityManager;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 
-//@RunWith(SpringRunner.class)
 @ExtendWith(MockitoExtension.class)
-//@TestPropertySource("classpath:application-test.properties")
-//@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-//@Testcontainers
-//@Execution(CONCURRENT)
+@Execution(ExecutionMode.CONCURRENT)
 class AwbDaoTest {
-
-//    @Container
-//    private static PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>("postgres:15-alpine");
-//
-//    static {
-//        postgresContainer = new PostgreSQLContainer("postgres:15-alpine")
-//                .withDatabaseName("integration-tests-db")
-//                .withUsername("sa")
-//                .withPassword("sa");
-//        postgresContainer.start();
-//    }
 
     @InjectMocks
     private AwbDao awbDao;
@@ -88,6 +69,8 @@ class AwbDaoTest {
     @Mock
     private JsonHelper jsonHelper;
     @Mock
+    IMawbHawbLinkDao mawbHawbLinkDao;
+    @Mock
     private IConsolidationDetailsDao consolidationDetailsDao;
     @Mock
     private IAwbRepository awbRepository;
@@ -97,6 +80,14 @@ class AwbDaoTest {
     private IConsoleShipmentMappingDao consoleShipmentMappingDao;
     @Mock
     private IEventDao eventDao;
+    @Mock
+    private EntityManager entityManager;
+    @Mock
+    private V1ServiceUtil v1ServiceUtil;
+    @Mock
+    private ModelMapper modelMapper;
+    @Mock
+    private CommonUtils commonUtils;
 
     private static JsonTestUtility jsonTestUtility;
     private static ObjectMapper objectMapperTest;
@@ -109,22 +100,10 @@ class AwbDaoTest {
 
     @BeforeAll
     static void beforeAll() throws IOException {
-//        postgresContainer.start();
         jsonTestUtility = new JsonTestUtility();
         objectMapperTest = JsonTestUtility.getMapper();
     }
-//
-//    @AfterAll
-//    static void afterAll() {
-//        postgresContainer.stop();
-//    }
 
-//    @DynamicPropertySource
-//    static void dynamicConfiguration(DynamicPropertyRegistry registry){
-//        registry.add("spring.datasource.url", postgresContainer::getJdbcUrl);
-//        registry.add("spring.datasource.username", postgresContainer::getUsername);
-//        registry.add("spring.datasource.password", postgresContainer::getPassword);
-//    }
 
     @BeforeEach
     void setUp() {
@@ -297,14 +276,15 @@ class AwbDaoTest {
     @Test
     void testFindById() {
         Long id = 1L;
-        Optional<Awb> optionalResponse = Optional.of(mockAwb);
-
-        when(awbRepository.findById(id)).thenReturn(optionalResponse);
+        boolean isSuccess = true;
+        when(awbRepository.findAwbByIds(any())).thenReturn(Arrays.asList(mockAwb));
 
         // Call the method from the service
         var result = awbDao.findById(id);
 
-        assertEquals(optionalResponse, result);
+        assertTrue(isSuccess);
+        assertNotNull(result);
+
     }
 
     @Test
@@ -338,7 +318,7 @@ class AwbDaoTest {
         Long consolidationId = 1L;
         List<Awb> listResponse = List.of(testMawb);
 
-        when(awbRepository.findByConsolidationId(consolidationId)).thenReturn(listResponse);
+        when(awbRepository.findByConsolidationIdByQuery(consolidationId)).thenReturn(listResponse);
 
         // Call the method from the service
         var result = awbDao.findByConsolidationId(consolidationId);
@@ -398,25 +378,26 @@ class AwbDaoTest {
     }
 
     @Test
-    void testAirMessagingIntegrationForMawb() {
+    void testAirMessagingIntegrationForMawb() throws RunnerException {
         Long consolidationId = 1L;
         String reportType = ReportConstants.MAWB;
         Boolean fromShipment = false;
 
-        testConsol.setShipmentsList(List.of(testShipment));
+        testConsol.setShipmentsList(Set.of(testShipment));
 
         AwbAirMessagingResponse mockAirMessagingResponse = new AwbAirMessagingResponse();
+        mockAirMessagingResponse.setMeta(AwbAirMessagingResponse.Meta.builder().build());
 
         // Mock
         when(awbRepository.findByConsolidationId(consolidationId)).thenReturn(List.of(testMawb));
-        when(awbRepository.findByShipmentId(testShipment.getId())).thenReturn(List.of(mockAwb));
+        when(awbRepository.findByShipmentIdByQuery(any())).thenReturn(List.of(mockAwb));
         when(consolidationDetailsDao.findById(consolidationId)).thenReturn(Optional.of(testConsol));
         when(awbUtility.createAirMessagingRequestForConsole(any(), any())).thenReturn(mockAirMessagingResponse);
-        when(awbUtility.createAirMessagingRequestForShipment(any(), any())).thenReturn(mockAirMessagingResponse);
-
+        when(awbUtility.createAirMessagingRequestForShipment(any(), any(), any(), any())).thenReturn(mockAirMessagingResponse);
+        when(awbDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testMawb)));
         // Test
         try {
-            awbDao.airMessagingIntegration(consolidationId, reportType, fromShipment);
+            awbDao.airMessagingIntegration(consolidationId, reportType, fromShipment, false);
         } catch (Exception e) {
             fail("Unexpected error occured", e);
         }
@@ -424,7 +405,39 @@ class AwbDaoTest {
     }
 
     @Test
-    void testAirMessagingIntegrationForDMawb() {
+    void testAirMessagingIntegrationForMawb2() throws RunnerException {
+        Long consolidationId = 1L;
+        String reportType = ReportConstants.MAWB;
+        Boolean fromShipment = false;
+
+        testConsol.setShipmentsList(Set.of(testShipment));
+
+        var mockMap = new HashMap<Integer, Object>();
+        mockMap.put(testShipment.getTenantId(), new TenantModel());
+
+        AwbAirMessagingResponse mockAirMessagingResponse = new AwbAirMessagingResponse();
+        mockAirMessagingResponse.setMeta(AwbAirMessagingResponse.Meta.builder().build());
+
+        // Mock
+        when(awbRepository.findByConsolidationId(consolidationId)).thenReturn(List.of(testMawb));
+        when(awbRepository.findByShipmentIdByQuery(any())).thenReturn(List.of(mockAwb));
+        when(consolidationDetailsDao.findById(consolidationId)).thenReturn(Optional.of(testConsol));
+        when(v1ServiceUtil.getTenantDetails(any())).thenReturn(mockMap);
+        when(awbUtility.createAirMessagingRequestForConsole(any(), any())).thenReturn(mockAirMessagingResponse);
+        when(awbUtility.createAirMessagingRequestForShipment(any(), any(), any(), any())).thenReturn(mockAirMessagingResponse);
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(new TenantModel());
+        when(awbDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testMawb)));
+        // Test
+        try {
+            awbDao.airMessagingIntegration(consolidationId, reportType, fromShipment, true);
+        } catch (Exception e) {
+            fail("Unexpected error occured", e);
+        }
+
+    }
+
+    @Test
+    void testAirMessagingIntegrationForDMawb() throws RunnerException {
         Long shipmentId = 1L;
         String reportType = ReportConstants.MAWB;
         Boolean fromShipment = true;
@@ -432,13 +445,13 @@ class AwbDaoTest {
         AwbAirMessagingResponse mockAirMessagingResponse = new AwbAirMessagingResponse();
 
         // Mock
-        when(awbRepository.findByShipmentId(shipmentId)).thenReturn(List.of(mockAwb));
+        when(awbRepository.findByShipmentIdByQuery(anyLong())).thenReturn(List.of(mockAwb));
         when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(testShipment));
-        when(awbUtility.createAirMessagingRequestForShipment(any(), any())).thenReturn(mockAirMessagingResponse);
+        when(awbUtility.createAirMessagingRequestForShipment(any(), any(), any(), any())).thenReturn(mockAirMessagingResponse);
 
         // Test
         try {
-            awbDao.airMessagingIntegration(shipmentId, reportType, fromShipment);
+            awbDao.airMessagingIntegration(shipmentId, reportType, fromShipment, true);
         } catch (Exception e) {
             fail("Unexpected error occured", e);
         }
@@ -471,6 +484,73 @@ class AwbDaoTest {
         assertEquals(responseCount, res);
     }
 
+    @Test
+    void testUpdatePrintTypeFromConsolidationId() {
+        Long id = 1L;
+        int responseCount = 1;
+        var mockAWB = new Awb();
+        LocalDateTime printedAt = LocalDateTime.now();
+        mockAWB.setPrintType(PrintType.DRAFT_PRINTED);
+        mockAWB.setOriginalPrintedAt(printedAt);
+
+        when(awbRepository.findByConsolidationIdByQuery(anyLong())).thenReturn(List.of(mockAWB));
+
+        when(awbRepository.updatePrintTypeFromConsolidationId(id, PrintType.ORIGINAL_PRINTED.name())).thenReturn(responseCount);
+
+        var res = awbDao.updatePrintTypeFromConsolidationId(id, PrintType.ORIGINAL_PRINTED.name(), true, printedAt);
+
+        assertEquals(responseCount, res);
+    }
+
+    @Test
+    void testUpdatePrintTypeFromConsolidationId2() {
+        Long id = 1L;
+        int responseCount = 0;
+        var mockAWB = new Awb();
+        mockAWB.setPrintType(PrintType.ORIGINAL_PRINTED);
+        LocalDateTime printedAt = LocalDateTime.now();
+
+        when(awbRepository.findByConsolidationIdByQuery(anyLong())).thenReturn(List.of(mockAWB));
+        var res = awbDao.updatePrintTypeFromConsolidationId(id, PrintType.ORIGINAL_PRINTED.name(), true, printedAt);
+
+        verify(awbRepository, times(1)).updatePrintDateFromConsolidationId(anyLong(), any());
+
+        assertEquals(responseCount, res);
+    }
+    @Test
+    void testUpdatePrintTypeFromShipmentId() {
+        Long id = 1L;
+        int responseCount = 0;
+
+        var mockAWB = new Awb();
+        mockAWB.setPrintType(PrintType.ORIGINAL_PRINTED);
+        LocalDateTime printedAt = LocalDateTime.now();
+
+        when(awbRepository.findByShipmentId(anyLong())).thenReturn(List.of(mockAWB));
+        var res = awbDao.updatePrintTypeFromShipmentId(id, PrintType.ORIGINAL_PRINTED.name(), true, printedAt);
+
+        verify(awbRepository, times(1)).updatePrintDateFromShipmentId(anyLong(), any());
+
+        assertEquals(responseCount, res);
+    }
+
+    @Test
+    void testUpdatePrintTypeFromShipmentId2() {
+        Long id = 1L;
+        int responseCount = 1;
+
+        var mockAWB = new Awb();
+        LocalDateTime printedAt = LocalDateTime.of(2024,12,12,12,12);
+        mockAWB.setPrintType(PrintType.DRAFT_PRINTED);
+        mockAWB.setOriginalPrintedAt(printedAt);
+
+        when(awbRepository.updatePrintTypeFromShipmentId(id, PrintType.ORIGINAL_PRINTED.name())).thenReturn(responseCount);
+        when(awbRepository.findByShipmentId(anyLong())).thenReturn(List.of(mockAWB));
+        var res = awbDao.updatePrintTypeFromShipmentId(id, PrintType.ORIGINAL_PRINTED.name(), true, printedAt);
+
+        assertEquals(responseCount, res);
+    }
+
 
     @Test
     void testFindAllLinkedAwbsForHawb() {
@@ -484,10 +564,30 @@ class AwbDaoTest {
         // Mock
         when(awbRepository.findAwbByGuidByQuery(inputGuid)).thenReturn(mockAwb);
         when(consoleShipmentMappingDao.findByShipmentIdByQuery(any())).thenReturn(List.of(consoleShipmentMapping));
+        // Test
+        awbDao.findAllLinkedAwbs(inputGuid);
+
+    }
+
+    @Test
+    void testFindAllLinkedAwbsForHawb2() {
+        UUID inputGuid = UUID.randomUUID();
+        Long shipmentId = 1L, consolId = 1L;
+        boolean isSuccess = true;
+
+        ConsoleShipmentMapping consoleShipmentMapping = new ConsoleShipmentMapping();
+        consoleShipmentMapping.setShipmentId(shipmentId);
+        consoleShipmentMapping.setConsolidationId(consolId);
+
+        // Mock
+        when(awbRepository.findAwbByGuidByQuery(inputGuid)).thenReturn(mockAwb);
+        when(consoleShipmentMappingDao.findByShipmentIdByQuery(any())).thenReturn(List.of(consoleShipmentMapping));
+        when(consoleShipmentMappingDao.findByConsolidationIdByQuery(any())).thenReturn(List.of(consoleShipmentMapping));
 
         // Test
         awbDao.findAllLinkedAwbs(inputGuid);
 
+        assertTrue(isSuccess);
     }
 
     @Test
@@ -502,7 +602,7 @@ class AwbDaoTest {
         // Mock
         when(awbRepository.findAwbByGuidByQuery(inputGuid)).thenReturn(testMawb);
         when(consoleShipmentMappingDao.findByConsolidationIdByQuery(any())).thenReturn(List.of(consoleShipmentMapping));
-        when(awbRepository.findByShipmentIdByQuery(shipmentId)).thenReturn(List.of(mockAwb));
+        when(awbRepository.findByShipmentIdsByQuery(anyList())).thenReturn(List.of(mockAwb));
 
         // Test
         awbDao.findAllLinkedAwbs(inputGuid);
@@ -517,6 +617,269 @@ class AwbDaoTest {
         var res = awbDao.findAllLinkedAwbs(inputGuid);
 
         assertEquals(Collections.emptyList(), res);
+    }
+
+
+    @Test
+    void updatedAwbInformationEventFromShipment_Efreight_sci() {
+        var mock = Mockito.spy(awbDao);
+        ShipmentDetails shipmentDetails = jsonTestUtility.getTestShipment();
+        ShipmentDetails oldEntity = jsonTestUtility.getTestShipment();
+        shipmentDetails.getAdditionalDetails().setSci("T1");
+        shipmentDetails.getAdditionalDetails().setEfreightStatus("new");
+        shipmentDetails.setSecurityStatus("SPX");
+
+        when(mock.findByShipmentId(shipmentDetails.getId())).thenReturn(List.of(mockAwb));
+        when(mawbHawbLinkDao.findByHawbId(mockAwb.getId())).thenReturn(new ArrayList<>());
+
+        try {
+            mock.updatedAwbInformationEvent(shipmentDetails, oldEntity);
+            verify(mock, times(1)).save(any());
+        } catch (Exception e) {
+            fail(e);
+        }
+    }
+    @Test
+    void updatedAwbInformationEventFromShipment_without_change() {
+        var mock = Mockito.spy(awbDao);
+        ShipmentDetails shipmentDetails = jsonTestUtility.getTestShipment();
+        ShipmentDetails oldEntity = jsonTestUtility.getTestShipment();
+
+        when(mock.findByShipmentId(shipmentDetails.getId())).thenReturn(List.of(mockAwb));
+
+        try {
+            mock.updatedAwbInformationEvent(shipmentDetails, oldEntity);
+            verify(mock, times(1)).save(any());
+        } catch (Exception e) {
+            fail(e);
+        }
+    }
+
+    @Test
+    void updatedEfreightInformationEventFromConsolidation_efreight_Sci() {
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getTestConsolidationAir();
+        ConsolidationDetails oldEntity = jsonTestUtility.getTestConsolidationAir();
+        consolidationDetails.setSci("T1");
+        consolidationDetails.setEfreightStatus("new");
+        consolidationDetails.setSecurityStatus(Constants.EXEMPTION_CARGO);
+        var mock = Mockito.spy(awbDao);
+
+        when(mock.findByConsolidationId(consolidationDetails.getId())).thenReturn(List.of(testMawb));
+
+        try {
+            mock.updatedAwbInformationEvent(consolidationDetails, oldEntity);
+
+            verify(mock, times(1)).save(any());
+        } catch (Exception e) {
+            fail(e);
+        }
+    }
+    @Test
+    void updatedEfreightInformationEventFromConsolidation_without_change() {
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getTestConsolidationAir();
+        ConsolidationDetails oldEntity = jsonTestUtility.getTestConsolidationAir();
+        var mock = Mockito.spy(awbDao);
+
+        when(mock.findByConsolidationId(consolidationDetails.getId())).thenReturn(List.of(testMawb));
+
+        try {
+            mock.updatedAwbInformationEvent(consolidationDetails, oldEntity);
+
+            verify(mock, times(1)).save(any());
+        } catch (Exception e) {
+            fail(e);
+        }
+    }
+
+    @Test
+    void updatedEfreightInformationEventFromConsolidation_without_Mawb() {
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getTestConsolidationAir();
+        ConsolidationDetails oldEntity = jsonTestUtility.getTestConsolidationAir();
+        var mock = Mockito.spy(awbDao);
+
+        when(mock.findByConsolidationId(consolidationDetails.getId())).thenReturn(List.of());
+
+        try {
+            mock.updatedAwbInformationEvent(consolidationDetails, oldEntity);
+
+            verify(mock, times(2)).findByConsolidationId(any());
+        } catch (Exception e) {
+            fail(e);
+        }
+    }
+
+    @Test
+    void updatedEfreightInformationEventFrom_RandomEntity() {
+        Awb awb = new Awb();
+        var mock = Mockito.spy(awbDao);
+        try {
+            mock.updatedAwbInformationEvent(awb, awb);
+            verify(mock, times(0)).save(any());
+        } catch (Exception e) {
+            fail(e);
+        }
+    }
+
+    @Test
+    void updateSciFieldFromHawbFrom_Success_Sci_T1() throws RunnerException {
+        Awb mockAwb = jsonTestUtility.getTestHawb();
+        Awb mawb = jsonTestUtility.getTestMawb();
+        mockAwb.getAwbCargoInfo().setSci("T1");
+        var mock = Mockito.spy(awbDao);
+        when(mawbHawbLinkDao.findByHawbId(mockAwb.getId())).thenReturn(List.of(MawbHawbLink.builder().hawbId(mockAwb.getId()).mawbId(mawb.getId()).build()));
+        when(awbRepository.findAwbByIds(any())).thenReturn(Arrays.asList(mawb));
+
+        mock.updateSciFieldFromHawb(mockAwb, null, false, mockAwb.getId());
+        verify(mock, times(1)).save(any());
+    }
+
+    @Test
+    void updateSciFieldFromHawbFrom_Success_Sci_T1_mawbLinkNull() throws RunnerException {
+        Awb mockAwb = jsonTestUtility.getTestHawb();
+        Awb mawb = jsonTestUtility.getTestMawb();
+        mockAwb.getAwbCargoInfo().setSci("T1");
+        var mock = Mockito.spy(awbDao);
+        when(mawbHawbLinkDao.findByHawbId(mockAwb.getId())).thenReturn(null);
+
+        mock.updateSciFieldFromHawb(mockAwb, null, false, mockAwb.getId());
+        verify(mock, times(0)).save(any());
+    }
+    @Test
+    void updateSciFieldFromHawbFrom_Success_Sci_T1_mawbLinkEmpty() throws RunnerException {
+        Awb mockAwb = jsonTestUtility.getTestHawb();
+        Awb mawb = jsonTestUtility.getTestMawb();
+        mockAwb.getAwbCargoInfo().setSci("T1");
+        var mock = Mockito.spy(awbDao);
+        when(mawbHawbLinkDao.findByHawbId(mockAwb.getId())).thenReturn(List.of());
+
+        mock.updateSciFieldFromHawb(mockAwb, null, false, mockAwb.getId());
+        verify(mock, times(0)).save(any());
+    }
+
+    @Test
+    void updateSciFieldFromHawbFrom_Success_Sci_T1_MawbEmpty() throws RunnerException {
+        Awb mockAwb = jsonTestUtility.getTestHawb();
+        Awb mawb = jsonTestUtility.getTestMawb();
+        mockAwb.getAwbCargoInfo().setSci("T1");
+        var mock = Mockito.spy(awbDao);
+        when(mawbHawbLinkDao.findByHawbId(mockAwb.getId())).thenReturn(List.of(MawbHawbLink.builder().hawbId(mockAwb.getId()).mawbId(mawb.getId()).build()));
+        when(awbRepository.findAwbByIds(any())).thenReturn(Arrays.asList());
+
+        mock.updateSciFieldFromHawb(mockAwb, null, false, mockAwb.getId());
+        verify(mock, times(0)).save(any());
+    }
+    @Test
+    void updateSciFieldFromHawbFrom_Success_Sci_T1_mawb_FSUlocked() throws RunnerException {
+        Awb mockAwb = jsonTestUtility.getTestHawb();
+        Awb mawb = jsonTestUtility.getTestMawb();
+        mockAwb.getAwbCargoInfo().setSci("T1");
+        mawb.setAirMessageStatus(AwbStatus.AWB_FSU_LOCKED);
+        var mock = Mockito.spy(awbDao);
+        when(mawbHawbLinkDao.findByHawbId(mockAwb.getId())).thenReturn(List.of(MawbHawbLink.builder().hawbId(mockAwb.getId()).mawbId(mawb.getId()).build()));
+        when(awbRepository.findAwbByIds(any())).thenReturn(Arrays.asList(mawb));
+
+        mock.updateSciFieldFromHawb(mockAwb, null, false, mockAwb.getId());
+        verify(mock, times(0)).save(any());
+    }
+
+    @Test
+    void updateSciFieldFromHawbFrom_Success_SciT1_mawb_awb_sciT1() throws RunnerException {
+        Awb mockAwb = jsonTestUtility.getTestHawb();
+        mockAwb.getAwbCargoInfo().setSci("T1");
+        Awb mawb = jsonTestUtility.getTestMawb();
+        mawb.getAwbCargoInfo().setSci("T1");
+        var mock = Mockito.spy(awbDao);
+        when(mawbHawbLinkDao.findByHawbId(mockAwb.getId())).thenReturn(List.of(MawbHawbLink.builder().hawbId(mockAwb.getId()).mawbId(mawb.getId()).build()));
+        when(awbRepository.findAwbByIds(any())).thenReturn(Arrays.asList(mawb));
+
+        mock.updateSciFieldFromHawb(mockAwb, null, false, mockAwb.getId());
+        verify(mock, times(0)).save(any());
+    }
+
+    @Test
+    void updateSciFieldFromHawbFrom_Success_Sci_T2() throws RunnerException {
+        Awb mockAwb = jsonTestUtility.getTestHawb();
+        Awb mawb = jsonTestUtility.getTestMawb();
+        mawb.getAwbCargoInfo().setSci("T1");
+        mockAwb.getAwbCargoInfo().setSci("T2");
+        var mock = Mockito.spy(awbDao);
+        Page<Awb> awbs = new PageImpl<Awb>(List.of(mockAwb));
+        when(mawbHawbLinkDao.findByHawbId(mockAwb.getId())).thenReturn(List.of(MawbHawbLink.builder().hawbId(mockAwb.getId()).mawbId(mawb.getId()).build()));
+        when(awbRepository.findAwbByIds(any())).thenReturn(Arrays.asList(mawb));
+        when(mawbHawbLinkDao.findByMawbId(mawb.getId())).thenReturn(List.of(MawbHawbLink.builder().hawbId(mockAwb.getId()).mawbId(mawb.getId()).build()));
+        when(awbRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(awbs);
+
+        mock.updateSciFieldFromHawb(mockAwb, null, false, mockAwb.getId());
+        verify(mock, times(1)).save(any());
+    }
+
+    @Test
+    void updateAwbPrintInformationForShipment() {
+        Long shipmentId = 1L;
+        var mock = Mockito.spy(awbDao);
+        LocalDateTime mockDateTime = LocalDateTime.now();
+        mockAwb.setPrintType(PrintType.ORIGINAL_PRINTED);
+        when(mock.findByShipmentId(shipmentId)).thenReturn(List.of(mockAwb));
+
+        mock.updateAwbPrintInformation(shipmentId, null, PrintType.ORIGINAL_PRINTED, true, mockDateTime);
+
+        try {
+            verify(mock, times(1)).save(mockAwb);
+        }
+        catch (Exception e) {
+            fail(e);
+        }
+    }
+
+    @Test
+    void updateAwbPrintInformationDoesntUpdatePrintTypeIfAlreadyPrintedOriginal() {
+        Long shipmentId = 1L;
+        var mock = Mockito.spy(awbDao);
+        LocalDateTime mockDateTime = LocalDateTime.now();
+        mockAwb.setPrintType(PrintType.ORIGINAL_PRINTED);
+        when(mock.findByShipmentId(shipmentId)).thenReturn(List.of(mockAwb));
+
+        mock.updateAwbPrintInformation(shipmentId, null, PrintType.DRAFT_PRINTED, false, mockDateTime);
+
+        try {
+            verify(mock, times(1)).save(mockAwb);
+        }
+        catch (Exception e) {
+            fail(e);
+        }
+    }
+
+    @Test
+    void updateAwbPrintInformationSaveThrowsException() throws RunnerException {
+        Long shipmentId = 1L;
+        var mock = Mockito.spy(awbDao);
+        LocalDateTime mockDateTime = LocalDateTime.now();
+        mockAwb.setPrintType(PrintType.ORIGINAL_PRINTED);
+        mockAwb.setId(1L);
+        when(mock.findByShipmentId(shipmentId)).thenReturn(List.of(mockAwb));
+        when(awbRepository.save(any())).thenThrow(new RuntimeException("error"));
+
+        mock.updateAwbPrintInformation(shipmentId, null, PrintType.DRAFT_PRINTED, false, mockDateTime);
+
+        verify(mock, times(1)).save(mockAwb);
+    }
+
+    @Test
+    void updateAwbPrintInformationForConsolidation() {
+        Long consolidationId = 1L;
+        var mock = Mockito.spy(awbDao);
+        LocalDateTime mockDateTime = LocalDateTime.now();
+        when(mock.findByConsolidationId(consolidationId)).thenReturn(List.of(mockAwb));
+        doNothing().when(commonUtils).checkForMandatoryHsCodeForUAE(mockAwb);
+
+        mock.updateAwbPrintInformation(null, consolidationId, PrintType.ORIGINAL_PRINTED, true, mockDateTime);
+
+        try {
+            verify(mock, times(1)).save(mockAwb);
+        }
+        catch (Exception e) {
+            fail(e);
+        }
     }
 
 }

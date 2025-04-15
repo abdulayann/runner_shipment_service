@@ -15,4 +15,5 @@ import java.util.List;
 public class ShipmentAttachDetachRequest implements IRunnerRequest {
     private Long id;
     private List<Long> shipmentIds;
+    private String remarks;
 }

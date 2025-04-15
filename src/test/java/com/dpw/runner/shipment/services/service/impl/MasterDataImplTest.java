@@ -1,12 +1,20 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dto.request.ListCousinBranchesForEtRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
+import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.helper.impl.v1.V1MasterDataImpl;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,7 +27,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+
+import static org.mockito.ArgumentMatchers.eq;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
@@ -29,10 +43,17 @@ class MasterDataImplTest {
     private MasterDataFactory masterDataFactory;
 
     @Mock
+    private IMDMServiceAdapter mdmServiceAdapter;
+
+    @Mock
     private IV1Service v1Service;
 
     @Mock
     private V1MasterDataImpl v1MasterData;
+    @Mock
+    private MasterDataUtils masterDataUtils;
+    @Mock
+    private CommonUtils commonUtils;
 
     @InjectMocks
     private MasterDataImpl masterData;
@@ -428,6 +449,16 @@ class MasterDataImplTest {
     }
 
     @Test
+    void stateBasedList() {
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest();
+        Mockito.when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
+        Mockito.when(masterDataFactory.getMasterDataService().stateBasedList(Mockito.any())).thenReturn(new DependentServiceResponse());
+        ResponseEntity<IRunnerResponse> responseEntity = masterData.stateBasedList(commonRequestModel);
+        Assertions.assertNotNull(responseEntity);
+        Assertions.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
     void listUsers() {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest();
         Mockito.when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
@@ -684,4 +715,106 @@ class MasterDataImplTest {
         Assertions.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
+    @Test
+    void fetchMultipleMasterData() {
+        MasterListRequestV2 requestV2 = MasterListRequestV2.builder().MasterListRequests(List.of(MasterListRequest.builder()
+                        .ItemType("30")
+                .ItemValue("IND")
+                .build())).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(requestV2);
+        Map<String, EntityTransferMasterLists> keyMasterDataMap = new HashMap<>();
+        keyMasterDataMap.put("IND#COUNTRIES", EntityTransferMasterLists.builder().ItemValue("IND").ItemDescription("India").ValuenDesc("India").build());
+        Mockito.when(masterDataUtils.fetchInBulkMasterList(Mockito.any())).thenReturn(keyMasterDataMap);
+        ResponseEntity<IRunnerResponse> responseEntity = masterData.fetchMultipleMasterData(commonRequestModel);
+        Assertions.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void listOrgs() {
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest();
+        V1DataResponse v1DataResponse = V1DataResponse.builder()
+                .skip(4)
+                .totalCount(10)
+                .take(50)
+                .build();
+        Mockito.when(v1Service.listOrgs(Mockito.any())).thenReturn(v1DataResponse);
+        ResponseEntity<IRunnerResponse> responseEntity = masterData.listOrgs(commonRequestModel);
+        Assertions.assertNotNull(responseEntity);
+        Assertions.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void listBranchesByDefaultOrgAndAddress() {
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest();
+        V1DataResponse v1DataResponse = V1DataResponse.builder()
+                .skip(4)
+                .totalCount(10)
+                .take(50)
+                .build();
+        Mockito.when(v1Service.listBranchesByDefaultOrgAndAddress(Mockito.any())).thenReturn(v1DataResponse);
+        ResponseEntity<IRunnerResponse> responseEntity = masterData.listBranchesByDefaultOrgAndAddress(commonRequestModel);
+        Assertions.assertNotNull(responseEntity);
+        Assertions.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void listCousinBranchForEt() {
+        ListCousinBranchesForEtRequest commonRequestModel = ListCousinBranchesForEtRequest.builder().build();
+        commonRequestModel.setIsReassign(true);
+        commonRequestModel.setIsReceivingBranch(false);
+        commonRequestModel.setIsTriangulationBranch(false);
+        Mockito.when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
+        Mockito.when(masterDataFactory.getMasterDataService().listCousinBranches(Mockito.any())).thenReturn(new DependentServiceResponse());
+
+        Mockito.when(commonUtils.getTenantIdsFromEntity(commonRequestModel)).thenReturn(new ArrayList<>());
+        ResponseEntity<IRunnerResponse> responseEntity = masterData.listCousinBranchForEt(commonRequestModel);
+        Assertions.assertNotNull(responseEntity);
+        Assertions.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void listCousinBranchForEtWithEmptyTenantIds() {
+        ListCousinBranchesForEtRequest commonRequestModel = ListCousinBranchesForEtRequest.builder().build();
+        Mockito.when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
+        Mockito.when(masterDataFactory.getMasterDataService().listCousinBranches(Mockito.any())).thenReturn(new DependentServiceResponse());
+        Mockito.when(commonUtils.getTenantIdsFromEntity(commonRequestModel)).thenReturn(null);
+        ResponseEntity<IRunnerResponse> responseEntity = masterData.listCousinBranchForEt(commonRequestModel);
+        Assertions.assertNotNull(responseEntity);
+        Assertions.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void listCousinBranchForEtWithTenantIdsAndExistingCriteria() {
+        ListCousinBranchesForEtRequest commonRequestModel = ListCousinBranchesForEtRequest.builder().build();
+        List<Object> criteria = List.of(List.of("TenantId"), "not in", List.of(150));
+        commonRequestModel.setCriteria(criteria);
+        Mockito.when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
+        Mockito.when(masterDataFactory.getMasterDataService().listCousinBranches(Mockito.any())).thenReturn(new DependentServiceResponse());
+        Mockito.when(commonUtils.getTenantIdsFromEntity(commonRequestModel)).thenReturn(new ArrayList<>());
+        ResponseEntity<IRunnerResponse> responseEntity = masterData.listCousinBranchForEt(commonRequestModel);
+        Assertions.assertNotNull(responseEntity);
+        Assertions.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void listCousinBranchForEtWithTenantIdsAndExistingCriteria2() {
+        ListCousinBranchesForEtRequest commonRequestModel = ListCousinBranchesForEtRequest.builder().build();
+        List<Object> criteria = List.of(List.of("TenantId"), "not in", List.of(List.of(150)));
+        commonRequestModel.setCriteria(criteria);
+        Mockito.when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
+        Mockito.when(masterDataFactory.getMasterDataService().listCousinBranches(Mockito.any())).thenReturn(new DependentServiceResponse());
+        Mockito.when(commonUtils.getTenantIdsFromEntity(commonRequestModel)).thenReturn(new ArrayList<>());
+        ResponseEntity<IRunnerResponse> responseEntity = masterData.listCousinBranchForEt(commonRequestModel);
+        Assertions.assertNotNull(responseEntity);
+        Assertions.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void createNonBillableCustomerTest() throws RunnerException {
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest();
+        ResponseEntity<IRunnerResponse> responseEntity = new ResponseEntity<>(HttpStatus.OK);
+        Mockito.when(mdmServiceAdapter.createNonBillableCustomer(commonRequestModel)).thenReturn(responseEntity);
+        ResponseEntity<IRunnerResponse> response = masterData.createNonBillableCustomer(commonRequestModel);
+        Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
 }

@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.dpw.runner.shipment.services.entity.enums.ContainerPraStatus;
 import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
@@ -9,6 +10,7 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Getter
@@ -29,7 +31,6 @@ public class ContainerRequest extends CommonRequest implements IRunnerRequest {
     private String containerNumber;
     private String sealNumber;
     private String descriptionOfGoods;
-    private Long noOfPackages;
     private BigDecimal netWeight;
     private String netWeightUnit;
     private BigDecimal grossWeight;
@@ -59,7 +60,7 @@ public class ContainerRequest extends CommonRequest implements IRunnerRequest {
     private String hblDeliveryMode;
     private LocalDateTime allocationDate;
     private String dgClass;
-    private Boolean hazardous;
+    private Boolean hazardous = false;
     private String hazardousUn;
     private BigDecimal tareWeight;
     private String tareWeightUnit;
@@ -96,9 +97,10 @@ public class ContainerRequest extends CommonRequest implements IRunnerRequest {
     private Boolean isContractEnforced;
     private PartiesRequest pickupAddress;
     private PartiesRequest deliveryAddress;
-    private List<EventsRequest> eventsList;
+    // Commenting this to avoid entity update failures. Events in containers are not used as of now
+//    private List<EventsRequest> eventsList;
     private List<PackingRequest> packsList;
-    private List<ShipmentRequest> shipmentsList;
+    private Set<ShipmentRequest> shipmentsList;
     private Long contractEnforcedQuantityLimit;
     private String ownType;
     private String handlingInfo;
@@ -108,4 +110,11 @@ public class ContainerRequest extends CommonRequest implements IRunnerRequest {
     private String invoiceNumber;
     private String invoiceCurrency;
     private BigDecimal invoiceValue;
+    private String unNumber;
+    private String properShippingName;
+    private String packingGroup;
+    private BigDecimal minimumFlashPoint;
+    private String minimumFlashPointUnit;
+    private Boolean marinePollutant = false;
+    private ContainerPraStatus praStatus;
 }

@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.syncing.Entity.*;
+import com.dpw.runner.shipment.services.utils.Generated;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
 import org.modelmapper.ModelMapper;
@@ -130,14 +131,14 @@ public class SyncEntityConversionService {
         return containerRequestV2;
     }
 
-    public List<Containers> containersV1ToV2(List<ContainerRequestV2> containersList) {
+    public Set<Containers> containersV1ToV2(List<ContainerRequestV2> containersList) {
         if(containersList != null) {
-            List<Containers> res = containersList.stream().map(
+            Set<Containers> res = containersList.stream().map(
                     this::containerV1ToV2
-            ).toList();
+            ).collect(Collectors.toSet());
             return res;
         }
-        return new ArrayList<>();
+        return new HashSet<>();
     }
 
     public Containers containerV1ToV2(ContainerRequestV2 containerRequestV2) {
@@ -165,7 +166,7 @@ public class SyncEntityConversionService {
                         sd.setId(shipmentDetails1.getId());
                         shipmentDetails.add(sd);
                     }
-                    containers.setShipmentsList(shipmentDetails);
+                    containers.setShipmentsList(new HashSet<>(shipmentDetails));
                 }
             } catch (Exception ignored) {}
         }
@@ -184,7 +185,7 @@ public class SyncEntityConversionService {
 
     public RoutingsRequestV2 routingV2ToV1(Routings routings) {
         var routingsRequestV2 = modelMapper.map(routings, RoutingsRequestV2.class);
-        if(routingsRequestV2.getMode() != null && routingsRequestV2.getMode().equals(Constants.TRANSPORT_MODE_ROA))
+        if(Objects.equals(Constants.TRANSPORT_MODE_ROA, routingsRequestV2.getMode()))
             routingsRequestV2.setVoyage(routings.getTruckReferenceNumber());
         routingsRequestV2.setIsDomestic(routings.getIsDomestic());
         routingsRequestV2.setByCarrier(routings.getCarrier());
@@ -203,9 +204,9 @@ public class SyncEntityConversionService {
 
     public Routings routingV1ToV2(RoutingsRequestV2 routingsRequestV2) {
         var routings = modelMapper.map(routingsRequestV2, Routings.class);
-        routings.setDomestic(routingsRequestV2.getIsDomestic());
+        routings.setDomestic(Boolean.TRUE.equals(routingsRequestV2.getIsDomestic()));
         routings.setCarrier(routingsRequestV2.getByCarrier());
-        if(routingsRequestV2.getMode() != null && routingsRequestV2.getMode().equals(Constants.TRANSPORT_MODE_ROA)) {
+        if(Objects.equals(Constants.TRANSPORT_MODE_ROA, routingsRequestV2.getMode())) {
             routings.setTruckReferenceNumber(routingsRequestV2.getVoyage());
             routings.setVoyage(null);
         }
@@ -246,7 +247,7 @@ public class SyncEntityConversionService {
     public Parties addressV1ToV2(PartyRequestV2 partyRequestV2) {
         var parties = modelMapper.map(partyRequestV2, Parties.class);
         parties.setIsAddressFreeText(partyRequestV2.getIsFreeTextAddress());
-        if(parties.getIsAddressFreeText() != null && parties.getIsAddressFreeText()) {
+        if(Boolean.TRUE.equals(parties.getIsAddressFreeText())) {
             if(parties.getAddressData() == null)
                 parties.setAddressData(new HashMap<>());
             parties.getAddressData().put(PartiesConstants.RAW_DATA, partyRequestV2.getFreeTextAddress());
@@ -271,7 +272,7 @@ public class SyncEntityConversionService {
                 ShipmentDetails shipmentDetails = shipmentDao.findById(events.getEntityId()).get();
                 eventsRequestV2.setShipmentGuid(shipmentDetails.getGuid());
             }
-            if(Objects.equals(events.getEntityType(), Constants.CONSOLIDATION)) {
+            else if(Objects.equals(events.getEntityType(), Constants.CONSOLIDATION)) {
                 ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(events.getEntityId()).get();
                 eventsRequestV2.setConsolidationGuid(consolidationDetails.getGuid());
             }
@@ -288,11 +289,11 @@ public class SyncEntityConversionService {
 
         if (response.getMawbStocksLinkRows() != null && !response.getMawbStocksLinkRows().isEmpty()) {
             for(var mawbStocksLink : response.getMawbStocksLinkRows()) {
-                if(mawbStocksLink.getEntityType() != null && mawbStocksLink.getEntityType().equalsIgnoreCase("SHIPMENT")) {
+                if(Objects.equals(mawbStocksLink.getEntityType(), Constants.SHIPMENT)) {
                     Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(mawbStocksLink.getEntityId());
                     shipmentDetails.ifPresent(details -> mawbStocksLink.setShipmentGuid(details.getGuid()));
                 }
-                else if(mawbStocksLink.getEntityType() != null && mawbStocksLink.getEntityType().equalsIgnoreCase("CONSOLIDATION")) {
+                else if(Objects.equals(mawbStocksLink.getEntityType(), Constants.CONSOLIDATION)) {
                     Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(mawbStocksLink.getEntityId());
                     consolidationDetails.ifPresent(details -> mawbStocksLink.setConsolidationGuid(details.getGuid()));
                 }
@@ -312,11 +313,11 @@ public class SyncEntityConversionService {
         if(mawbStocks.getMawbStocksLinkRows() != null && mawbStocks.getMawbStocksLinkRows().size() > 0) {
             List<MawbStocksLink> mawbStocksLinks = new ArrayList<>();
             for(var mawbStocksLinkV2 : mawbStocks.getMawbStocksLinkRows()) {
-                if(mawbStocksLinkV2.getEntityType() != null && mawbStocksLinkV2.getEntityType().equalsIgnoreCase("SHIPMENT")) {
+                if(Objects.equals(mawbStocksLinkV2.getEntityType(), Constants.SHIPMENT)) {
                     Optional<ShipmentDetails> shipmentDetails = shipmentDao.findByGuid(mawbStocksLinkV2.getShipmentGuid());
                     shipmentDetails.ifPresent(details -> mawbStocksLinkV2.setEntityId(details.getId()));
                 }
-                else if(mawbStocksLinkV2.getEntityType() != null && mawbStocksLinkV2.getEntityType().equalsIgnoreCase("CONSOLIDATION")) {
+                else if(Objects.equals(mawbStocksLinkV2.getEntityType(), Constants.CONSOLIDATION)) {
                     Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findByGuid(mawbStocksLinkV2.getConsolidationGuid());
                     consolidationDetails.ifPresent(details -> mawbStocksLinkV2.setEntityId(details.getId()));
                 }
@@ -327,7 +328,7 @@ public class SyncEntityConversionService {
 
         return response;
     }
-
+    @Generated
     public List<AuditLog> auditLogsV1ToV2(List<AuditLogRequestV2> auditLogs, Long id) {
         if(auditLogs == null || auditLogs.isEmpty())
             return new ArrayList<>();

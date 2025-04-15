@@ -2,12 +2,12 @@ package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.BatchSize;
 
 import javax.persistence.*;
 import java.math.BigDecimal;
@@ -202,5 +202,6 @@ public class BookingCharges extends MultiTenancy {
     @JoinTable(name = "container_charges_mapping",
             joinColumns = {@JoinColumn(name = "charge_id")},
             inverseJoinColumns = {@JoinColumn(name = "container_id")})
+    @BatchSize(size = 50)
     private List<Containers> containersList;
 }

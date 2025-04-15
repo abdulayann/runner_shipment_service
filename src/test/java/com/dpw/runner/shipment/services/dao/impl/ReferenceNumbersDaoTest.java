@@ -1,6 +1,8 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -19,6 +21,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -62,6 +65,10 @@ class ReferenceNumbersDaoTest {
     void setUp() throws IOException {
         jsonTestUtility = new JsonTestUtility();
         testData = jsonTestUtility.getTestReferenceNumbers();
+        UsersDto mockUser = new UsersDto();
+        mockUser.setTenantId(1);
+        mockUser.setUsername("user");
+        UserContext.setUser(mockUser);
         MockitoAnnotations.openMocks(this);
     }
 
@@ -123,7 +130,7 @@ class ReferenceNumbersDaoTest {
     void updateEntityFromShipment_ExceptionThrown_ReturnsEmptyList() {
         Long shipmentId = 1L;
         var referenceNumbersDaoSpy = Mockito.spy(referenceNumbersDao);
-        doThrow(new RuntimeException("Test")).when(referenceNumbersDaoSpy).findAll(any(),any());
+        doThrow(new RuntimeException("Test")).when(referenceNumbersDaoSpy).findByShipmentId(any());
         assertThrows(RunnerException.class, () -> referenceNumbersDaoSpy.updateEntityFromShipment(Collections.emptyList(), shipmentId));
     }
 
@@ -132,7 +139,6 @@ class ReferenceNumbersDaoTest {
         Long shipmentId = 1L;
         List<ReferenceNumbers> referenceNumbersList = Arrays.asList(new ReferenceNumbers(), new ReferenceNumbers());
         var referenceNumbersDaoSpy = Mockito.spy(referenceNumbersDao);
-        doReturn(mock(Page.class)).when(referenceNumbersDaoSpy).findAll(any(), any());
         doReturn(referenceNumbersList).when(referenceNumbersDaoSpy).saveEntityFromShipment(anyList(), eq(shipmentId), anyMap());
         List<ReferenceNumbers> result = referenceNumbersDaoSpy.updateEntityFromShipment(referenceNumbersList, shipmentId);
         assertEquals(referenceNumbersList, result);
@@ -142,7 +148,7 @@ class ReferenceNumbersDaoTest {
     void updateEntityFromShipment_ReferenceNumbersListIsEmpty_ReturnsEmptyList() throws RunnerException {
         Long shipmentId = 1L;
         testData.setId(1L);
-        when(referenceNumbersRepository.findAll((Specification<ReferenceNumbers>) any(), (Pageable) any())).thenReturn(new PageImpl<ReferenceNumbers>(List.of(testData)));
+        when(referenceNumbersRepository.findByShipmentId(any())).thenReturn(List.of(testData));
         List<ReferenceNumbers> result = referenceNumbersDao.updateEntityFromShipment(Collections.singletonList(testData), shipmentId);
         assertNotNull(result);
         assertTrue(result.isEmpty());
@@ -355,8 +361,64 @@ class ReferenceNumbersDaoTest {
         );
         when(referenceNumbersRepository.findById(any())).thenReturn(Optional.empty());
 
-        assertThrows(RunnerException.class,() -> referenceNumbersDao.updateEntityFromConsole(referenceNumbersRequests, consolidationId, Collections.emptyList()));//        assertThrows(DataRetrievalFailureException.class, () -> referenceNumbersDao.saveEntityFromConsole(referenceNumbersRequests, consolidationId));
+        assertThrows(RunnerException.class, () -> {
+            referenceNumbersDao.updateEntityFromConsole(referenceNumbersRequests, consolidationId, Collections.emptyList());
+        });
     }
 
+    @Test
+    void saveEntityFromShipmentEntityNotPresent() {
+        ReferenceNumbers referenceNumbers = new ReferenceNumbers();
+        referenceNumbers.setId(1L);
+        List<ReferenceNumbers> referenceNumbersList = Arrays.asList(referenceNumbers);
 
+        when(referenceNumbersRepository.findById(any())).thenReturn(Optional.empty());
+        assertThrows(DataRetrievalFailureException.class, () -> {
+            referenceNumbersDao.saveEntityFromShipment(referenceNumbersList, 1L);
+        });
+    }
+
+    @Test
+    void saveEntityFromShipmentMapNotContainsId() {
+        ReferenceNumbers referenceNumbers = new ReferenceNumbers();
+        referenceNumbers.setId(1L);
+        List<ReferenceNumbers> referenceNumbersList = Arrays.asList(referenceNumbers);
+        assertThrows(DataRetrievalFailureException.class, () -> {
+            referenceNumbersDao.saveEntityFromShipment(referenceNumbersList, 1L, new HashMap<>());
+        });
+    }
+
+    @Test
+    void saveEntityFromShipment() {
+        ReferenceNumbers referenceNumbers = new ReferenceNumbers();
+        referenceNumbers.setId(1L);
+
+        HashMap<Long, ReferenceNumbers> map = new HashMap<>();
+        map.put(1L, referenceNumbers);
+
+        when(jsonHelper.convertToJson(any())).thenReturn("");
+        when(referenceNumbersRepository.saveAll(any())).thenReturn(Arrays.asList(referenceNumbers));
+
+        List<ReferenceNumbers> referenceNumbersList = Arrays.asList(referenceNumbers);
+        assertEquals(referenceNumbersList, referenceNumbersDao.saveEntityFromShipment(referenceNumbersList, 1L, map));
+    }
+
+    @Test
+    void updateEntityFromConsole() throws RunnerException {
+        UUID uuid1 = UUID.randomUUID();
+        UUID uuid2 = UUID.randomUUID();
+
+        ReferenceNumbers referenceNumbers1 = new ReferenceNumbers();
+        referenceNumbers1.setGuid(uuid1);
+
+        ReferenceNumbers referenceNumbers2 = new ReferenceNumbers();
+        referenceNumbers2.setGuid(uuid2);
+
+        List<ReferenceNumbers> referenceNumbersList = Arrays.asList(referenceNumbers1, referenceNumbers2);
+        List<ReferenceNumbers> oldList = Arrays.asList(referenceNumbers1);
+
+        when(referenceNumbersRepository.save(any())).thenReturn(referenceNumbers1);
+
+        assertEquals(referenceNumbersList, referenceNumbersDao.updateEntityFromConsole(referenceNumbersList, 1L, oldList));
+    }
 }

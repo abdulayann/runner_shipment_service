@@ -2,9 +2,11 @@ package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
+import com.dpw.runner.shipment.services.entity.enums.AirAuthorisingEntity;
 import com.dpw.runner.shipment.services.entity.enums.AndesStatus;
 import com.dpw.runner.shipment.services.entity.enums.LGDStatus;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
+import com.dpw.runner.shipment.services.utils.Generated;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.AllArgsConstructor;
@@ -23,6 +25,7 @@ import java.util.UUID;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Generated
 public class AdditionalDetailResponse implements IRunnerResponse {
     private Long id;
     private UUID guid;
@@ -38,10 +41,14 @@ public class AdditionalDetailResponse implements IRunnerResponse {
     private BigDecimal spotRate;
     private String spotRateType;
     private String efreightStatus;
+    private String sci;
     private Boolean importExportShipmentLock;
     private String CHAJobNumber;
     private String ADCode;
     private String BEType;
+    private AirAuthorisingEntity securityStatusReceivedFrom;
+    private String additionalSecurityInformation;
+    private String regulatedEntityCategory;
     private String customLocation;
     private String customCity;
     private Boolean isImportClearance;
@@ -121,6 +128,8 @@ public class AdditionalDetailResponse implements IRunnerResponse {
     private Boolean WBLPrinted;
     private Boolean draftPrinted;
     private Boolean surrenderPrinted;
+    private String importBrokerCountry;
+    private String exportBrokerCountry;
     private PartiesResponse notifyParty;
     private PartiesResponse importBroker;
     private PartiesResponse exportBroker;
@@ -147,6 +156,20 @@ public class AdditionalDetailResponse implements IRunnerResponse {
     private Map<String, String> textData;
     private String exemptionCodes;
     private String aomFreeText;
+    private String emergencyContactNumber;
+    private String emergencyContactNumberCode;
+    private LocalDateTime pickupDate;
+    private LocalDateTime cargoDeliveredDate;
+    private LocalDateTime customReleaseDate;
+    private Boolean docTurnedOverToCustomer;
+    private LocalDateTime proofOfDeliveryDate;
+    private LocalDateTime warehouseCargoArrivalDate;
+    private Boolean pickupByConsigneeCompleted;
+    private Boolean emptyContainerReturned;
+    private Boolean isExportCustomClearanceCompleted;
+    private LocalDateTime blInstructionReceived;
+    private LocalDateTime cargoOutForDelivery;
+    private Integer fcrNumber;
 
     public void addTextData(Map<String, String> dataMap) {
         if(textData == null) {

@@ -13,4 +13,8 @@ import lombok.NoArgsConstructor;
 public class V1TenantResponse {
     @JsonProperty("TenantName")
     private String TenantName;
+    @JsonProperty("Code")
+    private String Code;
+    @JsonProperty("TenantId")
+    private Long TenantId;
 }

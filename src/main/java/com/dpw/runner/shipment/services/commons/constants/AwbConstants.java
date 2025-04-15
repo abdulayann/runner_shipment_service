@@ -1,5 +1,7 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
+import java.util.List;
+
 public class AwbConstants {
     private AwbConstants(){}
     public static final String AWB_API_HANDLE = "/api/v2/awb";
@@ -16,7 +18,7 @@ public class AwbConstants {
     //Entity Type
     public static final String MAWB = "MAWB";
     public static final String DMAWB = "DMAWB";
-
+    public static final String T1 = "T1";
     public static final String FREIGHT_AMOUNT = "Freight Amount";
     public static final String OTHER_AMOUNT = "Other Amount";
     public static final String AWB_SYNC_SUCCESSFUL = "Successful AWB Syncing";
@@ -37,5 +39,18 @@ public class AwbConstants {
     public static final String DUPLICATE_PAIR_AWB_OCI_INFO_VALIDATION = "Combinations of Information Identifier and Trade identification code already exists. Please enter unique combinations";
     public static final String IATA_DESCRIPTION_FIELD_VALIDATION = "IATA description shouldn't be more than 3 in other charges";
     public static final String FNM_STATUS_FETCH_SUCCESS = "Successfully fetch fnm status message";
+    public static final String IATA_FETCH_RATE_SUCCESS = "Successfully fetched rates from iata";
+    public static final String SERVICE_HTTP_STATUS_CODE = "SERVICE_HTTP_STATUS_CODE";
+
+    public static final String FSU_LOCK_EVENT_CODE = "RCS";
+    public static final String RESUBMIT_FZB_VALIDATION = "HAWB is updated, please resubmit the FZB by printing the original MAWB";
+    public static final String RESUBMIT_FWB_VALIDATION = "MAWB is updated, please resubmit the FWB by printing the original MAWB";
+    public static final String ORDER_NUMBER = "ORDER NO: %s";
+    public static final List<String> SecurityStatusList = List.of("SPX", "SHR", "SCO", "Exemption Cargo");
+
+    public static final String AOM_SCREENING_STATUS = "AOM";
+    public static final String NOT_SCREENING_STATUS = "NOT";
+    public static final String EXEMPTION_CARGO_SECURITY_STATUS = "Exemption Cargo";
+    public static final String SPX = "SPX";
 
 }

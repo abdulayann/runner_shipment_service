@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 

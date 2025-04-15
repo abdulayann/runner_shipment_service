@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.config;
 
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
-import lombok.extern.slf4j.Slf4j;
+import com.dpw.runner.shipment.services.utils.Generated;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
@@ -20,6 +20,7 @@ import java.util.Map;
 
 @Configuration
 @EnableCaching
+@Generated
 public class RedisConfig {
 
     @Value("${redis.host}")

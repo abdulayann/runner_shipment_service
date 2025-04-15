@@ -43,7 +43,7 @@ public class ExcelUtils {
                     .collect(Collectors.joining(", "));
             cell.setCellValue(arrayListAsString);
         } else {
-            cell.setCellValue((String) value);
+            cell.setCellValue(value.toString());
         }
         cell.setCellStyle(style);
     }

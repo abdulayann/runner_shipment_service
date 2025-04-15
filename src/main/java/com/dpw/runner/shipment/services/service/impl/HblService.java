@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
@@ -22,6 +21,7 @@ import com.dpw.runner.shipment.services.dto.response.HblResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.CompanySettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.HblReset;
+import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -36,10 +36,7 @@ import com.dpw.runner.shipment.services.syncing.Entity.HblRequestV2;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IHblSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
-import com.dpw.runner.shipment.services.utils.AwbUtility;
-import com.dpw.runner.shipment.services.utils.MasterDataUtils;
-import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
-import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.dpw.runner.shipment.services.utils.*;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,10 +46,10 @@ import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -91,6 +88,15 @@ public class HblService implements IHblService {
     IShipmentService shipmentService;
     @Autowired
     private IV1Service v1Service;
+    @Autowired
+    private CommonUtils commonUtils;
+
+    @Autowired
+    private PartialFetchUtils partialFetchUtils;
+
+    @Autowired
+    private ConsolidationService consolidationService;
+
 
     private RetryTemplate retryTemplate = RetryTemplate.builder()
             .maxAttempts(3)
@@ -191,10 +197,10 @@ public class HblService implements IHblService {
         if(request.getIncludeColumns()==null || request.getIncludeColumns().isEmpty())
             return ResponseHelper.buildSuccessResponse(convertEntityToDto(hbl.get()));
         else
-            return ResponseHelper.buildSuccessResponse(PartialFetchUtils.fetchPartialListData(convertEntityToDto(hbl.get()),request.getIncludeColumns()));
+            return ResponseHelper.buildSuccessResponse(partialFetchUtils.fetchPartialListData(convertEntityToDto(hbl.get()),request.getIncludeColumns()));
     }
 
-    public Hbl checkAllContainerAssigned(ShipmentDetails shipment, List<Containers> containersList, List<Packing> packings) {
+    public Hbl checkAllContainerAssigned(ShipmentDetails shipment, Set<Containers> containersList, List<Packing> packings) {
         var shipmentId = shipment.getId();
         boolean allContainerAssigned = true;
         Hbl hbl = null;
@@ -226,7 +232,7 @@ public class HblService implements IHblService {
                 }
             }
             else {
-                ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+                ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
                 if(shipmentSettingsDetails.getRestrictHblGen() == null || !shipmentSettingsDetails.getRestrictHblGen()) {
                     try {
                         hbl = getHblFromShipmentId(shipmentId);
@@ -255,7 +261,8 @@ public class HblService implements IHblService {
         return hbl;
     }
     private void validateBeforeGeneration(ShipmentDetails shipmentDetails){
-        if(!Objects.isNull(shipmentDetails.getContainersList()) && !Objects.equals(shipmentDetails.getShipmentType(), Constants.SHIPMENT_TYPE_LCL)) {
+        if(!Objects.isNull(shipmentDetails.getContainersList())
+            && !(Objects.equals(shipmentDetails.getShipmentType(), Constants.SHIPMENT_TYPE_LCL) || (Objects.equals(shipmentDetails.getShipmentType(), Constants.CARGO_TYPE_FCL) && !Objects.equals(shipmentDetails.getJobType(), Constants.SHIPMENT_TYPE_DRT)))) {
             List<Containers> containers = shipmentDetails.getContainersList().stream().filter(c -> StringUtility.isEmpty(c.getContainerNumber())).toList();
             if (!containers.isEmpty())
                 throw new ValidationException("Please assign container number to all the containers before generating the HBL.");
@@ -263,24 +270,36 @@ public class HblService implements IHblService {
         if(!shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA)
                 || !shipmentDetails.getDirection().equals(Constants.DIRECTION_EXP)
                 || (!shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL) && !shipmentDetails.getShipmentType().equals(Constants.SHIPMENT_TYPE_LCL))
-                || (shipmentDetails.getShipmentType().equals(Constants.SHIPMENT_TYPE_LCL) && Objects.equals(shipmentDetails.getJobType(), Constants.JOB_TYPE_CLB))){
+                || (shipmentDetails.getShipmentType().equals(Constants.SHIPMENT_TYPE_LCL) && Objects.equals(shipmentDetails.getJobType(), Constants.JOB_TYPE_CLB))
+                || (shipmentDetails.getShipmentType().equals(Constants.CARGO_TYPE_FCL) && !Objects.equals(shipmentDetails.getJobType(), Constants.SHIPMENT_TYPE_DRT))){
             return;
         }
-        if(!Objects.isNull(shipmentDetails.getPackingList()) && !Objects.equals(shipmentDetails.getShipmentType(), Constants.SHIPMENT_TYPE_LCL)) {
+        if(!Objects.isNull(shipmentDetails.getPackingList())
+            && !Objects.equals(shipmentDetails.getShipmentType(), Constants.SHIPMENT_TYPE_LCL)) {
             var packsList = shipmentDetails.getPackingList().stream().filter(x -> Objects.isNull(x.getContainerId())).toList();
             if(!packsList.isEmpty()){
                 throw new ValidationException("Container Number is Mandatory for HBL Generation, please assign the container number for all the packages in the shipment.");
             }
         }
+        if(shipmentDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_SEA) && Boolean.TRUE.equals(shipmentDetails.getContainsHazardous())) {
+            if(!OceanDGStatus.OCEAN_DG_ACCEPTED.equals(shipmentDetails.getOceanDGStatus()) && !OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED.equals(shipmentDetails.getOceanDGStatus()) &&
+                    !Constants.IMP.equals(shipmentDetails.getDirection()))
+                throw new ValidationException("The shipment is marked as DG but is not approved. Please get the required DG approvals before generating Hbl.");
+            if(shipmentDetails.getContainersList() == null ||
+                    shipmentDetails.getContainersList().stream().filter(c -> Boolean.TRUE.equals(c.getHazardous())).toList().isEmpty())
+                throw new ValidationException("The shipment is marked as DG but does not contain any DG containers. Please add DG containers before generating Hbl.");
+        }
     }
 
     @Override
+    @Transactional
     public ResponseEntity<IRunnerResponse> generateHBL(CommonRequestModel commonRequestModel) throws RunnerException {
         HblGenerateRequest request = (HblGenerateRequest) commonRequestModel.getData();
         Hbl hbl = getHblFromShipmentId(request.getShipmentId());
 
         try {
             hblSync.sync(hbl, UUID.randomUUID().toString());
+
         }
         catch (Exception e) {
             log.error(SyncingConstants.ERROR_PERFORMING_HBL_SYNC, e);
@@ -300,7 +319,7 @@ public class HblService implements IHblService {
             throw new ValidationException(String.format(HblConstants.HBL_NO_DATA_FOUND_SHIPMENT, shipmentDetails.get().getShipmentId()));
 
         Hbl hbl = hbls.get(0);
-        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         if(shipmentSettingsDetails.getRestrictBLEdit() != null && shipmentSettingsDetails.getRestrictBLEdit()) {
             HblResetRequest resetRequest = HblResetRequest.builder().id(hbl.getId()).resetType(HblReset.ALL).build();
             return resetHbl(CommonRequestModel.buildRequest(resetRequest));
@@ -331,7 +350,7 @@ public class HblService implements IHblService {
     public ResponseEntity<IRunnerResponse> retrieveByShipmentId(CommonRequestModel request) {
         Long shipmentId = ((CommonGetRequest) request.getData()).getId();
 
-        ShipmentSettingsDetails shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         if(shipmentSettingsDetails != null && ((shipmentSettingsDetails.getRestrictBLEdit() != null && shipmentSettingsDetails.getRestrictBLEdit()) || (shipmentSettingsDetails.getAutoUpdateShipmentBL() != null && shipmentSettingsDetails.getAutoUpdateShipmentBL()))){
             HblGenerateRequest req = HblGenerateRequest.builder().shipmentId(shipmentId).build();
             try {
@@ -345,6 +364,7 @@ public class HblService implements IHblService {
     }
 
     @Override
+    @Transactional
     public ResponseEntity<IRunnerResponse> resetHbl(CommonRequestModel commonRequestModel) throws RunnerException {
         HblResetRequest request = (HblResetRequest) commonRequestModel.getData();
         Optional<Hbl> hblOptional = hblDao.findById(request.getId());
@@ -428,6 +448,10 @@ public class HblService implements IHblService {
     private HblDataDto mapShipmentToHBL(ShipmentDetails shipmentDetail) throws RunnerException {
         HblDataDto hblData = HblDataDto.builder().build();
         hblData.setShipmentId(shipmentDetail.getId());
+        Routings routing = null;
+        if (Objects.nonNull(shipmentDetail.getRoutingsList()))
+            routing = shipmentDetail.getRoutingsList().stream().filter(x -> Boolean.TRUE.equals(x.getIsSelectedForDocument())).findFirst().orElse(null);
+
         if(shipmentDetail.getConsigner() != null) {
             if (shipmentDetail.getConsigner().getOrgData() != null)
                 hblData.setConsignorName(StringUtility.convertToString(shipmentDetail.getConsigner().getOrgData().get(PartiesConstants.FULLNAME)) );
@@ -468,11 +492,20 @@ public class HblService implements IHblService {
             syncShipment = true;
         }
         hblData.setHouseBill(shipmentDetail.getHouseBill());
-        hblData.setVesselName(masterDataUtil.getVesselName(carrierDetails.getVessel()));
+        if (Objects.nonNull(routing)) {
+            hblData.setVesselName(masterDataUtil.getVesselName(routing.getVesselName()));
+            hblData.setVoyage(routing.getVoyage());
+        } else {
+            hblData.setVesselName(masterDataUtil.getVesselName(carrierDetails.getVessel()));
+            hblData.setVoyage(carrierDetails.getVoyage());
+        }        
         hblData.setNoOfCopies(StringUtility.convertToString(additionalDetails.getCopy()));
         hblData.setVersion(1);
         hblData.setOriginOfGoods(additionalDetails.getGoodsCO());
-        hblData.setVoyage(carrierDetails.getVoyage());
+        List<ShipmentOrder> shipmentOrders = shipmentDetail.getShipmentOrders();
+        if(shipmentOrders != null && !shipmentOrders.isEmpty()) {
+            hblData.setPurchaseOrderNumber(shipmentOrders.stream().map(ShipmentOrder::getOrderNumber).filter(Objects::nonNull).collect(Collectors.joining(", ")));
+        }
         if (!Objects.isNull(additionalDetails.getImportBroker())) {
             Parties broker = additionalDetails.getImportBroker();
             if (!Objects.isNull(broker.getOrgData()) && broker.getOrgData().containsKey(PartiesConstants.FULLNAME))
@@ -500,10 +533,10 @@ public class HblService implements IHblService {
             }
             if(shipmentDetail.getReferenceNumbersList() != null) {
                 hblData.setInvoiceNumbers(String.join(",",
-                        shipmentDetail.getReferenceNumbersList().stream().filter(c -> c.getType() == Constants.INVNO)
+                        shipmentDetail.getReferenceNumbersList().stream().filter(c -> Objects.equals(c.getType(), Constants.INVNO))
                                 .map(c -> c.getReferenceNumber()).collect(Collectors.toList())));
                 hblData.setLcNumber(String.join(",",
-                        shipmentDetail.getReferenceNumbersList().stream().filter(c -> c.getType() == Constants.CON)
+                        shipmentDetail.getReferenceNumbersList().stream().filter(c -> Objects.equals(c.getType(), Constants.CON))
                                 .map(c -> c.getReferenceNumber()).collect(Collectors.toList())));
             }
 
@@ -582,7 +615,7 @@ public class HblService implements IHblService {
         }
         var containers = shipment.getContainersList();
         if(Objects.equals(containers, null)) {
-            containers = new ArrayList<>();
+            containers = new HashSet<>();
         }
         List<HblContainerDto> hblContainers = new ArrayList<>();
         containers.forEach(container -> {
@@ -590,7 +623,7 @@ public class HblService implements IHblService {
             hblContainer.setGuid(container.getGuid());
             hblContainer.setCarrierSealNumber(container.getCarrierSealNumber());
             hblContainer.setSealNumber(container.getSealNumber());
-            hblContainer.setNoOfPackages(container.getNoOfPackages());
+            hblContainer.setNoOfPackages(IsStringNullOrEmpty(container.getPacks()) ? null : Long.valueOf(container.getPacks()));
             hblContainer.setContainerGrossVolume(container.getGrossVolume());
             hblContainer.setContainerGrossVolumeUnit(container.getGrossVolumeUnit());
             hblContainer.setContainerGrossWeight(container.getGrossWeight());
@@ -608,7 +641,7 @@ public class HblService implements IHblService {
 
     }
 
-    private List<HblCargoDto> mapShipmentCargoToHBL(List<Packing> packings, List<Containers> containers) {
+    private List<HblCargoDto> mapShipmentCargoToHBL(List<Packing> packings, Set<Containers> containers) {
         List<HblCargoDto> hblCargoes = new ArrayList<>();
         Map<Long, String> map = new HashMap<>();
         if(containers != null && containers.size() > 0)
@@ -661,7 +694,7 @@ public class HblService implements IHblService {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
         if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
-            return new ResponseEntity<>(HttpStatus.OK);
+            return ResponseHelper.buildSuccessResponse();
         }
 
         ListCommonRequest listCommonRequest = constructListCommonRequest("guid", request.getShipmentGuid(), "=");
@@ -693,8 +726,25 @@ public class HblService implements IHblService {
         }
         
     }
+
+    public void validateHblContainerNumberCondition(Hbl hblObject){
+        if(!Objects.isNull(hblObject.getHblContainer()) ) {
+            List<HblContainerDto> hblContainers = hblObject.getHblContainer().stream().filter(c -> StringUtility.isEmpty(c.getContainerNumber())).toList();
+            if (!hblContainers.isEmpty())
+                throw new ValidationException("Please assign container number to all the containers in HBL before generating the HBL.");
+        }
+
+        if(!Objects.isNull(hblObject.getHblCargo()) ) {
+            List<HblCargoDto> hblCargos = hblObject.getHblCargo().stream().filter(c -> StringUtility.isEmpty(c.getBlContainerContainerNumber())).toList();
+            if (!hblCargos.isEmpty())
+                throw new ValidationException("Container Number is Mandatory for HBL Generation, please assign the container number for all the HBLCargo in the shipment.");
+        }
+    }
     private void updateShipmentToHBL(ShipmentDetails shipmentDetail, Hbl hbl, HblLockSettings hblLock) {
         HblDataDto hblData = hbl.getHblData();
+        Routings routing = null;
+        if (Objects.nonNull(shipmentDetail.getRoutingsList()))
+            routing = shipmentDetail.getRoutingsList().stream().filter(x -> Boolean.TRUE.equals(x.getIsSelectedForDocument())).findFirst().orElse(null);
 
         if(shipmentDetail.getConsigner() != null) {
             if(!hblLock.getConsignorNameLock())
@@ -745,8 +795,18 @@ public class HblService implements IHblService {
             hblData.setCargoGrossVolumeUnit(shipmentDetail.getVolumeUnit());
         if(!hblLock.getHouseBillLock())
             hblData.setHouseBill(shipmentDetail.getHouseBill());
-        if(!hblLock.getVesselNameLock())
-            hblData.setVesselName(masterDataUtil.getVesselName(carrierDetails.getVessel()));
+        if(!hblLock.getVesselNameLock()) {
+            if (Objects.nonNull(routing))
+                hblData.setVesselName(masterDataUtil.getVesselName(routing.getVesselName()));
+            else
+                hblData.setVesselName(masterDataUtil.getVesselName(carrierDetails.getVessel()));
+        }
+        if(!Boolean.TRUE.equals(hblLock.getVoyageLock())) {
+            if (Objects.nonNull(routing))
+                hblData.setVoyage(routing.getVoyage());
+            else
+                hblData.setVoyage(carrierDetails.getVoyage());
+        }
 
         // TODO: This needs to re-visit after incorporating this setting in service
         if (/*Unico HBL*/true) {
@@ -778,18 +838,18 @@ public class HblService implements IHblService {
             if(shipmentDetail.getReferenceNumbersList() != null) {
                 if(!hblLock.getInvoiceNumbers())
                     hblData.setInvoiceNumbers(String.join(",",
-                        shipmentDetail.getReferenceNumbersList().stream().filter(c -> c.getType() == Constants.INVNO)
+                        shipmentDetail.getReferenceNumbersList().stream().filter(c -> Objects.equals(c.getType(), Constants.INVNO))
                                 .map(c -> c.getReferenceNumber()).collect(Collectors.toList())));
                 if(!hblLock.getLcNumber())
                     hblData.setLcNumber(String.join(",",
-                        shipmentDetail.getReferenceNumbersList().stream().filter(c -> c.getType() == Constants.CON)
+                        shipmentDetail.getReferenceNumbersList().stream().filter(c -> Objects.equals(c.getType(), Constants.CON))
                                 .map(c -> c.getReferenceNumber()).collect(Collectors.toList())));
             }
 
         }
 
     }
-    private void updateShipmentCargoToHBL(List<Packing> packings, Hbl hbl, HblLockSettings hblLock, List<Containers> containers) {
+    private void updateShipmentCargoToHBL(List<Packing> packings, Hbl hbl, HblLockSettings hblLock, Set<Containers> containers) {
         Map<UUID, Packing> packMap = new HashMap<>();
         packings.forEach(pack -> {
             packMap.put(pack.getGuid(), pack);
@@ -861,7 +921,7 @@ public class HblService implements IHblService {
         if(!hblLock.getPackageTypeLock())
             cargo.setPackageType(pack.getPacksType());
     }
-    private void updateShipmentContainersToHBL(List<Containers> containers, Hbl hbl, HblLockSettings hblLock) {
+    private void updateShipmentContainersToHBL(Set<Containers> containers, Hbl hbl, HblLockSettings hblLock) {
         Map<UUID, Containers> contMap = new HashMap<>();
         containers.forEach(cont -> {
             contMap.put(cont.getGuid(), cont);
@@ -885,7 +945,7 @@ public class HblService implements IHblService {
                 hblContainer.setGuid(container.getGuid());
                 hblContainer.setCarrierSealNumber(container.getCarrierSealNumber());
                 hblContainer.setSealNumber(container.getSealNumber());
-                hblContainer.setNoOfPackages(container.getNoOfPackages());
+                hblContainer.setNoOfPackages(IsStringNullOrEmpty(container.getPacks()) ? null : Long.valueOf(container.getPacks()));
                 hblContainer.setContainerGrossVolume(container.getGrossVolume());
                 hblContainer.setContainerGrossVolumeUnit(container.getGrossVolumeUnit());
                 hblContainer.setContainerGrossWeight(container.getGrossWeight());
@@ -975,8 +1035,7 @@ public class HblService implements IHblService {
             locCodes.add(additionalDetails.getPlaceOfSupply());
         }
 
-        Map<String, EntityTransferUnLocations> v1Data = masterDataUtil.fetchInBulkUnlocations(locCodes.stream().filter(Objects::nonNull).toList(), EntityTransferConstants.LOCATION_SERVICE_GUID);
-        return v1Data;
+        return masterDataUtil.fetchInBulkUnlocations(locCodes.stream().filter(Objects::nonNull).collect(Collectors.toSet()), EntityTransferConstants.LOCATION_SERVICE_GUID);
     }
 
     private void setUnLocationsData(Map<String, EntityTransferUnLocations> v1Data, HblDataDto hblDataDto, AdditionalDetails additionalDetails, CarrierDetails carrierDetails, String onField) {

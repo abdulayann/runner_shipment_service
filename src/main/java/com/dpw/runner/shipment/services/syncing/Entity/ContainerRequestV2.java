@@ -114,8 +114,6 @@ public class ContainerRequestV2 implements IRunnerRequest {
     private BigDecimal NetWeight;
     @JsonProperty("NetWeightUnit")
     private String NetWeightUnit;
-    @JsonProperty("NoOfPackages")
-    private Long NoOfPackages;
     @JsonProperty("PackageBreadth")
     private String PackageBreadth;
     @JsonProperty("PackageHeight")

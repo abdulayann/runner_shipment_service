@@ -1,35 +1,33 @@
 package com.dpw.runner.shipment.services.helpers;
 
 import com.dpw.runner.shipment.services.commons.objectMapperMixin.ShipmentMixIn;
-import com.dpw.runner.shipment.services.config.LocalDateTimeWithTimeZoneSerializer;
+import com.dpw.runner.shipment.services.config.CustomLocalDateTimeDeserializer;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.utils.Generated;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.fasterxml.jackson.datatype.jsr310.ser.LocalDateTimeSerializer;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.MDC;
+import org.openapitools.jackson.nullable.JsonNullableModule;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.json.JsonParseException;
 import org.springframework.stereotype.Component;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 import javax.annotation.PostConstruct;
-import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
-import java.util.TimeZone;
 
 @Component
 @Slf4j
+@Generated
 public class JsonHelper {
 
     @Autowired
@@ -39,6 +37,10 @@ public class JsonHelper {
     private ObjectMapper mapper1 = new ObjectMapper();
 
     private ObjectMapper createMapper = new ObjectMapper();
+
+    private final ObjectMapper mapper2 = new ObjectMapper();
+
+    private ObjectMapper platformMapper = new ObjectMapper();
 
     @PostConstruct
     public void intializeMapper() {
@@ -73,6 +75,25 @@ public class JsonHelper {
         mapper.configure(DeserializationFeature.FAIL_ON_MISSING_CREATOR_PROPERTIES, false);
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
+        platformMapper.setSerializationInclusion(JsonInclude.Include.ALWAYS);
+        platformMapper.registerModule(new JavaTimeModule());
+        platformMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+        platformMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        platformMapper.configure(SerializationFeature.FAIL_ON_SELF_REFERENCES, false);
+        platformMapper.configure(DeserializationFeature.FAIL_ON_MISSING_CREATOR_PROPERTIES, false);
+        platformMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+        SimpleModule module = new SimpleModule();
+        module.addDeserializer(LocalDateTime.class,  new CustomLocalDateTimeDeserializer());
+        mapper2.registerModule(new JsonNullableModule());
+        mapper2.registerModule(new JavaTimeModule());
+        mapper2.registerModule(module);
+        mapper2.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+        mapper2.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        mapper2.configure(SerializationFeature.FAIL_ON_SELF_REFERENCES, false);
+        mapper2.configure(DeserializationFeature.FAIL_ON_MISSING_CREATOR_PROPERTIES, false);
+        mapper2.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
     }
 
     public <T> T readFromJson(String jsonString, Class<T> clazz) {
@@ -92,6 +113,14 @@ public class JsonHelper {
             log.error("Failed Parsed Object: {}", object.toString());
             log.error("Failed to Parse given Json: " + e.getMessage());
             log.info("Exception thrown while parsing json: {}", e.toString());
+            throw new JsonParseException(e);
+        }
+    }
+
+    public <T> String convertToJsonWithNulls(T object) {
+        try {
+            return platformMapper.writeValueAsString(object);
+        } catch (JsonProcessingException e) {
             throw new JsonParseException(e);
         }
     }
@@ -128,6 +157,10 @@ public class JsonHelper {
         return mapper.convertValue(object, clazz);
     }
 
+    public <T,F> F convertValueWithJsonNullable(T object, Class<F> clazz) {
+        return mapper2.convertValue(object, clazz);
+    }
+
     public <T,F> List<F> convertValueToList(T object, Class<F> clazz) {
         return mapper.convertValue(object, mapper.getTypeFactory().constructCollectionType(List.class, clazz));
     }
@@ -149,4 +182,5 @@ public class JsonHelper {
     public <T,F> F convertCreateValue(T object, Class<F> clazz) {
         return createMapper.convertValue(object, clazz);
     }
+
 }

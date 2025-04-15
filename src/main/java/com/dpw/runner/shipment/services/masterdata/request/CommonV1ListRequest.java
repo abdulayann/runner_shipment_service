@@ -12,7 +12,8 @@ import java.util.List;
 @NoArgsConstructor
 public class CommonV1ListRequest {
     @JsonProperty("Take")
-    public int take;
+    @Builder.Default
+    public int take = 500;
     @JsonProperty("Skip")
     public int skip;
     @JsonProperty("Sort")
@@ -23,4 +24,9 @@ public class CommonV1ListRequest {
     private int columnSelection;
     @JsonProperty("IncludeColumns")
     private List<String> includeColumns = null;
+    @JsonProperty("ContainsText")
+    private String containsText;
+    @JsonProperty("ExcludeTotalCount")
+    private Boolean excludeTotalCount;
+
 }

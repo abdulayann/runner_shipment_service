@@ -22,7 +22,7 @@ public class HblReleaseTypeMappingController {
     private final IHblReleaseTypeMappingService hblReleaseTypeMappingService;
 
 
-    private class MyListResponseClass extends RunnerListResponse<HblReleaseTypeMappingResponse> {}
+    private static class MyListResponseClass extends RunnerListResponse<HblReleaseTypeMappingResponse> {}
 
     @Autowired
     public HblReleaseTypeMappingController(IHblReleaseTypeMappingService hblReleaseTypeMappingService) {

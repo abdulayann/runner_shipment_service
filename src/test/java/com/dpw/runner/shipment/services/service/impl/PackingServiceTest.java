@@ -1,19 +1,19 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.SyncConfig;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.DetachPacksListDto;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackContainerNumberChangeRequest;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentMeasurementDetailsDto;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.dto.response.AchievedQuantitiesResponse;
 import com.dpw.runner.shipment.services.dto.response.AutoCalculatePackingResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
@@ -30,7 +30,6 @@ import com.dpw.runner.shipment.services.syncing.Entity.BulkPackingRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.PackingRequestV2;
 import com.dpw.runner.shipment.services.syncing.interfaces.IPackingSync;
 import com.dpw.runner.shipment.services.utils.CSVParsingUtil;
-import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -41,10 +40,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
-import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.springframework.context.annotation.Lazy;
@@ -70,7 +66,7 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
-class PackingServiceTest {
+class PackingServiceTest extends CommonMocks {
 
     @Mock
     IPackingDao packingDao;
@@ -115,8 +111,6 @@ class PackingServiceTest {
     private CSVParsingUtil<Packing> parser;
     @Mock
     private MasterDataUtils masterDataUtils;
-    @Mock
-    private CommonUtils commonUtils;
 
     @Mock
     private HttpServletResponse response;
@@ -166,6 +160,7 @@ class PackingServiceTest {
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
+        mockUser.setPermissions(new HashMap<>());
         UserContext.setUser(mockUser);
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().multipleShipmentEnabled(true).mergeContainers(false).volumeChargeableUnit("M3").weightChargeableUnit("KG").build());
         MockitoAnnotations.initMocks(this);
@@ -713,8 +708,46 @@ class PackingServiceTest {
         volumeWeightChargeable.setChargeable(new BigDecimal(434));
         volumeWeightChargeable.setVolumeWeight(new BigDecimal("217.167"));
         when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
+        UserContext.getUser().getPermissions().put(PermissionConstants.airDG, true);
         packingService.uploadPacking(bulkUploadRequest);
         verify(packingDao, times(1)).saveAll(any());
+    }
+
+    @Test
+    void uploadPacking_UndgEmpty_DgPermissionError() throws Exception{
+        List<Packing> packingList = List.of(testCsvPacking);
+        packingList.get(0).setDGClass("dgClass");
+        packingList.get(0).setFlashPoint("23");
+        packingList.get(0).setUNDGContact("");
+        BulkUploadRequest bulkUploadRequest = new BulkUploadRequest();
+        bulkUploadRequest.setConsolidationId(1L);
+        bulkUploadRequest.setShipmentId(2L);
+        bulkUploadRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        ArgumentCaptor captor = ArgumentCaptor.forClass(Map.class);
+        ArgumentCaptor captor2 = ArgumentCaptor.forClass(Map.class);
+        ArgumentCaptor captor3 = ArgumentCaptor.forClass(Map.class);
+        when(parser.parseExcelFile(any(), any(), any(), (Map<String, Set<String>>) captor.capture(), any(), any(), (Map<Long, Long>) captor2.capture(), (Map<Long, String>) captor3.capture(), anyMap()))
+                .thenAnswer(invocation -> {
+
+                    Map<String, Set<String>> masterDataMap = (Map<String, Set<String>>) captor.getValue();
+                    masterDataMap.clear();
+                    masterDataMap.putAll(jsonTestUtility.getMasterDataMapWithSameCommodity());
+
+                    Map<Long, Long> dgsubstance = (Map<Long, Long>) captor2.getValue();
+                    dgsubstance.clear();
+                    dgsubstance.putAll(jsonTestUtility.getDgSubstanceContactMap());
+
+                    Map<Long, String> dgsubstanceFlashPoint = (Map<Long, String>) captor3.getValue();
+                    dgsubstanceFlashPoint.clear();
+                    dgsubstanceFlashPoint.putAll(jsonTestUtility.getDgSubstanceFlashPoint());
+
+                    return packingList;
+                });
+        VolumeWeightChargeable volumeWeightChargeable = jsonTestUtility.getVolumeWeightChargeable();
+        volumeWeightChargeable.setChargeable(new BigDecimal(434));
+        volumeWeightChargeable.setVolumeWeight(new BigDecimal("217.167"));
+        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(volumeWeightChargeable);
+        assertThrows(ValidationException.class, () -> packingService.uploadPacking(bulkUploadRequest));
     }
 
     @Test
@@ -1014,13 +1047,110 @@ class PackingServiceTest {
     }
 
     @Test
+    void uploadPackingWeightValueOverAchieved() throws Exception{
+        var spyService = Mockito.spy(packingService);
+        List<Packing> packingList = List.of(testCsvPacking);
+        packingList.get(0).setVolumeUnit(Constants.VOLUME_UNIT_CM);
+        BulkUploadRequest bulkUploadRequest = new BulkUploadRequest();
+        bulkUploadRequest.setConsolidationId(1L);
+        bulkUploadRequest.setShipmentId(2L);
+        bulkUploadRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+
+        PackSummaryResponse packSummaryResponse = new PackSummaryResponse();
+        AchievedQuantitiesResponse achievedResponse = new AchievedQuantitiesResponse();
+        achievedResponse.setWeightUtilization("100.0");
+//        achievedResponse.setVolumeUtilization("100.0");
+        packSummaryResponse.setConsolidationAchievedQuantities(achievedResponse);
+
+        when(parser.parseExcelFile(any(), any(), any(), anyMap(), any(), any(), anyMap(), anyMap(), anyMap())).thenReturn(packingList);
+        doReturn(packSummaryResponse).when(spyService).calculatePacksUtilisationForConsolidation(any());
+        assertThrows(RunnerException.class, () -> spyService.uploadPacking(bulkUploadRequest));
+    }
+
+    @Test
+    void uploadPackingWeightValueOverAchievedSavePackOnOverride() throws Exception{
+        var spyService = Mockito.spy(packingService);
+        List<Packing> packingList = List.of(testCsvPacking);
+        packingList.get(0).setHazardous(false);
+        packingList.get(0).setVolumeUnit(Constants.VOLUME_UNIT_M3);
+        BulkUploadRequest bulkUploadRequest = new BulkUploadRequest();
+        bulkUploadRequest.setConsolidationId(1L);
+        bulkUploadRequest.setShipmentId(2L);
+        bulkUploadRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        bulkUploadRequest.setOverride(true);
+
+        PackSummaryResponse packSummaryResponse = new PackSummaryResponse();
+        AchievedQuantitiesResponse achievedResponse = new AchievedQuantitiesResponse();
+        achievedResponse.setWeightUtilization("100.0");
+        packSummaryResponse.setConsolidationAchievedQuantities(achievedResponse);
+        ConsolidationDetails consol = new ConsolidationDetails();
+        consol.setTransportMode("AIR");
+        when(parser.parseExcelFile(any(), any(), any(), anyMap(), any(), any(), anyMap(), anyMap(), anyMap())).thenReturn(packingList);
+        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(new VolumeWeightChargeable());
+        doReturn(packSummaryResponse).when(spyService).calculatePacksUtilisationForConsolidation(any());
+
+        spyService.uploadPacking(bulkUploadRequest);
+
+        verify(packingDao, times(1)).saveAll(any());
+        verify(packingSync, times(1)).sync(any(), any(), any());
+    }
+
+    @Test
+    void uploadPackingVolumeValueOverAchieved() throws Exception{
+        var spyService = Mockito.spy(packingService);
+        List<Packing> packingList = List.of(testCsvPacking);
+        packingList.get(0).setVolumeUnit(Constants.VOLUME_UNIT_CM);
+        BulkUploadRequest bulkUploadRequest = new BulkUploadRequest();
+        bulkUploadRequest.setConsolidationId(1L);
+        bulkUploadRequest.setShipmentId(2L);
+        bulkUploadRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+
+        PackSummaryResponse packSummaryResponse = new PackSummaryResponse();
+        AchievedQuantitiesResponse achievedResponse = new AchievedQuantitiesResponse();
+        achievedResponse.setVolumeUtilization("100.0");
+        packSummaryResponse.setConsolidationAchievedQuantities(achievedResponse);
+
+        when(parser.parseExcelFile(any(), any(), any(), anyMap(), any(), any(), anyMap(), anyMap(), anyMap())).thenReturn(packingList);
+        doReturn(packSummaryResponse).when(spyService).calculatePacksUtilisationForConsolidation(any());
+        assertThrows(RunnerException.class, () -> spyService.uploadPacking(bulkUploadRequest));
+    }
+
+    @Test
+    void uploadPackingVolumeValueOverAchievedSavePackOnOverride() throws Exception{
+        var spyService = Mockito.spy(packingService);
+        List<Packing> packingList = List.of(testCsvPacking);
+        packingList.get(0).setHazardous(false);
+        packingList.get(0).setVolumeUnit(Constants.VOLUME_UNIT_M3);
+        BulkUploadRequest bulkUploadRequest = new BulkUploadRequest();
+        bulkUploadRequest.setConsolidationId(1L);
+        bulkUploadRequest.setShipmentId(2L);
+        bulkUploadRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        bulkUploadRequest.setOverride(true);
+
+        PackSummaryResponse packSummaryResponse = new PackSummaryResponse();
+        AchievedQuantitiesResponse achievedResponse = new AchievedQuantitiesResponse();
+        achievedResponse.setVolumeUtilization("100.0");
+        packSummaryResponse.setConsolidationAchievedQuantities(achievedResponse);
+        ConsolidationDetails consol = new ConsolidationDetails();
+        consol.setTransportMode("AIR");
+
+        when(parser.parseExcelFile(any(), any(), any(), anyMap(), any(), any(), anyMap(), anyMap(), anyMap())).thenReturn(packingList);
+        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(new VolumeWeightChargeable());
+        doReturn(packSummaryResponse).when(spyService).calculatePacksUtilisationForConsolidation(any());
+
+        spyService.uploadPacking(bulkUploadRequest);
+
+        verify(packingDao, times(1)).saveAll(any());
+        verify(packingSync, times(1)).sync(any(), any(), any());
+    }
+
+    @Test
     void downloadPacking() {
         BulkDownloadRequest request = BulkDownloadRequest.builder().consolidationId("12").shipmentId("12").build();
         Page<Packing> page = new PageImpl<>(List.of(testPacking) , PageRequest.of(0 , 10) , 1);
 
         when(packingDao.findAll(any(), any())).thenReturn(page);
         when(commonUtils.convertToList(any(), eq(PackingExcelModel.class))).thenReturn(List.of(PackingExcelModel.builder().build()));
-
         Assertions.assertThrows(RunnerException.class, () -> packingService.downloadPacking(response, request));
     }
 
@@ -1031,7 +1161,6 @@ class PackingServiceTest {
 
         when(packingDao.findAll(any(), any())).thenReturn(page);
         when(commonUtils.convertToList(any(), eq(PackingExcelModel.class))).thenReturn(List.of(PackingExcelModel.builder().build()));
-
         Assertions.assertThrows(RunnerException.class, () -> packingService.downloadPacking(response, request));
     }
 
@@ -1042,7 +1171,6 @@ class PackingServiceTest {
 
         when(packingDao.findAll(any(), any())).thenReturn(page);
         when(commonUtils.convertToList(any(), eq(PackingExcelModel.class))).thenReturn(List.of(PackingExcelModel.builder().build()));
-
         Assertions.assertThrows(RunnerException.class, () -> packingService.downloadPacking(response, request));
     }
 
@@ -1121,7 +1249,7 @@ class PackingServiceTest {
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(testShipment));
         when(jsonHelper.convertValue(any(ContainerRequest.class) , eq(Containers.class))).thenReturn(testContainer);
         when(jsonHelper.convertValue(any(), eq(Packing.class))).thenReturn(testPacking);
-
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = packingService.calculateWeightVolumne(CommonRequestModel.builder().data(request).build());
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -1138,7 +1266,7 @@ class PackingServiceTest {
 
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(testShipment));
         when(jsonHelper.convertValue(any(ContainerRequest.class) , eq(Containers.class))).thenReturn(testContainer);
-
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = packingService.calculateWeightVolumne(CommonRequestModel.builder().data(request).build());
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -1153,6 +1281,7 @@ class PackingServiceTest {
                 .newPack(null)
                 .oldContainer(containerRequest).build();
 
+        mockShipmentSettings();
         when(jsonHelper.convertValue(any(ContainerRequest.class) , eq(Containers.class))).thenReturn(testContainer);
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(request).build();
         assertThrows(NullPointerException.class, () -> packingService.calculateWeightVolumne(commonRequestModel));
@@ -1169,7 +1298,7 @@ class PackingServiceTest {
                 .oldContainer(containerRequest).build();
 
         when(shipmentDao.findById(anyLong())).thenThrow(new RuntimeException());
-
+        mockShipmentSettings();
         assertThrows(RunnerException.class, () -> packingService.calculateWeightVolumne(CommonRequestModel.builder().data(request).build()));
     }
 
@@ -1180,6 +1309,7 @@ class PackingServiceTest {
                 .oldPack(null)
                 .newPack(null)
                 .oldContainer(null).build();
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = packingService.calculateWeightVolumne(CommonRequestModel.buildRequest(request));
         assertNotNull(responseEntity);
     }
@@ -1187,47 +1317,35 @@ class PackingServiceTest {
     @Test
     void testCalculatePackSummary_Success() throws RunnerException {
         List<Packing> packingList = testPackingList;
+        mockShipmentSettings();
+        mockTenantSettings();
         PackSummaryResponse packSummaryResponse = packingService.calculatePackSummary(packingList, Constants.TRANSPORT_MODE_SEA, Constants.SHIPMENT_TYPE_LCL, ShipmentMeasurementDetailsDto.builder().build());
         assertNotNull(packSummaryResponse);
         assertEquals(packSummaryResponse, jsonTestUtility.getTestPackSummaryResponse());
     }
 
     @Test
+    void testCalculatePackSummaryDefault_Success() throws RunnerException {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().multipleShipmentEnabled(true).mergeContainers(false).build());
+        mockShipmentSettings();
+        mockTenantSettings();
+        PackSummaryResponse packSummaryResponse = packingService.calculatePackSummary(null, Constants.TRANSPORT_MODE_ROA, Constants.SHIPMENT_TYPE_LCL, ShipmentMeasurementDetailsDto.builder().build());
+        assertNotNull(packSummaryResponse);
+    }
+
+    @Test
     void testCalculatePackSummary_AIR_Success() throws RunnerException {
         List<Packing> packingList = testPackingList;
+        mockShipmentSettings();
+        mockTenantSettings();
         PackSummaryResponse packSummaryResponse = packingService.calculatePackSummary(packingList, Constants.TRANSPORT_MODE_AIR, Constants.SHIPMENT_TYPE_LCL, ShipmentMeasurementDetailsDto.builder().build());
         assertNotNull(packSummaryResponse);
         assertEquals(packSummaryResponse, jsonTestUtility.getTestPackSummaryAirResponse());
     }
 
     @Test
-    void testCalculateVolumetricWeightForAir_Success() throws RunnerException {
-        VolumeWeightChargeable vwObj = packingService.calculateVolumetricWeightForAir(new BigDecimal(1), new BigDecimal(1), Constants.TRANSPORT_MODE_SEA, Constants.WEIGHT_UNIT_KG, Constants.VOLUME_UNIT_M3);
-        assertNotNull(vwObj);
-        assertEquals(vwObj.getChargeable(), jsonTestUtility.getTestVolWtChargeable().getChargeable());
-    }
-
-    @Test
-    void testCalculateVolumetricWeightForAirAndChargeable_Success() throws RunnerException {
-        testAutoCalculatePackingRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
-        testAutoCalculatePackingRequest.setContainerCategory(Constants.SHIPMENT_TYPE_LCL);
-        CommonRequestModel commonRequest = CommonRequestModel.buildRequest(testAutoCalculatePackingRequest);
-        ResponseEntity<IRunnerResponse> response = packingService.calculateVolumetricWeightForAirAndChargeable(commonRequest);
-        assertNotNull(response);
-    }
-
-    @Test
-    void testCalculateVolumetricWeightForAirAndChargeable_SEA_Success() throws RunnerException {
-        testAutoCalculatePackingRequest.setTransportMode(Constants.TRANSPORT_MODE_SEA);
-        testAutoCalculatePackingRequest.setContainerCategory(Constants.SHIPMENT_TYPE_LCL);
-        CommonRequestModel commonRequest = CommonRequestModel.buildRequest(testAutoCalculatePackingRequest);
-        ResponseEntity<IRunnerResponse> response = packingService.calculateVolumetricWeightForAirAndChargeable(commonRequest);
-        assertNotNull(response);
-    }
-
-    @Test
     void testCalculateVolume_Success() throws RunnerException {
-        packingService.calculateVolume(Constants.M, Constants.M, Constants.M, testAutoCalculatePackingResponse, testAutoCalculatePackingRequest);
+        packingService.calculateVolume(testAutoCalculatePackingRequest, testAutoCalculatePackingResponse);
         assertNotNull(testAutoCalculatePackingResponse);
     }
 
@@ -1236,7 +1354,8 @@ class PackingServiceTest {
         testAutoCalculatePackingRequest.setLength(new BigDecimal(1));
         testAutoCalculatePackingRequest.setWidth(new BigDecimal(2));
         testAutoCalculatePackingRequest.setHeight(new BigDecimal(3));
-        packingService.calculateVolume(Constants.M, Constants.M, Constants.M, testAutoCalculatePackingResponse, testAutoCalculatePackingRequest);
+        mockShipmentSettings();
+        packingService.calculateVolume(testAutoCalculatePackingRequest, testAutoCalculatePackingResponse);
         assertNotNull(testAutoCalculatePackingRequest);
     }
 
@@ -1245,7 +1364,8 @@ class PackingServiceTest {
         testAutoCalculatePackingRequest.setLength(new BigDecimal(1));
         testAutoCalculatePackingRequest.setWidth(new BigDecimal(2));
         testAutoCalculatePackingRequest.setHeight(new BigDecimal(3));
-        packingService.calculateVolume(Constants.CM, Constants.CM, Constants.CM, testAutoCalculatePackingResponse, testAutoCalculatePackingRequest);
+        mockShipmentSettings();
+        packingService.calculateVolume(testAutoCalculatePackingRequest, testAutoCalculatePackingResponse);
         assertNotNull(testAutoCalculatePackingRequest);
     }
 
@@ -1255,7 +1375,8 @@ class PackingServiceTest {
         testAutoCalculatePackingRequest.setWidth(new BigDecimal(2));
         testAutoCalculatePackingRequest.setHeight(new BigDecimal(3));
         testAutoCalculatePackingRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
-        packingService.calculateVolume(Constants.FT, Constants.FT, Constants.FT, testAutoCalculatePackingResponse, testAutoCalculatePackingRequest);
+        mockShipmentSettings();
+        packingService.calculateVolume(testAutoCalculatePackingRequest, testAutoCalculatePackingResponse);
         assertNotNull(testAutoCalculatePackingRequest);
     }
 
@@ -1264,7 +1385,9 @@ class PackingServiceTest {
         testAutoCalculatePackingRequest.setLength(new BigDecimal(1));
         testAutoCalculatePackingRequest.setWidth(new BigDecimal(2));
         testAutoCalculatePackingRequest.setHeight(new BigDecimal(3));
-        packingService.calculateVolume(Constants.IN, Constants.IN, Constants.IN, testAutoCalculatePackingResponse, testAutoCalculatePackingRequest);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setVolumeDecimalPlace(3);
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
+        packingService.calculateVolume(testAutoCalculatePackingRequest, testAutoCalculatePackingResponse);
         assertNotNull(testAutoCalculatePackingRequest);
     }
 
@@ -1273,7 +1396,8 @@ class PackingServiceTest {
         testAutoCalculatePackingRequest.setLength(new BigDecimal(1));
         testAutoCalculatePackingRequest.setWidth(new BigDecimal(2));
         testAutoCalculatePackingRequest.setHeight(new BigDecimal(3));
-        packingService.calculateVolume(Constants.MTR, Constants.MTR, Constants.MTR, testAutoCalculatePackingResponse, testAutoCalculatePackingRequest);
+        mockShipmentSettings();
+        packingService.calculateVolume(testAutoCalculatePackingRequest, testAutoCalculatePackingResponse);
         assertNotNull(testAutoCalculatePackingRequest);
     }
 
@@ -1282,7 +1406,8 @@ class PackingServiceTest {
         testAutoCalculatePackingRequest.setLength(new BigDecimal(1));
         testAutoCalculatePackingRequest.setWidth(new BigDecimal(2));
         testAutoCalculatePackingRequest.setHeight(new BigDecimal(3));
-        packingService.calculateVolume(Constants.M, Constants.M, Constants.M, testAutoCalculatePackingResponse, testAutoCalculatePackingRequest);
+        mockShipmentSettings();
+        packingService.calculateVolume(testAutoCalculatePackingRequest, testAutoCalculatePackingResponse);
         assertNotNull(testAutoCalculatePackingRequest);
     }
 
@@ -1291,14 +1416,15 @@ class PackingServiceTest {
         testAutoCalculatePackingRequest.setLength(new BigDecimal(1));
         testAutoCalculatePackingRequest.setWidth(new BigDecimal(2));
         testAutoCalculatePackingRequest.setHeight(new BigDecimal(3));
-        packingService.calculateVolume(Constants.MILLIMETER, Constants.MILLIMETER, Constants.MILLIMETER, testAutoCalculatePackingResponse, testAutoCalculatePackingRequest);
+        mockShipmentSettings();
+        packingService.calculateVolume(testAutoCalculatePackingRequest, testAutoCalculatePackingResponse);
         assertNotNull(testAutoCalculatePackingRequest);
     }
 
     @Test
     void testAutoCalculateVolumetricWeight_Success() {
         CommonRequestModel commonRequest = CommonRequestModel.buildRequest(testAutoCalculatePackingRequest);
-        ResponseEntity<IRunnerResponse> response = packingService.autoCalculateVolumetricWeight(commonRequest);
+        ResponseEntity<IRunnerResponse> response = packingService.autoCalculatePacksData(commonRequest);
         assertNotNull(response);
     }
 
@@ -1307,7 +1433,7 @@ class PackingServiceTest {
         testAutoCalculatePackingRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         CommonRequestModel commonRequest = CommonRequestModel.buildRequest(testAutoCalculatePackingRequest);
         when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(jsonTestUtility.getVolumeWeightChargeable());
-        ResponseEntity<IRunnerResponse> response = packingService.autoCalculateVolumetricWeight(commonRequest);
+        ResponseEntity<IRunnerResponse> response = packingService.autoCalculatePacksData(commonRequest);
         assertNotNull(response);
     }
 
@@ -1317,54 +1443,8 @@ class PackingServiceTest {
         testAutoCalculatePackingRequest.setContainerCategory(Constants.SHIPMENT_TYPE_LCL);
         CommonRequestModel commonRequest = CommonRequestModel.buildRequest(testAutoCalculatePackingRequest);
         when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(jsonTestUtility.getVolumeWeightChargeable());
-        ResponseEntity<IRunnerResponse> response = packingService.autoCalculateVolumetricWeight(commonRequest);
+        ResponseEntity<IRunnerResponse> response = packingService.autoCalculatePacksData(commonRequest);
         assertNotNull(response);
-    }
-
-    @Test
-    void testAutoCalculateChargable_Success() throws RunnerException {
-        testAutoCalculatePackingRequest.setTransportMode(Constants.TRANSPORT_MODE_SEA);
-        testAutoCalculatePackingRequest.setContainerCategory(Constants.SHIPMENT_TYPE_LCL);
-        CommonRequestModel commonRequest = CommonRequestModel.buildRequest(testAutoCalculatePackingRequest);
-        when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(jsonTestUtility.getTestVolWtChargeable());
-        ResponseEntity<IRunnerResponse> response = packingService.autoCalculateChargable(commonRequest);
-        assertNotNull(response);
-    }
-
-    @Test
-    void testAutoCalculateChargable_AIR_Success() throws RunnerException {
-        testAutoCalculatePackingRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
-        testAutoCalculatePackingRequest.setContainerCategory(Constants.SHIPMENT_TYPE_LCL);
-        CommonRequestModel commonRequest = CommonRequestModel.buildRequest(testAutoCalculatePackingRequest);
-        ResponseEntity<IRunnerResponse> response = packingService.autoCalculateChargable(commonRequest);
-        assertNotNull(response);
-    }
-
-    @Test
-    void testAutoCalculateVolume_Success() throws RunnerException {
-        CommonRequestModel commonRequest = CommonRequestModel.buildRequest(testAutoCalculatePackingRequest);
-        ResponseEntity<IRunnerResponse> response = packingService.autoCalculateVolume(commonRequest);
-        assertNotNull(response);
-    }
-
-    @Test
-    void testCalculateChargeableForAir_Success() throws RunnerException {
-        packingService.calculateChargeableForAir(testAutoCalculatePackingResponse, testAutoCalculatePackingRequest);
-        assertNotNull(testAutoCalculatePackingResponse.getChargeable());
-    }
-
-    @Test
-    void testCalculateChargeableForAir_ChWt_Success() throws RunnerException {
-        testAutoCalculatePackingRequest.setWeight(new BigDecimal(9));
-        testAutoCalculatePackingRequest.setVolume(new BigDecimal(99999));
-        packingService.calculateChargeableForAir(testAutoCalculatePackingResponse, testAutoCalculatePackingRequest);
-        assertNotNull(testAutoCalculatePackingResponse.getChargeable());
-    }
-
-    @Test
-    void testCalculateChargeableForSEA_LCL_Success() throws RunnerException {
-        packingService.calculateChargeableForSEA_LCL(testAutoCalculatePackingResponse, testAutoCalculatePackingRequest);
-        assertNotNull(testAutoCalculatePackingResponse.getChargeable());
     }
 
     @Test
@@ -1444,5 +1524,397 @@ class PackingServiceTest {
         var e = assertThrows(RuntimeException.class, () -> spyService.V1BulkPackingCreateAndUpdate(commonRequestModel));
         assertNotNull(e);
     }
+
+    @Test
+    void testCalculatePacksUtilisationForConsolidationPacks() throws RunnerException{
+        var packingList = jsonTestUtility.getTestPackingList();
+        Long consolidationId = 1L;
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getTestConsolidationAir();
+        ShipmentRequest shipmentRequest = ShipmentRequest.builder().id(1L).build();
+        Allocations allocations = jsonTestUtility.getJson("CONSOLIDATION_ALLOCATION", Allocations.class);
+        consolidationDetails.setAllocations(allocations);
+        setFeatureFlagForInterBranch();
+
+        CalculatePackUtilizationRequest request = new CalculatePackUtilizationRequest();
+        request.setConsolidationId(consolidationId);
+        request.setPackingList(jsonTestUtility.convertValueToList(packingList, PackingRequest.class));
+
+        AchievedQuantities achievedQuantities = new AchievedQuantities();
+        BigDecimal consolidatedWeight = BigDecimal.valueOf(packingList.stream().mapToDouble(i -> i.getWeight().doubleValue()).sum());
+        BigDecimal consolidatedVolume = BigDecimal.valueOf(packingList.stream().mapToDouble(i -> i.getVolume().doubleValue()).sum());
+        achievedQuantities.setConsolidatedWeight(consolidatedWeight);
+        achievedQuantities.setConsolidatedVolume(consolidatedVolume);
+        achievedQuantities.setWeightUtilization(String.valueOf(consolidatedWeight.divide(allocations.getWeight())));
+        achievedQuantities.setVolumeUtilization(String.valueOf(consolidatedVolume.divide(allocations.getVolume())));
+
+        AchievedQuantitiesResponse achievedQuantitiesResponse = objectMapperTest.convertValue(achievedQuantities, AchievedQuantitiesResponse.class);
+
+        // Mocking
+        mockShipmentSettings();
+        mockTenantSettings();
+        when(jsonHelper.convertValueToList(any(), eq(Packing.class))).thenReturn(packingList);
+        when(jsonHelper.convertValue(any(), eq(Allocations.class))).thenReturn(allocations);
+        when(consolidationDao.findById(consolidationId)).thenReturn(Optional.of(consolidationDetails));
+        when(commonUtils.calculateConsolUtilization(consolidationDetails)).thenReturn(consolidationDetails.setAchievedQuantities(achievedQuantities));
+        when(jsonHelper.convertValue(any(), eq(AchievedQuantitiesResponse.class))).thenReturn(achievedQuantitiesResponse);
+
+        try{
+            var response = packingService.calculatePacksUtilisationForConsolidation(request);
+            assertNotNull(response);
+        }
+        catch (Exception e) {
+            fail(e);
+        }
+    }
+
+    @Test
+    void testCalculatePacksUtilisationForConsolidationPacksForIneligibleConsolidation() throws RunnerException{
+        var packingList = jsonTestUtility.getTestPackingList();
+        Long consolidationId = 1L;
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getTestConsolidationAir();
+        ShipmentRequest shipmentRequest = ShipmentRequest.builder().id(1L).build();
+        Allocations allocations = jsonTestUtility.getJson("CONSOLIDATION_ALLOCATION", Allocations.class);
+
+        //Invalid consol conditions
+        consolidationDetails.setTransportMode("SEA");
+        consolidationDetails.setShipmentType("IMP");
+        consolidationDetails.setAllocations(null);
+
+
+        CalculatePackUtilizationRequest request = new CalculatePackUtilizationRequest();
+        request.setConsolidationId(consolidationId);
+        request.setPackingList(jsonTestUtility.convertValueToList(packingList, PackingRequest.class));
+
+        AchievedQuantities achievedQuantities = new AchievedQuantities();
+        BigDecimal consolidatedWeight = BigDecimal.valueOf(packingList.stream().mapToDouble(i -> i.getWeight().doubleValue()).sum());
+        BigDecimal consolidatedVolume = BigDecimal.valueOf(packingList.stream().mapToDouble(i -> i.getVolume().doubleValue()).sum());
+        achievedQuantities.setConsolidatedWeight(consolidatedWeight);
+        achievedQuantities.setConsolidatedVolume(consolidatedVolume);
+        achievedQuantities.setWeightUtilization(String.valueOf(consolidatedWeight.divide(allocations.getWeight())));
+        achievedQuantities.setVolumeUtilization(String.valueOf(consolidatedVolume.divide(allocations.getVolume())));
+
+        AchievedQuantitiesResponse achievedQuantitiesResponse = objectMapperTest.convertValue(achievedQuantities, AchievedQuantitiesResponse.class);
+        var packingServiceSpy = Mockito.spy(packingService);
+
+        // Mocking
+        mockTenantSettings();
+        when(jsonHelper.convertValueToList(any(), eq(Packing.class))).thenReturn(packingList);
+        when(jsonHelper.convertValue(any(), eq(Allocations.class))).thenReturn(null);
+        when(consolidationDao.findById(consolidationId)).thenReturn(Optional.of(consolidationDetails));
+        doReturn(new PackSummaryResponse()).when(packingServiceSpy).calculatePackSummary(anyList(), any(), any(), any());
+
+        try{
+            var response = packingServiceSpy.calculatePacksUtilisationForConsolidation(request);
+            assertNull(response.getAchievedVolume());
+            assertNull(response.getAchievedWeight());
+        }
+        catch (Exception e) {
+            fail(e);
+        }
+    }
+
+    @Test
+    void testCalculatePacksUtilisationForAttachedShipmentPacks() throws RunnerException{
+        var packingList = jsonTestUtility.getTestPackingList();
+        Long consolidationId = 1L;
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getTestConsolidationAir();
+        consolidationDetails.setPackingList(packingList);
+        ShipmentRequest shipmentRequest = ShipmentRequest.builder().id(1L).build();
+        shipmentRequest.setPackingList(jsonTestUtility.convertValueToList(packingList, PackingRequest.class));
+        Allocations allocations = jsonTestUtility.getJson("CONSOLIDATION_ALLOCATION", Allocations.class);
+        consolidationDetails.setAllocations(allocations);
+        setFeatureFlagForInterBranch();
+
+        CalculatePackUtilizationRequest request = new CalculatePackUtilizationRequest();
+        request.setShipmentRequest(shipmentRequest);
+        request.setConsolidationId(consolidationId);
+
+        AchievedQuantities achievedQuantities = new AchievedQuantities();
+        BigDecimal consolidatedWeight = BigDecimal.valueOf(packingList.stream().mapToDouble(i -> i.getWeight().doubleValue()).sum());
+        BigDecimal consolidatedVolume = BigDecimal.valueOf(packingList.stream().mapToDouble(i -> i.getVolume().doubleValue()).sum());
+        achievedQuantities.setConsolidatedWeight(consolidatedWeight);
+        achievedQuantities.setConsolidatedVolume(consolidatedVolume);
+        achievedQuantities.setWeightUtilization(String.valueOf(consolidatedWeight.divide(allocations.getWeight())));
+        achievedQuantities.setVolumeUtilization(String.valueOf(consolidatedVolume.divide(allocations.getVolume())));
+
+        AchievedQuantitiesResponse achievedQuantitiesResponse = objectMapperTest.convertValue(achievedQuantities, AchievedQuantitiesResponse.class);
+
+        // Mocking
+        mockShipmentSettings();
+        mockTenantSettings();
+        when(jsonHelper.convertValueToList(any(), eq(Packing.class))).thenReturn(packingList);
+        when(jsonHelper.convertValue(any(), eq(Allocations.class))).thenReturn(allocations);
+        when(consolidationDao.findById(consolidationId)).thenReturn(Optional.of(consolidationDetails));
+        when(commonUtils.calculateConsolUtilization(consolidationDetails)).thenReturn(consolidationDetails.setAchievedQuantities(achievedQuantities));
+        when(jsonHelper.convertValue(any(), eq(AchievedQuantitiesResponse.class))).thenReturn(achievedQuantitiesResponse);
+
+        try{
+            var response = packingService.calculatePacksUtilisationForConsolidation(request);
+            assertNotNull(response);
+        }
+        catch (Exception e) {
+            fail(e);
+        }
+    }
+
+    @Test
+    void testCalculatePacksUtilisationForAttachedShipmentEmptyRequest() throws RunnerException{
+        var packingList = Collections.EMPTY_LIST;
+        Long consolidationId = 1L;
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getTestConsolidationAir();
+        consolidationDetails.setPackingList(packingList);
+        ShipmentRequest shipmentRequest = ShipmentRequest.builder().build();
+        shipmentRequest.setPackingList(jsonTestUtility.convertValueToList(packingList, PackingRequest.class));
+        Allocations allocations = jsonTestUtility.getJson("CONSOLIDATION_ALLOCATION", Allocations.class);
+        consolidationDetails.setAllocations(allocations);
+        setFeatureFlagForInterBranch();
+
+        CalculatePackUtilizationRequest request = new CalculatePackUtilizationRequest();
+        request.setShipmentRequest(shipmentRequest);
+        request.setConsolidationId(consolidationId);
+
+        AchievedQuantities achievedQuantities = new AchievedQuantities();
+
+        AchievedQuantitiesResponse achievedQuantitiesResponse = objectMapperTest.convertValue(achievedQuantities, AchievedQuantitiesResponse.class);
+
+        // Mocking
+        when(jsonHelper.convertValueToList(any(), eq(Packing.class))).thenReturn(packingList);
+        when(jsonHelper.convertValue(any(), eq(Allocations.class))).thenReturn(allocations);
+        when(consolidationDao.findById(consolidationId)).thenReturn(Optional.of(consolidationDetails));
+
+        try{
+            var response = packingService.calculatePacksUtilisationForConsolidation(request);
+            assertNull(response);
+        }
+        catch (Exception e) {
+            fail(e);
+        }
+    }
+
+    @Test
+    void testCalculatePacksUtilisationForAttachingShipments() throws RunnerException{
+        var packingList = jsonTestUtility.getTestPackingList();
+        packingList.stream().map(i -> {
+            i.setConsolidationId(1L);
+            i.setShipmentId(1L);
+            return i;
+        }).toList();
+        Long consolidationId = 1L;
+        List<Long> shipmentIds = List.of(1L);
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getTestConsolidationAir();
+        ShipmentRequest shipmentRequest = ShipmentRequest.builder().id(1L).build();
+        Allocations allocations = jsonTestUtility.getJson("CONSOLIDATION_ALLOCATION", Allocations.class);
+        consolidationDetails.setAllocations(allocations);
+        consolidationDetails.setPackingList(packingList);
+        setFeatureFlagForInterBranch();
+
+        CalculatePackUtilizationRequest request = new CalculatePackUtilizationRequest();
+        request.setShipmentIdList(shipmentIds);
+        request.setConsolidationId(consolidationId);
+
+        AchievedQuantities achievedQuantities = new AchievedQuantities();
+        BigDecimal consolidatedWeight = BigDecimal.valueOf(packingList.stream().mapToDouble(i -> i.getWeight().doubleValue()).sum());
+        BigDecimal consolidatedVolume = BigDecimal.valueOf(packingList.stream().mapToDouble(i -> i.getVolume().doubleValue()).sum());
+        achievedQuantities.setConsolidatedWeight(consolidatedWeight);
+        achievedQuantities.setConsolidatedVolume(consolidatedVolume);
+        achievedQuantities.setWeightUtilization(String.valueOf(consolidatedWeight.divide(allocations.getWeight())));
+        achievedQuantities.setVolumeUtilization(String.valueOf(consolidatedVolume.divide(allocations.getVolume())));
+
+        AchievedQuantitiesResponse achievedQuantitiesResponse = objectMapperTest.convertValue(achievedQuantities, AchievedQuantitiesResponse.class);
+
+        Page<ShipmentDetails> shipmentDetailsPage = new PageImpl(List.of(ShipmentDetails.builder()
+            .packingList(packingList).build()
+        ));
+
+        // Mocking
+        mockShipmentSettings();
+        mockTenantSettings();
+        when(jsonHelper.convertValueToList(any(), eq(Packing.class))).thenReturn(packingList);
+        when(jsonHelper.convertValue(any(), eq(Allocations.class))).thenReturn(allocations);
+        when(consolidationDao.findById(consolidationId)).thenReturn(Optional.of(consolidationDetails));
+        when(commonUtils.calculateConsolUtilization(consolidationDetails)).thenReturn(consolidationDetails.setAchievedQuantities(achievedQuantities));
+        when(jsonHelper.convertValue(any(), eq(AchievedQuantitiesResponse.class))).thenReturn(achievedQuantitiesResponse);
+        when(shipmentDao.findAll(any(), any())).thenReturn(shipmentDetailsPage);
+
+        try{
+            var response = packingService.calculatePacksUtilisationForConsolidation(request);
+            assertNotNull(response);
+            verify(commonUtils, times(0)).setInterBranchContextForHub();
+        }
+        catch (Exception e) {
+            fail(e);
+        }
+    }
+
+    @Test
+    void savePackUtilisationCalculationInConsoleSuccess() throws RunnerException {
+        var spyService = Mockito.spy(packingService);
+        var packingList = jsonTestUtility.getTestPackingList();
+        Long consolidationId = 1L;
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getTestConsolidationAir();
+        consolidationDetails.setPackingList(packingList);
+        ShipmentRequest shipmentRequest = ShipmentRequest.builder().id(1L).build();
+        shipmentRequest.setPackingList(jsonTestUtility.convertValueToList(packingList, PackingRequest.class));
+        Allocations allocations = jsonTestUtility.getJson("CONSOLIDATION_ALLOCATION", Allocations.class);
+        consolidationDetails.setAllocations(allocations);
+        setFeatureFlagForInterBranch();
+
+        CalculatePackUtilizationRequest request = new CalculatePackUtilizationRequest();
+        request.setSaveConsol(true);
+        request.setShipmentRequest(shipmentRequest);
+        request.setConsolidationId(consolidationId);
+
+        AchievedQuantities achievedQuantities = new AchievedQuantities();
+        BigDecimal consolidatedWeight = BigDecimal.valueOf(packingList.stream().mapToDouble(i -> i.getWeight().doubleValue()).sum());
+        BigDecimal consolidatedVolume = BigDecimal.valueOf(packingList.stream().mapToDouble(i -> i.getVolume().doubleValue()).sum());
+        achievedQuantities.setConsolidatedWeight(consolidatedWeight);
+        achievedQuantities.setConsolidatedVolume(consolidatedVolume);
+        achievedQuantities.setWeightUtilization(String.valueOf(consolidatedWeight.divide(allocations.getWeight())));
+        achievedQuantities.setVolumeUtilization(String.valueOf(consolidatedVolume.divide(allocations.getVolume())));
+
+        AchievedQuantitiesResponse achievedQuantitiesResponse = objectMapperTest.convertValue(achievedQuantities, AchievedQuantitiesResponse.class);
+
+        // Mocking
+        mockShipmentSettings();
+        mockTenantSettings();
+        when(jsonHelper.convertValueToList(any(), eq(Packing.class))).thenReturn(packingList);
+        when(jsonHelper.convertValue(any(), eq(Allocations.class))).thenReturn(allocations);
+        when(consolidationDao.findById(consolidationId)).thenReturn(Optional.of(consolidationDetails));
+        when(commonUtils.calculateConsolUtilization(consolidationDetails)).thenReturn(consolidationDetails.setAchievedQuantities(achievedQuantities));
+        when(jsonHelper.convertValue(any(), eq(AchievedQuantitiesResponse.class))).thenReturn(achievedQuantitiesResponse);
+
+        try{
+            spyService.savePackUtilisationCalculationInConsole(request);
+            verify(consolidationDao, times(1)).save(any(), anyBoolean());
+        }
+        catch (Exception e) {
+            fail(e);
+        }
+    }
+
+    @Test
+    void savePackUtilisationCalculationInConsoleConsolidationNotPresent() {
+        var spyService = Mockito.spy(packingService);
+        var packingList = jsonTestUtility.getTestPackingList();
+        Long consolidationId = 1L;
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getTestConsolidationAir();
+        consolidationDetails.setPackingList(packingList);
+        ShipmentRequest shipmentRequest = ShipmentRequest.builder().id(1L).build();
+        shipmentRequest.setPackingList(jsonTestUtility.convertValueToList(packingList, PackingRequest.class));
+        Allocations allocations = jsonTestUtility.getJson("CONSOLIDATION_ALLOCATION", Allocations.class);
+        consolidationDetails.setAllocations(allocations);
+        setFeatureFlagForInterBranch();
+
+        CalculatePackUtilizationRequest request = new CalculatePackUtilizationRequest();
+        request.setSaveConsol(true);
+        request.setShipmentRequest(shipmentRequest);
+        request.setConsolidationId(consolidationId);
+
+        AchievedQuantities achievedQuantities = new AchievedQuantities();
+        BigDecimal consolidatedWeight = BigDecimal.valueOf(packingList.stream().mapToDouble(i -> i.getWeight().doubleValue()).sum());
+        BigDecimal consolidatedVolume = BigDecimal.valueOf(packingList.stream().mapToDouble(i -> i.getVolume().doubleValue()).sum());
+        achievedQuantities.setConsolidatedWeight(consolidatedWeight);
+        achievedQuantities.setConsolidatedVolume(consolidatedVolume);
+        achievedQuantities.setWeightUtilization(String.valueOf(consolidatedWeight.divide(allocations.getWeight())));
+        achievedQuantities.setVolumeUtilization(String.valueOf(consolidatedVolume.divide(allocations.getVolume())));
+
+        // Mocking
+        when(consolidationDao.findById(consolidationId)).thenReturn(Optional.empty());
+
+        try{
+            spyService.savePackUtilisationCalculationInConsole(request);
+            verify(consolidationDao, times(0)).save(any(), anyBoolean());
+        }
+        catch (Exception e) {
+            fail(e);
+        }
+    }
+
+    @Test
+    void savePackUtilisationCalculationInConsoleFails() {
+        var spyService = Mockito.spy(packingService);
+        var packingList = jsonTestUtility.getTestPackingList();
+        Long consolidationId = 1L;
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getTestConsolidationAir();
+        consolidationDetails.setPackingList(packingList);
+        ShipmentRequest shipmentRequest = ShipmentRequest.builder().id(1L).build();
+        shipmentRequest.setPackingList(jsonTestUtility.convertValueToList(packingList, PackingRequest.class));
+        Allocations allocations = jsonTestUtility.getJson("CONSOLIDATION_ALLOCATION", Allocations.class);
+        consolidationDetails.setAllocations(allocations);
+        setFeatureFlagForInterBranch();
+
+        CalculatePackUtilizationRequest request = new CalculatePackUtilizationRequest();
+        request.setSaveConsol(true);
+        request.setShipmentRequest(shipmentRequest);
+        request.setConsolidationId(consolidationId);
+
+        AchievedQuantities achievedQuantities = new AchievedQuantities();
+        BigDecimal consolidatedWeight = BigDecimal.valueOf(packingList.stream().mapToDouble(i -> i.getWeight().doubleValue()).sum());
+        BigDecimal consolidatedVolume = BigDecimal.valueOf(packingList.stream().mapToDouble(i -> i.getVolume().doubleValue()).sum());
+        achievedQuantities.setConsolidatedWeight(consolidatedWeight);
+        achievedQuantities.setConsolidatedVolume(consolidatedVolume);
+        achievedQuantities.setWeightUtilization(String.valueOf(consolidatedWeight.divide(allocations.getWeight())));
+        achievedQuantities.setVolumeUtilization(String.valueOf(consolidatedVolume.divide(allocations.getVolume())));
+
+        // Mocking
+        when(consolidationDao.findById(consolidationId)).thenThrow(new RuntimeException());
+
+        try{
+            spyService.savePackUtilisationCalculationInConsole(request);
+            verify(consolidationDao, times(0)).save(any(), anyBoolean());
+        }
+        catch (Exception e) {
+            fail(e);
+        }
+    }
+
+    @Test
+    void savePackUtilisationCalculationSkipsInCaseOfNonAirTransportMode() {
+        var spyService = Mockito.spy(packingService);
+        var packingList = jsonTestUtility.getTestPackingList();
+        Long consolidationId = 1L;
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getTestConsolidationAir();
+        consolidationDetails.setPackingList(packingList);
+        consolidationDetails.setTransportMode("SEA");
+        ShipmentRequest shipmentRequest = ShipmentRequest.builder().id(1L).build();
+        shipmentRequest.setPackingList(jsonTestUtility.convertValueToList(packingList, PackingRequest.class));
+        Allocations allocations = jsonTestUtility.getJson("CONSOLIDATION_ALLOCATION", Allocations.class);
+        consolidationDetails.setAllocations(allocations);
+        setFeatureFlagForInterBranch();
+
+        CalculatePackUtilizationRequest request = new CalculatePackUtilizationRequest();
+        request.setSaveConsol(true);
+        request.setShipmentRequest(shipmentRequest);
+        request.setConsolidationId(consolidationId);
+
+        AchievedQuantities achievedQuantities = new AchievedQuantities();
+        BigDecimal consolidatedWeight = BigDecimal.valueOf(packingList.stream().mapToDouble(i -> i.getWeight().doubleValue()).sum());
+        BigDecimal consolidatedVolume = BigDecimal.valueOf(packingList.stream().mapToDouble(i -> i.getVolume().doubleValue()).sum());
+        achievedQuantities.setConsolidatedWeight(consolidatedWeight);
+        achievedQuantities.setConsolidatedVolume(consolidatedVolume);
+        achievedQuantities.setWeightUtilization(String.valueOf(consolidatedWeight.divide(allocations.getWeight())));
+        achievedQuantities.setVolumeUtilization(String.valueOf(consolidatedVolume.divide(allocations.getVolume())));
+
+        // Mocking
+        when(consolidationDao.findById(consolidationId)).thenThrow(new RuntimeException());
+
+        try{
+            spyService.savePackUtilisationCalculationInConsole(request);
+            verify(consolidationDao, times(0)).save(any(), anyBoolean());
+        }
+        catch (Exception e) {
+            fail(e);
+        }
+    }
+
+
+
+    void setFeatureFlagForInterBranch() {
+        V1TenantSettingsResponse tenantSettingsResponse = new V1TenantSettingsResponse();
+        tenantSettingsResponse.setIsMAWBColoadingEnabled(true);
+        TenantSettingsDetailsContext.setCurrentTenantSettings(tenantSettingsResponse);
+    }
+
+
 
 }

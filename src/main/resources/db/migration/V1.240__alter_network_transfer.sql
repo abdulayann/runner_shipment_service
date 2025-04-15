@@ -1,0 +1,3 @@
+ALTER TABLE IF EXISTS network_transfer
+    ADD COLUMN IF NOT EXISTS entity_guid uuid,
+    ADD COLUMN IF NOT EXISTS is_hidden BOOLEAN DEFAULT FALSE;

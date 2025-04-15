@@ -73,7 +73,7 @@ class ProductIdentifierUtilityTest {
         PageImpl<TenantProducts> tenantProductsPage = new PageImpl<>(tenantProductsList);
 
         when(tenantProductsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(tenantProductsPage);
-        List<TenantProducts> tenantProducts = productIdentifierUtility.populateEnabledTenantProducts(shipmentSettingsDetails);
+        List<TenantProducts> tenantProducts = productIdentifierUtility.populateEnabledTenantProducts();
         assertEquals(ProductType.Shipment_Air_IMP, tenantProducts.get(0).getProductType());
     }
 
@@ -471,7 +471,6 @@ class ProductIdentifierUtilityTest {
         when(tenantProductsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(tenantProductsPage);
         when(productSequenceConfigDao.findAndLock(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfig);
 
-        String number = productIdentifierUtility.getCustomizedBLNumber(shipmentDetails, shipmentSettingsDetails);
         assertNotNull(number);
     }
 
@@ -673,7 +672,6 @@ class ProductIdentifierUtilityTest {
         when(tenantProductsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(tenantProductsPage);
         when(productSequenceConfigDao.findAndLock(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfig);
 
-        String number = productIdentifierUtility.getCustomizedBLNumber(shipmentDetails, shipmentSettingsDetails);
         assertNotNull(number);
         assertEquals("SHP001", number);
     }
@@ -708,7 +706,6 @@ class ProductIdentifierUtilityTest {
         when(tenantProductsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(tenantProductsPage);
         when(productSequenceConfigDao.findAndLock(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfig);
 
-        String number = productIdentifierUtility.getCustomizedBLNumber(shipmentDetails, shipmentSettingsDetails);
         assertNotNull(number);
     }
 
@@ -742,7 +739,6 @@ class ProductIdentifierUtilityTest {
         when(tenantProductsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(tenantProductsPage);
         when(productSequenceConfigDao.findAndLock(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfig);
 
-        String number = productIdentifierUtility.getCustomizedBLNumber(shipmentDetails, shipmentSettingsDetails);
         assertNotNull(number);
     }
 
@@ -776,7 +772,6 @@ class ProductIdentifierUtilityTest {
         when(tenantProductsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(tenantProductsPage);
         when(productSequenceConfigDao.findAndLock(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfig);
 
-        String number = productIdentifierUtility.getCustomizedBLNumber(shipmentDetails, shipmentSettingsDetails);
         assertNotNull(number);
         assertEquals("SHP001", number);
     }
@@ -806,7 +801,6 @@ class ProductIdentifierUtilityTest {
         when(tenantProductsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(tenantProductsPage);
         when(productSequenceConfigDao.findAndLock(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfig);
 
-        String number = productIdentifierUtility.getCustomizedBLNumber(shipmentDetails, shipmentSettingsDetails);
         assertNotNull(number);
     }
 
@@ -836,7 +830,6 @@ class ProductIdentifierUtilityTest {
         when(tenantProductsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(tenantProductsPage);
         when(productSequenceConfigDao.findAndLock(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfig);
 
-        String number = productIdentifierUtility.getCustomizedBLNumber(shipmentDetails, shipmentSettingsDetails);
         assertNotNull(number);
     }
 
@@ -972,7 +965,6 @@ class ProductIdentifierUtilityTest {
         when(tenantProductsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(tenantProductsPage);
         when(productSequenceConfigDao.findAndLock(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfig);
 
-        String number = productIdentifierUtility.getCustomizedBLNumber(shipmentDetails, shipmentSettingsDetails);
         assertNotNull(number);
     }
 
@@ -1003,7 +995,6 @@ class ProductIdentifierUtilityTest {
         when(tenantProductsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(tenantProductsPage);
         when(productSequenceConfigDao.findAndLock(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfig);
 
-        String number = productIdentifierUtility.getCustomizedBLNumber(shipmentDetails, shipmentSettingsDetails);
         assertNotNull(number);
     }
 
@@ -1034,7 +1025,6 @@ class ProductIdentifierUtilityTest {
         when(tenantProductsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(tenantProductsPage);
         when(productSequenceConfigDao.findAndLock(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfig);
 
-        String number = productIdentifierUtility.getCustomizedBLNumber(shipmentDetails, shipmentSettingsDetails);
         assertNotNull(number);
     }
 
@@ -1065,7 +1055,6 @@ class ProductIdentifierUtilityTest {
         when(tenantProductsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(tenantProductsPage);
         when(productSequenceConfigDao.findAndLock(any(Specification.class), any(Pageable.class))).thenReturn(productSequenceConfig);
 
-        String number = productIdentifierUtility.getCustomizedBLNumber(shipmentDetails, shipmentSettingsDetails);
         assertEquals("SHP001", number);
     }
 

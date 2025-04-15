@@ -11,20 +11,19 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dto.request.ListContractRequest;
-import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchOffersRequest;
-import com.dpw.runner.shipment.services.dto.request.npm.NPMFetchOffersRequestFromUI;
-import com.dpw.runner.shipment.services.dto.request.npm.UpdateContractRequest;
+import com.dpw.runner.shipment.services.dto.request.ListContractsWithFilterRequest;
+import com.dpw.runner.shipment.services.dto.request.npm.*;
 import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.response.npm.NPMContractsResponse;
 import com.dpw.runner.shipment.services.dto.response.npm.NPMContractsRunnerResponse;
 import com.dpw.runner.shipment.services.dto.response.npm.NPMFetchLangChargeCodeResponse;
 import com.dpw.runner.shipment.services.dto.response.npm.NpmAwbImportRateResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.dto.request.npm.*;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
 import com.dpw.runner.shipment.services.exception.exceptions.NPMException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.response.NpmErrorResponse;
@@ -33,15 +32,19 @@ import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
+import com.dpw.runner.shipment.services.service.interfaces.IQuoteContractsService;
+import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.DateUtils;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.*;
+import org.springframework.http.RequestEntity;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
@@ -55,8 +58,9 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
+
+import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 
 @Service
 @Slf4j
@@ -121,11 +125,20 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     private IAwbDao awbDao;
 
     @Autowired
+    private MasterDataUtils masterDataUtils;
+
+    @Autowired
     public NPMServiceAdapter(@Qualifier("restTemplateForNPM") RestTemplate restTemplate) {
         this.restTemplate = restTemplate;
     }
     @Autowired
     private ICustomerBookingDao customerBookingDao;
+
+    @Autowired
+    private IShipmentService shipmentService;
+
+    @Autowired
+    private IQuoteContractsService quoteContractsService;
 
     @Override
     public ResponseEntity<IRunnerResponse> fetchContract(CommonRequestModel commonRequestModel) throws RunnerException {
@@ -135,6 +148,8 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             log.info(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG, IntegrationType.NPM_CONTRACT_FETCH, jsonHelper.convertToJson(listContractRequest));
             ResponseEntity<ListContractResponse> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(listContractRequest)), ListContractResponse.class);
             this.setOriginAndDestinationName(response.getBody());
+            this.setCarrierMasterData(response.getBody());
+            quoteContractsService.updateQuoteContracts(response.getBody()); // update quote contracts data in db
             return ResponseHelper.buildDependentServiceResponse(response.getBody(),0,0);
         } catch (HttpStatusCodeException ex) {
             NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
@@ -154,7 +169,10 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             if(response.getBody() != null)
             {
                 mapContractToShipment(shipmentDetailsResponse, response.getBody());
+                var masterData = shipmentService.fetchAllMasterDataByKey(null, shipmentDetailsResponse);
+                shipmentDetailsResponse.setMasterDataMap(masterData);
             }
+            quoteContractsService.updateQuoteContracts(response.getBody()); // update quote contracts data in db
             return ResponseHelper.buildDependentServiceResponse(shipmentDetailsResponse,0,0);
         } catch (HttpStatusCodeException ex) {
             NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
@@ -166,28 +184,35 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
     @Override
     public ResponseEntity<IRunnerResponse> fetchContracts(CommonRequestModel commonRequestModel) throws RunnerException {
         try {
-            ListContractRequest listContractRequest = (ListContractRequest) commonRequestModel.getData();
+            ListContractsWithFilterRequest listContractsWithFilterRequest = (ListContractsWithFilterRequest) commonRequestModel.getData();
+            ListContractRequest listContractRequest = listContractsWithFilterRequest.getListContractRequest();
             String url = npmBaseUrl + npmContracts;
             log.info(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG, IntegrationType.NPM_CONTRACT_FETCH, jsonHelper.convertToJson(listContractRequest));
             ResponseEntity<NPMContractsResponse> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(listContractRequest)), NPMContractsResponse.class);
-            List<NPMContractsRunnerResponse> listResponse = this.setOriginAndDestinationName(response.getBody());
+            NPMContractsResponse npmContractsResponse = response.getBody();
+            if(npmContractsResponse != null)
+            {
+                List<NPMContractsResponse.NPMContractResponse> list = npmContractsResponse.getContracts();
+                if(list != null && !list.isEmpty())
+                {
+                    list = list.stream().filter(c -> c.getValidTill() != null && LocalDateTime.now().isBefore(c.getValidTill())).toList();
+                    if(listContractsWithFilterRequest.getCargoType() != null)
+                    {
+                        list = list.stream().filter(c -> listContractsWithFilterRequest.getCargoType().equals(c.getProduct_type())).toList();
+                    }
+                    if(listContractsWithFilterRequest.getOrigin() != null)
+                    {
+                        list = list.stream().filter(c -> listContractsWithFilterRequest.getOrigin().equals(c.getOrigin())).toList();
+                    }
+                    if(listContractsWithFilterRequest.getDestination() != null)
+                    {
+                        list = list.stream().filter(c -> listContractsWithFilterRequest.getDestination().equals(c.getDestination())).toList();
+                    }
+                    npmContractsResponse.setContracts(list);
+                }
+            }
+            List<NPMContractsRunnerResponse> listResponse = this.setOriginAndDestinationName(npmContractsResponse);
             return ResponseHelper.buildDependentServiceResponse(listResponse,0,0);
-        } catch (HttpStatusCodeException ex) {
-            NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
-            log.error(NPM_FETCH_CONTRACT_FAILED_DUE_TO_MSG, jsonHelper.convertToJson(npmErrorResponse));
-            throw new NPMException(ERROR_FROM_NPM_WHILE_FETCHING_CONTRACTS_MSG + npmErrorResponse.getErrorMessage());
-        }
-    }
-
-    @Override
-    public ResponseEntity<IRunnerResponse> fetchContractsTemp(CommonRequestModel commonRequestModel) throws RunnerException {
-        try {
-            ListContractRequest listContractRequest = (ListContractRequest) commonRequestModel.getData();
-            String url = npmBaseUrl + npmContracts;
-            log.info(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG, IntegrationType.NPM_CONTRACT_FETCH, jsonHelper.convertToJson(listContractRequest));
-            ResponseEntity<ListContractResponse> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(listContractRequest)), ListContractResponse.class);
-            this.setOriginAndDestinationNameTemp(response.getBody());
-            return ResponseHelper.buildDependentServiceResponse(response.getBody(),0,0);
         } catch (HttpStatusCodeException ex) {
             NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
             log.error(NPM_FETCH_CONTRACT_FAILED_DUE_TO_MSG, jsonHelper.convertToJson(npmErrorResponse));
@@ -219,6 +244,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             log.info(PAYLOAD_SENT_FOR_EVENT_WITH_REQUEST_PAYLOAD_MSG, IntegrationType.NPM_OFFER_FETCH_V2, jsonHelper.convertToJson(request));
             ResponseEntity<FetchOffersResponse> response = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(request)), FetchOffersResponse.class);
             this.setMeasurementBasis(response.getBody());
+            this.modifyOffersAPIData(response.getBody());
             return ResponseHelper.buildDependentServiceResponse(response.getBody(),0,0);
         } catch (HttpStatusCodeException ex) {
             NpmErrorResponse npmErrorResponse = jsonHelper.readFromJson(ex.getResponseBodyAsString(), NpmErrorResponse.class);
@@ -298,7 +324,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                     "In",
                     Arrays.asList(locCodes)
             );
-            CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
+            CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).criteriaRequests(criteria).build();
             V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
             List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
             if (unlocationsResponse != null && !unlocationsResponse.isEmpty()) {
@@ -311,33 +337,32 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         }
     }
 
-    private void setOriginAndDestinationNameTemp(ListContractResponse response) {
-        Set<String> locCodes = new HashSet<>();
+    private void setCarrierMasterData(ListContractResponse response) {
+        Set<String> carrier = new HashSet<>();
+        log.info("List Contract Response to fetch carrier data {}", response);
         if(response != null && response.getContracts() != null  && !response.getContracts().isEmpty()) {
             response.getContracts().forEach(cont -> {
-                locCodes.add(cont.getOrigin());
-                locCodes.add(cont.getDestination());
-            });
-            List<Object> criteria = Arrays.asList(
-                    Arrays.asList(LOCATIONS_REFERENCE_GUID),
-                    "In",
-                    Arrays.asList(locCodes)
-            );
-            CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
-            V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
-            List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
-            if (unlocationsResponse != null && !unlocationsResponse.isEmpty()) {
-                Map<String, String> locationMap = new HashMap<>();
-                for (UnlocationsResponse unlocation : unlocationsResponse) {
-                    locationMap.put(unlocation.getLocationsReferenceGUID(), unlocation.getName());
+                if(cont.getCarrier_codes() != null) {
+                    cont.getCarrier_codes().remove(NPMConstants.ANY);
+                    cont.getCarrier_codes().remove(NPMConstants.SQSN);
+                    cont.getCarrier_codes().remove(null);
+                    if(!cont.getCarrier_codes().isEmpty()) {
+                        carrier.add(cont.getCarrier_codes().get(0));
+                        log.info("Carrier data from npm {}", carrier);
+                        response.setCarrierMasterData(masterDataUtils.fetchInBulkCarriersBySCACCode(carrier.stream().toList()));
+                        if(response.getCarrierMasterData().containsKey(cont.getCarrier_codes().get(0))) {
+                            EntityTransferCarrier carrierMasterData = response.getCarrierMasterData().get(cont.getCarrier_codes().get(0));
+                            cont.getCarrier_codes().set(0, carrierMasterData.getItemValue());
+                            response.getCarrierMasterData().clear();
+                            response.getCarrierMasterData().put(carrierMasterData.getItemValue(), carrierMasterData);
+                        }
+                        else {
+                            log.info("Carrier code not valid or not present in contract");
+                            cont.setCarrier_codes(new ArrayList<>());
+                        }
+                    }
                 }
-                response.getContracts().forEach(cont -> {
-                    if(locationMap.containsKey(cont.getOrigin()))
-                        cont.setOrigin_name(locationMap.get(cont.getOrigin()));
-                    if(locationMap.containsKey(cont.getDestination()))
-                        cont.setDestination_name(locationMap.get(cont.getDestination()));
-                });
-            }
+            });
         }
     }
 
@@ -354,7 +379,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                     "In",
                     Arrays.asList(locCodes)
             );
-            CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(criteria).build();
+            CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).criteriaRequests(criteria).build();
             V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
             List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
             if (unlocationsResponse != null && !unlocationsResponse.isEmpty()) {
@@ -369,7 +394,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                     if(locationMap.containsKey(cont.getDestination()))
                         cont.setDestination_name(locationMap.get(cont.getDestination()));
                     List<NPMContractsResponse.NPMContractResponse> list = new ArrayList<>();
-                    if(responseMap.get(cont.getParent_contract_id()) != null && responseMap.get(cont.getParent_contract_id()).size() > 0)
+                    if(responseMap.get(cont.getParent_contract_id()) != null && !responseMap.get(cont.getParent_contract_id()).isEmpty())
                         list.addAll(responseMap.get(cont.getParent_contract_id()));
                     list.add(cont);
                     responseMap.put(cont.getParent_contract_id(), list);
@@ -402,6 +427,21 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                 return "Shipment";
             default:
                 return uom;
+        }
+    }
+
+    private void modifyOffersAPIData(FetchOffersResponse response) {
+        if(Objects.isNull(response) || Objects.isNull(response.getOffers()) || response.getOffers().isEmpty())
+            return;
+        FetchOffersResponse.Offer offer = response.getOffers().get(0);
+        if(!IsStringNullOrEmpty(offer.getCarrier())) {
+            List<String> carrierCodes = new ArrayList<>();
+            carrierCodes.add(offer.getCarrier());
+            Map<String, EntityTransferCarrier> map = masterDataUtils.fetchInBulkCarriersBySCACCode(carrierCodes);
+            if(map.containsKey(offer.getCarrier()))
+                offer.setCarrier(map.get(offer.getCarrier()).ItemValue);
+            else
+                offer.setCarrier(null);
         }
     }
 
@@ -743,7 +783,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             shipmentResponse.setContractId(contract.getContract_id());
             shipmentResponse.setContractType(contract.getContract_type());
             shipmentResponse.setCarrierDetails(createCarrierDetails(contract));
-            shipmentResponse.setShipmentType(contract.getLoad_types().get(0));
+            shipmentResponse.setShipmentType(contract.getLoad_types() != null && !contract.getLoad_types().isEmpty() ? contract.getLoad_types().get(0) : null);
             if(contract.getMeta() != null)
             {
                 shipmentResponse.setTransportMode(contract.getMeta().getMode_of_transport());
@@ -776,7 +816,24 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                 .destination(contract.getDestination())
                 .originPort(contract.getMeta() != null ? contract.getMeta().getPol() : null)
                 .destinationPort(contract.getMeta() != null ? contract.getMeta().getPod() : null)
+                .shippingLine(getCarrier(contract))
+                .minTransitHours(contract.getMeta() != null ? contract.getMeta().getMinTransitHours() : null)
+                .maxTransitHours(contract.getMeta() != null ? contract.getMeta().getMaxTransitHours() : null)
                 .build();
+    }
+
+    public String getCarrier(ListContractResponse.ContractResponse contract) {
+        if(contract.getCarrier_codes() == null)
+            return null;
+        contract.getCarrier_codes().remove(NPMConstants.ANY);
+        contract.getCarrier_codes().remove(NPMConstants.SQSN);
+        contract.getCarrier_codes().remove(null);
+        if(contract.getCarrier_codes().isEmpty())
+            return null;
+        Map<String, EntityTransferCarrier> map = masterDataUtils.fetchInBulkCarriersBySCACCode(contract.getCarrier_codes().stream().toList());
+        if(map.containsKey(contract.getCarrier_codes().get(0)))
+            return map.get(contract.getCarrier_codes().get(0)).ItemValue;
+        return null;
     }
 
     private List<RoutingsResponse> createRoutings(ListContractResponse.ContractResponse contractResponse) {
@@ -802,7 +859,6 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
             List<PackingResponse> packingList = new ArrayList<>();
             for(var contractUsage: contractUsages) {
                 var packing = new PackingResponse();
-                packing.setPacks(contractUsage.getUsage() != null ? contractUsage.getUsage().toString() : null);
                 var filter_attributes = contractUsage.getFilter_params();
                 if(filter_attributes != null)
                 {
@@ -815,6 +871,7 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
                 if(meta != null)
                 {
                      var load_attributes = meta.getLoad_attributes();
+                     packing.setPacks(load_attributes.getQuantity() != null ? load_attributes.getQuantity().toString() : null);
                      packing.setWeight(load_attributes.getWeight());
                      packing.setWeightUnit(load_attributes.getWeight_uom());
                      packing.setVolume(load_attributes.getVolume());
@@ -841,15 +898,15 @@ public class NPMServiceAdapter implements INPMServiceAdapter {
         return null;
     }
 
-    private List<ContainerResponse> createContainers(ListContractResponse.ContractResponse contractResponse)
+    private Set<ContainerResponse> createContainers(ListContractResponse.ContractResponse contractResponse)
     {
         if(contractResponse.getContract_usage() != null && contractResponse.getContract_usage().size() > 0) {
             List<ListContractResponse.ContractUsage> contractUsages = contractResponse.getContract_usage();
-            List<ContainerResponse> containerList = new ArrayList<>();
+            Set<ContainerResponse> containerList = new HashSet<>();
             for(var contractUsage: contractUsages)
             {
                 ContainerResponse containerResponse = new ContainerResponse();
-                containerResponse.setContainerCount(contractUsage.getUsage());
+                containerResponse.setContainerCount(Objects.isNull(contractUsage.getMeta()) ? contractUsage.getUsage() : contractUsage.getMeta().getOriginal_usage());
                 var filter_attributes = contractUsage.getFilter_params();
                 if(filter_attributes != null)
                 {

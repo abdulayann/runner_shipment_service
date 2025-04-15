@@ -1,8 +1,6 @@
 package com.dpw.runner.shipment.services.ReportingService.Models;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import lombok.Data;
 
 @Data
@@ -26,26 +24,26 @@ public class ShipmentPrintModel implements IDocumentModel{
     public Integer totalRecords;
     public String secondPartOfDesc;
 
-    private String getLogoPath(String type)
-    {
-        UsersDto user = UserContext.getUser();
-
-        var path = switch (type) {
-            case "Header" -> basePath + user.TenantPrintLogo;
-            case "HBL" -> basePath + user.HouseBillLogo;
-            default -> basePath + user.TenantId + "/Assets/";
-        };
-
-        return path;
-    }
-
-    public String Logo()
-    {
-        return getLogoPath("Header");
-    }
-
-    public String HouseBillLogo() {
-         return getLogoPath("HBL");
-    }
+//    private String getLogoPath(String type)
+//    {
+//        UsersDto user = UserContext.getUser();
+//
+//        var path = switch (type) {
+//            case "Header" -> basePath + user.TenantPrintLogo;
+//            case "HBL" -> basePath + user.HouseBillLogo;
+//            default -> basePath + user.TenantId + "/Assets/";
+//        };
+//
+//        return path;
+//    }
+//
+//    public String Logo()
+//    {
+//        return getLogoPath("Header");
+//    }
+//
+//    public String HouseBillLogo() {
+//         return getLogoPath("HBL");
+//    }
 
 }

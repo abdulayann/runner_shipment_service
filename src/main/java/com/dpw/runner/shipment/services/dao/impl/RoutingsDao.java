@@ -1,20 +1,25 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IRoutingsDao;
+import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
+import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IRoutingsRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
@@ -49,12 +54,15 @@ public class RoutingsDao implements IRoutingsDao {
 
     @Autowired
     private IAuditLogService auditLogService;
+    @Autowired
+    private CommonUtils commonUtils;
 
     @Override
     public Routings save(Routings routings) {
         Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(routings), Constants.ROUTING, LifecycleHooks.ON_CREATE, false);
         if (!errors.isEmpty())
             throw new ValidationException(String.join(",", errors));
+        validateRoutingForDocumentSelection(routings);
         return routingsRepository.save(routings);
     }
     @Override
@@ -63,6 +71,7 @@ public class RoutingsDao implements IRoutingsDao {
             Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(routings), Constants.ROUTING, LifecycleHooks.ON_CREATE, false);
             if (!errors.isEmpty())
                 throw new ValidationException(String.join(",", errors));
+            validateRoutingForDocumentSelection(routings);
         }
         return routingsRepository.saveAll(routingsList);
     }
@@ -93,14 +102,9 @@ public class RoutingsDao implements IRoutingsDao {
         List<Routings> responseRoutings = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            Map<Long, Routings> hashMap;
-//            if(!Objects.isNull(routingsIdList) && !routingsIdList.isEmpty()) {
-                ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", shipmentId, "=");
-                Pair<Specification<Routings>, Pageable> pair = fetchData(listCommonRequest, Routings.class);
-                Page<Routings> routings = findAll(pair.getLeft(), pair.getRight());
-                hashMap = routings.stream()
+            List<Routings> routings = findByShipmentId(shipmentId);
+            Map<Long, Routings> hashMap = routings.stream()
                         .collect(Collectors.toMap(Routings::getId, Function.identity()));
-//            }
             Map<Long, Routings> copyHashMap = new HashMap<>(hashMap);
             List<Routings> routingsRequestList = new ArrayList<>();
             if (routingsList != null && routingsList.size() != 0) {
@@ -121,6 +125,10 @@ public class RoutingsDao implements IRoutingsDao {
             log.error(responseMsg, e);
             throw new RunnerException(e.getMessage());
         }
+    }
+
+    private List<Routings> findByShipmentId(Long shipmentId) {
+        return routingsRepository.findByShipmentId(shipmentId);
     }
 
     @Override
@@ -146,6 +154,7 @@ public class RoutingsDao implements IRoutingsDao {
             try {
                 auditLogService.addAuditLog(
                         AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                 .newData(req)
                                 .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Routings.class) : null)
                                 .parent(ShipmentDetails.class.getSimpleName())
@@ -190,6 +199,7 @@ public class RoutingsDao implements IRoutingsDao {
             try {
                 auditLogService.addAuditLog(
                         AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                 .newData(req)
                                 .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Routings.class) : null)
                                 .parent(ShipmentDetails.class.getSimpleName())
@@ -260,6 +270,7 @@ public class RoutingsDao implements IRoutingsDao {
             try {
                 auditLogService.addAuditLog(
                         AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                 .newData(req)
                                 .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Routings.class) : null)
                                 .parent(CustomerBooking.class.getSimpleName())
@@ -280,14 +291,9 @@ public class RoutingsDao implements IRoutingsDao {
         List<Routings> responseRoutings = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            Map<Long, Routings> hashMap;
-//            if(!Objects.isNull(routingsIdList) && !routingsIdList.isEmpty()) {
-                ListCommonRequest listCommonRequest = constructListCommonRequest("consolidationId", consolidationId, "=");
-                Pair<Specification<Routings>, Pageable> pair = fetchData(listCommonRequest, Routings.class);
-                Page<Routings> routings = findAll(pair.getLeft(), pair.getRight());
-                hashMap = routings.stream()
+            List<Routings> routings = findRoutingsByConsolidationId(consolidationId);
+            Map<Long, Routings> hashMap = routings.stream()
                         .collect(Collectors.toMap(Routings::getId, Function.identity()));
-//            }
             Map<Long, Routings> copyHashMap = new HashMap<>(hashMap);
             List<Routings> routingsRequestList = new ArrayList<>();
             if (routingsList != null && routingsList.size() != 0) {
@@ -399,6 +405,7 @@ public class RoutingsDao implements IRoutingsDao {
                     try {
                         auditLogService.addAuditLog(
                                 AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                         .newData(null)
                                         .prevData(jsonHelper.readFromJson(json, Routings.class))
                                         .parent(entity)
@@ -454,5 +461,112 @@ public class RoutingsDao implements IRoutingsDao {
             log.error(responseMsg, e);
             throw new RunnerException(e.getMessage());
         }
+    }
+
+    private void validateRoutingForDocumentSelection(Routings routings) {
+        if (Boolean.TRUE.equals(routings.getIsSelectedForDocument()) &&
+            (RoutingCarriage.PRE_CARRIAGE.equals(routings.getCarriage()) || RoutingCarriage.ON_CARRIAGE.equals(routings.getCarriage()))) {
+            throw new ValidationException(Constants.ROUTING_VALIDATION);
+        }
+    }
+
+    /**
+     * Retrieves the list of routing requests for the specified customer booking request.
+     *
+     * <p>If the customer booking request already contains a routing list, it returns that list.
+     * Otherwise, it generates routing legs based on the carrier details provided in the request.</p>
+     *
+     * <p>The routing legs are generated based on the following logic:</p>
+     * <ul>
+     *     <li>If Origin and Port of Loading (POL) are different, create a leg from Origin to POL.</li>
+     *     <li>If POL and Port of Discharge (POD) are different, create a leg from POL to POD.</li>
+     *     <li>If POD and Destination are different, create a leg from POD to Destination.</li>
+     *     <li>If all points are the same (Origin, POL, POD, Destination), create a single leg from Origin to Destination.</li>
+     * </ul>
+     *
+     * @return a list of {@link RoutingsRequest} containing the generated or existing routing legs
+     */
+    @Override
+    public List<Routings> generateDefaultRouting(CarrierDetails carrier, String transportMode) {
+
+        // Initialize the list to hold routing requests
+        List<Routings> routingRequests = new ArrayList<>();
+
+        CarrierDetails carrierDetails = Optional.ofNullable(carrier)
+                .orElse(new CarrierDetails());
+
+        // Define origin, ports, and destination with their respective transport modes
+        Pair<String, String> originPort = Pair.of(carrierDetails.getOrigin(), Constants.TRANSPORT_MODE_ROA);
+        Pair<String, String> portOfLoading = Pair.of(carrierDetails.getOriginPort(), null);
+        Pair<String, String> portOfDischarge = Pair.of(carrierDetails.getDestinationPort(), null);
+        Pair<String, String> destinationPort = Pair.of(carrierDetails.getDestination(), Constants.TRANSPORT_MODE_ROA);
+
+        // Create a list of locations for processing
+        List<Pair<String, String>> locations = List.of(originPort, portOfLoading, portOfDischarge, destinationPort);
+
+        int currentLocation = 0; // Index for the current location
+        int nextLocation = 1; // Index for the next location to compare
+        long legCounter = 1L;   // A counter for leg numbers
+        // Loop through the locations to generate routing requests
+        while (currentLocation < 4 && nextLocation < 4) {
+            // Skip null locations or If locations are the same, move to the next pair
+            if (locations.get(currentLocation).getLeft() == null || locations.get(currentLocation).getLeft().equalsIgnoreCase(locations.get(nextLocation).getLeft())) {
+                currentLocation++;
+                nextLocation++;
+            } else if (locations.get(nextLocation).getLeft() == null) {
+                nextLocation++;
+            } else {
+                String mode = transportMode;
+                RoutingCarriage carriage = RoutingCarriage.MAIN_CARRIAGE;
+
+                if (locations.get(currentLocation).getRight() != null || locations.get(nextLocation).getRight() != null) {
+                    mode = Constants.TRANSPORT_MODE_ROA; // Set mode to ROA if specific conditions are met
+                    carriage = locations.get(currentLocation).getRight() != null  ? RoutingCarriage.PRE_CARRIAGE : RoutingCarriage.ON_CARRIAGE;
+                }
+                String flightNumber = "";
+                String flightCarrier = "";
+                if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster()) && Objects.equals(transportMode, Constants.TRANSPORT_MODE_AIR) && Objects.equals(carriage, RoutingCarriage.MAIN_CARRIAGE)) {
+                    flightNumber = carrierDetails.getFlightNumber();
+                    flightCarrier = carrierDetails.getShippingLine();
+                }
+
+                // Create and add a new routing request to the list
+                routingRequests.add(createRoutingsRequest(legCounter++, mode, locations.get(currentLocation).getLeft(), locations.get(nextLocation).getLeft(), carriage, flightNumber, flightCarrier));
+                currentLocation = nextLocation;
+                nextLocation++;
+            }
+        }
+
+        // Return the generated routing requests
+        return routingRequests;
+    }
+
+    /**
+     * Creates a new routing request.
+     *
+     * @param leg   the leg number for the routing request
+     * @param mode  the mode of transport for the routing request
+     * @param pol   the Port of Loading for the routing request
+     * @param pod   the Port of Discharge for the routing request
+     * @return a new {@link RoutingsRequest} object with the specified parameters
+     */
+    private Routings createRoutingsRequest(Long leg, String mode, String pol, String pod, RoutingCarriage carriage, String flightNumber, String carrier) {
+        // Build and return the RoutingsRequest object with the given parameters
+        return Routings.builder()
+                .leg(leg)
+                .mode(mode)
+                .pol(pol)
+                .pod(pod)
+                .carrier(carrier)
+                .flightNumber(flightNumber)
+                .carriage(carriage)
+                .isSelectedForDocument(false)
+                .isDomestic(false)
+                .build();
+    }
+
+    @Override
+    public List<Routings> findRoutingsByConsolidationId(Long consolidationId) {
+        return routingsRepository.findByConsolidationId(consolidationId);
     }
 }

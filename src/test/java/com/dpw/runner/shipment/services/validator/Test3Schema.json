@@ -1,0 +1,13 @@
+{
+  "properties": {
+    "name": {
+      "type": "string",
+      "compare": [
+        {
+          "compareTo": "1",
+          "operator": "lesser-than"
+        }
+      ]
+    }
+  }
+}

@@ -20,6 +20,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -38,6 +40,7 @@ import static org.mockito.Mockito.*;
 
 
 @ExtendWith(MockitoExtension.class)
+@Execution(ExecutionMode.CONCURRENT)
 class NotesDaoTest {
 
     private static JsonTestUtility jsonTestUtility;
@@ -134,12 +137,8 @@ class NotesDaoTest {
     @Test
     void updateEntityFromOtherEntity() {
         testData.setId(1L);
-
         Notes savedNote = testData;
-
-        Page<Notes> page = new PageImpl(List.of(savedNote));
-        when(notesRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
-
+        when(notesRepository.findByEntityIdAndEntityType(any(), any())).thenReturn(List.of(savedNote));
         try {
             var result = notesDao.updateEntityFromOtherEntity(List.of(testData) , 1L , "Shipment");
             assertNotNull(result);
@@ -150,7 +149,7 @@ class NotesDaoTest {
 
     @Test
     void updateEntityFromOtherEntityWithException() throws RunnerException {
-        doThrow(new RuntimeException()).when(notesRepository).findAll(any(Specification.class), any(Pageable.class));
+        doThrow(new RuntimeException()).when(notesRepository).findByEntityIdAndEntityType(any(), any());
         try {
             var e = assertThrows(RunnerException.class, () -> notesDao.updateEntityFromOtherEntity(List.of(testData), 1L, "Shipment"));
         } catch (Exception e) {

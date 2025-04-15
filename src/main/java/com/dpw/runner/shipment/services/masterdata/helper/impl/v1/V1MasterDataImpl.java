@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.masterdata.helper.impl.v1;
 
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
+import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.v1.request.CreateConsolidationTaskRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.CreateShipmentTaskRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.FlightScheduleRequest;
@@ -12,6 +13,7 @@ import com.dpw.runner.shipment.services.masterdata.helper.IMasterDataService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -20,6 +22,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Service
+@Slf4j
 public class V1MasterDataImpl implements IMasterDataService {
 
     public static final String ARRIVAL_ESTIMATED_RUNWAY = "ArrivalEstimatedRunway";
@@ -58,7 +61,15 @@ public class V1MasterDataImpl implements IMasterDataService {
 
     @Override
     public DependentServiceResponse fetchCarrierMasterData(Object request) {
-        V1DataResponse v1DataResponse = v1Service.fetchCarrierMasterData(request, false);
+        boolean isList = false;
+        try{
+            var obj = jsonHelper.convertValue(request, CarrierListObject.class);
+            isList = (obj != null && obj.getListObject() != null) && obj.getIsList() != null && obj.getIsList() ;
+        }
+        catch (Exception e) {
+            log.error("unable to construct CarrierListObject from request");
+        }
+        V1DataResponse v1DataResponse = v1Service.fetchCarrierMasterData(request, isList);
         return DependentServiceResponse.builder().success(true)
                 .data(v1DataResponse.entities).pageSize(v1DataResponse.take).numberOfRecords(v1DataResponse.totalCount).pageNo(v1DataResponse.skip).build();
     }
@@ -266,6 +277,13 @@ public class V1MasterDataImpl implements IMasterDataService {
         return DependentServiceResponse.builder().success(true)
                 .data(v1DataResponse.entities).pageSize(v1DataResponse.take).numberOfRecords(v1DataResponse.totalCount).pageNo(v1DataResponse.skip).build();
     }
+    @Override
+    public DependentServiceResponse stateBasedList(Object request) {
+        V1DataResponse v1DataResponse = v1Service.stateBasedList(request);
+        return DependentServiceResponse.builder().success(true)
+                .data(v1DataResponse.entities).pageSize(v1DataResponse.take).numberOfRecords(v1DataResponse.totalCount).pageNo(v1DataResponse.skip).build();
+    }
+
 
     @Override
     public DependentServiceResponse createUnlocationData(Object request) {
@@ -510,5 +528,6 @@ public class V1MasterDataImpl implements IMasterDataService {
         return DependentServiceResponse.builder().success(true)
                 .data(partyRequestV2).build();
     }
+
 
 }

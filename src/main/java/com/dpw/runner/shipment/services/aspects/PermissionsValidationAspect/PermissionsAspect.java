@@ -5,17 +5,19 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.utils.ExcludePermissions;
 import com.dpw.runner.shipment.services.utils.PermissionUtil;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.stereotype.Component;
 
-import javax.persistence.EntityManager;
+import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_LIST_PERMISSION;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_LIST_PERMISSION;
@@ -24,16 +26,12 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPM
 @Component
 public class PermissionsAspect {
 
-    @Autowired
-    private PermissionsContext permissionsContext;
-    @Autowired
-    private EntityManager entityManager;
-
-    @Before("execution(* com.dpw.runner.shipment.services.service.interfaces.IShipmentService+.*(..)) && args(commonRequestModel)")
-    public void beforeFindOfMultiTenancyRepository(JoinPoint joinPoint, CommonRequestModel commonRequestModel) throws RunnerException {
-        if (commonRequestModel.getData() == null || !commonRequestModel.getData().getClass().isAssignableFrom(ListCommonRequest.class)) {
+    @Before("execution(* com.dpw.runner.shipment.services.service.interfaces.IShipmentService+.*(..)) && args(commonRequestModel, getMasterData)")
+    public void beforeFindOfMultiTenancyRepository(JoinPoint joinPoint, CommonRequestModel commonRequestModel, boolean getMasterData) throws RunnerException {
+        if (commonRequestModel.getData() == null || !commonRequestModel.getData().getClass().isAssignableFrom(ListCommonRequest.class) || checkExcludePermissionsFilter(joinPoint)) {
             return;
         }
+
         ListCommonRequest listCommonRequest = (ListCommonRequest) commonRequestModel.getData();
         List<String> permissionList = PermissionsContext.getPermissions(SHIPMENT_LIST_PERMISSION);
         if(permissionList == null || permissionList.size() == 0)
@@ -60,8 +58,8 @@ public class PermissionsAspect {
         }
     }
 
-    @Before("execution(* com.dpw.runner.shipment.services.service.interfaces.IConsolidationService+.*(..)) && args(commonRequestModel)")
-    public void beforeConsolidationList(JoinPoint joinPoint, CommonRequestModel commonRequestModel) throws RunnerException {
+    @Before("execution(* com.dpw.runner.shipment.services.service.interfaces.IConsolidationService+.*(..)) && args(commonRequestModel, getMasterData)")
+    public void beforeConsolidationList(JoinPoint joinPoint, CommonRequestModel commonRequestModel, boolean getMasterData) throws RunnerException {
         if (commonRequestModel.getData() == null || !commonRequestModel.getData().getClass().isAssignableFrom(ListCommonRequest.class)) {
             return;
         }
@@ -91,4 +89,16 @@ public class PermissionsAspect {
         }
     }
 
+    private boolean checkExcludePermissionsFilter(JoinPoint joinPoint) {
+        if(joinPoint != null)
+        {
+            MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
+            if(!Objects.isNull(methodSignature))
+            {
+                Method method = methodSignature.getMethod();
+                return method.isAnnotationPresent(ExcludePermissions.class);
+            }
+        }
+        return false;
+    }
 }

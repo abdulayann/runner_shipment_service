@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.config;
 
+import com.dpw.runner.shipment.services.utils.Generated;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.common.config.TopicConfig;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +12,7 @@ import org.springframework.web.context.support.GenericWebApplicationContext;
 import javax.annotation.PostConstruct;
 
 @Configuration
+@Generated
 public class TopicConfigs {
 
     @Autowired
@@ -27,6 +29,9 @@ public class TopicConfigs {
 
     @Value("${containersKafka.queue}")
     private String containerKafkaBeanName;
+
+    @Value("${tiKafka.queue}")
+    private String tiKafkaBeanName;
 
     @PostConstruct
     void init() {
@@ -61,6 +66,14 @@ public class TopicConfigs {
                 .compact()
                 .build();
         context.registerBean(containerKafkaBeanName, NewTopic.class, () -> containerKafkaTopic);
+
+        NewTopic tiKafkaTopic = TopicBuilder.name(tiKafkaBeanName)
+                .partitions(3)
+                .replicas(1)
+                .config(TopicConfig.MIN_IN_SYNC_REPLICAS_CONFIG, String.valueOf(1))
+                .compact()
+                .build();
+        context.registerBean(tiKafkaBeanName, NewTopic.class, () -> tiKafkaTopic);
 
 
     }

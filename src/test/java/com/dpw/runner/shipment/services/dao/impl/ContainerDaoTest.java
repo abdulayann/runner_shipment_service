@@ -128,7 +128,7 @@ class ContainerDaoTest {
         List<Events> eventsList = new ArrayList<>();
         eventsList.add(new Events());
         testContainer.setEventsList(eventsList);
-        List<ShipmentDetails> shipmentDetails = new ArrayList<>();
+        Set<ShipmentDetails> shipmentDetails = new HashSet<>();
         shipmentDetails.add(new ShipmentDetails());
         testContainer.setShipmentsList(shipmentDetails);
         when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
@@ -145,7 +145,7 @@ class ContainerDaoTest {
         List<Events> eventsList = new ArrayList<>();
         eventsList.add(new Events());
         testContainer.setEventsList(eventsList);
-        List<ShipmentDetails> shipmentDetails = new ArrayList<>();
+        Set<ShipmentDetails> shipmentDetails = new HashSet<>();
         testContainer.setShipmentsList(shipmentDetails);
         List<TruckDriverDetails> truckDriverDetails = new ArrayList<>();
         testContainer.setTruckingDetails(truckDriverDetails);
@@ -248,8 +248,6 @@ class ContainerDaoTest {
     void testUpdateEntityFromShipmentConsole() throws RunnerException {
         List<Containers> containersList = new ArrayList<>();
         containersList.add(testContainer);
-        when(containerRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(new PageImpl<>(containersList));
-        when(packingDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(jsonTestUtility.getTestPacking())));
         ContainerDao spyService = spy(containerDao);
         doReturn(containersList).when(spyService).saveAll(anyList());
         List<Containers> containers = spyService.updateEntityFromShipmentConsole(containersList, 1L, 2L, true);
@@ -353,8 +351,27 @@ class ContainerDaoTest {
 
     @Test
     void updateEntityFromShipmentConsole() {
-        when(containerRepository.findAll(any(Specification.class), any(Pageable.class))).thenThrow(new RuntimeException());
+        when(containerRepository.findByConsolidationId(anyLong())).thenThrow(new RuntimeException());
         assertThrows(RunnerException.class, () -> containerDao.updateEntityFromShipmentConsole(List.of(testContainer), 3L, null, true));
     }
 
+    @Test
+    void updateEntityFromConsolidationV1() throws RunnerException {
+        UUID uuid1 = UUID.randomUUID();
+        UUID uuid2 = UUID.randomUUID();
+
+        Containers container1 = Containers.builder().build();
+        container1.setGuid(uuid1);
+
+        Containers container2 = Containers.builder().build();
+        container2.setGuid(uuid2);
+
+        List<Containers> containersList = Arrays.asList(container1);
+        List<Containers> oldList = Arrays.asList(container1, container2);
+
+        doNothing().when(containerRepository).deleteById(any());
+        when(containerRepository.save(any())).thenReturn(container1);
+
+        assertEquals(containersList, containerDao.updateEntityFromConsolidationV1(containersList, 1L, oldList));
+    }
 }

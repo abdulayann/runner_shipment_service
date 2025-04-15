@@ -2,6 +2,9 @@ package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
+import com.dpw.runner.shipment.services.utils.TrimStringDeserializer;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -9,6 +12,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Data
@@ -22,6 +26,7 @@ public class ConsolidationDetailsRequest extends CommonRequest implements IRunne
     private String transportMode;
     private String containerCategory;
     private Boolean isDomestic;
+    @JsonDeserialize(using = TrimStringDeserializer.class)
     private String mawb;
     private String serviceLevel;
     private String payment;
@@ -55,6 +60,7 @@ public class ConsolidationDetailsRequest extends CommonRequest implements IRunne
     private String volumeUtilization;
     private String weightUtilization;
     private String shipmentType;
+    @JsonDeserialize(using = TrimStringDeserializer.class)
     private String bol;
     private Boolean isCargoOnly;
     private Boolean isLocked;
@@ -82,6 +88,7 @@ public class ConsolidationDetailsRequest extends CommonRequest implements IRunne
     private Long warehouseId;
     private Long sourceTenantId;
     private String ediTransactionId;
+    private List<TriangulationPartnerRequest> triangulationPartnerList;
     private Long triangulationPartner;
     private Long receivingBranch;
     private boolean intraBranch;
@@ -96,6 +103,8 @@ public class ConsolidationDetailsRequest extends CommonRequest implements IRunne
     private AllocationsRequest allocations;
     private ArrivalDepartureDetailsRequest arrivalDetails;
     private ArrivalDepartureDetailsRequest departureDetails;
+    private String sendingAgentCountry;
+    private String receivingAgentCountry;
     private PartiesRequest sendingAgent;
     private PartiesRequest receivingAgent;
     private PartiesRequest borrowedFrom;
@@ -109,7 +118,7 @@ public class ConsolidationDetailsRequest extends CommonRequest implements IRunne
     private List<JobRequest> jobsList;
     private List<EventsRequest> eventsList;
     private List<FileRepoRequest> fileRepoList;
-    private List<ShipmentRequest> shipmentsList;
+    private Set<ShipmentRequest> shipmentsList;
     private List<Long> shipmentIds;
     private List<PartiesRequest> consolidationAddresses;
     private String carrierBookingRef;
@@ -117,4 +126,23 @@ public class ConsolidationDetailsRequest extends CommonRequest implements IRunne
     private Boolean autoUpdateGoodsDesc;
     private UUID sourceGuid;
     private String efreightStatus;
+    private Boolean hazardous;
+    private String emergencyContactNumber;
+    private String emergencyContactNumberCode;
+    private Boolean creatingFromDgShipment;
+    private String securityStatus;
+    private List<String> screeningStatus;
+    private String exemptionCodes;
+    private String aomFreeText;
+    private String sci;
+    private String additionalSecurityInformation;
+    private LocalDateTime cfsCutOffDate;
+    private Boolean openForAttachment;
+    private Boolean interBranchConsole;
+    @ExcludeTimeZone
+    private LocalDateTime latDate;
+    private String department;
+    private Boolean isNetworkFile;
+    private Boolean isReceivingBranchManually;
+    private Boolean isTransferredToReceivingBranch;
 }

@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import com.dpw.runner.shipment.services.Kafka.Dto.SyncKafkaDto;
-import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
+import com.dpw.runner.shipment.services.kafka.dto.SyncKafkaDto;
+import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataSyncResponse;
@@ -78,14 +78,19 @@ public class SyncService implements ISyncService {
     }
 
     @Override
-    public void pushToKafka(String json, String id, String guid, String entity, String transactionId) {
+    public void pushToKafka(String json, String id, String guid, String entity, String transactionId, Integer tenantId, String username, String updatedUsername) {
         try {
             SyncKafkaDto request = SyncKafkaDto.builder()
-                    .data(json).id(id).guid(guid).entity(entity).tenantId(TenantContext.getCurrentTenant())
-                    .userName(UserContext.getUser().getUsername()).transactionId(transactionId).build();
+                    .data(json).id(id).guid(guid).entity(entity).tenantId(tenantId)
+                    .userName(username).transactionId(transactionId).updateUsername(updatedUsername).build();
             producer.produceToKafka(jsonHelper.convertToJson(request), senderQueue, transactionId);
         } catch (Exception ex) {
             log.error("Exception occurred during event: {} for entity: {} with exception: {} with data: {}", LoggerEvent.KAFKA_PUSH_FOR_V1_SYNC, entity, ex.getLocalizedMessage(), json);
         }
+    }
+
+    @Override
+    public void pushToKafka(String json, String id, String guid, String entity, String transactionId) {
+        pushToKafka(json, id, guid, entity, transactionId, TenantContext.getCurrentTenant(), UserContext.getUser().getUsername(), null);
     }
 }

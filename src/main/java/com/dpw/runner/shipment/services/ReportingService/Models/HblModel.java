@@ -51,4 +51,5 @@ public class HblModel implements IDocumentModel{
     public String polName;
     public String polCountry;
     public String podName;
+    public Long transportInstructionId;
 }

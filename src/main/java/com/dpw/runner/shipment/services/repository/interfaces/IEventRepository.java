@@ -2,6 +2,8 @@ package com.dpw.runner.shipment.services.repository.interfaces;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancyRepository;
 import com.dpw.runner.shipment.services.entity.Events;
+import com.dpw.runner.shipment.services.utils.Generated;
+import com.dpw.runner.shipment.services.utils.InterBranchEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -16,7 +18,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-@Repository
+@Repository @Generated
+@InterBranchEntity
 public interface IEventRepository extends MultiTenancyRepository<Events> {
     Page<Events> findAll(Specification<Events> spec, Pageable pageable);
 
@@ -32,10 +35,19 @@ public interface IEventRepository extends MultiTenancyRepository<Events> {
         return findOne(spec);
     }
 
+    default Optional<Events> findByEntityIdAndEntityType(Long entityId, String entityType) {
+        Specification<Events> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.and(
+                criteriaBuilder.equal(root.get("entityId"), entityId.intValue()),
+                criteriaBuilder.equal(root.get("entityType"), entityType)
+        );
+        return findOne(spec);
+    }
+
+
     @Modifying
     @Transactional
-    @Query(value = "insert into events (guid, entity_id, entity_type, event_code, description, estimated, actual, source, tenant_id, status, created_at, updated_at) values (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)", nativeQuery = true)
-    void createEventForAirMessagingStatus(UUID guid, Long entityId, String entityType, String eventCode, String description, LocalDateTime estimated, LocalDateTime actual, String source, Integer tenantId, String status, LocalDateTime createdAt, LocalDateTime updatedAt);
+    @Query(value = "insert into events (guid, entity_id, entity_type, event_code, description, estimated, actual, source, tenant_id, status, created_at, updated_at, consolidation_id, shipment_number) values (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)", nativeQuery = true)
+    void createEventForAirMessagingStatus(UUID guid, Long entityId, String entityType, String eventCode, String description, LocalDateTime estimated, LocalDateTime actual, String source, Integer tenantId, String status, LocalDateTime createdAt, LocalDateTime updatedAt, Long consolidationId, String shipmentNumber);
 
     @Modifying @Transactional
     @Query(value = "insert into events (guid, entity_id, entity_type, event_code, description, source, tenant_id, pieces, total_pieces, weight, total_weight, is_partial, received_date, scheduled_date, created_at, updated_at) values (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16)", nativeQuery = true)

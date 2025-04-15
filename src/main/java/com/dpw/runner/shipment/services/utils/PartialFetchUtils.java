@@ -7,22 +7,20 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.github.bohnman.squiggly.Squiggly;
 import com.github.bohnman.squiggly.util.SquigglyUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-@Generated
 @Component
 public class PartialFetchUtils {
 
-    private static JsonHelper jsonHelper;
+    @Autowired
+    private JsonHelper jsonHelper;
 
-    public PartialFetchUtils(JsonHelper jsonHelper){
-        this.jsonHelper=jsonHelper;
-    }
-    public static <T> Object fetchPartialData(RunnerResponse<T> object, List<String> includeColumns) {
+    public <T> Object fetchPartialData(RunnerResponse<T> object, List<String> includeColumns) {
 
-         if (includeColumns == null || includeColumns.size() == 0) {
+        if (includeColumns == null || includeColumns.size() == 0) {
             return object;
         }
         ObjectMapper objectMapper = new ObjectMapper();
@@ -32,7 +30,7 @@ public class PartialFetchUtils {
         return jsonHelper.readFromJson(jsonString,Object.class);
     }
 
-    public static <T> Object  fetchPartialListData(IRunnerResponse object, List<String> includeColumns) {
+    public <T> Object fetchPartialListData(IRunnerResponse object, List<String> includeColumns) {
 
         if (includeColumns == null || includeColumns.size() == 0) {
             return object;

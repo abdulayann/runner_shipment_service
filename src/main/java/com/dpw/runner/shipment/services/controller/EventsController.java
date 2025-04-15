@@ -8,9 +8,12 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
+import com.dpw.runner.shipment.services.dto.request.TrackingEventsRequest;
 import com.dpw.runner.shipment.services.dto.response.EventsResponse;
+import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse;
 import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.service.impl.ApiKeyAuthenticationService;
 import com.dpw.runner.shipment.services.service.interfaces.IEventService;
 import com.dpw.runner.shipment.services.syncing.Entity.EventsRequestV2;
 import com.dpw.runner.shipment.services.syncing.interfaces.IEventsSync;
@@ -33,14 +36,16 @@ import java.util.Optional;
 @Slf4j
 public class EventsController {
     private final IEventService eventService;
+    private final ApiKeyAuthenticationService authenticationService;
     private final IEventsSync eventsSync;
     private class MyResponseClass extends RunnerResponse<EventsResponse> {}
     private class MyListResponseClass extends RunnerListResponse<EventsResponse> {}
 
     @Autowired
-    public EventsController(IEventService eventService, IEventsSync eventsSync) {
+    public EventsController(IEventService eventService, IEventsSync eventsSync, ApiKeyAuthenticationService authenticationService) {
         this.eventService = eventService;
         this.eventsSync = eventsSync;
+        this.authenticationService = authenticationService;
     }
 
     @ApiResponses(value = {
@@ -102,14 +107,8 @@ public class EventsController {
     @ExcludeTimeZone
     public ResponseEntity<IRunnerResponse> syncEventsToService(@RequestBody @Valid EventsRequestV2 request, @RequestParam(required = false, defaultValue = "true") boolean checkForSync) {
         String responseMsg = "failure executing :(";
-        try {
-            return eventService.V1EventsCreateAndUpdate(CommonRequestModel.buildRequest(request), checkForSync);
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : "Error syncing provided Events";
-            log.error(responseMsg, e);
-        }
-        return ResponseHelper.buildFailedResponse(responseMsg);
+        return ResponseHelper.buildSuccessResponse();
+//      return eventService.V1EventsCreateAndUpdate(CommonRequestModel.buildRequest(request), checkForSync);
     }
 
     @ApiResponses(value = {
@@ -120,7 +119,64 @@ public class EventsController {
     public ResponseEntity<IRunnerResponse> trackEventDetails(@RequestParam(name = "shipmentId") Optional<Long> id, @RequestParam(name = "consolidationId") Optional<Long> consolidationId) {
         String responseMsg;
         try {
-            return eventService.trackEvents(id, consolidationId);
+            TrackingEventsRequest request = new TrackingEventsRequest();
+            request.setShipmentId(id.orElse(null));
+            request.setConsolidationId(consolidationId.orElse(null));
+            return eventService.trackEvents(request);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : "Error fetching Events";
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = EventConstants.TRACK_EVENTS_FETCH_SUCCESSFUL, response = MyListResponseClass.class),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    @PostMapping(EventConstants.TRACK_EVENT_DETAILS_V2)
+    public ResponseEntity<IRunnerResponse> trackEventDetailsV2(@RequestBody @Valid TrackingEventsRequest request) {
+        String responseMsg;
+        try {
+            return eventService.trackEvents(request);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : "Error fetching Events";
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Push Tracking Events", response = MyListResponseClass.class),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    @PostMapping("/push-tracking-events")
+    @ExcludeTimeZone
+    public ResponseEntity<IRunnerResponse> pushTrackingEvents(@RequestHeader(ApiConstants.X_API_KEY) String xApiKey,
+            @RequestBody @Valid TrackingServiceApiResponse.Container request) {
+        String responseMsg;
+        try {
+            authenticationService.authenticate(Constants.TRACKING_PUSH_API, xApiKey);
+            return eventService.pushTrackingEvents(request);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : "Error fetching Events";
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = EventConstants.EVENT_LIST_SUCCESS, response = MyListResponseClass.class),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    @PostMapping(EventConstants.LIST_EVENT_DETAILS_V2)
+    public ResponseEntity<IRunnerResponse> listEventsV2(@RequestBody @Valid TrackingEventsRequest request) {
+        String responseMsg;
+        try {
+            return eventService.listV2(CommonRequestModel.buildRequest(request));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : "Error fetching Events";

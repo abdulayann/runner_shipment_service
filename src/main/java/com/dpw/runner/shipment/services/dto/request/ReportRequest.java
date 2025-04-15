@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Getter
@@ -35,4 +36,29 @@ public class ReportRequest implements IRunnerRequest {
     List<Long> shipmentIds;
     boolean isShipperAndConsignee;
     boolean isSecurityData;
+    String transportInstructionId;
+    String remarks;
+    boolean includeCsdInfo;
+    boolean printCSD;
+    boolean combiLabel;
+    PartiesRequest fcrShipper;
+    List<Long> packIds;
+    String placeOfIssue;
+    LocalDateTime dateOfIssue;
+    String consolAirline;
+    String destination;
+    String mawbNumber;
+    Integer totalMawbPieces;
+    Boolean printCustomLabel;
+    String hawbNumber;
+    Integer totalHawbPieces;
+    List<HawbInfo> hawbInfo;
+
+    @Getter
+    @Setter
+    public static class HawbInfo {
+        private String hawbNumber;
+        private Integer hawbPieceCount;
+    }
+
 }

@@ -12,5 +12,5 @@ public class Criteria {
     private String fieldName;
     private String operator;
     private Object value;
-
+    private Boolean convertTimeZone;
 }

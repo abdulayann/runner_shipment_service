@@ -304,4 +304,34 @@ public class ShipmentSettingsSyncRequest implements IRunnerRequest {
     private String transportOrderRoad;
     @JsonProperty("DisableBlPartiesName")
     private Boolean disableBlPartiesName;
+    @JsonProperty("AirDGFlag")
+    private Boolean airDGFlag;
+    @JsonProperty("IataTactFlag")
+    private Boolean iataTactFlag;
+    @JsonProperty("EnableLCLConsolidation")
+    private Boolean enableLclConsolidation;
+    @JsonProperty("BookingOrder")
+    private String BookingOrder;
+    @JsonProperty("BookingOrderForMbl")
+    private String BookingOrderForMbl;
+    @JsonProperty("BookingOrderAir")
+    private String BookingOrderAir;
+    @JsonProperty("BookingOrderAirforMawb")
+    private String BookingOrderAirForMawb;
+    @JsonProperty("TransportInstructionPickupOrder")
+    private String transportInstructionPickupOrder;
+    @JsonProperty("TransportInstructionDeliveryOrder")
+    private String transportInstructionDeliveryOrder;
+    @JsonProperty("EnablePartyCheckForConsolidation")
+    private Boolean enablePartyCheckForConsolidation;
+    @JsonProperty("CSD")
+    private String csd;
+    @JsonProperty("HideManifest")
+    private Boolean hideManifest;
+    @JsonProperty("FcrDocument")
+    private String fcrDocument;
+    @JsonProperty("CountryAirCargoSecurity")
+    private Boolean countryAirCargoSecurity;
+    @JsonProperty("AmrAirFreight")
+    private Boolean isAmrAirFreightEnabled;
 }

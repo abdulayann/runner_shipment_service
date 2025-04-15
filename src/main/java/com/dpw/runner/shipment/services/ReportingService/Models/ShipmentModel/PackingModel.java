@@ -120,4 +120,22 @@ public class PackingModel implements Serializable {
     private Long innerPacksId;
     @JsonProperty("InnerPacksCount")
     private Long innerPacksCount;
+    @JsonProperty("UnNumberAir")
+    private String unNumberAir;
+    @JsonProperty("DgClassAir")
+    private String dgClassAir;
+    @JsonProperty("DgClassAirDescription")
+    private String dgClassAirDescription;
+    @JsonProperty("UnNumber")
+    private String unNumber;
+    @JsonProperty("ProperShippingName")
+    private String properShippingName;
+    @JsonProperty("PackingGroup")
+    private String packingGroup;
+    @JsonProperty("MinimumFlashPoint")
+    private BigDecimal minimumFlashPoint;
+    @JsonProperty("MinimumFlashPointUnit")
+    private String minimumFlashPointUnit;
+    @JsonProperty("MarinePollutant")
+    private Boolean marinePollutant;
 }

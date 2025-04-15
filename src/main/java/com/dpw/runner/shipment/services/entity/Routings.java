@@ -2,20 +2,19 @@ package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.DedicatedMasterData;
 import com.dpw.runner.shipment.services.utils.MasterData;
 import com.dpw.runner.shipment.services.utils.UnlocationData;
+import java.time.LocalDateTime;
+import javax.persistence.*;
+import javax.validation.constraints.Size;
+
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
-
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Table;
-import javax.validation.constraints.Size;
-import java.time.LocalDateTime;
 
 @Entity
 @Setter
@@ -27,6 +26,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @SQLDelete(sql = "UPDATE routings SET is_deleted = true WHERE id=?")
 @Where(clause = "is_deleted = false")
+@Builder
 public class Routings extends MultiTenancy {
 
     @Column(name = "shipment_id")
@@ -34,6 +34,9 @@ public class Routings extends MultiTenancy {
 
     @Column(name = "booking_id")
     private Long bookingId;
+
+    @Column(name = "carriage")
+    private RoutingCarriage carriage;
 
     @Column(name = "leg")
     private Long leg;
@@ -81,6 +84,9 @@ public class Routings extends MultiTenancy {
     @Column(name = "is_linked")
     private Boolean isLinked;
 
+    @Column(name = "is_selected_for_document")
+    private Boolean isSelectedForDocument;
+
     @Column(name = "voyage")
     private String voyage;
 
@@ -92,6 +98,9 @@ public class Routings extends MultiTenancy {
 
     @Column(name = "aircraft_type")
     private String aircraftType;
+
+    @Column(name = "vehicle_number")
+    private String vehicleNumber;
 
     @Column(name = "route_leg_id")
     private Long routeLegId;
@@ -111,8 +120,27 @@ public class Routings extends MultiTenancy {
     @MasterData(type = MasterDataType.COUNTRIES)
     private String carrierCountry;
 
+    @Size(max=64, message = "max size is 64 for origin_port_loc_code")
+    @Column(name = "origin_port_loc_code")
+    private String originPortLocCode;
+
+    @Size(max=64, message = "max size is 64 for destination_port_loc_code")
+    @Column(name = "destination_port_loc_code")
+    private String destinationPortLocCode;
+
+    @Column(name = "inherited_from_consolidation", columnDefinition = "boolean default false")
+    private Boolean inheritedFromConsolidation;
+
     public boolean getIsDomestic() {
         return isDomestic;
+    }
+
+    @PrePersist
+    @PreUpdate
+    public void ensureDefaultValues() {
+        if (inheritedFromConsolidation == null) {
+            inheritedFromConsolidation = false;
+        }
     }
 }
 

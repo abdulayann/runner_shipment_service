@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.entitytransfer.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
-import com.dpw.runner.shipment.services.entity.FileRepo;
 import lombok.*;
 
 import java.util.List;
@@ -16,4 +15,5 @@ public class SendShipmentRequest implements IRunnerRequest {
     private List<String> additionalDocs;
     private List<Integer> sendToBranch;
     private List<String> sendToOrg;
+    private Boolean isAutomaticTransfer;
 }

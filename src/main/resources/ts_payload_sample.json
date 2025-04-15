@@ -1,0 +1,490 @@
+{
+  "identifierType": "userDefinedCollection",
+  "identifier": "22ac6d41-575c-4d80-ae46-c5cddd62fae0",
+  "status": "Success",
+  "containers": [
+    {
+      "containerNumber": "KOCU4871357",
+      "identifierType": "containerNumber",
+      "identifierSource": "none",
+      "identifierValue": "KOCU4871357",
+      "status": "Success",
+      "failure": null,
+      "clientReference": null,
+      "customerId": null,
+      "container": {
+        "type": "High Cube General Purpose",
+        "size": "40",
+        "typeIsoCode": "45G0",
+        "bolNumber": "DALA13638700",
+        "bookingNumber": null,
+        "clientBookingNumber": "DBFC-2441486-058050",
+        "shipmentReference": null,
+        "sealNumber": "UL-3285391/253630",
+        "marks": null,
+        "incoterm": null,
+        "shipper": null,
+        "consignee": null,
+        "weight": "24339.8",
+        "weightUom": null,
+        "numberOfPackages": null,
+        "packageType": null,
+        "reeferTemperature": null,
+        "commodity": null,
+        "grossWeight": null,
+        "cargoWeight": null,
+        "customAgencyName": null,
+        "grossWeightUom": null,
+        "cargoWeightUom": null,
+        "latitude": 30.42879,
+        "longitude": -81.01863,
+        "location": null,
+        "locationUpdateTime": "2024-09-09T21:30:54Z",
+        "locationName": null,
+        "locationType": "ON_VESSEL",
+        "locationLabel": "ONE MODERN"
+      },
+      "journey": {
+        "lineCode": null,
+        "from": null,
+        "to": null,
+        "serviceType": "containerYardToHub",
+        "carrierName": "HMM",
+        "scacCode": "HDMU",
+        "rawCarrierName": null,
+        "standardCarrierName": null,
+        "placeOfOrigin": null,
+        "portOfDeparture": 1,
+        "portOfArrival": 2,
+        "placeOfDestination": null,
+        "originHub": null,
+        "destinationHub": null,
+        "placeOfOriginEtd": null,
+        "placeOfOriginAtd": null,
+        "portOfDepartureEtd": null,
+        "portOfDepartureAtd": {
+          "dateTime": "2024-09-04T17:29:00",
+          "sources": [
+            {
+              "dateTime": "2024-09-04T17:29:00",
+              "source": "HMM",
+              "acquisitionType": null
+            }
+          ]
+        },
+        "portOfArrivalEta": {
+          "dateTime": "2024-10-16T00:29:00",
+          "sources": [
+            {
+              "dateTime": "2024-10-16T00:29:00",
+              "source": "HMM",
+              "acquisitionType": null
+            }
+          ]
+        },
+        "portOfArrivalAta": null,
+        "placeOfDestinationEta": null,
+        "placeOfDestinationAta": null,
+        "originHubEtd": null,
+        "originHubAtd": null,
+        "destinationHubEta": {
+          "dateTime": "2024-10-20T06:08:00",
+          "sources": [
+            {
+              "dateTime": "2024-10-20T06:08:00",
+              "source": "HMM",
+              "acquisitionType": null
+            }
+          ]
+        },
+        "destinationHubAta": null,
+        "isJourneyComplete": false,
+        "storageFreeDays": null,
+        "igmNo": null,
+        "igmDate": null,
+        "itemNo": null,
+        "cfsName": null,
+        "segments": [
+          {
+            "source": 1,
+            "destination": 2,
+            "transport": 2,
+            "etd": null,
+            "atd": {
+              "dateTime": "2024-09-04T17:29:00",
+              "sources": [
+                {
+                  "dateTime": "2024-09-04T17:29:00",
+                  "source": "HMM",
+                  "acquisitionType": null
+                }
+              ]
+            },
+            "eta": {
+              "dateTime": "2024-10-16T00:29:00",
+              "sources": [
+                {
+                  "dateTime": "2024-10-16T00:29:00",
+                  "source": "HMM",
+                  "acquisitionType": null
+                }
+              ]
+            },
+            "ata": null
+          }
+        ],
+        "lastMileLocations": null
+      },
+      "places": [
+        {
+          "id": 1,
+          "type": "unknown",
+          "code": "USNYC",
+          "name": "New York",
+          "terminalName": "APM TERMINALS",
+          "subdivisionName": null,
+          "subdivisionType": null,
+          "country": "US",
+          "city": null,
+          "pincode": null,
+          "latitude": 40.70000076293945,
+          "longitude": -74.01000213623047,
+          "rawDescription": "NEW YORK, NY",
+          "formattedDescription": "New York, Ny",
+          "source": null
+        },
+        {
+          "id": 2,
+          "type": "unknown",
+          "code": "INMUN",
+          "name": "Mundra",
+          "terminalName": "ADANI MUNDRA CONTAINER TERMINAL 2",
+          "subdivisionName": null,
+          "subdivisionType": null,
+          "country": "IN",
+          "city": null,
+          "pincode": null,
+          "latitude": 22.7276611328125,
+          "longitude": 69.65933227539062,
+          "rawDescription": "MUNDRA, INDIA",
+          "formattedDescription": "Mundra, India",
+          "source": null
+        }
+      ],
+      "transports": [
+        {
+          "id": 1,
+          "type": "truck",
+          "operatorCode": null,
+          "operatorName": null,
+          "name": null,
+          "voyage": null,
+          "imo": null,
+          "mmsi": null,
+          "callSign": null,
+          "flag": null,
+          "trainNumber": null,
+          "truckNumber": null,
+          "truckDriverName": null,
+          "truckDriverPhoneNumber": null,
+          "truckCompanyName": null
+        },
+        {
+          "id": 2,
+          "type": "vessel",
+          "operatorCode": null,
+          "operatorName": null,
+          "name": "ONE MODERN",
+          "voyage": "0071W",
+          "imo": null,
+          "mmsi": null,
+          "callSign": null,
+          "flag": null,
+          "trainNumber": null,
+          "truckNumber": null,
+          "truckDriverName": null,
+          "truckDriverPhoneNumber": null,
+          "truckCompanyName": null
+        }
+      ],
+      "events": [
+        {
+          "id": 1,
+          "eventCategory": "departure",
+          "eventType": "gateOutWithContainerEmpty",
+          "description": "Empty Container Gate Out",
+          "descriptionFromSource": "Export Empty Container Released",
+          "status": "actual",
+          "location": 1,
+          "locationRole": "originEmptyDepot",
+          "projectedEventTime": null,
+          "actualEventTime": {
+            "dateTime": "2024-08-27T09:28:00",
+            "sources": [
+              {
+                "dateTime": "2024-08-27T09:28:00",
+                "source": "HMM",
+                "acquisitionType": null
+              }
+            ]
+          },
+          "details": {
+            "transport": 1,
+            "hasContainer": true,
+            "hasCargo": false
+          },
+          "reason": null,
+          "subevents": null
+        },
+        {
+          "id": 2,
+          "eventCategory": "arrival",
+          "eventType": "gateInWithContainerFull",
+          "description": "Full Container Gate In",
+          "descriptionFromSource": "Export Truck Gate In to Terminal",
+          "status": "actual",
+          "location": 1,
+          "locationRole": "originPort",
+          "projectedEventTime": null,
+          "actualEventTime": {
+            "dateTime": "2024-08-30T08:09:00",
+            "sources": [
+              {
+                "dateTime": "2024-08-29T08:09:00",
+                "source": "HMM",
+                "acquisitionType": null
+              }
+            ]
+          },
+          "details": {
+            "transport": 1,
+            "hasContainer": true,
+            "hasCargo": true
+          },
+          "reason": null,
+          "subevents": null
+        },
+        {
+          "id": 3,
+          "eventCategory": "load",
+          "eventType": "loadOnVessel",
+          "description": "Load on Vessel",
+          "descriptionFromSource": "Vessel Loading at POL",
+          "status": "actual",
+          "location": 1,
+          "locationRole": "originPort",
+          "projectedEventTime": null,
+          "actualEventTime": {
+            "dateTime": "2024-09-04T04:25:00",
+            "sources": [
+              {
+                "dateTime": "2024-09-04T04:25:00",
+                "source": "HMM",
+                "acquisitionType": null
+              }
+            ]
+          },
+          "details": {
+            "transport": 2,
+            "hasCargo": true
+          },
+          "reason": null,
+          "subevents": null
+        },
+        {
+          "id": 4,
+          "eventCategory": "departure",
+          "eventType": "vesselDepartureWithContainer",
+          "description": "Vessel Departure",
+          "descriptionFromSource": "Vessel Departure from POL",
+          "status": "actual",
+          "location": 1,
+          "locationRole": "originPort",
+          "projectedEventTime": null,
+          "actualEventTime": {
+            "dateTime": "2024-09-04T17:29:00",
+            "sources": [
+              {
+                "dateTime": "2024-09-04T17:29:00",
+                "source": "HMM",
+                "acquisitionType": null
+              }
+            ]
+          },
+          "details": {
+            "transport": 2,
+            "hasContainer": true,
+            "hasCargo": true
+          },
+          "reason": null,
+          "subevents": null
+        },
+        {
+          "id": 5,
+          "eventCategory": "arrival",
+          "eventType": "vesselArrivalWithContainer",
+          "description": "Vessel Arrival",
+          "descriptionFromSource": "Vessel Arrival",
+          "status": "projected",
+          "location": 2,
+          "locationRole": "destinationPort",
+          "projectedEventTime": {
+            "dateTime": "2024-10-16T00:29:00",
+            "sources": [
+              {
+                "dateTime": "2024-10-16T00:29:00",
+                "source": "HMM",
+                "acquisitionType": null
+              }
+            ]
+          },
+          "actualEventTime": null,
+          "details": {
+            "transport": 2,
+            "hasContainer": true,
+            "hasCargo": true
+          },
+          "reason": null,
+          "subevents": null
+        },
+        {
+          "id": 6,
+          "eventCategory": "departure",
+          "eventType": "gateOutWithContainerFull",
+          "description": "Full Container Gate Out",
+          "descriptionFromSource": "Gate Out",
+          "status": "projected",
+          "location": 2,
+          "locationRole": "destinationPort",
+          "projectedEventTime": {
+            "dateTime": "2024-10-18T05:31:00",
+            "sources": [
+              {
+                "dateTime": "2024-10-18T05:31:00",
+                "source": "HMM",
+                "acquisitionType": null
+              }
+            ]
+          },
+          "actualEventTime": null,
+          "details": {
+            "transport": 1,
+            "hasContainer": true,
+            "hasCargo": true
+          },
+          "reason": null,
+          "subevents": null
+        },
+        {
+          "id": 7,
+          "eventCategory": "departure",
+          "eventType": "gateInWithContainerEmpty",
+          "description": "Full Container Gate Out",
+          "descriptionFromSource": "Gate Out",
+          "status": "projected",
+          "location": 2,
+          "locationRole": "origin",
+          "projectedEventTime": {
+            "dateTime": "2024-10-18T05:31:00",
+            "sources": [
+              {
+                "dateTime": "2024-10-18T05:31:00",
+                "source": "HMM",
+                "acquisitionType": null
+              }
+            ]
+          },
+          "actualEventTime": null,
+          "details": {
+            "transport": 1,
+            "hasContainer": true,
+            "hasCargo": true
+          },
+          "reason": null,
+          "subevents": null
+        },
+        {
+          "id": 8,
+          "eventCategory": "departure",
+          "eventType": "gateInWithContainerEmpty",
+          "description": "Full Container Gate Out",
+          "descriptionFromSource": "Gate Out",
+          "status": "projected",
+          "location": 2,
+          "locationRole": "destination",
+          "projectedEventTime": {
+            "dateTime": "2024-10-24T05:31:00",
+            "sources": [
+              {
+                "dateTime": "2024-10-21T05:31:00",
+                "source": "HMM",
+                "acquisitionType": null
+              }
+            ]
+          },
+          "actualEventTime": null,
+          "details": {
+            "transport": 1,
+            "hasContainer": true,
+            "hasCargo": true
+          },
+          "reason": null,
+          "subevents": null
+        }
+      ],
+      "locationHistory": [
+        {
+          "source": "HMM",
+          "latitude": 40.70000076293945,
+          "longitude": -74.01000213623047,
+          "locationUpdateTime": "2024-08-27T09:28:00",
+          "locationName": "New York",
+          "locationType": "Unknown",
+          "locationLabel": null
+        },
+        {
+          "source": "HMM",
+          "latitude": 40.70000076293945,
+          "longitude": -74.01000213623047,
+          "locationUpdateTime": "2024-08-29T08:09:00",
+          "locationName": "New York",
+          "locationType": "Unknown",
+          "locationLabel": null
+        },
+        {
+          "source": "HMM",
+          "latitude": 40.70000076293945,
+          "longitude": -74.01000213623047,
+          "locationUpdateTime": "2024-09-04T04:25:00",
+          "locationName": "New York",
+          "locationType": "Unknown",
+          "locationLabel": null
+        },
+        {
+          "source": "HMM",
+          "latitude": 40.70000076293945,
+          "longitude": -74.01000213623047,
+          "locationUpdateTime": "2024-09-04T17:29:00",
+          "locationName": "New York",
+          "locationType": "Unknown",
+          "locationLabel": null
+        },
+        {
+          "source": "VesselFinder",
+          "latitude": 30.42879,
+          "longitude": -81.01863,
+          "locationUpdateTime": "2024-09-09T21:30:54Z",
+          "locationName": null,
+          "locationType": "ON_VESSEL",
+          "locationLabel": "ONE MODERN"
+        }
+      ],
+      "bookingContainers": null,
+      "temperatureHistory": null
+    }
+  ],
+  "failedContainers": [],
+  "failedBookings": [],
+  "failedBillOfLadings": [],
+  "invalidInputs": []
+}

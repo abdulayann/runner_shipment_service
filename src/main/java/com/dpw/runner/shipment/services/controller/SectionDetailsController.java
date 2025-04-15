@@ -1,0 +1,70 @@
+package com.dpw.runner.shipment.services.controller;
+
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dto.section.request.SectionDetailsRequest;
+import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.service.interfaces.ISectionDetailsService;
+import javax.validation.Valid;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RestController
+@RequestMapping("api/v3/section-details")
+public class SectionDetailsController {
+
+  private final ISectionDetailsService service;
+
+  public SectionDetailsController(ISectionDetailsService service) {
+    this.service = service;
+  }
+
+  @PostMapping
+  public ResponseEntity<IRunnerResponse> create(@RequestBody @Valid SectionDetailsRequest request) {
+    try {
+      request.setId(null);
+      return ResponseHelper.buildSuccessResponse(service.create(request));
+    } catch (Exception e) {
+      return ResponseHelper.buildFailedResponse(e.getMessage());
+    }
+  }
+
+  @PutMapping
+  public ResponseEntity<IRunnerResponse> update(@RequestBody @Valid SectionDetailsRequest request) {
+    try {
+      return ResponseHelper.buildSuccessResponse(service.update(request));
+    } catch (Exception e) {
+      return ResponseHelper.buildFailedResponse(e.getMessage());
+    }
+  }
+
+  @DeleteMapping("/{id}")
+  public ResponseEntity<IRunnerResponse> delete(@PathVariable Long id) {
+    try {
+      return ResponseHelper.buildSuccessResponse(service.delete(id));
+    } catch (Exception e) {
+      return ResponseHelper.buildFailedResponse(e.getMessage());
+    }
+  }
+
+  @GetMapping("/{id}")
+  public ResponseEntity<IRunnerResponse> getById(@PathVariable Long id) {
+    try {
+      return ResponseHelper.buildSuccessResponse(service.getById(id));
+    } catch (Exception e) {
+      return ResponseHelper.buildFailedResponse(e.getMessage());
+    }
+  }
+
+  @GetMapping
+  public ResponseEntity<IRunnerResponse> getAll() {
+    return ResponseEntity.ok(service.getAll());
+  }
+}
+

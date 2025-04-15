@@ -6,7 +6,9 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.repository.interfaces.IConsoleShipmentsMappingRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -27,11 +29,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -88,7 +88,7 @@ class ConsoleShipmentMappingDaoTest {
     void testFindByConsolidationId() {
         Long consolidationId = 1L;
         List<ConsoleShipmentMapping> listResponse = List.of(testConsoleShipmentMapping);
-        when(consoleShipmentsMappingRepository.findByConsolidationId(consolidationId)).thenReturn(listResponse);
+        when(consoleShipmentsMappingRepository.findByConsolidationIdByQuery(consolidationId)).thenReturn(listResponse);
         var result = consoleShipmentMappingDao.findByConsolidationId(consolidationId);
         assertEquals(listResponse, result);
     }
@@ -97,7 +97,7 @@ class ConsoleShipmentMappingDaoTest {
     void testFindByShipmentId() {
         Long shipmentId = 1L;
         List<ConsoleShipmentMapping> listResponse = List.of(testConsoleShipmentMapping);
-        when(consoleShipmentsMappingRepository.findByShipmentId(shipmentId)).thenReturn(listResponse);
+        when(consoleShipmentsMappingRepository.findByShipmentIdByQuery(shipmentId)).thenReturn(listResponse);
         var result = consoleShipmentMappingDao.findByShipmentId(shipmentId);
         assertEquals(listResponse, result);
     }
@@ -129,42 +129,65 @@ class ConsoleShipmentMappingDaoTest {
     @Test
     void assignShipments() {
         List<ConsoleShipmentMapping> consoleShipmentMappingList = List.of(testConsoleShipmentMapping);
-        doReturn(consoleShipmentMappingList).when(consoleShipmentsMappingRepository).findByConsolidationId(any());
+        doReturn(consoleShipmentMappingList).when(consoleShipmentsMappingRepository).findByConsolidationIdByQuery(any());
         List<Long> shipIds = List.of(2L);
-        List<Long> response = consoleShipmentMappingDao.assignShipments(1L, shipIds, null);
-        assertEquals(shipIds, response);
+        Set<Long> response = consoleShipmentMappingDao.assignShipments(ShipmentRequestedType.APPROVE, 1L, shipIds, null, new HashSet<Long>(), new HashSet<>(new ArrayList<>(shipIds)), new HashMap<>());
+        assertEquals(new HashSet<>(shipIds), response);
+    }
+
+    @Test
+    void assignShipmentsWithInterBranchShipments() {
+        Long shipmentId = 2L;
+        List<ConsoleShipmentMapping> consoleShipmentMappingList = List.of(testConsoleShipmentMapping);
+        doReturn(consoleShipmentMappingList).when(consoleShipmentsMappingRepository).findByConsolidationIdByQuery(any());
+        List<Long> shipIds = List.of(shipmentId);
+        Set<Long> response = consoleShipmentMappingDao.assignShipments(ShipmentRequestedType.APPROVE, 1L, shipIds, null, new HashSet<Long>(List.of(shipmentId)), new HashSet<>(new ArrayList<>(shipIds)), new HashMap<>());
+        assertEquals(new HashSet<>(shipIds), response);
+    }
+
+    @Test
+    void assignShipmentsWithImportInterBranchShipments() {
+        Long shipmentId = 2L;
+        List<ConsoleShipmentMapping> consoleShipmentMappingList = List.of(testConsoleShipmentMapping);
+        doReturn(consoleShipmentMappingList).when(consoleShipmentsMappingRepository).findByConsolidationIdByQuery(any());
+        List<Long> shipIds = List.of(shipmentId);
+        Map<Long, ShipmentDetails> interBranchImportShipmentMap = new HashMap<>();
+        ShipmentDetails shipmentDetails = mock(ShipmentDetails.class);
+        interBranchImportShipmentMap.put(shipmentId, shipmentDetails);
+        Set<Long> response = consoleShipmentMappingDao.assignShipments(ShipmentRequestedType.APPROVE, 1L, shipIds, null, new HashSet<Long>(List.of(shipmentId)), new HashSet<>(new ArrayList<>(shipIds)), interBranchImportShipmentMap);
+        assertEquals(new HashSet<>(shipIds), response);
     }
 
     @Test
     void assignShipments_MappingsNull() {
         List<ConsoleShipmentMapping> consoleShipmentMappingList = List.of(testConsoleShipmentMapping);
-        doReturn(null).when(consoleShipmentsMappingRepository).findByConsolidationId(any());
+        doReturn(null).when(consoleShipmentsMappingRepository).findByConsolidationIdByQuery(any());
         List<Long> shipIds = List.of(2L);
-        List<Long> response = consoleShipmentMappingDao.assignShipments(1L, shipIds, null);
-        assertEquals(shipIds, response);
+        Set<Long> response = consoleShipmentMappingDao.assignShipments(ShipmentRequestedType.APPROVE, 1L, shipIds, null, new HashSet<Long>(), new HashSet<>(new ArrayList<>(shipIds)), new HashMap<>());
+        assertEquals(new HashSet<>(shipIds), response);
     }
 
     @Test
     void assignShipments_MappingsEmpty() {
         List<ConsoleShipmentMapping> consoleShipmentMappingList = List.of(testConsoleShipmentMapping);
-        doReturn(new ArrayList<>()).when(consoleShipmentsMappingRepository).findByConsolidationId(any());
+        doReturn(new ArrayList<>()).when(consoleShipmentsMappingRepository).findByConsolidationIdByQuery(any());
         List<Long> shipIds = List.of(2L);
-        List<Long> response = consoleShipmentMappingDao.assignShipments(1L, shipIds, null);
-        assertEquals(shipIds, response);
+        Set<Long> response = consoleShipmentMappingDao.assignShipments(ShipmentRequestedType.APPROVE, 1L, shipIds, null, new HashSet<Long>(), new HashSet<>(new ArrayList<>(shipIds)), new HashMap<>());
+        assertEquals(new HashSet<>(shipIds), response);
     }
 
     @Test
     void assignShipments_Branches() {
         List<ConsoleShipmentMapping> consoleShipmentMappingList = List.of(testConsoleShipmentMapping);
         List<Long> shipIds = new ArrayList<>();
-        List<Long> response = consoleShipmentMappingDao.assignShipments(1L, new ArrayList<>(), consoleShipmentMappingList);
-        assertEquals(shipIds, response);
+        Set<Long> response = consoleShipmentMappingDao.assignShipments(ShipmentRequestedType.APPROVE, 1L, new ArrayList<>(), consoleShipmentMappingList, new HashSet<Long>(), new HashSet<>(new ArrayList<>(shipIds)), new HashMap<>());
+        assertEquals(new HashSet<>(shipIds), response);
     }
 
     @Test
     void updateShipmentsMappings() {
         List<ConsoleShipmentMapping> consoleShipmentMappingList = List.of(testConsoleShipmentMapping);
-        doReturn(consoleShipmentMappingList).when(consoleShipmentsMappingRepository).findByConsolidationId(any());
+        doReturn(consoleShipmentMappingList).when(consoleShipmentsMappingRepository).findByConsolidationIdByQuery(any());
         List<Long> shipIds = List.of(2L);
         assertDoesNotThrow(() -> consoleShipmentMappingDao.updateShipmentsMappings(1L, shipIds));
     }
@@ -172,9 +195,25 @@ class ConsoleShipmentMappingDaoTest {
     @Test
     void updateShipmentsMappings_Cases() {
         List<ConsoleShipmentMapping> consoleShipmentMappingList = List.of(testConsoleShipmentMapping);
-        doReturn(consoleShipmentMappingList).when(consoleShipmentsMappingRepository).findByConsolidationId(any());
+        doReturn(consoleShipmentMappingList).when(consoleShipmentsMappingRepository).findByConsolidationIdByQuery(any());
         List<Long> shipIds = List.of(1L);
         assertDoesNotThrow(() -> consoleShipmentMappingDao.updateShipmentsMappings(1L, shipIds));
     }
+
+    @Test
+    void testFindByConsolidationIdAll() {
+        Long consolId = 1L;
+        consoleShipmentMappingDao.findByConsolidationIdAll(consolId);
+        verify(consoleShipmentsMappingRepository, times(1)).findByConsolidationId(any());
+    }
+
+    @Test
+    void testDeletePendingStateByConsoleId() {
+        boolean isSuccess = true;
+        doNothing().when(consoleShipmentsMappingRepository).deletePendingStateByConsoleId(anyLong());
+        consoleShipmentMappingDao.deletePendingStateByConsoleId(1L);
+        assertTrue(isSuccess);
+    }
+
 
 }

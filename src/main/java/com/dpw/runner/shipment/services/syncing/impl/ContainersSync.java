@@ -1,11 +1,11 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
+import com.dpw.runner.shipment.services.aspects.sync.SyncingContext;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataSyncResponse;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
@@ -30,7 +30,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.support.RetryTemplate;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -83,13 +82,21 @@ public class ContainersSync implements IContainersSync {
 
     @Override
     public ResponseEntity<IRunnerResponse> sync(List<Long> containerIds, Page<ShipmentsContainersMapping> shipmentsContainersMappingPageable) {
+        return sync(containerIds, shipmentsContainersMappingPageable, UUID.randomUUID().toString());
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> sync(List<Long> containerIds, Page<ShipmentsContainersMapping> shipmentsContainersMappingPageable, String transactionId) {
+        if (!Boolean.TRUE.equals(SyncingContext.getContext()))
+            return ResponseHelper.buildSuccessResponse();
+
         List<Containers> containers = getContainersFromIds(containerIds);
         if(containers == null || containers.size() == 0) {
             log.error("Error in syncing containers: Not able to get containers for ids: " + containerIds.toString());
         }
         List<ContainerRequestV2> containerRequestV2 = convertEntityToSyncDto(containers, shipmentsContainersMappingPageable);
         String json = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(containerRequestV2).module(SyncingConstants.CONTAINERS).build());
-        syncService.pushToKafka(json, containers.stream().map(BaseEntity::getId).toList().toString(), containers.stream().map(BaseEntity::getGuid).toList().toString(), "Containers", UUID.randomUUID().toString());
+        syncService.pushToKafka(json, containers.stream().map(BaseEntity::getId).toList().toString(), containers.stream().map(BaseEntity::getGuid).toList().toString(), "Containers", transactionId);
         return ResponseHelper.buildSuccessResponse(containerRequestV2);
     }
 

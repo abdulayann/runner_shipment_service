@@ -4,77 +4,69 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSetti
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
-import org.junit.jupiter.api.AfterAll;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.repository.interfaces.ICustomerBookingRepository;
+import com.dpw.runner.shipment.services.validator.ValidatorUtility;
+import com.dpw.runner.shipment.services.validator.custom.validations.CustomerBookingValidations;
+import com.nimbusds.jose.util.Pair;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringRunner;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
+import org.springframework.dao.DataRetrievalFailureException;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.Mockito.*;
 
-@RunWith(SpringRunner.class)
 @ExtendWith(MockitoExtension.class)
-@TestPropertySource("classpath:application-test.properties")
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Testcontainers
-@Execution(CONCURRENT)
+@Execution(ExecutionMode.CONCURRENT)
 class CustomerBookingDaoTest {
-
-    @Container
-    private static PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>("postgres:15-alpine");
     private static JsonTestUtility jsonTestUtility;
 
-    static {
-        postgresContainer = new PostgreSQLContainer("postgres:15-alpine")
-                .withDatabaseName("integration-tests-db")
-                .withUsername("sa")
-                .withPassword("sa");
-        postgresContainer.start();
-    }
+    @InjectMocks
+    private CustomerBookingDao customerBookingDao;
 
-    @Autowired
-    private ICustomerBookingDao customerBookingDao;
+    @Mock
+    private ICustomerBookingRepository customerBookingRepository;
+    @Mock
+    private ValidatorUtility validatorUtility;
+
+    @Mock
+    private JsonHelper jsonHelper;
+    @Mock
+    private CustomerBookingValidations customValidations;
+
+    @Mock
+    private CustomerBooking customerBookingMock;
 
     @BeforeAll
     static void beforeAll() throws IOException {
-        postgresContainer.start();
         jsonTestUtility = new JsonTestUtility();
-    }
-
-    @AfterAll
-    static void afterAll() {
-        postgresContainer.stop();
-    }
-
-    @DynamicPropertySource
-    static void dynamicConfiguration(DynamicPropertyRegistry registry){
-        registry.add("spring.datasource.url", postgresContainer::getJdbcUrl);
-        registry.add("spring.datasource.username", postgresContainer::getUsername);
-        registry.add("spring.datasource.password", postgresContainer::getPassword);
     }
 
     @BeforeEach
@@ -108,12 +100,129 @@ class CustomerBookingDaoTest {
         customerBooking.setCargoType(Constants.CARGO_TYPE_FCL);
         customerBooking.setCarrierDetails(carrierDetails);
 
+        when(customerBookingRepository.save(any())).thenReturn(customerBooking);
+        when(jsonHelper.convertToJson(any())).thenReturn("");
+        when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
+
         // Test
         CustomerBooking savedCustomerBooking = customerBookingDao.save(customerBooking);
 
         // Assert
-        assertNotNull(savedCustomerBooking.getId());
+        assertEquals(customerBooking, savedCustomerBooking);
     }
 
     // create tc for save by using input that fails all validations one by one to inc coverage
+    @Test
+    void findAll() {
+        CustomerBooking testData = CustomerBooking.builder().build();
+
+        List<CustomerBooking> customerBookingList = new ArrayList<>();
+        customerBookingList.add(testData);
+
+        PageImpl<CustomerBooking> customerBookingPage = new PageImpl<>(customerBookingList);
+        ListCommonRequest listReq = constructListCommonRequest("id", 1, "=");
+        Pair<Specification<CustomerBooking>, Pageable> pair = fetchData(listReq, CustomerBooking.class);
+
+        when(customerBookingRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(customerBookingPage);
+        assertEquals(customerBookingPage, customerBookingDao.findAll(pair.getLeft(), pair.getRight()));
+    }
+
+    @Test
+    void findById() {
+        CustomerBooking testData = CustomerBooking.builder().build();
+        when(customerBookingRepository.findById(any())).thenReturn(Optional.of(testData));
+        assertEquals(testData, customerBookingDao.findById(1L).get());
+    }
+
+    @Test
+    void delete() {
+        CustomerBooking testData = CustomerBooking.builder().build();
+        customerBookingDao.delete(testData);
+        verify(customerBookingRepository, times(1)).delete(testData);
+    }
+
+    @Test
+    void updateIsPlatformBookingCreated() {
+        when(customerBookingRepository.updateIsPlatformBookingCreated(any(), any())).thenReturn(1);
+        assertEquals(1, customerBookingDao.updateIsPlatformBookingCreated(1L, true));
+    }
+
+    @Test
+    void updateBillStatus() {
+        when(customerBookingRepository.updateBillingStatus(any(), any())).thenReturn(1);
+        assertEquals(1, customerBookingDao.updateBillStatus(1L, true));
+    }
+
+    @Test
+    void SaveError() {
+        HashSet<String> error = new HashSet<>();
+        error.add("An Error Occured");
+        CustomerBooking customerBooking = CustomerBooking.builder().build();
+        when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(error);
+        assertThrows(ValidationException.class, () -> {
+            customerBookingDao.save(customerBooking);
+        });
+    }
+
+    @Test
+    void SaveEntityNotPresent() {
+        HashSet<String> error = new HashSet<>();
+
+        CustomerBooking customerBooking = CustomerBooking.builder().build();
+        customerBooking.setId(1L);
+
+        when(customerBookingRepository.findById(any())).thenReturn(Optional.empty());
+        when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(error);
+        assertThrows(DataRetrievalFailureException.class, () -> {
+            customerBookingDao.save(customerBooking);
+        });
+    }
+
+    @Test
+    void SaveEntityIdNull() {
+        HashSet<String> error = new HashSet<>();
+
+        CustomerBooking customerBooking = CustomerBooking.builder().build();
+
+        when(customerBookingRepository.findByBookingNumber(any())).thenReturn(Optional.of(customerBooking));
+        when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(error);
+        assertThrows(ValidationException.class, () -> {
+            customerBookingDao.save(customerBooking);
+        });
+    }
+
+    @Test
+    void updateEntityFromShipmentConsoleEntityNotPresent() {
+        CustomerBooking customerBooking = CustomerBooking.builder().build();
+        customerBooking.setId(1L);
+
+        when(customerBookingRepository.findById(any())).thenReturn(Optional.empty());
+
+        assertThrows(DataRetrievalFailureException.class, () -> {
+            customerBookingDao.save(customerBooking);
+        });
+    }
+
+    @Test
+    void updateEntityFromShipmentConsoleEntity() throws RunnerException {
+        CustomerBooking customerBooking = CustomerBooking.builder().build();
+        customerBooking.setId(1L);
+
+        when(customerBookingRepository.findById(any())).thenReturn(Optional.of(customerBooking));
+        when(customerBookingRepository.save(any())).thenReturn(customerBooking);
+
+        assertEquals(customerBooking, customerBookingDao.updateEntityFromShipmentConsole(customerBooking));
+    }
+
+    @Test
+    void updateEntityFromShipmentConsoleCatch() {
+        CustomerBooking customerBooking = CustomerBooking.builder().build();
+        customerBooking.setId(1L);
+
+        when(customerBookingRepository.findById(any())).thenReturn(Optional.empty());
+
+        assertThrows(RunnerException.class, () -> {
+            customerBookingDao.updateEntityFromShipmentConsole(customerBooking);
+        });
+    }
 }

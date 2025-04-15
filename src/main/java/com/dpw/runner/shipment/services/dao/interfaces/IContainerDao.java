@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dao.interfaces;
 
 import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.response.consolidation.IContainerLiteResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -14,6 +15,7 @@ public interface IContainerDao {
     Containers save(Containers containers);
 
     Page<Containers> findAll(Specification<Containers> spec, Pageable pageable);
+    List<IContainerLiteResponse> findAllLiteContainer(List<Long> consolidationId);
 
     List<Containers> getAllContainers();
 
@@ -32,6 +34,9 @@ public interface IContainerDao {
     List<Containers> updateEntityFromShipmentV1(List<Containers> containersList, List<Containers> oldContainers) throws RunnerException;
     List<Containers> findByShipmentId(Long shipmentId);
     List<Containers> findByConsolidationId(Long shipmentId);
+    List<Containers> findByConsolidationIdIn(List<Long> consolidationIds);
     void deleteById(Long id);
+    List<Containers> findByIdIn(List<Long> containerIds);
 
+    void deleteByIdIn(List<Long> deleteContainerIds);
 }

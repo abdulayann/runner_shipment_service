@@ -5,8 +5,6 @@ import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
-import javax.persistence.Column;
-
 @Getter
 @Setter
 @ApiModel("File Repository Request Model")

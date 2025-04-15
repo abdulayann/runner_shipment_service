@@ -1,7 +1,9 @@
 package com.dpw.runner.shipment.services.entity.enums;
 
+import com.dpw.runner.shipment.services.utils.Generated;
 import org.springframework.util.StringUtils;
 
+@Generated
 public enum MergeClass {
 
     A(0);

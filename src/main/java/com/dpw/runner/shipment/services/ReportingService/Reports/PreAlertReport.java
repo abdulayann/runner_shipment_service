@@ -7,13 +7,12 @@ import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.PreAlertModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.response.CommodityResponse;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -25,6 +24,7 @@ import java.util.Map;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.AIRLINE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.JOB_NO;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.NOTIFY_PARTY;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.*;
 
 @Component
@@ -36,6 +36,9 @@ public class PreAlertReport extends IReport {
 
     public Boolean printWithoutTranslation;
 
+    @Autowired
+    private CommonUtils commonUtils;
+
     @Override
     public Map<String, Object> getData(Long id) {
         PreAlertModel preAlertModel = (PreAlertModel) getDocumentModel(id);
@@ -46,8 +49,9 @@ public class PreAlertReport extends IReport {
     public IDocumentModel getDocumentModel(Long id) {
         PreAlertModel preAlertModel = new PreAlertModel();
         preAlertModel.shipmentDetails = getShipment(id);
+        validateAirAndOceanDGCheck(preAlertModel.shipmentDetails);
         preAlertModel.tenantDetails = getTenant();
-        preAlertModel.shipmentSettingsDetails = ShipmentSettingsDetailsContext.getCurrentTenantSettings();
+        preAlertModel.shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         preAlertModel.consolidationDetails = getFirstConsolidationFromShipmentId(id);
         if(preAlertModel.shipmentDetails.getContainersList() != null && preAlertModel.shipmentDetails.getContainersList().size() > 0) {
             List<ShipmentContainers> shipmentContainersList = new ArrayList<>();
@@ -69,7 +73,8 @@ public class PreAlertReport extends IReport {
         PreAlertModel preAlertModel = (PreAlertModel) documentModel;
         List<String> orgWithoutTranslation = new ArrayList<>();
         List<String> chargeTypesWithoutTranslation = new ArrayList<>();
-        String json = jsonHelper.convertToJsonWithDateTimeFormatter(preAlertModel.shipmentDetails, GetDPWDateFormatOrDefault());
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
+        String json = jsonHelper.convertToJsonWithDateTimeFormatter(preAlertModel.shipmentDetails, GetDPWDateFormatOrDefault(v1TenantSettingsResponse));
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
         JsonDateFormat(dictionary);
         addTenantDetails(dictionary, preAlertModel.tenantDetails);
@@ -135,7 +140,10 @@ public class PreAlertReport extends IReport {
                 dictionary.put(ReportConstants.NOTIFY_PARTY_AIR, getCompleteNameAndAddress(notifyFullName, notify));
             }
         }
-        dictionary.put(ReportConstants.NOTIFY_PARTY, notify);
+        if(preAlertModel.shipmentDetails.getAdditionalDetails() != null) {
+            dictionary.put(NOTIFY_PARTY, ReportHelper.getOrgAddressDetails(preAlertModel.shipmentDetails.getAdditionalDetails().getNotifyParty()));
+        }
+
         dictionary.put(ReportConstants.CONSIGNER_ADDRESS, getAddressList(ReportHelper.getValueFromMap(preAlertModel.shipmentDetails.getConsigner() != null ?
                 preAlertModel.shipmentDetails.getConsigner().getAddressData() : null, ReportConstants.ADDRESS1)));
         dictionary.put(ReportConstants.CONSIGNEE_ADDRESS, getAddressList(ReportHelper.getValueFromMap(preAlertModel.shipmentDetails.getConsignee() != null ?
@@ -150,9 +158,8 @@ public class PreAlertReport extends IReport {
             dictionary.put(ReportConstants.TENANT, tenantsDataList);
         dictionary.put(ReportConstants.NO_OF_PACKAGES_WORD, preAlertModel.noofpackages_word);
         dictionary.put(ReportConstants.USER_DISPLAY_NAME, preAlertModel.userdisplayname);
-        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
         String tsDateTimeFormat = v1TenantSettingsResponse.getDPWDateFormat();
-        dictionary.put(ReportConstants.CURRENT_DATE, ConvertToDPWDateFormat(LocalDateTime.now(), tsDateTimeFormat));
+        dictionary.put(ReportConstants.CURRENT_DATE, ConvertToDPWDateFormat(LocalDateTime.now(), tsDateTimeFormat, v1TenantSettingsResponse));
         dictionary.put(ReportConstants.DELIVERY_AGENT, null);
         dictionary.put(ReportConstants.NOTIFY_PARTY_FREETEXT, notify);
         dictionary.put(ReportConstants.CONSIGNEE_FREETEXT, consignee);
@@ -169,28 +176,22 @@ public class PreAlertReport extends IReport {
             dictionary.put(ReportConstants.DELIVERY_AGENT, deliveryAgent);
         }
         if (preAlertModel.shipmentDetails.getCarrierDetails() != null) {
-            dictionary.put(ReportConstants.ETD, ConvertToDPWDateFormat(preAlertModel.shipmentDetails.getCarrierDetails().getEtd(), tsDateTimeFormat));
+            dictionary.put(ReportConstants.ETD, ConvertToDPWDateFormat(preAlertModel.shipmentDetails.getCarrierDetails().getEtd(), tsDateTimeFormat, v1TenantSettingsResponse));
         }
         if (preAlertModel.shipmentDetails.getCarrierDetails() != null) {
-            dictionary.put(ReportConstants.ETA, ConvertToDPWDateFormat(preAlertModel.shipmentDetails.getCarrierDetails().getEta(), tsDateTimeFormat));
+            dictionary.put(ReportConstants.ETA, ConvertToDPWDateFormat(preAlertModel.shipmentDetails.getCarrierDetails().getEta(), tsDateTimeFormat, v1TenantSettingsResponse));
         }
         dictionary.put(ReportConstants.SHIPMENT_CONTAINERS, preAlertModel.getShipmentContainers());
         dictionary.put(ReportConstants.CONTAINER_COUNT_BY_CODE, getCountByContainerTypeCode(preAlertModel.getShipmentContainers()));
-        if (preAlertModel.shipmentDetails.getCarrierDetails() != null) {
-            UnlocationsResponse origin = getUNLocRow(preAlertModel.shipmentDetails.getCarrierDetails().getOrigin());
-            if (origin != null && origin.getIataCode() != null)
-                dictionary.put(ReportConstants.ORIGIN, origin.getIataCode());
-            else
-                dictionary.put(ReportConstants.ORIGIN, null);
-        } else
+        UnlocationsResponse origin = getUNLocRow(preAlertModel.shipmentDetails.getCarrierDetails().getOrigin());
+        if (origin != null && origin.getIataCode() != null)
+            dictionary.put(ReportConstants.ORIGIN, origin.getIataCode());
+        else
             dictionary.put(ReportConstants.ORIGIN, null);
-        if (preAlertModel.shipmentDetails.getCarrierDetails() != null) {
-            UnlocationsResponse destination = getUNLocRow(preAlertModel.shipmentDetails.getCarrierDetails().getDestination());
-            if (destination != null && destination.getIataCode() != null)
-                dictionary.put(ReportConstants.DESTINATION, destination.getIataCode());
-            else
-                dictionary.put(ReportConstants.DESTINATION, null);
-        } else
+        UnlocationsResponse destination = getUNLocRow(preAlertModel.shipmentDetails.getCarrierDetails().getDestination());
+        if (destination != null && destination.getIataCode() != null)
+            dictionary.put(ReportConstants.DESTINATION, destination.getIataCode());
+        else
             dictionary.put(ReportConstants.DESTINATION, null);
         dictionary.put(JOB_NO, preAlertModel.shipmentDetails.getShipmentId());
         dictionary.put(AIRLINE, preAlertModel.shipmentDetails.getCarrierDetails().getShippingLine());
@@ -213,8 +214,8 @@ public class PreAlertReport extends IReport {
         Map<String, UnlocationsResponse> unlocationsMap = masterDataUtils.getLocationData(new HashSet<>(unlocoRequests));
         UnlocationsResponse pol = unlocationsMap.get(preAlertModel.shipmentDetails.getCarrierDetails().getOriginPort());
         UnlocationsResponse pod = unlocationsMap.get(preAlertModel.shipmentDetails.getCarrierDetails().getDestinationPort());
-        UnlocationsResponse origin = unlocationsMap.get(preAlertModel.shipmentDetails.getCarrierDetails().getOrigin());
-        UnlocationsResponse destination = unlocationsMap.get(preAlertModel.shipmentDetails.getCarrierDetails().getDestination());
+        origin = unlocationsMap.get(preAlertModel.shipmentDetails.getCarrierDetails().getOrigin());
+        destination = unlocationsMap.get(preAlertModel.shipmentDetails.getCarrierDetails().getDestination());
         if (pol != null) {
             dictionary.put(ReportConstants.PORT_OF_DEPARTURE, pol.getPortName());
             dictionary.put(ReportConstants.PORT_OF_DEPARTURE_COUNTRY, pol.getCountry());

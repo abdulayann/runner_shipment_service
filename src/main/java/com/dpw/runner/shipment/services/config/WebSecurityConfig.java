@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.config;
 
 import com.dpw.runner.shipment.services.filters.AuthFilter;
+import com.dpw.runner.shipment.services.utils.Generated;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -15,6 +16,7 @@ import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 @Configuration
 @EnableWebSecurity
 @EnableGlobalMethodSecurity(prePostEnabled = true)
+@Generated
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Autowired
@@ -31,6 +33,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         "/swagger-ui.html",
         "/webjars/**",
         "/api/v2/enums/**",
+        "/api/v2/events/push-tracking-events",
         "/api/v2/cache/**"
     };
 

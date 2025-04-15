@@ -74,4 +74,10 @@ public class CustomerBookingRequest extends CommonRequest implements IRunnerRequ
     private String secondarySalesAgentEmail;
     private Boolean isNotifyConsigneeEqual;
     private String currentPartyForQuote;
+    private BookingSource source;
+    private UUID sourceGuid;
+    private String orderManagementId;
+    private String orderManagementNumber;
+    private Boolean isDg;
+    private String rejectionRemarks;
 }

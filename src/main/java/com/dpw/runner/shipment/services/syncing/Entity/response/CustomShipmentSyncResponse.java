@@ -3,7 +3,6 @@ package com.dpw.runner.shipment.services.syncing.Entity.response;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.syncing.Entity.*;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -404,8 +403,6 @@ public class CustomShipmentSyncResponse implements IRunnerResponse {
     private LocalDateTime ShipmentCompletedOn;
     @JsonProperty("SourceTenantId")
     private Integer SourceTenantId;
-    @JsonProperty("TriangulationPartner")
-    private Integer TriangulationPartner;
 
 
 

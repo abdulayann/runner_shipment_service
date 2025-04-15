@@ -28,4 +28,6 @@ public class PartyRequestV2 implements IRunnerRequest {
     private Boolean IsFreeTextAddress;
     @JsonProperty("FreeTextAddress")
     private String FreeTextAddress;
+    private String orgId;
+    private String addressId;
 }

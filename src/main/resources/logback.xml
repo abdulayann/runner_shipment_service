@@ -5,32 +5,20 @@
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%d{dd-MM-yyyy HH:mm:ss.SSS} ${spring.application.name}: %X{request_id} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <pattern>%green(%d{dd-MM-yyyy HH:mm:ss.SSS}) [%magenta(${spring.application.name})]: %highlight(%X{request_id}) %highlight(%X{ts_id}) %blue([%thread]) %highlight(%-5level) %cyan(%logger{36}) - %msg%n
+            </pattern>
         </encoder>
     </appender>
 
     <appender name="ASYNC_CONSOLE" class="ch.qos.logback.classic.AsyncAppender">
         <appender-ref ref="STDOUT" />
+        <queueSize>1024</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <maxFlushTime>1000</maxFlushTime>
+        <includeCallerData>false</includeCallerData>
     </appender>
 
-    <appender name="SYSLOG-TCP" class="com.papertrailapp.logback.Syslog4jAppender">
-        <layout class="ch.qos.logback.classic.PatternLayout">
-            <pattern>${papertrail_app} ${papertrail_app}-${hostName} ${spring.application.name}: [%thread] %X{request_id} %-5level %logger{35}: %m%n%xEx</pattern>
-        </layout>
-        <syslogConfig class="org.productivity.java.syslog4j.impl.net.udp.UDPNetSyslogConfig">
-            <host>${papertrail_host}</host>
-            <port>${papertrail_port}</port>
-            <maxMessageLength>128000</maxMessageLength>
-            <sendLocalName>false</sendLocalName>
-        </syslogConfig>
-    </appender>
-
-    <logger name="dpw.runner" level="debug" additivity="false">
-<!--        <appender-ref ref="SYSLOG-TCP" />-->
-        <appender-ref ref="ASYNC_CONSOLE" />
-    </logger>
-
-    <root level="debug">
+    <root level="info">
 <!--        <appender-ref ref="SYSLOG-TCP" />-->
         <appender-ref ref="ASYNC_CONSOLE" />
     </root>

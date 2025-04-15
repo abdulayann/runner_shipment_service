@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.aspects.MultitenancyAspect;
 
 
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
+import com.dpw.runner.shipment.services.utils.TenantIdData;
 import lombok.Data;
 import lombok.Getter;
 import org.hibernate.annotations.Filter;
@@ -31,6 +32,7 @@ public class MultiTenancy extends BaseEntity {
     public static final String TENANT_PARAMETER_NAME = "tenant_id";
     public static final String TENANT_COLUMN = "tenant_id";
 
-    @Column(name = "tenant_id")
+    @TenantIdData
+    @Column(name = "tenant_id", nullable = false, updatable = false)
     private Integer tenantId;
 }

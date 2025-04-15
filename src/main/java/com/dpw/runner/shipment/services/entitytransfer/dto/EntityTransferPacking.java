@@ -1,10 +1,15 @@
 package com.dpw.runner.shipment.services.entitytransfer.dto;
 
+import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
+import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
 import com.dpw.runner.shipment.services.entitytransfer.common.request.IEntityTranferBaseEntity;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.UUID;
 
 @Data
 @ToString
@@ -12,11 +17,11 @@ import java.util.Map;
 @AllArgsConstructor
 @NoArgsConstructor
 public class EntityTransferPacking implements IEntityTranferBaseEntity {
+    private UUID guid;
     private Integer DGGoodsId;
     private Integer DGSubstanceId;
     private String packs;
     private String packsType;
-    private String containerNumber;
     private BigDecimal weight;
     private String weightUnit;
     private BigDecimal volume;
@@ -45,13 +50,12 @@ public class EntityTransferPacking implements IEntityTranferBaseEntity {
     private String referenceNumber;
     private String DGClass;
     private Boolean hazardous;
-    private Long commodityId;
     private BigDecimal netWeight;
     private String netWeightUnit;
     private BigDecimal volumeWeight;
     private String volumeWeightUnit;
     private String vinNumber;
-    private Long containerId;
+    private String containerNumber;
     private String transportMode;
     private String innerPackageNumber;
     private String innerPackageType;
@@ -59,8 +63,31 @@ public class EntityTransferPacking implements IEntityTranferBaseEntity {
     private String chargeableUnit;
     private String customsReleaseCode;
     private String shipmentNumber;
+    private Boolean shipmentHazardous;
     private Long innerPacksId;
     private Long innerPacksCount;
-    private Map<String, EntityTransferMasterLists> masterData;
-    private Map<String, EntityTransferCommodityType> commodityTypeMasterData;
+    private String commodityGroup;
+    private Boolean isDimension;
+    private Boolean isContractEnforced;
+    private String handlingInfo;
+    private Long contractEnforcedQuantityLimit;
+    private String containerDesc;
+    private String unNumberAir;
+    private String dgClassAir;
+    private String dgClassAirDescription;
+    private Boolean assigned;
+    private DateBehaviorType dateType;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime cargoGateInDate;
+    private String unNumber;
+    private String properShippingName;
+    private String packingGroup;
+    private BigDecimal minimumFlashPoint;
+    private String minimumFlashPointUnit;
+    private Boolean marinePollutant = false;
+
+    private Map<String, String> unlocationData;
+    private Map<String, String> masterData;
+    private Map<String, String> commodityTypeData;
+
 }

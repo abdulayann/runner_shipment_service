@@ -22,6 +22,7 @@ public class PartiesConstants {
     public static final String ADDRESS2 = "Address2";
     public static final String COUNTRY = "Country";
     public static final String CITY = "City";
+    public static final String ID = "Id";
     public static final String CITY_CODE = "CityCode";
     public static final String STATE = "State";
     public static final String ZIP_POST_CODE = "ZipPostCode";
@@ -29,6 +30,7 @@ public class PartiesConstants {
     public static final String PIN_CODE = "PinCode";
     public static final String CONTACT_NUMBER = "ContactNumber";
     public static final String CONTACT_PHONE = "ContactPhone";
+    public static final String CONTACT_NAME = "ContactName";
     public static final String EMAIL = "Email";
     public static final String MOBILE = "Mobile";
     public static final String PHONE = "Phone";
@@ -57,4 +59,8 @@ public class PartiesConstants {
     public static final String API = "API";
     public static final String KC_RA_NUMBER = "KCRANumber";
     public static final String KC_RA_EXPIRY = "KCRAExpiry";
+
+    public static final String REGULATED_AGENT = "RegulatedAgent";
+    public static final String KNOWN_CONSIGNOR = "KnownConsignor";
+    public static final String ORG_ID = "OrgId";
 }

@@ -1,11 +1,25 @@
 package com.dpw.runner.shipment.services.controller;
 
-import com.dpw.runner.shipment.services.commons.constants.*;
-import com.dpw.runner.shipment.services.commons.requests.*;
+import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.ContainerConstants;
+import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.EventConstants;
+import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
+import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
+import com.dpw.runner.shipment.services.commons.requests.BulkUploadRequest;
+import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
+import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.requests.ExportContainerListRequest;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
-import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CheckAllocatedDataChangeResponse;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CheckAllocatedDataChangesRequest;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerAssignListRequest;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerNumberCheckResponse;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerPackADInShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -16,16 +30,24 @@ import com.dpw.runner.shipment.services.syncing.Entity.ContainerRequestV2;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+import java.io.IOException;
+import java.util.List;
+import java.util.Objects;
+import javax.servlet.http.HttpServletResponse;
+import javax.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import javax.servlet.http.HttpServletResponse;
-import javax.validation.Valid;
-import java.io.IOException;
-import java.util.List;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 @Slf4j
 @SuppressWarnings("ALL")
@@ -54,7 +76,7 @@ public class ContainerController {
     })
     @PostMapping(ApiConstants.API_UPLOAD)
     public ResponseEntity<IRunnerResponse> uploadCSV(@ModelAttribute BulkUploadRequest request) throws IOException {
-        if (request.getFile().isEmpty()) {
+        if (Objects.isNull(request.getFile()) || request.getFile().isEmpty()) {
             return ResponseHelper.buildFailedResponse("No File Found !");
         }
 
@@ -75,7 +97,7 @@ public class ContainerController {
     })
     @PostMapping(ApiConstants.API_UPLOAD_EVENTS)
     public ResponseEntity<IRunnerResponse> uploadEventsCSV(@ModelAttribute BulkUploadRequest request) throws IOException {
-        if (request.getFile().isEmpty()) {
+        if (Objects.isNull(request.getFile()) || request.getFile().isEmpty()) {
             return ResponseHelper.buildFailedResponse("No File Found !");
         }
 
@@ -162,11 +184,6 @@ public class ContainerController {
         return (ResponseEntity<IRunnerResponse>) containerService.calculateAllocatedData(CommonRequestModel.buildRequest(containerRequest));
     }
 
-//    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CALCULATION_SUCCESSFUL) })
-//    @PostMapping(ApiConstants.API_CALCULATE_ACHIEVED_PACK_ASSIGN)
-//    public ResponseEntity<RunnerListResponse<ContainerResponse>> calculateAchievedOnPackAssign(@RequestBody ContainerPackADInShipmentRequest containerPackAssignDetachRequest) {
-//        return (ResponseEntity<RunnerListResponse<ContainerResponse>>) containerService.calculateAchievedQuantity_onPackAssign(CommonRequestModel.buildRequest(containerPackAssignDetachRequest));
-//    }
 
     @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CONTAINER_DETACH_SUCCESSFUL, response = RunnerListResponse.class) })
     @PostMapping(ApiConstants.API_CALCULATE_ACHIEVED_PACK_DETACH)
@@ -245,6 +262,13 @@ public class ContainerController {
     public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest) {
         return containerService.getContainers(CommonRequestModel.buildRequest(listCommonRequest));
     }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = EventConstants.EVENT_LIST_SUCCESS, response = MyListResponseClass.class)})
+    @PostMapping(ContainerConstants.LIST_BY_MODULE_GUID_AND_MODULE_TYPE)
+    public ResponseEntity<IRunnerResponse> listByModuleGuidAndModuleType(@RequestParam String moduleGuid, @RequestParam String moduleType) {
+        return containerService.getByModuleGuidAndModuleType(moduleGuid, moduleType);
+    }
+
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.SUCCESS, response = RunnerListResponse.class)})
     @GetMapping(ContainerConstants.CHECK_CONTAINERS_DELETE)

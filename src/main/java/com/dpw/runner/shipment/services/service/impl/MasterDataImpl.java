@@ -1,26 +1,46 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
+import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dto.request.ListCousinBranchesForEtRequest;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
+import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.interfaces.IMasterDataService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 @Service
 public class MasterDataImpl implements IMasterDataService {
 
+    private final MasterDataFactory masterDataFactory;
+    private final IV1Service v1Service;
+    private final MasterDataUtils masterDataUtils;
+    private final CommonUtils commonUtils;
+    private final IMDMServiceAdapter mdmServiceAdapter;
+
     @Autowired
-    private MasterDataFactory masterDataFactory;
-    @Autowired
-    private IV1Service v1Service;
+    public MasterDataImpl (MasterDataFactory masterDataFactory, IV1Service v1Service, MasterDataUtils masterDataUtils, CommonUtils commonUtils
+    ,IMDMServiceAdapter mdmServiceAdapter) {
+        this.masterDataFactory = masterDataFactory;
+        this.v1Service = v1Service;
+        this.masterDataUtils = masterDataUtils;
+        this.commonUtils = commonUtils;
+        this.mdmServiceAdapter = mdmServiceAdapter;
+    }
 
     @Override
     public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
@@ -216,6 +236,11 @@ public class MasterDataImpl implements IMasterDataService {
     public ResponseEntity<IRunnerResponse> listUnlocation(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().fetchUnlocationData(commonRequestModel.getDependentData()));
     }
+    @Override
+    public ResponseEntity<IRunnerResponse> stateBasedList(CommonRequestModel commonRequestModel) {
+        return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().stateBasedList(commonRequestModel.getDependentData()));
+    }
+
 
     @Override
     public ResponseEntity<IRunnerResponse> listUsers(CommonRequestModel commonRequestModel) {
@@ -240,6 +265,12 @@ public class MasterDataImpl implements IMasterDataService {
     @Override
     public ResponseEntity<IRunnerResponse> listOwnType(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().fetchOwnType(commonRequestModel.getDependentData()));
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> createNonBillableCustomer(CommonRequestModel commonRequestModel)
+        throws RunnerException {
+        return mdmServiceAdapter.createNonBillableCustomer(commonRequestModel);
     }
 
     @Override
@@ -348,5 +379,69 @@ public class MasterDataImpl implements IMasterDataService {
     @Override
     public ResponseEntity<IRunnerResponse> getDefaultOrg(CommonRequestModel commonRequestModel) {
         return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().getDefaultOrg(commonRequestModel.getDependentData()));
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> listOrgs(CommonRequestModel commonRequestModel) {
+        V1DataResponse v1DataResponse = v1Service.listOrgs(commonRequestModel.getDependentData());
+        return ResponseHelper.buildDependentServiceResponse(DependentServiceResponse.builder().success(true)
+                .data(v1DataResponse.entities).pageSize(v1DataResponse.take).numberOfRecords(v1DataResponse.totalCount).pageNo(v1DataResponse.skip).build());
+    }
+
+
+    @Override
+    public ResponseEntity<IRunnerResponse> fetchMultipleMasterData(CommonRequestModel commonRequestModel) {
+        MasterListRequestV2 request = (MasterListRequestV2) commonRequestModel.getData();
+        request.setIncludeCols(Arrays.asList(MasterDataConstants.ITEM_TYPE, MasterDataConstants.ITEM_VALUE, "ItemDescription", "ValuenDesc", "Cascade"));
+        var keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(request);
+        Map<String, Object> response = new HashMap<>();
+        keyMasterDataMap.forEach((key, value) -> masterDataUtils.setKeyValueForMasterLists(response, key, value));
+        return ResponseHelper.buildSuccessResponse(response);
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> listBranchesByDefaultOrgAndAddress(CommonRequestModel commonRequestModel) {
+        V1DataResponse v1DataResponse = v1Service.listBranchesByDefaultOrgAndAddress(commonRequestModel.getDependentData());
+        return ResponseHelper.buildDependentServiceResponse(DependentServiceResponse.builder().success(true)
+                .data(v1DataResponse.entities).pageSize(v1DataResponse.take).numberOfRecords(v1DataResponse.totalCount).pageNo(v1DataResponse.skip).build());
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> listCousinBranchForEt(ListCousinBranchesForEtRequest request) {
+        List<Object> criteria = request.getCriteria() ;
+        List<Long> tenantIds = commonUtils.getTenantIdsFromEntity(request);
+        if(tenantIds!=null && !tenantIds.isEmpty()) {
+            List<Long> existingTenantIds = criteria!=null && !criteria.isEmpty() && criteria.size() > 2 ? (List<Long>) criteria.get(2): null;
+            criteria = convertToV1NotInCriteria("TenantId", tenantIds, existingTenantIds);
+        }
+        CommonV1ListRequest v1ListRequest = CommonV1ListRequest.builder()
+                .sort(request.getSort())
+                .containsText(request.getContainsText())
+                .excludeTotalCount(request.getExcludeTotalCount())
+                .columnSelection(request.getColumnSelection())
+                .includeColumns(request.getIncludeColumns())
+                .take(request.getTake())
+                .skip(request.getSkip())
+                .criteriaRequests(criteria)
+                .build();
+        return ResponseHelper.buildDependentServiceResponse(masterDataFactory.getMasterDataService().listCousinBranches(v1ListRequest));
+    }
+
+    public List<Object> convertToV1NotInCriteria(String filterValue, List<?> values, List<Long> existingTenantIds) {
+        List<String> itemType = new ArrayList<>();
+        itemType.add(filterValue);
+        List<Object> param = new ArrayList<>();
+        if(values!=null)
+            param.addAll(values);
+        if (existingTenantIds != null) {
+            for (Object obj : existingTenantIds) {
+                if (obj instanceof List) {
+                    param.addAll((List<?>) obj);
+                } else {
+                    param.add(obj);
+                }
+            }
+        }
+        return new ArrayList<>(Arrays.asList(itemType, "not in", Collections.singletonList(param)));
     }
 }

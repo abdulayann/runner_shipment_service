@@ -46,4 +46,8 @@ public class EventsModel implements IDocumentModel {
     private String source;
     @JsonProperty("TenantId")
     private Long tenantId;
+    @JsonProperty("ContainerNumber")
+    private String containerNumber;
+    @JsonProperty("LocationRole")
+    private String locationRole;
 }

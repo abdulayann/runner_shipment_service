@@ -1,12 +1,13 @@
 package com.dpw.runner.shipment.services.dto.response;
 
-import com.dpw.runner.shipment.services.Kafka.Dto.AwbShipConsoleDto;
+import com.dpw.runner.shipment.services.kafka.dto.AwbShipConsoleDto;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.awb.*;
 import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import lombok.Data;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -33,6 +34,7 @@ public class AwbResponse implements IRunnerResponse {
     private Map<String, String> masterData;
     private Map<String, String> unlocationData;
     private MasterData chargeDetails;
+    private Boolean airMessageResubmitted;
     // Default Awb objects for UI
     private AwbShipmentInfoResponse defaultAwbShipmentInfo;
     private List<AwbNotifyPartyInfo> defaultAwbNotifyPartyInfo;
@@ -42,5 +44,8 @@ public class AwbResponse implements IRunnerResponse {
     private List<String> shcIdList;
     private AwbStatus airMessageStatus;
     private AwbStatus linkedHawbAirMessageStatus;
+    private LocalDateTime originalPrintedAt;
+    private AirMessagingAdditionalFields airMessagingAdditionalFields;
 
+    private String userDisplayName;
 }

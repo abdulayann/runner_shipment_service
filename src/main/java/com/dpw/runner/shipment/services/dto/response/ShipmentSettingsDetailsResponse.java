@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dto.section.response.SectionVisibilityResponse;
 import com.dpw.runner.shipment.services.entity.enums.GenerationType;
 import lombok.Data;
 
@@ -158,4 +159,33 @@ public class ShipmentSettingsDetailsResponse implements IRunnerResponse {
     private LocalDateTime raExpiry;
     private String transportOrderRoad;
     private Boolean disableBlPartiesName;
+    private Boolean airDGFlag;
+    private Boolean iataTactFlag;
+    private Boolean enableLclConsolidation;
+    private String bookingOrder;
+    private String bookingOrderForMbl;
+    private String bookingOrderAir;
+    private String bookingOrderAirForMawb;
+    private String transportInstructionPickupOrder;
+    private String transportInstructionDeliveryOrder;
+    private Boolean enablePartyCheckForConsolidation;
+    private String csd;
+    private Boolean hideManifest;
+    private LocalDateTime isEntityTransferPrerequisiteEnabledDate;
+    private Boolean isEntityTransferPrerequisiteEnabled;
+    private Boolean isNetworkTransferEntityEnabled;
+    private Boolean isAutomaticTransferEnabled;
+    private Boolean eventsRevampEnabled;
+    private Boolean isAlwaysUtilization;
+    private Boolean isUtilizationForContainerQuoted;
+    private Boolean hasNoUtilization;
+    private Boolean isAwbRevampEnabled;
+    private String fcrDocument;
+    private Boolean isRunnerV3Enabled;
+    private Boolean isRAEnabled;
+    private Boolean isKCEnabled;
+    private List<SectionVisibilityResponse> sectionVisibilityResponses;
+    private Boolean countryAirCargoSecurity;
+    private Boolean preAlertEmailAndLogs;
+    private Boolean isAmrAirFreightEnabled;
 }

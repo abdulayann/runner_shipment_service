@@ -7,8 +7,8 @@ import com.dpw.runner.shipment.services.config.CustomWeightValueSerializer;
 import com.dpw.runner.shipment.services.config.DecimalPlaceValueSerializer;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
-import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
-import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
+import com.dpw.runner.shipment.services.entity.enums.*;
+import com.dpw.runner.shipment.services.utils.Generated;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -19,23 +19,23 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
+@Generated
 public class ShipmentDetailsResponse implements IRunnerResponse {
     private Long id;
+    private Integer tenantId;
     private UUID guid;
     private String houseBill;
     private String transportMode;
     private String direction;
     private String shipmentType;
     private Integer status;
+    private String shipmentStatus;
     private String source;
     private String jobType;
     private String serviceType;
@@ -69,6 +69,10 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private String packsUnit;
     private Integer innerPacks;
     private String innerPackUnit;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime cargoReadyDate;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime cargoDeliveryDate;
     private BigDecimal freightLocal;
     private String freightLocalCurrency;
     private BigDecimal freightOverseas;
@@ -86,6 +90,7 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private String route;
     private Long sourceTenantId;
     private Long documentationPartner;
+    private List<TriangulationPartnerResponse> triangulationPartnerList;
     private Long triangulationPartner;
     private Long receivingBranch;
     private boolean intraBranch;
@@ -117,8 +122,8 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private List<BookingCarriageResponse> bookingCarriagesList;
     private List<JobResponse> jobsList;
     @JsonIgnoreProperties("shipmentsList")
-    private List<ConsolidationListResponse> consolidationList;
-    private List<ContainerResponse> containersList;
+    private Set<ConsolidationListResponse> consolidationList;
+    private Set<ContainerResponse> containersList;
     private Long container20Count;
     private Long container40Count;
     private Long container20GPCount;
@@ -146,11 +151,17 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private Long orderNumber;
     private String orderManagementId;
     private String orderManagementNumber;
+    private List<ShipmentOrderResponse> shipmentOrders;
     private String createdBy;
     private ContainerSummaryResponse containerSummary;
     private PackSummaryResponse packSummary;
     private Map<String, String> textData;
     private List<NotesResponse> customerBookingNotesList;
+    private Map<String, Long> containerData;
+    private Long containerCount;
+    private BigDecimal teuCount;
+    private Integer packCount;
+    private String department;
 
     public void addTextData(Map<String, String> dataMap) {
         if(textData == null) {
@@ -165,6 +176,7 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
 
     private CustomerCategoryRates customerCategory;
     private String contractId;
+    private String parentContractId;
     private String contractType;
     private String clientCountry;
     private String consignorCountry;
@@ -179,10 +191,42 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private Long clientDpsAddressId;
     private Long consignorDpsAddressId;
     private Long notifyPartyDpsAddressId;
+    private List<String> implicationList;
     private Long shipmentCount;
     private LocalDateTime bookingCreatedDate;
     private String securityStatus;
     private AwbStatus awbStatus;
 
     private String currentPartyForQuote;
+    private Map<String, Object> masterDataMap;
+    private Boolean entityTransfer;
+    private String destinationSalesBranch;
+    private String destinationPrimarySalesAgentEmail;
+    private String destinationSecondarySalesAgentEmail;
+    private String destinationCurrentPartyForQuote;
+    private String destinationContractId;
+    private String destinationContractType;
+    private String updatedBy;
+    private DateBehaviorType dateType;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime shipmentGateInDate;
+    private ShipmentPackStatus shipmentPackStatus;
+    private Integer pendingActionCount;
+    private FileStatus fileStatus;
+    private Boolean isReceivingBranchAdded;
+    private OceanDGStatus oceanDGStatus;
+    private Boolean syncRoutingFromConsolidation;
+    private Boolean isNetworkFile;
+    private String transferStatus;
+    private Boolean isReceivingBranchManually;
+    private Boolean isTransferredToReceivingBranch;
+    private Boolean b2b;
+
+    private Boolean isCoLoadEnabled;
+    private String coLoadCarrierName;
+    private String coLoadBlNumber;
+
+    private String issuingCarrierName;
+    private String oceanBlNumber;
+    private UUID customerBookingGuid;
 }

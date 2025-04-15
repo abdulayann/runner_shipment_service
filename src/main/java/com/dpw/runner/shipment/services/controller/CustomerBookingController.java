@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.CreditLimitRequest;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
+import com.dpw.runner.shipment.services.dto.request.CustomerStatusUpdateRequest;
 import com.dpw.runner.shipment.services.dto.request.platformBooking.PlatformToRunnerCustomerBookingRequest;
 import com.dpw.runner.shipment.services.dto.request.crp.CRPListRequest;
 import com.dpw.runner.shipment.services.dto.request.crp.CRPRetrieveRequest;
@@ -18,8 +19,8 @@ import com.dpw.runner.shipment.services.dto.response.CustomerBookingResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.CreditLimitResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1ShipmentCreationResponse;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
-import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingService;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
@@ -33,6 +34,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.Optional;
 
 @Slf4j
 @SuppressWarnings("ALL")
@@ -148,13 +150,11 @@ public class CustomerBookingController {
     @ApiResponses(value = {@ApiResponse(code = 200, response = MyResponseClass.class, message = CustomerBookingConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
     @PreAuthorize("hasAuthority('" + PermissionConstants.customerBookingView + "')")
-    public ResponseEntity<IRunnerResponse> retrieveById(@ApiParam(value = CustomerBookingConstants.BOOKING_ID, required = true) @RequestParam Long id) {
-        double start = System.currentTimeMillis();
-        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+    public ResponseEntity<IRunnerResponse> retrieveById(@ApiParam(value = CustomerBookingConstants.BOOKING_ID) @RequestParam Optional<Long> id, @ApiParam(value = CustomerBookingConstants.BOOKING_GUID) @RequestParam Optional<String> guid) {
+        CommonGetRequest request = CommonGetRequest.builder().build();
+        id.ifPresent(request::setId);
+        guid.ifPresent(request::setGuid);
         ResponseEntity<IRunnerResponse> response = customerBookingService.retrieveById(CommonRequestModel.buildRequest(request));
-        double timeTaken = System.currentTimeMillis() - start;
-        if (timeTaken > 500)
-            log.info(" RequestId: {} || {} for event: {} Actual time taken: {} ms",LoggerHelper.getRequestIdFromMDC(), LoggerEvent.MORE_TIME_TAKEN, LoggerEvent.BOOKING_RETRIEVAL, timeTaken);
         return response;
     }
 
@@ -168,6 +168,21 @@ public class CustomerBookingController {
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = CustomerBookingConstants.UPDATE_SUCCESSFUL, response = MyResponseClass.class)})
+    @PutMapping(ApiConstants.API_CANCEL_BOOKING)
+    @PreAuthorize("hasAuthority('" + PermissionConstants.customerBookingCancel + "')")
+    public ResponseEntity<IRunnerResponse> cancel(@RequestBody @Valid CustomerBookingRequest request) {
+        String responseMsg;
+        try {
+            return customerBookingService.cancel(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
@@ -200,5 +215,18 @@ public class CustomerBookingController {
             log.error(responseMsg, e);
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = CustomerBookingConstants.CREATE_SUCCESSFUL, response = RunnerResponse.class)})
+    @GetMapping(ApiConstants.API_CLONE)
+    public ResponseEntity<IRunnerResponse> cloneById(@ApiParam(value = CustomerBookingConstants.BOOKING_ID, required = true) @RequestParam Long id) {
+        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+        return customerBookingService.cloneBooking(CommonRequestModel.buildRequest(request));
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = CustomerBookingConstants.RETRIEVE_BY_ORDER_ID_SUCCESSFUL, response = RunnerResponse.class)})
+    @GetMapping(ApiConstants.API_RETRIEVE_BY_ORDER_ID)
+    public ResponseEntity<IRunnerResponse> retrieveByOrderId(@ApiParam(value = CustomerBookingConstants.ORDER_ID, required = true) @RequestParam String orderId) throws RunnerException {
+        return customerBookingService.retrieveByOrderId(orderId);
     }
 }

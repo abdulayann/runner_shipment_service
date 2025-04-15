@@ -1,8 +1,5 @@
 package com.dpw.runner.shipment.services.aspects.MultitenancyAspect;
 
-import org.springframework.stereotype.Component;
-
-@Component
 public class TenantContext {
     private TenantContext(){}
     private static ThreadLocal<Integer> currentTenant = new InheritableThreadLocal<>();

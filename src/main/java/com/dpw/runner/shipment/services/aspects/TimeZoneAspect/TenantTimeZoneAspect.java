@@ -38,7 +38,6 @@ public class TenantTimeZoneAspect {
 
     @Around("controllerMethods()")
     public Object changeTimeZone(ProceedingJoinPoint joinPoint) throws Throwable {
-
         log.info("Inside TenantTimeZone Aspect");
 
         Object[] args = joinPoint.getArgs();
@@ -47,10 +46,11 @@ public class TenantTimeZoneAspect {
         Boolean enableTimeZoneFlag = userDetails.getEnableTimeZone();
         String tenantTimeZone = userDetails.getTimeZoneId();
         String browserTimeZone = fetchTimeZoneIdFromRequestHeader();
+        boolean skipTimeZone = skipTimeZone();
 
         //for handling request
         for (Object arg : args) {
-            if(arg != null)
+            if(arg != null && !skipTimeZone)
                 transformTimeZoneRecursively(arg, browserTimeZone, tenantTimeZone, enableTimeZoneFlag, true);
         }
 
@@ -60,7 +60,7 @@ public class TenantTimeZoneAspect {
         // For handling Response
         if (response instanceof ResponseEntity<?>) {
             Object body = ((ResponseEntity<?>) response).getBody();
-            if (body != null) {
+            if (body != null && !skipTimeZone) {
                 transformTimeZoneRecursively(body, browserTimeZone, tenantTimeZone, enableTimeZoneFlag, false);
             }
         }
@@ -131,5 +131,16 @@ public class TenantTimeZoneAspect {
         }
         MDC.put(TimeZoneConstants.BROWSER_TIME_ZONE_NAME, xBrowserTimeZone);
         return xBrowserTimeZone;
+    }
+
+    private boolean skipTimeZone() {
+        RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
+        if(Objects.nonNull(requestAttributes))
+        {
+            ServletRequestAttributes attributes = (ServletRequestAttributes) requestAttributes;
+            String skipTimeZone = attributes.getRequest().getHeader(TimeZoneConstants.SKIP_TIME_ZONE);
+            return Objects.equals(skipTimeZone, "true");
+        }
+        return false;
     }
 }

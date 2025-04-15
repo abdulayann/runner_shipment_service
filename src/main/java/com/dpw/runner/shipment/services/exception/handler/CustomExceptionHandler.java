@@ -1,12 +1,20 @@
 package com.dpw.runner.shipment.services.exception.handler;
 
-import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.exception.exceptions.DpsException;
 import com.dpw.runner.shipment.services.exception.exceptions.FileNotFoundException;
 import com.dpw.runner.shipment.services.exception.exceptions.InvalidAccessTokenException;
 import com.dpw.runner.shipment.services.exception.exceptions.InvalidAuthenticationException;
+import com.dpw.runner.shipment.services.exception.exceptions.ReportException;
+import com.dpw.runner.shipment.services.exception.exceptions.RoutingException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.SectionDetailsException;
+import com.dpw.runner.shipment.services.exception.exceptions.SectionFieldsException;
+import com.dpw.runner.shipment.services.exception.exceptions.SectionVisibilityException;
+import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.utils.Generated;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.http.HttpHeaders;
@@ -21,14 +29,23 @@ import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
 @ControllerAdvice
 @Slf4j
+@Generated
 public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
+
+    @ExceptionHandler({
+            BillingException.class,
+            ReportException.class,
+            RoutingException.class})
+    private ResponseEntity<IRunnerResponse> handleCustomExceptions(final RuntimeException ex) {
+        return ResponseHelper.buildFailedResponse(ex.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler({DpsException.class})
+    private ResponseEntity<IRunnerResponse> handleDpsExceptions(final RuntimeException ex) {
+        return ResponseHelper.buildFailedResponse("DPS ERROR -- "+ex.getMessage(), HttpStatus.BAD_REQUEST);
+    }
 
     @ExceptionHandler(AccessDeniedException.class)
     protected ResponseEntity<IRunnerResponse> handleAccessDeniedException(AccessDeniedException ex) {
@@ -76,8 +93,11 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
                 .stream()
                 .map(DefaultMessageSourceResolvable::getDefaultMessage)
                 .toList();
-        log.error("Return Response with data {}", errors.toString());
-        ResponseEntity<IRunnerResponse> responseEntity = ResponseHelper.buildFailedResponse(Constants.Validation_Exception, errors);
+        String errorMessages = errors.size() > 1
+                ? String.join(" | ", errors)
+                : errors.get(0);
+        log.error("Return Response with data {}", errors);
+        ResponseEntity<IRunnerResponse> responseEntity = ResponseHelper.buildFailedResponse(errorMessages);
         return ResponseEntity.status(responseEntity.getStatusCode()).body(responseEntity.getBody());
     }
 
@@ -88,5 +108,17 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
 //                new RunnerResponse(false, new ApiError(HttpStatus.BAD_REQUEST, ex.getLocalizedMessage()));
         ResponseEntity<IRunnerResponse> responseEntity = ResponseHelper.buildFailedResponse(ex.getLocalizedMessage(), HttpStatus.BAD_REQUEST);
         return ResponseEntity.status(responseEntity.getStatusCode()).body(responseEntity.getBody());
+    }
+    @ExceptionHandler({SectionVisibilityException.class})
+    private ResponseEntity<IRunnerResponse> handleSectionVisibilityException(final SectionVisibilityException ex) {
+        return ResponseHelper.buildFailedResponse(ex.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+    @ExceptionHandler({SectionDetailsException.class})
+    private ResponseEntity<IRunnerResponse> handleSectionDetailsException(final SectionDetailsException ex) {
+        return ResponseHelper.buildFailedResponse(ex.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+    @ExceptionHandler({SectionFieldsException.class})
+    private ResponseEntity<IRunnerResponse> handleSectionFieldsException(final SectionFieldsException ex) {
+        return ResponseHelper.buildFailedResponse(ex.getMessage(), HttpStatus.BAD_REQUEST);
     }
 }

@@ -2,17 +2,16 @@ package com.dpw.runner.shipment.services.dao.interfaces;
 
 import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
 import com.dpw.runner.shipment.services.entity.Events;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
-
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 public interface IEventDao {
     Events save(Events events);
@@ -24,6 +23,8 @@ public interface IEventDao {
     Page<Events> findAll(Specification<Events> spec, Pageable pageable);
 
     Optional<Events> findById(Long id);
+
+    Optional<Events> findByEntityIdAndEntityType(Long id, String entityType);
 
     void delete(Events events);
 
@@ -39,4 +40,16 @@ public interface IEventDao {
     void createEventForAirMessagingStatus(UUID guid, Long entityId, String entityType, String eventCode, String description, LocalDateTime estimated, LocalDateTime actual, String source, Integer tenantId, String status, LocalDateTime createdAt, LocalDateTime updatedAt);
 
     void createEventForAirMessagingEvent(Events events);
+
+    void updateEventDetails(Events event);
+
+    boolean shouldSendEventFromShipmentToConsolidation(Events events, String transportMode);
+
+    void updateFieldsForShipmentGeneratedEvents(List<Events> eventsList, ShipmentDetails shipmentDetails);
+
+    Events updateUserFieldsInEvent(Events event, Boolean forceUpdate);
+
+    List<Events> updateEventsList(List<Events> shipmentEvents);
+
+    void updateAllEventDetails(List<Events> events);
 }

@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
@@ -85,14 +86,9 @@ public class PackingDao implements IPackingDao {
         List<Packing> responsePackings = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            Map<Long, Packing> hashMap;
-//            if(!Objects.isNull(packIdList) && !packIdList.isEmpty()) {
-                ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", shipmentId, "=");
-                Pair<Specification<Packing>, Pageable> pair = fetchData(listCommonRequest, Packing.class);
-                Page<Packing> packings = findAll(pair.getLeft(), pair.getRight());
-                hashMap = packings.stream()
+            List<Packing> packings = findByShipmentId(shipmentId);
+            Map<Long, Packing> hashMap = packings.stream()
                         .collect(Collectors.toMap(Packing::getId, Function.identity()));
-//            }
             Map<Long, Packing> hashMapCopy = new HashMap<>(hashMap);
             List<Packing> packingRequestList = new ArrayList<>();
             if (packingList != null && packingList.size() != 0) {
@@ -115,6 +111,10 @@ public class PackingDao implements IPackingDao {
             log.error(responseMsg, e);
             throw new RunnerException(e.getMessage());
         }
+    }
+
+    public List<Packing> findByShipmentId(Long shipmentId) {
+        return packingRepository.findByShipmentId(shipmentId);
     }
 
     public List<Packing> updateEntityFromBooking(List<Packing> packingList, Long bookingId) throws RunnerException {
@@ -257,6 +257,7 @@ public class PackingDao implements IPackingDao {
             try {
                 auditLogService.addAuditLog(
                         AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                 .newData(req)
                                 .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Packing.class) : null)
                                 .parent(ShipmentDetails.class.getSimpleName())
@@ -301,6 +302,7 @@ public class PackingDao implements IPackingDao {
             try {
                 auditLogService.addAuditLog(
                         AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                 .newData(req)
                                 .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Packing.class) : null)
                                 .parent(ShipmentDetails.class.getSimpleName())
@@ -339,6 +341,7 @@ public class PackingDao implements IPackingDao {
             try {
                 auditLogService.addAuditLog(
                         AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                 .newData(req)
                                 .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Packing.class) : null)
                                 .parent(CustomerBooking.class.getSimpleName())
@@ -404,6 +407,7 @@ public class PackingDao implements IPackingDao {
                     try {
                         auditLogService.addAuditLog(
                                 AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                         .newData(null)
                                         .prevData(jsonHelper.readFromJson(json, Packing.class))
                                         .parent(entity)
@@ -448,7 +452,7 @@ public class PackingDao implements IPackingDao {
         saveEntityFromContainer(packings.getContent(), null);
     }
 
-    public List<Packing> updateEntityFromShipment(List<Packing> packingList, Long shipmentId, List<Packing> oldEntityList, List<Packing> oldConsoleEntityList, List<Containers> containers, Map<UUID, String> packMap) throws RunnerException {
+    public List<Packing> updateEntityFromShipment(List<Packing> packingList, Long shipmentId, List<Packing> oldEntityList, List<Packing> oldConsoleEntityList, Set<Containers> containers, Map<UUID, String> packMap) throws RunnerException {
         String responseMsg;
         List<Packing> responsePackings = new ArrayList<>();
         Map<UUID, Packing> packingMap = new HashMap<>();
@@ -508,5 +512,10 @@ public class PackingDao implements IPackingDao {
     @Override
     public List<Packing> findByConsolidationId(Long consolidationId) {
         return packingRepository.findByConsolidationId(consolidationId);
+    }
+
+    @Override
+    public List<Packing> findByContainerIdIn(List<Long> deleteContainerIds) {
+        return packingRepository.findByContainerIdIn(deleteContainerIds);
     }
 }

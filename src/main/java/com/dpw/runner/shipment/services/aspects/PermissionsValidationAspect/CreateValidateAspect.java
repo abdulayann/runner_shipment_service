@@ -3,30 +3,25 @@ package com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.utils.V1PermissionMapUtil;
-import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
-import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.utils.PermissionUtil.getParameterFromPermission;
-import static com.dpw.runner.shipment.services.utils.V1PermissionMapUtil.getPermissionName;
 
 @Aspect
 @Component
 public class CreateValidateAspect {
 
     @Before("execution(* com.dpw.runner.shipment.services.service.impl.ShipmentService.create(..)) && args(commonRequestModel)")
-    public void validateShipmentCreate(JoinPoint joinPoint, CommonRequestModel commonRequestModel) throws RunnerException {
+    public void validateShipmentCreate(JoinPoint joinPoint, CommonRequestModel commonRequestModel) throws ValidationException {
         ShipmentRequest shipment = (ShipmentRequest) commonRequestModel.getData();
         List<String> userPermissions = PermissionsContext.getPermissions(SHIPMENT_CREATE_PERMISSION);
         int retrieveValidationFields = 4;
@@ -43,11 +38,13 @@ public class CreateValidateAspect {
             if(shipment.getIsDomestic() != null)
                 domesticType = shipment.getIsDomestic();
 
-            for (String permission : userPermissions){
-                String v1MappedPermission = V1PermissionMapUtil.getPermissionName(permission);
+            List<String> mappedPermissionList = V1PermissionMapUtil.getPermissionNames(userPermissions);
+
+            for (String v1MappedPermission : mappedPermissionList){
+                // earlier used this : V1PermissionMapUtil.getPermissionName(permission)
                 if(v1MappedPermission == null)
                     continue;
-                List<String> parameterList = Arrays.stream(getPermissionName(permission).toLowerCase().split(DELIMITER))
+                List<String> parameterList = Arrays.stream(v1MappedPermission.toLowerCase().split(DELIMITER))
                         .filter(e -> !e.contains("create"))
                         .toList();
                 String validTransportMode = getParameterFromPermission(TRANSPORT_MODE_INDEX, parameterList);
@@ -72,12 +69,12 @@ public class CreateValidateAspect {
             }
 
             if (validatedFields.size() < retrieveValidationFields)
-                throw new RunnerException("Unable to create record due to insufficient create permissions");
+                throw new ValidationException("Unable to create record due to insufficient create permissions");
         }
     }
 
     @Before("execution(* com.dpw.runner.shipment.services.service.impl.ConsolidationService.create(..)) && args(commonRequestModel)")
-    public void validateConsolidationCreate(JoinPoint joinPoint, CommonRequestModel commonRequestModel) throws RunnerException {
+    public void validateConsolidationCreate(JoinPoint joinPoint, CommonRequestModel commonRequestModel) throws ValidationException {
         List<String> userPermissions = PermissionsContext.getPermissions(CONSOLIDATION_CREATE_PERMISSION);
         int retrieveValidationFields = 4;
         Set<String> validatedFields = new HashSet<>();
@@ -94,11 +91,13 @@ public class CreateValidateAspect {
             if(consolidation.getIsDomestic() != null)
                 domesticType = consolidation.getIsDomestic();
 
-            for (String permission : userPermissions){
-                String v1MappedPermission = V1PermissionMapUtil.getPermissionName(permission);
+            List<String> mappedPermissionList = V1PermissionMapUtil.getPermissionNames(userPermissions);
+
+            for (String v1MappedPermission : mappedPermissionList){
+                // earlier used this : V1PermissionMapUtil.getPermissionName(permission)
                 if(v1MappedPermission == null)
                     continue;
-                List<String> parameterList = Arrays.stream(getPermissionName(permission).toLowerCase().split(DELIMITER))
+                List<String> parameterList = Arrays.stream(v1MappedPermission.toLowerCase().split(DELIMITER))
                         .filter(e -> !e.contains("create"))
                         .toList();
                 String validTransportMode = getParameterFromPermission(TRANSPORT_MODE_INDEX, parameterList);
@@ -123,7 +122,7 @@ public class CreateValidateAspect {
             }
 
             if (validatedFields.size() < retrieveValidationFields)
-                throw new RunnerException("Unable to create record due to insufficient create permissions");
+                throw new ValidationException("Unable to create record due to insufficient create permissions");
         }
     }
 }

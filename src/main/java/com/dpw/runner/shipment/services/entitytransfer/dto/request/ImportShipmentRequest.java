@@ -10,5 +10,10 @@ import lombok.*;
 @NoArgsConstructor
 @ToString
 public class ImportShipmentRequest implements IRunnerRequest {
-    EntityTransferShipmentDetails entityTransferShipmentDetails;
+    EntityTransferShipmentDetails entityData;
+    private Long taskId;
+    private String operation;
+    private String rejectRemarks;
+    private Boolean isFromNte;
+    private String assignedTo;
 }

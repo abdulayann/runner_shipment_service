@@ -1,8 +1,10 @@
 package com.dpw.runner.shipment.services.entity.enums;
 
+import com.dpw.runner.shipment.services.utils.Generated;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
+@Generated
 public enum ChargeTypeCode {
     Client_Charge_Code(1),
     Fusion_Memo_Line(2),

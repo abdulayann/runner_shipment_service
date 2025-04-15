@@ -1,13 +1,17 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.entity.CarrierDetails;
 import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -43,7 +47,7 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
-class RoutingsDaoTest {
+class RoutingsDaoTest extends CommonMocks {
 
     @Mock
     private IRoutingsRepository routingsRepository;
@@ -66,7 +70,7 @@ class RoutingsDaoTest {
     private static Routings testNewRoutings;
 
     @BeforeAll
-    static void init(){
+    static void init() {
         try {
             jsonTestUtility = new JsonTestUtility();
             objectMapperTest = JsonTestUtility.getMapper();
@@ -85,7 +89,8 @@ class RoutingsDaoTest {
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
         UserContext.setUser(mockUser);
-        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().multipleShipmentEnabled(true).mergeContainers(false).volumeChargeableUnit("M3").weightChargeableUnit("KG").build());
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().multipleShipmentEnabled(true).mergeContainers(false).volumeChargeableUnit("M3").weightChargeableUnit("KG")
+                .enableRouteMaster(true).build());
         MockitoAnnotations.initMocks(this);
     }
 
@@ -98,6 +103,26 @@ class RoutingsDaoTest {
         Routings savedRoutings = routingsDao.save(routings);
 
         assertEquals(routings, savedRoutings);
+    }
+
+    @Test
+    void testSave_CarriageValidationFailure() {
+        Routings routings = jsonTestUtility.getCompleteShipment().getRoutingsList().get(0);
+        when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
+        routings.setCarriage(RoutingCarriage.ON_CARRIAGE);
+        routings.setIsSelectedForDocument(Boolean.TRUE);
+
+        assertThrows(ValidationException.class, () -> routingsDao.save(routings));
+    }
+
+    @Test
+    void testSave_CarriageValidationFailurePreCarriage() {
+        Routings routings = jsonTestUtility.getCompleteShipment().getRoutingsList().get(0);
+        when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
+        routings.setCarriage(RoutingCarriage.PRE_CARRIAGE);
+        routings.setIsSelectedForDocument(Boolean.TRUE);
+
+        assertThrows(ValidationException.class, () -> routingsDao.save(routings));
     }
 
     @Test
@@ -180,7 +205,6 @@ class RoutingsDaoTest {
     void testUpdateEntityFromShipment() throws RunnerException {
         List<Routings> routingsList = Collections.singletonList(testRoutings);
         RoutingsDao spyService = spy(routingsDao);
-        doReturn(new PageImpl<>(routingsList)).when(spyService).findAll(any(), any());
         doReturn(routingsList).when(spyService).saveEntityFromShipment(anyList(), anyLong(), any());
         List<Routings> routingsList1 = spyService.updateEntityFromShipment(routingsList, 1L);
         assertNotNull(routingsList1);
@@ -191,7 +215,6 @@ class RoutingsDaoTest {
     void testUpdateEntityFromShipment_NullId() throws RunnerException {
         List<Routings> routingsList = Collections.singletonList(testNewRoutings);
         RoutingsDao spyService = spy(routingsDao);
-        doReturn(new PageImpl<>(routingsList)).when(spyService).findAll(any(), any());
         doReturn(routingsList).when(spyService).saveEntityFromShipment(anyList(), anyLong(), any());
         List<Routings> routingsList1 = spyService.updateEntityFromShipment(routingsList, 1L);
         assertNotNull(routingsList1);
@@ -202,7 +225,6 @@ class RoutingsDaoTest {
     void testUpdateEntityFromShipment_NullRoutings() throws RunnerException {
         List<Routings> routingsList = Collections.singletonList(testRoutings);
         RoutingsDao spyService = spy(routingsDao);
-        doReturn(new PageImpl<>(routingsList)).when(spyService).findAll(any(), any());
         List<Routings> routingsList1 = spyService.updateEntityFromShipment(null, 1L);
         assertNotNull(routingsList1);
         assertEquals(new ArrayList<>(), routingsList1);
@@ -214,7 +236,6 @@ class RoutingsDaoTest {
         List<Routings> oldRoutingsList = Arrays.asList(testRoutings, objectMapperTest.convertValue(testRoutings, Routings.class));
         oldRoutingsList.get(1).setId(5L);
         RoutingsDao spyService = spy(routingsDao);
-        doReturn(new PageImpl<>(oldRoutingsList)).when(spyService).findAll(any(), any());
         doReturn(routingsList).when(spyService).saveEntityFromShipment(anyList(), anyLong(), any());
         List<Routings> routingsList1 = spyService.updateEntityFromShipment(routingsList, 1L);
         assertNotNull(routingsList1);
@@ -227,9 +248,7 @@ class RoutingsDaoTest {
         List<Routings> oldRoutingsList = Arrays.asList(testRoutings, objectMapperTest.convertValue(testRoutings, Routings.class));
         oldRoutingsList.get(1).setId(5L);
         RoutingsDao spyService = spy(routingsDao);
-        doReturn(new PageImpl<>(oldRoutingsList)).when(spyService).findAll(any(), any());
         doReturn(routingsList).when(spyService).saveEntityFromShipment(anyList(), anyLong(), any());
-        doThrow(RuntimeException.class).when(jsonHelper).convertToJson(any());
         List<Routings> routingsList1 = spyService.updateEntityFromShipment(routingsList, 1L);
         assertNotNull(routingsList1);
         assertEquals(routingsList, routingsList1);
@@ -241,9 +260,7 @@ class RoutingsDaoTest {
         List<Routings> oldRoutingsList = Arrays.asList(testRoutings, objectMapperTest.convertValue(testRoutings, Routings.class));
         oldRoutingsList.get(1).setId(5L);
         RoutingsDao spyService = spy(routingsDao);
-        doReturn(new PageImpl<>(oldRoutingsList)).when(spyService).findAll(any(), any());
         doReturn(routingsList).when(spyService).saveEntityFromShipment(anyList(), anyLong(), any());
-        doThrow(InvocationTargetException.class).when(auditLogService).addAuditLog(any(AuditLogMetaData.class));
         List<Routings> routingsList1 = spyService.updateEntityFromShipment(routingsList, 1L);
         assertNotNull(routingsList1);
         assertEquals(routingsList, routingsList1);
@@ -253,7 +270,6 @@ class RoutingsDaoTest {
     void testUpdateEntityFromShipment_Failure() throws RunnerException {
         List<Routings> routingsList = Collections.singletonList(testRoutings);
         RoutingsDao spyService = spy(routingsDao);
-        doReturn(new PageImpl<>(new ArrayList<>())).when(spyService).findAll(any(), any());
         assertThrows(RunnerException.class, () -> spyService.updateEntityFromShipment(routingsList, 1L));
     }
 
@@ -427,7 +443,6 @@ class RoutingsDaoTest {
     void testUpdateEntityFromConsole() throws RunnerException {
         List<Routings> routingsList = Collections.singletonList(testRoutings);
         RoutingsDao spyService = spy(routingsDao);
-        doReturn(new PageImpl<>(routingsList)).when(spyService).findAll(any(), any());
         doReturn(routingsList).when(spyService).saveEntityFromConsole(anyList(), anyLong(), anyMap());
         List<Routings> routingsList1 = spyService.updateEntityFromConsole(routingsList, 1L);
         assertNotNull(routingsList1);
@@ -438,7 +453,6 @@ class RoutingsDaoTest {
     void testUpdateEntityFromConsole_NullRoutings() throws RunnerException {
         List<Routings> routingsList = Collections.singletonList(testRoutings);
         RoutingsDao spyService = spy(routingsDao);
-        doReturn(new PageImpl<>(routingsList)).when(spyService).findAll(any(), any());
         List<Routings> routingsList1 = spyService.updateEntityFromConsole(null, 1L);
         assertNotNull(routingsList1);
         assertEquals(new ArrayList<>(), routingsList1);
@@ -448,7 +462,6 @@ class RoutingsDaoTest {
     void testUpdateEntityFromConsole_Failure() throws RunnerException {
         List<Routings> routingsList = Collections.singletonList(testRoutings);
         RoutingsDao spyService = spy(routingsDao);
-        doReturn(new PageImpl<>(new ArrayList<>())).when(spyService).findAll(any(), any());
         assertThrows(RunnerException.class, () -> spyService.updateEntityFromConsole(routingsList, 1L));
     }
 
@@ -587,6 +600,182 @@ class RoutingsDaoTest {
         RoutingsDao spyService = spy(routingsDao);
         doThrow(RuntimeException.class).when(spyService).saveEntityFromShipment(any(), anyLong());
         assertThrows(RunnerException.class, () -> spyService.updateEntityFromShipment(routingsList, 1L, routingsList));
+    }
+
+
+    @Test
+    void testGetCustomerBookingRequestRoutingList_NoExistingRoutingList() {
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setOrigin("Origin");
+        carrierDetails.setOriginPort("Port of Loading");
+        carrierDetails.setDestinationPort("Port of Discharge");
+        carrierDetails.setDestination("Destination");
+
+        mockShipmentSettings();
+        List<Routings> result = routingsDao.generateDefaultRouting(carrierDetails, null);
+
+        assertNotNull(result);
+        assertEquals(3, result.size());
+    }
+
+    @Test
+    void testGetCustomerBookingRequestRoutingList_AIR() {
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setOrigin("Origin");
+        carrierDetails.setOriginPort("Port of Loading");
+        carrierDetails.setDestinationPort("Port of Discharge");
+        carrierDetails.setDestination("Destination");
+        carrierDetails.setFlightNumber("554");
+        carrierDetails.setShippingLine("air");
+        mockShipmentSettings();
+
+        List<Routings> result = routingsDao.generateDefaultRouting(carrierDetails, Constants.TRANSPORT_MODE_AIR);
+
+        assertNotNull(result);
+        assertEquals(3, result.size());
+    }
+
+    @Test
+    void testGetCustomerBookingRequestRoutingList_NullCarrierDetails() {
+
+        List<Routings> result = routingsDao.generateDefaultRouting(null, Constants.TRANSPORT_MODE_AIR);
+
+        assertNotNull(result);
+        assertEquals(0, result.size());
+    }
+
+    @Test
+    void testGetCustomerBookingRequestRoutingList_NullOrigin() {
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setOrigin(null);
+        carrierDetails.setOriginPort("Port of Loading");
+        carrierDetails.setDestinationPort("Port of Discharge");
+        carrierDetails.setDestination("Destination");
+        mockShipmentSettings();
+
+        List<Routings> result = routingsDao.generateDefaultRouting(carrierDetails, Constants.TRANSPORT_MODE_SEA);
+
+        assertNotNull(result);
+        assertEquals(2, result.size());
+    }
+
+    @Test
+    void testGetCustomerBookingRequestRoutingList_NullPortOfLoading() {
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setOrigin("Origin");
+        carrierDetails.setOriginPort(null);
+        carrierDetails.setDestinationPort("Port of Discharge");
+        carrierDetails.setDestination("Destination");
+        mockShipmentSettings();
+
+        List<Routings> result = routingsDao.generateDefaultRouting(carrierDetails, Constants.TRANSPORT_MODE_SEA);
+
+        assertNotNull(result);
+        assertEquals(2, result.size());
+    }
+
+    @Test
+    void testGetCustomerBookingRequestRoutingList_NullPortOfDischarge() {
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setOrigin("Origin");
+        carrierDetails.setOriginPort("Port of Loading");
+        carrierDetails.setDestinationPort(null);
+        carrierDetails.setDestination("Destination");
+        mockShipmentSettings();
+
+        List<Routings> result = routingsDao.generateDefaultRouting(carrierDetails, Constants.TRANSPORT_MODE_SEA);
+
+        assertNotNull(result);
+        assertEquals(2, result.size());
+    }
+
+    @Test
+    void testGetCustomerBookingRequestRoutingList_NullDestination() {
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setOrigin("Origin");
+        carrierDetails.setOriginPort("Port of Loading");
+        carrierDetails.setDestinationPort("Port of Discharge");
+        carrierDetails.setDestination(null);
+        mockShipmentSettings();
+
+        List<Routings> result = routingsDao.generateDefaultRouting(carrierDetails, Constants.TRANSPORT_MODE_SEA);
+
+        assertNotNull(result);
+        assertEquals(2, result.size());
+    }
+
+    @Test
+    void testGetCustomerBookingRequestRoutingList_SameOriginAndPortOfLoading() {
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setOrigin("Origin");
+        carrierDetails.setOriginPort("Origin");
+        carrierDetails.setDestinationPort("Port of Discharge");
+        carrierDetails.setDestination("Destination");
+        mockShipmentSettings();
+
+        List<Routings> result = routingsDao.generateDefaultRouting(carrierDetails, Constants.TRANSPORT_MODE_SEA);
+
+        assertNotNull(result);
+        assertEquals(2, result.size());
+    }
+
+    @Test
+    void testGetCustomerBookingRequestRoutingList_SamePortOfLoadingAndPortOfDischarge() {
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setOrigin("Origin");
+        carrierDetails.setOriginPort("Port of Loading");
+        carrierDetails.setDestinationPort("Port of Loading");
+        carrierDetails.setDestination("Destination");
+        mockShipmentSettings();
+
+        List<Routings> result = routingsDao.generateDefaultRouting(carrierDetails, Constants.TRANSPORT_MODE_SEA);
+
+        assertNotNull(result);
+        assertEquals(2, result.size());
+    }
+
+    @Test
+    void testGetCustomerBookingRequestRoutingList_SamePortOfDischargeAndDestination() {
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setOrigin("Origin");
+        carrierDetails.setOriginPort("Port of Loading");
+        carrierDetails.setDestinationPort("Destination");
+        carrierDetails.setDestination("Destination");
+        mockShipmentSettings();
+
+        List<Routings> result = routingsDao.generateDefaultRouting(carrierDetails, Constants.TRANSPORT_MODE_SEA);
+
+        assertNotNull(result);
+        assertEquals(2, result.size());
+    }
+
+    @Test
+    void testGetCustomerBookingRequestRoutingList_SameOriginPortOfLoadingAndPortOfDischarge() {
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setOrigin("Origin");
+        carrierDetails.setOriginPort("Origin");
+        carrierDetails.setDestinationPort("Origin");
+        carrierDetails.setDestination("Destination");
+        mockShipmentSettings();
+
+        List<Routings> result = routingsDao.generateDefaultRouting(carrierDetails, Constants.TRANSPORT_MODE_SEA);
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+    }
+
+    @Test
+    void testGetCustomerBookingRequestRoutingList_SameOriginPortOfLoadingPortOfDischargeAndDestination() {
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setOrigin("Origin");
+        carrierDetails.setOriginPort("Origin");
+        carrierDetails.setDestinationPort("Origin");
+        carrierDetails.setDestination("Origin");
+
+        List<Routings> result = routingsDao.generateDefaultRouting(carrierDetails, Constants.TRANSPORT_MODE_SEA);
+
+        assertNotNull(result);
+        assertEquals(0, result.size());
     }
 
 }

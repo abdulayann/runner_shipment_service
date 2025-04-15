@@ -1,16 +1,15 @@
 package com.dpw.runner.shipment.services.helper;
 
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeDeserializer;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
 import com.dpw.runner.shipment.services.dto.request.ReportRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.PlatformCreateRequest;
 import com.dpw.runner.shipment.services.dto.request.platformBooking.PlatformToRunnerCustomerBookingRequest;
+import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
 import com.dpw.runner.shipment.services.entity.*;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
+import com.dpw.runner.shipment.services.entitytransfer.dto.*;
 import com.dpw.runner.shipment.services.syncing.Entity.ContainerRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.EventsRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.PackingRequestV2;
@@ -23,14 +22,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
 import org.springframework.boot.json.JsonParseException;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
 
@@ -57,6 +57,14 @@ public class JsonTestUtility {
 
     public JsonTestUtility() throws IOException {
         payload = objectMapper.readValue(new File(path), Map.class);
+    }
+
+    public String readJson(String fileName) throws IOException {
+        return FileUtils.readFileToString(new File(fileName), StandardCharsets.UTF_8);
+    }
+
+    public String getMDMResponseString() throws JsonProcessingException {
+        return convertToJson(payload.get("MDM_RESPONSE"));
     }
 
     public Packing getTestPacking(){
@@ -366,6 +374,10 @@ public class JsonTestUtility {
         return objectMapper.convertValue(payload.get("CUSTOMER_BOOKING_REQUEST"), CustomerBooking.class);
     }
 
+    public NetworkTransfer getNetworkTransfer() {
+        return objectMapper.convertValue(payload.get("NETWORK_TRANSFER_RESPONSE"), NetworkTransfer.class);
+    }
+
     public PlatformToRunnerCustomerBookingRequest getPlatformCreateUpdateRequest() {
         return objectMapper.convertValue(payload.get("PLATFORM_CREATE_UPDATE"), PlatformToRunnerCustomerBookingRequest.class);
     }
@@ -376,5 +388,90 @@ public class JsonTestUtility {
 
     public EntityTransferAddress getAddressData() {
         return objectMapper.convertValue(payload.get("ADDRESS_DATA"), EntityTransferAddress.class);
+    }
+
+    public ListCommonRequest getListRequest() {
+        return objectMapper.convertValue(payload.get("LIST_REQUEST"), ListCommonRequest.class);
+    }
+
+    public ListCommonRequest getListRequest1() {
+        return objectMapper.convertValue(payload.get("LIST_REQUEST1"), ListCommonRequest.class);
+    }
+
+    public ListCommonRequest getListRequest2() {
+        return objectMapper.convertValue(payload.get("LIST_REQUEST2"), ListCommonRequest.class);
+    }
+
+    public ListCommonRequest getListRequestIsEnum() {
+        return objectMapper.convertValue(payload.get("LIST_REQUEST_IS_ENUM"), ListCommonRequest.class);
+    }
+
+    public ListCommonRequest getListRequestIN() {
+        return objectMapper.convertValue(payload.get("LIST_REQUEST_IN"), ListCommonRequest.class);
+    }
+
+    public ListCommonRequest getListRequestIN2() {
+        return objectMapper.convertValue(payload.get("LIST_REQUEST_IN2"), ListCommonRequest.class);
+    }
+
+    public ListCommonRequest getListRequest4() {
+        return objectMapper.convertValue(payload.get("LIST_REQUEST_4"), ListCommonRequest.class);
+    }
+
+    public ListCommonRequest getListRequest5() {
+        return objectMapper.convertValue(payload.get("LIST_REQUEST_5"), ListCommonRequest.class);
+    }
+
+    public ListCommonRequest getListRequest6() {
+        return objectMapper.convertValue(payload.get("LIST_REQUEST_6"), ListCommonRequest.class);
+    }
+
+    public ListCommonRequest getListRequest7() {
+        return objectMapper.convertValue(payload.get("LIST_REQUEST_7"), ListCommonRequest.class);
+    }
+
+    public ListCommonRequest getListRequest8() {
+        return objectMapper.convertValue(payload.get("LIST_REQUEST_8"), ListCommonRequest.class);
+    }
+
+    public ListCommonRequest getListRequest9() {
+        return objectMapper.convertValue(payload.get("LIST_REQUEST_9"), ListCommonRequest.class);
+    }
+
+    public ListCommonRequest getListRequest10() {
+        return objectMapper.convertValue(payload.get("LIST_REQUEST_10"), ListCommonRequest.class);
+    }
+
+    public ListCommonRequest getListRequest11() {
+        return objectMapper.convertValue(payload.get("LIST_REQUEST_11"), ListCommonRequest.class);
+    }
+
+    public ListCommonRequest getListRequest12() {
+        return objectMapper.convertValue(payload.get("LIST_REQUEST_12"), ListCommonRequest.class);
+    }
+
+    public ListCommonRequest getListRequest13() {
+        return objectMapper.convertValue(payload.get("LIST_REQUEST_13"), ListCommonRequest.class);
+    }
+
+    public QuoteContracts getQuoteContracts() {
+        return objectMapper.convertValue(payload.get("QUOTE_CONTRACTS"), QuoteContracts.class);
+    }
+
+    public ListContractResponse getListContractResponse() {
+        return objectMapper.convertValue(payload.get("LIST_CONTRACT_RESPONSE"), ListContractResponse.class);
+    }
+    public EntityTransferShipmentDetails getImportShipmentData() {
+        return objectMapper.convertValue(payload.get("ImportShipmentData"), EntityTransferShipmentDetails.class);
+    }
+    public EntityTransferConsolidationDetails getImportConsolidationAir() {
+        return objectMapper.convertValue(payload.get("entityTransferConsolidationDetailsAir"), EntityTransferConsolidationDetails.class);
+    }
+    public EntityTransferConsolidationDetails getImportConsolidationSea() {
+        return objectMapper.convertValue(payload.get("entityTransferConsolidationDetailsSea"), EntityTransferConsolidationDetails.class);
+    }
+
+    public Notification getNotification() {
+        return objectMapper.convertValue(payload.get("NOTIFICATION_RESPONSE"), Notification.class);
     }
 }

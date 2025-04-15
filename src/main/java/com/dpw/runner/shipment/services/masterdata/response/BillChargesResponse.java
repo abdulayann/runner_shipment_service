@@ -1,9 +1,8 @@
 package com.dpw.runner.shipment.services.masterdata.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Data;
-
 import java.math.BigDecimal;
+import lombok.Data;
 
 @Data
 public class BillChargesResponse {
@@ -38,7 +37,12 @@ public class BillChargesResponse {
     @JsonProperty("LocalTax")
     private BigDecimal localTax;
     @JsonProperty("MeasurementBasis")
-    private String measurementBasis;
+    private String measurementBasis; //TODO: SUBHAM doubt which value is this
     @JsonProperty("LocalCostCurrency")
     private String localCostCurrency;
+
+    // Billing Service attributes
+    private String billingChargeTypeId;
+    private String billingChargeTypeGuid;
+
 }

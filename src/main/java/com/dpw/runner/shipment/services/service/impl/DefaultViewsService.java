@@ -27,8 +27,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-
 @SuppressWarnings("ALL")
 @Service
 @Slf4j

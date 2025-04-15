@@ -1,0 +1,370 @@
+package com.dpw.runner.shipment.services.ReportingService.Reports;
+
+import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
+import com.dpw.runner.shipment.services.ReportingService.Models.CSDModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
+import com.dpw.runner.shipment.services.commons.constants.ReferenceNumbersConstants;
+import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.enums.Ownership;
+import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.*;
+
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+@Execution(ExecutionMode.CONCURRENT)
+class CSDReportTest {
+
+    @InjectMocks
+    CSDReport csdReport;
+
+    @Mock
+    MasterDataUtils masterDataUtils;
+
+    @Mock
+    CommonUtils commonUtils;
+
+    @Mock
+    IAwbDao awbDao;
+
+    @BeforeAll
+    static void init() throws IOException {
+        UsersDto mockUser = new UsersDto();
+        mockUser.setTenantId(1);
+        mockUser.setUsername("user");
+        mockUser.setEnableTimeZone(false);
+        UserContext.setUser(mockUser);
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().disableBlPartiesName(false).build());
+    }
+
+    private CSDModel getSampleCSDModel(){
+        CSDModel csdModel = new CSDModel();
+        ShipmentModel shipmentModel = new ShipmentModel();
+        shipmentModel.setId(123L);
+        shipmentModel.setMasterBill("12");
+        shipmentModel.setTransportMode(ReportConstants.SEA);
+        shipmentModel.setDirection(ReportConstants.EXP);
+        shipmentModel.setFreightLocal(BigDecimal.TEN);
+        shipmentModel.setFreightLocalCurrency("INR");
+        shipmentModel.setFreightOverseas(BigDecimal.TEN);
+        shipmentModel.setFreightOverseasCurrency("INR");
+        shipmentModel.setGoodsDescription("123");
+        shipmentModel.setWeight(BigDecimal.TEN);
+        shipmentModel.setVolume(BigDecimal.TEN);
+        shipmentModel.setChargable(BigDecimal.TEN);
+        shipmentModel.setVolumetricWeight(BigDecimal.TEN);
+        shipmentModel.setNoOfPacks(10);
+        shipmentModel.setSecurityStatus("Test");
+        shipmentModel.setPaymentTerms("PPT");
+        shipmentModel.setPacksUnit("PKG");
+        shipmentModel.setHouseBill("hsnn1234");
+        shipmentModel.setInnerPacks(123);
+
+        PartiesModel partiesModel = new PartiesModel();
+        partiesModel.setOrgCode("Test");
+        partiesModel.setAddressCode("Test");
+        partiesModel.setType(CUSTOM_HOUSE_AGENT);
+        Map<String, Object> orgData = new HashMap<>();
+        orgData.put(FULL_NAME, "123");
+        orgData.put(CONTACT_PERSON, "123");
+        orgData.put(COMPANY_NAME, "123");
+        orgData.put(PartiesConstants.RAW_DATA, "Text");
+        partiesModel.setOrgData(orgData);
+        partiesModel.setAddressData(orgData);
+
+        shipmentModel.setConsignee(partiesModel);
+        shipmentModel.setConsigner(partiesModel);
+        shipmentModel.setClient(partiesModel);
+
+        CarrierDetailModel carrierDetailModel = new CarrierDetailModel();
+        carrierDetailModel.setOrigin("test");
+        carrierDetailModel.setOriginPort("test");
+        carrierDetailModel.setEta(LocalDateTime.now());
+        carrierDetailModel.setEtd(LocalDateTime.now());
+        carrierDetailModel.setAtd(LocalDateTime.now());
+        carrierDetailModel.setVessel(UUID.randomUUID().toString());
+        carrierDetailModel.setAta(LocalDateTime.now());
+        carrierDetailModel.setDestinationPort("bb69aefb-0294-4be9-baec-835a431123df");
+        carrierDetailModel.setDestination(carrierDetailModel.getDestinationPort());
+        carrierDetailModel.setShippingLine("MAERSK");
+
+        AdditionalDetailModel additionalDetailModel = new AdditionalDetailModel();
+        additionalDetailModel.setPaidPlace("test");
+        additionalDetailModel.setNotifyParty(partiesModel);
+        additionalDetailModel.setDateOfIssue(LocalDateTime.now());
+        additionalDetailModel.setDateOfReceipt(LocalDateTime.now());
+        additionalDetailModel.setOnBoard("SHP");
+        additionalDetailModel.setOnBoardDate(LocalDateTime.now());
+        additionalDetailModel.setExportBroker(partiesModel);
+        additionalDetailModel.setImportBroker(partiesModel);
+        additionalDetailModel.setScreeningStatus(Arrays.asList(Constants.AOM));
+        additionalDetailModel.setExemptionCodes("Test");
+        additionalDetailModel.setAomFreeText("Test");
+        additionalDetailModel.setGoodsCO("IND");
+        additionalDetailModel.setBLChargesDisplay("PPD");
+        shipmentModel.setCarrierDetails(carrierDetailModel);
+        shipmentModel.setAdditionalDetails(additionalDetailModel);
+        shipmentModel.setShipmentAddresses(Arrays.asList(partiesModel));
+        shipmentModel.setServiceType("Test");
+
+        ShipmentContainers shipmentContainers = new ShipmentContainers();
+        shipmentContainers.setContainerCount(1L);
+        shipmentContainers.setContainerTypeCode("20GP");
+        shipmentContainers.setNetWeight(BigDecimal.TEN);
+        shipmentContainers.setNoofPackages(10L);
+        shipmentModel.setShipmentContainersList(Arrays.asList(shipmentContainers));
+
+        List<ContainerModel> containerModelList = new ArrayList<>();
+        ContainerModel containers = new ContainerModel();
+        containers.setContainerCount(1L);
+        containers.setContainerCode("20GP");
+        containers.setNetWeight(BigDecimal.TEN);
+        containers.setContainerNumber("CONT000283");
+        containers.setGrossVolume(BigDecimal.TEN);
+        containers.setGrossVolumeUnit("M3");
+        containers.setGrossWeight(BigDecimal.TEN);
+        containers.setGrossWeightUnit("KG");
+        containers.setPacksType("PKG");
+        containers.setPacks("100");
+        containers.setCarrierSealNumber("Test123");
+        containerModelList.add(containers);
+
+        containers = new ContainerModel();
+        containers.setContainerCount(1L);
+        containers.setContainerCode("20GP");
+        containers.setNetWeight(BigDecimal.TEN);
+        containers.setContainerNumber("CONT000283");
+        containers.setGrossVolume(BigDecimal.TEN);
+        containers.setGrossVolumeUnit("M3");
+        containers.setGrossWeight(BigDecimal.TEN);
+        containers.setGrossWeightUnit("KG");
+        containers.setPacksType("PKG");
+        containers.setPacks("100");
+        containers.setCarrierSealNumber("Test123");
+        containerModelList.add(containers);
+        shipmentModel.setContainersList(containerModelList);
+
+        PickupDeliveryDetailsModel delivertDetails = new PickupDeliveryDetailsModel();
+        delivertDetails.setActualPickupOrDelivery(LocalDateTime.now());
+        delivertDetails.setDestinationDetail(partiesModel);
+        delivertDetails.setAgentDetail(partiesModel);
+        delivertDetails.setSourceDetail(partiesModel);
+        delivertDetails.setTransporterDetail(partiesModel);
+        shipmentModel.setPickupDetails(delivertDetails);
+        shipmentModel.setDeliveryDetails(delivertDetails);
+
+        BookingCarriageModel bookingCarriageModel = new BookingCarriageModel();
+        bookingCarriageModel.setCarriageType(PRE_CARRIAGE);
+        shipmentModel.setBookingCarriagesList(Arrays.asList(bookingCarriageModel));
+
+        List<PackingModel> packingModels = new ArrayList<>();
+        PackingModel packingModel = new PackingModel();
+        packingModel.setLength(BigDecimal.TEN);
+        packingModel.setWidth(BigDecimal.TEN);
+        packingModel.setHeight(BigDecimal.TEN);
+        packingModel.setPacks("10");
+        packingModels.add(packingModel);
+
+        PackingModel packingModel2 = new PackingModel();
+        packingModel2.setLength(BigDecimal.TEN);
+        packingModel2.setWidth(BigDecimal.TEN);
+        packingModel2.setHeight(BigDecimal.TEN);
+        packingModel2.setPacks("20");
+        packingModels.add(packingModel2);
+        shipmentModel.setPackingList(packingModels);
+
+        List<TruckDriverDetailsModel> truckDriverDetailsModels = new ArrayList<>();
+        TruckDriverDetailsModel truckDriverDetailsModel = new TruckDriverDetailsModel();
+        truckDriverDetailsModel.setTransporterType(Ownership.Self);
+        truckDriverDetailsModels.add(truckDriverDetailsModel);
+        shipmentModel.setTruckDriverDetails(truckDriverDetailsModels);
+
+
+        List<ReferenceNumbersModel> referenceNumbersModels = new ArrayList<>();
+        ReferenceNumbersModel referenceNumbersModel = new ReferenceNumbersModel();
+        referenceNumbersModel.setType(ReferenceNumbersConstants.REF_NUM_TYPE_ETN);
+        referenceNumbersModels.add(referenceNumbersModel);
+        referenceNumbersModel = new ReferenceNumbersModel();
+        referenceNumbersModel.setType(ReferenceNumbersConstants.REF_NUM_TYPE_CRR);
+        referenceNumbersModels.add(referenceNumbersModel);
+        shipmentModel.setReferenceNumbersList(referenceNumbersModels);
+
+        ConsolidationModel consolidationModel = new ConsolidationModel();
+        consolidationModel.setPayment("PPM");
+        consolidationModel.setReceivingAgent(partiesModel);
+        consolidationModel.setSendingAgent(partiesModel);
+        consolidationModel.setCarrierDetails(carrierDetailModel);
+        consolidationModel.setPackingList(packingModels);
+        ArrivalDepartureDetailsModel arrivalDepartureDetailsModel = new ArrivalDepartureDetailsModel();
+        arrivalDepartureDetailsModel.setCTOId(partiesModel);
+        arrivalDepartureDetailsModel.setLastForeignPort(UUID.randomUUID().toString());
+        consolidationModel.setArrivalDetails(arrivalDepartureDetailsModel);
+        partiesModel = new PartiesModel();
+        partiesModel.setType("Notify Party 1");
+        orgData = new HashMap<>();
+        orgData.put(FULL_NAME, "123");
+        partiesModel.setOrgData(orgData);
+        partiesModel.setAddressData(orgData);
+        consolidationModel.setConsolidationAddresses(Arrays.asList(partiesModel));
+        consolidationModel.setReferenceNumbersList(shipmentModel.getReferenceNumbersList());
+        consolidationModel.setShipmentType(EXP);
+        consolidationModel.setDepartureDetails(arrivalDepartureDetailsModel);
+        consolidationModel.setContainersList(shipmentModel.getContainersList());
+        consolidationModel.setId(123L);
+        consolidationModel.setShipmentsList(Arrays.asList(shipmentModel));
+
+        csdModel.setShipmentModel(shipmentModel);
+        csdModel.setConsolidationModel(consolidationModel);
+        return csdModel;
+    }
+
+    @Test
+    void test_getData() throws RunnerException {
+        var spyReport = Mockito.spy(csdReport);
+        doReturn(getSampleCSDModel()).when(spyReport).getDocumentModel(Mockito.any());
+        doReturn(Collections.emptyMap()).when(spyReport).populateDictionary(Mockito.any());
+        var resp = spyReport.getData(12L);
+        assertNotNull(resp);
+    }
+
+    @Test
+    void test_getDocumentModel() throws RunnerException {
+        var spyReport = Mockito.spy(this.csdReport);
+        doReturn(new ConsolidationModel()).when(spyReport).getConsolidation(Mockito.any());
+        spyReport.setIsConsolidation(true);
+        var resp = spyReport.getDocumentModel(12L);
+        assertNotNull(resp);
+    }
+
+    @Test
+    void test_getDocumentModel_shipment() throws RunnerException {
+        var spyReport = Mockito.spy(this.csdReport);
+        doReturn(new ShipmentModel()).when(spyReport).getShipment(Mockito.anyLong());
+        spyReport.setIsConsolidation(false);
+        var resp = spyReport.getDocumentModel(12L);
+        assertNotNull(resp);
+    }
+
+    @Test
+    void test_populateDictionary_whenConsolidation() {
+        var spyReport = Mockito.spy(this.csdReport);
+        doNothing().when(spyReport).populateUserFields(any(), any());
+        spyReport.setIsConsolidation(true);
+        doNothing().when(spyReport).populateConsolidationFields(any(), any());
+        doNothing().when(spyReport).populateRaKcDataConsolidation(any(), any());
+        V1TenantSettingsResponse sampleResponse = new V1TenantSettingsResponse();
+        sampleResponse.setDPWDateFormat("yyyy-MM-dd");
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(sampleResponse);
+        var resp = spyReport.populateDictionary(getSampleCSDModel());
+        assertNotNull(resp);
+    }
+
+    @Test
+    void test_populateDictionary_whenConsolidationWithScreeningStatus() {
+        var spyReport = Mockito.spy(this.csdReport);
+        doNothing().when(spyReport).populateUserFields(any(), any());
+        spyReport.setIsConsolidation(true);
+        doNothing().when(spyReport).populateConsolidationFields(any(), any());
+        doNothing().when(spyReport).populateRaKcDataConsolidation(any(), any());
+        V1TenantSettingsResponse sampleResponse = new V1TenantSettingsResponse();
+        sampleResponse.setDPWDateFormat("yyyy-MM-dd");
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(sampleResponse);
+        CSDModel csdModel = getSampleCSDModel();
+        csdModel.getConsolidationModel().setScreeningStatus(List.of("AOM", "SCC"));
+        var resp = spyReport.populateDictionary(csdModel);
+        assertNotNull(resp);
+    }
+
+    @Test
+    void test_populateDictionary_whenShipment() {
+        var spyReport = Mockito.spy(this.csdReport);
+        doNothing().when(spyReport).populateUserFields(any(), any());
+        spyReport.setIsConsolidation(false);
+        doNothing().when(spyReport).populateShipmentFields(any(), any());
+        doNothing().when(spyReport).populateRaKcData(any(), any());
+        V1TenantSettingsResponse sampleResponse = new V1TenantSettingsResponse();
+        sampleResponse.setDPWDateFormat("yyyy-MM-dd");
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(sampleResponse);
+        var resp = spyReport.populateDictionary(getSampleCSDModel());
+        assertNotNull(resp);
+    }
+
+    @Test
+    void testPopulateDictionaryPutsSPXCodeInExemptionCargo() {
+        var spyReport = Mockito.spy(this.csdReport);
+        CSDModel csdModel = getSampleCSDModel();
+        ShipmentModel shipment = csdModel.getShipmentModel();
+        doAnswer(invocationOnMock -> {
+            Object[] args = invocationOnMock.getArguments();
+            Map<String, Object> dictionary = (Map<String, Object>) args[1];
+            dictionary.put(CONSIGNMENT_STATUS, shipment.getSecurityStatus());
+            return null;
+        }).when(spyReport).populateUserFields(any(), any());
+        spyReport.setIsConsolidation(false);
+        doNothing().when(spyReport).populateShipmentFields(any(), any());
+        doNothing().when(spyReport).populateRaKcData(any(), any());
+        V1TenantSettingsResponse sampleResponse = new V1TenantSettingsResponse();
+        sampleResponse.setDPWDateFormat("yyyy-MM-dd");
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(sampleResponse);
+
+        shipment.setSecurityStatus(AwbConstants.EXEMPTION_CARGO_SECURITY_STATUS);
+        var resp = spyReport.populateDictionary(csdModel);
+        assertNotNull(resp);
+        assertEquals(AwbConstants.SPX, resp.get(CONSIGNMENT_STATUS));
+    }
+
+    @Test
+    void testPopulateDictionaryPopulatesListOfAirports() {
+        var spyReport = Mockito.spy(this.csdReport);
+        doNothing().when(spyReport).populateUserFields(any(), any());
+        spyReport.setIsConsolidation(false);
+        doNothing().when(spyReport).populateShipmentFields(any(), any());
+        doNothing().when(spyReport).populateRaKcData(any(), any());
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(new V1TenantSettingsResponse());
+        V1TenantSettingsResponse sampleResponse = new V1TenantSettingsResponse();
+        sampleResponse.setDPWDateFormat("yyyy-MM-dd");
+        CSDModel csdModel = getSampleCSDModel();
+        ShipmentModel shipment = csdModel.getShipmentModel();
+        RoutingsModel routingsModel = new RoutingsModel();
+        routingsModel.setLeg(1L);
+        routingsModel.setMode(AIR);
+        routingsModel.setPol("Airport1");
+        routingsModel.setPod("Airport2");
+        routingsModel.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+        shipment.setRoutingsList(List.of(routingsModel));
+
+        var resp = spyReport.populateDictionary(csdModel);
+        assertNotNull(resp);
+        assertNotNull(resp.get(ReportConstants.TRANSIT_AIRPORTS));
+    }
+
+}

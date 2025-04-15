@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.entity;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.dto.request.awb.*;
 import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
+import com.dpw.runner.shipment.services.entity.enums.PrintType;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import lombok.*;
@@ -11,6 +12,7 @@ import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 
 import javax.persistence.*;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
@@ -45,6 +47,10 @@ public class Awb extends MultiTenancy {
     @Type(type = "jsonb")
     @Column(name = "awb_cargo_info", columnDefinition = "jsonb")
     private AwbCargoInfo awbCargoInfo;
+
+    @Type(type = "jsonb")
+    @Column(name = "air_messaging_additional_fields", columnDefinition = "jsonb")
+    private AirMessagingAdditionalFields airMessagingAdditionalFields;
 
     @Type(type = "jsonb")
     @Column(name = "awb_payment_info", columnDefinition = "jsonb")
@@ -90,4 +96,14 @@ public class Awb extends MultiTenancy {
 
     @Column(name = "user_display_name")
     private String userDisplayName;
+
+    @Column(name = "air_message_resubmitted")
+    private Boolean airMessageResubmitted;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "print_type")
+    private PrintType printType;
+
+    @Column(name = "original_printed_at")
+    private LocalDateTime originalPrintedAt;
 }

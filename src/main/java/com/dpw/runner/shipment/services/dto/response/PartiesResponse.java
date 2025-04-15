@@ -1,11 +1,10 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.dto.v1.response.RAKCDetailsResponse;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
 
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -24,7 +23,11 @@ public class PartiesResponse implements IRunnerResponse {
     private String orgCode;
     private Integer tenantId;
     private String addressCode;
+    private String orgId;
+    private String addressId;
     private Map<String, Object> orgData;
     private Map<String, Object> addressData;
     private Boolean isAddressFreeText;
+    private RAKCDetailsResponse rAKCDetails;
+    private String countryCode;
 }

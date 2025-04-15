@@ -3,12 +3,12 @@ package com.dpw.runner.shipment.services.syncing.Entity;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Data;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import lombok.Data;
 
 @Data
 public class CustomConsolidationRequest implements IRunnerResponse, IRunnerRequest {
@@ -164,7 +164,7 @@ public class CustomConsolidationRequest implements IRunnerResponse, IRunnerReque
     private String SMTPIGMNumberCaps;
 
     @JsonProperty("ShipmentGuids")
-    private List<UUID> ShipmentGuids;
+    private Map<UUID, Integer> shipmentGuids;
 
     @JsonProperty("SendingAgent")
     private PartyRequestV2 SendingAgent;
@@ -370,7 +370,7 @@ public class CustomConsolidationRequest implements IRunnerResponse, IRunnerReque
     @JsonProperty("CutoffDate")
     private LocalDateTime CutoffDate;
     @JsonProperty("Hazardous")
-    private boolean Hazardous;
+    private Boolean hazardous;
     @JsonProperty("DGClass")
     private String DGClass;
     @JsonProperty("DGSubstance")
@@ -536,4 +536,8 @@ public class CustomConsolidationRequest implements IRunnerResponse, IRunnerReque
     private String CreatedBy;
     @JsonProperty("CreatedDate")
     private LocalDateTime CreatedDate;
+    @JsonProperty("EmergencyContactNumber")
+    private String emergencyContactNumber;
+    @JsonProperty("EmergencyContactNumberCode")
+    private String emergencyContactNumberCode;
 }

@@ -3,6 +3,8 @@ package com.dpw.runner.shipment.services.ReportingService.CommonUtils;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.google.common.base.Strings;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -12,7 +14,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ZIP_POST_CODE;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 
 @Component
 public class ReportHelper {
@@ -34,24 +36,34 @@ public class ReportHelper {
         }
     }
 
-    public static String getFormattedAddress(PartiesModel partiesModel) {
-        if(partiesModel == null || partiesModel.getAddressData() == null)
+    public static String getFormattedAddress(PartiesModel partiesModel, boolean includeCompanyName) {
+        if (partiesModel == null || partiesModel.getAddressData() == null) {
             return null;
-        String response = getNextLineAddress(partiesModel.getAddressData(), ReportConstants.COMPANY_NAME, null);
+        }
+
+        String response = null;
+        if (includeCompanyName) {
+            response = getNextLineAddress(partiesModel.getAddressData(), ReportConstants.COMPANY_NAME, null);
+        }
         response = getNextLineAddress(partiesModel.getAddressData(), ReportConstants.ADDRESS1, response);
         response = getNextLineAddress(partiesModel.getAddressData(), ReportConstants.ADDRESS2, response);
+
         String temp = getCommaSeparatedAddress(partiesModel.getAddressData(), ReportConstants.CITY, null);
         temp = getCommaSeparatedAddress(partiesModel.getAddressData(), ReportConstants.STATE, temp);
         temp = getCommaSeparatedAddress(partiesModel.getAddressData(), ReportConstants.COUNTRY, temp);
         temp = getCommaSeparatedAddress(partiesModel.getAddressData(), ReportConstants.ZIP_POST_CODE, temp);
-        if(!CommonUtils.IsStringNullOrEmpty(temp)) {
-            if(response == null)
+
+        if (!CommonUtils.IsStringNullOrEmpty(temp)) {
+            if (response == null) {
                 response = temp;
-            else
+            } else {
                 response = response + "\n" + temp;
+            }
         }
+
         return response;
     }
+
 
     public static String getNextLineAddress(Map<String, Object> map, String key, String response) {
         String x = getValueFromMap(map, key);
@@ -95,6 +107,65 @@ public class ReportHelper {
         return list;
     }
 
+    public static List<String> getOrgAddressWithoutPhoneEmail(String name, String address1, String address2, String city, String stateCode,  String pinCode, String countryCode)
+    {
+        List<String> details = new ArrayList<>();
+        details.add(name);
+        if(!Strings.isNullOrEmpty(address1)) {
+            details.add(address1);
+        }
+        if(!Strings.isNullOrEmpty(address2)) {
+            details.add(address2);
+        }
+
+        StringBuilder locationDetails = new StringBuilder();
+        if (!Strings.isNullOrEmpty(city)) {
+            locationDetails.append(city);
+        }
+        if (!Strings.isNullOrEmpty(stateCode)) {
+            if (!locationDetails.isEmpty()) {
+                locationDetails.append(", ");
+            }
+            locationDetails.append(stateCode);
+        }
+        if (!Strings.isNullOrEmpty(pinCode)) {
+            if (!locationDetails.isEmpty()) {
+                locationDetails.append(", ");
+            }
+            locationDetails.append(pinCode);
+        }
+        if (!Strings.isNullOrEmpty(countryCode)) {
+            if (!locationDetails.isEmpty()) {
+                locationDetails.append(", ");
+            }
+            locationDetails.append(countryCode);
+        }
+
+        if (!locationDetails.isEmpty()) {
+            details.add(locationDetails.toString());
+        }
+
+        return details;
+    }
+
+    public static List<String> getOrgAddressWithoutPhoneEmail(PartiesModel party) {
+        if(party == null || party.getAddressData() == null)
+            return new ArrayList<>();
+        Map<String, Object> partyAddress = party.getAddressData();
+        List<String> list = new ArrayList<String>();
+        if(getValueFromMap(partyAddress,ReportConstants.COMPANY_NAME) != null)
+            list.add(getValueFromMap(partyAddress,ReportConstants.COMPANY_NAME));
+        if(getValueFromMap(partyAddress,ReportConstants.ADDRESS1) != null)
+            list.add(getValueFromMap(partyAddress,ReportConstants.ADDRESS1));
+        if(getValueFromMap(partyAddress,ReportConstants.ADDRESS2) != null)
+            list.add(getValueFromMap(partyAddress,ReportConstants.ADDRESS2));
+        if(getCityCountry(getValueFromMap(partyAddress,ReportConstants.CITY), getValueFromMap(partyAddress,ReportConstants.COUNTRY)) != null)
+            list.add(getCityCountry(getValueFromMap(partyAddress,ReportConstants.CITY), getValueFromMap(partyAddress,ReportConstants.COUNTRY)));
+        if(getValueFromMap(partyAddress,"Zip_PostCode") != null)
+            list.add(getValueFromMap(partyAddress,"Zip_PostCode"));
+        return list;
+    }
+
     public static List<String> getOrgAddressWithPhoneEmail(PartiesModel party) {
         if(party == null || party.getAddressData() == null)
             return new ArrayList<>();
@@ -117,6 +188,31 @@ public class ReportHelper {
         return list;
     }
 
+    public static List<String> getOrgAddressDetails(PartiesModel party) {
+        if(party == null || party.getAddressData() == null)
+            return new ArrayList<>();
+        Map<String, Object> partyAddress = party.getAddressData();
+        List<String> list = new ArrayList<String>();
+        if(getValueFromMap(partyAddress,ReportConstants.COMPANY_NAME) != null)
+            list.add(getValueFromMap(partyAddress,ReportConstants.COMPANY_NAME));
+        if(getValueFromMap(partyAddress,ReportConstants.ADDRESS1) != null)
+            list.add(getValueFromMap(partyAddress,ReportConstants.ADDRESS1));
+        if(getValueFromMap(partyAddress,ReportConstants.ADDRESS2) != null)
+            list.add(getValueFromMap(partyAddress,ReportConstants.ADDRESS2));
+        if(getValueFromMap(partyAddress, CITY) != null) {
+            list.add(getValueFromMap(partyAddress, CITY));
+        }
+        if(getValueFromMap(partyAddress, STATE) != null) {
+            list.add(getValueFromMap(partyAddress, STATE));
+        }
+        if(getValueFromMap(partyAddress,COUNTRY) != null) {
+            list.add(getValueFromMap(partyAddress, COUNTRY));
+        }
+        if(getValueFromMap(partyAddress,ZIP_POST_CODE) != null)
+            list.add(getValueFromMap(partyAddress,ZIP_POST_CODE));
+        return list;
+    }
+
     public static List<String> getOrgAddress(String name, String address1, String address2, String city_country, String city_zipcode, String state_country)
     {
         List<String> list = new ArrayList<>();
@@ -132,6 +228,32 @@ public class ReportHelper {
             list.add(city_zipcode);
         if(state_country != null)
             list.add(state_country);
+        return list;
+
+    }
+
+    public static List<String> getOrgAddressForLesserLines(String address1, String address2, String state, String city, String state_country, String pincode)
+    {
+        List<String> list = new ArrayList<>();
+        if(StringUtility.isNotEmpty(address1))
+            list.add(address1);
+        if(StringUtility.isNotEmpty(address2))
+            list.add(address2);
+
+        StringBuilder sb = new StringBuilder();
+
+        if (StringUtility.isNotEmpty(city))
+            sb.append(city).append(" ");
+        if (StringUtility.isNotEmpty(state))
+            sb.append(state).append(" ");
+        if (StringUtility.isNotEmpty(pincode))
+            sb.append(pincode).append(" ");
+        if (StringUtility.isNotEmpty(state_country))
+            sb.append(state_country).append(" ");
+
+        if (StringUtility.isNotEmpty(sb.toString()))
+            list.add(sb.toString());
+
         return list;
 
     }
@@ -156,6 +278,24 @@ public class ReportHelper {
         if(getValueFromMap(partyAddress,ReportConstants.CONTACT_PHONE) != null)
             list.add(getValueFromMap(partyAddress,ReportConstants.CONTACT_PHONE));
         return list;
+    }
+
+    /**
+     * @param dictionary : source dictionary
+     * @param partiesModel : party model for populating address
+     * @param addressReportKey : cargo manifest report key for address
+     * Puts party address with email and contact phone as null
+     */
+    public static void populateCargoManifestPartyAddress(Map<String, Object> dictionary, PartiesModel partiesModel, String addressReportKey) {
+        if (partiesModel != null && partiesModel.getAddressData() != null) {
+            Map<String, Object> consignerAddress = partiesModel.getAddressData();
+            var consigner = ReportHelper.getOrgAddressWithPhoneEmail(getValueFromMap(consignerAddress, COMPANY_NAME),
+                    getValueFromMap(consignerAddress, ADDRESS1), getValueFromMap(consignerAddress, ADDRESS2),
+                    ReportHelper.getCityCountry(getValueFromMap(consignerAddress, CITY), getValueFromMap(consignerAddress, COUNTRY)),
+                    null, null, getValueFromMap(consignerAddress, ZIP_POST_CODE));
+
+            dictionary.put(addressReportKey, consigner);
+        }
     }
 
     public static List<String> getAddressList(String address)
@@ -197,9 +337,7 @@ public class ReportHelper {
 
     public static List<String> getListOfStrings(String... strings) {
         List<String> stringList = new ArrayList<>();
-        for (String str : strings) {
-            stringList.add(str);
-        }
+        stringList.addAll(Arrays.asList(strings));
         return stringList;
     }
 

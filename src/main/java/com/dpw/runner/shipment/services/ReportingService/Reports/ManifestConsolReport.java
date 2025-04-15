@@ -9,10 +9,10 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ManifestConsolMo
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ConsolidationModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.helper.ICarrierMasterData;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.nimbusds.jose.util.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -64,7 +64,7 @@ public class ManifestConsolReport extends IReport {
     Map<String, Object> populateDictionary(IDocumentModel documentModel) {
         ManifestConsolModel model = (ManifestConsolModel) documentModel;
         Map<String, Object> dictionary = new HashMap<>();
-        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
 
         populateConsolidationFields(model.getConsolidation() , dictionary);
         List<PackingModel> packingList = GetAllShipmentsPacks(model.getShipmentDetailsList());
@@ -80,9 +80,10 @@ public class ManifestConsolReport extends IReport {
 
         List<ShipmentAndContainerResponse> shipmentContainers = getShipmentAndContainerResponse(model.getShipmentDetailsList());
         if(shipmentContainers != null) {
-            var values = shipmentContainers.stream()
-                    .map(i -> jsonHelper.convertJsonToMap(jsonHelper.convertToJson(i)))
-                    .toList();
+            List<Map<String, Object>> values = new ArrayList<>();
+            for (ShipmentAndContainerResponse shipmentContainers1 : shipmentContainers) {
+                values.add(jsonHelper.convertValue(shipmentContainers1, new TypeReference<>() {}));
+            }
             if (Objects.isNull(values)) values = new ArrayList<>();
             values.forEach(v -> {
                 v.put(GROSS_WEIGHT, v.get(WEIGHT));

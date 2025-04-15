@@ -1,5 +1,7 @@
 package com.dpw.runner.shipment.services.service.v1;
 
+import com.dpw.runner.shipment.services.dto.request.UserWithPermissionRequestV1;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.*;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
@@ -9,12 +11,24 @@ import com.dpw.runner.shipment.services.entitytransfer.dto.response.CheckTaskExi
 import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
+import java.util.List;
 import java.util.UUID;
 
 public interface IV1Service {
     ResponseEntity<V1ShipmentCreationResponse> createBooking(CustomerBooking customerBooking, boolean isShipmentEnabled, boolean isBillingEnabled, UUID shipmentGuid, HttpHeaders headers);
     ResponseEntity<UpdateOrgCreditLimitBookingResponse> updateOrgCreditLimitFromBooking(CheckCreditLimitResponse request);
+
+    void setAuthContext();
+
+    void setAuthContext(String token, UsersDto user);
+
+    List<SimpleGrantedAuthority> getAuthorities(List<String> permissions);
+
+    void clearAuthContext();
+
+    String generateToken();
 
     V1DataResponse fetchMasterData(Object request);
 
@@ -31,6 +45,8 @@ public interface IV1Service {
     V1DataResponse fetchOrganization(Object request);
 
     V1DataResponse fetchUnlocation(Object request);
+    V1DataResponse stateBasedList(Object request);
+
 
     V1DataResponse fetchContainerTypeData(Object request);
 
@@ -88,6 +104,8 @@ public interface IV1Service {
 
     V1DataResponse createOrganizationData(Object request);
 
+    V1DataResponse fetchOrganization(Object request, HttpHeaders httpHeaders);
+
     V1DataResponse updateOrganizationData(Object request);
 
     V1DataResponse createUnlocationData(Object request);
@@ -127,6 +145,9 @@ public interface IV1Service {
 
     V1DataResponse addressList(Object request);
 
+    V1DataResponse addressList(Object request, HttpHeaders headers);
+
+    List<String> getTenantName(List<Integer> tenantIds);
     V1DataResponse tenantNameByTenantId(Object request);
     V1DataResponse fetchChargeCodeData(Object request);
     V1RetrieveResponse retrieveChargeCodeData(Object request);
@@ -136,6 +157,7 @@ public interface IV1Service {
     V1RetrieveResponse retrieveTenantSettings();
     CompanySettingsResponse retrieveCompanySettings();
     V1RetrieveResponse retrieveTenant();
+    V1RetrieveResponse retrieveTenant(HttpHeaders headers);
     PartyRequestV2 getDefaultOrg();
 
     V1DataResponse fetchOwnType(Object request);
@@ -148,7 +170,7 @@ public interface IV1Service {
     GuidsListResponse fetchBookingIdFilterGuids(Object request);
     V1DataResponse fetchGetTemplateMainPage(Object request);
     HblTaskCreationResponse createTaskforHBL(Object request);
-    ShipmentBillingListResponse fetchShipmentBillingData(Object request);
+    ShipmentBillingListResponse fetchShipmentBillingData(ShipmentBillingListRequest request);
     V1DataResponse fetchRolesList(Object request);
     V1DataResponse fetchBillingList(Object request);
     V1DataResponse fetchBillChargesList(Object request);
@@ -165,4 +187,23 @@ public interface IV1Service {
     V1DataResponse fetchCreditLimit(Object request);
     OrgAddressResponse fetchOrgAddresses(Object request);
     EntityTransferAddress fetchAddress(String entityId);
+    V1DataResponse getCoLoadingStations(Object request);
+    TenantDetailsByListResponse getTenantDetails(Object request);
+    V1DataResponse getEmailTemplates(Object request);
+    V1DataResponse getEmailTemplatesWithTenantId(Object request);
+    V1DataResponse getMasterDetails(Object request);
+    V1DataResponse getUserDetails(Object request);
+    TaskCreateResponse createTask(Object request);
+    V1DataResponse updateTask(Object request);
+    V1RetrieveResponse retrieveTask(Object request);
+    V1DataResponse listTask(Object request);
+    List<UsersRoleListResponse> getUserEmailsByRoleId(V1UsersEmailRequest request);
+
+    Integer getRoleIdsByRoleName(V1RoleIdRequest roleIdRequest);
+
+    V1DataResponse getCompaniesDetails(Object request);
+
+    V1DataResponse listOrgs(Object request);
+    V1DataResponse listBranchesByDefaultOrgAndAddress(Object request);
+    List<UsersDto> getUsersWithGivenPermissions(UserWithPermissionRequestV1 request);
 }

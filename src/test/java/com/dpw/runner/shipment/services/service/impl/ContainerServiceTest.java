@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import com.dpw.runner.shipment.services.Kafka.Dto.KafkaResponse;
-import com.dpw.runner.shipment.services.Kafka.Producer.KafkaProducer;
+import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -25,16 +24,21 @@ import com.dpw.runner.shipment.services.exception.exceptions.ValidationException
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
+import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.service_bus.ISBProperties;
+import com.dpw.runner.shipment.services.service_bus.ISBUtils;
+import com.dpw.runner.shipment.services.service_bus.model.ContainerBoomiUniversalJson;
+import com.dpw.runner.shipment.services.service_bus.model.EventMessage;
 import com.dpw.runner.shipment.services.syncing.Entity.BulkContainerRequestV2;
 import com.dpw.runner.shipment.services.syncing.impl.SyncEntityConversionService;
 import com.dpw.runner.shipment.services.syncing.interfaces.IContainerSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IContainersSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IPackingsSync;
 import com.dpw.runner.shipment.services.utils.CSVParsingUtil;
-import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -47,6 +51,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -70,10 +75,7 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith({MockitoExtension.class, SpringExtension.class})
 @Execution(CONCURRENT)
-class ContainerServiceTest {
-
-    @Mock
-    private CommonUtils commonUtils;
+class ContainerServiceTest extends CommonMocks {
 
     @Mock
     private ConsolidationService consolidationService;
@@ -134,6 +136,16 @@ class ContainerServiceTest {
 
     @Mock
     IShipmentsContainersMappingDao shipmentsContainersMappingDao;
+
+    @Mock
+    private ISBUtils sbUtils;
+
+    @Mock
+    private ISBProperties isbProperties;
+
+    @Mock
+    private ModelMapper modelMapper;
+
     private static JsonTestUtility jsonTestUtility;
     private static Containers testContainer;
     private static Packing testPacking;
@@ -590,7 +602,8 @@ class ContainerServiceTest {
         testContainer.setAchievedVolumeUnit(Constants.VOLUME_UNIT_M3);
         when(containerDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testContainer)));
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(objectMapper.convertValue(testContainer, ContainerResponse.class));
-        when(masterDataUtils.createInBulkCommodityTypeRequest(any(), any(), any(), any())).thenReturn(new ArrayList<>());
+        when(masterDataUtils.createInBulkCommodityTypeRequest(any(), any(), any(), any(), any())).thenReturn(new ArrayList<>());
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = containerService.getContainersForSelection(CommonRequestModel.buildRequest(containerAssignListRequest));
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
@@ -605,10 +618,11 @@ class ContainerServiceTest {
         testContainer.setAchievedWeightUnit(Constants.WEIGHT_UNIT_KG);
         testContainer.setAchievedVolumeUnit(Constants.VOLUME_UNIT_M3);
         testShipment.setShipmentType(Constants.CARGO_TYPE_FCL);
-        testContainer.setShipmentsList(List.of(testShipment));
+        testContainer.setShipmentsList(Set.of(testShipment));
         when(containerDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testContainer)));
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(objectMapper.convertValue(testContainer, ContainerResponse.class));
-        when(masterDataUtils.createInBulkCommodityTypeRequest(any(), any(), any(), any())).thenReturn(new ArrayList<>());
+        when(masterDataUtils.createInBulkCommodityTypeRequest(any(), any(), any(), any(), any())).thenReturn(new ArrayList<>());
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = containerService.getContainersForSelection(CommonRequestModel.buildRequest(containerAssignListRequest));
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
@@ -624,8 +638,9 @@ class ContainerServiceTest {
         testContainer.setAchievedWeightUnit(Constants.WEIGHT_UNIT_KG);
         testContainer.setAchievedVolumeUnit(Constants.VOLUME_UNIT_M3);
         testShipment.setShipmentType(Constants.CARGO_TYPE_FCL);
-        testContainer.setShipmentsList(List.of(testShipment));
+        testContainer.setShipmentsList(Set.of(testShipment));
         when(containerDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testContainer)));
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = containerService.getContainersForSelection(CommonRequestModel.buildRequest(containerAssignListRequest));
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
@@ -643,10 +658,11 @@ class ContainerServiceTest {
         testContainer.setAchievedWeightUnit(Constants.WEIGHT_UNIT_KG);
         testContainer.setAchievedVolumeUnit(Constants.VOLUME_UNIT_M3);
         testShipment.setShipmentType(Constants.CARGO_TYPE_FCL);
-        testContainer.setShipmentsList(List.of(testShipment));
+        testContainer.setShipmentsList(Set.of(testShipment));
         when(containerDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testContainer)));
         when(jsonHelper.convertValue(any(), eq(ContainerResponse.class))).thenReturn(objectMapper.convertValue(testContainer, ContainerResponse.class));
-        when(masterDataUtils.createInBulkCommodityTypeRequest(any(), any(), any(), any())).thenReturn(new ArrayList<>());
+        when(masterDataUtils.createInBulkCommodityTypeRequest(any(), any(), any(), any(), any())).thenReturn(new ArrayList<>());
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = containerService.getContainersForSelection(CommonRequestModel.buildRequest(containerAssignListRequest));
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
@@ -664,8 +680,9 @@ class ContainerServiceTest {
         testContainer.setAchievedWeightUnit(Constants.WEIGHT_UNIT_KG);
         testContainer.setAchievedVolumeUnit(Constants.VOLUME_UNIT_M3);
         testShipment.setShipmentType(Constants.CARGO_TYPE_FCL);
-        testContainer.setShipmentsList(List.of(testShipment));
+        testContainer.setShipmentsList(Set.of(testShipment));
         when(containerDao.findAll(any(), any())).thenThrow(new RuntimeException());
+        mockShipmentSettings();
         ResponseEntity<IRunnerResponse> responseEntity = containerService.getContainersForSelection(CommonRequestModel.buildRequest(containerAssignListRequest));
         assertNotNull(responseEntity);
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
@@ -709,18 +726,21 @@ class ContainerServiceTest {
     @Test
     void calculateContainerSummary() throws RunnerException{
         List<Containers> containersList = List.of(testContainer);
+        mockShipmentSettings();
+        mockTenantSettings();
         ContainerSummaryResponse containerSummaryResponse = containerService.calculateContainerSummary(containersList, Constants.TRANSPORT_MODE_SEA, Constants.SHIPMENT_TYPE_LCL);
         assertNotNull(containerSummaryResponse);
     }
 
     @Test
     void calculateContainerSummary_Branches() throws RunnerException{
-        testContainer.setNoOfPackages(null);
         testContainer.setPacks(null);
         testContainer.setContainerCount(null);
         List<Containers> containersList = List.of(testContainer);
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setWeightChargeableUnit(null);
         ShipmentSettingsDetailsContext.getCurrentTenantSettings().setVolumeChargeableUnit(null);
+        mockShipmentSettings();
+        mockTenantSettings();
         ContainerSummaryResponse containerSummaryResponse = containerService.calculateContainerSummary(containersList, Constants.TRANSPORT_MODE_SEA, Constants.SHIPMENT_TYPE_LCL);
         assertNotNull(containerSummaryResponse);
     }
@@ -1213,7 +1233,6 @@ class ContainerServiceTest {
                 });
         when(shipmentDao.findById(any())).thenReturn(Optional.empty());
         when(containerDao.saveAll(any())).thenReturn(List.of(testContainer));
-        when(containerSync.sync(any(), any(), any())).thenAnswer(invocation -> {return new ResponseEntity<>(HttpStatus.OK);});
         assertDoesNotThrow(() -> containerService.uploadContainers(request));
     }
 
@@ -1252,7 +1271,6 @@ class ContainerServiceTest {
         when(consolidationService.calculateVolumeWeight(any(), any(), any(), any(), any())).thenReturn(jsonTestUtility.getVolumeWeightChargeable());
         when(shipmentDao.findById(any())).thenReturn(Optional.empty());
         when(containerDao.saveAll(any())).thenReturn(List.of(testContainer));
-        when(containerSync.sync(any(), any(), any())).thenAnswer(invocation -> {return new ResponseEntity<>(HttpStatus.OK);});
         assertDoesNotThrow(() -> containerService.uploadContainers(request));
     }
 
@@ -1301,6 +1319,86 @@ class ContainerServiceTest {
     void uploadContainerEvents_Failure_NullId() throws Exception {
         BulkUploadRequest request = new BulkUploadRequest();
         assertThrows(ValidationException.class, () -> containerService.uploadContainerEvents(request));
+    }
+
+    @Test
+    void testPushContainersToDependentServices() {
+        // Arrange
+        Containers c1 = new Containers();
+        c1.setId(1L);
+        c1.setConsolidationId(1L);
+        c1.setContainerNumber("C123");
+        c1.setShipmentsList(new HashSet<>(Collections.singletonList(ShipmentDetails.builder().bookingReference("DBFC-4317515-934863").build())));
+        Containers c2 = new Containers();
+        c2.setId(2L);
+        c2.setContainerNumber("C456");
+
+        List<Containers> containersList = Arrays.asList(c1,c2);
+        List<Containers> oldContainers = Arrays.asList(c1);
+
+        V1TenantSettingsResponse v1TenantSettingsResponse = new V1TenantSettingsResponse();
+        v1TenantSettingsResponse.setLogicAppIntegrationEnabled(true);
+        v1TenantSettingsResponse.setTransportOrchestratorEnabled(true);
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(v1TenantSettingsResponse);
+
+        ContainerBoomiUniversalJson containerBoomiUniversalJson = new ContainerBoomiUniversalJson();
+        containerBoomiUniversalJson.setHazardous(true);
+
+        when(jsonHelper.convertToJson(any(EventMessage.class))).thenReturn("jsonBody");
+        when(modelMapper.map(any(), eq(ContainerBoomiUniversalJson.class))).thenReturn(containerBoomiUniversalJson);
+
+        // Act
+        containerService.pushContainersToDependentServices(containersList, oldContainers);
+
+        // Assert
+        verify(producer, times(1)).produceToKafka(eq("jsonBody"), any(), anyString());
+        verify(sbUtils, times(1)).sendMessagesToTopic(eq(isbProperties), any(), anyList());
+    }
+
+    @Test
+    void getByModuleGuidAndModuleType_ValidShipmentGuid_ShouldReturnSuccessResponse() {
+        UUID validGuid = UUID.randomUUID();
+        // Given
+        String moduleGuid = validGuid.toString();
+        String moduleType = Constants.SHIPMENT;
+
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setContainersList(Set.of(new Containers()));
+
+        List<ContainerResponse> containerResponses = List.of(new ContainerResponse());
+
+        when(shipmentDao.findByGuid(validGuid)).thenReturn(Optional.of(shipmentDetails));
+        when(jsonHelper.convertValueToList(any(), eq(ContainerResponse.class))).thenReturn(containerResponses);
+
+        // When
+        ResponseEntity<IRunnerResponse> response = containerService.getByModuleGuidAndModuleType(moduleGuid, moduleType);
+
+        // Then
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+    }
+
+    @Test
+    void getByModuleGuidAndModuleType_ValidConsolidationGuid_ShouldReturnSuccessResponse() {
+        UUID validGuid = UUID.randomUUID();
+        // Given
+        String moduleGuid = validGuid.toString();
+        String moduleType = Constants.CONSOLIDATION;
+
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setContainersList(List.of(new Containers()));
+
+        List<ContainerResponse> containerResponses = List.of(new ContainerResponse());
+
+        when(consolidationDetailsDao.findByGuid(validGuid)).thenReturn(Optional.of(consolidationDetails));
+        when(jsonHelper.convertValueToList(any(), eq(ContainerResponse.class))).thenReturn(containerResponses);
+
+        // When
+        ResponseEntity<IRunnerResponse> response = containerService.getByModuleGuidAndModuleType(moduleGuid, moduleType);
+
+        // Then
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
     }
 
 }

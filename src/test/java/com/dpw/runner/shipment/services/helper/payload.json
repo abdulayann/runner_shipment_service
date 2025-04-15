@@ -255,7 +255,11 @@
     "notesList": [],
     "truckDriverDetails": [],
     "servicesList": [],
-    "routingsList": [],
+    "routingsList": [{
+      "id": 1,
+      "guid": "86d295a5-a896-46f1-82a8-26369755cda3",
+      "shipmentId": 1
+    }],
     "referenceNumbersList": [],
     "packingList": [],
     "fileRepoList": [],
@@ -329,19 +333,56 @@
       "entityType": "HAWB",
       "shipperName": "TEST VG CREDIT LIMIT",
       "shipperAddress": "\r\nADDRESS 1\r\nMH\r\nPUNE\r\nIND",
+      "shipperCity": "PUNE",
+      "shipperCountry": "IND",
+      "shipperState": "MH",
+      "shipperZipCode": "344221",
+      "shipperPhone": "9876554476",
       "consigneeName": "NATIONWIDE PAPER LTD",
       "consigneeAddress": "\r\nABC CO LLC\nAEJEA\r\nARE",
+      "consigneeCity": "PUNE",
+      "consigneeCountry": "IND",
+      "consigneeState": "MH",
+      "consigneeZipCode": "344221",
+      "consigneePhone": "9876554476",
       "consigneeReferenceNumber": "2436215",
       "iataCode": "5678",
       "awbNumber": "235-88998641",
       "originAirport": "Kempegowda International Airport BLR",
       "destinationAirport": "George Bush Intercontinental Airport IAH, TX",
       "firstCarrier": "Turkish Airlines",
-      "agentCASSCode": "8975"
+      "agentCASSCode": "8975",
+      "issuingAgentName": "ABB EGYPT",
+      "issuingAgentAddress": "\nABC CO LLC\nAEJEA",
+      "issuingAgentCity": "PUNE",
+      "issuingAgentCountry": "IND",
+      "issuingAgentState": "MH",
+      "issuingAgentZipCode": "344221",
+      "issuingAgentPhone": "9876554476"
     },
     "awbRoutingInfo": [
       {
         "entityId": 1,
+        "entityType": "HAWB",
+        "byCarrier": "Turkish Airlines",
+        "flightNumber": "6457",
+        "flightDate": "2024-02-02T01:00:00",
+        "destinationPortName": "USIAH_AIR",
+        "originPortName": "INBLR_AIR",
+        "isShipmentCreated": true
+      },
+      {
+        "entityId": 2,
+        "entityType": "HAWB",
+        "byCarrier": "Turkish Airlines",
+        "flightNumber": "6457",
+        "flightDate": "2024-02-02T01:00:00",
+        "destinationPortName": "USIAH_AIR",
+        "originPortName": "INBLR_AIR",
+        "isShipmentCreated": true
+      },
+      {
+        "entityId": 3,
         "entityType": "HAWB",
         "byCarrier": "Turkish Airlines",
         "flightNumber": "6457",
@@ -357,7 +398,9 @@
       "ntrQtyGoods": "DIMS: IN \r\n5=400X300X2,1=100X200X10\r\nTOTAL VOLUMETRIC WEIGHT ",
       "currency": "EGP",
       "customsValue": 0,
-      "chargeCode": "CC"
+      "chargeCode": "CC",
+      "carriageValue": 1,
+      "insuranceAmount": 1
     },
     "awbOtherInfo": {
       "entityId": 1,
@@ -482,7 +525,10 @@
       "originAirport": "Kempegowda International Airport BLR",
       "destinationAirport": "George Bush Intercontinental Airport IAH, TX",
       "firstCarrier": "Turkish Airlines",
-      "agentCASSCode": "8975"
+      "agentCASSCode": "8975",
+      "consigneeCountry": "IND",
+      "issuingAgentCountry": "IND",
+      "shipperCountry": "IND"
     },
     "defaultAwbRoutingInfo": [
       {
@@ -494,6 +540,31 @@
         "destinationPortName": "USIAH_AIR",
         "originPortName": "INBLR_AIR",
         "isShipmentCreated": true
+      }
+    ],
+    "awbPaymentInfo": {
+      "weightCharges": 0,
+      "totalPrepaid": 0,
+      "totalCollect": 0,
+      "dueAgentCharges": 0,
+      "dueCarrierCharges": 0,
+      "tax": 0,
+      "valuationCharge" : 0
+    },
+    "awbOtherChargesInfo": [
+      {
+        "modeOfPayment": "Collect",
+        "chargeTypeId": "VG_04Oct",
+        "rate": "233",
+        "iataDescription": "ASD",
+        "chargeBasis": 1,
+        "amount": 233,
+        "chargeDue": 2,
+        "chargeTypeDescription": " updated details 123"
+      }],
+    "awbSpecialHandlingCodesMappings": [
+      {
+        "shcId": 1234
       }
     ]
   },
@@ -676,6 +747,7 @@
   },
   "CONSOLIDATION": {
     "id": 1,
+    "interBranchConsole": false,
     "guid": "1d27fe99-0874-4587-9a83-460bb5ba31f0",
     "consolidationNumber": "CONS000231188",
     "consolidationType": "AGT",
@@ -688,7 +760,7 @@
     "referenceNumber": "CONS000231188",
     "override": false,
     "shipmentType": "EXP",
-    "bol": "231161",
+    "bol": "986-55667780",
     "isCargoOnly": false,
     "isLocked": false,
     "docsClosingTime": "2024-03-20T00:00:00",
@@ -1090,7 +1162,14 @@
     },
     "packingList": [],
     "referenceNumbersList": [],
-    "routingsList": [],
+    "routingsList": [{
+      "id": 1,
+      "guid": "dc092b0e-43a6-41d7-9dc3-546017f85771",
+      "consolidationId": 1,
+      "pol": "DKAAL_POR",
+      "pod": "AUADL_POR",
+      "carriage": "MAIN_CARRIAGE"
+    }],
     "containersList": [
       {
         "id": 150408,
@@ -1140,6 +1219,132 @@
         "consolidationId": 1,
         "containerCode": "20GP",
         "containerNumber": "TCLU1666664",
+        "hblDeliveryMode": "CFS/CY",
+        "netWeight": 0.000000,
+        "grossWeight": 1.120000,
+        "grossWeightUnit": "KG",
+        "measurement": 0,
+        "isShipperOwned": false,
+        "isEmpty": false,
+        "containerCount": 1,
+        "grossVolume": 2.234,
+        "grossVolumeUnit": "M3",
+        "isReefer": false,
+        "minTemp": 0,
+        "maxTemp": 0,
+        "allocationDate": "2024-01-04T01:05:07",
+        "hazardous": false,
+        "tareWeight": 0,
+        "isTemperatureMaintained": false,
+        "chargeable": 0.00,
+        "isOwnContainer": false,
+        "transportMode": "SEA",
+        "allocatedWeight": 28230.000000,
+        "allocatedWeightUnit": "KG",
+        "allocatedVolume": 33.000,
+        "allocatedVolumeUnit": "M3",
+        "achievedWeight": 0.000000,
+        "achievedWeightUnit": "KG",
+        "achievedVolume": 0.000,
+        "achievedVolumeUnit": "M3",
+        "weightUtilization": "0",
+        "volumeUtilization": "0",
+        "isPart": false,
+        "isAttached": true,
+        "truckingDetails": [],
+        "eventsList": [],
+        "tenantId": 728
+      },
+      {
+        "id": 150410,
+        "guid": "dc092b0e-43a6-41d7-9dc3-546017f85123",
+        "consolidationId": 1,
+        "containerCode": "20RE",
+        "containerNumber": "TCLU1666665",
+        "hblDeliveryMode": "CFS/CY",
+        "netWeight": 0.000000,
+        "grossWeight": 1.120000,
+        "grossWeightUnit": "KG",
+        "measurement": 0,
+        "isShipperOwned": false,
+        "isEmpty": false,
+        "containerCount": 1,
+        "grossVolume": 2.234,
+        "grossVolumeUnit": "M3",
+        "isReefer": false,
+        "minTemp": 0,
+        "maxTemp": 0,
+        "allocationDate": "2024-01-04T01:05:07",
+        "hazardous": false,
+        "tareWeight": 0,
+        "isTemperatureMaintained": false,
+        "chargeable": 0.00,
+        "isOwnContainer": false,
+        "transportMode": "SEA",
+        "allocatedWeight": 28230.000000,
+        "allocatedWeightUnit": "KG",
+        "allocatedVolume": 33.000,
+        "allocatedVolumeUnit": "M3",
+        "achievedWeight": 0.000000,
+        "achievedWeightUnit": "KG",
+        "achievedVolume": 0.000,
+        "achievedVolumeUnit": "M3",
+        "weightUtilization": "0",
+        "volumeUtilization": "0",
+        "isPart": false,
+        "isAttached": true,
+        "truckingDetails": [],
+        "eventsList": [],
+        "tenantId": 728
+      },
+      {
+        "id": 150411,
+        "guid": "dc092b0e-43a6-41d7-9dc3-546017f85123",
+        "consolidationId": 1,
+        "containerCode": "40GP",
+        "containerNumber": "TCLU1666666",
+        "hblDeliveryMode": "CFS/CY",
+        "netWeight": 0.000000,
+        "grossWeight": 1.120000,
+        "grossWeightUnit": "KG",
+        "measurement": 0,
+        "isShipperOwned": false,
+        "isEmpty": false,
+        "containerCount": 1,
+        "grossVolume": 2.234,
+        "grossVolumeUnit": "M3",
+        "isReefer": false,
+        "minTemp": 0,
+        "maxTemp": 0,
+        "allocationDate": "2024-01-04T01:05:07",
+        "hazardous": false,
+        "tareWeight": 0,
+        "isTemperatureMaintained": false,
+        "chargeable": 0.00,
+        "isOwnContainer": false,
+        "transportMode": "SEA",
+        "allocatedWeight": 28230.000000,
+        "allocatedWeightUnit": "KG",
+        "allocatedVolume": 33.000,
+        "allocatedVolumeUnit": "M3",
+        "achievedWeight": 0.000000,
+        "achievedWeightUnit": "KG",
+        "achievedVolume": 0.000,
+        "achievedVolumeUnit": "M3",
+        "weightUtilization": "0",
+        "volumeUtilization": "0",
+        "isPart": false,
+        "isAttached": true,
+        "truckingDetails": [],
+        "eventsList": [],
+        "tenantId": 728
+      },
+      {
+        "id": 150412,
+        "guid": "dc092b0e-43a6-41d7-9dc3-546017f85123",
+        "consolidationId": 1,
+        "containerCode": "40RE",
+        "containerNumber": "TCLU1666667",
         "hblDeliveryMode": "CFS/CY",
         "netWeight": 0.000000,
         "grossWeight": 1.120000,
@@ -1276,9 +1481,20 @@
       "originAirport": "brussel",
       "destinationAirport": "bagani",
       "firstCarrier": "Air Transat",
-      "agentCASSCode": "123"
+      "agentCASSCode": "123",
+      "consigneeCountry": "IND",
+      "issuingAgentCountry": "IND",
+      "shipperCountry": "IND"
     },
-    "awbNotifyPartyInfo": [],
+    "awbNotifyPartyInfo": [
+      {
+        "city": "Pune",
+        "state": "MH",
+        "country": "IND",
+        "zipCode": "383767",
+        "phone": "8976666553"
+      }
+    ],
     "awbRoutingInfo": [
       {
         "entityId": 2246,
@@ -1293,7 +1509,7 @@
       "entityId": 2246,
       "entityType": "MAWB",
       "handlingInfo": "Attached : Commercial Invoice & P/List",
-      "ntrQtyGoods": "CONSOLIDATED CARGO AS PER MANIFEST ATTACHED\r\n",
+      "ntrQtyGoods": "CONSOLIDATION AS PER ATTACHED LIST\r\n",
       "currency": "EGP",
       "customsValue": 0,
       "customOriginCode": "EG"
@@ -1365,7 +1581,10 @@
       "awbNumber": "986-55667780",
       "originAirport": "brussel",
       "destinationAirport": "bagani",
-      "firstCarrier": "Air Transat"
+      "firstCarrier": "Air Transat",
+      "consigneeCountry": "IND",
+      "issuingAgentCountry": "IND",
+      "shipperCountry": "IND"
     },
     "defaultAwbRoutingInfo": [
       {
@@ -1509,7 +1728,9 @@
         "IsObsolete": false,
         "AddressType": "General",
         "CompanyName": "RA Branch",
-        "AddressShortCode": "Def RA Address"
+        "AddressShortCode": "Def RA Address",
+        "ZipPostCode": "324332",
+        "ContactPhone": "9866334674"
       }
     },
     "receivingAgent": {
@@ -1547,7 +1768,8 @@
         "Country": "EGY",
         "Address1": "Cairo",
         "Address2": "Cairo",
-        "RAKCType": 1,
+        "RegulatedAgent": true,
+        "KnownConsignor": false,
         "OrgSource": "Fusion",
         "KCRAExpiry": "2024-04-30T00:00:00.000",
         "KCRANumber": "75766889",
@@ -1776,6 +1998,8 @@
         "entityId": 344,
         "entityType": "HAWB",
         "guid": "666322bc-cb98-48e3-8a3f-cb99e061a30f",
+        "chargeableWt": 12,
+        "grossWt": 10,
         "isShipmentCreated": true
       }
     ],
@@ -1822,6 +2046,8 @@
         "entityId": 344,
         "entityType": "HAWB",
         "guid": "666322bc-cb98-48e3-8a3f-cb99e061a30f",
+        "chargeableWt": 12,
+        "grossWt": 10,
         "isShipmentCreated": true
       }
     ],
@@ -1996,7 +2222,7 @@
     },
     "consigner": {
       "id": 1,
-      "orgCode": "000043",
+      "orgCode": "22481_1",
       "addressCode": "VALID",
       "orgData": {
         "Id": 58,
@@ -2035,7 +2261,7 @@
     },
     "consignee": {
       "id": 1,
-      "orgCode": "00001",
+      "orgCode": "223532_4",
       "addressCode": "Default1",
       "orgData": {
         "Id": 64,
@@ -2287,8 +2513,8 @@
         "leg": 1,
         "mode": "AIR",
         "routingStatus": "PLD",
-        "pol": "EGDAM",
-        "pod": "AEDXB_POR",
+        "pol": "0E8F5220-D6CE-4D29-9755-B7C32A4B9F4F",
+        "pod": "38C78DB3-E3C2-41D8-A32D-3A139B0AA67A",
         "eta": "2024-05-04 00:00:00",
         "etd": "2024-05-01 00:00:00",
         "ata": "2024-05-04 00:00:00",
@@ -2298,7 +2524,8 @@
         "flightNumber": "1443",
         "aircraftType": "CAO",
         "carrier": "Air India",
-        "domestic": false
+        "domestic": false,
+        "carriage": "MAIN_CARRIAGE"
       }
     ]
   },
@@ -2448,6 +2675,10 @@
     },
     "receivingBranch": 66,
     "documentationPartner": 484,
+    "triangulationPartnerList": [{
+      "triangulationPartner": 2312,
+      "isAccepted": false
+    }],
     "triangulationPartner": 2312,
     "departureDetails": {
       "ctoid": {},
@@ -2576,6 +2807,14 @@
       "triangulationPartner": {
         "label": "DPWCANADA_SS",
         "value": 2312,
+        "TenantId": 2312
+      },
+      "triangulationPartnerList": {
+        "label": "DPWCANADA_SS",
+        "value": [{
+          "triangulationPartner": 2312,
+          "isAccepted": false
+        }],
         "TenantId": 2312
       },
       "carrierDetails": {
@@ -2888,6 +3127,7 @@
   "COMPLETE_SHIPMENT": {
     "id": 155357,
     "guid": "7d7c8d88-dc94-4012-8d8d-e442174f0b8c",
+    "receivingBranch": 1,
     "transportMode": "SEA",
     "direction": "EXP",
     "shipmentType": "BBK",
@@ -3056,7 +3296,6 @@
       "onBoardDate": "2024-04-08 00:00:00",
       "original": 2,
       "copy": 2,
-      "screeningStatus": [],
       "paidPlace": "V9d7R1mVmFpHqggDUz3s",
       "placeOfIssue": "V9d7R1mVmFpHqggDUz3s",
       "placeOfSupply": "V9d7R1mVmFpHqggDUz3s",
@@ -3091,7 +3330,8 @@
           "Unloco": "1130766",
           "OrgSource": "Runner",
           "Address2": "2836BEN",
-          "RAKCType": 1,
+          "RegulatedAgent": true,
+          "KnownConsignor": false,
           "OrgReceivables": false,
           "AdditionalAddressInfo": "03646332015 Default Address",
           "KCRAExpiry": "2024-04-30T00:00:00.000",
@@ -3578,7 +3818,8 @@
           "OrgSource": "Runner",
           "ZipPostCode": "9000",
           "Address2": "BEN",
-          "RAKCType": 1,
+          "RegulatedAgent": true,
+          "KnownConsignor": false,
           "OrgReceivables": false,
           "AdditionalAddressInfo": "Def",
           "KCRAExpiry": "2024-04-29T01:00:00.000",
@@ -4069,15 +4310,35 @@
     "totalPacks": "1 BAG, 1 CNA",
     "totalPacksWeight": "152,078 KG",
     "totalPacksVolume": "119,646 M3",
-    "packsVolumetricWeight": "19,941,040 KG",
-    "packsChargeableWeight": "119,646 M3"
+    "packsVolumetricWeight": "152 M3",
+    "packsChargeableWeight": "119,646 M3",
+    "achievedWeight": 152078.0,
+    "achievedVolume": 119646.0,
+    "totalPacksWithUnit": "2 MPK",
+    "chargeableWeight" : 119646.0,
+    "packsChargeableWeightUnit" : "M3",
+    "packsVolume" : 119646.0,
+    "packsVolumeUnit" : "M3",
+    "weightUnit": "KG",
+    "volumeUnit": "M3",
+    "dgPacks": 0
   },
   "PACK_SUMMARY_RESPONSE_AIR": {
     "totalPacks": "1 BAG, 1 CNA",
     "totalPacksWeight": "152,078 KG",
     "totalPacksVolume": "119,646 M3",
     "packsVolumetricWeight": "19,941,040 KG",
-    "packsChargeableWeight": "19,941,040 KG"
+    "packsChargeableWeight": "19,941,040 KG",
+    "achievedWeight": 152078.0,
+    "achievedVolume": 119646.0,
+    "totalPacksWithUnit": "2 MPK",
+    "packsVolume" : 119646.0,
+    "packsVolumeUnit" : "M3",
+    "chargeableWeight" : 19941040.0,
+    "packsChargeableWeightUnit" : "KG",
+    "weightUnit": "KG",
+    "volumeUnit": "M3",
+    "dgPacks": 0
   },
   "VOL_WT_CHARGEABLE": {
     "chargeable": "166.67",
@@ -4171,6 +4432,7 @@
   "SHIPMENT_SETTINGS": {
     "id": 63,
     "tenantId": 166,
+    "entityTransfer": true,
     "restrictHblGen": true,
     "printPhoneNumber": false,
     "housebillPrefix": "HBL",
@@ -6209,8 +6471,8 @@
       "Guid": "1e0b5588-7e09-4b57-815c-04d50ba650b6",
       "ItemType": 144,
       "ItemValue": null,
-      "ItemDescription": "SEA,RAI,ROA",
-      "ValuenDesc": " (SEA,RAI,ROA)",
+      "ItemDescription": "SEA,RAI,ROA,AIR",
+      "ValuenDesc": " (SEA,RAI,ROA,AIR)",
       "Cascade": null,
       "Identifier1": null,
       "Identifier2": null,
@@ -6317,6 +6579,7 @@
   "COMPLETE_CONSOLIDATION": {
     "id": 2258,
     "guid": "435d5a11-5c5b-446d-83a1-5e34cab90a17",
+    "receivingBranch": 1,
     "consolidationNumber": "CONS000234029",
     "consolidationType": "AGT",
     "transportMode": "SEA",
@@ -8745,6 +9008,7 @@
   },
   "CONSOLIDATION_AIR": {
     "id": 2097,
+    "interBranchConsole": false,
     "guid": "e03fa08a-b80b-46f2-909c-20970cf8c1aa",
     "consolidationNumber": "CONS000233659",
     "consolidationType": "DRT",
@@ -9000,6 +9264,7 @@
         "leg": 2,
         "mode": "AIR",
         "routingStatus": "PLD",
+        "carriage": "MAIN_CARRIAGE",
         "pol": "EGCAI_AIR",
         "pod": "SGJUR_AIR",
         "eta": "2024-05-13 00:00:00",
@@ -9223,6 +9488,26 @@
       "value": "Default"
     }
   },
+  "NETWORK_TRANSFER_RESPONSE": {
+    "id": 21,
+    "guid": "f2fbf3e9-3f37-439b-a45e-d4f7d08885c9",
+    "entityType": "SHIPMENT",
+    "entityNumber": "SHP000117811",
+    "entityId": 12146,
+    "transportMode": "AIR",
+    "sourceBranchId": 728,
+    "status": "REASSIGNED",
+    "tenantId": 938,
+    "createdAt": "2024-11-07T19:09:15.657434",
+    "tenantMasterData": {
+      "tenantId": "ALEXANDRIA TEST QA",
+      "tenantId_code": "ALEX TEST"
+    },
+    "masterData": {
+      "transportMode": "AIR (Air Freight)",
+      "jobType": "IMP (Import)"
+    }
+  },
   "CUSTOMER_BOOKING_REQUEST": {
     "id": 202861,
     "guid": "1451980b-bab4-45e3-b6ba-3c178fcd0b22",
@@ -9369,7 +9654,12 @@
     "contractStatus": "SINGLE_USAGE",
     "source": "Platform",
     "businessCode": "ab2f6b79-0384-43b2-ba09-e6c38c1df6f6",
-    "containersList": [],
+    "containersList": [
+      {
+        "id": 2684,
+        "guid": "9f9c2d42-d479-44bf-8541-0029e498fc86"
+      }
+    ],
     "packingList": [
       {
         "id": 2684,
@@ -9764,7 +10054,8 @@
     "OrganizationCode": "FRC00003424",
     "Id": 24247,
     "value": "FRC00003424",
-    "InsertUserIdUsername": "EGYPQAP100ALEX@dpworld.com"
+    "InsertUserIdUsername": "EGYPQAP100ALEX@dpworld.com",
+    "WhitelistedTenantGUID": "f5386934-d42a-448d-96e0-0eb273fd0f0e"
   },
   "ADDRESS_DATA": {
     "Id": 37709,
@@ -9811,5 +10102,4217 @@
     "enable_grouping": "False",
     "shipment_settings_id": "1",
     "is_deleted": "True"
+  },
+
+  "LIST_REQUEST" : {
+    "pageNo": 1,
+    "pageSize": 25,
+    "filterCriteria": [
+      {
+        "innerFilter": [
+          {
+            "criteria": {
+              "fieldName": "status",
+              "operator": "=",
+              "value": "0"
+            }
+          },
+          {
+            "criteria": {
+              "fieldName": "transportMode",
+              "operator": "!=",
+              "value": "SEA"
+            },
+            "logicOperator": "and"
+          },
+          {
+            "criteria": {
+              "fieldName": "eta",
+              "operator": ">=",
+              "value": "2024-06-02 00:00:00"
+            },
+            "logicOperator": "and"
+          },
+          {
+            "criteria": {
+              "fieldName": "eta",
+              "operator": "<=",
+              "value": "2024-06-12 23:59:59"
+            },
+            "logicOperator": "and"
+          },
+          {
+            "criteria": {
+              "fieldName": "eta",
+              "operator": ">",
+              "value": "2024-06-12 23:59:59"
+            },
+            "logicOperator": "and"
+          },
+          {
+            "criteria": {
+              "fieldName": "etd",
+              "operator": "<",
+              "value": "2024-06-12 23:59:59"
+            },
+            "logicOperator": "and"
+          },
+          {
+            "criteria": {
+              "fieldName": "masterBill",
+              "operator": "LIKE",
+              "value": "%1234%"
+            },
+            "logicOperator": "and"
+          },
+          {
+            "criteria": {
+              "fieldName": "masterBill",
+              "operator": "CONTAINS",
+              "value": "1234"
+            },
+            "logicOperator": "and"
+          },
+          {
+            "criteria": {
+              "fieldName": "origin",
+              "operator": "ISNULL"
+            },
+
+            "logicOperator": "and"
+          },
+          {
+            "criteria": {
+              "fieldName": "destination",
+              "operator": "ISNOTNULL"
+            },
+            "logicOperator": "and"
+          }
+        ]
+      }
+    ],
+    "sortRequest": {
+      "fieldName": "transportMode",
+      "order": "ASC"
+    },
+    "containsText": ""
+  },
+  "LIST_REQUEST1" : {
+    "pageNo": 1,
+    "pageSize": 25,
+    "filterCriteria": [
+      {
+        "innerFilter": [
+          {
+            "criteria": {
+              "fieldName": "guid",
+              "operator": "=",
+              "value": "4cab9e0c-ea45-450d-88f4-144df5585a76"
+            }
+          },
+          {
+            "criteria": {
+              "fieldName": "status",
+              "operator": "!=",
+              "value": 0
+            },
+            "logicOperator": "and"
+          },
+          {
+            "criteria": {
+              "fieldName": "eta",
+              "operator": "<=",
+              "value": "2024-06-12 23:59:59"
+            },
+            "logicOperator": "and"
+          },
+          {
+            "criteria": {
+              "fieldName": "eta",
+              "operator": ">",
+              "value": "2024-06-12 23:59:59"
+            },
+            "logicOperator": "and"
+          },
+          {
+            "criteria": {
+              "fieldName": "etd",
+              "operator": "<",
+              "value": "2024-06-12 23:59:59"
+            },
+            "logicOperator": "and"
+          },
+          {
+            "criteria": {
+              "fieldName": "eta",
+              "operator": ">=",
+              "value": "2024-06-02 00:00:00"
+            },
+            "logicOperator": "and"
+          }
+        ]
+      }
+    ],
+    "sortRequest": {
+      "fieldName": "transportMode",
+      "order": "ASC"
+    },
+    "containsText": ""
+  },
+  "LIST_REQUEST_IS_ENUM" : {
+    "pageNo": 1,
+    "pageSize": 25,
+    "filterCriteria": [
+      {
+        "innerFilter": [
+          {
+            "criteria": {
+              "fieldName": "status",
+              "operator": "=",
+              "value": "0"
+            }
+          }
+        ]
+      }
+    ],
+    "sortRequest": {
+      "fieldName": "transportMode",
+      "order": "ASC"
+    },
+    "containsText": ""
+  },
+  "LIST_REQUEST_IN" : {
+    "pageNo": 1,
+    "pageSize": 25,
+    "filterCriteria": [
+      {
+        "innerFilter": [
+          {
+            "criteria": {
+              "fieldName": "status",
+              "operator": "in"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "LIST_REQUEST_4" : {
+    "pageNo": 1,
+    "pageSize": 25,
+    "filterCriteria": [
+      {
+        "innerFilter": [
+          {
+            "criteria": {
+              "fieldName": "status",
+              "operator": "=",
+              "value": "0"
+            }
+          }
+        ]
+      }
+    ],
+    "sortRequest": {
+      "fieldName": "status",
+      "order": "ASC"
+    },
+    "containsText": ""
+  },
+  "LIST_REQUEST_5" : {
+    "pageNo": 1,
+    "pageSize": 25,
+    "filterCriteria": [
+      {
+        "innerFilter": [
+        ]
+      }
+    ],
+    "sortRequest": {
+      "fieldName": "status",
+      "order": "DESC"
+    },
+    "containsText": ""
+  },
+
+  "LIST_REQUEST_6" : {
+    "pageNo": 1,
+    "pageSize": 25,
+    "filterCriteria": [
+      {
+        "innerFilter": [
+          {
+            "criteria": {
+              "fieldName": "guid",
+              "operator": "=",
+              "value": "4cab9e0c-ea45-450d-88f4-144df5585a76"
+            }
+          },
+          {
+            "criteria": {
+              "fieldName": "status",
+              "operator": "!=",
+              "value": 0
+            },
+            "logicOperator": "or"
+          }
+        ]
+      }
+    ],
+    "sortRequest": {
+      "fieldName": "transportMode",
+      "order": "ASC"
+    },
+    "containsText": ""
+  },
+
+  "LIST_REQUEST_7" : {
+    "pageNo": 1,
+    "pageSize": 25,
+    "filterCriteria": [
+      {
+        "innerFilter": [
+        ]
+      }
+    ],
+    "sortRequest": {
+      "fieldName": "transportMode",
+      "order": "ASC"
+    },
+    "containsText": ""
+  },
+
+  "LIST_REQUEST_IN2" : {
+    "pageNo": 1,
+    "pageSize": 25,
+    "filterCriteria": [
+      {
+        "innerFilter": [
+          {
+            "criteria": {
+              "fieldName": "guid",
+              "operator": "IN"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "LIST_REQUEST_7" : {
+    "pageNo": 1,
+    "pageSize": 25,
+    "filterCriteria": [
+      {
+        "innerFilter": [
+          {
+            "criteria": {
+              "fieldName": "status",
+              "operator": "=",
+              "value": "0"
+            }
+          },
+          {
+            "criteria": {
+              "fieldName": "transportMode",
+              "operator": "!=",
+              "value": "SEA"
+            },
+            "logicOperator": "or"
+          }
+        ]
+      },
+      {
+        "innerFilter": [
+          {
+            "criteria": {
+              "fieldName": "status",
+              "operator": "=",
+              "value": "0"
+            }
+          },
+          {
+            "criteria": {
+              "fieldName": "transportMode",
+              "operator": "!=",
+              "value": "SEA"
+            },
+            "logicOperator": "or"
+          }
+        ]
+      }
+    ],
+    "sortRequest": {
+      "fieldName": "transportMode",
+      "order": "ASC"
+    },
+    "containsText": ""
+  },
+  "LIST_REQUEST_8" : {
+    "pageNo": 1,
+    "pageSize": 25,
+    "filterCriteria": [
+      {
+        "innerFilter": [
+          {
+            "criteria": {
+              "fieldName": "status",
+              "operator": "=",
+              "value": "0"
+            }
+          }
+        ]
+      }
+    ],
+    "sortRequest": {
+      "fieldName": "status",
+      "order": "DESC"
+    },
+    "containsText": ""
+  },
+  "LIST_REQUEST_9" : {
+    "pageNo": 1,
+    "pageSize": 25,
+    "filterCriteria": [
+      {
+        "innerFilter": [
+          {
+            "criteria": {
+              "fieldName": "andesStatus",
+              "operator": "=",
+              "value": "SendToAndes"
+            }
+          }
+        ]
+      }
+    ],
+    "containsText": ""
+  },
+  "LIST_REQUEST_10" : {
+    "pageNo": 1,
+    "pageSize": 25,
+    "filterCriteria": [
+      {
+        "innerFilter": [
+          {
+            "criteria": {
+              "fieldName": "eta",
+              "operator": ">",
+              "value": "2024-06-12 23:59:59"
+            }
+          },
+          {
+            "criteria": {
+              "fieldName": "etd",
+              "operator": ">",
+              "value": "2017-01-13T17:09:42.411"
+            },
+            "logicOperator": "or"
+          },{
+            "criteria": {
+              "fieldName": "status",
+              "operator": ">",
+              "value": 0
+            },
+            "logicOperator": "or"
+          }
+        ]
+      }
+    ],
+    "sortRequest": {
+      "fieldName": "eta",
+      "order": "ASC"
+    },
+    "containsText": ""
+  },
+  "LIST_REQUEST_11" : {
+    "pageNo": 1,
+    "pageSize": 25,
+    "filterCriteria": [
+      {
+        "innerFilter": [
+          {
+            "criteria": {
+              "fieldName": "eta",
+              "operator": "<",
+              "value": "2024-06-12 23:59:59"
+            }
+          },
+          {
+            "criteria": {
+              "fieldName": "etd",
+              "operator": "<",
+              "value": "2017-01-13T17:09:42.411"
+            },
+            "logicOperator": "or"
+          },{
+            "criteria": {
+              "fieldName": "status",
+              "operator": "<",
+              "value": 0
+            },
+            "logicOperator": "or"
+          }
+        ]
+      }
+    ],
+    "sortRequest": {
+      "fieldName": "eta",
+      "order": "ASC"
+    },
+    "containsText": ""
+  },
+  "LIST_REQUEST_12" : {
+    "pageNo": 1,
+    "pageSize": 25,
+    "filterCriteria": [
+      {
+        "innerFilter": [
+          {
+            "criteria": {
+              "fieldName": "eta",
+              "operator": "<=",
+              "value": "2024-06-12 23:59:59"
+            }
+          },
+          {
+            "criteria": {
+              "fieldName": "etd",
+              "operator": "<=",
+              "value": "2017-01-13T17:09:42.411"
+            },
+            "logicOperator": "or"
+          },{
+            "criteria": {
+              "fieldName": "status",
+              "operator": "<=",
+              "value": 0
+            },
+            "logicOperator": "or"
+          }
+        ]
+      }
+    ],
+    "sortRequest": {
+      "fieldName": "eta",
+      "order": "ASC"
+    },
+    "containsText": ""
+  },
+  "LIST_REQUEST_13" : {
+    "pageNo": 1,
+    "pageSize": 25,
+    "filterCriteria": [
+      {
+        "innerFilter": [
+          {
+            "criteria": {
+              "fieldName": "eta",
+              "operator": ">=",
+              "value": "2024-06-12 23:59:59"
+            }
+          },
+          {
+            "criteria": {
+              "fieldName": "etd",
+              "operator": ">=",
+              "value": "2017-01-13T17:09:42.411"
+            },
+            "logicOperator": "or"
+          },{
+            "criteria": {
+              "fieldName": "status",
+              "operator": ">=",
+              "value": 0
+            },
+            "logicOperator": "or"
+          }
+        ]
+      }
+    ],
+    "sortRequest": {
+      "fieldName": "eta",
+      "order": "ASC"
+    },
+    "containsText": ""
+  },
+  "QUOTE_CONTRACTS": {
+    "id": 1,
+    "guid": "63b0083b-08ab-49e4-a457-a7484cb172c8",
+    "contractId": "DPWQ-846222-103303",
+    "containerTypes": [
+      "BBK"
+    ]
+  },
+  "LIST_CONTRACT_RESPONSE": {
+    "unlocMasterData": {
+      "EGDAM_POR": {
+        "Id": 138013,
+        "Country": "EGY",
+        "Name": "DAMIETTA2",
+        "PortName": "Damietta",
+        "LocCode": "EGDAM",
+        "NameWoDiacritics": "DAMIETTA",
+        "LocationsReferenceGUID": "EGDAM_POR",
+        "lookupDescAir": "DAMIETTA",
+        "lookupDescSea": "DAMIETTA - EGDAM, Damietta",
+        "CountryName": "Egypt",
+        "CountryThreeDigitCode": "EGY"
+      },
+      "INNSA_POR": {
+        "Id": 138284,
+        "Country": "IND",
+        "Name": "INNSA Nhava Sheva Port",
+        "PortName": "INNSA Nhava Sheva Port",
+        "LocCode": "INNSA",
+        "NameWoDiacritics": "INNSA Nhava Sheva Port",
+        "LocationsReferenceGUID": "INNSA_POR",
+        "lookupDescAir": "INNSA Nhava Sheva Port",
+        "lookupDescSea": "INNSA Nhava Sheva Port - INNSA, INNSA Nhava Sheva Port",
+        "CountryName": "India",
+        "CountryThreeDigitCode": "IND"
+      }
+    },
+    "contracts": [
+      {
+        "_id": "2b65f67c-2e4a-4d51-bb57-8d1fe65f6d61",
+        "contract_id": "DPWQ-846222-103303",
+        "parent_contract_id": "DPWQ-846222-103303",
+        "contract_type": "MULTI_USAGE",
+        "source": "p100_digitaluser2_stage@maildrop.cc",
+        "source_type": "QUOTE_MODULE",
+        "customer_org_id": "FRC00003242",
+        "origin": "7grk4eWHGEhfD9VxCJKx",
+        "destination": "uYPwD6dHL6k7GGoETE4t",
+        "valid_from": "2024-06-13T00:00:00",
+        "valid_till": "2024-06-19T00:00:00",
+        "product_type": "LCL",
+        "state": "ENABLED",
+        "tenant_id": "ab2f6b79-0384-43b2-ba09-e6c38c1df6f6",
+        "offer_type": "ONLY_CONTRACT_OFFERS",
+        "via_nodes": [
+          null
+        ],
+        "load_types": [
+          "LCL"
+        ],
+        "cargo_types": [
+          "BBK",
+          "ANY"
+        ],
+        "commodities": [
+          "FAK"
+        ],
+        "carrier_codes": [],
+        "cha": "ANY",
+        "forwarder": "ANY",
+        "bco": "ANY",
+        "cycle": "ANY",
+        "meta": {
+          "pod": "INNSA_POR",
+          "pol": "EGDAM_POR",
+          "route": [
+            {
+              "type": "LEG",
+              "origin": {
+                "code": "7grk4eWHGEhfD9VxCJKx"
+              },
+              "destination": {
+                "code": "EGDAM_POR"
+              }
+            },
+            {
+              "type": "LEG",
+              "origin": {
+                "code": "EGDAM_POR"
+              },
+              "destination": {
+                "code": "INNSA_POR"
+              }
+            },
+            {
+              "type": "LEG",
+              "origin": {
+                "code": "INNSA_POR"
+              },
+              "destination": {
+                "code": "uYPwD6dHL6k7GGoETE4t"
+              }
+            }
+          ],
+          "incoterm": "CIP",
+          "service_mode": "F2F",
+          "payment_terms": "PPD",
+          "additional_info": "NA",
+          "mode_of_transport": "SEA",
+          "shipment_movement": "EXP",
+          "branch_info": {
+            "id": "EGCAI",
+            "country": "Egypt",
+            "sales_agent_primary_email": "CRMTest.One@dpworld.com",
+            "sales_agent_secondary_email": "crmtest.one@dpworld.com"
+          }
+        },
+        "createdAt": "2024-06-13T09:19:32.897",
+        "updatedAt": "2024-06-13T09:19:32.897",
+        "contract_usage": [
+          {
+            "usage_id": "ae4dd142-7871-475e-9581-332a84f20979",
+            "filter_params": {
+              "load_type": [
+                "LCL"
+              ],
+              "cargo_type": [
+                "BBK"
+              ],
+              "commodity": [
+                "FAK"
+              ]
+            },
+            "usage": 1,
+            "usage_uom": "unit",
+            "meta": {
+              "original_usage": 1,
+              "original_usage_uom": "unit",
+              "load_attributes": {
+                "weight": 2000,
+                "quantity": 1,
+                "volume": 1000,
+                "weight_uom": "KG",
+                "quantity_uom": "unit",
+                "volume_uom": "CC",
+                "dimensions": {
+                  "width": 111,
+                  "height": 1111,
+                  "length": 111,
+                  "uom": "CM"
+                }
+              }
+            }
+          }
+        ],
+        "destination_name": "uYPwD6dHL6k7GGoETE4t",
+        "origin_name": "7grk4eWHGEhfD9VxCJKx"
+      }
+    ],
+    "count": 1
+  },
+  "MDM_RESPONSE" : {
+    "count": 0,
+    "currentPage": 0,
+    "data": [
+      {
+        "disbursementBucketEnum": [
+          {
+            "description": "string",
+            "value": "string"
+          }
+        ],
+        "finalStatus": "Init",
+        "freightBucketEnum": [
+          {
+            "description": "string",
+            "value": "string"
+          }
+        ],
+        "isRestricted": true,
+        "responses": [
+          {
+            "city": "New York",
+            "country": "USA",
+            "creditLimitInfoInLocalCurrency": {
+              "availableCreditBalance": {
+                "additionalProp1": 0,
+                "additionalProp2": 0,
+                "additionalProp3": 0
+              },
+              "creditLimit": 0,
+              "disbursementCreditInfo": {
+                "approver": [
+                  {
+                    "approvalRole": "string",
+                    "approvedOrRejectedAt": "string",
+                    "approvedOrRejectedBy": "string",
+                    "approvedOrRejectedRole": "string",
+                    "message": "string",
+                    "order": 0,
+                    "status": "Init",
+                    "taskCreationDate": "string"
+                  }
+                ],
+                "bucketName": "string",
+                "creditInfo": {
+                  "additionalProp1": 0,
+                  "additionalProp2": 0,
+                  "additionalProp3": 0
+                },
+                "intimationRoles": [
+                  "string"
+                ],
+                "taskIds": [
+                  "string"
+                ]
+              },
+              "freightAndServicesCreditInfo": {
+                "approver": [
+                  {
+                    "approvalRole": "string",
+                    "approvedOrRejectedAt": "string",
+                    "approvedOrRejectedBy": "string",
+                    "approvedOrRejectedRole": "string",
+                    "message": "string",
+                    "order": 0,
+                    "status": "Init",
+                    "taskCreationDate": "string"
+                  }
+                ],
+                "bucketName": "string",
+                "creditInfo": {
+                  "additionalProp1": 0,
+                  "additionalProp2": 0,
+                  "additionalProp3": 0
+                },
+                "intimationRoles": [
+                  "string"
+                ],
+                "taskIds": [
+                  "string"
+                ]
+              },
+              "outstandingAmount": {
+                "additionalProp1": 0,
+                "additionalProp2": 0,
+                "additionalProp3": 0
+              },
+              "overdueAmount": {
+                "additionalProp1": 0,
+                "additionalProp2": 0,
+                "additionalProp3": 0
+              },
+              "paymentTerm": "string"
+            },
+            "creditLimitInfoInUSDCurrency": {
+              "availableCreditBalance": {
+                "additionalProp1": 0,
+                "additionalProp2": 0,
+                "additionalProp3": 0
+              },
+              "creditLimit": 0,
+              "disbursementCreditInfo": {
+                "approver": [
+                  {
+                    "approvalRole": "string",
+                    "approvedOrRejectedAt": "string",
+                    "approvedOrRejectedBy": "string",
+                    "approvedOrRejectedRole": "string",
+                    "message": "string",
+                    "order": 0,
+                    "status": "Init",
+                    "taskCreationDate": "string"
+                  }
+                ],
+                "bucketName": "string",
+                "creditInfo": {
+                  "additionalProp1": 0,
+                  "additionalProp2": 0,
+                  "additionalProp3": 0
+                },
+                "intimationRoles": [
+                  "string"
+                ],
+                "taskIds": [
+                  "string"
+                ]
+              },
+              "freightAndServicesCreditInfo": {
+                "approver": [
+                  {
+                    "approvalRole": "string",
+                    "approvedOrRejectedAt": "string",
+                    "approvedOrRejectedBy": "string",
+                    "approvedOrRejectedRole": "string",
+                    "message": "string",
+                    "order": 0,
+                    "status": "Init",
+                    "taskCreationDate": "string"
+                  }
+                ],
+                "bucketName": "string",
+                "creditInfo": {
+                  "additionalProp1": 0,
+                  "additionalProp2": 0,
+                  "additionalProp3": 0
+                },
+                "intimationRoles": [
+                  "string"
+                ],
+                "taskIds": [
+                  "string"
+                ]
+              },
+              "outstandingAmount": {
+                "additionalProp1": 0,
+                "additionalProp2": 0,
+                "additionalProp3": 0
+              },
+              "overdueAmount": {
+                "additionalProp1": 0,
+                "additionalProp2": 0,
+                "additionalProp3": 0
+              },
+              "paymentTerm": "string"
+            },
+            "orgId": "ORG123456",
+            "partyName": "John Doe Enterprises",
+            "siteId": "SITE78910"
+          }
+        ],
+        "restrictionType": "string"
+      }
+    ],
+    "errors": [
+      "string"
+    ],
+    "httpStatus": "100 CONTINUE",
+    "message": "string",
+    "metadata": "string",
+    "pageSize": 0,
+    "requestId": "string",
+    "success": true,
+    "totalNoOfItems": 0,
+    "totalPages": 0
+  },
+  "TRACKING_SERVICE_SHIPMENT_RESPONSE": {
+    "identifierType": "userDefinedCollection",
+    "identifier": "97e7f430-ffc4-4eb9-b42f-0cca449949a9",
+    "status": "Success",
+    "containers": [
+      {
+        "containerNumber": "TCLU3168510",
+        "identifierType": "containerNumber",
+        "identifierSource": "none",
+        "identifierValue": "TCLU3168510",
+        "clientReference": null,
+        "customerId": null,
+        "container": {
+          "type": "General Purpose",
+          "size": "20",
+          "typeIsoCode": "22G1",
+          "bolNumber": null,
+          "bookingNumber": null,
+          "clientBookingNumber": "DBLC-3420558-207193",
+          "shipmentReference": null,
+          "sealNumber": null,
+          "marks": null,
+          "incoterm": null,
+          "shipper": null,
+          "consignee": null,
+          "weight": null,
+          "weightUom": null,
+          "numberOfPackages": null,
+          "packageType": null,
+          "reeferTemperature": null,
+          "commodity": null,
+          "grossWeight": null,
+          "cargoWeight": null,
+          "customAgencyName": null,
+          "grossWeightUom": null,
+          "cargoWeightUom": null,
+          "latitude": 32.77657,
+          "longitude": -79.93092,
+          "location": null,
+          "locationUpdateTime": "2024-06-21T07:16:00",
+          "locationName": null,
+          "locationType": null,
+          "locationLabel": null
+        },
+        "journey": {
+          "lineCode": null,
+          "from": null,
+          "to": null,
+          "serviceType": "unknown",
+          "carrierName": "ZIM",
+          "scacCode": "ZIMU",
+          "rawCarrierName": null,
+          "standardCarrierName": null,
+          "placeOfOrigin": null,
+          "portOfDeparture": 1,
+          "portOfArrival": 3,
+          "placeOfDestination": null,
+          "originHub": null,
+          "destinationHub": null,
+          "placeOfOriginEtd": null,
+          "placeOfOriginAtd": null,
+          "portOfDepartureEtd": null,
+          "portOfDepartureAtd": null,
+          "portOfArrivalEta": null,
+          "portOfArrivalAta": null,
+          "placeOfDestinationEta": null,
+          "placeOfDestinationAta": null,
+          "originHubEtd": null,
+          "originHubAtd": null,
+          "destinationHubEta": null,
+          "destinationHubAta": null,
+          "isJourneyComplete": true,
+          "storageFreeDays": null,
+          "igmNo": null,
+          "igmDate": null,
+          "itemNo": null,
+          "cfsName": null,
+          "segments": null,
+          "lastMileLocations": null
+        },
+        "places": [
+          {
+            "id": 1,
+            "type": "unknown",
+            "code": "CNNGB",
+            "name": "Ningbo",
+            "terminalName": null,
+            "subdivisionName": null,
+            "subdivisionType": null,
+            "country": "CN",
+            "city": null,
+            "pincode": null,
+            "latitude": 29.87819,
+            "longitude": 121.54945,
+            "rawDescription": "Ningbo, Zhejiang Sheng, China",
+            "formattedDescription": "Ningbo, Zhejiang Sheng, China",
+            "source": null
+          },
+          {
+            "id": 2,
+            "type": "unknown",
+            "code": "USSAV",
+            "name": "Savannah",
+            "terminalName": null,
+            "subdivisionName": null,
+            "subdivisionType": null,
+            "country": "US",
+            "city": null,
+            "pincode": null,
+            "latitude": 32.08354,
+            "longitude": -81.09983,
+            "rawDescription": "Savannah, Georgia, United States",
+            "formattedDescription": "Savannah, Georgia, United States",
+            "source": null
+          },
+          {
+            "id": 3,
+            "type": "unknown",
+            "code": "USCHS",
+            "name": "Charleston",
+            "terminalName": null,
+            "subdivisionName": null,
+            "subdivisionType": null,
+            "country": "US",
+            "city": null,
+            "pincode": null,
+            "latitude": 32.77657,
+            "longitude": -79.93092,
+            "rawDescription": "Charleston, South Carolina, United States",
+            "formattedDescription": "Charleston, South Carolina, United States",
+            "source": null
+          }
+        ],
+        "transports": [
+          {
+            "id": 1,
+            "type": "truck",
+            "operatorCode": null,
+            "operatorName": null,
+            "name": null,
+            "voyage": null,
+            "imo": null,
+            "mmsi": null,
+            "callSign": null,
+            "flag": null,
+            "trainNumber": null,
+            "truckNumber": null,
+            "truckDriverName": null,
+            "truckDriverPhoneNumber": null,
+            "truckCompanyName": null
+          },
+          {
+            "id": 2,
+            "type": "vessel",
+            "operatorCode": null,
+            "operatorName": null,
+            "name": "ZIM SAMMY OFER",
+            "voyage": null,
+            "imo": "9931094",
+            "mmsi": "477871500",
+            "callSign": "VRUX7",
+            "flag": "HK",
+            "trainNumber": null,
+            "truckNumber": null,
+            "truckDriverName": null,
+            "truckDriverPhoneNumber": null,
+            "truckCompanyName": null
+          }
+        ],
+        "events": [
+          {
+            "id": 1,
+            "eventCategory": "departure",
+            "eventType": "gateOutWithContainerEmpty",
+            "description": "Empty Container Gate Out",
+            "descriptionFromSource": "Empty container dispatched from inland point to Customer",
+            "status": "actual",
+            "location": 1,
+            "locationRole": "originEmptyDepot",
+            "projectedEventTime": null,
+            "actualEventTime": {
+              "dateTime": "2024-04-26T16:33:00",
+              "sources": [
+                {
+                  "dateTime": "2024-04-26T16:33:00",
+                  "source": "ZIM",
+                  "acquisitionType": null
+                }
+              ]
+            },
+            "details": {
+              "transport": 1,
+              "hasContainer": true,
+              "hasCargo": false
+            },
+            "reason": null,
+            "subevents": null
+          },
+          {
+            "id": 2,
+            "eventCategory": "arrival",
+            "eventType": "gateInWithContainerFull",
+            "description": "Full Container Gate In",
+            "descriptionFromSource": "Export gate-in from Customer to Port of Loading",
+            "status": "actual",
+            "location": 1,
+            "locationRole": "originPort",
+            "projectedEventTime": null,
+            "actualEventTime": {
+              "dateTime": "2024-04-29T00:40:00",
+              "sources": [
+                {
+                  "dateTime": "2024-04-29T00:40:00",
+                  "source": "ZIM",
+                  "acquisitionType": null
+                }
+              ]
+            },
+            "details": {
+              "transport": 1,
+              "hasContainer": true,
+              "hasCargo": true
+            },
+            "reason": null,
+            "subevents": null
+          },
+          {
+            "id": 3,
+            "eventCategory": "load",
+            "eventType": "loadOnVessel",
+            "description": "Load on Vessel",
+            "descriptionFromSource": "Container was loaded at Port of Loading to Port of Discharge",
+            "status": "actual",
+            "location": 1,
+            "locationRole": "originPort",
+            "projectedEventTime": null,
+            "actualEventTime": {
+              "dateTime": "2024-05-03T15:11:00",
+              "sources": [
+                {
+                  "dateTime": "2024-05-03T15:11:00",
+                  "source": "ZIM",
+                  "acquisitionType": null
+                }
+              ]
+            },
+            "details": {
+              "transport": 2,
+              "hasCargo": true
+            },
+            "reason": null,
+            "subevents": null
+          },
+          {
+            "id": 4,
+            "eventCategory": "departure",
+            "eventType": "vesselDepartureWithContainer",
+            "description": "Vessel Departure",
+            "descriptionFromSource": "Vessel departure from Port of Loading to Port of Discharge",
+            "status": "actual",
+            "location": 1,
+            "locationRole": "originPort",
+            "projectedEventTime": null,
+            "actualEventTime": {
+              "dateTime": "2024-05-04T01:21:00",
+              "sources": [
+                {
+                  "dateTime": "2024-05-04T01:21:00",
+                  "source": "ZIM",
+                  "acquisitionType": null
+                }
+              ]
+            },
+            "details": {
+              "transport": 2,
+              "hasContainer": true,
+              "hasCargo": true
+            },
+            "reason": null,
+            "subevents": null
+          },
+          {
+            "id": 5,
+            "eventCategory": "notification",
+            "eventType": "notification",
+            "description": "Notification",
+            "descriptionFromSource": "Carrier Release",
+            "status": "actual",
+            "location": 2,
+            "locationRole": "unknown",
+            "projectedEventTime": null,
+            "actualEventTime": {
+              "dateTime": "2024-05-31T17:51:44",
+              "sources": [
+                {
+                  "dateTime": "2024-05-31T17:51:44",
+                  "source": "ZIM",
+                  "acquisitionType": null
+                }
+              ]
+            },
+            "details": {
+              "eventCategory": "notification"
+            },
+            "reason": null,
+            "subevents": null
+          },
+          {
+            "id": 6,
+            "eventCategory": "customsRelease",
+            "eventType": "customsRelease",
+            "description": "Customs Release",
+            "descriptionFromSource": "Customs release",
+            "status": "actual",
+            "location": 3,
+            "locationRole": "destinationPort",
+            "projectedEventTime": null,
+            "actualEventTime": {
+              "dateTime": "2024-06-05T09:01:28",
+              "sources": [
+                {
+                  "dateTime": "2024-06-05T09:01:28",
+                  "source": "ZIM",
+                  "acquisitionType": null
+                }
+              ]
+            },
+            "details": {
+              "eventCategory": "customsRelease"
+            },
+            "reason": null,
+            "subevents": null
+          },
+          {
+            "id": 7,
+            "eventCategory": "arrival",
+            "eventType": "vesselArrivalWithContainer",
+            "description": "Vessel Arrival",
+            "descriptionFromSource": "Vessel arrival to Port of Discharge",
+            "status": "actual",
+            "location": 3,
+            "locationRole": "destinationPort",
+            "projectedEventTime": null,
+            "actualEventTime": {
+              "dateTime": "2024-06-07T22:06:00",
+              "sources": [
+                {
+                  "dateTime": "2024-06-07T22:06:00",
+                  "source": "ZIM",
+                  "acquisitionType": null
+                }
+              ]
+            },
+            "details": {
+              "transport": 2,
+              "hasContainer": true,
+              "hasCargo": true
+            },
+            "reason": null,
+            "subevents": null
+          }
+        ],
+        "locationHistory": [
+          {
+            "source": "ZIM",
+            "latitude": 29.87819,
+            "longitude": 121.54945,
+            "locationUpdateTime": "2024-04-26T16:33:00",
+            "locationName": "Ningbo",
+            "locationType": "Unknown",
+            "locationLabel": null
+          },
+          {
+            "source": "ZIM",
+            "latitude": 29.87819,
+            "longitude": 121.54945,
+            "locationUpdateTime": "2024-04-29T00:40:00",
+            "locationName": "Ningbo",
+            "locationType": "Unknown",
+            "locationLabel": null
+          },
+          {
+            "source": "ZIM",
+            "latitude": 29.87819,
+            "longitude": 121.54945,
+            "locationUpdateTime": "2024-05-03T15:11:00",
+            "locationName": "Ningbo",
+            "locationType": "Unknown",
+            "locationLabel": null
+          },
+          {
+            "source": "ZIM",
+            "latitude": 29.87819,
+            "longitude": 121.54945,
+            "locationUpdateTime": "2024-05-04T01:21:00",
+            "locationName": "Ningbo",
+            "locationType": "Unknown",
+            "locationLabel": null
+          },
+          {
+            "source": "ZIM",
+            "latitude": 32.08354,
+            "longitude": -81.09983,
+            "locationUpdateTime": "2024-05-31T17:51:44",
+            "locationName": "Savannah",
+            "locationType": "Unknown",
+            "locationLabel": null
+          },
+          {
+            "source": "ZIM",
+            "latitude": 32.77657,
+            "longitude": -79.93092,
+            "locationUpdateTime": "2024-06-05T09:01:28",
+            "locationName": "Charleston",
+            "locationType": "Unknown",
+            "locationLabel": null
+          },
+          {
+            "source": "ZIM",
+            "latitude": 32.77657,
+            "longitude": -79.93092,
+            "locationUpdateTime": "2024-06-07T22:06:00",
+            "locationName": "Charleston",
+            "locationType": "Unknown",
+            "locationLabel": null
+          },
+          {
+            "source": "SeaRoute",
+            "latitude": 29.9534473419189,
+            "longitude": 121.858291625977,
+            "locationUpdateTime": "2024-06-19T07:11:00",
+            "locationName": null,
+            "locationType": "ON_VESSEL",
+            "locationLabel": null
+          },
+          {
+            "source": "ZIM",
+            "latitude": 32.77657,
+            "longitude": -79.93092,
+            "locationUpdateTime": "2024-06-19T08:11:00",
+            "locationName": "Charleston",
+            "locationType": "Unknown",
+            "locationLabel": null
+          },
+          {
+            "source": "ZIM",
+            "latitude": 32.77657,
+            "longitude": -79.93092,
+            "locationUpdateTime": "2024-06-19T08:11:00",
+            "locationName": "Charleston",
+            "locationType": "Unknown",
+            "locationLabel": null
+          },
+          {
+            "source": "ZIM",
+            "latitude": 32.77657,
+            "longitude": -79.93092,
+            "locationUpdateTime": "2024-06-20T08:28:00",
+            "locationName": "Charleston",
+            "locationType": "Unknown",
+            "locationLabel": null
+          },
+          {
+            "source": "ZIM",
+            "latitude": 32.77657,
+            "longitude": -79.93092,
+            "locationUpdateTime": "2024-06-21T07:16:00",
+            "locationName": "Charleston",
+            "locationType": "Unknown",
+            "locationLabel": null
+          }
+        ],
+        "bookingContainers": null,
+        "temperatureHistory": []
+      }
+    ],
+    "failedContainers": [],
+    "failedBookings": [],
+    "failedBillOfLadings": [],
+    "invalidInputs": []
+  },
+  "CONSOLIDATION_ALLOCATION" : {
+    "id": 2109,
+    "guid": "fe65ec4a-10af-4ab3-8109-fbb0b3614a47",
+    "chargeableUnit": "M3",
+    "weight": 100.00,
+    "weightUnit": "KG",
+    "volume": 100.00,
+    "volumeUnit": "M3"
+  },
+  "ImportShipmentData": {
+    "guid": "ce28696c-e233-4722-b637-287f7577187b",
+    "transportMode": "AIR",
+    "direction": "EXP",
+    "shipmentType": "BCN",
+    "status": 0,
+    "source": "System",
+    "jobType": "DRT",
+    "serviceType": "A2A",
+    "masterBill": "549-32355256",
+    "paymentTerms": "PPD",
+    "incoterms": "CPT",
+    "shipmentId": "TQAA24090140",
+    "weight": 154,
+    "weightUnit": "DT",
+    "volume": 1000169,
+    "volumeUnit": "L",
+    "volumetricWeight": 1666.952,
+    "volumetricWeightUnit": "DT",
+    "chargable": 166695.5,
+    "chargeableUnit": "KG",
+    "netWeight": 0,
+    "netWeightUnit": "DT",
+    "noOfPacks": 2,
+    "packsUnit": "BAG",
+    "innerPacks": 0,
+    "freightLocalCurrency": "EGP",
+    "autoUpdateWtVol": true,
+    "cargoFinanceBooking": false,
+    "sourceTenantId": 937,
+    "documentationPartner": 728,
+    "triangulationPartnerList": [{
+      "triangulationPartner": 728,
+      "isAccepted": false
+    }],
+    "triangulationPartner": 728,
+    "receivingBranch": 728,
+    "intraBranch": false,
+    "client": {
+      "orgCode": "FRDC0004416",
+      "addressCode": "FRDO0006218",
+      "orgData": {
+        "Id": 25246,
+        "City": "kasaragod",
+        "Guid": "60801b77-e960-44a7-a412-b6da4ffbd889",
+        "Email": "atmrubber789@gmail.com",
+        "State": "KL",
+        "label": "A T M RUBBER INDUSTRIES",
+        "value": "FRDC0004416",
+        "Unloco": 1114575,
+        "Country": "IND",
+        "Address1": "NO.22/8, MEENJA, MANJESHWAR",
+        "FullName": "A T M RUBBER INDUSTRIES",
+        "Payables": false,
+        "CompanyId": 1,
+        "UnlocoGuid": "e4156e1b-5bf4-4d10-a7d9-21acd5e347ee",
+        "Receivables": true,
+        "ZipPostCode": "671323",
+        "ForworderAgent": false,
+        "OrganizationCode": "FRDC0004416",
+        "InsertUserIdUsername": "EGYPQAP100ALEX@dpworld.com",
+        "UpdateUserIdUsername": "dpwaususer"
+      },
+      "addressData": {
+        "Id": 38171,
+        "City": "kasaragod",
+        "Guid": "67258bf5-9f0e-4b45-b4c0-b2d2497314dc",
+        "Email": "atmrubber789@gmail.com",
+        "State": "KL",
+        "Country": "IND",
+        "OrgGuid": "60801b77-e960-44a7-a412-b6da4ffbd889",
+        "Address1": "NO.22/8, MEENJA, MANJESHWAR",
+        "OrgSource": "CRP",
+        "AddressType": 2,
+        "CompanyName": "A T M RUBBER INDUSTRIES",
+        "OrgFullName": "A T M RUBBER INDUSTRIES",
+        "OrgPayables": false,
+        "ZipPostCode": "671323",
+        "ContactPhone": "4676745456",
+        "KnownConsignor": false,
+        "OrgReceivables": true,
+        "RegulatedAgent": false,
+        "OrgActiveClient": true,
+        "AddressShortCode": "FRDO0006218",
+        "OrgOrganizationCode": "FRDC0004416"
+      }
+    },
+    "consigner": {
+      "orgCode": "FRDC0004505",
+      "addressCode": "FRDO0006317",
+      "orgData": {
+        "Id": 25275,
+        "City": "kachchh",
+        "Guid": "6d3fd77d-3c8c-4892-9db0-d9285b152361",
+        "Email": "devang@mcsconsultants.in",
+        "State": "GJ",
+        "label": "A. D. Mehta Clearing Agency",
+        "value": "FRDC0004505",
+        "Unloco": 1114575,
+        "Country": "IND",
+        "Address1": "1St Floor, Office No. 21 And 22,",
+        "FullName": "A. D. Mehta Clearing Agency",
+        "Payables": false,
+        "CompanyId": 1,
+        "UnlocoGuid": "e4156e1b-5bf4-4d10-a7d9-21acd5e347ee",
+        "Receivables": true,
+        "ZipPostCode": "370230",
+        "ForworderAgent": false,
+        "OrganizationCode": "FRDC0004505",
+        "InsertUserIdUsername": "EGYPQAP100ALEX@dpworld.com",
+        "UpdateUserIdUsername": "dpwaususer"
+      },
+      "addressData": {
+        "Id": 38203,
+        "City": "Kachchh",
+        "Guid": "4a4c4b2b-7ea6-4157-ab87-0a9c2fa88daa",
+        "Email": "devang@mcsconsultants.in",
+        "State": "GJ",
+        "Country": "IND",
+        "OrgGuid": "6d3fd77d-3c8c-4892-9db0-d9285b152361",
+        "Address1": "1St Floor, Office No. 21 And 22,",
+        "OrgSource": "CRP",
+        "AddressType": 2,
+        "CompanyName": "A D Mehta Clearing Agency",
+        "OrgFullName": "A. D. Mehta Clearing Agency",
+        "OrgPayables": false,
+        "ZipPostCode": "370230",
+        "OrgReceivables": true,
+        "OrgActiveClient": true,
+        "AddressShortCode": "FRDO0006317",
+        "OrgOrganizationCode": "FRDC0004505"
+      }
+    },
+    "consignee": {
+      "orgCode": "FRDC0004077",
+      "addressCode": "FRDO0005849",
+      "orgData": {
+        "Id": 24993,
+        "City": "DIAMOND HARBOUR",
+        "Guid": "f2e1fc5c-0a95-4220-b4d1-d0887d19f0ab",
+        "Email": "a2zbuilder.no1@gmail.com",
+        "State": "WB",
+        "label": "A2Z BUILDER",
+        "value": "FRDC0004077",
+        "Country": "IND",
+        "Address1": "VILL- UTTAR KAMARPOLE, P.O- SARISHA, P.S- DIAMOND HARBOUR, South Twenty Four Parganas,",
+        "FullName": "A2Z BUILDER",
+        "Payables": false,
+        "CompanyId": 1,
+        "Receivables": true,
+        "ZipPostCode": "743368",
+        "ForworderAgent": false,
+        "OrganizationCode": "FRDC0004077",
+        "InsertUserIdUsername": "EGYPQAP100ALEX@dpworld.com",
+        "UpdateUserIdUsername": "EGYPQAP100ALEX@dpworld.com"
+      },
+      "addressData": {
+        "Id": 37894,
+        "City": "DIAMOND HARBOUR",
+        "Guid": "4d2034e1-7570-4e9b-a5c1-5c4d083d70c3",
+        "Email": "a2zbuilder.no1@gmail.com",
+        "State": "WB",
+        "Country": "IND",
+        "OrgGuid": "f2e1fc5c-0a95-4220-b4d1-d0887d19f0ab",
+        "Address1": "VILL- UTTAR KAMARPOLE, P.O- SARISHA, P.S- DIAMOND HARBOUR, South Twenty Four Parganas,",
+        "OrgSource": "CRP",
+        "AddressType": 2,
+        "CompanyName": "A2Z BUILDER",
+        "OrgFullName": "A2Z BUILDER",
+        "OrgPayables": false,
+        "ZipPostCode": "743368",
+        "KnownConsignor": false,
+        "OrgReceivables": true,
+        "RegulatedAgent": false,
+        "OrgActiveClient": true,
+        "AddressShortCode": "FRDO0005849",
+        "OrgOrganizationCode": "FRDC0004077"
+      }
+    },
+    "additionalDetails": {
+      "efreightStatus": "NON",
+      "screeningStatus": [],
+      "paidPlace": "EGALY_AIR",
+      "placeOfIssue": "EGALY_AIR",
+      "placeOfSupply": "EGALY_AIR",
+      "notifyParty": {
+        "orgCode": "23836",
+        "addressCode": "default",
+        "orgData": {
+          "Id": 23836,
+          "Guid": "06c6367a-a0f2-49a2-9042-1e1dfe7322e3",
+          "State": "EGY",
+          "label": "  Wegman trim story  ",
+          "value": "23836",
+          "Unloco": 125368,
+          "Country": "EGY",
+          "Address1": "Test Address 1",
+          "Address2": "Test Address 2",
+          "FullName": "  Wegman trim story  ",
+          "Payables": true,
+          "CompanyId": 547,
+          "LocalName": "Kiểm tra Wegman",
+          "UnlocoGuid": "6bc2c279-6d36-4f39-830a-8811084d5901",
+          "Receivables": true,
+          "ForworderAgent": true,
+          "OrganizationCode": "23836",
+          "PaymentTermsCode": "I15",
+          "InsertUserIdUsername": "nga.nguyen1@dpworld.com",
+          "OrganizationCategory": "Internal",
+          "UpdateUserIdUsername": "EGYPQAP100ALEX@dpworld.com"
+        },
+        "addressData": {
+          "Id": 35824,
+          "Guid": "0fc5fd14-8c81-443f-883e-8cc99ad9ec5d",
+          "Unloco": "125368",
+          "Country": "EGY",
+          "OrgGuid": "06c6367a-a0f2-49a2-9042-1e1dfe7322e3",
+          "Address1": "Test address 1",
+          "OrgSource": "Runner",
+          "UnlocoGuid": "6bc2c279-6d36-4f39-830a-8811084d5901",
+          "AddressType": 2,
+          "CompanyName": "Wegmans",
+          "OrgFullName": "  Wegman trim story  ",
+          "OrgPayables": true,
+          "OrgLocalName": "Kiểm tra Wegman",
+          "KnownConsignor": false,
+          "OrgReceivables": true,
+          "RegulatedAgent": false,
+          "SiteIdentifier": "  1174622  ",
+          "OrgActiveClient": true,
+          "AddressShortCode": "default",
+          "OrgOrganizationCode": "23836",
+          "AdditionalAddressInfo": "địa chỉ mặc định"
+        }
+      },
+      "importBroker": {},
+      "exportBroker": {
+        "orgCode": "EGYPT_TESTQA",
+        "addressCode": "Default",
+        "orgData": {
+          "Id": 25484,
+          "City": "El Iskandariya (Alexandria)",
+          "Phone": "9876865681",
+          "State": "EG",
+          "Unloco": 1205776,
+          "Country": "EGY",
+          "Address1": "egypt",
+          "FullName": "EGYPT_TEST QA",
+          "TenantId": 937,
+          "ActiveClient": true,
+          "OrganizationCode": "EGYPT_TESTQA"
+        },
+        "addressData": {
+          "Id": 153531,
+          "City": "El Iskandariya (Alexandria)",
+          "State": "EG",
+          "Active": true,
+          "Unloco": "1205776",
+          "Country": "EGY",
+          "Address1": "egypt",
+          "TenantId": 937,
+          "IsObsolete": false,
+          "AddressType": "General",
+          "CompanyName": "EGYPT_TEST QA",
+          "ContactPhone": "9876865681",
+          "AddressShortCode": "Default",
+          "AdditionalAddressInfo": "EGYPT_TESTQA Default Address"
+        }
+      },
+      "borrowedFrom": {},
+      "sendingAgent": {},
+      "receivingAgent": {}
+    },
+    "carrierDetails": {
+      "shippingLine": "ABSA Cargo Airline",
+      "flightNumber": "3214",
+      "aircraftType": "PAX",
+      "origin": "INBLR_AIR",
+      "destination": "INHAL_TER",
+      "eta": "2024-09-05T04:20:00",
+      "etd": "2024-09-02T00:00:00",
+      "originPort": "INBLR_AIR",
+      "destinationPort": "INBOM_AIR",
+      "voyageOrFlightNumber": "3214",
+      "originLocCode": "INBLR",
+      "destinationLocCode": "INHAL",
+      "originPortLocCode": "INBLR",
+      "destinationPortLocCode": "INBOM"
+    },
+    "routingsList": [
+      {
+        "leg": 1,
+        "mode": "AIR",
+        "routingStatus": "PLD",
+        "pol": "INBLR_AIR",
+        "pod": "INBOM_AIR",
+        "etd": "2024-09-02T00:00:00",
+        "atd": "2024-09-02T00:00:00",
+        "isLinked": true,
+        "flightNumber": "3412",
+        "aircraftType": "PAX",
+        "carrier": "Aero Costa Rica",
+        "domestic": false
+      }
+    ],
+    "referenceNumbersList": [],
+    "notesList": [],
+    "packingList": [
+      {
+        "guid": "9955d12d-d606-46b3-8d6b-30b4015df6c6",
+        "packs": "1",
+        "packsType": "BAG",
+        "weight": 144,
+        "weightUnit": "DT",
+        "volume": 169,
+        "volumeUnit": "L",
+        "inspections": "insp",
+        "lengthUnit": "M",
+        "widthUnit": "M",
+        "heightUnit": "M",
+        "minTempUnit": "CEL",
+        "maxTempUnit": "CEL",
+        "goodsDescription": "goods desc",
+        "hazardous": false,
+        "netWeightUnit": "DT",
+        "volumeWeight": 0.282,
+        "volumeWeightUnit": "DT",
+        "customsReleaseCode": "crc",
+        "commodityGroup": "Footwear",
+        "isDimension": false,
+        "handlingInfo": "description",
+        "dateType": "ESTIMATED"
+      },
+      {
+        "guid": "e4b49664-2806-43b8-b776-71195d1161b3",
+        "packs": "1",
+        "packsType": "BAG",
+        "weight": 1000,
+        "weightUnit": "KG",
+        "volume": 1000,
+        "volumeUnit": "M3",
+        "lengthUnit": "M",
+        "widthUnit": "M",
+        "heightUnit": "M",
+        "marksnNums": "mrkc123",
+        "minTempUnit": "CEL",
+        "maxTempUnit": "CEL",
+        "hazardous": false,
+        "netWeightUnit": "DT",
+        "volumeWeight": 166667,
+        "volumeWeightUnit": "KG",
+        "chargeable": 166667,
+        "chargeableUnit": "KG",
+        "commodityGroup": "Metals",
+        "isDimension": false,
+        "dateType": "ESTIMATED"
+      }
+    ],
+    "bookingCarriagesList": [],
+    "containersList": [],
+    "servicesList": [],
+    "shipmentCreatedOn": "2024-09-02T07:33:48",
+    "shipmentAddresses": [],
+    "containsHazardous": false,
+    "contractId": "",
+    "contractType": "",
+    "salesBranch": "",
+    "primarySalesAgentEmail": "",
+    "secondarySalesAgentEmail": "",
+    "bookingCreatedDate": "2024-09-02T07:33:48",
+    "currentPartyForQuote": "",
+    "destinationSalesBranch": "",
+    "destinationPrimarySalesAgentEmail": "",
+    "destinationSecondarySalesAgentEmail": "",
+    "destinationCurrentPartyForQuote": "",
+    "destinationContractId": "",
+    "destinationContractType": "",
+    "dateType": "ESTIMATED",
+    "sourceBranchTenantName": "EGYPT_TEST QA",
+    "masterData": {
+      "Carriers": {
+        "ABSA Cargo Airline": "ABSA Cargo Airline",
+        "Aero Costa Rica": "Aero Costa Rica"
+      },
+      "MasterLists": {
+        "PAYMENT": {
+          "PPD": "PPD (Prepaid)"
+        },
+        "ROUTING_STATUS": {
+          "PLD": "PLD (Planned)"
+        },
+        "MODE": {
+          "AIR": "AIR (Air)"
+        },
+        "TEMPERATURE_UNIT": {
+          "CEL": "CEL (Degree Celsius)"
+        },
+        "COMMODITY_GROUP": {
+          "Metals": "Metals (Metals)",
+          "Footwear": "Footwear (Footwear / Headgear)"
+        },
+        "AIRCRAFT_TYPE": {
+          "PAX": "PAX (Passenger Aircraft)"
+        },
+        "TRANSPORT_MODE": {
+          "AIR": "AIR (Air Freight)"
+        },
+        "PACKS_UNIT": {
+          "BAG": "BAG (Bag)"
+        },
+        "CONTAINER_CATEGORY": {
+          "BCN": "BCN (Buyer's Consolidation)"
+        },
+        "SOURCE_TYPE": {
+          "System": "System (System)"
+        },
+        "DIMENSION_UNIT": {
+          "M": "M (Meters)"
+        },
+        "EFREIGHT_STATUS": {
+          "NON": "NON (e-freight NOT supported)"
+        },
+        "SERVICE_MODE": {
+          "A2A": "A2A (Airport to Airport)"
+        },
+        "INCOTERMS": {
+          "CPT": "CPT (Carriage paid to)"
+        },
+        "CUSTOM_SHIPMENT_TYPE": {
+          "EXP": "EXP (Export)"
+        },
+        "VOLUME_UNIT": {
+          "M3": "M3 (Cubic Meters)",
+          "L": "L (Liter)"
+        },
+        "WEIGHT_UNIT": {
+          "DT": "DT (Decitons)",
+          "KG": "KG (KiloGrams)"
+        },
+        "SHIPMENT_TYPE": {
+          "DRT": "DRT (DIRECT)"
+        }
+      },
+      "Unlocations": {
+        "INBOM_AIR": "CSI - Chhatrapati Shivaji International BOM Mumbai Maharashtra India - [Airport]",
+        "INBLR_AIR": "KIA - Kempegowda International Airport BLR Bengaluru Karnataka India - [Airport]",
+        "INHAL_TER": "\"DP World PFT, ICD Haldia\" - INHAL, \"DP World PFT, ICD Haldia\"- Rail",
+        "EGALY_AIR": "El Iskandariya - ALY, El Nouzha Airport- Air Port"
+      },
+      "Tenants": {
+        "728": "EGYPT Alexandria p100",
+        "937": "EGYPT_TEST QA"
+      }
+    },
+    "sendToBranch": 728,
+    "isShipmentReadOnly": false,
+    "additionalDocs": ["e3a55e27-0dda-4265-8fea-ed12dbf510f8"]
+  },
+  "entityTransferConsolidationDetailsAir": {
+    "guid": "1dcefc76-0888-4c53-b028-113a5b096254",
+    "consolidationNumber": "TQAA24080079",
+    "consolidationType": "STD",
+    "transportMode": "AIR",
+    "containerCategory": "LSE",
+    "isDomestic": false,
+    "mawb": "390-44556676",
+    "payment": "PPD",
+    "declarationType": "IMP",
+    "isLinked": false,
+    "isCharter": false,
+    "referenceNumber": "TQAA24080079",
+    "shipmentType": "STD",
+    "bol": "390-44556676",
+    "isInland": false,
+    "sourceTenantId": 937,
+    "receivingBranch": 728,
+    "intraBranch": false,
+    "carrierDetails": {
+      "shippingLine": "Aegean Airlines",
+      "flightNumber": "1432",
+      "aircraftType": "CAO",
+      "origin": "INBLR_AIR",
+      "destination": "USATL_AIR",
+      "eta": "2024-09-07T00:00:00",
+      "etd": "2024-08-31T00:00:00",
+      "originPort": "INBLR_AIR",
+      "destinationPort": "USATL_AIR",
+      "voyageOrFlightNumber": "1432",
+      "originLocCode": "INBLR",
+      "destinationLocCode": "USATL",
+      "originPortLocCode": "INBLR",
+      "destinationPortLocCode": "USATL"
+    },
+    "achievedQuantities": {
+      "consolidatedWeightUnit": "KG",
+      "consolidatedVolumeUnit": "M3",
+      "weightUtilization": "",
+      "volumeUtilization": ""
+    },
+    "allocations": {
+      "weightUnit": "KG",
+      "volumeUnit": "M3",
+      "chargeableUnit": "KG"
+    },
+    "arrivalDetails": {},
+    "departureDetails": {
+      "firstForeignPort": "INBLR_AIR",
+      "lastForeignPort": "USATL_AIR"
+    },
+    "sendingAgent": {
+      "orgCode": "ACCRUE PARTNERS",
+      "addressCode": "Default",
+      "orgData": {
+        "Id": 4487,
+        "Guid": "b9d5730c-4643-4482-af8a-290159eb369c",
+        "label": "ACCRUE PARTNERS, INC",
+        "value": "ACCRUE PARTNERS",
+        "Unloco": 31226,
+        "Country": "CHN",
+        "Address1": "1 test dr.",
+        "FullName": "ACCRUE PARTNERS, INC",
+        "Payables": false,
+        "CompanyId": 150,
+        "LocalName": "Local Org1",
+        "UnlocoGuid": "2c75eea9-599e-4e92-91dc-52b1444302da",
+        "Receivables": true,
+        "ZipPostCode": "2344324",
+        "ForworderAgent": true,
+        "OrganizationCode": "ACCRUE PARTNERS",
+        "InsertUserIdUsername": "joshua.harrelson@dpworld.com",
+        "UpdateUserIdUsername": "EGYPQAP100ALEX@dpworld.com"
+      },
+      "addressData": {
+        "Id": 13499,
+        "Guid": "165fb6b8-e639-4a1e-af7c-187b493c15fd",
+        "Unloco": "31226",
+        "Country": "CHN",
+        "OrgGuid": "b9d5730c-4643-4482-af8a-290159eb369c",
+        "Address1": "1 test dr.",
+        "UnlocoGuid": "2c75eea9-599e-4e92-91dc-52b1444302da",
+        "AddressType": 2,
+        "CompanyName": "Test 1",
+        "OrgFullName": "ACCRUE PARTNERS, INC",
+        "OrgPayables": false,
+        "ContactPhone": "+1111111",
+        "OrgLocalName": "Local Org1",
+        "OrgReceivables": true,
+        "SiteIdentifier": "CLINTON",
+        "OrgActiveClient": true,
+        "AddressShortCode": "Default",
+        "OrgOrganizationCode": "ACCRUE PARTNERS",
+        "AdditionalAddressInfo": "TEST1 Default Address"
+      }
+    },
+    "receivingAgent": {
+      "orgCode": "111791",
+      "addressCode": "EGFFS - EGYPT FREIGHT FORWARDING SERVICES",
+      "orgData": {
+        "Id": 24079,
+        "City": "Machelen",
+        "Guid": "3c2393f0-dfc2-4128-88ef-f2db72d393ba",
+        "Email": "christophe@afl.be",
+        "label": "All Freight Logistics NV",
+        "value": "111791",
+        "Country": "BEL",
+        "Address1": "Bedrijvenzone Machelen cargo  829F",
+        "Address2": "Machelen",
+        "FullName": "All Freight Logistics NV",
+        "Payables": true,
+        "CompanyId": 517,
+        "Receivables": false,
+        "ZipPostCode": "1830",
+        "ForworderAgent": true,
+        "OrganizationCode": "111791",
+        "InsertUserIdUsername": "DPWEgypt@dpworld.com",
+        "OrganizationCategory": "Internal",
+        "UpdateUserIdUsername": "EGYPQAP100ALEX@dpworld.com"
+      },
+      "addressData": {
+        "Id": 36228,
+        "City": "Machelen",
+        "Guid": "87872ada-1ea5-4638-9740-abe78b6c29b8",
+        "Email": "christophe@afl.be",
+        "label": "All Freight Logistics NV\nBedrijvenzone Machelen cargo  829F, Machelen, Machelen\nBE, 1830\n32--27529522",
+        "value": "EGFFS - EGYPT FREIGHT FORWARDING SERVICES",
+        "Country": "BE",
+        "OrgGuid": "3c2393f0-dfc2-4128-88ef-f2db72d393ba",
+        "Address1": "Bedrijvenzone Machelen cargo  829F",
+        "Address2": "Machelen",
+        "AddressType": 1,
+        "CompanyName": "All Freight Logistics NV",
+        "OrgFullName": "All Freight Logistics NV",
+        "OrgPayables": true,
+        "ZipPostCode": "1830",
+        "ContactPhone": "32--27529522",
+        "TaxRegNumber": "756888",
+        "OrgReceivables": false,
+        "SiteIdentifier": "All Freight Logistics NV EG",
+        "OrgActiveClient": true,
+        "AddressShortCode": "EGFFS - EGYPT FREIGHT FORWARDING SERVICES",
+        "OrgOrganizationCode": "111791"
+      }
+    },
+    "creditor": {
+      "orgCode": "77874",
+      "addressCode": "ROCND - DP World Logistics Romania_609017_ROCND01_C",
+      "orgData": {
+        "Id": 25424,
+        "Guid": "2736eeaf-1085-4d70-8947-8de8ddf45e2a",
+        "State": "SG",
+        "label": "  Hindustan VNM4  ",
+        "value": "77874",
+        "Country": "VNM",
+        "Address1": "AUHRA CENTRE, A WING, 5TH FLOOR,",
+        "Address2": "MAHAKALI CAVES ROAD,ANDHERI EAST",
+        "FullName": "  Hindustan VNM4  ",
+        "Payables": true,
+        "CompanyId": 547,
+        "Receivables": false,
+        "ZipPostCode": "40093",
+        "ForworderAgent": false,
+        "OrganizationCode": "77874",
+        "InsertUserIdUsername": "nga.nguyen1@dpworld.com",
+        "OrganizationCategory": "Internal"
+      },
+      "addressData": {
+        "Id": 153462,
+        "City": "HOCHIMINH",
+        "Guid": "9c2d95d1-428e-4738-a8c3-f6d40062d1cf",
+        "State": "SG",
+        "Country": "VNM",
+        "OrgGuid": "2736eeaf-1085-4d70-8947-8de8ddf45e2a",
+        "Address1": "AUHRA CENTRE, A WING, 5TH FLOOR,",
+        "Address2": "MAHAKALI CAVES ROAD,ANDHERI EAST",
+        "AddressType": 1,
+        "CompanyName": "Hindustan VNM1",
+        "OrgFullName": "  Hindustan VNM4  ",
+        "OrgPayables": true,
+        "ZipPostCode": "4093",
+        "ContactPhone": "99999",
+        "OrgReceivables": false,
+        "SiteIdentifier": "  609017_ROCND01_B  ",
+        "OrgActiveClient": true,
+        "AddressShortCode": "ROCND - DP World Logistics Romania_609017_ROCND01_C",
+        "OrgOrganizationCode": "77874"
+      }
+    },
+    "packingList": [
+      {
+        "guid": "d5914493-6dc4-4870-9982-c831149fecfb",
+        "consolidationId": 3578,
+        "shipmentId": 8526,
+        "packs": "1",
+        "packsType": "AMM",
+        "weight": 200,
+        "weightUnit": "KG",
+        "volume": 200,
+        "volumeUnit": "M3",
+        "lengthUnit": "M",
+        "widthUnit": "M",
+        "heightUnit": "M",
+        "minTempUnit": "CEL",
+        "maxTempUnit": "CEL",
+        "hazardous": false,
+        "netWeightUnit": "KG",
+        "volumeWeight": 33333.4,
+        "volumeWeightUnit": "KG",
+        "chargeable": 33333.4,
+        "chargeableUnit": "KG",
+        "shipmentNumber": "TQAA24080078",
+        "isDimension": false,
+        "dateType": "ESTIMATED"
+      },
+      {
+        "guid": "0b9abb1f-314e-4229-b30b-fceee768c80b",
+        "consolidationId": 3578,
+        "shipmentId": 8526,
+        "packs": "1",
+        "packsType": "BAG",
+        "weight": 100,
+        "weightUnit": "KG",
+        "volume": 100,
+        "volumeUnit": "M3",
+        "lengthUnit": "M",
+        "widthUnit": "M",
+        "heightUnit": "M",
+        "minTempUnit": "CEL",
+        "maxTempUnit": "CEL",
+        "hazardous": false,
+        "netWeightUnit": "KG",
+        "volumeWeight": 16666.7,
+        "volumeWeightUnit": "KG",
+        "chargeable": 16666.7,
+        "chargeableUnit": "KG",
+        "shipmentNumber": "TQAA24080078",
+        "isDimension": false,
+        "dateType": "ESTIMATED"
+      },
+      {
+        "guid": "974057f0-b0f2-4b44-a93c-609c46a62148",
+        "consolidationId": 3578,
+        "shipmentId": 8526,
+        "packs": "1",
+        "packsType": "BAL",
+        "weight": 200,
+        "weightUnit": "KG",
+        "volume": 200,
+        "volumeUnit": "M3",
+        "lengthUnit": "M",
+        "widthUnit": "M",
+        "heightUnit": "M",
+        "minTempUnit": "CEL",
+        "maxTempUnit": "CEL",
+        "hazardous": false,
+        "netWeightUnit": "KG",
+        "volumeWeight": 33333.4,
+        "volumeWeightUnit": "KG",
+        "chargeable": 33333.4,
+        "chargeableUnit": "KG",
+        "shipmentNumber": "TQAA24080078",
+        "isDimension": false,
+        "dateType": "ESTIMATED"
+      },
+      {
+        "guid": "3d38192f-181c-4d4b-ba41-d7e2b56577d1",
+        "consolidationId": 3578,
+        "shipmentId": 8526,
+        "packs": "1",
+        "packsType": "BBK",
+        "weight": 200,
+        "weightUnit": "KG",
+        "volume": 200,
+        "volumeUnit": "M3",
+        "lengthUnit": "M",
+        "widthUnit": "M",
+        "heightUnit": "M",
+        "minTempUnit": "CEL",
+        "maxTempUnit": "CEL",
+        "hazardous": false,
+        "netWeightUnit": "KG",
+        "volumeWeight": 33333.4,
+        "volumeWeightUnit": "KG",
+        "chargeable": 33333.4,
+        "chargeableUnit": "KG",
+        "shipmentNumber": "TQAA24080078",
+        "isDimension": false,
+        "dateType": "ESTIMATED"
+      }
+    ],
+    "referenceNumbersList": [
+      {
+        "countryOfIssue": "IND",
+        "type": "BKG",
+        "referenceNumber": "REF12445"
+      }
+    ],
+    "routingsList": [
+      {
+        "leg": 1,
+        "mode": "AIR",
+        "routingStatus": "CFD",
+        "pol": "INLKO_AIR",
+        "pod": "INHAL_TER",
+        "eta": "2024-09-07T00:00:00",
+        "etd": "2024-08-31T00:00:00",
+        "consolidationId": 3578,
+        "flightNumber": "1432",
+        "carrier": "Aegean Airlines",
+        "domestic": false
+      }
+    ],
+    "containersList": [],
+    "createdBy": "egypt_qa@yopmail.com",
+    "consolidationAddresses": [],
+    "createdAt": "2024-08-28T08:32:45",
+    "hazardous": false,
+    "screeningStatus": [],
+    "openForAttachment": true,
+    "shipmentsList": [
+      {
+        "guid": "2a9bab36-fea2-4e51-a252-a9d49c6c39f4",
+        "houseBill": "390-44556676",
+        "transportMode": "AIR",
+        "direction": "STD",
+        "shipmentType": "LSE",
+        "status": 0,
+        "source": "System",
+        "jobType": "STD",
+        "serviceType": "A2A",
+        "masterBill": "390-44556676",
+        "consolRef": "TQAA24080079",
+        "shipmentId": "TQAA24080078",
+        "weight": 300,
+        "weightUnit": "KG",
+        "volume": 300,
+        "volumeUnit": "M3",
+        "volumetricWeight": 50000.1,
+        "volumetricWeightUnit": "KG",
+        "chargable": 50000.5,
+        "chargeableUnit": "KG",
+        "netWeight": 0,
+        "netWeightUnit": "KG",
+        "noOfPacks": 2,
+        "packsUnit": "MPK",
+        "innerPacks": 0,
+        "freightLocalCurrency": "EGP",
+        "autoUpdateWtVol": true,
+        "cargoFinanceBooking": false,
+        "route": "",
+        "sourceTenantId": 937,
+        "intraBranch": false,
+        "client": {
+          "orgCode": "77876",
+          "addressCode": "ROCND - DP World Logistics Romania_609017_ROCND01_C",
+          "orgData": {
+            "Id": 25415,
+            "Guid": "2753921a-40be-41ff-81d2-1110a97830f3",
+            "State": "SG",
+            "label": "  Hindustan VNM1  ",
+            "value": "77876",
+            "Country": "VNM",
+            "Address1": "AUHRA CENTRE, A WING, 5TH FLOOR,",
+            "Address2": "MAHAKALI CAVES ROAD,ANDHERI EAST",
+            "FullName": "  Hindustan VNM1  ",
+            "Payables": false,
+            "CompanyId": 547,
+            "Receivables": true,
+            "ZipPostCode": "40093",
+            "ForworderAgent": false,
+            "OrganizationCode": "77876",
+            "InsertUserIdUsername": "nga.nguyen1@dpworld.com",
+            "OrganizationCategory": "Internal",
+            "UpdateUserIdUsername": "nga.nguyen1@dpworld.com"
+          },
+          "addressData": {
+            "Id": 153448,
+            "City": "HOCHIMINH",
+            "Guid": "f6545b78-b1ef-47b0-b5b4-da695d1cdff0",
+            "State": "SG",
+            "Country": "VNM",
+            "OrgGuid": "2753921a-40be-41ff-81d2-1110a97830f3",
+            "Address1": "AUHRA CENTRE, A WING, 5TH FLOOR,",
+            "Address2": "MAHAKALI CAVES ROAD,ANDHERI EAST",
+            "AddressType": 1,
+            "CompanyName": "Hindustan VNM1",
+            "OrgFullName": "  Hindustan VNM1  ",
+            "OrgPayables": false,
+            "ZipPostCode": "4093",
+            "ContactPhone": "999991234",
+            "KnownConsignor": false,
+            "OrgReceivables": true,
+            "RegulatedAgent": false,
+            "SiteIdentifier": "  609017_ROCND01_B  ",
+            "OrgActiveClient": true,
+            "AddressShortCode": "ROCND - DP World Logistics Romania_609017_ROCND01_C",
+            "OrgOrganizationCode": "77876"
+          }
+        },
+        "consigner": {
+          "orgCode": "FRDC0004416",
+          "addressCode": "FRDO0006218",
+          "orgData": {
+            "Id": 25246,
+            "City": "kasaragod",
+            "Guid": "60801b77-e960-44a7-a412-b6da4ffbd889",
+            "Email": "atmrubber789@gmail.com",
+            "State": "KL",
+            "label": "A T M RUBBER INDUSTRIES",
+            "value": "FRDC0004416",
+            "Unloco": 1114575,
+            "Country": "IND",
+            "Address1": "NO.22/8, MEENJA, MANJESHWAR",
+            "FullName": "A T M RUBBER INDUSTRIES",
+            "Payables": false,
+            "CompanyId": 1,
+            "UnlocoGuid": "e4156e1b-5bf4-4d10-a7d9-21acd5e347ee",
+            "Receivables": true,
+            "ZipPostCode": "671323",
+            "ForworderAgent": false,
+            "OrganizationCode": "FRDC0004416",
+            "InsertUserIdUsername": "EGYPQAP100ALEX@dpworld.com",
+            "UpdateUserIdUsername": "dpwaususer"
+          },
+          "addressData": {
+            "Id": 38171,
+            "City": "kasaragod",
+            "Guid": "67258bf5-9f0e-4b45-b4c0-b2d2497314dc",
+            "Email": "atmrubber789@gmail.com",
+            "State": "KL",
+            "Country": "IND",
+            "OrgGuid": "60801b77-e960-44a7-a412-b6da4ffbd889",
+            "Address1": "NO.22/8, MEENJA, MANJESHWAR",
+            "OrgSource": "CRP",
+            "AddressType": 2,
+            "CompanyName": "A T M RUBBER INDUSTRIES",
+            "OrgFullName": "A T M RUBBER INDUSTRIES",
+            "OrgPayables": false,
+            "ZipPostCode": "671323",
+            "ContactPhone": "4676745456",
+            "KnownConsignor": false,
+            "OrgReceivables": true,
+            "RegulatedAgent": false,
+            "OrgActiveClient": true,
+            "AddressShortCode": "FRDO0006218",
+            "OrgOrganizationCode": "FRDC0004416"
+          }
+        },
+        "consignee": {
+          "orgCode": "FRDC0004505",
+          "addressCode": "FRDO0006317",
+          "orgData": {
+            "Id": 25275,
+            "City": "kachchh",
+            "Guid": "6d3fd77d-3c8c-4892-9db0-d9285b152361",
+            "Email": "devang@mcsconsultants.in",
+            "State": "GJ",
+            "label": "A. D. Mehta Clearing Agency",
+            "value": "FRDC0004505",
+            "Unloco": 1114575,
+            "Country": "IND",
+            "Address1": "1St Floor, Office No. 21 And 22,",
+            "FullName": "A. D. Mehta Clearing Agency",
+            "Payables": false,
+            "CompanyId": 1,
+            "UnlocoGuid": "e4156e1b-5bf4-4d10-a7d9-21acd5e347ee",
+            "Receivables": true,
+            "ZipPostCode": "370230",
+            "ForworderAgent": false,
+            "OrganizationCode": "FRDC0004505",
+            "InsertUserIdUsername": "EGYPQAP100ALEX@dpworld.com",
+            "UpdateUserIdUsername": "dpwaususer"
+          },
+          "addressData": {
+            "Id": 38203,
+            "City": "Kachchh",
+            "Guid": "4a4c4b2b-7ea6-4157-ab87-0a9c2fa88daa",
+            "Email": "devang@mcsconsultants.in",
+            "State": "GJ",
+            "Country": "IND",
+            "OrgGuid": "6d3fd77d-3c8c-4892-9db0-d9285b152361",
+            "Address1": "1St Floor, Office No. 21 And 22,",
+            "OrgSource": "CRP",
+            "AddressType": 2,
+            "CompanyName": "A D Mehta Clearing Agency",
+            "OrgFullName": "A. D. Mehta Clearing Agency",
+            "OrgPayables": false,
+            "ZipPostCode": "370230",
+            "OrgReceivables": true,
+            "OrgActiveClient": true,
+            "AddressShortCode": "FRDO0006317",
+            "OrgOrganizationCode": "FRDC0004505"
+          }
+        },
+        "additionalDetails": {
+          "screeningStatus": [],
+          "paidPlace": "EGALY_AIR",
+          "placeOfIssue": "EGALY_AIR",
+          "placeOfSupply": "EGALY_AIR",
+          "notifyParty": {
+            "orgCode": "34567",
+            "addressCode": "VNSGN - DP World Vietnam_4509017_VNSGN01_E",
+            "orgData": {
+              "Id": 25493,
+              "City": "Manchester",
+              "Guid": "25418d2a-b2e4-472e-a28e-87761149f8a8",
+              "label": " QA and stage _Ashish ",
+              "value": "34567",
+              "Country": "GBR",
+              "Address1": "150th Street,PH F F Tower,Suite 20B1 ,",
+              "Address2": "AAHAKALI CAVES ROAD,ANDHERI EAST2",
+              "FullName": " QA and stage _Ashish ",
+              "Payables": true,
+              "CompanyId": 548,
+              "ForworderAgent": false,
+              "OrganizationCode": "34567",
+              "InsertUserIdUsername": "INDQAP100@dpworld.com",
+              "OrganizationCategory": "INTERCOMPANY"
+            },
+            "addressData": {
+              "Id": 153541,
+              "City": "Manchester",
+              "Guid": "022c5b39-e843-479d-8aac-20a74e211bd8",
+              "Country": "GBR",
+              "OrgGuid": "25418d2a-b2e4-472e-a28e-87761149f8a8",
+              "Address1": "150th Street,PH F F Tower,Suite 20B 1,",
+              "Address2": "AAHAKALI CAVES ROAD,ANDHERI EAST 2",
+              "AddressType": 1,
+              "CompanyName": "QA and stage _Ashish",
+              "OrgFullName": " QA and stage _Ashish ",
+              "OrgPayables": true,
+              "ContactPhone": "824918425",
+              "ContactPerson": "Ashish",
+              "SiteIdentifier": "testing ",
+              "OrgActiveClient": true,
+              "AddressShortCode": "VNSGN - DP World Vietnam_4509017_VNSGN01_E",
+              "OrgOrganizationCode": "34567"
+            }
+          },
+          "importBroker": {},
+          "exportBroker": {}
+        },
+        "carrierDetails": {
+          "shippingLine": "Aegean Airlines",
+          "flightNumber": "1432",
+          "aircraftType": "CAO",
+          "origin": "INLKO_AIR",
+          "destination": "INHAL_TER",
+          "eta": "2024-09-07T00:00:00",
+          "etd": "2024-08-31T00:00:00",
+          "originPort": "INBLR_AIR",
+          "destinationPort": "USATL_AIR",
+          "voyageOrFlightNumber": "1432",
+          "originLocCode": "INLKO",
+          "destinationLocCode": "INHAL",
+          "originPortLocCode": "INBLR",
+          "destinationPortLocCode": "USATL"
+        },
+        "routingsList": [
+          {
+            "shipmentId": 8526,
+            "leg": 1,
+            "mode": "AIR",
+            "routingStatus": "PLD",
+            "pol": "INBLR_AIR",
+            "pod": "USATL_AIR",
+            "eta": "2024-09-04T00:00:00",
+            "etd": "2024-08-31T00:00:00",
+            "isLinked": true,
+            "aircraftType": "CAO",
+            "transitDays": 4,
+            "carrier": "Aegean Airlines",
+            "domestic": false
+          }
+        ],
+        "referenceNumbersList": [],
+        "packingList": [
+          {
+            "guid": "d5914493-6dc4-4870-9982-c831149fecfb",
+            "consolidationId": 3578,
+            "shipmentId": 8526,
+            "packs": "1",
+            "packsType": "AMM",
+            "weight": 200,
+            "weightUnit": "KG",
+            "volume": 200,
+            "volumeUnit": "M3",
+            "lengthUnit": "M",
+            "widthUnit": "M",
+            "heightUnit": "M",
+            "minTempUnit": "CEL",
+            "maxTempUnit": "CEL",
+            "hazardous": false,
+            "netWeightUnit": "KG",
+            "volumeWeight": 33333.4,
+            "volumeWeightUnit": "KG",
+            "chargeable": 33333.4,
+            "chargeableUnit": "KG",
+            "shipmentNumber": "TQAA24080078",
+            "isDimension": false,
+            "dateType": "ESTIMATED"
+          },
+          {
+            "guid": "0b9abb1f-314e-4229-b30b-fceee768c80b",
+            "consolidationId": 3578,
+            "shipmentId": 8526,
+            "packs": "1",
+            "packsType": "BAG",
+            "weight": 100,
+            "weightUnit": "KG",
+            "volume": 100,
+            "volumeUnit": "M3",
+            "lengthUnit": "M",
+            "widthUnit": "M",
+            "heightUnit": "M",
+            "minTempUnit": "CEL",
+            "maxTempUnit": "CEL",
+            "hazardous": false,
+            "netWeightUnit": "KG",
+            "volumeWeight": 16666.7,
+            "volumeWeightUnit": "KG",
+            "chargeable": 16666.7,
+            "chargeableUnit": "KG",
+            "shipmentNumber": "TQAA24080078",
+            "isDimension": false,
+            "dateType": "ESTIMATED"
+          },
+          {
+            "guid": "974057f0-b0f2-4b44-a93c-609c46a62148",
+            "consolidationId": 3578,
+            "shipmentId": 8526,
+            "packs": "1",
+            "packsType": "BAL",
+            "weight": 200,
+            "weightUnit": "KG",
+            "volume": 200,
+            "volumeUnit": "M3",
+            "lengthUnit": "M",
+            "widthUnit": "M",
+            "heightUnit": "M",
+            "minTempUnit": "CEL",
+            "maxTempUnit": "CEL",
+            "hazardous": false,
+            "netWeightUnit": "KG",
+            "volumeWeight": 33333.4,
+            "volumeWeightUnit": "KG",
+            "chargeable": 33333.4,
+            "chargeableUnit": "KG",
+            "shipmentNumber": "TQAA24080078",
+            "isDimension": false,
+            "dateType": "ESTIMATED"
+          },
+          {
+            "guid": "3d38192f-181c-4d4b-ba41-d7e2b56577d1",
+            "consolidationId": 3578,
+            "shipmentId": 8526,
+            "packs": "1",
+            "packsType": "BBK",
+            "weight": 200,
+            "weightUnit": "KG",
+            "volume": 200,
+            "volumeUnit": "M3",
+            "lengthUnit": "M",
+            "widthUnit": "M",
+            "heightUnit": "M",
+            "minTempUnit": "CEL",
+            "maxTempUnit": "CEL",
+            "hazardous": false,
+            "netWeightUnit": "KG",
+            "volumeWeight": 33333.4,
+            "volumeWeightUnit": "KG",
+            "chargeable": 33333.4,
+            "chargeableUnit": "KG",
+            "shipmentNumber": "TQAA24080078",
+            "isDimension": false,
+            "dateType": "ESTIMATED"
+          }
+        ],
+        "fileRepoList": [],
+        "bookingCarriagesList": [],
+        "containersList": [],
+        "servicesList": [],
+        "elDetailsList": [],
+        "shipmentCreatedOn": "2024-08-28T08:15:10",
+        "shipmentAddresses": [],
+        "containsHazardous": false,
+        "createdBy": "egypt_qa@yopmail.com",
+        "createdAt": "2024-08-28T08:31:36",
+        "updatedAt": "2024-08-28T10:43:02",
+        "contractId": "",
+        "contractType": "",
+        "salesBranch": "",
+        "primarySalesAgentEmail": "",
+        "secondarySalesAgentEmail": "",
+        "bookingCreatedDate": "2024-08-28T08:15:10",
+        "currentPartyForQuote": "",
+        "destinationSalesBranch": "",
+        "destinationPrimarySalesAgentEmail": "",
+        "destinationSecondarySalesAgentEmail": "",
+        "destinationCurrentPartyForQuote": "",
+        "destinationContractId": "",
+        "destinationContractType": "",
+        "updatedBy": "egypt_qa@yopmail.com",
+        "dateType": "ESTIMATED",
+        "masterData": {
+          "Carriers": {
+            "Aegean Airlines": "Aegean Airlines"
+          },
+          "MasterLists": {
+            "ROUTING_STATUS": {
+              "PLD": "PLD (Planned)"
+            },
+            "TEMPERATURE_UNIT": {
+              "CEL": "CEL (Degree Celsius)"
+            },
+            "MODE": {
+              "AIR": "AIR (Air)"
+            },
+            "AIRCRAFT_TYPE": {
+              "CAO": "CAO (Cargo Aircraft)"
+            },
+            "TRANSPORT_MODE": {
+              "AIR": "AIR (Air Freight)"
+            },
+            "PACKS_UNIT": {
+              "AMM": "AMM (Ammo Pack)",
+              "BAG": "BAG (Bag)",
+              "MPK": "MPK (Multi Pack)"
+            },
+            "CONTAINER_CATEGORY": {
+              "LSE": "LSE (Loose)"
+            },
+            "DIMENSION_UNIT": {
+              "M": "M (Meters)"
+            },
+            "SOURCE_TYPE": {
+              "System": "System (System)"
+            },
+            "SERVICE_MODE": {
+              "A2A": "A2A (Airport to Airport)"
+            },
+            "VOLUME_UNIT": {
+              "M3": "M3 (Cubic Meters)"
+            },
+            "WEIGHT_UNIT": {
+              "KG": "KG (KiloGrams)"
+            },
+            "SHIPMENT_TYPE": {
+              "STD": "STD (Standard House)"
+            }
+          },
+          "Unlocations": {
+            "INBLR_AIR": "KIA - Kempegowda International Airport BLR Bengaluru Karnataka India - [Airport]",
+            "INHAL_TER": "\"DP World PFT, ICD Haldia\" - INHAL, \"DP World PFT, ICD Haldia\"- Rail",
+            "USATL_AIR": "Atlanta - ATL, Hartsfield Jackson Atlanta International Airport- Air Port",
+            "EGALY_AIR": "El Iskandariya - ALY, El Nouzha Airport- Air Port",
+            "INLKO_AIR": "Lucknow - LKO, Chaudhary Charan Singh International Airport- Air Port"
+          },
+          "Tenants": {
+            "937": "EGYPT_TEST QA"
+          }
+        },
+        "sendToBranch": 728,
+        "isShipmentReadOnly": false
+      }
+    ],
+    "packingVsContainerGuid": {},
+    "containerVsShipmentGuid": {},
+    "sendToBranch": 728,
+    "masterData": {
+      "Carriers": {
+        "Aegean Airlines": "Aegean Airlines"
+      },
+      "MasterLists": {
+        "PAYMENT": {
+          "PPD": "PPD (Prepaid)"
+        },
+        "COUNTRIES": {
+          "IND": "IND (India)"
+        },
+        "ROUTING_STATUS": {
+          "CFD": "CFD (Confirmed)"
+        },
+        "TEMPERATURE_UNIT": {
+          "CEL": "CEL (Degree Celsius)"
+        },
+        "MODE": {
+          "AIR": "AIR (Air)"
+        },
+        "REFERENCE_NUMBER_TYPE": {
+          "BKG": "BKG (Carrier Booking Reference Number)"
+        },
+        "AIRCRAFT_TYPE": {
+          "CAO": "CAO (Cargo Aircraft)"
+        },
+        "PACKS_UNIT": {
+          "AMM": "AMM (Ammo Pack)",
+          "BAG": "BAG (Bag)"
+        },
+        "CONTAINER_CATEGORY": {
+          "LSE": "LSE (Loose)"
+        },
+        "DIMENSION_UNIT": {
+          "M": "M (Meters)"
+        },
+        "VOLUME_UNIT": {
+          "M3": "M3 (Cubic Meters)"
+        },
+        "CUSTOM_DECL_TYPE": {
+          "IMP": "IMP (Import)"
+        },
+        "WEIGHT_UNIT": {
+          "KG": "KG (KiloGrams)"
+        }
+      },
+      "Unlocations": {
+        "INBLR_AIR": "KIA - Kempegowda International Airport BLR Bengaluru Karnataka India - [Airport]",
+        "INHAL_TER": "\"DP World PFT, ICD Haldia\" - INHAL, \"DP World PFT, ICD Haldia\"- Rail",
+        "USATL_AIR": "Atlanta - ATL, Hartsfield Jackson Atlanta International Airport- Air Port",
+        "INLKO_AIR": "Lucknow - LKO, Chaudhary Charan Singh International Airport- Air Port"
+      },
+      "Tenants": {
+        "728": "EGYPT Alexandria p100",
+        "937": "EGYPT_TEST QA"
+      }
+    }
+  },
+  "entityTransferConsolidationDetailsSea": {
+    "guid": "d6b4d163-5d9a-463c-ae2a-76f3a82f8b8d",
+    "consolidationNumber": "TQAS24080084",
+    "consolidationType": "STD",
+    "transportMode": "SEA",
+    "containerCategory": "FCL",
+    "isDomestic": false,
+    "isLinked": false,
+    "isCharter": false,
+    "referenceNumber": "TQAS24080084",
+    "shipmentType": "STD",
+    "isInland": false,
+    "sourceTenantId": 937,
+    "receivingBranch": 728,
+    "intraBranch": false,
+    "isReceivingAgentFreeTextAddress": false,
+    "isSendingAgentFreeTextAddress": false,
+    "carrierDetails": {
+      "shippingLine": "CMA CGM",
+      "vessel": "c978d0d8-9c93-4f49-869c-6bcf3d9e4610",
+      "voyage": "0QC1DW1MA",
+      "origin": "INMUN_POR",
+      "destination": "AEJEA_POR",
+      "eta": "2024-08-31T05:30:00",
+      "etd": "2024-08-28T22:00:00",
+      "originPort": "INMUN_POR",
+      "destinationPort": "AEJEA_POR",
+      "voyageOrFlightNumber": "0QC1DW1MA",
+      "originLocCode": "INMUN",
+      "destinationLocCode": "AEJEA",
+      "originPortLocCode": "INMUN",
+      "destinationPortLocCode": "AEJEA"
+    },
+    "achievedQuantities": {
+      "weightVolume": 0.1,
+      "weightVolumeUnit": "M3",
+      "consolidatedWeight": 25,
+      "consolidatedWeightUnit": "KG",
+      "consolidatedVolume": 25,
+      "consolidatedVolumeUnit": "M3",
+      "consolidationChargeQuantity": 25,
+      "consolidationChargeQuantityUnit": "M3"
+    },
+    "allocations": {
+      "chargeableUnit": "M3"
+    },
+    "arrivalDetails": {},
+    "departureDetails": {},
+    "sendingAgent": {
+      "orgCode": "amanBusinessUnitTest",
+      "addressCode": "SHORT1",
+      "orgData": {
+        "Id": 24133,
+        "Guid": "5a930868-33a6-42b7-bfba-97a84cd7fe8c",
+        "Email": "contact@godship.com",
+        "State": "UP",
+        "label": "amanBusinessUnitTest",
+        "value": "amanBusinessUnitTest",
+        "Unloco": 137996,
+        "Country": "IND",
+        "Address1": "X-123 Square Central",
+        "Address2": "British Columbia",
+        "FullName": "amanBusinessUnitTest",
+        "Payables": false,
+        "CompanyId": 1,
+        "UnlocoGuid": "17a8cf8f-2a53-4e2e-9407-85cc23808adf",
+        "Receivables": true,
+        "ZipPostCode": "400002",
+        "ForworderAgent": true,
+        "OrganizationCode": "amanBusinessUnitTest",
+        "InsertUserIdUsername": "EGYPQAP100ALEX@dpworld.com",
+        "OrganizationCategory": "INTERCOMPANY",
+        "UpdateUserIdUsername": "EGYPQAP100ALEX@dpworld.com"
+      },
+      "addressData": {
+        "Id": 36437,
+        "City": "British Columbia",
+        "Guid": "769cc8c2-b9b1-4b3b-b16b-bb7b366bb3a7",
+        "Email": "contact@godship.com",
+        "State": "British Columbia",
+        "label": "COMPANY\nAdress 2 new, British Columbia, British Columbia, British Columbia\nCAN, 400001\n9338888881",
+        "value": "SHORT1",
+        "Country": "CAN",
+        "OrgGuid": "5a930868-33a6-42b7-bfba-97a84cd7fe8c",
+        "Address1": "Adress 2 new",
+        "Address2": "British Columbia",
+        "KCRAExpiry": "2026-07-30T22:00:00.000",
+        "KCRANumber": "441123",
+        "AddressType": 1,
+        "CompanyName": "COMPANY",
+        "OrgFullName": "amanBusinessUnitTest",
+        "OrgPayables": false,
+        "ZipPostCode": "400001",
+        "ContactPhone": "9338888881",
+        "KnownConsignor": false,
+        "OrgReceivables": true,
+        "RegulatedAgent": true,
+        "OrgActiveClient": true,
+        "AddressShortCode": "SHORT1",
+        "OrgOrganizationCode": "amanBusinessUnitTest"
+      }
+    },
+    "receivingAgent": {
+      "orgCode": "CANDPWCNDHQHMJK",
+      "addressCode": "Default",
+      "orgData": {
+        "Id": 2408,
+        "City": "Burnaby",
+        "Guid": "9e50347f-2eea-4938-80a6-5551f8c892fb",
+        "State": "BCL",
+        "label": "DPW Canada HQ",
+        "value": "CANDPWCNDHQHMJK",
+        "Unloco": 28552,
+        "Country": "CAN",
+        "Address1": "Suite 1500, Metrotower II",
+        "Address2": "4720 Kingsway",
+        "FullName": "DPW Canada HQ",
+        "Payables": true,
+        "CompanyId": 1,
+        "UnlocoGuid": "aef98df0-7b5f-472e-a52f-a5f8823e56b0",
+        "Receivables": false,
+        "ZipPostCode": "V5H4N2",
+        "ForworderAgent": true,
+        "HomeAirPortGuid": "d499864a-e0c9-404d-b47b-515080d6010e",
+        "OrganizationCode": "CANDPWCNDHQHMJK",
+        "InsertUserIdUsername": "runneradmin",
+        "UpdateUserIdUsername": "runneradmin"
+      },
+      "addressData": {
+        "Id": 5013,
+        "City": "Burnaby",
+        "Guid": "aea3d775-4568-4283-9af6-b9ec6175187f",
+        "State": "BCL",
+        "Unloco": "28552",
+        "Country": "CAN",
+        "OrgGuid": "9e50347f-2eea-4938-80a6-5551f8c892fb",
+        "Address1": "Suite 1500, Metrotower II",
+        "Address2": "4720 Kingsway",
+        "UnlocoGuid": "aef98df0-7b5f-472e-a52f-a5f8823e56b0",
+        "AddressType": 2,
+        "CompanyName": "DPW Canada HQ",
+        "OrgFullName": "DPW Canada HQ",
+        "OrgPayables": true,
+        "ZipPostCode": "V5H4N2",
+        "ContactPhone": "+6042522474",
+        "OrgReceivables": false,
+        "OrgActiveClient": true,
+        "AddressShortCode": "Default",
+        "OrgOrganizationCode": "CANDPWCNDHQHMJK",
+        "AdditionalAddressInfo": "Default Address"
+      }
+    },
+    "creditor": {
+      "orgCode": "34567",
+      "addressCode": "VNSGN - DP World Vietnam_4509017_VNSGN01_E",
+      "orgData": {
+        "Id": 25493,
+        "City": "Manchester",
+        "Guid": "25418d2a-b2e4-472e-a28e-87761149f8a8",
+        "label": " QA and stage _Ashish ",
+        "value": "34567",
+        "Country": "GBR",
+        "Address1": "150th Street,PH F F Tower,Suite 20B1 ,",
+        "Address2": "AAHAKALI CAVES ROAD,ANDHERI EAST2",
+        "FullName": " QA and stage _Ashish ",
+        "Payables": true,
+        "CompanyId": 548,
+        "ForworderAgent": false,
+        "OrganizationCode": "34567",
+        "InsertUserIdUsername": "INDQAP100@dpworld.com",
+        "OrganizationCategory": "INTERCOMPANY"
+      },
+      "addressData": {
+        "Id": 153541,
+        "City": "Manchester",
+        "Guid": "022c5b39-e843-479d-8aac-20a74e211bd8",
+        "Country": "GBR",
+        "OrgGuid": "25418d2a-b2e4-472e-a28e-87761149f8a8",
+        "Address1": "150th Street,PH F F Tower,Suite 20B 1,",
+        "Address2": "AAHAKALI CAVES ROAD,ANDHERI EAST 2",
+        "AddressType": 1,
+        "CompanyName": "QA and stage _Ashish",
+        "OrgFullName": " QA and stage _Ashish ",
+        "OrgPayables": true,
+        "ContactPhone": "824918425",
+        "ContactPerson": "Ashish",
+        "SiteIdentifier": "testing ",
+        "OrgActiveClient": true,
+        "AddressShortCode": "VNSGN - DP World Vietnam_4509017_VNSGN01_E",
+        "OrgOrganizationCode": "34567"
+      }
+    },
+    "packingList": [],
+    "referenceNumbersList": [],
+    "routingsList": [
+      {
+        "leg": 1,
+        "mode": "SEA",
+        "pol": "INMUN_POR",
+        "pod": "AEJEA_POR",
+        "eta": "2024-08-30T00:00:00",
+        "etd": "2024-08-27T00:00:00",
+        "atd": "2024-08-29T00:00:00",
+        "consolidationId": 3581,
+        "domestic": false
+      }
+    ],
+    "containersList": [
+      {
+        "guid": "ec7e67b7-a6cd-489e-989e-f1aa12423cdd",
+        "consolidationId": 3581,
+        "containerCode": "20GP",
+        "containerNumber": "CONT0123459",
+        "descriptionOfGoods": "Description",
+        "netWeightUnit": "KG",
+        "grossWeight": 1000,
+        "grossWeightUnit": "KG",
+        "measurementUnit": "M",
+        "containerCount": 1,
+        "customsReleaseCode": "CR012",
+        "containerStuffingLocation": "INCCU_TER",
+        "containerComments": "Description",
+        "grossVolume": 1000,
+        "grossVolumeUnit": "M3",
+        "minTemp": 35,
+        "minTempUnit": "CEL",
+        "maxTempUnit": "CEL",
+        "hblDeliveryMode": "CFS/CFS",
+        "allocationDate": "2024-08-28T09:05:44",
+        "dgClass": "1.1A",
+        "hazardous": true,
+        "packs": "1",
+        "packsType": "BAG",
+        "marksNums": "Description",
+        "pacrNumber": "PACR12",
+        "allocatedWeight": 28230,
+        "allocatedWeightUnit": "KG",
+        "allocatedVolume": 33,
+        "allocatedVolumeUnit": "M3",
+        "achievedWeight": 28230,
+        "achievedWeightUnit": "KG",
+        "achievedVolume": 33,
+        "achievedVolumeUnit": "M3",
+        "weightUtilization": "100",
+        "volumeUtilization": "100",
+        "handlingInfo": "Description",
+        "isPart": false,
+        "isAttached": true,
+        "eventsList": [],
+        "invoiceNumber": "CINV#1234",
+        "invoiceCurrency": "INR",
+        "invoiceValue": 99999
+      }
+    ],
+    "createdBy": "egypt_qa@yopmail.com",
+    "consolidationAddresses": [],
+    "createdAt": "2024-08-28T09:05:44",
+    "hazardous": false,
+    "screeningStatus": [],
+    "openForAttachment": false,
+    "shipmentsList": [
+      {
+        "guid": "5909c164-8bcd-4da2-a14f-aecebbc748c8",
+        "transportMode": "SEA",
+        "direction": "STD",
+        "shipmentType": "FCL",
+        "status": 0,
+        "source": "System",
+        "jobType": "STD",
+        "serviceType": "P2P",
+        "consolRef": "TQAS24080084",
+        "paymentTerms": "PPD",
+        "incoterms": "DAT",
+        "shipmentId": "TQAS24080083",
+        "weight": 25,
+        "weightUnit": "KG",
+        "volume": 25,
+        "volumeUnit": "M3",
+        "volumetricWeight": 0.1,
+        "volumetricWeightUnit": "M3",
+        "chargable": 25,
+        "chargeableUnit": "M3",
+        "netWeight": 0,
+        "netWeightUnit": "KG",
+        "noOfPacks": 1,
+        "packsUnit": "BAG",
+        "freightLocalCurrency": "EGP",
+        "autoUpdateWtVol": true,
+        "cargoFinanceBooking": false,
+        "route": "",
+        "sourceTenantId": 937,
+        "intraBranch": false,
+        "client": {
+          "orgCode": "FRDC0004505",
+          "addressCode": "FRDO0006317",
+          "orgData": {
+            "Id": 25275,
+            "City": "kachchh",
+            "Guid": "6d3fd77d-3c8c-4892-9db0-d9285b152361",
+            "Email": "devang@mcsconsultants.in",
+            "State": "GJ",
+            "label": "A. D. Mehta Clearing Agency",
+            "value": "FRDC0004505",
+            "Unloco": 1114575,
+            "Country": "IND",
+            "Address1": "1St Floor, Office No. 21 And 22,",
+            "FullName": "A. D. Mehta Clearing Agency",
+            "Payables": false,
+            "CompanyId": 1,
+            "UnlocoGuid": "e4156e1b-5bf4-4d10-a7d9-21acd5e347ee",
+            "Receivables": true,
+            "ZipPostCode": "370230",
+            "ForworderAgent": false,
+            "OrganizationCode": "FRDC0004505",
+            "InsertUserIdUsername": "EGYPQAP100ALEX@dpworld.com",
+            "UpdateUserIdUsername": "dpwaususer"
+          },
+          "addressData": {
+            "Id": 38203,
+            "City": "Kachchh",
+            "Guid": "4a4c4b2b-7ea6-4157-ab87-0a9c2fa88daa",
+            "Email": "devang@mcsconsultants.in",
+            "State": "GJ",
+            "Country": "IND",
+            "OrgGuid": "6d3fd77d-3c8c-4892-9db0-d9285b152361",
+            "Address1": "1St Floor, Office No. 21 And 22,",
+            "OrgSource": "CRP",
+            "AddressType": 2,
+            "CompanyName": "A D Mehta Clearing Agency",
+            "OrgFullName": "A. D. Mehta Clearing Agency",
+            "OrgPayables": false,
+            "ZipPostCode": "370230",
+            "OrgReceivables": true,
+            "OrgActiveClient": true,
+            "AddressShortCode": "FRDO0006317",
+            "OrgOrganizationCode": "FRDC0004505"
+          }
+        },
+        "consigner": {
+          "orgCode": "FRDC0004505",
+          "addressCode": "FRDO0006317",
+          "orgData": {
+            "Id": 25275,
+            "City": "kachchh",
+            "Guid": "6d3fd77d-3c8c-4892-9db0-d9285b152361",
+            "Email": "devang@mcsconsultants.in",
+            "State": "GJ",
+            "label": "A. D. Mehta Clearing Agency",
+            "value": "FRDC0004505",
+            "Unloco": 1114575,
+            "Country": "IND",
+            "Address1": "1St Floor, Office No. 21 And 22,",
+            "FullName": "A. D. Mehta Clearing Agency",
+            "Payables": false,
+            "CompanyId": 1,
+            "UnlocoGuid": "e4156e1b-5bf4-4d10-a7d9-21acd5e347ee",
+            "Receivables": true,
+            "ZipPostCode": "370230",
+            "ForworderAgent": false,
+            "OrganizationCode": "FRDC0004505",
+            "InsertUserIdUsername": "EGYPQAP100ALEX@dpworld.com",
+            "UpdateUserIdUsername": "dpwaususer"
+          },
+          "addressData": {
+            "Id": 38203,
+            "City": "Kachchh",
+            "Guid": "4a4c4b2b-7ea6-4157-ab87-0a9c2fa88daa",
+            "Email": "devang@mcsconsultants.in",
+            "State": "GJ",
+            "Country": "IND",
+            "OrgGuid": "6d3fd77d-3c8c-4892-9db0-d9285b152361",
+            "Address1": "1St Floor, Office No. 21 And 22,",
+            "OrgSource": "CRP",
+            "AddressType": 2,
+            "CompanyName": "A D Mehta Clearing Agency",
+            "OrgFullName": "A. D. Mehta Clearing Agency",
+            "OrgPayables": false,
+            "ZipPostCode": "370230",
+            "OrgReceivables": true,
+            "OrgActiveClient": true,
+            "AddressShortCode": "FRDO0006317",
+            "OrgOrganizationCode": "FRDC0004505"
+          }
+        },
+        "consignee": {
+          "orgCode": "FRDC0004492",
+          "addressCode": "FRDO0006304",
+          "orgData": {
+            "Id": 25216,
+            "City": "ghaziabad",
+            "Guid": "9e4b8391-6b54-438b-a8ae-222ba730f685",
+            "Email": "logistics@aryanint.com",
+            "State": "UP",
+            "label": "AADROIT INDULGENCE PRIVATE LIMITED",
+            "value": "FRDC0004492",
+            "Country": "IND",
+            "Address1": "KHASRA NO. 512, 513, 514, AADROIT INDULGENCE PRIVATE LIMITED, VILLAGE CHIJARSI",
+            "FullName": "AADROIT INDULGENCE PRIVATE LIMITED",
+            "Payables": false,
+            "CompanyId": 1,
+            "Receivables": true,
+            "ZipPostCode": "245304",
+            "ForworderAgent": false,
+            "OrganizationCode": "FRDC0004492",
+            "InsertUserIdUsername": "EGYPQAP100ALEX@dpworld.com",
+            "UpdateUserIdUsername": "EGYPQAP100ALEX@dpworld.com"
+          },
+          "addressData": {
+            "Id": 38139,
+            "City": "ghaziabad",
+            "Guid": "df53e8fd-d5b3-48bc-b1c2-0ca600a77bc9",
+            "Email": "logistics@aryanint.com",
+            "State": "UP",
+            "Country": "IND",
+            "OrgGuid": "9e4b8391-6b54-438b-a8ae-222ba730f685",
+            "Address1": "KHASRA NO. 512, 513, 514, AADROIT INDULGENCE PRIVATE LIMITED, VILLAGE CHIJARSI",
+            "OrgSource": "CRP",
+            "AddressType": 2,
+            "CompanyName": "AADROIT INDULGENCE PRIVATE LIMITED",
+            "OrgFullName": "AADROIT INDULGENCE PRIVATE LIMITED",
+            "OrgPayables": false,
+            "ZipPostCode": "245304",
+            "ContactPhone": "6766766766",
+            "KnownConsignor": false,
+            "OrgReceivables": true,
+            "RegulatedAgent": false,
+            "OrgActiveClient": true,
+            "AddressShortCode": "FRDO0006304",
+            "OrgOrganizationCode": "FRDC0004492"
+          }
+        },
+        "additionalDetails": {
+          "screeningStatus": [],
+          "paidPlace": "EGALY_AIR",
+          "placeOfIssue": "EGALY_AIR",
+          "placeOfSupply": "EGALY_AIR",
+          "notifyParty": {
+            "orgCode": "34567",
+            "addressCode": "VNSGN - DP World Vietnam_4509017_VNSGN01_E",
+            "orgData": {
+              "Id": 25493,
+              "City": "Manchester",
+              "Guid": "25418d2a-b2e4-472e-a28e-87761149f8a8",
+              "label": " QA and stage _Ashish ",
+              "value": "34567",
+              "Country": "GBR",
+              "Address1": "150th Street,PH F F Tower,Suite 20B1 ,",
+              "Address2": "AAHAKALI CAVES ROAD,ANDHERI EAST2",
+              "FullName": " QA and stage _Ashish ",
+              "Payables": true,
+              "CompanyId": 548,
+              "ForworderAgent": false,
+              "OrganizationCode": "34567",
+              "InsertUserIdUsername": "INDQAP100@dpworld.com",
+              "OrganizationCategory": "INTERCOMPANY"
+            },
+            "addressData": {
+              "Id": 153541,
+              "City": "Manchester",
+              "Guid": "022c5b39-e843-479d-8aac-20a74e211bd8",
+              "Country": "GBR",
+              "OrgGuid": "25418d2a-b2e4-472e-a28e-87761149f8a8",
+              "Address1": "150th Street,PH F F Tower,Suite 20B 1,",
+              "Address2": "AAHAKALI CAVES ROAD,ANDHERI EAST 2",
+              "AddressType": 1,
+              "CompanyName": "QA and stage _Ashish",
+              "OrgFullName": " QA and stage _Ashish ",
+              "OrgPayables": true,
+              "ContactPhone": "824918425",
+              "ContactPerson": "Ashish",
+              "SiteIdentifier": "testing ",
+              "OrgActiveClient": true,
+              "AddressShortCode": "VNSGN - DP World Vietnam_4509017_VNSGN01_E",
+              "OrgOrganizationCode": "34567"
+            }
+          }
+        },
+        "carrierDetails": {
+          "shippingLine": "CMA CGM",
+          "vessel": "c978d0d8-9c93-4f49-869c-6bcf3d9e4610",
+          "voyage": "0QC1DW1MA",
+          "origin": "0yRLYgEGNj8RKJOGhIeY",
+          "destination": "GH2fZAsdBLyl9gAcsrAx",
+          "eta": "2024-08-31T05:30:00",
+          "etd": "2024-08-28T22:00:00",
+          "originPort": "INMUN_POR",
+          "destinationPort": "AEJEA_POR",
+          "voyageOrFlightNumber": "0QC1DW1MA",
+          "originLocCode": "INMUN",
+          "destinationLocCode": "AEJEA",
+          "originPortLocCode": "INMUN",
+          "destinationPortLocCode": "AEJEA"
+        },
+        "routingsList": [
+          {
+            "shipmentId": 8533,
+            "leg": 1,
+            "mode": "SEA",
+            "routingStatus": "PLD",
+            "pol": "INMUN_POR",
+            "pod": "AEJEA_POR",
+            "eta": "2024-08-30T00:00:00",
+            "etd": "2024-08-27T00:00:00",
+            "atd": "2024-08-29T00:00:00",
+            "isLinked": true,
+            "domestic": false
+          }
+        ],
+        "referenceNumbersList": [],
+        "notesList": [],
+        "packingList": [
+          {
+            "guid": "f1fe380d-8a1c-4973-bdce-69e87481de2d",
+            "shipmentId": 8533,
+            "packs": "1",
+            "packsType": "BAG",
+            "weight": 25,
+            "weightUnit": "KG",
+            "volume": 25,
+            "volumeUnit": "M3",
+            "inspections": "packs desc",
+            "commodity": "291100",
+            "lengthUnit": "M",
+            "widthUnit": "M",
+            "heightUnit": "M",
+            "minTempUnit": "CEL",
+            "maxTempUnit": "CEL",
+            "goodsDescription": "packs desc",
+            "hazardous": true,
+            "netWeightUnit": "KG",
+            "volumeWeight": 0.1,
+            "volumeWeightUnit": "M3",
+            "containerId": 152817,
+            "chargeable": 25,
+            "chargeableUnit": "M3",
+            "commodityGroup": "Chemicals",
+            "isDimension": false,
+            "handlingInfo": "packs desc",
+            "dateType": "ESTIMATED",
+            "hscode": "",
+            "dgclass": "1.1A",
+            "undgcontact": "2035",
+            "dgsubstanceId": 1436
+          }
+        ],
+        "fileRepoList": [],
+        "bookingCarriagesList": [],
+        "containersList": [
+          {
+            "guid": "ec7e67b7-a6cd-489e-989e-f1aa12423cdd",
+            "consolidationId": 3581,
+            "containerCode": "20GP",
+            "containerNumber": "CONT0123459",
+            "descriptionOfGoods": "Description",
+            "netWeightUnit": "KG",
+            "grossWeight": 1000,
+            "grossWeightUnit": "KG",
+            "measurementUnit": "M",
+            "containerCount": 1,
+            "customsReleaseCode": "CR012",
+            "containerStuffingLocation": "INCCU_TER",
+            "containerComments": "Description",
+            "grossVolume": 1000,
+            "grossVolumeUnit": "M3",
+            "minTemp": 35,
+            "minTempUnit": "CEL",
+            "maxTempUnit": "CEL",
+            "hblDeliveryMode": "CFS/CFS",
+            "allocationDate": "2024-08-28T09:05:44",
+            "dgClass": "1.1A",
+            "hazardous": true,
+            "packs": "1",
+            "packsType": "BAG",
+            "marksNums": "Description",
+            "pacrNumber": "PACR12",
+            "allocatedWeight": 28230,
+            "allocatedWeightUnit": "KG",
+            "allocatedVolume": 33,
+            "allocatedVolumeUnit": "M3",
+            "achievedWeight": 28230,
+            "achievedWeightUnit": "KG",
+            "achievedVolume": 33,
+            "achievedVolumeUnit": "M3",
+            "weightUtilization": "100",
+            "volumeUtilization": "100",
+            "handlingInfo": "Description",
+            "isPart": false,
+            "isAttached": true,
+            "eventsList": [],
+            "invoiceNumber": "CINV#1234",
+            "invoiceCurrency": "INR",
+            "invoiceValue": 99999
+          }
+        ],
+        "servicesList": [],
+        "elDetailsList": [],
+        "shipmentCreatedOn": "2024-08-28T08:45:38",
+        "shipmentAddresses": [],
+        "containsHazardous": false,
+        "createdBy": "egypt_qa@yopmail.com",
+        "createdAt": "2024-08-28T09:03:00",
+        "updatedAt": "2024-08-28T09:07:27",
+        "contractId": "",
+        "contractType": "",
+        "salesBranch": "",
+        "primarySalesAgentEmail": "",
+        "secondarySalesAgentEmail": "",
+        "bookingCreatedDate": "2024-08-28T08:45:38",
+        "currentPartyForQuote": "",
+        "destinationSalesBranch": "",
+        "destinationPrimarySalesAgentEmail": "",
+        "destinationSecondarySalesAgentEmail": "",
+        "destinationCurrentPartyForQuote": "",
+        "destinationContractId": "",
+        "destinationContractType": "",
+        "updatedBy": "egypt_qa@yopmail.com",
+        "dateType": "ESTIMATED",
+        "sourceBranchTenantName": "EGYPT_TEST QA",
+        "masterData": {
+          "Carriers": {
+            "CMA CGM": "CMA CGM"
+          },
+          "MasterLists": {
+            "PAYMENT": {
+              "PPD": "PPD (Prepaid)"
+            },
+            "ROUTING_STATUS": {
+              "PLD": "PLD (Planned)"
+            },
+            "HBL_DELIVERY_MODE": {
+              "CFS/CFS": "CFS/CFS (CFS/CFS)"
+            },
+            "DG_CLASS": {
+              "1.1A": "1.1A (Class - A)"
+            },
+            "MODE": {
+              "SEA": "SEA (Sea)"
+            },
+            "TEMPERATURE_UNIT": {
+              "CEL": "CEL (Degree Celsius)"
+            },
+            "COMMODITY_GROUP": {
+              "Chemicals": "Chemicals (Chemicals & Allied Industries)"
+            },
+            "TRANSPORT_MODE": {
+              "SEA": "SEA (Sea Freight)"
+            },
+            "PACKS_UNIT": {
+              "BAG": "BAG (Bag)"
+            },
+            "CONTAINER_CATEGORY": {
+              "FCL": "FCL (Full Container Load)"
+            },
+            "DIMENSION_UNIT": {
+              "M": "M (Meters)"
+            },
+            "SOURCE_TYPE": {
+              "System": "System (System)"
+            },
+            "SERVICE_MODE": {
+              "P2P": "P2P (Port to Port)"
+            },
+            "INCOTERMS": {
+              "DAT": "DAT (Delivered at Terminal)"
+            },
+            "VOLUME_UNIT": {
+              "M3": "M3 (Cubic Meters)"
+            },
+            "WEIGHT_UNIT": {
+              "KG": "KG (KiloGrams)"
+            },
+            "SHIPMENT_TYPE": {
+              "STD": "STD (Standard House)"
+            }
+          },
+          "Commodity": {
+            "291100": "Acetals and hemiacetals whether or not with other oxygen function and their halogenated sulphonated nitrated or nitrosated derivatives"
+          },
+          "ContainerTypes": {
+            "20GP": "20GP - Twenty foot general purpose"
+          },
+          "DGSubstances": {
+            "1436": "1,1,1-TRIFLUOROETHANE"
+          },
+          "Vessels": {
+            "c978d0d8-9c93-4f49-869c-6bcf3d9e4610": "CMA CGM SAIGON"
+          },
+          "Unlocations": {
+            "0yRLYgEGNj8RKJOGhIeY": "Mundraa - INMUN Gujrat India- Door",
+            "INMUN_POR": "Mundra - INMUN, Mundra- Sea Port",
+            "GH2fZAsdBLyl9gAcsrAx": "AEJEA Jebel Ali DP World Port - AEJEA Dubai United Arab Emirates- Door",
+            "EGALY_AIR": "El Iskandariya - ALY, El Nouzha Airport- Air Port",
+            "AEJEA_POR": "Jebel Ali - AEJEA, Jebel Ali Dp World Terminal- Sea Port",
+            "INCCU_TER": "\"DP World PFT, ICD Kolkata\" - INCCU, \"DP World PFT, ICD Kolkata\"- Rail"
+          },
+          "Tenants": {
+            "937": "EGYPT_TEST QA"
+          }
+        },
+        "sendToBranch": 728,
+        "isShipmentReadOnly": false
+      }
+    ],
+    "packingVsContainerGuid": {
+      "f1fe380d-8a1c-4973-bdce-69e87481de2d": "ec7e67b7-a6cd-489e-989e-f1aa12423cdd",
+      "4087fd0c-3af0-4be7-b29a-b0236c2f63c3": "ec7e67b7-a6cd-489e-989e-f1aa12423cdd"
+    },
+    "containerVsShipmentGuid": {
+      "ec7e67b7-a6cd-489e-989e-f1aa12423cdd": [
+        "5909c164-8bcd-4da2-a14f-aecebbc748c8"
+      ]
+    },
+    "sendToBranch": 728,
+    "sourceBranchTenantName": "EGYPT_TEST QA",
+    "masterData": {
+      "Carriers": {
+        "CMA CGM": "CMA CGM"
+      },
+      "MasterLists": {
+        "CONTAINER_CATEGORY": {
+          "FCL": "FCL (Full Container Load)"
+        },
+        "HBL_DELIVERY_MODE": {
+          "CFS/CFS": "CFS/CFS (CFS/CFS)"
+        },
+        "DIMENSION_UNIT": {
+          "M": "M (Meters)"
+        },
+        "DG_CLASS": {
+          "1.1A": "1.1A (Class - A)"
+        },
+        "MODE": {
+          "SEA": "SEA (Sea)"
+        },
+        "TEMPERATURE_UNIT": {
+          "CEL": "CEL (Degree Celsius)"
+        },
+        "VOLUME_UNIT": {
+          "M3": "M3 (Cubic Meters)"
+        },
+        "WEIGHT_UNIT": {
+          "KG": "KG (KiloGrams)"
+        }
+      },
+      "ContainerTypes": {
+        "20GP": "20GP - Twenty foot general purpose"
+      },
+      "Vessels": {
+        "c978d0d8-9c93-4f49-869c-6bcf3d9e4610": "CMA CGM SAIGON"
+      },
+      "Unlocations": {
+        "INMUN_POR": "Mundra - INMUN, Mundra- Sea Port",
+        "AEJEA_POR": "Jebel Ali - AEJEA, Jebel Ali Dp World Terminal- Sea Port",
+        "INCCU_TER": "\"DP World PFT, ICD Kolkata\" - INCCU, \"DP World PFT, ICD Kolkata\"- Rail"
+      },
+      "Tenants": {
+        "728": "EGYPT Alexandria p100",
+        "937": "EGYPT_TEST QA"
+      }
+    }
+  },
+
+  "TRACKING_CONTAINER": {
+    "containerNumber": "607-34879246",
+    "identifierType": "airWayBillNumber",
+    "identifierValue": "607-34879246",
+    "journey": {
+      "serviceType": "unknown",
+      "carrierName": "AirCargo",
+      "portOfDeparture": 4,
+      "portOfArrival": 5,
+      "portOfDepartureAtd": {
+        "dateTime": "2024-07-05T22:00:00",
+        "sources": [
+          {
+            "dateTime": "2024-07-05T22:00:00",
+            "source": "AirCargo"
+          }
+        ]
+      },
+      "portOfArrivalAta": {
+        "dateTime": "2024-07-10T03:25:00",
+        "sources": [
+          {
+            "dateTime": "2024-07-10T03:25:00",
+            "source": "AirCargo"
+          }
+        ]
+      },
+      "segments": [
+        {
+          "source": 4,
+          "destination": 2,
+          "transport": 2,
+          "atd": {
+            "dateTime": "2024-07-05T22:00:00",
+            "sources": [
+              {
+                "dateTime": "2024-07-05T22:00:00",
+                "source": "AirCargo"
+              }
+            ]
+          },
+          "ata": {
+            "dateTime": "2024-07-06T06:00:00",
+            "sources": [
+              {
+                "dateTime": "2024-07-06T06:00:00",
+                "source": "AirCargo"
+              }
+            ]
+          }
+        },
+        {
+          "source": 2,
+          "destination": 1,
+          "transport": 3,
+          "atd": {
+            "dateTime": "2024-07-07T12:03:00",
+            "sources": [
+              {
+                "dateTime": "2024-07-07T12:03:00",
+                "source": "AirCargo"
+              }
+            ]
+          },
+          "ata": {
+            "dateTime": "2024-07-07T19:55:00",
+            "sources": [
+              {
+                "dateTime": "2024-07-07T19:55:00",
+                "source": "AirCargo"
+              }
+            ]
+          }
+        },
+        {
+          "source": 1,
+          "destination": 5,
+          "transport": 4,
+          "atd": {
+            "dateTime": "2024-07-09T21:27:00",
+            "sources": [
+              {
+                "dateTime": "2024-07-09T21:27:00",
+                "source": "AirCargo"
+              }
+            ]
+          },
+          "ata": {
+            "dateTime": "2024-07-10T03:25:00",
+            "sources": [
+              {
+                "dateTime": "2024-07-10T03:25:00",
+                "source": "AirCargo"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "places": [
+      {
+        "id": 1,
+        "type": "unknown",
+        "code": "AUH",
+        "name": "Abu Dhabi International Airport",
+        "country": "AE",
+        "latitude": "24.433",
+        "longitude": "54.6511",
+        "rawDescription": "AEAUH",
+        "formattedDescription": "Aeauh"
+      },
+      {
+        "id": 2,
+        "type": "unknown",
+        "code": "MUC",
+        "name": "Munich Airport",
+        "country": "DE",
+        "latitude": "48.3538",
+        "longitude": "11.7861",
+        "rawDescription": "DEMUC",
+        "formattedDescription": "Demuc"
+      },
+      {
+        "id": 3,
+        "type": "unknown",
+        "code": "FRA",
+        "name": "Frankfurt Airport",
+        "country": "DE",
+        "latitude": "50.0333",
+        "longitude": "8.57056",
+        "rawDescription": "DEFRA",
+        "formattedDescription": "Defra"
+      },
+      {
+        "id": 4,
+        "type": "unknown",
+        "code": "NUE",
+        "name": "Nuremberg Airport",
+        "country": "DE",
+        "latitude": "49.4987",
+        "longitude": "11.0781",
+        "rawDescription": "DENUE",
+        "formattedDescription": "Denue"
+      },
+      {
+        "id": 5,
+        "type": "unknown",
+        "code": "BLR",
+        "name": "Kempegowda International Airport",
+        "country": "IN",
+        "latitude": "13.1979",
+        "longitude": "77.7063",
+        "rawDescription": "INBLR",
+        "formattedDescription": "Inblr"
+      }
+    ],
+    "transports": [
+      {
+        "id": 1,
+        "type": "flight"
+      },
+      {
+        "id": 2,
+        "type": "flight",
+        "operatorName": "Etihad cristal cargo",
+        "name": "EY7126T"
+      },
+      {
+        "id": 3,
+        "type": "flight",
+        "operatorName": "Etihad cristal cargo",
+        "name": "EY0126"
+      },
+      {
+        "id": 4,
+        "type": "flight",
+        "operatorName": "Etihad cristal cargo",
+        "name": "EY0216"
+      }
+    ],
+    "events": [
+      {
+        "id": 1,
+        "eventCategory": "literal",
+        "eventType": "literal",
+        "description": "Booked",
+        "descriptionFromSource": "BKD",
+        "status": "actual",
+        "location": 1,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-01T11:39:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-01T11:39:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {}
+      },
+      {
+        "id": 2,
+        "eventCategory": "literal",
+        "eventType": "literal",
+        "description": "Planned FLight Departure",
+        "descriptionFromSource": "PLD",
+        "status": "actual",
+        "location": 2,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-04T13:04:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-04T13:04:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {}
+      },
+      {
+        "id": 3,
+        "eventCategory": "literal",
+        "eventType": "literal",
+        "description": "Planned FLight Departure",
+        "descriptionFromSource": "PLD",
+        "status": "actual",
+        "location": 1,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-05T01:10:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-05T01:10:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {}
+      },
+      {
+        "id": 4,
+        "eventCategory": "literal",
+        "eventType": "literal",
+        "description": "Booked",
+        "descriptionFromSource": "BKD",
+        "status": "actual",
+        "location": 3,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-05T08:43:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-05T08:43:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {}
+      },
+      {
+        "id": 5,
+        "eventCategory": "literal",
+        "eventType": "literal",
+        "description": "Booked",
+        "descriptionFromSource": "BKD",
+        "status": "actual",
+        "location": 1,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-05T10:49:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-05T10:49:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {}
+      },
+      {
+        "id": 6,
+        "eventCategory": "literal",
+        "eventType": "literal",
+        "description": "Planned FLight Departure",
+        "descriptionFromSource": "PLD",
+        "status": "actual",
+        "location": 2,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-05T16:34:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-05T16:34:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {}
+      },
+      {
+        "id": 7,
+        "eventCategory": "literal",
+        "eventType": "literal",
+        "description": "Freight on Hand",
+        "descriptionFromSource": "FOH",
+        "status": "actual",
+        "location": 4,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-05T16:46:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-05T16:46:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {}
+      },
+      {
+        "id": 8,
+        "eventCategory": "literal",
+        "eventType": "literal",
+        "description": "Received from Shipper",
+        "descriptionFromSource": "RCS",
+        "status": "actual",
+        "location": 4,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-05T16:46:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-05T16:46:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {}
+      },
+      {
+        "id": 9,
+        "eventCategory": "departure",
+        "eventType": "flightDeparture",
+        "description": "Flight Departure",
+        "descriptionFromSource": "DEP",
+        "status": "actual",
+        "location": 4,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-05T20:26:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-05T20:26:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {
+          "transport": 2,
+          "hasContainer": true,
+          "hasCargo": true
+        }
+      },
+      {
+        "id": 10,
+        "eventCategory": "literal",
+        "eventType": "literal",
+        "description": "Manifested",
+        "descriptionFromSource": "MAN",
+        "status": "actual",
+        "location": 4,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-05T20:26:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-05T20:26:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {}
+      },
+      {
+        "id": 11,
+        "eventCategory": "literal",
+        "eventType": "literal",
+        "description": "Received from Flight",
+        "descriptionFromSource": "RCF",
+        "status": "actual",
+        "location": 2,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-06T03:01:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-06T03:01:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {}
+      },
+      {
+        "id": 12,
+        "eventCategory": "literal",
+        "eventType": "literal",
+        "description": "Manifested",
+        "descriptionFromSource": "MAN",
+        "status": "actual",
+        "location": 2,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-07T04:56:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-07T04:56:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {}
+      },
+      {
+        "id": 13,
+        "eventCategory": "literal",
+        "eventType": "literal",
+        "description": "Prepared for Loading",
+        "descriptionFromSource": "FAL",
+        "status": "actual",
+        "location": 2,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-07T11:45:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-07T11:45:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {}
+      },
+      {
+        "id": 14,
+        "eventCategory": "departure",
+        "eventType": "flightDeparture",
+        "description": "Flight Departure",
+        "descriptionFromSource": "DEP",
+        "status": "actual",
+        "location": 2,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-07T13:46:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-07T13:46:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {
+          "transport": 3,
+          "hasContainer": true,
+          "hasCargo": true
+        }
+      },
+      {
+        "id": 15,
+        "eventCategory": "arrival",
+        "eventType": "flightArrival",
+        "description": "Flight Arrival",
+        "descriptionFromSource": "ARR",
+        "status": "actual",
+        "location": 1,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-07T19:47:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-07T19:47:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {
+          "transport": 3,
+          "hasContainer": true,
+          "hasCargo": true
+        }
+      },
+      {
+        "id": 16,
+        "eventCategory": "arrival",
+        "eventType": "flightArrival",
+        "description": "Flight Arrival",
+        "descriptionFromSource": "ARR",
+        "status": "actual",
+        "location": 1,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-07T19:55:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-07T19:55:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {
+          "transport": 3,
+          "hasContainer": true,
+          "hasCargo": true
+        }
+      },
+      {
+        "id": 17,
+        "eventCategory": "literal",
+        "eventType": "literal",
+        "description": "Received from Flight",
+        "descriptionFromSource": "RCF",
+        "status": "actual",
+        "location": 1,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-07T22:11:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-07T22:11:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {}
+      },
+      {
+        "id": 18,
+        "eventCategory": "literal",
+        "eventType": "literal",
+        "description": "Planned FLight Departure",
+        "descriptionFromSource": "PLD",
+        "status": "actual",
+        "location": 1,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-08T01:10:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-08T01:10:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {}
+      },
+      {
+        "id": 19,
+        "eventCategory": "literal",
+        "eventType": "literal",
+        "description": "Planned FLight Departure",
+        "descriptionFromSource": "PLD",
+        "status": "actual",
+        "location": 1,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-08T18:25:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-08T18:25:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {}
+      },
+      {
+        "id": 20,
+        "eventCategory": "literal",
+        "eventType": "literal",
+        "description": "Booked",
+        "descriptionFromSource": "BKD",
+        "status": "actual",
+        "location": 4,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-08T23:20:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-08T23:20:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {}
+      },
+      {
+        "id": 21,
+        "eventCategory": "literal",
+        "eventType": "literal",
+        "description": "Booked",
+        "descriptionFromSource": "BKD",
+        "status": "actual",
+        "location": 4,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-09T10:12:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-09T10:12:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {}
+      },
+      {
+        "id": 22,
+        "eventCategory": "literal",
+        "eventType": "literal",
+        "description": "Manifested",
+        "descriptionFromSource": "MAN",
+        "status": "actual",
+        "location": 1,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-09T16:34:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-09T16:34:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {}
+      },
+      {
+        "id": 23,
+        "eventCategory": "departure",
+        "eventType": "flightDeparture",
+        "description": "Flight Departure",
+        "descriptionFromSource": "DEP",
+        "status": "actual",
+        "location": 1,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-09T21:27:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-09T21:27:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {
+          "transport": 4,
+          "hasContainer": true,
+          "hasCargo": true
+        }
+      },
+      {
+        "id": 24,
+        "eventCategory": "arrival",
+        "eventType": "flightArrival",
+        "description": "Flight Arrival",
+        "descriptionFromSource": "ARR",
+        "status": "actual",
+        "location": 5,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-10T03:08:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-10T03:08:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {
+          "transport": 4,
+          "hasContainer": true,
+          "hasCargo": true
+        }
+      },
+      {
+        "id": 25,
+        "eventCategory": "arrival",
+        "eventType": "flightArrival",
+        "description": "Flight Arrival",
+        "descriptionFromSource": "ARR",
+        "status": "actual",
+        "location": 5,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-10T03:25:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-10T03:25:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {
+          "transport": 4,
+          "hasContainer": true,
+          "hasCargo": true
+        }
+      },
+      {
+        "id": 26,
+        "eventCategory": "literal",
+        "eventType": "literal",
+        "description": "Received from Flight",
+        "descriptionFromSource": "RCF",
+        "status": "actual",
+        "location": 5,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-10T06:38:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-10T06:38:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {}
+      },
+      {
+        "id": 27,
+        "eventCategory": "literal",
+        "eventType": "literal",
+        "description": "Shipment notified for delivery",
+        "descriptionFromSource": "NAN",
+        "status": "actual",
+        "location": 5,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-10T06:50:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-10T06:50:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {}
+      },
+      {
+        "id": 28,
+        "eventCategory": "literal",
+        "eventType": "literal",
+        "description": "Delivered",
+        "descriptionFromSource": "DLV",
+        "status": "actual",
+        "location": 5,
+        "locationRole": "unknown",
+        "actualEventTime": {
+          "dateTime": "2024-07-10T16:50:00",
+          "sources": [
+            {
+              "dateTime": "2024-07-10T16:50:00",
+              "source": "AirCargo"
+            }
+          ]
+        },
+        "details": {}
+      }
+    ],
+    "container": {
+      "bolNumber": "",
+      "clientBookingNumber": "DBAR-9391923-605569",
+      "numberOfPackages": "3",
+      "shipmentReference": "SHP00012345"
+    }
+  },
+  "NOTIFICATION_RESPONSE": {
+    "id": 11,
+    "guid": "893cc8fa-7315-4d23-a635-3ce8705a5140",
+    "entityType": "SHIPMENT",
+    "entityId": 12977,
+    "requestedBranchId": 937,
+    "requestedUser": "egypt_qa@yopmail.com",
+    "requestedOn": "2024-12-04 09:39:49",
+    "requestType": "REASSIGN",
+    "reason": "Reassigned requested",
+    "reassignedToBranchId": 908,
+    "tenantIdsData": {
+      "requestedBranchId": "EGYPT_TEST QA",
+      "reassignedToBranchId_code": "EGYSHP100",
+      "requestedBranchId_code": "EGYPT_TESTQA",
+      "reassignedToBranchId": "EGYSHP100"
+    },
+    "tenantId": 728
   }
 }

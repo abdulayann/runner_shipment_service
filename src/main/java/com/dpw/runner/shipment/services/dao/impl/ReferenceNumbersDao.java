@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
@@ -71,14 +72,9 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
         List<ReferenceNumbers> responseReferenceNumbers = new ArrayList<>();
         try {
             // TODO- Handle Transactions here
-            Map<Long, ReferenceNumbers> hashMap;
-//            if(!Objects.isNull(referenceNumbersIdList) && !referenceNumbersIdList.isEmpty()) {
-                ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", shipmentId, "=");
-                Pair<Specification<ReferenceNumbers>, Pageable> pair = fetchData(listCommonRequest, ReferenceNumbers.class);
-                Page<ReferenceNumbers> routings = findAll(pair.getLeft(), pair.getRight());
-                hashMap = routings.stream()
+            List<ReferenceNumbers> routings = findByShipmentId(shipmentId);
+            Map<Long, ReferenceNumbers> hashMap = routings.stream()
                         .collect(Collectors.toMap(ReferenceNumbers::getId, Function.identity()));
-//            }
             Map<Long, ReferenceNumbers> copyHashMap = new HashMap<>(hashMap);
             List<ReferenceNumbers> referenceNumbersRequests = new ArrayList<>();
             if (referenceNumbersList != null && !referenceNumbersList.isEmpty()) {
@@ -99,6 +95,10 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
             log.error(responseMsg, e);
             throw new RunnerException(e.getMessage());
         }
+    }
+
+    public List<ReferenceNumbers> findByShipmentId(Long shipmentId) {
+        return referenceNumbersRepository.findByShipmentId(shipmentId);
     }
 
     @Override
@@ -124,6 +124,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
             try {
                 auditLogService.addAuditLog(
                         AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                 .newData(req)
                                 .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, ReferenceNumbers.class) : null)
                                 .parent(ShipmentDetails.class.getSimpleName())
@@ -168,6 +169,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
             try {
                 auditLogService.addAuditLog(
                         AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                 .newData(req)
                                 .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, ReferenceNumbers.class) : null)
                                 .parent(ShipmentDetails.class.getSimpleName())
@@ -279,6 +281,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
             try {
                 auditLogService.addAuditLog(
                         AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                 .newData(req)
                                 .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, ReferenceNumbers.class) : null)
                                 .parent(ConsolidationDetails.class.getSimpleName())
@@ -323,6 +326,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
             try {
                 auditLogService.addAuditLog(
                         AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                 .newData(req)
                                 .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, ReferenceNumbers.class) : null)
                                 .parent(ConsolidationDetails.class.getSimpleName())
@@ -348,6 +352,7 @@ public class ReferenceNumbersDao implements IReferenceNumbersDao {
                     try {
                         auditLogService.addAuditLog(
                                 AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                         .newData(null)
                                         .prevData(jsonHelper.readFromJson(json, ReferenceNumbers.class))
                                         .parent(entityType)

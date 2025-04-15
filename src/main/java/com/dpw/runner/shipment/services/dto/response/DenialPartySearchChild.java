@@ -1,7 +1,10 @@
 package com.dpw.runner.shipment.services.dto.response;
 
+import com.dpw.runner.shipment.services.utils.Generated;
+
 import java.io.Serializable;
 
+@Generated
 public class DenialPartySearchChild implements Serializable {
     private String dp_id;
     private String list;

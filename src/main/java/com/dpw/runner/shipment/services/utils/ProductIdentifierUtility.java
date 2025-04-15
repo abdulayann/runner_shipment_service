@@ -9,9 +9,11 @@ import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
 import com.dpw.runner.shipment.services.dao.impl.ProductSequenceConfigDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ITenantProductsDao;
 import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
 import com.dpw.runner.shipment.services.entity.enums.ProductType;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSettingsSync;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -47,13 +49,12 @@ public class ProductIdentifierUtility {
   /**
    * Alternative for v1 constructor call with TenantSettings as a parameter
    *
-   * @param shipmentSettingsDetails (tenant settings)
    */
-  public List<TenantProducts> populateEnabledTenantProducts(ShipmentSettingsDetails shipmentSettingsDetails) {
-     return mapTenantProducts(shipmentSettingsDetails);
+  public List<TenantProducts> populateEnabledTenantProducts() {
+     return mapTenantProducts();
   }
 
-  private List<TenantProducts> mapTenantProducts(ShipmentSettingsDetails tenantSettings) {
+  private List<TenantProducts> mapTenantProducts() {
     var tenantProducts = new ArrayList<TenantProducts>();
     var findProduct = fetchRegisteredProduct();
     for (var p : findProduct) {
@@ -82,6 +83,7 @@ public class ProductIdentifierUtility {
     var productSequence = GetCommonProductSequence(transportMode, productProcessTypes);
     if (productSequence != null) {
       var regexPrefix = productSequence.getPrefix();
+      log.info("CR-ID {} || prefix for common sequence {}", LoggerHelper.getRequestIdFromMDC(), regexPrefix);
       sequenceNumber = RegexToSequenceNumber(productSequence, transportMode);
     }
     return sequenceNumber;
@@ -99,6 +101,7 @@ public class ProductIdentifierUtility {
     List<TenantProducts> tenantProductList = tenantProducts.getContent();
 
     if (tenantProductList.size() > 0) {
+      log.info("CR-ID {} || common sequence found", LoggerHelper.getRequestIdFromMDC());
       var tenantProductIds = tenantProductList.stream().map(TenantProducts::getId).toList();
       listRequest = getCommonProductSequenceListCriteria(tenantProductIds, productProcessTypes, transportMode);
 
@@ -108,6 +111,7 @@ public class ProductIdentifierUtility {
               Map.entry("transportMode", RunnerEntityMapping.builder().tableName("tenantProducts").dataType(List.class).fieldName("transportModes").build()),
               Map.entry(Constants.PRODUCT_PROCESS_TYPES, RunnerEntityMapping.builder().tableName("ProductSequenceConfig").dataType(ProductProcessTypes.class).fieldName(Constants.PRODUCT_PROCESS_TYPES).build())
           );
+      log.info("CR-ID {} || retrieving product for common sequence", LoggerHelper.getRequestIdFromMDC());
       Pair<Specification<ProductSequenceConfig>, Pageable> productSequenceConfigPair =
           fetchData(listRequest, ProductSequenceConfig.class, tableNames);
         returnProduct = productSequenceConfigDao.findAndLock(productSequenceConfigPair.getLeft(), productSequenceConfigPair.getRight());
@@ -389,6 +393,9 @@ public class ProductIdentifierUtility {
             String counter =
                     getNextNumberHelper.padLeft(productSequence.getSerialCounter().toString(), numberOfDigits, '0');
             result = (result == null ? new StringBuilder("null") : result).append(counter);
+            log.info("CR-ID {} || Calling event {} from RegexToSequenceNumber", LoggerHelper.getRequestIdFromMDC(), LoggerEvent.PRODUCT_SEQ_SAVE);
+
+
             productSequence = productSequenceConfigDao.save(productSequence);
             try {
               shipmentSettingsSync.syncProductSequence(productSequence, v1AuthHelper.getHeadersForDataSync());
@@ -638,8 +645,8 @@ public class ProductIdentifierUtility {
     }
   }
 
-  public String getCustomizedBLNumber(ShipmentDetails shipmentDetails, ShipmentSettingsDetails tenantSettings) throws RunnerException {
-    List<TenantProducts> enabledTenantProducts = this.populateEnabledTenantProducts(tenantSettings);
+  public String getCustomizedBLNumber(ShipmentDetails shipmentDetails) throws RunnerException {
+    List<TenantProducts> enabledTenantProducts = this.populateEnabledTenantProducts();
 
     TenantProducts identifiedProduct = this.IdentifyProduct(shipmentDetails, enabledTenantProducts);
     if (identifiedProduct == null){

@@ -17,7 +17,7 @@ public class TruckDriverModel implements IDocumentModel{
     private List<ShipmentContainers> containers;
     public ConsolidationModel consolidationDetails;
     public TenantModel tenant;
-    public Long totalPacks;
+    public long totalPacks;
     public BigDecimal totalWeight;
     private List<TruckDriverDetailsModel> truckDriverDetails;
 }

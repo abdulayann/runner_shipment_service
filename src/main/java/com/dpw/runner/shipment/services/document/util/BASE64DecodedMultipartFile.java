@@ -1,9 +1,11 @@
 package com.dpw.runner.shipment.services.document.util;
 
+import com.dpw.runner.shipment.services.utils.Generated;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
 
+@Generated
 public class BASE64DecodedMultipartFile implements MultipartFile {
     private final byte[] imgContent;
 

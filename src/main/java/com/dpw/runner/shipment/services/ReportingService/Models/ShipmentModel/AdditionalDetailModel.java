@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.config.LocalDateTimeWithTimeZoneSerializer;
+import com.dpw.runner.shipment.services.entity.enums.AirAuthorisingEntity;
 import com.dpw.runner.shipment.services.entity.enums.AndesStatus;
 import com.dpw.runner.shipment.services.entity.enums.LGDStatus;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
@@ -221,4 +222,20 @@ public class AdditionalDetailModel implements IDocumentModel {
     private String bLRemarksDescription;
     private String exemptionCodes;
     private String aomFreeText;
+    @JsonProperty("EmergencyContactNumber")
+    private String emergencyContactNumber;
+    @JsonProperty("EmergencyContactNumberCode")
+    private String emergencyContactNumberCode;
+    @JsonProperty("Sci")
+    private String sci;
+
+    // new CSD fields
+    @JsonProperty("SecurityStatusReceivedFrom")
+    private AirAuthorisingEntity securityStatusReceivedFrom;
+    @JsonProperty("AdditionalSecurityInformation")
+    private String additionalSecurityInformation;
+    @JsonProperty("RegulatedEntityCategory")
+    private String regulatedEntityCategory;
+    @JsonProperty("FcrNumber")
+    private Integer fcrNumber;
 }

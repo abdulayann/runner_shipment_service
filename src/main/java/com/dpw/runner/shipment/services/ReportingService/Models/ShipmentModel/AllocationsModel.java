@@ -22,8 +22,6 @@ public class AllocationsModel implements IDocumentModel {
     private UUID guid;
     @JsonProperty("ShipmentsCount")
     private Integer shipmentsCount;
-    @JsonProperty("Hazardous")
-    private Boolean hazardous;
     @JsonProperty("CutoffDate")
     @JsonSerialize(using = LocalDateTimeWithTimeZoneSerializer.class)
     private LocalDateTime cutoffDate;

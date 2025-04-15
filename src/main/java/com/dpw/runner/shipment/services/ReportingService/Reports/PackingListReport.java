@@ -7,7 +7,6 @@ import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.PackingListModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ReferenceNumbersModel;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
@@ -15,6 +14,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.GetNextNumberHelper;
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -46,6 +46,7 @@ public class PackingListReport extends IReport {
     IDocumentModel getDocumentModel(Long id) {
         PackingListModel packingListModel = new PackingListModel();
         var shipment = getShipment(id);
+        validateAirAndOceanDGCheck(shipment);
         packingListModel.setShipmentDetails(shipment);
         if(shipment.getConsolidationList() != null && shipment.getConsolidationList().size() > 0) {
             packingListModel.setConsolidation(getConsolidation(shipment.getConsolidationList().get(0).getId()));
@@ -60,7 +61,7 @@ public class PackingListReport extends IReport {
     @Override
     Map<String, Object> populateDictionary(IDocumentModel documentModel) {
         PackingListModel model = (PackingListModel) documentModel;
-        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         var shipment = model.getShipmentDetails();
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(shipment));
 
@@ -177,7 +178,7 @@ public class PackingListReport extends IReport {
         if(shipment.getPackingList() != null && shipment.getPackingList().size() > 0) {
             List<Map<String, Object>> values = new ArrayList<>();
             shipment.getPackingList().forEach(i ->
-                values.add(jsonHelper.convertJsonToMap(jsonHelper.convertToJson(i)))
+                values.add(jsonHelper.convertValue(i, new TypeReference<>() {}))
             );
 
             for(var v : values) {
@@ -187,9 +188,9 @@ public class PackingListReport extends IReport {
                 if (!breakFlagNetWeight && v.containsKey(ReportConstants.NET_WEIGHT) && v.get(ReportConstants.NET_WEIGHT) != null
                         && v.containsKey(ReportConstants.NET_WEIGHT_UNIT) && v.get(ReportConstants.NET_WEIGHT_UNIT) != null) {
                     if (unitOfTotalNetWeight == null) {
-                        unitOfTotalNetWeight = stringValueOf(v.get(ReportConstants.NET_WEIGHT));
+                        unitOfTotalNetWeight = stringValueOf(v.get(ReportConstants.NET_WEIGHT_UNIT));
                         totalNetWeight = totalNetWeight.add(new BigDecimal(stringValueOf(v.get(ReportConstants.NET_WEIGHT))));
-                    } else if (!unitOfTotalNetWeight.equals(stringValueOf(v.get(ReportConstants.NET_WEIGHT)))) {
+                    } else if (!unitOfTotalNetWeight.equals(stringValueOf(v.get(ReportConstants.NET_WEIGHT_UNIT)))) {
                         totalNetWeight = BigDecimal.ZERO;
                         breakFlagNetWeight = true;
                     } else {

@@ -5,7 +5,6 @@ import io.swagger.annotations.ApiModel;
 import lombok.*;
 
 import java.io.Serializable;
-import java.util.UUID;
 
 @Data
 @Builder

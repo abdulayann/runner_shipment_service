@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services.dto.request.crp;
 
-import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import lombok.*;
 

@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.PickUpOrderRepor
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PickupDeliveryDetailsModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -23,11 +24,17 @@ public class PickupOrderReport extends IReport {
 
     @Autowired
     private HblReport hblReport;
-
     public Boolean printWithoutTranslation;
+
     @Override
     public Map<String, Object> getData(Long id) {
         PickUpOrderReportModel pickUpOrderReportModel = (PickUpOrderReportModel) getDocumentModel(id);
+        return populateDictionary(pickUpOrderReportModel);
+    }
+
+    public Map<String, Object> getData(Long id, Long transportInstructionId) {
+        PickUpOrderReportModel pickUpOrderReportModel = (PickUpOrderReportModel) getDocumentModel(id);
+        pickUpOrderReportModel.hblModel.transportInstructionId = transportInstructionId;
         return populateDictionary(pickUpOrderReportModel);
     }
 
@@ -38,6 +45,13 @@ public class PickupOrderReport extends IReport {
         pickUpOrderReportModel.hblModel.isHbl = false;
         if (pickUpOrderReportModel.hblModel.shipment != null && pickUpOrderReportModel.hblModel.shipment.getPickupDetails() != null)
             pickUpOrderReportModel.pickUpTransportAddress = pickUpOrderReportModel.hblModel.shipment.getPickupDetails().getTransporterDetail();
+        ShipmentSettingsDetails shipmentSettingsDetails = getCurrentShipmentSettings();
+        Boolean countryAirCargoSecurity = shipmentSettingsDetails.getCountryAirCargoSecurity();
+        if (Boolean.TRUE.equals(countryAirCargoSecurity)) {
+            validateAirDGAndAirSecurityCheckShipments(pickUpOrderReportModel.hblModel.getShipment());
+        } else {
+            validateAirDGCheckShipments(pickUpOrderReportModel.hblModel.getShipment());
+        }
         return pickUpOrderReportModel;
     }
 
@@ -92,6 +106,9 @@ public class PickupOrderReport extends IReport {
                 }
             }
         }
+
+        populateUserFields(pickUpOrderReportModel.hblModel.getUser(), dictionary);
+        populateTenantFields(dictionary, pickUpOrderReportModel.hblModel.getTenant());
 
         dictionary.put(ReportConstants.PRINT_USER, UserContext.getUser().getUsername());
         populateRaKcData(dictionary, pickUpOrderReportModel.hblModel.shipment);

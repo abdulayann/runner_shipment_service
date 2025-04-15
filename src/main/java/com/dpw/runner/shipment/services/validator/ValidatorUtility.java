@@ -29,6 +29,7 @@ public class ValidatorUtility {
     private final ObjectMapper objectMapper;
     private final IValidationsDao validationsDao;
 
+    private static Map<String, List<Validations>> validationsMap = new HashMap();
     @Autowired
     public ValidatorUtility(ObjectMapper objectMapper, IValidationsDao validationsDao) {
         this.objectMapper = objectMapper;
@@ -46,17 +47,17 @@ public class ValidatorUtility {
     public Set<String> applyValidation(String json, String entity, LifecycleHooks lifecycleHook, boolean failOnFirst) {
         Set<String> errors = new LinkedHashSet<>();
         Map jsonMap = new HashMap();
-
+        long start = System.currentTimeMillis();
+        log.info("Initiating Validation Layer with for entity: {} raw data: {}", entity, json);
         try (JsonReader jsonReader = Json.createReader(new StringReader(json))) {
             JsonObject jsonObject = jsonReader.readObject();
             generateMap(jsonObject, StringUtility.getEmptyString(), jsonMap);
+            String key = String.format("%s-%s", entity, lifecycleHook);
 
-            Optional<List<Validations>> validations = validationsDao.findByLifecycleHookAndEntity(lifecycleHook, entity);
-            for (Validations validation : validations.get()) {
+            if (!validationsMap.containsKey(key))
+                validationsMap.put(key, validationsDao.findByLifecycleHookAndEntity(lifecycleHook, entity).get());
+            for (Validations validation : validationsMap.get(key)) {
                 try {
-                    log.info("Initiating Validation Layer with JSON Converted Entity Data: {}", jsonObject);
-                    log.info("Initiating Validation Layer with raw data: {}", json);
-                    log.info("Initiating Validation Layer with SchemaObject: {}", objectMapper.writeValueAsString(validation.getJsonSchema()));
                     try (JsonReader schemaReader = Json.createReader(new StringReader(objectMapper.writeValueAsString(validation.getJsonSchema())))) {
                         JsonObject schemaObject = schemaReader.readObject();
                         errors.addAll(validateJson(jsonObject, schemaObject, jsonMap, failOnFirst));
@@ -65,6 +66,7 @@ public class ValidatorUtility {
                     throw new RuntimeException(e);
                 }
             }
+            log.info("Ending Validation Layer with for entity: {} with time taken: {} ms", entity, System.currentTimeMillis() - start);
         }
 
         return errors;
@@ -98,7 +100,6 @@ public class ValidatorUtility {
             return errors;
         }
         for (String field : schemaObject.keySet()) {
-            JsonValue fieldValue = jsonObject.get(field);
             JsonObject fieldSchema = schemaObject.getJsonObject(field);
 
             for (String validationProperty : fieldSchema.keySet()) {
@@ -250,7 +251,7 @@ public class ValidatorUtility {
 
             if (fieldValue.getValueType() == JsonValue.ValueType.NUMBER) {
                 Integer fieldValueInteger = jsonObject.getInt(at);
-                Integer size = jsonObject.getInt(ValidatorConstants.MIN_VALUE);
+                Integer size = jsonSchema.getInt(ValidatorConstants.MIN_VALUE);
                 if (fieldValueInteger != null && fieldValueInteger < size) {
                     errors.add(String.format(ErrorConstants.INVALID_MIN_VALUE_VALIDATION, at, fieldValueInteger, size));
                 }
@@ -706,6 +707,10 @@ public class ValidatorUtility {
         if (errorJson.containsKey(key) && errorJson.get(key).getValueType() == JsonValue.ValueType.STRING)
             error = errorJson.getString(key);
         return error;
+    }
+
+    public void clearValidationsMap() {
+        validationsMap.clear();
     }
 
 }

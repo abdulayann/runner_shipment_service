@@ -88,6 +88,7 @@ public class AuditLogConstants {
                 put("route", "Route");
                 put("sourceTenantId", "Source Tenant Id");
                 put("documentationPartner", "Documentation Partner");
+                put("triangulationPartnerList", "Triangulation Partner List");
                 put("triangulationPartner", "Triangulation Partner");
                 put("receivingBranch", "Receiving Branch");
                 put("intraBranch", "Intra Branch");
@@ -350,9 +351,13 @@ public class AuditLogConstants {
 
                 put("deliveryDetails", "Delivery Details");
                 put("deliveryDetails.estimatedPickupOrDelivery", "Delivery Details: Estimated Pickup Or Delivery");
+                put("deliveryDetails.estimatedPickup", "Delivery Details: Estimated Pickup");
+                put("deliveryDetails.estimatedDelivery", "Delivery Details: Estimated Delivery");
                 put("deliveryDetails.requiredBy", "Delivery Details: Required By");
                 put("deliveryDetails.portTransportAdvised", "Delivery Details: Port Transport Advised");
                 put("deliveryDetails.actualPickupOrDelivery", "Delivery Details: Actual Pickup Or Delivery");
+                put("deliveryDetails.actualPickup", "Delivery Details: Actual Pickup ");
+                put("deliveryDetails.actualDelivery", "Delivery Details: Actual Delivery ");
                 put("deliveryDetails.pickupOrDelivery", "Delivery Details: Pickup Or Delivery");
                 put("deliveryDetails.type", "Delivery Details: Type");
                 put("deliveryDetails.shipmentId", "Delivery Details: Shipment Id");
@@ -372,6 +377,10 @@ public class AuditLogConstants {
                 put("deliveryDetails.emptyTruckInDate", "Delivery Details: Empty Truck In Date");
                 put("deliveryDetails.loadedTruckGateOutDate", "Delivery Details: Loaded Truck Gate Out Date");
                 put("deliveryDetails.pickupDeliveryInstruction", "Delivery Details: Pickup Delivery Instruction");
+                put("deliveryDetails.pickupGateIn", "Delivery Details : Pickup Gate In");
+                put("deliveryDetails.deliveryGateIn", "Delivery Details : Delivery Gate In");
+                put("deliveryDetails.pickupGateOut", "Delivery Details : Pickup Gate Out");
+                put("deliveryDetails.deliveryGateOut", "Delivery Details : Delivery Gate Out");
 
                 put("deliveryDetails.transporterDetail", "Delivery Details: Transporter Detail");
                 put("deliveryDetails.transporterDetail.entityId", "Delivery Details: Transporter Detail: Entity Id");
@@ -448,6 +457,15 @@ public class AuditLogConstants {
                 put("pickupDetails.emptyTruckInDate", "Pickup Details: Empty Truck In Date");
                 put("pickupDetails.loadedTruckGateOutDate", "Pickup Details: Loaded Truck Gate Out Date");
                 put("pickupDetails.pickupDeliveryInstruction", "Pickup Details: Pickup Delivery Instruction");
+
+                put("pickupDetails.pickupGateIn", "Pickup Details : Pickup Gate In");
+                put("pickupDetails.deliveryGateIn", "Pickup Details : Delivery Gate In");
+                put("pickupDetails.pickupGateOut", "Pickup Details : Pickup Gate Out");
+                put("pickupDetails.deliveryGateOut", "Pickup Details : Delivery Gate Out");
+                put("pickupDetails.estimatedPickup", "Pickup Details: Estimated Pickup");
+                put("pickupDetails.estimatedDelivery", "Pickup Details: Estimated Delivery");
+                put("pickupDetails.actualPickup", "Pickup Details: Actual Pickup ");
+                put("pickupDetails.actualDelivery", "Pickup Details: Actual Delivery ");
 
                 put("pickupDetails.transporterDetail", "Pickup Details: Transporter Detail");
                 put("pickupDetails.transporterDetail.entityId", "Pickup Details: Transporter Detail: Entity Id");
@@ -551,7 +569,6 @@ public class AuditLogConstants {
                 put(CONTAINER_CODE, "Container Code");
                 put("sealNumber", "Seal Number");
                 put("descriptionOfGoods", "Description Of Goods");
-                put("noOfPackages", "No Of Packages");
                 put(NET_WEIGHT, NET_WEIGHT_VAL);
                 put(NET_WEIGHT_UNIT, NET_WEIGHT_UNIT_VAL);
                 put("grossWeight", "Gross Weight");

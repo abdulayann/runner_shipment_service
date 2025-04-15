@@ -3,8 +3,8 @@ package com.dpw.runner.shipment.services.entitytransfer.dto;
 import com.dpw.runner.shipment.services.entitytransfer.common.request.IEntityTranferBaseEntity;
 import lombok.*;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.Map;
 
 @Data
@@ -13,14 +13,14 @@ import java.util.Map;
 @AllArgsConstructor
 @NoArgsConstructor
 public class EntityTransferServiceDetails implements IEntityTranferBaseEntity {
-    public String serviceType;
-    public EntityTransferParties contractor;
-    public int srvLocation;
-    public LocalDateTime bookingDate;
-    public Long serviceCount;
-    public Duration serviceDuration;
-    public LocalDateTime completionDate;
-    public String refNumber;
-    public String serviceNotes;
+    private String serviceType;
+    private EntityTransferParties contractor;
+    private String srvLocation;
+    private LocalDateTime bookingDate;
+    private Long serviceCount;
+    private LocalTime serviceDuration;
+    private LocalDateTime completionDate;
+    private String refNumber;
+    private String serviceNotes;
     private Map<String, EntityTransferMasterLists> masterData;
 }

@@ -1,22 +1,16 @@
 package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
-import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
-import com.dpw.runner.shipment.services.utils.MasterData;
 import com.dpw.runner.shipment.services.utils.OrganizationData;
 import com.dpw.runner.shipment.services.utils.UnlocationData;
 import lombok.*;
 import lombok.experimental.Accessors;
-import org.apache.poi.hpsf.Decimal;
-import org.hibernate.annotations.Generated;
-import org.hibernate.annotations.*;
+import org.hibernate.annotations.BatchSize;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.Where;
 
-import javax.persistence.CascadeType;
-import javax.persistence.Entity;
-import javax.persistence.Table;
 import javax.persistence.*;
 import java.time.LocalDateTime;
-import java.util.UUID;
 
 
 @Entity
@@ -27,35 +21,37 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 @Accessors(chain = true)
+@SQLDelete(sql = "UPDATE arrival_departure_details SET is_deleted = true WHERE id=?")
+@Where(clause = "is_deleted = false")
 @BatchSize(size = 50)
 public class ArrivalDepartureDetails extends MultiTenancy {
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "container_yard_id", referencedColumnName = "id")
     @OrganizationData
     private Parties containerYardId;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "transport_port_id", referencedColumnName = "id")
     @OrganizationData
     private Parties transportPortId;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "cto_id", referencedColumnName = "id")
     @OrganizationData
     private Parties CTOId;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "cfs_id", referencedColumnName = "id")
     @OrganizationData
     private Parties CFSId;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "first_foreign_port_id", referencedColumnName = "id")
     @OrganizationData
     private Parties firstForeignPortId;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "last_foreign_port_id", referencedColumnName = "id")
     @OrganizationData
     private Parties lastForeignPortId;

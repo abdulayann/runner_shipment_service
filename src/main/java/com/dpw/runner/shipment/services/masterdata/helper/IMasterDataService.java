@@ -85,6 +85,8 @@ public interface IMasterDataService {
     DependentServiceResponse updateOrganizationData(Object request);
 
     DependentServiceResponse fetchUnlocationData(Object request);
+    DependentServiceResponse stateBasedList(Object request);
+
 
     DependentServiceResponse createUnlocationData(Object request);
 

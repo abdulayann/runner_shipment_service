@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
+import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -44,6 +45,8 @@ public class RoutingsModel implements IDocumentModel {
     private Long consolidationId;
     @JsonProperty("IsLinked")
     private Boolean isLinked;
+    @JsonProperty("isSelectedForDocument")
+    private Boolean isSelectedForDocument;
     @JsonProperty("Voyage")
     private String voyage;
     @JsonProperty("AircraftRegistration")
@@ -64,4 +67,6 @@ public class RoutingsModel implements IDocumentModel {
     private Long transitDays;
     @JsonProperty("Carrier")
     private String carrier;
+    @JsonProperty("Carriage")
+    private RoutingCarriage carriage;
 }

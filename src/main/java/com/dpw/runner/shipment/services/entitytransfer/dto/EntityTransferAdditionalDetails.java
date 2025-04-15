@@ -1,13 +1,16 @@
 package com.dpw.runner.shipment.services.entitytransfer.dto;
 
+import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.entity.enums.AndesStatus;
 import com.dpw.runner.shipment.services.entity.enums.LGDStatus;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
 import com.dpw.runner.shipment.services.entitytransfer.common.request.IEntityTranferBaseEntity;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 
 @Data
@@ -16,96 +19,111 @@ import java.util.Map;
 @AllArgsConstructor
 @NoArgsConstructor
 public class EntityTransferAdditionalDetails implements IEntityTranferBaseEntity {
-    public LocalDateTime customsNoIssueDate;
-    public LocalDateTime expiryDate;
-    public String inspection;
-    public String airwayBillDims;
-    public BigDecimal shipperCOD;
-    public String shipperCODPM;
-    public String phase;
-    public BigDecimal spotRate;
-    public String spotRateType;
-    public String efreightStatus;
-    public Boolean importExportShipmentLock;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime customsNoIssueDate;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime expiryDate;
+    private String inspection;
+    private String airwayBillDims;
+    private BigDecimal shipperCOD;
+    private String shipperCODPM;
+    private String phase;
+    private BigDecimal spotRate;
+    private String spotRateType;
+    private String efreightStatus;
+    private Boolean importExportShipmentLock;
     public String CHAJobNumber;
     public String ADCode;
     public String BEType;
-    public String customLocation;
-    public String customCity;
-    public Boolean isImportClearance;
-    public Boolean isExportClearance;
+    private String customLocation;
+    private String customCity;
+    private Boolean isImportClearance;
+    private Boolean isExportClearance;
     public String IGMFileNo;
     public String IECode;
-    public String branchSINumber;
-    public AndesStatus andesStatus;
-    public LocalDateTime andesResponseDate;
-    public String andesStatusResponseText;
-    public String peruEntryExitPoint;
-    public String tipoDocumentNotifyParty;
-    public String tipoDocumentConsignee;
-    public String tipoDocumentConsignor;
-    public String andesTicket;
-    public Long warehouseId;
-    public String activityType;
-    public Long hsnNumber;
+    private String branchSINumber;
+    private AndesStatus andesStatus;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime andesResponseDate;
+    private String andesStatusResponseText;
+    private String peruEntryExitPoint;
+    private String tipoDocumentNotifyParty;
+    private String tipoDocumentConsignee;
+    private String tipoDocumentConsignor;
+    private String andesTicket;
+    private Long warehouseId;
+    private String activityType;
+    private Long hsnNumber;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     public LocalDateTime IGMFileDate;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     public LocalDateTime IGMInwardDate;
-    public LocalDateTime inwardDateAndTime;
-    public Long lineNumber;
-    public Long subLineNumber;
-    public Long localLineNumber;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime inwardDateAndTime;
+    private Long lineNumber;
+    private Long subLineNumber;
+    private Long localLineNumber;
     public String SMTPIGMNumber;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     public LocalDateTime SMTPIGMDate;
-    public Boolean isInland;
-    public Ownership ownership;
-    public String ownershipName;
-    public Ownership passedBy;
-    public String passedByPerson;
-    public LGDStatus lgdStatus;
-    public Boolean isCmsHBLSent;
-    public Boolean isCreditOverrideApproved;
-    public BigDecimal freeDays;
-    public String customHouse;
-    public String supplierInvoiceNumber;
-    public LocalDateTime supplierInvoiceDate;
-    public BigDecimal invoiceValue;
-    public BigDecimal assessValue;
+    private Boolean isInland;
+    private Ownership ownership;
+    private String ownershipName;
+    private Ownership passedBy;
+    private String passedByPerson;
+    private LGDStatus lgdStatus;
+    private Boolean isCmsHBLSent;
+    private Boolean isCreditOverrideApproved;
+    private BigDecimal freeDays;
+    private String customHouse;
+    private String supplierInvoiceNumber;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime supplierInvoiceDate;
+    private BigDecimal invoiceValue;
+    private BigDecimal assessValue;
     public BigDecimal CIFValue;
-    public BigDecimal totalDuty;
-    public String externalNotes;
-    public Long bondedWarehouseId;
-    public String releaseType;
-    public String houseBillType;
-    public String onBoard;
-    public LocalDateTime onBoardDate;
-    public String deliveryMode;
-    public Integer original;
-    public Integer copy;
+    private BigDecimal totalDuty;
+    private String externalNotes;
+    private Long bondedWarehouseId;
+    private String releaseType;
+    private String houseBillType;
+    private String onBoard;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime onBoardDate;
+    private String deliveryMode;
+    private Integer original;
+    private Integer copy;
     public String BLChargesDisplay;
     public String BLExporterShipment;
-    public String screeningStatus;
-    public String paidPlace;
-    public String placeOfIssue;
-    public String placeOfSupply;
-    public LocalDateTime dateOfIssue;
-    public LocalDateTime dateOfReceipt;
-    public String goodsCO;
+    private List<String> screeningStatus;
+    private String paidPlace;
+    private String placeOfIssue;
+    private String placeOfSupply;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime dateOfIssue;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime dateOfReceipt;
+    private String goodsCO;
     public String BOENumber;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     public LocalDateTime BOEDate;
-    public Boolean printedOriginal;
+    private Boolean printedOriginal;
     public Boolean WBLPrinted;
-    public Boolean draftPrinted;
-    public Boolean surrenderPrinted;
-    public EntityTransferParties notifyParty;
-    public EntityTransferParties importBroker;
-    public EntityTransferParties exportBroker;
-    public EntityTransferParties sendingForwarder;
-    public EntityTransferParties receivingForwarder;
-    public EntityTransferParties traderOrSupplier;
-    public EntityTransferParties eTailor;
-    public EntityTransferParties borrowedFrom;
-    public EntityTransferParties sendingAgent;
-    public EntityTransferParties receivingAgent;
+    private Boolean draftPrinted;
+    private Boolean surrenderPrinted;
+    private EntityTransferParties notifyParty;
+    private EntityTransferParties importBroker;
+    private EntityTransferParties exportBroker;
+    private EntityTransferParties sendingForwarder;
+    private EntityTransferParties receivingForwarder;
+    private EntityTransferParties traderOrSupplier;
+    private EntityTransferParties eTailor;
+    private EntityTransferParties borrowedFrom;
+    private EntityTransferParties sendingAgent;
+    private EntityTransferParties receivingAgent;
+    private String agentReference;
+    private String sci;
+    private Boolean emptyContainerReturned;
     private Map<String, EntityTransferMasterLists> masterData;
     private Map<String, EntityTransferUnLocations> unlocationData;
 }

@@ -42,5 +42,21 @@ public class CustomerBookingConstants {
     public static final String DATE_TIME_FORMAT = "yyyy/MM/dd'T'hh:mm:ss";
 
     public static final String BOOKING_DETAILS_RETRIEVE_BY_ID_ERROR = "Booking Details is null for Id {} with Request Id {}";
+    public static final String CUSTOMER_BOOKING_STRING = "BOOKING";
+    public static final String MDM_FINAL_STATUS_FIELD = "finalStatus";
+    public static final String MDM_FINAL_STATUS_APPROVED = "Approved";
+    public static final String MDM_FINAL_STATUS_NO_APPROVAL_NEEDED = "NoApproval";
+    public static final String BOOKING_GUID = "Booking Guid";
 
+    public static final String RETRIEVE_BY_ORDER_ID_SUCCESSFUL = "Successful Booking Data Retrieval By Order Id";
+    public static final String ORDER_ID = "Order Id";
+
+    public static final String PLATFORM_FAILURE_EMAIL_SUBJECT = "Reverse Integration Sync failed for Booking ID %s";
+    public static final String PLATFORM_FAILURE_EMAIL_BODY = "An error has occurred for Customer Reference No. BOOKING_ID  during the reverse sync process to the platform. The details of the error are as follows:\n\nBooking ID: BOOKING_ID\n\nShipment ID: SHIPMENT_ID\n\nPlatform Response: RESPONSE\n\nRunner Request: REQUEST \n\nRequest to resolve the issue at the earliest.\n\nRegards, \nCargoes Runner";
+
+    public static final String SHIPMENT_ID = "SHIPMENT_ID";
+    public static final String BOOKING_NUMBER = "BOOKING_ID";
+    public static final String RESPONSE = "RESPONSE";
+    public static final String REQUEST = "REQUEST";
+    public static final String SHIPMENT_NOT_CREATED = "Shipment Not created";
 }

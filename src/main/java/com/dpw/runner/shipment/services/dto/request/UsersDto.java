@@ -21,6 +21,7 @@ public class UsersDto implements Serializable {
     public String Username;
     public String DisplayName;
     public String Email;
+    public String Phone;
     public Boolean IsAdmin;;
     public Integer TenantId;
     public String Code; //Tenant Code

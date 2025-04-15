@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.Co
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.TruckDriverModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -54,7 +55,6 @@ public class ConsTruckwayBillReport extends IReport {
             ContainerModel containerModel = new ContainerModel();
             containerModel.setContainerNumber(container.getContainerNumber());
             containerModel.setSealNumber(container.getSealNumber());
-            containerModel.setNoOfPackages(container.getNoOfPackages());
             containerModel.setGrossWeight(getRoundedBigDecimal(container.getGrossWeight(),decimal, RoundingMode.HALF_UP));
             containerModel.setGrossWeightUnit(container.getGrossWeightUnit());
             containerModel.setGrossVolume(getRoundedBigDecimal(container.getGrossVolume(),decimal, RoundingMode.HALF_UP));
@@ -76,7 +76,8 @@ public class ConsTruckwayBillReport extends IReport {
     @Override
     public Map<String, Object> populateDictionary(IDocumentModel documentModel) {
         TruckDriverModel truckDriverModel = (TruckDriverModel) documentModel;
-        String json = jsonHelper.convertToJsonWithDateTimeFormatter(truckDriverModel.consolidationDetails, GetDPWDateFormatOrDefault());
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
+        String json = jsonHelper.convertToJsonWithDateTimeFormatter(truckDriverModel.consolidationDetails, GetDPWDateFormatOrDefault(v1TenantSettingsResponse));
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
         populateConsolidationFields(truckDriverModel.consolidationDetails, dictionary);
         populateUserFields(truckDriverModel.usersDto, dictionary);

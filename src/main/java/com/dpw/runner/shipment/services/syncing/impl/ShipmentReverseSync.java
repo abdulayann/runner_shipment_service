@@ -18,10 +18,10 @@ import com.dpw.runner.shipment.services.syncing.Entity.CustomShipmentSyncRequest
 import com.dpw.runner.shipment.services.syncing.Entity.PackingRequestV2;
 import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentReverseSync;
+import com.dpw.runner.shipment.services.utils.Generated;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
@@ -32,6 +32,7 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrE
 
 @Service
 @Slf4j
+@Generated
 public class ShipmentReverseSync implements IShipmentReverseSync {
 
     @Autowired
@@ -53,7 +54,7 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
             ShipmentDetails sd = modelMapper.map(cs, ShipmentDetails.class);
 
             if (checkForSync && !Objects.isNull(syncConfig.IS_REVERSE_SYNC_ACTIVE) && !syncConfig.IS_REVERSE_SYNC_ACTIVE) {
-                return new ResponseEntity<>(HttpStatus.OK);
+                return ResponseHelper.buildSuccessResponse();
             }
             mapCarrierDetailsReverse(cs, sd);
             mapAdditionalDetailsReverse(cs, sd);
@@ -84,6 +85,7 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
             sd.setConsignorCountry(cs.getConsignorCountryFilter());
             sd.setNotifyPartyCountry(cs.getNotifyPartyCountryFilter());
             sd.setShipmentCreatedOn(cs.getCreatedDate());
+            sd.setCreatedAt(cs.getInsertDate());
             sd.setVolumetricWeight(cs.getVolumeWeight());
             sd.setVolumetricWeightUnit(cs.getWeightVolumeUnit());
             if(!IsStringNullOrEmpty(cs.getPrevShipmentStatusString()))
@@ -103,7 +105,6 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
             if(cs.getPackings_() != null)
                 map = cs.getPackings_().stream().filter(x-> x.getContainerNumber() != null).collect(Collectors.toMap(PackingRequestV2::getGuid, PackingRequestV2::getContainerNumber));
             sd.setPackingList(syncEntityConversionService.packingsV1ToV2(cs.getPackings_()));
-            sd.setFileRepoList(convertToList(cs.getDocs_(), FileRepo.class));
             sd.setElDetailsList(convertToList(cs.getELDetails(), ELDetails.class));
 
             sd.setBookingCarriagesList(convertToList(cs.getBookingCarriages(), BookingCarriage.class));
@@ -123,13 +124,12 @@ public class ShipmentReverseSync implements IShipmentReverseSync {
     private void mapReverseShipmentGuids(ShipmentDetails response, CustomShipmentSyncRequest request) {
         if(request == null || request.getConsolidationGuids() == null)
             return;
-        List<ConsolidationDetails> req = request.getConsolidationGuids().stream()
-                .map(item -> {
-                    ConsolidationDetails p = new ConsolidationDetails();
-                    p.setGuid(item);
-                    return p;
-                })
-                .toList();
+        Set<ConsolidationDetails> req = new HashSet<>();
+        request.getConsolidationGuids().forEach((key, value) -> {
+            ConsolidationDetails p = new ConsolidationDetails();
+            p.setGuid(key);
+            req.add(p);
+        });
         response.setConsolidationList(req);
     }
 

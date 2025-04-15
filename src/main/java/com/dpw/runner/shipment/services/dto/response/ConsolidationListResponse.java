@@ -1,16 +1,19 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
+import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
 
 @Builder
 @NoArgsConstructor
@@ -19,6 +22,7 @@ import java.util.UUID;
 public class ConsolidationListResponse implements IRunnerResponse {
     private Long id;
     private UUID guid;
+    private Integer tenantId;
     private String consolidationNumber;
     private String consolidationType;
     private String transportMode;
@@ -84,6 +88,7 @@ public class ConsolidationListResponse implements IRunnerResponse {
     private Long warehouseId;
     private Long sourceTenantId;
     private String ediTransactionId;
+    private List<TriangulationPartnerResponse> triangulationPartnerList;
     private Long triangulationPartner;
     private Long receivingBranch;
     private boolean intraBranch;
@@ -118,4 +123,23 @@ public class ConsolidationListResponse implements IRunnerResponse {
     private Long container40RECount;
     private Long containerCount;
     private Set<String> containerNumbers;
+    private Boolean hazardous;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime cfsCutOffDate;
+    private Boolean openForAttachment;
+    private Boolean interBranchConsole;
+    private Integer pendingActionCount;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    @ExcludeTimeZone
+    private LocalDateTime latDate;
+    private String department;
+    private LocalDateTime createdAt;
+    private String requestedType;
+    private String requestedBy;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime requestedOn;
+    private Map<String, String> tenantMasterData;
+    private Boolean isNetworkFlag;
+    private Boolean isReceivingBranchManually;
+    private Boolean isTransferredToReceivingBranch;
 }

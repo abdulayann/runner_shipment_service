@@ -5,28 +5,23 @@ import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConst
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
 import com.dpw.runner.shipment.services.ReportingService.Models.TransportOrderModel;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.ReferenceNumbersConstants;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
-import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.GOODS_VALUE;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.*;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getFormattedAddress;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 
 @Component
 public class TransportOrderReport extends IReport{
-
-    @Autowired
-    private JsonHelper jsonHelper;
 
     @Override
     public Map<String, Object> getData(Long id) throws RunnerException {
@@ -34,10 +29,22 @@ public class TransportOrderReport extends IReport{
         return populateDictionary(cargoManifestModel);
     }
 
+    public Map<String, Object> getData(Long id, Long transportInstructionId) throws RunnerException {
+        TransportOrderModel cargoManifestModel = (TransportOrderModel) getDocumentModel(id);
+        cargoManifestModel.shipmentDetails.setTransportInstructionId(transportInstructionId);
+        return populateDictionary(cargoManifestModel);
+    }
+
     @Override
     IDocumentModel getDocumentModel(Long id) throws RunnerException {
         TransportOrderModel transportOrderModel = new TransportOrderModel();
         transportOrderModel.shipmentDetails = getShipment(id);
+        ShipmentSettingsDetails shipmentSettingsDetails = getCurrentShipmentSettings();
+        Boolean countryAirCargoSecurity = shipmentSettingsDetails.getCountryAirCargoSecurity();
+        if (Boolean.TRUE.equals(countryAirCargoSecurity)) {
+            validateAirDGAndAirSecurityCheckShipments(transportOrderModel.shipmentDetails);
+        }
+        validateAirAndOceanDGCheck(transportOrderModel.shipmentDetails);
         return transportOrderModel;
     }
 
@@ -95,10 +102,10 @@ public class TransportOrderReport extends IReport{
                     dictionary.put(ReportConstants.CUSTOMER_REFERENCE, referenceNumbersModel.getReferenceNumber());
             }
         }
-        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         dictionary.put(GOODS_VALUE, AmountNumberFormatter.Format(shipmentModel.getGoodsValue(), UserContext.getUser().getCompanyCurrency(), v1TenantSettingsResponse));
         dictionary.put(ReportConstants.GOODS_VALUE_CURRENCY, shipmentModel.getGoodsValueCurrency());
-        dictionary.put(ReportConstants.INSURANCE_VALUE_TRANSPORT, AmountNumberFormatter.Format(shipmentModel.getInsuranceValue(), UserContext.getUser().getCompanyCurrency(), v1TenantSettingsResponse));
+        dictionary.put(ReportConstants.INSURANCE_VALUE, AmountNumberFormatter.Format(shipmentModel.getInsuranceValue(), UserContext.getUser().getCompanyCurrency(), v1TenantSettingsResponse));
         dictionary.put(ReportConstants.INSURANCE_VALUE_CURRENCY, shipmentModel.getInsuranceValueCurrency());
 
         if(shipmentModel != null && shipmentModel.getFreightLocal() != null)
@@ -111,12 +118,12 @@ public class TransportOrderReport extends IReport{
             dictionary.put(ReportConstants.FREIGHT_OVERSEAS_CURRENCY, shipmentModel.getFreightOverseasCurrency());
         if(shipmentModel.getPickupDetails() != null && shipmentModel.getPickupDetails().getSourceDetail() != null) {
             PartiesModel pickup = shipmentModel.getPickupDetails().getSourceDetail();
-            dictionary.put(ReportConstants.PICK_UP_ADDRESS, getFormattedAddress(pickup));
+            dictionary.put(ReportConstants.PICK_UP_ADDRESS, getFormattedAddress(pickup,true));
             dictionary.put(ReportConstants.PICKUP_CONTACT, getValueFromMap(pickup.getAddressData(), ReportConstants.CONTACT_PHONE));
         }
         if(shipmentModel.getDeliveryDetails() != null && shipmentModel.getDeliveryDetails().getDestinationDetail() != null) {
             PartiesModel delivery = shipmentModel.getDeliveryDetails().getDestinationDetail();
-            dictionary.put(ReportConstants.DELIVERY_ADDRESS, getFormattedAddress(delivery));
+            dictionary.put(ReportConstants.DELIVERY_ADDRESS, getFormattedAddress(delivery,true));
             dictionary.put(ReportConstants.DELIVERY_CONTACT, getValueFromMap(delivery.getAddressData(), ReportConstants.CONTACT_PHONE));
         }
         try { dictionary.put(ReportConstants.EXPORT_BROKER, getValueFromMap(shipmentModel.getPickupDetails().getBrokerDetail().getOrgData(), ReportConstants.FULL_NAME)); } catch (Exception ignored) {}
@@ -131,6 +138,8 @@ public class TransportOrderReport extends IReport{
             dictionary.put(ReportConstants.FREIGHT_OVERSEAS, AmountNumberFormatter.Format(shipmentModel.getFreightOverseas(), shipmentModel.getFreightOverseasCurrency(), v1TenantSettingsResponse));
         if(shipmentModel != null && shipmentModel.getFreightOverseasCurrency() != null && !shipmentModel.getFreightOverseasCurrency().isEmpty())
             dictionary.put(ReportConstants.FREIGHT_OVERSEAS_CURRENCY, shipmentModel.getFreightOverseasCurrency());
+        if(shipmentModel.getTransportInstructionId() != null)
+            addTransportInstructionTags(dictionary, shipmentModel);
         return dictionary;
     }
 }

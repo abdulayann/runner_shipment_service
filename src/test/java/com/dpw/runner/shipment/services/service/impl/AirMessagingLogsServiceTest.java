@@ -10,7 +10,8 @@ import com.dpw.runner.shipment.services.dao.interfaces.IAirMessagingLogsDao;
 import com.dpw.runner.shipment.services.dto.request.AirMessagingLogsRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.AirMessagingLogsResponse;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.AirMessagingLogs;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -20,6 +21,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -38,10 +41,10 @@ import java.util.concurrent.ExecutionException;
 
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@Execution(ExecutionMode.CONCURRENT)
 class AirMessagingLogsServiceTest {
 
     @Mock
@@ -241,7 +244,7 @@ class AirMessagingLogsServiceTest {
     @Test
     void testGetRecentLogForEntityGuid_Success() {
         AirMessagingLogs airMessagingLogs = testAirMessagingLogs;
-        when(airMessagingLogsDao.findByEntityGuid(any())).thenReturn(List.of(airMessagingLogs));
+        when(airMessagingLogsDao.findByEntityGuidByQuery(any())).thenReturn(List.of(airMessagingLogs));
         AirMessagingLogs response = airMessagingLogsService.getRecentLogForEntityGuid(airMessagingLogs.getGuid());
         assertEquals(airMessagingLogs, response);
     }
@@ -255,7 +258,7 @@ class AirMessagingLogsServiceTest {
     @Test
     void testGetRecentLogForEntityGuid_Failure_GuidNotExist() {
         AirMessagingLogs airMessagingLogs = testAirMessagingLogs;
-        when(airMessagingLogsDao.findByEntityGuid(any())).thenReturn(List.of());
+        when(airMessagingLogsDao.findByEntityGuidByQuery(any())).thenReturn(List.of());
         AirMessagingLogs response = airMessagingLogsService.getRecentLogForEntityGuid(airMessagingLogs.getGuid());
         assertNull(response);
     }

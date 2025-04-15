@@ -1,15 +1,15 @@
 package com.dpw.runner.shipment.services.service.v1.impl;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
-
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
 import com.dpw.runner.shipment.services.dto.request.CreateBookingModuleInV1;
+import com.dpw.runner.shipment.services.dto.request.UserWithPermissionRequestV1;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
 import com.dpw.runner.shipment.services.dto.v1.request.*;
@@ -18,27 +18,39 @@ import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
 import com.dpw.runner.shipment.services.entitytransfer.dto.response.CheckTaskExistResponse;
-import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.UnAuthorizedException;
 import com.dpw.runner.shipment.services.exception.exceptions.V1ServiceException;
 import com.dpw.runner.shipment.services.exception.response.V1ErrorResponse;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
+import com.dpw.runner.shipment.services.service.impl.GetUserServiceFactory;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.syncing.Entity.PartyRequestV2;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.TokenUtility;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
+import com.dpw.runner.shipment.services.validator.enums.Operators;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mockito;
+import org.mockito.*;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.PropertySource;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.web.client.HttpClientErrorException;
@@ -47,10 +59,11 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.UUID;
-import java.util.regex.Matcher;
+import java.util.*;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ContextConfiguration(classes = {V1ServiceImpl.class})
 @ExtendWith(SpringExtension.class)
@@ -78,12 +91,119 @@ class V1ServiceImplTest {
     @MockBean
     private V1ServiceUtil v1ServiceUtil;
 
+    @MockBean
+    private CommonUtils commonUtils;
+
+
+    @MockBean
+    private GetUserServiceFactory getUserServiceFactory;
+
+    @MockBean
+    private TokenUtility tokenUtility;
+
+    @MockBean
+    private CacheManager cacheManager;
+
+    private V1UsersEmailRequest request;
+    private UsersRoleListResponse userRole;
+
     @BeforeAll
     static void init() throws IOException {
         objectMapper = JsonTestUtility.getMapper();
         v1ErrorResponse = V1ErrorResponse.builder().error(V1ErrorResponse.V1Error.builder().message(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE).build()).build();
         v1ErrorInString = objectMapper.writeValueAsString(v1ErrorInString);
     }
+
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+
+        request = new V1UsersEmailRequest();
+        request.setRoleId(1);
+        request.setTake(10);
+
+        userRole = UsersRoleListResponse.builder()
+                .roleId(1L)
+                .userName("John Doe")
+                .email("john.doe@example.com")
+                .build();
+    }
+
+    @Test
+    void testGetTenantName_WithValidTenantIds_ReturnsTenantNames() {
+        // Arrange
+        List<Integer> tenantIds = List.of(1, 2, 3);
+
+        CommonV1ListRequest expectedRequest = new CommonV1ListRequest();
+        expectedRequest.setCriteriaRequests(List.of(
+                List.of(Constants.TENANTID),
+                Operators.IN.getValue(),
+                List.of(tenantIds)
+        ));
+
+        V1DataResponse tenantNameResponse = new V1DataResponse();
+        tenantNameResponse.entities = List.of(
+                new V1TenantResponse("Tenant 1", "T1", 1L),
+                new V1TenantResponse("Tenant 2", "T2", 2L)
+        );
+
+        HttpHeaders headers = new HttpHeaders();
+        HttpEntity<CommonV1ListRequest> requestEntity = new HttpEntity<>(expectedRequest, V1AuthHelper.getHeaders());
+
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(tenantNameResponse));
+
+
+        when(jsonHelper.convertValueToList(tenantNameResponse.entities, V1TenantResponse.class))
+                .thenReturn(List.of(new V1TenantResponse("Tenant 1", "T1", 1L), new V1TenantResponse("Tenant 2", "T2", 2L)));
+
+        // Act
+        List<String> tenantNames = v1ServiceImpl.getTenantName(tenantIds);
+
+        // Assert
+        assertNotNull(tenantNames);
+        assertEquals(2, tenantNames.size());
+        assertEquals("Tenant 1", tenantNames.get(0));
+        assertEquals("Tenant 2", tenantNames.get(1));
+    }
+
+    @Test
+    void testGetTenantName_WithValidTenantIds_ReturnsTenantNames_nullTenantResponse() {
+        // Arrange
+        List<Integer> tenantIds = List.of(1, 2, 3);
+
+        CommonV1ListRequest expectedRequest = new CommonV1ListRequest();
+        expectedRequest.setCriteriaRequests(List.of(
+                List.of(Constants.TENANTID),
+                Operators.IN.getValue(),
+                List.of(tenantIds)
+        ));
+
+        V1DataResponse tenantNameResponse = new V1DataResponse();
+        tenantNameResponse.entities = List.of(
+                new V1TenantResponse("Tenant 1", "T1", 1L),
+                new V1TenantResponse("Tenant 2", "T2", 2L)
+        );
+
+        HttpHeaders headers = new HttpHeaders();
+        HttpEntity<CommonV1ListRequest> requestEntity = new HttpEntity<>(expectedRequest, V1AuthHelper.getHeaders());
+
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(tenantNameResponse));
+
+
+        when(jsonHelper.convertValueToList(tenantNameResponse.entities, V1TenantResponse.class))
+                .thenReturn(null);
+
+        // Act
+        List<String> tenantNames = v1ServiceImpl.getTenantName(tenantIds);
+
+        // Assert
+        assertNotNull(tenantNames);
+        assertEquals(0, tenantNames.size());
+    }
+
+
 
     /**
      * Method under test: {@link V1ServiceImpl#fetchVesselData(Object)}
@@ -2017,6 +2137,70 @@ class V1ServiceImplTest {
     }
 
     /**
+     * Method under test: {@link V1ServiceImpl#stateBasedList(Object)} (Object)}
+     */
+    @Test
+    void testStateBasedList() throws RestClientException {
+        // Arrange
+        var mock = mock(ResponseEntity.class);
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(V1DataResponse.builder().entityId(1L).build()));
+        when(mock.getBody()).thenReturn(V1DataResponse.builder().entityId(1L).build());
+        // Act
+        var responseEntity = v1ServiceImpl.stateBasedList("Request");
+        // Assert
+        assertEquals(1L, responseEntity.getEntityId());
+    }
+
+    @Test
+    void testStateBasedList2() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST, v1ErrorInString));
+        when(jsonHelper.readFromJson(anyString(), eq(V1ErrorResponse.class))).thenReturn(v1ErrorResponse);
+        // Act
+        Throwable throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.stateBasedList("Request"));
+        // Assert
+        assertEquals(v1ErrorResponse.getError().getMessage(), throwable.getMessage());
+    }
+
+    @Test
+    void testStateBasedList3() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpServerErrorException(HttpStatus.BAD_REQUEST, v1ErrorInString));
+        when(jsonHelper.readFromJson(anyString(), eq(V1ErrorResponse.class))).thenReturn(v1ErrorResponse);
+        // Act
+        Throwable throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.stateBasedList("Request"));
+        // Assert
+        assertEquals(v1ErrorResponse.getError().getMessage(), throwable.getMessage());
+    }
+
+    @Test
+    void testStateBasedList4() throws RestClientException {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Act
+        Throwable throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.stateBasedList("Request"));
+        // Assert
+        assertEquals("RuntimeException", throwable.getMessage());
+    }
+
+    @Test
+    void testStateBasedList5() throws RestClientException {
+        // Arrange
+        var mock = mock(ResponseEntity.class);
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(null));
+        when(mock.getBody()).thenReturn(null);
+        // Act
+        var responseEntity = v1ServiceImpl.stateBasedList("Request");
+        // Assert
+        assertNull(responseEntity.getEntities());
+    }
+
+    /**
      * Method under test: {@link V1ServiceImpl#updateUnlocationData(Object)} (Object)}
      */
     @Test
@@ -3271,6 +3455,40 @@ class V1ServiceImplTest {
     }
 
     @Test
+    void testGetDefaultOrg_OrgData() throws RestClientException {
+        // Arrange
+        var mock = mock(ResponseEntity.class);
+        var mockResponse = new PartyRequestV2();
+        mockResponse.setOrgCode("DPW");
+        mockResponse.setOrgData(Map.of("Id", 213));
+        mockResponse.setAddressData(Map.of("Id", 432));
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+        when(mock.getBody()).thenReturn(mockResponse);
+        // Act
+        var responseEntity = v1ServiceImpl.getDefaultOrg();
+        // Assert
+        assertEquals("DPW", responseEntity.getOrgCode());
+    }
+
+    @Test
+    void testGetDefaultOrg_OrgData_Without_Id() throws RestClientException {
+        // Arrange
+        var mock = mock(ResponseEntity.class);
+        var mockResponse = new PartyRequestV2();
+        mockResponse.setOrgCode("DPW");
+        mockResponse.setOrgData(Map.of());
+        mockResponse.setAddressData(Map.of());
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+        when(mock.getBody()).thenReturn(mockResponse);
+        // Act
+        var responseEntity = v1ServiceImpl.getDefaultOrg();
+        // Assert
+        assertEquals("DPW", responseEntity.getOrgCode());
+    }
+
+    @Test
     void testGetDefaultOrg2() throws RestClientException {
         // Arrange
         when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
@@ -3575,7 +3793,7 @@ class V1ServiceImplTest {
         when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
                 (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
         // Act
-        var responseEntity = v1ServiceImpl.fetchShipmentBillingData(CheckCreditLimitResponse.builder().build());
+        var responseEntity = v1ServiceImpl.fetchShipmentBillingData(ShipmentBillingListRequest.builder().build());
 
         // Assert
         assertEquals(hashMap, responseEntity.getData());
@@ -3588,7 +3806,7 @@ class V1ServiceImplTest {
                 (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
 
         // Act and Assert
-        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchShipmentBillingData(CheckCreditLimitResponse.builder().build()));
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchShipmentBillingData(ShipmentBillingListRequest.builder().build()));
         assertEquals(UnAuthorizedException.class.getSimpleName(), throwable.getClass().getSimpleName());
     }
 
@@ -3598,7 +3816,7 @@ class V1ServiceImplTest {
         when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
                 (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST));
 
-        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchShipmentBillingData(CheckCreditLimitResponse.builder().build()));
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchShipmentBillingData(ShipmentBillingListRequest.builder().build()));
         assertEquals(V1ServiceException.class.getSimpleName(), throwable.getClass().getSimpleName());
     }
 
@@ -3609,7 +3827,7 @@ class V1ServiceImplTest {
                 (Object[]) any())).thenThrow(new RuntimeException());
 
         // Act and Assert
-        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchShipmentBillingData(CheckCreditLimitResponse.builder().build()));
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchShipmentBillingData(ShipmentBillingListRequest.builder().build()));
         assertEquals(V1ServiceException.class.getSimpleName(), throwable.getClass().getSimpleName());
     }
 
@@ -4226,6 +4444,7 @@ class V1ServiceImplTest {
         when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
                 (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
 
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
         // Act
         var responseEntity = v1ServiceImpl.getActiveInvoices(CheckActiveInvoiceRequest.builder().build());
 
@@ -4240,6 +4459,7 @@ class V1ServiceImplTest {
         // Arrange
         when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
                 (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
 
         // Act
         var responseEntity = v1ServiceImpl.getActiveInvoices(CheckActiveInvoiceRequest.builder().build());
@@ -4254,6 +4474,7 @@ class V1ServiceImplTest {
         when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
                 (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
 
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetailsContext.getCurrentTenantSettings());
         // Act and Assert
         var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.getActiveInvoices(CheckActiveInvoiceRequest.builder().build()));
         assertEquals(UnAuthorizedException.class.getSimpleName(), throwable.getClass().getSimpleName());
@@ -4789,4 +5010,887 @@ class V1ServiceImplTest {
         assertEquals(V1ServiceException.class.getSimpleName(), throwable.getClass().getSimpleName());
     }
 
+    @Test
+    void testGetCoLoadingStations() {
+        var mockResponse = V1DataResponse.builder().build();
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+            (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+        // Act
+        var responseEntity = v1ServiceImpl.getCoLoadingStations("Request");
+
+        // Assert
+        assertEquals(mockResponse, responseEntity);
+    }
+
+    @Test
+    void testGetCoLoadingStationsThrowsError() {
+        var mockResponse = V1DataResponse.builder().build();
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+            (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
+        // Act
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.getCoLoadingStations("Request"));
+
+        // Assert
+        assertNotNull(throwable);
+    }
+
+    @Test
+    void testGetCoLoadingStationsThrowsError2() {
+        var mockResponse = V1DataResponse.builder().build();
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+            (Object[]) any())).thenThrow(new RuntimeException());
+        // Act
+        var throwable = assertThrows(V1ServiceException.class, () -> v1ServiceImpl.getCoLoadingStations("Request"));
+
+        // Assert
+        assertNotNull(throwable);
+    }
+
+
+    @Test
+    void getTenantDetails() {
+        var mockResponse = TenantDetailsByListResponse.builder().build();
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+        // Act
+        var responseEntity = v1ServiceImpl.getTenantDetails("Request");
+
+        // Assert
+        assertEquals(mockResponse, responseEntity);
+    }
+
+    @Test
+    void getTenantDetailsThrowsError() {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
+        // Act
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.getTenantDetails("Request"));
+
+        // Assert
+        assertNotNull(throwable);
+    }
+
+    @Test
+    void getTenantDetailsThrowsError2() {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new RuntimeException());
+        // Act
+        var throwable = assertThrows(V1ServiceException.class, () -> v1ServiceImpl.getTenantDetails("Request"));
+
+        // Assert
+        assertNotNull(throwable);
+    }
+
+    @Test
+    void getEmailTemplates() {
+        var mockResponse = V1DataResponse.builder().build();
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+        // Act
+        var responseEntity = v1ServiceImpl.getEmailTemplates("Request");
+
+        // Assert
+        assertEquals(mockResponse, responseEntity);
+    }
+
+    @Test
+    void getEmailTemplatesThrowsError() {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
+        // Act
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.getEmailTemplates("Request"));
+
+        // Assert
+        assertNotNull(throwable);
+    }
+
+    @Test
+    void getEmailTemplatesThrowsError2() {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new RuntimeException());
+        // Act
+        var throwable = assertThrows(V1ServiceException.class, () -> v1ServiceImpl.getEmailTemplates("Request"));
+
+        // Assert
+        assertNotNull(throwable);
+    }
+
+    @Test
+    void getMasterDetails() {
+        var mockResponse = V1DataResponse.builder().build();
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+        // Act
+        var responseEntity = v1ServiceImpl.getMasterDetails("Request");
+
+        // Assert
+        assertEquals(mockResponse, responseEntity);
+    }
+
+    @Test
+    void getMasterDetailsThrowsError() {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
+        // Act
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.getMasterDetails("Request"));
+
+        // Assert
+        assertNotNull(throwable);
+    }
+
+    @Test
+    void getMasterDetailsThrowsError2() {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new RuntimeException());
+        // Act
+        var throwable = assertThrows(V1ServiceException.class, () -> v1ServiceImpl.getMasterDetails("Request"));
+
+        // Assert
+        assertNotNull(throwable);
+    }
+
+    @Test
+    void getUserDetails() {
+        var mockResponse = V1DataResponse.builder().build();
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+        // Act
+        var responseEntity = v1ServiceImpl.getUserDetails("Request");
+
+        // Assert
+        assertEquals(mockResponse, responseEntity);
+    }
+
+    @Test
+    void getUserDetailsThrowsError() {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
+        // Act
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.getUserDetails("Request"));
+
+        // Assert
+        assertNotNull(throwable);
+    }
+
+    @Test
+    void getUserDetailsThrowsError2() {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new RuntimeException());
+        // Act
+        var throwable = assertThrows(V1ServiceException.class, () -> v1ServiceImpl.getUserDetails("Request"));
+
+        // Assert
+        assertNotNull(throwable);
+    }
+
+    @Test
+    void testGetUserEmailsByRoleId_Success() {
+        List<UsersRoleListResponse> responseList = Arrays.asList(userRole);
+        ResponseEntity<List<UsersRoleListResponse>> responseEntity = ResponseEntity.ok(responseList);
+
+        when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), any(ParameterizedTypeReference.class)))
+                .thenReturn(responseEntity);
+
+        List<UsersRoleListResponse> result = v1ServiceImpl.getUserEmailsByRoleId(request);
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals("john.doe@example.com", result.get(0).getEmail());
+    }
+
+    @Test
+    void testGetUserEmailsByRoleId_HttpClientErrorException() {
+        HttpClientErrorException ex = mock(HttpClientErrorException.class);
+        when(ex.getResponseBodyAsString()).thenReturn("{\"error\": {\"message\": \"Client Error\"}}");
+
+        when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), any(ParameterizedTypeReference.class)))
+                .thenThrow(ex);
+
+        when(jsonHelper.readFromJson(anyString(), eq(V1ErrorResponse.class)))
+                .thenReturn(new V1ErrorResponse(new V1ErrorResponse.V1Error("Client Error")));
+
+        V1ServiceException thrown = assertThrows(V1ServiceException.class, () -> {
+            v1ServiceImpl.getUserEmailsByRoleId(request);
+        });
+
+        assertEquals("Client Error", thrown.getMessage());
+    }
+
+    @Test
+    void testGetUserEmailsByRoleId_HttpServerErrorException() {
+        HttpServerErrorException ex = mock(HttpServerErrorException.class);
+        when(ex.getResponseBodyAsString()).thenReturn("{\"error\": {\"message\": \"Server Error\"}}");
+
+        when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), any(ParameterizedTypeReference.class)))
+                .thenThrow(ex);
+
+        when(jsonHelper.readFromJson(anyString(), eq(V1ErrorResponse.class)))
+                .thenReturn(new V1ErrorResponse(new V1ErrorResponse.V1Error("Server Error")));
+
+        V1ServiceException thrown = assertThrows(V1ServiceException.class, () -> {
+            v1ServiceImpl.getUserEmailsByRoleId(request);
+        });
+
+        assertEquals("Server Error", thrown.getMessage());
+    }
+
+
+    @Test
+    void testGetUserEmailsByRoleId_GeneralException() {
+        when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), any(ParameterizedTypeReference.class)))
+                .thenThrow(new RuntimeException("General Error"));
+
+        V1ServiceException thrown = assertThrows(V1ServiceException.class, () -> {
+            v1ServiceImpl.getUserEmailsByRoleId(request);
+        });
+
+        assertEquals("General Error", thrown.getMessage());
+    }
+
+    @Test
+    void updateTask() {
+        var mockResponse = V1DataResponse.builder().build();
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+        // Act
+        var responseEntity = v1ServiceImpl.updateTask("Request");
+
+        // Assert
+        assertEquals(mockResponse, responseEntity);
+    }
+
+    @Test
+    void updateTask2() {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
+        // Act
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.updateTask("Request"));
+
+        // Assert
+        assertNotNull(throwable);
+    }
+
+    @Test
+    void updateTask3() {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new RuntimeException());
+        // Act
+        var throwable = assertThrows(V1ServiceException.class, () -> v1ServiceImpl.updateTask("Request"));
+
+        // Assert
+        assertNotNull(throwable);
+    }
+
+    @Test
+    void retrieveTask() {
+        var mockResponse = V1RetrieveResponse.builder().build();
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+        // Act
+        var responseEntity = v1ServiceImpl.retrieveTask("Request");
+
+        // Assert
+        assertEquals(mockResponse, responseEntity);
+    }
+
+    @Test
+    void retrieveTask2() {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
+        // Act
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.retrieveTask("Request"));
+
+        // Assert
+        assertNotNull(throwable);
+    }
+
+    @Test
+    void retrieveTask3() {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new RuntimeException());
+        // Act
+        var throwable = assertThrows(V1ServiceException.class, () -> v1ServiceImpl.retrieveTask("Request"));
+
+        // Assert
+        assertNotNull(throwable);
+    }
+
+
+    @Test
+    void listTask() {
+        var mockResponse = V1DataResponse.builder().build();
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+        // Act
+        var responseEntity = v1ServiceImpl.listTask("Request");
+
+        // Assert
+        assertEquals(mockResponse, responseEntity);
+    }
+
+    @Test
+    void listTask2() {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
+        // Act
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.listTask("Request"));
+
+        // Assert
+        assertNotNull(throwable);
+    }
+
+    @Test
+    void listTask3() {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new RuntimeException());
+        // Act
+        var throwable = assertThrows(V1ServiceException.class, () -> v1ServiceImpl.listTask("Request"));
+
+        // Assert
+        assertNotNull(throwable);
+    }
+
+    @Test
+    void createTask() {
+        var mockResponse = TaskCreateResponse.builder().build();
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+        // Act
+        var responseEntity = v1ServiceImpl.createTask("Request");
+
+        // Assert
+        assertEquals(mockResponse, responseEntity);
+    }
+
+    @Test
+    void createTask2() {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
+        // Act
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.createTask("Request"));
+
+        // Assert
+        assertNotNull(throwable);
+    }
+
+    @Test
+    void createTask3() {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new RuntimeException());
+        // Act
+        var throwable = assertThrows(V1ServiceException.class, () -> v1ServiceImpl.createTask("Request"));
+
+        // Assert
+        assertNotNull(throwable);
+    }
+
+    @Test
+    void testClearAuthContext() {
+        // Mocking the static methods using Mockito
+        try (MockedStatic<TenantContext> tenantContextMock = mockStatic(TenantContext.class);
+                MockedStatic<RequestAuthContext> authContextMock = mockStatic(RequestAuthContext.class);
+                MockedStatic<PermissionsContext> permissionsContextMock = mockStatic(PermissionsContext.class);
+                MockedStatic<SecurityContextHolder> securityContextHolderMock = mockStatic(SecurityContextHolder.class);
+                MockedStatic<UserContext> userContextMock = mockStatic(UserContext.class)) {
+
+            // Call the method to be tested
+            v1ServiceImpl.clearAuthContext();
+
+            // Verify the method calls
+            tenantContextMock.verify(TenantContext::removeTenant, times(1));
+            authContextMock.verify(RequestAuthContext::removeToken, times(1));
+            permissionsContextMock.verify(PermissionsContext::removePermissions, times(1));
+            securityContextHolderMock.verify(SecurityContextHolder::clearContext, times(1));
+            userContextMock.verify(UserContext::removeUser, times(1));
+        }
+    }
+
+    @Test
+    void testGetAuthoritiesWithNoPermissions() {
+        // Test with an empty list
+        List<String> permissions = Collections.emptyList();
+        Collection<? extends GrantedAuthority> authorities = v1ServiceImpl.getAuthorities(permissions);
+
+        // Verify that the returned collection is empty
+        assertTrue(authorities.isEmpty(), "The authorities collection should be empty.");
+    }
+
+    @Test
+    void testGetAuthoritiesWithPermissions() {
+        // Test with a list of permissions
+        List<String> permissions = Arrays.asList("READ", "WRITE", "DELETE");
+        Collection<? extends GrantedAuthority> authorities = v1ServiceImpl.getAuthorities(permissions);
+
+        // Verify that the correct number of authorities are returned
+        assertEquals(3, authorities.size(), "The authorities collection should contain three elements.");
+
+        // Verify that the authorities contain the expected values
+        assertTrue(authorities.contains(new SimpleGrantedAuthority("READ")), "The authorities should contain READ permission.");
+        assertTrue(authorities.contains(new SimpleGrantedAuthority("WRITE")), "The authorities should contain WRITE permission.");
+        assertTrue(authorities.contains(new SimpleGrantedAuthority("DELETE")), "The authorities should contain DELETE permission.");
+    }
+
+    @Test
+    void testGetAuthoritiesWithDuplicatePermissions() {
+        // Test with duplicate permissions
+        List<String> permissions = Arrays.asList("READ", "WRITE", "READ"); // Duplicate READ
+        Collection<? extends GrantedAuthority> authorities = v1ServiceImpl.getAuthorities(permissions);
+
+        // Verify that the correct number of authorities are returned
+        assertEquals(3, authorities.size(), "The authorities collection should contain three elements.");
+
+        // Verify that the authorities contain the expected values, duplicates are not an issue here
+        assertTrue(authorities.contains(new SimpleGrantedAuthority("READ")), "The authorities should contain READ permission.");
+        assertTrue(authorities.contains(new SimpleGrantedAuthority("WRITE")), "The authorities should contain WRITE permission.");
+    }
+
+    @Test
+    void testSetAuthContext() {
+        // Mocking dependencies
+        String token = "Bearer sampleToken";
+        String tenantId = "tenant123";
+        String username = "user1";
+        UsersDto user = mock(UsersDto.class);
+        Map<String, Boolean> permissionsMap = new HashMap<>();
+        permissionsMap.put("READ", true);
+        permissionsMap.put("WRITE", true);
+
+        when(user.getTenantId()).thenReturn(1);
+        when(user.getUsername()).thenReturn(username);
+        when(user.getPermissions()).thenReturn(permissionsMap);
+
+        // Mocking static methods
+        try (MockedStatic<RequestAuthContext> requestAuthContextMock = mockStatic(RequestAuthContext.class);
+                MockedStatic<TenantContext> tenantContextMock = mockStatic(TenantContext.class);
+                MockedStatic<UserContext> userContextMock = mockStatic(UserContext.class);
+                MockedStatic<SecurityContextHolder> securityContextHolderMock = mockStatic(SecurityContextHolder.class);
+                MockedStatic<PermissionsContext> permissionsContextMock = mockStatic(PermissionsContext.class)) {
+
+            // Mock the SecurityContext and ensure only one instance is used
+            SecurityContext contextMock = mock(SecurityContext.class);
+            securityContextHolderMock.when(SecurityContextHolder::getContext).thenReturn(contextMock);
+
+            // Call the method to be tested
+            v1ServiceImpl.setAuthContext(token, user);
+
+            // Verify that the authentication token was set
+            requestAuthContextMock.verify(() -> RequestAuthContext.setAuthToken(token), times(1));
+
+            // Verify that the tenant context was set
+            tenantContextMock.verify(() -> TenantContext.setCurrentTenant(1), times(1));
+
+            // Verify that the user context was set
+            userContextMock.verify(() -> UserContext.setUser(user), times(1));
+
+            // Create the expected authentication token
+            List<String> grantedPermissions = new ArrayList<>(permissionsMap.keySet());
+            UsernamePasswordAuthenticationToken expectedAuthenticationToken =
+                    new UsernamePasswordAuthenticationToken(user, null, v1ServiceImpl.getAuthorities(grantedPermissions));
+
+            // Verify that the security context authentication was set correctly
+            verify(contextMock, times(1)).setAuthentication(expectedAuthenticationToken);
+
+            // Verify that the permissions context was set
+            permissionsContextMock.verify(() -> PermissionsContext.setPermissions(grantedPermissions), times(1));
+        }
+    }
+
+    @Test
+    void testSetAuthContextWithEmptyPermissions() {
+        // Mocking dependencies
+        String token = "Bearer sampleToken";
+        int tenantId = 1; // Changed to int to match the expected type
+        String username = "user1";
+        UsersDto user = mock(UsersDto.class);
+        Map<String, Boolean> permissionsMap = new HashMap<>(); // Empty permissions
+
+        when(user.getTenantId()).thenReturn(tenantId);
+        when(user.getUsername()).thenReturn(username);
+        when(user.getPermissions()).thenReturn(permissionsMap);
+
+        // Mocking static methods
+        try (MockedStatic<RequestAuthContext> requestAuthContextMock = mockStatic(RequestAuthContext.class);
+                MockedStatic<TenantContext> tenantContextMock = mockStatic(TenantContext.class);
+                MockedStatic<UserContext> userContextMock = mockStatic(UserContext.class);
+                MockedStatic<SecurityContextHolder> securityContextHolderMock = mockStatic(SecurityContextHolder.class);
+                MockedStatic<PermissionsContext> permissionsContextMock = mockStatic(PermissionsContext.class)) {
+
+            // Mock the SecurityContextHolder behavior
+            SecurityContext contextMock = mock(SecurityContext.class);
+            securityContextHolderMock.when(SecurityContextHolder::getContext).thenReturn(contextMock);
+
+            // Call the method to be tested
+            v1ServiceImpl.setAuthContext(token, user);
+
+            // Verify that the authentication token was set
+            requestAuthContextMock.verify(() -> RequestAuthContext.setAuthToken(token), times(1));
+
+            // Verify that the tenant context was set
+            tenantContextMock.verify(() -> TenantContext.setCurrentTenant(tenantId), times(1));
+
+            // Verify that the user context was set
+            userContextMock.verify(() -> UserContext.setUser(user), times(1));
+
+            // Create the expected authentication token with empty permissions
+            List<String> grantedPermissions = new ArrayList<>(permissionsMap.keySet());
+            UsernamePasswordAuthenticationToken expectedAuthenticationToken =
+                    new UsernamePasswordAuthenticationToken(user, null, v1ServiceImpl.getAuthorities(grantedPermissions));
+
+            // Verify that the security context authentication was set correctly
+            verify(contextMock, times(1)).setAuthentication(expectedAuthenticationToken);
+
+            // Verify that the permissions context was set with an empty list
+            permissionsContextMock.verify(() -> PermissionsContext.setPermissions(grantedPermissions), times(1));
+        }
+    }
+
+    @Test
+    void testGenerateTokenReturnsNullCache() {
+        // Mock the token generation API response
+        String token = "sampleToken";
+
+        Cache mockCache = null;
+        when(cacheManager.getCache(anyString())).thenReturn(mockCache);
+
+        // Call the method and verify the result
+        assertThrows(V1ServiceException.class, () -> v1ServiceImpl.generateToken());
+
+    }
+
+    @Test
+    void testGenerateTokenGetsTokenFromCache() {
+        // Mock the token generation API response
+        String token = "sampleToken";
+
+        Cache mockCache = mock(Cache.class);
+        when(cacheManager.getCache(anyString())).thenReturn(mockCache);
+        when(mockCache.get(anyString())).thenReturn(() -> token);
+
+        // Call the method and verify the result
+        String resultToken = v1ServiceImpl.generateToken();
+        assertEquals(token, resultToken);
+
+    }
+
+    @Test
+    void testGenerateToken_Success() {
+        // Mock the token generation API response
+        String token = "sampleToken";
+        String v1GenerateTokenUrl = "https://qa-runner.cargoes.com/Api/Account/GenerateToken";
+        Map<String, Object> responseBody = new HashMap<>();
+        responseBody.put("token", token);
+
+        // Create a non-null ResponseEntity with the mocked response body
+        ResponseEntity<Map<String, Object>> responseEntity = new ResponseEntity<>(responseBody, HttpStatus.OK);
+
+        // Properly instantiate ParameterizedTypeReference to match the method
+        ParameterizedTypeReference<Map<String, Object>> responseType = new ParameterizedTypeReference<>() {
+        };
+
+        // Mock RestTemplate exchange method to return the mocked ResponseEntity
+        when(restTemplate.exchange(
+                eq(v1GenerateTokenUrl), // Ensure URL matches
+                eq(HttpMethod.POST),
+                any(),
+                eq(responseType)) // Ensure the ParameterizedTypeReference matches
+        ).thenReturn(responseEntity);
+
+        Cache mockCache = mock(Cache.class);
+        when(cacheManager.getCache(anyString())).thenReturn(mockCache);
+        when(mockCache.get(anyString())).thenReturn(() -> null);
+
+        // Call the method and verify the result
+        String resultToken = v1ServiceImpl.generateToken();
+        assertEquals(token, resultToken);
+
+        // Verify the token was retrieved and logged
+        verify(restTemplate, times(1)).exchange(eq(v1GenerateTokenUrl), eq(HttpMethod.POST), any(HttpEntity.class), eq(responseType));
+    }
+
+    @Test
+    public void testSetAuthContext_Success2() {
+        // Mock token and user details
+        String token = "Bearer sampleToken";
+        String username = "testUser";
+        UsersDto user = mock(UsersDto.class);
+        when(user.getUsername()).thenReturn(username);
+        when(user.getPermissions()).thenReturn(Map.of("READ", true, "WRITE", true));
+
+        // Mock static method calls
+        try (MockedStatic<RequestAuthContext> requestAuthContextMock = mockStatic(RequestAuthContext.class);
+                MockedStatic<TenantContext> tenantContextMock = mockStatic(TenantContext.class);
+                MockedStatic<UserContext> userContextMock = mockStatic(UserContext.class);
+                MockedStatic<SecurityContextHolder> securityContextHolderMock = mockStatic(SecurityContextHolder.class);
+                MockedStatic<PermissionsContext> permissionsContextMock = mockStatic(PermissionsContext.class)) {
+
+            // Mock security context
+            SecurityContext contextMock = mock(SecurityContext.class);
+            securityContextHolderMock.when(SecurityContextHolder::getContext).thenReturn(contextMock);
+
+            // Call the method under test
+            v1ServiceImpl.setAuthContext(token, user);
+
+            // Verify token and context setting
+            requestAuthContextMock.verify(() -> RequestAuthContext.setAuthToken(token), times(1));
+            tenantContextMock.verify(() -> TenantContext.setCurrentTenant(user.getTenantId()), times(1));
+            userContextMock.verify(() -> UserContext.setUser(user), times(1));
+
+            // Verify the security context was set
+            ArgumentCaptor<UsernamePasswordAuthenticationToken> captor = ArgumentCaptor.forClass(UsernamePasswordAuthenticationToken.class);
+            verify(contextMock).setAuthentication(captor.capture());
+            UsernamePasswordAuthenticationToken authToken = captor.getValue();
+            assertNotNull(authToken);
+            assertEquals(user, authToken.getPrincipal());
+        }
+    }
+
+    @Test
+    public void testSetAuthContextWithEmptyPermissions2() {
+        // Mock dependencies
+        String token = "Bearer sampleToken";
+        String username = "user1";
+        UsersDto user = mock(UsersDto.class);
+        Map<String, Boolean> permissionsMap = new HashMap<>(); // Empty permissions
+
+        when(user.getTenantId()).thenReturn(1);
+        when(user.getUsername()).thenReturn(username);
+        when(user.getPermissions()).thenReturn(permissionsMap);
+
+        // Mock static methods
+        try (MockedStatic<RequestAuthContext> requestAuthContextMock = mockStatic(RequestAuthContext.class);
+                MockedStatic<TenantContext> tenantContextMock = mockStatic(TenantContext.class);
+                MockedStatic<UserContext> userContextMock = mockStatic(UserContext.class);
+                MockedStatic<SecurityContextHolder> securityContextHolderMock = mockStatic(SecurityContextHolder.class);
+                MockedStatic<PermissionsContext> permissionsContextMock = mockStatic(PermissionsContext.class)) {
+
+            // Mock the SecurityContextHolder behavior
+            SecurityContext contextMock = mock(SecurityContext.class);
+            securityContextHolderMock.when(SecurityContextHolder::getContext).thenReturn(contextMock);
+
+            // Call the method under test
+            v1ServiceImpl.setAuthContext(token, user);
+
+            // Verify token and context setting
+            requestAuthContextMock.verify(() -> RequestAuthContext.setAuthToken(token), times(1));
+            tenantContextMock.verify(() -> TenantContext.setCurrentTenant(1), times(1));
+            userContextMock.verify(() -> UserContext.setUser(user), times(1));
+
+            // Verify the security context was set with empty permissions
+            List<String> grantedPermissions = new ArrayList<>(permissionsMap.keySet());
+            UsernamePasswordAuthenticationToken authenticationToken =
+                    new UsernamePasswordAuthenticationToken(user, null, v1ServiceImpl.getAuthorities(grantedPermissions));
+            verify(contextMock).setAuthentication(authenticationToken);
+
+            // Verify permissions were set with an empty list
+            permissionsContextMock.verify(() -> PermissionsContext.setPermissions(grantedPermissions), times(1));
+        }
+    }
+
+    @Test
+    public void testGetAuthorities() {
+        // Prepare mock permissions
+        List<String> permissions = List.of("READ", "WRITE");
+
+        // Call the method under test
+        Collection<? extends GrantedAuthority> authorities = v1ServiceImpl.getAuthorities(permissions);
+
+        // Verify the authorities are correctly mapped
+        assertNotNull(authorities);
+        assertEquals(2, authorities.size());
+        assertTrue(authorities.contains(new SimpleGrantedAuthority("READ")));
+        assertTrue(authorities.contains(new SimpleGrantedAuthority("WRITE")));
+    }
+
+    @Test
+    void getCompaniesDetails() {
+        var mockResponse = V1DataResponse.builder().build();
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+        // Act
+        var responseEntity = v1ServiceImpl.getCompaniesDetails("Request");
+
+        // Assert
+        assertEquals(mockResponse, responseEntity);
+    }
+
+    @Test
+    void getCompaniesDetails2() {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
+        // Act
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.getCompaniesDetails("Request"));
+
+        // Assert
+        assertNotNull(throwable);
+    }
+
+    @Test
+    void getCompaniesDetails3() {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new RuntimeException());
+        // Act
+        var throwable = assertThrows(V1ServiceException.class, () -> v1ServiceImpl.getCompaniesDetails("Request"));
+
+        // Assert
+        assertNotNull(throwable);
+    }
+
+    @Test
+    void listOrgs() {
+        var mockResponse = V1DataResponse.builder().build();
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+        // Act
+        var responseEntity = v1ServiceImpl.listOrgs("Request");
+
+        // Assert
+        assertEquals(mockResponse, responseEntity);
+    }
+
+    @Test
+    void listOrgsThrowsError() {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
+        // Act
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.listOrgs("Request"));
+
+        // Assert
+        assertNotNull(throwable);
+    }
+
+    @Test
+    void listOrgsThrowsError2() {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new RuntimeException());
+        // Act
+        var throwable = assertThrows(V1ServiceException.class, () -> v1ServiceImpl.listOrgs("Request"));
+
+        // Assert
+        assertNotNull(throwable);
+    }
+
+    @Test
+    void listBranchesByDefaultOrgAndAddress() {
+        var mockResponse = V1DataResponse.builder().build();
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(mockResponse));
+        // Act
+        var responseEntity = v1ServiceImpl.listBranchesByDefaultOrgAndAddress("Request");
+
+        // Assert
+        assertEquals(mockResponse, responseEntity);
+    }
+
+    @Test
+    void listBranchesByDefaultOrgAndAddressThrowsError() {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.UNAUTHORIZED));
+        // Act
+        var throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.listBranchesByDefaultOrgAndAddress("Request"));
+
+        // Assert
+        assertNotNull(throwable);
+    }
+
+    @Test
+    void listBranchesByDefaultOrgAndAddressThrowsError2() {
+        // Arrange
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new RuntimeException());
+        // Act
+        var throwable = assertThrows(V1ServiceException.class, () -> v1ServiceImpl.listBranchesByDefaultOrgAndAddress("Request"));
+
+        // Assert
+        assertNotNull(throwable);
+    }
+
+    @Test
+    void testGetUsersWithGivenPermissions_Success() {
+        UserWithPermissionRequestV1 mockRequest = new UserWithPermissionRequestV1();
+        List<UsersDto> users = List.of(new UsersDto(), new UsersDto());
+        V1DataResponse mockResponse = V1DataResponse.builder().entities(users).build();
+
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenReturn(new ResponseEntity<>(mockResponse, HttpStatus.OK));
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(new ArrayList<>());
+
+        List<UsersDto> result = v1ServiceImpl.getUsersWithGivenPermissions(mockRequest);
+
+        assertNotNull(result);
+    }
+
+    @Test
+    void testGetUsersWithGivenPermissions_ClientError() {
+        UserWithPermissionRequestV1 mockRequest = new UserWithPermissionRequestV1();
+        HttpClientErrorException exception = HttpClientErrorException.create(
+                HttpStatus.BAD_REQUEST,
+                "Bad Request",
+                null,
+                "{\"error\": {\"message\": \"Client Error\"}}".getBytes(),
+                null
+        );
+
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(exception);
+
+        when(jsonHelper.readFromJson(anyString(), eq(V1ErrorResponse.class)))
+                .thenReturn(new V1ErrorResponse(new V1ErrorResponse.V1Error("Client Error")));
+
+        V1ServiceException thrown = assertThrows(
+                V1ServiceException.class,
+                () -> v1ServiceImpl.getUsersWithGivenPermissions(mockRequest)
+        );
+
+        assertEquals("Client Error", thrown.getMessage());
+    }
+
+    @Test
+    void testGetUsersWithGivenPermissions_GenericException() {
+        UserWithPermissionRequestV1 mockRequest = new UserWithPermissionRequestV1();
+
+        when(restTemplate.postForEntity(Mockito.<String>any(), Mockito.<Object>any(), Mockito.<Class<Object>>any(),
+                (Object[]) any())).thenThrow(new RuntimeException("Unexpected error"));
+
+        V1ServiceException thrown = assertThrows(
+                V1ServiceException.class,
+                () -> v1ServiceImpl.getUsersWithGivenPermissions(mockRequest)
+        );
+
+        assertEquals("Unexpected error", thrown.getMessage());
+    }
 }

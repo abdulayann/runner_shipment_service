@@ -1,0 +1,75 @@
+{
+  "properties": {
+    "invalidBoolean": {
+      "type": "boolean"
+    },
+    "invalidDate": {
+      "type": "date"
+    },
+    "date": {
+      "type": "date"
+    },
+    "invalidName": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string",
+      "minSize": 3,
+      "maxSize": 50,
+      "required": true
+    },
+    "age": {
+      "type": "number",
+      "minValue": 18,
+      "maxValue": 100,
+      "required": true
+    },
+    "email": {
+      "type": "string",
+      "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$",
+      "required": true,
+      "errors" : {
+        "pattern" : "string"
+      }
+    },
+    "password": {
+      "type": "string",
+      "minSize": 8,
+      "required": true
+    },
+    "confirmPassword": {
+      "type": "string",
+      "compare": [
+        {
+          "compareTo": "carrierDetails.etd",
+          "operator": "equals"
+        }
+      ],
+      "required": true
+    },
+    "roles": {
+      "type": "array",
+      "minSize": 1,
+      "enum": ["admin", "user", "guest"],
+      "arrayProperties": {
+        "type": "string"
+      },
+      "required": true
+    },
+    "settings": {
+      "type": "object",
+      "properties": {
+        "theme": {
+          "type": "string",
+          "enum": ["light", "dark"],
+          "required": true
+        },
+        "notifications": {
+          "type": "boolean",
+          "required": false
+        }
+      },
+      "required": true
+    }
+  }
+}

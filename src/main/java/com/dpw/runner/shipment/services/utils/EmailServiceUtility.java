@@ -11,6 +11,7 @@ import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 
 @SuppressWarnings("ALL")
 @Component
@@ -28,12 +29,14 @@ public class EmailServiceUtility {
             "wasim.jafar@dpworld.com", "abhishek.goyal@dpworld.com", "pardeep.malik@dpworld.com",
             "abhimanyu.chauhan@dpworld.com", "tanishq.malhotra@dpworld.com");
 
-    public void sendEmail(String body, String subject, List<String> emailIds, File file, String fileName) throws MessagingException, IOException {
+    public void sendEmail(String body, String subject, List<String> emailIds, List<String> cc, File file, String fileName) throws MessagingException, IOException {
 
         Session session = this.emailConfig.getSession();
         MimeMessage msg = new MimeMessage(session);
         msg.setFrom(new InternetAddress(from));
         msg.setRecipients(Message.RecipientType.TO, convertAddress(emailIds));
+        if (!Objects.isNull(cc))
+            msg.setRecipients(Message.RecipientType.CC, convertAddress(cc));
         msg.setSubject(subject);
         Multipart multipart = new MimeMultipart();
         MimeBodyPart textPart = new MimeBodyPart();
@@ -69,7 +72,7 @@ public class EmailServiceUtility {
     }
 
     public void sendEmailDefault(String body, String subject) throws MessagingException, IOException {
-        this.sendEmail(body, subject, emailIds, null, null);
+        this.sendEmail(body, subject, emailIds, null, null, null);
     }
 
     public void sendEmailForSyncEntity(String id, String guid, String entity, String error) throws MessagingException, IOException {

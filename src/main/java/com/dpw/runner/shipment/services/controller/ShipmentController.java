@@ -5,15 +5,23 @@ import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.requests.UpdateConsoleShipmentRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
-import com.dpw.runner.shipment.services.dto.patchRequest.ShipmentPatchRequest;
-import com.dpw.runner.shipment.services.dto.request.AttachListShipmentRequest;
-import com.dpw.runner.shipment.services.dto.request.CheckCreditLimitFromV1Request;
-import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
+import com.dpw.runner.shipment.services.dto.patchrequest.ShipmentPatchRequest;
+import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.dto.request.billing.InvoicePostingValidationRequest;
+import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
+import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
+import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitFromV1Response;
+import com.dpw.runner.shipment.services.dto.response.HblCheckResponse;
+import com.dpw.runner.shipment.services.dto.response.UpstreamDateUpdateResponse;
+import com.dpw.runner.shipment.services.dto.response.billing.InvoicePostingValidationResponse;
+import com.dpw.runner.shipment.services.dto.response.notification.PendingNotificationResponse;
+import com.dpw.runner.shipment.services.dto.v1.request.PartiesOrgAddressRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
@@ -22,6 +30,8 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
+import com.dpw.runner.shipment.services.service.interfaces.IDateTimeChangeLogService;
+import com.dpw.runner.shipment.services.service.interfaces.IDpsEventService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.syncing.AuditLogsSyncRequest;
 import com.dpw.runner.shipment.services.syncing.Entity.CustomShipmentSyncRequest;
@@ -49,7 +59,7 @@ import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.ALL;
-
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
 
 
 @SuppressWarnings(ALL)
@@ -57,7 +67,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.ALL;
 @RequestMapping(ShipmentConstants.SHIPMENT_API_HANDLE)
 @Slf4j
 public class ShipmentController {
-
+    
     @Autowired
     private IShipmentService shipmentService;
     @Autowired
@@ -74,7 +84,20 @@ public class ShipmentController {
     IOrderManagementAdapter orderManagementAdapter;
     @Autowired
     IConsolidationService consolidationService;
+    @Autowired
+    IDateTimeChangeLogService dateTimeChangeLogService;
+    @Autowired
+    IDpsEventService dpsEventService;
 
+    private static class HblCheckResponseClass extends RunnerResponse<HblCheckResponse> {}
+
+    @ApiResponses(value = {@ApiResponse(code = 200, response = HblCheckResponseClass.class, message = ShipmentConstants.HBL_NUMBER_CHECK_SUCCESSFUL)})
+    @GetMapping("/hbl-check")
+    public ResponseEntity<IRunnerResponse> hblCheck(
+            @ApiParam(value = ShipmentConstants.HBL_NUMBER, required = true) @RequestParam String hblNumber,
+            @ApiParam(value = ShipmentConstants.SHIPMENT_ID, required = false) @RequestParam Optional<String> shipmentId) {
+        return shipmentService.hblCheck(hblNumber, shipmentId.orElse(null));
+    }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = "Successful Shipment Details Data List Retrieval", responseContainer = "List", response = RunnerListResponse.class)})
     @PostMapping(value = "/list-shipment")
@@ -119,27 +142,51 @@ public class ShipmentController {
     // @PreAuthorize("hasAuthority('"+ Permissions.AdministrationGeneral+"')") //TODO-Authorization
     @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerListResponse.class, message = ShipmentConstants.LIST_SUCCESSFUL, responseContainer = ShipmentConstants.RESPONSE_CONTAINER_LIST)})
     @PostMapping(ApiConstants.API_LIST)
-    public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest, @RequestParam(required = false) Boolean getFullShipment) {
+    public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest, @RequestParam(required = false) Boolean getFullShipment, @RequestParam(required = false, defaultValue = "false") boolean getMasterData) {
         log.info("Received Shipment list request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(listCommonRequest));
         try {
-            if(getFullShipment != null && getFullShipment.booleanValue()) {
+            if(Boolean.TRUE.equals(getFullShipment)) {
                 return shipmentService.fullShipmentsList(CommonRequestModel.buildRequest(listCommonRequest));
             }
-           return shipmentService.list(CommonRequestModel.buildRequest(listCommonRequest));
+           ResponseEntity<IRunnerResponse> response = shipmentService.list(CommonRequestModel.buildRequest(listCommonRequest), getMasterData);
+            return  response;
         } catch (Exception ex) {
             return ResponseHelper.buildFailedResponse(ex.getMessage(), HttpStatus.FORBIDDEN);
         }
     }
 
+
+    @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerListResponse.class, message = ShipmentConstants.LIST_SUCCESSFUL, responseContainer = ShipmentConstants.RESPONSE_CONTAINER_LIST)})
+    @PostMapping(ApiConstants.API_LIST_EXTERNAL)
+    public ResponseEntity<IRunnerResponse> listExternal(@RequestBody @Valid ListCommonRequest listCommonRequest) {
+        log.info("Received Shipment list request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(listCommonRequest));
+        try {
+            return shipmentService.fullShipmentsExternalList(CommonRequestModel.buildRequest(listCommonRequest));
+        } catch (Exception ex) {
+            return ResponseHelper.buildFailedResponse(ex.getMessage(), HttpStatus.FORBIDDEN);
+        }
+    }
+
+
     // @PreAuthorize("hasAuthority('"+ Permissions.AdministrationGeneral+"')") //TODO-Authorization
     @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ShipmentConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
-    public ResponseEntity<IRunnerResponse> retrieveById(@ApiParam(value = ShipmentConstants.SHIPMENT_ID) @RequestParam Optional<Long> id, @ApiParam(value = ShipmentConstants.SHIPMENT_GUID) @RequestParam Optional<String> guid) {
+    public ResponseEntity<IRunnerResponse> retrieveById(@ApiParam(value = ShipmentConstants.SHIPMENT_ID) @RequestParam Optional<Long> id, @ApiParam(value = ShipmentConstants.SHIPMENT_GUID) @RequestParam Optional<String> guid, @RequestParam(required = false, defaultValue = "false") boolean getMasterData) {
         CommonGetRequest request = CommonGetRequest.builder().build();
         id.ifPresent(request::setId);
         guid.ifPresent(request::setGuid);
         log.info("Received Shipment retrieve request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
-        return shipmentService.retrieveById(CommonRequestModel.buildRequest(request));
+        return shipmentService.retrieveById(CommonRequestModel.buildRequest(request), getMasterData);
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ShipmentConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
+    @GetMapping(ShipmentConstants.API_SHIPMENT_RETRIEVE_FOR_NTE_SCREEN)
+    public ResponseEntity<IRunnerResponse> retrieveForNTE(@ApiParam(value = ShipmentConstants.SHIPMENT_ID) @RequestParam Optional<Long> id, @ApiParam(value = ShipmentConstants.SHIPMENT_GUID) @RequestParam Optional<String> guid) {
+        CommonGetRequest request = CommonGetRequest.builder().build();
+        id.ifPresent(request::setId);
+        guid.ifPresent(request::setGuid);
+        log.info("Received Shipment NTE retrieve request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
+        return shipmentService.retrieveForNTE(CommonRequestModel.buildRequest(request));
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ShipmentConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
@@ -172,11 +219,13 @@ public class ShipmentController {
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.UPDATE_SUCCESSFUL, response = RunnerResponse.class)})
     @PutMapping(ApiConstants.API_UPDATE)
     public ResponseEntity<IRunnerResponse> completeUpdate(@RequestBody @Valid ShipmentRequest request) {
+        long start = System.currentTimeMillis();
         log.info("Received Shipment update request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
         String responseMsg;
         try {
-            ShipmentRequest req = jsonHelper.convertValue(request, ShipmentRequest.class);
-            return shipmentService.completeUpdate(CommonRequestModel.buildRequest(req));
+            var response = shipmentService.completeUpdate(CommonRequestModel.buildRequest(request));
+            log.info("{} | end shipment completeUpdate.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - start);
+            return response;
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
@@ -191,7 +240,7 @@ public class ShipmentController {
     public ResponseEntity<IRunnerResponse> partialUpdate(@RequestBody @Valid Object request, @RequestParam(required = false, defaultValue = "false") Boolean fromV1) {
         String responseMsg;
         try {
-            ShipmentPatchRequest req = jsonHelper.convertValue(request, ShipmentPatchRequest.class);
+            ShipmentPatchRequest req = jsonHelper.convertValueWithJsonNullable(request, ShipmentPatchRequest.class);
             return shipmentService.partialUpdate(CommonRequestModel.buildRequest(req), fromV1);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
@@ -200,6 +249,24 @@ public class ShipmentController {
         }
         return ResponseHelper.buildFailedResponse(responseMsg);
     }
+
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = ShipmentConstants.FETCH_ORG_INFO, response = PartiesRequest.class),
+        @ApiResponse(code = 500, message = DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG)
+    })
+    @GetMapping(ShipmentConstants.FETCH_ORG_INFO)
+    public ResponseEntity<PartiesRequest> fetchOrgInfo(@RequestBody PartiesOrgAddressRequest request) {
+        try {
+            PartiesRequest orgAddressResponse = shipmentService.fetchOrgInfoFromV1(request);
+            return ResponseEntity.ok(orgAddressResponse);
+
+        } catch (RunnerException e) {
+            String errorMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
+            log.error(errorMsg, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.LOCK_TOGGLE_SUCCESSFUL, response = RunnerResponse.class)})
     @GetMapping(ApiConstants.TOGGLE_LOCK)
@@ -505,6 +572,12 @@ public class ShipmentController {
         return shipmentService.showAssignAllContainers(CommonRequestModel.buildRequest(request));
     }
 
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.SUCCESS, response = InvoicePostingValidationResponse.class)})
+    @PostMapping(value = "/invoices/validation")
+    public ResponseEntity<IRunnerResponse> validateInvoicePosting(@RequestBody InvoicePostingValidationRequest request) {
+        return shipmentService.validateInvoicePosting(request);
+    }
+
     @ApiResponses(value = {@ApiResponse(code = 200, message = "Successful Creditn Limit Retrieval")})
     @GetMapping(value = ShipmentConstants.FETCH_CREDIT_LIMIT)
     public ResponseEntity<?> fetchCreditLimit(@RequestParam String orgCode, @RequestParam(required = false) String addressCode) throws RunnerException {
@@ -537,4 +610,279 @@ public class ShipmentController {
             return ResponseHelper.buildFailedResponse(e.getMessage());
         }
     }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.SUCCESS, response = UpstreamDateUpdateResponse.class)})
+    @GetMapping(value = ShipmentConstants.GET_DATETIME_CHANGES)
+    public ResponseEntity<IRunnerResponse> getDateTimeChanges(@RequestParam Long shipmentId) {
+        try {
+            return shipmentService.getDateTimeChangeUpdates(shipmentId);
+        } catch (Exception e) {
+            return ResponseHelper.buildFailedResponse(e.getMessage());
+        }
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.SUCCESS, response = RunnerResponse.class)})
+    @GetMapping(value = ShipmentConstants.GET_CONTAINERS)
+    public ResponseEntity<IRunnerResponse> getContainerListFromTrackingService(
+            @RequestParam(required = false) Long shipmentId,
+            @RequestParam(required = false) Long consolidationId) {
+        try {
+            return shipmentService.getContainerListFromTrackingService(shipmentId, consolidationId);
+        } catch (Exception e) {
+            return ResponseHelper.buildFailedResponse(e.getMessage());
+        }
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerListResponse.class, message = ShipmentConstants.LIST_SUCCESSFUL, responseContainer = ShipmentConstants.RESPONSE_CONTAINER_LIST)})
+    @PostMapping(ApiConstants.API_CONSOLE_SHIPMENT_LIST)
+    public ResponseEntity<IRunnerResponse> consoleShipmentList(@RequestBody @Valid ListCommonRequest listCommonRequest, @RequestParam(required = false) Long consoleId, @RequestParam(required = false) String consoleGuid , @RequestParam(required = true) boolean isAttached, @RequestParam(required = false, defaultValue = "false") boolean getMasterData, @RequestParam(required = false, defaultValue = "false") boolean fromNte) {
+        log.info("Received Cosole Shipment list request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(listCommonRequest));
+        try {
+            return shipmentService.consoleShipmentList(CommonRequestModel.buildRequest(listCommonRequest), consoleId, consoleGuid, isAttached, getMasterData, fromNte);
+        } catch (Exception ex) {
+            return ResponseHelper.buildFailedResponse(ex.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.ALL_SHIPMENT_COUNT, response = UpstreamDateUpdateResponse.class)})
+    @GetMapping(ApiConstants.GET_ALL_SHIPMENTS_COUNT)
+    public ResponseEntity<IRunnerResponse> getAllShipments(@RequestParam(required = true) Long consoleId) {
+        log.info("Request received for count of all shipments");
+        try {
+            return shipmentService.getAllShipments(consoleId);
+        } catch (Exception ex) {
+            return ResponseHelper.buildFailedResponse(ex.getMessage());
+        }
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.UPDATE_SHIPMENT_STATUS, response = UpstreamDateUpdateResponse.class)})
+    @PutMapping(ApiConstants.UPDATE_SHIPMENT_STATUS)
+    public ResponseEntity<IRunnerResponse> updateShipments(@RequestBody UpdateConsoleShipmentRequest request) {
+        log.info("Request received for updating the shipments");
+        try {
+            return shipmentService.updateShipments(request);
+        } catch (Exception ex) {
+            return ResponseHelper.buildFailedResponse(ex.getMessage());
+        }
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ShipmentConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
+    @GetMapping(ShipmentConstants.API_RETRIEVE_MEASUREMENT_DATA)
+    public ResponseEntity<IRunnerResponse> retrieveMeasurmentData(@ApiParam(value = ShipmentConstants.SHIPMENT_GUID) @RequestParam Optional<String> guid, @ApiParam(value = ShipmentConstants.MODULE_ID) @RequestParam Optional<String> module) {
+        CommonGetRequest request = CommonGetRequest.builder().build();
+        guid.ifPresent(request::setGuid);
+        if(module.get().equalsIgnoreCase(SHIPMENT)) {
+            log.info("Received Shipment retrieve request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
+            return shipmentService.shipmentRetrieveWithMeasurmentBasis(CommonRequestModel.buildRequest(request));
+        } else {
+            log.info("Received Shipment retrieve request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
+            return consolidationService.consolidationRetrieveWithMeasurmentBasis(CommonRequestModel.buildRequest(request));
+        }
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.LATEST_CARGO_DELIVERY_DATE, response = UpstreamDateUpdateResponse.class)})
+    @GetMapping(ApiConstants.GET_ALL_CONSOLE_SHIPMENTS_LATEST_DATE)
+    public ResponseEntity<IRunnerResponse> getAllConsolShipmentsLatestDate(@RequestParam(required = true) Long consoleId) {
+        log.info("Request received for all consol shipments");
+        try {
+            return shipmentService.getLatestCargoDeliveryDate(consoleId);
+        } catch (Exception ex) {
+            return ResponseHelper.buildFailedResponse(ex.getMessage());
+        }
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.NOTIFICATION_FETCHED_SUCCESSFULLY, response = PendingNotificationResponse.class)})
+    @PostMapping(ApiConstants.GET_PENDING_NOTIFICATIONS)
+    public ResponseEntity<IRunnerResponse> getPendingNotifications(@RequestBody PendingNotificationRequest request) {
+        log.info("Request received for pending notifications for shipments");
+        try {
+            return shipmentService.getPendingNotifications(CommonRequestModel.builder().data(request).build());
+        } catch (Exception ex) {
+            return ResponseHelper.buildFailedResponse(ex.getMessage());
+        }
+    }
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.REQUESTED_INTER_BRANCH_CONSOLE, response = RunnerResponse.class)})
+    @GetMapping(ApiConstants.REQUEST_INTER_BRANCH_CONSOLE)
+    public ResponseEntity<IRunnerResponse> requestInterBranchConsole(@RequestParam(required = true) Long shipId, @RequestParam(required = true) Long consoleId, @RequestParam(required = false) String rejectRemarks) {
+        log.info("Request received for interBrnach console request");
+        try {
+            return shipmentService.requestInterBranchConsole(shipId, consoleId, rejectRemarks);
+        } catch (Exception ex) {
+            return ResponseHelper.buildFailedResponse(ex.getMessage());
+        }
+    }
+
+    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CALCULATION_SUCCESSFUL, response = RunnerResponse.class) })
+    @PostMapping(ApiConstants.SHIPMENT_SUMMARY)
+    public ResponseEntity<IRunnerResponse> calculateShipmentSummary(@RequestBody CalculateShipmentSummaryRequest calculateShipmentSummaryRequest) {
+        String responseMsg;
+        try {
+            return shipmentService.calculateShipmentSummary(CommonRequestModel.buildRequest(calculateShipmentSummaryRequest));
+        }
+        catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_CALCULATION_ERROR;
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.OCEAN_DG_EMAIL_SEND_SUCCESS, response = RunnerResponse.class)})
+    @PostMapping(ApiConstants.OCEAN_DG_SEND_FOR_APPROVAL)
+    public ResponseEntity<IRunnerResponse> oceanDGSendForApproval(@RequestBody
+    OceanDGApprovalRequest request) {
+        log.info("Request received for oceanDGSendForApproval");
+        try {
+            return shipmentService.sendOceanDGApprovalEmail(request);
+        } catch (Exception ex) {
+            return ResponseHelper.buildFailedResponse(ex.getMessage());
+        }
+    }
+
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.OCEAN_DG_APPROVAL_REQUEST_RESPONSE, response = RunnerResponse.class)})
+    @PostMapping(ApiConstants.OCEAN_DG_APPROVAL_RESPONSE)
+    public ResponseEntity<IRunnerResponse> oceanDGApprovalResponse(@RequestBody OceanDGRequest request) {
+        log.info("Request received for oceanDGApprovalResponse ");
+        try {
+            return shipmentService.dgApprovalResponse(request);
+        } catch (Exception ex) {
+            return ResponseHelper.buildFailedResponse(ex.getMessage());
+        }
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerListResponse.class, message = ShipmentConstants.LIST_SUCCESSFUL, responseContainer = ShipmentConstants.RESPONSE_CONTAINER_LIST)})
+    @PostMapping(ApiConstants.API_LIST_WITHOUT_FILTER)
+    public ResponseEntity<IRunnerResponse> listWithoutTenantFilter(@RequestBody @Valid ListCommonRequest listCommonRequest) {
+        log.info("Received Shipment list request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(listCommonRequest));
+        try {
+            return shipmentService.listWithoutTenantCheck(CommonRequestModel.buildRequest(listCommonRequest));
+        } catch (Exception ex) {
+            return ResponseHelper.buildFailedResponse(ex.getMessage());
+        }
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.ATTACH_DETACH_ORDER_RESPONSE, response = RunnerResponse.class)})
+    @PostMapping(ApiConstants.ATTACH_DETACH_ORDER)
+    public ResponseEntity<IRunnerResponse> attachDetachOrder(@RequestBody @Valid ShipmentOrderAttachDetachRequest shipmentOrderRequest) {
+        try {
+            return shipmentService.attachDetachOrder(shipmentOrderRequest);
+        } catch (Exception ex) {
+            return ResponseHelper.buildFailedResponse(ex.getMessage());
+        }
+    }
+
+    @ApiResponses(value = { @ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL, response = RunnerResponse.class) })
+    @PostMapping(ApiConstants.API_CREATE_FROM_BOOKING)
+    public ResponseEntity<IRunnerResponse> createShipmentForBooking(@RequestBody @Valid ShipmentRequest shipmentRequest) throws RunnerException {
+
+        String responseMsg;
+        try {
+            return ResponseHelper.buildSuccessResponse(shipmentService.createShipmentFromBooking(shipmentRequest));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+            throw new RunnerException(responseMsg);
+        }
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.FETCH_SUCCESSFUL)})
+    @GetMapping(ApiConstants.API_LIST_BILL_CHARGES_SHIPMENTS)
+    public ResponseEntity<?> listBillChargesShipments(@ApiParam(value = ShipmentConstants.SHIPMENT_GUID, required = true) @RequestParam String guid,
+                                                      @RequestParam(required = false) String entityId,
+                                                      @RequestParam(defaultValue = "1") Integer pageNo ,
+                                                      @RequestParam(required = false) Integer pageSize) {
+        try {
+            pageSize = (pageSize!=null) ? pageSize : Integer.MAX_VALUE;
+            ListCommonRequest request = ListCommonRequest.builder().pageNo(pageNo).pageSize(pageSize).entityId(entityId).build();
+            return shipmentService.fetchBillChargesShipmentList(CommonRequestModel.buildRequest(guid, request));
+        } catch (Exception e) {
+            return ResponseHelper.buildFailedResponse(e.getMessage());
+        }
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.CANCELLED, response = RunnerResponse.class)})
+    @GetMapping(ApiConstants.CANCEL)
+    public ResponseEntity<IRunnerResponse> cancelShipment(@ApiParam(value = ShipmentConstants.SHIPMENT_ID, required = true) @RequestParam Long id) throws RunnerException {
+        String responseMsg;
+        try {
+            CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+            return shipmentService.cancel(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : "";
+            log.error(responseMsg, e);
+            return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.FETCH_MATCHING_RULES_SUCCESS, response = RunnerResponse.class)})
+    @GetMapping(ApiConstants.MATCHING_RULES_BY_GUID)
+    public ResponseEntity<IRunnerResponse> getMatchingRulesByGuid(@ApiParam(value = ShipmentConstants.SHIPMENT_GUID, required = true) @RequestParam String shipmentGuid) {
+        return dpsEventService.getShipmentMatchingRulesByGuid(shipmentGuid);
+    }
+
+    // Runner - v3.0 Shipment endpoints
+
+    // create
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL, response = RunnerResponse.class),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
+    @PostMapping(ApiConstants.API_CREATE_V3)
+    public ResponseEntity<IRunnerResponse> createV3(@RequestBody @Valid ShipmentRequest request) {
+        log.info("Received Shipment create request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
+        String responseMsg;
+        try {
+            return shipmentService.createV3(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+    // update
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.UPDATE_SUCCESSFUL, response = RunnerResponse.class)})
+    @PutMapping(ApiConstants.API_UPDATE_V3)
+    public ResponseEntity<IRunnerResponse> completeUpdateV3(@RequestBody @Valid ShipmentRequest request) {
+        long start = System.currentTimeMillis();
+        log.info("Received Shipment update request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
+        String responseMsg;
+        try {
+            var response = shipmentService.completeUpdateV3(CommonRequestModel.buildRequest(request));
+            log.info("{} | end shipment completeUpdate.... {} ms", LoggerHelper.getRequestIdFromMDC(), System.currentTimeMillis() - start);
+            return response;
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_UPDATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+    // list
+    @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerListResponse.class, message = ShipmentConstants.LIST_SUCCESSFUL, responseContainer = ShipmentConstants.RESPONSE_CONTAINER_LIST)})
+    @PostMapping(ApiConstants.API_LIST_V3)
+    public ResponseEntity<IRunnerResponse> listV3(@RequestBody @Valid ListCommonRequest listCommonRequest, @RequestParam(required = false) Boolean getFullShipment, @RequestParam(required = false, defaultValue = "false") boolean getMasterData) {
+        log.info("Received Shipment list request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(listCommonRequest));
+        try {
+            if(Boolean.TRUE.equals(getFullShipment)) {
+                return shipmentService.fullShipmentsListV3(CommonRequestModel.buildRequest(listCommonRequest));
+            }
+            ResponseEntity<IRunnerResponse> response = shipmentService.listV3(CommonRequestModel.buildRequest(listCommonRequest), getMasterData);
+            return  response;
+        } catch (Exception ex) {
+            return ResponseHelper.buildFailedResponse(ex.getMessage(), HttpStatus.FORBIDDEN);
+        }
+    }
+    // retrieve
+    @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ShipmentConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
+    @GetMapping(ApiConstants.API_RETRIEVE_BY_ID_V3)
+    public ResponseEntity<IRunnerResponse> retrieveByIdV3(@ApiParam(value = ShipmentConstants.SHIPMENT_ID) @RequestParam Optional<Long> id, @ApiParam(value = ShipmentConstants.SHIPMENT_GUID) @RequestParam Optional<String> guid, @RequestParam(required = false, defaultValue = "false") boolean getMasterData) {
+        CommonGetRequest request = CommonGetRequest.builder().build();
+        id.ifPresent(request::setId);
+        guid.ifPresent(request::setGuid);
+        log.info("Received Shipment retrieve request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
+        return shipmentService.retrieveByIdV3(CommonRequestModel.buildRequest(request), getMasterData);
+    }
+
 }

@@ -1,8 +1,10 @@
 package com.dpw.runner.shipment.services.helpers;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.responses.*;
 import com.dpw.runner.shipment.services.dto.response.ByteArrayResourceResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -44,12 +46,6 @@ public class ResponseHelper {
                 .data(data).build(), HttpStatus.OK);
     }
 
-    public static ResponseEntity<IRunnerResponse> buildCreationSuccessResponse(IRunnerResponse data) {
-        return new ResponseEntity<>(RunnerResponse.builder().success(true)
-                .requestId(LoggerHelper.getRequestIdFromMDC())
-                .data(data).build(), HttpStatus.CREATED);
-    }
-
     public static ResponseEntity<IRunnerResponse> buildSuccessResponse() {
         return new ResponseEntity<>(
                 RunnerResponse.builder().success(true)
@@ -58,8 +54,17 @@ public class ResponseHelper {
                 HttpStatus.OK);
     }
 
+    public static ResponseEntity<IRunnerResponse> buildSuccessResponseWithWarning(String warning) {
+        return new ResponseEntity<>(
+                RunnerResponse.builder().success(true)
+                        .requestId(LoggerHelper.getRequestIdFromMDC())
+                        .warning(warning)
+                        .build(),
+                HttpStatus.OK);
+    }
+
     public static ResponseEntity<IRunnerResponse> buildListSuccessResponse(List<IRunnerResponse> data, int pageNo, long count) {
-        log.debug(RETURN_RESPONSE_WITH_DATA_MSG, data);
+//        log.debug(RETURN_RESPONSE_WITH_DATA_MSG, data);
         IRunnerResponse runnerResponse = RunnerListResponse.builder().success(true)
                 .requestId(LoggerHelper.getRequestIdFromMDC())
                 .data(data).numberOfRecords(count).totalPages(pageNo).build();
@@ -76,7 +81,7 @@ public class ResponseHelper {
 
     public static ResponseEntity<IRunnerResponse> buildFailedResponse(String msg, HttpStatus httpStatus) {
         httpStatus = httpStatus == null  ? HttpStatus.BAD_REQUEST : httpStatus;
-        log.debug(RETURN_RESPONSE_WITH_ERROR_MSG, msg);
+        log.error(RETURN_RESPONSE_WITH_ERROR_MSG, msg);
         RunnerResponse runnerResponse = buildFailResponse(new ApiError(httpStatus, msg));
         return new ResponseEntity<>(runnerResponse, httpStatus);
     }
@@ -93,10 +98,6 @@ public class ResponseHelper {
         return new ResponseEntity<>(runnerResponse, HttpStatus.BAD_REQUEST);
     }
 
-    public static ResponseEntity<IRunnerResponse> buildResponse(HttpStatus httpStatus) {
-        return new ResponseEntity<>(httpStatus);
-    }
-
     public static RunnerResponse buildFailResponse(ApiError apiError) {
         log.debug(RETURN_RESPONSE_WITH_ERROR_MSG, apiError);
         return RunnerResponse.builder().success(false)
@@ -104,13 +105,6 @@ public class ResponseHelper {
                 .error(apiError).build();
     }
 
-    public static ResponseEntity<DependentServiceResponse> buildDependentServiceFailedResponse(String msg) {
-        log.debug("Return Dependent Service Response with error {}", msg);
-        DependentServiceResponse runnerResponse = DependentServiceResponse.builder().success(false)
-                .requestId(LoggerHelper.getRequestIdFromMDC())
-                .error(new ApiError(HttpStatus.BAD_REQUEST, msg)).build();
-        return new ResponseEntity<>(runnerResponse, HttpStatus.BAD_REQUEST);
-    }
     public static ResponseEntity<IRunnerResponse> buildDependentServiceResponse(Object data, int pageNo, long count) {
         log.debug(RETURN_RESPONSE_WITH_DATA_MSG, data);
         DependentServiceResponse runnerResponse = DependentServiceResponse.builder().success(true)
@@ -132,6 +126,8 @@ public class ResponseHelper {
                 .contentType(contentType)
                 .contentLength(resource.contentLength())
                 .header(HttpHeaders.CONTENT_DISPOSITION,"attachment; filename=" + fileName)
+                .header("X-CSD-Document-Status",
+                    String.valueOf(Boolean.parseBoolean(MDC.get(Constants.IS_CSD_DOCUMENT_ADDED))))
                 .body(resource);
     }
 }

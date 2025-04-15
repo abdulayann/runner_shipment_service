@@ -3,9 +3,10 @@ package com.dpw.runner.shipment.services.ReportingService.Reports;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShippingInstructionModel;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
+import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.Hbl;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -13,11 +14,13 @@ import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.repository.interfaces.IHblRepository;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -51,6 +54,7 @@ public class ShippingInstructionReport extends IReport{
     @Override
     Map<String, Object> populateDictionary(IDocumentModel documentModel) {
         ShippingInstructionModel model = (ShippingInstructionModel) documentModel;
+        validateAirAndOceanDGCheck(model.getShipment());
         Map<String, Object> dictionary = new HashMap<>();
 
         PartiesModel consignerParty = model.getShipment().getConsigner();
@@ -74,23 +78,23 @@ public class ShippingInstructionReport extends IReport{
         dictionary.put(CONSIGNEE_ADDRESS, consignee);
         dictionary.put(NOTIFY_ADDRESS, notify);
 
-        if (consignerParty != null && consignerParty.getOrgData().get(CONSIGNER_FREETEXT) != null) {
+        if (consignerParty != null && consignerParty.getAddressData() != null  && consignerParty.getAddressData().containsKey(PartiesConstants.RAW_DATA)) {
             dictionary.put(CONSIGNER_FREETEXT,
-                    consignerParty.getOrgData().get(CONSIGNER_FREETEXT));
+                    consignerParty.getAddressData().get(PartiesConstants.RAW_DATA));
         } else {
             dictionary.put(CONSIGNER_FREETEXT, consigner);
         }
 
-        if (consigneeParty != null && consigneeParty.getOrgData().get(CONSIGNEE_FREETEXT) != null) {
+        if (consigneeParty != null && consigneeParty.getAddressData() != null  && consigneeParty.getAddressData().containsKey(PartiesConstants.RAW_DATA)) {
             dictionary.put(CONSIGNEE_FREETEXT,
-                    consigneeParty.getOrgData().get(CONSIGNEE_FREETEXT));
+                    consigneeParty.getAddressData().get(PartiesConstants.RAW_DATA));
         } else {
             dictionary.put(CONSIGNEE_FREETEXT, consignee);
         }
 
-        if (notifyParty != null && notifyParty.getOrgData().get(NOTIFY_PARTY_FREETEXT) != null) {
+        if (notifyParty != null && notifyParty.getAddressData() != null  && notifyParty.getAddressData().containsKey(PartiesConstants.RAW_DATA)) {
             dictionary.put(NOTIFY_PARTY_FREETEXT,
-                    getAddressList(notifyParty.getOrgData().get(NOTIFY_PARTY_FREETEXT).toString()));
+                    notifyParty.getAddressData().get(PartiesConstants.RAW_DATA));
         } else {
             dictionary.put(NOTIFY_PARTY_FREETEXT, notify);
         }
@@ -108,7 +112,7 @@ public class ShippingInstructionReport extends IReport{
             dictionary.put(POFD, getPortDetails(model.getShipment().getCarrierDetails().getDestination()));
             dictionary.put(PO_DELIVERY, getPortDetails(model.getShipment().getCarrierDetails().getDestinationPort()));
             String formatPattern = "dd/MMM/y";
-            V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+            V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
             if(!CommonUtils.IsStringNullOrEmpty(v1TenantSettingsResponse.getDPWDateFormat()))
                 formatPattern = v1TenantSettingsResponse.getDPWDateFormat();
             dictionary.put(ETD, GenerateFormattedDate(model.getShipment().getCarrierDetails().getEtd(), formatPattern));
@@ -135,12 +139,14 @@ public class ShippingInstructionReport extends IReport{
         BigDecimal totalWeight = BigDecimal.ZERO;
         String unitOfTotalWeight = null;
         boolean breakFlagForWeight = false;
-        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
 
         if (model.getShipment().getPackingList() != null) {
-            var values = model.getShipment().getPackingList().stream()
-                    .map(i -> jsonHelper.convertJsonToMap(jsonHelper.convertToJson(i)))
-                    .toList();
+
+            List<Map<String, Object>> values = new ArrayList<>();
+            for (PackingModel packingModel: model.getShipment().getPackingList()) {
+                values.add(jsonHelper.convertValue(packingModel, new TypeReference<>() {}));
+            }
 
             for (var v : values) {
                 totalPacks = sum(totalPacks, Long.parseLong(v.get(PACKS).toString()));

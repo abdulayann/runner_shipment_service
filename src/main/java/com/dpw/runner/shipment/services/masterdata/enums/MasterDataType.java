@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.masterdata.enums;
 
+import java.util.Objects;
 import lombok.Getter;
 
 @Getter
@@ -37,7 +38,7 @@ public enum MasterDataType {
     ORG_CATEGORY(31, "OrgCategory"),
     CUSTOM_SHIPMENT_TYPE(32, "CustomShipmentType"),
     CUSTOM_DECL_TYPE(33, "CustomDeclType"),
-            // Carrier(34, "Carrier"),
+    CARRIER(34, "Carrier"),
     DOC_TYPES(35, "DocTypes"),
     COUNTRY_STATES(60, "CountryStates"),
     AdditionalServices(61, "AdditionalServices"),
@@ -150,7 +151,17 @@ public enum MasterDataType {
     MAWB_CARRIER_AGENT(152, "MAWBCarrier/Agent"),
     SALES_AGENT_MASTER(1014, "SalesAgentMaster"),
     SECURITY_STATUS(159, "SecurityStatus"),
-    EXEMPTION_CODES(160, "ExemptionCodes");
+    EXEMPTION_CODES(160, "ExemptionCodes"),
+    SCI(166, "SCI"),
+    MODULE_MASTER(183, "ModuleMaster"),
+    DEPARTMENT_MASTER_LIST(184, "DepartmentMasterList"),
+    NATURE_OF_GOODS(185, "NatureOfGoods"),
+    IATA_CHARGE_CODES(186, "IATAChargeCodes"),
+    PACKING_GROUP(188, "PackingGroup"),
+    LOCATION_ROLE(189, "LocationRole"),
+    EVENT_SOURCE(190, "EventSource"),
+    PACKAGE_TYPE(191, "PackageType"),
+    CONTAINER_TYPE(192, "ContainerType");
 
     private int id;
     private String description;
@@ -170,5 +181,16 @@ public enum MasterDataType {
                 return d;
         }
         return null;
+    }
+
+    public static String getNameFromDescription(String description) {
+        if(Objects.isNull(description))
+            return "";
+        for (MasterDataType masterDataType : MasterDataType.values()) {
+            if (masterDataType.getDescription().equalsIgnoreCase(description)) {
+                return masterDataType.name();
+            }
+        }
+        return "";
     }
 }

@@ -7,7 +7,6 @@ import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.BookingCarriageModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ContainerModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShippingRequestOutModel;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
@@ -19,6 +18,7 @@ import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -151,7 +151,7 @@ public class ShippingRequestOutReport extends IReport {
                     "=",
                     vessel
             );
-            CommonV1ListRequest vesselRequest = CommonV1ListRequest.builder().skip(0).take(0).criteriaRequests(vesselCriteria).build();
+            CommonV1ListRequest vesselRequest = CommonV1ListRequest.builder().skip(0).criteriaRequests(vesselCriteria).build();
             V1DataResponse vesselResponse = v1Service.fetchVesselData(vesselRequest);
             List<VesselsResponse> vesselsResponse = jsonHelper.convertValueToList(vesselResponse.entities, VesselsResponse.class);
             if (vesselsResponse != null && vesselsResponse.size() > 0)
@@ -230,11 +230,9 @@ public class ShippingRequestOutReport extends IReport {
             dictionary.put(ReportConstants.SHIPMENT_HASCONTAINERS, false);
         }
 
-        String jsonContainer = jsonHelper.convertToJson(dictionary.get(ReportConstants.SHIPMENT_AND_CONTAINER));
+        List<Map<String, Object>> valuesContainer = jsonHelper.convertValue(dictionary.get(ReportConstants.SHIPMENT_AND_CONTAINER), new TypeReference<>() {});
 
-        List<Map<String, Object>> valuesContainer = jsonHelper.readFromJson(jsonContainer, List.class);
-
-        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
         valuesContainer.forEach(v -> {
             if (v.containsKey(ReportConstants.WEIGHT))
                 v.put(ReportConstants.WEIGHT, ConvertToWeightNumberFormat(v.get(ReportConstants.WEIGHT), v1TenantSettingsResponse));

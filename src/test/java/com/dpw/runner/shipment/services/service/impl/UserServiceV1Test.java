@@ -4,6 +4,8 @@ import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -17,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@Execution(ExecutionMode.CONCURRENT)
 class UserServiceV1Test {
 
     @Mock
@@ -44,7 +47,7 @@ class UserServiceV1Test {
         ResponseEntity<UsersDto> responseEntity = new ResponseEntity<>(expectedUserDto, HttpStatus.OK);
         when(restTemplate.exchange(eq(url), eq(HttpMethod.POST), eq(entity), eq(UsersDto.class))).thenReturn(responseEntity);
 
-        UsersDto actualUserDto = userServiceV1.getUserByToken("key", validToken);
+        UsersDto actualUserDto = userServiceV1.getUserByToken(validToken);
 
         assertEquals(expectedUserDto, actualUserDto);
         verify(restTemplate, times(1)).exchange(eq(url), eq(HttpMethod.POST), eq(entity), eq(UsersDto.class));
@@ -56,7 +59,7 @@ class UserServiceV1Test {
         headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
         HttpEntity<String> entity = new HttpEntity<>(headers);
 
-        UsersDto actualUserDto = userServiceV1.getUserByToken("key", invalidToken);
+        UsersDto actualUserDto = userServiceV1.getUserByToken(invalidToken);
 
         assertEquals(null, actualUserDto);
         verify(restTemplate, never()).exchange(anyString(), any(HttpMethod.class), any(HttpEntity.class), eq(UsersDto.class));

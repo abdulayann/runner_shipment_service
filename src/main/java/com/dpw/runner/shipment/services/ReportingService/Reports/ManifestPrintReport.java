@@ -7,14 +7,11 @@ import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ConsolidationModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PackingModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
-import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
-import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.nimbusds.jose.util.Pair;
-import io.netty.util.internal.StringUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -22,11 +19,13 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.util.*;
 
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.EMPTY_STRING;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
+
 @Component
 public class ManifestPrintReport extends IReport {
     @Autowired
     private JsonHelper jsonHelper;
-    private ConsolidationModel consol;
 
     @Override
     public Map<String, Object> getData(Long id) {
@@ -37,9 +36,9 @@ public class ManifestPrintReport extends IReport {
     @Override
     IDocumentModel getDocumentModel(Long id) {
         ConsolidationManifestPrintModel manifestPrintModel = new ConsolidationManifestPrintModel();
-        this.consol = getConsolidation(id);
-        if (consol != null)
-            manifestPrintModel.setShipments(consol.getShipmentsList());
+        ConsolidationModel consol = getConsolidation(id);
+        manifestPrintModel.setConsol(consol);
+        manifestPrintModel.setShipments(consol.getShipmentsList());
         return manifestPrintModel;
     }
 
@@ -50,49 +49,30 @@ public class ManifestPrintReport extends IReport {
         for (var shipmentDetails : manifestPrintModel.getShipments()) {
             populateShipmentFields(shipmentDetails, dictionary);
         }
+        ConsolidationModel consol = manifestPrintModel.getConsol();
         populateConsolidationFields(consol, dictionary);
-        V1TenantSettingsResponse v1TenantSettingsResponse = TenantSettingsDetailsContext.getCurrentTenantSettings();
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
 
         List<PackingModel> packings = GetAllShipmentsPacks(List.of(manifestPrintModel.getShipments().toArray(new ShipmentModel[0])));
         Pair<BigDecimal, String> weightAndUnit = GetTotalWeight(packings);
         Pair<BigDecimal, String> volumeAndUnit = GetTotalVolume(packings);
 
-        var listShipments = (List<ShipmentModel>) dictionary.get(ReportConstants.SHIPMENTS);
-
-        if(listShipments != null) {
-            var values = listShipments.stream()
-                    .map(i -> jsonHelper.convertJsonToMap(jsonHelper.convertToJson(i)))
-                    .toList();
-
-            if (Objects.isNull(values)) values = new ArrayList<>();
-            values.forEach(v -> {
-                if (v.containsKey(ReportConstants.WEIGHT))
-                    v.put(ReportConstants.WEIGHT, ConvertToWeightNumberFormat(v.get(ReportConstants.WEIGHT), v1TenantSettingsResponse));
-                if (v.containsKey(ReportConstants.TOTAL_PACKS))
-                    v.put(ReportConstants.TOTAL_PACKS, addCommas(v.get(ReportConstants.TOTAL_PACKS).toString()));
-                if (v.containsKey(ReportConstants.DESCRIPTION))
-                    v.put(ReportConstants.DESCRIPTION, StringUtility.toUpperCase(StringUtility.convertToString(v.get(ReportConstants.DESCRIPTION))));
-            });
-            dictionary.put(ReportConstants.SHIPMENTS, values);
-        }
-
-
         if (consol.getAchievedQuantities() != null && consol.getAchievedQuantities().getConsolidatedWeight() != null) {
             dictionary.put(ReportConstants.PWEIGHT_UNIT, ConvertToWeightNumberFormat(consol.getAchievedQuantities().getConsolidatedWeight(), v1TenantSettingsResponse) + " " + consol.getAchievedQuantities().getConsolidatedWeightUnit());
         } else {
-            dictionary.put(ReportConstants.PWEIGHT_UNIT, StringUtil.EMPTY_STRING);
+            dictionary.put(ReportConstants.PWEIGHT_UNIT, EMPTY_STRING);
         }
 
         if (consol.getAchievedQuantities() != null && consol.getAchievedQuantities().getConsolidatedVolume() != null) {
             dictionary.put(ReportConstants.PVOLUME_UNIT, ConvertToVolumeNumberFormat(consol.getAchievedQuantities().getConsolidatedVolume(), v1TenantSettingsResponse) + " " + consol.getAchievedQuantities().getConsolidatedVolumeUnit());
         } else {
-            dictionary.put(ReportConstants.PVOLUME_UNIT, StringUtil.EMPTY_STRING);
+            dictionary.put(ReportConstants.PVOLUME_UNIT, EMPTY_STRING);
         }
 
         if (consol.getAchievedQuantities() != null && consol.getAchievedQuantities().getConsolidationChargeQuantity() != null) {
             dictionary.put(ReportConstants.PCHARGE_UNIT, ConvertToWeightNumberFormat(consol.getAchievedQuantities().getConsolidationChargeQuantity(), v1TenantSettingsResponse) + " " + consol.getAchievedQuantities().getConsolidationChargeQuantityUnit());
         } else {
-            dictionary.put(ReportConstants.PCHARGE_UNIT, StringUtil.EMPTY_STRING);
+            dictionary.put(ReportConstants.PCHARGE_UNIT, EMPTY_STRING);
         }
 
         var containersList = consol.getContainersList();
@@ -101,7 +81,7 @@ public class ManifestPrintReport extends IReport {
           totalPackages =
               containersList.stream()
                   .filter(Objects::nonNull) // Filter out null values
-                  .map(c -> c.getNoOfPackages() != null ? c.getNoOfPackages() : 0)
+                  .map(c -> IsStringNullOrEmpty(c.getPacks()) ? 0 : Long.parseLong(c.getPacks()))
                   .reduce(Long::sum)
                   .orElse(0L); // Default value if the stream is empty
         }
@@ -185,6 +165,7 @@ public class ManifestPrintReport extends IReport {
             if (destinationUnloc != null)
                 dictionary.put(ReportConstants.DESTINATION_CODE, ReportHelper.getCityCountry(destinationUnloc.getNameWoDiacritics(), destinationUnloc.getCountry()));
         }
+        updateShipmentWeightAndPack(dictionary, v1TenantSettingsResponse);
         return dictionary;
     }
 }

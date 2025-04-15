@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.entity;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import lombok.*;
 import lombok.experimental.Accessors;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 import javax.persistence.*;
@@ -28,11 +29,11 @@ public class Jobs extends MultiTenancy {
     @Column(name = "consolidation_id")
     private Long consolidationId;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "buyer_detail_id", referencedColumnName = "id")
     private Parties buyerDetail;
 
-    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL)
+    @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "supplier_detail_id", referencedColumnName = "id")
     private Parties supplierDetail;
 
@@ -97,6 +98,7 @@ public class Jobs extends MultiTenancy {
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
     @Where(clause = "entity_type = 'JOBS'")
+    @BatchSize(size = 50)
     private List<Events> eventsList;
 
 }

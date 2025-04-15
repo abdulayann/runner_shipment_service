@@ -37,11 +37,13 @@ import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 public class AirMessagingLogsService implements IAirMessagingLogsService {
     private final IAirMessagingLogsDao airMessagingLogsDao;
     private final JsonHelper jsonHelper;
+    private final PartialFetchUtils partialFetchUtils;
 
     @Autowired
-    public AirMessagingLogsService(IAirMessagingLogsDao airMessagingLogsDao, JsonHelper jsonHelper) {
+    public AirMessagingLogsService(IAirMessagingLogsDao airMessagingLogsDao, JsonHelper jsonHelper, PartialFetchUtils partialFetchUtils) {
         this.airMessagingLogsDao = airMessagingLogsDao;
         this.jsonHelper = jsonHelper;
+        this.partialFetchUtils = partialFetchUtils;
     }
 
     @Override
@@ -204,7 +206,7 @@ public class AirMessagingLogsService implements IAirMessagingLogsService {
             if(request.getIncludeColumns() == null || request.getIncludeColumns().isEmpty())
                 return ResponseHelper.buildSuccessResponse(response);
             else
-                return ResponseHelper.buildSuccessResponse(PartialFetchUtils.fetchPartialListData(response, request.getIncludeColumns()));
+                return ResponseHelper.buildSuccessResponse(partialFetchUtils.fetchPartialListData(response, request.getIncludeColumns()));
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
@@ -218,7 +220,7 @@ public class AirMessagingLogsService implements IAirMessagingLogsService {
         if(Objects.isNull(guid))
             return null;
 
-        List<AirMessagingLogs> logs = airMessagingLogsDao.findByEntityGuid(guid);
+        List<AirMessagingLogs> logs = airMessagingLogsDao.findByEntityGuidByQuery(guid);
         if (logs.size() == 0) {
             return null;
         }
