@@ -3709,7 +3709,15 @@ class CommonUtilsTest {
         Object result = commonUtils.mapListToDTO(emptyList);
         assertEquals(emptyList, result);
     }
-
+    @Test
+    void testCheckForTriangulationPartnerList() {
+        List<TriangulationPartner> triangulationPartnerList = List.of(new TriangulationPartner());
+        List<TriangulationPartnerResponse> triangulationPartnerResponseList = List.of(new TriangulationPartnerResponse());
+        when(modelMapper.map(triangulationPartnerList, new TypeToken<List<TriangulationPartnerResponse>>() {}.getType()))
+                .thenReturn(triangulationPartnerResponseList);
+        Object result = commonUtils.mapListToDTO(triangulationPartnerList);
+        assertEquals(triangulationPartnerResponseList, result);
+    }
     @Test
     void testMapListToDTO_Containers() {
         List<Containers> containerList = List.of(new Containers());
