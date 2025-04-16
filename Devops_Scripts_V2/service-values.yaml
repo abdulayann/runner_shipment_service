@@ -19,11 +19,12 @@ allEnvironments: ['dev', 'qa', 'staging', 'prod','dr']
 bluegreen: True
 artifactAliasName: _config
 artifactVstsFeedPublish: 23a36ede-eaaf-42ed-b849-690d3430f272/fbd15528-c4b5-49c1-beea-5b436be8317c
+CONFIG_FOLDER_PATH: src/main/resources
 containerRegistrySC: ACR_Cargoes Runner
 artifactsFeeds: runner-artifactory
 jdkVersion: 1.17
-mavenOptions: -Xmx3072m $(MAVEN_OPTS)
-CONFIG_FOLDER_PATH: src/main/resources/
+mavenOptions: -Xmx3072m $(MAVEN_OPTIONS)
+POM_XML_PATH : pom.xml
 
 # Service configuration
 service:
@@ -79,12 +80,12 @@ ingress:
 # SecretProvider configuration
 secretprovider:
   name: runner-shipment-service-secretproviderclass
-  nonProdUserAssignedIdentityID: 0abd98ec-d7a9-4390-8820-792bad7c78f3
+  nonProdUserAssignedIdentityID: c91d1283-5c7c-40f7-8259-ca222695a9f8
   nonProdKeyVaultName: cargoesrunner-nonprod-kv
   prodUserAssignedIdentityID: d50883f6-2c0a-4fdb-b659-6176f5fb0be5
   prodKeyVaultName: kv-cargorunner-prod
-  drUserAssignedIdentityID: d50883f6-2c0a-4fdb-b659-6176f5fb0be5
-  drKeyVaultName: kv-cargorunner-prod
+  drUserAssignedIdentityID: 64b39da5-ace2-4052-9950-620d247d5a06
+  drKeyVaultName: kv-cargorunner-proddr
   tenantId: 2bd16c9b-7e21-4274-9c06-7919f7647bbb
 
 dev:
