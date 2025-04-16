@@ -5,15 +5,28 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSetti
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
 import com.dpw.runner.shipment.services.dao.impl.ShipmentsContainersMappingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerNumberCheckResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
+import com.dpw.runner.shipment.services.dto.request.ContainersExcelModel;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.service.v1.IV1Service;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,14 +36,19 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 
 @ExtendWith({MockitoExtension.class, SpringExtension.class})
@@ -44,14 +62,37 @@ class ContainerV3ServiceTest extends CommonMocks {
     @Mock
     private ShipmentsContainersMappingDao shipmentsContainersMappingDao;
 
+    @Mock
+    private IV1Service v1Service;
+
+    @Mock
+    private JsonHelper jsonHelper;
+
+    @Mock
+    private IShipmentDao shipmentDao;
+
+    @Mock
+    private IContainerDao containerDao;
+
+    @Mock
+    private IConsolidationDetailsDao consolidationDetailsDao;
+
+    @Mock
+    private MasterDataUtils masterDataUtils;
+
     @InjectMocks
     private ContainerV3Service containerV3Service;
+
+    private static ObjectMapper objectMapper;
+
+    private static ShipmentDetails testShipment;
 
     @BeforeAll
     static void init(){
         try {
             jsonTestUtility = new JsonTestUtility();
             testContainer = jsonTestUtility.getTestContainer();
+            objectMapper = JsonTestUtility.getMapper();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -60,6 +101,7 @@ class ContainerV3ServiceTest extends CommonMocks {
     @BeforeEach
     void setUp() {
         testContainer = jsonTestUtility.getTestContainer();
+        testShipment = jsonTestUtility.getTestShipment();
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder().P100Branch(false).build());
         UsersDto mockUser = new UsersDto();
@@ -92,6 +134,55 @@ class ContainerV3ServiceTest extends CommonMocks {
         when(shipmentsContainersMappingDao.findByContainerIdIn(any())).thenReturn(List.of(new ShipmentsContainersMapping()));
         ContainerSummaryResponse containerSummaryResponse = containerV3Service.calculateContainerSummary(containersList, Constants.TRANSPORT_MODE_SEA, Constants.SHIPMENT_TYPE_LCL);
         assertNotNull(containerSummaryResponse);
+    }
+
+    @Test
+    void testValidateContainerNumber_Success() {
+        String validContainerNumber = "ABCD123456";
+        ContainerNumberCheckResponse response = containerV3Service.validateContainerNumber(validContainerNumber);
+        Assertions.assertNotNull(response);
+        assertTrue(response.isSuccess());
+    }
+
+    @Test
+    void testValidateContainerNumber_InvalidLength() {
+        String invalidLengthContainerNumber = "ABC123";
+        when(v1Service.fetchMasterData(any())).thenReturn(V1DataResponse.builder().entities(new ArrayList<>()).build());
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(new ArrayList<>());
+        ContainerNumberCheckResponse response = containerV3Service.validateContainerNumber(invalidLengthContainerNumber);
+        Assertions.assertNotNull(response);
+        assertFalse(response.isSuccess());
+    }
+
+    @Test
+    void testValidateContainerNumber_InvalidCharacters() {
+        String invalidCharactersContainerNumber = "1234ABCD56";
+        ContainerNumberCheckResponse response = containerV3Service.validateContainerNumber(invalidCharactersContainerNumber);
+        Assertions.assertNotNull(response);
+        assertFalse(response.isSuccess());
+    }
+
+    @Test
+    void testValidateContainerNumber_WrongCheckDigit() {
+        String invalidLengthContainerNumber = "CONT0000001";
+        ContainerNumberCheckResponse response = containerV3Service.validateContainerNumber(invalidLengthContainerNumber);
+        Assertions.assertNotNull(response);
+        assertFalse(response.isSuccess());
+    }
+
+    @Test
+    void downloadContainers(){
+        HttpServletResponse response = new MockHttpServletResponse();
+        BulkDownloadRequest request = new BulkDownloadRequest();
+        request.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        request.setConsolidationId("3");
+        request.setShipmentId("6");
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(testShipment));
+        when(containerDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testContainer)));
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(jsonTestUtility.getTestConsolidation()));
+        when(containerDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(testContainer)));
+        when(commonUtils.convertToList(anyList(), eq(ContainersExcelModel.class))).thenReturn(List.of(objectMapper.convertValue(testContainer, ContainersExcelModel.class)));
+        assertDoesNotThrow(() -> containerV3Service.downloadContainers(response, request));
     }
 
 }

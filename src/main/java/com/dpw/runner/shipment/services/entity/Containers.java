@@ -372,6 +372,12 @@ public class Containers extends MultiTenancy {
     @Column(name = "marine_pollutant")
     private Boolean marinePollutant = false;
 
+    @Column(name = "humidity")
+    private BigDecimal humidity;
+
+    @Column(name = "vents")
+    private BigDecimal vents;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "pra_status")
     private ContainerPraStatus praStatus;

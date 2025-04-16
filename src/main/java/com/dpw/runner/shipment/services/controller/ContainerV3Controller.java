@@ -2,28 +2,28 @@ package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
 import com.dpw.runner.shipment.services.commons.constants.ContainerConstants;
+import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
+import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerNumberCheckResponse;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
-import java.util.List;
-import javax.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import javax.servlet.http.HttpServletResponse;
+import javax.validation.Valid;
+import java.util.List;
 
 @RestController
 @RequestMapping(ContainerConstants.CONTAINER_V3_API_HANDLE)
@@ -32,6 +32,8 @@ public class ContainerV3Controller {
 
     private final JsonHelper jsonHelper;
     private final IContainerV3Service containerV3Service;
+
+    private static class ContainerNumberCheckResponseClass extends RunnerResponse<ContainerNumberCheckResponse>{}
 
     public ContainerV3Controller(JsonHelper jsonHelper, IContainerV3Service containerV3Service) {
         this.jsonHelper = jsonHelper;
@@ -58,5 +60,21 @@ public class ContainerV3Controller {
         return ResponseHelper.buildSuccessResponse(containerV3Service.deleteBulk(request));
     }
 
+    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CONTAINER_VALIDATED, response = ContainerV3Controller.ContainerNumberCheckResponseClass.class) })
+    @PostMapping(ApiConstants.API_VALIDATE_CONTAINER_NUMBER)
+    public ResponseEntity<IRunnerResponse> validateContainerNumber(@RequestParam String containerNumber) {
+        return ResponseHelper.buildSuccessResponse(containerV3Service.validateContainerNumber(containerNumber));
+    }
+
+    @GetMapping(ApiConstants.API_DOWNLOAD)
+    public void downloadCSV(HttpServletResponse response, @ModelAttribute BulkDownloadRequest request) throws RunnerException {
+        containerV3Service.downloadContainers(response, request);
+    }
+
+    @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CALCULATION_SUCCESSFUL, response = RunnerResponse.class) })
+    @PostMapping(ApiConstants.CALCULATE_CONTAINER_SUMMARY)
+    public ResponseEntity<IRunnerResponse> calculateContainerSummary(@RequestParam (required = false) Long shipmentId, @RequestParam (required = false) Long consolidationId) throws RunnerException {
+        return ResponseHelper.buildSuccessResponse(containerV3Service.calculateContainerSummary(shipmentId, consolidationId));
+    }
 
 }
