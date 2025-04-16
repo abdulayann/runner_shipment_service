@@ -20,4 +20,7 @@ public class ErrorConstants {
     public static final String ERROR_WHILE_EMAIL = "Error occurred during sending email: with exception: %s";
     public static final String ERROR_WHILE_SYNC = "Error occurred during Sync: with exception: %s";
     public static final String VALIDATE_JOB_TYPE_CHANGE = "Pull/ Push request is already in progress, Cannot change Consolidation Type.";
+    public static final String INVALID_TRANSPORT_MODE = "Selected Transport Mode %s is not allowed.";
+    public static final String ERROR_WHILE_CREATING_EVENT = "Error occurred while creating event: with exception: %s";
+    public static final String JSON_INT_ERROR = "Error: Value for {} is not an integer.";
 }

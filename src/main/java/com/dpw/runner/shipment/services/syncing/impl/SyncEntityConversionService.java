@@ -12,8 +12,10 @@ import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.syncing.Entity.*;
 import com.dpw.runner.shipment.services.utils.Generated;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.jose.util.Pair;
+import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -28,6 +30,7 @@ import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.andCriteria;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
+@Slf4j
 @Component
 public class SyncEntityConversionService {
 
@@ -52,7 +55,7 @@ public class SyncEntityConversionService {
             map = containers.stream().filter(container -> container.getContainerNumber() != null).collect(Collectors.toMap(Containers::getId, Containers::getContainerNumber));
         if(packingList != null) {
             Map<Long, String> finalMap = map;
-            List<PackingRequestV2> res = packingList.stream()
+            return packingList.stream()
                     .map(item -> {
                         PackingRequestV2 p;
                         p = modelMapper.map(item, PackingRequestV2.class);
@@ -62,30 +65,36 @@ public class SyncEntityConversionService {
                         if(item.getContainerId() != null && finalMap.containsKey(item.getContainerId()))
                             p.setContainerNumber(finalMap.get(item.getContainerId()));
 
-                        if(shipmentGuid == null && item.getShipmentId() != null) {
-                            try { p.setShipmentGuid(shipmentDao.findById(p.getShipmentId()).get().getGuid()); }  catch (Exception ignored) { }
-                        }
-                        else p.setShipmentGuid(shipmentGuid);
-
-                        if(consoleGuid == null && item.getConsolidationId() != null) {
-                            try { p.setConsolidationGuid(consolidationDetailsDao.findById(p.getConsolidationId()).get().getGuid()); }  catch (Exception ignored) { }
-                        }
-                        else p.setConsolidationGuid(consoleGuid);
+                        setShipmentConsoleGuid(shipmentGuid, consoleGuid, item, p);
 
                         return p;
                     })
                     .toList();
-            return res;
         }
         return new ArrayList<>();
     }
 
+    private void setShipmentConsoleGuid(UUID shipmentGuid, UUID consoleGuid, Packing item, PackingRequestV2 p) {
+        if(shipmentGuid == null && item.getShipmentId() != null) {
+            try { p.setShipmentGuid(shipmentDao.findById(p.getShipmentId()).get().getGuid()); }  catch (Exception ex) {
+                log.debug(ex.getMessage());
+            }
+        }
+        else p.setShipmentGuid(shipmentGuid);
+
+        if(consoleGuid == null && item.getConsolidationId() != null) {
+            try { p.setConsolidationGuid(consolidationDetailsDao.findById(p.getConsolidationId()).get().getGuid()); }  catch (Exception ex) {
+                log.debug(ex.getMessage());
+            }
+        }
+        else p.setConsolidationGuid(consoleGuid);
+    }
+
     public List<Packing> packingsV1ToV2(List<PackingRequestV2> packingRequestV2List) {
         if(packingRequestV2List != null) {
-            List<Packing> res = packingRequestV2List.stream().map(
+            return packingRequestV2List.stream().map(
                     this::packingV1ToV2
             ).toList();
-            return res;
         }
         return new ArrayList<>();
     }
@@ -114,10 +123,9 @@ public class SyncEntityConversionService {
 
     public List<ContainerRequestV2> containersV2ToV1(List<Containers> containersList) {
         if(containersList != null) {
-            List<ContainerRequestV2> res = containersList.stream().map(
+            return containersList.stream().map(
                     this::containerV2ToV1
             ).toList();
-            return res;
         }
         return new ArrayList<>();
     }
@@ -131,14 +139,13 @@ public class SyncEntityConversionService {
         return containerRequestV2;
     }
 
-    public List<Containers> containersV1ToV2(List<ContainerRequestV2> containersList) {
+    public Set<Containers> containersV1ToV2(List<ContainerRequestV2> containersList) {
         if(containersList != null) {
-            List<Containers> res = containersList.stream().map(
+            return containersList.stream().map(
                     this::containerV1ToV2
-            ).toList();
-            return res;
+            ).collect(Collectors.toSet());
         }
-        return new ArrayList<>();
+        return new HashSet<>();
     }
 
     public Containers containerV1ToV2(ContainerRequestV2 containerRequestV2) {
@@ -154,7 +161,7 @@ public class SyncEntityConversionService {
                 containers.setConsolidationId(null);
             }
         }
-        if(containerRequestV2.getShipmentGuids() != null && containerRequestV2.getShipmentGuids().size() > 0) {
+        if(containerRequestV2.getShipmentGuids() != null && !containerRequestV2.getShipmentGuids().isEmpty()) {
             try {
                 ListCommonRequest listCommonRequest = constructListCommonRequest("guid", containerRequestV2.getShipmentGuids(), "IN");
                 Pair<Specification<ShipmentDetails>, org.springframework.data.domain.Pageable> pair = fetchData(listCommonRequest, ShipmentDetails.class);
@@ -166,19 +173,20 @@ public class SyncEntityConversionService {
                         sd.setId(shipmentDetails1.getId());
                         shipmentDetails.add(sd);
                     }
-                    containers.setShipmentsList(shipmentDetails);
+                    containers.setShipmentsList(new HashSet<>(shipmentDetails));
                 }
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+                log.info(Constants.IGNORED_ERROR_MSG);
+            }
         }
         return containers;
     }
 
     public List<RoutingsRequestV2> routingsV2ToV1(List<Routings> routingsList) {
         if(routingsList != null) {
-            List<RoutingsRequestV2> res = routingsList.stream().map(
+            return routingsList.stream().map(
                     this::routingV2ToV1
             ).toList();
-            return res;
         }
         return new ArrayList<>();
     }
@@ -194,10 +202,9 @@ public class SyncEntityConversionService {
 
     public List<Routings> routingsV1ToV2(List<RoutingsRequestV2> routingsRequestV2List) {
         if(routingsRequestV2List != null) {
-            List<Routings> res = routingsRequestV2List.stream().map(
+            return routingsRequestV2List.stream().map(
                     this::routingV1ToV2
             ).toList();
-            return res;
         }
         return new ArrayList<>();
     }
@@ -227,7 +234,7 @@ public class SyncEntityConversionService {
         partyRequestV2.setIsFreeTextAddress(parties.getIsAddressFreeText());
         if(partyRequestV2.getIsFreeTextAddress() == null)
             partyRequestV2.setIsFreeTextAddress(false);
-        if(partyRequestV2.getIsFreeTextAddress()){
+        if(Boolean.TRUE.equals(partyRequestV2.getIsFreeTextAddress())){
             var rawData = parties.getAddressData() != null ? parties.getAddressData().get(PartiesConstants.RAW_DATA): null;
             if(rawData != null)
                 partyRequestV2.setFreeTextAddress(rawData.toString());
@@ -257,10 +264,9 @@ public class SyncEntityConversionService {
 
     public List<EventsRequestV2> eventsV2ToV1(List<Events> eventsList) {
         if(eventsList != null) {
-            List<EventsRequestV2> res = eventsList.stream().map(
+            return eventsList.stream().map(
                     this::eventV2ToV1
             ).toList();
-            return res;
         }
         return new ArrayList<>();
     }
@@ -276,7 +282,9 @@ public class SyncEntityConversionService {
                 ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(events.getEntityId()).get();
                 eventsRequestV2.setConsolidationGuid(consolidationDetails.getGuid());
             }
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+            log.info(Constants.IGNORED_ERROR_MSG);
+        }
         return eventsRequestV2;
     }
 
@@ -310,7 +318,7 @@ public class SyncEntityConversionService {
             response.setConsolidationId(consolidationDetails.getId());
         }
 
-        if(mawbStocks.getMawbStocksLinkRows() != null && mawbStocks.getMawbStocksLinkRows().size() > 0) {
+        if(mawbStocks.getMawbStocksLinkRows() != null && !mawbStocks.getMawbStocksLinkRows().isEmpty()) {
             List<MawbStocksLink> mawbStocksLinks = new ArrayList<>();
             for(var mawbStocksLinkV2 : mawbStocks.getMawbStocksLinkRows()) {
                 if(Objects.equals(mawbStocksLinkV2.getEntityType(), Constants.SHIPMENT)) {
@@ -342,60 +350,69 @@ public class SyncEntityConversionService {
         }
         List<AuditLog> response = new ArrayList<>();
         for (AuditLogRequestV2 request : auditLogs) {
-            if(!oldLogsGuids.contains(request.getGuid())) {
-                AuditLog auditLog = new AuditLog();
-
-                auditLog.setParentType(Constants.SHIPMENT_DETAILS);
-                auditLog.setParentId(id);
-                auditLog.setGuid(request.getGuid());
-
-                if(Objects.equals(request.getAction(), "INSERT"))
-                    auditLog.setOperation(DBOperationType.CREATE.name());
-                else auditLog.setOperation(request.getAction());
-
-                try {
-                    List<Map<String, String>> v1changes = objectMapper.readValue(request.getChanges(), objectMapper.getTypeFactory().constructCollectionType(List.class, Map.class));
-                    Map<String, AuditLogChanges> changes = new HashMap<>();
-                    if(v1changes != null && !v1changes.isEmpty()) {
-                        for (Map<String, String> map : v1changes) {
-                            AuditLogChanges auditLogChanges = new AuditLogChanges();
-                            if(map.containsKey("F"))
-                                auditLogChanges.setFieldName(map.get("F"));
-                            if(map.containsKey("O"))
-                                auditLogChanges.setOldValue(map.get("O"));
-                            if(map.containsKey("V"))
-                                auditLogChanges.setNewValue(map.get("V"));
-                            changes.put(auditLogChanges.getFieldName(), auditLogChanges);
-                        }
-                    }
-                    auditLog.setChanges(changes);
-                }
-                catch (Exception e) {
-                    continue;
-                }
-
-                switch (request.getModule()) {
-                    case "ShipmentsRow" -> {
-                        auditLog.setEntity(ShipmentDetails.class.getSimpleName());
-                        auditLog.setEntityId(id);
-                    }
-                    case "CommonContainersRow" -> auditLog.setEntity(Containers.class.getSimpleName());
-                    case "PackingRow" -> auditLog.setEntity(Packing.class.getSimpleName());
-                    case "RoutingsRow" -> auditLog.setEntity(Routings.class.getSimpleName());
-                    case "NoteRow" -> auditLog.setEntity(Notes.class.getSimpleName());
-                    case "BookingCarriageRow" -> auditLog.setEntity(BookingCarriage.class.getSimpleName());
-                    case "EventsRow" -> auditLog.setEntity(Events.class.getSimpleName());
-                    case "ReferenceNumbersRow" -> auditLog.setEntity(ReferenceNumbers.class.getSimpleName());
-                    case "ConsolidationAddressRow" -> auditLog.setEntity(Parties.class.getSimpleName());
-                    case "ShipmentServicesRow" -> auditLog.setEntity(ServiceDetails.class.getSimpleName());
-                    case "TruckDriverDetailsRow" -> auditLog.setEntity(TruckDriverDetails.class.getSimpleName());
-                }
-
-                response.add(auditLog);
-            }
+            processAuditLogRequest(id, request, oldLogsGuids, response);
         }
         auditLogDao.saveAll(response);
         return response;
+    }
+
+    private void processAuditLogRequest(Long id, AuditLogRequestV2 request, Set<UUID> oldLogsGuids, List<AuditLog> response) {
+        if(!oldLogsGuids.contains(request.getGuid())) {
+            AuditLog auditLog = new AuditLog();
+
+            auditLog.setParentType(Constants.SHIPMENT_DETAILS);
+            auditLog.setParentId(id);
+            auditLog.setGuid(request.getGuid());
+
+            if(Objects.equals(request.getAction(), "INSERT"))
+                auditLog.setOperation(DBOperationType.CREATE.name());
+            else auditLog.setOperation(request.getAction());
+
+            try {
+                setChangesInAuditLog(request, auditLog);
+            }
+            catch (Exception e) {
+                return;
+            }
+
+            switch (request.getModule()) {
+                case "ShipmentsRow" -> {
+                    auditLog.setEntity(ShipmentDetails.class.getSimpleName());
+                    auditLog.setEntityId(id);
+                }
+                case "CommonContainersRow" -> auditLog.setEntity(Containers.class.getSimpleName());
+                case "PackingRow" -> auditLog.setEntity(Packing.class.getSimpleName());
+                case "RoutingsRow" -> auditLog.setEntity(Routings.class.getSimpleName());
+                case "NoteRow" -> auditLog.setEntity(Notes.class.getSimpleName());
+                case "BookingCarriageRow" -> auditLog.setEntity(BookingCarriage.class.getSimpleName());
+                case "EventsRow" -> auditLog.setEntity(Events.class.getSimpleName());
+                case "ReferenceNumbersRow" -> auditLog.setEntity(ReferenceNumbers.class.getSimpleName());
+                case "ConsolidationAddressRow" -> auditLog.setEntity(Parties.class.getSimpleName());
+                case "ShipmentServicesRow" -> auditLog.setEntity(ServiceDetails.class.getSimpleName());
+                case "TruckDriverDetailsRow" -> auditLog.setEntity(TruckDriverDetails.class.getSimpleName());
+                default -> log.debug(Constants.SWITCH_DEFAULT_CASE_MSG, request.getModule());
+            }
+
+            response.add(auditLog);
+        }
+    }
+
+    private void setChangesInAuditLog(AuditLogRequestV2 request, AuditLog auditLog) throws JsonProcessingException {
+        List<Map<String, String>> v1changes = objectMapper.readValue(request.getChanges(), objectMapper.getTypeFactory().constructCollectionType(List.class, Map.class));
+        Map<String, AuditLogChanges> changes = new HashMap<>();
+        if(v1changes != null && !v1changes.isEmpty()) {
+            for (Map<String, String> map : v1changes) {
+                AuditLogChanges auditLogChanges = new AuditLogChanges();
+                if(map.containsKey("F"))
+                    auditLogChanges.setFieldName(map.get("F"));
+                if(map.containsKey("O"))
+                    auditLogChanges.setOldValue(map.get("O"));
+                if(map.containsKey("V"))
+                    auditLogChanges.setNewValue(map.get("V"));
+                changes.put(auditLogChanges.getFieldName(), auditLogChanges);
+            }
+        }
+        auditLog.setChanges(changes);
     }
 
 }

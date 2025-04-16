@@ -6,6 +6,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.adapters.impl.TrackingServiceAdapter;
@@ -36,6 +40,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -83,6 +90,8 @@ class RoutingsServiceTest extends CommonMocks {
     private RoutingsRequest routingsRequest;
     private List<RoutingsRequest> routingsRequests;
     private List<RoutingsResponse> routingsResponseList;
+    private ExecutorService executorService = Executors.newFixedThreadPool(10);
+
 
     @BeforeEach
     void setUp() {
@@ -145,10 +154,12 @@ class RoutingsServiceTest extends CommonMocks {
         routingsUpdateRequest.setRoutingsRequests(routingsRequests);
 
         routingsResponseList = List.of(new RoutingsResponse());
+        routingsService.executorServiceRouting = executorService;
     }
 
     @Test
-    void testUpdateRoutingsBasedOnTracking_validData() throws RunnerException {
+    void testUpdateRoutingsBasedOnTracking_validData()
+        throws RunnerException, ExecutionException, InterruptedException {
         Long shipmentId = 123L;
         Set<String> referenceGuids = routingsList.stream()
                 .flatMap(routing -> Stream.of(routing.getPol(), routing.getPod()))
@@ -162,18 +173,20 @@ class RoutingsServiceTest extends CommonMocks {
         Map<String, UnlocationsResponse> unlocationsResponseMap = new HashMap<>();
         unlocationsResponseMap.put("POL1_POR",unlocationsResponse);
 
-        Mockito.when(masterDataUtils.getLocationData(referenceGuids)).thenReturn(unlocationsResponseMap);
         Mockito.when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(shipmentDetails));
         Mockito.when(trackingServiceAdapter.fetchTrackingData(any())).thenReturn(trackingServiceApiResponse);
+        Runnable mockedRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any())).thenReturn(mockedRunnable);
 
         routingsService.updateRoutingsBasedOnTracking(shipmentId, routingsList);
 
-        assertNotNull(routingsList.get(0).getEtd());
-        assertNotNull(routingsList.get(0).getAtd());
+        verify(masterDataUtils, times(2)).withMdc(any());
+        verify(mockedRunnable, times(2)).run();
     }
 
     @Test
-    void testUpdateRoutingsBasedOnTracking_nullShipmentDetails() throws RunnerException {
+    void testUpdateRoutingsBasedOnTracking_nullShipmentDetails()
+        throws RunnerException, ExecutionException, InterruptedException {
         Long shipmentId = 123L;
 
         Mockito.when(shipmentDao.findById(shipmentId)).thenReturn(Optional.empty());
@@ -185,7 +198,8 @@ class RoutingsServiceTest extends CommonMocks {
     }
 
     @Test
-    void testUpdateRoutingsBasedOnTracking_nullRoutings() throws RunnerException {
+    void testUpdateRoutingsBasedOnTracking_nullRoutings()
+        throws RunnerException, ExecutionException, InterruptedException {
         Long shipmentId = 123L;
          List<Routings> vRoutings = new ArrayList<>();
 
@@ -195,7 +209,8 @@ class RoutingsServiceTest extends CommonMocks {
     }
 
     @Test
-    void testUpdateRoutingsBasedOnTracking_nullPolAndPod() throws RunnerException {
+    void testUpdateRoutingsBasedOnTracking_nullPolAndPod()
+        throws RunnerException, ExecutionException, InterruptedException {
         Long shipmentId = 123L;
         Routings routings = new Routings();
         List<Routings> routingsList = new ArrayList<>();
@@ -212,7 +227,8 @@ class RoutingsServiceTest extends CommonMocks {
     }
 
     @Test
-    void testUpdateRoutingsBasedOnTracking_emptyTrackingServiceResponse() throws RunnerException {
+    void testUpdateRoutingsBasedOnTracking_emptyTrackingServiceResponse()
+        throws RunnerException, ExecutionException, InterruptedException {
         Long shipmentId = 123L;
 
         Mockito.when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(shipmentDetails));
@@ -225,7 +241,8 @@ class RoutingsServiceTest extends CommonMocks {
     }
 
     @Test
-    void testUpdateRoutingsBasedOnTracking_noContainers() throws RunnerException {
+    void testUpdateRoutingsBasedOnTracking_noContainers()
+        throws RunnerException, ExecutionException, InterruptedException {
         Long shipmentId = 123L;
         TrackingServiceApiResponse emptyResponse = new TrackingServiceApiResponse();
         emptyResponse.setContainers(null);
@@ -240,7 +257,8 @@ class RoutingsServiceTest extends CommonMocks {
     }
 
     @Test
-    void testUpdateRoutingsBasedOnTracking_noEventsOrPlacesInContainer() throws RunnerException {
+    void testUpdateRoutingsBasedOnTracking_noEventsOrPlacesInContainer()
+        throws RunnerException, ExecutionException, InterruptedException {
         Long shipmentId = 123L;
         Container containerWithoutEventsAndPlaces = new Container();
         containerWithoutEventsAndPlaces.setEvents(null);
@@ -253,16 +271,15 @@ class RoutingsServiceTest extends CommonMocks {
                 .collect(Collectors.toSet());
         Map<String, UnlocationsResponse> unlocationsResponseMap = new HashMap<>();
 
-        Mockito.when(masterDataUtils.getLocationData(referenceGuids)).thenReturn(unlocationsResponseMap);
         Mockito.when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(shipmentDetails));
         Mockito.when(trackingServiceAdapter.fetchTrackingData(any())).thenReturn(responseWithoutEventsAndPlaces);
-
+        Runnable mockedRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any())).thenReturn(mockedRunnable);
         routingsService.updateRoutingsBasedOnTracking(shipmentId, routingsList);
 
         assertNull(routingsList.get(0).getEtd());
         assertNull(routingsList.get(0).getAtd());
     }
-
     @Test
     void testUpdateRoutings_success() throws RunnerException {
         Set<String> referenceGuids = routingsList.stream()
@@ -272,10 +289,11 @@ class RoutingsServiceTest extends CommonMocks {
         Map<String, UnlocationsResponse> unlocationsResponseMap = new HashMap<>();
 
         Mockito.when(trackingServiceAdapter.fetchTrackingData(any())).thenReturn(trackingServiceApiResponse);
-        Mockito.when(masterDataUtils.getLocationData(referenceGuids)).thenReturn(unlocationsResponseMap);
         Mockito.when(commonUtils.convertToEntityList(Mockito.anyList(), Mockito.eq(Routings.class)))
                 .thenReturn(routingsList);
         Mockito.when(shipmentDao.findById(Mockito.anyLong())).thenReturn(Optional.of(shipmentDetails));
+        Runnable mockedRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any())).thenReturn(mockedRunnable);
 
         ResponseEntity<IRunnerResponse> response = routingsService.updateRoutings(routingsUpdateRequest);
 
@@ -332,9 +350,10 @@ class RoutingsServiceTest extends CommonMocks {
 
         Mockito.when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
         Mockito.when(trackingServiceAdapter.fetchTrackingData(any())).thenReturn(trackingServiceApiResponse);
-        Mockito.when(masterDataUtils.getLocationData(referenceGuids)).thenReturn(unlocationsResponseMap);
         Mockito.when(commonUtils.convertToEntityList(routingsUpdateRequest.getRoutingsRequests(), Routings.class))
                 .thenReturn(routingsList);
+        Runnable mockedRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any())).thenReturn(mockedRunnable);
 
         // Act
         ResponseEntity<IRunnerResponse> response = routingsService.updateRoutings(routingsUpdateRequest);

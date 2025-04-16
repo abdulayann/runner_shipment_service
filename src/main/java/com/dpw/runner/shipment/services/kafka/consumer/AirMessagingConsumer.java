@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.kafka.consumer;
 
+import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.kafka.dto.AirMessagingEventDto;
 import com.dpw.runner.shipment.services.kafka.dto.AirMessagingStatusDto;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -32,7 +33,10 @@ public class AirMessagingConsumer {
     @Autowired
     private AwbUtility awbUtility;
 
-    @KafkaListener(topics = {"#{'${air.messaging.event.kafka.queue}'}"}, groupId = "#{'${air.messaging.event.kafka.subs}'}")
+    @KafkaListener(
+            topics = {"#{'${air.messaging.event.kafka.queue}'}"},
+            autoStartup = "#{'${air.messaging.event.kafka.consumer-auto-startup}'}",
+            groupId = "#{'${air.messaging.event.kafka.subs}'}")
     public void consume(ConsumerRecord<String, String> message)
     {
         try {
@@ -45,7 +49,7 @@ public class AirMessagingConsumer {
                             AirMessagingStatusDto obj = objectMapper.readValue(message.value(), AirMessagingStatusDto.class);
                             awbUtility.createStatusUpdateForAirMessaging(obj);
                         } catch (RunnerException | MessagingException | IOException e) {
-                            throw new RuntimeException(e);
+                            throw new GenericException(e);
                         }
 
                     } else if (Objects.equals(value.toLowerCase(), Constants.EVENT)) {
@@ -53,7 +57,7 @@ public class AirMessagingConsumer {
                             AirMessagingEventDto obj = objectMapper.readValue(message.value(), AirMessagingEventDto.class);
                             awbUtility.createEventUpdateForAirMessaging(obj);
                         } catch (JsonProcessingException | RunnerException e) {
-                            throw new RuntimeException(e);
+                            throw new GenericException(e);
                         }
                     }
                 }

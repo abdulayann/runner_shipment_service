@@ -19,8 +19,8 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.PRE_CARRIAGE;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SEA;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SHIPMENT_PACKS;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TareWeight;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.VGMWeight;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.TARE_WEIGHT;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.VGM_WEIGHT;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -50,6 +50,7 @@ import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.Pa
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PickupDeliveryDetailsModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ReferenceNumbersModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentOrderModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
@@ -246,6 +247,18 @@ class SeawayBillReportTest extends CommonMocks {
         delivertDetails.setTransporterDetail(partiesModel);
         shipmentModel.setPickupDetails(delivertDetails);
         shipmentModel.setDeliveryDetails(delivertDetails);
+
+        ShipmentOrderModel shipmentOrderModel = new ShipmentOrderModel();
+        shipmentOrderModel.setOrderNumber("1234-5678-9123-4567");
+
+        ShipmentOrderModel shipmentOrderModel2 = new ShipmentOrderModel();
+        shipmentOrderModel2.setOrderNumber("1235-5678-9123-4567");
+
+        ShipmentOrderModel shipmentOrderModel3 = new ShipmentOrderModel();
+        shipmentOrderModel3.setOrderNumber("1235-5679-9123-4567");
+
+        shipmentModel.setShipmentOrders(Arrays.asList(shipmentOrderModel, shipmentOrderModel2, shipmentOrderModel3));
+
         seawayBillModel.setShipment(shipmentModel);
 
         BookingCarriageModel bookingCarriageModel = new BookingCarriageModel();
@@ -396,8 +409,8 @@ class SeawayBillReportTest extends CommonMocks {
         containerMap.put(GROSS_VOLUME, BigDecimal.TEN);
         containerMap.put(GROSS_WEIGHT, BigDecimal.TEN);
         containerMap.put(SHIPMENT_PACKS, BigDecimal.TEN);
-        containerMap.put(TareWeight, BigDecimal.TEN);
-        containerMap.put(VGMWeight, BigDecimal.TEN);
+        containerMap.put(TARE_WEIGHT, BigDecimal.TEN);
+        containerMap.put(VGM_WEIGHT, BigDecimal.TEN);
         containerMap.put(NET_WEIGHT, BigDecimal.TEN);
         containerMap.put(SeawayBillReport.NOOF_PACKAGES, BigDecimal.TEN);
         containerMap.put(SeawayBillReport.GROSS_VOLUME_ALIAS, BigDecimal.TEN);
@@ -410,9 +423,12 @@ class SeawayBillReportTest extends CommonMocks {
         Map<String, Object> chargeMap = new HashMap<>();
         chargeMap.put(CHARGE_TYPE_CODE, "AgentCharge");
         dictionary.put(CHARGES_SMALL, Arrays.asList(chargeMap));
+        dictionary.put(ReportConstants.ORDER_MANAGEMENT_NUMBER, "1234-5678-9123-4567,1235-5678-9123-4567,1235-5679-9123-4567");
         when(hblReport.getData(any())).thenReturn(dictionary);
         mockTenantSettings();
-        assertNotNull(seawayBillReport.populateDictionary(seawayBillModel));
+        Map<String, Object> dict = seawayBillReport.populateDictionary(seawayBillModel);
+        assertNotNull(dict);
+        assertNotNull(dict.get(ReportConstants.ORDER_MANAGEMENT_NUMBER));
     }
 
     @Test
@@ -427,8 +443,8 @@ class SeawayBillReportTest extends CommonMocks {
         containerMap.put(GROSS_VOLUME, BigDecimal.TEN);
         containerMap.put(GROSS_WEIGHT, BigDecimal.TEN);
         containerMap.put(SHIPMENT_PACKS, BigDecimal.TEN);
-        containerMap.put(TareWeight, BigDecimal.TEN);
-        containerMap.put(VGMWeight, BigDecimal.TEN);
+        containerMap.put(TARE_WEIGHT, BigDecimal.TEN);
+        containerMap.put(VGM_WEIGHT, BigDecimal.TEN);
         containerMap.put(NET_WEIGHT, BigDecimal.TEN);
         containerMap.put(SeawayBillReport.NOOF_PACKAGES, BigDecimal.TEN);
         containerMap.put(SeawayBillReport.GROSS_VOLUME_ALIAS, BigDecimal.TEN);

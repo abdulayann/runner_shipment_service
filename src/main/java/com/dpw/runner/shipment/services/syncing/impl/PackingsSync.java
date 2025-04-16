@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.syncing.impl;
 
 import com.dpw.runner.shipment.services.aspects.sync.SyncingContext;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Packing;
@@ -24,10 +25,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -48,24 +46,24 @@ public class PackingsSync implements IPackingsSync {
     private ISyncService syncService;
 
     @Override
-    public ResponseEntity<?> sync(List<Packing> packingList, String transactionId) {
+    public ResponseEntity<IRunnerResponse> sync(List<Packing> packingList, String transactionId) {
         if (!Boolean.TRUE.equals(SyncingContext.getContext()))
             return ResponseHelper.buildSuccessResponse();
 
-        List<PackingRequestV2> packingRequestV2List = new ArrayList<>();
-        List<Containers> containers = new ArrayList<>();
-        if(packingList != null && packingList.size() > 0) {
+        List<PackingRequestV2> packingRequestV2List;
+        Set<Containers> containers = new HashSet<>();
+        if(packingList != null && !packingList.isEmpty()) {
             List<Long> containerIds = packingList.stream().map(Packing::getContainerId).filter(Objects::nonNull).toList();
-            if(containerIds.size() > 0) {
+            if(!containerIds.isEmpty()) {
                 ListCommonRequest listCommonRequest = CommonUtils.constructListCommonRequest("id", containerIds, "IN");
                 Pair<Specification<Containers>, Pageable> pair = DbAccessHelper.fetchData(listCommonRequest, Containers.class);
                 Page<Containers> containersPage = containerDao.findAll(pair.getLeft(), pair.getRight());
                 if(containersPage != null && !containersPage.isEmpty()) {
-                    containers = containersPage.getContent();
+                    containers = new HashSet<>(containersPage.getContent());
                 }
             }
 
-            packingRequestV2List = syncEntityConversionService.packingsV2ToV1(packingList, containers, null, null);
+            packingRequestV2List = syncEntityConversionService.packingsV2ToV1(packingList, new ArrayList<>(containers), null, null);
 
             String json = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(packingRequestV2List).module(SyncingConstants.PACKINGS).build());
 

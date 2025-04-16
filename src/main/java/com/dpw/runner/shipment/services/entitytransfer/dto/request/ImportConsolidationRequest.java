@@ -4,6 +4,8 @@ import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferConsolidationDetails;
 import lombok.*;
 
+import java.util.Map;
+
 @Data
 @Builder
 @ToString
@@ -14,5 +16,7 @@ public class ImportConsolidationRequest implements IRunnerRequest {
     private Long taskId;
     private String operation;
     private String rejectRemarks;
+    private Boolean isFromNte;
+    private Map<String, String> shipmentNumberAssignedToMap;
 
 }

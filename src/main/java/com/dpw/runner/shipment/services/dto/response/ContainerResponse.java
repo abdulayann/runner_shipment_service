@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.config.CustomVolumeValueSerializer;
 import com.dpw.runner.shipment.services.config.CustomWeightValueSerializer;
 import com.dpw.runner.shipment.services.config.DecimalPlaceValueSerializer;
+import com.dpw.runner.shipment.services.entity.enums.ContainerPraStatus;
 import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.swagger.annotations.ApiModel;
@@ -115,17 +116,17 @@ public class ContainerResponse implements IRunnerResponse {
     private Map<String, String> textFieldData;
     private Boolean isPart;
     private Boolean isAttached;
-//    private List<TruckDriverDetailsResponse> truckingDetails;
     private List<EventsResponse> eventsList;
     private String hblNumber;
     private String invoiceNumber;
     private String invoiceCurrency;
     private BigDecimal invoiceValue;
-    private Long tenantId;
+    private Integer tenantId;
     private String unNumber;
     private String properShippingName;
     private String packingGroup;
     private BigDecimal minimumFlashPoint;
     private String minimumFlashPointUnit;
     private Boolean marinePollutant;
+    private ContainerPraStatus praStatus;
 }

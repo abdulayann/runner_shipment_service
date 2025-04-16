@@ -1,5 +1,7 @@
 package com.dpw.runner.shipment.services.syncing.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -9,6 +11,8 @@ import com.dpw.runner.shipment.services.entity.enums.GenerationType;
 import com.dpw.runner.shipment.services.entity.enums.ProductProcessTypes;
 import com.dpw.runner.shipment.services.entity.enums.ProductType;
 import com.dpw.runner.shipment.services.entity.enums.TypeOfHblPrint;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentSettingsService;
 import com.dpw.runner.shipment.services.syncing.Entity.HblTermsConditionTemplateDto;
@@ -33,6 +37,10 @@ public class ShipmentSettingsReverseSync implements IShipmentSettingsReverseSync
     IShipmentSettingsService shipmentSettingsService;
     @Autowired
     ModelMapper modelMapper;
+
+    @Autowired
+    private JsonHelper jsonHelper;
+
     @Autowired
     IShipmentSettingsDao shipmentSettingsDao;
 
@@ -40,15 +48,16 @@ public class ShipmentSettingsReverseSync implements IShipmentSettingsReverseSync
     public ResponseEntity<IRunnerResponse> reverseSync(CommonRequestModel commonRequestModel) {
         String responseMessage;
         ShipmentSettingsSyncRequest req = (ShipmentSettingsSyncRequest) commonRequestModel.getData();
+        log.info("CR-ID {} || Shipment Settings sync request received from V1 with payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(req));
         try {
             ShipmentSettingRequest dest = modelMapper.map(req, ShipmentSettingRequest.class);
-
+            TenantContext.setCurrentTenant(dest.getTenantId().intValue());
             // Non Enums entities
-            if(req.getHblLock() != null && req.getHblLock().size() > 0)
+            if(req.getHblLock() != null && !req.getHblLock().isEmpty())
                 dest.setHblLockSettings(convertToClass(req.getHblLock().get(0), HblLockSettingsRequest.class));
-            if(req.getHawbLock() != null && req.getHawbLock().size() > 0)
+            if(req.getHawbLock() != null && !req.getHawbLock().isEmpty())
                 dest.setHawbLockSettings(convertToClass(req.getHawbLock().get(0), HawbLockSettingsRequest.class));
-            if(req.getMawbLock() != null && req.getMawbLock().size() > 0)
+            if(req.getMawbLock() != null && !req.getMawbLock().isEmpty())
                 dest.setMawbLockSettings(convertToClass(req.getMawbLock().get(0), MawbLockSettingsRequest.class));
 
             // Entities with enums
@@ -103,7 +112,9 @@ public class ShipmentSettingsReverseSync implements IShipmentSettingsReverseSync
         // Setting ENUMS
         try {
             res.setTypeOfHblPrint(TypeOfHblPrint.valueOf(req.getTypeOfHblPrint()));
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+            log.info(Constants.IGNORED_ERROR_MSG);
+        }
 
         return res;
     }
@@ -116,7 +127,9 @@ public class ShipmentSettingsReverseSync implements IShipmentSettingsReverseSync
         // Setting ENUMS
         try {
             res.setProductType(ProductType.valueOf(req.getProductType()));
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+            log.info(Constants.IGNORED_ERROR_MSG);
+        }
 
         return res;
     }
@@ -130,19 +143,14 @@ public class ShipmentSettingsReverseSync implements IShipmentSettingsReverseSync
         try {
             res.setProductProcessTypes(ProductProcessTypes.valueOf(req.getProductProcessTypes()));
             res.setGenerationType(GenerationType.valueOf(req.getGenerationType()));
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+            log.info(Constants.IGNORED_ERROR_MSG);
+        }
 
         return res;
     }
 
 
-    private <T,P> List<P> convertToList(final List<T> lst, Class<P> clazz) {
-        if(lst == null)
-            return null;
-        return  lst.stream()
-                .map(item -> convertToClass(item, clazz))
-                .toList();
-    }
     private  <T,P> P convertToClass(T obj, Class<P> clazz) {
         if(obj == null)
             return null;

@@ -15,5 +15,6 @@ public interface IPickupDeliveryDetailsRepository extends MultiTenancyRepository
         return findOne(spec);
     }
     List<PickupDeliveryDetails> findAll();
+    List<PickupDeliveryDetails> findByIdIn(List<Long> ids);
 
 }

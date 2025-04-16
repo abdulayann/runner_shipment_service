@@ -6,20 +6,26 @@ import com.dpw.runner.shipment.services.ReportingService.Models.Commons.Shipment
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.AwbConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.constants.ReferenceNumbersConstants;
+import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
+import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -29,10 +35,10 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
@@ -40,6 +46,15 @@ class CSDReportTest {
 
     @InjectMocks
     CSDReport csdReport;
+
+    @Mock
+    MasterDataUtils masterDataUtils;
+
+    @Mock
+    CommonUtils commonUtils;
+
+    @Mock
+    IAwbDao awbDao;
 
     @BeforeAll
     static void init() throws IOException {
@@ -268,7 +283,24 @@ class CSDReportTest {
         doNothing().when(spyReport).populateRaKcDataConsolidation(any(), any());
         V1TenantSettingsResponse sampleResponse = new V1TenantSettingsResponse();
         sampleResponse.setDPWDateFormat("yyyy-MM-dd");
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(sampleResponse);
         var resp = spyReport.populateDictionary(getSampleCSDModel());
+        assertNotNull(resp);
+    }
+
+    @Test
+    void test_populateDictionary_whenConsolidationWithScreeningStatus() {
+        var spyReport = Mockito.spy(this.csdReport);
+        doNothing().when(spyReport).populateUserFields(any(), any());
+        spyReport.setIsConsolidation(true);
+        doNothing().when(spyReport).populateConsolidationFields(any(), any());
+        doNothing().when(spyReport).populateRaKcDataConsolidation(any(), any());
+        V1TenantSettingsResponse sampleResponse = new V1TenantSettingsResponse();
+        sampleResponse.setDPWDateFormat("yyyy-MM-dd");
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(sampleResponse);
+        CSDModel csdModel = getSampleCSDModel();
+        csdModel.getConsolidationModel().setScreeningStatus(List.of("AOM", "SCC"));
+        var resp = spyReport.populateDictionary(csdModel);
         assertNotNull(resp);
     }
 
@@ -281,8 +313,58 @@ class CSDReportTest {
         doNothing().when(spyReport).populateRaKcData(any(), any());
         V1TenantSettingsResponse sampleResponse = new V1TenantSettingsResponse();
         sampleResponse.setDPWDateFormat("yyyy-MM-dd");
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(sampleResponse);
         var resp = spyReport.populateDictionary(getSampleCSDModel());
         assertNotNull(resp);
+    }
+
+    @Test
+    void testPopulateDictionaryPutsSPXCodeInExemptionCargo() {
+        var spyReport = Mockito.spy(this.csdReport);
+        CSDModel csdModel = getSampleCSDModel();
+        ShipmentModel shipment = csdModel.getShipmentModel();
+        doAnswer(invocationOnMock -> {
+            Object[] args = invocationOnMock.getArguments();
+            Map<String, Object> dictionary = (Map<String, Object>) args[1];
+            dictionary.put(CONSIGNMENT_STATUS, shipment.getSecurityStatus());
+            return null;
+        }).when(spyReport).populateUserFields(any(), any());
+        spyReport.setIsConsolidation(false);
+        doNothing().when(spyReport).populateShipmentFields(any(), any());
+        doNothing().when(spyReport).populateRaKcData(any(), any());
+        V1TenantSettingsResponse sampleResponse = new V1TenantSettingsResponse();
+        sampleResponse.setDPWDateFormat("yyyy-MM-dd");
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(sampleResponse);
+
+        shipment.setSecurityStatus(AwbConstants.EXEMPTION_CARGO_SECURITY_STATUS);
+        var resp = spyReport.populateDictionary(csdModel);
+        assertNotNull(resp);
+        assertEquals(AwbConstants.SPX, resp.get(CONSIGNMENT_STATUS));
+    }
+
+    @Test
+    void testPopulateDictionaryPopulatesListOfAirports() {
+        var spyReport = Mockito.spy(this.csdReport);
+        doNothing().when(spyReport).populateUserFields(any(), any());
+        spyReport.setIsConsolidation(false);
+        doNothing().when(spyReport).populateShipmentFields(any(), any());
+        doNothing().when(spyReport).populateRaKcData(any(), any());
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(new V1TenantSettingsResponse());
+        V1TenantSettingsResponse sampleResponse = new V1TenantSettingsResponse();
+        sampleResponse.setDPWDateFormat("yyyy-MM-dd");
+        CSDModel csdModel = getSampleCSDModel();
+        ShipmentModel shipment = csdModel.getShipmentModel();
+        RoutingsModel routingsModel = new RoutingsModel();
+        routingsModel.setLeg(1L);
+        routingsModel.setMode(AIR);
+        routingsModel.setPol("Airport1");
+        routingsModel.setPod("Airport2");
+        routingsModel.setCarriage(RoutingCarriage.MAIN_CARRIAGE);
+        shipment.setRoutingsList(List.of(routingsModel));
+
+        var resp = spyReport.populateDictionary(csdModel);
+        assertNotNull(resp);
+        assertNotNull(resp.get(ReportConstants.TRANSIT_AIRPORTS));
     }
 
 }

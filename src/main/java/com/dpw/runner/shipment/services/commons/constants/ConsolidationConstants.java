@@ -5,7 +5,7 @@ import java.util.List;
 
 public class ConsolidationConstants {
     private ConsolidationConstants(){}
-    public static List<String> CONSOLIDATION_HEADER = Arrays.asList(
+    public static final List<String> CONSOLIDATION_HEADER = Arrays.asList(
             "Consolidation Type", "Consolidation Number", "Transport Mode", "Cargo Type",
             "ETA", "ATA", "ETD", "ATD", "Domestic", "Created By", "Voyage/Flight No",
             "Payment Terms", "Carrier", "Cutoff Date", "HBL / HAWB", "Estimated Terminal Cutoff",
@@ -14,7 +14,7 @@ public class ConsolidationConstants {
             "Carrier Booking Number", "Container Count", "POL", "POD", "MBL / MAWB", "POL Code", "POD Code" , "Origin Code", "Destination Code",
             "Origin", "Destination"
     );
-
+    public static final List<String> LIST_INCLUDE_COLUMNS = List.of( "carrierDetails", "containersList", "routingsList", "PackingList", "triangulationPartnerList");
     public static final String CONSOLIDATION_API_HANDLE = "/api/v2/consolidation";
     public static final String MBL_NUMBER = "MBL Number";
 
@@ -52,6 +52,7 @@ public class ConsolidationConstants {
     public static final String SHOW_CREATE_BOOKING_SUCCESSFUL = "show or create bookingSuccessful";
 
     public static final String  API_RETRIEVE_SHOW_CREATE_BOOKING = "/retrieve/show_create_booking";
+    public static final String API_CONSOLIDATION_RETRIEVE_FOR_NTE_SCREEN = "/retrieve/nte";
 
     public static final String SHOW_CREATE_BOOKING_OPERATION = "Operation Name (CREATE/VIEW)";
     public static final String CONSOLIDATION_DETAILS_NULL_FOR_GIVEN_ID_ERROR = "Consolidation Details is null for Id {}";
@@ -64,4 +65,6 @@ public class ConsolidationConstants {
     public static final String NOTIFICATION_FETCHED_SUCCESSFULLY = "Notifications fetched successfully";
     public static final String CONSOLIDATION_RETRIEVE_EMPTY_REQUEST = "Request is empty for Consolidation retrieve with Request Id {}";
     public static final String CONSOLIDATION_DETAILS_NULL = "Consolidation Details is null for Guid {} with Request Id {}";
+    public static final String PUSH_REQUESTED_SHIPMENT_VALIDATION_MESSAGE = "Existing Shipment Push Request already in place, Cannot initiate a new request.";
+    public static final String CONSOLIDATION_RETRIEVE_NULL_REQUEST =  "Request Id is null for Consolidation retrieve with Request Id {}";
 }

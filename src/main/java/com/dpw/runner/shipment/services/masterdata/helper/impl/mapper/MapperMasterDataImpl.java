@@ -10,10 +10,7 @@ import com.dpw.runner.shipment.services.utils.Generated;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 @Generated
@@ -23,7 +20,7 @@ public class MapperMasterDataImpl implements IMasterDataService {
 
     @PostConstruct
     public void fillMasterData() {
-        masterDataMap = new HashMap<>();
+        masterDataMap = new EnumMap<>(MasterDataType.class);
         List<MasterData> dataMap = new ArrayList<>();
         dataMap.add(MasterData.builder().itemValue("SEA").build());
         dataMap.add(MasterData.builder().itemValue("AIR").build());
@@ -219,6 +216,11 @@ public class MapperMasterDataImpl implements IMasterDataService {
 
     @Override
     public DependentServiceResponse fetchUnlocationData(Object request) {
+        return null;
+    }
+
+    @Override
+    public DependentServiceResponse stateBasedList(Object request) {
         return null;
     }
 

@@ -26,6 +26,7 @@ import java.util.*;
 @AllArgsConstructor
 @Data
 @Generated
+@SuppressWarnings("java:S1948")
 public class ShipmentDetailsResponse implements IRunnerResponse {
     private Long id;
     private Integer tenantId;
@@ -35,6 +36,7 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private String direction;
     private String shipmentType;
     private Integer status;
+    private String shipmentStatus;
     private String source;
     private String jobType;
     private String serviceType;
@@ -84,17 +86,18 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private String lockedBy;
     private Boolean isNotifyConsigneeEqual;
     private String bookingType;
-    private boolean cargoFinanceBooking;
+    private Boolean cargoFinanceBooking = Boolean.FALSE;
     private String bookingNumber;
     private String route;
     private Long sourceTenantId;
     private Long documentationPartner;
+    private List<TriangulationPartnerResponse> triangulationPartnerList;
     private Long triangulationPartner;
     private Long receivingBranch;
-    private boolean intraBranch;
+    private Boolean intraBranch = Boolean.FALSE;
     private Integer prevShipmentStatus;
     @JsonProperty("isShipmentReadOnly")
-    private boolean isShipmentReadOnly;
+    private Boolean isShipmentReadOnly = Boolean.FALSE;
     private String shipmentCompletedBy;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime shipmentCompletedOn;
@@ -120,8 +123,8 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private List<BookingCarriageResponse> bookingCarriagesList;
     private List<JobResponse> jobsList;
     @JsonIgnoreProperties("shipmentsList")
-    private List<ConsolidationListResponse> consolidationList;
-    private List<ContainerResponse> containersList;
+    private Set<ConsolidationListResponse> consolidationList;
+    private Set<ContainerResponse> containersList;
     private Long container20Count;
     private Long container40Count;
     private Long container20GPCount;
@@ -189,6 +192,7 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private Long clientDpsAddressId;
     private Long consignorDpsAddressId;
     private Long notifyPartyDpsAddressId;
+    private List<String> implicationList;
     private Long shipmentCount;
     private LocalDateTime bookingCreatedDate;
     private String securityStatus;
@@ -212,4 +216,20 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private FileStatus fileStatus;
     private Boolean isReceivingBranchAdded;
     private OceanDGStatus oceanDGStatus;
+    private Boolean syncRoutingFromConsolidation;
+    private Boolean isNetworkFile;
+    private String transferStatus;
+    private Boolean isReceivingBranchManually;
+    private Boolean isTransferredToReceivingBranch;
+    private Boolean b2b;
+
+    private Boolean isCoLoadEnabled;
+    private String coLoadCarrierName;
+    private String coLoadBlNumber;
+
+    private String issuingCarrierName;
+    private String oceanBlNumber;
+    private UUID customerBookingGuid;
+    private Boolean isFrob;
+    private String consolidationNumber;
 }

@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSetting
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
+import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
@@ -23,6 +24,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
@@ -30,7 +32,6 @@ import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
 import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
 import com.dpw.runner.shipment.services.masterdata.helper.impl.v1.V1MasterDataImpl;
-import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
@@ -54,6 +55,7 @@ import java.util.*;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -105,6 +107,7 @@ class CargoManifestAirShipmentReportTest extends CommonMocks {
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
         mockUser.setEnableTimeZone(false);
+        mockUser.setPermissions(new HashMap<>());
         UserContext.setUser(mockUser);
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().disableBlPartiesName(false).build());
     }
@@ -119,10 +122,7 @@ class CargoManifestAirShipmentReportTest extends CommonMocks {
     }
 
     private void mockVessel() {
-        V1DataResponse v1DataResponse = new V1DataResponse();
-        v1DataResponse.entities = Arrays.asList(new VesselsResponse());
-        when(v1Service.fetchVesselData(any())).thenReturn(v1DataResponse);
-        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), VesselsResponse.class)).thenReturn(Arrays.asList(new VesselsResponse()));
+        when(masterDataUtils.getVesselDataFromCache(any())).thenReturn(new HashMap<>());
     }
 
     private void populateModel(CargoManifestAirShipmentModel cargoManifestAirShipmentModel) {
@@ -251,7 +251,7 @@ class CargoManifestAirShipmentReportTest extends CommonMocks {
         shipmentModel.setPackingList(packingModels);
 
         ReferenceNumbersModel referenceNumbersModel = new ReferenceNumbersModel();
-        referenceNumbersModel.setType(ReportConstants.MORN);
+        referenceNumbersModel.setType(ReportConstants.MO_RN);
         shipmentModel.setReferenceNumbersList(Arrays.asList(referenceNumbersModel));
 
         ConsolidationModel consolidationModel = new ConsolidationModel();
@@ -304,7 +304,7 @@ class CargoManifestAirShipmentReportTest extends CommonMocks {
 
         OrgAddressResponse orgAddressResponse = new OrgAddressResponse();
         orgAddressResponse.setAddresses(addressMap);
-        when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
+
         when(modelMapper.map(shipmentModel.getAdditionalDetails().getExportBroker(), Parties.class)).thenReturn(parties);
         when(modelMapper.map(shipmentModel.getAdditionalDetails().getImportBroker(), Parties.class)).thenReturn(parties);
         when(modelMapper.map(shipmentModel.getConsigner(), Parties.class)).thenReturn(parties2);
@@ -376,7 +376,7 @@ class CargoManifestAirShipmentReportTest extends CommonMocks {
     private void masterDataMock() {
         V1DataResponse v1DataResponse = new V1DataResponse();
         v1DataResponse.entities = Arrays.asList(new MasterData());
-        when(v1Service.fetchMultipleMasterData(any())).thenReturn(v1DataResponse);
+        when(masterDataUtils.fetchMasterListFromCache(any())).thenReturn(new HashMap<>());
 
         List<MasterData> masterDataList = new ArrayList<>();
         MasterData masterData = new MasterData();
@@ -432,7 +432,6 @@ class CargoManifestAirShipmentReportTest extends CommonMocks {
         masterData.setItemValue("IND");
         masterData.setItemDescription("IND");
         masterDataList.add(masterData);
-        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), MasterData.class)).thenReturn(masterDataList);
     }
 
     private void mockCarrier() {
@@ -477,5 +476,41 @@ class CargoManifestAirShipmentReportTest extends CommonMocks {
 
 
         assertNotNull(cargoManifestAirShipmentReport.getDocumentModel(123L));
+    }
+
+    @Test
+    void getDocumentModel_CountryAirCargoSecurity() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setCountryAirCargoSecurity(true);
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+
+        ShipmentModel shipmentModel = new ShipmentModel();
+        shipmentModel.setId(1L);
+        shipmentModel.setTransportMode(AIR);
+        shipmentModel.setDirection(EXP);
+        shipmentModel.setContainersList(Arrays.asList(new ContainerModel()));
+
+        when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
+        mockShipmentSettings();
+
+        assertThrows(ValidationException.class, () -> cargoManifestAirShipmentReport.getDocumentModel(123L));
+    }
+
+    @Test
+    void getDocumentModel_CountryAirCargoSecurity2() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setCountryAirCargoSecurity(true);
+        UserContext.getUser().getPermissions().put(PermissionConstants.AIR_SECURITY_PERMISSION, true);
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+
+        ShipmentModel shipmentModel = new ShipmentModel();
+        shipmentModel.setId(1L);
+        shipmentModel.setTransportMode(AIR);
+        shipmentModel.setDirection(EXP);
+        shipmentModel.setContainsHazardous(true);
+        shipmentModel.setContainersList(Arrays.asList(new ContainerModel()));
+
+        when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
+        mockShipmentSettings();
+
+        assertThrows(ValidationException.class, () -> cargoManifestAirShipmentReport.getDocumentModel(123L));
     }
 }

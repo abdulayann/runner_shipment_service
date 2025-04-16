@@ -3,19 +3,23 @@ package com.dpw.runner.shipment.services.entitytransfer.dto;
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryResponse;
+import com.dpw.runner.shipment.services.dto.response.TriangulationPartnerResponse;
 import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
 import com.dpw.runner.shipment.services.entitytransfer.common.request.IEntityTranferBaseEntity;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import lombok.*;
-
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @Data
 @Builder
@@ -69,15 +73,13 @@ public class EntityTransferShipmentDetails implements IEntityTranferBaseEntity, 
     private Boolean containerAutoWeightVolumeUpdate;
     private String marksNum;
     private String entryDetail;
-    private Boolean isLocked;
-    private String lockedBy;
     private Boolean isNotifyConsigneeEqual;
-    private String bookingType;
     private boolean cargoFinanceBooking;
     private String bookingNumber;
     private String route;
     private Long sourceTenantId;
     private Long documentationPartner;
+    private List<TriangulationPartnerResponse> triangulationPartnerList;
     private Long triangulationPartner;
     private Long receivingBranch;
     private boolean intraBranch;
@@ -132,7 +134,6 @@ public class EntityTransferShipmentDetails implements IEntityTranferBaseEntity, 
     private String salesBranch;
     private String primarySalesAgentEmail;
     private String secondarySalesAgentEmail;
-    private UUID clonedGuid;
     private Long consigneeDpsAddressId;
     private Long clientDpsAddressId;
     private Long consignorDpsAddressId;
@@ -160,4 +161,5 @@ public class EntityTransferShipmentDetails implements IEntityTranferBaseEntity, 
     private Integer sendToBranch;
 
     private List<String> additionalDocs;
+    private Boolean b2b;
 }

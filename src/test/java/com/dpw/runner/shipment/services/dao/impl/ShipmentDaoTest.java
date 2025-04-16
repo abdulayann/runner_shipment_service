@@ -1,21 +1,5 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
@@ -28,18 +12,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IMawbStocksLinkDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.AdditionalDetails;
-import com.dpw.runner.shipment.services.entity.CarrierDetails;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.MawbStocks;
-import com.dpw.runner.shipment.services.entity.MawbStocksLink;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.Parties;
-import com.dpw.runner.shipment.services.entity.Routings;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -50,23 +23,13 @@ import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection;
 import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection.NullShipmentDetailsProjection;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
-import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.nimbusds.jose.util.Pair;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import javax.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
@@ -78,6 +41,17 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+
+import javax.persistence.EntityManager;
+import java.time.LocalDateTime;
+import java.util.*;
+
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(CONCURRENT)
@@ -130,11 +104,11 @@ class ShipmentDaoTest extends CommonMocks {
     }
 
     @Test
-    void saveTestCatch() throws RunnerException {
+    void saveTestCatch() {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
-        shipmentDetails.setContainersList(Arrays.asList(Containers.builder().build()));
-        shipmentDetails.setConsolidationList(Arrays.asList(ConsolidationDetails.builder().build()));
+        shipmentDetails.setContainersList(new HashSet<>(Collections.singletonList(Containers.builder().build())));
+        shipmentDetails.setConsolidationList(new HashSet<>(Collections.singletonList(ConsolidationDetails.builder().build())));
         shipmentDetails.setId(1L);
 
         when(shipmentRepository.findById(any())).thenReturn(Optional.of(shipmentDetails));
@@ -146,11 +120,11 @@ class ShipmentDaoTest extends CommonMocks {
     }
 
     @Test
-    void saveTestOldEntityNotPresent() throws RunnerException {
+    void saveTestOldEntityNotPresent() {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
-        shipmentDetails.setContainersList(Arrays.asList(Containers.builder().build()));
-        shipmentDetails.setConsolidationList(Arrays.asList(ConsolidationDetails.builder().build()));
+        shipmentDetails.setContainersList(new HashSet<>(Collections.singletonList(Containers.builder().build())));
+        shipmentDetails.setConsolidationList(new HashSet<>(Collections.singletonList(ConsolidationDetails.builder().build())));
         shipmentDetails.setId(1L);
 
         when(shipmentRepository.findById(any())).thenReturn(Optional.empty());
@@ -165,8 +139,8 @@ class ShipmentDaoTest extends CommonMocks {
     void saveTest() throws RunnerException {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
-        shipmentDetails.setContainersList(Arrays.asList(Containers.builder().build()));
-        shipmentDetails.setConsolidationList(Arrays.asList(ConsolidationDetails.builder().build()));
+        shipmentDetails.setContainersList(new HashSet<>(Collections.singletonList(Containers.builder().build())));
+        shipmentDetails.setConsolidationList(new HashSet<>(Collections.singletonList(ConsolidationDetails.builder().build())));
         shipmentDetails.setCarrierDetails(CarrierDetails.builder().origin("origin").destination("destination").originPort("originPort").destinationPort("destinationPort").build());
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
         shipmentDetails.setId(1L);
@@ -174,22 +148,32 @@ class ShipmentDaoTest extends CommonMocks {
         when(shipmentRepository.findById(any())).thenReturn(Optional.of(shipmentDetails));
         when(shipmentRepository.save(any(ShipmentDetails.class))).thenReturn(shipmentDetails);
         when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
-        when(commonUtils.getCurrentTenantSettings()).thenReturn(V1TenantSettingsResponse.builder().IsMAWBColoadingEnabled(true).build());
         mockShipmentSettings();
         assertEquals(shipmentDetails, shipmentDao.save(shipmentDetails, false));
+    }
+
+    @Test
+    void saveStatusTest() {
+        Long shipmentId = 1L;
+        Integer status = 1;
+
+        doNothing().when(shipmentRepository).saveStatus(shipmentId, status);
+
+        shipmentDao.saveStatus(shipmentId, status);
+
+        verify(shipmentRepository, times(1)).saveStatus(shipmentId, status);
     }
 
     @Test
     void saveTest2() throws RunnerException {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
-        shipmentDetails.setContainersList(Arrays.asList(Containers.builder().build()));
-        shipmentDetails.setConsolidationList(Arrays.asList(ConsolidationDetails.builder().build()));
+        shipmentDetails.setContainersList(new HashSet<>(Collections.singletonList(Containers.builder().build())));
+        shipmentDetails.setConsolidationList(new HashSet<>(Collections.singletonList(ConsolidationDetails.builder().build())));
         shipmentDetails.setCarrierDetails(CarrierDetails.builder().origin("origin").destination("destination").originPort("originPort").destinationPort("destinationPort").build());
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
         when(shipmentRepository.save(any(ShipmentDetails.class))).thenReturn(shipmentDetails);
         when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
-        when(commonUtils.getCurrentTenantSettings()).thenReturn(V1TenantSettingsResponse.builder().IsMAWBColoadingEnabled(true).build());
         mockShipmentSettings();
         assertEquals(shipmentDetails, shipmentDao.save(shipmentDetails, false));
     }
@@ -198,15 +182,14 @@ class ShipmentDaoTest extends CommonMocks {
     void saveTest3() throws RunnerException {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
-        shipmentDetails.setContainersList(Arrays.asList(Containers.builder().build()));
-        shipmentDetails.setConsolidationList(Arrays.asList(ConsolidationDetails.builder().build()));
+        shipmentDetails.setContainersList(new HashSet<>(Collections.singletonList(Containers.builder().build())));
+        shipmentDetails.setConsolidationList(new HashSet<>(Collections.singletonList(ConsolidationDetails.builder().build())));
         shipmentDetails.setCarrierDetails(CarrierDetails.builder().origin("origin").destination("destination").originPort("originPort").destinationPort("destinationPort").build());
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
         shipmentDetails.setId(1L);
         when(shipmentRepository.findById(any())).thenReturn(Optional.of(shipmentDetails));
         when(shipmentRepository.save(any(ShipmentDetails.class))).thenReturn(shipmentDetails);
         when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
-        when(commonUtils.getCurrentTenantSettings()).thenReturn(V1TenantSettingsResponse.builder().IsMAWBColoadingEnabled(true).build());
         mockShipmentSettings();
         assertEquals(shipmentDetails, shipmentDao.save(shipmentDetails, false));
     }
@@ -222,7 +205,6 @@ class ShipmentDaoTest extends CommonMocks {
         when(shipmentRepository.findById(any())).thenReturn(Optional.of(new ShipmentDetails()));
         when(shipmentRepository.save(any(ShipmentDetails.class))).thenReturn(shipmentDetails);
         when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
-        when(commonUtils.getCurrentTenantSettings()).thenReturn(V1TenantSettingsResponse.builder().IsMAWBColoadingEnabled(true).build());
         mockShipmentSettings();
         assertEquals(shipmentDetails, shipmentDao.save(shipmentDetails, false));
     }
@@ -244,26 +226,21 @@ class ShipmentDaoTest extends CommonMocks {
         consolidationDetails.setId(1L);
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
-                .consolidationList(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build()))
+                .consolidationList(new HashSet<>(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build())))
                 .containsHazardous(false)
                 .transportMode(Constants.TRANSPORT_MODE_AIR)
                 .packingList(Arrays.asList(packing))
                 .routingsList(Arrays.asList(routings, routings))
-                .containersList(Arrays.asList(containers, containers))
+                .containersList(new HashSet<>(Arrays.asList(containers, containers)))
                 .shipmentAddresses(Arrays.asList(parties, parties))
-                .consolidationList(Arrays.asList(consolidationDetails, consolidationDetails))
+                .consolidationList(new HashSet<>(Arrays.asList(consolidationDetails, consolidationDetails)))
                 .carrierDetails(CarrierDetails.builder().build())
                 .direction(Constants.DIRECTION_IMP)
                 .build();
 
-        List<ConsolidationDetails> consolidationDetailsList = new ArrayList<>();
-        consolidationDetailsList.add(consolidationDetails);
-
-        PageImpl<ConsolidationDetails> consolidationDetailsPage = new PageImpl<>(consolidationDetailsList);
-        //when(consolidationDetailsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(consolidationDetailsPage);
         mockShipmentSettings();
         Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
-        assertTrue(errors.contains("Container Number cannot be same for two different containers"));
+        assertFalse(errors.contains("Container Number cannot be same for two different containers"));
     }
 
     @Test
@@ -283,14 +260,14 @@ class ShipmentDaoTest extends CommonMocks {
         consolidationDetails.setId(1L);
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
-                .consolidationList(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build()))
+                .consolidationList(new HashSet<>(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build())))
                 .containsHazardous(false)
                 .transportMode(Constants.TRANSPORT_MODE_AIR)
                 .packingList(Arrays.asList(packing))
                 .routingsList(Arrays.asList(routings, routings))
-                .containersList(Arrays.asList(containers, containers))
+                .containersList(new HashSet<>(Arrays.asList(containers, containers)))
                 .shipmentAddresses(Arrays.asList(parties, parties))
-                .consolidationList(Arrays.asList(consolidationDetails, consolidationDetails))
+                .consolidationList(new HashSet<>(Arrays.asList(consolidationDetails, consolidationDetails)))
                 .carrierDetails(CarrierDetails.builder().build())
                 .direction(Constants.DIRECTION_EXP)
                 .masterBill("MBL123")
@@ -302,7 +279,7 @@ class ShipmentDaoTest extends CommonMocks {
         when(consolidationDetailsDao.findByBol(any())).thenReturn(consolidationDetailsList);
         mockShipmentSettings();
         Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
-        assertTrue(errors.contains("Container Number cannot be same for two different containers"));
+        assertFalse(errors.contains("Container Number cannot be same for two different containers"));
     }
 
     @Test
@@ -322,14 +299,14 @@ class ShipmentDaoTest extends CommonMocks {
         consolidationDetails.setId(1L);
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
-                .consolidationList(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build()))
+                .consolidationList(new HashSet<>(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build())))
                 .containsHazardous(false)
                 .transportMode(Constants.TRANSPORT_MODE_AIR)
                 .packingList(Arrays.asList(packing))
                 .routingsList(Arrays.asList(routings, routings))
-                .containersList(Arrays.asList(containers, containers))
+                .containersList(new HashSet<>(Arrays.asList(containers, containers)))
                 .shipmentAddresses(Arrays.asList(parties, parties))
-                .consolidationList(Arrays.asList(consolidationDetails, consolidationDetails))
+                .consolidationList(new HashSet<>(Arrays.asList(consolidationDetails, consolidationDetails)))
                 .carrierDetails(CarrierDetails.builder().build())
                 .direction(Constants.DIRECTION_EXP)
                 .masterBill("MBL123")
@@ -343,12 +320,12 @@ class ShipmentDaoTest extends CommonMocks {
 
         UsersDto usersDto = new UsersDto();
         Map<String, Boolean> permissions = new HashMap<>();
-        permissions.put(PermissionConstants.airDG, true);
+        permissions.put(PermissionConstants.AIR_DG, true);
         usersDto.setPermissions(permissions);
         UserContext.setUser(usersDto);
         mockShipmentSettings();
         Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
-        assertTrue(errors.contains("Container Number cannot be same for two different containers"));
+        assertFalse(errors.contains("Container Number cannot be same for two different containers"));
     }
 
     @Test
@@ -368,14 +345,14 @@ class ShipmentDaoTest extends CommonMocks {
         consolidationDetails.setId(1L);
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
-                .consolidationList(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build()))
+                .consolidationList(new HashSet<>(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build())))
                 .containsHazardous(false)
                 .transportMode(Constants.TRANSPORT_MODE_AIR)
                 .packingList(Arrays.asList(packing))
                 .routingsList(Arrays.asList(routings, routings))
-                .containersList(Arrays.asList(containers, containers))
+                .containersList(new HashSet<>(Arrays.asList(containers, containers)))
                 .shipmentAddresses(Arrays.asList(parties, parties))
-                .consolidationList(Arrays.asList(consolidationDetails, consolidationDetails))
+                .consolidationList(new HashSet<>(Arrays.asList(consolidationDetails, consolidationDetails)))
                 .carrierDetails(CarrierDetails.builder().build())
                 .direction(Constants.DIRECTION_EXP)
                 .masterBill("MBL123")
@@ -389,12 +366,12 @@ class ShipmentDaoTest extends CommonMocks {
 
         UsersDto usersDto = new UsersDto();
         Map<String, Boolean> permissions = new HashMap<>();
-        permissions.put(PermissionConstants.airDG, true);
+        permissions.put(PermissionConstants.AIR_DG, true);
         usersDto.setPermissions(permissions);
         UserContext.setUser(usersDto);
         mockShipmentSettings();
         Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
-        assertTrue(errors.contains("Container Number cannot be same for two different containers"));
+        assertFalse(errors.contains("Container Number cannot be same for two different containers"));
     }
 
     @Test
@@ -414,14 +391,14 @@ class ShipmentDaoTest extends CommonMocks {
         consolidationDetails.setId(1L);
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
-                .consolidationList(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build()))
+                .consolidationList(new HashSet<>(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build())))
                 .containsHazardous(false)
                 .transportMode(Constants.TRANSPORT_MODE_AIR)
                 .packingList(Arrays.asList(packing))
                 .routingsList(Arrays.asList(routings, routings))
-                .containersList(Arrays.asList(containers, containers))
+                .containersList(new HashSet<>(Arrays.asList(containers, containers)))
                 .shipmentAddresses(Arrays.asList(parties, parties))
-                .consolidationList(Arrays.asList(consolidationDetails, consolidationDetails))
+                .consolidationList(new HashSet<>(Arrays.asList(consolidationDetails, consolidationDetails)))
                 .carrierDetails(CarrierDetails.builder().build())
                 .direction(Constants.DIRECTION_EXP)
                 .masterBill("MBL123")
@@ -439,13 +416,13 @@ class ShipmentDaoTest extends CommonMocks {
         UserContext.setUser(usersDto);
         mockShipmentSettings();
         Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
-        assertTrue(errors.contains("Container Number cannot be same for two different containers"));
+        assertFalse(errors.contains("Container Number cannot be same for two different containers"));
     }
 
     @Test
     void updateShipmentLockedTest() {
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().isLocked(true).build();
-        Exception e = assertThrows(ValidationException.class, () -> {
+        assertThrows(ValidationException.class, () -> {
             shipmentDao.update(shipmentDetails, true);
         });
     }
@@ -455,7 +432,7 @@ class ShipmentDaoTest extends CommonMocks {
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
         shipmentDetails.setId(1L);
         when(shipmentRepository.findById(any())).thenReturn(Optional.empty());
-        Exception e = assertThrows(DataRetrievalFailureException.class, () -> {
+        assertThrows(DataRetrievalFailureException.class, () -> {
             shipmentDao.update(shipmentDetails, true);
         });
     }
@@ -472,7 +449,6 @@ class ShipmentDaoTest extends CommonMocks {
         shipmentDetails.setId(1L);
         when(shipmentRepository.findById(any())).thenReturn(Optional.of(shipmentDetails));
         when(shipmentRepository.save(shipmentDetails)).thenReturn(shipmentDetails);
-        when(commonUtils.getCurrentTenantSettings()).thenReturn(V1TenantSettingsResponse.builder().build());
         mockShipmentSettings();
         ShipmentDetails response = shipmentDao.update(shipmentDetails, true);
         assertNotNull(response);
@@ -481,8 +457,6 @@ class ShipmentDaoTest extends CommonMocks {
     @Test
     void updateHblNumberTest() {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().airDGFlag(true).cancelledBLSuffix("BL").build());
-
-        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .transportMode(Constants.TRANSPORT_MODE_AIR)
@@ -496,13 +470,7 @@ class ShipmentDaoTest extends CommonMocks {
         shipmentDetails.setId(1L);
         when(shipmentRepository.findById(any())).thenReturn(Optional.of(shipmentDetails));
         when(shipmentRepository.save(shipmentDetails)).thenReturn(shipmentDetails);
-        when(commonUtils.getCurrentTenantSettings()).thenReturn(V1TenantSettingsResponse.builder().build());
 
-        List<ConsolidationDetails> consolidationDetailsList = new ArrayList<>();
-        consolidationDetailsList.add(consolidationDetails);
-
-        PageImpl<ConsolidationDetails> consolidationDetailsPage = new PageImpl<>(consolidationDetailsList);
-        //when(consolidationDetailsDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(consolidationDetailsPage);
         doNothing().when(mawbStocksLinkDao).deLinkExistingMawbStockLink(any());
         mockShipmentSettings();
         ShipmentDetails response = shipmentDao.update(shipmentDetails, false);
@@ -611,7 +579,6 @@ class ShipmentDaoTest extends CommonMocks {
         doNothing().when(mawbStocksLinkDao).deLinkExistingMawbStockLink(any());
         when(v1Service.fetchCarrierMasterData(any(), eq(true))).thenReturn(V1DataResponse.builder().build());
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(CarrierResponse.builder().iATACode("iATA").build()));
-        when(commonUtils.getCurrentTenantSettings()).thenReturn(V1TenantSettingsResponse.builder().build());
         mockShipmentSettings();
        ShipmentDetails response = shipmentDao.update(shipmentDetails, false);
        assertNotNull(response);
@@ -648,7 +615,6 @@ class ShipmentDaoTest extends CommonMocks {
         consolidationDetailsList.add(consolidationDetails);
 
         when(consolidationDetailsDao.findByBol(any())).thenReturn(consolidationDetailsList);
-        when(commonUtils.getCurrentTenantSettings()).thenReturn(V1TenantSettingsResponse.builder().build());
 
         MawbStocksLink mawbStocksLink = MawbStocksLink.builder().status(Constants.UNUSED).build();
         List<MawbStocksLink> mawbStocksLinkList = new ArrayList<>();
@@ -712,7 +678,6 @@ class ShipmentDaoTest extends CommonMocks {
 
         MawbStocks mawbStocks = MawbStocks.builder().build();
         mawbStocks.setId(1L);
-        when(commonUtils.getCurrentTenantSettings()).thenReturn(V1TenantSettingsResponse.builder().build());
 
         when(mawbStocksDao.save(any())).thenReturn(mawbStocks);
         when(mawbStocksLinkDao.save(any())).thenReturn(MawbStocksLink.builder().build());
@@ -776,7 +741,6 @@ class ShipmentDaoTest extends CommonMocks {
         consolidationDetailsList.add(consolidationDetails);
 
         when(consolidationDetailsDao.findByBol(any())).thenReturn(consolidationDetailsList);
-        when(commonUtils.getCurrentTenantSettings()).thenReturn(V1TenantSettingsResponse.builder().build());
 
         List<MawbStocksLink> mawbStocksLinkList = new ArrayList<>();
 
@@ -791,6 +755,152 @@ class ShipmentDaoTest extends CommonMocks {
 
         when(mawbStocksDao.save(any())).thenReturn(mawbStocks);
         when(mawbStocksLinkDao.save(any())).thenReturn(MawbStocksLink.builder().build());
+        mockShipmentSettings();
+        ShipmentDetails response = shipmentDao.update(shipmentDetails, false);
+        assertNotNull(response);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "DRT, null",
+            "DRT, STD",
+            "STD, DRT",
+            "DRT, DRT",
+            "DRT, null",
+            "null, DRT"
+    })
+    void updateMawbChecks(String jobType1, String jobType2) {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(
+                ShipmentSettingsDetails.builder().airDGFlag(true).cancelledBLSuffix("BL").build()
+        );
+
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
+        HashMap<String, Object> hm = new HashMap<>();
+        hm.put("FullName", "DP World");
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setBorrowedFrom(Parties.builder().orgData(hm).build());
+
+        ShipmentDetails shipmentDetails2 = ShipmentDetails.builder()
+                .transportMode(Constants.TRANSPORT_MODE_AIR)
+                .houseBill("HBL123")
+                .masterBill("Mast77777770")
+                .status(2)
+                .carrierDetails(CarrierDetails.builder()
+                        .origin("origin")
+                        .originPort("origin")
+                        .destination("origin")
+                        .destinationPort("destination")
+                        .etd(LocalDateTime.now())
+                        .etd(LocalDateTime.now())
+                        .build())
+                .jobType(jobType1)
+                .direction("EXP")
+                .additionalDetails(additionalDetails)
+                .build();
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .transportMode(Constants.TRANSPORT_MODE_AIR)
+                .houseBill("HBL123")
+                .masterBill("Mast77777770")
+                .status(3)
+                .carrierDetails(CarrierDetails.builder()
+                        .origin("origin")
+                        .originPort("origin")
+                        .destination("origin")
+                        .destinationPort("destination")
+                        .etd(LocalDateTime.now())
+                        .etd(LocalDateTime.now())
+                        .build())
+                .jobType(jobType2)
+                .direction("EXP")
+                .additionalDetails(additionalDetails)
+                .build();
+
+        shipmentDetails.setId(1L);
+
+        when(shipmentRepository.findById(any())).thenReturn(Optional.of(shipmentDetails2));
+        when(shipmentRepository.save(any())).thenReturn(shipmentDetails);
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(Arrays.asList(CarrierResponse.builder().iATACode("iATA").build()));
+        when(v1Service.fetchCarrierMasterData(any(), eq(false))).thenReturn(V1DataResponse.builder().build());
+
+        List<MawbStocksLink> mawbStocksLinkList = new ArrayList<>();
+        PageImpl<MawbStocksLink> mawbStocksLinkPage = new PageImpl<>(mawbStocksLinkList);
+        when(mawbStocksLinkDao.findAll(any(Specification.class), any(Pageable.class))).thenReturn(mawbStocksLinkPage);
+
+        MawbStocks mawbStocks = MawbStocks.builder().build();
+        mawbStocks.setId(1L);
+        when(mawbStocksDao.save(any())).thenReturn(mawbStocks);
+        when(mawbStocksLinkDao.save(any())).thenReturn(MawbStocksLink.builder().build());
+
+        List<ConsolidationDetails> consolidationDetailsList = new ArrayList<>();
+        consolidationDetailsList.add(consolidationDetails);
+        when(consolidationDetailsDao.findByBol(any())).thenReturn(consolidationDetailsList);
+
+        mockShipmentSettings();
+        ShipmentDetails response = shipmentDao.update(shipmentDetails, false);
+        assertNotNull(response);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "null, STD",
+            "STD, STD",
+            "STD, null"
+    })
+    void updateMawbChecks1(String jobType1, String jobType2) {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().airDGFlag(true).cancelledBLSuffix("BL").build());
+
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
+
+        HashMap<String, Object> hm = new HashMap<>();
+        hm.put("FullName", "DP World");
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        additionalDetails.setBorrowedFrom(Parties.builder().orgData(hm).build());
+
+        ShipmentDetails shipmentDetails2 = ShipmentDetails.builder()
+                .transportMode(Constants.TRANSPORT_MODE_AIR)
+                .houseBill("HBL123")
+                .masterBill("Mast77777770")
+                .status(2)
+                .carrierDetails(CarrierDetails.builder()
+                        .origin("origin")
+                        .originPort("origin")
+                        .destination("origin")
+                        .destinationPort("destination")
+                        .etd(LocalDateTime.now())
+                        .etd(LocalDateTime.now())
+                        .build())
+                .jobType(jobType1)
+                .direction("EXP")
+                .additionalDetails(additionalDetails)
+                .build();
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .transportMode(Constants.TRANSPORT_MODE_AIR)
+                .houseBill("HBL123")
+                .masterBill("Mast77777770")
+                .status(3)
+                .carrierDetails(CarrierDetails.builder()
+                        .origin("origin")
+                        .originPort("origin")
+                        .destination("origin")
+                        .destinationPort("destination")
+                        .etd(LocalDateTime.now())
+                        .etd(LocalDateTime.now())
+                        .build())
+                .jobType(jobType2)
+                .direction("EXP")
+                .additionalDetails(additionalDetails)
+                .build();
+
+        shipmentDetails.setId(1L);
+        when(shipmentRepository.findById(any())).thenReturn(Optional.of(shipmentDetails2));
+        when(shipmentRepository.save(any())).thenReturn(shipmentDetails);
+
+        List<ConsolidationDetails> consolidationDetailsList = new ArrayList<>();
+        consolidationDetailsList.add(consolidationDetails);
+
+        when(consolidationDetailsDao.findByBol(any())).thenReturn(consolidationDetailsList);
         mockShipmentSettings();
         ShipmentDetails response = shipmentDao.update(shipmentDetails, false);
         assertNotNull(response);
@@ -855,10 +965,6 @@ class ShipmentDaoTest extends CommonMocks {
 
         when(consolidationDetailsDao.findByBol(any())).thenReturn(consolidationDetailsList);
 
-        List<MawbStocksLink> mawbStocksLinkList = new ArrayList<>();
-
-        PageImpl<MawbStocksLink> mawbStocksLinkPage = new PageImpl<>(mawbStocksLinkList);
-
         MawbStocks mawbStocks = MawbStocks.builder().build();
         mawbStocks.setId(1L);
         mockShipmentSettings();
@@ -921,8 +1027,6 @@ class ShipmentDaoTest extends CommonMocks {
 
         mawbStocksLinkList.add(MawbStocksLink.builder().status("CONSUMED").build());
         when(mawbStocksLinkDao.findByMawbNumber(any())).thenReturn(mawbStocksLinkList);
-        when(commonUtils.getCurrentTenantSettings()).thenReturn(V1TenantSettingsResponse.builder().build());
-
         when(mawbStocksDao.findById(any())).thenReturn(Optional.of(MawbStocks.builder().build()));
         mockShipmentSettings();
         ShipmentDetails response = shipmentDao.update(shipmentDetails, false);
@@ -989,6 +1093,24 @@ class ShipmentDaoTest extends CommonMocks {
     }
 
     @Test
+    void findByGuids() {
+        // Arrange
+        List<UUID> guids = List.of(UUID.randomUUID(), UUID.randomUUID());
+        List<ShipmentDetails> shipmentDetailsList = List.of(
+                ShipmentDetails.builder().build(),
+                ShipmentDetails.builder().build()
+        );
+        when(shipmentRepository.findAllByGuids(anyList())).thenReturn(shipmentDetailsList);
+
+        // Act
+        List<ShipmentDetails> result = shipmentDao.findByGuids(guids);
+
+        // Assert
+        assertEquals(shipmentDetailsList, result);
+        verify(shipmentRepository, times(1)).findAllByGuids(guids); // Ensures the method was called with the correct argument
+    }
+
+    @Test
     void findByBookingReference() {
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
         List<ShipmentDetails> shipmentDetailsList = Arrays.asList(shipmentDetails);
@@ -1019,27 +1141,23 @@ class ShipmentDaoTest extends CommonMocks {
         consolidationDetails.setId(1L);
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
-                .consolidationList(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build()))
+                .consolidationList(new HashSet<>(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build())))
                 .containsHazardous(false)
                 .transportMode(Constants.TRANSPORT_MODE_AIR)
                 .packingList(Arrays.asList(packing))
                 .routingsList(Arrays.asList(routings, routings))
-                .containersList(Arrays.asList(containers, containers))
+                .containersList(new HashSet<>(Arrays.asList(containers, containers)))
                 .shipmentAddresses(Arrays.asList(parties, parties))
-                .consolidationList(Arrays.asList(consolidationDetails, consolidationDetails))
+                .consolidationList(new HashSet<>(Arrays.asList(consolidationDetails, consolidationDetails)))
                 .carrierDetails(CarrierDetails.builder().build())
                 .direction(Constants.DIRECTION_IMP)
                 .houseBill("HBL123")
                 .build();
 
-        List<ConsolidationDetails> consolidationDetailsList = new ArrayList<>();
-        consolidationDetailsList.add(consolidationDetails);
-
-        PageImpl<ConsolidationDetails> consolidationDetailsPage = new PageImpl<>(consolidationDetailsList);
-        when(shipmentRepository.findByHouseBill(any(), any())).thenReturn(Arrays.asList(ShipmentDetails.builder().build()));
+        when(shipmentRepository.findByHouseBill(any(), any())).thenReturn(Collections.singletonList(ShipmentDetails.builder().build()));
         mockShipmentSettings();
         Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
-        assertTrue(errors.contains("Container Number cannot be same for two different containers"));
+        assertFalse(errors.contains("Container Number cannot be same for two different containers"));
     }
 
     @Test
@@ -1059,14 +1177,14 @@ class ShipmentDaoTest extends CommonMocks {
         consolidationDetails.setId(1L);
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
-                .consolidationList(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build()))
+                .consolidationList(new HashSet<>(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build())))
                 .containsHazardous(false)
                 .transportMode(Constants.TRANSPORT_MODE_AIR)
                 .packingList(Arrays.asList(packing))
                 .routingsList(Arrays.asList(routings, routings))
-                .containersList(Arrays.asList(containers, containers))
+                .containersList(new HashSet<>(Arrays.asList(containers, containers)))
                 .shipmentAddresses(Arrays.asList(parties, parties))
-                .consolidationList(Arrays.asList(consolidationDetails, consolidationDetails))
+                .consolidationList(new HashSet<>(Arrays.asList(consolidationDetails, consolidationDetails)))
                 .carrierDetails(CarrierDetails.builder().build())
                 .direction(Constants.DIRECTION_IMP)
                 .houseBill("HBL123")
@@ -1074,15 +1192,12 @@ class ShipmentDaoTest extends CommonMocks {
                 .bookingReference("bref123")
                 .build();
 
-        List<ConsolidationDetails> consolidationDetailsList = new ArrayList<>();
-        consolidationDetailsList.add(consolidationDetails);
 
-        PageImpl<ConsolidationDetails> consolidationDetailsPage = new PageImpl<>(consolidationDetailsList);
-        when(shipmentRepository.findByHouseBill(any(), any())).thenReturn(Arrays.asList(ShipmentDetails.builder().build()));
-        when(shipmentRepository.findByBookingReference(any(), any())).thenReturn(Arrays.asList(ShipmentDetails.builder().build()));
+        when(shipmentRepository.findByHouseBill(any(), any())).thenReturn(Collections.singletonList(ShipmentDetails.builder().build()));
+        when(shipmentRepository.findByBookingReference(any(), any())).thenReturn(Collections.singletonList(ShipmentDetails.builder().build()));
         mockShipmentSettings();
         Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
-        assertTrue(errors.contains("Container Number cannot be same for two different containers"));
+        assertFalse(errors.contains("Container Number cannot be same for two different containers"));
     }
 
     @Test
@@ -1105,14 +1220,14 @@ class ShipmentDaoTest extends CommonMocks {
         consolidationDetails.setId(2L);
 
         ShipmentDetails shipmentDetails = ShipmentDetails.builder()
-                .consolidationList(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build()))
+                .consolidationList(new HashSet<>(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build())))
                 .containsHazardous(false)
                 .transportMode(Constants.TRANSPORT_MODE_AIR)
                 .packingList(Arrays.asList(packing))
                 .routingsList(Arrays.asList(routings, routings))
-                .containersList(Arrays.asList(containers, containers))
+                .containersList(new HashSet<>(Arrays.asList(containers, containers)))
                 .shipmentAddresses(Arrays.asList(parties, parties))
-                .consolidationList(Arrays.asList(consolidationDetails, consolidationDetails))
+                .consolidationList(new HashSet<>(Arrays.asList(consolidationDetails, consolidationDetails)))
                 .carrierDetails(CarrierDetails.builder().build())
                 .direction(Constants.DIRECTION_IMP)
                 .houseBill("HBL123")
@@ -1130,15 +1245,15 @@ class ShipmentDaoTest extends CommonMocks {
         when(consolidationDetailsDao.findByBol(any())).thenReturn(consolidationDetailsList);
         mockShipmentSettings();
         Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
-        assertTrue(errors.contains("Container Number cannot be same for two different containers"));
+        assertFalse(errors.contains("Container Number cannot be same for two different containers"));
     }
 
     @Test
     void saveAll() throws RunnerException {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
         ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
-        shipmentDetails.setContainersList(Arrays.asList(Containers.builder().build()));
-        shipmentDetails.setConsolidationList(Arrays.asList(ConsolidationDetails.builder().build()));
+        shipmentDetails.setContainersList(new HashSet<>(Collections.singletonList(Containers.builder().build())));
+        shipmentDetails.setConsolidationList(new HashSet<>(Collections.singletonList(ConsolidationDetails.builder().build())));
         shipmentDetails.setCarrierDetails(CarrierDetails.builder().origin("origin").destination("destination").originPort("originPort").destinationPort("destinationPort").build());
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
         shipmentDetails.setId(1L);
@@ -1148,7 +1263,6 @@ class ShipmentDaoTest extends CommonMocks {
         when(shipmentRepository.findById(any())).thenReturn(Optional.of(shipmentDetails));
         when(shipmentRepository.save(any(ShipmentDetails.class))).thenReturn(shipmentDetails);
         when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
-        when(commonUtils.getCurrentTenantSettings()).thenReturn(V1TenantSettingsResponse.builder().build());
         mockShipmentSettings();
         assertEquals(shipmentDetailsList, shipmentDao.saveAll(shipmentDetailsList));
     }
@@ -1164,7 +1278,6 @@ class ShipmentDaoTest extends CommonMocks {
         when(shipmentRepository.findById(any())).thenReturn(Optional.of(shipmentDetails));
         when(shipmentRepository.save(any(ShipmentDetails.class))).thenReturn(shipmentDetails);
         when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
-        when(commonUtils.getCurrentTenantSettings()).thenReturn(V1TenantSettingsResponse.builder().build());
         mockShipmentSettings();
         assertEquals(shipmentDetails, shipmentDao.save(shipmentDetails, false));
     }
@@ -1178,7 +1291,6 @@ class ShipmentDaoTest extends CommonMocks {
 
         when(shipmentRepository.save(any(ShipmentDetails.class))).thenReturn(shipmentDetails);
         when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
-        when(commonUtils.getCurrentTenantSettings()).thenReturn(V1TenantSettingsResponse.builder().build());
         mockShipmentSettings();
         assertEquals(shipmentDetails, shipmentDao.save(shipmentDetails, false));
     }
@@ -1192,7 +1304,6 @@ class ShipmentDaoTest extends CommonMocks {
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
         shipmentDetails.setId(1L);
         shipmentDetails.setStatus(ShipmentStatus.Cancelled.getValue());
-        when(commonUtils.getCurrentTenantSettings()).thenReturn(V1TenantSettingsResponse.builder().IsMAWBColoadingEnabled(true).build());
         when(shipmentRepository.findById(any())).thenReturn(Optional.of(ShipmentDetails.builder().build()));
         when(shipmentRepository.save(any(ShipmentDetails.class))).thenReturn(shipmentDetails);
         when(validatorUtility.applyValidation(any(), any(), any(), anyBoolean())).thenReturn(new HashSet<>());
@@ -1250,5 +1361,299 @@ class ShipmentDaoTest extends CommonMocks {
 
         when(shipmentRepository.findAllWithoutTenantFilter(any(Specification.class), any(Pageable.class))).thenReturn(shipmentDetailsPage);
         assertEquals(shipmentDetailsPage, shipmentDao.findAllWithoutTenantFilter(pair.getLeft(), pair.getRight()));
+    }
+
+    @Test
+    void applyShipmentValidationsExpTest_NonHazPack_HazShipment1() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().airDGFlag(true).restrictedLocationsEnabled(true).build());
+
+        Packing packing = new Packing();
+        packing.setHazardous(false);
+
+        Routings routings = new Routings();
+        routings.setLeg(1L);
+
+        Containers containers = Containers.builder().containerNumber("CON123").build();
+        Parties parties = Parties.builder().type("type").build();
+
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
+        consolidationDetails.setId(1L);
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .consolidationList(new HashSet<>(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build())))
+                .containsHazardous(false)
+                .transportMode(Constants.TRANSPORT_MODE_SEA)
+                .shipmentType(Constants.SHIPMENT_TYPE_LCL)
+                .jobType(Constants.SHIPMENT_TYPE_STD)
+                .packingList(Arrays.asList(packing))
+                .routingsList(Arrays.asList(routings, routings))
+                .containersList(new HashSet<>(Arrays.asList(containers, containers)))
+                .shipmentAddresses(Arrays.asList(parties, parties))
+                .consolidationList(new HashSet<>(Arrays.asList(consolidationDetails, consolidationDetails)))
+                .carrierDetails(CarrierDetails.builder().build())
+                .direction(Constants.DIRECTION_EXP)
+                .masterBill("MBL123")
+                .containsHazardous(true)
+                .build();
+
+        List<ConsolidationDetails> consolidationDetailsList = new ArrayList<>();
+        consolidationDetailsList.add(consolidationDetails);
+
+        when(consolidationDetailsDao.findByBol(any())).thenReturn(consolidationDetailsList);
+
+        UsersDto usersDto = new UsersDto();
+        Map<String, Boolean> permissions = new HashMap<>();
+        permissions.put(PermissionConstants.AIR_DG, true);
+        usersDto.setPermissions(permissions);
+        UserContext.setUser(usersDto);
+        mockShipmentSettings();
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        assertFalse(errors.contains("Container Number cannot be same for two different containers"));
+    }
+
+    @Test
+    void applyShipmentValidationsExpTest_NonHazPack_HazShipment2() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().airDGFlag(true).restrictedLocationsEnabled(true).build());
+
+        Packing packing = new Packing();
+        packing.setHazardous(false);
+
+        Routings routings = new Routings();
+        routings.setLeg(1L);
+
+        Containers containers = Containers.builder().containerNumber("CON123").build();
+        Parties parties = Parties.builder().type("type").build();
+
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
+        consolidationDetails.setId(1L);
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .consolidationList(new HashSet<>(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build())))
+                .containsHazardous(false)
+                .transportMode(Constants.TRANSPORT_MODE_SEA)
+                .shipmentType(Constants.CARGO_TYPE_FCL)
+                .jobType(Constants.SHIPMENT_TYPE_STD)
+                .packingList(Arrays.asList(packing))
+                .routingsList(Arrays.asList(routings, routings))
+                .containersList(new HashSet<>(Arrays.asList(containers, containers)))
+                .shipmentAddresses(Arrays.asList(parties, parties))
+                .consolidationList(new HashSet<>(Arrays.asList(consolidationDetails, consolidationDetails)))
+                .carrierDetails(CarrierDetails.builder().build())
+                .direction(Constants.DIRECTION_EXP)
+                .masterBill("MBL123")
+                .containsHazardous(true)
+                .build();
+
+        List<ConsolidationDetails> consolidationDetailsList = new ArrayList<>();
+        consolidationDetailsList.add(consolidationDetails);
+
+        when(consolidationDetailsDao.findByBol(any())).thenReturn(consolidationDetailsList);
+
+        UsersDto usersDto = new UsersDto();
+        Map<String, Boolean> permissions = new HashMap<>();
+        permissions.put(PermissionConstants.AIR_DG, true);
+        usersDto.setPermissions(permissions);
+        UserContext.setUser(usersDto);
+        mockShipmentSettings();
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        assertFalse(errors.contains("Container Number cannot be same for two different containers"));
+    }
+
+    @Test
+    void applyShipmentValidationsExpTest_NonHazPack_HazShipment3() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().airDGFlag(true).restrictedLocationsEnabled(true).build());
+
+        Packing packing = new Packing();
+        packing.setHazardous(false);
+
+        Routings routings = new Routings();
+        routings.setLeg(1L);
+
+        Containers containers = Containers.builder().containerNumber("CON123").build();
+        Parties parties = Parties.builder().type("type").build();
+
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
+        consolidationDetails.setId(1L);
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .consolidationList(new HashSet<>(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build())))
+                .containsHazardous(false)
+                .transportMode(Constants.TRANSPORT_MODE_SEA)
+                .shipmentType(Constants.SHIPMENT_TYPE_LCL)
+                .jobType(Constants.CONSOLIDATION_TYPE_AGT)
+                .packingList(Arrays.asList(packing))
+                .routingsList(Arrays.asList(routings, routings))
+                .containersList(new HashSet<>(Arrays.asList(containers, containers)))
+                .shipmentAddresses(Arrays.asList(parties, parties))
+                .consolidationList(new HashSet<>(Arrays.asList(consolidationDetails, consolidationDetails)))
+                .carrierDetails(CarrierDetails.builder().build())
+                .direction(Constants.DIRECTION_EXP)
+                .masterBill("MBL123")
+                .containsHazardous(true)
+                .build();
+
+        List<ConsolidationDetails> consolidationDetailsList = new ArrayList<>();
+        consolidationDetailsList.add(consolidationDetails);
+
+        when(consolidationDetailsDao.findByBol(any())).thenReturn(consolidationDetailsList);
+
+        UsersDto usersDto = new UsersDto();
+        Map<String, Boolean> permissions = new HashMap<>();
+        permissions.put(PermissionConstants.AIR_DG, true);
+        usersDto.setPermissions(permissions);
+        UserContext.setUser(usersDto);
+        mockShipmentSettings();
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        assertFalse(errors.contains("Container Number cannot be same for two different containers"));
+    }
+
+    @Test
+    void applyShipmentValidationsExpTest_NonHazPack_HazShipment4() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().airDGFlag(true).restrictedLocationsEnabled(true).build());
+
+        Packing packing = new Packing();
+        packing.setHazardous(false);
+
+        Routings routings = new Routings();
+        routings.setLeg(1L);
+
+        Containers containers = Containers.builder().containerNumber("CON123").build();
+        Parties parties = Parties.builder().type("type").build();
+
+        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
+        consolidationDetails.setId(1L);
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .consolidationList(new HashSet<>(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build())))
+                .containsHazardous(false)
+                .transportMode(Constants.TRANSPORT_MODE_SEA)
+                .shipmentType(Constants.SHIPMENT_TYPE_LCL)
+                .jobType(Constants.CONSOLIDATION_TYPE_CLD)
+                .packingList(Arrays.asList(packing))
+                .routingsList(Arrays.asList(routings, routings))
+                .containersList(new HashSet<>(Arrays.asList(containers, containers)))
+                .shipmentAddresses(Arrays.asList(parties, parties))
+                .consolidationList(new HashSet<>(Arrays.asList(consolidationDetails, consolidationDetails)))
+                .carrierDetails(CarrierDetails.builder().build())
+                .direction(Constants.DIRECTION_EXP)
+                .masterBill("MBL123")
+                .containsHazardous(true)
+                .build();
+
+        List<ConsolidationDetails> consolidationDetailsList = new ArrayList<>();
+        consolidationDetailsList.add(consolidationDetails);
+
+        when(consolidationDetailsDao.findByBol(any())).thenReturn(consolidationDetailsList);
+
+        UsersDto usersDto = new UsersDto();
+        Map<String, Boolean> permissions = new HashMap<>();
+        permissions.put(PermissionConstants.AIR_DG, true);
+        usersDto.setPermissions(permissions);
+        UserContext.setUser(usersDto);
+        mockShipmentSettings();
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        assertFalse(errors.contains("Container Number cannot be same for two different containers"));
+    }
+
+    @Test
+    void findShipmentByIdWithQuery() {
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder().build();
+        shipmentDetails.setId(1L);
+        when(shipmentRepository.findShipmentByIdWithQuery(anyLong())).thenReturn(Optional.of(shipmentDetails));
+        Optional<ShipmentDetails> responseEntity = shipmentDao.findShipmentByIdWithQuery(shipmentDetails.getId());
+        assertEquals(Optional.of(shipmentDetails), responseEntity);
+    }
+
+    @Test
+    void updateFCRNo() {
+        assertDoesNotThrow(() -> shipmentDao.updateFCRNo(1L));
+    }
+
+    @Test
+    void findReceivingByGuid() {
+        var guid = UUID.randomUUID();
+        when(shipmentRepository.findReceivingByGuid(guid)).thenReturn(1);
+        var res = shipmentDao.findReceivingByGuid(guid);
+        assertEquals(1, res);
+    }
+
+    @Test
+    void applyShipmentValidationsTest_CountryAirCargoSecurity() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().countryAirCargoSecurity(true).restrictedLocationsEnabled(true).build());
+
+        Packing packing = new Packing();
+        packing.setHazardous(true);
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .containsHazardous(false)
+                .transportMode(Constants.TRANSPORT_MODE_AIR)
+                .packingList(Arrays.asList(packing))
+                .direction(Constants.DIRECTION_IMP)
+                .build();
+
+        mockShipmentSettings();
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        assertTrue(errors.contains("The shipment contains DG package. Marking the shipment as non DG is not allowed"));
+    }
+
+    @Test
+    void applyShipmentValidationsExpTest_CountryAirCargoSecurity() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().countryAirCargoSecurity(true).restrictedLocationsEnabled(true).build());
+
+        Packing packing = new Packing();
+        packing.setHazardous(true);
+        UserContext.setUser(UsersDto.builder().Permissions(new HashMap<>()).build());
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .containsHazardous(false)
+                .transportMode(Constants.TRANSPORT_MODE_AIR)
+                .packingList(Arrays.asList(packing))
+                .direction(Constants.DIRECTION_EXP)
+                .build();
+
+        mockShipmentSettings();
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        assertTrue(errors.contains("You don't have Air Security permission to create or update AIR EXP Shipment."));
+    }
+
+    @Test
+    void applyShipmentValidationsExpTest_NonHazPack_CountryAirCargoSecurity() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().countryAirCargoSecurity(true).restrictedLocationsEnabled(true).build());
+
+        Packing packing = new Packing();
+        packing.setHazardous(false);
+        Map<String, Boolean> permissions = new HashMap<>();
+        permissions.put(PermissionConstants.AIR_SECURITY_PERMISSION, true);
+        UserContext.setUser(UsersDto.builder().Permissions(permissions).build());
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .containsHazardous(false)
+                .transportMode(Constants.TRANSPORT_MODE_AIR)
+                .packingList(Arrays.asList(packing))
+                .direction(Constants.DIRECTION_EXP)
+                .build();
+
+        mockShipmentSettings();
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+        assertFalse(errors.contains("You don't have Air Security permission to create or update AIR EXP Shipment."));
+    }
+
+    @Test
+    void applyShipmentValidationsTest_NonHazPack_CountryAirCargoSecurity_V1Sync() {
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().countryAirCargoSecurity(true).restrictedLocationsEnabled(true).build());
+
+        Packing packing = new Packing();
+        packing.setHazardous(false);
+
+        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .containsHazardous(true)
+                .transportMode(Constants.TRANSPORT_MODE_AIR)
+                .packingList(Arrays.asList(packing))
+                .direction(Constants.DIRECTION_IMP)
+                .build();
+
+        mockShipmentSettings();
+        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, true);
+        assertFalse(errors.contains("You don't have Air Security permission to create or update AIR EXP Shipment."));
     }
 }

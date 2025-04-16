@@ -1,97 +1,41 @@
 package com.dpw.runner.shipment.services.service.impl;
 
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
-
-import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
-import com.dpw.runner.shipment.services.kafka.dto.OrderManageDto;
-import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
-import com.dpw.runner.shipment.services.adapters.interfaces.ICRPServiceAdapter;
-import com.dpw.runner.shipment.services.adapters.interfaces.IFusionServiceAdapter;
-import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
-import com.dpw.runner.shipment.services.adapters.interfaces.INPMServiceAdapter;
-import com.dpw.runner.shipment.services.adapters.interfaces.IOrderManagementAdapter;
+import com.dpw.runner.shipment.services.adapters.interfaces.*;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
-import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
-import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
-import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
+import com.dpw.runner.shipment.services.commons.constants.*;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
-import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
-import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
+import com.dpw.runner.shipment.services.commons.requests.*;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
-import com.dpw.runner.shipment.services.dao.interfaces.IBookingChargesDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
-import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IRoutingsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
-import com.dpw.runner.shipment.services.dto.request.BookingChargesRequest;
-import com.dpw.runner.shipment.services.dto.request.CarrierDetailRequest;
-import com.dpw.runner.shipment.services.dto.request.CheckCreditBalanceFusionRequest;
-import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
-import com.dpw.runner.shipment.services.dto.request.CreditLimitRequest;
-import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
-import com.dpw.runner.shipment.services.dto.request.PackingRequest;
-import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
-import com.dpw.runner.shipment.services.dto.request.RoutingsRequest;
-import com.dpw.runner.shipment.services.dto.request.npm.HazardousInfoRequest;
-import com.dpw.runner.shipment.services.dto.request.npm.LoadAttributesRequest;
-import com.dpw.runner.shipment.services.dto.request.npm.LoadDetailsRequest;
-import com.dpw.runner.shipment.services.dto.request.npm.LoadInfoRequest;
-import com.dpw.runner.shipment.services.dto.request.npm.UpdateContractRequest;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.dto.request.npm.*;
 import com.dpw.runner.shipment.services.dto.request.platformBooking.PlatformToRunnerCustomerBookingRequest;
-import com.dpw.runner.shipment.services.dto.response.CheckCreditBalanceFusionResponse;
-import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
-import com.dpw.runner.shipment.services.dto.response.CustomerBookingResponse;
-import com.dpw.runner.shipment.services.dto.response.PackingResponse;
-import com.dpw.runner.shipment.services.dto.response.PlatformToRunnerCustomerBookingResponse;
-import com.dpw.runner.shipment.services.dto.response.RoutingsResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.request.ApprovalPartiesRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.CreateShipmentTaskFromBookingTaskRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.ShipmentBillingListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.V1RetrieveRequest;
-import com.dpw.runner.shipment.services.dto.v1.response.ShipmentBillingListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.ShipmentRetrieveResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.UpdateOrgCreditLimitBookingResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1RetrieveResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1ShipmentCreationResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.BookingCharges;
-import com.dpw.runner.shipment.services.entity.CarrierDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.CustomerBooking;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.Parties;
-import com.dpw.runner.shipment.services.entity.Routings;
+import com.dpw.runner.shipment.services.dto.v1.response.*;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.BookingSource;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferAddress;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCarrier;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferChargeType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferContainerType;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferOrganizations;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
+import com.dpw.runner.shipment.services.entity.enums.PartyType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.*;
+import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
+import com.dpw.runner.shipment.services.kafka.dto.OrderManageDto;
+import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.masterdata.factory.MasterDataFactory;
@@ -99,31 +43,11 @@ import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.ICustomerBookingService;
+import com.dpw.runner.shipment.services.service.interfaces.IQuoteContractsService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
-import com.dpw.runner.shipment.services.utils.BookingIntegrationsUtility;
-import com.dpw.runner.shipment.services.utils.CommonUtils;
-import com.dpw.runner.shipment.services.utils.MasterDataUtils;
-import com.dpw.runner.shipment.services.utils.StringUtility;
-import com.dpw.runner.shipment.services.utils.V1AuthHelper;
+import com.dpw.runner.shipment.services.utils.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
-import java.lang.reflect.InvocationTargetException;
-import java.math.BigDecimal;
-import java.security.SecureRandom;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Random;
-import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 import org.modelmapper.ModelMapper;
@@ -138,6 +62,20 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.lang.reflect.InvocationTargetException;
+import java.math.BigDecimal;
+import java.security.SecureRandom;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
+
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.validator.constants.CustomerBookingConstants.*;
 
 @Service
 @Slf4j
@@ -164,6 +102,9 @@ public class CustomerBookingService implements ICustomerBookingService {
 
     @Autowired
     private IPackingDao packingDao;
+
+    @Autowired
+    private IReferenceNumbersDao referenceNumbersDao;
 
     @Autowired
     private IRoutingsDao routingsDao;
@@ -203,10 +144,15 @@ public class CustomerBookingService implements ICustomerBookingService {
     private IOrderManagementAdapter orderManagementAdapter;
     @Autowired
     private KafkaProducer producer;
+    @Autowired
+    private IQuoteContractsService quoteContractsService;
     @Value("${booking.event.kafka.queue}")
     private String senderQueue;
 
-    private static final Map<String, String> loadTypeMap = Map.of("SEA", "LCL", "AIR", "LSE");
+    @Autowired
+    private IEventDao eventDao;
+    @Autowired
+    private INotesDao notesDao;
 
     private Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
             Map.entry("customerOrgCode", RunnerEntityMapping.builder().tableName("customer").dataType(String.class).fieldName(Constants.ORG_CODE).build()),
@@ -221,7 +167,9 @@ public class CustomerBookingService implements ICustomerBookingService {
             Map.entry("bookingStatus", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(BookingStatus.class).fieldName("bookingStatus").build()),
             Map.entry("createdBy", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(String.class).fieldName("createdBy").build()),
             Map.entry("contractId", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(String.class).fieldName("contractId").build()),
-            Map.entry("shipmentCreatedDate", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(LocalDateTime.class).fieldName("shipmentCreatedDate").build())
+            Map.entry("shipmentCreatedDate", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(LocalDateTime.class).fieldName("shipmentCreatedDate").build()),
+            Map.entry("source", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(BookingSource.class).fieldName("source").build()),
+            Map.entry("shipmentReferenceNumber", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(String.class).fieldName("shipmentReferenceNumber").build())
     );
 
 
@@ -238,7 +186,9 @@ public class CustomerBookingService implements ICustomerBookingService {
         CustomerBooking customerBooking = jsonHelper.convertValue(request, CustomerBooking.class);
         customerBooking.setSource(BookingSource.Runner);
         // Update NPM for contract utilization
-        _npmContractUpdate(customerBooking, null, false, CustomerBookingConstants.REMOVE, false);
+        if(checkNPMContractUtilization(customerBooking)) {
+            npmContractUpdate(customerBooking, null, false, CustomerBookingConstants.REMOVE, false);
+        }
         try {
             createEntities(customerBooking, request);
             /**
@@ -277,10 +227,51 @@ public class CustomerBookingService implements ICustomerBookingService {
         populateTotalRevenueDetails(customerBooking, request);
         customerBooking = customerBookingDao.save(customerBooking);
         Long bookingId = customerBooking.getId();
+        request.setId(bookingId);
 
+        saveChildEntities(customerBooking, request);
+        generateBookingAcknowledgementEvent(request);
+
+        List<Containers> containers = customerBooking.getContainersList();
+        Map<UUID, Containers> containerMap = new HashMap<>();
+        if (containers != null && !containers.isEmpty()) {
+            for (Containers container : containers) {
+                containerMap.put(container.getGuid(), container);
+            }
+        }
+        List<BookingChargesRequest> bookingChargesRequest = request.getBookingCharges();
+        processBookingChargesRequest(customerBooking, bookingChargesRequest, containerMap);
+        if(request.getOrderManagementId() != null)
+        {
+            pushCustomerBookingDataToDependentService(customerBooking, true);
+        }
+        try {
+            auditLogService.addAuditLog(
+                    AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
+                            .newData(customerBooking)
+                            .prevData(null)
+                            .parent(CustomerBooking.class.getSimpleName())
+                            .parentId(customerBooking.getId())
+                            .isIntegrationLog(Objects.equals(customerBooking.getBookingStatus(), BookingStatus.PENDING_FOR_REVIEW))
+                            .flow("Inbound")
+                            .dataType("Transactional")
+                            .operation(DBOperationType.CREATE.name()).build()
+            );
+        } catch (Exception e) {
+            log.error(e.getMessage());
+        }
+    }
+
+    private void saveChildEntities(CustomerBooking customerBooking, CustomerBookingRequest request) throws RunnerException {
+        Long bookingId = customerBooking.getId();
         List<PackingRequest> packingRequest = request.getPackingList();
         if (packingRequest != null)
             customerBooking.setPackingList(packingDao.saveEntityFromBooking(commonUtils.convertToEntityList(packingRequest, Packing.class), bookingId));
+
+        List<ReferenceNumbersRequest> referenceNumbersRequests = request.getReferenceNumbersList();
+        if (referenceNumbersRequests != null)
+            customerBooking.setReferenceNumbersList(referenceNumbersDao.saveEntityFromBooking(commonUtils.convertToEntityList(referenceNumbersRequests, ReferenceNumbers.class), bookingId));
 
         List<RoutingsRequest> routingsRequest = request.getRoutingList();
         if (routingsRequest != null)
@@ -292,14 +283,20 @@ public class CustomerBookingService implements ICustomerBookingService {
             customerBooking.setContainersList(containers);
         }
 
-        List<Containers> containers = customerBooking.getContainersList();
-        Map<UUID, Containers> containerMap = new HashMap<>();
-        if (containers != null && !containers.isEmpty()) {
-            for (Containers container : containers) {
-                containerMap.put(container.getGuid(), container);
-            }
+        List<NotesRequest> notesRequests = request.getNotesList();
+        if (notesRequests != null) {
+            notesDao.saveEntityFromOtherEntity(commonUtils.convertToEntityList(notesRequests, Notes.class), bookingId, Constants.CUSTOMER_BOOKING);
         }
-        List<BookingChargesRequest> bookingChargesRequest = request.getBookingCharges();
+    }
+
+    private void generateBookingAcknowledgementEvent(CustomerBookingRequest request) {
+        // create booking acknowledged event for Tesla
+        if(Constants.TESLA.equalsIgnoreCase(request.getIntegrationSource()))
+            createAutomatedEvents(request, EventConstants.BKAC, LocalDateTime.now(), null, EventConstants.BKAC_DESCRIPTION);
+    }
+
+
+    private void processBookingChargesRequest(CustomerBooking customerBooking, List<BookingChargesRequest> bookingChargesRequest, Map<UUID, Containers> containerMap) throws RunnerException {
         if (bookingChargesRequest != null && !bookingChargesRequest.isEmpty()) {
             List<BookingCharges> bookingCharges = new ArrayList<>();
             for (BookingChargesRequest bookingChargeRequest : bookingChargesRequest) {
@@ -319,22 +316,6 @@ public class CustomerBookingService implements ICustomerBookingService {
             bookingCharges = bookingChargesDao.updateEntityFromBooking(bookingCharges, customerBooking.getId());
             customerBooking.setBookingCharges(bookingCharges);
         }
-        if(request.getOrderManagementId() != null)
-        {
-            pushCustomerBookingDataToDependentService(customerBooking, true);
-        }
-        try {
-            auditLogService.addAuditLog(
-                    AuditLogMetaData.builder()
-                            .newData(customerBooking)
-                            .prevData(null)
-                            .parent(CustomerBooking.class.getSimpleName())
-                            .parentId(customerBooking.getId())
-                            .operation(DBOperationType.CREATE.name()).build()
-            );
-        } catch (Exception e) {
-            log.error(e.getMessage());
-        }
     }
 
     @Override
@@ -351,6 +332,15 @@ public class CustomerBookingService implements ICustomerBookingService {
             log.debug(CustomerBookingConstants.BOOKING_DETAILS_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
+
+        boolean eventPersisted = false;
+        Optional<Events> persistedEvent = eventDao.findByEntityIdAndEntityType(oldEntity.get().getId(), Constants.BOOKING);
+        if(persistedEvent.isPresent())
+            eventPersisted = true;
+        if(!eventPersisted && request.getBookingStatus().equals(BookingStatus.PENDING_FOR_KYC) && oldEntity.get().getBookingStatus().equals(BookingStatus.PENDING_FOR_REVIEW)) {
+            createAutomatedEvents(request, EventConstants.BKCR, LocalDateTime.now(), null, null);
+        }
+
         if (Objects.equals(oldEntity.get().getBookingStatus(), BookingStatus.READY_FOR_SHIPMENT)) {
             throw new ValidationException("Booking alterations are not allowed once booking moved to Ready For Shipment.");
         }
@@ -362,18 +352,17 @@ public class CustomerBookingService implements ICustomerBookingService {
         customerBooking.setSource(oldEntity.get().getSource());
 
         // NPM update contract
-        contractUtilisationForUpdate(customerBooking, oldEntity.get());
+        if(checkNPMContractUtilization(customerBooking)) {
+            contractUtilisationForUpdate(customerBooking, oldEntity.get());
+        }
         customerBooking = this.updateEntities(customerBooking, request, jsonHelper.convertToJson(oldEntity.get()));
         try {
             //Check 2
             V1TenantSettingsResponse v1TenantSettingsResponse = commonUtils.getCurrentTenantSettings();
             if (!Objects.equals(customerBooking.getBookingStatus(), BookingStatus.PENDING_FOR_KYC)
-                    && (Boolean.FALSE.equals(v1TenantSettingsResponse.getFetchRatesMandate()) || (!Objects.isNull(customerBooking.getBookingCharges()) && !customerBooking.getBookingCharges().isEmpty())) && !isCreatedInPlatform) {
+                    && (Boolean.FALSE.equals(v1TenantSettingsResponse.getFetchRatesMandate()) || (!Objects.isNull(customerBooking.getBookingCharges()) && !customerBooking.getBookingCharges().isEmpty()))) {
                 CustomerBooking finalCustomerBooking = customerBooking;
                 CompletableFuture.runAsync(masterDataUtils.withMdc(() -> bookingIntegrationsUtility.createBookingInPlatform(finalCustomerBooking)), executorService);
-            } else if (isCreatedInPlatform) {
-                CustomerBooking finalCustomerBooking = customerBooking;
-                CompletableFuture.runAsync(masterDataUtils.withMdc(() -> bookingIntegrationsUtility.updateBookingInPlatform(finalCustomerBooking)), executorService);
             }
         } catch (Exception e) {
             log.error(e.getMessage());
@@ -396,6 +385,10 @@ public class CustomerBookingService implements ICustomerBookingService {
         if (packingRequest != null)
             customerBooking.setPackingList(packingDao.updateEntityFromBooking(commonUtils.convertToEntityList(packingRequest, Packing.class), bookingId));
 
+        List<ReferenceNumbersRequest> referenceNumbersRequests = request.getReferenceNumbersList();
+        if (referenceNumbersRequests != null)
+            customerBooking.setReferenceNumbersList(referenceNumbersDao.updateEntityFromBooking(commonUtils.convertToEntityList(referenceNumbersRequests, ReferenceNumbers.class), bookingId));
+
         List<RoutingsRequest> routingsRequest = request.getRoutingList();
         if (routingsRequest != null)
             customerBooking.setRoutingList(routingsDao.updateEntityFromBooking(commonUtils.convertToEntityList(routingsRequest, Routings.class), bookingId));
@@ -404,6 +397,11 @@ public class CustomerBookingService implements ICustomerBookingService {
         if (containerRequest != null) {
             List<Containers> containers = containerDao.updateEntityFromBooking(commonUtils.convertToEntityList(containerRequest, Containers.class), bookingId);
             customerBooking.setContainersList(containers);
+        }
+
+        List<NotesRequest> notesRequests = request.getNotesList();
+        if (notesRequests != null) {
+            notesDao.updateEntityFromOtherEntity(commonUtils.convertToEntityList(notesRequests, Notes.class), bookingId, Constants.CUSTOMER_BOOKING);
         }
 
         List<Containers> containers = customerBooking.getContainersList();
@@ -419,60 +417,79 @@ public class CustomerBookingService implements ICustomerBookingService {
             customerBooking.setBookingCharges(bookingCharges);
         }
         if (Objects.equals(customerBooking.getBookingStatus(), BookingStatus.READY_FOR_SHIPMENT)) {
-            if(Boolean.TRUE.equals(tenantSettingsResponse.getShipmentServiceV2Enabled()))
-            {
-                boolean hasAirDGPermission = UserContext.isAirDgUser();
-                if(Objects.equals(request.getTransportType(),Constants.TRANSPORT_MODE_AIR) && Objects.equals(request.getIsDg(), Boolean.TRUE) && !hasAirDGPermission){
-                    throw new ValidationException("User does not have AIR DG Permission to create AIR Shipment from Booking");
-                }
-                ShipmentDetailsResponse shipmentResponse = (ShipmentDetailsResponse) (((RunnerResponse) bookingIntegrationsUtility.createShipmentInV2(request).getBody()).getData());
-                //Check 3
-                if(shipmentResponse != null) {
-                    if(customerBooking.getBookingCharges() != null && !customerBooking.getBookingCharges().isEmpty()) {
-                        bookingIntegrationsUtility.createShipment(customerBooking, false, true, shipmentResponse, V1AuthHelper.getHeaders());
-                    }
-                    customerBooking.setShipmentId(shipmentResponse.getShipmentId());
-                    customerBooking.setShipmentEntityIdV2(StringUtility.convertToString(shipmentResponse.getId()));
-                    customerBooking.setShipmentGuid(StringUtility.convertToString(shipmentResponse.getGuid()));
-                    customerBooking.setShipmentCreatedDate(LocalDateTime.now());
-                    customerBooking = customerBookingDao.save(customerBooking);
-
-                    mdmServiceAdapter.createShipmentTaskFromBooking(
-                            CommonRequestModel.buildRequest(
-                                    CreateShipmentTaskFromBookingTaskRequest.builder()
-                                            .currentEntityType(CustomerBookingConstants.CUSTOMER_BOOKING_STRING)
-                                            .currentEntityUuid(StringUtility.convertToString(customerBooking.getGuid()))
-                                            .newEntityType(Constants.SHIPMENT)
-                                            .newEntityUuid(StringUtility.convertToString(shipmentResponse.getGuid()))
-                                            .build()));
-                }
-            }
-            else
-            {
-                V1ShipmentCreationResponse shipmentCreationResponse = jsonHelper.convertValue(bookingIntegrationsUtility.createShipmentInV1(customerBooking, true, true, null, V1AuthHelper.getHeaders()).getBody(), V1ShipmentCreationResponse.class);
-                if (!Objects.isNull(shipmentCreationResponse) && !Objects.isNull(shipmentCreationResponse.getShipmentId())) {
-                    customerBooking.setShipmentId(shipmentCreationResponse.getShipmentId());
-                    customerBooking.setShipmentEntityId(shipmentCreationResponse.getEntityId());
-                    customerBooking.setShipmentGuid(shipmentCreationResponse.getShipmentGuid());
-                    customerBooking.setShipmentCreatedDate(LocalDateTime.now());
-                    customerBooking.setIsBillCreated(true);
-                    customerBooking = customerBookingDao.save(customerBooking);
-                }
-            }
+            customerBooking = processReadyForShipmentBooking(customerBooking, request, tenantSettingsResponse);
         }
         try {
             auditLogService.addAuditLog(
                     AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                             .newData(customerBooking)
                             .prevData(jsonHelper.readFromJson(oldEntity, CustomerBooking.class))
                             .parent(CustomerBooking.class.getSimpleName())
                             .parentId(customerBooking.getId())
+                            .isIntegrationLog(Objects.equals(customerBooking.getBookingStatus(), BookingStatus.PENDING_FOR_REVIEW))
+                            .flow("Inbound")
+                            .dataType("Transactional")
                             .operation(DBOperationType.UPDATE.name()).build()
             );
         } catch (Exception e) {
             log.error(e.getMessage());
         }
         return customerBooking;
+    }
+
+    private CustomerBooking processReadyForShipmentBooking(CustomerBooking customerBooking, CustomerBookingRequest request, V1TenantSettingsResponse tenantSettingsResponse) throws RunnerException {
+        if(Boolean.TRUE.equals(tenantSettingsResponse.getShipmentServiceV2Enabled()))
+        {
+            Boolean countryAirCargoSecurity = tenantSettingsResponse.getCountryAirCargoSecurity();
+            validateAirSecurityAndPermissions(request, countryAirCargoSecurity);
+            ShipmentDetailsResponse shipmentResponse = (ShipmentDetailsResponse) (((RunnerResponse) bookingIntegrationsUtility.createShipmentInV2(request).getBody()).getData());
+            //Check 3
+            if(shipmentResponse != null) {
+                if(customerBooking.getBookingCharges() != null && !customerBooking.getBookingCharges().isEmpty()) {
+                    bookingIntegrationsUtility.createShipment(customerBooking, false, true, shipmentResponse, V1AuthHelper.getHeaders());
+                }
+                customerBooking.setShipmentId(shipmentResponse.getShipmentId());
+                customerBooking.setShipmentEntityIdV2(StringUtility.convertToString(shipmentResponse.getId()));
+                customerBooking.setShipmentGuid(StringUtility.convertToString(shipmentResponse.getGuid()));
+                customerBooking.setShipmentCreatedDate(LocalDateTime.now());
+                customerBooking = customerBookingDao.save(customerBooking);
+
+                mdmServiceAdapter.createShipmentTaskFromBooking(
+                        CommonRequestModel.buildRequest(
+                                CreateShipmentTaskFromBookingTaskRequest.builder()
+                                        .currentEntityType(CustomerBookingConstants.CUSTOMER_BOOKING_STRING)
+                                        .currentEntityUuid(StringUtility.convertToString(customerBooking.getGuid()))
+                                        .newEntityType(Constants.SHIPMENT)
+                                        .newEntityUuid(StringUtility.convertToString(shipmentResponse.getGuid()))
+                                        .build()));
+            }
+        }
+        else
+        {
+            V1ShipmentCreationResponse shipmentCreationResponse = jsonHelper.convertValue(bookingIntegrationsUtility.createShipmentInV1(customerBooking, true, true, null, V1AuthHelper.getHeaders()).getBody(), V1ShipmentCreationResponse.class);
+            if (!Objects.isNull(shipmentCreationResponse) && !Objects.isNull(shipmentCreationResponse.getShipmentId())) {
+                customerBooking.setShipmentId(shipmentCreationResponse.getShipmentId());
+                customerBooking.setShipmentEntityId(shipmentCreationResponse.getEntityId());
+                customerBooking.setShipmentGuid(shipmentCreationResponse.getShipmentGuid());
+                customerBooking.setShipmentCreatedDate(LocalDateTime.now());
+                customerBooking.setIsBillCreated(true);
+                customerBooking = customerBookingDao.save(customerBooking);
+            }
+        }
+        return customerBooking;
+    }
+
+    private void validateAirSecurityAndPermissions(CustomerBookingRequest request, Boolean countryAirCargoSecurity) {
+        if (Boolean.TRUE.equals(countryAirCargoSecurity)) {
+            if (!CommonUtils.checkAirSecurityForBookingRequest(request))
+                throw new ValidationException("User does not have Air Security permission to create AIR EXP Shipment from Booking.");
+        } else {
+            boolean hasAirDGPermission = UserContext.isAirDgUser();
+            if (Objects.equals(request.getTransportType(), Constants.TRANSPORT_MODE_AIR) && Objects.equals(request.getIsDg(), Boolean.TRUE) && !hasAirDGPermission) {
+                throw new ValidationException("User does not have AIR DG Permission to create AIR Shipment from Booking");
+            }
+        }
     }
 
     @Override
@@ -535,7 +552,7 @@ public class CustomerBookingService implements ICustomerBookingService {
     public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
-            double _start = System.currentTimeMillis();
+            double startTime = System.currentTimeMillis();
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
             if (request == null || (request.getId() == null && request.getGuid() == null)) {
                 log.error("Request Id and Guid are null for Booking retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
@@ -556,10 +573,10 @@ public class CustomerBookingService implements ICustomerBookingService {
             }
             double current = System.currentTimeMillis();
             log.info("Booking details fetched successfully for Id {} with Request Id {}", id, LoggerHelper.getRequestIdFromMDC());
-            log.info("Time taken to fetch booking details from db: {} Request Id {}", current - _start, LoggerHelper.getRequestIdFromMDC());
+            log.info("Time taken to fetch booking details from db: {} Request Id {}", current - startTime, LoggerHelper.getRequestIdFromMDC());
             CustomerBookingResponse customerBookingResponse = jsonHelper.convertValue(customerBooking.get(), CustomerBookingResponse.class);
-            double _next = System.currentTimeMillis();
-            log.info("Time taken to fetch details from db: {} Request Id {}", _next - current, LoggerHelper.getRequestIdFromMDC());
+            double nextTime = System.currentTimeMillis();
+            log.info("Time taken to fetch details from db: {} Request Id {}", nextTime - current, LoggerHelper.getRequestIdFromMDC());
             createCustomerBookingResponse(customerBooking.get(), customerBookingResponse);
             return ResponseHelper.buildSuccessResponse(customerBookingResponse);
         } catch (Exception e) {
@@ -586,6 +603,37 @@ public class CustomerBookingService implements ICustomerBookingService {
             throw new ValidationException("'Restrict the transaction when Credit Limit is enabled' does not include CustomerBooking");
         }
         CheckCreditBalanceFusionRequest request = CheckCreditBalanceFusionRequest.builder().req_Params(new CheckCreditBalanceFusionRequest.ReqParams()).build();
+        processCreditLimitOn(v1TenantSettingsResponse, creditLimitRequest, request);
+        if (Boolean.TRUE.equals(v1TenantSettingsResponse.getIsGlobalFusionIntegrationEnabled())) {
+            request.getReq_Params().setCalling_System(CustomerBookingConstants.GCR_FUSION);
+            request.getReq_Params().setBu_id(v1TenantSettingsResponse.getBusinessUnitName());
+            ResponseEntity<IRunnerResponse> response = fusionServiceAdapter.checkCreditLimitP100(CommonRequestModel.buildRequest(request));
+            if(response == null || response.getBody() == null || ((DependentServiceResponse)response.getBody()).getData() == null){
+                log.error("No Data found on Fusion with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+                throw new ValidationException("No Data found on Fusion");
+            }
+            CheckCreditBalanceFusionResponse checkCreditBalanceFusionResponse = modelMapper.map(((DependentServiceResponse)response.getBody()).getData(), CheckCreditBalanceFusionResponse.class);
+            CheckCreditLimitResponse checkCreditLimitResponse = createCheckCreditLimitPayload(checkCreditBalanceFusionResponse);
+            try{
+                UpdateOrgCreditLimitBookingResponse updateOrgCreditLimitBookingResponse = jsonHelper.convertValue(bookingIntegrationsUtility.updateOrgCreditLimitFromBooking(checkCreditLimitResponse).getBody(), UpdateOrgCreditLimitBookingResponse.class);
+                if(Boolean.TRUE.equals(updateOrgCreditLimitBookingResponse.getSuccess())){
+                    log.info("Successfully Updated Org with Credit Limit in V1");
+                }else {
+                    log.error("Error in Updating Org Credit Limit in V1 with error : {}", updateOrgCreditLimitBookingResponse.getError());
+                    throw new ValidationException("Error in Updating Org Credit Limit in V1 with error : "+ updateOrgCreditLimitBookingResponse.getError());
+                }
+            } catch (Exception ex){
+                log.error("Error in Updating Org Credit Limit in V1 with error : {} with Request Id {}", ex.getMessage(), LoggerHelper.getRequestIdFromMDC());
+                throw new GenericException("Error in Updating Org Credit Limit in V1 with error : "+ ex.getMessage());
+            }
+            return ResponseHelper.buildSuccessResponse(checkCreditLimitResponse);
+        } else {
+            log.error("'Enable Global Fusion Integration' is false for this Tenant this is required for Customer Booking with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new ValidationException("'Enable Global Fusion Integration' is false for this Tenant this is required for Customer Booking");
+        }
+    }
+
+    private void processCreditLimitOn(V1TenantSettingsResponse v1TenantSettingsResponse, CreditLimitRequest creditLimitRequest, CheckCreditBalanceFusionRequest request) {
         if(v1TenantSettingsResponse.getCreditLimitOn() == 0){
 
             if(creditLimitRequest != null && creditLimitRequest.getCustomerIdentifierId() == null &&  creditLimitRequest.getClientOrgCode() != null){
@@ -636,33 +684,6 @@ public class CustomerBookingService implements ICustomerBookingService {
             }
             request.getReq_Params().setSite_number(creditLimitRequest.getSiteIdentifierId());
         }
-        if (Boolean.TRUE.equals(v1TenantSettingsResponse.getIsGlobalFusionIntegrationEnabled())) {
-            request.getReq_Params().setCalling_System(CustomerBookingConstants.GCR_FUSION);
-            request.getReq_Params().setBu_id(v1TenantSettingsResponse.getBusinessUnitName());
-            ResponseEntity<IRunnerResponse> response = fusionServiceAdapter.checkCreditLimitP100(CommonRequestModel.buildRequest(request));
-            if(response == null || response.getBody() == null || ((DependentServiceResponse)response.getBody()).getData() == null){
-                log.error("No Data found on Fusion with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-                throw new ValidationException("No Data found on Fusion");
-            }
-            CheckCreditBalanceFusionResponse checkCreditBalanceFusionResponse = modelMapper.map(((DependentServiceResponse)response.getBody()).getData(), CheckCreditBalanceFusionResponse.class);
-            CheckCreditLimitResponse checkCreditLimitResponse = createCheckCreditLimitPayload(checkCreditBalanceFusionResponse);
-            try{
-                UpdateOrgCreditLimitBookingResponse updateOrgCreditLimitBookingResponse = jsonHelper.convertValue(bookingIntegrationsUtility.updateOrgCreditLimitFromBooking(checkCreditLimitResponse).getBody(), UpdateOrgCreditLimitBookingResponse.class);
-                if(updateOrgCreditLimitBookingResponse.getSuccess()){
-                    log.info("Successfully Updated Org with Credit Limit in V1");
-                }else {
-                    log.error("Error in Updating Org Credit Limit in V1 with error : {}", updateOrgCreditLimitBookingResponse.getError());
-                    throw new ValidationException("Error in Updating Org Credit Limit in V1 with error : "+ updateOrgCreditLimitBookingResponse.getError());
-                }
-            } catch (Exception ex){
-                log.error("Error in Updating Org Credit Limit in V1 with error : {} with Request Id {}", ex.getMessage(), LoggerHelper.getRequestIdFromMDC());
-                throw new RuntimeException("Error in Updating Org Credit Limit in V1 with error : "+ ex.getMessage());
-            }
-            return ResponseHelper.buildSuccessResponse(checkCreditLimitResponse);
-        } else {
-            log.error("'Enable Global Fusion Integration' is false for this Tenant this is required for Customer Booking with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            throw new ValidationException("'Enable Global Fusion Integration' is false for this Tenant this is required for Customer Booking");
-        }
     }
 
     @Override
@@ -706,14 +727,13 @@ public class CustomerBookingService implements ICustomerBookingService {
         double outstandingAmount = checkCreditBalanceFusionResponse.getData().getCreditDetails().get(0).getOutstandingAmount();
         double overDueAmount = checkCreditBalanceFusionResponse.getData().getCreditDetails().get(0).getOverDue();
         double totalCreditAvailableBalance = (totalCreditLimit - outstandingAmount);
-       var PaymentTerm=checkCreditBalanceFusionResponse.getData().getCreditDetails().get(0).getPaymentTerms();
-       if(PaymentTerm==null||PaymentTerm.isEmpty()){
-           PaymentTerm=CustomerBookingConstants.IMMEDIATE;
+       var paymentTerm = checkCreditBalanceFusionResponse.getData().getCreditDetails().get(0).getPaymentTerms();
+       if(paymentTerm == null || paymentTerm.isEmpty()){
+           paymentTerm = CustomerBookingConstants.IMMEDIATE;
        }
 
         double creditLimitUtilizedPer = totalCreditLimit != 0 ? (outstandingAmount * 100) / totalCreditLimit : 0;
         double overDuePer = totalCreditLimit != 0 ? (overDueAmount * 100) / totalCreditLimit : 0;
-        var num = CommonUtils.roundOffToTwoDecimalPlace(checkCreditBalanceFusionResponse.getData().getCreditDetails().get(0).getTotalCreditLimit());
         return CheckCreditLimitResponse.builder()
                 .totalCreditLimit(CommonUtils.roundOffToTwoDecimalPlace(totalCreditLimit))
                 .currency(checkCreditBalanceFusionResponse.getData().getCreditDetails().get(0).getCreditLimitCurrency())
@@ -723,7 +743,7 @@ public class CustomerBookingService implements ICustomerBookingService {
                 .totalCreditAvailableBalance(CommonUtils.roundOffToTwoDecimalPlace(totalCreditAvailableBalance))
                 .creditLimitUtilizedPer(CommonUtils.roundOffToTwoDecimalPlace(creditLimitUtilizedPer))
                 .overduePer(CommonUtils.roundOffToTwoDecimalPlace(overDuePer))
-                .paymentTerms(PaymentTerm)
+                .paymentTerms(paymentTerm)
                 .accountNumber(checkCreditBalanceFusionResponse.getData().getCreditDetails().get(0).getAccountNumber())
                 .siteNumber(checkCreditBalanceFusionResponse.getData().getCreditDetails().get(0).getSiteNumber())
                 .build();
@@ -734,17 +754,65 @@ public class CustomerBookingService implements ICustomerBookingService {
     public ResponseEntity<IRunnerResponse> platformCreateBooking(CommonRequestModel commonRequestModel) throws RunnerException {
         PlatformToRunnerCustomerBookingRequest request = (PlatformToRunnerCustomerBookingRequest) commonRequestModel.getData();
         if (request.getIsSingleUsageContract() != null)
-            request.setContractStatus(request.getIsSingleUsageContract() ? "SINGLE_USAGE" : "MULTI_USAGE");
+            request.setContractStatus(Boolean.TRUE.equals(request.getIsSingleUsageContract()) ? "SINGLE_USAGE" : "MULTI_USAGE");
         String bookingNumber = request.getBookingNumber();
         if (bookingNumber == null) {
             log.error("Booking Number is empty for create Booking with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
-        Optional<CustomerBooking> customerBooking = customerBookingDao.findByBookingNumber(bookingNumber);
+        Optional<CustomerBooking> customerBooking = findCustomerBooking(request);
 
         PlatformToRunnerCustomerBookingResponse platformResponse = new PlatformToRunnerCustomerBookingResponse();
         platformResponse.setBookingNumber(bookingNumber);
         setOrgAndAddressToParties(request);
 
+        processRequestListsForResponse(request, platformResponse);
+
+        if (request.getBookingCharges() != null) {
+            List<PlatformToRunnerCustomerBookingResponse.ReferenceNumbersGuidMapResponse> referenceNumbersGuidMapResponses = new ArrayList<>();
+            request.getBookingCharges().forEach(charge -> {
+                if (charge.getGuid() == null)
+                    charge.setGuid(UUID.randomUUID());
+                referenceNumbersGuidMapResponses.add(PlatformToRunnerCustomerBookingResponse.ReferenceNumbersGuidMapResponse.builder()
+                        .reference_id(charge.getReference_id())
+                        .guid(charge.getGuid())
+                        .build());
+
+            });
+            platformResponse.setCharges(referenceNumbersGuidMapResponses);
+        }
+        if(request.getBookingStatus()==null && request.getSource()!=null && BookingSource.B2B.equals(request.getSource()))
+            request.setBookingStatus(BookingStatus.PENDING_FOR_REVIEW);
+
+        CustomerBookingRequest customerBookingRequest = modelMapper.map(request, CustomerBookingRequest.class);
+        assignCarrierDetailsToRequest(customerBookingRequest, request);
+        if (customerBooking.isEmpty()) {
+            customerBookingRequest.setCurrentPartyForQuote("CLIENT");
+            this.createPlatformBooking(customerBookingRequest);
+        } else {
+            updateDataInExistingBooking(customerBooking.get(), customerBookingRequest);
+
+            this.updatePlatformBooking(customerBookingRequest, customerBooking.get());
+        }
+
+        return ResponseHelper.buildSuccessResponse(platformResponse);
+    }
+
+    private Optional<CustomerBooking> findCustomerBooking(PlatformToRunnerCustomerBookingRequest request) {
+        String bookingNumber = request.getBookingNumber();
+        String shipmentReferenceNumber = request.getShipmentReferenceNumber();
+        Optional<CustomerBooking> optional;
+        if (Constants.TESLA.equalsIgnoreCase(request.getIntegrationSource())) {
+            optional = customerBookingDao.findByShipmentReferenceNumber(shipmentReferenceNumber);
+            request.setBookingNumber(optional.map(CustomerBooking::getBookingNumber).orElse(null));
+        }
+        else {
+            optional = customerBookingDao.findByBookingNumber(bookingNumber);
+        }
+
+        return optional;
+    }
+
+    private void processRequestListsForResponse(PlatformToRunnerCustomerBookingRequest request, PlatformToRunnerCustomerBookingResponse platformResponse) {
         Map<String, UUID> referenceIdVsGuidContainerMap = new HashMap<>();
 
         if (request.getContainersList() != null) {
@@ -790,149 +858,136 @@ public class CustomerBookingService implements ICustomerBookingService {
             });
             platformResponse.setRoutings(referenceNumbersGuidMapResponses);
         }
+    }
 
-        if (request.getBookingCharges() != null) {
-            List<PlatformToRunnerCustomerBookingResponse.ReferenceNumbersGuidMapResponse> referenceNumbersGuidMapResponses = new ArrayList<>();
-            request.getBookingCharges().forEach(charge -> {
-                if (charge.getGuid() == null)
-                    charge.setGuid(UUID.randomUUID());
-                referenceNumbersGuidMapResponses.add(PlatformToRunnerCustomerBookingResponse.ReferenceNumbersGuidMapResponse.builder()
-                        .reference_id(charge.getReference_id())
-                        .guid(charge.getGuid())
-                        .build());
+    private void updateDataInExistingBooking(CustomerBooking customerBooking, CustomerBookingRequest customerBookingRequest) {
+        if (Objects.equals(customerBooking.getBookingStatus(), BookingStatus.READY_FOR_SHIPMENT))
+            throw new ValidationException("Booking alterations are not allowed once booking moved to Ready For Shipment.");
+        if (customerBooking.getId() != null)
+            customerBookingRequest.setId(customerBooking.getId());
+        if (customerBooking.getGuid() != null)
+            customerBookingRequest.setGuid(customerBooking.getGuid());
+        if (customerBooking.getCarrierDetails() != null) {
+            customerBookingRequest.getCarrierDetails().setId(customerBooking.getCarrierDetails().getId());
+            customerBookingRequest.getCarrierDetails().setGuid(customerBooking.getCarrierDetails().getGuid());
+        }
+        if(customerBooking.getCurrentPartyForQuote() != null)
+        {
+            customerBookingRequest.setCurrentPartyForQuote(customerBooking.getCurrentPartyForQuote());
+        }
 
-//                if (charge.getContainers() != null) {
-//                    charge.getContainers().forEach(cont -> {
-//                        if (cont.getRunner_guid() != null) {
-//                            if (charge.getContainersUUID() != null)
-//                                charge.getContainersUUID().add(cont.getRunner_guid());
-//                            else
-//                                charge.setContainersUUID(List.of(cont.getRunner_guid()));
-//                        } else {
-//                            if (charge.getContainersUUID() != null) {
-//                                if (referenceIdVsGuidContainerMap.containsKey(cont.getReference_id())) {
-//                                    charge.getContainersUUID().add(referenceIdVsGuidContainerMap.get(cont.getReference_id()));
-//                                }
-//                            } else {
-//                                if (referenceIdVsGuidContainerMap.containsKey(cont.getReference_id())) {
-//                                    charge.setContainersUUID(List.of(referenceIdVsGuidContainerMap.get(cont.getReference_id())));
-//                                }
-//                            }
-//                        }
-//                    });
-//                }
+        Map<UUID, Long> guidVsIdContainerMap = new HashMap<>();
+        Map<UUID, Long> guidVsIdPackingMap = new HashMap<>();
+        Map<UUID, Long> guidVsIdRoutingMap = new HashMap<>();
+        Map<UUID, Long> guidVsIdChargesMap = new HashMap<>();
+        if (customerBooking.getContainersList() != null) {
+            customerBooking.getContainersList().forEach(cont -> guidVsIdContainerMap.put(cont.getGuid(), cont.getId()));
+        }
+
+        if (customerBooking.getPackingList() != null) {
+            customerBooking.getPackingList().forEach(pack -> guidVsIdPackingMap.put(pack.getGuid(), pack.getId()));
+        }
+
+        if (customerBooking.getRoutingList() != null) {
+            customerBooking.getRoutingList().forEach(route -> guidVsIdRoutingMap.put(route.getGuid(), route.getId()));
+        }
+
+        if (customerBooking.getBookingCharges() != null) {
+            customerBooking.getBookingCharges().forEach(charge -> guidVsIdChargesMap.put(charge.getGuid(), charge.getId()));
+        }
+
+        setCountWithContainersList(customerBookingRequest, guidVsIdContainerMap);
+
+        setPackWithPackingsList(customerBookingRequest, guidVsIdPackingMap);
+
+        setRouteWithRoutingList(customerBookingRequest, guidVsIdRoutingMap);
+
+        setChargeWithBookingCharges(customerBookingRequest, guidVsIdChargesMap);
+    }
+
+    private void setChargeWithBookingCharges(CustomerBookingRequest customerBookingRequest, Map<UUID, Long> guidVsIdChargesMap) {
+        if (customerBookingRequest.getBookingCharges() != null) {
+            customerBookingRequest.getBookingCharges().forEach(charge -> {
+                if (charge.getGuid() != null && guidVsIdChargesMap.containsKey(charge.getGuid()))
+                        charge.setId(guidVsIdChargesMap.get(charge.getGuid()));
+
             });
-            platformResponse.setCharges(referenceNumbersGuidMapResponses);
         }
+    }
 
-        CustomerBookingRequest customerBookingRequest = modelMapper.map(request, CustomerBookingRequest.class);
-        assignCarrierDetailsToRequest(customerBookingRequest, request);
-        ResponseEntity<RunnerResponse<CustomerBookingResponse>> response = null;
-        if (customerBooking.isEmpty()) {
-            customerBookingRequest.setCurrentPartyForQuote("CLIENT");
-            this.createPlatformBooking(customerBookingRequest);
-        } else {
-            if (Objects.equals(customerBooking.get().getBookingStatus(), BookingStatus.READY_FOR_SHIPMENT))
-                throw new ValidationException("Booking alterations are not allowed once booking moved to Ready For Shipment.");
-            if (customerBooking.get().getId() != null)
-                customerBookingRequest.setId(customerBooking.get().getId());
-            if (customerBooking.get().getGuid() != null)
-                customerBookingRequest.setGuid(customerBooking.get().getGuid());
-            if (customerBooking.get().getCarrierDetails() != null) {
-                customerBookingRequest.getCarrierDetails().setId(customerBooking.get().getCarrierDetails().getId());
-                customerBookingRequest.getCarrierDetails().setGuid(customerBooking.get().getCarrierDetails().getGuid());
-            }
-            if(customerBooking.get().getCurrentPartyForQuote() != null)
-            {
-                customerBookingRequest.setCurrentPartyForQuote(customerBooking.get().getCurrentPartyForQuote());
-            }
+    private void setRouteWithRoutingList(CustomerBookingRequest customerBookingRequest, Map<UUID, Long> guidVsIdRoutingMap) {
+        if (customerBookingRequest.getRoutingList() != null) {
+            customerBookingRequest.getRoutingList().forEach(route -> {
+                if (route.getGuid() != null && guidVsIdRoutingMap.containsKey(route.getGuid()))
+                        route.setId(guidVsIdRoutingMap.get(route.getGuid()));
 
-            Map<UUID, Long> guidVsIdContainerMap = new HashMap<>();
-            Map<UUID, Long> guidVsIdPackingMap = new HashMap<>();
-            Map<UUID, Long> guidVsIdRoutingMap = new HashMap<>();
-            Map<UUID, Long> guidVsIdChargesMap = new HashMap<>();
-            if (customerBooking.get().getContainersList() != null) {
-                customerBooking.get().getContainersList().forEach(cont -> {
-                    guidVsIdContainerMap.put(cont.getGuid(), cont.getId());
-                });
-            }
-
-            if (customerBooking.get().getPackingList() != null) {
-                customerBooking.get().getPackingList().forEach(pack -> {
-                    guidVsIdPackingMap.put(pack.getGuid(), pack.getId());
-                });
-            }
-
-            if (customerBooking.get().getRoutingList() != null) {
-                customerBooking.get().getRoutingList().forEach(route -> {
-                    guidVsIdRoutingMap.put(route.getGuid(), route.getId());
-                });
-            }
-
-            if (customerBooking.get().getBookingCharges() != null) {
-                customerBooking.get().getBookingCharges().forEach(charge -> {
-                    guidVsIdChargesMap.put(charge.getGuid(), charge.getId());
-                });
-            }
-
-            if (customerBookingRequest.getContainersList() != null) {
-                customerBookingRequest.getContainersList().forEach(cont -> {
-                    if (cont.getGuid() != null) {
-                        if (guidVsIdContainerMap.containsKey(cont.getGuid()))
-                            cont.setId(guidVsIdContainerMap.get(cont.getGuid()));
-                    }
-                });
-            }
-
-            if (customerBookingRequest.getPackingList() != null) {
-                customerBookingRequest.getPackingList().forEach(pack -> {
-                    if (pack.getGuid() != null) {
-                        if (guidVsIdPackingMap.containsKey(pack.getGuid()))
-                            pack.setId(guidVsIdPackingMap.get(pack.getGuid()));
-                    }
-                });
-            }
-
-            if (customerBookingRequest.getRoutingList() != null) {
-                customerBookingRequest.getRoutingList().forEach(route -> {
-                    if (route.getGuid() != null) {
-                        if (guidVsIdRoutingMap.containsKey(route.getGuid()))
-                            route.setId(guidVsIdRoutingMap.get(route.getGuid()));
-                    }
-                });
-            }
-
-            if (customerBookingRequest.getBookingCharges() != null) {
-                customerBookingRequest.getBookingCharges().forEach(charge -> {
-                    if (charge.getGuid() != null) {
-                        if (guidVsIdChargesMap.containsKey(charge.getGuid()))
-                            charge.setId(guidVsIdChargesMap.get(charge.getGuid()));
-                    }
-                });
-            }
-
-            this.updatePlatformBooking(customerBookingRequest, customerBooking.get());
+            });
         }
+    }
 
-        return ResponseHelper.buildSuccessResponse(platformResponse);
+    private void setPackWithPackingsList(CustomerBookingRequest customerBookingRequest, Map<UUID, Long> guidVsIdPackingMap) {
+        if (customerBookingRequest.getPackingList() != null) {
+            customerBookingRequest.getPackingList().forEach(pack -> {
+                if (pack.getGuid() != null && guidVsIdPackingMap.containsKey(pack.getGuid()))
+                        pack.setId(guidVsIdPackingMap.get(pack.getGuid()));
+
+            });
+        }
+    }
+
+    private void setCountWithContainersList(CustomerBookingRequest customerBookingRequest, Map<UUID, Long> guidVsIdContainerMap) {
+        if (customerBookingRequest.getContainersList() != null) {
+            customerBookingRequest.getContainersList().forEach(cont -> {
+                if (cont.getGuid() != null && guidVsIdContainerMap.containsKey(cont.getGuid()))
+                        cont.setId(guidVsIdContainerMap.get(cont.getGuid()));
+
+            });
+        }
     }
 
     private void setOrgAndAddressToParties(PlatformToRunnerCustomerBookingRequest request) {
+        Map<String, PartiesRequest> requestMap = new HashMap<>();
         if (request.getCustomer() != null) {
-            String orgCode = request.getCustomer().getOrgCode();
-            String addressCode = request.getCustomer().getAddressCode();
-            bookingIntegrationsUtility.transformOrgAndAddressPayload(request.getCustomer(), addressCode, orgCode);
+            requestMap.put(CUSTOMER_REQUEST, request.getCustomer());
         }
-        if ((Objects.isNull(request.getIsConsignorFreeText()) || request.getIsConsignorFreeText()) && request.getConsignor() != null) {
+        if(request.getConsignor() != null && !Boolean.TRUE.equals(request.getIsConsignorFreeText()) &&
+                !isStringNullOrEmpty(request.getConsignor().getOrgCode()) &&
+                !isStringNullOrEmpty(request.getConsignor().getAddressCode())) {
+            requestMap.put(CONSIGNOR_REQUEST, request.getConsignor());
+        }
+        else {
             transformOrgAndAddressToRawData(request.getConsignor());
         }
-        if ((Objects.isNull(request.getIsConsigneeFreeText()) || request.getIsConsigneeFreeText()) && request.getConsignee() != null) {
+        if(request.getConsignee() != null && !Boolean.TRUE.equals(request.getIsConsigneeFreeText()) &&
+                !isStringNullOrEmpty(request.getConsignee().getOrgCode()) &&
+                !isStringNullOrEmpty(request.getConsignee().getAddressCode())) {
+            requestMap.put(CONSIGNEE_REQUEST, request.getConsignee());
+        }
+        else {
             transformOrgAndAddressToRawData(request.getConsignee());
         }
-        if ((Objects.isNull(request.getIsNotifyPartyFreeText()) || request.getIsNotifyPartyFreeText()) && request.getNotifyParty() != null) {
+        if(request.getNotifyParty() != null && !Boolean.TRUE.equals(request.getIsNotifyPartyFreeText()) &&
+                !isStringNullOrEmpty(request.getNotifyParty().getOrgCode()) &&
+                !isStringNullOrEmpty(request.getNotifyParty().getAddressCode())) {
+            requestMap.put(NOTIFY_PARTY_REQUEST, request.getNotifyParty());
+        }
+        else {
             transformOrgAndAddressToRawData(request.getNotifyParty());
         }
+        bookingIntegrationsUtility.transformOrgAndAddressPayloadToGivenParties(requestMap);
+        if(requestMap.containsKey("Customer"))
+            request.setCustomer(requestMap.get("Customer"));
+        if(requestMap.containsKey("Consignor"))
+            request.setConsignor(requestMap.get("Consignor"));
+        if(requestMap.containsKey("Consignee"))
+            request.setConsignee(requestMap.get("Consignee"));
+        if(requestMap.containsKey("Notify Party"))
+            request.setNotifyParty(requestMap.get("Notify Party"));
 
+        processRequestBookingCharges(request);
+    }
+
+    private void processRequestBookingCharges(PlatformToRunnerCustomerBookingRequest request) {
         if (request.getBookingCharges() != null && !request.getBookingCharges().isEmpty()) {
             request.getBookingCharges().forEach(charge -> {
                 if (charge.getCreditor() != null) {
@@ -954,6 +1009,8 @@ public class CustomerBookingService implements ICustomerBookingService {
     }
 
     private void transformOrgAndAddressToRawData(PartiesRequest partiesRequest) {
+        if(partiesRequest == null)
+            return;
         Map<String, Object> orgData = partiesRequest.getOrgData();
         Map<String, Object> addressData = partiesRequest.getAddressData();
 
@@ -963,7 +1020,8 @@ public class CustomerBookingService implements ICustomerBookingService {
             orgString = orgString.concat((String) orgData.get(PartiesConstants.FULLNAME));
             addressString = addressString.concat((String) orgData.get(PartiesConstants.FULLNAME) + "|");
         }
-        partiesRequest.setOrgData(Map.of(PartiesConstants.RAW_DATA, orgString));
+        partiesRequest.setOrgData(new HashMap<>(Map.of(PartiesConstants.RAW_DATA, orgString)));
+        partiesRequest.getOrgData().putAll(orgData);
         if (addressData.containsKey(PartiesConstants.ADDRESS1)) {
             addressString = addressString.concat((String) addressData.get(PartiesConstants.ADDRESS1) + "|");
         }
@@ -988,7 +1046,9 @@ public class CustomerBookingService implements ICustomerBookingService {
         if (addressData.containsKey(PartiesConstants.PHONE)) {
             addressString = addressString.concat((String) addressData.get(PartiesConstants.PHONE) + "|");
         }
-        partiesRequest.setAddressData(Map.of(PartiesConstants.RAW_DATA, addressString));
+        partiesRequest.setIsAddressFreeText(true);
+        partiesRequest.setAddressData(new HashMap<>(Map.of(PartiesConstants.RAW_DATA, addressString)));
+        partiesRequest.getAddressData().putAll(addressData);
     }
 
 
@@ -996,7 +1056,8 @@ public class CustomerBookingService implements ICustomerBookingService {
     private CustomerBookingResponse updatePlatformBooking(CustomerBookingRequest request, CustomerBooking oldEntity) throws RunnerException {
         CustomerBooking customerBooking = jsonHelper.convertValue(request, CustomerBooking.class);
         customerBooking.setIsPlatformBookingCreated(Boolean.TRUE);
-        customerBooking.setSource(BookingSource.Platform);
+        if(request.getSource()==null)
+            customerBooking.setSource(BookingSource.Platform);
         try {
             customerBooking = this.updateEntities(customerBooking, request, jsonHelper.convertToJson(oldEntity));
         } catch (Exception e) {
@@ -1015,7 +1076,8 @@ public class CustomerBookingService implements ICustomerBookingService {
         customerBooking.setIsConsignorAddressFreeText(customerBooking.getIsConsignorFreeText() != null && customerBooking.getIsConsignorFreeText());
         customerBooking.setIsCustomerAddressFreeText(false);
         customerBooking.setIsNotifyPartyAddressFreeText(customerBooking.getIsNotifyPartyFreeText() != null && customerBooking.getIsNotifyPartyFreeText());
-        customerBooking.setSource(BookingSource.Platform);
+        if(request!=null && request.getSource()==null)
+            customerBooking.setSource(BookingSource.Platform);
         customerBooking.setIsPlatformBookingCreated(Boolean.TRUE);
         try {
             createEntities(customerBooking, request);
@@ -1043,7 +1105,7 @@ public class CustomerBookingService implements ICustomerBookingService {
     private void assignCarrierDetailsToRequest(CustomerBookingRequest customerBookingRequest, PlatformToRunnerCustomerBookingRequest request) {
 
         String vessel = null;
-        if(!IsStringNullOrEmpty(request.getVessel())) {
+        if(!isStringNullOrEmpty(request.getVessel())) {
             VesselsResponse vesselsResponse = getVesselsData(request.getVessel());
             if(vesselsResponse != null)
                 vessel = StringUtility.convertToString(vesselsResponse.getGuid());
@@ -1064,7 +1126,7 @@ public class CustomerBookingService implements ICustomerBookingService {
     }
 
     private String getCarrierItemValueFromSCAC(String carrierSCACCode) {
-        if(IsStringNullOrEmpty(carrierSCACCode))
+        if(isStringNullOrEmpty(carrierSCACCode))
             return null;
         List<String> carrierCodes = new ArrayList<>();
         carrierCodes.add(carrierSCACCode);
@@ -1087,30 +1149,30 @@ public class CustomerBookingService implements ICustomerBookingService {
     private void contractUtilisationForUpdate(CustomerBooking customerBooking, CustomerBooking old) throws RunnerException {
         if (!Objects.isNull(customerBooking.getContractId()) && Objects.equals(old.getContractId(), customerBooking.getContractId())) {
             // Alteration on same contract
-            _npmContractUpdate(customerBooking,  old, true, CustomerBookingConstants.REMOVE, false);
+            npmContractUpdate(customerBooking,  old, true, CustomerBookingConstants.REMOVE, false);
         }  else if (!Objects.isNull(customerBooking.getContractId()) && !Objects.isNull(old.getContractId())) {
             // Lock current contract with current containers
-            _npmContractUpdate(customerBooking, null, false, CustomerBookingConstants.REMOVE, false);
+            npmContractUpdate(customerBooking, null, false, CustomerBookingConstants.REMOVE, false);
             // Release existing booking with old containers
-            _npmContractUpdate(old, null, false, CustomerBookingConstants.ADD, false);
+            npmContractUpdate(old, null, false, CustomerBookingConstants.ADD, false);
         } else if (!Objects.isNull(customerBooking.getContractId()) && Objects.isNull(old.getContractId())) {
             // Lock current contract with current containers
-            _npmContractUpdate(customerBooking, null, false, CustomerBookingConstants.REMOVE, false);
+            npmContractUpdate(customerBooking, null, false, CustomerBookingConstants.REMOVE, false);
         }  else if (Objects.isNull(customerBooking.getContractId()) && !Objects.isNull(old.getContractId())) {
             // Release existing booking with old containers
-            _npmContractUpdate(old, null, false, CustomerBookingConstants.ADD, false);
+            npmContractUpdate(old, null, false, CustomerBookingConstants.ADD, false);
         }
 
         if (!Objects.isNull(customerBooking.getContractId()) && Objects.equals(customerBooking.getBookingStatus(), BookingStatus.CANCELLED)) {
-            _npmContractUpdate(customerBooking, null, false, CustomerBookingConstants.ADD, true);
+            npmContractUpdate(customerBooking, null, false, CustomerBookingConstants.ADD, true);
         }
     }
 
-    private void _npmContractUpdate(CustomerBooking current, CustomerBooking old, Boolean isAlteration, String operation, boolean isCancelled) throws RunnerException {
+    private void npmContractUpdate(CustomerBooking current, CustomerBooking old, Boolean isAlteration, String operation, boolean isCancelled) throws RunnerException {
         if (Objects.equals(current.getTransportType(),Constants.TRANSPORT_MODE_SEA) && !Objects.isNull(current.getContractId()) ) {
             List<LoadInfoRequest> loadInfoRequestList = containersListForLoad(current, old, operation);
 
-            if (!loadInfoRequestList.isEmpty() || !isAlteration) {
+            if (!loadInfoRequestList.isEmpty() || !Boolean.TRUE.equals(isAlteration)) {
                 String contractStatus = null;
                 if (Objects.equals(current.getContractStatus(), CustomerBookingConstants.SINGLE_USAGE) && isCancelled)
                     contractStatus = CustomerBookingConstants.ENABLED;
@@ -1141,19 +1203,29 @@ public class CustomerBookingService implements ICustomerBookingService {
 
         if (idVsContainerMap.isEmpty()) {
             // Only current operation, no comparison
-            current.getContainersList().forEach(cont -> {
-                loadInfoRequestList.add(containerLoadConstruct(cont, operation, cont.getContainerCount()));
-            });
+            if(current.getContainersList() != null)
+            {
+                current.getContainersList().forEach(cont ->
+                    loadInfoRequestList.add(containerLoadConstruct(cont, operation, cont.getContainerCount()))
+                );
+            }
         }  else {
             // Find delta
-            Map<String, Containers> finalIdVsContainerMap = idVsContainerMap;
+            updateFinalIdVsContainerMap(current, idVsContainerMap, loadInfoRequestList);
+        }
+        return loadInfoRequestList;
+    }
+
+    private void updateFinalIdVsContainerMap(CustomerBooking current, Map<String, Containers> finalIdVsContainerMap, List<LoadInfoRequest> loadInfoRequestList) {
+        if(current.getContainersList() != null)
+        {
             current.getContainersList().forEach(cont -> {
                 String key = cont.getId() + "-" + cont.getContainerCode() + "-" + cont.getCommodityGroup();
                 if (finalIdVsContainerMap.containsKey(key)) {
                     // existing container with probably quantity change
-                    if (finalIdVsContainerMap.get(key).getContainerCount() != cont.getContainerCount()) {
-                        Long _diff = cont.getContainerCount() - finalIdVsContainerMap.get(key).getContainerCount();
-                        loadInfoRequestList.add(containerLoadConstruct(cont, _diff > 0 ? CustomerBookingConstants.REMOVE : CustomerBookingConstants.ADD, Math.abs(_diff)));
+                    if (!Objects.equals(finalIdVsContainerMap.get(key).getContainerCount(), cont.getContainerCount())) {
+                        long diff = cont.getContainerCount() - finalIdVsContainerMap.get(key).getContainerCount();
+                        loadInfoRequestList.add(containerLoadConstruct(cont, diff > 0 ? CustomerBookingConstants.REMOVE : CustomerBookingConstants.ADD, Math.abs(diff)));
                     }
                     finalIdVsContainerMap.remove(key);
                 }
@@ -1162,10 +1234,9 @@ public class CustomerBookingService implements ICustomerBookingService {
                     loadInfoRequestList.add(containerLoadConstruct(cont, CustomerBookingConstants.REMOVE, cont.getContainerCount()));
                 }
             });
-            // Release all the remaining loads
-            finalIdVsContainerMap.forEach((k,v) -> loadInfoRequestList.add(containerLoadConstruct(v, CustomerBookingConstants.ADD, v.getContainerCount())));
         }
-        return loadInfoRequestList;
+        // Release all the remaining loads
+        finalIdVsContainerMap.forEach((k, v) -> loadInfoRequestList.add(containerLoadConstruct(v, CustomerBookingConstants.ADD, v.getContainerCount())));
     }
 
     private LoadInfoRequest containerLoadConstruct(Containers container, String operation, Long quantity) {
@@ -1213,7 +1284,7 @@ public class CustomerBookingService implements ICustomerBookingService {
      */
     private void createCustomerBookingResponse(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
         try {
-            double _start = System.currentTimeMillis();
+            double startTime = System.currentTimeMillis();
             var masterListFuture = CompletableFuture.runAsync(withMdc(() -> this.addAllMasterDataInSingleCall(customerBookingResponse)), executorService);
             var unLocationsFuture = CompletableFuture.runAsync(withMdc(() -> this.addAllLocationDataInSingleCall(customerBookingResponse)), executorService);
             var vesselsFuture = CompletableFuture.runAsync(withMdc(() -> this.addAllVesselDataInSingleCall(customerBookingResponse)), executorService);
@@ -1223,55 +1294,63 @@ public class CustomerBookingService implements ICustomerBookingService {
             if(customerBookingResponse.getBookingStatus() == BookingStatus.READY_FOR_SHIPMENT) {
                 V1TenantSettingsResponse tenantSettingsResponse = commonUtils.getCurrentTenantSettings();
                 Boolean isShipmentV2 = tenantSettingsResponse.getShipmentServiceV2Enabled();
-                if (isShipmentV2) {
+                if (Boolean.TRUE.equals(isShipmentV2)) {
                     if (customerBookingResponse.getShipmentEntityIdV2() == null) {
-                        if (customerBookingResponse.getShipmentGuid() == null) {
-                            if (customerBookingResponse.getShipmentEntityId() != null) {
-                                V1RetrieveRequest v1RetrieveRequest =
-                                        V1RetrieveRequest.builder().
-                                                EntityId(customerBookingResponse.getShipmentEntityId()).
-                                                build();
-                                V1RetrieveResponse v1RetrieveResponse = v1Service.getShipment(v1RetrieveRequest);
-                                ShipmentRetrieveResponse shipmentRetrieveResponse = (ShipmentRetrieveResponse) v1RetrieveResponse.getEntity();
-                                var shipment = shipmentDao.findByGuid(shipmentRetrieveResponse.getGuid());
-                                if (shipment.isPresent())
-                                    customerBookingResponse.setShipmentEntityIdV2(StringUtility.convertToString(shipment.get().getId()));
-                            }
-                        } else {
-                            var shipment = shipmentDao.findByGuid(UUID.fromString(customerBooking.getShipmentGuid()));
-                            if (shipment.isPresent())
-                                customerBookingResponse.setShipmentEntityIdV2(StringUtility.convertToString(shipment.get().getId()));
-                        }
+                        setShipmentEntityIdV2InResponse(customerBooking, customerBookingResponse);
                     }
                 } else {
                     if (customerBookingResponse.getShipmentEntityId() == null) {
-                        if (customerBookingResponse.getShipmentGuid() != null) {
-                            ShipmentBillingListRequest shipmentBillingListRequest = ShipmentBillingListRequest.builder().guidsList(Arrays.asList(UUID.fromString(customerBookingResponse.getShipmentGuid()))).build();
-                            ShipmentBillingListResponse shipmentBillingListResponse = v1Service.fetchShipmentBillingData(shipmentBillingListRequest);
-                            if (shipmentBillingListResponse.getData() != null && !shipmentBillingListResponse.getData().isEmpty()) {
-                                ShipmentBillingListResponse.BillingData billingData = shipmentBillingListResponse.getData().get(customerBookingResponse.getShipmentGuid());
-                                customerBookingResponse.setShipmentEntityId(StringUtility.convertToString(billingData.getId()));
-                            }
-                        }
+                        setShipmentEntityIdInResponse(customerBookingResponse);
                     }
                 }
             }
             CompletableFuture.allOf(masterListFuture, unLocationsFuture, vesselsFuture, carrierFuture, containerTypeFuture, chargeTypeFuture).join();
-            log.info("Time taken to fetch Master-data from V1: {} ms. || RequestId: {}", System.currentTimeMillis() - _start, LoggerHelper.getRequestIdFromMDC());
+            log.info("Time taken to fetch Master-data from V1: {} ms. || RequestId: {}", System.currentTimeMillis() - startTime, LoggerHelper.getRequestIdFromMDC());
         } catch (Exception ex) {
             log.error("Exception during fetching master data in retrieve API for booking number: {} with exception: {}", customerBooking.getBookingNumber(), ex.getMessage());
+        }
+    }
+
+    private void setShipmentEntityIdInResponse(CustomerBookingResponse customerBookingResponse) {
+        if (customerBookingResponse.getShipmentGuid() != null) {
+            ShipmentBillingListRequest shipmentBillingListRequest = ShipmentBillingListRequest.builder().guidsList(Arrays.asList(UUID.fromString(customerBookingResponse.getShipmentGuid()))).build();
+            ShipmentBillingListResponse shipmentBillingListResponse = v1Service.fetchShipmentBillingData(shipmentBillingListRequest);
+            if (shipmentBillingListResponse.getData() != null && !shipmentBillingListResponse.getData().isEmpty()) {
+                ShipmentBillingListResponse.BillingData billingData = shipmentBillingListResponse.getData().get(customerBookingResponse.getShipmentGuid());
+                customerBookingResponse.setShipmentEntityId(StringUtility.convertToString(billingData.getId()));
+            }
+        }
+    }
+
+    private void setShipmentEntityIdV2InResponse(CustomerBooking customerBooking, CustomerBookingResponse customerBookingResponse) {
+        if (customerBookingResponse.getShipmentGuid() == null) {
+            if (customerBookingResponse.getShipmentEntityId() != null) {
+                V1RetrieveRequest v1RetrieveRequest =
+                        V1RetrieveRequest.builder().
+                                EntityId(customerBookingResponse.getShipmentEntityId()).
+                                build();
+                V1RetrieveResponse v1RetrieveResponse = v1Service.getShipment(v1RetrieveRequest);
+                ShipmentRetrieveResponse shipmentRetrieveResponse = (ShipmentRetrieveResponse) v1RetrieveResponse.getEntity();
+                var shipment = shipmentDao.findByGuid(shipmentRetrieveResponse.getGuid());
+                if (shipment.isPresent())
+                    customerBookingResponse.setShipmentEntityIdV2(StringUtility.convertToString(shipment.get().getId()));
+            }
+        } else {
+            var shipment = shipmentDao.findByGuid(UUID.fromString(customerBooking.getShipmentGuid()));
+            if (shipment.isPresent())
+                customerBookingResponse.setShipmentEntityIdV2(StringUtility.convertToString(shipment.get().getId()));
         }
     }
 
     public Runnable withMdc(Runnable runnable) {
         Map<String, String> mdc = MDC.getCopyOfContextMap();
         String token = RequestAuthContext.getAuthToken();
-        var userContext = UserContext.getUser();
+        var userContext1 = UserContext.getUser();
         return () -> {
             try {
                 MDC.setContextMap(mdc);
                 RequestAuthContext.setAuthToken(token);
-                UserContext.setUser(userContext);
+                UserContext.setUser(userContext1);
                 runnable.run();
             } finally {
                 RequestAuthContext.removeToken();
@@ -1296,28 +1375,31 @@ public class CustomerBookingService implements ICustomerBookingService {
     private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllMasterDataInSingleCall(CustomerBookingResponse customerBookingResponse) {
         try {
             // Preprocessing
+            Map<String, Object> cacheMap = new HashMap<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-            List<MasterListRequest> listRequests = new ArrayList<>(masterDataUtils.createInBulkMasterListRequest(customerBookingResponse, CustomerBooking.class, fieldNameKeyMap, CustomerBooking.class.getSimpleName() ));
+            Set<MasterListRequest> listRequests = new HashSet<>(masterDataUtils.createInBulkMasterListRequest(customerBookingResponse, CustomerBooking.class, fieldNameKeyMap, CustomerBooking.class.getSimpleName(), cacheMap));
             if (!Objects.isNull(customerBookingResponse.getRoutingList()))
-                customerBookingResponse.getRoutingList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, Routings.class, fieldNameKeyMap, Routings.class.getSimpleName() + r.getId() )));
+                customerBookingResponse.getRoutingList().forEach(r -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(r, Routings.class, fieldNameKeyMap, Routings.class.getSimpleName() + r.getId(), cacheMap)));
             if (!Objects.isNull(customerBookingResponse.getContainersList()))
-                customerBookingResponse.getContainersList().forEach(c -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(c, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() + c.getId() )));
+                customerBookingResponse.getContainersList().forEach(c -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(c, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() + c.getId(), cacheMap)));
             if (!Objects.isNull(customerBookingResponse.getPackingList()))
-                customerBookingResponse.getPackingList().forEach(c -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(c, Packing.class, fieldNameKeyMap, Packing.class.getSimpleName() + c.getId() )));
+                customerBookingResponse.getPackingList().forEach(c -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(c, Packing.class, fieldNameKeyMap, Packing.class.getSimpleName() + c.getId(), cacheMap)));
             MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
-            masterListRequestV2.setMasterListRequests(listRequests);
+            masterListRequestV2.setMasterListRequests(listRequests.stream().toList());
             // fetching from V1 in single call
             Map<String, EntityTransferMasterLists> keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(masterListRequestV2);
-            masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST);
+            Set<String> keys = new HashSet<>();
+            commonUtils.createMasterDataKeysList(listRequests, keys);
+            masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST, keys, new EntityTransferMasterLists(), cacheMap);
 
             // Postprocessing
-            customerBookingResponse.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(CustomerBooking.class.getSimpleName()), CacheConstants.MASTER_LIST, true));
+            customerBookingResponse.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(CustomerBooking.class.getSimpleName()), CacheConstants.MASTER_LIST, true, cacheMap));
             if (!Objects.isNull(customerBookingResponse.getRoutingList()))
-                customerBookingResponse.getRoutingList().forEach(r -> r.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Routings.class.getSimpleName() + r.getId() ), CacheConstants.MASTER_LIST, true)));
+                customerBookingResponse.getRoutingList().forEach(r -> r.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Routings.class.getSimpleName() + r.getId() ), CacheConstants.MASTER_LIST, true, cacheMap)));
             if (!Objects.isNull(customerBookingResponse.getContainersList()))
-                customerBookingResponse.getContainersList().forEach(c -> c.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Containers.class.getSimpleName() + c.getId() ), CacheConstants.MASTER_LIST, true)));
+                customerBookingResponse.getContainersList().forEach(c -> c.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Containers.class.getSimpleName() + c.getId() ), CacheConstants.MASTER_LIST, true, cacheMap)));
             if (!Objects.isNull(customerBookingResponse.getPackingList()))
-                customerBookingResponse.getPackingList().forEach(c -> c.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Packing.class.getSimpleName() + c.getId() ), CacheConstants.MASTER_LIST, true)));
+                customerBookingResponse.getPackingList().forEach(c -> c.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Packing.class.getSimpleName() + c.getId() ), CacheConstants.MASTER_LIST, true, cacheMap)));
             return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
         } catch (Exception ex) {
             log.error("Request: {} | Error Occurred in CompletableFuture: addAllMasterDataInSingleCall in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), CustomerBookingService.class.getSimpleName(), ex.getMessage());
@@ -1330,20 +1412,21 @@ public class CustomerBookingService implements ICustomerBookingService {
     private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllLocationDataInSingleCall(CustomerBookingResponse customerBookingResponse) {
         try {
             // Preprocessing
+            Map<String, Object> cacheMap = new HashMap<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-            List<String> locationCodes = new ArrayList<>();
+            Set<String> locationCodes = new HashSet<>();
             if (!Objects.isNull(customerBookingResponse.getCarrierDetails()))
-                locationCodes.addAll((masterDataUtils.createInBulkUnLocationsRequest(customerBookingResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName() )));
+                locationCodes.addAll((masterDataUtils.createInBulkUnLocationsRequest(customerBookingResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName(), cacheMap)));
             if (!Objects.isNull(customerBookingResponse.getRoutingList()))
-                customerBookingResponse.getRoutingList().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, Routings.class, fieldNameKeyMap, Routings.class.getSimpleName() + r.getId() )));
+                customerBookingResponse.getRoutingList().forEach(r -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(r, Routings.class, fieldNameKeyMap, Routings.class.getSimpleName() + r.getId(), cacheMap)));
             // fetching from V1 in single call
             Map<String, EntityTransferUnLocations> keyMasterDataMap = masterDataUtils.fetchInBulkUnlocations(locationCodes, EntityTransferConstants.LOCATION_SERVICE_GUID);
-            masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.UNLOCATIONS);
+            masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.UNLOCATIONS, locationCodes, new EntityTransferUnLocations(), cacheMap);
             // Postprocessing
             if (!Objects.isNull(customerBookingResponse.getCarrierDetails()))
-                customerBookingResponse.getCarrierDetails().setUnlocationData(masterDataUtils.setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName()), CacheConstants.UNLOCATIONS, true));
+                customerBookingResponse.getCarrierDetails().setUnlocationData(masterDataUtils.setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName()), CacheConstants.UNLOCATIONS, true, cacheMap));
             if (!Objects.isNull(customerBookingResponse.getRoutingList()))
-                customerBookingResponse.getRoutingList().forEach(r -> r.setUnlocationData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Routings.class.getSimpleName() + r.getId()), CacheConstants.UNLOCATIONS, true)));
+                customerBookingResponse.getRoutingList().forEach(r -> r.setUnlocationData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Routings.class.getSimpleName() + r.getId()), CacheConstants.UNLOCATIONS, true, cacheMap)));
 
             return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
         } catch (Exception ex) {
@@ -1355,16 +1438,17 @@ public class CustomerBookingService implements ICustomerBookingService {
 //    @Async
     private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllChargeTypesInSingleCall(CustomerBookingResponse customerBookingResponse) {
         try {
+            Map<String, Object> cacheMap = new HashMap<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-            List<String> chargeTypes = new ArrayList<>();
+            Set<String> chargeTypes = new HashSet<>();
 
             if (!Objects.isNull(customerBookingResponse.getBookingCharges()))
-                customerBookingResponse.getBookingCharges().forEach(r -> chargeTypes.addAll(masterDataUtils.createInBulkChargeTypeRequest(r, BookingCharges.class, fieldNameKeyMap, BookingCharges.class.getSimpleName() + r.getId() )));
-            Map<String, EntityTransferChargeType> v1Data = masterDataUtils.fetchInBulkChargeTypes(chargeTypes);
-            masterDataUtils.pushToCache(v1Data, CacheConstants.CHARGE_TYPE);
+                customerBookingResponse.getBookingCharges().forEach(r -> chargeTypes.addAll(masterDataUtils.createInBulkChargeTypeRequest(r, BookingCharges.class, fieldNameKeyMap, BookingCharges.class.getSimpleName() + r.getId(), cacheMap)));
+            Map<String, EntityTransferChargeType> v1Data = masterDataUtils.fetchInBulkChargeTypes(chargeTypes.stream().toList());
+            masterDataUtils.pushToCache(v1Data, CacheConstants.CHARGE_TYPE, chargeTypes, new EntityTransferChargeType(), cacheMap);
 
             if (!Objects.isNull(customerBookingResponse.getBookingCharges()))
-                customerBookingResponse.getBookingCharges().forEach(r -> r.setChargeTypeMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(BookingCharges.class.getSimpleName() + r.getId()), CacheConstants.CHARGE_TYPE, true)));
+                customerBookingResponse.getBookingCharges().forEach(r -> r.setChargeTypeMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(BookingCharges.class.getSimpleName() + r.getId()), CacheConstants.CHARGE_TYPE, true, cacheMap)));
 
             return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
         } catch (Exception ex) {
@@ -1376,16 +1460,17 @@ public class CustomerBookingService implements ICustomerBookingService {
 //    @Async
     private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllContainerTypesInSingleCall(CustomerBookingResponse customerBookingResponse) {
         try {
+            Map<String, Object> cacheMap = new HashMap<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-            List<String> containerTypes = new ArrayList<>();
+            Set<String> containerTypes = new HashSet<>();
             if (!Objects.isNull(customerBookingResponse.getContainersList()))
-                customerBookingResponse.getContainersList().forEach(r -> containerTypes.addAll(masterDataUtils.createInBulkContainerTypeRequest(r, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() + r.getId() )));
+                customerBookingResponse.getContainersList().forEach(r -> containerTypes.addAll(masterDataUtils.createInBulkContainerTypeRequest(r, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() + r.getId(), cacheMap)));
 
             Map<String, EntityTransferContainerType> v1Data = masterDataUtils.fetchInBulkContainerTypes(containerTypes);
-            masterDataUtils.pushToCache(v1Data, CacheConstants.CONTAINER_TYPE);
+            masterDataUtils.pushToCache(v1Data, CacheConstants.CONTAINER_TYPE, containerTypes, new EntityTransferContainerType(), cacheMap);
 
             if (!Objects.isNull(customerBookingResponse.getContainersList()))
-                customerBookingResponse.getContainersList().forEach(r -> r.setContainerCodeData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Containers.class.getSimpleName() + r.getId()), CacheConstants.CONTAINER_TYPE, true)));
+                customerBookingResponse.getContainersList().forEach(r -> r.setContainerCodeData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Containers.class.getSimpleName() + r.getId()), CacheConstants.CONTAINER_TYPE, true, cacheMap)));
 
             return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
         }  catch (Exception ex) {
@@ -1398,11 +1483,12 @@ public class CustomerBookingService implements ICustomerBookingService {
     private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllVesselDataInSingleCall(CustomerBookingResponse customerBookingResponse) {
         try {
             if (!Objects.isNull(customerBookingResponse.getCarrierDetails())) {
+                Map<String, Object> cacheMap = new HashMap<>();
                 Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-                List<String> vesselList = new ArrayList<>(masterDataUtils.createInBulkVesselsRequest(customerBookingResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName()));
-                Map v1Data = masterDataUtils.fetchInBulkVessels(vesselList);
-                masterDataUtils.pushToCache(v1Data, CacheConstants.VESSELS);
-                customerBookingResponse.getCarrierDetails().setVesselsMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName()), CacheConstants.VESSELS, true));
+                Set<String> vesselList = new HashSet<>(masterDataUtils.createInBulkVesselsRequest(customerBookingResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName(), cacheMap));
+                Map<String, EntityTransferVessels> v1Data = masterDataUtils.fetchInBulkVessels(vesselList);
+                masterDataUtils.pushToCache(v1Data, CacheConstants.VESSELS, vesselList, new EntityTransferVessels(), cacheMap);
+                customerBookingResponse.getCarrierDetails().setVesselsMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName()), CacheConstants.VESSELS, true, cacheMap));
             }
             return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(Arrays.asList()));
         }  catch (Exception ex) {
@@ -1415,11 +1501,12 @@ public class CustomerBookingService implements ICustomerBookingService {
     private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllCarrierDataInSingleCall(CustomerBookingResponse customerBookingResponse) {
         try {
             if (!Objects.isNull(customerBookingResponse.getCarrierDetails())) {
+                Map<String, Object> cacheMap = new HashMap<>();
                 Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-                List<String> vesselList = new ArrayList<>(masterDataUtils.createInBulkCarriersRequest(customerBookingResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName()));
-                Map v1Data = masterDataUtils.fetchInBulkCarriers(vesselList);
-                masterDataUtils.pushToCache(v1Data, CacheConstants.CARRIER);
-                customerBookingResponse.getCarrierDetails().setCarrierMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName()), CacheConstants.CARRIER, true));
+                Set<String> carriersList = new HashSet<>(masterDataUtils.createInBulkCarriersRequest(customerBookingResponse.getCarrierDetails(), CarrierDetails.class, fieldNameKeyMap, CarrierDetails.class.getSimpleName(), cacheMap));
+                Map<String, EntityTransferCarrier> v1Data = masterDataUtils.fetchInBulkCarriers(carriersList);
+                masterDataUtils.pushToCache(v1Data, CacheConstants.CARRIER, carriersList, new EntityTransferCarrier(), cacheMap);
+                customerBookingResponse.getCarrierDetails().setCarrierMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(CarrierDetails.class.getSimpleName()), CacheConstants.CARRIER, true, cacheMap));
             }
             return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(Arrays.asList()));
         }  catch (Exception ex) {
@@ -1434,16 +1521,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
 
-            if (request.getId() == null) {
-                log.error("Request Id is null for booking cloning with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-                throw new ValidationException("Booking Id cannot be null");
-            }
-            long id = request.getId();
-            Optional<CustomerBooking> customerBooking = customerBookingDao.findById(id);
-            if(!customerBooking.isPresent())
-            {
-                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-            }
+            Optional<CustomerBooking> customerBooking = getValidatedCustomerBooking(request);
             CustomerBookingResponse customerBookingResponse = jsonHelper.convertValue(customerBooking.get(), CustomerBookingResponse.class);
             customerBookingResponse.setId(null);
             customerBookingResponse.setGuid(null);
@@ -1568,24 +1646,52 @@ public class CustomerBookingService implements ICustomerBookingService {
         }
     }
 
+    private Optional<CustomerBooking> getValidatedCustomerBooking(CommonGetRequest request) {
+        if (request.getId() == null) {
+            log.error("Request Id is null for booking cloning with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+            throw new ValidationException("Booking Id cannot be null");
+        }
+        long id = request.getId();
+        Optional<CustomerBooking> customerBooking = customerBookingDao.findById(id);
+        if(customerBooking.isEmpty())
+        {
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+        Boolean countryAirCargoSecurity = shipmentSettingsDetails.getCountryAirCargoSecurity();
+        if (Boolean.TRUE.equals(countryAirCargoSecurity) && !CommonUtils.checkAirSecurityForBooking(customerBooking.get())) {
+            throw new ValidationException(Constants.AIR_SECURITY_PERMISSION_MSG);
+        }
+        return customerBooking;
+    }
+
+    @SuppressWarnings("java:S135")
     public boolean checkForCreditLimitManagement(CustomerBooking booking) throws RunnerException {
         ApprovalPartiesRequest approvalPartiesRequest = ApprovalPartiesRequest.builder().build();
-        List<Parties> parties = List.of(booking.getConsignee(), booking.getCustomer(), booking.getNotifyParty(), booking.getConsignor())
+        List<Object[]> parties = List.of(
+                    new Object[]{booking.getCustomer(), PartyType.CLIENT},
+                    new Object[]{booking.getConsignee(), PartyType.CONSIGNEE},
+                    new Object[]{booking.getConsignor(), PartyType.CONSIGNOR},
+                    new Object[]{booking.getNotifyParty(), PartyType.NOTIFY_PARTY}
+                )
                 .stream()
-                .filter(Objects::nonNull)
+                .filter(entry -> entry[0] != null)
                 .toList();
         List<ApprovalPartiesRequest.ApprovalParty> partiesList = new ArrayList<>();
-        for(Parties party : parties){
+        for(Object[] partyEntry : parties){
+            Parties party = (Parties) partyEntry[0];
             if(party == null) continue;
-            var orgId = party.getOrgData() != null ? String.valueOf(party.getOrgData().get(PartiesConstants.ID)) : null;
-            var addressId = party.getAddressData() != null ? String.valueOf(party.getAddressData().get(PartiesConstants.ID)) : null;
-            if(orgId == null || addressId == null)
+            var orgId = party.getOrgData() != null ? StringUtility.convertToString(party.getOrgData().get(PartiesConstants.ID)) : null;
+            var addressId = party.getAddressData() != null ? StringUtility.convertToString(party.getAddressData().get(PartiesConstants.ID)) : null;
+            if(StringUtility.isEmpty(orgId) || StringUtility.isEmpty(addressId))
                 continue;
+            var orgType = partyEntry[1].toString();
             partiesList.add(ApprovalPartiesRequest.ApprovalParty.builder()
                     .addressId(addressId)
                     .orgId(orgId)
                     .entityType(CustomerBookingConstants.CUSTOMER_BOOKING_STRING)
                     .entityId(String.valueOf(booking.getGuid()))
+                    .orgType(orgType)
                     .build());
         }
         approvalPartiesRequest.setCreditDetailsRequests(partiesList);
@@ -1617,5 +1723,60 @@ public class CustomerBookingService implements ICustomerBookingService {
         catch (Exception e) {
             log.error("Error Producing Order Management Data to kafka, error is due to " + e.getMessage());
         }
+    }
+
+    private boolean checkNPMContractUtilization(CustomerBooking customerBooking) {
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+        if(Boolean.TRUE.equals(shipmentSettingsDetails.getIsAlwaysUtilization())) {
+            return true;
+        }
+        if(Boolean.TRUE.equals(shipmentSettingsDetails.getIsUtilizationForContainerQuoted())
+                && !CommonUtils.listIsNullOrEmpty(customerBooking.getContainersList())) {
+            QuoteContracts quoteContracts = quoteContractsService.getQuoteContractsByContractId(customerBooking.getContractId());
+
+            if (quoteContracts == null || CommonUtils.listIsNullOrEmpty(quoteContracts.getContainerTypes())) {
+                return false;
+            }
+
+            // Check if all containers in booking match the contract's container types
+            return areAllContainersQuoted(customerBooking.getContainersList(), quoteContracts.getContainerTypes());
+        }
+
+        return false;
+    }
+
+    private boolean areAllContainersQuoted(List<Containers> containersList, List<String> containerTypes) {
+        for (Containers container : containersList) {
+            if (!containerTypes.contains(container.getContainerCode())) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private Events createAutomatedEvents(CustomerBookingRequest request, String eventCode,
+                                         LocalDateTime actualDateTime, LocalDateTime estimatedDateTime, String description) {
+        Events events = initializeAutomatedEvents(request, eventCode, actualDateTime, estimatedDateTime);
+        events.setDescription(description);
+        commonUtils.updateEventWithMasterData(List.of(events));
+        // Persist the event
+        eventDao.save(events);
+        return events;
+    }
+
+    private Events initializeAutomatedEvents(CustomerBookingRequest request, String eventCode,
+                                             LocalDateTime actualDateTime, LocalDateTime estimatedDateTime) {
+        Events events = new Events();
+        // Set event fields from booking request
+        events.setActual(actualDateTime);
+        events.setEstimated(estimatedDateTime);
+        events.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
+        events.setIsPublicTrackingEvent(true);
+        events.setEntityType(Constants.BOOKING);
+        events.setEntityId(request.getId());
+        events.setTenantId(TenantContext.getCurrentTenant());
+        events.setEventCode(eventCode);
+
+        return events;
     }
 }

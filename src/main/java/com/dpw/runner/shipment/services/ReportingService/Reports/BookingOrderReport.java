@@ -48,10 +48,12 @@ public class BookingOrderReport extends IReport {
         var transportMode = bookingOrderModel.getShipmentModel() != null ? bookingOrderModel.getShipmentModel().getTransportMode() : null;
         var direction = bookingOrderModel.getShipmentModel() != null ? bookingOrderModel.getShipmentModel().getDirection() : null;
         if((StringUtils.equals(transportMode, ReportConstants.SEA) || StringUtils.equals(transportMode, ReportConstants.AIR)) && StringUtils.equals(direction, ReportConstants.EXP)){
+            assert bookingOrderModel.getShipmentModel() != null;
             String conReferenceNumberString = bookingOrderModel.getShipmentModel().getReferenceNumbersList() == null ? EMPTY_STRING : getCommaSeparatedValues(bookingOrderModel.getShipmentModel().getReferenceNumbersList());
             dictionary.put(ReportConstants.CON, conReferenceNumberString);
         }
 
+        assert bookingOrderModel.getShipmentModel() != null;
         String shipmentType = (Objects.equals(bookingOrderModel.getShipmentModel().getJobType(), Constants.SHIPMENT_TYPE_DRT)) ? Constants.DMAWB : Constants.HAWB;
         dictionary.put(ReportConstants.SHIPMENT_TYPE, shipmentType);
 
@@ -64,7 +66,7 @@ public class BookingOrderReport extends IReport {
             bookingOrderModel.getTenantModel().getZipPostCode()
             );
         dictionary.put(ReportConstants.TENANT_NAME_AND_ADDRESS, tenantNameAddress);
-        boolean isDirect = Constants.DMAWB.equals(shipmentType) ? true : false;
+        boolean isDirect = Constants.DMAWB.equals(shipmentType);
         boolean isNonDirect = !isDirect;
         dictionary.put(ReportConstants.IS_DIRECT_SHIPMENT, isDirect);
         dictionary.put(ReportConstants.IS_NON_DIRECT_SHIPMENT, isNonDirect);
@@ -75,25 +77,26 @@ public class BookingOrderReport extends IReport {
         String containerSummary = StringUtility.convertToString(dictionary.get(ReportConstants.CONTAINER_SUMMARY));
         dictionary.put(ReportConstants.CONTAINER_SUMMARY, getStringBetweenParenthesis(containerSummary));
 
+        processShipmentPackingList(bookingOrderModel, dictionary);
+        if(bookingOrderModel.getShipmentModel().getAdditionalDetails() != null) {
+            dictionary.put(NOTIFY_PARTY, ReportHelper.getOrgAddressDetails(bookingOrderModel.getShipmentModel().getAdditionalDetails().getNotifyParty()));
+        }
+
+        return dictionary;
+    }
+
+    private void processShipmentPackingList(BookingOrderModel bookingOrderModel, Map<String, Object> dictionary) {
         if(!Objects.isNull(bookingOrderModel.getShipmentModel().getPackingList()) && !bookingOrderModel.getShipmentModel().getPackingList().isEmpty()) {
             getPackingDetails(bookingOrderModel.getShipmentModel(), dictionary);
             dictionary.put(HAS_PACK_DETAILS, true);
             var hazardousCheck = bookingOrderModel.getShipmentModel().getPackingList().stream().anyMatch(x -> !Objects.isNull(x.getHazardous()) && x.getHazardous());
             var temperatureCheck = bookingOrderModel.getShipmentModel().getPackingList().stream().anyMatch(x -> !Objects.isNull(x.getIsTemperatureControlled()) && x.getIsTemperatureControlled());
-            if (hazardousCheck)
-                dictionary.put(HAS_DANGEROUS_GOODS, true);
-            else
-                dictionary.put(HAS_DANGEROUS_GOODS, false);
-            if (temperatureCheck)
-                dictionary.put(HAS_TEMPERATURE_DETAILS, true);
-            else
-                dictionary.put(HAS_TEMPERATURE_DETAILS, false);
+            dictionary.put(HAS_DANGEROUS_GOODS, hazardousCheck);
+            dictionary.put(HAS_TEMPERATURE_DETAILS, temperatureCheck);
 
         } else {
             dictionary.put(HAS_PACK_DETAILS, false);
         }
-
-        return dictionary;
     }
 
     private String getCommaSeparatedValues(List<ReferenceNumbersModel> con) {

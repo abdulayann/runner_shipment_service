@@ -88,7 +88,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -326,7 +325,7 @@ class ShipmentCANReportTest extends CommonMocks {
 
         OrgAddressResponse orgAddressResponse = new OrgAddressResponse();
         orgAddressResponse.setAddresses(addressMap);
-        when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
+
         when(modelMapper.map(shipmentModel.getAdditionalDetails().getExportBroker(), Parties.class)).thenReturn(parties);
         when(modelMapper.map(shipmentModel.getAdditionalDetails().getImportBroker(), Parties.class)).thenReturn(parties);
         when(modelMapper.map(shipmentModel.getConsigner(), Parties.class)).thenReturn(parties2);
@@ -493,7 +492,7 @@ class ShipmentCANReportTest extends CommonMocks {
 
         OrgAddressResponse orgAddressResponse = new OrgAddressResponse();
         orgAddressResponse.setAddresses(addressMap);
-        when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
+
         when(modelMapper.map(shipmentModel.getAdditionalDetails().getExportBroker(), Parties.class)).thenReturn(parties);
         when(modelMapper.map(shipmentModel.getAdditionalDetails().getImportBroker(), Parties.class)).thenReturn(parties);
         when(modelMapper.map(shipmentModel.getConsigner(), Parties.class)).thenReturn(parties2);
@@ -652,7 +651,7 @@ class ShipmentCANReportTest extends CommonMocks {
 
         OrgAddressResponse orgAddressResponse = new OrgAddressResponse();
         orgAddressResponse.setAddresses(addressMap);
-        when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
+
         when(modelMapper.map(shipmentModel.getAdditionalDetails().getExportBroker(), Parties.class)).thenReturn(parties);
         when(modelMapper.map(shipmentModel.getAdditionalDetails().getImportBroker(), Parties.class)).thenReturn(parties);
         when(modelMapper.map(shipmentModel.getConsigner(), Parties.class)).thenReturn(parties2);
@@ -833,7 +832,7 @@ class ShipmentCANReportTest extends CommonMocks {
 
         OrgAddressResponse orgAddressResponse = new OrgAddressResponse();
         orgAddressResponse.setAddresses(addressMap);
-        when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
+
         when(modelMapper.map(shipmentModel.getAdditionalDetails().getExportBroker(), Parties.class)).thenReturn(parties);
         when(modelMapper.map(shipmentModel.getAdditionalDetails().getImportBroker(), Parties.class)).thenReturn(parties);
         when(modelMapper.map(shipmentModel.getConsigner(), Parties.class)).thenReturn(parties2);

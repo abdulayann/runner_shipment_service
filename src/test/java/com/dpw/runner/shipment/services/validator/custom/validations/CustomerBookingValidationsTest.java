@@ -26,8 +26,9 @@ import java.util.List;
 
 import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_IMP;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
@@ -341,4 +342,68 @@ class CustomerBookingValidationsTest extends CommonMocks {
         customerBookingValidations.onSave(oldEntity,newEntity_withBookingCharges);
 
     }
+
+    @Test
+    void testOnSaveForTransportModeConfig() {
+        CustomerBooking newEntity = CustomerBooking.builder().bookingNumber("num1")
+                .bookingStatus(BookingStatus.PENDING_FOR_KYC)
+                .customer(Parties.builder().orgCode("code").addressCode("addressCode").build())
+                .transportType(Constants.TRANSPORT_MODE_AIR)
+                .build();
+        var mockTenantSettings = V1TenantSettingsResponse.builder().transportModeConfig(true).build();
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(mockTenantSettings);
+        when(commonUtils.isTransportModeValid(any(), anyString(), any())).thenReturn(false);
+
+        assertThrows(ValidationException.class, () -> customerBookingValidations.onSave(null, newEntity));
+    }
+
+    @Test
+    void testOnSaveForTransportModeConfig2() {
+        CustomerBooking newEntity = CustomerBooking.builder().bookingNumber("num1")
+                .bookingStatus(BookingStatus.PENDING_FOR_KYC)
+                .customer(Parties.builder().orgCode("code").addressCode("addressCode").build())
+                .transportType(Constants.TRANSPORT_MODE_AIR)
+                .build();
+
+        CustomerBooking oldEntity = CustomerBooking.builder().bookingNumber("num1")
+                .bookingStatus(BookingStatus.PENDING_FOR_KYC)
+                .customer(Parties.builder().orgCode("code").addressCode("addressCode").build())
+                .transportType(Constants.TRANSPORT_MODE_SEA)
+                .build();
+
+        var mockTenantSettings = V1TenantSettingsResponse.builder().transportModeConfig(true).build();
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(mockTenantSettings);
+        when(commonUtils.isTransportModeValid(any(), anyString(), any())).thenReturn(false);
+
+        assertThrows(ValidationException.class, () -> customerBookingValidations.onSave(oldEntity, newEntity));
+    }
+
+    @Test
+    void testOnSaveForTransportModeConfig3() {
+        CustomerBooking newEntity = CustomerBooking.builder().bookingNumber("num1")
+                .bookingStatus(BookingStatus.CANCELLED)
+                .customer(Parties.builder().orgCode("code").addressCode("addressCode").build())
+                .transportType(Constants.TRANSPORT_MODE_AIR)
+                .build();
+
+        var mockTenantSettings = V1TenantSettingsResponse.builder().transportModeConfig(true).build();
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(mockTenantSettings);
+        customerBookingValidations.onSave(newEntity, newEntity);
+        assertNotNull(newEntity);
+    }
+
+    @Test
+    void testOnSaveForTransportModeConfig4() {
+        CustomerBooking newEntity = CustomerBooking.builder().bookingNumber("num1")
+                .bookingStatus(BookingStatus.CANCELLED)
+                .customer(Parties.builder().orgCode("code").addressCode("addressCode").build())
+                .transportType(Constants.TRANSPORT_MODE_AIR)
+                .build();
+        var mockTenantSettings = V1TenantSettingsResponse.builder().transportModeConfig(true).build();
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(mockTenantSettings);
+        when(commonUtils.isTransportModeValid(any(), anyString(), any())).thenReturn(true);
+        customerBookingValidations.onSave(null, newEntity);
+        assertNotNull(newEntity);
+    }
+
 }

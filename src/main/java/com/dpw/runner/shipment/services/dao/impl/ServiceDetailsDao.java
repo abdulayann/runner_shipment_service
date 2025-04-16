@@ -1,10 +1,10 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IServiceDetailsDao;
 import com.dpw.runner.shipment.services.entity.ServiceDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
@@ -15,7 +15,6 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IServiceDetailsRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
-import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -27,9 +26,6 @@ import org.springframework.stereotype.Repository;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 @Repository
 @Slf4j
@@ -79,18 +75,13 @@ public class ServiceDetailsDao implements IServiceDetailsDao {
         String responseMsg;
         List<ServiceDetails> responseServiceDetails = new ArrayList<>();
         try {
-            // TODO- Handle Transactions here
-            Map<Long, ServiceDetails> hashMap;
-//            if(!Objects.isNull(serviceDetailsIdList) && !serviceDetailsIdList.isEmpty()) {
-                ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", shipmentId, "=");
-                Pair<Specification<ServiceDetails>, Pageable> pair = fetchData(listCommonRequest, ServiceDetails.class);
-                Page<ServiceDetails> serviceDetailsPage = findAll(pair.getLeft(), pair.getRight());
-                hashMap = serviceDetailsPage.stream()
+            // LATER- Handle Transactions here
+            List<ServiceDetails> serviceDetailsPage = findByShipmentId(shipmentId);
+            Map<Long, ServiceDetails> hashMap = serviceDetailsPage.stream()
                         .collect(Collectors.toMap(ServiceDetails::getId, Function.identity()));
-//            }
             Map<Long, ServiceDetails> copyHashMap = new HashMap<>(hashMap);
             List<ServiceDetails> serviceDetailsRequests = new ArrayList<>();
-            if (serviceDetailsList != null && serviceDetailsList.size() != 0) {
+            if (serviceDetailsList != null && !serviceDetailsList.isEmpty()) {
                 for (ServiceDetails request : serviceDetailsList) {
                     Long id = request.getId();
                     if (id != null) {
@@ -108,6 +99,10 @@ public class ServiceDetailsDao implements IServiceDetailsDao {
             log.error(responseMsg, e);
             throw new RunnerException(e.getMessage());
         }
+    }
+
+    private List<ServiceDetails> findByShipmentId(Long shipmentId) {
+        return serviceDetailsRepository.findByShipmentId(shipmentId);
     }
 
     public List<ServiceDetails> saveEntityFromShipment(List<ServiceDetails> serviceDetailsRequests, Long shipmentId) {
@@ -132,6 +127,7 @@ public class ServiceDetailsDao implements IServiceDetailsDao {
             try {
                 auditLogService.addAuditLog(
                         AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                 .newData(req)
                                 .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, ServiceDetails.class) : null)
                                 .parent(ShipmentDetails.class.getSimpleName())
@@ -175,6 +171,7 @@ public class ServiceDetailsDao implements IServiceDetailsDao {
             try {
                 auditLogService.addAuditLog(
                         AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                 .newData(req)
                                 .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, ServiceDetails.class) : null)
                                 .parent(ShipmentDetails.class.getSimpleName())
@@ -199,6 +196,7 @@ public class ServiceDetailsDao implements IServiceDetailsDao {
                     try {
                         auditLogService.addAuditLog(
                                 AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                         .newData(null)
                                         .prevData(jsonHelper.readFromJson(json, ServiceDetails.class))
                                         .parent(entity)
@@ -221,7 +219,7 @@ public class ServiceDetailsDao implements IServiceDetailsDao {
         String responseMsg;
         List<ServiceDetails> responseServiceDetails = new ArrayList<>();
         Map<UUID, ServiceDetails> serviceDetailsMap = new HashMap<>();
-        if(oldEntityList != null && oldEntityList.size() > 0) {
+        if(oldEntityList != null && !oldEntityList.isEmpty()) {
             for (ServiceDetails entity:
                     oldEntityList) {
                 serviceDetailsMap.put(entity.getGuid(), entity);
@@ -231,7 +229,7 @@ public class ServiceDetailsDao implements IServiceDetailsDao {
         try {
             ServiceDetails oldEntity;
             List<ServiceDetails> serviceDetailsRequests = new ArrayList<>();
-            if (serviceDetailsList != null && serviceDetailsList.size() != 0) {
+            if (serviceDetailsList != null && !serviceDetailsList.isEmpty()) {
                 for (ServiceDetails request : serviceDetailsList) {
                     oldEntity = serviceDetailsMap.get(request.getGuid());
                     if(oldEntity != null) {

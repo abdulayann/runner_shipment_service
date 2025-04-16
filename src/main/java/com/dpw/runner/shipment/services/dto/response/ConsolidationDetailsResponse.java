@@ -7,15 +7,14 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.PackSummaryRespon
 import com.dpw.runner.shipment.services.entity.enums.AwbStatus;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Builder
 @NoArgsConstructor
@@ -90,6 +89,7 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private Long warehouseId;
     private Long sourceTenantId;
     private String ediTransactionId;
+    private List<TriangulationPartnerResponse> triangulationPartnerList;
     private Long triangulationPartner;
     private Long receivingBranch;
     private boolean intraBranch;
@@ -104,6 +104,8 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private AllocationsResponse allocations;
     private ArrivalDepartureDetailsResponse arrivalDetails;
     private ArrivalDepartureDetailsResponse departureDetails;
+    private String sendingAgentCountry;
+    private String receivingAgentCountry;
     private PartiesResponse sendingAgent;
     private PartiesResponse receivingAgent;
     private PartiesResponse borrowedFrom;
@@ -152,6 +154,7 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private PartiesResponse consigner;
     private PartiesResponse consignee;
     private String sci;
+    private String additionalSecurityInformation;
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime cfsCutOffDate;
     private Boolean openForAttachment;
@@ -161,4 +164,8 @@ public class ConsolidationDetailsResponse implements IRunnerResponse {
     private LocalDateTime latDate;
     private Integer pendingActionCount;
     private String department;
+    private Boolean isNetworkFlag;
+    private String transferStatus;
+    private Boolean isReceivingBranchManually;
+    private Boolean isTransferredToReceivingBranch;
 }

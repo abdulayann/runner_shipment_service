@@ -13,6 +13,7 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@SuppressWarnings("java:S1948")
 public class PartiesRequest extends CommonRequest implements IRunnerRequest {
     private Long id;
     private Long entityId;
@@ -26,4 +27,5 @@ public class PartiesRequest extends CommonRequest implements IRunnerRequest {
     private Map<String, Object> orgData;
     private Map<String, Object> addressData;
     private Boolean isAddressFreeText;
+    private String countryCode;
 }

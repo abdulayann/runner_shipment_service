@@ -1,5 +1,7 @@
 package com.dpw.runner.shipment.services.utils;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.google.common.base.Strings;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -8,10 +10,37 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+
 @Component
 public class CountryListHelper {
 
+    private CountryListHelper(){}
     public static class ISO3166 {
+
+        private ISO3166(){}
+        public static String getAlpha3FromAlpha2(String alpha2) {
+            if(isStringNullOrEmpty(alpha2))
+                return null;
+            ISO3166Country iso3166Country = fromAlpha2(alpha2);
+            return iso3166Country.getAlpha3();
+        }
+
+        public static String getAlpha2FromAlpha3(String alpha3) {
+            if(isStringNullOrEmpty(alpha3))
+                return null;
+            ISO3166Country iso3166Country = fromAlpha3(alpha3);
+            return iso3166Country.getAlpha2();
+        }
+
+        public static String getAlpha2IfAlpha3(String country) {
+            if (!Strings.isNullOrEmpty(country) && country.length() == 3)
+                country = fromAlpha3(country.toUpperCase()).getAlpha2();
+            else if (Strings.isNullOrEmpty(country))
+                country = null;
+
+            return country;
+        }
 
         public static ISO3166Country fromAlpha3(String alpha3)
         {
@@ -33,7 +62,7 @@ public class CountryListHelper {
                 return fromAlpha2(countryCode.toUpperCase()).getName();
             if (countryCode.length() == 3)
                 return fromAlpha3(countryCode.toUpperCase()).getName();
-            return StringUtility.getEmptyString();
+            return Constants.EMPTY_STRING;
         }
 
         private static List<ISO3166Country> buildCollection()

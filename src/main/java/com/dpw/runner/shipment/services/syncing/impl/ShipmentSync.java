@@ -4,7 +4,6 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.sync.SyncingContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
-import com.dpw.runner.shipment.services.commons.constants.TimeZoneConstants;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
@@ -19,11 +18,11 @@ import com.dpw.runner.shipment.services.syncing.Entity.*;
 import com.dpw.runner.shipment.services.syncing.constants.SyncingConstants;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSync;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
-import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -33,7 +32,6 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 
 import static com.dpw.runner.shipment.services.utils.CommonUtils.stringValueOf;
-import static com.dpw.runner.shipment.services.utils.DateUtils.convertDateToUserTimeZone;
 import static java.util.stream.Collectors.toMap;
 
 @Component
@@ -61,6 +59,9 @@ public class ShipmentSync implements IShipmentSync {
     private ISyncService syncService;
     @Autowired
     private IConsolidationSync consolidationSync;
+
+    @Autowired
+    private CommonUtils commonUtils;
 
     private static final String SHIPMENTS = "Shipments";
 
@@ -127,11 +128,10 @@ public class ShipmentSync implements IShipmentSync {
         mapTruckDriverDetail(cs, sd);
         cs.setRoutings(syncEntityConversionService.routingsV2ToV1(sd.getRoutingsList()));
         mapEvents(cs, sd);
-        cs.setContainersList(syncEntityConversionService.containersV2ToV1(sd.getContainersList()));
+        cs.setContainersList(syncEntityConversionService.containersV2ToV1(sd.getContainersList() != null ? new ArrayList<>(sd.getContainersList()) : null));
         cs.setReferenceNumbers(convertToList(sd.getReferenceNumbersList(), ReferenceNumbersRequestV2.class));
-        cs.setPackings_(syncEntityConversionService.packingsV2ToV1(sd.getPackingList(), sd.getContainersList(), sd.getGuid(), null));
+        cs.setPackings_(syncEntityConversionService.packingsV2ToV1(sd.getPackingList(), sd.getContainersList() != null ? new ArrayList<>(sd.getContainersList()) : null, sd.getGuid(), null));
         cs.setShipmentAddresses(syncEntityConversionService.addressesV2ToV1(sd.getShipmentAddresses()));
-        cs.setDocs_(convertToList(sd.getFileRepoList(), FileRepoRequestV2.class));
         cs.setELDetails(convertToList(sd.getElDetailsList(), ElDetailsRequestV2.class));
         cs.setCustomerBookingNotesList(convertToList(customerBookingNotes, NoteRequestV2.class));
         // PickupAddressJSON and DeliveryAddressJSON (could be renamed for easy mapping)
@@ -150,6 +150,19 @@ public class ShipmentSync implements IShipmentSync {
         // Manually mapped fields
         cs.setVolumeWeight(sd.getVolumetricWeight());
         cs.setWeightVolumeUnit(sd.getVolumetricWeightUnit());
+        setIsConsigneeFreeTextAddressInRequest(sd, cs);
+
+        setIsConsignerFreeTextAddressInRequest(sd, cs);
+
+        setIsNotifyPartyFreeTextAddressInRequest(sd, cs);
+
+        cs.setDeletedContGuids(deletedContGuids);
+        cs.setOrderNumber(sd.getOrderManagementId());
+        cs.setOrderManagementNumber(sd.getOrderManagementNumber());
+        return cs;
+    }
+
+    private void setIsConsigneeFreeTextAddressInRequest(ShipmentDetails sd, CustomShipmentSyncRequest cs) {
         if(sd.getConsignee() != null && Boolean.TRUE.equals(sd.getConsignee().getIsAddressFreeText())){
             cs.setIsConsigneeFreeTextAddress(true);
 
@@ -158,7 +171,9 @@ public class ShipmentSync implements IShipmentSync {
                 cs.setConsigneeFreeTextAddress(rawData.toString());
         }
         else cs.setIsConsigneeFreeTextAddress(false);
+    }
 
+    private void setIsConsignerFreeTextAddressInRequest(ShipmentDetails sd, CustomShipmentSyncRequest cs) {
         if(sd.getConsigner() != null && Boolean.TRUE.equals(sd.getConsigner().getIsAddressFreeText())){
             cs.setIsConsignerFreeTextAddress(true);
             var rawData = sd.getConsigner().getAddressData() != null ? sd.getConsigner().getAddressData().get(PartiesConstants.RAW_DATA): null;
@@ -166,7 +181,9 @@ public class ShipmentSync implements IShipmentSync {
                 cs.setConsignerFreeTextAddress(rawData.toString());
         }
         else  cs.setIsConsignerFreeTextAddress(false);
+    }
 
+    private void setIsNotifyPartyFreeTextAddressInRequest(ShipmentDetails sd, CustomShipmentSyncRequest cs) {
         if(sd.getAdditionalDetails() != null && sd.getAdditionalDetails().getNotifyParty() != null && Boolean.TRUE.equals(sd.getAdditionalDetails().getNotifyParty().getIsAddressFreeText())){
             cs.setIsNotifyPartyFreeTextAddress(true);
             var rawData = sd.getAdditionalDetails().getNotifyParty().getAddressData() != null ? sd.getAdditionalDetails().getNotifyParty().getAddressData().get(PartiesConstants.RAW_DATA): null;
@@ -174,12 +191,8 @@ public class ShipmentSync implements IShipmentSync {
                 cs.setNotifyPartyFreeTextAddress(rawData.toString());
         }
         else cs.setIsNotifyPartyFreeTextAddress(false);
-
-        cs.setDeletedContGuids(deletedContGuids);
-        cs.setOrderNumber(sd.getOrderManagementId());
-        cs.setOrderManagementNumber(sd.getOrderManagementNumber());
-        return cs;
     }
+
     @Override
     public void syncLockStatus(ShipmentDetails shipmentDetails) {
         LockSyncRequest lockSyncRequest = LockSyncRequest.builder().guid(shipmentDetails.getGuid()).lockStatus(shipmentDetails.getIsLocked()).build();
@@ -192,7 +205,7 @@ public class ShipmentSync implements IShipmentSync {
         HttpHeaders httpHeaders = v1AuthHelper.getHeadersForDataSyncFromKafka(sd.getCreatedBy(), sd.getTenantId(), null);
         String shipment = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(cs).module(SyncingConstants.SHIPMENT).build());
         if (!Objects.isNull(sd.getConsolidationList()) && !sd.getConsolidationList().isEmpty()) {
-            var console = consolidationDetailsDao.findById(sd.getConsolidationList().get(0).getId());
+            var console = consolidationDetailsDao.findById(sd.getConsolidationList().iterator().next().getId());
             if (console.isPresent()) {
                 CustomConsolidationRequest response = consolidationSync.createConsoleSyncReq(console.get());
                 String consolidationRequest = jsonHelper.convertToJson(V1DataSyncRequest.builder().entity(response).module(SyncingConstants.CONSOLIDATION).build());
@@ -269,10 +282,10 @@ public class ShipmentSync implements IShipmentSync {
             return;
         modelMapper.map(sd.getAdditionalDetails(), cs);
         if(cs.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR))
-            cs.setIssueDate(sd.getAdditionalDetails().getDateOfIssue());
+            cs.setIssueDate(commonUtils.getUserZoneTime(sd.getAdditionalDetails().getDateOfIssue()));
         else
-            cs.setDateofIssue(sd.getAdditionalDetails().getDateOfIssue());
-        cs.setDateofReceipt(sd.getAdditionalDetails().getDateOfReceipt());
+            cs.setDateofIssue(commonUtils.getUserZoneTime(sd.getAdditionalDetails().getDateOfIssue()));
+        cs.setDateofReceipt(commonUtils.getUserZoneTime(sd.getAdditionalDetails().getDateOfReceipt()));
         cs.setReceivingForwarderParty(mapPartyObject(sd.getAdditionalDetails().getReceivingForwarder()));
         cs.setSendingForwarderParty(mapPartyObject(sd.getAdditionalDetails().getSendingForwarder()));
         cs.setTraderOrSupplierParty(mapPartyObject(sd.getAdditionalDetails().getTraderOrSupplier()));
@@ -287,12 +300,12 @@ public class ShipmentSync implements IShipmentSync {
         }
         if(sd.getAdditionalDetails().getPassedBy() != null)
             cs.setPassedByString(String.valueOf(sd.getAdditionalDetails().getPassedBy().getValue()));
-        cs.setBoedate(convertDateToUserTimeZone(sd.getAdditionalDetails().getBOEDate(), MDC.get(TimeZoneConstants.BROWSER_TIME_ZONE_NAME), null, false));
+        cs.setBoedate(commonUtils.getUserZoneTime(sd.getAdditionalDetails().getBOEDate()));
         cs.setBoenumber(sd.getAdditionalDetails().getBOENumber());
-        cs.setIgmfileDate(convertDateToUserTimeZone(sd.getAdditionalDetails().getIGMFileDate(), MDC.get(TimeZoneConstants.BROWSER_TIME_ZONE_NAME), null, false));
+        cs.setIgmfileDate(commonUtils.getUserZoneTime(sd.getAdditionalDetails().getIGMFileDate()));
         cs.setIgmfileNo(sd.getAdditionalDetails().getIGMFileNo());
-        cs.setIgminwardDate(convertDateToUserTimeZone(sd.getAdditionalDetails().getIGMInwardDate(), MDC.get(TimeZoneConstants.BROWSER_TIME_ZONE_NAME), null, false));
-        cs.setSmtpigmdate(convertDateToUserTimeZone(sd.getAdditionalDetails().getSMTPIGMDate(), MDC.get(TimeZoneConstants.BROWSER_TIME_ZONE_NAME), null, false));
+        cs.setIgminwardDate(commonUtils.getUserZoneTime(sd.getAdditionalDetails().getIGMInwardDate()));
+        cs.setSmtpigmdate(commonUtils.getUserZoneTime(sd.getAdditionalDetails().getSMTPIGMDate()));
         cs.setSmtpigmnumber(sd.getAdditionalDetails().getSMTPIGMNumber());
         cs.setHblDeliveryMode(sd.getAdditionalDetails().getDeliveryMode());
         cs.setChargesApply(sd.getAdditionalDetails().getBLChargesDisplay());
@@ -309,9 +322,9 @@ public class ShipmentSync implements IShipmentSync {
             return;
         List<ShipmentServiceRequestV2> res = sd.getServicesList().stream().map(
                 i -> {
-                    var _service = modelMapper.map(i, ShipmentServiceRequestV2.class);
-                    _service.setServiceDurationSpan(i.getServiceDuration());
-                    return _service;
+                    var serviceRequestV2 = modelMapper.map(i, ShipmentServiceRequestV2.class);
+                    serviceRequestV2.setServiceDurationSpan(i.getServiceDuration());
+                    return serviceRequestV2;
                 }
         ).toList();
         cs.setServicesList(res);

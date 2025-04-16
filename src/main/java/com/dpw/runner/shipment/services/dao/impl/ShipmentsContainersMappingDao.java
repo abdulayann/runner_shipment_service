@@ -1,11 +1,15 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import com.dpw.runner.shipment.services.commons.constants.ContainerConstants;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentsContainersMappingRepository;
 import com.dpw.runner.shipment.services.syncing.interfaces.IContainersSync;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.nimbusds.jose.util.Pair;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -25,8 +29,18 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
     @Autowired
     private IShipmentsContainersMappingRepository shipmentsContainersMappingRepository;
 
+    private final IContainersSync containersSync;
+
+    private final ExecutorService executorService;
+    private final MasterDataUtils masterDataUtils;
+
     @Autowired
-    IContainersSync containersSync;
+    public ShipmentsContainersMappingDao(IContainersSync containersSync, ExecutorService executorService,
+        MasterDataUtils masterDataUtils) {
+        this.containersSync = containersSync;
+        this.executorService = executorService;
+        this.masterDataUtils = masterDataUtils;
+    }
 
     @Override
     public List<ShipmentsContainersMapping> findByContainerId(Long containerId) {
@@ -45,7 +59,7 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
 
     @Override
     public Page<ShipmentsContainersMapping> findAllByContainerIds(List<Long> containerIds) {
-        if(containerIds != null && containerIds.size() > 0) {
+        if(containerIds != null && !containerIds.isEmpty()) {
             ListCommonRequest listCommonRequest = constructListCommonRequest("containerId", containerIds, "IN");
             Pair<Specification<ShipmentsContainersMapping>, Pageable> pair = fetchData(listCommonRequest, ShipmentsContainersMapping.class);
             return findAll(pair.getLeft(), pair.getRight());
@@ -60,12 +74,14 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
     private void delete(ShipmentsContainersMapping shipmentsContainersMapping) {
         shipmentsContainersMappingRepository.delete(shipmentsContainersMapping);
     }
-
+    private void deleteList(List<ShipmentsContainersMapping> shipmentsContainersMappings) {
+        shipmentsContainersMappingRepository.deleteAll(shipmentsContainersMappings);
+    }
     @Override
     public void assignContainers(Long shipmentId, List<Long> containerIds, String transactionId) {
         List<ShipmentsContainersMapping> mappings = findByShipmentId(shipmentId);
         HashSet<Long> contIds = new HashSet<>(containerIds);
-        if (mappings != null && mappings.size() > 0) {
+        if (mappings != null && !mappings.isEmpty()) {
             for (ShipmentsContainersMapping shipmentsContainersMappings : mappings) {
                 contIds.remove(shipmentsContainersMappings.getContainerId());
             }
@@ -91,7 +107,7 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
     public void assignShipments(Long containerId, List<Long> shipIds, boolean fromV1) {
         List<ShipmentsContainersMapping> mappings = findByContainerId(containerId);
         HashSet<Long> shipmentIds = new HashSet<>(shipIds);
-        if (mappings != null && mappings.size() > 0) {
+        if (mappings != null && !mappings.isEmpty()) {
             for (ShipmentsContainersMapping shipmentsContainersMappings : mappings) {
                 shipmentIds.remove(shipmentsContainersMappings.getShipmentId());
             }
@@ -110,7 +126,7 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
                 containersSync.sync(List.of(containerId), findAllByContainerIds(List.of(containerId)));
             }
             catch (Exception e) {
-                log.error("Error syncing containers");
+                log.error(ContainerConstants.ERROR_SYNCING_CONTAINERS);
             }
         }
     }
@@ -120,7 +136,7 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
         List<ShipmentsContainersMapping> mappings = findByContainerId(containerId);
         HashSet<Long> shipmentIds = new HashSet<>(shipIds);
         List<ShipmentsContainersMapping> deleteMappings = new ArrayList<>();
-        if (mappings != null && mappings.size() > 0) {
+        if (mappings != null && !mappings.isEmpty()) {
             for (ShipmentsContainersMapping shipmentsContainersMappings : mappings) {
                 if (shipmentIds.contains(shipmentsContainersMappings.getShipmentId())) {
                     deleteMappings.add(shipmentsContainersMappings);
@@ -138,9 +154,38 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
                 containersSync.sync(List.of(containerId), findAllByContainerIds(List.of(containerId)));
             }
             catch (Exception e) {
-                log.error("Error syncing containers");
+                log.error(ContainerConstants.ERROR_SYNCING_CONTAINERS);
             }
         }
+    }
+    public void detachListShipments(List<Long> containerIds, List<Long> shipIds, boolean fromV1) {
+        List<ShipmentsContainersMapping> mappings = findByContainerIdIn(containerIds);
+        HashSet<Long> shipmentIds = new HashSet<>(shipIds);
+        List<ShipmentsContainersMapping> deleteMappings = new ArrayList<>();
+        if (mappings != null && !mappings.isEmpty()) {
+            for (ShipmentsContainersMapping shipmentsContainersMappings : mappings) {
+                if (shipmentIds.contains(shipmentsContainersMappings.getShipmentId())) {
+                    deleteMappings.add(shipmentsContainersMappings);
+                }
+            }
+        }
+        if (!deleteMappings.isEmpty()) {
+            deleteList(deleteMappings);
+        }
+        if(!fromV1) {
+            try {
+                log.info("Call sync containers from detachShipments with ids: " + containerIds.toString());
+                CompletableFuture.runAsync(masterDataUtils.withMdc(()-> containersSync.sync(containerIds, findAllByContainerIds(containerIds))), executorService);
+            }
+            catch (Exception e) {
+                log.error(ContainerConstants.ERROR_SYNCING_CONTAINERS);
+            }
+        }
+    }
+
+    @Override
+    public List<ShipmentsContainersMapping> findByContainerIdIn(List<Long> containerIds) {
+        return shipmentsContainersMappingRepository.findByContainerIdIn(containerIds);
     }
 
     @Override

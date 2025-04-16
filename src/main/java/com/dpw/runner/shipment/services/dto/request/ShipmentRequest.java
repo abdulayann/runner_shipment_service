@@ -16,6 +16,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Data
@@ -23,6 +24,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @ValidCargoDeliveryDate
+@SuppressWarnings("java:S6539")
 public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private AdditionalDetailRequest additionalDetails;
     private String additionalTerms;
@@ -36,13 +38,14 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private Boolean cargoFinanceBooking;
     private CarrierDetailRequest carrierDetails;
     private BigDecimal chargable;
+    private Boolean isChargableEditable;
     private String chargeableUnit;
     private PartiesRequest client;
     private PartiesRequest consignee;
     private PartiesRequest consigner;
     private String consolRef;
     private Boolean containerAutoWeightVolumeUpdate;
-    private List<ContainerRequest> containersList;
+    private Set<ContainerRequest> containersList;
     private String direction;
     private Long documentationPartner;
     private List<ELDetailsRequest> elDetailsList;
@@ -100,6 +103,7 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private Long sourceTenantId;
     private Integer status;
     private String transportMode;
+    private List<TriangulationPartnerRequest> triangulationPartnerList;
     private Long triangulationPartner;
     private List<TruckDriverDetailsRequest> truckDriverDetails;
     private BigDecimal volume;
@@ -108,7 +112,7 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private String volumetricWeightUnit;
     private BigDecimal weight;
     private String weightUnit;
-    private List<ConsolidationDetailsRequest> consolidationList;
+    private Set<ConsolidationDetailsRequest> consolidationList;
     private String jobStatus;
     public BigDecimal goodsValue;
     public String goodsValueCurrency;
@@ -167,6 +171,7 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private ShipmentPackStatus shipmentPackStatus;
     private String department;
     private OceanDGStatus oceanDGStatus;
+    private Boolean isRefeer;
 
     // Consolidation achieved values
     private AchievedQuantitiesRequest consolidationAchievedQuantities;
@@ -175,4 +180,20 @@ public class ShipmentRequest extends CommonRequest implements IRunnerRequest {
     private LocalDateTime cargoDeliveryDate;
     private Boolean isReceivingBranchAdded;
     private FileStatus fileStatus;
+    private Boolean syncRoutingFromConsolidation;
+    private Boolean isNetworkFile;
+    private Boolean isReceivingBranchManually;
+    private Boolean isTransferredToReceivingBranch;
+    private String shipmentStatus;
+    private Boolean b2b;
+
+    private Boolean isCoLoadEnabled;
+    private String coLoadCarrierName;
+    private String coLoadBlNumber;
+
+    private String issuingCarrierName;
+    private String oceanBlNumber;
+    private UUID customerBookingGuid;
+    private Boolean isFrob;
+
 }

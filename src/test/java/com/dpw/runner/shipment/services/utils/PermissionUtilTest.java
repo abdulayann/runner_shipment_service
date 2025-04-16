@@ -432,7 +432,6 @@ class PermissionUtilTest {
 
 
 
-
         assertEquals(15, result.size());
         assertEquals(48, result2.size());
         assertEquals(48, result3.size());

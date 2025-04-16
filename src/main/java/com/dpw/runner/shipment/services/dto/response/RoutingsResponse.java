@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
+import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -27,6 +28,7 @@ public class RoutingsResponse implements IRunnerResponse {
     private Long shipmentId;
     private Long bookingId;
     private Long leg;
+    private RoutingCarriage carriage;
     private String mode;
     private String routingStatus;
     private String vesselName;
@@ -64,6 +66,9 @@ public class RoutingsResponse implements IRunnerResponse {
     private Map<String, String> unlocationData;
     private Map<String, String> masterData;
     private Map<String, String> carrierMasterData;
+    private String originPortLocCode;
+    private String destinationPortLocCode;
+    private Boolean inheritedFromConsolidation;
 
     public void setIsDomestic(boolean isDomestic) {
         this.isDomestic = isDomestic;

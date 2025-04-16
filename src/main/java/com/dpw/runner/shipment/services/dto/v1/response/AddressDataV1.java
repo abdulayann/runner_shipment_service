@@ -82,10 +82,10 @@ public class AddressDataV1 {
   @JsonProperty("RakcType")
   private String rakcType;
 
-  @JsonProperty("KcraNumber")
+  @JsonProperty("KCRANumber")
   private String kcraNumber;
 
-  @JsonProperty("KcraExpiry")
+  @JsonProperty("KCRAExpiry")
   private String kcraExpiry;
 
   @JsonProperty("RegulatedAgent")

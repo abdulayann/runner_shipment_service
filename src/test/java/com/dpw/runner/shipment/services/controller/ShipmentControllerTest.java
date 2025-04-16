@@ -20,7 +20,6 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.UpdateConsoleShipmentRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
-import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.AutoUpdateWtVolRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculateContainerSummaryRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.CalculatePackSummaryRequest;
@@ -31,8 +30,8 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentContainer
 import com.dpw.runner.shipment.services.dto.request.AttachListShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.CheckCreditLimitFromV1Request;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
-import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentOrderAttachDetachRequest;
+import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.billing.InvoicePostingValidationRequest;
 import com.dpw.runner.shipment.services.dto.request.notification.PendingNotificationRequest;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGApprovalRequest;
@@ -43,10 +42,12 @@ import com.dpw.runner.shipment.services.dto.v1.request.PartiesOrgAddressRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIContainerListRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.TIListRequest;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.DpsException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
+import com.dpw.runner.shipment.services.service.interfaces.IDpsEventService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.syncing.AuditLogsSyncRequest;
 import com.dpw.runner.shipment.services.syncing.Entity.CustomShipmentSyncRequest;
@@ -60,6 +61,8 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import javax.servlet.http.HttpServletResponse;
+
+import org.apache.http.auth.AuthenticationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -100,6 +103,8 @@ class ShipmentControllerTest {
     private IOrderManagementAdapter orderManagementAdapter;
     @Mock
     private IConsolidationService consolidationService;
+    @Mock
+    private IDpsEventService dpsEventService;
     @InjectMocks
     private ShipmentController shipmentController;
 
@@ -588,7 +593,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void delete() throws RunnerException {
+    void delete() {
         // Mock
         when(shipmentService.delete(any())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
@@ -598,34 +603,34 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void testList() throws RunnerException {
+    void testList() {
         // Mock
         when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(10));
         when(shipmentService.fullShipmentsList(any())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
-        var responseEntity = shipmentController.list(ListCommonRequest.builder().build(), true);
+        var responseEntity = shipmentController.list(ListCommonRequest.builder().build(), true, true);
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
     @Test
-    void testList1() throws RunnerException {
+    void testList1() {
         // Mock
         when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(10));
-        when(shipmentService.list(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        when(shipmentService.list(any(), anyBoolean())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
-        var responseEntity = shipmentController.list(ListCommonRequest.builder().build(), false);
+        var responseEntity = shipmentController.list(ListCommonRequest.builder().build(), false, true);
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
     @Test
-    void testList3() throws RunnerException {
+    void testList3() {
         // Mock
         when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(10));
         when(shipmentService.list(any())).thenThrow(new RuntimeException());
         // Test
-        var responseEntity = shipmentController.list(ListCommonRequest.builder().build(), false);
+        var responseEntity = shipmentController.list(ListCommonRequest.builder().build(), false, true);
         // Assert
         assertEquals(HttpStatus.FORBIDDEN, responseEntity.getStatusCode());
     }
@@ -634,9 +639,20 @@ class ShipmentControllerTest {
     void testRetrieveById() {
         // Mock
         when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(10));
-        when(shipmentService.retrieveById(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        when(shipmentService.retrieveById(any(), anyBoolean())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
-        var responseEntity = shipmentController.retrieveById(Optional.of(111L), Optional.of(UUID.randomUUID().toString()));
+        var responseEntity = shipmentController.retrieveById(Optional.of(111L), Optional.of(UUID.randomUUID().toString()), true);
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void retrieveForNTE() {
+        // Mock
+        when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(10));
+        when(shipmentService.retrieveForNTE(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = shipmentController.retrieveForNTE(Optional.of(111L), Optional.of("dda5d586-0f21-47df-a905-ab4103ae009f"));
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -826,7 +842,7 @@ class ShipmentControllerTest {
      */
 
     @Test
-    void exportShipmentListTest() throws IOException, IllegalAccessException {
+    void exportShipmentListTest() throws IOException, IllegalAccessException, ExecutionException, InterruptedException {
         boolean isExecuted = true;
         // Mock
         doNothing().when(shipmentService).exportExcel(any(), any());
@@ -837,7 +853,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void exportShipmentListTest2() throws IOException, IllegalAccessException {
+    void exportShipmentListTest2() throws IOException, IllegalAccessException, ExecutionException, InterruptedException {
         boolean isExecuted = true;
         // Mock
         doThrow(new RuntimeException()).when(shipmentService).exportExcel(any(), any());
@@ -848,7 +864,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void exportShipmentListTest3() throws IOException, IllegalAccessException {
+    void exportShipmentListTest3() throws IOException, IllegalAccessException, ExecutionException, InterruptedException {
         boolean isExecuted = true;
         // Mock
         doThrow(new RuntimeException("RuntimeException")).when(shipmentService).exportExcel(any(), any());
@@ -869,7 +885,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void getDefaultShipment() throws RunnerException {
+    void getDefaultShipment() {
         // Mock
         when(shipmentService.getDefaultShipment()).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
@@ -889,7 +905,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void getConsolFromShipment() throws RunnerException {
+    void getConsolFromShipment() {
         // Mock
         when(consolidationService.getConsolFromShipment(any())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
@@ -899,7 +915,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void getConsolFromShipment2() throws RunnerException {
+    void getConsolFromShipment2() {
         // Mock
         when(consolidationService.getConsolFromShipment(any())).thenThrow(new RuntimeException());
         // Test
@@ -909,7 +925,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void attachListShipment() throws RunnerException {
+    void attachListShipment() {
         // Mock
         when(shipmentService.attachListShipment(any())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
@@ -919,7 +935,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void attachListShipment2() throws RunnerException {
+    void attachListShipment2() {
         // Mock
         when(shipmentService.attachListShipment(any())).thenThrow(new RuntimeException());
         // Test
@@ -929,7 +945,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void getMasterDataDescriptionMapping() throws RunnerException {
+    void getMasterDataDescriptionMapping() {
         // Mock
         when(shipmentService.getMasterDataMappings()).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
@@ -939,7 +955,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void getIdFromGuid() throws RunnerException {
+    void getIdFromGuid() {
         // Mock
         when(shipmentService.getIdFromGuid(any())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
@@ -949,7 +965,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void getIdFromGuid2() throws RunnerException {
+    void getIdFromGuid2() {
         // Mock
         when(shipmentService.getIdFromGuid(any())).thenThrow(new RuntimeException());
         // Test
@@ -959,7 +975,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void getGuidFromId() throws RunnerException {
+    void getGuidFromId() {
         // Mock
         when(shipmentService.getGuidFromId(any())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
@@ -969,7 +985,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void getGuidFromId2() throws RunnerException {
+    void getGuidFromId2() {
         // Mock
         when(shipmentService.getGuidFromId(any())).thenThrow(new RuntimeException());
         // Test
@@ -979,7 +995,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void checkCreditLimitFromV1() throws RunnerException {
+    void checkCreditLimitFromV1() {
         // Mock
         when(shipmentService.checkCreditLimitFromV1(any())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
@@ -989,7 +1005,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void checkCreditLimitFromV12() throws RunnerException {
+    void checkCreditLimitFromV12() {
         // Mock
         when(shipmentService.checkCreditLimitFromV1(any())).thenThrow(new RuntimeException());
         // Test
@@ -1039,7 +1055,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void fetchEmails() throws RunnerException {
+    void fetchEmails() {
         // Mock
         when(shipmentService.fetchEmails(any(), anyLong())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
@@ -1100,7 +1116,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void testConsoleShipmentList_Success() {
+    void testConsoleShipmentList_Success() throws AuthenticationException {
         // Mock
         ListCommonRequest listCommonRequest = new ListCommonRequest();
         Long consoleId = 1L;
@@ -1108,23 +1124,23 @@ class ShipmentControllerTest {
         IRunnerResponse runnerResponse = new RunnerListResponse<>();
         ResponseEntity<IRunnerResponse> responseEntity = ResponseEntity.ok(runnerResponse);
 
-        when(shipmentService.consoleShipmentList(any(CommonRequestModel.class), eq(consoleId), eq(isAttached)))
+        when(shipmentService.consoleShipmentList(any(CommonRequestModel.class), eq(consoleId), eq(""), eq(isAttached), anyBoolean(), anyBoolean()))
                 .thenReturn(responseEntity);
         // Test
-        responseEntity = shipmentController.consoleShipmentList(listCommonRequest, 1L, true);
+        responseEntity = shipmentController.consoleShipmentList(listCommonRequest, 1L, "", true, true, false);
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
     @Test
-    void testConsoleShipmentList_Exception() {
+    void testConsoleShipmentList_Exception() throws AuthenticationException {
         // Mock
-        when(shipmentService.consoleShipmentList(any(), anyLong(), anyBoolean())).thenThrow(new RuntimeException("Test Exception"));
+        when(shipmentService.consoleShipmentList(any(), anyLong(), eq(null),  anyBoolean(), anyBoolean(), anyBoolean())).thenThrow(new RuntimeException("Test Exception"));
         ListCommonRequest request = mock(ListCommonRequest.class);
         // Test
-        var responseEntity = shipmentController.consoleShipmentList(request, 1L, true);
+        var responseEntity = shipmentController.consoleShipmentList(request, 1L, null,true, true, false);
         // Assert
-        assertEquals(HttpStatus.FORBIDDEN, responseEntity.getStatusCode());
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
     @Test
@@ -1195,9 +1211,9 @@ class ShipmentControllerTest {
     @Test
     void testRequestInterBranchConsole() throws RunnerException {
         // Mock
-        when(shipmentService.requestInterBranchConsole(1L, 2L)).thenReturn(ResponseHelper.buildSuccessResponse());
+        when(shipmentService.requestInterBranchConsole(1L, 2L, "")).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
-        var responseEntity = shipmentController.requestInterBranchConsole(1L, 2L);
+        var responseEntity = shipmentController.requestInterBranchConsole(1L, 2L, "");
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -1205,15 +1221,15 @@ class ShipmentControllerTest {
     @Test
     void testRequestInterBranchConsole_Failure() throws RunnerException {
         // Mock
-        when(shipmentService.requestInterBranchConsole(1L, 2L)).thenThrow(new RuntimeException());
+        when(shipmentService.requestInterBranchConsole(1L, 2L, "")).thenThrow(new RuntimeException());
         // Test
-        var responseEntity = shipmentController.requestInterBranchConsole(1L, 2L);
+        var responseEntity = shipmentController.requestInterBranchConsole(1L, 2L, "");
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
     @Test
-    void getPendingNotifications() throws RunnerException {
+    void getPendingNotifications() {
         // Mock
         when(shipmentService.getPendingNotifications(any())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
@@ -1223,7 +1239,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void getPendingNotificationsFails() throws RunnerException {
+    void getPendingNotificationsFails() {
         // Mock
         when(shipmentService.getPendingNotifications(any())).thenThrow(new RuntimeException("RuntimeException"));
         // Test
@@ -1233,7 +1249,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void testGetAllConsolShipmentsLatestDate_Success() throws Exception {
+    void testGetAllConsolShipmentsLatestDate_Success() {
         // Arrange
         Long consoleId = 1L;
         ResponseEntity<IRunnerResponse> expectedResponse = ResponseEntity.ok(new UpstreamDateUpdateResponse());
@@ -1246,7 +1262,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void testGetAllConsolShipmentsLatestDate_Exception() throws Exception {
+    void testGetAllConsolShipmentsLatestDate_Exception() {
         // Arrange
         Long consoleId = 1L;
         String errorMessage = "Service error";
@@ -1303,7 +1319,7 @@ class ShipmentControllerTest {
     }
 
     @Test
-    void testListWithoutTenantFilter() throws RunnerException {
+    void testListWithoutTenantFilter() {
         ListCommonRequest listCommonRequest = ListCommonRequest.builder().build();
         when(shipmentService.listWithoutTenantCheck(any())).thenThrow(new RuntimeException());
         var responseEntity = shipmentController.listWithoutTenantFilter(listCommonRequest);
@@ -1337,8 +1353,200 @@ class ShipmentControllerTest {
     void testAttachDetachOrderException(){
         ShipmentOrderAttachDetachRequest shipmentOrderAttachDetachRequest = ShipmentOrderAttachDetachRequest.builder().build();
         when(shipmentController.attachDetachOrder(any())).thenThrow(new RuntimeException());
-        var responseEntity = shipmentController.attachDetachOrder(shipmentOrderAttachDetachRequest);
+        assertDoesNotThrow(() -> shipmentController.attachDetachOrder(shipmentOrderAttachDetachRequest));
+    }
+
+    @Test
+    void testCancelShipment() throws RunnerException {
+        Long shipmentId = 1L;
+        when(shipmentService.cancel(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        var responseEntity = shipmentController.cancelShipment(shipmentId);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testCancelShipmentThrowsException() throws RunnerException {
+        Long shipmentId = 1L;
+        String errorMessage = "Error";
+        when(shipmentService.cancel(any())).thenThrow(new RuntimeException(errorMessage));
+        var responseEntity = shipmentController.cancelShipment(shipmentId);
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testGetFilteredShipment(){
+        when(shipmentService.fetchBillChargesShipmentList(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        var responseEntity = shipmentController.listBillChargesShipments("guid", "SH",null, null );
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testGetFilteredShipmentException() {
+        when(shipmentService.fetchBillChargesShipmentList(any())).thenThrow(new RuntimeException());
+        var responseEntity = shipmentController.listBillChargesShipments("guid", any(), null, null );
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void getMatchingRulesByGuid() {
+        String guid = UUID.randomUUID().toString();
+        // Mock
+        when(dpsEventService.getShipmentMatchingRulesByGuid(guid)).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = shipmentController.getMatchingRulesByGuid(guid);
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void getMatchingRulesByGuid_Failure() {
+        String guid = UUID.randomUUID().toString();
+        // Mock
+        when(dpsEventService.getShipmentMatchingRulesByGuid((guid))).thenThrow(new DpsException());
+        // Test
+        assertThrows(DpsException.class, () -> shipmentController.getMatchingRulesByGuid(guid));
+    }
+    @Test
+    void testListExternal() {
+        // Mock
+        when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(10));
+        when(shipmentService.fullShipmentsExternalList(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = shipmentController.listExternal(ListCommonRequest.builder().build());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testListExternal1() {
+        // Mock
+        when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(10));
+        when(shipmentService.fullShipmentsExternalList(any())).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = shipmentController.listExternal(ListCommonRequest.builder().build());
+        // Assert
+        assertEquals(HttpStatus.FORBIDDEN, responseEntity.getStatusCode());
+    }
+
+
+    // Runner V3 endpoints
+
+    /**
+     * Method under test: {@link ShipmentController#createV3(ShipmentRequest)}
+     */
+
+    @Test
+    void createV3est() {
+        // Mock
+        when(shipmentService.createV3(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(1));
+        // Test
+        var responseEntity = shipmentController.createV3(new ShipmentRequest());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void createV3Test2() {
+        // Mock
+        when(shipmentService.createV3(any())).thenThrow(new RuntimeException());
+        when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(1));
+        // Test
+        var responseEntity = shipmentController.createV3(new ShipmentRequest());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void createV3Test3() {
+        // Mock
+        when(shipmentService.createV3(any())).thenThrow(new RuntimeException("RuntimeException"));
+        when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(1));
+        // Test
+        var responseEntity = shipmentController.createV3(new ShipmentRequest());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    /**
+     * Method under test: {@link ShipmentController#completeUpdateV3(ShipmentRequest)}
+     */
+
+    @Test
+    void completeUpdateV3Test() throws RunnerException {
+        // Mock
+        when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(10));
+        when(shipmentService.completeUpdateV3(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = shipmentController.completeUpdateV3(new ShipmentRequest());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void completeUpdateV3Test2() throws RunnerException {
+        // Mock
+        when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(10));
+        when(shipmentService.completeUpdateV3(any())).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = shipmentController.completeUpdateV3(new ShipmentRequest());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void completeUpdateV3Test3() throws RunnerException {
+        // Mock
+        when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(10));
+        when(shipmentService.completeUpdateV3(any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = shipmentController.completeUpdateV3(new ShipmentRequest());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void listV3Test() {
+        // Mock
+        when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(10));
+        when(shipmentService.fullShipmentsListV3(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = shipmentController.listV3(ListCommonRequest.builder().build(), true, true);
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void ListV3Test2() {
+        // Mock
+        when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(10));
+        when(shipmentService.listV3(any(), anyBoolean())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = shipmentController.listV3(ListCommonRequest.builder().build(), false, true);
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void listV3Test3() {
+        // Mock
+        when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(10));
+        when(shipmentService.listV3(any(), anyBoolean())).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = shipmentController.listV3(ListCommonRequest.builder().build(), false, true);
+        // Assert
+        assertEquals(HttpStatus.FORBIDDEN, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testRetrieveByIdV3() {
+        // Mock
+        when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(10));
+        when(shipmentService.retrieveByIdV3(any(), anyBoolean())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = shipmentController.retrieveByIdV3(Optional.of(111L), Optional.of(UUID.randomUUID().toString()), true);
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
 }

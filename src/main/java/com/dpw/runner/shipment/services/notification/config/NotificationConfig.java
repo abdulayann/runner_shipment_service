@@ -23,4 +23,12 @@ public class NotificationConfig {
     private String organizationId;
     @Value("${notification.emailFrom:default}")
     private String emailFrom;
+    @Value("${notification.getLogs:default}")
+    private String getLogs;
+    @Value("${notification.apiKeyVersionHeader:default}")
+    private String apiKeyVersionHeader;
+    @Value("${notification.apiKeyVersion:default}")
+    private String apiKeyVersion;
+    @Value("${notification.createTags:default}")
+    private String createTags;
 }

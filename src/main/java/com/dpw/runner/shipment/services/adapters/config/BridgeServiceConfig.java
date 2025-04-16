@@ -21,6 +21,10 @@ public class BridgeServiceConfig {
     private String userName;
     @Value("${bridgeService.password}")
     private String password;
+    @Value("${bridgeService.outbound.fileTransfer.userName}")
+    private String outBoundTransferUserName;
+    @Value("${bridgeService.inbound.fileTransfer.password}")
+    private String outBoundTransferPassword;
 
 
     @Value("${bridgeService.tactIntegrationRequestCode}")

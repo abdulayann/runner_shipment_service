@@ -17,4 +17,5 @@ public interface ITruckDriverDetailsRepository extends MultiTenancyRepository<Tr
         return findOne(spec);
     }
     List<TruckDriverDetails> findAll();
+  List<TruckDriverDetails> findByShipmentId(Long shipmentId);
 }

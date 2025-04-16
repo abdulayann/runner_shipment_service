@@ -1,8 +1,10 @@
 package com.dpw.runner.shipment.services.helpers;
 
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.responses.*;
 import com.dpw.runner.shipment.services.dto.response.ByteArrayResourceResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -62,7 +64,6 @@ public class ResponseHelper {
     }
 
     public static ResponseEntity<IRunnerResponse> buildListSuccessResponse(List<IRunnerResponse> data, int pageNo, long count) {
-        log.debug(RETURN_RESPONSE_WITH_DATA_MSG, data);
         IRunnerResponse runnerResponse = RunnerListResponse.builder().success(true)
                 .requestId(LoggerHelper.getRequestIdFromMDC())
                 .data(data).numberOfRecords(count).totalPages(pageNo).build();
@@ -79,7 +80,7 @@ public class ResponseHelper {
 
     public static ResponseEntity<IRunnerResponse> buildFailedResponse(String msg, HttpStatus httpStatus) {
         httpStatus = httpStatus == null  ? HttpStatus.BAD_REQUEST : httpStatus;
-        log.debug(RETURN_RESPONSE_WITH_ERROR_MSG, msg);
+        log.error(RETURN_RESPONSE_WITH_ERROR_MSG, msg);
         RunnerResponse runnerResponse = buildFailResponse(new ApiError(httpStatus, msg));
         return new ResponseEntity<>(runnerResponse, httpStatus);
     }
@@ -124,6 +125,8 @@ public class ResponseHelper {
                 .contentType(contentType)
                 .contentLength(resource.contentLength())
                 .header(HttpHeaders.CONTENT_DISPOSITION,"attachment; filename=" + fileName)
+                .header("X-CSD-Document-Status",
+                    String.valueOf(Boolean.parseBoolean(MDC.get(Constants.IS_CSD_DOCUMENT_ADDED))))
                 .body(resource);
     }
 }

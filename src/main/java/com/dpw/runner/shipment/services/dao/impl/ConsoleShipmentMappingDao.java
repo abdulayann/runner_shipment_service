@@ -2,9 +2,11 @@ package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.repository.interfaces.IConsoleShipmentsMappingRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -13,10 +15,15 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
+
 @Repository
 public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
     @Autowired
     private IConsoleShipmentsMappingRepository consoleShipmentsMappingRepository;
+
+    @Autowired
+    @Lazy
+    private ShipmentDao shipmentDao;
 
     @Override
     public Page<ConsoleShipmentMapping> findAll(Specification<ConsoleShipmentMapping> spec, Pageable pageable) {
@@ -81,21 +88,11 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
     }
 
     @Override
-    public HashSet<Long> assignShipments(ShipmentRequestedType shipmentRequestedType, Long consolidationId, List<Long> shipIds, List<ConsoleShipmentMapping> mappings, Set<Long> interBranchShipIds) {
+    public HashSet<Long> assignShipments(ShipmentRequestedType shipmentRequestedType, Long consolidationId, List<Long> shipIds, List<ConsoleShipmentMapping> mappings, Set<Long> interBranchRequestedShipIds, Set<Long> interBranchApprovedShipIds, Map<Long, ShipmentDetails> interBranchImportShipmentMap) {
         if(mappings == null)
             mappings = findByConsolidationId(consolidationId);
         HashSet<Long> shipmentIds = new HashSet<>(shipIds);
-        Map<Long, ConsoleShipmentMapping> consoleShipmentMappingMap = new HashMap<>();
-        if (mappings != null && mappings.size() > 0) {
-            for (ConsoleShipmentMapping consoleShipmentMapping : mappings) {
-                if(Objects.equals(consolidationId, consoleShipmentMapping.getConsolidationId())) {
-                    if(Boolean.TRUE.equals(consoleShipmentMapping.getIsAttachmentDone()))
-                        shipmentIds.remove(consoleShipmentMapping.getShipmentId());
-                    if(shipmentRequestedType != null)
-                        consoleShipmentMappingMap.put(consoleShipmentMapping.getShipmentId(), consoleShipmentMapping);
-                }
-            }
-        }
+        Map<Long, ConsoleShipmentMapping> consoleShipmentMappingMap = getLongConsoleShipmentMappingMap(shipmentRequestedType, consolidationId, mappings, shipmentIds);
         if (!shipmentIds.isEmpty()) {
             for (Long id : shipmentIds) {
                 ConsoleShipmentMapping entity;
@@ -105,19 +102,39 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
                     entity = new ConsoleShipmentMapping();
                 entity.setShipmentId(id);
                 entity.setConsolidationId(consolidationId);
-                if(interBranchShipIds.contains(id)) {
-                    entity.setIsAttachmentDone(false);
-                    entity.setRequestedType(ShipmentRequestedType.SHIPMENT_PULL_REQUESTED);
-                } else {
-                    entity.setIsAttachmentDone(true);
-                }
-                if(shipmentRequestedType != null) {
+                processInterBranchCase(interBranchRequestedShipIds, interBranchImportShipmentMap, id, entity);
+                if(shipmentRequestedType != null && (interBranchApprovedShipIds.contains(id) || interBranchImportShipmentMap.containsKey(id))) {
                     entity.setRequestedType(shipmentRequestedType);
                 }
                 save(entity);
             }
         }
         return shipmentIds;
+    }
+
+    private void processInterBranchCase(Set<Long> interBranchRequestedShipIds, Map<Long, ShipmentDetails> interBranchImportShipmentMap, Long id, ConsoleShipmentMapping entity) {
+        if(interBranchRequestedShipIds.contains(id) && !interBranchImportShipmentMap.containsKey(id))
+        {
+            entity.setIsAttachmentDone(false);
+            entity.setRequestedType(ShipmentRequestedType.SHIPMENT_PULL_REQUESTED);
+        } else {
+            entity.setIsAttachmentDone(true);
+        }
+    }
+
+    private Map<Long, ConsoleShipmentMapping> getLongConsoleShipmentMappingMap(ShipmentRequestedType shipmentRequestedType, Long consolidationId, List<ConsoleShipmentMapping> mappings, HashSet<Long> shipmentIds) {
+        Map<Long, ConsoleShipmentMapping> consoleShipmentMappingMap = new HashMap<>();
+        if (mappings != null && !mappings.isEmpty()) {
+            for (ConsoleShipmentMapping consoleShipmentMapping : mappings) {
+                if(Objects.equals(consolidationId, consoleShipmentMapping.getConsolidationId())) {
+                    if(Boolean.TRUE.equals(consoleShipmentMapping.getIsAttachmentDone()))
+                        shipmentIds.remove(consoleShipmentMapping.getShipmentId());
+                    if(shipmentRequestedType != null)
+                        consoleShipmentMappingMap.put(consoleShipmentMapping.getShipmentId(), consoleShipmentMapping);
+                }
+            }
+        }
+        return consoleShipmentMappingMap;
     }
 
     @Override
@@ -176,5 +193,34 @@ public class ConsoleShipmentMappingDao implements IConsoleShipmentMappingDao {
     @Transactional
     public void deletePendingStateByConsoleIdAndShipmentId(Long consoleId, Long shipmentId) {
         consoleShipmentsMappingRepository.deletePendingStateByConsoleIdAndShipmentId(consoleId, shipmentId);
+    }
+
+    @Override
+    public Map<Long, Integer> pendingStateCountBasedOnShipmentId(List<Long> shipmentIds, Integer requestedType) {
+        List<Object[]> results = consoleShipmentsMappingRepository.pendingStateCountBasedOnShipmentId(shipmentIds, requestedType);
+        return this.convertResponseToMap(results);
+    }
+
+    @Override
+    public Integer pendingStateCountBasedOnRequestType(Integer requestType, Integer tenantId) {
+        return consoleShipmentsMappingRepository.pendingStateCountBasedOnRequestType(requestType, tenantId);
+    }
+
+    @Override
+    public Map<Long, Integer> pendingStateCountBasedOnConsolidation(List<Long> consoleIds, Integer requestedType) {
+        List<Object[]> results = consoleShipmentsMappingRepository.pendingStateCountBasedOnConsolidation(consoleIds, requestedType);
+        return this.convertResponseToMap(results);
+    }
+
+    private Map<Long, Integer> convertResponseToMap(List<Object[]> results) {
+        Map<Long, Integer> responseMap = new HashMap<>();
+
+        for (Object[] result : results) {
+            Long key = ((Number) result[0]).longValue();
+            int count = ((Number) result[1]).intValue();
+            responseMap.put(key, count);
+        }
+
+        return responseMap;
     }
 }

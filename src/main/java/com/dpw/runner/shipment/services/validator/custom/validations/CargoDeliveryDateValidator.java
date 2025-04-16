@@ -2,11 +2,9 @@ package com.dpw.runner.shipment.services.validator.custom.validations;
 
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.validator.annotations.ValidCargoDeliveryDate;
-
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 import java.time.LocalDateTime;
-import java.util.Date;
 
 public class CargoDeliveryDateValidator implements ConstraintValidator<ValidCargoDeliveryDate, ShipmentRequest> {
 

@@ -5,7 +5,6 @@ import com.dpw.runner.shipment.services.utils.UnlocationData;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.swagger.annotations.ApiModel;
 import lombok.*;
-
 import java.io.Serializable;
 import java.time.LocalDateTime;
 
@@ -26,6 +25,8 @@ public class AwbRoutingInfo implements Serializable {
     private String  flightNumber;
     @ExcludeTimeZone
     private LocalDateTime flightDate;
+    @ExcludeTimeZone
+    private LocalDateTime eta;
     private String departureAirport;
     private String destinationAirport;
     @UnlocationData

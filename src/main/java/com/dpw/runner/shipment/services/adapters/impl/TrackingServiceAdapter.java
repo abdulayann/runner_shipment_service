@@ -1,12 +1,12 @@
 package com.dpw.runner.shipment.services.adapters.impl;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 import com.azure.messaging.servicebus.ServiceBusMessage;
 import com.dpw.runner.shipment.services.adapters.config.TrackingServiceConfig;
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
@@ -41,6 +41,8 @@ import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service_bus.ISBProperties;
 import com.dpw.runner.shipment.services.service_bus.ISBUtils;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.CountryListHelper;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.nimbusds.jose.util.Pair;
 import java.time.format.DateTimeFormatter;
@@ -59,6 +61,7 @@ import java.util.concurrent.ForkJoinPool;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -69,6 +72,15 @@ import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ForkJoinPool;
+
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 
 @Slf4j
@@ -88,6 +100,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
     @Autowired
     private MasterDataFactory masterDataFactory;
     @Autowired
+    @Qualifier("restTemplateForTrackingService")
     private RestTemplate restTemplate;
     @Autowired
     private ISBUtils sbUtils;
@@ -101,6 +114,8 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
     private String trackingServiceNewFlowEndpoint;
     @Autowired
     private IV1Service v1Service;
+    @Autowired
+    private CommonUtils commonUtils;
 
     @Override
     public UniversalTrackingPayload.UniversalEventsPayload mapEventDetailsForTracking(String bookingReferenceNumber, String referenceNumberType, String runnerReferenceNumber, List<Events> events) {
@@ -133,7 +148,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
     @Override
     @Async
     public void publishUpdatesToTrackingServiceQueue(String jsonBody, Boolean isTrackingEvents) {
-        if(isTrackingEvents){
+        if(Boolean.TRUE.equals(isTrackingEvents)){
           // Publish to EventsMessage Topic
           sbUtils.sendMessagesToTopic(
               isbProperties,
@@ -153,13 +168,13 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
         try {
             List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByShipmentId(shipmentDetails.getId());
             ConsolidationDetails consolidationDetails = null;
-            if(consoleShipmentMappings != null && consoleShipmentMappings.size() > 0) {
+            if(consoleShipmentMappings != null && !consoleShipmentMappings.isEmpty()) {
                 Optional<ConsolidationDetails> optional = consolidationDetailsDao.findById(consoleShipmentMappings.get(0).getConsolidationId());
                 consolidationDetails = optional.get();
             }
 
             if(consolidationDetails != null && !consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR))
-                res = GetContainerDetailsAttachedForShipment(shipmentDetails).size() > 0;
+                res = !getContainerDetailsAttachedForShipment(shipmentDetails).isEmpty();
             else
                 res = !Objects.isNull(shipmentDetails.getHouseBill()) || !Objects.isNull(shipmentDetails.getMasterBill());
 
@@ -172,7 +187,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
     @Override
     public boolean checkIfAwbExists(ConsolidationDetails consolidationDetails) {
         List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(consolidationDetails.getId());
-        if(consoleShipmentMappings != null && consoleShipmentMappings.size() > 0){
+        if(consoleShipmentMappings != null && !consoleShipmentMappings.isEmpty()){
             Optional<ShipmentDetails> optional = shipmentDao.findById(consoleShipmentMappings.get(0).getShipmentId());
             var shipment = optional.get();
             return (shipment.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipment.getHouseBill() != null);
@@ -193,25 +208,13 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
     }
 
     @Override
-    public UniversalTrackingPayload mapConsoleDataToTrackingServiceData(ConsolidationDetails consolidationDetails) {
+    public UniversalTrackingPayload mapConsoleDataToTrackingServiceData(ConsolidationDetails consolidationDetails, ShipmentDetails shipment) {
         UniversalTrackingPayload trackingPayload = null;
         if(consolidationDetails != null) {
-            ShipmentDetails shipment = GetShipmentIfConsolAttached(consolidationDetails);
-            trackingPayload = mapDetailsToTSData(consolidationDetails, shipment, false);
+            trackingPayload = mapDetailsToTSData(consolidationDetails, shipment, true);
             log.info("Consolidation tracking payload : {}", trackingPayload);
         }
         return trackingPayload;
-    }
-
-    private ShipmentDetails GetShipmentIfConsolAttached(ConsolidationDetails consolidationDetails) {
-        ShipmentDetails shipmentDetails = null;
-        List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(consolidationDetails.getId());
-        if(consoleShipmentMappings != null && consoleShipmentMappings.size() > 0) {
-            Long shipmentId = consoleShipmentMappings.get(0).getShipmentId();
-            Optional<ShipmentDetails> optional = shipmentDao.findById(shipmentId);
-            shipmentDetails = optional.get();
-        }
-        return shipmentDetails;
     }
 
     @Override
@@ -269,7 +272,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
         ConsolidationDetails consolidationDetails = null;
         try{
             List<ConsoleShipmentMapping> linkedConsol = consoleShipmentMappingDao.findByShipmentId(shipmentId);
-            if(linkedConsol != null && linkedConsol.size() > 0) {
+            if(linkedConsol != null && !linkedConsol.isEmpty()) {
                 Optional<ConsolidationDetails> optional = consolidationDetailsDao.findById(linkedConsol.get(0).getConsolidationId());
                 consolidationDetails = optional.get();
             }
@@ -289,7 +292,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
 
         var entityDetails = getEntityDetails(inputConsol, inputShipment, isRequestFromShipment);
         var consolNumber = inputConsol !=null ? inputConsol.getConsolidationNumber() : null;
-        var masterBill = inputConsol !=null ? inputConsol.getBol() : (inputShipment != null ? inputShipment.getMasterBill() : null);
+        var masterBill = inputConsol !=null ? inputConsol.getBol() : getDefaultMasterBill(inputShipment);
         var shipmentNumber =  inputShipment !=null ? inputShipment.getShipmentId() : null;
 
 
@@ -298,7 +301,21 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
         else
             trackingPayload = mapDetailsForTracking(Constants.SHIPMENT, shipmentNumber,masterBill, shipmentDetails, entityDetails);
 
-        if(inputShipment != null && inputShipment.getSource().equals("API")) {
+        setBookingReferenceNumberInTrackingPayload(inputConsol, inputShipment, isRequestFromShipment, trackingPayload);
+
+        setEntityTypeInTrackingPayload(inputConsol, inputShipment, trackingPayload);
+
+        setCarrierInTrackingPayload(inputConsol, inputShipment, trackingPayload);
+
+        return trackingPayload;
+    }
+
+    private String getDefaultMasterBill(ShipmentDetails inputShipment) {
+        return inputShipment != null ? inputShipment.getMasterBill() : null;
+    }
+
+    private void setBookingReferenceNumberInTrackingPayload(ConsolidationDetails inputConsol, ShipmentDetails inputShipment, boolean isRequestFromShipment, UniversalTrackingPayload trackingPayload) {
+        if(inputShipment != null && "API".equals(inputShipment.getSource())) {
             if(!isRequestFromShipment)
                 trackingPayload.setBookingReferenceNumber(inputConsol.getReferenceNumber());
             else
@@ -306,61 +323,63 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
         }
         else
             trackingPayload.setBookingReferenceNumber(null);
+    }
 
+    private void setEntityTypeInTrackingPayload(ConsolidationDetails inputConsol, ShipmentDetails inputShipment, UniversalTrackingPayload trackingPayload) {
         if((inputConsol != null && ! inputConsol.getTransportMode().equalsIgnoreCase(Constants.TRANSPORT_MODE_AIR)) || (inputShipment != null && !inputShipment.getTransportMode().equalsIgnoreCase(Constants.TRANSPORT_MODE_AIR)))
             trackingPayload.setEntityType("Container");
         else
             trackingPayload.setEntityType("awb");
+    }
 
+    private void setCarrierInTrackingPayload(ConsolidationDetails inputConsol, ShipmentDetails inputShipment, UniversalTrackingPayload trackingPayload) {
         if(inputConsol != null)
             trackingPayload.setCarrier(fetchCarrierName(inputConsol.getCarrierDetails().getShippingLine()));
         else
             trackingPayload.setCarrier(fetchCarrierName(inputShipment.getCarrierDetails().getShippingLine()));
-
-        return trackingPayload;
     }
 
     private List<UniversalTrackingPayload.EntityDetail> getEntityDetails(ConsolidationDetails inputConsol, ShipmentDetails inputShipment, boolean isRequestFromShipment) {
         if(inputConsol!=null && !inputConsol.getTransportMode().equals("AIR")) {
             if(!isRequestFromShipment)
-                return GetContainerDetailsFromConsol(inputConsol);
+                return getContainerDetailsFromConsol(inputConsol);
             else
-                return GetContainerDetailsAttachedForShipment(inputShipment);
+                return getContainerDetailsAttachedForShipment(inputShipment);
         }
         else if(inputShipment.getTransportMode().equals("AIR"))
-                return GetAWBDetailsFromShipment(inputShipment);
+                return getAWBDetailsFromShipment(inputShipment);
         else
             return null;
     }
 
     private String getBillOfLading(ShipmentDetails shipmentDetails) {
-        if(!IsStringNullOrEmpty(shipmentDetails.getHouseBill()))
+        if(!isStringNullOrEmpty(shipmentDetails.getHouseBill()))
             return shipmentDetails.getHouseBill();
         return shipmentDetails.getMasterBill();
     }
 
-    private List<UniversalTrackingPayload.EntityDetail> GetAWBDetailsFromShipment(ShipmentDetails inputShipment) {
+    private List<UniversalTrackingPayload.EntityDetail> getAWBDetailsFromShipment(ShipmentDetails inputShipment) {
         List<UniversalTrackingPayload.EntityDetail> result = new ArrayList<>();
         List<Awb> awbList = awbDao.findByShipmentId(inputShipment.getId());
         result.add(UniversalTrackingPayload.EntityDetail.builder()
                 .trackingNumber(inputShipment.getMasterBill())
-                .allocationDate(awbList == null || awbList.size() == 0 ? null: awbList.get(0).getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
+                .allocationDate(awbList == null || awbList.isEmpty() ? null: awbList.get(0).getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")))
                 .build());
 
         return result;
     }
 
-    private List<UniversalTrackingPayload.EntityDetail> GetContainerDetailsAttachedForShipment(ShipmentDetails inputShipment) {
-        return getEntityDetailsFromContainers(inputShipment.getContainersList());
+    private List<UniversalTrackingPayload.EntityDetail> getContainerDetailsAttachedForShipment(ShipmentDetails inputShipment) {
+        return getEntityDetailsFromContainers(inputShipment.getContainersList() != null ? new ArrayList<>(inputShipment.getContainersList()) : null);
     }
 
 
-    private List<UniversalTrackingPayload.EntityDetail> GetContainerDetailsFromConsol(ConsolidationDetails inputConsol) {
+    private List<UniversalTrackingPayload.EntityDetail> getContainerDetailsFromConsol(ConsolidationDetails inputConsol) {
         return getEntityDetailsFromContainers(inputConsol.getContainersList());
     }
 
     private List<UniversalTrackingPayload.EntityDetail> getEntityDetailsFromContainers(List<Containers> containersList) {
-        if(containersList == null || containersList.size() == 0)
+        if(containersList == null || containersList.isEmpty())
             return null;
 
         List<UniversalTrackingPayload.EntityDetail> result = new ArrayList<>();
@@ -377,7 +396,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
                     .mode(container.getHblDeliveryMode())
                     .containerCount(container.getContainerCount())
                     .descriptionOfGoods(container.getDescriptionOfGoods())
-                    .noofPackages(IsStringNullOrEmpty(container.getPacks()) ? null : Long.valueOf(container.getPacks()))
+                    .noofPackages(isStringNullOrEmpty(container.getPacks()) ? null : Long.valueOf(container.getPacks()))
                     .netWeight(container.getNetWeight())
                     .netWeightUom(container.getNetWeightUnit())
                     .build();
@@ -407,12 +426,19 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
         if(shipmentDetails == null)
             return null;
 
+        // shipment direction
+        String shipmentDirection = shipmentDetails.getDirection();
+        if(Constants.DIRECTION_CTS.equalsIgnoreCase(shipmentDetails.getDirection()))
+            shipmentDirection = Constants.DIRECTION_EXP;
+
+
         UniversalTrackingPayload.ShipmentDetail response = UniversalTrackingPayload.ShipmentDetail.builder()
                 .serviceMode(shipmentDetails.getServiceType())
 //                .estimatedPickupDate(shipmentDetails.EstimatedPickup != null ? ((DateTime)shipmentDetails.EstimatedPickup).Date.ToString("yyyy-MM-dd") : null)
 //                .bookingCreationDate(shipmentDetails.DateofIssue != null ? ((DateTime)shipmentDetails.DateofIssue).Date.ToString("yyyy-MM-dd") : null)
                 .houseBill(getBillOfLading(shipmentDetails))
-                .shipmentType(shipmentDetails.getDirection())
+                .shipmentType(shipmentDirection)
+                .countryCode(getBranchCountryCode())
                 .build();
 
         if(shipmentDetails.getCarrierDetails() != null) {
@@ -444,7 +470,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
 
     private Map<String, UnlocationsResponse> getLocationData(Set<String> locCodes) {
         Map<String, UnlocationsResponse> locationMap = new HashMap<>();
-        if (locCodes.size() > 0) {
+        if (!locCodes.isEmpty()) {
             List<Object> criteria = Arrays.asList(
                     Arrays.asList(EntityTransferConstants.LOCATION_SERVICE_GUID),
                     "In",
@@ -453,7 +479,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
             CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).criteriaRequests(criteria).build();
             V1DataResponse v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
             List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(v1DataResponse.entities, UnlocationsResponse.class);
-            if (unlocationsResponse != null && unlocationsResponse.size() > 0) {
+            if (unlocationsResponse != null && !unlocationsResponse.isEmpty()) {
 
                 for (UnlocationsResponse unlocation : unlocationsResponse) {
                     locationMap.put(unlocation.getLocationsReferenceGUID(), unlocation);
@@ -462,6 +488,17 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
             }
         }
         return locationMap;
+    }
+
+    private String getBranchCountryCode() {
+        String countryCode = null;
+        // user should ideally not be null but even if it is we can gracefully exit
+        if (UserContext.getUser() == null || UserContext.getUser().getTenantCountryCode() == null)
+            return countryCode;
+
+        countryCode = CountryListHelper.ISO3166.fromAlpha3(UserContext.getUser().getTenantCountryCode().toUpperCase()).getAlpha2();
+
+        return StringUtility.toUpperCase(countryCode);
     }
 
     @Override
@@ -486,6 +523,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
     // WILL REMOVE AFTER EVENTS TESTING
     // IGNORE THE COMMENTED SECTION
 
+    @SuppressWarnings("java:S125")
 //    @Override
 //    public TrackingServiceApiResponse fetchTrackingData(TrackingRequest request) throws RunnerException {
 //        // Toggle this flag to switch between remote call and reading from file
@@ -566,6 +604,32 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
             return EventConstants.FLDR;
         }
 
+        String shortCode = getShortCode(safeEventCode, safeDescription);
+        if (shortCode != null) return shortCode;
+
+        String ecpk = getECPKEventCode(safeEventCode, safeLocationRole);
+        if (ecpk != null) return ecpk;
+
+        String fcgi = getFCGIEventCode(safeEventCode, safeLocationRole);
+        if (fcgi != null) return fcgi;
+
+        String vsdp = getVSDPEventCode(safeEventCode, safeLocationRole);
+        if (vsdp != null) return vsdp;
+
+        String ardp = getADRPEventCode(safeEventCode, safeLocationRole);
+        if (ardp != null) return ardp;
+
+        String fugo = getFUGOEventCode(safeEventCode, safeLocationRole);
+        if (fugo != null) return fugo;
+
+        String emcr = getEMCREventCode(safeEventCode, safeLocationRole);
+        if (emcr != null) return emcr;
+
+        log.info("No match found for event code '{}' with location role '{}'. Returning original event code.", safeEventCode, safeLocationRole);
+        return eventCode;
+    }
+
+    private String getShortCode(String safeEventCode, String safeDescription) {
         if (EventConstants.LITERAL.equalsIgnoreCase(safeEventCode)) {
             String shortCode = null;
 
@@ -582,45 +646,61 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
                 return shortCode;
             }
         }
+        return null;
+    }
 
+    private String getECPKEventCode(String safeEventCode, String safeLocationRole) {
         if (EventConstants.GATE_IN_WITH_CONTAINER_EMPTY.equalsIgnoreCase(safeEventCode)
                 && safeLocationRole.startsWith(EventConstants.ORIGIN)) {
             log.debug("Matched GATE_IN_WITH_CONTAINER_EMPTY and ORIGIN. Returning short code: {}", EventConstants.ECPK);
             return EventConstants.ECPK;
         }
+        return null;
+    }
 
+    private String getFCGIEventCode(String safeEventCode, String safeLocationRole) {
         if (EventConstants.GATE_IN_WITH_CONTAINER_FULL.equalsIgnoreCase(safeEventCode)
                 && "originPort".equalsIgnoreCase(safeLocationRole)) {
             log.debug("Matched GATE_IN_WITH_CONTAINER_FULL and originPort. Returning short code: {}", EventConstants.FCGI);
             return EventConstants.FCGI;
         }
+        return null;
+    }
 
+    private String getVSDPEventCode(String safeEventCode, String safeLocationRole) {
         if (EventConstants.VESSEL_DEPARTURE_WITH_CONTAINER.equalsIgnoreCase(safeEventCode)
                 && "originPort".equalsIgnoreCase(safeLocationRole)) {
             log.debug("Matched VESSEL_DEPARTURE_WITH_CONTAINER and originPort. Returning short code: {}", EventConstants.VSDP);
             return EventConstants.VSDP;
         }
+        return null;
+    }
 
+    private String getADRPEventCode(String safeEventCode, String safeLocationRole) {
         if (EventConstants.VESSEL_ARRIVAL_WITH_CONTAINER.equalsIgnoreCase(safeEventCode)
                 && "destinationPort".equalsIgnoreCase(safeLocationRole)) {
             log.debug("Matched VESSEL_ARRIVAL_WITH_CONTAINER and destinationPort. Returning short code: {}", EventConstants.ARDP);
             return EventConstants.ARDP;
         }
+        return null;
+    }
 
+    private String getFUGOEventCode(String safeEventCode, String safeLocationRole) {
         if (EventConstants.GATE_OUT_WITH_CONTAINER_FULL.equalsIgnoreCase(safeEventCode)
                 && "destinationPort".equalsIgnoreCase(safeLocationRole)) {
             log.debug("Matched GATE_OUT_WITH_CONTAINER_FULL and destinationPort. Returning short code: {}", EventConstants.FUGO);
             return EventConstants.FUGO;
         }
+        return null;
+    }
 
+    private String getEMCREventCode(String safeEventCode, String safeLocationRole) {
         if (EventConstants.GATE_IN_WITH_CONTAINER_EMPTY.equalsIgnoreCase(safeEventCode)
                 && safeLocationRole.startsWith(EventConstants.DESTINATION)) {
             log.debug("Matched GATE_IN_WITH_CONTAINER_EMPTY and DESTINATION. Returning short code: {}", EventConstants.EMCR);
             return EventConstants.EMCR;
         }
-
-        log.info("No match found for event code '{}' with location role '{}'. Returning original event code.", safeEventCode, safeLocationRole);
-        return eventCode;
+        return null;
     }
 
     @Override
@@ -672,8 +752,8 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
                                                         .map(DateAndSources::getDateTime).orElse(null))
                                                 .estimated(Optional.ofNullable(event.getProjectedEventTime())
                                                         .map(DateAndSources::getDateTime).orElse(null))
-                                                .eventCode(convertTrackingEventCodeToShortCode(event.getLocationRole(), event.getEventType(), event.getDescriptionFromSource()))
-                                                .description(event.getDescriptionFromSource())
+                                                .eventCode(convertTrackingEventCodeToShortCode(event.getLocationRole(), event.getEventType(), event.getDescription()))
+                                                .description(event.getDescription())
                                                 .containerNumber(container.getContainerNumber())
                                                 .locationRole(event.getLocationRole());
 
@@ -684,8 +764,8 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
                                                         .findFirst())
                                                 .ifPresent(place -> eventBuilder.latitude(place.getLatitude())
                                                         .longitude(place.getLongitude())
-                                                        .placeDescription(place.getFormattedDescription())
-                                                        .placeName(place.getName()));
+                                                        .placeDescription(StringUtils.left(place.getFormattedDescription(), 100))
+                                                        .placeName(place.getCode()));
 
                                         // Populate fields from Transports independently
                                         Optional.ofNullable(event.getDetails())
@@ -694,7 +774,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
                                                         .filter(transport -> transport != null && transportId.equals(transport.getId()))
                                                         .findFirst())
                                                 .ifPresent(transport -> eventBuilder.flightNumber(transport.getName())
-                                                        .flightName(String.valueOf(transport.getOperatorName())));
+                                                        .flightName(StringUtility.convertToString(transport.getOperatorName())));
 
                                         // Build and return the event
                                         return eventBuilder.build();

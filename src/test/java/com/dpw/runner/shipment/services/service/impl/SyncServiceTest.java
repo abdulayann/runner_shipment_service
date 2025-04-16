@@ -9,12 +9,9 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1DataSyncResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
-import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.EmailServiceUtility;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,15 +23,11 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpHeaders;
 
-import javax.mail.MessagingException;
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -49,24 +42,9 @@ class SyncServiceTest {
     private KafkaProducer producer;
     @Mock
     private JsonHelper jsonHelper;
-//    @Mock
-//    private RetryTemplate retryTemplate;
 
     @InjectMocks
     private SyncService syncService;
-
-    private static JsonTestUtility jsonTestUtility;
-    private static ObjectMapper objectMapperTest;
-
-    @BeforeAll
-    static void init(){
-        try {
-            jsonTestUtility = new JsonTestUtility();
-            objectMapperTest = JsonTestUtility.getMapper();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
 
     @BeforeEach
     void setUp() {
@@ -81,7 +59,7 @@ class SyncServiceTest {
     }
 
     @Test
-    void callSyncSuccess() throws RunnerException {
+    void callSyncSuccess() {
         String json = null;
         String id = "1";
         String guid = null;
@@ -91,11 +69,11 @@ class SyncServiceTest {
 
         when(v1Service.v1DataSync(any(), any())).thenReturn(mockResponse);
 
-        syncService.callSyncAsync(json, id, guid, entity, headers);
+        assertDoesNotThrow(() -> syncService.callSyncAsync(json, id, guid, entity, headers));
     }
 
     @Test
-    void callSyncFailure() throws RunnerException, MessagingException, IOException {
+    void callSyncFailure() {
         String json = null;
         String id = "1";
         String guid = null;
@@ -106,22 +84,22 @@ class SyncServiceTest {
         // mock
         when(v1Service.v1DataSync(any(), any())).thenReturn(mockResponse);
         // call
-        var e = assertThrows(RunnerException.class, () -> syncService.callSync(json, id, guid, entity, headers));
+        assertThrows(RunnerException.class, () -> syncService.callSync(json, id, guid, entity, headers));
     }
 
     @Test
-    void callSyncAsync() throws RunnerException {
-        List<String> json = new ArrayList<>(Arrays.asList("1"));
-        List<String> id = new ArrayList<>(Arrays.asList("1"));
-        List<String> guid = new ArrayList<>(Arrays.asList("1"));
-        List<String> entity = new ArrayList<>(Arrays.asList("1"));
+    void callSyncAsync() {
+        List<String> json = new ArrayList<>(List.of("1"));
+        List<String> id = new ArrayList<>(List.of("1"));
+        List<String> guid = new ArrayList<>(List.of("1"));
+        List<String> entity = new ArrayList<>(List.of("1"));
         HttpHeaders headers = null;
 
         V1DataSyncResponse mockResponse = V1DataSyncResponse.builder().isSuccess(true).build();
 
         when(v1Service.v1DataSync(any(), any())).thenReturn(mockResponse);
 
-        syncService.callSyncAsync(json, id, guid, entity, headers);
+        assertDoesNotThrow(() -> syncService.callSyncAsync(json, id, guid, entity, headers));
     }
 
     @Test
@@ -133,7 +111,7 @@ class SyncServiceTest {
         String entity = null;
         String transactionId = null;
         doThrow(new RuntimeException()).when(producer).produceToKafka(any(), any(), any());
-        syncService.pushToKafka(json, id, guid, entity, transactionId);
+        assertDoesNotThrow(() -> syncService.pushToKafka(json, id, guid, entity, transactionId));
     }
 
     @Test
@@ -145,6 +123,6 @@ class SyncServiceTest {
         String entity = null;
         String transactionId = null;
         doNothing().when(producer).produceToKafka(any(), any(), any());
-        syncService.pushToKafka(json, id, guid, entity, transactionId);
+        assertDoesNotThrow(() -> syncService.pushToKafka(json, id, guid, entity, transactionId));
     }
 }

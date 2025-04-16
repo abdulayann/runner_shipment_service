@@ -24,5 +24,9 @@ public class CommonV1ListRequest {
     private int columnSelection;
     @JsonProperty("IncludeColumns")
     private List<String> includeColumns = null;
+    @JsonProperty("ContainsText")
+    private String containsText;
+    @JsonProperty("ExcludeTotalCount")
+    private Boolean excludeTotalCount;
 
 }

@@ -5,7 +5,9 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
+import com.dpw.runner.shipment.services.dto.request.ListCousinBranchesForEtRequest;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.service.interfaces.IMasterDataService;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
@@ -74,6 +76,23 @@ public class MasterDataController {
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return   ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @ApiResponses(value = {
+        @ApiResponse(code = 200, message = ShipmentConstants.NON_BILLABLE_CUSTOMER_SUCCESSFUL),
+        @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+    })
+    @PostMapping(ApiConstants.CREATE_NON_BILLABLE_CUSTOMER)
+    public ResponseEntity<IRunnerResponse> createNonBillableCustomer(@RequestBody @Valid Object request) {
+        String responseMsg;
+        try {
+            return masterDataService.createNonBillableCustomer(CommonRequestModel.buildDependentDataRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
             log.error(responseMsg, e);
         }
         return   ResponseHelper.buildFailedResponse(responseMsg);
@@ -639,6 +658,22 @@ public class MasterDataController {
         }
         return   ResponseHelper.buildFailedResponse(responseMsg);
     }
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, response = DependentServiceResponse.class),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+    })
+    @PostMapping(MasterDataConstants.UNLOCATION + ApiConstants.STATE_BASED_LIST)
+    public ResponseEntity<IRunnerResponse> stateBasedList(@RequestBody @Valid Object request) {
+        String responseMsg;
+        try {
+            return   masterDataService.stateBasedList(CommonRequestModel.buildDependentDataRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return   ResponseHelper.buildFailedResponse(responseMsg);
+    }
 
     @ApiResponses(value = {
             @ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL, response = DependentServiceResponse.class),
@@ -1060,6 +1095,88 @@ public class MasterDataController {
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return   ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, response = DependentServiceResponse.class),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+    })
+    @PostMapping(MasterDataConstants.LIST_ORGS)
+    public ResponseEntity<IRunnerResponse> listOrgs(@RequestBody @Valid Object request) {
+        String responseMsg;
+        try {
+            return masterDataService.listOrgs(CommonRequestModel.buildDependentDataRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @ApiResponses(value = {@ApiResponse(code = 200, message = AwbConstants.MASTER_DATA_RETRIEVE_SUCCESS)})
+    @PostMapping(MasterDataConstants.MULTIPLE_MASTER_DATA)
+    public ResponseEntity<IRunnerResponse> fetchMultipleMasterData(@RequestBody MasterListRequestV2 request) {
+        String responseMsg;
+        try {
+            return masterDataService.fetchMultipleMasterData(CommonRequestModel.buildRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = ShipmentConstants.TENANT_DATA_RETRIEVAL, response = DependentServiceResponse.class),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+    })
+    @PostMapping(ApiConstants.LIST_BRANCHES_BY_DEFAULT_ORG_AND_ADDRESS)
+    public ResponseEntity<IRunnerResponse> listBranchesByDefaultOrgAndAddress(@RequestBody @Valid Object request) {
+        String responseMsg;
+        try {
+            return masterDataService.listBranchesByDefaultOrgAndAddress(CommonRequestModel.buildDependentDataRequest(request));
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, response = DependentServiceResponse.class),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+    })
+    @PostMapping(MasterDataConstants.TENANT + MasterDataConstants.LIST_COUSIN_BRANCH_FOR_NTE_REASSIGN)
+    public ResponseEntity<IRunnerResponse> listCousinBranchForNTEReassign(@RequestBody @Valid ListCousinBranchesForEtRequest request) {
+        String responseMsg;
+        try {
+            request.setIsReassign(true);
+            return   masterDataService.listCousinBranchForEt(request);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage()
+                    : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
+            log.error(responseMsg, e);
+        }
+        return   ResponseHelper.buildFailedResponse(responseMsg);
+    }
+
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = ShipmentConstants.LIST_SUCCESSFUL, response = DependentServiceResponse.class),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
+    })
+    @PostMapping(MasterDataConstants.TENANT + MasterDataConstants.LIST_COUSIN_BRANCH_FOR_ET)
+    public ResponseEntity<IRunnerResponse> listCousinBranchForEt(@RequestBody @Valid ListCousinBranchesForEtRequest request) {
+        String responseMsg;
+        try {
+            return   masterDataService.listCousinBranchForEt(request);
+        } catch (Exception e) {
+            responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
             log.error(responseMsg, e);
         }
         return   ResponseHelper.buildFailedResponse(responseMsg);

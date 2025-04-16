@@ -1,7 +1,6 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 import java.util.List;
-import java.util.Set;
 
 public class EventConstants {
 
@@ -46,6 +45,7 @@ public class EventConstants {
     public static final String CAAW  = "CAAW";
     public static final String VSDP  = "VSDP";
     public static final String FHBL  = "FHBL";
+    public static final String DHBL =  "DHBL";
     public static final String HAWB  = "HAWB";
     public static final String CANG  = "CANG";
     public static final String ARDP  = "ARDP";
@@ -57,8 +57,29 @@ public class EventConstants {
     public static final String CAFS  = "CAFS";
     public static final String SEPU  = "SEPU";
     public static final String EMCR  = "EMCR";
+    public static final String BKCR  = "BKCR";
+    public static final String ECCC  = "ECCC";
+    public static final String BLRS  = "BLRS";
+    public static final String DNMU  = "DNMU";
+    public static final String FNMU  = "FNMU";
+    public static final String PRST  = "PRST";
+    public static final String TSHA  = "TSHA";
+    public static final String COOD  = "COOD";
+    public static final String COCR  = "COCR";
+    public static final String COSN  = "COSN";
+    public static final String TCOA  = "TCOA";
+    public static final String INGE  = "INGE";
+    public static final String SISC  = "SISC";
+    public static final String VGMS  = "VGMS";
+    public static final String BBCK  = "BBCK";
+    public static final String DORC  = "DORC";
+    public static final String PUED = "PUED";
+    public static final String TRED = "TRED";
+    public static final String BKAC = "BKAC";
     // ~~~~~~ end runner event short codes
-    public static final List<String> ATD_EVENT_CODES = List.of("VESSELDEPARTUREWITHCONTAINER", "VSDPR");
+
+    public static final String BKAC_DESCRIPTION = "Booking Acknowledged";
+    public static final List<String> ATD_EVENT_CODES = List.of("VESSELDEPARTUREWITHCONTAINER");
     public static final List<String> ATA_EVENT_CODES = List.of("VESSELARRIVALWITHCONTAINER", "VSARV");
 
     public static final String INVGNTD = "INVGNTD";
@@ -93,5 +114,9 @@ public class EventConstants {
     public static final String DESTINATION = "destination";
     public static final String ORIGIN = "origin";
 
-    public static final Set<String> allowedEventCodes = Set.copyOf(List.of());
+    public static final String SYSTEM_GENERATED = "System Generated";
+    public static final String ERROR_FETCHING_EVENTS_MSG = "Error fetching Events";
+    public static final String ENTITY_ID = "entityId";
+    public static final String ENTITY_TYPE = "entityType";
+    public static final String EVENT_CODE_MATCHES_FCL = "Event code {} matches FCL shipment criteria. messageId {}";
 }

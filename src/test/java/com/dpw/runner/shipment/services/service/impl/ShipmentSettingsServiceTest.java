@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.DocumentService.DocumentService;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
@@ -13,6 +14,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IHblTermsConditionTemplat
 import com.dpw.runner.shipment.services.dao.interfaces.IProductSequenceConfigDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ITenantProductsDao;
+import com.dpw.runner.shipment.services.dto.patchrequest.ShipmentSettingsPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentSettingRequest;
 import com.dpw.runner.shipment.services.dto.request.TemplateUploadRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
@@ -24,9 +26,9 @@ import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.mapper.ShipmentSettingsMapper;
 import com.dpw.runner.shipment.services.syncing.Entity.ShipmentSettingsSyncRequest;
 import com.dpw.runner.shipment.services.syncing.interfaces.IShipmentSettingsSync;
-import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -37,10 +39,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.openapitools.jackson.nullable.JsonNullable;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
@@ -49,6 +54,7 @@ import org.springframework.http.ResponseEntity;
 import java.io.IOException;
 import java.util.*;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -82,6 +88,9 @@ class ShipmentSettingsServiceTest extends CommonMocks {
     @InjectMocks
     private ShipmentSettingsService shipmentSettingsService;
 
+    @Mock
+    private ShipmentSettingsMapper shipmentSettingsMapper;
+
     private static JsonTestUtility jsonTestUtility;
     private static ObjectMapper objectMapperTest;
 
@@ -112,6 +121,7 @@ class ShipmentSettingsServiceTest extends CommonMocks {
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
         UserContext.setUser(mockUser);
+        TenantContext.setCurrentTenant(1);
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().multipleShipmentEnabled(true).mergeContainers(false).volumeChargeableUnit("M3").weightChargeableUnit("KG").build());
         MockitoAnnotations.initMocks(this);
     }
@@ -243,6 +253,20 @@ class ShipmentSettingsServiceTest extends CommonMocks {
     }
 
     @Test
+    void completeSettingsUpdateCreateV1_Update2() throws RunnerException{
+        shipmentSettingRequest = objectMapperTest.convertValue(testShipmentSettingsDetails, ShipmentSettingRequest.class);
+        shipmentSettingRequest.setIsAlwaysUtilization(false);
+        shipmentSettingRequest.setIsUtilizationForContainerQuoted(false);
+        shipmentSettingRequest.setHasNoUtilization(false);
+        when(shipmentSettingsDao.getSettingsByTenantIds(any())).thenReturn(List.of(testShipmentSettingsDetails));
+        when(shipmentSettingsDao.save(any())).thenReturn(testShipmentSettingsDetails);
+        when(jsonHelper.convertValue(any(), eq(ShipmentSettingsDetailsResponse.class))).thenReturn(shipmentSettingsDetailsResponse);
+        when(jsonHelper.convertValue(any(), eq(ShipmentSettingsDetails.class))).thenReturn(testShipmentSettingsDetails);
+        ResponseEntity<IRunnerResponse> responseEntity = shipmentSettingsService.completeSettingsUpdateCreateV1(CommonRequestModel.buildRequest(shipmentSettingRequest));
+        Assertions.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
     void testCompleteSettingsUpdateCreateV1_RequestNull() throws RunnerException{
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest();
         Assertions.assertThrows(RuntimeException.class, () -> shipmentSettingsService.completeSettingsUpdateCreateV1(commonRequestModel));
@@ -299,7 +323,7 @@ class ShipmentSettingsServiceTest extends CommonMocks {
 
     @Test
     void testCompleteCreateFromV1_RequestNull() throws RunnerException{
-        when(shipmentSettingsDao.save(any())).thenThrow(new RuntimeException());
+        //when(shipmentSettingsDao.save(any())).thenThrow(new RuntimeException());
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest();
         Assertions.assertThrows(RuntimeException.class, () -> shipmentSettingsService.completeCreateFromV1(commonRequestModel));
     }
@@ -501,7 +525,7 @@ class ShipmentSettingsServiceTest extends CommonMocks {
         tenantModelMap.put(StringUtility.convertToString(1), tenantModel1);
         tenantModelMap.put(StringUtility.convertToString(2), tenantModel2);
         mockTenantSettings();
-        when(masterDataUtils.fetchInTenantsList(Arrays.asList(StringUtility.convertToString(1), StringUtility.convertToString(2)))).thenReturn(tenantModelMap);
+        when(masterDataUtils.fetchInTenantsList(new HashSet<>(Arrays.asList(StringUtility.convertToString(1), StringUtility.convertToString(2))))).thenReturn(tenantModelMap);
         var response = shipmentSettingsService.listCoLoadStationTenantIds();
         Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
     }
@@ -514,7 +538,7 @@ class ShipmentSettingsServiceTest extends CommonMocks {
         Map<String, TenantModel> tenantModelMap = new HashMap<>();
         tenantModelMap.put(StringUtility.convertToString(1), tenantModel1);
         mockTenantSettings();
-        when(masterDataUtils.fetchInTenantsList(Arrays.asList(StringUtility.convertToString(1)))).thenReturn(tenantModelMap);
+        when(masterDataUtils.fetchInTenantsList(new HashSet<>(Collections.singletonList(StringUtility.convertToString(1))))).thenReturn(tenantModelMap);
         var response = shipmentSettingsService.listCoLoadStationTenantIds();
         Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
     }
@@ -528,7 +552,7 @@ class ShipmentSettingsServiceTest extends CommonMocks {
         Map<String, TenantModel> tenantModelMap = new HashMap<>();
         tenantModelMap.put(StringUtility.convertToString(1), tenantModel1);
         mockTenantSettings();
-        when(masterDataUtils.fetchInTenantsList(Arrays.asList(StringUtility.convertToString(1)))).thenReturn(tenantModelMap);
+        when(masterDataUtils.fetchInTenantsList(new HashSet<>(Collections.singletonList(StringUtility.convertToString(1))))).thenReturn(tenantModelMap);
         var response = shipmentSettingsService.listCoLoadStationTenantIds();
         Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
     }
@@ -548,7 +572,7 @@ class ShipmentSettingsServiceTest extends CommonMocks {
         List<CoLoadingMAWBDetailsResponse> coLoadingMAWBDetailsResponses = new ArrayList<>(Arrays.asList(CoLoadingMAWBDetailsResponse.builder().parentTenantId(2).build()));
         mockTenantSettings();
         when(commonUtils.fetchColoadingDetails()).thenReturn(coLoadingMAWBDetailsResponses);
-        when(masterDataUtils.fetchInTenantsList(Arrays.asList(StringUtility.convertToString(1), StringUtility.convertToString(2)))).thenReturn(tenantModelMap);
+        when(masterDataUtils.fetchInTenantsList(new HashSet<>(Arrays.asList(StringUtility.convertToString(1), StringUtility.convertToString(2))))).thenReturn(tenantModelMap);
         var response = shipmentSettingsService.listHubTenantIds();
         Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
     }
@@ -561,9 +585,143 @@ class ShipmentSettingsServiceTest extends CommonMocks {
         Map<String, TenantModel> tenantModelMap = new HashMap<>();
         tenantModelMap.put(StringUtility.convertToString(1), tenantModel1);
         mockTenantSettings();
-        when(masterDataUtils.fetchInTenantsList(Arrays.asList(StringUtility.convertToString(1)))).thenReturn(tenantModelMap);
+        when(masterDataUtils.fetchInTenantsList(new HashSet<>(Collections.singletonList(StringUtility.convertToString(1))))).thenReturn(tenantModelMap);
         var response = shipmentSettingsService.listHubTenantIds();
         Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void hideManifest(boolean hideManifest) {
+        when(shipmentSettingsDao.list(any(), any())).thenReturn(new PageImpl<>(List.of(testShipmentSettingsDetails)));
+        shipmentSettingsService.hideManifest(hideManifest);
+        Assertions.assertTrue(true);
+    }
+
+    @Test
+    void hideManifestWithNull() {
+        when(shipmentSettingsDao.list(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>()));
+        assertThrows(DataRetrievalFailureException.class, () -> shipmentSettingsService.hideManifest(true));
+    }
+
+    @Test
+    void partialUpdate_Success(){
+        ShipmentSettingsPatchRequest shipmentSettingsPatchRequest = new ShipmentSettingsPatchRequest();
+        shipmentSettingsPatchRequest.setId(2L);
+        shipmentSettingsPatchRequest.setTenantId(1L);
+        shipmentSettingsPatchRequest.setIsEntityTransferPrerequisiteEnabled(JsonNullable.of(true));
+        ShipmentSettingsService spyService = spy(shipmentSettingsService);
+        when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.ofNullable(testShipmentSettingsDetails));
+        when(shipmentSettingsDao.save(any())).thenReturn(testShipmentSettingsDetails);
+        when(jsonHelper.convertValue(any(), eq(ShipmentSettingsDetailsResponse.class))).thenReturn(objectMapperTest.convertValue(testShipmentSettingsDetails, ShipmentSettingsDetailsResponse.class));
+        ResponseEntity<IRunnerResponse> responseEntity = spyService.partialUpdate(CommonRequestModel.buildRequest(shipmentSettingsPatchRequest));
+        Assertions.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void partialUpdate_Success_WithEntityTransferFalse(){
+        ShipmentSettingsPatchRequest shipmentSettingsPatchRequest = new ShipmentSettingsPatchRequest();
+        shipmentSettingsPatchRequest.setId(2L);
+        shipmentSettingsPatchRequest.setTenantId(1L);
+        shipmentSettingsPatchRequest.setIsEntityTransferPrerequisiteEnabled(JsonNullable.of(false));
+        ShipmentSettingsService spyService = spy(shipmentSettingsService);
+        when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.ofNullable(testShipmentSettingsDetails));
+        when(shipmentSettingsDao.save(any())).thenReturn(testShipmentSettingsDetails);
+        when(jsonHelper.convertValue(any(), eq(ShipmentSettingsDetailsResponse.class))).thenReturn(objectMapperTest.convertValue(testShipmentSettingsDetails, ShipmentSettingsDetailsResponse.class));
+        ResponseEntity<IRunnerResponse> responseEntity = spyService.partialUpdate(CommonRequestModel.buildRequest(shipmentSettingsPatchRequest));
+        Assertions.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void partialUpdate_Success_WithOldEntityTransferFalse(){
+        ShipmentSettingsPatchRequest shipmentSettingsPatchRequest = new ShipmentSettingsPatchRequest();
+        shipmentSettingsPatchRequest.setId(2L);
+        shipmentSettingsPatchRequest.setTenantId(1L);
+        shipmentSettingsPatchRequest.setIsEntityTransferPrerequisiteEnabled(JsonNullable.of(false));
+        ShipmentSettingsService spyService = spy(shipmentSettingsService);
+        testShipmentSettingsDetails.setIsEntityTransferPrerequisiteEnabled(false);
+        when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.ofNullable(testShipmentSettingsDetails));
+        when(shipmentSettingsDao.save(any())).thenReturn(testShipmentSettingsDetails);
+        when(jsonHelper.convertValue(any(), eq(ShipmentSettingsDetailsResponse.class))).thenReturn(objectMapperTest.convertValue(testShipmentSettingsDetails, ShipmentSettingsDetailsResponse.class));
+        ResponseEntity<IRunnerResponse> responseEntity = spyService.partialUpdate(CommonRequestModel.buildRequest(shipmentSettingsPatchRequest));
+        Assertions.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void partialUpdate_Success_WithOldEntityTransferTrue(){
+        ShipmentSettingsPatchRequest shipmentSettingsPatchRequest = new ShipmentSettingsPatchRequest();
+        shipmentSettingsPatchRequest.setId(2L);
+        shipmentSettingsPatchRequest.setTenantId(1L);
+        shipmentSettingsPatchRequest.setIsEntityTransferPrerequisiteEnabled(JsonNullable.of(true));
+        ShipmentSettingsService spyService = spy(shipmentSettingsService);
+        testShipmentSettingsDetails.setIsEntityTransferPrerequisiteEnabled(true);
+        when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.ofNullable(testShipmentSettingsDetails));
+        when(shipmentSettingsDao.save(any())).thenReturn(testShipmentSettingsDetails);
+        when(jsonHelper.convertValue(any(), eq(ShipmentSettingsDetailsResponse.class))).thenReturn(objectMapperTest.convertValue(testShipmentSettingsDetails, ShipmentSettingsDetailsResponse.class));
+        ResponseEntity<IRunnerResponse> responseEntity = spyService.partialUpdate(CommonRequestModel.buildRequest(shipmentSettingsPatchRequest));
+        Assertions.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void partialUpdate_failure(){
+        ShipmentSettingsPatchRequest shipmentSettingsPatchRequest = new ShipmentSettingsPatchRequest();
+        shipmentSettingsPatchRequest.setId(1L);
+        shipmentSettingsPatchRequest.setTenantId(1L);
+        shipmentSettingsPatchRequest.setIsEntityTransferPrerequisiteEnabled(JsonNullable.of(true));
+        when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.ofNullable(testShipmentSettingsDetails));
+        when(shipmentSettingsDao.save(any())).thenThrow(new RuntimeException());
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(shipmentSettingsPatchRequest);
+        Assertions.assertThrows(RuntimeException.class, () -> shipmentSettingsService.partialUpdate(commonRequestModel));
+    }
+
+    @Test
+    void partialUpdate_RequestNull(){
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest();
+        Assertions.assertThrows(RuntimeException.class, () -> shipmentSettingsService.partialUpdate(commonRequestModel));
+    }
+
+    @Test
+    void partialUpdate_IdNull(){
+        ShipmentSettingsPatchRequest shipmentSettingsPatchRequest = new ShipmentSettingsPatchRequest();
+        shipmentSettingsPatchRequest.setId(null);
+        shipmentSettingsPatchRequest.setTenantId(2L);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(shipmentSettingsPatchRequest);
+        Assertions.assertThrows(DataRetrievalFailureException.class, () -> shipmentSettingsService.partialUpdate(commonRequestModel));
+    }
+
+    @Test
+    void partialUpdate_TenantIdNull(){
+        ShipmentSettingsPatchRequest shipmentSettingsPatchRequest = new ShipmentSettingsPatchRequest();
+        shipmentSettingsPatchRequest.setId(1L);
+        shipmentSettingsPatchRequest.setTenantId(null);
+        when(shipmentSettingsDao.findById(anyLong())).thenReturn(Optional.empty());
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(shipmentSettingsPatchRequest);
+        Assertions.assertThrows(DataRetrievalFailureException.class, () -> shipmentSettingsService.partialUpdate(commonRequestModel));
+    }
+
+    @Test
+    void partialUpdate_TenantIdAndIdNull(){
+        ShipmentSettingsPatchRequest shipmentSettingsPatchRequest = new ShipmentSettingsPatchRequest();
+        shipmentSettingsPatchRequest.setId(null);
+        shipmentSettingsPatchRequest.setTenantId(null);
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(shipmentSettingsPatchRequest);
+        Assertions.assertThrows(DataRetrievalFailureException.class, () -> shipmentSettingsService.partialUpdate(commonRequestModel));
+    }
+
+    @Test
+    void partialUpdate_Success_WithAwbRevampFlagTrue(){
+        ShipmentSettingsPatchRequest shipmentSettingsPatchRequest = new ShipmentSettingsPatchRequest();
+        shipmentSettingsPatchRequest.setId(2L);
+        shipmentSettingsPatchRequest.setTenantId(1L);
+        shipmentSettingsPatchRequest.setIsEntityTransferPrerequisiteEnabled(JsonNullable.of(true));
+        shipmentSettingsPatchRequest.setIsAwbRevampEnabled(JsonNullable.of(true));
+        ShipmentSettingsService spyService = spy(shipmentSettingsService);
+        testShipmentSettingsDetails.setIsEntityTransferPrerequisiteEnabled(true);
+        testShipmentSettingsDetails.setIsAwbRevampEnabled(true);
+        when(shipmentSettingsDao.findByTenantId(any())).thenReturn(Optional.ofNullable(testShipmentSettingsDetails));
+        when(shipmentSettingsDao.save(any())).thenReturn(testShipmentSettingsDetails);
+        when(jsonHelper.convertValue(any(), eq(ShipmentSettingsDetailsResponse.class))).thenReturn(objectMapperTest.convertValue(testShipmentSettingsDetails, ShipmentSettingsDetailsResponse.class));
+        ResponseEntity<IRunnerResponse> responseEntity = spyService.partialUpdate(CommonRequestModel.buildRequest(shipmentSettingsPatchRequest));
+        Assertions.assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
 }

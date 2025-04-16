@@ -1,5 +1,10 @@
 package com.dpw.runner.shipment.services.controller;
 
+import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
+import com.dpw.runner.shipment.services.ReportingService.Models.Commons.EmailBodyResponse;
 import com.dpw.runner.shipment.services.dto.request.ReportRequest;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.TranslationException;
@@ -7,6 +12,11 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IReportService;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.itextpdf.text.DocumentException;
+import java.io.IOException;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
@@ -16,14 +26,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ContextConfiguration;
-
-import java.io.IOException;
-import java.util.Optional;
-import java.util.UUID;
-
-import static org.junit.Assert.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
+import org.springframework.transaction.UnexpectedRollbackException;
 
 @ContextConfiguration(classes = {ReportController.class})
 @ExtendWith(MockitoExtension.class)
@@ -36,7 +39,8 @@ class ReportControllerTest {
     private ReportController reportController;
 
     @Test
-    void createReport() throws DocumentException, RunnerException, IOException {
+    void createReport()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         // Mock
         when(reportService.getDocumentData(any())).thenReturn(StringUtility.getRandomString(100).getBytes());
         // Test
@@ -46,7 +50,8 @@ class ReportControllerTest {
     }
 
     @Test
-    void createReport2() throws DocumentException, RunnerException, IOException {
+    void createReport2()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         // Mock
         when(reportService.getDocumentData(any())).thenThrow(new TranslationException("TranslationException"));
         // Test
@@ -56,7 +61,8 @@ class ReportControllerTest {
     }
 
     @Test
-    void createReport3() throws DocumentException, RunnerException, IOException {
+    void createReport3()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         // Mock
         when(reportService.getDocumentData(any())).thenThrow(new RunnerException("RunnerException"));
         // Test
@@ -66,7 +72,19 @@ class ReportControllerTest {
     }
 
     @Test
-    void createReport4() throws DocumentException, RunnerException, IOException {
+    void createReport2_1()
+            throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
+        // Mock
+        when(reportService.getDocumentData(any())).thenThrow(new UnexpectedRollbackException("UnexpectedRollbackException"));
+        // Test
+        var responseEntity = reportController.createReport(new ReportRequest());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void createReport4()
+        throws DocumentException, RunnerException, IOException, ExecutionException, InterruptedException {
         // Mock
         when(reportService.getDocumentData(any())).thenThrow(new RunnerException(""));
         // Test
@@ -115,6 +133,19 @@ class ReportControllerTest {
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
+    @Test
+    void createAuditLog() throws Exception {
+        when(reportService.getPreAlertEmailTemplateData(any(), any())).thenReturn(new EmailBodyResponse());
+        var response = reportController.getPreAlertEmailTemplateData(1L, 2L);
+        Assertions.assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void createAuditLog1() throws Exception {
+        when(reportService.getPreAlertEmailTemplateData(any(), any())).thenThrow(new RunnerException());
+        var response = reportController.getPreAlertEmailTemplateData(1L, 2L);
+        Assertions.assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    }
 
 
 }

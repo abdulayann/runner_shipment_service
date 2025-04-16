@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.adapters.interfaces.ICRPServiceAdapter;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dto.request.CreditLimitRequest;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
+import com.dpw.runner.shipment.services.dto.request.CustomerStatusUpdateRequest;
 import com.dpw.runner.shipment.services.dto.request.crp.CRPListRequest;
 import com.dpw.runner.shipment.services.dto.request.crp.CRPRetrieveRequest;
 import com.dpw.runner.shipment.services.dto.request.platformBooking.PlatformToRunnerCustomerBookingRequest;
@@ -181,6 +182,34 @@ class CustomerBookingControllerTest {
         var responseEntity = customerBookingController.update(CustomerBookingRequest.builder().build());
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void cancel() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        when(customerBookingService.update(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = customerBookingController.cancel(CustomerBookingRequest.builder().build());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void cancel2() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        when(customerBookingService.update(any())).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = customerBookingController.cancel(CustomerBookingRequest.builder().build());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void cancel3() throws RunnerException, NoSuchFieldException, JsonProcessingException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+        // Mock
+        when(customerBookingService.update(any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = customerBookingController.cancel(CustomerBookingRequest.builder().build());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
     @Test

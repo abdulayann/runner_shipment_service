@@ -19,6 +19,7 @@ public class PendingConsolidationActionResponse implements IPendingActionsRespon
     private String houseBill;
 
     private String branch;
+    private String branchDisplayName;
 
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime ata;

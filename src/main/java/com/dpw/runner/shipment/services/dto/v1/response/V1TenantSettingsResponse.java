@@ -57,4 +57,52 @@ public class V1TenantSettingsResponse implements Serializable {
     private String shipmentAttachDefaultToMailId;
     @JsonProperty("ShipmentAttachDefaultCCMailId")
     private String shipmentAttachDefaultCCMailId;
+    @JsonProperty("LegalEntityCode")
+    private String legalEntityCode;
+    @JsonProperty("TransportModeConfig")
+    private Boolean transportModeConfig;
+    @JsonProperty("BookingTransportModeAir")
+    private Boolean bookingTransportModeAir;
+    @JsonProperty("BookingTransportModeSea")
+    private Boolean bookingTransportModeSea;
+    @JsonProperty("BookingTransportModeRail")
+    private Boolean bookingTransportModeRail;
+    @JsonProperty("BookingTransportModeRoad")
+    private Boolean bookingTransportModeRoad;
+    @JsonProperty("ShipmentTransportModeAir")
+    private Boolean shipmentTransportModeAir;
+    @JsonProperty("ShipmentTransportModeSea")
+    private Boolean shipmentTransportModeSea;
+    @JsonProperty("ShipmentTransportModeRail")
+    private Boolean shipmentTransportModeRail;
+    @JsonProperty("ShipmentTransportModeRoad")
+    private Boolean shipmentTransportModeRoad;
+    @JsonProperty("FileTransferConfigurations")
+    private List<FileTransferConfigurations> fileTransferConfigurations;
+    @JsonProperty("CountryAirCargoSecurity")
+    private Boolean countryAirCargoSecurity;
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class FileTransferConfigurations implements Serializable {
+        @JsonProperty("Id")
+        private Long id;
+        @JsonProperty("Guid")
+        private String guid;
+        @JsonProperty("TransportMode")
+        private String transportMode;
+        @JsonProperty("CriteriaField")
+        private int criteriaField;
+        @JsonProperty("TriggerType")
+        private int triggerType;
+        @JsonProperty("IntervalTime")
+        private int intervalTime;
+        @JsonProperty("IntervalTimeUnit")
+        private int intervalTimeUnit;
+        @JsonProperty("IsActive")
+        private int isActive;
+    }
+    
 }

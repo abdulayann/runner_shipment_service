@@ -29,4 +29,7 @@ public interface IShipmentOrderRepository extends JpaRepository<ShipmentOrder, L
     @Transactional
     @Query(value = "DELETE FROM shipment_order so WHERE so.id NOT IN ?1 AND so.shipment_id = ?2", nativeQuery = true)
     void deleteByIdNotInAndShipmentId(List<Long> incomingIds, Long shipmentId);
+
+    @Transactional
+    void deleteAllByShipmentId(Long shipmentId);
 }

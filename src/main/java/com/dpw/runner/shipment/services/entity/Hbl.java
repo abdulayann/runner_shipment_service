@@ -8,10 +8,7 @@ import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
 import lombok.*;
 import lombok.experimental.Accessors;
-import org.hibernate.annotations.SQLDelete;
-import org.hibernate.annotations.Type;
-import org.hibernate.annotations.TypeDef;
-import org.hibernate.annotations.Where;
+import org.hibernate.annotations.*;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -30,6 +27,7 @@ import java.util.List;
 @TypeDef(name = "jsonb", typeClass = JsonBinaryType.class )
 @SQLDelete(sql = "UPDATE hbl SET is_deleted = true WHERE id=?")
 @Where(clause = "is_deleted = false")
+@SuppressWarnings("java:S1948")
 public class Hbl extends MultiTenancy {
 
     @Column(name = "shipment_id")

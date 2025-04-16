@@ -7,6 +7,7 @@ import lombok.Data;
 import java.util.List;
 
 @Data
+@SuppressWarnings("java:S1948")
 public class NPMOffersResponseParent extends CommonRequest implements IRunnerRequest {
     public String rate_type;
     public List<NPMOffer> rates;

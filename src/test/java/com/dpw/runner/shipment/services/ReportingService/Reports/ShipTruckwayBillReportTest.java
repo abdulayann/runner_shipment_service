@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConst
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.TransportOrderModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.TruckDriverModel;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
@@ -13,6 +14,7 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.constants.ReferenceNumbersConstants;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
+import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
@@ -41,8 +43,11 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -53,6 +58,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.EXP;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -88,6 +94,15 @@ class ShipTruckwayBillReportTest extends CommonMocks {
 
     @Mock
     private IConsolidationDetailsDao consolidationDetailsDao;
+
+    @Mock
+    private CacheManager cacheManager;
+
+    @Mock
+    private Cache cache;
+
+    @Mock
+    private CustomKeyGenerator keyGenerator;
 
     @BeforeAll
     static void init() throws IOException {
@@ -305,7 +320,22 @@ class ShipTruckwayBillReportTest extends CommonMocks {
         mockCarrier();
         mockShipmentSettings();
         mockTenantSettings();
+        when(cacheManager.getCache(any())).thenReturn(cache);
+        when(cache.get(any())).thenReturn(null);
+        when(keyGenerator.customCacheKeyForMasterData(any(),any())).thenReturn(new StringBuilder());
         assertNotNull(shipTruckwayBillReport.populateDictionary(truckDriverModel));
+    }
+
+    @Test
+    void testGetData_ShipTruckBillReportId() {
+        var spyService = Mockito.spy(shipTruckwayBillReport);
+        Map<String, Object> dictionary = new HashMap<String, Object>();
+        TruckDriverModel model = new TruckDriverModel();
+        populateModel(model);
+        doReturn(model).when(spyService).getDocumentModel(any());
+        doReturn(dictionary).when(spyService).populateDictionary(any());
+        Map<String, Object> result = spyService.getData(1L);
+        assertNotNull(result, "The result should not be null");
     }
 
     private void mockCarrier() {
@@ -339,7 +369,7 @@ class ShipTruckwayBillReportTest extends CommonMocks {
     private void masterDataMock() {
         V1DataResponse v1DataResponse = new V1DataResponse();
         v1DataResponse.entities = Arrays.asList(new MasterData());
-        when(v1Service.fetchMultipleMasterData(any())).thenReturn(v1DataResponse);
+        when(masterDataUtils.fetchMasterListFromCache(any())).thenReturn(new HashMap<>());
 
         List<MasterData> masterDataList = new ArrayList<>();
         MasterData masterData = new MasterData();
@@ -395,13 +425,9 @@ class ShipTruckwayBillReportTest extends CommonMocks {
         masterData.setItemValue("IND");
         masterData.setItemDescription("IND");
         masterDataList.add(masterData);
-        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), MasterData.class)).thenReturn(masterDataList);
     }
 
     private void mockVessel() {
-        V1DataResponse v1DataResponse = new V1DataResponse();
-        v1DataResponse.entities = Arrays.asList(new VesselsResponse());
-        when(v1Service.fetchVesselData(any())).thenReturn(v1DataResponse);
-        when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), VesselsResponse.class)).thenReturn(Arrays.asList(new VesselsResponse()));
+        when(masterDataUtils.getVesselDataFromCache(any())).thenReturn(new HashMap<>());
     }
 }

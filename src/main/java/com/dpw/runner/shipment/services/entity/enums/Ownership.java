@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.utils.Generated;
 import org.springframework.util.StringUtils;
 
 @Generated
+@SuppressWarnings("java:S115") //Suppressing Rename this constant name to match the regular expression
 public enum Ownership {
     Self(1, "Self"),
     ThirdParty(2, "3rd Party");

@@ -4,17 +4,19 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.entity.enums.FileStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentPackStatus;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
 
 @Builder
 @NoArgsConstructor
@@ -34,6 +36,7 @@ public class ShipmentListResponse implements IRunnerResponse {
     private String serviceType;
     private String masterBill;
     private String bookingReference;
+    private String srnReferenceNumber;
     private String consolRef;
     private Long salesAgent;
     private String paymentTerms;
@@ -61,24 +64,25 @@ public class ShipmentListResponse implements IRunnerResponse {
     private String freightLocalCurrency;
     private BigDecimal freightOverseas;
     private String freightOverseasCurrency;
-    private boolean autoUpdateWtVol;
-    private boolean containerAutoWeightVolumeUpdate;
+    private Boolean autoUpdateWtVol;
+    private Boolean containerAutoWeightVolumeUpdate;
     private String marksNum;
     private String entryDetail;
     private Boolean isLocked;
     private String lockedBy;
     private Boolean isNotifyConsigneeEqual;
     private String bookingType;
-    private boolean cargoFinanceBooking;
+    private Boolean cargoFinanceBooking;
     private String bookingNumber;
     private String route;
-    private long sourceTenantId;
-    private long documentationPartner;
-    private long triangulationPartner;
-    private long receivingBranch;
-    private boolean intraBranch;
+    private Long sourceTenantId;
+    private Long documentationPartner;
+    private List<TriangulationPartnerResponse> triangulationPartnerList;
+    private Long triangulationPartner;
+    private Long receivingBranch;
+    private Boolean intraBranch;
     private Integer prevShipmentStatus;
-    private boolean isShipmentReadOnly;
+    private Boolean isShipmentReadOnly;
     private String shipmentCompletedBy;
     private LocalDateTime shipmentCompletedOn;
     private String financeClosedBy;
@@ -139,4 +143,13 @@ public class ShipmentListResponse implements IRunnerResponse {
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime cargoDeliveryDate;
     private Integer ordersCount;
+    private Boolean isNetworkFile;
+    private Boolean isReceivingBranchManually;
+    private Boolean isTransferredToReceivingBranch;
+    @JsonIgnore
+    private List<EventsResponse> eventsList;
+    @JsonIgnore
+    private List<ShipmentOrderResponse> shipmentOrders;
+    @JsonIgnore
+    private List<ReferenceNumbersResponse> referenceNumbersList;
 }

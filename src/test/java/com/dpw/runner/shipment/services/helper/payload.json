@@ -255,7 +255,11 @@
     "notesList": [],
     "truckDriverDetails": [],
     "servicesList": [],
-    "routingsList": [],
+    "routingsList": [{
+      "id": 1,
+      "guid": "86d295a5-a896-46f1-82a8-26369755cda3",
+      "shipmentId": 1
+    }],
     "referenceNumbersList": [],
     "packingList": [],
     "fileRepoList": [],
@@ -329,8 +333,18 @@
       "entityType": "HAWB",
       "shipperName": "TEST VG CREDIT LIMIT",
       "shipperAddress": "\r\nADDRESS 1\r\nMH\r\nPUNE\r\nIND",
+      "shipperCity": "PUNE",
+      "shipperCountry": "IND",
+      "shipperState": "MH",
+      "shipperZipCode": "344221",
+      "shipperPhone": "9876554476",
       "consigneeName": "NATIONWIDE PAPER LTD",
       "consigneeAddress": "\r\nABC CO LLC\nAEJEA\r\nARE",
+      "consigneeCity": "PUNE",
+      "consigneeCountry": "IND",
+      "consigneeState": "MH",
+      "consigneeZipCode": "344221",
+      "consigneePhone": "9876554476",
       "consigneeReferenceNumber": "2436215",
       "iataCode": "5678",
       "awbNumber": "235-88998641",
@@ -338,7 +352,13 @@
       "destinationAirport": "George Bush Intercontinental Airport IAH, TX",
       "firstCarrier": "Turkish Airlines",
       "agentCASSCode": "8975",
-      "issuingAgentName": "ABB EGYPT"
+      "issuingAgentName": "ABB EGYPT",
+      "issuingAgentAddress": "\nABC CO LLC\nAEJEA",
+      "issuingAgentCity": "PUNE",
+      "issuingAgentCountry": "IND",
+      "issuingAgentState": "MH",
+      "issuingAgentZipCode": "344221",
+      "issuingAgentPhone": "9876554476"
     },
     "awbRoutingInfo": [
       {
@@ -388,6 +408,11 @@
       "shipper": "TEST VG CREDIT LIMIT",
       "carrier": "carrier for mawb from master",
       "executedOn": "2024-03-07T09:36:38"
+    },
+    "ociInfo": {
+      "shipper": {
+        "contactPersonName": "ABCD"
+      }
     },
     "awbGoodsDescriptionInfo": [
       {
@@ -505,7 +530,10 @@
       "originAirport": "Kempegowda International Airport BLR",
       "destinationAirport": "George Bush Intercontinental Airport IAH, TX",
       "firstCarrier": "Turkish Airlines",
-      "agentCASSCode": "8975"
+      "agentCASSCode": "8975",
+      "consigneeCountry": "IND",
+      "issuingAgentCountry": "IND",
+      "shipperCountry": "IND"
     },
     "defaultAwbRoutingInfo": [
       {
@@ -737,7 +765,7 @@
     "referenceNumber": "CONS000231188",
     "override": false,
     "shipmentType": "EXP",
-    "bol": "231161",
+    "bol": "986-55667780",
     "isCargoOnly": false,
     "isLocked": false,
     "docsClosingTime": "2024-03-20T00:00:00",
@@ -1139,7 +1167,14 @@
     },
     "packingList": [],
     "referenceNumbersList": [],
-    "routingsList": [],
+    "routingsList": [{
+      "id": 1,
+      "guid": "dc092b0e-43a6-41d7-9dc3-546017f85771",
+      "consolidationId": 1,
+      "pol": "DKAAL_POR",
+      "pod": "AUADL_POR",
+      "carriage": "MAIN_CARRIAGE"
+    }],
     "containersList": [
       {
         "id": 150408,
@@ -1451,9 +1486,20 @@
       "originAirport": "brussel",
       "destinationAirport": "bagani",
       "firstCarrier": "Air Transat",
-      "agentCASSCode": "123"
+      "agentCASSCode": "123",
+      "consigneeCountry": "IND",
+      "issuingAgentCountry": "IND",
+      "shipperCountry": "IND"
     },
-    "awbNotifyPartyInfo": [],
+    "awbNotifyPartyInfo": [
+      {
+        "city": "Pune",
+        "state": "MH",
+        "country": "IND",
+        "zipCode": "383767",
+        "phone": "8976666553"
+      }
+    ],
     "awbRoutingInfo": [
       {
         "entityId": 2246,
@@ -1468,7 +1514,7 @@
       "entityId": 2246,
       "entityType": "MAWB",
       "handlingInfo": "Attached : Commercial Invoice & P/List",
-      "ntrQtyGoods": "CONSOLIDATED CARGO AS PER MANIFEST ATTACHED\r\n",
+      "ntrQtyGoods": "CONSOLIDATION AS PER ATTACHED LIST\r\n",
       "currency": "EGP",
       "customsValue": 0,
       "customOriginCode": "EG"
@@ -1540,7 +1586,10 @@
       "awbNumber": "986-55667780",
       "originAirport": "brussel",
       "destinationAirport": "bagani",
-      "firstCarrier": "Air Transat"
+      "firstCarrier": "Air Transat",
+      "consigneeCountry": "IND",
+      "issuingAgentCountry": "IND",
+      "shipperCountry": "IND"
     },
     "defaultAwbRoutingInfo": [
       {
@@ -1684,7 +1733,9 @@
         "IsObsolete": false,
         "AddressType": "General",
         "CompanyName": "RA Branch",
-        "AddressShortCode": "Def RA Address"
+        "AddressShortCode": "Def RA Address",
+        "ZipPostCode": "324332",
+        "ContactPhone": "9866334674"
       }
     },
     "receivingAgent": {
@@ -2176,7 +2227,7 @@
     },
     "consigner": {
       "id": 1,
-      "orgCode": "000043",
+      "orgCode": "22481_1",
       "addressCode": "VALID",
       "orgData": {
         "Id": 58,
@@ -2215,7 +2266,7 @@
     },
     "consignee": {
       "id": 1,
-      "orgCode": "00001",
+      "orgCode": "223532_4",
       "addressCode": "Default1",
       "orgData": {
         "Id": 64,
@@ -2467,8 +2518,8 @@
         "leg": 1,
         "mode": "AIR",
         "routingStatus": "PLD",
-        "pol": "EGDAM",
-        "pod": "AEDXB_POR",
+        "pol": "0E8F5220-D6CE-4D29-9755-B7C32A4B9F4F",
+        "pod": "38C78DB3-E3C2-41D8-A32D-3A139B0AA67A",
         "eta": "2024-05-04 00:00:00",
         "etd": "2024-05-01 00:00:00",
         "ata": "2024-05-04 00:00:00",
@@ -2478,7 +2529,8 @@
         "flightNumber": "1443",
         "aircraftType": "CAO",
         "carrier": "Air India",
-        "domestic": false
+        "domestic": false,
+        "carriage": "MAIN_CARRIAGE"
       }
     ]
   },
@@ -2628,6 +2680,10 @@
     },
     "receivingBranch": 66,
     "documentationPartner": 484,
+    "triangulationPartnerList": [{
+      "triangulationPartner": 2312,
+      "isAccepted": false
+    }],
     "triangulationPartner": 2312,
     "departureDetails": {
       "ctoid": {},
@@ -2756,6 +2812,14 @@
       "triangulationPartner": {
         "label": "DPWCANADA_SS",
         "value": 2312,
+        "TenantId": 2312
+      },
+      "triangulationPartnerList": {
+        "label": "DPWCANADA_SS",
+        "value": [{
+          "triangulationPartner": 2312,
+          "isAccepted": false
+        }],
         "TenantId": 2312
       },
       "carrierDetails": {
@@ -4256,6 +4320,10 @@
     "achievedWeight": 152078.0,
     "achievedVolume": 119646.0,
     "totalPacksWithUnit": "2 MPK",
+    "chargeableWeight" : 119646.0,
+    "packsChargeableWeightUnit" : "M3",
+    "packsVolume" : 119646.0,
+    "packsVolumeUnit" : "M3",
     "weightUnit": "KG",
     "volumeUnit": "M3",
     "dgPacks": 0
@@ -4269,6 +4337,10 @@
     "achievedWeight": 152078.0,
     "achievedVolume": 119646.0,
     "totalPacksWithUnit": "2 MPK",
+    "packsVolume" : 119646.0,
+    "packsVolumeUnit" : "M3",
+    "chargeableWeight" : 19941040.0,
+    "packsChargeableWeightUnit" : "KG",
     "weightUnit": "KG",
     "volumeUnit": "M3",
     "dgPacks": 0
@@ -4365,6 +4437,7 @@
   "SHIPMENT_SETTINGS": {
     "id": 63,
     "tenantId": 166,
+    "entityTransfer": true,
     "restrictHblGen": true,
     "printPhoneNumber": false,
     "housebillPrefix": "HBL",
@@ -9196,6 +9269,7 @@
         "leg": 2,
         "mode": "AIR",
         "routingStatus": "PLD",
+        "carriage": "MAIN_CARRIAGE",
         "pol": "EGCAI_AIR",
         "pod": "SGJUR_AIR",
         "eta": "2024-05-13 00:00:00",
@@ -9419,6 +9493,26 @@
       "value": "Default"
     }
   },
+  "NETWORK_TRANSFER_RESPONSE": {
+    "id": 21,
+    "guid": "f2fbf3e9-3f37-439b-a45e-d4f7d08885c9",
+    "entityType": "SHIPMENT",
+    "entityNumber": "SHP000117811",
+    "entityId": 12146,
+    "transportMode": "AIR",
+    "sourceBranchId": 728,
+    "status": "REASSIGNED",
+    "tenantId": 938,
+    "createdAt": "2024-11-07T19:09:15.657434",
+    "tenantMasterData": {
+      "tenantId": "ALEXANDRIA TEST QA",
+      "tenantId_code": "ALEX TEST"
+    },
+    "masterData": {
+      "transportMode": "AIR (Air Freight)",
+      "jobType": "IMP (Import)"
+    }
+  },
   "CUSTOMER_BOOKING_REQUEST": {
     "id": 202861,
     "guid": "1451980b-bab4-45e3-b6ba-3c178fcd0b22",
@@ -9589,6 +9683,17 @@
         "commodityGroup": "FAK",
         "isDimension": true
       }
+    ],
+    "referenceNumbersList": [
+      {
+      "id": 123,
+      "consolidationId": 123456,
+      "countryOfIssue": "IND",
+      "type": "CRR",
+      "referenceNumber": "RefNum",
+      "shipmentId": 98765,
+      "isPortalEnable": false
+    }
     ],
     "routingList": [
       {
@@ -11413,6 +11518,10 @@
     "cargoFinanceBooking": false,
     "sourceTenantId": 937,
     "documentationPartner": 728,
+    "triangulationPartnerList": [{
+      "triangulationPartner": 728,
+      "isAccepted": false
+    }],
     "triangulationPartner": 728,
     "receivingBranch": 728,
     "intraBranch": false,
@@ -14202,6 +14311,24 @@
       "numberOfPackages": "3",
       "shipmentReference": "SHP00012345"
     }
+  },
+  "NOTIFICATION_RESPONSE": {
+    "id": 11,
+    "guid": "893cc8fa-7315-4d23-a635-3ce8705a5140",
+    "entityType": "SHIPMENT",
+    "entityId": 12977,
+    "requestedBranchId": 937,
+    "requestedUser": "egypt_qa@yopmail.com",
+    "requestedOn": "2024-12-04 09:39:49",
+    "requestType": "REASSIGN",
+    "reason": "Reassigned requested",
+    "reassignedToBranchId": 908,
+    "tenantIdsData": {
+      "requestedBranchId": "EGYPT_TEST QA",
+      "reassignedToBranchId_code": "EGYSHP100",
+      "requestedBranchId_code": "EGYPT_TESTQA",
+      "reassignedToBranchId": "EGYSHP100"
+    },
+    "tenantId": 728
   }
-
 }

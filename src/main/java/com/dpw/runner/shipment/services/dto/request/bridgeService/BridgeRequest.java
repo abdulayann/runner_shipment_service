@@ -6,6 +6,7 @@ import lombok.Data;
 
 @Data
 @Builder
+@SuppressWarnings("java:S1948")
 public class BridgeRequest implements IRunnerRequest {
     private String requestCode;
     private String transactionId;

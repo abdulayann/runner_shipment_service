@@ -119,6 +119,6 @@ public class MawbStocksController {
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
         }
-        return (ResponseEntity<IRunnerResponse>) ResponseHelper.buildFailedResponse(responseMsg);
+        return ResponseHelper.buildFailedResponse(responseMsg);
     }
 }

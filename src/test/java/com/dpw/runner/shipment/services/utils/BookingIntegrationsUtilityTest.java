@@ -1,14 +1,5 @@
 package com.dpw.runner.shipment.services.utils;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
-import static org.mockito.BDDMockito.willAnswer;
-import static org.mockito.Mockito.*;
-
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.interfaces.IPlatformServiceAdapter;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -39,11 +30,6 @@ import com.dpw.runner.shipment.services.masterdata.helper.IMasterDataService;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.util.*;
-import java.util.stream.Stream;
-
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -59,6 +45,16 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.retry.RetryCallback;
 import org.springframework.retry.support.RetryTemplate;
+
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.util.*;
+import java.util.stream.Stream;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
+import static org.mockito.BDDMockito.willAnswer;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(CONCURRENT)
@@ -99,6 +95,9 @@ class BookingIntegrationsUtilityTest {
     @Mock
     private IShipmentDao shipmentDao;
 
+    @Mock
+    private IV1Service iv1Service;
+
     private static JsonTestUtility jsonTestUtility;
 
     @BeforeAll
@@ -111,7 +110,6 @@ class BookingIntegrationsUtilityTest {
     void testCreateBookingInPlatform_SuccessfulBooking_FCL_CargoType() throws RunnerException {
         CustomerBooking customerBooking = getCustomerBooking("FCL");
         when(masterDataUtils.getChargeTypes(anyList())).thenReturn(Map.of("ct1", EntityTransferChargeType.builder().Services("services").Description("Desc").build()));
-        when(customerBookingDao.updateIsPlatformBookingCreated(anyLong(), eq(true))).thenReturn(1);
 
         bookingIntegrationsUtility.createBookingInPlatform(customerBooking);
 
@@ -124,7 +122,6 @@ class BookingIntegrationsUtilityTest {
     void testCreateBookingInPlatform(String cargoType) throws RunnerException {
         CustomerBooking customerBooking = getCustomerBooking(cargoType);
         when(masterDataUtils.getChargeTypes(anyList())).thenReturn(Map.of("ct1", EntityTransferChargeType.builder().Services("services").Description("Desc").build()));
-        when(customerBookingDao.updateIsPlatformBookingCreated(anyLong(), eq(true))).thenReturn(1);
         customerBooking.setTransportType(Constants.TRANSPORT_MODE_SEA);
 
         bookingIntegrationsUtility.createBookingInPlatform(customerBooking);
@@ -166,7 +163,6 @@ class BookingIntegrationsUtilityTest {
         customerBooking.getCarrierDetails().setShippingLine("");
 
         when(masterDataUtils.getChargeTypes(anyList())).thenReturn(Map.of("ct1", EntityTransferChargeType.builder().Services("services").Description("Desc").build()));
-        when(customerBookingDao.updateIsPlatformBookingCreated(anyLong(), eq(true))).thenReturn(1);
 
         bookingIntegrationsUtility.createBookingInPlatform(customerBooking);
 
@@ -179,8 +175,7 @@ class BookingIntegrationsUtilityTest {
         CustomerBooking customerBooking = getCustomerBooking("FCL");
 
         when(masterDataUtils.getChargeTypes(anyList())).thenReturn(Map.of("ct1", EntityTransferChargeType.builder().Services("services").Description("Desc").build()));
-        when(masterDataUtils.fetchInBulkCarriers(anyList())).thenReturn(Map.of("Maersk Line", EntityTransferCarrier.builder().ItemValue("item val").Identifier1("code").build()));
-        when(customerBookingDao.updateIsPlatformBookingCreated(anyLong(), eq(true))).thenReturn(1);
+        when(masterDataUtils.fetchInBulkCarriers(anySet())).thenReturn(Map.of("Maersk Line", EntityTransferCarrier.builder().ItemValue("item val").Identifier1("code").build()));
 
         bookingIntegrationsUtility.createBookingInPlatform(customerBooking);
 
@@ -194,7 +189,6 @@ class BookingIntegrationsUtilityTest {
         customerBooking.setPackingList(List.of(jsonTestUtility.getTestPacking()));
 
         when(masterDataUtils.getChargeTypes(anyList())).thenReturn(Map.of("ct1", EntityTransferChargeType.builder().Services("services").Description("Desc").build()));
-        when(customerBookingDao.updateIsPlatformBookingCreated(anyLong(), eq(true))).thenReturn(1);
 
         bookingIntegrationsUtility.createBookingInPlatform(customerBooking);
 
@@ -208,7 +202,6 @@ class BookingIntegrationsUtilityTest {
         customerBooking.setPackingList(List.of(jsonTestUtility.getTestPacking()));
 
         when(masterDataUtils.getChargeTypes(anyList())).thenReturn(Map.of("ct1", EntityTransferChargeType.builder().Services("services").Description("Desc").build()));
-        when(customerBookingDao.updateIsPlatformBookingCreated(anyLong(), eq(true))).thenReturn(0);
 
         bookingIntegrationsUtility.createBookingInPlatform(customerBooking);
 
@@ -267,12 +260,11 @@ class BookingIntegrationsUtilityTest {
 
     @Test
     void testUpdateBookingInPlatform_fromShipment_throwsException() throws RunnerException {
-        doThrow(new RuntimeException()).when(platformServiceAdapter).updateAtPlaform(any(CommonRequestModel.class));
         var shipment = jsonTestUtility.getTestShipment();
         shipment.setBookingType(CustomerBookingConstants.ONLINE);
         shipment.setBookingReference("12345");
         bookingIntegrationsUtility.updateBookingInPlatform(shipment);
-        verify(platformServiceAdapter, times((1))).updateAtPlaform(any());
+        verify(platformServiceAdapter, times((1))).createAtPlatform(any());
     }
 
     @Test
@@ -295,7 +287,7 @@ class BookingIntegrationsUtilityTest {
         referenceNumbers.setReferenceNumber("1234");
         shipment.setReferenceNumbersList(List.of(referenceNumbers));
         bookingIntegrationsUtility.updateBookingInPlatform(shipment);
-        verify(platformServiceAdapter, times(1)).updateAtPlaform(any(CommonRequestModel.class));
+        verify(platformServiceAdapter, times(1)).createAtPlatform(any(CommonRequestModel.class));
     }
 
     @Test
@@ -358,7 +350,7 @@ class BookingIntegrationsUtilityTest {
         bookingIntegrationsUtility.updateBookingInPlatform(cancelledShipment);
         bookingIntegrationsUtility.updateBookingInPlatform(confirmedShipment);
 
-        verify(platformServiceAdapter, times(3)).updateAtPlaform(any(CommonRequestModel.class));
+        verify(platformServiceAdapter, times(3)).createAtPlatform(any(CommonRequestModel.class));
     }
 
     @Test
@@ -367,9 +359,9 @@ class BookingIntegrationsUtilityTest {
         shipment.setBookingType(CustomerBookingConstants.ONLINE);
         shipment.setShipmentType(Constants.CARGO_TYPE_FCL);
         shipment.setBookingReference("1234");
-        shipment.setContainersList(List.of(jsonTestUtility.getTestContainer()));
+        shipment.setContainersList(Set.of(jsonTestUtility.getTestContainer()));
         bookingIntegrationsUtility.updateBookingInPlatform(shipment);
-        verify(platformServiceAdapter, times(1)).updateAtPlaform(any(CommonRequestModel.class));
+        verify(platformServiceAdapter, times(1)).createAtPlatform(any(CommonRequestModel.class));
     }
 
     @Test
@@ -587,7 +579,7 @@ class BookingIntegrationsUtilityTest {
 
         bookingIntegrationsUtility.documentUploadEvent(documentDto);
 
-        verify(shipmentDao, times(1)).findShipmentsByGuids(Set.of(entityId));
+        verify(shipmentDao, times(2)).findShipmentsByGuids(Set.of(entityId));
 
     }
 
@@ -604,7 +596,7 @@ class BookingIntegrationsUtilityTest {
 
         bookingIntegrationsUtility.documentUploadEvent(documentDto);
 
-        verify(shipmentDao, times(1)).findShipmentsByGuids(Set.of(entityId));
+        verify(shipmentDao, times(2)).findShipmentsByGuids(Set.of(entityId));
 
     }
 
@@ -620,7 +612,7 @@ class BookingIntegrationsUtilityTest {
 
         bookingIntegrationsUtility.documentUploadEvent(documentDto);
 
-        verify(shipmentDao, times(1)).findShipmentsByGuids(Set.of(entityId));
+        verify(shipmentDao, times(2)).findShipmentsByGuids(Set.of(entityId));
     }
 
     @Test
@@ -635,7 +627,7 @@ class BookingIntegrationsUtilityTest {
 
         bookingIntegrationsUtility.documentUploadEvent(documentDto);
 
-        verify(shipmentDao, times(1)).findShipmentsByGuids(Set.of(entityId));
+        verify(shipmentDao, times(2)).findShipmentsByGuids(Set.of(entityId));
     }
 
     @Test
@@ -647,7 +639,7 @@ class BookingIntegrationsUtilityTest {
 
         bookingIntegrationsUtility.documentUploadEvent(documentDto);
 
-        verify(shipmentDao, times(0)).findShipmentsByGuids(Set.of(entityId));
+        verify(shipmentDao, times(2)).findShipmentsByGuids(Set.of(entityId));
     }
 
     @Test
@@ -659,7 +651,7 @@ class BookingIntegrationsUtilityTest {
 
         bookingIntegrationsUtility.documentUploadEvent(documentDto);
 
-        verify(shipmentDao, times(0)).findShipmentsByGuids(Set.of(entityId));
+        verify(shipmentDao, times(1)).findShipmentsByGuids(Set.of(entityId));
     }
 
     @Test
@@ -671,6 +663,165 @@ class BookingIntegrationsUtilityTest {
 
         bookingIntegrationsUtility.documentUploadEvent(documentDto);
 
-        verify(shipmentDao, times(0)).findShipmentsByGuids(Set.of(entityId));
+        verify(shipmentDao, times(1)).findShipmentsByGuids(Set.of(entityId));
+    }
+
+    @Test
+    void testTransformOrgAndAddressPayloadToGivenParties() {
+        Map<String, PartiesRequest> requestMap = new HashMap<>();
+        requestMap.put("Customer Request", PartiesRequest.builder().orgCode("FCR0001").addressCode("FCR0001").build());
+        requestMap.put("Consignor Request", PartiesRequest.builder().orgCode("FCR0001").addressCode("FCR0001").build());
+        requestMap.put("Consignee Request", PartiesRequest.builder().orgCode("FCR0001").addressCode("FCR0001").build());
+        requestMap.put("Notify Party Request", PartiesRequest.builder().orgCode("FCR0001").addressCode("FCR0001").build());
+        DependentServiceResponse v1OrgResponse = new DependentServiceResponse();
+        Parties parties = Parties.builder().orgCode("FCR0001").addressCode("FCR0001").orgId("1").addressId("1").build();
+        v1OrgResponse.setData(new ArrayList<>(List.of(parties)));
+        var masterDataService = mock(IMasterDataService.class);
+        when(masterDataFactory.getMasterDataService()).thenReturn(masterDataService);
+        when(masterDataFactory.getMasterDataService().fetchOrganizationData(any())).thenReturn(v1OrgResponse);
+        when(jsonHelper.convertValueToList(any(), eq(Object.class))).thenReturn(new ArrayList<>(List.of(parties)));
+        Map<String, Object> map = new HashMap<>();
+        map.put("OrgId", "1");
+        map.put("OrganizationCode", "FCR0001");
+        map.put("AddressShortCode", "FCR0001");
+        map.put("Id", "1");
+        when(jsonHelper.convertJsonToMap(any())).thenReturn(map);
+        when(masterDataFactory.getMasterDataService().addressList(any())).thenReturn(v1OrgResponse);
+        bookingIntegrationsUtility.transformOrgAndAddressPayloadToGivenParties(requestMap);
+        assertNotNull(requestMap);
+        assertEquals(8, requestMap.size());
+    }
+
+    @Test
+    void testTransformOrgAndAddressPayloadToGivenParties1() {
+        Map<String, PartiesRequest> requestMap = new HashMap<>();
+        bookingIntegrationsUtility.transformOrgAndAddressPayloadToGivenParties(requestMap);
+        assertNotNull(requestMap);
+        assertEquals(0, requestMap.size());
+    }
+
+    @Test
+    void testTransformOrgAndAddressPayloadToGivenParties2() {
+        Map<String, PartiesRequest> requestMap = new HashMap<>();
+        bookingIntegrationsUtility.transformOrgAndAddressPayloadToGivenParties(null);
+        assertNotNull(requestMap);
+    }
+
+    @Test
+    void testTransformOrgAndAddressPayloadToGivenParties3() {
+        Map<String, PartiesRequest> requestMap = new HashMap<>();
+        requestMap.put("Customer Request", PartiesRequest.builder().orgCode("FCR0001").addressCode("FCR0001").build());
+        requestMap.put("Consignor Request", PartiesRequest.builder().orgCode("FCR0001").addressCode("FCR0001").build());
+        requestMap.put("Consignee Request", PartiesRequest.builder().orgCode("FCR0001").addressCode("FCR0001").build());
+        requestMap.put("Notify Party Request", PartiesRequest.builder().orgCode("FCR0001").addressCode("FCR0001").build());
+        DependentServiceResponse v1OrgResponse = new DependentServiceResponse();
+        var masterDataService = mock(IMasterDataService.class);
+        when(masterDataFactory.getMasterDataService()).thenReturn(masterDataService);
+        when(masterDataFactory.getMasterDataService().fetchOrganizationData(any())).thenReturn(v1OrgResponse);
+        assertThrows(DataRetrievalFailureException.class, () -> bookingIntegrationsUtility.transformOrgAndAddressPayloadToGivenParties(requestMap));
+    }
+
+    @Test
+    void testTransformOrgAndAddressPayloadToGivenParties4() {
+        Map<String, PartiesRequest> requestMap = new HashMap<>();
+        requestMap.put("Customer Request", PartiesRequest.builder().orgCode("FCR0001").addressCode("FCR0001").build());
+        requestMap.put("Consignor Request", PartiesRequest.builder().orgCode("FCR0001").addressCode("FCR0001").build());
+        requestMap.put("Consignee Request", PartiesRequest.builder().orgCode("FCR0001").addressCode("FCR0001").build());
+        requestMap.put("Notify Party Request", PartiesRequest.builder().orgCode("FCR0001").addressCode("FCR0001").build());
+        DependentServiceResponse v1OrgResponse = new DependentServiceResponse();
+        v1OrgResponse.setData(new ArrayList<>());
+        var masterDataService = mock(IMasterDataService.class);
+        when(masterDataFactory.getMasterDataService()).thenReturn(masterDataService);
+        when(masterDataFactory.getMasterDataService().fetchOrganizationData(any())).thenReturn(v1OrgResponse);
+        assertThrows(DataRetrievalFailureException.class, () -> bookingIntegrationsUtility.transformOrgAndAddressPayloadToGivenParties(requestMap));
+    }
+
+    @Test
+    void testTransformOrgAndAddressPayloadToGivenParties5() {
+        Map<String, PartiesRequest> requestMap = new HashMap<>();
+        requestMap.put("Customer Request", PartiesRequest.builder().orgCode("FCR0001").addressCode("FCR0001").build());
+        requestMap.put("Consignor Request", PartiesRequest.builder().orgCode("FCR0001").addressCode("FCR0001").build());
+        requestMap.put("Consignee Request", PartiesRequest.builder().orgCode("FCR0001").addressCode("FCR0001").build());
+        requestMap.put("Notify Party Request", PartiesRequest.builder().orgCode("FCR0001").addressCode("FCR0001").build());
+        DependentServiceResponse v1OrgResponse = new DependentServiceResponse();
+        Parties parties = Parties.builder().orgCode("FCR0001").addressCode("FCR0001").orgId("1").addressId("1").build();
+        v1OrgResponse.setData(new ArrayList<>(List.of(parties)));
+        var masterDataService = mock(IMasterDataService.class);
+        when(masterDataFactory.getMasterDataService()).thenReturn(masterDataService);
+        when(masterDataFactory.getMasterDataService().fetchOrganizationData(any())).thenReturn(v1OrgResponse);
+        when(jsonHelper.convertValueToList(any(), eq(Object.class))).thenReturn(new ArrayList<>(List.of(parties)));
+        Map<String, Object> map = new HashMap<>();
+        map.put("OrgId", "1");
+        map.put("OrganizationCode", "FCR0001");
+        map.put("AddressShortCode", "FCR0001");
+        map.put("Id", "1");
+        when(jsonHelper.convertJsonToMap(any())).thenReturn(map);
+        DependentServiceResponse v1OrgResponse2 = new DependentServiceResponse();
+        v1OrgResponse2.setData(null);
+        when(masterDataFactory.getMasterDataService().addressList(any())).thenReturn(v1OrgResponse2);
+        assertThrows(DataRetrievalFailureException.class, () -> bookingIntegrationsUtility.transformOrgAndAddressPayloadToGivenParties(requestMap));
+    }
+
+    @Test
+    void testTransformOrgAndAddressPayloadToGivenParties6() {
+        Map<String, PartiesRequest> requestMap = new HashMap<>();
+        requestMap.put("Customer Request", PartiesRequest.builder().orgCode("FCR0001").addressCode("FCR0001").build());
+        requestMap.put("Consignor Request", PartiesRequest.builder().orgCode("FCR0001").addressCode("FCR0001").build());
+        requestMap.put("Consignee Request", PartiesRequest.builder().orgCode("FCR0001").addressCode("FCR0001").build());
+        requestMap.put("Notify Party Request", PartiesRequest.builder().orgCode("FCR0001").addressCode("FCR0001").build());
+        DependentServiceResponse v1OrgResponse = new DependentServiceResponse();
+        Parties parties = Parties.builder().orgCode("FCR0001").addressCode("FCR0001").orgId("1").addressId("1").build();
+        v1OrgResponse.setData(new ArrayList<>(List.of(parties)));
+        var masterDataService = mock(IMasterDataService.class);
+        when(masterDataFactory.getMasterDataService()).thenReturn(masterDataService);
+        when(masterDataFactory.getMasterDataService().fetchOrganizationData(any())).thenReturn(v1OrgResponse);
+        when(jsonHelper.convertValueToList(any(), eq(Object.class))).thenReturn(new ArrayList<>(List.of(parties)));
+        Map<String, Object> map = new HashMap<>();
+        map.put("OrgId", "1");
+        map.put("OrganizationCode", "FCR0001");
+        map.put("AddressShortCode", "FCR0001");
+        map.put("Id", "1");
+        when(jsonHelper.convertJsonToMap(any())).thenReturn(map);
+        DependentServiceResponse v1OrgResponse2 = new DependentServiceResponse();
+        v1OrgResponse2.setData(new ArrayList<>());
+        when(masterDataFactory.getMasterDataService().addressList(any())).thenReturn(v1OrgResponse2);
+        assertThrows(DataRetrievalFailureException.class, () -> bookingIntegrationsUtility.transformOrgAndAddressPayloadToGivenParties(requestMap));
+    }
+
+    @Test
+    void updateBookingInPlatformEmptyContainer_fromShipment_throwsException() throws RunnerException {
+        var shipment = jsonTestUtility.getTestShipment();
+        shipment.setBookingType(CustomerBookingConstants.ONLINE);
+        shipment.setBookingReference("12345");
+        bookingIntegrationsUtility.updateBookingInPlatformEmptyContainer(shipment);
+        verify(platformServiceAdapter, times((1))).updateAtPlaform(any());
+    }
+
+    @Test
+    void updateBookingInPlatformEmptyContainer_fromShipment() throws RunnerException {
+        var shipment = jsonTestUtility.getTestShipment();
+        shipment.setBookingType(CustomerBookingConstants.ONLINE);
+        shipment.setBookingReference(null);
+        bookingIntegrationsUtility.updateBookingInPlatformEmptyContainer(shipment);
+        verify(platformServiceAdapter, times((0))).updateAtPlaform(any());
+    }
+
+    @Test
+    void updateBookingInPlatformEmptyContainer2_fromShipment() throws RunnerException {
+        var shipment = jsonTestUtility.getTestShipment();
+        shipment.setBookingType(CustomerBookingConstants.RUNNER);
+        shipment.setBookingReference(null);
+        bookingIntegrationsUtility.updateBookingInPlatformEmptyContainer(shipment);
+        verify(platformServiceAdapter, times((0))).updateAtPlaform(any());
+    }
+
+    @Test
+    void updateBookingInPlatformEmptyContainer_fromShipment_InvalidCase() throws RunnerException {
+        var shipment = jsonTestUtility.getTestShipment();
+        shipment.setBookingType(CustomerBookingConstants.ONLINE);
+        shipment.setBookingReference("12345");
+        shipment.setTransportMode(Constants.TRANSPORT_MODE_ROA);
+        bookingIntegrationsUtility.updateBookingInPlatformEmptyContainer(shipment);
+        verify(platformServiceAdapter, times((0))).updateAtPlaform(any());
     }
 }

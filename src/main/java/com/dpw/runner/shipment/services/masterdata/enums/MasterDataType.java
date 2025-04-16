@@ -1,8 +1,10 @@
 package com.dpw.runner.shipment.services.masterdata.enums;
 
+import java.util.Objects;
 import lombok.Getter;
 
 @Getter
+@SuppressWarnings("java:S115") //Suppressing Rename this constant name to match the regular expression
 public enum MasterDataType {
     ORDER_STATUS(1, "OrderStatus"),
     QUOTE_STATUS(2, "QuoteStatus"),
@@ -37,7 +39,7 @@ public enum MasterDataType {
     ORG_CATEGORY(31, "OrgCategory"),
     CUSTOM_SHIPMENT_TYPE(32, "CustomShipmentType"),
     CUSTOM_DECL_TYPE(33, "CustomDeclType"),
-            // Carrier(34, "Carrier"),
+    CARRIER(34, "Carrier"),
     DOC_TYPES(35, "DocTypes"),
     COUNTRY_STATES(60, "CountryStates"),
     AdditionalServices(61, "AdditionalServices"),
@@ -158,7 +160,9 @@ public enum MasterDataType {
     IATA_CHARGE_CODES(186, "IATAChargeCodes"),
     PACKING_GROUP(188, "PackingGroup"),
     LOCATION_ROLE(189, "LocationRole"),
-    EVENT_SOURCE(190, "EventSource");
+    EVENT_SOURCE(190, "EventSource"),
+    PACKAGE_TYPE(191, "PackageType"),
+    CONTAINER_TYPE(192, "ContainerType");
 
     private int id;
     private String description;
@@ -178,5 +182,16 @@ public enum MasterDataType {
                 return d;
         }
         return null;
+    }
+
+    public static String getNameFromDescription(String description) {
+        if(Objects.isNull(description))
+            return "";
+        for (MasterDataType masterDataType : MasterDataType.values()) {
+            if (masterDataType.getDescription().equalsIgnoreCase(description)) {
+                return masterDataType.name();
+            }
+        }
+        return "";
     }
 }

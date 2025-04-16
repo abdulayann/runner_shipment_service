@@ -92,4 +92,10 @@ public class CustomerBookingResponse implements IRunnerResponse {
     private String orderManagementId;
     private String orderManagementNumber;
     private Boolean isDg;
+    private Integer tenantId;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime createdAt;
+    private String rejectionRemarks;
+    private List<ReferenceNumbersResponse> referenceNumbersList;
+    private String shipmentReferenceNumber;
 }

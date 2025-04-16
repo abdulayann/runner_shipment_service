@@ -1,8 +1,10 @@
 package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.CarrierListObject;
+import com.dpw.runner.shipment.services.dto.request.ListCousinBranchesForEtRequest;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.service.interfaces.IMasterDataService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -163,6 +165,36 @@ class MasterDataControllerTest {
         when(iMasterDataService.createCarrier(any())).thenThrow(new RuntimeException("RuntimeException"));
         // Test
         var responseEntity = masterDataController.createCarrier(new Object());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testCreateNonBillableCustomer1() throws RunnerException {
+        // Mock
+        when(iMasterDataService.createNonBillableCustomer(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = masterDataController.createNonBillableCustomer(new Object());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testCreateNonBillableCustomer2() throws RunnerException {
+        // Mock
+        when(iMasterDataService.createNonBillableCustomer(any())).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = masterDataController.createNonBillableCustomer(new Object());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testCreateNonBillableCustomer3() throws RunnerException {
+        // Mock
+        when(iMasterDataService.createNonBillableCustomer(any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = masterDataController.createNonBillableCustomer(new Object());
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
@@ -1257,6 +1289,36 @@ class MasterDataControllerTest {
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
+    @Test
+    void stateBasedListTest() {
+        // Mock
+        when(iMasterDataService.stateBasedList(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = masterDataController.stateBasedList(new Object());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void stateBasedListTest2() {
+        // Mock
+        when(iMasterDataService.stateBasedList(any())).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = masterDataController.stateBasedList(new Object());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void stateBasedListTest3() {
+        // Mock
+        when(iMasterDataService.stateBasedList(any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = masterDataController.stateBasedList(new Object());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
     /**
      * Method under test: {@link MasterDataController#createOrganization(Object)}
      */
@@ -2108,10 +2170,155 @@ class MasterDataControllerTest {
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
+    @Test
+    void fetchMultipleMasterData() {
+        // Mock
+        when(iMasterDataService.fetchMultipleMasterData(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = masterDataController.fetchMultipleMasterData(new MasterListRequestV2());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void fetchMultipleMasterData2() {
+        // Mock
+        when(iMasterDataService.fetchMultipleMasterData(any())).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = masterDataController.fetchMultipleMasterData(new MasterListRequestV2());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void fetchMultipleMasterData3() {
+        // Mock
+        when(iMasterDataService.fetchMultipleMasterData(any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = masterDataController.fetchMultipleMasterData(new MasterListRequestV2());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void listOrgsTest() {
+        // Mock
+        when(iMasterDataService.listOrgs(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = masterDataController.listOrgs(new Object());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void listOrgsTest2() {
+        // Mock
+        when(iMasterDataService.listOrgs(any())).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = masterDataController.listOrgs(new Object());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void listOrgsTest3() {
+        // Mock
+        when(iMasterDataService.listOrgs(any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = masterDataController.listOrgs(new Object());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void listBranchesByDefaultOrgAndAddressTest() {
+        // Mock
+        when(iMasterDataService.listBranchesByDefaultOrgAndAddress(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        //Test
+        var responseEntity = masterDataController.listBranchesByDefaultOrgAndAddress(new Object());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void listBranchesByDefaultOrgAndAddressTest2() {
+        // Mock
+        when(iMasterDataService.listBranchesByDefaultOrgAndAddress(any())).thenThrow(new RuntimeException());
+        //Test
+        var responseEntity = masterDataController.listBranchesByDefaultOrgAndAddress(new Object());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void listBranchesByDefaultOrgAndAddressTest3() {
+        // Mock
+        when(iMasterDataService.listBranchesByDefaultOrgAndAddress(any())).thenThrow(new RuntimeException("RuntimeException"));
+        //Test
+        var responseEntity = masterDataController.listBranchesByDefaultOrgAndAddress(new Object());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void listCousinBranchForEtReassignTest() {
+        // Mock
+        when(iMasterDataService.listCousinBranchForEt(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = masterDataController.listCousinBranchForNTEReassign(new ListCousinBranchesForEtRequest());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void listCousinBranchForEtReassignTest2() {
+        // Mock
+        when(iMasterDataService.listCousinBranchForEt(any())).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = masterDataController.listCousinBranchForNTEReassign(new ListCousinBranchesForEtRequest());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void listCousinBranchForEtReassignTest3() {
+        // Mock
+        when(iMasterDataService.listCousinBranchForEt(any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = masterDataController.listCousinBranchForNTEReassign(new ListCousinBranchesForEtRequest());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
 
 
+    @Test
+    void listCousinBranchForEtTest() {
+        // Mock
+        when(iMasterDataService.listCousinBranchForEt(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = masterDataController.listCousinBranchForEt(new ListCousinBranchesForEtRequest());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
 
+    @Test
+    void listCousinBranchForEtTest2() {
+        // Mock
+        when(iMasterDataService.listCousinBranchForEt(any())).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = masterDataController.listCousinBranchForEt(new ListCousinBranchesForEtRequest());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
 
-
+    @Test
+    void listCousinBranchForEtTest3() {
+        // Mock
+        when(iMasterDataService.listCousinBranchForEt(any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = masterDataController.listCousinBranchForEt(new ListCousinBranchesForEtRequest());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
 
 }

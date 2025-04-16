@@ -326,4 +326,12 @@ public class ShipmentSettingsSyncRequest implements IRunnerRequest {
     private Boolean enablePartyCheckForConsolidation;
     @JsonProperty("CSD")
     private String csd;
+    @JsonProperty("HideManifest")
+    private Boolean hideManifest;
+    @JsonProperty("FcrDocument")
+    private String fcrDocument;
+    @JsonProperty("CountryAirCargoSecurity")
+    private Boolean countryAirCargoSecurity;
+    @JsonProperty("AmrAirFreight")
+    private Boolean isAmrAirFreightEnabled;
 }

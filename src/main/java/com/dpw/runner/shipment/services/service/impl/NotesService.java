@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.NotesConstants;
@@ -73,29 +74,23 @@ public class NotesService implements INotesService {
             NotesRequest request = (NotesRequest) commonRequestModel.getData();
             if(request.getEntityId() == null) {
                 if(StringUtility.isEmpty(request.getEntityGuid()) || StringUtility.isEmpty(request.getEntityType())) {
-                    log.debug("Request Id is null for Notes create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-                    throw new RunnerException("EntityId is not present");
+                    log.debug(NotesConstants.NOTES_REQUEST_ID_NULL, LoggerHelper.getRequestIdFromMDC());
+                    throw new RunnerException(NotesConstants.NOTES_ENTITY_ID_NOT_PRESENT);
                 }
                 CommonGetRequest commonGetRequest = CommonGetRequest.builder().guid(request.getEntityGuid()).build();
                 if(request.getEntityType().equalsIgnoreCase(Constants.SHIPMENT)) {
                     ResponseEntity<IRunnerResponse> response = shipmentService.getIdFromGuid(CommonRequestModel.buildRequest(commonGetRequest));
                     ShipmentDetailsResponse shipmentDetailsResponse = (ShipmentDetailsResponse) ((RunnerResponse<?>) Objects.requireNonNull(response.getBody())).getData();
-                    if(shipmentDetailsResponse == null) {
-                        log.debug("Request Id is null for Notes create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-                        throw new RunnerException("EntityId is not present");
-                    }
+                    validateShipmentDetailsResponse(shipmentDetailsResponse);
                     request.setEntityId(shipmentDetailsResponse.getId());
                 } else if(request.getEntityType().equalsIgnoreCase(Constants.CONSOLIDATION)) {
                     ResponseEntity<IRunnerResponse> response = consolidationService.getIdFromGuid(CommonRequestModel.buildRequest(commonGetRequest));
                     ConsolidationDetailsResponse consolidationDetailsResponse = (ConsolidationDetailsResponse) ((RunnerResponse<?>) Objects.requireNonNull(response.getBody())).getData();
-                    if(consolidationDetailsResponse == null) {
-                        log.debug("Request Id is null for Notes create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-                        throw new RunnerException("EntityId is not present");
-                    }
+                    validateConsoleDetailsResponse(consolidationDetailsResponse);
                     request.setEntityId(consolidationDetailsResponse.getId());
                 } else {
-                    log.debug("Request Id is null for Notes create with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-                    throw new RunnerException("EntityId is not present");
+                    log.debug(NotesConstants.NOTES_REQUEST_ID_NULL, LoggerHelper.getRequestIdFromMDC());
+                    throw new RunnerException(NotesConstants.NOTES_ENTITY_ID_NOT_PRESENT);
                 }
             }
             Notes notes = convertRequestToNotesEntity(request);
@@ -103,6 +98,7 @@ public class NotesService implements INotesService {
             // audit logs
             auditLogService.addAuditLog(
                     AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                             .newData(notes)
                             .prevData(null)
                             .parent(request.getEntityType())
@@ -117,6 +113,20 @@ public class NotesService implements INotesService {
                     : DaoConstants.DAO_GENERIC_CREATE_EXCEPTION_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    private void validateConsoleDetailsResponse(ConsolidationDetailsResponse consolidationDetailsResponse) throws RunnerException {
+        if(consolidationDetailsResponse == null) {
+            log.debug(NotesConstants.NOTES_REQUEST_ID_NULL, LoggerHelper.getRequestIdFromMDC());
+            throw new RunnerException(NotesConstants.NOTES_ENTITY_ID_NOT_PRESENT);
+        }
+    }
+
+    private void validateShipmentDetailsResponse(ShipmentDetailsResponse shipmentDetailsResponse) throws RunnerException {
+        if(shipmentDetailsResponse == null) {
+            log.debug(NotesConstants.NOTES_REQUEST_ID_NULL, LoggerHelper.getRequestIdFromMDC());
+            throw new RunnerException(NotesConstants.NOTES_ENTITY_ID_NOT_PRESENT);
         }
     }
 
@@ -145,6 +155,7 @@ public class NotesService implements INotesService {
             // audit logs
             auditLogService.addAuditLog(
                     AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                             .newData(notes)
                             .prevData(jsonHelper.readFromJson(oldEntityJsonString, Notes.class))
                             .parent(request.getEntityType())
@@ -225,6 +236,7 @@ public class NotesService implements INotesService {
             // audit logs
             auditLogService.addAuditLog(
                     AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                             .newData(null)
                             .prevData(jsonHelper.readFromJson(oldEntityJsonString, Notes.class))
                             .parent(parent)
@@ -278,7 +290,7 @@ public class NotesService implements INotesService {
 
     private List<IRunnerResponse> convertEntityListToDtoList(final List<Notes> lst) {
         return lst.stream()
-                .map(item -> convertEntityToDto(item))
+                .map(this::convertEntityToDto)
                 .collect(Collectors.toList());
     }
 }

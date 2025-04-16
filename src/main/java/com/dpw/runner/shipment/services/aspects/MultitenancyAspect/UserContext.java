@@ -15,8 +15,8 @@ public class UserContext {
     }
 
     public static boolean isAirDgUser() {
-        return getUser().getPermissions().containsKey(airDG)
-                && getUser().getPermissions().get(airDG);
+        return getUser().getPermissions().containsKey(AIR_DG)
+                && getUser().getPermissions().get(AIR_DG);
     }
 
     public static boolean isOceanDgUser() {
@@ -27,6 +27,11 @@ public class UserContext {
     public static boolean isOceanDgCommercialUser() {
         return getUser().getPermissions().containsKey(OCEAN_DG_COMMERCIAL_APPROVER)
                 && getUser().getPermissions().get(OCEAN_DG_COMMERCIAL_APPROVER);
+    }
+
+    public static boolean isAirSecurityUser() {
+        return getUser().getPermissions().containsKey(AIR_SECURITY_PERMISSION)
+                && getUser().getPermissions().get(AIR_SECURITY_PERMISSION);
     }
 
     public static void setUser(UsersDto userId) {

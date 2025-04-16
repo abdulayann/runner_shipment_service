@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSetting
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
+import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.constants.ReferenceNumbersConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
@@ -18,6 +19,7 @@ import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -40,6 +42,7 @@ import java.util.*;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
@@ -71,6 +74,7 @@ class TransportOrderReportTest extends CommonMocks {
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
         mockUser.setEnableTimeZone(false);
+        mockUser.setPermissions(new HashMap<>());
         UserContext.setUser(mockUser);
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().disableBlPartiesName(false).build());
     }
@@ -268,6 +272,9 @@ class TransportOrderReportTest extends CommonMocks {
         TransportOrderModel transportOrderModel = new TransportOrderModel();
         populateModel(transportOrderModel);
         mockTenantSettings();
+        ShipmentModel shipmentModel = transportOrderModel.shipmentDetails;
+        shipmentModel.setPickupDeliveryDetailsInstructions(Collections.singletonList(PickupDeliveryDetailsModel.builder().id(12L).build()));
+        shipmentModel.getAdditionalDetails().setScreeningStatus(Collections.singletonList(Constants.EAW));
         assertNotNull(transportOrderReport.populateDictionary(transportOrderModel));
     }
 
@@ -283,11 +290,13 @@ class TransportOrderReportTest extends CommonMocks {
         truckDriverDetailsModels.add(truckDriverDetailsModel);
         shipmentModel.setTruckDriverDetails(truckDriverDetailsModels);
         mockTenantSettings();
+        shipmentModel.setPickupDeliveryDetailsInstructions(Collections.singletonList(PickupDeliveryDetailsModel.builder().id(12L).build()));
         assertNotNull(transportOrderReport.populateDictionary(transportOrderModel));
     }
 
     @Test
     void getDocumentModel() throws RunnerException {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setCountryAirCargoSecurity(false);
         when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
         ShipmentModel shipmentModel = new ShipmentModel();
         shipmentModel.setTransportMode(AIR);
@@ -296,6 +305,7 @@ class TransportOrderReportTest extends CommonMocks {
         shipmentModel.setContainersList(Arrays.asList(new ContainerModel()));
         shipmentModel.setCarrierDetails(new CarrierDetailModel());
         when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
+        mockShipmentSettings();
         assertNotNull(transportOrderReport.getDocumentModel(123L));
     }
 
@@ -310,5 +320,41 @@ class TransportOrderReportTest extends CommonMocks {
         doReturn(dictionary).when(spyService).populateDictionary(any());
         Map<String, Object> result = spyService.getData(1L, largeTransportInstructionId);
         assertNotNull(result, "The result should not be null");
+    }
+
+    @Test
+    void getDocumentModel_CountryAirCargoSecurity() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setCountryAirCargoSecurity(true);
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        ShipmentModel shipmentModel = new ShipmentModel();
+        shipmentModel.setTransportMode(AIR);
+        shipmentModel.setDirection(EXP);
+        shipmentModel.setConsolidationList(Arrays.asList(new ConsolidationModel()));
+        shipmentModel.setContainersList(Arrays.asList(new ContainerModel()));
+        shipmentModel.setCarrierDetails(new CarrierDetailModel());
+        when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
+
+        mockShipmentSettings();
+
+        assertThrows(ValidationException.class, () -> transportOrderReport.getDocumentModel(123L));
+    }
+
+    @Test
+    void getDocumentModel_CountryAirCargoSecurity2() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setCountryAirCargoSecurity(true);
+        UserContext.getUser().getPermissions().put(PermissionConstants.AIR_DG, true);
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        ShipmentModel shipmentModel = new ShipmentModel();
+        shipmentModel.setTransportMode(AIR);
+        shipmentModel.setDirection(EXP);
+        shipmentModel.setConsolidationList(Arrays.asList(new ConsolidationModel()));
+        shipmentModel.setContainersList(Arrays.asList(new ContainerModel()));
+        shipmentModel.setCarrierDetails(new CarrierDetailModel());
+        shipmentModel.setContainsHazardous(true);
+        when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
+
+        mockShipmentSettings();
+
+        assertThrows(ValidationException.class, () -> transportOrderReport.getDocumentModel(123L));
     }
 }

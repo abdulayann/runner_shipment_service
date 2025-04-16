@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.document.util.BASE64DecodedMultipartFile;
+import com.dpw.runner.shipment.services.dto.patchrequest.ShipmentSettingsPatchRequest;
 import com.dpw.runner.shipment.services.dto.request.ProductSequenceConfigRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentSettingRequest;
 import com.dpw.runner.shipment.services.entity.ProductSequenceConfig;
@@ -82,7 +83,7 @@ class ShipmentSettingsControllerTest {
         // Mock
         when(shipmentSettingsService.retrieveByTenantId(any())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
-        var responseEntity = shipmentSettingsController.retrieveByTenantId(Optional.of(111L));
+        var responseEntity = shipmentSettingsController.retrieveByTenantId(Optional.of(111L), false);
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -92,7 +93,7 @@ class ShipmentSettingsControllerTest {
         // Mock
         when(shipmentSettingsService.retrieveByTenantId(any())).thenThrow(new RuntimeException());
         // Test
-        var responseEntity = shipmentSettingsController.retrieveByTenantId(Optional.of(111L));
+        var responseEntity = shipmentSettingsController.retrieveByTenantId(Optional.of(111L), false);
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
@@ -102,7 +103,7 @@ class ShipmentSettingsControllerTest {
         // Mock
         when(shipmentSettingsService.retrieveByTenantId(any())).thenThrow(new RuntimeException("RuntimeException"));
         // Test
-        var responseEntity = shipmentSettingsController.retrieveByTenantId(Optional.of(111L));
+        var responseEntity = shipmentSettingsController.retrieveByTenantId(Optional.of(111L), false);
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
@@ -403,4 +404,63 @@ class ShipmentSettingsControllerTest {
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 
+    @Test
+    void hideManifest() throws RunnerException {
+        // Mock
+        when(shipmentSettingsService.hideManifest(true)).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = shipmentSettingsController.updateHideManifest(true);
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void hideManifest2() throws RunnerException {
+        // Mock
+        when(shipmentSettingsService.hideManifest(true)).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = shipmentSettingsController.updateHideManifest(true);
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void hideManifest3() throws RunnerException {
+        // Mock
+        when(shipmentSettingsService.hideManifest(true)).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = shipmentSettingsController.updateHideManifest(true);
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void partialUpdate() throws RunnerException {
+        // Mock
+        when(shipmentSettingsService.partialUpdate(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = shipmentSettingsController.partialUpdate(ShipmentSettingsPatchRequest.builder().build());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void partialUpdate2() throws RunnerException {
+        // Mock
+        when(shipmentSettingsService.partialUpdate(any())).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = shipmentSettingsController.partialUpdate(ShipmentSettingsPatchRequest.builder().build());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void partialUpdate3() throws RunnerException {
+        // Mock
+        when(shipmentSettingsService.partialUpdate(any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = shipmentSettingsController.partialUpdate(ShipmentSettingsPatchRequest.builder().build());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
 }

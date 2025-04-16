@@ -15,4 +15,9 @@ public class AuditLogMetaData {
     private String parent;
     private Long parentId;
     private String entityType;
+    private String userName;
+    private Integer tenantId;
+    private Boolean isIntegrationLog;
+    private String flow;
+    private String dataType;
 }

@@ -12,6 +12,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Data
@@ -79,4 +80,8 @@ public class PickupDeliveryDetailsResponse implements IRunnerResponse {
     private LocalDateTime deliveryGateOut;
     private List<Parties> partiesList;
     private String remarks;
+    private List<TiLegsReponse> tiLegsList;
+
+    private Map<String, String> masterData;
+    private Boolean isDirectDelivery;
 }

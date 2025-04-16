@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.entity.enums;
 
+@SuppressWarnings("java:S115") //Suppressing Rename this constant name to match the regular expression
 public enum AndesStatus {
     SendToAndes(1, "Send To Customs"),
     SuccessFullIntegrated(2, "Submitted"),

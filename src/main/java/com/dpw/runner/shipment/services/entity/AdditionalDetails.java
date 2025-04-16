@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.entity;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.entity.enums.AirAuthorisingEntity;
 import com.dpw.runner.shipment.services.entity.enums.AndesStatus;
 import com.dpw.runner.shipment.services.entity.enums.LGDStatus;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
@@ -31,6 +32,7 @@ import java.util.List;
 @Accessors(chain = true)
 @SQLDelete(sql = "UPDATE shipment_additional_details SET is_deleted = true WHERE id=?")
 @Where(clause = "is_deleted = false")
+@BatchSize(size = 50)
 public class AdditionalDetails extends MultiTenancy {
 
     @Column(name = "customs_no_issue_date")
@@ -91,6 +93,16 @@ public class AdditionalDetails extends MultiTenancy {
 
     @Column(name = "be_type")
     private String BEType;
+
+    @Column(name = "security_status_received_from")
+    @Enumerated(EnumType.STRING)
+    private AirAuthorisingEntity securityStatusReceivedFrom;
+
+    @Column(name = "additional_security_information")
+    private String additionalSecurityInformation;
+
+    @Column(name = "regulated_entity_category")
+    private String regulatedEntityCategory;
 
     @Column(name = "custom_location")
     @MasterData(type = MasterDataType.CUSTOM_LOCATION, cascade = Constants.CUSTOM_CITY)
@@ -282,7 +294,7 @@ public class AdditionalDetails extends MultiTenancy {
     @Column(name = "screening_status")
     @Size(max=50, message = "max size is 50 for screening_status")
     //@MasterData(type = MasterDataType.SCREENING_STATUS)
-    @ElementCollection(targetClass = String.class, fetch = FetchType.EAGER)
+    @ElementCollection(targetClass = String.class, fetch = FetchType.LAZY)
     @CollectionTable(name = "screening_status", joinColumns = @JoinColumn(name = "shipment_additional_details_id"))
     @BatchSize(size = 50)
     private List<String> screeningStatus;
@@ -326,6 +338,14 @@ public class AdditionalDetails extends MultiTenancy {
 
     @Column(name = "surrender_printed")
     private Boolean surrenderPrinted;
+
+    @MasterData(type = MasterDataType.COUNTRIES)
+    @Column(name = "import_broker_country")
+    private String importBrokerCountry;
+
+    @MasterData(type = MasterDataType.COUNTRIES)
+    @Column(name = "export_broker_country")
+    private String exportBrokerCountry;
 
     @OneToOne(fetch = FetchType.LAZY, targetEntity = Parties.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "notify_party_id", referencedColumnName = "id")
@@ -460,19 +480,15 @@ public class AdditionalDetails extends MultiTenancy {
     @Column(name = "empty_container_returned")
     private Boolean emptyContainerReturned;
 
-    public String getbLRemarks() {
-        return bLRemarks;
-    }
+    @Column(name = "is_export_custom_clearance_completed")
+    private Boolean isExportCustomClearanceCompleted;
 
-    public String getbLRemarksDescription() {
-        return bLRemarksDescription;
-    }
+    @Column(name = "bl_instruction_received")
+    private LocalDateTime blInstructionReceived;
 
-    public Parties geteTailor() {
-        return eTailor;
-    }
+    @Column(name = "cargo_out_for_delivery")
+    private LocalDateTime cargoOutForDelivery;
 
-    public String getbLTermsandConditionsId() {
-        return bLTermsandConditionsId;
-    }
+   @Column(name = "fcr_number")
+   private Integer fcrNumber = 0;
 }

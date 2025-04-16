@@ -32,6 +32,8 @@ public class AwbRequest implements IRunnerRequest {
     private List<AwbOtherChargesInfo> awbOtherChargesInfo;
     private AwbOtherInfo awbOtherInfo;
     private List<AwbOCIInfo> awbOciInfo;
+    private Boolean acasEnabled;
+    private OCIInfo ociInfo;
     private List<AwbGoodsDescriptionInfo> awbGoodsDescriptionInfo;
     private List<AwbPackingInfo> awbPackingInfo;
     private List<AwbSpecialHandlingCodesMappingInfo> awbSpecialHandlingCodesMappings;
@@ -42,4 +44,5 @@ public class AwbRequest implements IRunnerRequest {
     private AwbStatus airMessageStatus;
     private AwbStatus linkedHawbAirMessageStatus;
     private LocalDateTime originalPrintedAt;
+    private AirMessagingAdditionalFields airMessagingAdditionalFields;
 }

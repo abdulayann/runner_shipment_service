@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Component
+@SuppressWarnings("java:S6539")
 public class ReportsFactory {
 
     private final Map<String, IReport> reportsMap;
@@ -47,7 +48,8 @@ public class ReportsFactory {
                           CargoManifestAirShipmentReport cargoManifestAirShipmentReport,
                           CargoManifestAirConsolidationReport cargoManifestAirConsolidationReport,
                           BookingOrderReport bookingOrderReport,
-                          CSDReport csdReport) {
+                          CSDReport csdReport,
+                          FCRDocumentReport fcrDocumentReport) {
         reportsMap = new HashMap<>();
         reportsMap.put(ReportConstants.ARRIVAL_NOTICE, arrivalNoticeReport);
         reportsMap.put(ReportConstants.SHIPPING_INSTRUCTION, shippingInstructionReport);
@@ -77,7 +79,7 @@ public class ReportsFactory {
         reportsMap.put(ReportConstants.CONTAINER_MANIFEST_PRINT, containerManifestPrint);
         reportsMap.put(ReportConstants.SEAWAY_BILL, seawayBillReport);
         reportsMap.put(ReportConstants.SHIP_TRUCKWAY_BILL, shipTruckwayBillReport);
-        reportsMap.put(ReportConstants.CONS_TRUCKWAY_BIll, consTruckwayBillReport);
+        reportsMap.put(ReportConstants.CONS_TRUCKWAY_BILL, consTruckwayBillReport);
         reportsMap.put(ReportConstants.SHIP_TRUCK_DRIVER_PROOF, shipTruckDriverProof);
         reportsMap.put(ReportConstants.CONS_TRUCK_DRIVER_PROOF, consTruckDriverProof);
         reportsMap.put(ReportConstants.TRANSPORT_ORDER, transportOrderReport);
@@ -87,6 +89,7 @@ public class ReportsFactory {
         reportsMap.put(ReportConstants.CARGO_MANIFEST_AIR_EXPORT_CONSOLIDATION, cargoManifestAirConsolidationReport);
         reportsMap.put(ReportConstants.BOOKING_ORDER, bookingOrderReport);
         reportsMap.put(ReportConstants.CSD_REPORT, csdReport);
+        reportsMap.put(ReportConstants.FCR_DOCUMENT, fcrDocumentReport);
     }
 
     public IReport getReport(String key) {

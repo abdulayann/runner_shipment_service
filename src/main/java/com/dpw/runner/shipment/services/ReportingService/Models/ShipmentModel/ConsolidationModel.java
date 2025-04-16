@@ -1,17 +1,16 @@
 package com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
+import com.dpw.runner.shipment.services.ReportingService.Models.TriangulationPartnerModel;
 import com.dpw.runner.shipment.services.config.LocalDateTimeWithTimeZoneSerializer;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import java.time.LocalDateTime;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import javax.persistence.Column;
-import java.time.LocalDateTime;
-import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -164,6 +163,8 @@ public class ConsolidationModel implements IDocumentModel {
     private long sourceTenantId;
     @JsonProperty("EdiTransactionId")
     private String ediTransactionId;
+    @JsonProperty("TriangulationPartnerList")
+    private List<TriangulationPartnerModel> triangulationPartnerList;
     @JsonProperty("TriangulationPartner")
     private long triangulationPartner;
     @JsonProperty("ReceivingBranch")
@@ -243,4 +244,6 @@ public class ConsolidationModel implements IDocumentModel {
     private String consoleGrossWeightAndUnit;
     @JsonProperty("Sci")
     private String sci;
+    @JsonProperty("AdditionalSecurityInformation")
+    private String additionalSecurityInformation;
 }

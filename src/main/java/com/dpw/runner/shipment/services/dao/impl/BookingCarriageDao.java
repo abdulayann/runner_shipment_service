@@ -1,10 +1,10 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.IBookingCarriageDao;
 import com.dpw.runner.shipment.services.entity.BookingCarriage;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
@@ -16,7 +16,6 @@ import com.dpw.runner.shipment.services.repository.interfaces.IBookingCarriageRe
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -29,9 +28,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 @Repository
 @Slf4j
@@ -84,18 +80,13 @@ public class BookingCarriageDao implements IBookingCarriageDao {
         String responseMsg;
         List<BookingCarriage> responseBookingCarriage = new ArrayList<>();
         try {
-            // TODO- Handle Transactions here
-            Map<Long, BookingCarriage> hashMap;
-//            if(!Objects.isNull(bookingCarriageIdList) && !bookingCarriageIdList.isEmpty()) {
-                ListCommonRequest listCommonRequest = constructListCommonRequest("shipmentId", shipmentId, "=");
-                Pair<Specification<BookingCarriage>, Pageable> pair = fetchData(listCommonRequest, BookingCarriage.class);
-                Page<BookingCarriage> bookingCarriages = findAll(pair.getLeft(), pair.getRight());
-                hashMap = bookingCarriages.stream()
+            // LATER- Handle Transactions here
+            List<BookingCarriage> bookingCarriages = findByShipmentId(shipmentId);
+            Map<Long, BookingCarriage> hashMap = bookingCarriages.stream()
                         .collect(Collectors.toMap(BookingCarriage::getId, Function.identity()));
-//            }
             Map<Long, BookingCarriage> copyHashMap = new HashMap<>(hashMap);
             List<BookingCarriage> bookingCarriagesRequestList = new ArrayList<>();
-            if (bookingCarriageList != null && bookingCarriageList.size() != 0) {
+            if (bookingCarriageList != null && !bookingCarriageList.isEmpty()) {
                 for (BookingCarriage request : bookingCarriageList) {
                     Long id = request.getId();
                     if (id != null) {
@@ -113,6 +104,10 @@ public class BookingCarriageDao implements IBookingCarriageDao {
             log.error(responseMsg, e);
             throw new RunnerException(e.getMessage());
         }
+    }
+
+    public List<BookingCarriage> findByShipmentId(Long shipmentId) {
+        return bookingCarriageRepository.findByShipmentId(shipmentId);
     }
 
     public List<BookingCarriage> saveEntityFromShipment(List<BookingCarriage> bookingCarriages, Long shipmentId) {
@@ -137,6 +132,8 @@ public class BookingCarriageDao implements IBookingCarriageDao {
             try {
                 auditLogService.addAuditLog(
                         AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId())
+                                .userName(UserContext.getUser().Username)
                                 .newData(req)
                                 .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, BookingCarriage.class) : null)
                                 .parent(ShipmentDetails.class.getSimpleName())
@@ -181,6 +178,7 @@ public class BookingCarriageDao implements IBookingCarriageDao {
             try {
                 auditLogService.addAuditLog(
                         AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                 .newData(req)
                                 .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, BookingCarriage.class) : null)
                                 .parent(ShipmentDetails.class.getSimpleName())
@@ -206,6 +204,7 @@ public class BookingCarriageDao implements IBookingCarriageDao {
                     try {
                         auditLogService.addAuditLog(
                                 AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                         .newData(null)
                                         .prevData(jsonHelper.readFromJson(json, BookingCarriage.class))
                                         .parent(entityType)
@@ -229,7 +228,7 @@ public class BookingCarriageDao implements IBookingCarriageDao {
         String responseMsg;
         List<BookingCarriage> responseBookingCarriage = new ArrayList<>();
         Map<UUID, BookingCarriage> bookingMap = new HashMap<>();
-        if(oldEntityList != null && oldEntityList.size() > 0) {
+        if(oldEntityList != null && !oldEntityList.isEmpty()) {
             for (BookingCarriage entity:
                     oldEntityList) {
                 bookingMap.put(entity.getGuid(), entity);
@@ -239,7 +238,7 @@ public class BookingCarriageDao implements IBookingCarriageDao {
 
             BookingCarriage oldEntity;
             List<BookingCarriage> bookingCarriagesRequestList = new ArrayList<>();
-            if (bookingCarriageList != null && bookingCarriageList.size() != 0) {
+            if (bookingCarriageList != null && !bookingCarriageList.isEmpty()) {
                 for (BookingCarriage request : bookingCarriageList) {
                     oldEntity = bookingMap.get(request.getGuid());
                     if(oldEntity != null) {

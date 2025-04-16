@@ -32,8 +32,11 @@ public class ApiConstants {
 
 
     public static final String API_UPDATE_BOOKING = "/update/booking";
+    public static final String API_CANCEL_BOOKING = "/cancel/booking";
 
     public static final String API_LIST = "/list";
+    public static final String CREATE_NON_BILLABLE_CUSTOMER = "/createNonBillableCustomer";
+    public static final String API_LIST_EXTERNAL = "/list/external";
     public static final String API_LIST_WITHOUT_FILTER = "/listWithoutFilter";
     public static final String API_CONSOLE_SHIPMENT_LIST = "/console-shipment-list";
     public static final String API_DELETE = "/delete";
@@ -49,6 +52,8 @@ public class ApiConstants {
     public static final String API_CALCULATE_CHARGEABLE = "/calculate/chargeable";
     public static final String API_CALCULATE_ACHIEVED_VALUES = "/calculate/achieved";
     public static final String API_CREATE_FROM_BOOKING = "/create/from/booking";
+    public static final String STATE_BASED_LIST = "/state-based-list";
+    public static final String API_LIST_BILL_CHARGES_SHIPMENTS = "/list-for-bill-charges";
 
     public static final String ENUM_API_HANDLE = "/api/v2/enums";
     public static final String ATTACH_SHIPMENTS = "attach-shipments";
@@ -76,6 +81,7 @@ public class ApiConstants {
     public static final String CALCULATE_CONTAINER_SUMMARY = "/container/summary";
     public static final String CALCULATE_PACK_SUMMARY = "/pack/summary";
     public static final String  GET_PACK_UTILISATION = "/get/packUtilisation";
+    public static final String HIDE_MANIFEST = "/hideManifest";
 
     public static final String SHIPMENT_SUMMARY = "/get/shipmentSummary";
     public static final String CALCULATE_AUTO_UPDATE_WT_VOL_SHIPMENT = "/calculate/auto";
@@ -127,4 +133,14 @@ public class ApiConstants {
     public static final String LIST_SHIPMENT_CONSOLIDATION = "/list/shipment/requested-console";
     public static final String ATTACH_DETACH_ORDER = "/attach-detach-order";
 
+    public static final String CANCEL = "/cancel";
+    public static final String LIST_BRANCHES_BY_DEFAULT_ORG_AND_ADDRESS = "/listBranchesByDefaultOrgAndAddress";
+    public static final String MATCHING_RULES_BY_GUID = "/get-matching-rules/guid";
+
+
+    // Runner V3.0 API Endpoints
+    public static final String API_CREATE_V3 = "/createV3";
+    public static final String API_UPDATE_V3 = "/updateV3";
+    public static final String API_LIST_V3 = "/listV3";
+    public static final String API_RETRIEVE_BY_ID_V3 = "/retrieveV3/id";
 }

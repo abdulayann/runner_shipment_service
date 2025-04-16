@@ -15,4 +15,5 @@ public class SendShipmentRequest implements IRunnerRequest {
     private List<String> additionalDocs;
     private List<Integer> sendToBranch;
     private List<String> sendToOrg;
+    private Boolean isAutomaticTransfer;
 }

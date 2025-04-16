@@ -3,16 +3,20 @@ package com.dpw.runner.shipment.services.adapters.impl;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dto.request.mdm.MdmListCriteriaRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.ApprovalPartiesRequest;
+import com.dpw.runner.shipment.services.dto.v1.request.CompanyDetailsRequest;
 import com.dpw.runner.shipment.services.dto.v1.request.CreateShipmentTaskFromBookingTaskRequest;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -23,9 +27,7 @@ import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -202,5 +204,76 @@ class MDMServiceAdapterTest {
         mdmServiceAdapter.createShipmentTaskFromBooking(commonRequestModel);
         verify(jsonHelper,times(4)).convertToJson(request);
         verify(restTemplate,times(3)).exchange(any(RequestEntity.class), eq(DependentServiceResponse.class));
+    }
+
+    @Test
+    void createNonBillableCustomer_Success() throws Exception {
+        // Arrange
+        CommonRequestModel commonRequestModel = mock(CommonRequestModel.class);
+        CompanyDetailsRequest request = new CompanyDetailsRequest();
+        when(commonRequestModel.getDependentData()).thenReturn(request);
+        String jsonRequest = "{}";
+        when(jsonHelper.convertToJson(any())).thenReturn(jsonRequest);
+        DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().build();
+        ResponseEntity<DependentServiceResponse> responseEntity = new ResponseEntity<>(dependentServiceResponse, HttpStatus.OK);
+        when(restTemplate.exchange(any(RequestEntity.class), eq(DependentServiceResponse.class)))
+            .thenReturn(responseEntity);
+
+        // Act
+        ResponseEntity<IRunnerResponse> response = mdmServiceAdapter.createNonBillableCustomer(commonRequestModel);
+
+        // Assert
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void createNonBillableCustomer_Exception() throws Exception {
+        // Arrange
+        CommonRequestModel commonRequestModel = mock(CommonRequestModel.class);
+        CompanyDetailsRequest request = new CompanyDetailsRequest();
+        when(commonRequestModel.getDependentData()).thenReturn(request);
+        String jsonRequest = "{}";
+        when(jsonHelper.convertToJson(any())).thenReturn(jsonRequest);
+        when(restTemplate.exchange(any(RequestEntity.class), eq(DependentServiceResponse.class)))
+            .thenThrow(new RuntimeException("MDM Service Error"));
+
+        // Act & Assert
+        mdmServiceAdapter.createNonBillableCustomer(commonRequestModel);
+        verify(restTemplate,times(1)).exchange(any(RequestEntity.class), eq(DependentServiceResponse.class));
+    }
+
+    @Test
+    void getDepartmentListReturnsListOfDepartments() throws Exception {
+        String transportMode = "AIR";
+        String shipmentType = "EXP";
+        String module = "SHP";
+        // Arrange
+        MdmListCriteriaRequest mdmListCriteriaRequest = MdmListCriteriaRequest.builder().build();
+        String jsonRequest = "{}";
+        when(jsonHelper.convertToJson(any())).thenReturn(jsonRequest);
+        when(restTemplate.postForEntity(anyString(), any(), any())).thenReturn(ResponseEntity.of(
+                Optional.of(new DependentServiceResponse())
+        ));
+        ArgumentCaptor<TypeReference<List<Map<String, Object>>>> captor = ArgumentCaptor.forClass(TypeReference.class);
+        when(jsonHelper.convertValue(any(), captor.capture())).thenReturn(new ArrayList<>());
+
+        // Act & Assert
+        var response = mdmServiceAdapter.getDepartmentList(transportMode, shipmentType, module);
+        assertNotNull(response);
+    }
+
+    @Test
+    void getDepartmentListReturnsEmptyListInCaseOfException() throws Exception {
+        String transportMode = "AIR";
+        String shipmentType = "EXP";
+        String module = "SHP";
+        // Arrange
+        String jsonRequest = "{}";
+        when(jsonHelper.convertToJson(any())).thenReturn(jsonRequest);
+        when(restTemplate.postForEntity(anyString(), any(), any())).thenThrow(new RuntimeException("MDM Service Error"));
+
+        // Act & Assert
+        var response = mdmServiceAdapter.getDepartmentList(transportMode, shipmentType, module);
+        assertEquals(0, response.size());
     }
 }

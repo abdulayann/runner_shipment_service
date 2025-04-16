@@ -12,6 +12,7 @@ import javax.persistence.Table;
 import javax.persistence.*;
 import javax.validation.constraints.Size;
 import java.util.Map;
+import java.util.Objects;
 
 
 @Entity
@@ -27,6 +28,7 @@ import java.util.Map;
 @SQLDelete(sql = "UPDATE parties SET is_deleted = true WHERE id=?")
 @Where(clause = "is_deleted = false")
 @BatchSize(size = 50)
+@SuppressWarnings("java:S1948")
 public class Parties extends MultiTenancy {
 
     private static final long serialVersionUID = 190794279984274725L;
@@ -63,5 +65,22 @@ public class Parties extends MultiTenancy {
 
     @Column(name = "is_address_free_text")
     private Boolean isAddressFreeText;
+
+    @Column(name = "country_code")
+    @Size(max=32, message = "max limit is 170 for country_code")
+    private String countryCode;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Parties that = (Parties) o;
+        return Objects.equals(this.orgId, that.orgId) && Objects.equals(this.addressId, that.addressId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(orgId, addressId);
+    }
 
 }

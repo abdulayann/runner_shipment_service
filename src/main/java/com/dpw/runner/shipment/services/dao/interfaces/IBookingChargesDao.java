@@ -21,6 +21,6 @@ public interface IBookingChargesDao {
 
     BookingCharges updateEntityFromShipmentConsole(BookingCharges bookingCharges) throws RunnerException;
 
-    List<BookingCharges> updateEntityFromBooking(List<BookingCharges> BookingChargesList, Long bookingId) throws RunnerException;
+    List<BookingCharges> updateEntityFromBooking(List<BookingCharges> bookingChargesList, Long bookingId) throws RunnerException;
 
 }

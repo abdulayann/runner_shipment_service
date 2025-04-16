@@ -1,16 +1,26 @@
 package com.dpw.runner.shipment.services.service_bus.consumer;
 
-import com.azure.messaging.servicebus.*;
+import com.azure.messaging.servicebus.ServiceBusErrorContext;
+import com.azure.messaging.servicebus.ServiceBusException;
+import com.azure.messaging.servicebus.ServiceBusProcessorClient;
+import com.azure.messaging.servicebus.ServiceBusReceivedMessage;
+import com.azure.messaging.servicebus.ServiceBusReceivedMessageContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.IgnoreAutoTenantPopulationContext;
+import com.dpw.runner.shipment.services.commons.constants.LoggingConstants;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IEventService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service_bus.SBConfiguration;
 import com.dpw.runner.shipment.services.service_bus.ServiceBusConfigProperties;
+import java.util.UUID;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -24,6 +34,9 @@ public class TrackingConsumer {
     private ServiceBusProcessorClient processorClient;
     private final IV1Service v1Service;
 
+    @Value("${tracking.event.abs.consumer-auto-startup}")
+    private Boolean startConsumer;
+
     @Autowired
     TrackingConsumer(SBConfiguration sbConfiguration, JsonHelper jsonHelper,
             IEventService eventService, ServiceBusConfigProperties serviceBusConfigProperties, IV1Service v1Service) {
@@ -36,17 +49,19 @@ public class TrackingConsumer {
 
     @PostConstruct
     public void startReceiver() {
-        processorClient = sbConfiguration.getSessionProcessorClient(
-                serviceBusConfigProperties.getTrackingService().getConnectionString(),
-                serviceBusConfigProperties.getTrackingService().getTopicName(),
-                serviceBusConfigProperties.getTrackingService().getSubscriptionName(),
-                this::processMessage,
-                this::processError
-        );
+        if (Boolean.TRUE.equals(startConsumer)) {
+            processorClient = sbConfiguration.getSessionProcessorClient(
+                    serviceBusConfigProperties.getTrackingService().getConnectionString(),
+                    serviceBusConfigProperties.getTrackingService().getTopicName(),
+                    serviceBusConfigProperties.getTrackingService().getSubscriptionName(),
+                    this::processMessage,
+                    this::processError
+            );
 
-        processorClient.start();
+            processorClient.start();
 
-        log.info("Tracking Consumer - started and listening...");
+            log.info("Tracking Consumer - started and listening...");
+        }
     }
 
     /**
@@ -55,20 +70,27 @@ public class TrackingConsumer {
      * Otherwise we don't explicitly modify any message metadata, and this should be available to this consumer to be
      * reprocessed next time unless the delivery count exceeds 10 and forces it to be dead lettered.
      */
+    @SneakyThrows
     public void processMessage(ServiceBusReceivedMessageContext context) {
         ServiceBusReceivedMessage receivedMessage = context.getMessage();
-        log.info("Tracking Consumer - Started processing message with id : {}", receivedMessage.getMessageId());
+        String messageId = UUID.randomUUID().toString();
+        MDC.put(LoggingConstants.TS_ID, messageId);
+
+        log.info("Tracking Consumer - Started processing Bus id: {} message with id : {}", receivedMessage.getMessageId(), messageId);
 
         TrackingServiceApiResponse.Container container = jsonHelper.readFromJson(receivedMessage.getBody().toString(), TrackingServiceApiResponse.Container.class);
-        log.info("Tracking Consumer - container payload {}", jsonHelper.convertToJson(container));
+        log.info("Tracking Consumer - container payload {} messageId {}", jsonHelper.convertToJson(container), messageId);
         v1Service.setAuthContext();
-        boolean processSuccess = eventService.processUpstreamTrackingMessage(container);
+        // IMPORTANT: This context disables the auto population of tenant Id while saving.
+        IgnoreAutoTenantPopulationContext.setContext(Boolean.TRUE);
+        boolean processSuccess = eventService.processUpstreamTrackingMessage(container, messageId);
 
         if(processSuccess) {
             context.complete();
-            log.info("Tracking Consumer - Finished processing message with id : {}", receivedMessage.getMessageId());
+            log.info("Tracking Consumer - Finished processing message with id : {}", messageId);
         }
         v1Service.clearAuthContext();
+        IgnoreAutoTenantPopulationContext.clearContext();
     }
 
     public void processError(ServiceBusErrorContext context) {

@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.ReportingService.Reports;
 
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.AmountNumberFormatter;
 import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
+import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper;
 import com.dpw.runner.shipment.services.ReportingService.Models.ArrivalNoticeModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
@@ -16,6 +17,7 @@ import com.dpw.runner.shipment.services.masterdata.response.BillChargesResponse;
 import com.dpw.runner.shipment.services.masterdata.response.BillingResponse;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.core.type.TypeReference;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -28,6 +30,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.getOrgAddress;
 
 @Component
+@Slf4j
 public class ArrivalNoticeReport extends IReport {
 
     @Autowired
@@ -66,7 +69,8 @@ public class ArrivalNoticeReport extends IReport {
         ArrivalNoticeModel arrivalNoticeModel = (ArrivalNoticeModel) documentModel;
         List<String> orgWithoutTranslation = new ArrayList<>();
         List<String> chargeTypesWithoutTranslation = new ArrayList<>();
-        String json = jsonHelper.convertToJsonWithDateTimeFormatter(arrivalNoticeModel.shipmentDetails, GetDPWDateFormatOrDefault());
+        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
+        String json = jsonHelper.convertToJsonWithDateTimeFormatter(arrivalNoticeModel.shipmentDetails, getDPWDateFormatOrDefault(v1TenantSettingsResponse));
         Map<String, Object> dictionary = jsonHelper.convertJsonToMap(json);
         populateShipmentFields(arrivalNoticeModel.shipmentDetails, dictionary);
         populateUserFields(arrivalNoticeModel.usersDto, dictionary);
@@ -76,40 +80,19 @@ public class ArrivalNoticeReport extends IReport {
         dictionary.put(ReportConstants.CONSIGNEE,consignee);
         dictionary.put(ReportConstants.CONTAINER_COUNT_BY_CODE, getCountByContainerTypeCode(arrivalNoticeModel.getContainers()));
         dictionary.put(ReportConstants.SHIPMENT_CONTAINERS, arrivalNoticeModel.getContainers());
-        V1TenantSettingsResponse v1TenantSettingsResponse = getCurrentTenantSettings();
-        dictionary.put(ReportConstants.CURRENT_DATE, ConvertToDPWDateFormat(LocalDateTime.now(), v1TenantSettingsResponse.getDPWDateFormat()));
-        List<Map<String, Object>> valuesContainer = new ArrayList<>();
-        for (ShipmentContainers shipmentContainers : arrivalNoticeModel.getContainers()) {
-            valuesContainer.add(jsonHelper.convertValue(shipmentContainers, new TypeReference<>() {}));
-        }
-        for (Map<String, Object> v : valuesContainer) {
-            if(v.containsKey(ReportConstants.GROSS_VOLUME) && v.get(ReportConstants.GROSS_VOLUME) != null)
-                v.put(ReportConstants.GROSS_VOLUME, ConvertToVolumeNumberFormat(v.get(ReportConstants.GROSS_VOLUME), v1TenantSettingsResponse));
-            if (v.containsKey(ReportConstants.GROSS_WEIGHT) && v.get(ReportConstants.GROSS_WEIGHT) != null)
-                v.put(ReportConstants.GROSS_WEIGHT, ConvertToWeightNumberFormat(v.get(ReportConstants.GROSS_WEIGHT), v1TenantSettingsResponse));
-            if (v.containsKey(ReportConstants.NET_WEIGHT) && v.get(ReportConstants.NET_WEIGHT) != null)
-                v.put(ReportConstants.NET_WEIGHT, ConvertToWeightNumberFormat(new BigDecimal(v.get(ReportConstants.NET_WEIGHT).toString())));
-        }
-        dictionary.put(ReportConstants.SHIPMENT_CONTAINERS, valuesContainer);
+        dictionary.put(ReportConstants.CURRENT_DATE, convertToDPWDateFormat(LocalDateTime.now(), v1TenantSettingsResponse.getDPWDateFormat(), v1TenantSettingsResponse));
+        processShipmentContainers(arrivalNoticeModel, v1TenantSettingsResponse, dictionary);
         if(StringUtility.isNotEmpty(arrivalNoticeModel.shipmentDetails.getHouseBill())) {
             dictionary.put(ReportConstants.SHIPMENT_DETAILS_CARGOCONTROLNO, "80C2" + arrivalNoticeModel.shipmentDetails.getHouseBill());
         }
         getBillChargesDetails(arrivalNoticeModel, chargeTypesWithoutTranslation);
-        if(!Objects.isNull(arrivalNoticeModel.getArrivalNoticeBillCharges()) && !arrivalNoticeModel.getArrivalNoticeBillCharges().isEmpty()){
-            var currency = arrivalNoticeModel.getArrivalNoticeBillCharges().stream().map(ArrivalNoticeModel.ArrivalNoticeBillCharges::getOverseasCurrency).filter(overseasCurrency ->!Objects.isNull(overseasCurrency)).findFirst().orElse("");
-            BigDecimal sumOfTaxAmount = arrivalNoticeModel.getArrivalNoticeBillCharges().stream()
-                    .map(ArrivalNoticeModel.ArrivalNoticeBillCharges::getTaxAmount).filter(Objects::nonNull)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-            BigDecimal sumOfBillAmount = arrivalNoticeModel.getArrivalNoticeBillCharges().stream()
-                    .map(ArrivalNoticeModel.ArrivalNoticeBillCharges::getBillAmount).filter(Objects::nonNull)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-            dictionary.put(ReportConstants.SHIPMENT_BILLCHARGES_FREVENUEBILLCHARGES, arrivalNoticeModel.getArrivalNoticeBillCharges());
-            dictionary.put(ReportConstants.SHIPMENT_BILLCHARGES_BILLCHARGESLOCALTAXSUMCOMMA, AmountNumberFormatter.Format(sumOfTaxAmount, currency, getCurrentTenantSettings()));
-            dictionary.put(ReportConstants.SHIPMENT_BILLCHARGES_BILLCHARGESSUM, AmountNumberFormatter.Format(sumOfBillAmount, currency, getCurrentTenantSettings()));
-            dictionary.put(ReportConstants.SHIPMENT_BILLCHARGES_OVERSEASCURRENCY, currency);
-        }
+        processBillChargesDetails(arrivalNoticeModel, dictionary);
 
         Optional<ReferenceNumbersModel> referenceNumber = Optional.empty();
+
+        if(arrivalNoticeModel.shipmentDetails.getAdditionalDetails() != null) {
+            dictionary.put(NOTIFY_PARTY, ReportHelper.getOrgAddressDetails(arrivalNoticeModel.shipmentDetails.getAdditionalDetails().getNotifyParty()));
+        }
 
         if (arrivalNoticeModel.shipmentDetails.getReferenceNumbersList() != null) {
             referenceNumber = arrivalNoticeModel.shipmentDetails.getReferenceNumbersList().stream().
@@ -141,27 +124,56 @@ public class ArrivalNoticeReport extends IReport {
         }
 
         populateRaKcData(dictionary, arrivalNoticeModel.shipmentDetails);
-        HandleTranslationErrors(printWithoutTranslation, orgWithoutTranslation, chargeTypesWithoutTranslation);
+        handleTranslationErrors(printWithoutTranslation, orgWithoutTranslation, chargeTypesWithoutTranslation);
 
+        processShipmentPackingList(arrivalNoticeModel, dictionary);
+
+        return dictionary;
+    }
+
+    private void processShipmentPackingList(ArrivalNoticeModel arrivalNoticeModel, Map<String, Object> dictionary) {
         if(!listIsNullOrEmpty(arrivalNoticeModel.shipmentDetails.getPackingList())) {
             getPackingDetails(arrivalNoticeModel.shipmentDetails, dictionary);
             dictionary.put(HAS_PACK_DETAILS, true);
             var hazardousCheck = arrivalNoticeModel.shipmentDetails.getPackingList().stream().anyMatch(x -> !Objects.isNull(x.getHazardous()) && x.getHazardous());
             var temperatureCheck = arrivalNoticeModel.shipmentDetails.getPackingList().stream().anyMatch(x -> !Objects.isNull(x.getIsTemperatureControlled()) && x.getIsTemperatureControlled());
-            if (hazardousCheck)
-                dictionary.put(HAS_DANGEROUS_GOODS, true);
-            else
-                dictionary.put(HAS_DANGEROUS_GOODS, false);
-            if (temperatureCheck)
-                dictionary.put(HAS_TEMPERATURE_DETAILS, true);
-            else
-                dictionary.put(HAS_TEMPERATURE_DETAILS, false);
-
+            dictionary.put(HAS_DANGEROUS_GOODS, hazardousCheck);
+            dictionary.put(HAS_TEMPERATURE_DETAILS, temperatureCheck);
         } else {
             dictionary.put(HAS_PACK_DETAILS, false);
         }
+    }
 
-        return dictionary;
+    private void processShipmentContainers(ArrivalNoticeModel arrivalNoticeModel, V1TenantSettingsResponse v1TenantSettingsResponse, Map<String, Object> dictionary) {
+        List<Map<String, Object>> valuesContainer = new ArrayList<>();
+        for (ShipmentContainers shipmentContainers : arrivalNoticeModel.getContainers()) {
+            valuesContainer.add(jsonHelper.convertValue(shipmentContainers, new TypeReference<>() {}));
+        }
+        for (Map<String, Object> v : valuesContainer) {
+            if(v.containsKey(ReportConstants.GROSS_VOLUME) && v.get(ReportConstants.GROSS_VOLUME) != null)
+                v.put(ReportConstants.GROSS_VOLUME, convertToVolumeNumberFormat(v.get(ReportConstants.GROSS_VOLUME), v1TenantSettingsResponse));
+            if (v.containsKey(ReportConstants.GROSS_WEIGHT) && v.get(ReportConstants.GROSS_WEIGHT) != null)
+                v.put(ReportConstants.GROSS_WEIGHT, convertToWeightNumberFormat(v.get(ReportConstants.GROSS_WEIGHT), v1TenantSettingsResponse));
+            if (v.containsKey(ReportConstants.NET_WEIGHT) && v.get(ReportConstants.NET_WEIGHT) != null)
+                v.put(ReportConstants.NET_WEIGHT, convertToWeightNumberFormat(new BigDecimal(v.get(ReportConstants.NET_WEIGHT).toString())));
+        }
+        dictionary.put(ReportConstants.SHIPMENT_CONTAINERS, valuesContainer);
+    }
+
+    private void processBillChargesDetails(ArrivalNoticeModel arrivalNoticeModel, Map<String, Object> dictionary) {
+        if(!Objects.isNull(arrivalNoticeModel.getArrivalNoticeBillCharges()) && !arrivalNoticeModel.getArrivalNoticeBillCharges().isEmpty()){
+            var currency = arrivalNoticeModel.getArrivalNoticeBillCharges().stream().map(ArrivalNoticeModel.ArrivalNoticeBillCharges::getOverseasCurrency).filter(overseasCurrency ->!Objects.isNull(overseasCurrency)).findFirst().orElse("");
+            BigDecimal sumOfTaxAmount = arrivalNoticeModel.getArrivalNoticeBillCharges().stream()
+                    .map(ArrivalNoticeModel.ArrivalNoticeBillCharges::getTaxAmount).filter(Objects::nonNull)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal sumOfBillAmount = arrivalNoticeModel.getArrivalNoticeBillCharges().stream()
+                    .map(ArrivalNoticeModel.ArrivalNoticeBillCharges::getBillAmount).filter(Objects::nonNull)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            dictionary.put(ReportConstants.SHIPMENT_BILLCHARGES_FREVENUEBILLCHARGES, arrivalNoticeModel.getArrivalNoticeBillCharges());
+            dictionary.put(ReportConstants.SHIPMENT_BILLCHARGES_BILLCHARGESLOCALTAXSUMCOMMA, AmountNumberFormatter.format(sumOfTaxAmount, currency, getCurrentTenantSettings()));
+            dictionary.put(ReportConstants.SHIPMENT_BILLCHARGES_BILLCHARGESSUM, AmountNumberFormatter.format(sumOfBillAmount, currency, getCurrentTenantSettings()));
+            dictionary.put(ReportConstants.SHIPMENT_BILLCHARGES_OVERSEASCURRENCY, currency);
+        }
     }
 
     private void getBillChargesDetails(ArrivalNoticeModel arrivalNoticeModel, List<String> chargeTypesWithoutTranslation){
@@ -169,9 +181,12 @@ public class ArrivalNoticeReport extends IReport {
         try {
             billingsList = getBillingData(arrivalNoticeModel.shipmentDetails.getGuid());
         }
-        catch (Exception e) { }
+        catch (Exception e) {
+            log.error("Error fetching billing data for GUID: {}", arrivalNoticeModel.shipmentDetails.getGuid(), e);
+
+        }
         List<BillChargesResponse> charges = new ArrayList<>();
-        if(billingsList != null && billingsList.size() > 0) {
+        if(billingsList != null && !billingsList.isEmpty()) {
             for(BillingResponse billingResponse : billingsList) {
                 List<BillChargesResponse> billChargesResponses = getBillChargesData(billingResponse);
                 if(billChargesResponses != null) {
@@ -183,28 +198,32 @@ public class ArrivalNoticeReport extends IReport {
         arrivalNoticeModel.setArrivalNoticeBillCharges(new ArrayList<>());
         if(!charges.isEmpty()) {
             for (var charge : charges){
-                 var arrivalNoticeCharge = new ArrivalNoticeModel.ArrivalNoticeBillCharges();
-                 arrivalNoticeCharge.setChargeTypeDescription(charge.getChargeTypeDescription());
-                 arrivalNoticeCharge.setChargeTypeDescriptionLL(GetChargeTypeDescriptionLL(charge.getChargeTypeCode(), chargeTypesWithoutTranslation));
-                 if(!Objects.isNull(charge.getOverseasSellAmount())){
-                     arrivalNoticeCharge.setSellAmount(AmountNumberFormatter.Format(charge.getOverseasSellAmount(), charge.getLocalSellCurrency(), getCurrentTenantSettings()));
-                 }
-                 if(!Objects.isNull(charge.getLocalTax())){
-                     arrivalNoticeCharge.setTaxAmount(charge.getLocalTax());
-                 }
-                 if(!Objects.isNull(charge.getMeasurementBasis())){
-                     arrivalNoticeCharge.setMeasurementBasis(MeasurementBasis.getByValue(Integer.parseInt(charge.getMeasurementBasis())).getDescription());
-                 }
-                 if(!Objects.isNull(charge.getOverseasSellAmount())){
-                     arrivalNoticeCharge.setBillAmount(charge.getOverseasSellAmount());
-                 }
-                 if(!Objects.isNull(charge.getLocalCostCurrency())){
-                     arrivalNoticeCharge.setOverseasCurrency(charge.getLocalCostCurrency());
-                 }
-
-                arrivalNoticeModel.getArrivalNoticeBillCharges().add(arrivalNoticeCharge);
+                processArrivalNoticeCharge(arrivalNoticeModel, chargeTypesWithoutTranslation, charge);
             }
         }
 
+    }
+
+    private void processArrivalNoticeCharge(ArrivalNoticeModel arrivalNoticeModel, List<String> chargeTypesWithoutTranslation, BillChargesResponse charge) {
+        var arrivalNoticeCharge = new ArrivalNoticeModel.ArrivalNoticeBillCharges();
+        arrivalNoticeCharge.setChargeTypeDescription(charge.getChargeTypeDescription());
+        arrivalNoticeCharge.setChargeTypeDescriptionLL(getChargeTypeDescriptionLL(charge.getChargeTypeCode(), chargeTypesWithoutTranslation));
+        if(!Objects.isNull(charge.getOverseasSellAmount())){
+            arrivalNoticeCharge.setSellAmount(AmountNumberFormatter.format(charge.getOverseasSellAmount(), charge.getLocalSellCurrency(), getCurrentTenantSettings()));
+        }
+        if(!Objects.isNull(charge.getLocalTax())){
+            arrivalNoticeCharge.setTaxAmount(charge.getLocalTax());
+        }
+        if(!Objects.isNull(charge.getMeasurementBasis())){
+            arrivalNoticeCharge.setMeasurementBasis(MeasurementBasis.getByValue(Integer.parseInt(charge.getMeasurementBasis())).getDescription());
+        }
+        if(!Objects.isNull(charge.getOverseasSellAmount())){
+            arrivalNoticeCharge.setBillAmount(charge.getOverseasSellAmount());
+        }
+        if(!Objects.isNull(charge.getLocalCostCurrency())){
+            arrivalNoticeCharge.setOverseasCurrency(charge.getLocalCostCurrency());
+        }
+
+        arrivalNoticeModel.getArrivalNoticeBillCharges().add(arrivalNoticeCharge);
     }
 }

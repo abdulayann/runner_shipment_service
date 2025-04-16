@@ -13,9 +13,10 @@ import org.springframework.http.*;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.Arrays;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -28,9 +29,7 @@ class UserServiceV1Test {
     @InjectMocks
     private UserServiceV1 userServiceV1;
 
-    private String url = "http://example.com";
-    private String validToken = "Bearer validToken";
-    private String invalidToken = "invalidToken";
+    private final String url = "http://example.com";
 
     @BeforeEach
     void setUp() {
@@ -40,28 +39,27 @@ class UserServiceV1Test {
     @Test
     void getUserByToken_ValidToken_ReturnsUserDto() {
         HttpHeaders headers = new HttpHeaders();
-        headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
+        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
         headers.setBearerAuth("validToken");
         HttpEntity<String> entity = new HttpEntity<>(headers);
         UsersDto expectedUserDto = new UsersDto();
         ResponseEntity<UsersDto> responseEntity = new ResponseEntity<>(expectedUserDto, HttpStatus.OK);
-        when(restTemplate.exchange(eq(url), eq(HttpMethod.POST), eq(entity), eq(UsersDto.class))).thenReturn(responseEntity);
+        when(restTemplate.exchange(url, HttpMethod.POST, entity, UsersDto.class)).thenReturn(responseEntity);
 
-        UsersDto actualUserDto = userServiceV1.getUserByToken("key", validToken);
+        String validToken = "Bearer validToken";
+        UsersDto actualUserDto = userServiceV1.getUserByToken(validToken);
 
         assertEquals(expectedUserDto, actualUserDto);
-        verify(restTemplate, times(1)).exchange(eq(url), eq(HttpMethod.POST), eq(entity), eq(UsersDto.class));
+        verify(restTemplate, times(1)).exchange(url, HttpMethod.POST, entity, UsersDto.class);
     }
 
     @Test
     void getUserByToken_InvalidToken_ReturnsNull() {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
-        HttpEntity<String> entity = new HttpEntity<>(headers);
 
-        UsersDto actualUserDto = userServiceV1.getUserByToken("key", invalidToken);
+        String invalidToken = "invalidToken";
+        UsersDto actualUserDto = userServiceV1.getUserByToken(invalidToken);
 
-        assertEquals(null, actualUserDto);
+        assertNull(actualUserDto);
         verify(restTemplate, never()).exchange(anyString(), any(HttpMethod.class), any(HttpEntity.class), eq(UsersDto.class));
     }
 }

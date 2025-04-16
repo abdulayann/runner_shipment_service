@@ -27,6 +27,7 @@ import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillBaseResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillChargesBaseResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingBaseResponse;
+import com.dpw.runner.shipment.services.dto.response.billing.BillingDueSummary;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingEntityResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingListResponse;
 import com.dpw.runner.shipment.services.dto.response.billing.BillingSummary;
@@ -213,6 +214,13 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
         return fetchBillingSummary(url, httpEntity);
     }
 
+    @Override
+    public List<BillingDueSummary> fetchBillingDueSummary(BillingBulkSummaryBranchWiseRequest request) {
+        String url = billingServiceUrlConfig.getBaseUrl() + billingServiceUrlConfig.getBillingBulkDueSummaryBranchWise();
+        HttpEntity<BillingBulkSummaryBranchWiseRequest> httpEntity = new HttpEntity<>(request, v2AuthHelper.getInvoiceServiceXApiKeyHeader());
+        return fetchBillingDueSummary(url, httpEntity);
+    }
+
     private <T> List<BillingSummary> fetchBillingSummary(String url, HttpEntity<T> httpEntity) {
         log.info("Sending request to URL: {}", url);
         log.debug(REQUEST_PAYLOAD, httpEntity.getBody());
@@ -249,8 +257,21 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
         }
     }
 
+    private <T> List<BillingDueSummary> fetchBillingDueSummary(String url, HttpEntity<T> httpEntity) {
+        BillingEntityResponse response = executePostRequest(url, httpEntity, new ParameterizedTypeReference<BillingEntityResponse>() {});
+
+        if (response != null && ObjectUtils.isNotEmpty(response.getData())
+                && ObjectUtils.isNotEmpty(response.getData().get(BILLING_SUMMARY))) {
+            List<Map<String, Object>> billingDueSummaryListMap = (List<Map<String, Object>>) response.getData().get(BILLING_SUMMARY);
+            return modelMapper.map(billingDueSummaryListMap, new TypeToken<List<BillingDueSummary>>() {}.getType());
+        } else {
+            log.warn("Billing due summary data not found in response.");
+            return Collections.emptyList();
+        }
+    }
+
     private <T, R> R executePostRequest(String url, HttpEntity<T> httpEntity, ParameterizedTypeReference<R> responseType) {
-        log.info("Sending request to URL: {}", url);
+        log.info("Sending request to URL: {} request: {}", url, jsonHelper.convertToJson(httpEntity));
         log.debug(REQUEST_PAYLOAD, httpEntity.getBody());
         double start = System.currentTimeMillis();
         try {
@@ -259,7 +280,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
             R response = responseEntity.getBody();
             log.info(LOG_TIME_CONSUMED, LoggerHelper.getRequestIdFromMDC(), url, System.currentTimeMillis() - start);
             log.info("Received response with status: {}", responseEntity.getStatusCode());
-            log.debug("Response body: {}", response);
+            log.info("Response body: {}", response);
 
             if (Objects.nonNull(response) && response instanceof BillingBaseResponse billingBaseResponse) {
                 if (ObjectUtils.isNotEmpty(billingBaseResponse.getErrors())) {
@@ -351,14 +372,21 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
                 (!Objects.equals(null, billingSummary.getAccruedCost()) && Double.compare(billingSummary.getAccruedCost(), 0.0) > 0) ||
                 (!Objects.equals(null, billingSummary.getInvoicedRevenue()) && Double.compare(billingSummary.getInvoicedRevenue(), 0.0) > 0) ||
                 (!Objects.equals(null, billingSummary.getInvoicedCost()) && Double.compare(billingSummary.getInvoicedCost(), 0.0) > 0) ||
-                (!Objects.equals(null, billingSummary.getDisbursementAccruedRevenue()) && Double.compare(billingSummary.getDisbursementAccruedRevenue(), 0.0) > 0) ||
+                areDisbursementFieldsPresent(billingSummary) || areCumulativeGPFieldsPresent(billingSummary);
+    }
+
+    private boolean areCumulativeGPFieldsPresent(BillingSummary billingSummary) {
+        return (!Objects.equals(null, billingSummary.getCumulativeGP()) && Double.compare(billingSummary.getCumulativeGP(), 0.0) > 0) ||
+                (!Objects.equals(null, billingSummary.getCumulativeGPPercentage()) && Double.compare(billingSummary.getCumulativeGPPercentage(), 0.0) > 0);
+    }
+
+    private boolean areDisbursementFieldsPresent(BillingSummary billingSummary) {
+        return (!Objects.equals(null, billingSummary.getDisbursementAccruedRevenue()) && Double.compare(billingSummary.getDisbursementAccruedRevenue(), 0.0) > 0) ||
                 (!Objects.equals(null, billingSummary.getDisbursementAccruedCost()) && Double.compare(billingSummary.getDisbursementAccruedCost(), 0.0) > 0) ||
                 (!Objects.equals(null, billingSummary.getDisbursementInvoicedRevenue()) && Double.compare(billingSummary.getDisbursementInvoicedRevenue(), 0.0) > 0) ||
                 (!Objects.equals(null, billingSummary.getDisbursementInvoicedCost()) && Double.compare(billingSummary.getDisbursementInvoicedCost(), 0.0) > 0) ||
                 (!Objects.equals(null, billingSummary.getDisbursementRevenue()) && Double.compare(billingSummary.getDisbursementRevenue(), 0.0) > 0) ||
-                (!Objects.equals(null, billingSummary.getDisbursementCost()) && Double.compare(billingSummary.getDisbursementCost(), 0.0) > 0) ||
-                (!Objects.equals(null, billingSummary.getCumulativeGP()) && Double.compare(billingSummary.getCumulativeGP(), 0.0) > 0) ||
-                (!Objects.equals(null, billingSummary.getCumulativeGPPercentage()) && Double.compare(billingSummary.getCumulativeGPPercentage(), 0.0) > 0);
+                (!Objects.equals(null, billingSummary.getDisbursementCost()) && Double.compare(billingSummary.getDisbursementCost(), 0.0) > 0);
     }
 
     @Override
@@ -421,7 +449,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
                         .build())
                 .configuration(ExternalBillConfiguration.builder()
                         .autoCalculate(List.of(
-                                Constants.LocalReferenceNumber,
+                                Constants.LOCAL_REFERENCE_NUMBER,
                                 "Tax",
                                 "SequenceNumber",
                                 "OverseasExchangeRate",
@@ -495,18 +523,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
             EntityTransferOrganizations creditorDetails = organizationList.stream().filter(org -> org.getOrganizationCode().equalsIgnoreCase(billCharge.getCreditorCode()))
                     .filter(ObjectUtils::isNotEmpty).findFirst().orElse(null);
 
-            Long creditorId = Optional.ofNullable(billCharge.getCreditorCode())
-                    .filter(code -> !code.trim().isEmpty())
-                    .map(code -> Optional.ofNullable(creditorDetails)
-                            .map(EntityTransferOrganizations::getId)
-                            .orElseThrow(() -> new BillingException(NO_ORG_FOUND_FOR + code)))
-                    .orElseGet(() -> Optional.ofNullable(creditorDetails)
-                            .map(EntityTransferOrganizations::getId)
-                            .orElse(clientId));
-
-            if (creditorDetails == null || creditorDetails.getPayables() == null || Boolean.FALSE.equals(creditorDetails.getPayables())) {
-                creditorId = -1L;
-            }
+            Long creditorId = getCreditorId(clientId, billCharge, creditorDetails);
 
             EntityTransferOrganizations debtorDetails = organizationList.stream()
                     .filter(org -> org.getOrganizationCode().equalsIgnoreCase(billCharge.getDebtorCode()))
@@ -600,13 +617,32 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
                                     .overseasSellCurrency(Optional.ofNullable(billCharge.getOverseasSellCurrency()).filter(ObjectUtils::isNotEmpty)
                                             .orElse(tenantModel.getCurrencyCode()))
                                     .noTax(false)
-                                    .isRcm(false).build())
+                                    .isRcm(false)
+                                    .internalRemarks(billCharge.getInternalRemarks())
+                                    .externalRemarks(billCharge.getExternalRemarks())
+                                    .build())
                             .build())
                     .build();
             externalBillChargeRequests.add(externalBillChargeRequest);
         } catch (Exception ex) {
             throw new BillingException(ex.getMessage());
         }
+    }
+
+    private Long getCreditorId(Long clientId, BillCharge billCharge, EntityTransferOrganizations creditorDetails) {
+        Long creditorId = Optional.ofNullable(billCharge.getCreditorCode())
+                .filter(code -> !code.trim().isEmpty())
+                .map(code -> Optional.ofNullable(creditorDetails)
+                        .map(EntityTransferOrganizations::getId)
+                        .orElseThrow(() -> new BillingException(NO_ORG_FOUND_FOR + code)))
+                .orElseGet(() -> Optional.ofNullable(creditorDetails)
+                        .map(EntityTransferOrganizations::getId)
+                        .orElse(clientId));
+
+        if (creditorDetails == null || creditorDetails.getPayables() == null || Boolean.FALSE.equals(creditorDetails.getPayables())) {
+            creditorId = -1L;
+        }
+        return creditorId;
     }
 
     private record MeasurementBasisRecord(String revenueMeasurementBasisV2, String measurementBasisUnit) {
@@ -655,14 +691,14 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
             List<Object> finalCriteria = new ArrayList<>();
             CommonV1ListRequest addressRequest = new CommonV1ListRequest();
 
-            List<Object> orgIdField = new ArrayList<>(List.of(Constants.OrgId));
+            List<Object> orgIdField = new ArrayList<>(List.of(Constants.ORG_ID));
             List<Long> orgIdList = organizations.stream().filter(ObjectUtils::isNotEmpty).map(EntityTransferOrganizations::getId).toList();
             List<Object> orgIdCriteria = new ArrayList<>(List.of(orgIdField, Constants.IN, List.of(orgIdList)));
             finalCriteria.add(orgIdCriteria);
 
             finalCriteria.add("and");
 
-            List<Object> activeClient = new ArrayList<>(List.of(Constants.Active));
+            List<Object> activeClient = new ArrayList<>(List.of(Constants.ACTIVE));
             List<Object> activeClientCriteria = new ArrayList<>(List.of(activeClient, Constants.EQ, 1));
             finalCriteria.add(activeClientCriteria);
 
@@ -701,7 +737,7 @@ public class BillingServiceAdapter implements IBillingServiceAdapter {
                 v1BillingData.setTotalPostedRevenue(v2BillingData.getTotalPostedRevenue());
                 v1BillingData.setTotalPostedProfit(v2BillingData.getTotalPostedProfit());
                 v1BillingData.setTotalPostedProfitPercent(v2BillingData.getTotalPostedProfitPercent());
-                v1BillingData.setId(null); // TODO: SUBHAM fetch id of Shipment
+                v1BillingData.setId(null); // LATER: SUBHAM fetch id of Shipment
 
                 Map<String, BillingData> data = Optional.ofNullable(shipmentBillingListResponse.getData()).orElseGet(HashMap::new);
                 data.put(shipmentGuid, v1BillingData);

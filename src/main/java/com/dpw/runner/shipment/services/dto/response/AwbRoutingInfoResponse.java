@@ -1,8 +1,10 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.utils.ExcludeTimeZone;
 import com.dpw.runner.shipment.services.utils.UnlocationData;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -18,7 +20,11 @@ public class AwbRoutingInfoResponse implements IRunnerResponse {
     private String  byCarrier;
     private String  flightNumber;
     @ExcludeTimeZone
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime flightDate;
+    @ExcludeTimeZone
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime eta;
     private String departureAirport;
     private String destinationAirport;
     @UnlocationData

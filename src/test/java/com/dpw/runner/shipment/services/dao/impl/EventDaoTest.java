@@ -1,13 +1,19 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.anyBoolean;
+import static org.mockito.Mockito.anyInt;
+import static org.mockito.Mockito.anyLong;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
@@ -15,14 +21,12 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.EventConstants;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
-import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
-import com.dpw.runner.shipment.services.entity.Events;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -30,13 +34,13 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.repository.interfaces.IEventRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.syncing.interfaces.IEventsSync;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -52,6 +56,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -96,6 +101,9 @@ class EventDaoTest {
 
     @Mock
     private IShipmentDao shipmentDao;
+
+    @Mock
+    private CommonUtils commonUtils;
 
     private static ObjectMapper objectMapper;
 
@@ -189,8 +197,8 @@ class EventDaoTest {
 
         Events savedEvent = testData;
 
-        Page<Events> page = new PageImpl(List.of(savedEvent));
-        when(eventRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+        Page<Events> page = new PageImpl<>(List.of(savedEvent));
+        when(eventRepository.findAll(ArgumentMatchers.<Specification<Events>>any(), any(Pageable.class))).thenReturn(page);
 
         try {
             var result = eventDao.updateEntityFromOtherEntity(List.of(testData) , 1L , "Shipment");
@@ -206,8 +214,8 @@ class EventDaoTest {
 
         Events savedEvent = testData;
 
-        Page<Events> page = new PageImpl(List.of(savedEvent));
-        when(eventRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+        Page<Events> page = new PageImpl<>(List.of(savedEvent));
+        when(eventRepository.findAll(ArgumentMatchers.<Specification<Events>>any(), any(Pageable.class))).thenReturn(page);
 
         try {
             var result = eventDao.updateEntityFromOtherEntity(List.of(testData) , 1L , "CONSOLIDATION");
@@ -275,13 +283,13 @@ class EventDaoTest {
         when(jsonHelper.convertToJson(any())).thenReturn(objectMapper.writeValueAsString(testData));
         when(eventRepository.save(testData)).thenReturn(testData);
 
-        var result = eventDao.saveEntityFromOtherEntity(List.of(testData) , 1L , "Shipment");
+        eventDao.saveEntityFromOtherEntity(List.of(testData) , 1L , "Shipment");
 
         verify(auditLogService, atLeast(1)).addAuditLog(any());
     }
 
     @Test
-    void saveEntityFromOtherEntityWithOldEntityMap() throws JsonProcessingException, RunnerException, NoSuchFieldException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+    void saveEntityFromOtherEntityWithOldEntityMap() throws JsonProcessingException {
         Long eventId = 1L;
         testData.setId(eventId);
 
@@ -291,22 +299,23 @@ class EventDaoTest {
         when(jsonHelper.convertToJson(any())).thenReturn(objectMapper.writeValueAsString(testData));
         when(eventRepository.saveAll(anyList())).thenReturn(List.of(testData));
 
-        var result = eventDao.saveEntityFromOtherEntity(List.of(testData), 1L, "Shipment", oldEntityMap);
+        assertDoesNotThrow(() ->eventDao.saveEntityFromOtherEntity(List.of(testData), 1L, "Shipment", oldEntityMap));
 
     }
 
     @Test
-    void saveEntityFromOtherEntityWithOldEntityMapThrowsException() throws JsonProcessingException, RunnerException, NoSuchFieldException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+    void saveEntityFromOtherEntityWithOldEntityMapThrowsException(){
         Long eventId = 1L;
         testData.setId(eventId);
-
-        var e = assertThrows(DataRetrievalFailureException.class, () ->
-                eventDao.saveEntityFromOtherEntity(List.of(testData), 1L, "Shipment", new HashMap<>()));
+        Map<Long, Events> oldEntityMap = new HashMap<>();
+        List<Events> events = List.of(testData);
+        assertThrows(DataRetrievalFailureException.class, () ->
+                eventDao.saveEntityFromOtherEntity(events, 1L, "Shipment", oldEntityMap));
 
     }
 
     @Test
-    void saveEntityFromOtherEntityIgnoresEntityTypeIfAlreadyPresentInEvents() throws JsonProcessingException, RunnerException, NoSuchFieldException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+    void saveEntityFromOtherEntityIgnoresEntityTypeIfAlreadyPresentInEvents() throws JsonProcessingException{
         Long eventId = 1L;
         testData.setId(eventId);
         testData.setEntityId(5L);
@@ -325,7 +334,7 @@ class EventDaoTest {
     }
 
     @Test
-    void saveEntityFromOtherEntityUpdateEntityTypeIfNotPresentInEvents() throws JsonProcessingException, RunnerException, NoSuchFieldException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+    void saveEntityFromOtherEntityUpdateEntityTypeIfNotPresentInEvents() throws JsonProcessingException{
         Long eventId = 1L;
         testData.setId(eventId);
         testData.setEntityId(null);
@@ -384,8 +393,8 @@ class EventDaoTest {
         Events savedEvent = new Events();
         savedEvent.setEventCode(request.eventCode);
 
-        Page<Events> page = new PageImpl(List.of(savedEvent));
-        when(eventRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+        Page<Events> page = new PageImpl<>(List.of(savedEvent));
+        when(eventRepository.findAll(ArgumentMatchers.<Specification<Events>>any(), any(Pageable.class))).thenReturn(page);
 
         eventDao.autoGenerateEvents(request);
 
@@ -440,10 +449,10 @@ class EventDaoTest {
         Events savedEvent = new Events();
         savedEvent.setEventCode("EventCode");
 
-        Page<Events> page = new PageImpl(List.of());
-        when(eventRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+        Page<Events> page = new PageImpl<>(List.of());
+        when(eventRepository.findAll(ArgumentMatchers.<Specification<Events>>any(), any(Pageable.class))).thenReturn(page);
 
-        assertEquals(false, eventDao.checkIfEventsRowExistsForEntityTypeAndEntityId(customAutoEventRequest));
+        assertFalse(eventDao.checkIfEventsRowExistsForEntityTypeAndEntityId(customAutoEventRequest));
     }
 
     @Test
@@ -451,8 +460,8 @@ class EventDaoTest {
         Events savedEvent = new Events();
         savedEvent.setEventCode("EventCode");
 
-        Page<Events> page = new PageImpl(List.of(savedEvent));
-        when(eventRepository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+        Page<Events> page = new PageImpl<>(List.of(savedEvent));
+        when(eventRepository.findAll(ArgumentMatchers.<Specification<Events>>any(), any(Pageable.class))).thenReturn(page);
 
         assertEquals(List.of(savedEvent), eventDao.getTheDataFromEntity("SHIPMENTS", 1, false));
     }
@@ -462,8 +471,10 @@ class EventDaoTest {
         Events events = new Events();
         events.setEntityId(1L);
         events.setEntityType(Constants.SHIPMENT);
+        events.setEventCode(EventConstants.BOCO);
 
-        ShipmentDetails shipment = ShipmentDetails.builder().shipmentId("SHP01").build();
+        ShipmentDetails shipment = ShipmentDetails.builder()
+                .transportMode(Constants.TRANSPORT_MODE_AIR).shipmentId("SHP01").build();
 
         List<ConsoleShipmentMapping> consoleShipmentMappings = List.of(ConsoleShipmentMapping.builder().shipmentId(1L).consolidationId(1L).build());
         List<ShipmentDetails> shipmentDetailsList = List.of(shipment);
@@ -489,98 +500,15 @@ class EventDaoTest {
     }
 
     @Test
-    void updateEventDetailsForShipmentEvents() {
-        // Create a list of shipment events
-        Events event1 = new Events();
-        event1.setEntityId(1L);
-        event1.setEntityType(Constants.SHIPMENT);
+    void updateEventDetailsForConsolidationEventAndDescartesSource() {
+        Events events = new Events();
+        events.setEntityId(1L);
+        events.setEntityType(Constants.CONSOLIDATION);
+        events.setSource(Constants.DESCARTES);
 
-        Events event2 = new Events();
-        event2.setEntityId(2L);
-        event2.setEntityType(Constants.SHIPMENT);
+        eventDao.updateEventDetails(events);
 
-        List<Events> eventsList = List.of(event1, event2);
-
-        // Mocking the results for each event's entityId
-        ShipmentDetails shipment1 = new ShipmentDetails();
-        shipment1.setId(1L);
-        shipment1.setShipmentId("SHP01");
-
-        ShipmentDetails shipment2 = new ShipmentDetails();
-        shipment2.setId(2L);
-        shipment2.setShipmentId("SHP02");
-
-        List<ConsoleShipmentMapping> consoleShipmentMappings1 = List.of(
-                ConsoleShipmentMapping.builder().shipmentId(1L).consolidationId(1L).build(),
-                ConsoleShipmentMapping.builder().shipmentId(2L).consolidationId(2L).build());
-
-        // Stubbing the findByShipmentId calls
-        when(consoleShipmentMappingDao.findByShipmentIds(Set.of(1L,2L))).thenReturn(consoleShipmentMappings1);
-
-        // Mocking a single call for getShipmentNumberFromId with a list containing both IDs
-        when(shipmentDao.getShipmentNumberFromId(List.of(1L, 2L)))
-                .thenReturn(List.of(shipment1, shipment2));
-
-        eventDao.updateEventDetails(eventsList);
-
-        // Asserting for the first event
-        assertEquals(1L, event1.getConsolidationId());
-        assertEquals(shipment1.getShipmentId(), event1.getShipmentNumber());
-
-        // Asserting for the second event
-        assertEquals(2L, event2.getConsolidationId());
-        assertEquals(shipment2.getShipmentId(), event2.getShipmentNumber());
-    }
-
-    @Test
-    void updateEventDetailsForConsolidationEvents() {
-        // Create a list of consolidation events
-        Events event1 = new Events();
-        event1.setEntityId(1L);
-        event1.setEntityType(Constants.CONSOLIDATION);
-
-        Events event2 = new Events();
-        event2.setEntityId(2L);
-        event2.setEntityType(Constants.CONSOLIDATION);
-
-        List<Events> eventsList = List.of(event1, event2);
-
-        eventDao.updateEventDetails(eventsList);
-
-        // Asserting for the first event
-        assertEquals(1L, event1.getConsolidationId());
-
-        // Asserting for the second event
-        assertEquals(2L, event2.getConsolidationId());
-    }
-
-    @Test
-    void updateEventDetailsForMixedEvents() {
-        // Create a mix of shipment and consolidation events
-        Events shipmentEvent = new Events();
-        shipmentEvent.setEntityId(1L);
-        shipmentEvent.setEntityType(Constants.SHIPMENT);
-
-        Events consolidationEvent = new Events();
-        consolidationEvent.setEntityId(2L);
-        consolidationEvent.setEntityType(Constants.CONSOLIDATION);
-
-        List<Events> eventsList = Arrays.asList(shipmentEvent, consolidationEvent);
-
-        // Mocking for shipment event
-        ShipmentDetails shipment = ShipmentDetails.builder().shipmentId("SHP01").build();
-        List<ConsoleShipmentMapping> consoleShipmentMappings = List.of(ConsoleShipmentMapping.builder().shipmentId(1L).consolidationId(1L).build());
-
-        when(consoleShipmentMappingDao.findByShipmentIds(Set.of(1L))).thenReturn(consoleShipmentMappings);
-        when(shipmentDao.getShipmentNumberFromId(List.of(1L))).thenReturn(List.of(shipment));
-
-        eventDao.updateEventDetails(eventsList);
-
-        // Asserting for the shipment event
-        assertEquals(1L, shipmentEvent.getConsolidationId());
-
-        // Asserting for the consolidation event
-        assertEquals(2L, consolidationEvent.getConsolidationId());
+        assertEquals(1L, events.getConsolidationId());
     }
 
 

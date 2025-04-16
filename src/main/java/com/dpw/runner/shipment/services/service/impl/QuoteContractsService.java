@@ -14,8 +14,10 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IQuoteContractsService;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -29,7 +31,7 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 
 @Service
 @Slf4j
@@ -96,13 +98,8 @@ public class QuoteContractsService implements IQuoteContractsService {
                 log.error("Request is empty for Quote Contracts update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
                 return;
             }
-            String contractId = null;
-            try {
-                contractId = request.getContracts().get(0).getContract_id();
-            } catch (Exception e) {
-                log.error("Contract Id is null for Quote Contracts update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
-            }
-            if(IsStringNullOrEmpty(contractId)) {
+            String contractId = getContractId(request);
+            if(isStringNullOrEmpty(contractId)) {
                 log.error("Contract Id is null for Quote Contracts update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
                 return;
             }
@@ -119,6 +116,16 @@ public class QuoteContractsService implements IQuoteContractsService {
         } catch (Exception e) {
             log.error("Error while updating quote Contracts with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
+    }
+
+    private static String getContractId(ListContractResponse request) {
+        String contractId = null;
+        try {
+            contractId = request.getContracts().get(0).getContract_id();
+        } catch (Exception e) {
+            log.error("Contract Id is null for Quote Contracts update with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
+        return contractId;
     }
 
     private void getQuoteContractsData(QuoteContracts quoteContracts, ListContractResponse request, String contractId) {
@@ -151,6 +158,18 @@ public class QuoteContractsService implements IQuoteContractsService {
 
     private IRunnerResponse convertEntityToDto(QuoteContracts quoteContracts) {
         return jsonHelper.convertValue(quoteContracts, QuoteContractsResponse.class);
+    }
+
+    @Override
+    public QuoteContracts getQuoteContractsByContractId(String contractId) {
+        if(StringUtils.isEmpty(contractId)) {
+            return null;
+        }
+        List<QuoteContracts> quoteContractsList = quoteContractsDao.findByContractId(contractId);
+        if(!CommonUtils.listIsNullOrEmpty(quoteContractsList)) {
+            return quoteContractsList.get(0);
+        }
+        return null;
     }
 
 }

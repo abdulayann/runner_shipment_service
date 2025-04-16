@@ -41,8 +41,8 @@ public class PlatformServiceAdapter implements IPlatformServiceAdapter {
         PlatformCreateRequest request = (PlatformCreateRequest) requestModel.getData();
         String url = baseUrl + "/booking/external";
         log.info("Platform Create Request for booking reference {}: {}", request.getBooking_ref_code(), request);
-        log.info("Payload sent for event: {} with request payload: {}", IntegrationType.PLATFORM_CREATE_BOOKING, jsonHelper.convertToJson(request));
-        ResponseEntity<?> responseEntity = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJson(request)), Object.class);
+        log.info("Payload sent for event: {} with request payload: {}", IntegrationType.PLATFORM_CREATE_BOOKING, jsonHelper.convertToJsonWithNulls(request));
+        ResponseEntity<?> responseEntity = restTemplate.exchange(RequestEntity.post(URI.create(url)).body(jsonHelper.convertToJsonWithNulls(request)), Object.class);
         return ResponseHelper.buildDependentServiceResponse(responseEntity.getBody(),0,0);
     }
 

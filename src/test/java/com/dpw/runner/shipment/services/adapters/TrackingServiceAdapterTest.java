@@ -1,12 +1,5 @@
 package com.dpw.runner.shipment.services.adapters;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import com.dpw.runner.shipment.services.adapters.config.TrackingServiceConfig;
 import com.dpw.runner.shipment.services.adapters.impl.TrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
@@ -23,11 +16,7 @@ import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiRe
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Events;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -38,12 +27,8 @@ import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service_bus.ISBProperties;
 import com.dpw.runner.shipment.services.service_bus.ISBUtils;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -58,6 +43,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
+
+import java.io.IOException;
+import java.util.*;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
@@ -95,6 +86,9 @@ class TrackingServiceAdapterTest {
 
     @Mock
     private RestTemplate restTemplate;
+
+    @Mock
+    private CommonUtils commonUtils;
 
     @InjectMocks
     private TrackingServiceAdapter trackingServiceAdapter;
@@ -154,7 +148,7 @@ class TrackingServiceAdapterTest {
         when(consoleShipmentMappingDao.findByShipmentId(any())).thenReturn(List.of(new ConsoleShipmentMapping()));
         when(consolidationDao.findById(any())).thenReturn(Optional.of(jsonTestUtility.getTestConsolidation()));
         ShipmentDetails shipmentDetails = jsonTestUtility.getTestShipment();
-        shipmentDetails.setContainersList(List.of(jsonTestUtility.getTestContainer()));
+        shipmentDetails.setContainersList(Set.of(jsonTestUtility.getTestContainer()));
         boolean res = trackingServiceAdapter.checkIfConsolAttached(shipmentDetails);
         assertTrue(res);
     }
@@ -166,7 +160,7 @@ class TrackingServiceAdapterTest {
         consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         when(consolidationDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
         ShipmentDetails shipmentDetails = jsonTestUtility.getTestShipment();
-        shipmentDetails.setContainersList(List.of(jsonTestUtility.getTestContainer()));
+        shipmentDetails.setContainersList(Set.of(jsonTestUtility.getTestContainer()));
         boolean res = trackingServiceAdapter.checkIfConsolAttached(shipmentDetails);
         assertFalse(res);
     }
@@ -178,7 +172,7 @@ class TrackingServiceAdapterTest {
         shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
         shipmentDetails.setMasterBill("MasterBill");
         shipmentDetails.setHouseBill(null);
-        shipmentDetails.setContainersList(List.of(jsonTestUtility.getTestContainer()));
+        shipmentDetails.setContainersList(Set.of(jsonTestUtility.getTestContainer()));
         boolean res = trackingServiceAdapter.checkIfConsolAttached(shipmentDetails);
         assertTrue(res);
     }
@@ -190,7 +184,7 @@ class TrackingServiceAdapterTest {
         consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         when(consolidationDao.findById(any())).thenThrow(new RuntimeException());
         ShipmentDetails shipmentDetails = jsonTestUtility.getTestShipment();
-        shipmentDetails.setContainersList(List.of(jsonTestUtility.getTestContainer()));
+        shipmentDetails.setContainersList(Set.of(jsonTestUtility.getTestContainer()));
         boolean res = trackingServiceAdapter.checkIfConsolAttached(shipmentDetails);
         assertFalse(res);
     }
@@ -228,23 +222,23 @@ class TrackingServiceAdapterTest {
                 .build();
         when(v1MasterData.fetchCarrierMasterData(any())).thenReturn(dependentServiceResponse);
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(new ArrayList<>());
-        UniversalTrackingPayload res = trackingServiceAdapter.mapConsoleDataToTrackingServiceData(consolidationDetails);
+        UniversalTrackingPayload res = trackingServiceAdapter.mapConsoleDataToTrackingServiceData(consolidationDetails, new ShipmentDetails());
         assertNotNull(res);
     }
 
     @Test
     void mapConsoleDataToTrackingServiceData_MappingFound() {
         ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
-        when(consoleShipmentMappingDao.findByConsolidationId(any())).thenReturn(List.of(new ConsoleShipmentMapping()));
-        when(shipmentDao.findById(any())).thenReturn(Optional.of(jsonTestUtility.getTestShipment()));
+        lenient().when(consoleShipmentMappingDao.findByConsolidationId(any())).thenReturn(List.of(new ConsoleShipmentMapping()));
+        lenient().when(shipmentDao.findById(any())).thenReturn(Optional.of(jsonTestUtility.getTestShipment()));
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
         DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder()
                 .data(new ArrayList<>())
                 .build();
-        when(v1MasterData.fetchCarrierMasterData(any())).thenReturn(dependentServiceResponse);
-        when(v1Service.fetchUnlocation(any())).thenReturn(V1DataResponse.builder().build());
+        lenient().when(v1MasterData.fetchCarrierMasterData(any())).thenReturn(dependentServiceResponse);
+        lenient().when(v1Service.fetchUnlocation(any())).thenReturn(V1DataResponse.builder().build());
         when(jsonHelper.convertValueToList(any(), any())).thenReturn(new ArrayList<>());
-        UniversalTrackingPayload res = trackingServiceAdapter.mapConsoleDataToTrackingServiceData(consolidationDetails);
+        UniversalTrackingPayload res = trackingServiceAdapter.mapConsoleDataToTrackingServiceData(consolidationDetails, new ShipmentDetails());
         assertNotNull(res);
     }
 
@@ -420,6 +414,46 @@ class TrackingServiceAdapterTest {
 
         // Expect EMCR to be returned
         assertEquals(EventConstants.EMCR, result);
+    }
+
+    @Test
+    void mapShipmentDataToTrackingServiceDataWhenUserIsNull() {
+        UserContext.setUser(null);
+        ShipmentDetails shipmentDetails = jsonTestUtility.getTestShipment();
+
+        when(v1Service.fetchUnlocation(any())).thenReturn(V1DataResponse.builder().build());
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(new UnlocationsResponse()));
+        when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
+        DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder()
+                .data(new ArrayList<>())
+                .build();
+        when(v1MasterData.fetchCarrierMasterData(any())).thenReturn(dependentServiceResponse);
+        when(jsonHelper.convertValueToList(any(), eq(CarrierMasterData.class))).thenReturn(List.of(CarrierMasterData.builder().identifier1("APL").build()));
+        UniversalTrackingPayload response = trackingServiceAdapter.mapShipmentDataToTrackingServiceData(shipmentDetails);
+        assertNotNull(response);
+        assertEquals("APL", response.getCarrier());
+        assertNull(response.getShipmentDetails().get(0).getCountryCode());
+    }
+
+    @Test
+    void mapShipmentDataToTrackingServiceDataPopulatesCountryCodeFromBranchCountry() {
+        UsersDto mockUser = new UsersDto();
+        mockUser.setTenantCountryCode("AUS");
+        UserContext.setUser(mockUser);
+        ShipmentDetails shipmentDetails = jsonTestUtility.getTestShipment();
+
+        when(v1Service.fetchUnlocation(any())).thenReturn(V1DataResponse.builder().build());
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(new UnlocationsResponse()));
+        when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
+        DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder()
+                .data(new ArrayList<>())
+                .build();
+        when(v1MasterData.fetchCarrierMasterData(any())).thenReturn(dependentServiceResponse);
+        when(jsonHelper.convertValueToList(any(), eq(CarrierMasterData.class))).thenReturn(List.of(CarrierMasterData.builder().identifier1("APL").build()));
+        UniversalTrackingPayload response = trackingServiceAdapter.mapShipmentDataToTrackingServiceData(shipmentDetails);
+        assertNotNull(response);
+        assertEquals("APL", response.getCarrier());
+        assertEquals("AU", response.getShipmentDetails().get(0).getCountryCode());
     }
 
 }

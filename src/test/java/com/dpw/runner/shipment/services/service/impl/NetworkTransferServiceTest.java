@@ -1,0 +1,510 @@
+package com.dpw.runner.shipment.services.service.impl;
+
+import com.dpw.runner.shipment.services.CommonMocks;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
+import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
+import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
+import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dto.request.ReassignRequest;
+import com.dpw.runner.shipment.services.dto.request.RequestForTransferRequest;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.response.NetworkTransferListResponse;
+import com.dpw.runner.shipment.services.dto.response.NetworkTransferResponse;
+import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
+import com.dpw.runner.shipment.services.helper.JsonTestUtility;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.utils.MasterDataKeyUtils;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.modelmapper.ModelMapper;
+import org.springframework.dao.DataRetrievalFailureException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.http.HttpStatus;
+
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+@Execution(ExecutionMode.CONCURRENT)
+class NetworkTransferServiceTest extends CommonMocks{
+
+    @Mock
+    private ModelMapper modelMapper;
+    @Mock
+    private JsonHelper jsonHelper;
+    @Mock
+    private INetworkTransferDao networkTransferDao;
+    @Mock
+    private MasterDataUtils masterDataUtils;
+    @Mock
+    private MasterDataKeyUtils masterDataKeyUtils;
+    @InjectMocks
+    private NetworkTransferService networkTransferService;
+    @Mock
+    private ExecutorService executorService;
+    @Mock
+    private INotificationDao notificationDao;
+    @Mock
+    private IShipmentSettingsDao shipmentSettingsDao;
+    @Mock
+    private IConsoleShipmentMappingDao consoleShipmentMappingDao;
+    @Mock
+    private IShipmentDao shipmentDao;
+    @Mock
+    private IConsolidationDetailsDao consolidationDao;
+
+
+    private static JsonTestUtility jsonTestUtility;
+    private static ObjectMapper objectMapper;
+    private static NetworkTransfer networkTransfer;
+    private static ShipmentDetails shipmentDetails;
+    private static ConsolidationDetails consolidationDetails;
+
+    @BeforeAll
+    static void init() throws IOException {
+        jsonTestUtility = new JsonTestUtility();
+        objectMapper = JsonTestUtility.getMapper();
+    }
+    @BeforeEach
+    void setUp() {
+        networkTransfer = jsonTestUtility.getNetworkTransfer();
+        shipmentDetails = jsonTestUtility.getTestShipment();
+        consolidationDetails = jsonTestUtility.getTestConsolidationAir();
+        networkTransferService.executorService = Executors.newFixedThreadPool(2);
+        UserContext.setUser(UsersDto.builder().Username("user").build());
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().isNetworkTransferEntityEnabled(Boolean.TRUE).build());
+        TenantContext.setCurrentTenant(1);
+    }
+
+    @AfterEach
+    void tearDown() {
+        networkTransferService.executorService.shutdown();
+    }
+
+    @Test
+    void requestForTransfer() {
+        RequestForTransferRequest requestForTransferRequest = RequestForTransferRequest.builder().id(12L).remarks("Test").build();
+        var request = CommonRequestModel.builder().data(requestForTransferRequest).build();
+        when(networkTransferDao.findById(anyLong())).thenReturn(Optional.of(NetworkTransfer.builder().isInterBranchEntity(false).build()));
+        when(notificationDao.save(any(Notification.class))).thenReturn(new Notification());
+        var response = networkTransferService.requestForTransfer(request);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void requestForTransfer_ForInterConsole() {
+        RequestForTransferRequest requestForTransferRequest = RequestForTransferRequest.builder().id(12L).remarks("Test").build();
+        var request = CommonRequestModel.builder().data(requestForTransferRequest).build();
+        when(networkTransferDao.findById(anyLong())).thenReturn(Optional.of(NetworkTransfer.builder().entityId(12L).isInterBranchEntity(true).entityType(Constants.SHIPMENT).build()));
+        when(notificationDao.save(any(Notification.class))).thenReturn(new Notification());
+        when(consoleShipmentMappingDao.findByShipmentId(any())).thenReturn(Collections.singletonList(ConsoleShipmentMapping.builder().consolidationId(1L).build()));
+        when(consoleShipmentMappingDao.findByConsolidationId(any())).thenReturn(Collections.singletonList(ConsoleShipmentMapping.builder().consolidationId(1L).build()));
+        when(networkTransferDao.findByEntityIdAndEntityTypeAndIsInterBranchEntity(any(), any(), any(), any(), any())).thenReturn(Collections.singletonList(NetworkTransfer.builder().build()));
+        var response = networkTransferService.requestForTransfer(request);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void requestForTransfer_ForInterConsole_EmptyMapping() {
+        RequestForTransferRequest requestForTransferRequest = RequestForTransferRequest.builder().id(12L).remarks("Test").build();
+        var request = CommonRequestModel.builder().data(requestForTransferRequest).build();
+        when(networkTransferDao.findById(anyLong())).thenReturn(Optional.of(NetworkTransfer.builder().entityId(12L).isInterBranchEntity(true).entityType(Constants.SHIPMENT).build()));
+        when(notificationDao.save(any(Notification.class))).thenReturn(new Notification());
+        var response = networkTransferService.requestForTransfer(request);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void requestForTransfer_DataRetrievalFailure() {
+        RequestForTransferRequest requestForTransferRequest = RequestForTransferRequest.builder().id(12L).remarks("Test").build();
+        var request = CommonRequestModel.builder().data(requestForTransferRequest).build();
+        when(networkTransferDao.findById(anyLong())).thenReturn(Optional.empty());
+        assertThrows(DataRetrievalFailureException.class, () -> networkTransferService.requestForTransfer(request));
+    }
+
+    @Test
+    void requestForTransfer_Already_REQUESTED_TO_TRANSFER() {
+        RequestForTransferRequest requestForTransferRequest = RequestForTransferRequest.builder().id(12L).remarks("Test").build();
+        var request = CommonRequestModel.builder().data(requestForTransferRequest).build();
+        when(networkTransferDao.findById(anyLong())).thenReturn(Optional.of(NetworkTransfer.builder().status(NetworkTransferStatus.REQUESTED_TO_TRANSFER).build()));
+        assertThrows(DataRetrievalFailureException.class, () -> networkTransferService.requestForTransfer(request));
+    }
+
+    @Test
+    void requestForReassign() {
+        ReassignRequest reassignRequest = ReassignRequest.builder().id(12L).branchId(12).remarks("Test").build();
+        var request = CommonRequestModel.builder().data(reassignRequest).build();
+        when(networkTransferDao.findById(anyLong())).thenReturn(Optional.of(NetworkTransfer.builder().isInterBranchEntity(false).build()));
+        when(notificationDao.save(any(Notification.class))).thenReturn(new Notification());
+        var response = networkTransferService.requestForReassign(request);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void requestForReassign_InterConsoleTrue() {
+        ReassignRequest reassignRequest = ReassignRequest.builder().id(12L).branchId(12).remarks("Test").build();
+        var request = CommonRequestModel.builder().data(reassignRequest).build();
+        when(networkTransferDao.findById(anyLong())).thenReturn(Optional.of(NetworkTransfer.builder().entityType(Constants.SHIPMENT).isInterBranchEntity(true).build()));
+        when(notificationDao.save(any(Notification.class))).thenReturn(new Notification());
+        var response = networkTransferService.requestForReassign(request);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+
+    @Test
+    void requestForReassign_InterConsole() {
+        UUID shipmentGuid = UUID.randomUUID();
+        Map<String, Integer> shipmentGuidReassignBranch = Map.of(shipmentGuid.toString(), 1);
+        ReassignRequest reassignRequest = ReassignRequest.builder().id(12L).branchId(12).shipmentGuidReassignBranch(shipmentGuidReassignBranch).remarks("Test").build();
+        var request = CommonRequestModel.builder().data(reassignRequest).build();
+        when(networkTransferDao.findById(anyLong())).thenReturn(Optional.of(NetworkTransfer.builder().entityType(Constants.CONSOLIDATION).isInterBranchEntity(true).build()));
+        when(notificationDao.save(any(Notification.class))).thenReturn(new Notification());
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder().receivingBranch(1L).build();
+        shipmentDetails1.setGuid(shipmentGuid);
+        when(networkTransferDao.findByTenantAndEntity(any(), any(), any())).thenReturn(Optional.of(NetworkTransfer.builder().build()));
+        when(consolidationDao.findConsolidationByIdWithQuery(any())).thenReturn(Optional.of(ConsolidationDetails.builder().interBranchConsole(true).shipmentsList(new HashSet<>(Collections.singletonList(shipmentDetails1))).build()));
+        var response = networkTransferService.requestForReassign(request);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void requestForReassign_DataRetrievalFailure() {
+        ReassignRequest reassignRequest = ReassignRequest.builder().id(12L).branchId(12).remarks("Test").build();
+        var request = CommonRequestModel.builder().data(reassignRequest).build();
+        when(networkTransferDao.findById(anyLong())).thenReturn(Optional.empty());
+        assertThrows(DataRetrievalFailureException.class, () -> networkTransferService.requestForReassign(request));
+    }
+
+    @Test
+    void requestForReassign_Already_REASSIGNED() {
+        ReassignRequest reassignRequest = ReassignRequest.builder().id(12L).branchId(12).remarks("Test").build();
+        var request = CommonRequestModel.builder().data(reassignRequest).build();
+        when(networkTransferDao.findById(anyLong())).thenReturn(Optional.of(NetworkTransfer.builder().status(NetworkTransferStatus.REASSIGNED).build()));
+        assertThrows(DataRetrievalFailureException.class, () -> networkTransferService.requestForReassign(request));
+    }
+
+    @Test
+    void testListWithEmptyRequest() {
+        // Test
+        var responseEntity = networkTransferService.list(CommonRequestModel.buildRequest());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testListWithEmptyException() {
+        when(networkTransferDao.findAll(any(), any())).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = networkTransferService.list(CommonRequestModel.buildRequest(ListCommonRequest.builder().build()));
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testListWithNoResult() {
+        when(networkTransferDao.findAll(any(), any())).thenReturn(Page.empty());
+        // Test
+        var responseEntity = networkTransferService.list(CommonRequestModel.buildRequest(ListCommonRequest.builder().build()));
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+        assertTrue(((RunnerListResponse) Objects.requireNonNull(responseEntity.getBody())).getData().isEmpty());
+    }
+
+    @Test
+    void testListWithSuccessResult() {
+        when(networkTransferDao.findAll(any(), any())).thenReturn(new PageImpl<>(List.of(networkTransfer)));
+        Runnable mockRunnable = mock(Runnable.class);
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+            // Get the argument passed to the withMdc method
+            Runnable argument = invocation.getArgument(0);
+            // Call the run method of the argument
+            argument.run();
+            // Add any additional behavior or return value as needed
+            return mockRunnable;
+        });
+        when(modelMapper.map(any(), eq(NetworkTransferListResponse.class))).thenReturn(objectMapper.convertValue(networkTransfer, NetworkTransferListResponse.class));
+        // Test
+        var responseEntity = networkTransferService.list(CommonRequestModel.buildRequest(ListCommonRequest.builder().build()));
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+        assertFalse(((RunnerListResponse) Objects.requireNonNull(responseEntity.getBody())).getData().isEmpty());
+    }
+
+    @Test
+    void testRetrieveByIdWithEmptyRequest() {
+        var responseEntity = networkTransferService.retrieveById(CommonRequestModel.buildRequest());
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testRetrieveByIdWithEmptyIdRequest() {
+        var responseEntity = networkTransferService.retrieveById(CommonRequestModel.buildRequest(CommonGetRequest.builder().build()));
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testRetrieveByIdWithIdNotPresent() {
+        when(networkTransferDao.findById(anyLong())).thenReturn(Optional.empty());
+        var responseEntity = networkTransferService.retrieveById(CommonRequestModel.buildRequest(CommonGetRequest.builder().id(123L).build()));
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testRetrieveByIdWithExceptionInFindById() {
+        when(networkTransferDao.findById(anyLong())).thenThrow(new RuntimeException());
+        var responseEntity = networkTransferService.retrieveById(CommonRequestModel.buildRequest(CommonGetRequest.builder().id(123L).build()));
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testRetrieveByIdWithSuccessResponse() {
+        when(networkTransferDao.findById(anyLong())).thenReturn(Optional.of(networkTransfer));
+        Runnable mockRunnable = mock(Runnable.class);
+        // Define the behavior of the mock
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+            // Get the argument passed to the withMdc method
+            Runnable argument = invocation.getArgument(0);
+            // Call the run method of the argument
+            argument.run();
+            // Add any additional behavior or return value as needed
+            return mockRunnable;
+        });
+        var spyService = Mockito.spy(networkTransferService);
+        when(jsonHelper.convertValue(any(), eq(NetworkTransferResponse.class))).thenReturn(objectMapper.convertValue(networkTransfer, NetworkTransferResponse.class));
+        var responseEntity = spyService.retrieveById(CommonRequestModel.buildRequest(CommonGetRequest.builder().id(123L).build()));
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testRetrieveByIdWithGuidWithSuccessResponse() {
+        when(networkTransferDao.findByGuid(any())).thenReturn(Optional.of(networkTransfer));
+        when(jsonHelper.convertValue(any(), eq(NetworkTransferResponse.class))).thenReturn(objectMapper.convertValue(networkTransfer, NetworkTransferResponse.class));
+        var responseEntity = networkTransferService.retrieveById(CommonRequestModel.buildRequest(CommonGetRequest.builder().guid("1d27fe99-0874-4587-9a83-460bb5ba31f0").build()));
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testCreateNetworkTransferEntityWithShipment(){
+        when(networkTransferDao.save(any())).thenReturn(networkTransfer);
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
+        shipmentDetails.setId(1L);
+        assertDoesNotThrow(() -> networkTransferService.processNetworkTransferEntity(123L, null,
+                Constants.SHIPMENT, shipmentDetails, null, Constants.SHIPMENT_TYPE_DRT, null, false));
+    }
+
+    @Test
+    void testCreateNetworkTransferEntityWithEmptyShipment(){
+        assertDoesNotThrow(() -> networkTransferService.processNetworkTransferEntity(123L, null,
+                Constants.SHIPMENT, null, null, Constants.SHIPMENT_TYPE_DRT, null, false));
+
+    }
+
+    @Test
+    void testCreateNetworkTransferEntityWithNewAndOldShipment(){
+        when(networkTransferDao.save(any())).thenReturn(networkTransfer);
+        when(networkTransferDao.findByTenantAndEntityAndJobType(any(),any(), any(), any())).thenReturn(Optional.of(networkTransfer));
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
+        shipmentDetails.setId(1L);
+        assertDoesNotThrow(() -> networkTransferService.processNetworkTransferEntity(123L, 132L,
+                Constants.SHIPMENT, shipmentDetails, null, Constants.SHIPMENT_TYPE_DRT, null, false));
+
+    }
+
+    @Test
+    void testCreateNetworkTransferEntityWithNewAndOldShipmentSame(){
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
+        shipmentDetails.setId(1L);
+        assertDoesNotThrow(() -> networkTransferService.processNetworkTransferEntity(123L, 123L,
+                Constants.SHIPMENT, shipmentDetails, null, Constants.SHIPMENT_TYPE_DRT, null, false));
+
+    }
+
+    @Test
+    void testCreateNetworkTransferEntityWithOldShipment(){
+        when(networkTransferDao.findByTenantAndEntityAndJobType(any(),any(), any(), any())).thenReturn(Optional.of(networkTransfer));
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
+        shipmentDetails.setId(1L);
+        assertDoesNotThrow(() -> networkTransferService.processNetworkTransferEntity(null, 132L,
+                Constants.SHIPMENT, shipmentDetails, null, Constants.DIRECTION_EXP, null, false));
+    }
+
+    @Test
+    void testCreateNetworkTransferEntityWitSomeOtherEntity(){
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
+        shipmentDetails.setId(1L);
+        assertDoesNotThrow(() -> networkTransferService.processNetworkTransferEntity(null, 132L,
+                Constants.SHIPMENT_CAMELCASE, shipmentDetails, null, Constants.DIRECTION_EXP, null, false));
+    }
+
+    @Test
+    void testCreateNetworkTransferEntityFailure(){
+        when(networkTransferDao.save(any())).thenThrow(new RuntimeException("Error"));
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
+        shipmentDetails.setId(1L);
+        assertThrows(RuntimeException.class, () -> networkTransferService.processNetworkTransferEntity(123L, null,
+                Constants.SHIPMENT, shipmentDetails, null, Constants.DIRECTION_EXP, null, false));
+    }
+
+    @Test
+    void testCreateNetworkTransferEntityWithConsolidation(){
+        when(networkTransferDao.save(any())).thenReturn(networkTransfer);
+        assertDoesNotThrow(() -> networkTransferService.processNetworkTransferEntity(123L, null,
+                Constants.CONSOLIDATION, null, consolidationDetails, Constants.DIRECTION_CTS, null, false));
+    }
+
+    @Test
+    void testCreateNetworkTransferEntityWithEmptyConsolidation(){
+        assertDoesNotThrow(() -> networkTransferService.processNetworkTransferEntity(123L, null,
+                Constants.CONSOLIDATION, null, null, Constants.DIRECTION_CTS, null, false));
+    }
+
+    @Test
+    void testCreateNetworkTransferEntityWithOldConsolidation(){
+        when(networkTransferDao.findByTenantAndEntityAndJobType(any(),any(), any(), any())).thenReturn(Optional.of(networkTransfer));
+        assertDoesNotThrow(() -> networkTransferService.processNetworkTransferEntity(null, 132L,
+                Constants.CONSOLIDATION, null, consolidationDetails, Constants.DIRECTION_EXP, null, false));
+    }
+
+    @Test
+    void testCreateNetworkTransferEntityDBFindFailure(){
+        when(networkTransferDao.findByTenantAndEntityAndJobType(any(), any(), any(), any())).thenThrow(new RuntimeException("Connection Time out"));
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
+        assertThrows(RuntimeException.class, () -> networkTransferService.processNetworkTransferEntity(123L, 321L,
+                Constants.SHIPMENT, shipmentDetails, null, Constants.DIRECTION_EXP, null, false));
+    }
+
+    @Test
+    void testCreateNetworkTransferEntityDBDeleteFailure(){
+        when(networkTransferDao.findByTenantAndEntityAndJobType(any(),any(), any(), any())).thenReturn(Optional.of(networkTransfer));
+        doThrow(new RuntimeException("Connection Time out")).when(networkTransferDao).deleteAndLog(any(), any());
+        shipmentDetails.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
+        assertThrows(RuntimeException.class, () -> networkTransferService.processNetworkTransferEntity(123L, 321L,
+                Constants.SHIPMENT, shipmentDetails, null, Constants.DIRECTION_EXP, null, false));
+    }
+
+    @Test
+    void testUpdateNetworkTransferTransferred(){
+        when(networkTransferDao.save(any())).thenReturn(networkTransfer);
+        assertDoesNotThrow(() -> networkTransferService.updateNetworkTransferTransferred(networkTransfer, null));
+    }
+
+    @Test
+    void testDeleteValidNetworkTransferEntity(){
+        when(networkTransferDao.findByTenantAndEntity(938, 12146L, Constants.SHIPMENT)).thenReturn(Optional.of(networkTransfer));
+        assertDoesNotThrow(() -> networkTransferService.deleteValidNetworkTransferEntity(938L, 12146L, Constants.SHIPMENT));
+    }
+
+    @Test
+    void testDeleteValidNetworkTransferEntity2(){
+        when(networkTransferDao.findByTenantAndEntity(938, 12146L, Constants.SHIPMENT)).thenReturn(Optional.empty());
+        assertDoesNotThrow(() -> networkTransferService.deleteValidNetworkTransferEntity(938L, 12146L, Constants.SHIPMENT));
+    }
+
+    @Test
+    void testDeleteValidNetworkTransferEntity3(){
+        networkTransfer.setStatus(NetworkTransferStatus.ACCEPTED);
+        when(networkTransferDao.findByTenantAndEntity(938, 12146L, Constants.SHIPMENT)).thenReturn(Optional.of(networkTransfer));
+        assertDoesNotThrow(() -> networkTransferService.deleteValidNetworkTransferEntity(938L, 12146L, Constants.SHIPMENT));
+    }
+
+    @Test
+    void testDeleteValidNetworkTransferEntityException(){
+        when(networkTransferDao.findByTenantAndEntity(938, 12146L, Constants.SHIPMENT)).thenReturn(Optional.of(networkTransfer));
+        doThrow(new RuntimeException("Connection Time out")).when(networkTransferDao).deleteAndLog(any(), any());
+        assertDoesNotThrow(() -> networkTransferService.deleteValidNetworkTransferEntity(938L, 12146L, Constants.SHIPMENT));
+    }
+
+    @Test
+    void testDeleteNetworkTransferEntity(){
+        assertDoesNotThrow(() -> networkTransferService.deleteNetworkTransferEntity(networkTransfer));
+    }
+
+
+    @Test
+    void testDeleteNetworkTransferEntity2(){
+        networkTransfer.setStatus(NetworkTransferStatus.ACCEPTED);
+        assertDoesNotThrow(() -> networkTransferService.deleteNetworkTransferEntity(networkTransfer));
+    }
+
+    @Test
+    void testDeleteNetworkTransferEntityException(){
+        doThrow(new RuntimeException("Connection Time out")).when(networkTransferDao).deleteAndLog(any(), any());
+        assertDoesNotThrow(() -> networkTransferService.deleteNetworkTransferEntity(networkTransfer));
+    }
+
+    @Test
+    void testUpdateStatusAndCreatedEntityId() {
+        assertDoesNotThrow(() -> networkTransferService.updateStatusAndCreatedEntityId(1L, NetworkTransferStatus.ACCEPTED.name(), 2L));
+    }
+
+    @Test
+    void testFetchEntityStatus() {
+        var guid = UUID.randomUUID().toString();
+        when(shipmentDao.findReceivingByGuid(UUID.fromString(guid))).thenReturn(1);
+        when(networkTransferDao.findByEntityGuidAndTenantId(UUID.fromString(guid), 1)).thenReturn(NetworkTransferStatus.SCHEDULED.name());
+        var response = networkTransferService.fetchEntityStatus(CommonGetRequest.builder().guid(guid).build());
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testFetchEntityStatus1() {
+        var guid = UUID.randomUUID().toString();
+        when(shipmentDao.findReceivingByGuid(UUID.fromString(guid))).thenReturn(null);
+        var response = networkTransferService.fetchEntityStatus(CommonGetRequest.builder().guid(guid).build());
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testBulkProcessInterConsoleNte() {
+        networkTransferService.bulkProcessInterConsoleNte(new ArrayList<>());
+        verify(networkTransferDao, times(0)).saveAll(any());
+    }
+
+    @Test
+    void testBulkProcessInterConsoleNte1() {
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder().build();
+        shipmentDetails1.setReceivingBranch(1L);
+        networkTransferService.bulkProcessInterConsoleNte(Collections.singletonList(shipmentDetails1));
+        verify(networkTransferDao, times(0)).saveAll(any());
+    }
+
+    @Test
+    void testBulkProcessInterConsoleNte2() {
+        ShipmentDetails shipmentDetails1 = ShipmentDetails.builder().build();
+        shipmentDetails1.setReceivingBranch(2L);
+        networkTransferService.bulkProcessInterConsoleNte(Collections.singletonList(shipmentDetails1));
+        verify(networkTransferDao, times(1)).saveAll(any());
+    }
+
+}

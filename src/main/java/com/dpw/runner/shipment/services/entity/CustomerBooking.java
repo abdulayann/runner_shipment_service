@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.utils.MasterData;
 import lombok.*;
 import lombok.experimental.Accessors;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.Where;
 
@@ -130,20 +131,29 @@ public class CustomerBooking extends MultiTenancy {
     private String contractId;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "bookingId")
+    @BatchSize(size = 50)
     private List<Containers> containersList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "bookingId")
+    @BatchSize(size = 50)
     private List<Packing> packingList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "bookingId")
     @OrderBy("leg ASC")
+    @BatchSize(size = 50)
     private List<Routings> routingList;
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "bookingId")
+    @BatchSize(size = 50)
+    private List<ReferenceNumbers> referenceNumbersList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
     @Where(clause = "entity_type = 'BOOKING'")
+    @BatchSize(size = 50)
     private List<FileRepo> fileRepoList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "bookingId")
+    @BatchSize(size = 50)
     private List<BookingCharges> bookingCharges;
 
     @Column(name = "is_platform_booking_created")
@@ -174,10 +184,6 @@ public class CustomerBooking extends MultiTenancy {
 
     @Column(name = "shipment_guid")
     private String shipmentGuid;
-
-//    @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
-//    @Where(clause = "entity = 'CustomerBooking'")
-//    private List<AuditLog> logsList;
 
     @Column(name = "auto_update_weight_volume")
     private Boolean isAutoWeightVolumeUpdate;
@@ -254,4 +260,10 @@ public class CustomerBooking extends MultiTenancy {
 
     @Column(name = "is_dg")
     private Boolean isDg;
+
+    @Column(name = "rejection_remarks")
+    private String rejectionRemarks;
+
+    @Column(name = "shipment_reference_number")
+    private String shipmentReferenceNumber;
 }

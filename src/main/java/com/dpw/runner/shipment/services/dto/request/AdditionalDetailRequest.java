@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.dto.request;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.IRunnerRequest;
+import com.dpw.runner.shipment.services.entity.enums.AirAuthorisingEntity;
 import com.dpw.runner.shipment.services.entity.enums.AndesStatus;
 import com.dpw.runner.shipment.services.entity.enums.LGDStatus;
 import com.dpw.runner.shipment.services.entity.enums.Ownership;
@@ -36,6 +37,9 @@ public class AdditionalDetailRequest extends CommonRequest implements IRunnerReq
     private String CHAJobNumber;
     private String ADCode;
     private String BEType;
+    private AirAuthorisingEntity securityStatusReceivedFrom;
+    private String additionalSecurityInformation;
+    private String regulatedEntityCategory;
     private String customLocation;
     private String customCity;
     private Boolean isImportClearance;
@@ -105,6 +109,8 @@ public class AdditionalDetailRequest extends CommonRequest implements IRunnerReq
     private Boolean WBLPrinted;
     private Boolean draftPrinted;
     private Boolean surrenderPrinted;
+    private String importBrokerCountry;
+    private String exportBrokerCountry;
     private PartiesRequest notifyParty;
     private PartiesRequest importBroker;
     private PartiesRequest exportBroker;
@@ -137,4 +143,8 @@ public class AdditionalDetailRequest extends CommonRequest implements IRunnerReq
     private LocalDateTime warehouseCargoArrivalDate;
     private Boolean pickupByConsigneeCompleted;
     private Boolean emptyContainerReturned;
+    private Boolean isExportCustomClearanceCompleted;
+    private LocalDateTime blInstructionReceived;
+    private LocalDateTime cargoOutForDelivery;
+    private Integer fcrNumber = 0;
 }

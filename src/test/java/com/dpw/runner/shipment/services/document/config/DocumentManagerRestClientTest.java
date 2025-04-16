@@ -1,20 +1,18 @@
 package com.dpw.runner.shipment.services.document.config;
 
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
-import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerBulkDownloadRequest;
-import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerFileAndRulesRequest;
-import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerSaveFileRequest;
-import com.dpw.runner.shipment.services.document.request.documentmanager.DocumentManagerTempFileUploadRequest;
-import com.dpw.runner.shipment.services.document.response.DocumentManagerBulkDownloadResponse;
-import com.dpw.runner.shipment.services.document.response.DocumentManagerDataResponse;
-import com.dpw.runner.shipment.services.document.response.DocumentManagerResponse;
+import com.dpw.runner.shipment.services.document.request.documentmanager.*;
+import com.dpw.runner.shipment.services.document.response.*;
 import com.dpw.runner.shipment.services.dto.request.CopyDocumentsRequest;
+import com.dpw.runner.shipment.services.exception.exceptions.DocumentClientException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import org.apache.poi.ss.formula.functions.T;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -23,6 +21,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
+
+import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -55,8 +55,7 @@ class DocumentManagerRestClientTest {
         DocumentManagerResponse<DocumentManagerDataResponse> response = new DocumentManagerResponse<>();
         ResponseEntity<DocumentManagerResponse<DocumentManagerDataResponse>> responseEntity = new ResponseEntity<>(response, HttpStatus.OK);
 
-        when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), any(ParameterizedTypeReference.class)))
-                .thenReturn(responseEntity);
+        when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), any(ParameterizedTypeReference.class))).thenReturn(responseEntity);
 
         DocumentManagerResponse<DocumentManagerDataResponse> result = documentManagerRestClient.getFileAndRules(token, request);
 
@@ -70,8 +69,7 @@ class DocumentManagerRestClientTest {
         DocumentManagerResponse<DocumentManagerDataResponse> response = new DocumentManagerResponse<>();
         ResponseEntity<DocumentManagerResponse<DocumentManagerDataResponse>> responseEntity = new ResponseEntity<>(response, HttpStatus.OK);
 
-        when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), any(ParameterizedTypeReference.class)))
-                .thenReturn(responseEntity);
+        when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), any(ParameterizedTypeReference.class))).thenReturn(responseEntity);
 
         DocumentManagerResponse<DocumentManagerDataResponse> result = documentManagerRestClient.temporaryFileUpload(request);
 
@@ -85,8 +83,7 @@ class DocumentManagerRestClientTest {
         DocumentManagerResponse<DocumentManagerDataResponse> response = new DocumentManagerResponse<>();
         ResponseEntity<DocumentManagerResponse<DocumentManagerDataResponse>> responseEntity = new ResponseEntity<>(response, HttpStatus.OK);
 
-        when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), any(ParameterizedTypeReference.class)))
-                .thenReturn(responseEntity);
+        when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), any(ParameterizedTypeReference.class))).thenReturn(responseEntity);
 
         DocumentManagerResponse<DocumentManagerDataResponse> result = documentManagerRestClient.saveFile(request);
 
@@ -101,8 +98,7 @@ class DocumentManagerRestClientTest {
         DocumentManagerResponse<DocumentManagerDataResponse> response = new DocumentManagerResponse<>();
         ResponseEntity<DocumentManagerResponse<DocumentManagerDataResponse>> responseEntity = new ResponseEntity<>(response, HttpStatus.OK);
 
-        when(restTemplate.exchange(anyString(), eq(HttpMethod.GET), any(HttpEntity.class), any(ParameterizedTypeReference.class)))
-                .thenReturn(responseEntity);
+        when(restTemplate.exchange(anyString(), eq(HttpMethod.GET), any(HttpEntity.class), any(ParameterizedTypeReference.class))).thenReturn(responseEntity);
 
         DocumentManagerResponse<DocumentManagerDataResponse> result = documentManagerRestClient.getFileById(token, id);
 
@@ -117,8 +113,7 @@ class DocumentManagerRestClientTest {
         DocumentManagerResponse<DocumentManagerBulkDownloadResponse> response = new DocumentManagerResponse<>();
         ResponseEntity<DocumentManagerResponse<DocumentManagerBulkDownloadResponse>> responseEntity = new ResponseEntity<>(response, HttpStatus.OK);
 
-        when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), any(ParameterizedTypeReference.class)))
-                .thenReturn(responseEntity);
+        when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), any(ParameterizedTypeReference.class))).thenReturn(responseEntity);
 
         DocumentManagerResponse<DocumentManagerBulkDownloadResponse> result = documentManagerRestClient.getBulkDownloadLink(token, request);
 
@@ -140,8 +135,8 @@ class DocumentManagerRestClientTest {
     void testCopyDocuments() {
         CopyDocumentsRequest copyDocumentsRequest = CopyDocumentsRequest.builder().build();
         when(restTemplate.postForEntity(anyString(), any(), eq(Object.class))).thenReturn(new ResponseEntity<>(new Object(), HttpStatus.OK));
-        var response = documentManagerRestClient.copyDocuments(CommonRequestModel.buildRequest(copyDocumentsRequest));
-        assertEquals(HttpStatus.OK, response.getStatusCode());
+        var response = documentManagerRestClient.copyDocuments(CommonRequestModel.buildRequest(copyDocumentsRequest), "authToken");
+        assertNotNull(response);
     }
 
     @Test
@@ -149,6 +144,181 @@ class DocumentManagerRestClientTest {
         CopyDocumentsRequest copyDocumentsRequest = CopyDocumentsRequest.builder().build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(copyDocumentsRequest);
         when(restTemplate.postForEntity(anyString(), any(), eq(Object.class))).thenThrow(new RuntimeException());
-        assertThrows(RuntimeException.class, () -> documentManagerRestClient.copyDocuments(commonRequestModel));
+
+        // Expect a RuntimeException when calling join on the CompletableFuture
+        CompletableFuture<ResponseEntity<Object>> future = documentManagerRestClient.copyDocuments(commonRequestModel, "authToken");
+        assertThrows(RuntimeException.class, future::join);
+    }
+
+    @Test
+    void testMultipleEntityFilesWithTenant() {
+        DocumentManagerMultipleEntityFileRequest request = new DocumentManagerMultipleEntityFileRequest();
+        DocumentManagerListResponse<DocumentManagerEntityFileResponse> expectedResponse = new DocumentManagerListResponse<>();
+        ResponseEntity<DocumentManagerListResponse<DocumentManagerEntityFileResponse>> responseEntity = new ResponseEntity<>(expectedResponse, HttpStatus.OK);
+
+        when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), any(ParameterizedTypeReference.class))).thenReturn(responseEntity);
+
+        DocumentManagerListResponse<DocumentManagerEntityFileResponse> actualResponse = documentManagerRestClient.multipleEntityFilesWithTenant(request);
+
+        assertEquals(expectedResponse, actualResponse);
+        verify(restTemplate, times(1)).exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), any(ParameterizedTypeReference.class));
+    }
+
+    @Test
+    void testMultipleEntityFilesWithTenant_Failure() {
+        DocumentManagerMultipleEntityFileRequest request = new DocumentManagerMultipleEntityFileRequest();
+
+        when(restTemplate.exchange(anyString(), eq(HttpMethod.POST), any(HttpEntity.class), any(ParameterizedTypeReference.class))).thenThrow(new RuntimeException());
+
+        assertThrows(RuntimeException.class, () -> documentManagerRestClient.multipleEntityFilesWithTenant(request));
+    }
+
+    @Test
+    void testUpdateFileEntities() {
+        DocumentManagerUpdateFileEntitiesRequest request = new DocumentManagerUpdateFileEntitiesRequest();
+        DocumentManagerResponse<T> expectedResponse = new DocumentManagerResponse<>();
+        ResponseEntity<DocumentManagerResponse<T>> responseEntity = new ResponseEntity<>(expectedResponse, HttpStatus.OK);
+
+        when(restTemplate.exchange(anyString(), eq(HttpMethod.PUT), any(HttpEntity.class), any(ParameterizedTypeReference.class))).thenReturn(responseEntity);
+
+        DocumentManagerResponse<T> actualResponse = documentManagerRestClient.updateFileEntities(request);
+
+        assertEquals(expectedResponse, actualResponse);
+        verify(restTemplate, times(1)).exchange(anyString(), eq(HttpMethod.PUT), any(HttpEntity.class), any(ParameterizedTypeReference.class));
+    }
+
+    @Test
+    void testUpdateFileEntities_Failure() {
+        DocumentManagerUpdateFileEntitiesRequest request = new DocumentManagerUpdateFileEntitiesRequest();
+
+        when(restTemplate.exchange(anyString(), eq(HttpMethod.PUT), any(HttpEntity.class), any(ParameterizedTypeReference.class))).thenThrow(new RuntimeException());
+
+        assertThrows(RuntimeException.class, () -> documentManagerRestClient.updateFileEntities(request));
+    }
+
+
+    @Test
+    void testDeleteFiles() {
+        DocumentManagerResponse<T> expectedResponse = new DocumentManagerResponse<>();
+        ResponseEntity<DocumentManagerResponse<T>> responseEntity = new ResponseEntity<>(expectedResponse, HttpStatus.OK);
+
+        ArgumentCaptor<HttpEntity> httpEntityCaptor = ArgumentCaptor.forClass(HttpEntity.class);
+        ArgumentCaptor<String> urlCaptor = ArgumentCaptor.forClass(String.class);
+        boolean isSuccess = true;
+        when(restTemplate.exchange(urlCaptor.capture(), eq(HttpMethod.PUT), httpEntityCaptor.capture(), any(ParameterizedTypeReference.class))).thenReturn(responseEntity);
+
+        DocumentManagerResponse<T> actualResponse = documentManagerRestClient.deleteFile(new Object());
+        assertNull(actualResponse);
+        assertTrue(isSuccess);
+    }
+
+
+    @Test
+    void testDeleteFiles2() {
+        ArgumentCaptor<HttpEntity> httpEntityCaptor = ArgumentCaptor.forClass(HttpEntity.class);
+        ArgumentCaptor<String> urlCaptor = ArgumentCaptor.forClass(String.class);
+        when(restTemplate.exchange(urlCaptor.capture(), eq(HttpMethod.PUT), httpEntityCaptor.capture(), any(ParameterizedTypeReference.class))).thenThrow(new RuntimeException());
+        Throwable throwable = assertThrows(Throwable.class, () -> documentManagerRestClient.deleteFile(new Object()));
+        assertEquals(DocumentClientException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    @Test
+    void testGetFileHistory() {
+        DocumentManagerResponse<T> expectedResponse = new DocumentManagerResponse<>();
+        ResponseEntity<DocumentManagerResponse<T>> responseEntity = new ResponseEntity<>(expectedResponse, HttpStatus.OK);
+
+        ArgumentCaptor<HttpEntity> httpEntityCaptor = ArgumentCaptor.forClass(HttpEntity.class);
+        ArgumentCaptor<String> urlCaptor = ArgumentCaptor.forClass(String.class);
+        boolean isSuccess = true;
+        when(restTemplate.exchange(urlCaptor.capture(), eq(HttpMethod.GET), httpEntityCaptor.capture(), any(ParameterizedTypeReference.class))).thenReturn(responseEntity);
+
+        DocumentManagerResponse<T> actualResponse = documentManagerRestClient.getFileHistory(new Object());
+        assertNull(actualResponse);
+        assertTrue(isSuccess);
+    }
+
+
+    @Test
+    void testGetFileHistoryException() {
+        ArgumentCaptor<HttpEntity> httpEntityCaptor = ArgumentCaptor.forClass(HttpEntity.class);
+        ArgumentCaptor<String> urlCaptor = ArgumentCaptor.forClass(String.class);
+        when(restTemplate.exchange(urlCaptor.capture(), eq(HttpMethod.GET), httpEntityCaptor.capture(), any(ParameterizedTypeReference.class))).thenThrow(new RuntimeException());
+        Throwable throwable = assertThrows(Throwable.class, () -> documentManagerRestClient.getFileHistory(new Object()));
+        assertEquals(DocumentClientException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    @Test
+    void testBulkSaveFiles() {
+        DocumentManagerResponse<T> expectedResponse = new DocumentManagerResponse<>();
+        ResponseEntity<DocumentManagerResponse<T>> responseEntity = new ResponseEntity<>(expectedResponse, HttpStatus.OK);
+
+        ArgumentCaptor<HttpEntity> httpEntityCaptor = ArgumentCaptor.forClass(HttpEntity.class);
+        ArgumentCaptor<String> urlCaptor = ArgumentCaptor.forClass(String.class);
+        boolean isSuccess = true;
+        when(restTemplate.exchange(urlCaptor.capture(), eq(HttpMethod.POST), httpEntityCaptor.capture(), any(ParameterizedTypeReference.class))).thenReturn(responseEntity);
+
+        DocumentManagerResponse<T> actualResponse = documentManagerRestClient.bulkSaveFiles(new Object());
+        assertNull(actualResponse);
+        assertTrue(isSuccess);
+    }
+
+
+    @Test
+    void testBulkSaveFilesException() {
+        ArgumentCaptor<HttpEntity> httpEntityCaptor = ArgumentCaptor.forClass(HttpEntity.class);
+        ArgumentCaptor<String> urlCaptor = ArgumentCaptor.forClass(String.class);
+        when(restTemplate.exchange(urlCaptor.capture(), eq(HttpMethod.POST), httpEntityCaptor.capture(), any(ParameterizedTypeReference.class))).thenThrow(new RuntimeException());
+        Throwable throwable = assertThrows(Throwable.class, () -> documentManagerRestClient.bulkSaveFiles(new Object()));
+        assertEquals(DocumentClientException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    @Test
+    void testTemporaryUpload() {
+        DocumentManagerResponse<T> expectedResponse = new DocumentManagerResponse<>();
+        ResponseEntity<DocumentManagerResponse<T>> responseEntity = new ResponseEntity<>(expectedResponse, HttpStatus.OK);
+
+        ArgumentCaptor<HttpEntity> httpEntityCaptor = ArgumentCaptor.forClass(HttpEntity.class);
+        ArgumentCaptor<String> urlCaptor = ArgumentCaptor.forClass(String.class);
+        boolean isSuccess = true;
+        when(restTemplate.exchange(urlCaptor.capture(), eq(HttpMethod.POST), httpEntityCaptor.capture(), any(ParameterizedTypeReference.class))).thenReturn(responseEntity);
+
+        DocumentManagerResponse<T> actualResponse = documentManagerRestClient.temporaryUpload(new Object());
+        assertNull(actualResponse);
+        assertTrue(isSuccess);
+    }
+
+
+    @Test
+    void testTemporaryUploadException() {
+        ArgumentCaptor<HttpEntity> httpEntityCaptor = ArgumentCaptor.forClass(HttpEntity.class);
+        ArgumentCaptor<String> urlCaptor = ArgumentCaptor.forClass(String.class);
+        when(restTemplate.exchange(urlCaptor.capture(), eq(HttpMethod.POST), httpEntityCaptor.capture(), any(ParameterizedTypeReference.class))).thenThrow(new RuntimeException());
+        Throwable throwable = assertThrows(Throwable.class, () -> documentManagerRestClient.temporaryUpload(new Object()));
+        assertEquals(DocumentClientException.class.getSimpleName(), throwable.getClass().getSimpleName());
+    }
+
+    @Test
+    void testList() {
+        DocumentManagerResponse<T> expectedResponse = new DocumentManagerResponse<>();
+        ResponseEntity<DocumentManagerResponse<T>> responseEntity = new ResponseEntity<>(expectedResponse, HttpStatus.OK);
+
+        ArgumentCaptor<HttpEntity> httpEntityCaptor = ArgumentCaptor.forClass(HttpEntity.class);
+        ArgumentCaptor<String> urlCaptor = ArgumentCaptor.forClass(String.class);
+        boolean isSuccess = true;
+        when(restTemplate.exchange(urlCaptor.capture(), eq(HttpMethod.POST), httpEntityCaptor.capture(), any(ParameterizedTypeReference.class))).thenReturn(responseEntity);
+
+        DocumentManagerResponse<T> actualResponse = documentManagerRestClient.list(new Object());
+        assertNull(actualResponse);
+        assertTrue(isSuccess);
+    }
+
+
+    @Test
+    void testListException() {
+        ArgumentCaptor<HttpEntity> httpEntityCaptor = ArgumentCaptor.forClass(HttpEntity.class);
+        ArgumentCaptor<String> urlCaptor = ArgumentCaptor.forClass(String.class);
+        when(restTemplate.exchange(urlCaptor.capture(), eq(HttpMethod.POST), httpEntityCaptor.capture(), any(ParameterizedTypeReference.class))).thenThrow(new RuntimeException());
+        Throwable throwable = assertThrows(Throwable.class, () -> documentManagerRestClient.list(new Object()));
+        assertEquals(DocumentClientException.class.getSimpleName(), throwable.getClass().getSimpleName());
     }
 }

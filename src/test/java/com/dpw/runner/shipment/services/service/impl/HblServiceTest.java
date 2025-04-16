@@ -27,6 +27,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.CompanySettingsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.HblReset;
+import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -40,7 +41,6 @@ import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.PartialFetchUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.NonNull;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,21 +49,15 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.NoTransactionException;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -101,6 +95,11 @@ class HblServiceTest extends CommonMocks {
     private SyncConfig syncConfig;
     @Mock
     private PartialFetchUtils partialFetchUtils;
+    @Mock
+    private ConsolidationService consolidationService;
+    @Mock
+    private HblService self;
+
 
     @BeforeAll
     static void init() throws IOException {
@@ -119,6 +118,7 @@ class HblServiceTest extends CommonMocks {
         testShipment.setDirection(Constants.DIRECTION_EXP);
         testShipment.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
         mockHbl = jsonTestUtility.getJson("HBL", Hbl.class);
+        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
         TenantSettingsDetailsContext.setCurrentTenantSettings(V1TenantSettingsResponse.builder().P100Branch(false).build());
         completeShipment = jsonTestUtility.getCompleteShipment();
     }
@@ -128,18 +128,19 @@ class HblServiceTest extends CommonMocks {
         HblRequest hblRequest = new HblRequest();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(hblRequest);
 
-        Hbl mockHbl = Hbl.builder().build();
-        HblDataDto hblData = objectMapper.convertValue(mockHbl, HblDataDto.class);
-        mockHbl.setHblData(hblData);
+        Hbl testHbl = Hbl.builder().build();
+        HblDataDto hblData = objectMapper.convertValue(testHbl, HblDataDto.class);
+        testHbl.setHblData(hblData);
 
         // Mock
-        when(hblDao.save(any())).thenReturn(mockHbl);
-        HblResponse response = objectMapper.convertValue(mockHbl.getHblData(), HblResponse.class);
+        when(hblDao.save(any())).thenReturn(testHbl);
+        HblResponse response = objectMapper.convertValue(testHbl.getHblData(), HblResponse.class);
         when(jsonHelper.convertValue(any(), eq(HblDataDto.class))).thenReturn(hblData);
         when(jsonHelper.convertValue(any(), eq(HblResponse.class))).thenReturn(response);
 
         // Test
-        ResponseEntity httpResponse = hblService.create(commonRequestModel);
+        ResponseEntity<IRunnerResponse> httpResponse = hblService.create(commonRequestModel);
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
 
     }
 
@@ -149,21 +150,47 @@ class HblServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(commonGetRequest);
 
 
-        Hbl mockHbl = Hbl.builder().build();
-        mockHbl.setHblData(new HblDataDto());
-        mockHbl.setId(1L);
+        Hbl testHbl = Hbl.builder().build();
+        testHbl.setHblData(new HblDataDto());
+        testHbl.setId(1L);
 
         // Mock
-        when(hblDao.findById(1L)).thenReturn(Optional.of(mockHbl));
-        HblResponse response = objectMapper.convertValue(mockHbl.getHblData(), HblResponse.class);
+        when(hblDao.findById(1L)).thenReturn(Optional.of(testHbl));
+        HblResponse response = objectMapper.convertValue(testHbl.getHblData(), HblResponse.class);
         when(jsonHelper.convertValue(any(), eq(HblResponse.class))).thenReturn(response);
 
         // Test
-        ResponseEntity httpResponse = hblService.retrieveById(commonRequestModel);
+        ResponseEntity<IRunnerResponse> httpResponse = hblService.retrieveById(commonRequestModel);
 
         // Assert
-        assertEquals(ResponseHelper.buildSuccessResponse(convertEntityToDto(mockHbl)), httpResponse);
+        assertEquals(ResponseHelper.buildSuccessResponse(convertEntityToDto(testHbl)), httpResponse);
 
+    }
+
+    @Test
+    void testHblContainersWithoutContainerNumber_ShouldThrowException() {
+        Hbl hblObject = new Hbl();
+        HblContainerDto hblContainerWithoutNumber = new HblContainerDto();
+        hblContainerWithoutNumber.setContainerNumber(null);
+        hblObject.setHblContainer(List.of(hblContainerWithoutNumber));
+
+        assertThrows(ValidationException.class, () ->
+                hblService.validateHblContainerNumberCondition(hblObject),
+            "Please assign container number to all the containers in HBL before generating the HBL."
+        );
+    }
+
+    @Test
+    void testHblCargosWithoutContainerNumber_ShouldThrowException() {
+        Hbl hblObject = new Hbl();
+        HblCargoDto hblCargoWithoutContainerNumber = new HblCargoDto();
+        hblCargoWithoutContainerNumber.setBlContainerContainerNumber(null);
+        hblObject.setHblCargo(List.of(hblCargoWithoutContainerNumber));
+
+        assertThrows(ValidationException.class, () ->
+                hblService.validateHblContainerNumberCondition(hblObject),
+            "Container Number is Mandatory for HBL Generation, please assign the container number for all the HBLCargo in the shipment."
+        );
     }
 
     @Test
@@ -171,10 +198,9 @@ class HblServiceTest extends CommonMocks {
 
         // Shipment, Lis<Container>, List<Packing>
         ShipmentDetails inputShipment = testShipment;
-        List<Containers> inputContainers = List.of(new Containers());
-        List<Packing> inputPacking = null;
+        Set<Containers> inputContainers = Set.of(new Containers());
         // Test
-        Hbl responseHbl = hblService.checkAllContainerAssigned(inputShipment, inputContainers, inputPacking);
+        Hbl responseHbl = hblService.checkAllContainerAssigned(inputShipment, inputContainers, null);
         // Assert
         assertNull(responseHbl);
     }
@@ -184,10 +210,9 @@ class HblServiceTest extends CommonMocks {
 
         // Shipment, Lis<Container>, List<Packing>
         ShipmentDetails inputShipment = testShipment;
-        List<Containers> inputContainers = List.of(Containers.builder().containerNumber(StringUtility.getEmptyString()).build());
-        List<Packing> inputPacking = null;
+        Set<Containers> inputContainers = Set.of(Containers.builder().containerNumber(Constants.EMPTY_STRING).build());
         // Test
-        Hbl responseHbl = hblService.checkAllContainerAssigned(inputShipment, inputContainers, inputPacking);
+        Hbl responseHbl = hblService.checkAllContainerAssigned(inputShipment, inputContainers, null);
         // Assert
         assertNull(responseHbl);
     }
@@ -197,7 +222,7 @@ class HblServiceTest extends CommonMocks {
         // Shipment, Lis<Container>, List<Packing>
         ShipmentDetails inputShipment = testShipment;
         inputShipment.setId(11L);
-        List<Containers> inputContainers = List.of(Containers.builder().containerNumber(StringUtility.getRandomString(1)).build());
+        Set<Containers> inputContainers = Set.of(Containers.builder().containerNumber(StringUtility.getRandomString(1)).build());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().restrictHblGen(false).build());
         when(shipmentDao.findById(anyLong())).thenReturn(Optional.empty());
         when(hblDao.findByShipmentId(anyLong())).thenReturn(List.of());
@@ -214,7 +239,7 @@ class HblServiceTest extends CommonMocks {
         inputShipment.setId(11L);
         Hbl inputHBL = mockHbl;
         inputHBL.setHblContainer(List.of());
-        List<Containers> inputContainers = List.of(Containers.builder().containerNumber(StringUtility.getRandomString(1)).build());
+        Set<Containers> inputContainers = Set.of(Containers.builder().containerNumber(StringUtility.getRandomString(1)).build());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
         when(hblDao.findByShipmentId(anyLong())).thenReturn(List.of(inputHBL));
         when(hblDao.save(any())).thenReturn(inputHBL);
@@ -229,10 +254,10 @@ class HblServiceTest extends CommonMocks {
         ShipmentDetails inputShipment = completeShipment;
         inputShipment.setId(11L);
         inputShipment.setShipmentType(Constants.SHIPMENT_TYPE_LCL);
-        inputShipment.setContainersList(List.of());
+        inputShipment.setContainersList(Set.of());
         Hbl inputHBL = mockHbl;
         inputHBL.setHblContainer(List.of());
-        List<Containers> inputContainers = List.of(Containers.builder().containerNumber(StringUtility.getRandomString(1)).build());
+        Set<Containers> inputContainers = Set.of(Containers.builder().containerNumber(StringUtility.getRandomString(1)).build());
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().build());
         when(hblDao.findByShipmentId(anyLong())).thenReturn(List.of(inputHBL));
         when(hblDao.save(any())).thenReturn(inputHBL);
@@ -254,7 +279,7 @@ class HblServiceTest extends CommonMocks {
         Containers container = new Containers();
         container.setId(1L);
         container.setContainerNumber(containerNumber);
-        List<Containers> inputContainers = List.of(container);
+        Set<Containers> inputContainers = Set.of(container);
         Packing packing = new Packing();
         packing.setContainerId(1L);
         List<Packing> inputPacking = List.of(packing);
@@ -286,7 +311,7 @@ class HblServiceTest extends CommonMocks {
         Containers container = new Containers();
         container.setId(1L);
         container.setContainerNumber(containerNumber);
-        List<Containers> inputContainers = List.of(container);
+        Set<Containers> inputContainers = Set.of(container);
         Packing packing = new Packing();
         packing.setContainerId(1L);
         List<Packing> inputPacking = List.of(packing);
@@ -297,7 +322,6 @@ class HblServiceTest extends CommonMocks {
 
         // Mock
         when(hblDao.findByShipmentId(anyLong())).thenReturn(List.of());
-//        when(shipmentService.generateCustomHouseBL(any())).thenReturn("custom-house-bl");
         when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(testShipment));
         when(hblDao.findByShipmentId(shipmentId)).thenReturn(List.of());
         when(masterDataUtils.fetchInBulkUnlocations(any(), anyString())).thenReturn(new HashMap<>());
@@ -323,7 +347,7 @@ class HblServiceTest extends CommonMocks {
         Containers container = new Containers();
         container.setId(1L);
         container.setContainerNumber(containerNumber);
-        List<Containers> inputContainers = List.of(container);
+        Set<Containers> inputContainers = Set.of(container);
         Packing packing = new Packing();
         packing.setContainerId(1L);
         List<Packing> inputPacking = List.of(packing);
@@ -348,9 +372,120 @@ class HblServiceTest extends CommonMocks {
         HblGenerateRequest request = HblGenerateRequest.builder().shipmentId(shipmentId).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
         testShipment.setHouseBill("custom-house-bl");
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAutomaticTransferEnabled(false);
+
+        // Mock
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(testShipment));
+        when(hblDao.findByShipmentId(shipmentId)).thenReturn(List.of());
+        when(masterDataUtils.fetchInBulkUnlocations(any(), anyString())).thenReturn(new HashMap<>());
+        when(v1Service.retrieveCompanySettings()).thenReturn(new CompanySettingsResponse());
+        when(hblDao.save(any())).thenReturn(mockHbl);
+        when(jsonHelper.convertValue(any(), eq(HblResponse.class))).thenReturn(objectMapper.convertValue(mockHbl.getHblData() , HblResponse.class));
+
+        // Test
+        ResponseEntity<IRunnerResponse> httpResponse = hblService.generateHBL(commonRequestModel);
+
+        // Assert
+        verify(hblSync, times(1)).sync(any(), anyString());
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+        assertEquals(ResponseHelper.buildSuccessResponse(convertEntityToDto(mockHbl)), httpResponse);
+    }
+
+    @Test
+    void generateHblSuccess2() throws RunnerException {
+        Long shipmentId = 1L;
+        HblGenerateRequest request = HblGenerateRequest.builder().shipmentId(shipmentId).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        testShipment.setHouseBill("custom-house-bl");
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAutomaticTransferEnabled(true);
 
 
         // Mock
+        addDataForAutomaticTransfer(testShipment);
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(testShipment));
+        when(hblDao.findByShipmentId(shipmentId)).thenReturn(List.of());
+        when(masterDataUtils.fetchInBulkUnlocations(any(), anyString())).thenReturn(new HashMap<>());
+        when(v1Service.retrieveCompanySettings()).thenReturn(new CompanySettingsResponse());
+        when(hblDao.save(any())).thenReturn(mockHbl);
+        when(jsonHelper.convertValue(any(), eq(HblResponse.class))).thenReturn(objectMapper.convertValue(mockHbl.getHblData() , HblResponse.class));
+
+        // Test
+        ResponseEntity<IRunnerResponse> httpResponse = hblService.generateHBL(commonRequestModel);
+
+        // Assert
+        verify(hblSync, times(1)).sync(any(), anyString());
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+        assertEquals(ResponseHelper.buildSuccessResponse(convertEntityToDto(mockHbl)), httpResponse);
+    }
+
+    @Test
+    void generateHblSuccess3() throws RunnerException {
+        Long shipmentId = 1L;
+        HblGenerateRequest request = HblGenerateRequest.builder().shipmentId(shipmentId).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        testShipment.setHouseBill("custom-house-bl");
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAutomaticTransferEnabled(true);
+
+
+        // Mock
+        addDataForAutomaticTransfer(testShipment);
+        testShipment.setConsolidationList(null);
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(testShipment));
+        when(hblDao.findByShipmentId(shipmentId)).thenReturn(List.of());
+        when(masterDataUtils.fetchInBulkUnlocations(any(), anyString())).thenReturn(new HashMap<>());
+        when(v1Service.retrieveCompanySettings()).thenReturn(new CompanySettingsResponse());
+        when(hblDao.save(any())).thenReturn(mockHbl);
+        when(jsonHelper.convertValue(any(), eq(HblResponse.class))).thenReturn(objectMapper.convertValue(mockHbl.getHblData() , HblResponse.class));
+
+        // Test
+        ResponseEntity<IRunnerResponse> httpResponse = hblService.generateHBL(commonRequestModel);
+
+        // Assert
+        verify(hblSync, times(1)).sync(any(), anyString());
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+        assertEquals(ResponseHelper.buildSuccessResponse(convertEntityToDto(mockHbl)), httpResponse);
+    }
+
+    @Test
+    void generateHblSuccess4() throws RunnerException {
+        Long shipmentId = 1L;
+        HblGenerateRequest request = HblGenerateRequest.builder().shipmentId(shipmentId).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        testShipment.setHouseBill("custom-house-bl");
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAutomaticTransferEnabled(true);
+
+
+        // Mock
+        addDataForAutomaticTransfer(testShipment);
+        testShipment.getConsolidationList().iterator().next().setConsolidationType(Constants.CONSOLIDATION_TYPE_DRT);
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(testShipment));
+        when(hblDao.findByShipmentId(shipmentId)).thenReturn(List.of());
+        when(masterDataUtils.fetchInBulkUnlocations(any(), anyString())).thenReturn(new HashMap<>());
+        when(v1Service.retrieveCompanySettings()).thenReturn(new CompanySettingsResponse());
+        when(hblDao.save(any())).thenReturn(mockHbl);
+        when(jsonHelper.convertValue(any(), eq(HblResponse.class))).thenReturn(objectMapper.convertValue(mockHbl.getHblData() , HblResponse.class));
+
+        // Test
+        ResponseEntity<IRunnerResponse> httpResponse = hblService.generateHBL(commonRequestModel);
+
+        // Assert
+        verify(hblSync, times(1)).sync(any(), anyString());
+        assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
+        assertEquals(ResponseHelper.buildSuccessResponse(convertEntityToDto(mockHbl)), httpResponse);
+    }
+
+    @Test
+    void generateHblSuccess5() throws RunnerException {
+        Long shipmentId = 1L;
+        HblGenerateRequest request = HblGenerateRequest.builder().shipmentId(shipmentId).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        testShipment.setHouseBill("custom-house-bl");
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setIsAutomaticTransferEnabled(true);
+
+
+        // Mock
+        addDataForAutomaticTransfer(testShipment);
+        testShipment.getConsolidationList().iterator().next().setTransportMode(Constants.TRANSPORT_MODE_AIR);
         when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(testShipment));
         when(hblDao.findByShipmentId(shipmentId)).thenReturn(List.of());
         when(masterDataUtils.fetchInBulkUnlocations(any(), anyString())).thenReturn(new HashMap<>());
@@ -391,7 +526,7 @@ class HblServiceTest extends CommonMocks {
     }
 
     @Test
-    void generateHblThrowsExceptionWhenShipmentIsNotPresent() throws RunnerException {
+    void generateHblThrowsExceptionWhenShipmentIsNotPresent() {
         Long shipmentId = 1L;
         HblGenerateRequest request = HblGenerateRequest.builder().shipmentId(shipmentId).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
@@ -408,7 +543,7 @@ class HblServiceTest extends CommonMocks {
     }
 
     @Test
-    void generateHblThrowsExceptionWhenHblIsAlreadyGeneratedForShipment() throws RunnerException {
+    void generateHblThrowsExceptionWhenHblIsAlreadyGeneratedForShipment() {
         Long shipmentId = 1L;
         HblGenerateRequest request = HblGenerateRequest.builder().shipmentId(shipmentId).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
@@ -427,16 +562,17 @@ class HblServiceTest extends CommonMocks {
     }
 
     @Test
-    void generateHblThrowsExceptionWhenContainerNumberIsMissing() throws RunnerException {
+    void generateHblThrowsExceptionWhenContainerNumberIsMissing() {
         Long shipmentId = 1L;
         HblGenerateRequest request = HblGenerateRequest.builder().shipmentId(shipmentId).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
 
         String errorMessage = "Please assign container number to all the containers before generating the HBL.";
 
-        List<Containers> containersList = List.of(new Containers());
+        Set<Containers> containersList = Set.of(new Containers());
         testShipment.setContainersList(containersList);
         testShipment.setShipmentType(Constants.CARGO_TYPE_FCL);
+        testShipment.setJobType(Constants.SHIPMENT_TYPE_DRT);
 
         // Mock
         when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(testShipment));
@@ -449,7 +585,7 @@ class HblServiceTest extends CommonMocks {
     }
 
     @Test
-    void generateHblThrowsExceptionWhenPackIsNotLinkedWithContainer() throws RunnerException {
+    void generateHblThrowsExceptionWhenPackIsNotLinkedWithContainer() {
         Long shipmentId = 1L;
         HblGenerateRequest request = HblGenerateRequest.builder().shipmentId(shipmentId).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
@@ -459,6 +595,7 @@ class HblServiceTest extends CommonMocks {
         List<Packing> packingList = List.of(new Packing());
         testShipment.setPackingList(packingList);
         testShipment.setShipmentType(Constants.CARGO_TYPE_FCL);
+        testShipment.setJobType(Constants.SHIPMENT_TYPE_DRT);
 
         // Mock
         when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(testShipment));
@@ -471,7 +608,7 @@ class HblServiceTest extends CommonMocks {
     }
 
     @Test
-    void resetHblFailsWhenHblNotPresentInDb() throws RunnerException {
+    void resetHblFailsWhenHblNotPresentInDb() {
         Long hblId = 1L;
         HblResetRequest resetRequest = new HblResetRequest();
         resetRequest.setId(hblId);
@@ -491,7 +628,7 @@ class HblServiceTest extends CommonMocks {
     }
 
     @Test
-    void resetHblFailsWhenShipmentNotPresentInDb() throws RunnerException {
+    void resetHblFailsWhenShipmentNotPresentInDb() {
         Long hblId = 1L;
         HblResetRequest resetRequest = new HblResetRequest();
         resetRequest.setId(hblId);
@@ -659,15 +796,15 @@ class HblServiceTest extends CommonMocks {
     @Test
     void createWithEmptyData() {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest();
-        Hbl mockHbl = Hbl.builder().build();
-        HblDataDto hblData = objectMapper.convertValue(mockHbl, HblDataDto.class);
-        mockHbl.setHblData(hblData);
+        Hbl testHbl = Hbl.builder().build();
+        HblDataDto hblData = objectMapper.convertValue(testHbl, HblDataDto.class);
+        testHbl.setHblData(hblData);
         // Mock
-        when(hblDao.save(any())).thenReturn(mockHbl);
-        HblResponse response = objectMapper.convertValue(mockHbl.getHblData(), HblResponse.class);
+        when(hblDao.save(any())).thenReturn(testHbl);
+        HblResponse response = objectMapper.convertValue(testHbl.getHblData(), HblResponse.class);
         when(jsonHelper.convertValue(any(), eq(HblResponse.class))).thenReturn(response);
         // Test
-        ResponseEntity httpResponse = hblService.create(commonRequestModel);
+        ResponseEntity<IRunnerResponse> httpResponse = hblService.create(commonRequestModel);
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
 
@@ -677,7 +814,7 @@ class HblServiceTest extends CommonMocks {
         // Mock
         when(hblDao.save(any())).thenThrow(new RuntimeException("22323"));
         // Test
-        ResponseEntity httpResponse = hblService.create(commonRequestModel);
+        ResponseEntity<IRunnerResponse> httpResponse = hblService.create(commonRequestModel);
         assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
     }
 
@@ -686,15 +823,15 @@ class HblServiceTest extends CommonMocks {
         HblRequest hblRequest = new HblRequest();
         hblRequest.setId(1L);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(hblRequest);
-        Hbl mockHbl = getHblModel();
-        HblResponse response = objectMapper.convertValue(mockHbl.getHblData(), HblResponse.class);
+        Hbl testHbl = getHblModel();
+        HblResponse response = objectMapper.convertValue(testHbl.getHblData(), HblResponse.class);
         // Mock
-        when(hblDao.findById(anyLong())).thenReturn(Optional.of(mockHbl));
-        when(hblDao.save(any())).thenReturn(mockHbl);
-        when(jsonHelper.convertValue(any(), eq(HblDataDto.class))).thenReturn(mockHbl.getHblData());
+        when(hblDao.findById(anyLong())).thenReturn(Optional.of(testHbl));
+        when(hblDao.save(any())).thenReturn(testHbl);
+        when(jsonHelper.convertValue(any(), eq(HblDataDto.class))).thenReturn(testHbl.getHblData());
         when(jsonHelper.convertValue(any(), eq(HblResponse.class))).thenReturn(response);
 
-        ResponseEntity httpResponse = hblService.update(commonRequestModel);
+        ResponseEntity<IRunnerResponse> httpResponse = hblService.update(commonRequestModel);
         // Test
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
@@ -704,16 +841,16 @@ class HblServiceTest extends CommonMocks {
         HblRequest hblRequest = new HblRequest();
         hblRequest.setId(1L);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(hblRequest);
-        Hbl mockHbl = getHblModel();
-        HblResponse response = objectMapper.convertValue(mockHbl.getHblData(), HblResponse.class);
+        Hbl testHbl = getHblModel();
+        HblResponse response = objectMapper.convertValue(testHbl.getHblData(), HblResponse.class);
         // Mock
-        when(hblDao.findById(anyLong())).thenReturn(Optional.of(mockHbl));
-        when(hblDao.save(any())).thenReturn(mockHbl);
+        when(hblDao.findById(anyLong())).thenReturn(Optional.of(testHbl));
+        when(hblDao.save(any())).thenReturn(testHbl);
         when(hblSync.sync(any(), anyString())).thenThrow(new RuntimeException());
-        when(jsonHelper.convertValue(any(), eq(HblDataDto.class))).thenReturn(mockHbl.getHblData());
+        when(jsonHelper.convertValue(any(), eq(HblDataDto.class))).thenReturn(testHbl.getHblData());
         when(jsonHelper.convertValue(any(), eq(HblResponse.class))).thenReturn(response);
 
-        ResponseEntity httpResponse = hblService.update(commonRequestModel);
+        ResponseEntity<IRunnerResponse> httpResponse = hblService.update(commonRequestModel);
         // Test
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
@@ -723,13 +860,13 @@ class HblServiceTest extends CommonMocks {
         HblRequest hblRequest = new HblRequest();
         hblRequest.setId(1L);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(hblRequest);
-        Hbl mockHbl = getHblModel();
+        Hbl testHbl = getHblModel();
         // Mock
-        when(hblDao.findById(anyLong())).thenReturn(Optional.of(mockHbl));
+        when(hblDao.findById(anyLong())).thenReturn(Optional.of(testHbl));
         when(hblDao.save(any())).thenThrow(new RuntimeException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE));
-        when(jsonHelper.convertValue(any(), eq(HblDataDto.class))).thenReturn(mockHbl.getHblData());
+        when(jsonHelper.convertValue(any(), eq(HblDataDto.class))).thenReturn(testHbl.getHblData());
 
-        ResponseEntity httpResponse = hblService.update(commonRequestModel);
+        ResponseEntity<IRunnerResponse> httpResponse = hblService.update(commonRequestModel);
         // Test
         assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
     }
@@ -739,13 +876,13 @@ class HblServiceTest extends CommonMocks {
         HblRequest hblRequest = new HblRequest();
         hblRequest.setId(1L);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(hblRequest);
-        Hbl mockHbl = getHblModel();
+        Hbl testHbl = getHblModel();
         // Mock
-        when(hblDao.findById(anyLong())).thenReturn(Optional.of(mockHbl));
+        when(hblDao.findById(anyLong())).thenReturn(Optional.of(testHbl));
         when(hblDao.save(any())).thenThrow(new RuntimeException());
-        when(jsonHelper.convertValue(any(), eq(HblDataDto.class))).thenReturn(mockHbl.getHblData());
+        when(jsonHelper.convertValue(any(), eq(HblDataDto.class))).thenReturn(testHbl.getHblData());
 
-        ResponseEntity httpResponse = hblService.update(commonRequestModel);
+        ResponseEntity<IRunnerResponse> httpResponse = hblService.update(commonRequestModel);
         // Test
         assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
     }
@@ -777,10 +914,10 @@ class HblServiceTest extends CommonMocks {
     void retrieveByIdWithIncludeColumns() {
         CommonGetRequest commonGetRequest = CommonGetRequest.builder().includeColumns(List.of("String")).id(1L).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(commonGetRequest);
-        Hbl mockHbl = getHblModel();
-        HblResponse response = objectMapper.convertValue(mockHbl.getHblData(), HblResponse.class);
+        Hbl testHbl = getHblModel();
+        HblResponse response = objectMapper.convertValue(testHbl.getHblData(), HblResponse.class);
         // Mock
-        when(hblDao.findById(anyLong())).thenReturn(Optional.of(mockHbl));
+        when(hblDao.findById(anyLong())).thenReturn(Optional.of(testHbl));
         when(jsonHelper.convertValue(any(), eq(HblResponse.class))).thenReturn(response);
         when(partialFetchUtils.fetchPartialListData(any(), any())).thenReturn(any());
         var responseEntity = hblService.retrieveById(commonRequestModel);
@@ -792,10 +929,10 @@ class HblServiceTest extends CommonMocks {
     void retrieveByIdWithEmptyIncludeColumns() {
         CommonGetRequest commonGetRequest = CommonGetRequest.builder().includeColumns(List.of()).id(1L).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(commonGetRequest);
-        Hbl mockHbl = getHblModel();
-        HblResponse response = objectMapper.convertValue(mockHbl.getHblData(), HblResponse.class);
+        Hbl testHbl = getHblModel();
+        HblResponse response = objectMapper.convertValue(testHbl.getHblData(), HblResponse.class);
         // Mock
-        when(hblDao.findById(anyLong())).thenReturn(Optional.of(mockHbl));
+        when(hblDao.findById(anyLong())).thenReturn(Optional.of(testHbl));
         when(jsonHelper.convertValue(any(), eq(HblResponse.class))).thenReturn(response);
         var responseEntity = hblService.retrieveById(commonRequestModel);
         // Assert
@@ -811,13 +948,14 @@ class HblServiceTest extends CommonMocks {
         when(shipmentDao.findById(10L)).thenReturn(Optional.of(ShipmentDetails.builder().build()));
         when(hblDao.findByShipmentId(10L)).thenReturn(List.of(mockHbl));
         mockShipmentSettings();
+        doThrow(new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE)).when(self).resetHbl(any());
         Exception e = assertThrows(DataRetrievalFailureException.class, () -> hblService.partialUpdateHBL(commonRequestModel));
         // Assert
         assertEquals(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE, e.getMessage());
     }
 
     @Test
-    void partialUpdateException() throws RunnerException {
+    void partialUpdateException() {
         HblGenerateRequest request = HblGenerateRequest.builder().shipmentId(10L).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
         // Mock
@@ -828,7 +966,7 @@ class HblServiceTest extends CommonMocks {
     }
 
     @Test
-    void partialUpdateExceptionForHbl() throws RunnerException {
+    void partialUpdateExceptionForHbl() {
         HblGenerateRequest request = HblGenerateRequest.builder().shipmentId(10L).build();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
         // Mock
@@ -1005,17 +1143,17 @@ class HblServiceTest extends CommonMocks {
         HblRequest hblRequest = new HblRequest();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(hblRequest);
 
-        Hbl mockHbl = Hbl.builder().build();
-        HblDataDto hblData = objectMapper.convertValue(mockHbl, HblDataDto.class);
-        mockHbl.setHblData(hblData);
-        HblResponse response = objectMapper.convertValue(mockHbl.getHblData(), HblResponse.class);
+        Hbl testHbl = Hbl.builder().build();
+        HblDataDto hblData = objectMapper.convertValue(testHbl, HblDataDto.class);
+        testHbl.setHblData(hblData);
+        HblResponse response = objectMapper.convertValue(testHbl.getHblData(), HblResponse.class);
         // Mock
-        when(hblDao.save(any())).thenReturn(mockHbl);
+        when(hblDao.save(any())).thenReturn(testHbl);
         when(hblSync.sync(any(), anyString())).thenThrow(new RuntimeException());
         when(jsonHelper.convertValue(any(), eq(HblDataDto.class))).thenReturn(hblData);
         when(jsonHelper.convertValue(any(), eq(HblResponse.class))).thenReturn(response);
         // Test
-        ResponseEntity httpResponse = hblService.create(commonRequestModel);
+        ResponseEntity<IRunnerResponse> httpResponse = hblService.create(commonRequestModel);
         // Assert
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
@@ -1025,14 +1163,14 @@ class HblServiceTest extends CommonMocks {
         HblRequest hblRequest = new HblRequest();
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(hblRequest);
 
-        Hbl mockHbl = Hbl.builder().build();
-        HblDataDto hblData = objectMapper.convertValue(mockHbl, HblDataDto.class);
-        mockHbl.setHblData(hblData);
+        Hbl testHbl = Hbl.builder().build();
+        HblDataDto hblData = objectMapper.convertValue(testHbl, HblDataDto.class);
+        testHbl.setHblData(hblData);
         // Mock
         when(hblDao.save(any())).thenThrow(new RuntimeException());
         when(jsonHelper.convertValue(any(), eq(HblDataDto.class))).thenReturn(hblData);
         // Test
-        ResponseEntity httpResponse = hblService.create(commonRequestModel);
+        ResponseEntity<IRunnerResponse> httpResponse = hblService.create(commonRequestModel);
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, httpResponse.getStatusCode());
     }
@@ -1040,9 +1178,9 @@ class HblServiceTest extends CommonMocks {
     @Test
     void listTest() {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest();
-        ResponseEntity httpResponse = hblService.list(commonRequestModel);
+        ResponseEntity<IRunnerResponse> httpResponse = hblService.list(commonRequestModel);
         // Test
-        assertEquals(null, httpResponse);
+        assertNull(httpResponse);
     }
 
     @Test
@@ -1050,7 +1188,7 @@ class HblServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest();
         var httpResponse = hblService.listAsync(commonRequestModel);
         // Test
-        assertEquals(null, httpResponse);
+        assertNull(httpResponse);
     }
 
     @Test
@@ -1058,7 +1196,7 @@ class HblServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest();
         var httpResponse = hblService.delete(commonRequestModel);
         // Test
-        assertEquals(null, httpResponse);
+        assertNull(httpResponse);
     }
 
     @Test
@@ -1099,7 +1237,7 @@ class HblServiceTest extends CommonMocks {
         hblRequestV2.setShipmentGuid(UUID.randomUUID());
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(hblRequestV2);
 
-        when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<ShipmentDetails>(Arrays.asList(completeShipment)));
+        when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(Collections.singletonList(completeShipment)));
         when(hblDao.findByShipmentId(anyLong())).thenReturn(List.of(mockHbl));
         when(jsonHelper.convertValue(any(), eq(HblResponse.class))).thenReturn(objectMapper.convertValue(mockHbl.getHblData(), HblResponse.class));
         when(jsonHelper.convertValue(any(), eq(HblRequest.class))).thenReturn(objectMapper.convertValue(mockHbl.getHblData(), HblRequest.class));
@@ -1117,7 +1255,7 @@ class HblServiceTest extends CommonMocks {
         hblRequestV2.setShipmentGuid(UUID.randomUUID());
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(hblRequestV2);
 
-        when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<ShipmentDetails>(Arrays.asList(completeShipment)));
+        when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(Collections.singletonList(completeShipment)));
         when(hblDao.findByShipmentId(anyLong())).thenReturn(List.of());
         when(jsonHelper.convertValue(any(), eq(HblResponse.class))).thenReturn(objectMapper.convertValue(mockHbl.getHblData(), HblResponse.class));
         when(jsonHelper.convertValue(any(), eq(HblRequest.class))).thenReturn(objectMapper.convertValue(mockHbl.getHblData(), HblRequest.class));
@@ -1130,31 +1268,31 @@ class HblServiceTest extends CommonMocks {
     }
 
     @Test
-    void saveV1HblException() throws RunnerException {
+    void saveV1HblException() {
         var hblRequestV2 = new HblRequestV2();
         hblRequestV2.setShipmentGuid(UUID.randomUUID());
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(hblRequestV2);
 
-        when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<ShipmentDetails>(Arrays.asList(completeShipment)));
+        when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(Collections.singletonList(completeShipment)));
         when(hblDao.findByShipmentId(anyLong())).thenThrow(new RuntimeException());
 
-        Exception e = assertThrows(RuntimeException.class, () -> hblService.saveV1Hbl(commonRequestModel, false));
+        Exception e = assertThrows(GenericException.class, () -> hblService.saveV1Hbl(commonRequestModel, false));
         // Test
-        assertEquals(RuntimeException.class.getSimpleName(), e.getClass().getSimpleName());
+        assertEquals(GenericException.class.getSimpleName(), e.getClass().getSimpleName());
     }
 
     @Test
-    void saveV1HblExceptionWithMessage() throws RunnerException {
+    void saveV1HblExceptionWithMessage() {
         var hblRequestV2 = new HblRequestV2();
         hblRequestV2.setShipmentGuid(UUID.randomUUID());
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(hblRequestV2);
 
-        when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<ShipmentDetails>(Arrays.asList(completeShipment)));
+        when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(Collections.singletonList(completeShipment)));
         when(hblDao.findByShipmentId(anyLong())).thenThrow(new RuntimeException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE));
 
-        Exception e = assertThrows(RuntimeException.class, () -> hblService.saveV1Hbl(commonRequestModel, false));
+        Exception e = assertThrows(GenericException.class, () -> hblService.saveV1Hbl(commonRequestModel, false));
         // Test
-        assertEquals(RuntimeException.class.getSimpleName(), e.getClass().getSimpleName());
+        assertEquals(GenericException.class.getSimpleName(), e.getClass().getSimpleName());
     }
 
     @Test
@@ -1210,6 +1348,26 @@ class HblServiceTest extends CommonMocks {
         var responseEntity = hblService.retrieveByShipmentId(commonRequestModel);
         // Test
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void generateHblSuccess1() {
+        Long shipmentId = 1L;
+        HblGenerateRequest request = HblGenerateRequest.builder().shipmentId(shipmentId).build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        testShipment.setHouseBill("custom-house-bl");
+        testShipment.setContainsHazardous(true);
+        when(shipmentDao.findById(shipmentId)).thenReturn(Optional.of(testShipment));
+        assertThrows(ValidationException.class, () -> hblService.generateHBL(commonRequestModel));
+    }
+
+    private void addDataForAutomaticTransfer(ShipmentDetails shipment) {
+        shipment.setMasterBill("MBL123");
+        ConsolidationDetails consolidationDetails = new ConsolidationDetails();
+        consolidationDetails.setTransportMode(Constants.TRANSPORT_MODE_SEA);
+        consolidationDetails.setConsolidationType(Constants.SHIPMENT_TYPE_STD);
+
+        shipment.setConsolidationList(Set.of(consolidationDetails));
     }
 
 }

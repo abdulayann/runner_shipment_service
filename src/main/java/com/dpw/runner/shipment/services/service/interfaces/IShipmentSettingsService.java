@@ -13,4 +13,6 @@ public interface IShipmentSettingsService extends ICommonService{
     ResponseEntity<IRunnerResponse> retrieveByTenantId(CommonRequestModel commonRequestModel);
     ResponseEntity<IRunnerResponse> listCoLoadStationTenantIds();
     ResponseEntity<IRunnerResponse> listHubTenantIds();
-    }
+    ResponseEntity<IRunnerResponse> hideManifest(boolean hideManifest);
+    ResponseEntity<IRunnerResponse> partialUpdate(CommonRequestModel commonRequestModel);
+}

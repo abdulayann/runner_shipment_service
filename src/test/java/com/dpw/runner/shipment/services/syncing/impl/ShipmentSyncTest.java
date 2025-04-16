@@ -15,6 +15,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.ISyncService;
 import com.dpw.runner.shipment.services.syncing.Entity.*;
 import com.dpw.runner.shipment.services.syncing.interfaces.IConsolidationSync;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.StringUtility;
 import com.dpw.runner.shipment.services.utils.V1AuthHelper;
 import org.junit.jupiter.api.Test;
@@ -59,6 +60,8 @@ class ShipmentSyncTest {
     private ISyncService syncService;
     @Mock
     private IConsolidationSync consolidationSync;
+    @Mock
+    private CommonUtils commonUtils;
 
     /**
      * Method under test:
@@ -98,12 +101,11 @@ class ShipmentSyncTest {
         inputShipment.setTransportMode(Constants.TRANSPORT_MODE_AIR);
         inputShipment.setServicesList(List.of(new ServiceDetails()));
         inputShipment.setTruckDriverDetails(List.of(inputTruckDriverDetails1));
-        inputShipment.setContainersList(List.of(inputContainer1, inputContainer2));
+        inputShipment.setContainersList(new HashSet<>(List.of(inputContainer1, inputContainer2)));
         inputShipment.setConsigner(Parties.builder().addressData(inputAddressMapWithOutRawData).isAddressFreeText(true).build());
         inputShipment.setConsignee(Parties.builder().addressData(inputAddressMapWithOutRawData).isAddressFreeText(true).build());
         inputAdditionalDetails.setNotifyParty(Parties.builder().addressData(inputAddressMapWithOutRawData).isAddressFreeText(true).build());
         inputShipment.setEventsList(List.of(new Events()));
-        inputShipment.setFileRepoList(List.of(new FileRepo()));
         // Mock
         var mockCustomShipmentSyncRequest = new CustomShipmentSyncRequest();
         mockCustomShipmentSyncRequest.setTransportMode(Constants.TRANSPORT_MODE_AIR);
@@ -156,7 +158,7 @@ class ShipmentSyncTest {
         inputShipment.setGuid(guid);
         inputShipment.setAdditionalDetails(inputAdditionalDetails);
         inputShipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
-        inputShipment.setContainersList(List.of(inputContainer1, inputContainer2));
+        inputShipment.setContainersList(new HashSet<>(List.of(inputContainer1, inputContainer2)));
         inputShipment.setConsigner(Parties.builder().addressData(inputAddressMapWithOutRawData).isAddressFreeText(true).build());
         inputShipment.setConsignee(Parties.builder().addressData(inputAddressMapWithOutRawData).isAddressFreeText(true).build());
         inputAdditionalDetails.setNotifyParty(Parties.builder().addressData(inputAddressMapWithOutRawData).isAddressFreeText(true).build());
@@ -199,7 +201,7 @@ class ShipmentSyncTest {
         inputShipment.setGuid(guid);
         inputShipment.setAdditionalDetails(inputAdditionalDetails);
         inputShipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
-        inputShipment.setContainersList(List.of());
+        inputShipment.setContainersList(Set.of());
         inputShipment.setTruckDriverDetails(List.of(inputTruckDriverDetails1));
         inputShipment.setConsigner(Parties.builder().addressData(inputAddressMapWithOutRawData).isAddressFreeText(false).build());
         inputShipment.setConsignee(Parties.builder().addressData(inputAddressMapWithOutRawData).isAddressFreeText(false).build());
@@ -255,7 +257,7 @@ class ShipmentSyncTest {
         inputShipment.setGuid(guid);
         inputShipment.setAdditionalDetails(inputAdditionalDetails);
         inputShipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
-        inputShipment.setContainersList(List.of());
+        inputShipment.setContainersList(Set.of());
         inputShipment.setTruckDriverDetails(List.of(inputTruckDriverDetails1));
         inputShipment.setConsigner(Parties.builder().addressData(inputAddressMapWithOutRawData).isAddressFreeText(false).build());
         inputShipment.setConsignee(Parties.builder().addressData(inputAddressMapWithOutRawData).isAddressFreeText(false).build());
@@ -289,7 +291,7 @@ class ShipmentSyncTest {
         inputShipment.setId(1L);
         inputShipment.setGuid(guid);
         inputShipment.setTransportMode(Constants.TRANSPORT_MODE_SEA);
-        inputShipment.setConsolidationList(List.of(new ConsolidationDetails()));
+        inputShipment.setConsolidationList(Set.of(new ConsolidationDetails()));
         // Mock
         var mockCustomShipmentSyncRequest = new CustomShipmentSyncRequest();
         mockCustomShipmentSyncRequest.setTransportMode(Constants.TRANSPORT_MODE_SEA);

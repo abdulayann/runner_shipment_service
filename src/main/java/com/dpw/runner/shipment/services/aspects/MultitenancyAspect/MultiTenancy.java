@@ -14,6 +14,7 @@ import javax.persistence.Column;
 import javax.persistence.EntityListeners;
 import javax.persistence.MappedSuperclass;
 
+@SuppressWarnings({"java:S1710", "ALL"})
 @Data
 @MappedSuperclass
 @FilterDef(name = MultiTenancy.TENANT_FILTER_NAME,
@@ -33,6 +34,6 @@ public class MultiTenancy extends BaseEntity {
     public static final String TENANT_COLUMN = "tenant_id";
 
     @TenantIdData
-    @Column(name = "tenant_id")
+    @Column(name = "tenant_id", nullable = false, updatable = false)
     private Integer tenantId;
 }

@@ -12,6 +12,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSetting
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
+import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
 import com.dpw.runner.shipment.services.dto.v1.response.OrgAddressResponse;
@@ -20,8 +21,10 @@ import com.dpw.runner.shipment.services.entity.Hbl;
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,6 +45,7 @@ import java.util.*;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.EXP;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -61,6 +65,9 @@ class PickupOrderReportTest extends CommonMocks {
     private V1ServiceUtil v1ServiceUtil;
 
     @Mock
+    private MasterDataUtils masterDataUtils;
+
+    @Mock
     private HblReport hblReport;
 
     @BeforeAll
@@ -71,6 +78,7 @@ class PickupOrderReportTest extends CommonMocks {
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
         mockUser.setEnableTimeZone(false);
+        mockUser.setPermissions(new HashMap<>());
         UserContext.setUser(mockUser);
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().disableBlPartiesName(false).build());
     }
@@ -273,7 +281,7 @@ class PickupOrderReportTest extends CommonMocks {
 
         OrgAddressResponse orgAddressResponse = new OrgAddressResponse();
         orgAddressResponse.setAddresses(addressMap);
-        when(v1ServiceUtil.fetchOrgInfoFromV1(any())).thenReturn(orgAddressResponse);
+
         when(modelMapper.map(shipmentModel.getAdditionalDetails().getExportBroker(), Parties.class)).thenReturn(parties);
         when(modelMapper.map(shipmentModel.getAdditionalDetails().getImportBroker(), Parties.class)).thenReturn(parties);
         when(modelMapper.map(shipmentModel.getConsigner(), Parties.class)).thenReturn(parties2);
@@ -293,8 +301,8 @@ class PickupOrderReportTest extends CommonMocks {
         containerMap.put(GROSS_VOLUME, BigDecimal.TEN);
         containerMap.put(GROSS_WEIGHT, BigDecimal.TEN);
         containerMap.put(SHIPMENT_PACKS, BigDecimal.TEN);
-        containerMap.put(TareWeight, BigDecimal.TEN);
-        containerMap.put(VGMWeight, BigDecimal.TEN);
+        containerMap.put(TARE_WEIGHT, BigDecimal.TEN);
+        containerMap.put(VGM_WEIGHT, BigDecimal.TEN);
         containerMap.put(NET_WEIGHT, BigDecimal.TEN);
         mockRakc(pickUpOrderReportModel.hblModel.getShipment());
         Map<String, Object> dictionary = new HashMap<>();
@@ -302,7 +310,6 @@ class PickupOrderReportTest extends CommonMocks {
         chargeMap.put(CHARGE_TYPE_CODE, "AgentCharge");
         dictionary.put(CHARGES_SMALL, Arrays.asList(chargeMap));
         when(hblReport.populateDictionary(any())).thenReturn(dictionary);
-        mockTenantSettings();
         assertNotNull(pickupOrderReport.populateDictionary(pickUpOrderReportModel));
     }
 
@@ -329,5 +336,55 @@ class PickupOrderReportTest extends CommonMocks {
         when(hblReport.getDocumentModel(any())).thenReturn(hblModel);
         mockShipmentSettings();
         assertNotNull(pickupOrderReport.getDocumentModel(123L));
+    }
+
+    @Test
+    void getDocumentModel_CountryAirCargoSecurity() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setCountryAirCargoSecurity(true);
+        ShipmentModel shipmentModel = new ShipmentModel();
+        shipmentModel.setTransportMode(AIR);
+        shipmentModel.setTransportInstructionId(12L);
+        shipmentModel.setPickupDeliveryDetailsInstructions(List.of(PickupDeliveryDetailsModel.builder()
+                .id(12L)
+                .agentDetail(new PartiesModel())
+                .actualPickup(LocalDateTime.now())
+                .actualDelivery(LocalDateTime.now())
+                .build()));
+        shipmentModel.setDirection(EXP);
+        shipmentModel.setContainersList(Arrays.asList(new ContainerModel()));
+        shipmentModel.setPickupDetails(new PickupDeliveryDetailsModel());
+        HblModel hblModel = new HblModel();
+        hblModel.setShipment(shipmentModel);
+
+        when(hblReport.getDocumentModel(any())).thenReturn(hblModel);
+        mockShipmentSettings();
+
+        assertThrows(ValidationException.class, () -> pickupOrderReport.getDocumentModel(123L));
+    }
+
+    @Test
+    void getDocumentModel_CountryAirCargoSecurity2() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setCountryAirCargoSecurity(true);
+        UserContext.getUser().getPermissions().put(PermissionConstants.AIR_DG, true);
+        ShipmentModel shipmentModel = new ShipmentModel();
+        shipmentModel.setTransportMode(AIR);
+        shipmentModel.setTransportInstructionId(12L);
+        shipmentModel.setPickupDeliveryDetailsInstructions(List.of(PickupDeliveryDetailsModel.builder()
+                .id(12L)
+                .agentDetail(new PartiesModel())
+                .actualPickup(LocalDateTime.now())
+                .actualDelivery(LocalDateTime.now())
+                .build()));
+        shipmentModel.setDirection(EXP);
+        shipmentModel.setContainersList(Arrays.asList(new ContainerModel()));
+        shipmentModel.setPickupDetails(new PickupDeliveryDetailsModel());
+        shipmentModel.setContainsHazardous(true);
+        HblModel hblModel = new HblModel();
+        hblModel.setShipment(shipmentModel);
+
+        when(hblReport.getDocumentModel(any())).thenReturn(hblModel);
+        mockShipmentSettings();
+
+        assertThrows(ValidationException.class, () -> pickupOrderReport.getDocumentModel(123L));
     }
 }

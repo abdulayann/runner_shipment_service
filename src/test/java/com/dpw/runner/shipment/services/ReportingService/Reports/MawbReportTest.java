@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.dpw.runner.shipment.services.CommonMocks;
+import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
 import com.dpw.runner.shipment.services.ReportingService.Models.HawbModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ConsolidationModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.ShipmentModel;
@@ -118,7 +119,7 @@ class MawbReportTest extends CommonMocks {
                 ShipmentSettingsDetails.builder().airDGFlag(true).build());
         UsersDto usersDto = new UsersDto();
         Map<String, Boolean> permissions = new HashMap<>();
-        permissions.put(PermissionConstants.airDG, true);
+        permissions.put(PermissionConstants.AIR_DG, true);
         usersDto.setPermissions(permissions);
         UserContext.setUser(usersDto);
     }
@@ -264,5 +265,107 @@ class MawbReportTest extends CommonMocks {
     void populateDictionary() {
         HawbModel hawbModel = new HawbModel();
         Assertions.assertNotNull(mawbReport.populateDictionary(hawbModel));
+    }
+
+    @Test
+    void getDocumentModel_CountryAirCargoSecurity_MAWB() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setCountryAirCargoSecurity(true);
+        ConsolidationDetails consolidationDetails1 = new ConsolidationDetails();
+        consolidationDetails1.setId(123L);
+        when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(consolidationDetails1);
+        ConsolidationModel consolidationModel = new ConsolidationModel();
+        consolidationModel.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationModel.setShipmentType(Constants.DIRECTION_EXP);
+        when(modelMapper.map(consolidationDetails1, ConsolidationModel.class)).thenReturn(consolidationModel);
+        mawbReport.isDMawb = false;
+        mockShipmentSettings();
+
+        Assertions.assertThrows(ValidationException.class, () -> mawbReport.getDocumentModel(123L));
+    }
+
+    @Test
+    void getDocumentModel_CountryAirCargoSecurity_MAWB2() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setCountryAirCargoSecurity(true);
+        ConsolidationDetails consolidationDetails1 = new ConsolidationDetails();
+        consolidationDetails1.setId(123L);
+        when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(consolidationDetails1);
+        ConsolidationModel consolidationModel = new ConsolidationModel();
+        consolidationModel.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationModel.setShipmentType(Constants.DIRECTION_EXP);
+        when(modelMapper.map(consolidationDetails1, ConsolidationModel.class)).thenReturn(consolidationModel);
+        mawbReport.isDMawb = false;
+        mawbReport.printType = ReportConstants.ORIGINAL;
+        mockShipmentSettings();
+
+        Assertions.assertThrows(ValidationException.class, () -> mawbReport.getDocumentModel(123L));
+    }
+
+    @Test
+    void getDocumentModel_CountryAirCargoSecurity_MAWB3() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setCountryAirCargoSecurity(true);
+        ConsolidationDetails consolidationDetails1 = new ConsolidationDetails();
+        consolidationDetails1.setId(123L);
+        when(consolidationDetailsDao.findConsolidationsById(any())).thenReturn(consolidationDetails1);
+        ConsolidationModel consolidationModel = new ConsolidationModel();
+        consolidationModel.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        consolidationModel.setShipmentType(Constants.DIRECTION_EXP);
+        consolidationModel.setHazardous(true);
+        when(modelMapper.map(consolidationDetails1, ConsolidationModel.class)).thenReturn(consolidationModel);
+        mawbReport.isDMawb = false;
+        mawbReport.printType = ReportConstants.ORIGINAL;
+        mockShipmentSettings();
+
+        Assertions.assertThrows(ValidationException.class, () -> mawbReport.getDocumentModel(123L));
+    }
+
+    @Test
+    void getDocumentModel_CountryAirCargoSecurity_DMAWB() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setCountryAirCargoSecurity(true);
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        ShipmentModel shipmentModel = new ShipmentModel();
+        shipmentModel.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentModel.setDirection(Constants.DIRECTION_EXP);
+        shipmentModel.setConsolidationList(Arrays.asList(new ConsolidationModel()));
+        when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
+        mawbReport.isDMawb = true;
+
+        mockShipmentSettings();
+
+        Assertions.assertThrows(ValidationException.class, () -> mawbReport.getDocumentModel(123L));
+    }
+
+    @Test
+    void getDocumentModel_CountryAirCargoSecurity_DMAWB2() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setCountryAirCargoSecurity(true);
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        ShipmentModel shipmentModel = new ShipmentModel();
+        shipmentModel.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentModel.setDirection(Constants.DIRECTION_EXP);
+        shipmentModel.setConsolidationList(Arrays.asList(new ConsolidationModel()));
+        when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
+        mawbReport.isDMawb = true;
+        mawbReport.printType = ReportConstants.ORIGINAL;
+
+        mockShipmentSettings();
+
+        Assertions.assertThrows(ValidationException.class, () -> mawbReport.getDocumentModel(123L));
+    }
+
+    @Test
+    void getDocumentModel_CountryAirCargoSecurity_DMAWB3() {
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setCountryAirCargoSecurity(true);
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        ShipmentModel shipmentModel = new ShipmentModel();
+        shipmentModel.setTransportMode(Constants.TRANSPORT_MODE_AIR);
+        shipmentModel.setDirection(Constants.DIRECTION_EXP);
+        shipmentModel.setContainsHazardous(true);
+        shipmentModel.setConsolidationList(Arrays.asList(new ConsolidationModel()));
+        when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
+        mawbReport.isDMawb = true;
+        mawbReport.printType = ReportConstants.ORIGINAL;
+
+        mockShipmentSettings();
+
+        Assertions.assertThrows(ValidationException.class, () -> mawbReport.getDocumentModel(123L));
     }
 }

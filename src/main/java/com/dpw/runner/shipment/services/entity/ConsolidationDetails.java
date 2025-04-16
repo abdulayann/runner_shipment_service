@@ -16,6 +16,8 @@ import javax.persistence.*;
 import javax.validation.constraints.Size;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -248,6 +250,11 @@ public class ConsolidationDetails extends MultiTenancy {
     @Size(max=50, message = "max size is 50 for edi_transaction_id")
     private String ediTransactionId;
 
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "triangulation_partner_consolidation", joinColumns = @JoinColumn(name = "consolidation_id"))
+    @BatchSize(size = 50)
+    private List<TriangulationPartner> triangulationPartnerList;
+
     @Column(name = "triangulation_partner")
     @TenantIdData
     private Long triangulationPartner;
@@ -300,6 +307,14 @@ public class ConsolidationDetails extends MultiTenancy {
     @JoinColumn(name = "departure_details_id", referencedColumnName = "id")
     private ArrivalDepartureDetails departureDetails;
 
+    @MasterData(type = MasterDataType.COUNTRIES)
+    @Column(name = "sending_agent_country")
+    private String sendingAgentCountry;
+
+    @MasterData(type = MasterDataType.COUNTRIES)
+    @Column(name = "receiving_agent_country")
+    private String receivingAgentCountry;
+
     @OneToOne(targetEntity = Parties.class, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinColumn(name = "sending_agent_id", referencedColumnName = "id")
     @OrganizationData
@@ -343,10 +358,6 @@ public class ConsolidationDetails extends MultiTenancy {
     @BatchSize(size = 50)
     private List<Containers> containersList;
 
-//    @OneToMany(fetch = FetchType.LAZY, mappedBy = "consolidationId")
-//    @BatchSize(size = 50)
-//    private List<TruckDriverDetails> truckDriverDetails;
-
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "consolidationId")
     @BatchSize(size = 50)
     private List<Jobs> jobsList;
@@ -367,7 +378,7 @@ public class ConsolidationDetails extends MultiTenancy {
     @JsonIgnoreProperties(value = "consolidationList", allowSetters = true)
     @BatchSize(size = 50)
     @WhereJoinTable(clause = "is_attachment_done = 'True'")
-    private List<ShipmentDetails> shipmentsList;
+    private Set<ShipmentDetails> shipmentsList;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "entityId")
     @Where(clause = "entity_type = 'CONSOLIDATION_ADDRESSES'")
@@ -432,6 +443,9 @@ public class ConsolidationDetails extends MultiTenancy {
     @MasterData(type = MasterDataType.SCI)
     private String sci;
 
+    @Column(name = "additional_security_information")
+    private String additionalSecurityInformation;
+
     @Column(name = "cfs_cut_off_date")
     private LocalDateTime cfsCutOffDate;
 
@@ -446,10 +460,34 @@ public class ConsolidationDetails extends MultiTenancy {
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "consolidationId")
     @Where(clause = "is_attachment_done = 'false'")
+    @BatchSize(size = 50)
     private List<ConsoleShipmentMapping> consoleShipmentMappings;
 
     @Column(name = "department")
     @Size(max=32, message = "max size is 32 for department")
     @MasterData(type = MasterDataType.DEPARTMENT_MASTER_LIST)
     private String department;
+
+    @Column(name = "is_network_file")
+    private Boolean isNetworkFile;
+
+    @Column(name = "is_receiving_branch_manually")
+    private Boolean isReceivingBranchManually;
+
+    @Column(name = "is_transferred_to_receiving_branch")
+    private Boolean isTransferredToReceivingBranch;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ConsolidationDetails that = (ConsolidationDetails) o;
+        return Objects.equals(getId(), that.getId());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getId());
+    }
+
 }

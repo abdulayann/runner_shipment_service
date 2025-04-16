@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 public class UserServiceMavani implements IUserService {
 
     @Override
-    public UsersDto getUserByToken(String key, String token) {
+    public UsersDto getUserByToken(String token) {
         return new UsersDto();
-    } // TODO- actually fetch from mavani
+    } // LATER- actually fetch from mavani
 }

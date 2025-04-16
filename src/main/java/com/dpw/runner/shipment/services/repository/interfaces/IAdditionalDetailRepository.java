@@ -6,9 +6,10 @@ import com.dpw.runner.shipment.services.utils.Generated;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-
 import java.util.List;
 import java.util.Optional;
+
+
 @Generated
 public interface IAdditionalDetailRepository extends MultiTenancyRepository<AdditionalDetails> {
     List<AdditionalDetails> findAll();
@@ -17,4 +18,6 @@ public interface IAdditionalDetailRepository extends MultiTenancyRepository<Addi
         Specification<AdditionalDetails> spec = (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.equal(root.get("id"), id);
         return findOne(spec);
     }
+
+    List<AdditionalDetails> findByIdIn(List<Long> ids);
 }

@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.BatchSize;
 
 import javax.persistence.*;
 import java.math.BigDecimal;
@@ -197,9 +198,16 @@ public class BookingCharges extends MultiTenancy {
     @Column(name = "revenue_line_total")
     private BigDecimal revenueLineTotal;
 
+    @Column(name = "internal_remarks", length = 5000)
+    private String internalRemarks;
+
+    @Column(name = "external_remarks", length = 5000)
+    private String externalRemarks;
+
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "container_charges_mapping",
             joinColumns = {@JoinColumn(name = "charge_id")},
             inverseJoinColumns = {@JoinColumn(name = "container_id")})
+    @BatchSize(size = 50)
     private List<Containers> containersList;
 }

@@ -1,10 +1,10 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.INotesDao;
 import com.dpw.runner.shipment.services.entity.Notes;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
@@ -16,7 +16,6 @@ import com.dpw.runner.shipment.services.repository.interfaces.INotesRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -29,9 +28,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListRequestFromEntityId;
 
 @Repository
 @Slf4j
@@ -86,18 +82,13 @@ public class NotesDao implements INotesDao {
         String responseMsg;
         List<Notes> responseNotes = new ArrayList<>();
         try {
-            // TODO- Handle Transactions here
-            Map<Long, Notes> hashMap;
-//            if(!Objects.isNull(notesIdList) && !notesIdList.isEmpty()) {
-                ListCommonRequest listCommonRequest = constructListRequestFromEntityId(entityId, entityType);
-                Pair<Specification<Notes>, Pageable> pair = fetchData(listCommonRequest, Notes.class);
-                Page<Notes> notes = findAll(pair.getLeft(), pair.getRight());
-                hashMap = notes.stream()
+            // LATER- Handle Transactions here
+            List<Notes> notes = findByEntityIdAndEntityType(entityId, entityType);
+            Map<Long, Notes> hashMap = notes.stream()
                         .collect(Collectors.toMap(Notes::getId, Function.identity()));
-//            }
             Map<Long, Notes> copyHashMap = new HashMap<>(hashMap);
             List<Notes> notesRequestList = new ArrayList<>();
-            if (notesList != null && notesList.size() != 0) {
+            if (notesList != null && !notesList.isEmpty()) {
                 for (Notes request : notesList) {
                     Long id = request.getId();
                     if (id != null) {
@@ -140,6 +131,7 @@ public class NotesDao implements INotesDao {
             try {
                 auditLogService.addAuditLog(
                         AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                 .newData(req)
                                 .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Notes.class) : null)
                                 .parent(Objects.equals(entityType, Constants.SHIPMENT) ? ShipmentDetails.class.getSimpleName() : entityType)
@@ -185,6 +177,7 @@ public class NotesDao implements INotesDao {
             try {
                 auditLogService.addAuditLog(
                         AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                 .newData(req)
                                 .prevData(oldEntityJsonString != null ? jsonHelper.readFromJson(oldEntityJsonString, Notes.class) : null)
                                 .parent(Objects.equals(entityType, Constants.SHIPMENT) ? ShipmentDetails.class.getSimpleName() : entityType)
@@ -210,6 +203,7 @@ public class NotesDao implements INotesDao {
                     try {
                         auditLogService.addAuditLog(
                                 AuditLogMetaData.builder()
+                                .tenantId(UserContext.getUser().getTenantId()).userName(UserContext.getUser().Username)
                                         .newData(null)
                                         .prevData(jsonHelper.readFromJson(json, Notes.class))
                                         .parent(Objects.equals(entityType, Constants.SHIPMENT) ? ShipmentDetails.class.getSimpleName() : entityType)
@@ -233,7 +227,7 @@ public class NotesDao implements INotesDao {
         String responseMsg;
         List<Notes> responseNotes = new ArrayList<>();
         Map<UUID, Notes> notesMap = new HashMap<>();
-        if(oldEntityList != null && oldEntityList.size() > 0) {
+        if(oldEntityList != null && !oldEntityList.isEmpty()) {
             for (Notes entity:
                     oldEntityList) {
                 notesMap.put(entity.getGuid(), entity);
@@ -242,7 +236,7 @@ public class NotesDao implements INotesDao {
         try {
             Notes oldEntity;
             List<Notes> notesRequestList = new ArrayList<>();
-            if (notesList != null && notesList.size() != 0) {
+            if (notesList != null && !notesList.isEmpty()) {
                 for (Notes request : notesList) {
                     oldEntity = notesMap.get(request.getGuid());
                     if(oldEntity != null) {

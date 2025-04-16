@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.utils.Generated;
 import lombok.Data;
 import org.springframework.stereotype.Component;
 
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -53,6 +54,7 @@ public class SBConfiguration {
                 .connectionString(connectionString)
                 .processor()
                 .disableAutoComplete()
+                .maxAutoLockRenewDuration(Duration.ofMinutes(1))
                 .maxConcurrentCalls(1)
                 .receiveMode(ServiceBusReceiveMode.PEEK_LOCK)
                 .topicName(topicName)

@@ -1,7 +1,20 @@
 package com.dpw.runner.shipment.services.service_bus.consumer;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.azure.core.util.BinaryData;
-import com.azure.messaging.servicebus.*;
+import com.azure.messaging.servicebus.ServiceBusErrorContext;
+import com.azure.messaging.servicebus.ServiceBusErrorSource;
+import com.azure.messaging.servicebus.ServiceBusException;
+import com.azure.messaging.servicebus.ServiceBusFailureReason;
+import com.azure.messaging.servicebus.ServiceBusProcessorClient;
+import com.azure.messaging.servicebus.ServiceBusReceivedMessage;
+import com.azure.messaging.servicebus.ServiceBusReceivedMessageContext;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IEventService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
@@ -16,8 +29,7 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import java.lang.reflect.Field;
 
 @ExtendWith(MockitoExtension.class)
 class TrackingConsumerTest {
@@ -51,7 +63,7 @@ class TrackingConsumerTest {
     }
 
     @Test
-    void startReceiver() {
+    void startReceiver() throws NoSuchFieldException, IllegalAccessException {
         ServiceBusConfigProperties.TrackingService config = new ServiceBusConfigProperties.TrackingService();
         config.setConnectionString("");
         config.setTopicName("");
@@ -61,6 +73,11 @@ class TrackingConsumerTest {
 
         when(serviceBusConfigProperties.getTrackingService()).thenReturn(config);
         when(sbConfiguration.getSessionProcessorClient(anyString(), anyString(), anyString(), any(), any())).thenReturn(processorMock);
+
+        // Use reflection to set startConsumer to true
+        Field startConsumerField = TrackingConsumer.class.getDeclaredField("startConsumer");
+        startConsumerField.setAccessible(true);
+        startConsumerField.set(trackingConsumer, true);
 
         trackingConsumer.startReceiver();
 
@@ -72,7 +89,7 @@ class TrackingConsumerTest {
         // Happy flow
         when(contextMock.getMessage()).thenReturn(messageMock); // Mock the message retrieval
         when(messageMock.getBody()).thenReturn(BinaryData.fromString("This is a valid message"));
-        when(eventService.processUpstreamTrackingMessage(any())).thenReturn(true);
+        when(eventService.processUpstreamTrackingMessage(any(), any())).thenReturn(true);
 
         trackingConsumer.processMessage(contextMock);
 
@@ -86,7 +103,7 @@ class TrackingConsumerTest {
         // Given an invalid message
         when(contextMock.getMessage()).thenReturn(messageMock); // Mock the message retrieval
         when(messageMock.getBody()).thenReturn(BinaryData.fromString("This is an invalid message"));
-        when(eventService.processUpstreamTrackingMessage(any())).thenReturn(true);
+        when(eventService.processUpstreamTrackingMessage(any(), any())).thenReturn(true);
 
         trackingConsumer.processMessage(contextMock);
 
@@ -100,7 +117,7 @@ class TrackingConsumerTest {
         // Given an invalid message
         when(contextMock.getMessage()).thenReturn(messageMock); // Mock the message retrieval
         when(messageMock.getBody()).thenReturn(BinaryData.fromString("This is a valid message"));
-        when(eventService.processUpstreamTrackingMessage(any())).thenReturn(false);
+        when(eventService.processUpstreamTrackingMessage(any(), any())).thenReturn(false);
 
         trackingConsumer.processMessage(contextMock);
 

@@ -1,54 +1,8 @@
 package com.dpw.runner.shipment.services.utils;
 
-import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_APPROVAL_APPROVE_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_APPROVAL_REJECTION_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_APPROVAL_REQUEST_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_COMMERCIAL_APPROVAL_APPROVE_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_COMMERCIAL_APPROVAL_REJECTION_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_COMMERCIAL_APPROVAL_REQUEST_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.REQUESTER_REMARKS;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_DETACH_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PULL_ACCEPTED_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PULL_REJECTED_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PULL_REQUESTED_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PUSH_ACCEPTED_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PUSH_REJECTED_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_PUSH_REQUESTED_EMAIL_TYPE;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.TIME;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.USERNAME;
-import static com.dpw.runner.shipment.services.commons.constants.PermissionConstants.OCEAN_DG_APPROVER;
-import static com.dpw.runner.shipment.services.commons.constants.PermissionConstants.OCEAN_DG_COMMERCIAL_APPROVER;
-import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_REQUESTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_DETACH;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_ACCEPTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_REJECTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PULL_REQUESTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PUSH_ACCEPTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PUSH_REJECTED;
-import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.andCriteria;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyBoolean;
-import static org.mockito.Mockito.anyString;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
+import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants;
+import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.adapters.interfaces.IMDMServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancy;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
@@ -56,42 +10,34 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.interbranch.InterBranchContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
+import com.dpw.runner.shipment.services.commons.constants.MdmConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogChanges;
 import com.dpw.runner.shipment.services.commons.requests.Criteria;
 import com.dpw.runner.shipment.services.commons.requests.FilterCriteria;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.dao.impl.ConsolidationDao;
+import com.dpw.runner.shipment.services.dao.impl.ShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IAuditLogDao;
 import com.dpw.runner.shipment.services.dao.interfaces.ICarrierDetailsDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentSettingsDao;
-import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
-import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
-import com.dpw.runner.shipment.services.dto.request.PackingRequest;
-import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.dto.request.*;
+import com.dpw.runner.shipment.services.dto.request.awb.AwbGoodsDescriptionInfo;
 import com.dpw.runner.shipment.services.dto.request.intraBranch.InterBranchDto;
 import com.dpw.runner.shipment.services.dto.request.ocean_dg.OceanDGRequest;
-import com.dpw.runner.shipment.services.dto.v1.response.CoLoadingMAWBDetailsResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.TaskCreateResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.TenantDetailsByListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.UsersRoleListResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.AchievedQuantities;
-import com.dpw.runner.shipment.services.entity.Allocations;
-import com.dpw.runner.shipment.services.entity.AuditLog;
-import com.dpw.runner.shipment.services.entity.CarrierDetails;
-import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Containers;
-import com.dpw.runner.shipment.services.entity.Events;
-import com.dpw.runner.shipment.services.entity.Packing;
-import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.dto.response.*;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.SendEmailDto;
+import com.dpw.runner.shipment.services.dto.v1.response.*;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
+import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
@@ -99,54 +45,55 @@ import com.dpw.runner.shipment.services.service.impl.ShipmentService;
 import com.dpw.runner.shipment.services.service.impl.TenantSettingsService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.itextpdf.text.BaseColor;
-import com.itextpdf.text.Document;
-import com.itextpdf.text.DocumentException;
-import com.itextpdf.text.Element;
-import com.itextpdf.text.Paragraph;
-import com.itextpdf.text.Rectangle;
+import com.itextpdf.text.*;
 import com.itextpdf.text.exceptions.InvalidPdfException;
-import com.itextpdf.text.pdf.BaseFont;
-import com.itextpdf.text.pdf.PdfContentByte;
-import com.itextpdf.text.pdf.PdfGState;
-import com.itextpdf.text.pdf.PdfReader;
-import com.itextpdf.text.pdf.PdfStamper;
-import com.itextpdf.text.pdf.PdfWriter;
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import javax.validation.ConstraintViolation;
-import javax.validation.ConstraintViolationException;
+import com.itextpdf.text.pdf.*;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
-import org.mockito.InOrder;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
+import org.modelmapper.TypeToken;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.transaction.TransactionSystemException;
+
+import javax.validation.ConstraintViolation;
+import javax.validation.ConstraintViolationException;
+import java.awt.image.BufferedImage;
+import java.io.*;
+import java.lang.reflect.InvocationTargetException;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.List;
+import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.stream.Stream;
+
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETA_CAPS;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.ETD_CAPS;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
+import static com.dpw.runner.shipment.services.commons.constants.PermissionConstants.OCEAN_DG_APPROVER;
+import static com.dpw.runner.shipment.services.commons.constants.PermissionConstants.OCEAN_DG_COMMERCIAL_APPROVER;
+import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_REQUESTED;
+import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.*;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.andCriteria;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(CONCURRENT)
@@ -195,20 +142,50 @@ class CommonUtilsTest {
     private ShipmentService shipmentService;
 
     @Mock
+    private ShipmentDetails shipmentDetails;
+
+    @Mock
+    private CarrierDetails carrierDetailsMock;
+
+    @Mock
+    private V1TenantSettingsResponse v1TenantSettingsResponse;
+
+    @Mock
+    private EmailTemplatesRequest emailTemplateModel;
+
+    @Mock
     private ICarrierDetailsDao carrierDetailsDao;
 
     @Mock
     private MasterDataUtils masterDataUtils;
 
+    @Mock
+    private ShipmentDao shipmentDao;
+
+    @Mock
+    private ConsolidationDao consolidationDetailsDao;
+
+    @Mock
+    private IMDMServiceAdapter mdmServiceAdapter;
+
+
     private PdfContentByte dc;
     private BaseFont font;
     private Rectangle realPageSize;
     private Rectangle rect;
-    private PdfReader reader;
-    private PdfStamper stamper;
-    private ByteArrayOutputStream outputStream;
-    private byte[] pdfBytes;
 
+    static Stream<Arguments> pTestCases() {
+        return Stream.of(
+                Arguments.of("Entity", new HashSet<>(), "Response"),
+                Arguments.of("Entity", Set.of("foo"), "Response"),
+                Arguments.of("Entity", Set.of("No such field: {}", "foo"), "Response"),
+                Arguments.of("Entity", Collections.singleton(null), "Response"),
+                Arguments.of("Entity", Collections.singleton(""), "Response"),
+                Arguments.of(new HashMap<>(), Set.of("foo"), "Response"),
+                Arguments.of(null, Set.of("foo"), "Response"),
+                Arguments.of(Map.of("foo", "42"), Set.of("foo"), "Response")
+        );
+    }
     @AfterEach
     void tearDown() {
         commonUtils.syncExecutorService.shutdown();
@@ -220,10 +197,6 @@ class CommonUtilsTest {
         font = BaseFont.createFont(BaseFont.HELVETICA, BaseFont.WINANSI, BaseFont.EMBEDDED);
         realPageSize = new Rectangle(0, 0, 595, 842); // A4 size
         rect = new Rectangle(100, 100, 500, 742);
-        reader = mock(PdfReader.class);
-        stamper = mock(PdfStamper.class);
-        outputStream = new ByteArrayOutputStream();
-        pdfBytes = new byte[0];
 
         MockitoAnnotations.initMocks(this);
         commonUtils.syncExecutorService = Executors.newFixedThreadPool(2);
@@ -234,6 +207,9 @@ class CommonUtilsTest {
         mockUser.setUsername("user");
         mockUser.setPermissions(new HashMap<>());
         mockUser.setEmail("email");
+        mockUser.setCode("TEST_CODE");
+        mockUser.setUsername("TestUser");
+        mockUser.setTenantDisplayName("Test Tenant");
         UserContext.setUser(mockUser);
     }
 
@@ -422,7 +398,7 @@ class CommonUtilsTest {
 
     @Test
     void testAddWaterMark() {
-        CommonUtils.AddWaterMark(dc, "Test Watermark", font, 50, 35, new BaseColor(70, 70, 255), realPageSize, rect);
+        CommonUtils.addWaterMark(dc, "Test Watermark", font, 50, 35, new BaseColor(70, 70, 255), realPageSize, rect);
 
         InOrder inOrder = inOrder(dc);
         inOrder.verify(dc).saveState();
@@ -435,7 +411,7 @@ class CommonUtilsTest {
         inOrder.verify(dc).restoreState();
     }
 
-    private byte[] createSamplePdf() throws DocumentException, IOException {
+    private byte[] createSamplePdf() throws DocumentException{
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         Document document = new Document();
         PdfWriter.getInstance(document, baos);
@@ -490,21 +466,21 @@ class CommonUtilsTest {
     }
 
     @Test
-    void IsStringNullOrEmpty_NullInput_ReturnsTrue() {
-        boolean result = CommonUtils.IsStringNullOrEmpty(null);
+    void isStringNullOrEmpty_NullInput_ReturnsTrue() {
+        boolean result = CommonUtils.isStringNullOrEmpty(null);
         assertTrue(result);
     }
 
     @Test
-    void IsStringNullOrEmpty_EmptyStringInput_ReturnsTrue() {
-        boolean result = CommonUtils.IsStringNullOrEmpty("");
+    void isStringNullOrEmpty_EmptyStringInput_ReturnsTrue() {
+        boolean result = CommonUtils.isStringNullOrEmpty("");
         assertTrue(result);
     }
 
     @Test
-    void IsStringNullOrEmpty_NonEmptyStringInput_ReturnsFalse() {
+    void isStringNullOrEmpty_NonEmptyStringInput_ReturnsFalse() {
         String input = "Hello";
-        boolean result = CommonUtils.IsStringNullOrEmpty(input);
+        boolean result = CommonUtils.isStringNullOrEmpty(input);
         assertFalse(result);
     }
 
@@ -531,7 +507,7 @@ class CommonUtilsTest {
     @Test
     void testImageToByte() throws IOException {
         BufferedImage img = new BufferedImage(100, 100, BufferedImage.TYPE_INT_RGB);
-        byte[] result = CommonUtils.ImageToByte(img);
+        byte[] result = CommonUtils.imageToByte(img);
 
         assertNotNull(result);
     }
@@ -539,12 +515,12 @@ class CommonUtilsTest {
     @Test
     void testHasUnsupportedCharacters() {
         String input = "ValidString123";
-        boolean result = CommonUtils.HasUnsupportedCharacters(input);
+        boolean result = CommonUtils.hasUnsupportedCharacters(input);
 
         assertFalse(result);
 
         input = "InvalidString\u001F";
-        result = CommonUtils.HasUnsupportedCharacters(input);
+        result = CommonUtils.hasUnsupportedCharacters(input);
 
         assertTrue(result);
     }
@@ -574,6 +550,35 @@ class CommonUtilsTest {
     }
 
     @Test
+    void testAddBlankPage() throws IOException, DocumentException {
+        int originalDocumentPageCount = 2;
+        byte[] originalPdf = createSamplePdf(originalDocumentPageCount);
+        byte[] updatedPdf = CommonUtils.addBlankPage(originalPdf);
+
+        PdfReader pdfReader = new PdfReader(updatedPdf);
+        int pageCount = pdfReader.getNumberOfPages();
+        pdfReader.close();
+
+        // Assert that the updated PDF now has 3 pages
+        assertEquals(3, pageCount, "The PDF should have 3 pages after adding a blank page.");
+    }
+
+    private byte[] createSamplePdf(int pageCount) throws DocumentException {
+        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+        Document document = new Document();
+        PdfWriter.getInstance(document, byteArrayOutputStream);
+
+        document.open();
+        for (int i = 0; i < pageCount; i++) {
+            document.newPage();
+            document.add(new com.itextpdf.text.Paragraph("Page " + (i + 1)));
+        }
+        document.close();
+
+        return byteArrayOutputStream.toByteArray();
+    }
+
+    @Test
     void testGetErrorResponseMessage_WithTransactionSystemException() {
         Throwable rootCause = mock(Throwable.class);
         when(rootCause.getMessage()).thenReturn("Root cause message");
@@ -581,7 +586,7 @@ class CommonUtilsTest {
         TransactionSystemException transactionSystemException = new TransactionSystemException("Transaction failed");
         transactionSystemException.initCause(rootCause);
 
-        String result = CommonUtils.getErrorResponseMessage(transactionSystemException, CommonUtilsTest.class);
+        String result = CommonUtils.getErrorResponseMessage(transactionSystemException);
 
         assertEquals("Root cause message", result);
     }
@@ -589,11 +594,11 @@ class CommonUtilsTest {
     @Test
     void testGetErrorResponseMessage_WithGenericException() {
         Exception genericException = new Exception("Generic exception message");
-        String result = CommonUtils.getErrorResponseMessage(genericException, CommonUtilsTest.class);
+        String result = CommonUtils.getErrorResponseMessage(genericException);
         assertEquals("Generic exception message", result);
     }
 
-    private byte[] createSamplePdfWithMultiplePages() throws DocumentException, IOException {
+    private byte[] createSamplePdfWithMultiplePages() throws DocumentException{
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         Document document = new Document();
         PdfWriter.getInstance(document, baos);
@@ -953,12 +958,112 @@ class CommonUtilsTest {
         carrierDetails.setOriginPort("test");
         carrierDetails.setDestination("test");
         carrierDetails.setDestinationPort("test");
-        Map<String, UnlocationsResponse> unlocationsMap = new HashMap<>();
-        unlocationsMap.put("test", new UnlocationsResponse());
-        when(masterDataUtils.getLocationData(any())).thenReturn(unlocationsMap);
+        Map<String, EntityTransferUnLocations> unlocationsMap = new HashMap<>();
+        unlocationsMap.put("test", new EntityTransferUnLocations());
+        when(masterDataUtils.getLocationDataFromCache(any(), anyString())).thenReturn(unlocationsMap);
         commonUtils.updateUnLocData(carrierDetails, null);
         verify(carrierDetailsDao, times(0)).saveUnLocCodes(any());
     }
+
+    @Test
+    void testUpdateCarrierUnLocData() {
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setOrigin("test");
+        carrierDetails.setOriginPort("test");
+        carrierDetails.setDestination("test");
+        carrierDetails.setDestinationPort("test");
+        String mockLocCode = "LocCode-test";
+        Map<String, EntityTransferUnLocations> unlocationsMap = new HashMap<>();
+        unlocationsMap.put("test", EntityTransferUnLocations.builder().LocCode(mockLocCode).build());
+        commonUtils.updateCarrierUnLocData(carrierDetails, unlocationsMap);
+        assertEquals(carrierDetails.getOriginLocCode(), mockLocCode);
+        assertEquals(carrierDetails.getDestinationLocCode(), mockLocCode);
+        assertEquals(carrierDetails.getOriginPortLocCode(), mockLocCode);
+        assertEquals(carrierDetails.getDestinationPortLocCode(), mockLocCode);
+    }
+
+    @Test
+    void testUpdateCarrierUnLocData_FailsToUpdateInCaseOfError() {
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setOrigin("test");
+        carrierDetails.setOriginPort("test");
+        carrierDetails.setDestination("test");
+        carrierDetails.setDestinationPort("test");
+        commonUtils.updateCarrierUnLocData(carrierDetails, null);
+        assertEquals(null, carrierDetails.getOriginLocCode());
+    }
+
+    @Test
+    void testUpdateRoutingUnLocData() {
+        Routings routings = new Routings();
+        routings.setPol("test");
+        routings.setPod("test");
+        String mockLocCode = "LocCode-test";
+        Map<String, EntityTransferUnLocations> unlocationsMap = new HashMap<>();
+        unlocationsMap.put("test", EntityTransferUnLocations.builder().LocCode(mockLocCode).build());
+        commonUtils.updateRoutingUnLocData(List.of(routings), unlocationsMap);
+        assertEquals(routings.getOriginPortLocCode(), mockLocCode);
+        assertEquals(routings.getDestinationPortLocCode(), mockLocCode);
+    }
+
+    @Test
+    void testUpdateRoutingUnLocData_FailsToUpdateInCaseOfError() {
+        Routings routings = new Routings();
+        routings.setPol("test");
+        routings.setPod("test");
+        String mockLocCode = null;
+        commonUtils.updateRoutingUnLocData(List.of(routings), null);
+        assertEquals(routings.getOriginPortLocCode(), mockLocCode);
+        assertEquals(routings.getDestinationPortLocCode(), mockLocCode);
+    }
+
+    @Test
+    void testGetChangedUnLocationFields_ForInputEntity() {
+        Routings routings = new Routings();
+        routings.setPol("testPol");
+        routings.setPod("testPod");
+        Set<String> unLocationSet = new HashSet<>();
+
+        commonUtils.getChangedUnLocationFields(routings, null, unLocationSet);
+        assertEquals(2, unLocationSet.size());
+    }
+
+    @Test
+    void testGetChangedUnLocationFields_ShouldNotChangeSetIfFieldsAreSame() {
+        Routings routings = new Routings();
+        routings.setPol("testPol");
+        routings.setPod("testPod");
+
+        Routings oldRouting = new Routings();
+        oldRouting.setPol("testPol");
+        oldRouting.setPod("testPod");
+        Set<String> unLocationSet = new HashSet<>();
+
+        commonUtils.getChangedUnLocationFields(routings, oldRouting, unLocationSet);
+        assertEquals(0, unLocationSet.size());
+    }
+
+    @Test
+    void testGetChangedUnLocationFields_ForInputList() {
+        Routings routings1 = new Routings();
+        routings1.setPol("testPol1");
+        routings1.setPod("testPod1");
+        Routings routings2 = new Routings();
+        routings2.setPol("testPol2");
+        routings2.setPod("testPod2");
+        Set<String> unLocationSet = new HashSet<>();
+
+        commonUtils.getChangedUnLocationFields(List.of(routings1, routings2), null, unLocationSet);
+        assertEquals(4, unLocationSet.size());
+    }
+
+    @Test
+    void testGetChangedUnLocationFields_ForEmptyInputList() {
+        Set<String> unLocationSet = new HashSet<>();
+        commonUtils.getChangedUnLocationFields(null, null, unLocationSet);
+        assertEquals(0, unLocationSet.size());
+    }
+
 
     @Test
     void testUpdateUnLocData_Data1() {
@@ -1061,7 +1166,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                "username");
+                "username", null);
         assertFalse(shipmentRequestedTypes.isEmpty());
     }
 
@@ -1083,7 +1188,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null);
+                null, null);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1108,7 +1213,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null);
+                null, null);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1148,7 +1253,7 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username");
+                "username", null);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1183,7 +1288,7 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username");
+                "username", null);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1207,7 +1312,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null);
+                null, null);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1229,7 +1334,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null);
+                null, null);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1268,7 +1373,7 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username");
+                "username", null);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1302,7 +1407,80 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username");
+                "username", null);
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+    }
+
+    @Test
+    void sendEmailForPullPushRequestStatusPushWithdrawRequest() throws Exception {
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder()
+                .consolidationNumber("1")
+                .sourceTenantId(1L)
+                .carrierDetails(CarrierDetails.builder().build())
+                .allocations(Allocations.builder().build())
+                .build();
+        consolidationDetails1.setTenantId(1);
+        consolidationDetails1.setCreatedBy("CreatedBy");
+        consolidationDetails1.setId(1L);
+        HashMap tenantModelMap = new HashMap<>();
+        TenantModel tenantModel = new TenantModel();
+        tenantModel.setCode("Code");
+        tenantModel.setTenantName("TenantName");
+        tenantModelMap.put(1,tenantModel);
+        commonUtils.sendEmailForPullPushRequestStatus(
+                ShipmentDetails.builder()
+                        .shipmentId("2")
+                        .carrierDetails(CarrierDetails.builder().build())
+                        .build(),
+                consolidationDetails1,
+                SHIPMENT_PUSH_WITHDRAW,
+                "rejectRemarks",
+                new HashMap<>() {{
+                    put(SHIPMENT_PUSH_WITHDRAW, EmailTemplatesRequest.builder().body("").subject("").build());
+                }},
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                null, tenantModelMap);
+        verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
+    }
+
+    @Test
+    void sendEmailForPullPushRequestStatusPullWithdrawRequest() throws Exception {
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder()
+                .consolidationNumber("1")
+                .sourceTenantId(1L)
+                .carrierDetails(CarrierDetails.builder().build())
+                .allocations(Allocations.builder().build())
+                .build();
+        consolidationDetails1.setTenantId(1);
+        consolidationDetails1.setCreatedBy("CreatedBy");
+        consolidationDetails1.setId(1L);
+        HashMap tenantModelMap = new HashMap<>();
+        TenantModel tenantModel = new TenantModel();
+        tenantModel.setCode("Code");
+        tenantModel.setTenantName("TenantName");
+        tenantModelMap.put(1,tenantModel);
+        tenantModelMap.put(null, tenantModel);
+        commonUtils.sendEmailForPullPushRequestStatus(
+                ShipmentDetails.builder()
+                        .shipmentId("2")
+                        .carrierDetails(CarrierDetails.builder().build())
+                        .build(),
+                consolidationDetails1,
+                SHIPMENT_PULL_WITHDRAW,
+                "rejectRemarks",
+                new HashMap<>() {{
+                    put(SHIPMENT_PULL_WITHDRAW, EmailTemplatesRequest.builder().body("").subject("").build());
+                }},
+                new HashSet<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                new HashMap<>(),
+                null, tenantModelMap);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1327,7 +1505,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null);
+                null, null);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1349,7 +1527,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null);
+                null, null);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1390,7 +1568,7 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username");
+                "username", null);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1426,7 +1604,7 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username");
+                "username", null);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1451,7 +1629,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null);
+                null, null);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1473,7 +1651,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null);
+                null, null);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1514,7 +1692,7 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username");
+                "username", null);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1550,7 +1728,7 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username");
+                "username", null);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1574,7 +1752,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null);
+                null, null);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1596,7 +1774,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null);
+                null, null);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1636,7 +1814,7 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username");
+                "username", null);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1671,7 +1849,7 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username");
+                "username", null);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1696,7 +1874,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null);
+                null, null);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1731,7 +1909,7 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username");
+                "username", null);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1764,7 +1942,7 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username");
+                "username", null);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -1969,7 +2147,7 @@ class CommonUtilsTest {
     }
 
     @Test
-    void testCheckIfAnyDGClass3() throws RunnerException {
+    void testCheckIfAnyDGClass3(){
         assertThrows(RunnerException.class, () -> commonUtils.checkIfAnyDGClass("7.1"));
     }
 
@@ -2142,7 +2320,7 @@ class CommonUtilsTest {
         Map<String,Object> dictionary = new HashMap<>();
         CarrierDetails carrierDetails = CarrierDetails.builder().build();
 
-        List<Containers> containersList = new ArrayList<>();
+        Set<Containers> containersList = new HashSet<>();
         containersList.add(Containers.builder().containerCount(10l).hazardous(true).build());
 
         List<Packing> packingList = new ArrayList<>();
@@ -2339,7 +2517,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null);
+                null, null);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -2361,7 +2539,7 @@ class CommonUtilsTest {
                 new HashMap<>(),
                 new HashMap<>(),
                 new HashMap<>(),
-                null);
+                null, null);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -2401,7 +2579,7 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username");
+                "username", null);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -2436,7 +2614,7 @@ class CommonUtilsTest {
                 new HashMap<>() {{
                     put(56, v1TenantSettingsResponse);
                 }},
-                "username");
+                "username", null);
         verify(notificationService, times(0)).sendEmail(any(), any(), any(), any());
     }
 
@@ -2505,4 +2683,1728 @@ class CommonUtilsTest {
         assertEquals("E123--S789-SRC-place", result);  // Expect containerNumber to be empty
     }
 
+    @Test
+    void testPopulateTemplate_withValidData_shouldPopulateDictionary() {
+
+        Map<String, Object> dictionary = new HashMap<>();
+        when(v1TenantSettingsResponse.getDPWDateFormat()).thenReturn("MM/dd/yyyy");
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(v1TenantSettingsResponse);
+        // Set up shipment details
+        when(shipmentDetails.getCreatedBy()).thenReturn("creator");
+        when(shipmentDetails.getAssignedTo()).thenReturn("assignee");
+        when(shipmentDetails.getShipmentId()).thenReturn("SHIP123");
+        when(shipmentDetails.getId()).thenReturn(1L);
+
+
+        // Set up consolidation details
+        when(consolidationDetails.getConsolidationNumber()).thenReturn("CONS123");
+        when(consolidationDetails.getMawb()).thenReturn("MAWB123");
+        when(consolidationDetails.getCarrierDetails()).thenReturn(carrierDetailsMock);
+        when(carrierDetailsMock.getFlightNumber()).thenReturn("FL123");
+
+        when(consolidationDetails.getCarrierDetails().getOriginPort()).thenReturn("origin_port");
+        when(consolidationDetails.getCarrierDetails().getShippingLine()).thenReturn("abc");
+        when(consolidationDetails.getCarrierDetails().getDestinationPort()).thenReturn("destination_port");
+
+        Map<String, UnlocationsResponse> unLocMap = new HashMap<>();
+        Map<String, CarrierMasterData> carrierMasterDataMap = new HashMap<>();
+        unLocMap.put("origin_port", new UnlocationsResponse());
+        carrierMasterDataMap.put("abc", new CarrierMasterData());
+        unLocMap.put("destination_port", new UnlocationsResponse());
+
+        // Call the method
+        commonUtils.populateShipmentImportPullAttachmentTemplate(dictionary, shipmentDetails, consolidationDetails, carrierMasterDataMap, unLocMap);
+
+        // Verify dictionary population
+        assertEquals("creator", dictionary.get(SHIPMENT_CREATE_USER));
+        assertEquals("assignee", dictionary.get(SHIPMENT_ASSIGNED_USER));
+        assertEquals("SHIP123", dictionary.get(INTERBRANCH_SHIPMENT_NUMBER_WITHOUT_LINK));
+        assertEquals("CONS123", dictionary.get(SOURCE_CONSOLIDATION_NUMBER));
+        assertEquals("MAWB123", dictionary.get(Constants.MAWB_NUMBER));
+        assertEquals("FL123", dictionary.get(FLIGHT_NUMBER1));
+
+        // Verify UserContext and tenant details
+        assertEquals("TEST_CODE", dictionary.get(CONSOL_BRANCH_CODE));
+        assertEquals("Test Tenant", dictionary.get(CONSOL_BRANCH_NAME));
+        assertEquals("TestUser", dictionary.get(ACTIONED_USER_NAME));
+    }
+
+    @Test
+    void testPopulateShipmentImportPushAttachmentTemplate_withValidData() {
+
+        Map<String, Object> dictionary = new HashMap<>();
+        when(v1TenantSettingsResponse.getDPWDateFormat()).thenReturn("MM/dd/yyyy");
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(v1TenantSettingsResponse);
+
+        // Mock shipmentDetails
+        when(shipmentDetails.getShipmentId()).thenReturn("SHIP123");
+        when(shipmentDetails.getHouseBill()).thenReturn("HB123");
+        when(shipmentDetails.getCarrierDetails()).thenReturn(carrierDetailsMock);
+
+        // Mock consolidationDetails
+        when(consolidationDetails.getCreatedBy()).thenReturn("createdByUser");
+        when(consolidationDetails.getConsolidationNumber()).thenReturn("CONSOL123");
+
+        // Mock carrier details
+        when(carrierDetailsMock.getEtd()).thenReturn(LocalDate.parse( "2024-09-20").atTime(LocalTime.MIDNIGHT));
+        when(carrierDetailsMock.getEta()).thenReturn(LocalDate.parse( "2024-09-25").atTime(LocalTime.MIDNIGHT));
+        when(carrierDetailsMock.getShippingLine()).thenReturn("LINE123");
+        when(carrierDetailsMock.getFlightNumber()).thenReturn("FLIGHT001");
+        when(carrierDetailsMock.getOriginPort()).thenReturn("ORIG001");
+        when(carrierDetailsMock.getDestinationPort()).thenReturn("DEST001");
+        when(shipmentDetails.getCarrierDetails().getOriginPort()).thenReturn("origin_port");
+        when(shipmentDetails.getCarrierDetails().getShippingLine()).thenReturn("abc");
+        when(shipmentDetails.getCarrierDetails().getDestinationPort()).thenReturn("destination_port");
+
+        Map<String, UnlocationsResponse> unLocMap = new HashMap<>();
+        Map<String, CarrierMasterData> carrierMasterDataMap = new HashMap<>();
+        unLocMap.put("origin_port", new UnlocationsResponse());
+        carrierMasterDataMap.put("abc", new CarrierMasterData());
+        unLocMap.put("destination_port", new UnlocationsResponse());
+
+        // Test method
+        commonUtils.populateShipmentImportPushAttachmentTemplate(dictionary, shipmentDetails, consolidationDetails, carrierMasterDataMap, unLocMap);
+
+        // Assert dictionary contents
+        assertEquals("createdByUser", dictionary.get(CONSOLIDATION_CREATE_USER));
+        assertEquals("SHIP123", dictionary.get(Constants.SHIPMENT_NUMBER));
+        assertEquals("Test Tenant", dictionary.get(CONSOL_BRANCH_NAME));
+        assertEquals("HB123", dictionary.get(Constants.HAWB_NUMBER));
+        assertEquals("09/20/2024", dictionary.get(ETD_CAPS));
+        assertEquals("09/25/2024", dictionary.get(ETA_CAPS));
+        assertEquals("FLIGHT001", dictionary.get(FLIGHT_NUMBER1));
+        assertEquals("TEST_CODE", dictionary.get(CONSOL_BRANCH_CODE));
+        assertEquals("TestUser", dictionary.get(ACTIONED_USER_NAME));
+    }
+
+    @Test
+    void testPopulateShipmentImportPushAttachmentTemplate_withMissingCarrierDetails() {
+
+        Map<String, Object> dictionary = new HashMap<>();
+        when(v1TenantSettingsResponse.getDPWDateFormat()).thenReturn("MM/dd/yyyy");
+        when(commonUtils.getCurrentTenantSettings()).thenReturn(v1TenantSettingsResponse);
+
+        // Mock shipmentDetails with missing carrier details
+        when(shipmentDetails.getCarrierDetails()).thenReturn(carrierDetailsMock);
+        when(carrierDetailsMock.getShippingLine()).thenReturn(null);
+
+        Map<String, UnlocationsResponse> unLocMap = new HashMap<>();
+        Map<String, CarrierMasterData> carrierMasterDataMap = new HashMap<>();
+
+        // Test method
+        commonUtils.populateShipmentImportPushAttachmentTemplate(dictionary, shipmentDetails, consolidationDetails, carrierMasterDataMap, unLocMap);
+
+        // Assert dictionary does not contain carrier details
+        assertNull(dictionary.get("CARRIER_CODE"));
+        assertNull(dictionary.get("CARRIER_NAME"));
+    }
+
+    @Test
+    void testSendEmailNotification_WithEmptyToList() {
+        Map<String, Object> dictionary = new HashMap<>();
+        // Arrange
+        List<String> to = new ArrayList<>();  // Empty "to" list
+        List<String> cc = Arrays.asList("cc@example.com");
+
+        // Act
+        commonUtils.sendEmailNotification(dictionary, emailTemplateModel, to, cc);
+
+        // Assert
+        // Ensure notificationService.sendEmail is never called
+        verify(notificationService, never()).sendEmail(anyString(), anyString(), anyList(), anyList());
+    }
+
+
+    @Test
+    void testSendEmailNotification_WhenToListIsEmpty() {
+        Map<String, Object> dictionary = new HashMap<>();
+        List<String> ccEmails = new ArrayList<>();
+        // Arrange: empty 'to' list
+        List<String> emptyTo = List.of();
+
+        // Act
+        commonUtils.sendEmailNotification(dictionary, emailTemplateModel, emptyTo, ccEmails);
+
+        // Assert: verify that the notification service sendEmail was never called
+        verify(notificationService, never()).sendEmail(anyString(), anyString(), anyList(), anyList());
+    }
+
+    @Test
+    void testSendEmailNotification_ValidatesDictionaryModification() {
+        Map<String, Object> dictionary = new HashMap<>();
+        emailTemplateModel = new EmailTemplatesRequest();
+        emailTemplateModel.setBody("Hello, {name}");
+        emailTemplateModel.setSubject("Shipment Update");
+
+        // Arrange
+        List<String> to = List.of("recipient@example.com");
+        List<String> cc = List.of("cc@example.com");
+        dictionary.put("name", "John Doe");
+
+        // Act
+        commonUtils.sendEmailNotification(dictionary, emailTemplateModel, to, cc);
+
+        // Assert
+        assertEquals("Hello, John Doe", commonUtils.replaceTagsFromData(dictionary, emailTemplateModel.getBody()));
+    }
+
+    @Test
+    void testGetEmailTemplates_Success() {
+        // Arrange: Mock the iv1Service response
+        V1DataResponse mockV1DataResponse = new V1DataResponse();
+        mockV1DataResponse.entities = new ArrayList<>();  // Add any mock entities you need
+
+        when(iv1Service.getEmailTemplates(any(CommonV1ListRequest.class))).thenReturn(mockV1DataResponse);
+
+        // Mock the jsonHelper conversion
+        List<EmailTemplatesRequest> mockTemplates = new ArrayList<>();
+        when(jsonHelper.convertValueToList(mockV1DataResponse.entities, EmailTemplatesRequest.class)).thenReturn(mockTemplates);
+
+        // Act
+        List<EmailTemplatesRequest> result = commonUtils.getEmailTemplates("TestTemplateType");
+
+        // Assert: Verify the result and interactions
+        assertNotNull(result);
+        assertEquals(mockTemplates, result);  // Result should match the mock list returned by the helper
+
+        // Verify that the service and helper were called with the correct arguments
+        verify(iv1Service, times(1)).getEmailTemplates(any(CommonV1ListRequest.class));
+        verify(jsonHelper, times(1)).convertValueToList(mockV1DataResponse.entities, EmailTemplatesRequest.class);
+    }
+
+    @Test
+    void testGetEmailTemplates_EmptyResponse() {
+        // Arrange: Mock an empty response
+        V1DataResponse emptyResponse = new V1DataResponse();
+        emptyResponse.entities = new ArrayList<>();  // No entities in the response
+
+        when(iv1Service.getEmailTemplates(any(CommonV1ListRequest.class))).thenReturn(emptyResponse);
+
+        when(jsonHelper.convertValueToList(emptyResponse.entities, EmailTemplatesRequest.class)).thenReturn(new ArrayList<>());
+
+        // Act
+        List<EmailTemplatesRequest> result = commonUtils.getEmailTemplates("EmptyTemplateType");
+
+        // Assert: Verify the result is an empty list
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+
+        // Verify the service and helper were called correctly
+        verify(iv1Service, times(1)).getEmailTemplates(any(CommonV1ListRequest.class));
+        verify(jsonHelper, times(1)).convertValueToList(emptyResponse.entities, EmailTemplatesRequest.class);
+    }
+
+    @Test
+    void testGetEmailTemplates_ExceptionThrown() {
+        // Arrange: Mock the service to throw an exception
+        when(iv1Service.getEmailTemplates(any(CommonV1ListRequest.class)))
+                .thenThrow(new RuntimeException("Error fetching templates"));
+
+        // Act & Assert: Verify that an exception is thrown and handled properly
+        assertThrows(RuntimeException.class, () -> {
+            commonUtils.getEmailTemplates("TestTemplateType");
+        });
+
+        // Verify that the helper was never called since the service failed
+        verify(jsonHelper, never()).convertValueToList(anyList(), eq(EmailTemplatesRequest.class));
+    }
+
+    @Test
+    void testIsTransportModeValid() {
+        var tenantSettings = V1TenantSettingsResponse.builder().build();
+        var response = commonUtils.isTransportModeValid(TRANSPORT_MODE_SEA, SHIPMENT_DETAILS, tenantSettings);
+        assertFalse(response);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {SHIPMENT_DETAILS, CUSTOMER_BOOKING, CONSOLIDATION})
+    void testIsTransportModeValidSea(String entity) {
+        var tenantSettings = V1TenantSettingsResponse.builder().shipmentTransportModeAir(true).shipmentTransportModeRail(true).shipmentTransportModeRoad(true).bookingTransportModeAir(true).bookingTransportModeRail(true).bookingTransportModeRoad(true).build();
+        var response = commonUtils.isTransportModeValid(TRANSPORT_MODE_SEA, entity, tenantSettings);
+        assertFalse(response);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {SHIPMENT_DETAILS, CUSTOMER_BOOKING})
+    void testIsTransportModeValidAir(String entity) {
+        var tenantSettings = V1TenantSettingsResponse.builder().shipmentTransportModeSea(true).shipmentTransportModeRail(true).shipmentTransportModeRoad(true).bookingTransportModeSea(true).bookingTransportModeRail(true).bookingTransportModeRoad(true).build();
+        var response = commonUtils.isTransportModeValid(TRANSPORT_MODE_AIR, entity, tenantSettings);
+        assertFalse(response);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {SHIPMENT_DETAILS, CUSTOMER_BOOKING})
+    void testIsTransportModeValidRail(String entity) {
+        var tenantSettings = V1TenantSettingsResponse.builder().shipmentTransportModeSea(true).shipmentTransportModeAir(true).shipmentTransportModeRoad(true).bookingTransportModeSea(true).bookingTransportModeAir(true).bookingTransportModeRoad(true).build();
+        var response = commonUtils.isTransportModeValid(TRANSPORT_MODE_RAI, entity, tenantSettings);
+        assertFalse(response);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {SHIPMENT_DETAILS, CUSTOMER_BOOKING})
+    void testIsTransportModeValidRoad(String entity) {
+        var tenantSettings = V1TenantSettingsResponse.builder().shipmentTransportModeSea(true).shipmentTransportModeSea(true).shipmentTransportModeRail(true).bookingTransportModeSea(true).bookingTransportModeSea(true).bookingTransportModeRail(true).build();
+        var response = commonUtils.isTransportModeValid(TRANSPORT_MODE_ROA, entity, tenantSettings);
+        assertFalse(response);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {SHIPMENT_DETAILS, CUSTOMER_BOOKING})
+    void testIsTransportModeValidAccepted(String entity) {
+        var tenantSettings = V1TenantSettingsResponse.builder().shipmentTransportModeSea(true).bookingTransportModeSea(true).build();
+        var response = commonUtils.isTransportModeValid(TRANSPORT_MODE_SEA, entity, tenantSettings);
+        assertTrue(response);
+    }
+
+    @Test
+    void testUpdateEventWithMasterData() {
+        String mockEventCode = "EV1";
+        String mockEventDescription = "mock description";
+        String mockEventDescription2 = "mock description 2";
+        Events mockEvent1 = Events.builder().eventCode("EV1").build();
+        Events mockEvent2 = Events.builder().description(mockEventDescription2).build();
+        List<Events> mockEventList = List.of(mockEvent1, mockEvent2);
+
+        V1DataResponse mockV1DataResponse = new V1DataResponse();
+        when(iv1Service.fetchMasterData(any())).thenReturn(mockV1DataResponse);
+        when(jsonHelper.convertValueToList(any(), eq(EntityTransferMasterLists.class))).thenReturn(List.of(
+                EntityTransferMasterLists.builder().ItemValue(mockEventCode).ItemDescription(mockEventDescription).build()
+        ));
+
+        commonUtils.updateEventWithMasterData(mockEventList);
+
+        assertEquals(mockEventDescription, mockEvent1.getDescription());
+        assertEquals(mockEventDescription2, mockEvent2.getDescription());
+    }
+
+    @Test
+    void testUpdateEventWithMasterDataDescriptionKeepsTheOlderInCaseOfExceptionFromV1() {
+        String mockEventCode = "EV1";
+        String mockEventDescription = "older description";
+        Events mockEvent = Events.builder().eventCode(mockEventCode).description(mockEventDescription).build();
+        List<Events> mockEventList = List.of(mockEvent);
+
+        when(iv1Service.fetchMasterData(any())).thenThrow(new RuntimeException("mock error !"));
+
+        commonUtils.updateEventWithMasterData(mockEventList);
+
+        assertEquals(mockEventDescription, mockEvent.getDescription());
+    }
+
+    @Test
+    void testUpdateEventWithMasterDataDescriptionDoesNotFailsIfEventCodeIsNull() {
+        String mockEventDescription = "non updatable description";
+        Events mockEvent = Events.builder().description(mockEventDescription).build();
+        List<Events> mockEventList = List.of(mockEvent);
+
+        commonUtils.updateEventWithMasterData(mockEventList);
+
+        assertEquals(mockEventDescription, mockEvent.getDescription());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", "I"})
+    void testGetCountryFromUnLocCode(String req) {
+        String response = commonUtils.getCountryFromUnLocCode(req);
+        assertNull(response);
+    }
+
+    @Test
+    void testGetCountryFromUnLocCode1() {
+        String response = commonUtils.getCountryFromUnLocCode("IN");
+        assertEquals("IND", response);
+    }
+
+    @ParameterizedTest
+    @MethodSource("providePartiesObjects")
+    void testCheckIfPartyExists(Parties req) {
+        boolean response = commonUtils.checkIfPartyExists(req);
+        assertFalse(response);
+    }
+
+    @ParameterizedTest
+    @MethodSource("providePartiesResponseObjects")
+    void testCheckIfPartyExists1(PartiesResponse req) {
+        boolean response = commonUtils.checkIfPartyExists(req);
+        assertFalse(response);
+    }
+
+    @Test
+    void testCheckIfPartyExists2() {
+        PartiesResponse req = new PartiesResponse();
+        req.setOrgCode("orgCode");
+        boolean response = commonUtils.checkIfPartyExists(req);
+        assertTrue(response);
+    }
+
+    @Test
+    void testCheckIfPartyExists3() {
+        Parties req = new Parties();
+        req.setOrgCode("orgCode");
+        boolean response = commonUtils.checkIfPartyExists(req);
+        assertTrue(response);
+    }
+
+    private static Stream<Parties> providePartiesObjects() {
+        return Stream.of(
+                new Parties(),
+                null
+        );
+    }
+
+    private static Stream<PartiesResponse> providePartiesResponseObjects() {
+        return Stream.of(
+                new PartiesResponse(),
+                null
+        );
+    }
+
+    @Test
+    void testMandatoryHsCodeForUAE_withShipmentIdAndMissingHsCode_shouldThrowValidationException() {
+
+        Awb awb = new Awb();
+        CarrierDetails carrierDetailsWithAE = mock(CarrierDetails.class);
+        when(carrierDetailsWithAE.getDestinationPortLocCode()).thenReturn("AE123");
+        when(shipmentDetails.getCarrierDetails()).thenReturn(carrierDetailsWithAE);
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+
+        awb.setShipmentId(1L);
+        AwbGoodsDescriptionInfo goodsWithoutHsCode = new AwbGoodsDescriptionInfo();
+        awb.setAwbGoodsDescriptionInfo(Arrays.asList(goodsWithoutHsCode));
+
+        assertThrows(ValidationException.class, () -> commonUtils.checkForMandatoryHsCodeForUAE(awb));
+    }
+
+    @Test
+    void testMandatoryHsCodeForUAE_withShipmentIdAndMissingHsCode_shouldThrowValidationException1() {
+
+        Awb awb = new Awb();
+        CarrierDetails carrierDetailsWithoutAE = mock(CarrierDetails.class);
+        when(carrierDetailsWithoutAE.getDestinationPortLocCode()).thenReturn("US456");
+
+        when(shipmentDetails.getCarrierDetails()).thenReturn(carrierDetailsWithoutAE);
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+
+        awb.setShipmentId(1L);
+        AwbGoodsDescriptionInfo goodsWithoutHsCode = new AwbGoodsDescriptionInfo();
+        awb.setAwbGoodsDescriptionInfo(Arrays.asList(goodsWithoutHsCode));
+
+        commonUtils.checkForMandatoryHsCodeForUAE(awb);
+    }
+
+    @Test
+    void testMandatoryHsCodeForUAE_withConsolidationIdAndMissingHsCode_shouldThrowValidationException() {
+
+        Awb awb = new Awb();
+        CarrierDetails carrierDetailsWithAE = mock(CarrierDetails.class);
+        when(carrierDetailsWithAE.getDestinationPortLocCode()).thenReturn("AE123");
+        when(consolidationDetails.getCarrierDetails()).thenReturn(carrierDetailsWithAE);
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
+
+        awb.setConsolidationId(1L);
+        AwbGoodsDescriptionInfo goodsWithoutHsCode = new AwbGoodsDescriptionInfo();
+        awb.setAwbGoodsDescriptionInfo(Arrays.asList(goodsWithoutHsCode));
+
+        assertThrows(ValidationException.class, () -> commonUtils.checkForMandatoryHsCodeForUAE(awb));
+    }
+
+    @Test
+    void testMandatoryHsCodeForUAE_withConsolidationIdAndMissingHsCode_shouldThrowValidationException1() {
+
+        Awb awb = new Awb();
+        CarrierDetails carrierDetailsWithoutAE = mock(CarrierDetails.class);
+        when(carrierDetailsWithoutAE.getDestinationPortLocCode()).thenReturn("US456");
+        when(consolidationDetails.getCarrierDetails()).thenReturn(carrierDetailsWithoutAE);
+        when(consolidationDetailsDao.findById(any())).thenReturn(Optional.of(consolidationDetails));
+
+        awb.setConsolidationId(1L);
+        AwbGoodsDescriptionInfo goodsWithoutHsCode = new AwbGoodsDescriptionInfo();
+        awb.setAwbGoodsDescriptionInfo(Arrays.asList(goodsWithoutHsCode));
+
+        commonUtils.checkForMandatoryHsCodeForUAE(awb);
+    }
+
+    @Test
+    void testMandatoryHsCodeForUAE_withBothShipmentAndConsolidationIdNull_shouldNotThrowException() {
+
+        Awb awb = new Awb();
+        AwbGoodsDescriptionInfo goodsWithoutHsCode = new AwbGoodsDescriptionInfo();
+        awb.setAwbGoodsDescriptionInfo(Arrays.asList(goodsWithoutHsCode));
+        commonUtils.checkForMandatoryHsCodeForUAE(awb);
+    }
+
+    @Test
+    void testGetAutoPopulateDepartmentReturnSingleUniqueDepartmentValue() {
+        String transportMode = "AIR";
+        String direction = "EXP";
+        String module = "SHP";
+
+        when(mdmServiceAdapter.getDepartmentList(anyString(), anyString(), anyString())).thenReturn(List.of(
+                Map.ofEntries(Map.entry(MdmConstants.DEPARTMENT, "AE")),
+                Map.ofEntries(Map.entry(MdmConstants.DEPARTMENT, "AE")),
+                Map.ofEntries(Map.entry(MdmConstants.DEPARTMENT, "AE"))
+        ));
+
+        String res = commonUtils.getAutoPopulateDepartment(transportMode, direction, module);
+        assertEquals("AE", res);
+    }
+
+    @Test
+    void testGetAutoPopulateDepartmentReturnsNullIfMoreThanSingleUniqueDepartment() {
+        String transportMode = "AIR";
+        String direction = "EXP";
+        String module = "SHP";
+
+        when(mdmServiceAdapter.getDepartmentList(anyString(), anyString(), anyString())).thenReturn(List.of(
+                Map.ofEntries(Map.entry(MdmConstants.DEPARTMENT, "AE")),
+                Map.ofEntries(Map.entry(MdmConstants.DEPARTMENT, "AE")),
+                Map.ofEntries(Map.entry(MdmConstants.DEPARTMENT, "ACT"))
+        ));
+
+        String res = commonUtils.getAutoPopulateDepartment(transportMode, direction, module);
+        assertNull(res);
+    }
+
+    @Test
+    void testGetAutoPopulateDepartmentReturnsNullIfNoResponseFromMDM() {
+        String transportMode = "AIR";
+        String direction = "EXP";
+        String module = "SHP";
+
+        when(mdmServiceAdapter.getDepartmentList(anyString(), anyString(), anyString())).thenReturn(Collections.emptyList());
+
+        String res = commonUtils.getAutoPopulateDepartment(transportMode, direction, module);
+        assertNull(res);
+    }
+
+    @Test
+    void testGetShipmentDetailsResponse() {
+        List<String> includeColumns = List.of("carrierDetails", "eventsList");
+        Object response = commonUtils.getShipmentDetailsResponse(shipmentDetails, includeColumns);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testGetShipmentDetailsResponseWithEmptyString() {
+        List<String> includeColumns = List.of(Constants.EMPTY_STRING);
+        Object response = commonUtils.getShipmentDetailsResponse(shipmentDetails, includeColumns);
+        assertNotNull(response);
+    }
+
+    @Test
+    void testChangeShipmentDGStatusToReqd() {
+        assertFalse(commonUtils.changeShipmentDGStatusToReqd(ShipmentDetails.builder().direction(IMP).build(), false));
+    }
+
+    @Test
+    void testGetTriangulationPartnerList_EmptyInput() {
+        List<Long> triangulationPartnerIds = commonUtils.getTriangulationPartnerList(null);
+
+        assertNotNull(triangulationPartnerIds);
+        assertTrue(triangulationPartnerIds.isEmpty());
+    }
+
+    @Test
+    void testGetTriangulationPartnerList_NonEmptyInput() {
+        List<TriangulationPartner> partnerList = Arrays.asList(
+                TriangulationPartner.builder().triangulationPartner(1L).isAccepted(true).build(),
+                TriangulationPartner.builder().triangulationPartner(2L).isAccepted(false).build(),
+                null
+        );
+
+        // Act
+        List<Long> triangulationPartnerIds = commonUtils.getTriangulationPartnerList(partnerList);
+
+        // Assert
+        assertNotNull(triangulationPartnerIds);
+        assertEquals(2, triangulationPartnerIds.size());
+        assertTrue(triangulationPartnerIds.contains(1L));
+        assertTrue(triangulationPartnerIds.contains(2L));
+    }
+
+    @Test
+    void testGetTenantIdsFromEntity_ShipmentSuccess() {
+        Long entityId = 1L;
+        ShipmentDetails mockShipment = new ShipmentDetails();
+        mockShipment.setTenantId(100);
+        mockShipment.setReceivingBranch(200L);
+        mockShipment.setTriangulationPartnerList(List.of(
+                TriangulationPartner.builder().triangulationPartner(300L).build(),
+                TriangulationPartner.builder().triangulationPartner(400L).build()
+        ));
+
+        when(shipmentDao.findShipmentByIdWithQuery(entityId)).thenReturn(Optional.of(mockShipment));
+        ListCousinBranchesForEtRequest request = ListCousinBranchesForEtRequest.builder().entityId(entityId).entityType(SHIPMENT).isReassign(true).isReceivingBranch(true).isTriangulationBranch(false).build();
+        List<Long> result = commonUtils.getTenantIdsFromEntity(request);
+
+        assertEquals(4, result.size());
+    }
+
+    @Test
+    void testGetTenantIdsFromEntity_ShipmentSuccess_WithInterConsoleFalse_AndReceivingBranch() {
+        Long entityId = 1L;
+        ShipmentDetails mockShipment = new ShipmentDetails();
+        mockShipment.setTenantId(100);
+        mockShipment.setReceivingBranch(200L);
+        mockShipment.setTriangulationPartnerList(List.of(
+                TriangulationPartner.builder().triangulationPartner(300L).build(),
+                TriangulationPartner.builder().triangulationPartner(400L).build()
+        ));
+        ConsolidationDetails mockConsolidation = new ConsolidationDetails();
+        mockConsolidation.setInterBranchConsole(false);
+        mockConsolidation.setReceivingBranch(100L);
+        mockConsolidation.setTenantId(100);
+        mockConsolidation.setShipmentsList(new HashSet<>(Collections.singletonList(mockShipment)));
+        mockShipment.setConsolidationList(new HashSet<>(Collections.singletonList(mockConsolidation)));
+        when(shipmentDao.findShipmentByIdWithQuery(entityId)).thenReturn(Optional.of(mockShipment));
+        ListCousinBranchesForEtRequest request = ListCousinBranchesForEtRequest.builder().entityId(entityId).entityType(SHIPMENT).isReassign(true).isReceivingBranch(true).isTriangulationBranch(false).build();
+        List<Long> result = commonUtils.getTenantIdsFromEntity(request);
+
+        assertEquals(4, result.size());
+    }
+
+    @Test
+    void testGetTenantIdsFromEntity_ShipmentSuccess_WithInterConsoleFalse_AndTriangulationBranch() {
+        Long entityId = 1L;
+        ShipmentDetails mockShipment = new ShipmentDetails();
+        mockShipment.setTenantId(100);
+        mockShipment.setReceivingBranch(200L);
+        mockShipment.setTriangulationPartnerList(List.of(
+                TriangulationPartner.builder().triangulationPartner(300L).build(),
+                TriangulationPartner.builder().triangulationPartner(400L).build()
+        ));
+        ConsolidationDetails mockConsolidation = new ConsolidationDetails();
+        mockConsolidation.setInterBranchConsole(false);
+        mockConsolidation.setReceivingBranch(100L);
+        mockConsolidation.setTenantId(100);
+
+        mockConsolidation.setShipmentsList(new HashSet<>(Collections.singletonList(mockShipment)));
+        mockShipment.setConsolidationList(new HashSet<>(Collections.singletonList(mockConsolidation)));
+        when(shipmentDao.findShipmentByIdWithQuery(entityId)).thenReturn(Optional.of(mockShipment));
+        ListCousinBranchesForEtRequest request = ListCousinBranchesForEtRequest.builder().entityId(entityId).entityType(SHIPMENT).isReassign(true).isReceivingBranch(false).isTriangulationBranch(true).build();
+        List<Long> result = commonUtils.getTenantIdsFromEntity(request);
+
+        assertEquals(4, result.size());
+    }
+
+    @Test
+    void testGetTenantIdsFromEntity_ShipmentSuccess_WithReceivingBranch() {
+        Long entityId = 1L;
+        ShipmentDetails mockShipment = new ShipmentDetails();
+        mockShipment.setTenantId(100);
+        mockShipment.setReceivingBranch(200L);
+        mockShipment.setTriangulationPartnerList(List.of(
+                TriangulationPartner.builder().triangulationPartner(300L).build(),
+                TriangulationPartner.builder().triangulationPartner(400L).build()
+        ));
+        ConsolidationDetails mockConsolidation = new ConsolidationDetails();
+        mockConsolidation.setInterBranchConsole(true);
+        mockConsolidation.setReceivingBranch(100L);
+        mockConsolidation.setTenantId(100);
+        mockConsolidation.setTriangulationPartnerList(List.of(
+                TriangulationPartner.builder().triangulationPartner(300L).build(),
+                TriangulationPartner.builder().triangulationPartner(400L).build()
+        ));
+        mockConsolidation.setShipmentsList(new HashSet<>(Collections.singletonList(mockShipment)));
+        mockShipment.setConsolidationList(new HashSet<>(Collections.singletonList(mockConsolidation)));
+        when(shipmentDao.findShipmentByIdWithQuery(entityId)).thenReturn(Optional.of(mockShipment));
+        ListCousinBranchesForEtRequest request = ListCousinBranchesForEtRequest.builder().entityId(entityId).entityType(SHIPMENT).isReassign(true).isReceivingBranch(true).isTriangulationBranch(false).build();
+        List<Long> result = commonUtils.getTenantIdsFromEntity(request);
+
+        assertEquals(4, result.size());
+    }
+
+    @Test
+    void testGetTenantIdsFromEntity_ShipmentSuccess_WithReceivingBranch_ReassignFalse() {
+        Long entityId = 1L;
+        ShipmentDetails mockShipment = new ShipmentDetails();
+        mockShipment.setTenantId(100);
+        mockShipment.setReceivingBranch(200L);
+        mockShipment.setTriangulationPartnerList(List.of(
+                TriangulationPartner.builder().triangulationPartner(300L).build(),
+                TriangulationPartner.builder().triangulationPartner(400L).build()
+        ));
+        ConsolidationDetails mockConsolidation = new ConsolidationDetails();
+        mockConsolidation.setInterBranchConsole(true);
+        mockConsolidation.setReceivingBranch(100L);
+        mockConsolidation.setTenantId(100);
+        mockConsolidation.setTriangulationPartnerList(List.of(
+                TriangulationPartner.builder().triangulationPartner(300L).build(),
+                TriangulationPartner.builder().triangulationPartner(400L).build()
+        ));
+        mockConsolidation.setShipmentsList(new HashSet<>(Collections.singletonList(mockShipment)));
+        mockShipment.setConsolidationList(new HashSet<>(Collections.singletonList(mockConsolidation)));
+        when(shipmentDao.findShipmentByIdWithQuery(entityId)).thenReturn(Optional.of(mockShipment));
+        ListCousinBranchesForEtRequest request = ListCousinBranchesForEtRequest.builder().entityId(entityId).entityType(SHIPMENT).isReassign(false).isReceivingBranch(true).isTriangulationBranch(false).build();
+        List<Long> result = commonUtils.getTenantIdsFromEntity(request);
+
+        assertEquals(3, result.size());
+    }
+
+    @Test
+    void testGetTenantIdsFromEntity_ShipmentSuccess_WithTriangulationBranch() {
+        Long entityId = 1L;
+        ShipmentDetails mockShipment = new ShipmentDetails();
+        mockShipment.setTenantId(100);
+        mockShipment.setReceivingBranch(200L);
+        mockShipment.setId(1L);
+        mockShipment.setTriangulationPartnerList(List.of(
+                TriangulationPartner.builder().triangulationPartner(300L).build(),
+                TriangulationPartner.builder().triangulationPartner(400L).build()
+        ));
+        ShipmentDetails mockShipment2 = new ShipmentDetails();
+        mockShipment2.setTenantId(100);
+        mockShipment2.setReceivingBranch(200L);
+        mockShipment.setId(2L);
+        mockShipment2.setTriangulationPartnerList(List.of(
+                TriangulationPartner.builder().triangulationPartner(300L).build(),
+                TriangulationPartner.builder().triangulationPartner(400L).build()
+        ));
+        ConsolidationDetails mockConsolidation = new ConsolidationDetails();
+        mockConsolidation.setInterBranchConsole(true);
+        mockConsolidation.setReceivingBranch(100L);
+        mockConsolidation.setTenantId(100);
+        mockConsolidation.setTriangulationPartnerList(List.of(
+                TriangulationPartner.builder().triangulationPartner(300L).build(),
+                TriangulationPartner.builder().triangulationPartner(400L).build()
+        ));
+        mockConsolidation.setShipmentsList(new HashSet<>(Arrays.asList(mockShipment, mockShipment2)));
+        mockShipment.setConsolidationList(new HashSet<>(Collections.singletonList(mockConsolidation)));
+        when(shipmentDao.findShipmentByIdWithQuery(entityId)).thenReturn(Optional.of(mockShipment));
+        ListCousinBranchesForEtRequest request = ListCousinBranchesForEtRequest.builder().entityId(entityId).entityType(SHIPMENT).isReassign(true).isReceivingBranch(false).isTriangulationBranch(true).build();
+        List<Long> result = commonUtils.getTenantIdsFromEntity(request);
+
+        assertEquals(4, result.size());
+    }
+
+    @Test
+    void testGetTenantIdsFromEntity_ConsolidationSuccess() {
+        Long entityId = 2L;
+        ConsolidationDetails mockConsolidation = new ConsolidationDetails();
+        mockConsolidation.setTenantId(500);
+        mockConsolidation.setReceivingBranch(600L);
+        mockConsolidation.setTriangulationPartnerList(List.of(
+                TriangulationPartner.builder().triangulationPartner(700L).build()
+        ));
+
+        when(consolidationDetailsDao.findConsolidationByIdWithQuery(entityId)).thenReturn(Optional.of(mockConsolidation));
+        ListCousinBranchesForEtRequest request = ListCousinBranchesForEtRequest.builder().entityId(entityId).entityType(CONSOLIDATION).isReassign(true).isReceivingBranch(false).isTriangulationBranch(false).build();
+        List<Long> result = commonUtils.getTenantIdsFromEntity(request);
+
+        assertEquals(3, result.size());
+    }
+
+    @Test
+    void testGetTenantIdsFromEntity_ConsolidationSuccess_WithInterConsoleFalse_AndReceivingBranch() {
+        Long entityId = 2L;
+
+        ConsolidationDetails mockConsolidation = new ConsolidationDetails();
+        mockConsolidation.setInterBranchConsole(false);
+        mockConsolidation.setReceivingBranch(100L);
+        mockConsolidation.setTenantId(200);
+        mockConsolidation.setTriangulationPartnerList(List.of(
+                TriangulationPartner.builder().triangulationPartner(300L).build(),
+                TriangulationPartner.builder().triangulationPartner(400L).build()
+        ));
+        when(consolidationDetailsDao.findConsolidationByIdWithQuery(entityId)).thenReturn(Optional.of(mockConsolidation));
+        ListCousinBranchesForEtRequest request = ListCousinBranchesForEtRequest.builder().entityId(entityId).entityType(CONSOLIDATION).isReassign(true).isReceivingBranch(true).isTriangulationBranch(false).build();
+        List<Long> result = commonUtils.getTenantIdsFromEntity(request);
+
+        assertEquals(4, result.size());
+    }
+
+    @Test
+    void testGetTenantIdsFromEntity_ConsolidationSuccess_WithInterConsoleFalse_AndTriangulationBranch() {
+        Long entityId = 2L;
+
+        ConsolidationDetails mockConsolidation = new ConsolidationDetails();
+        mockConsolidation.setInterBranchConsole(false);
+        mockConsolidation.setReceivingBranch(100L);
+        mockConsolidation.setTenantId(200);
+        mockConsolidation.setTriangulationPartnerList(List.of(
+                TriangulationPartner.builder().triangulationPartner(300L).build(),
+                TriangulationPartner.builder().triangulationPartner(400L).build()
+        ));
+
+        when(consolidationDetailsDao.findConsolidationByIdWithQuery(entityId)).thenReturn(Optional.of(mockConsolidation));
+        ListCousinBranchesForEtRequest request = ListCousinBranchesForEtRequest.builder().entityId(entityId).entityType(CONSOLIDATION).isReassign(true).isReceivingBranch(false).isTriangulationBranch(true).build();
+        List<Long> result = commonUtils.getTenantIdsFromEntity(request);
+
+        assertEquals(4, result.size());
+    }
+
+    @Test
+    void testGetTenantIdsFromEntity_ConsolidationSuccess_WithReceivingBranch() {
+        Long entityId = 1L;
+        ShipmentDetails mockShipment = new ShipmentDetails();
+        mockShipment.setTenantId(100);
+
+        ConsolidationDetails mockConsolidation = new ConsolidationDetails();
+        mockConsolidation.setInterBranchConsole(true);
+        mockConsolidation.setReceivingBranch(100L);
+        mockConsolidation.setTenantId(200);
+        mockConsolidation.setTriangulationPartnerList(List.of(
+                TriangulationPartner.builder().triangulationPartner(300L).build(),
+                TriangulationPartner.builder().triangulationPartner(400L).build()
+        ));
+        mockConsolidation.setShipmentsList(new HashSet<>(Collections.singletonList(mockShipment)));
+        mockShipment.setConsolidationList(new HashSet<>(Collections.singletonList(mockConsolidation)));
+        when(consolidationDetailsDao.findConsolidationByIdWithQuery(entityId)).thenReturn(Optional.of(mockConsolidation));
+        ListCousinBranchesForEtRequest request = ListCousinBranchesForEtRequest.builder().entityId(entityId).entityType(CONSOLIDATION).isReassign(true).isReceivingBranch(true).isTriangulationBranch(false).build();
+        List<Long> result = commonUtils.getTenantIdsFromEntity(request);
+
+        assertEquals(4, result.size());
+    }
+
+    @Test
+    void testGetTenantIdsFromEntity_ConsolidationSuccess_WithReceivingBranch_ReassignFalse() {
+        Long entityId = 1L;
+        ShipmentDetails mockShipment = new ShipmentDetails();
+        mockShipment.setTenantId(100);
+
+        ConsolidationDetails mockConsolidation = new ConsolidationDetails();
+        mockConsolidation.setInterBranchConsole(true);
+        mockConsolidation.setTenantId(200);
+        mockConsolidation.setShipmentsList(new HashSet<>(Collections.singletonList(mockShipment)));
+        mockShipment.setConsolidationList(new HashSet<>(Collections.singletonList(mockConsolidation)));
+        when(consolidationDetailsDao.findConsolidationByIdWithQuery(entityId)).thenReturn(Optional.of(mockConsolidation));
+        ListCousinBranchesForEtRequest request = ListCousinBranchesForEtRequest.builder().entityId(entityId).entityType(CONSOLIDATION).isReassign(false).isReceivingBranch(true).isTriangulationBranch(false).build();
+        List<Long> result = commonUtils.getTenantIdsFromEntity(request);
+
+        assertEquals(2, result.size());
+    }
+
+    @Test
+    void testGetTenantIdsFromEntity_ConsolidationSuccess_WithTriangulationBranch() {
+        Long entityId = 1L;
+        ShipmentDetails mockShipment = new ShipmentDetails();
+        mockShipment.setTenantId(100);
+        mockShipment.setReceivingBranch(200L);
+        mockShipment.setId(1L);
+        mockShipment.setTriangulationPartnerList(List.of(
+                TriangulationPartner.builder().triangulationPartner(300L).build(),
+                TriangulationPartner.builder().triangulationPartner(400L).build()
+        ));
+        ShipmentDetails mockShipment2 = new ShipmentDetails();
+        mockShipment2.setTenantId(100);
+        mockShipment2.setReceivingBranch(200L);
+        mockShipment.setId(2L);
+        mockShipment2.setTriangulationPartnerList(List.of(
+                TriangulationPartner.builder().triangulationPartner(300L).build(),
+                TriangulationPartner.builder().triangulationPartner(400L).build()
+        ));
+        ConsolidationDetails mockConsolidation = new ConsolidationDetails();
+        mockConsolidation.setInterBranchConsole(true);
+        mockConsolidation.setReceivingBranch(100L);
+        mockConsolidation.setTenantId(100);
+        mockConsolidation.setTriangulationPartnerList(List.of(
+                TriangulationPartner.builder().triangulationPartner(300L).build(),
+                TriangulationPartner.builder().triangulationPartner(400L).build()
+        ));
+        mockConsolidation.setShipmentsList(new HashSet<>(Arrays.asList(mockShipment, mockShipment2)));
+        mockShipment.setConsolidationList(new HashSet<>(Collections.singletonList(mockConsolidation)));
+        when(consolidationDetailsDao.findConsolidationByIdWithQuery(entityId)).thenReturn(Optional.of(mockConsolidation));
+        ListCousinBranchesForEtRequest request = ListCousinBranchesForEtRequest.builder().entityId(entityId).entityType(CONSOLIDATION).isReassign(true).isReceivingBranch(false).isTriangulationBranch(true).build();
+        List<Long> result = commonUtils.getTenantIdsFromEntity(request);
+
+        assertEquals(4, result.size());
+    }
+
+    @Test
+    void testGetTenantIdsFromEntity_ShipmentNotFound() {
+        Long entityId = 1L;
+
+        when(shipmentDao.findShipmentByIdWithQuery(entityId)).thenReturn(Optional.empty());
+        ListCousinBranchesForEtRequest request = ListCousinBranchesForEtRequest.builder().entityId(entityId).entityType(SHIPMENT).isReassign(true).isReceivingBranch(true).isTriangulationBranch(false).build();
+        List<Long> result = commonUtils.getTenantIdsFromEntity(request);
+
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testGetTenantIdsFromEntity_ConsolidationNotFound() {
+        Long entityId = 2L;
+
+        when(consolidationDetailsDao.findConsolidationByIdWithQuery(entityId)).thenReturn(Optional.empty());
+        ListCousinBranchesForEtRequest request = ListCousinBranchesForEtRequest.builder().entityId(entityId).entityType(CONSOLIDATION).isReassign(true).isReceivingBranch(true).isTriangulationBranch(false).build();
+        List<Long> result = commonUtils.getTenantIdsFromEntity(request);
+
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testGetTenantIdsFromEntity_EmptyTriangulationPartners() {
+        Long entityId = 3L;
+        ShipmentDetails mockShipment = new ShipmentDetails();
+        mockShipment.setTenantId(800);
+        mockShipment.setReceivingBranch(900L);
+        mockShipment.setTriangulationPartnerList(Collections.emptyList());
+
+        when(shipmentDao.findShipmentByIdWithQuery(entityId)).thenReturn(Optional.of(mockShipment));
+
+        ListCousinBranchesForEtRequest request = ListCousinBranchesForEtRequest.builder().entityId(entityId).entityType(SHIPMENT).isReassign(true).isReceivingBranch(true).isTriangulationBranch(false).build();
+
+        List<Long> result = commonUtils.getTenantIdsFromEntity(request);
+
+        assertEquals(2, result.size());
+    }
+
+    @Test
+    void testGetTenantIdsFromEntity_Shipment_WithInterConsoleFalse_AndReceivingBranch() {
+        String entityGuid = "6511f2e4-6234-452d-8abe-3685106317c2";
+        ShipmentDetails mockShipment = new ShipmentDetails();
+        mockShipment.setTenantId(100);
+        mockShipment.setReceivingBranch(200L);
+        mockShipment.setTriangulationPartnerList(List.of(
+                TriangulationPartner.builder().triangulationPartner(300L).build(),
+                TriangulationPartner.builder().triangulationPartner(400L).build()
+        ));
+        ConsolidationDetails mockConsolidation = new ConsolidationDetails();
+        mockConsolidation.setInterBranchConsole(false);
+        mockConsolidation.setReceivingBranch(100L);
+        mockConsolidation.setTenantId(100);
+        mockConsolidation.setShipmentsList(new HashSet<>(Collections.singletonList(mockShipment)));
+        mockShipment.setConsolidationList(new HashSet<>(Collections.singletonList(mockConsolidation)));
+        when(shipmentDao.findShipmentByGuidWithQuery(UUID.fromString(entityGuid))).thenReturn(Optional.of(mockShipment));
+        ListCousinBranchesForEtRequest request = ListCousinBranchesForEtRequest.builder().entityGuid(entityGuid).entityType(SHIPMENT).isReassign(true).isReceivingBranch(true).isTriangulationBranch(false).build();
+        List<Long> result = commonUtils.getTenantIdsFromEntity(request);
+
+        assertEquals(4, result.size());
+    }
+
+    @Test
+    void testGetTenantIdsFromEntity_Consolidation_WithInterConsoleFalse_AndReceivingBranch() {
+        String entityGuid = "6511f2e4-6234-452d-8abe-3685106317c2";
+
+        ConsolidationDetails mockConsolidation = new ConsolidationDetails();
+        mockConsolidation.setInterBranchConsole(false);
+        mockConsolidation.setReceivingBranch(100L);
+        mockConsolidation.setTenantId(200);
+        mockConsolidation.setTriangulationPartnerList(List.of(
+                TriangulationPartner.builder().triangulationPartner(300L).build(),
+                TriangulationPartner.builder().triangulationPartner(400L).build()
+        ));
+        when(consolidationDetailsDao.findConsolidationByGuidWithQuery(UUID.fromString(entityGuid))).thenReturn(Optional.of(mockConsolidation));
+        ListCousinBranchesForEtRequest request = ListCousinBranchesForEtRequest.builder().entityGuid(entityGuid).entityType(CONSOLIDATION).isReassign(true).isReceivingBranch(true).isTriangulationBranch(false).build();
+        List<Long> result = commonUtils.getTenantIdsFromEntity(request);
+
+        assertEquals(4, result.size());
+    }
+
+    @Test
+    void testPrepareEventRequest_Success_WithReferenceNumber() {
+        Long entityId = 1001L;
+        String eventCode = "EVENT_CODE";
+        String entityType = "SHIPMENT";
+        String referenceNumber = "REF123";
+
+        EventsRequest eventsRequest = commonUtils.prepareEventRequest(entityId, eventCode, entityType, referenceNumber);
+
+        assertNotNull(eventsRequest.getActual());
+    }
+
+    @Test
+    void testPrepareEventRequest_Success_WithoutReferenceNumber() {
+        Long entityId = 1001L;
+        String eventCode = "EVENT_CODE";
+        String entityType = "SHIPMENT";
+
+        EventsRequest eventsRequest = commonUtils.prepareEventRequest(entityId, eventCode, entityType, null);
+
+        assertNotNull(eventsRequest);
+        assertNotNull(eventsRequest.getActual());
+    }
+
+    @Test
+    void testPrepareEventRequest_Success_WithEmptyReferenceNumber() {
+        Long entityId = 1001L;
+        String eventCode = "EVENT_CODE";
+        String entityType = "SHIPMENT";
+        String referenceNumber = "";
+
+        EventsRequest eventsRequest = commonUtils.prepareEventRequest(entityId, eventCode, entityType, referenceNumber);
+
+        assertNotNull(eventsRequest);
+        assertNull(eventsRequest.getContainerNumber());
+        assertNotNull(eventsRequest.getActual());
+    }
+    @ParameterizedTest
+    @MethodSource("pTestCases")
+    void testSetIncludedFieldsToResponse(Object entity, Set<String> includeColumns, Object expectedResponse) {
+        assertEquals(expectedResponse, commonUtils.setIncludedFieldsToResponse(entity, includeColumns, expectedResponse));
+    }
+    @Test
+    void testSetIncludedFieldsToResponseInvalidColumn() {
+        ShipmentDetailsResponse response = new ShipmentDetailsResponse();
+        assertEquals(response, commonUtils.setIncludedFieldsToResponse(new ShipmentDetails(), Set.of("invalidColumns"), response));
+    }
+    @Test
+    void testMapListToDTO_EmptyList() {
+        List<Containers> emptyList = new ArrayList<>();
+        Object result = commonUtils.mapListToDTO(emptyList);
+        assertEquals(emptyList, result);
+    }
+    @Test
+    void testCheckForTriangulationPartnerList() {
+        List<TriangulationPartner> triangulationPartnerList = List.of(new TriangulationPartner());
+        List<TriangulationPartnerResponse> triangulationPartnerResponseList = List.of(new TriangulationPartnerResponse());
+        when(modelMapper.map(triangulationPartnerList, new TypeToken<List<TriangulationPartnerResponse>>() {}.getType()))
+                .thenReturn(triangulationPartnerResponseList);
+        Object result = commonUtils.mapListToDTO(triangulationPartnerList);
+        assertEquals(triangulationPartnerResponseList, result);
+    }
+    @Test
+    void testMapListToDTO_Containers() {
+        List<Containers> containerList = List.of(new Containers());
+        List<ContainerResponse> containerResponseList = List.of(new ContainerResponse());
+
+        when(modelMapper.map(containerList, new TypeToken<List<ContainerResponse>>() {}.getType()))
+                .thenReturn(containerResponseList);
+
+        Object result = commonUtils.mapListToDTO(containerList);
+
+        //assertInstanceOf(List.class, result);
+        assertEquals(containerResponseList, result);
+    }
+
+    @Test
+    void testMapListToDTO_BookingCarriage() {
+        List<BookingCarriage> bookingCarriageList = List.of(new BookingCarriage());
+        List<BookingCarriageResponse> bookingCarriageResponseList = List.of(new BookingCarriageResponse());
+
+        when(modelMapper.map(bookingCarriageList, new TypeToken<List<BookingCarriageResponse>>() {}.getType()))
+                .thenReturn(bookingCarriageResponseList);
+
+        Object result = commonUtils.mapListToDTO(bookingCarriageList);
+
+        assertEquals(bookingCarriageResponseList, result);
+    }
+
+    @Test
+    void testMapListToDTO_NoMappingFound() {
+        List<String> stringList = List.of("test");
+        Object result = commonUtils.mapListToDTO(stringList);
+        assertEquals(stringList, result);
+    }
+    @Test
+    void testMapListToDTO_ELDetails() {
+        List<ELDetails> elDetailsList = List.of(new ELDetails());
+        List<ELDetailsResponse> elDetailsResponseList = List.of(new ELDetailsResponse());
+
+        when(modelMapper.map(elDetailsList, new TypeToken<List<ELDetailsResponse>>() {}.getType()))
+                .thenReturn(elDetailsResponseList);
+
+        Object result = commonUtils.mapListToDTO(elDetailsList);
+
+        assertEquals(elDetailsResponseList, result);
+    }
+
+    @Test
+    void testMapListToDTO_Events() {
+        List<Events> eventsList = List.of(new Events());
+        List<EventsResponse> eventsResponseList = List.of(new EventsResponse());
+        when(modelMapper.map(eventsList, new TypeToken<List<EventsResponse>>() {}.getType()))
+                .thenReturn(eventsResponseList);
+
+        Object result = commonUtils.mapListToDTO(eventsList);
+        assertEquals(eventsResponseList, result);
+    }
+    @Test
+    void testMapListToDTO_Packing() {
+        List<Packing> packings = List.of(new Packing());
+        List<PackingResponse> packingResponseList = List.of(new PackingResponse());
+        when(modelMapper.map(packings, new TypeToken<List<PackingResponse>>() {}.getType()))
+                .thenReturn(packingResponseList);
+
+        Object result = commonUtils.mapListToDTO(packings);
+        assertEquals(packingResponseList, result);
+    }
+    @Test
+    void testMapListToDTO_ReferenceNumbers() {
+        List<ReferenceNumbers> referenceNumbersList = List.of(new ReferenceNumbers());
+        List<ReferenceNumbersResponse> referenceNumbersResponseList = List.of(new ReferenceNumbersResponse());
+
+        when(modelMapper.map(referenceNumbersList, new TypeToken<List<ReferenceNumbersResponse>>() {}.getType()))
+                .thenReturn(referenceNumbersResponseList);
+
+        Object result = commonUtils.mapListToDTO(referenceNumbersList);
+
+        assertEquals(referenceNumbersResponseList, result);
+    }
+    @Test
+    void testMapListToDTO_Routings() {
+        List<Routings> routingList = List.of(new Routings());
+        List<RoutingsResponse> routingResponseList = List.of(new RoutingsResponse());
+
+        when(modelMapper.map(routingList, new TypeToken<List<RoutingsResponse>>() {}.getType()))
+                .thenReturn(routingResponseList);
+
+        Object result = commonUtils.mapListToDTO(routingList);
+
+        assertEquals(routingResponseList, result);
+    }
+    @Test
+    void testMapListToDTO_ServiceDetails() {
+        List<ServiceDetails> serviceDetailsList = List.of(new ServiceDetails());
+        List<ServiceDetailsResponse> serviceDetailsResponseList = List.of(new ServiceDetailsResponse());
+
+        when(modelMapper.map(serviceDetailsList, new TypeToken<List<ServiceDetailsResponse>>() {}.getType()))
+                .thenReturn(serviceDetailsResponseList);
+
+        Object result = commonUtils.mapListToDTO(serviceDetailsList);
+
+        assertEquals(serviceDetailsResponseList, result);
+    }
+    @Test
+    void testMapListToDTO_Notes() {
+        List<Notes> notesList = List.of(new Notes());
+        List<NotesResponse> notesResponseList = List.of(new NotesResponse());
+
+        when(modelMapper.map(notesList, new TypeToken<List<NotesResponse>>() {}.getType()))
+                .thenReturn(notesResponseList);
+
+        Object result = commonUtils.mapListToDTO(notesList);
+
+        assertEquals(notesResponseList, result);
+    }
+
+    @Test
+    void testMapListToDTO_Jobs() {
+        List<Jobs> jobsList = List.of(new Jobs());
+        List<JobResponse> jobResponseList = List.of(new JobResponse());
+
+        when(modelMapper.map(jobsList, new TypeToken<List<JobResponse>>() {}.getType()))
+                .thenReturn(jobResponseList);
+
+        Object result = commonUtils.mapListToDTO(jobsList);
+
+        assertEquals(jobResponseList, result);
+    }
+
+    @Test
+    void testMapListToDTO_ConsolidationDetails() {
+        List<ConsolidationDetails> consolidationDetailsList = List.of(new ConsolidationDetails());
+        List<ConsolidationListResponse> consolidationResponseList = List.of(new ConsolidationListResponse());
+
+        when(modelMapper.map(consolidationDetailsList, new TypeToken<List<ConsolidationListResponse>>() {}.getType()))
+                .thenReturn(consolidationResponseList);
+
+        Object result = commonUtils.mapListToDTO(consolidationDetailsList);
+
+        assertEquals(consolidationResponseList, result);
+    }
+
+    @Test
+    void testMapListToDTO_Parties() {
+        List<Parties> partiesList = List.of(new Parties());
+        List<PartiesResponse> partiesResponseList = List.of(new PartiesResponse());
+
+        when(modelMapper.map(partiesList, new TypeToken<List<PartiesResponse>>() {}.getType()))
+                .thenReturn(partiesResponseList);
+
+        Object result = commonUtils.mapListToDTO(partiesList);
+
+        assertEquals(partiesResponseList, result);
+    }
+
+    @Test
+    void testMapListToDTO_ShipmentOrder() {
+        List<ShipmentOrder> shipmentOrderList = List.of(new ShipmentOrder());
+        List<ShipmentOrderResponse> shipmentOrderResponseList = List.of(new ShipmentOrderResponse());
+
+        when(modelMapper.map(shipmentOrderList, new TypeToken<List<ShipmentOrderResponse>>() {}.getType()))
+                .thenReturn(shipmentOrderResponseList);
+
+        Object result = commonUtils.mapListToDTO(shipmentOrderList);
+
+        assertEquals(shipmentOrderResponseList, result);
+    }
+    @Test
+    void testMapListToDTO_TruckDriverDetails() {
+        List<TruckDriverDetails> truckDriverDetailsList = List.of(new TruckDriverDetails());
+        List<TruckDriverDetailsResponse> truckDriverDetailsResponseList = List.of(new TruckDriverDetailsResponse());
+
+        when(modelMapper.map(truckDriverDetailsList, new TypeToken<List<TruckDriverDetailsResponse>>() {}.getType()))
+                .thenReturn(truckDriverDetailsResponseList);
+
+        Object result = commonUtils.mapListToDTO(truckDriverDetailsList);
+
+        assertEquals(truckDriverDetailsResponseList, result);
+    }
+    @Test
+    void testMapToDTO_CarrierDetails() {
+        CarrierDetails carrierDetails = new CarrierDetails();
+        CarrierDetailResponse carrierDetailResponse =new CarrierDetailResponse();
+
+        when(modelMapper.map(carrierDetails,CarrierDetailResponse.class)).thenReturn(carrierDetailResponse);
+
+        Object result = commonUtils.mapToDTO(carrierDetails);
+
+        assertEquals(carrierDetailResponse, result);
+    }
+    @Test
+    void testMapToDTO_AdditionalDetails() {
+        AdditionalDetails additionalDetails = new AdditionalDetails();
+        AdditionalDetailResponse additionalDetailResponse =new AdditionalDetailResponse();
+
+        when(modelMapper.map(additionalDetails,AdditionalDetailResponse.class)).thenReturn(additionalDetailResponse);
+
+        Object result = commonUtils.mapToDTO(additionalDetails);
+
+        assertEquals(additionalDetailResponse, result);
+    }
+
+    @Test
+    void testMapToDTO_PickupDeliveryDetails() {
+        PickupDeliveryDetails pickupDeliveryDetails = new PickupDeliveryDetails();
+        PickupDeliveryDetailsResponse pickupDeliveryDetailsResponse =new PickupDeliveryDetailsResponse();
+
+        when(modelMapper.map(pickupDeliveryDetails,PickupDeliveryDetailsResponse.class)).thenReturn(pickupDeliveryDetailsResponse);
+
+        Object result = commonUtils.mapToDTO(pickupDeliveryDetails);
+
+        assertEquals(pickupDeliveryDetailsResponse, result);
+    }
+    @Test
+    void testMapToDTO_Parties() {
+        Parties parties = new Parties();
+        PartiesResponse partiesResponse =new PartiesResponse();
+
+        when(modelMapper.map(parties,PartiesResponse.class)).thenReturn(partiesResponse);
+
+        Object result = commonUtils.mapToDTO(parties);
+
+        assertEquals(partiesResponse, result);
+    }
+    @Test
+    void testMapToDTO_ArrivalDepartureDetails() {
+        ArrivalDepartureDetails arrivalDepartureDetails = new ArrivalDepartureDetails();
+        ArrivalDepartureDetailsResponse arrivalDepartureDetailsResponse =new ArrivalDepartureDetailsResponse();
+
+        when(modelMapper.map(arrivalDepartureDetails,ArrivalDepartureDetailsResponse.class)).thenReturn(arrivalDepartureDetailsResponse);
+
+        Object result = commonUtils.mapToDTO(arrivalDepartureDetails);
+
+        assertEquals(arrivalDepartureDetailsResponse, result);
+    }
+    @Test
+    void testSetNestedFieldValue_SimpleField() throws NoSuchMethodException, IllegalAccessException, InstantiationException, InvocationTargetException {
+        Parties obj = new Parties();
+        commonUtils.setNestedFieldValue(obj, "type", "consignee");
+        assertEquals("consignee", obj.getType());
+    }
+
+    @Test
+    void testSetNestedFieldValue_NestedField() throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
+        ShipmentDetails obj = new ShipmentDetails();
+        commonUtils.setNestedFieldValue(obj, "carrierDetails.shippingLine", "Perma");
+        assertNotNull(obj.getCarrierDetails());
+        assertEquals("Perma", obj.getCarrierDetails().getShippingLine());
+    }
+
+    @Test
+    void testSetNestedFieldValue_MapField() throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
+        Map<String, Object> map = new HashMap<>();
+        commonUtils.setNestedFieldValue(map, "orgData.city", "new York");
+        assertTrue(map.containsKey("orgData"));
+        assertTrue(((Map<?, ?>) map.get("orgData")).containsKey("city"));
+        assertEquals("new York", ((Map<?, ?>) map.get("orgData")).get("city"));
+    }
+
+    @Test
+    void testSetNestedFieldValue_NoGetterAvailable() {
+        Parties obj = new Parties();
+        assertThrows(NoSuchMethodException.class, () ->
+                commonUtils.setNestedFieldValue(obj, "invalidField", "test"));
+    }
+    @Test
+    void testMapListToDTOSet_Containers() {
+        Set<Containers> containersList = Set.of(new Containers());
+        Set<ContainerResponse> containerResponseList = Set.of(new ContainerResponse());
+        when(modelMapper.map(containersList, new TypeToken<Set<ContainerResponse>>() {}.getType()))
+                .thenReturn(containerResponseList);
+
+        Object result = commonUtils.mapToDTO(containersList);
+
+        assertEquals(containerResponseList, result);
+    }
+    @Test
+    void testMapListToDTOSet_ConsolidationDetails() {
+        Set<ConsolidationDetails> consolidationDetailsSet = Set.of(new ConsolidationDetails());
+        Set<ConsolidationListResponse> consolidationListResponseSet = Set.of(new ConsolidationListResponse());
+        when(modelMapper.map(consolidationDetailsSet, new TypeToken<Set<ConsolidationListResponse>>() {}.getType()))
+                .thenReturn(consolidationListResponseSet);
+
+        Object result = commonUtils.mapToDTO(consolidationDetailsSet);
+
+        assertEquals(consolidationListResponseSet, result);
+    }
+    @Test
+    void testSetIncludedFields_validField() throws Exception {
+        // Given
+        List<String> fields = Collections.singletonList("carrierDetails");
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setCarrierDetails(new CarrierDetails());
+        CarrierDetailResponse carrierDetailResponse = new CarrierDetailResponse();
+        when(modelMapper.map(any(CarrierDetails.class), eq(CarrierDetailResponse.class)))
+                .thenReturn(carrierDetailResponse);
+
+        // When
+        ShipmentDetailsResponse result = commonUtils.getShipmentDetailsResponse(shipmentDetails, fields);
+
+        // Then
+        verify(modelMapper).map(any(CarrierDetails.class), eq(CarrierDetailResponse.class));
+        assertNotNull(result);
+        // Add assertions depending on what the setter methods do with carrierDetailResponse
+    }
+
+    @Test
+    void testSetIncludedFields_fieldDoesNotExist() {
+        shipmentDetails = new ShipmentDetails();
+        // Given
+        List<String> fields = Collections.singletonList("nonExistentField");
+
+        // When
+        ShipmentDetailsResponse result = commonUtils.getShipmentDetailsResponse(shipmentDetails, fields);
+
+        // Then
+        assertNotNull(result);
+        // Assert that the non-existent field doesn't cause an issue (e.g., no setter invocation)
+    }
+
+    @Test
+    void testSetIncludedFields_fieldWithNullValue() {
+        // Given
+        List<String> fields = Collections.singletonList("packingList");
+        when(shipmentDetails.getPackingList()).thenReturn(null);
+
+        // When
+        ShipmentDetailsResponse result = commonUtils.getShipmentDetailsResponse(shipmentDetails, fields);
+
+        // Then
+        assertNotNull(result);
+        // Assert that no null pointer exceptions are thrown
+    }
+
+    @Test
+    void testSetIncludedFields_withMultipleFields() {
+        // Given
+        List<String> fields = Arrays.asList("carrierDetails", "additionalDetails");
+        ShipmentDetails shipmentDetails = new ShipmentDetails();
+        shipmentDetails.setCarrierDetails(new CarrierDetails());
+        shipmentDetails.setAdditionalDetails(new AdditionalDetails());
+        shipmentDetails.setPickupDetails(new PickupDeliveryDetails());
+        shipmentDetails.setConsigner(new Parties());
+        CarrierDetailResponse carrierDetailResponse = new CarrierDetailResponse();
+        AdditionalDetailResponse additionalDetailResponse = new AdditionalDetailResponse();
+        when(modelMapper.map(any(CarrierDetails.class), eq(CarrierDetailResponse.class)))
+                .thenReturn(carrierDetailResponse);
+        when(modelMapper.map(any(AdditionalDetails.class), eq(AdditionalDetailResponse.class)))
+                .thenReturn(additionalDetailResponse);
+
+        // When
+        ShipmentDetailsResponse result = commonUtils.getShipmentDetailsResponse(shipmentDetails, fields);
+
+        // Then
+        verify(modelMapper).map(any(CarrierDetails.class), eq(CarrierDetailResponse.class));
+        verify(modelMapper).map(any(AdditionalDetails.class), eq(AdditionalDetailResponse.class));
+        assertNotNull(result);
+    }
+
+    @Test
+    void testSetIncludedFields_withEmptyFields() {
+        // Given
+        List<String> fields = Collections.emptyList();
+
+        // When
+        ShipmentDetailsResponse result = commonUtils.getShipmentDetailsResponse(shipmentDetails, fields);
+
+        // Then
+        assertNotNull(result); // Ensure it still returns a non-null response even with empty fields
+    }
+    @Test
+    void testSetIncludedFields_withInvalidFieldType() {
+        // Given
+        List<String> fields = Arrays.asList("carrierDetails", "invalidField");
+
+        // When
+        ShipmentDetailsResponse result = commonUtils.getShipmentDetailsResponse(shipmentDetails, fields);
+
+        // Then
+        assertNotNull(result);
+        // Ensure that it doesn't throw exceptions for invalid fields, just logs an error
+    }
+    @Test
+    void testGetDtoValue_withList() {
+        // Given
+        List<CarrierDetails> carrierDetailsList = Collections.singletonList(new CarrierDetails());
+        TypeToken<List<CarrierDetailResponse>> typeToken = new TypeToken<>() {};
+        when(modelMapper.map(carrierDetailsList, typeToken.getType())).thenReturn(List.of(new CarrierDetails()));
+        // When
+        Object result = commonUtils.getDtoValue(carrierDetailsList);
+
+        // Then
+        assertNotNull(result);
+        assertTrue(result instanceof List<?>);
+    }
+
+    @Test
+    void testGetDtoValue_withNonList() {
+        // Given
+        CarrierDetails carrierDetail = new CarrierDetails();
+        CarrierDetailResponse carrierDetailResponse = new CarrierDetailResponse();
+        when(modelMapper.map(any(CarrierDetails.class), eq(CarrierDetailResponse.class)))
+                .thenReturn(carrierDetailResponse);
+        // When
+        Object result = commonUtils.getDtoValue(carrierDetail);
+
+        // Then
+        assertNotNull(result);
+        assertTrue(result instanceof CarrierDetailResponse);
+    }
+
+    @Test
+    void testGetDtoValue_withNull() {
+        // Given
+        Object result = commonUtils.getDtoValue(null);
+
+        // Then
+        assertNull(result);
+    }
+
+    @Test
+    void sendEmailShipmentPullWithdraw() {
+        // Arrange
+        SendEmailDto sendEmailDto = new SendEmailDto();
+        sendEmailDto.setEmailTemplatesRequestMap(new HashMap<>());
+        sendEmailDto.setShipmentRequestedTypes(new HashSet<>());
+
+        // Act
+        commonUtils.sendEmailShipmentPullWithdraw(sendEmailDto);
+
+        // Assert
+        assertTrue(sendEmailDto.getShipmentRequestedTypes().contains(SHIPMENT_PULL_WITHDRAW));
+        verify(notificationService, never()).sendEmail(anyString(), anyString(), anyList(), anyList());
+    }
+
+    @Test
+    void sendEmailShipmentPullWithdraw1() {
+        // Arrange
+        SendEmailDto sendEmailDto = new SendEmailDto();
+        sendEmailDto.setEmailTemplatesRequestMap(Map.of(SHIPMENT_PULL_WITHDRAW, EmailTemplatesRequest.builder().body("body").subject("subject").build()));
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        shipmentDetails1.setTenantId(1);
+        shipmentDetails1.setAssignedTo("Assigned");
+        sendEmailDto.setShipmentDetails(shipmentDetails1);
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder().build();
+        consolidationDetails1.setTenantId(1);
+        sendEmailDto.setConsolidationDetails(consolidationDetails1);
+        TenantModel tenantModel = new TenantModel();
+        tenantModel.setCode("Tenant");
+        sendEmailDto.setTenantModelMap(Map.of(1, tenantModel));
+        sendEmailDto.setUsernameEmailsMap(Map.of("Assigned", "Email"));
+        V1TenantSettingsResponse tenantSettingsResponse = new V1TenantSettingsResponse();
+        tenantSettingsResponse.setShipmentAttachDefaultToMailId("to1@example.com,to2@example.com");
+        tenantSettingsResponse.setConsolidationAttachDefaultToMailId("cc1@example.com,cc2@example.com");
+
+        sendEmailDto.setV1TenantSettingsMap(Map.of(1, tenantSettingsResponse));
+
+        // Assert
+        assertDoesNotThrow(() -> commonUtils.sendEmailShipmentPullWithdraw(sendEmailDto));
+    }
+
+    @Test
+    void sendEmailShipmentPullWithdraw2() {
+        // Arrange
+        SendEmailDto sendEmailDto = new SendEmailDto();
+        sendEmailDto.setEmailTemplatesRequestMap(Map.of(SHIPMENT_PULL_WITHDRAW, EmailTemplatesRequest.builder().body("body").subject("subject").build()));
+        V1TenantSettingsResponse tenantSettingsResponse = new V1TenantSettingsResponse();
+        tenantSettingsResponse.setConsolidationAttachDefaultCCMailId("cc1@example.com,cc2@example.com");
+
+        sendEmailDto.setV1TenantSettingsMap(Map.of(1, tenantSettingsResponse));
+
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        shipmentDetails1.setTenantId(1);
+        shipmentDetails1.setAssignedTo("Assigned");
+        sendEmailDto.setShipmentDetails(shipmentDetails1);
+
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder().build();
+        consolidationDetails1.setTenantId(1);
+        sendEmailDto.setConsolidationDetails(consolidationDetails1);
+        TenantModel tenantModel = new TenantModel();
+        tenantModel.setCode("Tenant");
+        sendEmailDto.setTenantModelMap(Map.of(1, tenantModel));
+        sendEmailDto.setUsernameEmailsMap(Map.of("Assigned", "Email"));
+
+        assertDoesNotThrow(() -> commonUtils.sendEmailShipmentPullWithdraw(sendEmailDto));
+    }
+
+    @Test
+    void sendEmailShipmentPushWithdraw() {
+        // Arrange
+        SendEmailDto sendEmailDto = new SendEmailDto();
+        sendEmailDto.setEmailTemplatesRequestMap(new HashMap<>());
+        sendEmailDto.setShipmentRequestedTypes(new HashSet<>());
+
+        // Act
+        commonUtils.sendEmailShipmentPushWithdraw(sendEmailDto);
+
+        // Assert
+        assertTrue(sendEmailDto.getShipmentRequestedTypes().contains(SHIPMENT_PUSH_WITHDRAW));
+    }
+
+    @Test
+    void sendEmailShipmentPushWithdraw1() {
+        // Arrange
+        SendEmailDto sendEmailDto = new SendEmailDto();
+        sendEmailDto.setEmailTemplatesRequestMap(Map.of(SHIPMENT_PUSH_WITHDRAW, EmailTemplatesRequest.builder().body("body").subject("subject").build()));
+
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        shipmentDetails1.setTenantId(1);
+        shipmentDetails1.setAssignedTo("Assigned");
+
+        ConsolidationDetails consolidationDetails1 = ConsolidationDetails.builder().build();
+        consolidationDetails1.setTenantId(1);
+
+        V1TenantSettingsResponse tenantSettingsResponse = new V1TenantSettingsResponse();
+        tenantSettingsResponse.setShipmentAttachDefaultToMailId("to1@example.com,to1@example.com");
+        tenantSettingsResponse.setConsolidationAttachDefaultToMailId("to1@example.com,to1@example.com");
+
+        sendEmailDto.setV1TenantSettingsMap(Map.of(1, tenantSettingsResponse));
+
+        sendEmailDto.setShipmentDetails(shipmentDetails1);
+        sendEmailDto.setConsolidationDetails(consolidationDetails1);
+        TenantModel tenantModel = new TenantModel();
+        tenantModel.setCode("Tenant");
+        sendEmailDto.setTenantModelMap(Map.of(1, tenantModel));
+        sendEmailDto.setUsernameEmailsMap(Map.of("Assigned", "assigned@example.com"));
+
+        // Assert
+        assertDoesNotThrow(() -> commonUtils.sendEmailShipmentPushWithdraw(sendEmailDto));
+    }
+
+    @Test
+    void sendEmailShipmentPushWithdraw2() {
+        // Arrange
+        SendEmailDto sendEmailDto = new SendEmailDto();
+        sendEmailDto.setEmailTemplatesRequestMap(Map.of(SHIPMENT_PUSH_WITHDRAW, EmailTemplatesRequest.builder().body("body").subject("subject").build()));
+
+        V1TenantSettingsResponse tenantSettingsResponse = new V1TenantSettingsResponse();
+        tenantSettingsResponse.setConsolidationAttachDefaultCCMailId("cc1@example.com,cc2@example.com");
+        tenantSettingsResponse.setShipmentAttachDefaultCCMailId("cc1@example.com,cc2@example.com");
+
+        sendEmailDto.setV1TenantSettingsMap(Map.of(1, tenantSettingsResponse));
+
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        shipmentDetails1.setTenantId(1);
+        sendEmailDto.setShipmentDetails(shipmentDetails1);
+
+        ConsolidationDetails consolidationDetails1 = new ConsolidationDetails();
+        consolidationDetails1.setTenantId(1);
+        sendEmailDto.setConsolidationDetails(consolidationDetails1);
+        TenantModel tenantModel = new TenantModel();
+        tenantModel.setCode("Tenant");
+        sendEmailDto.setTenantModelMap(Map.of(1, tenantModel));
+        sendEmailDto.setUsernameEmailsMap(Map.of("Assigned", "assigned@example.com"));
+
+        assertDoesNotThrow(() -> commonUtils.sendEmailShipmentPushWithdraw(sendEmailDto));
+    }
+
+    @Test
+    void populateDictionaryForEmailFromShipment() {
+        // Arrange
+        Map<String, Object> dictionary = new HashMap<>();
+        ShipmentDetails shipmentDetails1 = getMockShipmentDetails();
+        ConsolidationDetails consolidationDetails1 = getMockConsolidationDetails();
+        Map<String, UnlocationsResponse> unLocMap = new HashMap<>();
+        Map<String, CarrierMasterData> carrierMasterDataMap = new HashMap<>();
+
+        when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(getMockTenantSettings());
+
+        // Act
+        commonUtils.populateDictionaryForEmailFromShipment(dictionary, shipmentDetails1, consolidationDetails1, unLocMap, carrierMasterDataMap);
+        commonUtils.populateDictionaryForEmailFromConsolidation(dictionary, shipmentDetails1, consolidationDetails1, unLocMap, carrierMasterDataMap);
+        commonUtils.populateShipmentImportPushAttachmentTemplate(dictionary, shipmentDetails1, consolidationDetails1, carrierMasterDataMap, unLocMap);
+        commonUtils.populateShipmentImportPullAttachmentTemplate(dictionary, shipmentDetails1, consolidationDetails1, carrierMasterDataMap, unLocMap);
+
+        // Assert
+        assertEquals(consolidationDetails1.getCreatedBy(), dictionary.get(CONSOLIDATION_CREATE_USER));
+        assertEquals(shipmentDetails1.getShipmentId(), dictionary.get(SHIPMENT_NUMBER));
+        assertEquals(shipmentDetails1.getHouseBill(), dictionary.get(HAWB_NUMBER));
+    }
+
+    @Test
+    void populateDictionaryForEmailFromShipment2() {
+        // Arrange
+        Map<String, Object> dictionary = new HashMap<>();
+        ShipmentDetails shipmentDetails1 = getMockShipmentDetails();
+        shipmentDetails1.getCarrierDetails().setShippingLine("ABC");
+
+        ConsolidationDetails consolidationDetails1 = getMockConsolidationDetails();
+        consolidationDetails1.getCarrierDetails().setShippingLine("ABC");
+
+        CarrierMasterData carrierMasterData = new CarrierMasterData();
+        carrierMasterData.setIataCode("XYZ");
+        carrierMasterData.setItemDescription("Test Carrier");
+
+        Map<String, CarrierMasterData> carrierMasterDataMap = Map.of("ABC", carrierMasterData);
+        Map<String, UnlocationsResponse> unLocMap = new HashMap<>();
+
+        when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(getMockTenantSettings());
+
+        // Act
+        commonUtils.populateDictionaryForEmailFromShipment(dictionary, shipmentDetails1, consolidationDetails1, unLocMap, carrierMasterDataMap);
+        commonUtils.populateDictionaryForEmailFromConsolidation(dictionary, shipmentDetails1, consolidationDetails1, unLocMap, carrierMasterDataMap);
+        commonUtils.populateShipmentImportPushAttachmentTemplate(dictionary, shipmentDetails1, consolidationDetails1, carrierMasterDataMap, unLocMap);
+        commonUtils.populateShipmentImportPullAttachmentTemplate(dictionary, shipmentDetails1, consolidationDetails1, carrierMasterDataMap, unLocMap);
+
+        // Assert
+        assertEquals("XYZ", dictionary.get(CARRIER_CODE));
+        assertEquals("Test Carrier", dictionary.get(CARRIER_NAME));
+    }
+
+    @Test
+    void populateDictionaryForEmailFromShipment3() {
+        // Arrange
+        Map<String, Object> dictionary = new HashMap<>();
+        ShipmentDetails shipmentDetails1 = getMockShipmentDetails();
+        shipmentDetails1.getCarrierDetails().setOriginPort("JFK");
+        shipmentDetails1.getCarrierDetails().setDestinationPort("LAX");
+        shipmentDetails1.getCarrierDetails().setShippingLine("ABC");
+
+        ConsolidationDetails consolidationDetails1 = getMockConsolidationDetails();
+        consolidationDetails1.getCarrierDetails().setOriginPort("JFK");
+        consolidationDetails1.getCarrierDetails().setDestinationPort("LAX");
+        consolidationDetails1.getCarrierDetails().setShippingLine("ABC");
+
+        CarrierMasterData carrierMasterData = new CarrierMasterData();
+        carrierMasterData.setItemValue("XYZ");
+        carrierMasterData.setItemDescription("Test Carrier");
+
+        UnlocationsResponse origin = new UnlocationsResponse();
+        origin.setLocCode("JFK_CODE");
+        origin.setName("New York");
+
+        UnlocationsResponse destination = new UnlocationsResponse();
+        destination.setLocCode("LAX_CODE");
+        destination.setName("Los Angeles");
+
+        Map<String, UnlocationsResponse> unLocMap = Map.of("JFK", origin, "LAX", destination);
+        Map<String, CarrierMasterData> carrierMasterDataMap = Map.of("ABC", carrierMasterData);
+
+        when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(getMockTenantSettings());
+
+        // Act
+        commonUtils.populateDictionaryForEmailFromShipment(dictionary, shipmentDetails1, consolidationDetails1, unLocMap, carrierMasterDataMap);
+        commonUtils.populateDictionaryForEmailFromConsolidation(dictionary, shipmentDetails1, consolidationDetails1, unLocMap, carrierMasterDataMap);
+        commonUtils.populateShipmentImportPushAttachmentTemplate(dictionary, shipmentDetails1, consolidationDetails1, carrierMasterDataMap, unLocMap);
+        commonUtils.populateShipmentImportPullAttachmentTemplate(dictionary, shipmentDetails1, consolidationDetails1, carrierMasterDataMap, unLocMap);
+
+        // Assert
+        assertEquals("JFK_CODE", dictionary.get(ReportConstants.POL));
+        assertEquals("New York", dictionary.get(POL_NAME));
+        assertEquals("LAX_CODE", dictionary.get(ReportConstants.POD));
+        assertEquals("Los Angeles", dictionary.get(POD_NAME));
+    }
+
+    @Test
+    void populateDictionaryForEmailFromShipment4() {
+        // Arrange
+        Map<String, Object> dictionary = new HashMap<>();
+        ShipmentDetails shipmentDetails1 = getMockShipmentDetails();
+        ConsolidationDetails consolidationDetails1 = getMockConsolidationDetails();
+        shipmentDetails1.getCarrierDetails().setShippingLine("NON_EXISTENT");
+        consolidationDetails1.getCarrierDetails().setShippingLine("NON_EXISTENT");
+
+        Map<String, CarrierMasterData> carrierMasterDataMap = new HashMap<>();
+        Map<String, UnlocationsResponse> unLocMap = new HashMap<>();
+
+        when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(getMockTenantSettings());
+
+        // Act
+        commonUtils.populateDictionaryForEmailFromShipment(dictionary, shipmentDetails1, consolidationDetails1, unLocMap, carrierMasterDataMap);
+        commonUtils.populateDictionaryForEmailFromConsolidation(dictionary, shipmentDetails1, consolidationDetails1, unLocMap, carrierMasterDataMap);
+        commonUtils.populateShipmentImportPushAttachmentTemplate(dictionary, shipmentDetails1, consolidationDetails1, carrierMasterDataMap, unLocMap);
+        commonUtils.populateShipmentImportPullAttachmentTemplate(dictionary, shipmentDetails1, consolidationDetails1, carrierMasterDataMap, unLocMap);
+
+        // Assert
+        assertNull(dictionary.get(CARRIER_CODE));
+        assertNull(dictionary.get(CARRIER_NAME));
+    }
+
+    @Test
+    void populateDictionaryForEmailFromShipment5() {
+        // Arrange
+        Map<String, Object> dictionary = new HashMap<>();
+        ShipmentDetails shipmentDetails1 = new ShipmentDetails();
+        ConsolidationDetails consolidationDetails1 = new ConsolidationDetails();
+        consolidationDetails1.setAllocations(new Allocations());
+        Map<String, UnlocationsResponse> unLocMap = new HashMap<>();
+        Map<String, CarrierMasterData> carrierMasterDataMap = new HashMap<>();
+        shipmentDetails1.setCarrierDetails(new CarrierDetails());
+        consolidationDetails1.setCarrierDetails(new CarrierDetails());
+
+        when(tenantSettingsService.getV1TenantSettings(any())).thenReturn(getMockTenantSettings());
+
+        // Act
+        commonUtils.populateDictionaryForEmailFromShipment(dictionary, shipmentDetails1, consolidationDetails1, unLocMap, carrierMasterDataMap);
+        commonUtils.populateDictionaryForEmailFromConsolidation(dictionary, shipmentDetails1, consolidationDetails1, unLocMap, carrierMasterDataMap);
+        commonUtils.populateShipmentImportPushAttachmentTemplate(dictionary, shipmentDetails1, consolidationDetails1, carrierMasterDataMap, unLocMap);
+        commonUtils.populateShipmentImportPullAttachmentTemplate(dictionary, shipmentDetails1, consolidationDetails1, carrierMasterDataMap, unLocMap);
+
+        // Assert
+        assertNull(dictionary.get(SHIPMENT_NUMBER));
+        assertNull(dictionary.get(HAWB_NUMBER));
+    }
+
+
+    private ShipmentDetails getMockShipmentDetails() {
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setShipmentId("SHIP123");
+        shipment.setHouseBill("HAWB456");
+        shipment.setWeight(BigDecimal.valueOf(100));
+        shipment.setWeightUnit("KG");
+        shipment.setVolume(BigDecimal.valueOf(10));
+        shipment.setVolumeUnit("CBM");
+
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setEtd(LocalDateTime.now());
+        carrierDetails.setEta(LocalDateTime.now());
+        carrierDetails.setShippingLine("LINE001");
+        carrierDetails.setOriginPort("JFK");
+        carrierDetails.setDestinationPort("LAX");
+        shipment.setCarrierDetails(carrierDetails);
+
+        return shipment;
+    }
+
+    private ConsolidationDetails getMockConsolidationDetails() {
+        ConsolidationDetails consolidation = new ConsolidationDetails();
+        consolidation.setCreatedBy("admin@example.com");
+        consolidation.setConsolidationNumber("CONSOL123");
+
+        CarrierDetails carrierDetails = new CarrierDetails();
+        carrierDetails.setEtd(LocalDateTime.now());
+        carrierDetails.setEta(LocalDateTime.now());
+        carrierDetails.setShippingLine("LINE001");
+        carrierDetails.setOriginPort("JFK");
+        carrierDetails.setDestinationPort("LAX");
+        consolidation.setCarrierDetails(carrierDetails);
+
+        Allocations allocations1 = new Allocations();
+        allocations1.setWeight(BigDecimal.valueOf(100));
+        allocations1.setWeightUnit("KG");
+        allocations1.setVolume(BigDecimal.valueOf(10));
+        allocations1.setVolumeUnit("CBM");
+
+        consolidation.setAllocations(allocations1);
+
+        return consolidation;
+    }
+
+    private V1TenantSettingsResponse getMockTenantSettings() {
+        V1TenantSettingsResponse settings = new V1TenantSettingsResponse();
+        settings.setDPWDateFormat("yyyy-MM-dd HH:mm:ss");
+        return settings;
+    }
 }

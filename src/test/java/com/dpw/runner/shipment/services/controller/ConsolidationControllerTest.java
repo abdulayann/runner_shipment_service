@@ -1,18 +1,5 @@
 package com.dpw.runner.shipment.services.controller;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.when;
-
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.*;
 import com.dpw.runner.shipment.services.dto.request.*;
@@ -95,7 +82,7 @@ class ConsolidationControllerTest {
         when(consolidationService.fullConsolidationsList(any())).thenReturn(mockResponse);
         when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(11));
         // Test
-        var responseEntity = consolidationController.list(ListCommonRequest.builder().build(), true);
+        var responseEntity = consolidationController.list(ListCommonRequest.builder().build(), true, true);
         // Assert
         assertEquals(mockResponse.getStatusCode(), responseEntity.getStatusCode());
     }
@@ -104,10 +91,10 @@ class ConsolidationControllerTest {
     void list2() {
         var mockResponse = ResponseHelper.buildFailedResponse("Response");
         // Mock
-        when(consolidationService.list(any())).thenReturn(mockResponse);
+        when(consolidationService.list(any(), anyBoolean())).thenReturn(mockResponse);
         when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(11));
         // Test
-        var responseEntity = consolidationController.list(ListCommonRequest.builder().build(), false);
+        var responseEntity = consolidationController.list(ListCommonRequest.builder().build(), false, true);
         // Assert
         assertEquals(mockResponse.getStatusCode(), responseEntity.getStatusCode());
     }
@@ -118,7 +105,7 @@ class ConsolidationControllerTest {
         when(consolidationService.list(any())).thenThrow(new RuntimeException());
         when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(11));
         // Test
-        var responseEntity = consolidationController.list(ListCommonRequest.builder().build(), false);
+        var responseEntity = consolidationController.list(ListCommonRequest.builder().build(), false, true);
         // Assert
         assertEquals(HttpStatus.FORBIDDEN, responseEntity.getStatusCode());
     }
@@ -160,12 +147,23 @@ class ConsolidationControllerTest {
     }
 
     @Test
-    void retrieveById() {
+    void retrieveForNTE() {
         // Mock
-        when(consolidationService.retrieveById(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        when(consolidationService.retrieveForNTE(any())).thenReturn(ResponseHelper.buildSuccessResponse());
         when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(11));
         // Test
-        var responseEntity = consolidationController.retrieveById(Optional.of(1L), Optional.of(UUID.randomUUID().toString()));
+        var responseEntity = consolidationController.retrieveForNTE(Optional.of(1L));
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void retrieveById() {
+        // Mock
+        when(consolidationService.retrieveById(any(), anyBoolean())).thenReturn(ResponseHelper.buildSuccessResponse());
+        when(jsonHelper.convertToJson(any())).thenReturn(StringUtility.getRandomString(11));
+        // Test
+        var responseEntity = consolidationController.retrieveById(Optional.of(1L), Optional.of(UUID.randomUUID().toString()), true);
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -192,11 +190,11 @@ class ConsolidationControllerTest {
     }
 
     @Test
-    void calculateAchieved_AllocatedForSameUnit() {
+    void calculateAchievedAllocatedForSameUnit() {
         // Mock
-        when(consolidationService.calculateAchieved_AllocatedForSameUnit(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        when(consolidationService.calculateAchievedAllocatedForSameUnit(any())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
-        var responseEntity = consolidationController.calculateAchieved_AllocatedForSameUnit( new ConsoleCalculationsRequest());
+        var responseEntity = consolidationController.calculateAchievedAllocatedForSameUnit( new ConsoleCalculationsRequest());
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -223,7 +221,7 @@ class ConsolidationControllerTest {
     @Test
     void attachShipments() throws RunnerException {
         // Mock
-        when(consolidationService.attachShipments(any(), any(), any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        when(consolidationService.attachShipments(any(), any(), any(), anyBoolean())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
         var responseEntity = consolidationController.attachShipments( new ShipmentAttachDetachRequest());
         // Assert
@@ -491,7 +489,7 @@ class ConsolidationControllerTest {
     }
 
     @Test
-    void exportConsolidationList() throws IOException, IllegalAccessException {
+    void exportConsolidationList() throws IOException, IllegalAccessException, RunnerException {
         // Mock
         doNothing().when(consolidationService).exportExcel(any(), any());
         // Test
@@ -501,7 +499,7 @@ class ConsolidationControllerTest {
     }
 
     @Test
-    void exportConsolidationList2() throws IOException, IllegalAccessException {
+    void exportConsolidationList2() throws IOException, IllegalAccessException, RunnerException {
         // Mock
         doThrow(new RuntimeException()).when(consolidationService).exportExcel(any(), any());
         // Test
@@ -511,7 +509,7 @@ class ConsolidationControllerTest {
     }
 
     @Test
-    void exportConsolidationList3() throws IOException, IllegalAccessException {
+    void exportConsolidationList3() throws IOException, IllegalAccessException, RunnerException {
         // Mock
         doThrow(new RuntimeException("RuntimeException")).when(consolidationService).exportExcel(any(), any());
         // Test
@@ -907,9 +905,9 @@ class ConsolidationControllerTest {
     @Test
     void listRequestedConsolidationForShipment() {
         // Mock
-        when(consolidationService.listRequestedConsolidationForShipment(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        when(consolidationService.listRequestedConsolidationForShipment(any(), anyBoolean())).thenReturn(ResponseHelper.buildSuccessResponse());
         // Test
-        var responseEntity = consolidationController.listRequestedConsolidationForShipment(123L);
+        var responseEntity = consolidationController.listRequestedConsolidationForShipment(123L, true);
         // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
@@ -917,9 +915,9 @@ class ConsolidationControllerTest {
     @Test
     void listRequestedConsolidationForShipment2(){
         // Mock
-        when(consolidationService.listRequestedConsolidationForShipment(any())).thenThrow(new RuntimeException());
+        when(consolidationService.listRequestedConsolidationForShipment(any(), anyBoolean())).thenThrow(new RuntimeException());
         // Test
-        var responseEntity = consolidationController.listRequestedConsolidationForShipment(123L);
+        var responseEntity = consolidationController.listRequestedConsolidationForShipment(123L, true);
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
@@ -927,9 +925,9 @@ class ConsolidationControllerTest {
     @Test
     void listRequestedConsolidationForShipment3() throws RunnerException {
         // Mock
-        when(consolidationService.listRequestedConsolidationForShipment(any())).thenThrow(new RuntimeException("RuntimeException"));
+        when(consolidationService.listRequestedConsolidationForShipment(any(), anyBoolean())).thenThrow(new RuntimeException("RuntimeException"));
         // Test
-        var responseEntity = consolidationController.listRequestedConsolidationForShipment(123L);
+        var responseEntity = consolidationController.listRequestedConsolidationForShipment(123L, true);
         // Assert
         assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }

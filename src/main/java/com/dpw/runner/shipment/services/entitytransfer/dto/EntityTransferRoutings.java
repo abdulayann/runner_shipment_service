@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.entitytransfer.dto;
 
 import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
+import com.dpw.runner.shipment.services.entity.enums.RoutingCarriage;
 import com.dpw.runner.shipment.services.entitytransfer.common.request.IEntityTranferBaseEntity;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -17,6 +18,7 @@ import java.util.Map;
 public class EntityTransferRoutings implements IEntityTranferBaseEntity {
     private Long leg;
     private String mode;
+    private RoutingCarriage carriage;
     private String routingStatus;
     private String vesselName;
     private String pol;

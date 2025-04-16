@@ -302,6 +302,12 @@ class V1MasterDataImplTest {
         when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
         assertNotNull(v1MasterData.fetchUnlocationData(new Object()));
     }
+    @Test
+    void stateBasedList() {
+        V1DataResponse v1DataResponse = new V1DataResponse();
+        when(v1Service.stateBasedList(any())).thenReturn(v1DataResponse);
+        assertNotNull(v1MasterData.stateBasedList(new Object()));
+    }
 
     @Test
     void updateOrganizationData() {

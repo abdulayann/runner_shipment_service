@@ -12,6 +12,7 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@SuppressWarnings("java:S1948")
 public class NPMContractsRunnerResponse implements IRunnerResponse {
     private List<NPMContractsResponse.NPMContractResponse> contracts;
     private String parent_contract_id;

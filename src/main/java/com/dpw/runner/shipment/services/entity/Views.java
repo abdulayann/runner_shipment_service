@@ -25,6 +25,7 @@ import java.util.Map;
 @TypeDef(name = "jsonb", typeClass = JsonBinaryType.class )
 @SQLDelete(sql = "UPDATE views SET is_deleted = true WHERE id=?")
 @Where(clause = "is_deleted = false")
+@SuppressWarnings("java:S1948")
 public class Views extends BaseEntity {
 
     private static final long serialVersionUID = 190794279984274725L;

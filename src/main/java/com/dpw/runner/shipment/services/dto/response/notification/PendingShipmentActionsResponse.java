@@ -19,6 +19,7 @@ public class PendingShipmentActionsResponse implements IPendingActionsResponse {
     private String masterBill;
 
     private String branch;
+    private String branchDisplayName;
 
     @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
     private LocalDateTime ata;

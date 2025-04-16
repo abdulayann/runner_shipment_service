@@ -35,13 +35,13 @@ class TokenUtilityTest {
 
         DefaultJWTClaimsVerifier claimsVerifier = mock(DefaultJWTClaimsVerifier.class);
         doThrow(BadJWTException.class).when(claimsVerifier).verify(claimsSet, null); // Simulation of verification failure
-        assertThrows(BadJWTException.class, () -> tokenUtility.getUserNameFromToken(token, null));
+        assertThrows(BadJWTException.class, () -> tokenUtility.getUserNameFromToken(token));
     }
 
     @Test
     void testGetUserNameFromToken_InvalidToken() {
         String token = "InvalidToken";
-        assertThrows(BadJWTException.class, () -> tokenUtility.getUserNameFromToken(token, null));
+        assertThrows(BadJWTException.class, () -> tokenUtility.getUserNameFromToken(token));
     }
 
     @Test
