@@ -101,6 +101,7 @@ dev:
     data:
       APP_ENV: dev
       props_profile: dev
+      SPRING_PROFILES_ACTIVE: dev
       NEW_RELIC_APP_NAME: runner-shipment-service-dev
   secretName: shipment-service-dev-SECRET
   deployment:
