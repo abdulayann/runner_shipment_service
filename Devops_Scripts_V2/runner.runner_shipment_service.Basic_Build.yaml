@@ -17,10 +17,10 @@ variables:
   value: ACR_Cargoes Runner
 - name: MAVEN_CACHE_FOLDER
   value: $(Pipeline.Workspace)/.m2/repository
-- name: MAVEN_OPTS
-  value: -Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)
 - name: POM_XML_PATH
   value: pom.xml
+- name: MAVEN_OPTIONS
+  value: -Dmaven.repo.local=$(MAVEN_CACHE_FOLDER)
 
 pool:
   vmImage: ubuntu-latest
