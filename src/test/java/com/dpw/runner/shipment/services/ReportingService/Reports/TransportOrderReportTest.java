@@ -5,7 +5,6 @@ import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConst
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
 import com.dpw.runner.shipment.services.ReportingService.Models.TransportOrderModel;
-import com.dpw.runner.shipment.services.aspects.LicenseContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -32,7 +31,6 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
@@ -47,7 +45,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -327,47 +324,37 @@ class TransportOrderReportTest extends CommonMocks {
 
     @Test
     void getDocumentModel_CountryAirCargoSecurity() {
-        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
-            mockedLicenseContext.when(LicenseContext::isAirSecurityLicense).thenReturn(false);
-            ShipmentSettingsDetailsContext.getCurrentTenantSettings()
-                .setCountryAirCargoSecurity(true);
-            when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
-            ShipmentModel shipmentModel = new ShipmentModel();
-            shipmentModel.setTransportMode(AIR);
-            shipmentModel.setDirection(EXP);
-            shipmentModel.setConsolidationList(Arrays.asList(new ConsolidationModel()));
-            shipmentModel.setContainersList(Arrays.asList(new ContainerModel()));
-            shipmentModel.setCarrierDetails(new CarrierDetailModel());
-            when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setCountryAirCargoSecurity(true);
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        ShipmentModel shipmentModel = new ShipmentModel();
+        shipmentModel.setTransportMode(AIR);
+        shipmentModel.setDirection(EXP);
+        shipmentModel.setConsolidationList(Arrays.asList(new ConsolidationModel()));
+        shipmentModel.setContainersList(Arrays.asList(new ContainerModel()));
+        shipmentModel.setCarrierDetails(new CarrierDetailModel());
+        when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
 
-            mockShipmentSettings();
+        mockShipmentSettings();
 
-            assertThrows(ValidationException.class,
-                () -> transportOrderReport.getDocumentModel(123L));
-        }
+        assertThrows(ValidationException.class, () -> transportOrderReport.getDocumentModel(123L));
     }
 
     @Test
     void getDocumentModel_CountryAirCargoSecurity2() {
-        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
-            mockedLicenseContext.when(LicenseContext::isAirSecurityLicense).thenReturn(true);
-            ShipmentSettingsDetailsContext.getCurrentTenantSettings()
-                .setCountryAirCargoSecurity(true);
-            UserContext.getUser().getPermissions().put(PermissionConstants.AIR_DG, true);
-            when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
-            ShipmentModel shipmentModel = new ShipmentModel();
-            shipmentModel.setTransportMode(AIR);
-            shipmentModel.setDirection(EXP);
-            shipmentModel.setConsolidationList(Arrays.asList(new ConsolidationModel()));
-            shipmentModel.setContainersList(Arrays.asList(new ContainerModel()));
-            shipmentModel.setCarrierDetails(new CarrierDetailModel());
-            shipmentModel.setContainsHazardous(true);
-            when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setCountryAirCargoSecurity(true);
+        UserContext.getUser().getPermissions().put(PermissionConstants.AIR_DG, true);
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        ShipmentModel shipmentModel = new ShipmentModel();
+        shipmentModel.setTransportMode(AIR);
+        shipmentModel.setDirection(EXP);
+        shipmentModel.setConsolidationList(Arrays.asList(new ConsolidationModel()));
+        shipmentModel.setContainersList(Arrays.asList(new ContainerModel()));
+        shipmentModel.setCarrierDetails(new CarrierDetailModel());
+        shipmentModel.setContainsHazardous(true);
+        when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
 
-            mockShipmentSettings();
+        mockShipmentSettings();
 
-            assertThrows(ValidationException.class,
-                () -> transportOrderReport.getDocumentModel(123L));
-        }
+        assertThrows(ValidationException.class, () -> transportOrderReport.getDocumentModel(123L));
     }
 }
