@@ -21,6 +21,7 @@ import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.repository.interfaces.IContainerRepository;
@@ -93,9 +94,35 @@ public class ContainerV3Service implements IContainerV3Service {
 
     @Override
     public ContainerResponse create(ContainerV3Request containerRequest) {
+        String requestId = LoggerHelper.getRequestIdFromMDC();
+
+        if (containerRequest == null) {
+            log.error("Container create request is null | Request ID: {}", requestId);
+            return null;
+        }
+
+        log.info("Starting container creation | Request ID: {} | Request Body: {}", requestId, containerRequest);
+
+        // Convert DTO to Entity
         Containers container = jsonHelper.convertValue(containerRequest, Containers.class);
+        log.debug("Converted container request to entity | Entity: {}", container);
+
+        // Save to DB
         Containers savedContainer = containerRepository.save(container);
-        return jsonHelper.convertValue(savedContainer, ContainerResponse.class);
+        log.info("Saved container entity to DB | Container ID: {} | Request ID: {}", savedContainer.getId(), requestId);
+
+        // Post-save logic
+        afterSave(savedContainer, true);
+        log.debug("afterSave logic executed for container ID: {}", savedContainer.getId());
+
+        // Audit logging
+        recordAuditLogs(null, List.of(savedContainer), DBOperationType.CREATE);
+        log.info("Audit log recorded for container creation | Container ID: {}", savedContainer.getId());
+
+        ContainerResponse response = jsonHelper.convertValue(savedContainer, ContainerResponse.class);
+        log.info("Returning container response | Container ID: {} | Response: {}", savedContainer.getId(), response);
+
+        return response;
     }
 
     @Override
