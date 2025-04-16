@@ -4,3 +4,4 @@ COPY newrelic/newrelic.yml /usr/local/newrelic
 COPY newrelic/newrelic.jar /usr/local/newrelic
 COPY target/runner-shipment-services-0.0.1.jar /usr/local/lib/runner-shipment-services-0.0.1.jar
 EXPOSE 8080
+
