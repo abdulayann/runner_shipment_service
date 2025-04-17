@@ -1084,7 +1084,7 @@ public class ShipmentService implements IShipmentService {
                 fileRepoList(customerBookingRequest.getFileRepoList()).
                 routingsList(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled()) && Boolean.TRUE.equals(isRouteMasterEnabled) ? null : customerBookingRequestRoutingList).
                 consolidationList(isConsoleCreationNeeded(customerBookingRequest) ? consolidationDetails : null).
-                referenceNumbersList(customerBookingRequest.getReferenceNumbersList()).
+                referenceNumbersList(createReferenceNumbersList(customerBookingRequest.getReferenceNumbersList())).
                 notesList(createNotes(notes)).
                 sourceTenantId(Long.valueOf(UserContext.getUser().TenantId)).
                 source("API").
@@ -1246,6 +1246,19 @@ public class ShipmentService implements IShipmentService {
                         .isPublic(note.getIsPublic())
                         .insertDate(note.getCreatedAt())
                         .entityType(Constants.CUSTOMER_BOOKING)
+                        .build()).toList();
+    }
+
+    private List<ReferenceNumbersRequest> createReferenceNumbersList(List<ReferenceNumbersRequest> referenceNumbers){
+        if(referenceNumbers == null) return null;
+        return referenceNumbers.stream().filter(Objects::nonNull).map(refNumber ->
+                ReferenceNumbersRequest.builder()
+                        .consolidationId(refNumber.getConsolidationId())
+                        .countryOfIssue(refNumber.getCountryOfIssue())
+                        .type(refNumber.getType())
+                        .referenceNumber(refNumber.getReferenceNumber())
+                        .shipmentId(refNumber.getShipmentId())
+                        .isPortalEnable(refNumber.getIsPortalEnable())
                         .build()).toList();
     }
 
