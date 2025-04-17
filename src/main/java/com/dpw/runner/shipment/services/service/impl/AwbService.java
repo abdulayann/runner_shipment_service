@@ -1046,7 +1046,7 @@ public class AwbService implements IAwbService {
                 setAwbCustomOriginCode(awbCargoInfo, orgRow);
                 setAwbIssuingAgentTaxRegistrationNumber(orgRow, issuingAgentAddressIdToEntityMap, awbShipmentInfo);
                 setIataAndCassCode(orgRow, awbShipmentInfo);
-                setExecutedAt(orgRow);
+//                setExecutedAt(orgRow);
             }
         }
 
@@ -1575,7 +1575,7 @@ public class AwbService implements IAwbService {
                 setAwbShipmentInfoCustomValue(shipmentDetails, awbCargoInfo, orgRow, issuingAgentAddressIdToEntityMap, awbShipmentInfo);
                 // awbOtherInfoRow.setExecutedAt(getCityId(orgRow.OrgId)); // fetch from master data
                 // awbCargoInfo.CustomOriginCode(getCountryCode(orgRow.OrgCountry)); // fetch from master data
-                setExecutedAt(orgRow);
+//                setExecutedAt(orgRow);
             }
         }
 
@@ -3739,6 +3739,7 @@ public class AwbService implements IAwbService {
 
     private String setUnLocationDataWithDiarcties(String name) {
         List<String> diarcties = new ArrayList<>();
+        name = name.toLowerCase();
         diarcties.add(name);
 
         List<Object> criteria = Arrays.asList(
@@ -3756,7 +3757,7 @@ public class AwbService implements IAwbService {
         }
 
         List<EntityTransferUnLocations> locationDataList = jsonHelper.convertValueToList(v1DataResponse.entities, EntityTransferUnLocations.class);
-        var locMap = locationDataList.stream().collect(Collectors.toMap(EntityTransferUnLocations::getNameWoDiacritics, EntityTransferUnLocations::getLocationsReferenceGUID,
+        var locMap = locationDataList.stream().collect(Collectors.toMap(i -> StringUtility.convertToString(i.getNameWoDiacritics()).toLowerCase(), EntityTransferUnLocations::getLocationsReferenceGUID,
                 (locationguid1, locationguid2) -> locationguid1));
         return locMap.get(name);
     }
