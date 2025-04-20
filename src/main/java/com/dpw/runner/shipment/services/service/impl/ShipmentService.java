@@ -42,7 +42,6 @@ import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IOrderManagementAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.ITrackingServiceAdapter;
-import com.dpw.runner.shipment.services.aspects.LicenseContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.aspects.PermissionsValidationAspect.PermissionsContext;
@@ -1085,6 +1084,7 @@ public class ShipmentService implements IShipmentService {
                 fileRepoList(customerBookingRequest.getFileRepoList()).
                 routingsList(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getIsRunnerV3Enabled()) && Boolean.TRUE.equals(isRouteMasterEnabled) ? null : customerBookingRequestRoutingList).
                 consolidationList(isConsoleCreationNeeded(customerBookingRequest) ? consolidationDetails : null).
+                referenceNumbersList(createReferenceNumbersList(customerBookingRequest.getReferenceNumbersList())).
                 notesList(createNotes(notes)).
                 sourceTenantId(Long.valueOf(UserContext.getUser().TenantId)).
                 source("API").
@@ -1246,6 +1246,19 @@ public class ShipmentService implements IShipmentService {
                         .isPublic(note.getIsPublic())
                         .insertDate(note.getCreatedAt())
                         .entityType(Constants.CUSTOMER_BOOKING)
+                        .build()).toList();
+    }
+
+    private List<ReferenceNumbersRequest> createReferenceNumbersList(List<ReferenceNumbersRequest> referenceNumbers){
+        if(referenceNumbers == null) return null;
+        return referenceNumbers.stream().filter(Objects::nonNull).map(refNumber ->
+                ReferenceNumbersRequest.builder()
+                        .consolidationId(refNumber.getConsolidationId())
+                        .countryOfIssue(refNumber.getCountryOfIssue())
+                        .type(refNumber.getType())
+                        .referenceNumber(refNumber.getReferenceNumber())
+                        .shipmentId(refNumber.getShipmentId())
+                        .isPortalEnable(refNumber.getIsPortalEnable())
                         .build()).toList();
     }
 
@@ -6440,7 +6453,7 @@ public class ShipmentService implements IShipmentService {
     }
 
     private boolean isAirDgUser() {
-        return  LicenseContext.isDgAirLicense();
+        return UserContext.isAirDgUser();
     }
 
     private boolean checkForAirDGFlag(ConsolidationDetails consolidationDetails) {
@@ -8072,7 +8085,7 @@ public class ShipmentService implements IShipmentService {
             return ResponseHelper.buildSuccessResponseWithWarning("DG approval not required for Import Shipment");
         }
 
-        boolean isOceanDgUser = LicenseContext.isOceanDGLicense();
+        boolean isOceanDgUser = UserContext.isOceanDgUser();
         OceanDGStatus dgStatus = shipmentDetails.getOceanDGStatus();
         OceanDGStatus updatedDgStatus = determineDgStatusAfterApproval(dgStatus, isOceanDgUser, shipmentDetails);
         DBOperationType operationType = determineOperationType(dgStatus, isOceanDgUser);
