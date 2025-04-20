@@ -8093,8 +8093,8 @@ public class ShipmentService implements IShipmentService {
         DBOperationType operationType = determineOperationType(dgStatus, isOceanDgUser);
 
         boolean isShipmentdg = isOceanDG(shipmentDetails);
-        log.info("DG Approval Processing: shipmentId={}, isOceanDgUser={}, currentStatus={}, updatedStatus={}, operationType={}, isShipmentdg={}",
-            shipId, isOceanDgUser, dgStatus, updatedDgStatus, operationType, isShipmentdg);
+        log.info("DG Approval Processing: requestId={}, shipmentId={}, isOceanDgUser={}, currentStatus={}, updatedStatus={}, operationType={}, isShipmentdg={}",
+            LoggerHelper.getRequestIdFromMDC(), shipId, isOceanDgUser, dgStatus, updatedDgStatus, operationType, isShipmentdg);
 
         String warning = null;
         if(!isShipmentdg){
@@ -8453,14 +8453,14 @@ public class ShipmentService implements IShipmentService {
         return shipmentDetails.getContainersList() != null &&
             shipmentDetails.getContainersList().stream()
                 .filter(Objects::nonNull)
-                .anyMatch(containers -> containers.getHazardous() &&
+                .anyMatch(containers -> Boolean.TRUE.equals(containers.getHazardous()) &&
                     Optional.ofNullable(containers.getDgClass())
                         .map(dgClass -> dgClass.startsWith("1"))
                         .orElse(false))
             || shipmentDetails.getPackingList() != null &&
                 shipmentDetails.getPackingList().stream()
                     .filter(Objects::nonNull)
-                    .anyMatch(packing -> packing.getHazardous() &&
+                    .anyMatch(packing -> Boolean.TRUE.equals(packing.getHazardous()) &&
                         Optional.ofNullable(packing.getDGClass())
                             .map(dgClass -> dgClass.startsWith("1"))
                             .orElse(false));
