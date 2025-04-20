@@ -6,6 +6,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.PADDING_10_PX;
 import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.STYLE;
+import static com.dpw.runner.shipment.services.commons.enums.DBOperationType.COMMERCIAL_APPROVE;
 import static com.dpw.runner.shipment.services.commons.enums.DBOperationType.COMMERCIAL_REQUEST;
 import static com.dpw.runner.shipment.services.commons.enums.DBOperationType.DG_APPROVE;
 import static com.dpw.runner.shipment.services.commons.enums.DBOperationType.DG_REQUEST;
@@ -13,6 +14,7 @@ import static com.dpw.runner.shipment.services.entity.enums.DateBehaviorType.ACT
 import static com.dpw.runner.shipment.services.entity.enums.DateBehaviorType.ESTIMATED;
 import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_ACCEPTED;
 import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_APPROVAL_REQUIRED;
+import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED;
 import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED;
 import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_COMMERCIAL_REJECTED;
 import static com.dpw.runner.shipment.services.entity.enums.OceanDGStatus.OCEAN_DG_COMMERCIAL_REQUESTED;
@@ -8091,6 +8093,9 @@ public class ShipmentService implements IShipmentService {
         DBOperationType operationType = determineOperationType(dgStatus, isOceanDgUser);
 
         boolean isShipmentdg = isOceanDG(shipmentDetails);
+        log.info("DG Approval Processing: shipmentId={}, isOceanDgUser={}, currentStatus={}, updatedStatus={}, operationType={}, isShipmentdg={}",
+            shipId, isOceanDgUser, dgStatus, updatedDgStatus, operationType, isShipmentdg);
+
         String warning = null;
         if(!isShipmentdg){
             warning = "Shipment does not have any DG container or package, no need of any dg approval";
@@ -8098,10 +8103,16 @@ public class ShipmentService implements IShipmentService {
             operationType = DG_REQUEST;
         }
 
-        if((dgStatus == OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED || dgStatus== OCEAN_DG_COMMERCIAL_REJECTED)&& !checkForClass1(shipmentDetails) && warning == null){
+        if((dgStatus == OCEAN_DG_ACCEPTED || dgStatus == OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED || dgStatus== OCEAN_DG_COMMERCIAL_REJECTED) && !checkForClass1(shipmentDetails) && warning == null){
             warning = "Shipment does not have any class1 DG container or package, no need of commercial dg approval";
             updatedDgStatus = OCEAN_DG_ACCEPTED;
-            operationType = COMMERCIAL_REQUEST;
+            operationType = DG_APPROVE;
+        }
+
+        if(dgStatus == OCEAN_DG_COMMERCIAL_ACCEPTED){
+            warning = "Shipment is already in commercial approved state";
+            updatedDgStatus = OCEAN_DG_COMMERCIAL_ACCEPTED;
+            operationType = COMMERCIAL_APPROVE;
         }
 
         if ((!isOceanDgUser || dgStatus == OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED || dgStatus== OCEAN_DG_COMMERCIAL_REJECTED) && warning == null) {
@@ -8416,7 +8427,7 @@ public class ShipmentService implements IShipmentService {
             }
         }else if(dgStatus == OCEAN_DG_COMMERCIAL_REQUESTED){
             if(request.getStatus() == TaskStatus.REJECTED){
-                operationType = DBOperationType.COMMERCIAL_APPROVE;
+                operationType = COMMERCIAL_APPROVE;
             }else{
                 operationType = DBOperationType.COMMERCIAL_REJECT;
             }
@@ -8425,8 +8436,12 @@ public class ShipmentService implements IShipmentService {
     }
 
     private OceanDGStatus determineDgStatusAfterApproval(OceanDGStatus dgStatus, boolean isOceanDgUser, ShipmentDetails shipmentDetails) {
+        boolean isClass1 = checkForClass1(shipmentDetails);
+        if(dgStatus == OCEAN_DG_ACCEPTED && !isClass1){
+            return dgStatus;
+        }
         if ((dgStatus == OCEAN_DG_APPROVAL_REQUIRED || dgStatus == OCEAN_DG_REJECTED) && isOceanDgUser) {
-            return checkForClass1(shipmentDetails) ? OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED : OCEAN_DG_ACCEPTED;
+            return isClass1 ? OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED : OCEAN_DG_ACCEPTED;
         } else {
             return (dgStatus == OCEAN_DG_COMMERCIAL_APPROVAL_REQUIRED || dgStatus == OCEAN_DG_COMMERCIAL_REJECTED) ? OCEAN_DG_COMMERCIAL_REQUESTED : OCEAN_DG_REQUESTED;
         }
@@ -8510,17 +8525,7 @@ public class ShipmentService implements IShipmentService {
         // making v1 calls for master data
         var emailTemplateFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getDGEmailTemplate(emailTemplatesRequestMap)), executorService);
         var vesselResponseFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getVesselsData(shipmentDetails.getCarrierDetails(), vesselsResponse)), executorService);
-        /**
-        CompletableFuture<Integer> roleIdFuture = CompletableFuture.supplyAsync(
-            (Supplier<Integer>) masterDataUtils.withMdc(() -> commonUtils.getRoleId(oceanDGStatus)),
-            executorService
-        );
-        var userEmailsFuture = roleIdFuture.thenCompose(roleId -> CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.getUserEmailsByRoleId(toUserEmails, roleId)), executorService));
-        var taskResponseFuture = roleIdFuture.thenCompose(roleId -> CompletableFuture.runAsync(masterDataUtils.withMdc(() -> commonUtils.createTask(shipmentDetails, roleId,
-            taskCreateResponse)), executorService));
 
-        CompletableFuture.allOf(emailTemplateFuture, userEmailsFuture, vesselResponseFuture, taskResponseFuture).join();
-        */
         CompletableFuture.allOf(emailTemplateFuture, vesselResponseFuture).join();
         Integer roleId = commonUtils.getRoleId(templateStatus);
         List<String> toUserEmails = commonUtils.getUserEmailsByRoleId(roleId);
@@ -8547,7 +8552,7 @@ public class ShipmentService implements IShipmentService {
     private OceanDGStatus getDgStatusAfterApprovalResponse(OceanDGStatus currentStatus, TaskStatus approvalStatus) {
         if (currentStatus == OCEAN_DG_COMMERCIAL_REQUESTED) {
             return approvalStatus == TaskStatus.APPROVED ?
-                OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED :
+                OCEAN_DG_COMMERCIAL_ACCEPTED :
                 OceanDGStatus.OCEAN_DG_COMMERCIAL_REJECTED;
         } else if (currentStatus == OCEAN_DG_REQUESTED) {
             return approvalStatus == TaskStatus.APPROVED  ?

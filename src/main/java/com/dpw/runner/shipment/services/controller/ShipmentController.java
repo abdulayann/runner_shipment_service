@@ -730,7 +730,7 @@ public class ShipmentController {
     @PostMapping(ApiConstants.OCEAN_DG_SEND_FOR_APPROVAL)
     public ResponseEntity<IRunnerResponse> oceanDGSendForApproval(@RequestBody
     OceanDGApprovalRequest request) {
-        log.info("Request received for oceanDGSendForApproval");
+        log.info("Received for oceanDGSendForApproval with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
         try {
             return shipmentService.sendOceanDGApprovalEmail(request);
         } catch (Exception ex) {
