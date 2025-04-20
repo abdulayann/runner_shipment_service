@@ -438,7 +438,7 @@ class AwbServiceTest extends CommonMocks {
 
         V1DataResponse mockV1DataResponse = V1DataResponse.builder().entities("").build();
         when(v1Service.fetchOrganization(any())).thenReturn(mockV1DataResponse);
-        List<EntityTransferOrganizations> mockOrgList = List.of(EntityTransferOrganizations.builder().build());
+        List<EntityTransferOrganizations> mockOrgList = List.of(EntityTransferOrganizations.builder().City("MOCKCITY").build());
         when(jsonHelper.convertValueToList(any(), eq(EntityTransferOrganizations.class))).thenReturn(mockOrgList);
         when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
 
