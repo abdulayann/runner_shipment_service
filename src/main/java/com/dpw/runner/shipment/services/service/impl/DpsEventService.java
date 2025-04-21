@@ -291,7 +291,7 @@ public class DpsEventService implements IDpsEventService {
         if (Strings.isNullOrEmpty(shipmentGuid)) {
             throw new DpsException("GUID can't be null. Please provide guid!");
         }
-        List<DpsEvent> dpsEventList = dpsEventRepository.findDpsEventByGuidAndExecutionState(shipmentGuid, DpsExecutionStatus.ACTIVE.name());
+        List<DpsEvent> dpsEventList = findDpsEventByGuidAndExecutionState(shipmentGuid);
 
         if(ObjectUtils.isEmpty(dpsEventList)) {
             log.warn("No DPS Event found with provided entity id {}", shipmentGuid);
@@ -301,6 +301,19 @@ public class DpsEventService implements IDpsEventService {
                     .map(this::constructDpsEventResponse).toList();
             return ResponseHelper.buildSuccessResponse(dpsEventResponses);
         }
+    }
+
+    /**
+     * Retrieves all active {@link DpsEvent} records associated with the given shipment GUID.
+     * <p>
+     * This method filters events based on the {@link DpsExecutionStatus#ACTIVE} state. It is primarily used to evaluate DPS and CGS statuses for a shipment.
+     *
+     * @param shipmentGuid the GUID of the shipment whose events are to be retrieved
+     * @return a list of active {@link DpsEvent} objects linked to the specified shipment GUID
+     */
+    @Override
+    public List<DpsEvent> findDpsEventByGuidAndExecutionState(String shipmentGuid) {
+        return dpsEventRepository.findDpsEventByGuidAndExecutionState(shipmentGuid, DpsExecutionStatus.ACTIVE.name());
     }
 
     /**
