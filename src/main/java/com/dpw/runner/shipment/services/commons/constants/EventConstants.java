@@ -73,7 +73,12 @@ public class EventConstants {
     public static final String VGMS  = "VGMS";
     public static final String BBCK  = "BBCK";
     public static final String DORC  = "DORC";
+    public static final String PUED = "PUED";
+    public static final String TRED = "TRED";
+    public static final String BKAC = "BKAC";
     // ~~~~~~ end runner event short codes
+
+    public static final String BKAC_DESCRIPTION = "Booking Acknowledged";
     public static final List<String> ATD_EVENT_CODES = List.of("VESSELDEPARTUREWITHCONTAINER");
     public static final List<String> ATA_EVENT_CODES = List.of("VESSELARRIVALWITHCONTAINER", "VSARV");
 

@@ -3,7 +3,6 @@ package com.dpw.runner.shipment.services.service.impl;
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.*;
-import com.dpw.runner.shipment.services.aspects.LicenseContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -105,6 +104,9 @@ public class CustomerBookingService implements ICustomerBookingService {
     private IPackingDao packingDao;
 
     @Autowired
+    private IReferenceNumbersDao referenceNumbersDao;
+
+    @Autowired
     private IRoutingsDao routingsDao;
 
     @Autowired
@@ -149,6 +151,8 @@ public class CustomerBookingService implements ICustomerBookingService {
 
     @Autowired
     private IEventDao eventDao;
+    @Autowired
+    private INotesDao notesDao;
 
     private Map<String, RunnerEntityMapping> tableNames = Map.ofEntries(
             Map.entry("customerOrgCode", RunnerEntityMapping.builder().tableName("customer").dataType(String.class).fieldName(Constants.ORG_CODE).build()),
@@ -164,7 +168,8 @@ public class CustomerBookingService implements ICustomerBookingService {
             Map.entry("createdBy", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(String.class).fieldName("createdBy").build()),
             Map.entry("contractId", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(String.class).fieldName("contractId").build()),
             Map.entry("shipmentCreatedDate", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(LocalDateTime.class).fieldName("shipmentCreatedDate").build()),
-            Map.entry("source", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(BookingSource.class).fieldName("source").build())
+            Map.entry("source", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(BookingSource.class).fieldName("source").build()),
+            Map.entry("shipmentReferenceNumber", RunnerEntityMapping.builder().tableName(Constants.CUSTOMER_BOOKING).dataType(String.class).fieldName("shipmentReferenceNumber").build())
     );
 
 
@@ -222,20 +227,10 @@ public class CustomerBookingService implements ICustomerBookingService {
         populateTotalRevenueDetails(customerBooking, request);
         customerBooking = customerBookingDao.save(customerBooking);
         Long bookingId = customerBooking.getId();
+        request.setId(bookingId);
 
-        List<PackingRequest> packingRequest = request.getPackingList();
-        if (packingRequest != null)
-            customerBooking.setPackingList(packingDao.saveEntityFromBooking(commonUtils.convertToEntityList(packingRequest, Packing.class), bookingId));
-
-        List<RoutingsRequest> routingsRequest = request.getRoutingList();
-        if (routingsRequest != null)
-            customerBooking.setRoutingList(routingsDao.saveEntityFromBooking(commonUtils.convertToEntityList(routingsRequest, Routings.class), bookingId));
-
-        List<ContainerRequest> containerRequest = request.getContainersList();
-        if (containerRequest != null) {
-            List<Containers> containers = containerDao.updateEntityFromBooking(commonUtils.convertToEntityList(containerRequest, Containers.class), bookingId);
-            customerBooking.setContainersList(containers);
-        }
+        saveChildEntities(customerBooking, request);
+        generateBookingAcknowledgementEvent(request);
 
         List<Containers> containers = customerBooking.getContainersList();
         Map<UUID, Containers> containerMap = new HashMap<>();
@@ -267,6 +262,39 @@ public class CustomerBookingService implements ICustomerBookingService {
             log.error(e.getMessage());
         }
     }
+
+    private void saveChildEntities(CustomerBooking customerBooking, CustomerBookingRequest request) throws RunnerException {
+        Long bookingId = customerBooking.getId();
+        List<PackingRequest> packingRequest = request.getPackingList();
+        if (packingRequest != null)
+            customerBooking.setPackingList(packingDao.saveEntityFromBooking(commonUtils.convertToEntityList(packingRequest, Packing.class), bookingId));
+
+        List<ReferenceNumbersRequest> referenceNumbersRequests = request.getReferenceNumbersList();
+        if (referenceNumbersRequests != null)
+            customerBooking.setReferenceNumbersList(referenceNumbersDao.saveEntityFromBooking(commonUtils.convertToEntityList(referenceNumbersRequests, ReferenceNumbers.class), bookingId));
+
+        List<RoutingsRequest> routingsRequest = request.getRoutingList();
+        if (routingsRequest != null)
+            customerBooking.setRoutingList(routingsDao.saveEntityFromBooking(commonUtils.convertToEntityList(routingsRequest, Routings.class), bookingId));
+
+        List<ContainerRequest> containerRequest = request.getContainersList();
+        if (containerRequest != null) {
+            List<Containers> containers = containerDao.updateEntityFromBooking(commonUtils.convertToEntityList(containerRequest, Containers.class), bookingId);
+            customerBooking.setContainersList(containers);
+        }
+
+        List<NotesRequest> notesRequests = request.getNotesList();
+        if (notesRequests != null) {
+            notesDao.saveEntityFromOtherEntity(commonUtils.convertToEntityList(notesRequests, Notes.class), bookingId, Constants.CUSTOMER_BOOKING);
+        }
+    }
+
+    private void generateBookingAcknowledgementEvent(CustomerBookingRequest request) {
+        // create booking acknowledged event for Tesla
+        if(Constants.TESLA.equalsIgnoreCase(request.getIntegrationSource()))
+            createAutomatedEvents(request, EventConstants.BKAC, LocalDateTime.now(), null, EventConstants.BKAC_DESCRIPTION);
+    }
+
 
     private void processBookingChargesRequest(CustomerBooking customerBooking, List<BookingChargesRequest> bookingChargesRequest, Map<UUID, Containers> containerMap) throws RunnerException {
         if (bookingChargesRequest != null && !bookingChargesRequest.isEmpty()) {
@@ -310,7 +338,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         if(persistedEvent.isPresent())
             eventPersisted = true;
         if(!eventPersisted && request.getBookingStatus().equals(BookingStatus.PENDING_FOR_KYC) && oldEntity.get().getBookingStatus().equals(BookingStatus.PENDING_FOR_REVIEW)) {
-            createAutomatedEvents(request, EventConstants.BKCR, LocalDateTime.now(), null);
+            createAutomatedEvents(request, EventConstants.BKCR, LocalDateTime.now(), null, null);
         }
 
         if (Objects.equals(oldEntity.get().getBookingStatus(), BookingStatus.READY_FOR_SHIPMENT)) {
@@ -357,6 +385,10 @@ public class CustomerBookingService implements ICustomerBookingService {
         if (packingRequest != null)
             customerBooking.setPackingList(packingDao.updateEntityFromBooking(commonUtils.convertToEntityList(packingRequest, Packing.class), bookingId));
 
+        List<ReferenceNumbersRequest> referenceNumbersRequests = request.getReferenceNumbersList();
+        if (referenceNumbersRequests != null)
+            customerBooking.setReferenceNumbersList(referenceNumbersDao.updateEntityFromBooking(commonUtils.convertToEntityList(referenceNumbersRequests, ReferenceNumbers.class), bookingId));
+
         List<RoutingsRequest> routingsRequest = request.getRoutingList();
         if (routingsRequest != null)
             customerBooking.setRoutingList(routingsDao.updateEntityFromBooking(commonUtils.convertToEntityList(routingsRequest, Routings.class), bookingId));
@@ -365,6 +397,11 @@ public class CustomerBookingService implements ICustomerBookingService {
         if (containerRequest != null) {
             List<Containers> containers = containerDao.updateEntityFromBooking(commonUtils.convertToEntityList(containerRequest, Containers.class), bookingId);
             customerBooking.setContainersList(containers);
+        }
+
+        List<NotesRequest> notesRequests = request.getNotesList();
+        if (notesRequests != null) {
+            notesDao.updateEntityFromOtherEntity(commonUtils.convertToEntityList(notesRequests, Notes.class), bookingId, Constants.CUSTOMER_BOOKING);
         }
 
         List<Containers> containers = customerBooking.getContainersList();
@@ -449,7 +486,7 @@ public class CustomerBookingService implements ICustomerBookingService {
             if (!CommonUtils.checkAirSecurityForBookingRequest(request))
                 throw new ValidationException("User does not have Air Security permission to create AIR EXP Shipment from Booking.");
         } else {
-            boolean hasAirDGPermission =  LicenseContext.isDgAirLicense();
+            boolean hasAirDGPermission = UserContext.isAirDgUser();
             if (Objects.equals(request.getTransportType(), Constants.TRANSPORT_MODE_AIR) && Objects.equals(request.getIsDg(), Boolean.TRUE) && !hasAirDGPermission) {
                 throw new ValidationException("User does not have AIR DG Permission to create AIR Shipment from Booking");
             }
@@ -723,7 +760,7 @@ public class CustomerBookingService implements ICustomerBookingService {
         if (bookingNumber == null) {
             log.error("Booking Number is empty for create Booking with Request Id {}", LoggerHelper.getRequestIdFromMDC());
         }
-        Optional<CustomerBooking> customerBooking = customerBookingDao.findByBookingNumber(bookingNumber);
+        Optional<CustomerBooking> customerBooking = findCustomerBooking(request);
 
         PlatformToRunnerCustomerBookingResponse platformResponse = new PlatformToRunnerCustomerBookingResponse();
         platformResponse.setBookingNumber(bookingNumber);
@@ -759,6 +796,21 @@ public class CustomerBookingService implements ICustomerBookingService {
         }
 
         return ResponseHelper.buildSuccessResponse(platformResponse);
+    }
+
+    private Optional<CustomerBooking> findCustomerBooking(PlatformToRunnerCustomerBookingRequest request) {
+        String bookingNumber = request.getBookingNumber();
+        String shipmentReferenceNumber = request.getShipmentReferenceNumber();
+        Optional<CustomerBooking> optional;
+        if (Constants.TESLA.equalsIgnoreCase(request.getIntegrationSource())) {
+            optional = customerBookingDao.findByShipmentReferenceNumber(shipmentReferenceNumber);
+            request.setBookingNumber(optional.map(CustomerBooking::getBookingNumber).orElse(null));
+        }
+        else {
+            optional = customerBookingDao.findByBookingNumber(bookingNumber);
+        }
+
+        return optional;
     }
 
     private void processRequestListsForResponse(PlatformToRunnerCustomerBookingRequest request, PlatformToRunnerCustomerBookingResponse platformResponse) {
@@ -1704,8 +1756,9 @@ public class CustomerBookingService implements ICustomerBookingService {
     }
 
     private Events createAutomatedEvents(CustomerBookingRequest request, String eventCode,
-                                         LocalDateTime actualDateTime, LocalDateTime estimatedDateTime) {
+                                         LocalDateTime actualDateTime, LocalDateTime estimatedDateTime, String description) {
         Events events = initializeAutomatedEvents(request, eventCode, actualDateTime, estimatedDateTime);
+        events.setDescription(description);
         commonUtils.updateEventWithMasterData(List.of(events));
         // Persist the event
         eventDao.save(events);

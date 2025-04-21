@@ -438,7 +438,7 @@ class AwbServiceTest extends CommonMocks {
 
         V1DataResponse mockV1DataResponse = V1DataResponse.builder().entities("").build();
         when(v1Service.fetchOrganization(any())).thenReturn(mockV1DataResponse);
-        List<EntityTransferOrganizations> mockOrgList = List.of(EntityTransferOrganizations.builder().build());
+        List<EntityTransferOrganizations> mockOrgList = List.of(EntityTransferOrganizations.builder().City("MOCKCITY").build());
         when(jsonHelper.convertValueToList(any(), eq(EntityTransferOrganizations.class))).thenReturn(mockOrgList);
         when(v1Service.addressList(any())).thenReturn(mockV1DataResponse);
 
@@ -684,6 +684,7 @@ class AwbServiceTest extends CommonMocks {
         OCIInfo ociInfo = new OCIInfo();
         OtherIdentityInfo otherIdentityInfo = new OtherIdentityInfo();
         otherIdentityInfo.setIrIpAddress(null);
+        otherIdentityInfo.setIaIpAddress(null);
         ociInfo.setOtherIdentityInfo(otherIdentityInfo);
         mockAwb.setOciInfo(ociInfo);
         AwbResponse mockAwbResponse = objectMapper.convertValue(mockAwb, AwbResponse.class);
@@ -721,6 +722,7 @@ class AwbServiceTest extends CommonMocks {
         OCIInfo ociInfo = new OCIInfo();
         OtherIdentityInfo otherIdentityInfo = new OtherIdentityInfo();
         otherIdentityInfo.setIrIpAddress("127.0.0.1");
+        otherIdentityInfo.setIaIpAddress("120.0.0.1");
         ociInfo.setOtherIdentityInfo(otherIdentityInfo);
         mockAwb.setOciInfo(ociInfo);
         AwbResponse mockAwbResponse = objectMapper.convertValue(mockAwb, AwbResponse.class);

@@ -1,10 +1,15 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 
+import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
+import java.util.EnumSet;
+import java.util.Set;
+
 public class EntityTransferConstants {
     private EntityTransferConstants(){}
     public static final String ENTITY_TRANSFER_API_HANDLE = "/api/v2/entity-transfer";
     public static final String SEND_SHIPMENT = "/send-shipment";
+    public static final String SEND_ENTITY_TO_EXTERNAL_SYSTEM = "/send-file-to-external";
     public static final String CHECK_RETRANSFER_ACCEPTED = "/check-retransfer-accepted";
     public static final String SEND_SHIPMENT_VALIDATION = "/send-shipment-validation";
     public static final String CHECK_TASK_EXIST = "/check-task-exist";
@@ -66,4 +71,6 @@ public class EntityTransferConstants {
     public static final String SHIPMENT_REJECTION_EMAIL_BODY = "<p>Dear user,</p>  <p>&nbsp;</p>  <p>The retransfer request for shipment {#SHIPMENT_NUMBER} has been cancelled by {#USER_NAME} at {#BRANCH_NAME}. The reason for cancellation is: “{#CANCELLATION_REASON}”.</p> <p>&nbsp;</p> <p>In case of any further clarification, please reach out to {#CANCELLED_USER_EMAIL_ID}.</p> <p>Thanks,&nbsp;<br /> Cargoes Runner</p>";
     public static final String CONSOLIDATION_REJECTION_EMAIL_SUBJECT = "{#CONSOLIDATION_NUMBER} Retransfer Cancellation Notification";
     public static final String CONSOLIDATION_REJECTION_EMAIL_BODY = "<p>Dear user,</p>  <p>&nbsp;</p>  <p>The retransfer request for consolidation {#CONSOLIDATION_NUMBER} has been cancelled by {#USER_NAME} at {#BRANCH_NAME}. The reason for cancellation is: “{#CANCELLATION_REASON}”.</p> <p>&nbsp;</p> <p>In case of any further clarification, please reach out to {#CANCELLED_USER_EMAIL_ID}.</p> <p>Thanks,&nbsp;<br /> Cargoes Runner</p>";
+
+    public static final Set<NetworkTransferStatus> RETRANSFER_SET = EnumSet.of(NetworkTransferStatus.RETRANSFERRED, NetworkTransferStatus.ACCEPTED);
 }

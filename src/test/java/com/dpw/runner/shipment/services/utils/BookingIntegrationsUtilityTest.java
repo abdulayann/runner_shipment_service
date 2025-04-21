@@ -36,6 +36,7 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
@@ -120,6 +121,12 @@ class BookingIntegrationsUtilityTest {
         mockUser.setPermissions(new HashMap<>());
         UserContext.setUser(mockUser);
     }
+
+    @BeforeEach
+    void beforeEachConfig() {
+        UserContext.setUser(UsersDto.builder().build());
+    }
+
 
     @Test
     void testCreateBookingInPlatform_SuccessfulBooking_FCL_CargoType() throws RunnerException {

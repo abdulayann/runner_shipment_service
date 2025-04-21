@@ -25,4 +25,5 @@ public interface INetworkTransferService{
     void updateStatusAndCreatedEntityId(Long id, String status, Long createdEntityId);
     void bulkProcessInterConsoleNte(List<ShipmentDetails> shipmentDetails);
     ResponseEntity<IRunnerResponse> fetchEntityStatus(CommonGetRequest commonGetRequest);
+    ResponseEntity<IRunnerResponse> createExternal(CommonRequestModel commonRequestModel);
 }
