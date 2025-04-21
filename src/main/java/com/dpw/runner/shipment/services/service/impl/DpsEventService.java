@@ -457,14 +457,14 @@ public class DpsEventService implements IDpsEventService {
 
     private void setDpsFieldDataInEvent(DpsDataDto dtoData, DpsEvent dpsEvent) {
         if (dtoData.getFieldsDetectedValues() != null) {
-            List<DpsFieldData> fieldDataList = ObjectUtils.defaultIfNull(dpsEvent.getDpsFieldData(), new ArrayList<>());
-            dtoData.getFieldsDetectedValues().forEach(fieldDataDto ->
-                    fieldDataList.add(DpsFieldData.builder()
+            List<DpsFieldData> fieldDataList = dtoData.getFieldsDetectedValues().stream()
+                    .map(fieldDataDto -> DpsFieldData.builder()
                             .key(fieldDataDto.getKey())
                             .value(fieldDataDto.getValue())
                             .build())
-            );
-            dpsEvent.setDpsFieldData(fieldDataList); // Set the updated list back to the entity
+                    .collect(Collectors.toList());
+
+            dpsEvent.setDpsFieldData(fieldDataList);
         }
     }
 
