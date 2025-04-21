@@ -1774,6 +1774,7 @@ public class ContainerService implements IContainerService {
         }
         details.setBookingRef(bookingRef);
         details.setContainer(containerBoomiUniversalJson);
+        commonUtils.getUserZoneTime(details.getContainer().getAllocationDate());
         return details;
     }
 
