@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.interfaces.IPlatformServiceAdapter;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
@@ -13,6 +14,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.IIntegrationResponseDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.UpdateOrgCreditLimitBookingResponse;
@@ -32,6 +34,7 @@ import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
@@ -105,6 +108,12 @@ class BookingIntegrationsUtilityTest {
         jsonTestUtility = new JsonTestUtility();
         objectMapper = JsonTestUtility.getMapper();
     }
+
+    @BeforeEach
+    void beforeEachConfig() {
+        UserContext.setUser(UsersDto.builder().build());
+    }
+
 
     @Test
     void testCreateBookingInPlatform_SuccessfulBooking_FCL_CargoType() throws RunnerException {

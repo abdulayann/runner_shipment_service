@@ -1046,7 +1046,6 @@ public class AwbService implements IAwbService {
                 setAwbCustomOriginCode(awbCargoInfo, orgRow);
                 setAwbIssuingAgentTaxRegistrationNumber(orgRow, issuingAgentAddressIdToEntityMap, awbShipmentInfo);
                 setIataAndCassCode(orgRow, awbShipmentInfo);
-                setExecutedAt(orgRow);
             }
         }
 
@@ -1055,15 +1054,6 @@ public class AwbService implements IAwbService {
     }
 
         return awbShipmentInfo;
-    }
-
-    private void setExecutedAt(Parties orgRow) {
-        String city = orgRow.getOrgData() != null ? stringValueOf(orgRow.getOrgData().get(CITY)) : null;
-        if(StringUtility.isNotEmpty(city)) {
-            executedAt = setUnLocationDataWithDiarcties(city);
-        } else {
-            executedAt = null;
-        }
     }
 
     private void setIataAndCassCode(Parties orgRow, AwbShipmentInfo awbShipmentInfo) {
@@ -1575,7 +1565,6 @@ public class AwbService implements IAwbService {
                 setAwbShipmentInfoCustomValue(shipmentDetails, awbCargoInfo, orgRow, issuingAgentAddressIdToEntityMap, awbShipmentInfo);
                 // awbOtherInfoRow.setExecutedAt(getCityId(orgRow.OrgId)); // fetch from master data
                 // awbCargoInfo.CustomOriginCode(getCountryCode(orgRow.OrgCountry)); // fetch from master data
-                setExecutedAt(orgRow);
             }
         }
 
@@ -3738,27 +3727,27 @@ public class AwbService implements IAwbService {
     }
 
     private String setUnLocationDataWithDiarcties(String name) {
-        List<String> diarcties = new ArrayList<>();
-        diarcties.add(name);
-
-        List<Object> criteria = Arrays.asList(
-                Arrays.asList(EntityTransferConstants.NAME_WO_DIACRITICS),
-                Operators.IN.getValue(),
-                List.of(diarcties)
-        );
-        CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).criteriaRequests(criteria).build();
-
-        V1DataResponse v1DataResponse;
         try {
+            List<String> diarcties = new ArrayList<>();
+            name = Optional.ofNullable(name).map(String::toLowerCase).orElse(Constants.EMPTY_STRING);
+            diarcties.add(name);
+
+            List<Object> criteria = Arrays.asList(
+                    Arrays.asList(EntityTransferConstants.NAME_WO_DIACRITICS),
+                    Operators.IN.getValue(),
+                    List.of(diarcties)
+            );
+            CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).criteriaRequests(criteria).build();
+
+            V1DataResponse v1DataResponse;
             v1DataResponse = v1Service.fetchUnlocation(commonV1ListRequest);
+            List<EntityTransferUnLocations> locationDataList = jsonHelper.convertValueToList(v1DataResponse.entities, EntityTransferUnLocations.class);
+            var locMap = locationDataList.stream().collect(Collectors.toMap(i -> StringUtility.convertToString(i.getNameWoDiacritics()).toLowerCase(), EntityTransferUnLocations::getLocationsReferenceGUID,
+                    (locationguid1, locationguid2) -> locationguid1));
+            return locMap.get(name);
         } catch (Exception e) {
             return Constants.EMPTY_STRING;
         }
-
-        List<EntityTransferUnLocations> locationDataList = jsonHelper.convertValueToList(v1DataResponse.entities, EntityTransferUnLocations.class);
-        var locMap = locationDataList.stream().collect(Collectors.toMap(EntityTransferUnLocations::getNameWoDiacritics, EntityTransferUnLocations::getLocationsReferenceGUID,
-                (locationguid1, locationguid2) -> locationguid1));
-        return locMap.get(name);
     }
 
     private void populateTaxRegistrationNumber(Awb awb, ShipmentDetails shipmentDetails) {
