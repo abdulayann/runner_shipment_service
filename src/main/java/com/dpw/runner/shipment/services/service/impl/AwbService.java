@@ -3729,7 +3729,7 @@ public class AwbService implements IAwbService {
     private String setUnLocationDataWithDiarcties(String name) {
         try {
             List<String> diarcties = new ArrayList<>();
-            name = name.toLowerCase();
+            name = Optional.ofNullable(name).map(String::toLowerCase).orElse(Constants.EMPTY_STRING);
             diarcties.add(name);
 
             List<Object> criteria = Arrays.asList(
