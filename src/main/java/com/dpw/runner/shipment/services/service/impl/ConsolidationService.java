@@ -2805,7 +2805,7 @@ public class ConsolidationService implements IConsolidationService {
                 boolean isFCLAlready = getIsFCLAlready(contShipIds, container);
                 for(ContainerShipmentADInConsoleRequest.PacksList pack : request.getPacksList()) {
                     updateShipmentsIncluded(pack, shipmentsIncluded, contShipIds);
-                    isFCL = processAndValidateFCLPack(pack, isFCL, isFCLAlready, contShipIds, shipmentsIncluded);
+                    isFCL = processAndValidateFCLPack(pack, isFCL, contShipIds, shipmentsIncluded);
                     weight = addWeightForPack(pack, container, weight);
                     volume = addVolumeForPack(pack, container, volume);
                     processHazardousPack(pack, container);
@@ -2874,7 +2874,7 @@ public class ConsolidationService implements IConsolidationService {
             shipmentsIncluded.add(pack.getShipmentId());
     }
 
-    private boolean processAndValidateFCLPack(ContainerShipmentADInConsoleRequest.PacksList pack, boolean isFCL, boolean isFCLAlready, List<Long> contShipIds, Set<Long> shipmentsIncluded) {
+    private boolean processAndValidateFCLPack(ContainerShipmentADInConsoleRequest.PacksList pack, boolean isFCL, List<Long> contShipIds, Set<Long> shipmentsIncluded) {
         if(pack.getShipmentType().equals(Constants.CARGO_TYPE_FCL)) {
             isFCL = true;
             if( contShipIds.size() + shipmentsIncluded.size() > 1 ) {
