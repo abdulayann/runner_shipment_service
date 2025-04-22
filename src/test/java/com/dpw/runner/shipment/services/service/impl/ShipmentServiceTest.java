@@ -194,6 +194,7 @@ import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.DateTimeChangeLog;
+import com.dpw.runner.shipment.services.entity.DpsEvent;
 import com.dpw.runner.shipment.services.entity.ELDetails;
 import com.dpw.runner.shipment.services.entity.Events;
 import com.dpw.runner.shipment.services.entity.Hbl;
@@ -216,6 +217,8 @@ import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
 import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
 import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
 import com.dpw.runner.shipment.services.entity.enums.DateType;
+import com.dpw.runner.shipment.services.entity.enums.DpsWorkflowState;
+import com.dpw.runner.shipment.services.entity.enums.DpsWorkflowType;
 import com.dpw.runner.shipment.services.entity.enums.JobState;
 import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
 import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
@@ -10634,6 +10637,68 @@ ShipmentServiceTest extends CommonMocks {
         ResponseEntity<IRunnerResponse> httpResponse = shipmentService.fullShipmentsListV3(commonRequestModel);
         assertEquals(expectedResponse, httpResponse);
     }
+
+    @Test
+    void testSetDpsData_OnHoldAndWarning() {
+        // given
+        String guid = UUID.randomUUID().toString();
+        ShipmentListResponse response = new ShipmentListResponse();
+        response.setGuid(UUID.fromString(guid));
+
+        List<DpsEvent> events = List.of(
+                createEvent(DpsWorkflowType.HOLD, DpsWorkflowState.PER_BLOCKED),
+                createEvent(DpsWorkflowType.WARNING, DpsWorkflowState.UN_HOLD)
+        );
+
+        when(dpsEventService.findDpsEventByGuidAndExecutionState(guid)).thenReturn(events);
+
+        // when
+        shipmentService.setDpsData(response);
+
+        // then
+        assertEquals("On Hold", response.getDpsStatus());
+        assertEquals("On Hold", response.getCgsStatus());
+    }
+
+    @Test
+    void testSetDpsData_OnlyWarning() {
+        String guid = UUID.randomUUID().toString();
+        ShipmentListResponse response = new ShipmentListResponse();
+        response.setGuid(UUID.fromString(guid));
+
+        List<DpsEvent> events = List.of(
+                createEvent(DpsWorkflowType.WARNING, DpsWorkflowState.UN_HOLD)
+        );
+
+        when(dpsEventService.findDpsEventByGuidAndExecutionState(guid)).thenReturn(events);
+
+        shipmentService.setDpsData(response);
+
+        assertEquals("No Hold", response.getDpsStatus());
+        assertEquals("On Warning", response.getCgsStatus());
+    }
+
+    @Test
+    void testSetDpsData_NoEvents() {
+        String guid = UUID.randomUUID().toString();
+        ShipmentListResponse response = new ShipmentListResponse();
+        response.setGuid(UUID.fromString(guid));
+
+        when(dpsEventService.findDpsEventByGuidAndExecutionState(guid)).thenReturn(Collections.emptyList());
+
+        shipmentService.setDpsData(response);
+
+        assertEquals("No Hold", response.getDpsStatus());
+        assertEquals("No Hold", response.getCgsStatus());
+    }
+
+    private DpsEvent createEvent(DpsWorkflowType type, DpsWorkflowState state) {
+        DpsEvent event = new DpsEvent();
+        event.setWorkflowType(type);
+        event.setState(state);
+        return event;
+    }
+
     @Test
     void testListV3() {
         Criteria criteria = Criteria.builder().fieldName("wayBillNumber").value(1).build();

@@ -831,7 +831,7 @@ public class ShipmentService implements IShipmentService {
      *
      * @param response the shipment response object on which statuses are to be set
      */
-    private void setDpsData(ShipmentListResponse response) {
+    public void setDpsData(ShipmentListResponse response) {
         String guid = response.getGuid().toString();
 
         // Fetch all DPS events for the given shipment GUID
