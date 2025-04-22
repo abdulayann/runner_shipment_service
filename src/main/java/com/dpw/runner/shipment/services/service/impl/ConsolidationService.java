@@ -2877,7 +2877,7 @@ public class ConsolidationService implements IConsolidationService {
     private boolean processAndValidateFCLPack(ContainerShipmentADInConsoleRequest.PacksList pack, boolean isFCL, boolean isFCLAlready, List<Long> contShipIds, Set<Long> shipmentsIncluded) {
         if(pack.getShipmentType().equals(Constants.CARGO_TYPE_FCL)) {
             isFCL = true;
-            if( (isFCLAlready || isFCL) && contShipIds.size() + shipmentsIncluded.size() > 1 ) {
+            if( contShipIds.size() + shipmentsIncluded.size() > 1 ) {
                 throw new ValidationException("Mentioned container is already assigned or being assigned to a FCL Shipment - " + pack.getShipmentNumber() + " along with some other Shipment. Please check and retry!");
             }
         }
