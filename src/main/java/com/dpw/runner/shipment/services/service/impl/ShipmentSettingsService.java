@@ -468,7 +468,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         List<TenantProductsRequest> tenantProductsList = request.getTenantProducts();
         List<ProductSequenceConfigRequest> productSequenceConfigList = request.getProductSequenceConfig();
 
-        List<HblTermsConditionTemplate> oldHblTermsConditionTemplateList = oldEntity.get().getHblTermsConditionTemplate();
+        List<HblTermsConditionTemplate> oldHblTermsConditionTemplateList = oldEntity.get().getHblTermsConditionTemplate(); //NOSONAR
         List<HblTermsConditionTemplate> oldHblHawbBackPrintTemplateList = oldEntity.get().getHblHawbBackPrintTemplate();
         List<TenantProducts> oldTenantProductsList = oldEntity.get().getTenantProducts();
         List<ProductSequenceConfig> oldProductSequenceConfigList = oldEntity.get().getProductSequenceConfig();

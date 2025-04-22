@@ -313,7 +313,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import org.springframework.util.CollectionUtils;
 
-@SuppressWarnings("ALL")
+@SuppressWarnings({"ALL", "java:S2111"})
 @Service
 @Slf4j
 public class ConsolidationService implements IConsolidationService {

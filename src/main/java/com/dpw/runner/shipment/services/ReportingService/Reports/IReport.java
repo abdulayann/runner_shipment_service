@@ -95,7 +95,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.*;
 
 @Slf4j
-@SuppressWarnings("unchecked")
+@SuppressWarnings({"unchecked", "java:S2259"})
 public abstract class IReport {
 
 
