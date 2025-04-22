@@ -75,6 +75,7 @@ import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.conve
 
 @Slf4j
 @Service
+@SuppressWarnings("java:S2111")
 public class PackingService implements IPackingService {
     @Autowired
     IPackingDao packingDao;
