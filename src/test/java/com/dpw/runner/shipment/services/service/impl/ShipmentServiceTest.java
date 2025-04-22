@@ -214,17 +214,7 @@ import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
 import com.dpw.runner.shipment.services.entity.TenantProducts;
 import com.dpw.runner.shipment.services.entity.TriangulationPartner;
 import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
-import com.dpw.runner.shipment.services.entity.enums.CustomerCategoryRates;
-import com.dpw.runner.shipment.services.entity.enums.DateBehaviorType;
-import com.dpw.runner.shipment.services.entity.enums.DateType;
-import com.dpw.runner.shipment.services.entity.enums.DpsWorkflowState;
-import com.dpw.runner.shipment.services.entity.enums.DpsWorkflowType;
-import com.dpw.runner.shipment.services.entity.enums.JobState;
-import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
-import com.dpw.runner.shipment.services.entity.enums.OceanDGStatus;
-import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
-import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
-import com.dpw.runner.shipment.services.entity.enums.TaskStatus;
+import com.dpw.runner.shipment.services.entity.enums.*;
 import com.dpw.runner.shipment.services.exception.exceptions.DocumentClientException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
@@ -10650,7 +10640,7 @@ ShipmentServiceTest extends CommonMocks {
                 createEvent(DpsWorkflowType.WARNING, DpsWorkflowState.UN_HOLD)
         );
 
-        when(dpsEventService.findDpsEventByGuidAndExecutionState(guid)).thenReturn(events);
+        when(dpsEventService.findDpsEventByGuidAndExecutionState(guid, DpsExecutionStatus.ACTIVE)).thenReturn(events);
 
         // when
         shipmentService.setDpsData(response);
@@ -10670,7 +10660,7 @@ ShipmentServiceTest extends CommonMocks {
                 createEvent(DpsWorkflowType.WARNING, DpsWorkflowState.UN_HOLD)
         );
 
-        when(dpsEventService.findDpsEventByGuidAndExecutionState(guid)).thenReturn(events);
+        when(dpsEventService.findDpsEventByGuidAndExecutionState(guid, DpsExecutionStatus.ACTIVE)).thenReturn(events);
 
         shipmentService.setDpsData(response);
 
@@ -10684,7 +10674,7 @@ ShipmentServiceTest extends CommonMocks {
         ShipmentListResponse response = new ShipmentListResponse();
         response.setGuid(UUID.fromString(guid));
 
-        when(dpsEventService.findDpsEventByGuidAndExecutionState(guid)).thenReturn(Collections.emptyList());
+        when(dpsEventService.findDpsEventByGuidAndExecutionState(guid, DpsExecutionStatus.ACTIVE)).thenReturn(Collections.emptyList());
 
         shipmentService.setDpsData(response);
 

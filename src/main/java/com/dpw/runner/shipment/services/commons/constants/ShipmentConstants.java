@@ -262,6 +262,7 @@ public class ShipmentConstants {
     public static final String SHIPMENT_RETRIEVE_NULL_REQUEST = "Request Id is null for Shipment retrieve with Request Id {}";
 
     public static final String FETCH_MATCHING_RULES_SUCCESS = "Matching Rules Fetched Successfully";
+    public static final String FETCH_MATCHING_RULES_WITH_EXECUTION_STATE_SUCCESS = "Matching Rules Fetched Successfully with Execution state";
     public static final String FULL_NAME = "FullName";
     public static final String SHIPMENT_ID_GUID_NULL_FOR_RETRIEVE_NTE = "Request Id and Guid are null for Shipment retrieve with Request Id {}";
     public static final String ID_GUID_NULL_ERROR = "Id and GUID can't be null. Please provide any one !";

@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dto.request.GetMatchingRulesRequest;
 import com.dpw.runner.shipment.services.dto.response.DpsEventResponse;
 import com.dpw.runner.shipment.services.dto.response.DpsEventResponse.DpsApprovalDetailResponse;
 import com.dpw.runner.shipment.services.entity.DpsEvent;
@@ -291,10 +292,26 @@ public class DpsEventService implements IDpsEventService {
         if (Strings.isNullOrEmpty(shipmentGuid)) {
             throw new DpsException("GUID can't be null. Please provide guid!");
         }
-        List<DpsEvent> dpsEventList = findDpsEventByGuidAndExecutionState(shipmentGuid);
+        List<DpsEvent> dpsEventList = findDpsEventByGuidAndExecutionState(shipmentGuid, DpsExecutionStatus.ACTIVE);
 
         if(ObjectUtils.isEmpty(dpsEventList)) {
             log.warn("No DPS Event found with provided entity id {}", shipmentGuid);
+            return ResponseHelper.buildSuccessResponse(Collections.emptyList());
+        } else {
+            List<DpsEventResponse> dpsEventResponses = dpsEventList.stream()
+                    .map(this::constructDpsEventResponse).toList();
+            return ResponseHelper.buildSuccessResponse(dpsEventResponses);
+        }
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> getShipmentMatchingRulesByGuidAndExecutionState(GetMatchingRulesRequest getMatchingRulesRequest) {
+        if (Strings.isNullOrEmpty(getMatchingRulesRequest.getShipmentGuid().toString())) {
+            throw new DpsException("GUID can't be null. Please provide guid!");
+        }
+        List<DpsEvent> dpsEventList = findDpsEventByGuidAndExecutionState(getMatchingRulesRequest.getShipmentGuid().toString(), getMatchingRulesRequest.getDpsExecutionStatus());
+        if(ObjectUtils.isEmpty(dpsEventList)) {
+            log.warn("No DPS Event found with provided entity id {}", getMatchingRulesRequest.getShipmentGuid().toString());
             return ResponseHelper.buildSuccessResponse(Collections.emptyList());
         } else {
             List<DpsEventResponse> dpsEventResponses = dpsEventList.stream()
@@ -312,8 +329,8 @@ public class DpsEventService implements IDpsEventService {
      * @return a list of active {@link DpsEvent} objects linked to the specified shipment GUID
      */
     @Override
-    public List<DpsEvent> findDpsEventByGuidAndExecutionState(String shipmentGuid) {
-        return dpsEventRepository.findDpsEventByGuidAndExecutionState(shipmentGuid, DpsExecutionStatus.ACTIVE.name());
+    public List<DpsEvent> findDpsEventByGuidAndExecutionState(String shipmentGuid, DpsExecutionStatus dpsExecutionStatus) {
+        return dpsEventRepository.findDpsEventByGuidAndExecutionState(shipmentGuid, dpsExecutionStatus.name());
     }
 
     /**

@@ -1,9 +1,11 @@
 package com.dpw.runner.shipment.services.service.interfaces;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.dto.request.GetMatchingRulesRequest;
 import com.dpw.runner.shipment.services.dto.response.DpsEventResponse;
 import com.dpw.runner.shipment.services.entity.DpsEvent;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.enums.DpsExecutionStatus;
 import com.dpw.runner.shipment.services.kafka.dto.DpsDto;
 import java.util.List;
 import java.util.Set;
@@ -23,7 +25,9 @@ public interface IDpsEventService {
 
     ResponseEntity<IRunnerResponse> getShipmentMatchingRulesByGuid(String shipmentGuid);
 
-    List<DpsEvent> findDpsEventByGuidAndExecutionState(String shipmentGuid);
+    ResponseEntity<IRunnerResponse> getShipmentMatchingRulesByGuidAndExecutionState(GetMatchingRulesRequest getMatchingRulesRequest);
+
+    List<DpsEvent> findDpsEventByGuidAndExecutionState(String shipmentGuid, DpsExecutionStatus dpsExecutionStatus);
 
     DpsEventResponse constructDpsEventResponse(DpsEvent dpsEvent);
 
