@@ -138,6 +138,26 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
     }
 
+    @Override
+    public ResponseEntity<IRunnerResponse> create(CommonRequestModel commonRequestModel) {
+        return null;
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> delete(CommonRequestModel commonRequestModel) {
+        return null;
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel, boolean getMasterData) {
+        return null;
+    }
+
+    @Override
+    public ResponseEntity<IRunnerResponse> completeUpdate(CommonRequestModel commonRequestModel) {
+        return null;
+    }
+
     private List<IRunnerResponse> convertEntityListToDtoList(List<ShipmentDetails> lst, boolean getMasterData, List<ShipmentListResponse> shipmentListResponses, Set<String> includeColumns, Boolean notificationFlag) {
         List<IRunnerResponse> responseList = new ArrayList<>();
         Map<Long, ShipmentDetails> shipmentDetailsMap = lst.stream().collect(Collectors.toMap(ShipmentDetails::getId, Function.identity()));
