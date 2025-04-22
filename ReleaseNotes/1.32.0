@@ -1,1 +1,6 @@
 Release Version - Release-v1.32.0
+
+POST Deployment
+----------------
+1. RUN V1.269__add_booking_id_reference_number.sql in ALL env
+2. RUN V1.270__add_shipment_reference_number_in_customer_booking.sql in ALL env
