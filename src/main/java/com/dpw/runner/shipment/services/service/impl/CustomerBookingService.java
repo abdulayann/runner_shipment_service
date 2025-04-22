@@ -1609,6 +1609,7 @@ public class CustomerBookingService implements ICustomerBookingService {
                     return r;
                 }).toList());
             }
+            setReferenceNumbersForClonedBookings(customerBookingResponse);
             customerBookingResponse.setBookingCharges(null);
 
             //fields related to contract
@@ -1643,6 +1644,19 @@ public class CustomerBookingService implements ICustomerBookingService {
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    private void setReferenceNumbersForClonedBookings(CustomerBookingResponse customerBookingResponse) {
+        if(customerBookingResponse.getReferenceNumbersList() != null && !customerBookingResponse.getReferenceNumbersList().isEmpty())
+        {
+            customerBookingResponse.setReferenceNumbersList(customerBookingResponse.getReferenceNumbersList().stream().map(referenceNumbersResponse -> {
+                ReferenceNumbersResponse r = new ReferenceNumbersResponse();
+                r.setCountryOfIssue(referenceNumbersResponse.getCountryOfIssue());
+                r.setType(referenceNumbersResponse.getType());
+                r.setReferenceNumber(referenceNumbersResponse.getReferenceNumber());
+                return r;
+            }).toList());
         }
     }
 
