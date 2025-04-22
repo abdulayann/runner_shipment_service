@@ -511,4 +511,36 @@ class ReferenceNumbersDaoTest {
         assertNotNull(referenceNumbersList1);
         assertEquals(referenceNumbersList, referenceNumbersList1);
     }
+
+    @Test
+    void testUpdateEntityFromBooking_JsonParseFailure() throws Exception {
+        ReferenceNumbers referenceNumbers = new ReferenceNumbers();
+        referenceNumbers.setReferenceNumber("qwerty");
+        referenceNumbers.setId(1234L);
+        referenceNumbers.setBookingId(2321L);
+        List<ReferenceNumbers> referenceNumbersList = Collections.singletonList(referenceNumbers);
+        ReferenceNumbersDao spyService = spy(referenceNumbersDao);
+        doReturn(new PageImpl<>(List.of(testData))).when(spyService).findAll(any(), any());
+        doReturn(referenceNumbersList).when(spyService).saveEntityFromBooking(anyList(), anyLong());
+        when(jsonHelper.convertToJson(any())).thenThrow(RuntimeException.class);
+        List<ReferenceNumbers> referenceNumbersList1 = spyService.updateEntityFromBooking(referenceNumbersList, 1L);
+        assertNotNull(referenceNumbersList1);
+        assertEquals(referenceNumbersList, referenceNumbersList1);
+    }
+
+    @Test
+    void testUpdateEntityFromBooking_AuditLogFailure() throws Exception {
+        ReferenceNumbers referenceNumbers = new ReferenceNumbers();
+        referenceNumbers.setReferenceNumber("qwerty");
+        referenceNumbers.setId(1234L);
+        referenceNumbers.setBookingId(2321L);
+        List<ReferenceNumbers> referenceNumbersList = Collections.singletonList(referenceNumbers);
+        ReferenceNumbersDao spyService = spy(referenceNumbersDao);
+        doReturn(new PageImpl<>(List.of(testData))).when(spyService).findAll(any(), any());
+        doReturn(referenceNumbersList).when(spyService).saveEntityFromBooking(anyList(), anyLong());
+        doThrow(InvocationTargetException.class).when(auditLogService).addAuditLog(any(AuditLogMetaData.class));
+        List<ReferenceNumbers> referenceNumbersList1 = spyService.updateEntityFromBooking(referenceNumbersList, 1L);
+        assertNotNull(referenceNumbersList1);
+        assertEquals(referenceNumbersList, referenceNumbersList1);
+    }
 }
