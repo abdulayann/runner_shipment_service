@@ -13,6 +13,6 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 public class GetMatchingRulesRequest {
-    private UUID shipmentGuid;
+    private String shipmentGuid;
     private List<DpsExecutionStatus> dpsExecutionStatusList;
 }

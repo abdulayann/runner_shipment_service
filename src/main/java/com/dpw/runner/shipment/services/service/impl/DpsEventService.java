@@ -306,12 +306,12 @@ public class DpsEventService implements IDpsEventService {
 
     @Override
     public ResponseEntity<IRunnerResponse> getShipmentMatchingRulesByGuidAndExecutionState(GetMatchingRulesRequest getMatchingRulesRequest) {
-        if (Strings.isNullOrEmpty(getMatchingRulesRequest.getShipmentGuid().toString())) {
+        if (Strings.isNullOrEmpty(getMatchingRulesRequest.getShipmentGuid())) {
             throw new DpsException("GUID can't be null. Please provide guid!");
         }
-        List<DpsEvent> dpsEventList = findDpsEventByGuidAndExecutionStateIn(getMatchingRulesRequest.getShipmentGuid().toString(), getMatchingRulesRequest.getDpsExecutionStatusList());
+        List<DpsEvent> dpsEventList = findDpsEventByGuidAndExecutionStateIn(getMatchingRulesRequest.getShipmentGuid(), getMatchingRulesRequest.getDpsExecutionStatusList());
         if(ObjectUtils.isEmpty(dpsEventList)) {
-            log.warn("No DPS Event found with provided entity id {}", getMatchingRulesRequest.getShipmentGuid().toString());
+            log.warn("No DPS Event found with provided entity id {}", getMatchingRulesRequest.getShipmentGuid());
             return ResponseHelper.buildSuccessResponse(Collections.emptyList());
         } else {
             List<DpsEventResponse> dpsEventResponses = dpsEventList.stream()
