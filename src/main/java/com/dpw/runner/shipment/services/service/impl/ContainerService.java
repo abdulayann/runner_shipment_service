@@ -1521,7 +1521,7 @@ public class ContainerService implements IContainerService {
             }
             List<Containers> existingCont = containerDao.findByGuid(containerRequest.getGuid());
             Containers containers = syncEntityConversionService.containerV1ToV2(containerRequest);
-            List<Long> shipIds = null;
+            Set<Long> shipIds = null;
             boolean isCreate = true;
             if (existingCont != null && !existingCont.isEmpty()) {
                 containers.setId(existingCont.get(0).getId());
@@ -1550,13 +1550,13 @@ public class ContainerService implements IContainerService {
         }
     }
 
-    private List<Long> getShipIds(ContainerRequestV2 containerRequest, List<Long> shipIds) {
+    private Set<Long> getShipIds(ContainerRequestV2 containerRequest, Set<Long> shipIds) {
         if (containerRequest.getShipmentGuids() != null && !containerRequest.getShipmentGuids().isEmpty()) {
             ListCommonRequest listCommonRequest = constructListCommonRequest("guid", containerRequest.getShipmentGuids(), "IN");
             Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listCommonRequest, ShipmentDetails.class);
             Page<ShipmentDetails> shipmentDetails = shipmentDao.findAll(pair.getLeft(), pair.getRight());
             if (shipmentDetails.get() != null && shipmentDetails.get().count() > 0) {
-                shipIds = shipmentDetails.get().map(e -> e.getId()).toList();
+                shipIds = shipmentDetails.get().map(e -> e.getId()).collect(Collectors.toSet());
             }
         }
         return shipIds;

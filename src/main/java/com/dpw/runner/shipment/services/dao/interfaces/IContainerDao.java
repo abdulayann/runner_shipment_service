@@ -33,7 +33,7 @@ public interface IContainerDao {
     List<Containers> updateEntityFromConsolidationV1(List<Containers> containersList, Long consolidationId, List<Containers> oldContainers) throws RunnerException;
     List<Containers> updateEntityFromShipmentV1(List<Containers> containersList, List<Containers> oldContainers) throws RunnerException;
     List<Containers> findByShipmentId(Long shipmentId);
-    List<Containers> findByConsolidationId(Long shipmentId);
+    List<Containers> findByConsolidationId(Long consolidationId);
     List<Containers> findByConsolidationIdIn(List<Long> consolidationIds);
     void deleteAllById(List<Long> containerIdList);
     void deleteById(Long id);
