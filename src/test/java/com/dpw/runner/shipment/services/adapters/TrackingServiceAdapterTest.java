@@ -227,6 +227,15 @@ class TrackingServiceAdapterTest {
     }
 
     @Test
+    void checkIfAwbExists2() {
+        when(consoleShipmentMappingDao.findByConsolidationId(any())).thenReturn(List.of(new ConsoleShipmentMapping()));
+        when(shipmentDao.findById(any())).thenReturn(Optional.empty());
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
+        boolean res = trackingServiceAdapter.checkIfAwbExists(consolidationDetails);
+        assertFalse(res);
+    }
+
+    @Test
     void checkIfConsolContainersExist() {
         ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
         boolean res = trackingServiceAdapter.checkIfConsolContainersExist(consolidationDetails);
@@ -495,6 +504,67 @@ class TrackingServiceAdapterTest {
         assertNotNull(response);
         assertEquals("APL", response.getCarrier());
         assertEquals("AU", response.getShipmentDetails().get(0).getCountryCode());
+    }
+
+    @Test
+    void testSetBookingReference_whenShipmentIsAPI_andRequestFromShipmentFalse_andConsolNotNull() {
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setSource("API");
+
+        ConsolidationDetails consol = new ConsolidationDetails();
+        consol.setReferenceNumber("CONSOL_REF_123");
+
+        UniversalTrackingPayload trackingPayload = new UniversalTrackingPayload();
+
+        trackingServiceAdapter.setBookingReferenceNumberInTrackingPayload(consol, shipment, false, trackingPayload);
+
+        assertEquals("CONSOL_REF_123", trackingPayload.getBookingReferenceNumber());
+    }
+
+    @Test
+    void testSetBookingReference_whenShipmentIsAPI_andRequestFromShipmentFalse_andConsolNull() {
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setSource("API");
+
+        UniversalTrackingPayload trackingPayload = new UniversalTrackingPayload();
+
+        trackingServiceAdapter.setBookingReferenceNumberInTrackingPayload(null, shipment, false, trackingPayload);
+
+        assertNull(trackingPayload.getBookingReferenceNumber());
+    }
+
+    @Test
+    void testSetBookingReference_whenShipmentIsAPI_andRequestFromShipmentTrue() {
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setSource("API");
+        shipment.setBookingReference("BOOK_REF_456");
+
+        UniversalTrackingPayload trackingPayload = new UniversalTrackingPayload();
+
+        trackingServiceAdapter.setBookingReferenceNumberInTrackingPayload(new ConsolidationDetails(), shipment, true, trackingPayload);
+
+        assertEquals("BOOK_REF_456", trackingPayload.getBookingReferenceNumber());
+    }
+
+    @Test
+    void testSetBookingReference_whenShipmentSourceIsNotAPI() {
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setSource("MANUAL");
+
+        UniversalTrackingPayload trackingPayload = new UniversalTrackingPayload();
+
+        trackingServiceAdapter.setBookingReferenceNumberInTrackingPayload(new ConsolidationDetails(), shipment, true, trackingPayload);
+
+        assertNull(trackingPayload.getBookingReferenceNumber());
+    }
+
+    @Test
+    void testSetBookingReference_whenShipmentIsNull() {
+        UniversalTrackingPayload trackingPayload = new UniversalTrackingPayload();
+
+        trackingServiceAdapter.setBookingReferenceNumberInTrackingPayload(new ConsolidationDetails(), null, false, trackingPayload);
+
+        assertNull(trackingPayload.getBookingReferenceNumber());
     }
 
 }

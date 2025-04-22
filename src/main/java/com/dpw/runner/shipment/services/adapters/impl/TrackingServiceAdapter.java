@@ -182,8 +182,10 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
         List<ConsoleShipmentMapping> consoleShipmentMappings = consoleShipmentMappingDao.findByConsolidationId(consolidationDetails.getId());
         if(consoleShipmentMappings != null && !consoleShipmentMappings.isEmpty()){
             Optional<ShipmentDetails> optional = shipmentDao.findById(consoleShipmentMappings.get(0).getShipmentId());
-            var shipment = optional.get();
-            return (shipment.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipment.getHouseBill() != null);
+            if (optional.isPresent()) {
+                var shipment = optional.get();
+                return (shipment.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR) && shipment.getHouseBill() != null);
+            }
         }
         return false;
     }
@@ -307,10 +309,12 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
         return inputShipment != null ? inputShipment.getMasterBill() : null;
     }
 
-    private void setBookingReferenceNumberInTrackingPayload(ConsolidationDetails inputConsol, ShipmentDetails inputShipment, boolean isRequestFromShipment, UniversalTrackingPayload trackingPayload) {
+     public void setBookingReferenceNumberInTrackingPayload(ConsolidationDetails inputConsol, ShipmentDetails inputShipment, boolean isRequestFromShipment, UniversalTrackingPayload trackingPayload) {
         if(inputShipment != null && "API".equals(inputShipment.getSource())) {
-            if(!isRequestFromShipment)
-                trackingPayload.setBookingReferenceNumber(inputConsol.getReferenceNumber());
+            if(!isRequestFromShipment) {
+                var referenceNumber = inputConsol !=  null ? inputConsol.getReferenceNumber() : null;
+                trackingPayload.setBookingReferenceNumber(referenceNumber);
+            }
             else
                 trackingPayload.setBookingReferenceNumber(inputShipment.getBookingReference());
         }

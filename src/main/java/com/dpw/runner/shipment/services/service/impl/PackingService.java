@@ -344,8 +344,7 @@ public class PackingService implements IPackingService {
     private BigDecimal getCalculatedVolume(Packing packingRow) throws RunnerException {
         if (!StringUtils.isEmpty(packingRow.getPacks()) && packingRow.getLength() != null
                 && packingRow.getHeight() != null && packingRow.getWidth() != null
-                && !StringUtils.isEmpty(packingRow.getWidthUnit()) && !StringUtils.isEmpty(packingRow.getHeightUnit())
-                && !StringUtils.isEmpty(packingRow.getHeightUnit())) {
+                && !StringUtils.isEmpty(packingRow.getWidthUnit()) && !StringUtils.isEmpty(packingRow.getHeightUnit())) {
             String lengthUnit = packingRow.getLengthUnit().equals(FT) ? FOOT_FT : packingRow.getLengthUnit();
             String widthUnit = packingRow.getWidthUnit().equals(FT) ? FOOT_FT : packingRow.getWidthUnit();
             String heightUnit = packingRow.getHeightUnit().equals(FT) ? FOOT_FT : packingRow.getHeightUnit();
@@ -573,10 +572,17 @@ public class PackingService implements IPackingService {
         }
         ShipmentDetails shipmentDetails = null;
         try {
-            if(request.getNewPack() != null)
-                shipmentDetails = shipmentDao.findById(request.getNewPack().getShipmentId()).get();
-            else if(request.getOldPack() != null)
-                shipmentDetails = shipmentDao.findById(request.getOldPack().getShipmentId()).get();
+            if (request.getNewPack() != null) {
+                Optional<ShipmentDetails> shipmentOptional = shipmentDao.findById(request.getNewPack().getShipmentId());
+                if (shipmentOptional.isPresent()) {
+                    shipmentDetails = shipmentOptional.get();
+                }
+            } else if (request.getOldPack() != null) {
+                Optional<ShipmentDetails> shipmentOptional = shipmentDao.findById(request.getOldPack().getShipmentId());
+                if (shipmentOptional.isPresent()) {
+                    shipmentDetails = shipmentOptional.get();
+                }
+            }
         }
         catch (Exception e) {
             throw new RunnerException("Please send correct shipment Id in packing request");

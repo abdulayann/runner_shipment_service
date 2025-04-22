@@ -2743,7 +2743,11 @@ public class V1ServiceImpl implements IV1Service {
             response = this.restTemplate.postForEntity(this.getUserWithGivenPermission, entity, V1DataResponse.class);
 
             log.info("Token time taken in getUsersWithGivenPermissions() function {} ms", (System.currentTimeMillis() - time));
-            return jsonHelper.convertValueToList(response.getBody().getEntities(), UsersDto.class);
+            var body = response.getBody();
+            if (body != null && body.getEntities() != null) {
+                return jsonHelper.convertValueToList(body.getEntities(), UsersDto.class);
+            }
+            return new ArrayList<>();
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
             throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
         } catch (Exception var7) {

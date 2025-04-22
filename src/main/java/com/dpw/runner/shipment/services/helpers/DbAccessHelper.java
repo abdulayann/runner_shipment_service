@@ -234,7 +234,7 @@ public class DbAccessHelper {
     private static <T> Join<Class<T>, T> manageJoin(SortRequest sortRequest, Map<String, Join<Class<T>, T>> map, Map<String, RunnerEntityMapping> tableNames, Root<T> root, CriteriaQuery<?> query) {
         Join<Class<T>, T> join;
         if ((root.getJoins() == null && root.getFetches() == null) || (root.getJoins().isEmpty() && root.getFetches().isEmpty()) || map.get(tableNames.get(sortRequest.getFieldName()).getTableName()) == null ||
-                (!root.getJoins().contains(map.get(tableNames.get(sortRequest.getFieldName()).getTableName())) && !root.getFetches().contains(map.get(tableNames.get(sortRequest.getFieldName()).getTableName())))) {
+                (!root.getJoins().contains(map.get(tableNames.get(sortRequest.getFieldName()).getTableName())) && !root.getFetches().contains(map.get(tableNames.get(sortRequest.getFieldName()).getTableName())))) { //NOSONAR
             join = (Join) root.fetch(tableNames.get(sortRequest.getFieldName()).getTableName(), JoinType.LEFT);
             map.put(tableNames.get(sortRequest.getFieldName()).getTableName(), join);
             query.distinct(true);
@@ -251,7 +251,7 @@ public class DbAccessHelper {
             path = root;
         } else {
             if ((root.getJoins() == null && root.getFetches() == null) || (root.getJoins().isEmpty() && root.getFetches().isEmpty()) || map.get(tableNames.get(input.getFieldName()).getTableName()) == null ||
-                    (!root.getJoins().contains(map.get(tableNames.get(input.getFieldName()).getTableName())) && !root.getFetches().contains(map.get(tableNames.get(input.getFieldName()).getTableName())))) {
+                    (!root.getJoins().contains(map.get(tableNames.get(input.getFieldName()).getTableName())) && !root.getFetches().contains(map.get(tableNames.get(input.getFieldName()).getTableName())))) {//NOSONAR
                 join = root.join(tableNames.get(input.getFieldName()).getTableName(), JoinType.LEFT);
                 map.put(tableNames.get(input.getFieldName()).getTableName(), join);
                 path = join;

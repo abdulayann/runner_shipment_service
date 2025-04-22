@@ -394,7 +394,7 @@ public class EventService implements IEventService {
             }
             Optional<Events> existingEvent = eventDao.findByGuid(eventsRequestV2.getGuid());
             Events events = modelMapper.map(eventsRequestV2, Events.class);
-            if (existingEvent != null && existingEvent.isPresent()) {
+            if (existingEvent.isPresent()) {
                 events.setId(existingEvent.get().getId());
             }
             if (eventsRequestV2.getShipmentGuid() != null) {

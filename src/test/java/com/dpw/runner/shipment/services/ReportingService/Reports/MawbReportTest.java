@@ -51,6 +51,7 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 
@@ -345,11 +346,11 @@ class MawbReportTest extends CommonMocks {
         when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
         mawbReport.isDMawb = true;
         mawbReport.printType = ReportConstants.ORIGINAL;
-
         mockShipmentSettings();
 
         Assertions.assertThrows(ValidationException.class, () -> mawbReport.getDocumentModel(123L));
     }
+
 
     @Test
     void getDocumentModel_CountryAirCargoSecurity_DMAWB3() {
