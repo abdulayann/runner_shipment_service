@@ -4,7 +4,6 @@ import com.dpw.runner.shipment.services.entity.enums.DpsExecutionStatus;
 import lombok.*;
 
 import java.util.List;
-import java.util.UUID;
 
 @Getter
 @Setter
