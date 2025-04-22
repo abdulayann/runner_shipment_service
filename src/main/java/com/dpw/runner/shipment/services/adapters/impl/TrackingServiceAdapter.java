@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.adapters.impl;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 
 import com.azure.messaging.servicebus.ServiceBusMessage;
 import com.dpw.runner.shipment.services.adapters.config.TrackingServiceConfig;
@@ -23,6 +24,7 @@ import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiRe
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.DateAndSources;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Details;
+import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Event;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.Awb;
@@ -72,15 +74,6 @@ import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-
-import java.time.format.DateTimeFormatter;
-import java.util.*;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ForkJoinPool;
-
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 
 @Slf4j
@@ -572,61 +565,65 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
 //        }
 //    }
 
-    /**
-     * Converts a tracking event code to a short code based on the location role.
-     * <p>
-     * This method translates specific tracking event codes to their corresponding short codes based on the location role. The conversion is based on predefined constants and
-     * specific conditions.
-     *
-     * @param locationRole the role of the location associated with the event
-     * @param eventCode    the original event code to be converted
-     * @param description
-     * @return the corresponding short code if a match is found, otherwise returns the original event code
-     */
     @Override
-    public String convertTrackingEventCodeToShortCode(String locationRole, String eventCode, String description) {
+    public String convertTrackingEventCodeToShortCode(Event event) {
 
-        String safeEventCode = StringUtils.defaultString(eventCode);
-        String safeLocationRole = StringUtils.defaultString(locationRole);
-        String safeDescription = StringUtils.defaultString(description);
+        String safeEventType = StringUtils.defaultString(event.getEventType());
+        String safeLocationRole = StringUtils.defaultString(event.getLocationRole());
+        String safeDescription = StringUtils.defaultString(event.getDescription());
+        String safeDescriptionFromSource = StringUtils.defaultString(event.getDescriptionFromSource());
 
-        log.info("Converting event code '{}' with location role '{}'", safeEventCode, safeLocationRole);
+        log.info("Converting event code '{}' with location role '{}'", safeEventType, safeLocationRole);
 
-        if (EventConstants.FLIGHT_ARRIVAL.equalsIgnoreCase(safeEventCode)
+        if (EventConstants.FLIGHT_ARRIVAL.equalsIgnoreCase(safeEventType)
                 && safeDescription.equalsIgnoreCase("Flight Arrival")) {
-            log.debug("Matched FLIGHT_ARRIVAL and DESCRIPTION. Returning short code: {}", EventConstants.FLAR);
+            log.info("Matched FLIGHT_ARRIVAL and DESCRIPTION. Returning short code: {}", EventConstants.FLAR);
             return EventConstants.FLAR;
         }
 
-        if (EventConstants.FLIGHT_DEPARTURE.equalsIgnoreCase(safeEventCode)
+        if (EventConstants.FLIGHT_DEPARTURE.equalsIgnoreCase(safeEventType)
                 && safeDescription.equalsIgnoreCase("Flight Departure")) {
-            log.debug("Matched FLIGHT_DEPARTURE and DESCRIPTION. Returning short code: {}", EventConstants.FLDR);
+            log.info("Matched FLIGHT_DEPARTURE and DESCRIPTION. Returning short code: {}", EventConstants.FLDR);
             return EventConstants.FLDR;
         }
 
-        String shortCode = getShortCode(safeEventCode, safeDescription);
-        if (shortCode != null) return shortCode;
+        String shortCode = getShortCode(safeEventType, safeDescription);
+        if (shortCode != null) {
+            return shortCode;
+        }
 
-        String ecpk = getECPKEventCode(safeEventCode, safeLocationRole);
-        if (ecpk != null) return ecpk;
+        String ecpk = getECPKEventCode(safeEventType, safeLocationRole);
+        if (ecpk != null) {
+            return ecpk;
+        }
 
-        String fcgi = getFCGIEventCode(safeEventCode, safeLocationRole);
-        if (fcgi != null) return fcgi;
+        String fcgi = getFCGIEventCode(safeEventType, safeLocationRole);
+        if (fcgi != null) {
+            return fcgi;
+        }
 
-        String vsdp = getVSDPEventCode(safeEventCode, safeLocationRole);
-        if (vsdp != null) return vsdp;
+        String vsdp = getVSDPEventCode(safeEventType, safeLocationRole, safeDescriptionFromSource);
+        if (vsdp != null) {
+            return vsdp;
+        }
 
-        String ardp = getADRPEventCode(safeEventCode, safeLocationRole);
-        if (ardp != null) return ardp;
+        String ardp = getADRPEventCode(safeEventType, safeLocationRole);
+        if (ardp != null) {
+            return ardp;
+        }
 
-        String fugo = getFUGOEventCode(safeEventCode, safeLocationRole);
-        if (fugo != null) return fugo;
+        String fugo = getFUGOEventCode(safeEventType, safeLocationRole);
+        if (fugo != null) {
+            return fugo;
+        }
 
-        String emcr = getEMCREventCode(safeEventCode, safeLocationRole);
-        if (emcr != null) return emcr;
+        String emcr = getEMCREventCode(safeEventType, safeLocationRole);
+        if (emcr != null) {
+            return emcr;
+        }
 
-        log.info("No match found for event code '{}' with location role '{}'. Returning original event code.", safeEventCode, safeLocationRole);
-        return eventCode;
+        log.info("No match found for event code '{}' with location role '{}'. Returning original event code.", safeEventType, safeLocationRole);
+        return safeEventType;
     }
 
     private String getShortCode(String safeEventCode, String safeDescription) {
@@ -652,7 +649,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
     private String getECPKEventCode(String safeEventCode, String safeLocationRole) {
         if (EventConstants.GATE_IN_WITH_CONTAINER_EMPTY.equalsIgnoreCase(safeEventCode)
                 && safeLocationRole.startsWith(EventConstants.ORIGIN)) {
-            log.debug("Matched GATE_IN_WITH_CONTAINER_EMPTY and ORIGIN. Returning short code: {}", EventConstants.ECPK);
+            log.info("Matched GATE_IN_WITH_CONTAINER_EMPTY and ORIGIN. Returning short code: {}", EventConstants.ECPK);
             return EventConstants.ECPK;
         }
         return null;
@@ -661,25 +658,33 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
     private String getFCGIEventCode(String safeEventCode, String safeLocationRole) {
         if (EventConstants.GATE_IN_WITH_CONTAINER_FULL.equalsIgnoreCase(safeEventCode)
                 && "originPort".equalsIgnoreCase(safeLocationRole)) {
-            log.debug("Matched GATE_IN_WITH_CONTAINER_FULL and originPort. Returning short code: {}", EventConstants.FCGI);
+            log.info("Matched GATE_IN_WITH_CONTAINER_FULL and originPort. Returning short code: {}", EventConstants.FCGI);
             return EventConstants.FCGI;
         }
         return null;
     }
 
-    private String getVSDPEventCode(String safeEventCode, String safeLocationRole) {
-        if (EventConstants.VESSEL_DEPARTURE_WITH_CONTAINER.equalsIgnoreCase(safeEventCode)
-                && "originPort".equalsIgnoreCase(safeLocationRole)) {
-            log.debug("Matched VESSEL_DEPARTURE_WITH_CONTAINER and originPort. Returning short code: {}", EventConstants.VSDP);
+    private String getVSDPEventCode(String safeEventType, String safeLocationRole, String safeDescriptionFromSource) {
+        boolean isVesselDepartureFromOrigin =
+                EventConstants.VESSEL_DEPARTURE_WITH_CONTAINER.equalsIgnoreCase(safeEventType) &&
+                        EventConstants.ORIGIN_PORT.equalsIgnoreCase(safeLocationRole);
+
+        boolean isExportLoadOnVessel =
+                EventConstants.LOAD_ON_VESSEL.equalsIgnoreCase(safeEventType) &&
+                        EventConstants.EXPORT_LOADED_ON_VESSEL.equalsIgnoreCase(safeDescriptionFromSource);
+
+        if (isVesselDepartureFromOrigin || isExportLoadOnVessel) {
+            log.info("Matched conditions for VSDP. Returning short code: {}", EventConstants.VSDP);
             return EventConstants.VSDP;
         }
+
         return null;
     }
 
     private String getADRPEventCode(String safeEventCode, String safeLocationRole) {
         if (EventConstants.VESSEL_ARRIVAL_WITH_CONTAINER.equalsIgnoreCase(safeEventCode)
                 && "destinationPort".equalsIgnoreCase(safeLocationRole)) {
-            log.debug("Matched VESSEL_ARRIVAL_WITH_CONTAINER and destinationPort. Returning short code: {}", EventConstants.ARDP);
+            log.info("Matched VESSEL_ARRIVAL_WITH_CONTAINER and destinationPort. Returning short code: {}", EventConstants.ARDP);
             return EventConstants.ARDP;
         }
         return null;
@@ -688,7 +693,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
     private String getFUGOEventCode(String safeEventCode, String safeLocationRole) {
         if (EventConstants.GATE_OUT_WITH_CONTAINER_FULL.equalsIgnoreCase(safeEventCode)
                 && "destinationPort".equalsIgnoreCase(safeLocationRole)) {
-            log.debug("Matched GATE_OUT_WITH_CONTAINER_FULL and destinationPort. Returning short code: {}", EventConstants.FUGO);
+            log.info("Matched GATE_OUT_WITH_CONTAINER_FULL and destinationPort. Returning short code: {}", EventConstants.FUGO);
             return EventConstants.FUGO;
         }
         return null;
@@ -697,7 +702,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
     private String getEMCREventCode(String safeEventCode, String safeLocationRole) {
         if (EventConstants.GATE_IN_WITH_CONTAINER_EMPTY.equalsIgnoreCase(safeEventCode)
                 && safeLocationRole.startsWith(EventConstants.DESTINATION)) {
-            log.debug("Matched GATE_IN_WITH_CONTAINER_EMPTY and DESTINATION. Returning short code: {}", EventConstants.EMCR);
+            log.info("Matched GATE_IN_WITH_CONTAINER_EMPTY and DESTINATION. Returning short code: {}", EventConstants.EMCR);
             return EventConstants.EMCR;
         }
         return null;
@@ -752,7 +757,7 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
                                                         .map(DateAndSources::getDateTime).orElse(null))
                                                 .estimated(Optional.ofNullable(event.getProjectedEventTime())
                                                         .map(DateAndSources::getDateTime).orElse(null))
-                                                .eventCode(convertTrackingEventCodeToShortCode(event.getLocationRole(), event.getEventType(), event.getDescription()))
+                                                .eventCode(convertTrackingEventCodeToShortCode(event))
                                                 .description(event.getDescription())
                                                 .containerNumber(container.getContainerNumber())
                                                 .locationRole(event.getLocationRole());
