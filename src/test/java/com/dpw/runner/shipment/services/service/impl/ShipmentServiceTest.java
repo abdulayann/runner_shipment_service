@@ -10640,7 +10640,7 @@ ShipmentServiceTest extends CommonMocks {
                 createEvent(DpsWorkflowType.WARNING, DpsWorkflowState.UN_HOLD)
         );
 
-        when(dpsEventService.findDpsEventByGuidAndExecutionState(guid, DpsExecutionStatus.ACTIVE)).thenReturn(events);
+        when(dpsEventService.findDpsEventByGuidAndExecutionState(guid)).thenReturn(events);
 
         // when
         shipmentService.setDpsData(response);
@@ -10660,7 +10660,7 @@ ShipmentServiceTest extends CommonMocks {
                 createEvent(DpsWorkflowType.WARNING, DpsWorkflowState.UN_HOLD)
         );
 
-        when(dpsEventService.findDpsEventByGuidAndExecutionState(guid, DpsExecutionStatus.ACTIVE)).thenReturn(events);
+        when(dpsEventService.findDpsEventByGuidAndExecutionState(guid)).thenReturn(events);
 
         shipmentService.setDpsData(response);
 
@@ -10674,7 +10674,7 @@ ShipmentServiceTest extends CommonMocks {
         ShipmentListResponse response = new ShipmentListResponse();
         response.setGuid(UUID.fromString(guid));
 
-        when(dpsEventService.findDpsEventByGuidAndExecutionState(guid, DpsExecutionStatus.ACTIVE)).thenReturn(Collections.emptyList());
+        when(dpsEventService.findDpsEventByGuidAndExecutionState(guid)).thenReturn(Collections.emptyList());
 
         shipmentService.setDpsData(response);
 

@@ -292,7 +292,7 @@ public class DpsEventService implements IDpsEventService {
         if (Strings.isNullOrEmpty(shipmentGuid)) {
             throw new DpsException("GUID can't be null. Please provide guid!");
         }
-        List<DpsEvent> dpsEventList = findDpsEventByGuidAndExecutionState(shipmentGuid, DpsExecutionStatus.ACTIVE);
+        List<DpsEvent> dpsEventList = findDpsEventByGuidAndExecutionState(shipmentGuid);
 
         if(ObjectUtils.isEmpty(dpsEventList)) {
             log.warn("No DPS Event found with provided entity id {}", shipmentGuid);
@@ -309,7 +309,7 @@ public class DpsEventService implements IDpsEventService {
         if (Strings.isNullOrEmpty(getMatchingRulesRequest.getShipmentGuid().toString())) {
             throw new DpsException("GUID can't be null. Please provide guid!");
         }
-        List<DpsEvent> dpsEventList = findDpsEventByGuidAndExecutionState(getMatchingRulesRequest.getShipmentGuid().toString(), getMatchingRulesRequest.getDpsExecutionStatus());
+        List<DpsEvent> dpsEventList = findDpsEventByGuidAndExecutionStateIn(getMatchingRulesRequest.getShipmentGuid().toString(), getMatchingRulesRequest.getDpsExecutionStatusList());
         if(ObjectUtils.isEmpty(dpsEventList)) {
             log.warn("No DPS Event found with provided entity id {}", getMatchingRulesRequest.getShipmentGuid().toString());
             return ResponseHelper.buildSuccessResponse(Collections.emptyList());
@@ -329,8 +329,16 @@ public class DpsEventService implements IDpsEventService {
      * @return a list of active {@link DpsEvent} objects linked to the specified shipment GUID
      */
     @Override
-    public List<DpsEvent> findDpsEventByGuidAndExecutionState(String shipmentGuid, DpsExecutionStatus dpsExecutionStatus) {
-        return dpsEventRepository.findDpsEventByGuidAndExecutionState(shipmentGuid, dpsExecutionStatus.name());
+    public List<DpsEvent> findDpsEventByGuidAndExecutionState(String shipmentGuid) {
+        return dpsEventRepository.findDpsEventByGuidAndExecutionState(shipmentGuid, DpsExecutionStatus.ACTIVE.name());
+    }
+
+    @Override
+    public List<DpsEvent> findDpsEventByGuidAndExecutionStateIn(String shipmentGuid, List<DpsExecutionStatus> dpsExecutionStatusList) {
+        List<String> dpsExecutionList = dpsExecutionStatusList.stream()
+                .map(DpsExecutionStatus::name)
+                .toList();
+        return dpsEventRepository.findDpsEventByGuidAndExecutionStateIn(shipmentGuid, dpsExecutionList);
     }
 
     /**

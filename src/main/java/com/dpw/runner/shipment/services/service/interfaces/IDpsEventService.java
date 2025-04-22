@@ -27,7 +27,9 @@ public interface IDpsEventService {
 
     ResponseEntity<IRunnerResponse> getShipmentMatchingRulesByGuidAndExecutionState(GetMatchingRulesRequest getMatchingRulesRequest);
 
-    List<DpsEvent> findDpsEventByGuidAndExecutionState(String shipmentGuid, DpsExecutionStatus dpsExecutionStatus);
+    List<DpsEvent> findDpsEventByGuidAndExecutionState(String shipmentGuid);
+
+    List<DpsEvent> findDpsEventByGuidAndExecutionStateIn(String shipmentGuid, List<DpsExecutionStatus> dpsExecutionStatusList);
 
     DpsEventResponse constructDpsEventResponse(DpsEvent dpsEvent);
 

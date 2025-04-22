@@ -818,7 +818,7 @@ public class ShipmentService implements IShipmentService {
         String guid = response.getGuid().toString();
 
         // Fetch all DPS events for the given shipment GUID
-        List<DpsEvent> dpsEvents = dpsEventService.findDpsEventByGuidAndExecutionState(guid, DpsExecutionStatus.ACTIVE);
+        List<DpsEvent> dpsEvents = dpsEventService.findDpsEventByGuidAndExecutionState(guid);
         log.info("Fetched {} DPS events for shipment GUID: {}", dpsEvents.size(), guid);
 
         // Determine DPS status based on HOLD events with PER_BLOCKED or HOLD state
