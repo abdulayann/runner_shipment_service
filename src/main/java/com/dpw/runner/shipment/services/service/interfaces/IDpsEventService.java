@@ -23,6 +23,8 @@ public interface IDpsEventService {
 
     ResponseEntity<IRunnerResponse> getShipmentMatchingRulesByGuid(String shipmentGuid);
 
+    List<DpsEvent> findDpsEventByGuidAndExecutionState(String shipmentGuid);
+
     DpsEventResponse constructDpsEventResponse(DpsEvent dpsEvent);
 
     DpsEvent constructDpsEvent(DpsDto dpsDto);
