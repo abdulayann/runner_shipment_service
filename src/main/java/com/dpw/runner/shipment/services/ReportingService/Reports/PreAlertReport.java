@@ -162,6 +162,14 @@ public class PreAlertReport extends IReport {
         populateHasContainerFields(preAlertModel.shipmentDetails, dictionary, v1TenantSettingsResponse);
         handleTranslationErrors(printWithoutTranslation, orgWithoutTranslation, chargeTypesWithoutTranslation);
 
+        // Add Party Details in Caps
+        ReportHelper.addPartyNameAndAddressInCaps(preAlertModel.shipmentDetails.getConsigner(), dictionary, SHIPPER_NAME_IN_CAPS, SHIPPER_ADDRESS_IN_CAPS);
+        ReportHelper.addPartyNameAndAddressInCaps(preAlertModel.shipmentDetails.getConsignee(), dictionary, CONSIGNEE_NAME_IN_CAPS, CONSIGNEE_ADDRESS_IN_CAPS);
+        ReportHelper.addPartyNameAndAddressInCaps(preAlertModel.shipmentDetails.getAdditionalDetails().getImportBroker(), dictionary, DESTINATION_AGENT_NAME_IN_CAPS, DESTINATION_AGENT_ADDRESS_IN_CAPS);
+        ReportHelper.addPartyNameAndAddressInCaps(preAlertModel.shipmentDetails.getAdditionalDetails().getExportBroker(), dictionary, ORIGIN_AGENT_NAME_IN_CAPS, ORIGIN_AGENT_ADDRESS_IN_CAPS);
+
+        ReportHelper.addTenantDetails(dictionary, preAlertModel.tenantDetails);
+
         return dictionary;
     }
 
@@ -293,9 +301,12 @@ public class PreAlertReport extends IReport {
         if(preAlertModel.shipmentDetails.getPackingList() != null && !preAlertModel.shipmentDetails.getPackingList().isEmpty()) {
             List<Map<String, Object>> packDictionary = new ArrayList<>();
             for (PackingModel pack : preAlertModel.shipmentDetails.getPackingList()) {
-                String packJson = jsonHelper.convertToJson(pack);
-                packDictionary.add(jsonHelper.convertJsonToMap(packJson));
+                processPackingMasterData(pack);
+                Map<String, Object> packMap =  jsonHelper.convertJsonToMap(jsonHelper.convertToJson(pack));
+                packMap.put(SHIPMENT_PACKING_PACKS_TYPE_DESCRIPTION, getMasterListItemDesc(pack.getPacksType(), MasterDataType.PACKS_UNIT.name(), false));
+                packDictionary.add(packMap);
             }
+
             if(!packDictionary.isEmpty()) {
                 for(Map<String, Object> v: packDictionary) {
                     jsonDateFormat(v);

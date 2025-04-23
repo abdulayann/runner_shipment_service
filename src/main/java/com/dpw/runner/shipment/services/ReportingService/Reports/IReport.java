@@ -164,6 +164,7 @@ public abstract class IReport {
     abstract IDocumentModel getDocumentModel(Long id) throws RunnerException;
     abstract Map<String, Object> populateDictionary(IDocumentModel documentModel) throws RunnerException;
 
+    // TODO: Containers
     public ShipmentContainers getShipmentContainer(ContainerModel row)
     {
         ShipmentContainers ship = new ShipmentContainers();
@@ -514,6 +515,9 @@ public abstract class IReport {
         dictionary.put(SHIPMENT_DETAIL_DATE_OF_ISSUE, convertToDPWDateFormat(additionalDetails.getDateOfIssue(), formatPattern, true));
         dictionary.put(SHIPMENT_DETAIL_DATE_OF_ISSUE_IN_CAPS, StringUtility.toUpperCase(convertToDPWDateFormat(additionalDetails.getDateOfIssue(), formatPattern, true)));
         dictionary.put(ReportConstants.DATE_OF_RECEIPT, additionalDetails.getDateOfReceipt());
+
+        LocalDateTime ataOrEta = shipment.getCarrierDetails().getAta() != null ? shipment.getCarrierDetails().getAta() : shipment.getCarrierDetails().getEta();
+        dictionary.put(ATA_OR_ETA, convertToDPWDateFormat(ataOrEta, tsDateTimeFormat, v1TenantSettingsResponse));
     }
 
     private void processShippingLineTags(ShipmentModel shipment, Map<String, Object> dictionary) {
