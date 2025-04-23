@@ -262,7 +262,7 @@ public abstract class IReport {
         }
     }
 
-    private String getMasterListItemDesc(String value, String type, boolean isValueNDesc) {
+    public String getMasterListItemDesc(String value, String type, boolean isValueNDesc) {
         if(StringUtility.isEmpty(value))
             return value;
         String key = value + "#" + type;
@@ -514,6 +514,9 @@ public abstract class IReport {
         dictionary.put(SHIPMENT_DETAIL_DATE_OF_ISSUE, convertToDPWDateFormat(additionalDetails.getDateOfIssue(), formatPattern, true));
         dictionary.put(SHIPMENT_DETAIL_DATE_OF_ISSUE_IN_CAPS, StringUtility.toUpperCase(convertToDPWDateFormat(additionalDetails.getDateOfIssue(), formatPattern, true)));
         dictionary.put(ReportConstants.DATE_OF_RECEIPT, additionalDetails.getDateOfReceipt());
+
+        LocalDateTime ataOrEta = shipment.getCarrierDetails().getAta() != null ? shipment.getCarrierDetails().getAta() : shipment.getCarrierDetails().getEta();
+        dictionary.put(ATA_OR_ETA, convertToDPWDateFormat(ataOrEta, tsDateTimeFormat, v1TenantSettingsResponse));
     }
 
     private void processShippingLineTags(ShipmentModel shipment, Map<String, Object> dictionary) {
@@ -3305,7 +3308,7 @@ public abstract class IReport {
         }
     }
 
-    private void processPackingMasterData(PackingModel pack) {
+    public void processPackingMasterData(PackingModel pack) {
         try {
             Set<MasterListRequest> requests = new HashSet<>();
             Optional<Cache> cacheOptional = Optional.ofNullable(cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA));

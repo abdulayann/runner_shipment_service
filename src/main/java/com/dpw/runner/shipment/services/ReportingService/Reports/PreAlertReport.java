@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.response.CommodityResponse;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
@@ -24,9 +25,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.AIRLINE;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.JOB_NO;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.NOTIFY_PARTY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.*;
 
 @Component
@@ -162,6 +161,14 @@ public class PreAlertReport extends IReport {
         populateHasContainerFields(preAlertModel.shipmentDetails, dictionary, v1TenantSettingsResponse);
         handleTranslationErrors(printWithoutTranslation, orgWithoutTranslation, chargeTypesWithoutTranslation);
 
+        // Add Party Details in Caps
+        ReportHelper.addPartyNameAndAddressInCaps(preAlertModel.shipmentDetails.getConsigner(), dictionary, SHIPPER_NAME_IN_CAPS, SHIPPER_ADDRESS_IN_CAPS);
+        ReportHelper.addPartyNameAndAddressInCaps(preAlertModel.shipmentDetails.getConsignee(), dictionary, CONSIGNEE_NAME_IN_CAPS, CONSIGNEE_ADDRESS_IN_CAPS);
+        ReportHelper.addPartyNameAndAddressInCaps(preAlertModel.shipmentDetails.getAdditionalDetails().getImportBroker(), dictionary, DESTINATION_AGENT_NAME_IN_CAPS, DESTINATION_AGENT_ADDRESS_IN_CAPS);
+        ReportHelper.addPartyNameAndAddressInCaps(preAlertModel.shipmentDetails.getAdditionalDetails().getExportBroker(), dictionary, ORIGIN_AGENT_NAME_IN_CAPS, ORIGIN_AGENT_ADDRESS_IN_CAPS);
+
+        ReportHelper.addTenantDetails(dictionary, preAlertModel.tenantDetails);
+
         return dictionary;
     }
 
@@ -293,9 +300,12 @@ public class PreAlertReport extends IReport {
         if(preAlertModel.shipmentDetails.getPackingList() != null && !preAlertModel.shipmentDetails.getPackingList().isEmpty()) {
             List<Map<String, Object>> packDictionary = new ArrayList<>();
             for (PackingModel pack : preAlertModel.shipmentDetails.getPackingList()) {
-                String packJson = jsonHelper.convertToJson(pack);
-                packDictionary.add(jsonHelper.convertJsonToMap(packJson));
+                processPackingMasterData(pack);
+                Map<String, Object> packMap =  jsonHelper.convertJsonToMap(jsonHelper.convertToJson(pack));
+                packMap.put(SHIPMENT_PACKING_PACKS_TYPE_DESCRIPTION, getMasterListItemDesc(pack.getPacksType(), MasterDataType.PACKS_UNIT.name(), false));
+                packDictionary.add(packMap);
             }
+
             if(!packDictionary.isEmpty()) {
                 for(Map<String, Object> v: packDictionary) {
                     jsonDateFormat(v);
