@@ -1,0 +1,17 @@
+package com.dpw.runner.shipment.services.dto.request;
+
+import com.dpw.runner.shipment.services.entity.enums.DpsExecutionStatus;
+import lombok.*;
+
+import java.util.List;
+
+@Getter
+@Setter
+@ToString
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class GetMatchingRulesRequest {
+    private String shipmentGuid;
+    private List<DpsExecutionStatus> dpsExecutionStatusList;
+}
