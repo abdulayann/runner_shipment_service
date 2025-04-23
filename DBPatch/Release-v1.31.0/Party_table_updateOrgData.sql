@@ -2049,8 +2049,8 @@ UPDATE parties
 SET
   org_id = '142112',
   org_code = 'FRC00025874',
-  address_id = 224079,
-  address_code = FRO00026703,
+  address_id = '224079',
+  address_code = 'FRO00026703',
   org_data = '{"Id": 142112, "Guid": "d715c881-59ea-413e-9d56-fee2dcc3fec5", "Email": "purchasing.projects@topic.nl", "IsGSA": false, "Phone": "+31(0)499 33 69 69", "State": "NB", "label": "Topic Embedded Projects B.V.", "value": "61106", "Broker": false, "Source": "Runner", "Unloco": 373311, "Carrier": false, "Country": "NLD", "Address1": "Materiaalweg 4", "FullName": "Topic Embedded Projects B.V.", "IsActive": 1, "Payables": false, "Services": false, "TenantId": 484, "CompanyId": 389, "Consignee": false, "Consigner": true, "IsParnter": false, "TaxVendor": false, "AirCarrier": false, "ExtraParam": "{}", "InsertDate": "2024-01-10T13:50:19.000", "SeaCarrier": false, "UnlocoGuid": "3e3b8a2c-9fb5-4b11-ae56-048e8f5ec073", "RailCarrier": false, "Receivables": false, "RoadCarrier": false, "ZipPostCode": "5681 RJ", "ActiveClient": true, "CurrencyCode": "EUR", "EmailInvoice": false, "InsertUserId": 2043, "ForworderAgent": false, "IsCreditEnabled": false, "IsV2PaymentTerm": false, "TransportClient": false, "IsWalkInCustomer": false, "OrganizationCode": "FRC00025874", "InsertUserIdUsername": "jan.vandermeij@dpweur.com", "CreditLimitOfConfigRow": "", "CreditTermsOfConfigRow": "", "ImportExportClearanceLock": false, "FusionCreditlimitOverrideApproved": false}',
   address_data = '{"OrgOrganizationCode": "FRC00025874", "OrgId": "142112", "Id": 224079, "AddressShortCode": "FRO00026703"}'
 WHERE id = '186512';
