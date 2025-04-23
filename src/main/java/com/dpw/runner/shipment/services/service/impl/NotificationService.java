@@ -17,10 +17,7 @@ import com.dpw.runner.shipment.services.dto.response.TriangulationPartnerRespons
 import com.dpw.runner.shipment.services.dto.response.NotificationListResponse;
 import com.dpw.runner.shipment.services.dto.response.NotificationResponse;
 import com.dpw.runner.shipment.services.dto.response.NotificationConfirmationMsgResponse;
-import com.dpw.runner.shipment.services.entity.NetworkTransfer;
-import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
-import com.dpw.runner.shipment.services.entity.Notification;
-import com.dpw.runner.shipment.services.entity.TriangulationPartner;
+import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
 import com.dpw.runner.shipment.services.entity.enums.NotificationRequestType;
@@ -306,7 +303,9 @@ public class NotificationService implements INotificationService {
             if(Objects.equals(notification.getNotificationRequestType(), NotificationRequestType.REASSIGN) && !emailList.isEmpty()) {
                 template = createReassignmentCancellationEmailBody(notification, reason, entityNumber);
             } else if(Objects.equals(notification.getNotificationRequestType(), NotificationRequestType.REQUEST_TRANSFER) && !emailList.isEmpty()) {
-                template = createRequestToTranferCancellationEmailBody(notification, reason, entityNumber);
+                ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+                if(shipmentSettingsDetails.getIsNteAdditionalEmailsEnabled())
+                    template = createRequestToTranferCancellationEmailBody(notification, reason, entityNumber);
             }
             if(!emailList.isEmpty() && template.getBody() != null) {
                 commonUtils.sendEmailNotification(template, emailList, List.of(UserContext.getUser().getEmail()));
