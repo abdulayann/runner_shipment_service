@@ -436,8 +436,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             if(request.getIsAutomaticTransferEnabled() == null)
                 request.setIsAutomaticTransferEnabled(oldEntity.get().getIsAutomaticTransferEnabled());
 
-            if(request.getIsNteAdditionalEmailsEnabled() == null)
-                request.setIsNteAdditionalEmailsEnabled(oldEntity.get().getIsNteAdditionalEmailsEnabled());
+            setNteAdditionalEmailsFlag(oldEntity, request);
 
             if(request.getEventsRevampEnabled() == null) {
                 request.setEventsRevampEnabled(oldEntity.get().getEventsRevampEnabled());
@@ -463,6 +462,11 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             log.error(responseMsg, e);
             throw new GenericException(e);
         }
+    }
+
+    private void setNteAdditionalEmailsFlag(Optional<ShipmentSettingsDetails> oldEntity, ShipmentSettingRequest request) {
+        if(request.getIsNteAdditionalEmailsEnabled() == null)
+            request.setIsNteAdditionalEmailsEnabled(oldEntity.get().getIsNteAdditionalEmailsEnabled());
     }
 
     private ResponseEntity<IRunnerResponse> getfuncResponseEntity(Optional<ShipmentSettingsDetails> oldEntity, ShipmentSettingRequest request, ShipmentSettingsDetails shipmentSettingsDetails) throws RunnerException {
