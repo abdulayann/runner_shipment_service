@@ -164,7 +164,6 @@ public abstract class IReport {
     abstract IDocumentModel getDocumentModel(Long id) throws RunnerException;
     abstract Map<String, Object> populateDictionary(IDocumentModel documentModel) throws RunnerException;
 
-    // TODO: Containers
     public ShipmentContainers getShipmentContainer(ContainerModel row)
     {
         ShipmentContainers ship = new ShipmentContainers();
@@ -263,7 +262,7 @@ public abstract class IReport {
         }
     }
 
-    private String getMasterListItemDesc(String value, String type, boolean isValueNDesc) {
+    public String getMasterListItemDesc(String value, String type, boolean isValueNDesc) {
         if(StringUtility.isEmpty(value))
             return value;
         String key = value + "#" + type;
@@ -3309,7 +3308,7 @@ public abstract class IReport {
         }
     }
 
-    private void processPackingMasterData(PackingModel pack) {
+    public void processPackingMasterData(PackingModel pack) {
         try {
             Set<MasterListRequest> requests = new HashSet<>();
             Optional<Cache> cacheOptional = Optional.ofNullable(cacheManager.getCache(CacheConstants.CACHE_KEY_MASTER_DATA));

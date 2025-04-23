@@ -11,6 +11,7 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.masterdata.enums.MasterDataType;
 import com.dpw.runner.shipment.services.masterdata.response.CommodityResponse;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
@@ -24,9 +25,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.AIRLINE;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.JOB_NO;
-import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.NOTIFY_PARTY;
+import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.*;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportHelper.*;
 
 @Component
