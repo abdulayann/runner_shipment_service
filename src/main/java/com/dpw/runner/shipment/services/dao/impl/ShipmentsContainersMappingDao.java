@@ -104,16 +104,15 @@ public class ShipmentsContainersMappingDao implements IShipmentsContainersMappin
     }
 
     @Override
-    public void assignShipments(Long containerId, List<Long> shipIds, boolean fromV1) {
+    public void assignShipments(Long containerId, Set<Long> shipIds, boolean fromV1) {
         List<ShipmentsContainersMapping> mappings = findByContainerId(containerId);
-        HashSet<Long> shipmentIds = new HashSet<>(shipIds);
         if (mappings != null && !mappings.isEmpty()) {
             for (ShipmentsContainersMapping shipmentsContainersMappings : mappings) {
-                shipmentIds.remove(shipmentsContainersMappings.getShipmentId());
+                shipIds.remove(shipmentsContainersMappings.getShipmentId());
             }
         }
-        if (!shipmentIds.isEmpty()) {
-            for (Long id : shipmentIds) {
+        if (!shipIds.isEmpty()) {
+            for (Long id : shipIds) {
                 ShipmentsContainersMapping entity = new ShipmentsContainersMapping();
                 entity.setShipmentId(id);
                 entity.setContainerId(containerId);

@@ -109,7 +109,7 @@ public class ContainerV3Service implements IContainerV3Service {
     private IShipmentsContainersMappingDao shipmentsContainersMappingDao;
 
     @Autowired
-    private ExecutorService executorService;
+    ExecutorService executorService;
 
     @Autowired
     private CommonUtils commonUtils;
@@ -143,13 +143,11 @@ public class ContainerV3Service implements IContainerV3Service {
     );
 
     @Override
+    @Transactional
     public ContainerResponse create(ContainerV3Request containerRequest) {
+        List<Containers> containersList = getSiblingContainers(containerRequest);
+        containerValidationUtil.validateContainerNumberUniqueness(containerRequest.getContainerNumber(), containersList);
         String requestId = LoggerHelper.getRequestIdFromMDC();
-
-        if (containerRequest == null) {
-            log.error("Container create request is null | Request ID: {}", requestId);
-            return null;
-        }
 
         log.info("Starting container creation | Request ID: {} | Request Body: {}", requestId, containerRequest);
 
@@ -158,12 +156,28 @@ public class ContainerV3Service implements IContainerV3Service {
         log.debug("Converted container request to entity | Entity: {}", container);
 
         // Save to DB
-        Containers savedContainer = containerRepository.save(container);
+        Containers savedContainer = containerDao.save(container);
         log.info("Saved container entity to DB | Container ID: {} | Request ID: {}", savedContainer.getId(), requestId);
 
         // Post-save logic
-        afterSave(savedContainer, true);
-        log.debug("afterSave logic executed for container ID: {}", savedContainer.getId());
+        // Run afterSave and assignShipments in parallel
+        CompletableFuture<Void> afterSaveFuture = CompletableFuture.runAsync(
+            masterDataUtils.withMdc(() -> afterSave(savedContainer, true)),
+            executorService
+        );
+
+        CompletableFuture<Void> assignShipmentsFuture = CompletableFuture.runAsync(
+            masterDataUtils.withMdc(() ->
+                shipmentsContainersMappingDao.assignShipments(
+                    savedContainer.getId(),
+                    containerRequest.getShipmentsIds(),
+                    false)
+            ),
+            executorService
+        );
+
+        // Wait for both async operations to complete
+        CompletableFuture.allOf(afterSaveFuture, assignShipmentsFuture).join();
 
         // Audit logging
         recordAuditLogs(null, List.of(savedContainer), DBOperationType.CREATE);
@@ -339,6 +353,16 @@ public class ContainerV3Service implements IContainerV3Service {
         }
 
         return message;
+    }
+
+    private List<Containers> getSiblingContainers(ContainerV3Request containerRequest) {
+        if(containerRequest.getConsolidationId() != null){
+            return containerDao.findByConsolidationId(containerRequest.getConsolidationId());
+        }else if(containerRequest.getShipmentsIds() != null && containerRequest.getShipmentsIds().size() == 1){
+            Long shipmentId =  containerRequest.getShipmentsIds().iterator().next();
+            return containerDao.findByShipmentId(shipmentId);
+        }
+        return new ArrayList<>();
     }
 
     /**

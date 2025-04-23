@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
+import com.dpw.runner.shipment.services.entity.Containers;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -32,6 +33,18 @@ public class ContainerValidationUtil {
                         String.format("Container ID is missing for item at index %d. All items must have a valid ID.", index)
                 );
             }
+        }
+    }
+
+    public void validateContainerNumberUniqueness(String containerNumber, List<Containers> containersList){
+        if(StringUtility.isEmpty(containerNumber) || containerNumber.length() < 10) return;
+
+        boolean exists = containersList.stream()
+             .map(Containers::getContainerNumber)
+             .anyMatch(existingNumber -> existingNumber.equals(containerNumber));
+
+        if(exists){
+            throw new IllegalArgumentException("Container number '" + containerNumber + "' already exists.");
         }
     }
 
