@@ -33,6 +33,7 @@ import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -8218,7 +8219,7 @@ ShipmentServiceTest extends CommonMocks {
     void testSendOceanDGApprovalEmail_DgUser() throws RunnerException {
         try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
             mockedLicenseContext.when(LicenseContext::isOceanDGLicense).thenReturn(true);
-            try (MockedStatic<UserContext> userContextMockedStatic = Mockito.mockStatic(
+            try (MockedStatic<UserContext> userContextMockedStatic = mockStatic(
                 UserContext.class)) {
                 OceanDGApprovalRequest request = OceanDGApprovalRequest
                     .builder()
@@ -8241,10 +8242,6 @@ ShipmentServiceTest extends CommonMocks {
                 when(shipmentDao.findById(request.getShipmentId())).thenReturn(
                     Optional.ofNullable(shipmentDetails));
 
-                UsersDto user = UsersDto.builder().build();
-                userContextMockedStatic.when(UserContext::getUser).thenReturn(user);
-                userContextMockedStatic.when(UserContext::isOceanDgUser).thenReturn(true);
-
                 shipmentService.sendOceanDGApprovalEmail(request);
                 verify(shipmentDao).findById(any());
             }
@@ -8253,7 +8250,7 @@ ShipmentServiceTest extends CommonMocks {
 
     @Test
     void testSendOceanDGCommercialApproved_DgUser() throws RunnerException {
-        try (MockedStatic<UserContext> userContextMockedStatic = Mockito.mockStatic(
+        try (MockedStatic<UserContext> userContextMockedStatic = mockStatic(
             UserContext.class)) {
             OceanDGApprovalRequest request = OceanDGApprovalRequest
                 .builder()
@@ -8275,9 +8272,6 @@ ShipmentServiceTest extends CommonMocks {
             when(shipmentDao.findById(request.getShipmentId())).thenReturn(
                 Optional.ofNullable(shipmentDetails));
 
-            UsersDto user = UsersDto.builder().build();
-            userContextMockedStatic.when(UserContext::getUser).thenReturn(user);
-            userContextMockedStatic.when(UserContext::isOceanDgUser).thenReturn(true);
 
             shipmentService.sendOceanDGApprovalEmail(request);
             verify(shipmentDao).findById(any());
