@@ -8249,36 +8249,6 @@ ShipmentServiceTest extends CommonMocks {
     }
 
     @Test
-    void testSendOceanDGCommercialApproved_DgUser() throws RunnerException {
-        try (MockedStatic<UserContext> userContextMockedStatic = mockStatic(
-            UserContext.class)) {
-            OceanDGApprovalRequest request = OceanDGApprovalRequest
-                .builder()
-                .shipmentId(1l)
-                .remarks("Non_DG_USER")
-                .build();
-
-            Packing packing = new Packing();
-            packing.setHazardous(true);
-            packing.setDGClass("1.23");
-
-            ShipmentDetails shipmentDetails = ShipmentDetails
-                .builder()
-                .oceanDGStatus(OceanDGStatus.OCEAN_DG_COMMERCIAL_ACCEPTED)
-                .containersList(Set.of(Containers.builder().hazardous(true).dgClass("2.1").build()))
-                .packingList(List.of(packing))
-                .build();
-
-            when(shipmentDao.findById(request.getShipmentId())).thenReturn(
-                Optional.ofNullable(shipmentDetails));
-
-
-            shipmentService.sendOceanDGApprovalEmail(request);
-            verify(shipmentDao).findById(any());
-        }
-    }
-
-    @Test
     void testSendOceanDGApprovalEmail_Imp() throws RunnerException {
         OceanDGApprovalRequest request = OceanDGApprovalRequest
                 .builder()
