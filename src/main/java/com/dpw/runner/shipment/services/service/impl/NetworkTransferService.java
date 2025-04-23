@@ -9,6 +9,7 @@ import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.constants.NetworkTransferConstants;
+import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.requests.RunnerEntityMapping;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
@@ -18,6 +19,8 @@ import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.request.NetworkTransferRequest;
 import com.dpw.runner.shipment.services.dto.request.ReassignRequest;
 import com.dpw.runner.shipment.services.dto.request.RequestForTransferRequest;
+import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.NetworkTransferExternalResponse;
 import com.dpw.runner.shipment.services.dto.response.NetworkTransferResponse;
 import com.dpw.runner.shipment.services.dto.response.NetworkTransferListResponse;
@@ -34,11 +37,13 @@ import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.service.interfaces.INetworkTransferService;
+import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataKeyUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
+import com.dpw.runner.shipment.services.utils.StringUtility;
+import com.dpw.runner.shipment.services.validator.constants.ErrorConstants;
 import com.nimbusds.jose.util.Pair;
-import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.modelmapper.ModelMapper;
@@ -56,6 +61,8 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
 @Slf4j
@@ -81,11 +88,13 @@ public class NetworkTransferService implements INetworkTransferService {
 
     private final INotificationDao notificationDao;
 
+    private final V1ServiceUtil v1ServiceUtil;
+
     @Autowired
     public NetworkTransferService(ModelMapper modelMapper, JsonHelper jsonHelper, INetworkTransferDao networkTransferDao,
                                   MasterDataUtils masterDataUtils, ExecutorService executorService,
                                   CommonUtils commonUtils, MasterDataKeyUtils masterDataKeyUtils, INotificationDao notificationDao,
-                                  IConsoleShipmentMappingDao consoleShipmentMappingDao, IShipmentDao shipmentDao, IConsolidationDetailsDao consolidationDao) {
+                                  IConsoleShipmentMappingDao consoleShipmentMappingDao, IShipmentDao shipmentDao, IConsolidationDetailsDao consolidationDao, V1ServiceUtil v1ServiceUtil) {
         this.modelMapper = modelMapper;
         this.jsonHelper = jsonHelper;
         this.networkTransferDao = networkTransferDao;
@@ -97,6 +106,7 @@ public class NetworkTransferService implements INetworkTransferService {
         this.consoleShipmentMappingDao = consoleShipmentMappingDao;
         this.consolidationDao = consolidationDao;
         this.shipmentDao = shipmentDao;
+        this.v1ServiceUtil = v1ServiceUtil;
     }
 
 
@@ -439,6 +449,7 @@ public class NetworkTransferService implements INetworkTransferService {
         notificationDao.save(notification);
         networkTransferList.add(networkTransfer.get());
         networkTransferDao.saveAll(networkTransferList);
+        triggerRequestTransferEmail(entityId, entityType, requestForTransferRequest.getRemarks());
         return ResponseHelper.buildSuccessResponse();
     }
 
@@ -580,5 +591,68 @@ public class NetworkTransferService implements INetworkTransferService {
         networkTransfer = networkTransferDao.save(networkTransfer);
         NetworkTransferExternalResponse networkTransferExternalResponse = jsonHelper.convertValue(networkTransfer, NetworkTransferExternalResponse.class);
         return ResponseHelper.buildSuccessResponse(networkTransferExternalResponse);
+    }
+
+    private void triggerRequestTransferEmail(Long entityId, String entityType, String reason) {
+        try {
+            String entityNumber = "";
+            String assignedTo = "";
+            if(SHIPMENT.equals(entityType)) {
+                Optional<ShipmentDetails> shipmentDetails = shipmentDao.findShipmentByIdWithQuery(entityId);
+                if (shipmentDetails.isPresent()) {
+                    assignedTo = shipmentDetails.get().getAssignedTo();
+                    entityNumber = shipmentDetails.get().getShipmentId();
+                }
+            } else if (CONSOLIDATION.equals(entityType)) {
+                Optional<ConsolidationDetails> consolidationDetails = consolidationDao.findConsolidationByIdWithQuery(entityId);
+                if (consolidationDetails.isPresent())
+                    entityNumber = consolidationDetails.get().getConsolidationNumber();
+            }
+            if (CommonUtils.isStringNullOrEmpty(assignedTo))
+                return;
+            List<String> emailList = new ArrayList<>();
+            Map<String, String> usernameEmailsMap = new HashMap<>();
+            commonUtils.getUserDetails(new HashSet<>(Set.of(assignedTo)), usernameEmailsMap);
+            if (usernameEmailsMap.containsKey(assignedTo))
+                emailList.add(usernameEmailsMap.get(assignedTo));
+            EmailTemplatesRequest template = createRequestTransferEmailBody(entityType, reason, entityNumber);
+            if(!emailList.isEmpty() && template.getBody() != null) {
+                commonUtils.sendEmailNotification(template, emailList, List.of(UserContext.getUser().getEmail()));
+            }
+        } catch (Exception ex) {
+            log.error(String.format(ErrorConstants.ERROR_WHILE_EMAIL, ex.getMessage()));
+        }
+    }
+
+    private EmailTemplatesRequest createRequestTransferEmailBody(String entityType, String reason, String entityNumber){
+        UsersDto user = UserContext.getUser();
+        var branchIdVsTenantModelMap = convertToTenantModel(v1ServiceUtil.getTenantDetails(List.of(TenantContext.getCurrentTenant())));
+        String body = "";
+        String subject = "";
+        if(SHIPMENT.equals(entityType)) {
+            body = EntityTransferConstants.EMAIL_TEMPLATE_REQUEST_TO_TRANSFER_SHIPMENT_BODY;
+            subject = EntityTransferConstants.EMAIL_TEMPLATE_REQUEST_TO_TRANSFER_SHIPMENT_SUBJECT;
+            subject = subject.replace(EntityTransferConstants.SHIPMENT_NUMBER_PLACEHOLDER, entityNumber);
+            body = body.replace(EntityTransferConstants.SHIPMENT_NUMBER_PLACEHOLDER, entityNumber);
+        } else if (CONSOLIDATION.equals(entityType)){
+            body = EntityTransferConstants.EMAIL_TEMPLATE_REQUEST_TO_TRANSFER_CONSOLIDATION_BODY;
+            subject = EntityTransferConstants.EMAIL_TEMPLATE_REQUEST_TO_TRANSFER_CONSOLIDATION_SUBJECT;
+            subject = subject.replace(EntityTransferConstants.CONSOLIDATION_NUMBER_PLACEHOLDER, entityNumber);
+            body = body.replace(EntityTransferConstants.CONSOLIDATION_NUMBER_PLACEHOLDER, entityNumber);
+        }
+        body = body.replace(EntityTransferConstants.USER_NAME_PLACEHOLDER, user.getDisplayName());
+        body = body.replace(EntityTransferConstants.BRANCH_NAME_PLACEHOLDER, StringUtility.convertToString(branchIdVsTenantModelMap.get(TenantContext.getCurrentTenant()).tenantName));
+        body = body.replace(EntityTransferConstants.TRANSFER_REASON_PLACEHOLDER, reason);
+        body = body.replace(EntityTransferConstants.REQUESTED_USER_EMAIL_PLACEHOLDER, user.getEmail());
+        return EmailTemplatesRequest.builder().body(body).subject(subject).build();
+    }
+
+    private Map<Integer, TenantModel> convertToTenantModel(Map<Integer, Object> map) {
+        var response = new HashMap<Integer, TenantModel>();
+
+        for (var entry : map.entrySet())
+            response.put(entry.getKey(), modelMapper.map(entry.getValue(), TenantModel.class));
+
+        return response;
     }
 }

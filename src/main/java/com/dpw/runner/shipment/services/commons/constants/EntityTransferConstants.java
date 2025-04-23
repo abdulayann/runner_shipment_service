@@ -51,6 +51,8 @@ public class EntityTransferConstants {
     public static final String BRANCH_NAME_PLACEHOLDER = "{#BRANCH_NAME}";
     public static final String CANCELLATION_REASON_PLACEHOLDER = "{#CANCELLATION_REASON}";
     public static final String CANCELLED_USER_EMAIL_PLACEHOLDER = "{#CANCELLED_USER_EMAIL_ID}";
+    public static final String TRANSFER_REASON_PLACEHOLDER = "{#TRANSFER_REASON}";
+    public static final String REQUESTED_USER_EMAIL_PLACEHOLDER = "{#REQUESTED_USER_EMAIL_ID}";
 
     public static final String MISSING_RECEIVING_BRANCH_VALIDATION = "Please enter the receiving agent in entity transfer tab before proceeding with the transfer !";
 
@@ -73,4 +75,10 @@ public class EntityTransferConstants {
     public static final String CONSOLIDATION_REJECTION_EMAIL_BODY = "<p>Dear user,</p>  <p>&nbsp;</p>  <p>The retransfer request for consolidation {#CONSOLIDATION_NUMBER} has been cancelled by {#USER_NAME} at {#BRANCH_NAME}. The reason for cancellation is: “{#CANCELLATION_REASON}”.</p> <p>&nbsp;</p> <p>In case of any further clarification, please reach out to {#CANCELLED_USER_EMAIL_ID}.</p> <p>Thanks,&nbsp;<br /> Cargoes Runner</p>";
 
     public static final Set<NetworkTransferStatus> RETRANSFER_SET = EnumSet.of(NetworkTransferStatus.RETRANSFERRED, NetworkTransferStatus.ACCEPTED);
+
+    // Request to transfer email templates
+    public static final String EMAIL_TEMPLATE_REQUEST_TO_TRANSFER_SHIPMENT_BODY = "<p>Dear user,</p> <p>&nbsp;</p> <p>An early transfer request for shipment {#SHIPMENT_NUMBER} has been made by {#USER_NAME} at {#BRANCH_NAME}. The reason for the request is: “{#TRANSFER_REASON}”.</p> <p>&nbsp;</p> <p>Please take the necessary action by reviewing the transfer requests at the shipment – {#SHIPMENT_NUMBER}.</p> <p>&nbsp;</p> <p>In case of any further clarification, please reach out to {#REQUESTED_USER_EMAIL_ID}.</p> <p>Thanks,<br/>Cargoes Runner</p>";
+    public static final String EMAIL_TEMPLATE_REQUEST_TO_TRANSFER_SHIPMENT_SUBJECT = "Early Transfer Request Notification for Shipment – {#SHIPMENT_NUMBER}";
+    public static final String EMAIL_TEMPLATE_REQUEST_TO_TRANSFER_CONSOLIDATION_BODY = "<p>Dear user,</p>  <p>&nbsp;</p>  <p>An early transfer request for consolidation {#CONSOLIDATION_NUMBER} has been made by {#USER_NAME} at {#BRANCH_NAME}. The reason for the request is: “{#TRANSFER_REASON}”.</p> <p>&nbsp;</p> <p>Please take the necessary action by reviewing the transfer requests at the consolidation - {#CONSOLIDATION_NUMBER}.</p> <p>&nbsp;</p> <p>In case of any further clarification, please reach out to {#REQUESTED_USER_EMAIL_ID}.</p> <p>Thanks,&nbsp;<br /> Cargoes Runner</p>";
+    public static final String EMAIL_TEMPLATE_REQUEST_TO_TRANSFER_CONSOLIDATION_SUBJECT = "Early Transfer Request Notification for Consolidation – {#CONSOLIDATION_NUMBER}";
 }
