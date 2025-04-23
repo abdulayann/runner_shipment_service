@@ -109,7 +109,7 @@ public class ContainerV3Service implements IContainerV3Service {
     private IShipmentsContainersMappingDao shipmentsContainersMappingDao;
 
     @Autowired
-    private ExecutorService executorService;
+    ExecutorService executorService;
 
     @Autowired
     private CommonUtils commonUtils;

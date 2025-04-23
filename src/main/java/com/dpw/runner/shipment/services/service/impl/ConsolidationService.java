@@ -3135,7 +3135,7 @@ public class ConsolidationService implements IConsolidationService {
         container.setAchievedVolume(volume);
         container = containerService.calculateUtilization(container);
         containerDao.save(container);
-        shipmentsContainersMappingDao.assignShipments(container.getId(), newShipmentsIncluded.stream().toList(), false);
+        shipmentsContainersMappingDao.assignShipments(container.getId(), newShipmentsIncluded, false);
         packingADSync(packingList, UUID.randomUUID().toString());
         return container;
     }
