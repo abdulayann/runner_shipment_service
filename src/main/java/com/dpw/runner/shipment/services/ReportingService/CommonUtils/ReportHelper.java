@@ -311,23 +311,26 @@ public class ReportHelper {
     }
 
     public static void addTenantDetails(Map<String, Object> dictionary, TenantModel tenantModel) {
-        dictionary.put(ReportConstants.TENANT_NAME, tenantModel.tenantName);
-        dictionary.put(ReportConstants.TENANT_ADDRESS_1, tenantModel.address1);
-        dictionary.put(ReportConstants.TENANT_ADDRESS_2, tenantModel.address2);
-        dictionary.put(ReportConstants.TENANT_EMAIL, tenantModel.email);
-        dictionary.put(ReportConstants.TENANT_CITY, tenantModel.city);
-        dictionary.put(ReportConstants.TENANT_STATE, tenantModel.state);
-        dictionary.put(ReportConstants.TENANT_COUNTRY, tenantModel.country);
-        dictionary.put(ReportConstants.TENANT_COUNTRY_PHONE, tenantModel.phone);
-        dictionary.put(ReportConstants.TENANT_MOBILE, tenantModel.mobile);
-        dictionary.put(ReportConstants.TENANT_ZIP_POST_CODE, tenantModel.zipPostCode);
-        dictionary.put(ReportConstants.TENANT_URL, tenantModel.websiteUrl);
-        dictionary.put(TENANT_NAME_IN_CAPS, StringUtility.toUpperCase(tenantModel.tenantName));
-        dictionary.put(TENANT_VAT_REG_NUMBER_IN_CAPS, StringUtility.toUpperCase(tenantModel.vatRegNumber));
-        dictionary.put(TENANT_EMAIL_IN_CAPS, StringUtility.toUpperCase(tenantModel.email));
 
-        List<String> tenantAddress = getOrgAddressForLesserLines(tenantModel.getAddress1(), tenantModel.getAddress2(), tenantModel.getState(), tenantModel.getCity(), tenantModel.getCountry(), tenantModel.getZipPostCode());
-        dictionary.put(TENANT_ADDRESS_IN_CAPS, CommonUtils.listIsNullOrEmpty(tenantAddress) ? tenantAddress : tenantAddress.stream().filter(Objects::nonNull).map(StringUtility::toUpperCase).toList());
+        if (Objects.nonNull(tenantModel)) {
+            dictionary.put(ReportConstants.TENANT_NAME, tenantModel.tenantName);
+            dictionary.put(ReportConstants.TENANT_ADDRESS_1, tenantModel.address1);
+            dictionary.put(ReportConstants.TENANT_ADDRESS_2, tenantModel.address2);
+            dictionary.put(ReportConstants.TENANT_EMAIL, tenantModel.email);
+            dictionary.put(ReportConstants.TENANT_CITY, tenantModel.city);
+            dictionary.put(ReportConstants.TENANT_STATE, tenantModel.state);
+            dictionary.put(ReportConstants.TENANT_COUNTRY, tenantModel.country);
+            dictionary.put(ReportConstants.TENANT_COUNTRY_PHONE, tenantModel.phone);
+            dictionary.put(ReportConstants.TENANT_MOBILE, tenantModel.mobile);
+            dictionary.put(ReportConstants.TENANT_ZIP_POST_CODE, tenantModel.zipPostCode);
+            dictionary.put(ReportConstants.TENANT_URL, tenantModel.websiteUrl);
+            dictionary.put(TENANT_NAME_IN_CAPS, StringUtility.toUpperCase(tenantModel.tenantName));
+            dictionary.put(TENANT_VAT_REG_NUMBER_IN_CAPS, StringUtility.toUpperCase(tenantModel.vatRegNumber));
+            dictionary.put(TENANT_EMAIL_IN_CAPS, StringUtility.toUpperCase(tenantModel.email));
+
+            List<String> tenantAddress = getOrgAddressForLesserLines(tenantModel.getAddress1(), tenantModel.getAddress2(), tenantModel.getState(), tenantModel.getCity(), tenantModel.getCountry(), tenantModel.getZipPostCode());
+            dictionary.put(TENANT_ADDRESS_IN_CAPS, CommonUtils.listIsNullOrEmpty(tenantAddress) ? tenantAddress : tenantAddress.stream().filter(Objects::nonNull).map(StringUtility::toUpperCase).toList());
+        }
     }
 
     public static String getValueFromMap(Map<String, Object> dataMap, String key) {
