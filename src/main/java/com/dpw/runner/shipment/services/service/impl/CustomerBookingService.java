@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.service.impl;
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.*;
+import com.dpw.runner.shipment.services.aspects.LicenseContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -486,7 +487,7 @@ public class CustomerBookingService implements ICustomerBookingService {
             if (!CommonUtils.checkAirSecurityForBookingRequest(request))
                 throw new ValidationException("User does not have Air Security permission to create AIR EXP Shipment from Booking.");
         } else {
-            boolean hasAirDGPermission = UserContext.isAirDgUser();
+            boolean hasAirDGPermission =  LicenseContext.isDgAirLicense();
             if (Objects.equals(request.getTransportType(), Constants.TRANSPORT_MODE_AIR) && Objects.equals(request.getIsDg(), Boolean.TRUE) && !hasAirDGPermission) {
                 throw new ValidationException("User does not have AIR DG Permission to create AIR Shipment from Booking");
             }
@@ -1610,6 +1611,7 @@ public class CustomerBookingService implements ICustomerBookingService {
                     return r;
                 }).toList());
             }
+            setReferenceNumbersForClonedBookings(customerBookingResponse);
             customerBookingResponse.setBookingCharges(null);
 
             //fields related to contract
@@ -1644,6 +1646,19 @@ public class CustomerBookingService implements ICustomerBookingService {
                     : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
             log.error(responseMsg, e);
             return ResponseHelper.buildFailedResponse(responseMsg);
+        }
+    }
+
+    private void setReferenceNumbersForClonedBookings(CustomerBookingResponse customerBookingResponse) {
+        if(customerBookingResponse.getReferenceNumbersList() != null && !customerBookingResponse.getReferenceNumbersList().isEmpty())
+        {
+            customerBookingResponse.setReferenceNumbersList(customerBookingResponse.getReferenceNumbersList().stream().map(referenceNumbersResponse -> {
+                ReferenceNumbersResponse r = new ReferenceNumbersResponse();
+                r.setCountryOfIssue(referenceNumbersResponse.getCountryOfIssue());
+                r.setType(referenceNumbersResponse.getType());
+                r.setReferenceNumber(referenceNumbersResponse.getReferenceNumber());
+                return r;
+            }).toList());
         }
     }
 

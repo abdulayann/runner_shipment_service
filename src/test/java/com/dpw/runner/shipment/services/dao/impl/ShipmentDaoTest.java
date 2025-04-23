@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.CommonMocks;
+import com.dpw.runner.shipment.services.aspects.LicenseContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -330,93 +331,111 @@ class ShipmentDaoTest extends CommonMocks {
 
     @Test
     void applyShipmentValidationsExpTest_NonHazPack_HazShipment() {
-        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().airDGFlag(true).restrictedLocationsEnabled(true).build());
+        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
+            mockedLicenseContext.when(LicenseContext::isDgAirLicense).thenReturn(true);
+            ShipmentSettingsDetailsContext.setCurrentTenantSettings(
+                ShipmentSettingsDetails.builder().airDGFlag(true).restrictedLocationsEnabled(true)
+                    .build());
 
-        Packing packing = new Packing();
-        packing.setHazardous(false);
+            Packing packing = new Packing();
+            packing.setHazardous(false);
 
-        Routings routings = new Routings();
-        routings.setLeg(1L);
+            Routings routings = new Routings();
+            routings.setLeg(1L);
 
-        Containers containers = Containers.builder().containerNumber("CON123").build();
-        Parties parties = Parties.builder().type("type").build();
+            Containers containers = Containers.builder().containerNumber("CON123").build();
+            Parties parties = Parties.builder().type("type").build();
 
-        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
-        consolidationDetails.setId(1L);
+            ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
+            consolidationDetails.setId(1L);
 
-        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
-                .consolidationList(new HashSet<>(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build())))
+            ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .consolidationList(new HashSet<>(
+                    Arrays.asList(ConsolidationDetails.builder().build(),
+                        ConsolidationDetails.builder().build())))
                 .containsHazardous(false)
                 .transportMode(Constants.TRANSPORT_MODE_AIR)
                 .packingList(Arrays.asList(packing))
                 .routingsList(Arrays.asList(routings, routings))
                 .containersList(new HashSet<>(Arrays.asList(containers, containers)))
                 .shipmentAddresses(Arrays.asList(parties, parties))
-                .consolidationList(new HashSet<>(Arrays.asList(consolidationDetails, consolidationDetails)))
+                .consolidationList(
+                    new HashSet<>(Arrays.asList(consolidationDetails, consolidationDetails)))
                 .carrierDetails(CarrierDetails.builder().build())
                 .direction(Constants.DIRECTION_EXP)
                 .masterBill("MBL123")
                 .containsHazardous(true)
                 .build();
 
-        List<ConsolidationDetails> consolidationDetailsList = new ArrayList<>();
-        consolidationDetailsList.add(consolidationDetails);
+            List<ConsolidationDetails> consolidationDetailsList = new ArrayList<>();
+            consolidationDetailsList.add(consolidationDetails);
 
-        when(consolidationDetailsDao.findByBol(any())).thenReturn(consolidationDetailsList);
+            when(consolidationDetailsDao.findByBol(any())).thenReturn(consolidationDetailsList);
 
-        UsersDto usersDto = new UsersDto();
-        Map<String, Boolean> permissions = new HashMap<>();
-        permissions.put(PermissionConstants.AIR_DG, true);
-        usersDto.setPermissions(permissions);
-        UserContext.setUser(usersDto);
-        mockShipmentSettings();
-        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
-        assertFalse(errors.contains("Container Number cannot be same for two different containers"));
+            UsersDto usersDto = new UsersDto();
+            Map<String, Boolean> permissions = new HashMap<>();
+            permissions.put(PermissionConstants.AIR_DG, true);
+            usersDto.setPermissions(permissions);
+            UserContext.setUser(usersDto);
+            mockShipmentSettings();
+            Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+            assertFalse(
+                errors.contains("Container Number cannot be same for two different containers"));
+        }
     }
 
     @Test
     void applyShipmentValidationsExpTest_NonHazPack_NonDgUser() {
-        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().airDGFlag(true).restrictedLocationsEnabled(true).build());
+        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
+            mockedLicenseContext.when(LicenseContext::isDgAirLicense).thenReturn(true);
+            ShipmentSettingsDetailsContext.setCurrentTenantSettings(
+                ShipmentSettingsDetails.builder().airDGFlag(true).restrictedLocationsEnabled(true)
+                    .build());
 
-        Packing packing = new Packing();
-        packing.setHazardous(false);
+            Packing packing = new Packing();
+            packing.setHazardous(false);
 
-        Routings routings = new Routings();
-        routings.setLeg(1L);
+            Routings routings = new Routings();
+            routings.setLeg(1L);
 
-        Containers containers = Containers.builder().containerNumber("CON123").build();
-        Parties parties = Parties.builder().type("type").build();
+            Containers containers = Containers.builder().containerNumber("CON123").build();
+            Parties parties = Parties.builder().type("type").build();
 
-        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
-        consolidationDetails.setId(1L);
+            ConsolidationDetails consolidationDetails = ConsolidationDetails.builder().build();
+            consolidationDetails.setId(1L);
 
-        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
-                .consolidationList(new HashSet<>(Arrays.asList(ConsolidationDetails.builder().build(), ConsolidationDetails.builder().build())))
+            ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+                .consolidationList(new HashSet<>(
+                    Arrays.asList(ConsolidationDetails.builder().build(),
+                        ConsolidationDetails.builder().build())))
                 .containsHazardous(false)
                 .transportMode(Constants.TRANSPORT_MODE_AIR)
                 .packingList(Arrays.asList(packing))
                 .routingsList(Arrays.asList(routings, routings))
                 .containersList(new HashSet<>(Arrays.asList(containers, containers)))
                 .shipmentAddresses(Arrays.asList(parties, parties))
-                .consolidationList(new HashSet<>(Arrays.asList(consolidationDetails, consolidationDetails)))
+                .consolidationList(
+                    new HashSet<>(Arrays.asList(consolidationDetails, consolidationDetails)))
                 .carrierDetails(CarrierDetails.builder().build())
                 .direction(Constants.DIRECTION_EXP)
                 .masterBill("MBL123")
                 .containsHazardous(true)
                 .build();
 
-        List<ConsolidationDetails> consolidationDetailsList = new ArrayList<>();
-        consolidationDetailsList.add(consolidationDetails);
+            List<ConsolidationDetails> consolidationDetailsList = new ArrayList<>();
+            consolidationDetailsList.add(consolidationDetails);
 
-        when(consolidationDetailsDao.findByBol(any())).thenReturn(consolidationDetailsList);
+            when(consolidationDetailsDao.findByBol(any())).thenReturn(consolidationDetailsList);
 
-        UsersDto usersDto = new UsersDto();
-        Map<String, Boolean> permissions = new HashMap<>();
-        usersDto.setPermissions(permissions);
-        UserContext.setUser(usersDto);
-        mockShipmentSettings();
-        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
-        assertFalse(errors.contains("Container Number cannot be same for two different containers"));
+            UsersDto usersDto = new UsersDto();
+            Map<String, Boolean> permissions = new HashMap<>();
+            usersDto.setPermissions(permissions);
+            UserContext.setUser(usersDto);
+            mockShipmentSettings();
+            Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+            assertFalse(
+                errors.contains("Container Number cannot be same for two different containers"));
+        }
     }
 
     @Test
@@ -1598,44 +1617,56 @@ class ShipmentDaoTest extends CommonMocks {
 
     @Test
     void applyShipmentValidationsExpTest_CountryAirCargoSecurity() {
-        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().countryAirCargoSecurity(true).restrictedLocationsEnabled(true).build());
+        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
+            mockedLicenseContext.when(LicenseContext::isAirSecurityLicense).thenReturn(false);
+            ShipmentSettingsDetailsContext.setCurrentTenantSettings(
+                ShipmentSettingsDetails.builder().countryAirCargoSecurity(true)
+                    .restrictedLocationsEnabled(true).build());
 
-        Packing packing = new Packing();
-        packing.setHazardous(true);
-        UserContext.setUser(UsersDto.builder().Permissions(new HashMap<>()).build());
+            Packing packing = new Packing();
+            packing.setHazardous(true);
+            UserContext.setUser(UsersDto.builder().Permissions(new HashMap<>()).build());
 
-        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+            ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .containsHazardous(false)
                 .transportMode(Constants.TRANSPORT_MODE_AIR)
                 .packingList(Arrays.asList(packing))
                 .direction(Constants.DIRECTION_EXP)
                 .build();
 
-        mockShipmentSettings();
-        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
-        assertTrue(errors.contains("You don't have Air Security permission to create or update AIR EXP Shipment."));
+            mockShipmentSettings();
+            Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+            assertTrue(errors.contains(
+                "You don't have Air Security permission to create or update AIR EXP Shipment."));
+        }
     }
 
     @Test
     void applyShipmentValidationsExpTest_NonHazPack_CountryAirCargoSecurity() {
-        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().countryAirCargoSecurity(true).restrictedLocationsEnabled(true).build());
+        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
+            mockedLicenseContext.when(LicenseContext::isAirSecurityLicense).thenReturn(true);
+            ShipmentSettingsDetailsContext.setCurrentTenantSettings(
+                ShipmentSettingsDetails.builder().countryAirCargoSecurity(true)
+                    .restrictedLocationsEnabled(true).build());
 
-        Packing packing = new Packing();
-        packing.setHazardous(false);
-        Map<String, Boolean> permissions = new HashMap<>();
-        permissions.put(PermissionConstants.AIR_SECURITY_PERMISSION, true);
-        UserContext.setUser(UsersDto.builder().Permissions(permissions).build());
+            Packing packing = new Packing();
+            packing.setHazardous(false);
+            Map<String, Boolean> permissions = new HashMap<>();
+            permissions.put(PermissionConstants.AIR_SECURITY_PERMISSION, true);
+            UserContext.setUser(UsersDto.builder().Permissions(permissions).build());
 
-        ShipmentDetails shipmentDetails = ShipmentDetails.builder()
+            ShipmentDetails shipmentDetails = ShipmentDetails.builder()
                 .containsHazardous(false)
                 .transportMode(Constants.TRANSPORT_MODE_AIR)
                 .packingList(Arrays.asList(packing))
                 .direction(Constants.DIRECTION_EXP)
                 .build();
 
-        mockShipmentSettings();
-        Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
-        assertFalse(errors.contains("You don't have Air Security permission to create or update AIR EXP Shipment."));
+            mockShipmentSettings();
+            Set<String> errors = shipmentDao.applyShipmentValidations(shipmentDetails, false);
+            assertFalse(errors.contains(
+                "You don't have Air Security permission to create or update AIR EXP Shipment."));
+        }
     }
 
     @Test
