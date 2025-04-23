@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -782,6 +783,7 @@ class NotificationServiceTest {
             mapArg.put("abc", "abc@example.com");
             return null;
         }).when(commonUtils).getUserDetails(eq(Set.of("abc")), anyMap());
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().isNteAdditionalEmailsEnabled(true).build());
         when(v1ServiceUtil.getTenantDetails(anyList())).thenReturn(tenantModelMap);
         when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(new TenantModel());
         var response = notificationService.rejectNotification(commonRequestModel);
@@ -818,6 +820,7 @@ class NotificationServiceTest {
             return null;
         }).when(commonUtils).getUserDetails(eq(Set.of("abc")), anyMap());
         when(v1ServiceUtil.getTenantDetails(anyList())).thenReturn(tenantModelMap);
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().isNteAdditionalEmailsEnabled(true).build());
         when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(new TenantModel());
         var response = notificationService.rejectNotification(commonRequestModel);
 
