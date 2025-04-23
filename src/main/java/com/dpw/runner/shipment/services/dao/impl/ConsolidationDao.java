@@ -120,11 +120,14 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         ConsolidationDetails oldConsole = null;
         if(consolidationDetails.getId() != null) {
             long id = consolidationDetails.getId();
-            ConsolidationDetails oldEntity = findById(id).get();
-            if(consolidationDetails.getShipmentsList() == null) {
-                consolidationDetails.setShipmentsList(oldEntity.getShipmentsList());
+            Optional<ConsolidationDetails> optional = findById(id);
+            if (optional.isPresent()) {
+                ConsolidationDetails oldEntity = optional.get();
+                if (consolidationDetails.getShipmentsList() == null) {
+                    consolidationDetails.setShipmentsList(oldEntity.getShipmentsList());
+                }
+                oldConsole = oldEntity;
             }
-            oldConsole = oldEntity;
         }
         onSave(consolidationDetails, errors, oldConsole, fromV1Sync, updatingFromDgShipment);
         return consolidationDetails;

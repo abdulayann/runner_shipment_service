@@ -27,6 +27,7 @@ import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.request.ReportRequest;
+import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.*;
@@ -537,7 +538,8 @@ public class ReportService implements IReportService {
                 status = ShipmentStatus.GenerateHBL;
 
             }
-            shipmentService.updateDateAndStatus(Long.parseLong(reportRequest.getReportId()), issueDate, status.getValue());
+            Integer statusVal = status != null ? status.getValue() : null;
+            shipmentService.updateDateAndStatus(Long.parseLong(reportRequest.getReportId()), issueDate, statusVal);
         }
     }
 
@@ -1672,7 +1674,7 @@ public class ReportService implements IReportService {
             } else {
                 image1.scaleAbsolute(300, 30);
             }
-            image1.setAbsolutePosition((int) realPageSize.getLeft() + x, realPageSize.getTop() + y);
+            image1.setAbsolutePosition(realPageSize.getLeft() + x, realPageSize.getTop() + y);
             dc.addImage(image1);
 
             dc.restoreState();
@@ -1886,9 +1888,11 @@ public class ReportService implements IReportService {
             uploadRequest.setIsTransferEnabled(Boolean.TRUE);
             hblDao.save(blObject);
         } else {
-            fileVersion = blObject.getHblData().getVersion().toString();
-            blObject.getHblData().setVersion(blObject.getHblData().getVersion() + 1);
-            hblDao.save(blObject);
+            if (blObject != null && blObject.getHblData() != null && blObject.getHblData().getVersion() != null) {
+                fileVersion = blObject.getHblData().getVersion().toString();
+                blObject.getHblData().setVersion(blObject.getHblData().getVersion() + 1);
+                hblDao.save(blObject);
+            }
         }
         String filename = uploadRequest.getDocType() + "_" + printType + "_" + uploadRequest.getId() + "_" + fileVersion + ".pdf";
 

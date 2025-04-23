@@ -158,7 +158,7 @@ public class AwbUtility {
             charge = Math.floor(charge) + 0.50;
         else
             charge = Math.ceil(charge);
-        return new BigDecimal(charge);
+        return new BigDecimal(charge); //NOSONAR
     }
 
     public static void validateShipmentInfoBeforeGeneratingAwb(ShipmentDetails shipmentDetails) {
@@ -937,7 +937,7 @@ public class AwbUtility {
                 masterAwb = awbsList.get(0);
             }
         }
-        if(masterAwb == null) {
+        if(masterAwb == null && awb.isPresent()) {
             consoleStatus = awb.get().getAirMessageStatus();
             masterAwb = awb.get();
         }

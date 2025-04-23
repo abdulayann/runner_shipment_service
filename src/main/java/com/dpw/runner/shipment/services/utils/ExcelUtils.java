@@ -14,6 +14,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.math.BigDecimal;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -117,7 +118,6 @@ public class ExcelUtils {
         return new XSSFWorkbook();
     }
 
-    @SuppressWarnings("java:S4042")
     public Resource getResource(XSSFWorkbook workbook) throws RunnerException {
         Resource fileResource;
         try {
@@ -125,7 +125,8 @@ public class ExcelUtils {
             File file = new File(tempFile);
             byte[] fileDataBytes = Files.readAllBytes(Paths.get(file.getPath()));
             fileResource = new ByteArrayResource(fileDataBytes);
-            file.delete();
+            Path path = file.toPath();
+            Files.delete(path);
         } catch (Exception ex) {
             log.error("Unable to process the file");
             throw new RunnerException("Unable to process the file.");

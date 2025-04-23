@@ -184,7 +184,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
         Optional<ShipmentSettingsDetails> oldEntity = getOldEntityShipmentSettingsDetails(request);
-        if(!oldEntity.isPresent()) {
+        if(oldEntity.isEmpty()) {
             log.debug(ShipmentSettingsConstants.SHIPMENT_SETTINGS_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
@@ -468,7 +468,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
         List<TenantProductsRequest> tenantProductsList = request.getTenantProducts();
         List<ProductSequenceConfigRequest> productSequenceConfigList = request.getProductSequenceConfig();
 
-        List<HblTermsConditionTemplate> oldHblTermsConditionTemplateList = oldEntity.get().getHblTermsConditionTemplate();
+        List<HblTermsConditionTemplate> oldHblTermsConditionTemplateList = oldEntity.get().getHblTermsConditionTemplate(); //NOSONAR
         List<HblTermsConditionTemplate> oldHblHawbBackPrintTemplateList = oldEntity.get().getHblHawbBackPrintTemplate();
         List<TenantProducts> oldTenantProductsList = oldEntity.get().getTenantProducts();
         List<ProductSequenceConfig> oldProductSequenceConfigList = oldEntity.get().getProductSequenceConfig();

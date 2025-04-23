@@ -1399,7 +1399,7 @@ public class EntityTransferService implements IEntityTransferService {
 
         ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
         if(Boolean.TRUE.equals(shipmentSettingsDetails.getIsNetworkTransferEntityEnabled()) && Objects.equals(consolidationDetails.get().getShipmentType(), Constants.DIRECTION_EXP)) {
-            processNTEValidations(consolidationDetails);
+            processNTEValidations(consolidationDetails.get());
         }
         else {
             if (consolidationDetails.get().getTransportMode().equals(Constants.TRANSPORT_MODE_SEA) ||
@@ -1562,14 +1562,14 @@ public class EntityTransferService implements IEntityTransferService {
         return hblGenerationError;
     }
 
-    private void processNTEValidations(Optional<ConsolidationDetails> consolidationDetails) {
+    private void processNTEValidations(ConsolidationDetails consolidationDetails) {
         SendConsoleValidationResponse response;
-        if(Objects.equals(consolidationDetails.get().getTransportMode(), Constants.TRANSPORT_MODE_AIR))
-            response = this.networkTransferValidationsForAirConsolidation(consolidationDetails.get(), false);
-        else if (Objects.equals(consolidationDetails.get().getTransportMode(), TRANSPORT_MODE_SEA))
-            response = this.networkTransferValidationsForSeaConsolidation(consolidationDetails.get(), false);
+        if(Objects.equals(consolidationDetails.getTransportMode(), Constants.TRANSPORT_MODE_AIR))
+            response = this.networkTransferValidationsForAirConsolidation(consolidationDetails, false);
+        else if (Objects.equals(consolidationDetails.getTransportMode(), TRANSPORT_MODE_SEA))
+            response = this.networkTransferValidationsForSeaConsolidation(consolidationDetails, false);
         else
-            response = this.networkTransferValidationsForOtherTransportConsolidation(consolidationDetails.get(), false);
+            response = this.networkTransferValidationsForOtherTransportConsolidation(consolidationDetails, false);
         if(Boolean.TRUE.equals(response.getIsError())) {
             throw new ValidationException(response.getConsoleErrorMessage());
         }
@@ -1630,7 +1630,7 @@ public class EntityTransferService implements IEntityTransferService {
     public SendConsoleValidationResponse automaticTransferConsoleValidation(CommonRequestModel commonRequestModel) {
         ValidateSendConsolidationRequest request = (ValidateSendConsolidationRequest) commonRequestModel.getData();
         Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(request.getConsoleId());
-        if (!consolidationDetails.isPresent()) {
+        if (consolidationDetails.isEmpty()) {
             log.debug(CONSOLIDATION_DETAILS_IS_NULL_FOR_ID_WITH_REQUEST_ID, request.getConsoleId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
@@ -2635,6 +2635,7 @@ public class EntityTransferService implements IEntityTransferService {
         return tenantIds;
     }
 
+    @SuppressWarnings("java:S2259")
     private Set<Integer> retrieveTaskFromNte(Long entityId, String entityType, List<Integer> tenantIds) {
         List<NetworkTransfer> networkTransfers = networkTransferDao.findByEntityAndTenantList(entityId, entityType, tenantIds);
         networkTransfers = ObjectUtils.isNotEmpty(networkTransfers) ?

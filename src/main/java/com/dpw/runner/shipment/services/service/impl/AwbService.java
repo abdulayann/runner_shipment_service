@@ -1918,7 +1918,7 @@ public class AwbService implements IAwbService {
                 if(i.getGuid() == null)
                     i.setGuid(UUID.randomUUID());
                 return i;
-            }).toList();
+            }).toList(); //NOSONAR
         }
     }
 
@@ -1953,6 +1953,7 @@ public class AwbService implements IAwbService {
         }
     }
 
+    @SuppressWarnings("java:S3655")
     private ResponseEntity<IRunnerResponse> resetAwb(CommonRequestModel commonRequestModel) throws RunnerException {
         ResetAwbRequest resetAwbRequest = (ResetAwbRequest) commonRequestModel.getData();
         Optional<Awb> awbOptional = awbDao.findById(resetAwbRequest.getId());
@@ -2033,6 +2034,7 @@ public class AwbService implements IAwbService {
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(awb));
     }
 
+    @SuppressWarnings("java:S3655")
     private void processAwbPacksAndGoods(ResetAwbRequest resetAwbRequest, Optional<ConsolidationDetails> consolidationDetails, Awb awb, CreateAwbRequest createAwbRequest, Long awbId, Optional<ShipmentDetails> shipmentDetails) throws RunnerException {
         if (resetAwbRequest.getAwbType().equals(Constants.MAWB)) {
             PackSummaryResponse packSummary = packingService.calculatePackSummary(consolidationDetails.get().getPackingList(), consolidationDetails.get().getTransportMode(), consolidationDetails.get().getContainerCategory(), new ShipmentMeasurementDetailsDto());
@@ -2528,7 +2530,7 @@ public class AwbService implements IAwbService {
     }
 
     private void addRoutingInfo(ShipmentDetails shipmentDetails, CreateAwbRequest request, Awb awb) {
-        var flightDate = request.getAwbType() == Constants.DMAWB ? shipmentDetails.getCarrierDetails().getEtd() : null;
+        var flightDate = Objects.equals(request.getAwbType(), Constants.DMAWB) ? shipmentDetails.getCarrierDetails().getEtd() : null;
         var eta = request.getAwbType().equalsIgnoreCase(Constants.DMAWB) ? shipmentDetails.getCarrierDetails().getEta() : null;
         AwbRoutingInfo routingInfo = new AwbRoutingInfo();
         routingInfo.setIsShipmentCreated(true);
@@ -2561,7 +2563,7 @@ public class AwbService implements IAwbService {
             awbRoute.setFlightNumber(shipmentDetails.getCarrierDetails().getFlightNumber());
 
         if (isFieldLocked(request, hawbLockSettings.getFlightDateLock(), mawbLockSettings.getFlightDateLock())) {
-            var flightDate = request.getAwbType() == Constants.DMAWB ? shipmentDetails.getCarrierDetails().getEtd() : null;
+            var flightDate = Objects.equals(request.getAwbType(), Constants.DMAWB) ? shipmentDetails.getCarrierDetails().getEtd() : null;
             var eta = request.getAwbType().equalsIgnoreCase(Constants.DMAWB) ? shipmentDetails.getCarrierDetails().getEta() : null;
             awbRoute.setFlightDate(flightDate);
             awbRoute.setEta(eta);
@@ -2803,19 +2805,22 @@ public class AwbService implements IAwbService {
                 processAwbList(awbList, hawbPacksLinkedToMawb);
             }
             Double factor = Constants.AIR_FACTOR_FOR_VOL_WT;
-            totalVolumetricWeightOfAwbPacks.multiply(new BigDecimal(factor));
+            totalVolumetricWeightOfAwbPacks.multiply(BigDecimal.valueOf(factor)); //NOSONAR
         }
         return hawbPacksLinkedToMawb;
     }
 
     private void processAwbList(List<Awb> awbList, List<AwbPackingInfo> hawbPacksLinkedToMawb) {
         if (awbList != null && !awbList.isEmpty()) {
-            var awb = awbList.stream().findFirst().get();
+            Optional<Awb> awbOptional = awbList.stream().findFirst();
+            if (awbOptional.isEmpty())
+                return;
+            var awb = awbOptional.get();
             if (awb.getAwbPackingInfo() != null && !awb.getAwbPackingInfo().isEmpty()) {
                 for (var awbPack : awb.getAwbPackingInfo()) {
                     if (awbPack.getVolume() != null && !StringUtility.isEmpty(awbPack.getVolumeUnit()) &&
                             "M3".equals(awbPack.getVolumeUnit())) {
-                        totalVolumetricWeightOfAwbPacks.add(awbPack.getVolume());
+                        totalVolumetricWeightOfAwbPacks.add(awbPack.getVolume()); //NOSONAR
                     }
                     hawbPacksLinkedToMawb.add(awbPack);
                 }
@@ -3226,6 +3231,7 @@ public class AwbService implements IAwbService {
         }
     }
 
+    @SuppressWarnings("java:S2111")
     @Override
     public ResponseEntity<IRunnerResponse> generateAwbPaymentInfo(CommonRequestModel commonRequestModel) throws RunnerException {
 

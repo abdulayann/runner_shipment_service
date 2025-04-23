@@ -265,7 +265,7 @@ public class BookingIntegrationsUtility {
             try {
                 try {
                     TimeUnit.SECONDS.sleep(5);
-                } catch (Exception ex) {
+                } catch (Exception ex) {  //NOSONAR - Ignoring interrupt intentionally
                     log.error("Wait failed due to {}", ex.getMessage());
                 }
                 this.createBill(customerBooking, false, true, shipmentResponse, headers);

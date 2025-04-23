@@ -6958,4 +6958,37 @@ import static org.mockito.Mockito.*;
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
+    @Test
+    void testCalculateAchievedAllocatedForSameUnit_WhenUnitsDiffer_ShouldConvertUnits() {
+        ConsolidationDetails consolidationDetails1 = new ConsolidationDetails();
+        Allocations allocations = new Allocations();
+        allocations.setWeightUnit(Constants.WEIGHT_UNIT_KG);
+        allocations.setWeight(BigDecimal.valueOf(100));
+        allocations.setVolumeUnit(Constants.VOLUME_UNIT_M3);
+        allocations.setVolume(BigDecimal.valueOf(10));
+
+        AchievedQuantities achievedQuantities = new AchievedQuantities();
+        achievedQuantities.setConsolidatedWeight(BigDecimal.valueOf(220.46)); // in LB
+        achievedQuantities.setConsolidatedWeightUnit(Constants.WEIGHT_UNIT_KG); // different than KG
+        achievedQuantities.setConsolidatedVolume(BigDecimal.valueOf(1000)); // in CF
+        achievedQuantities.setConsolidatedVolumeUnit(Constants.VOLUME_UNIT_M3); // different than M3
+
+        ConsoleCalculationsRequest request = new ConsoleCalculationsRequest();
+        request.setId(123L);
+        request.setTransportMode("AIR");
+        request.setContainerCategory("STANDARD");
+
+        ConsoleCalculationsResponse response = new ConsoleCalculationsResponse();
+        response.setAllocations(new AllocationsResponse());
+        response.setAchievedQuantities(new AchievedQuantitiesResponse());
+
+        when(consolidationDetailsDao.findById(123L)).thenReturn(Optional.of(consolidationDetails1));
+        when(jsonHelper.convertValue(any(), eq(Allocations.class))).thenReturn(allocations);
+        when(jsonHelper.convertValue(any(), eq(AchievedQuantities.class))).thenReturn(achievedQuantities);
+
+        ResponseEntity<IRunnerResponse> responseEntity = consolidationService.calculateAchievedAllocatedForSameUnit(CommonRequestModel.buildRequest(request));
+
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
 }

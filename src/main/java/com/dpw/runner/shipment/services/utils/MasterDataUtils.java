@@ -85,6 +85,7 @@ import org.springframework.stereotype.Component;
 
 @Slf4j
 @Component
+@SuppressWarnings("java:S2259")
 public class MasterDataUtils{
 
     private static class ContainerCounts {

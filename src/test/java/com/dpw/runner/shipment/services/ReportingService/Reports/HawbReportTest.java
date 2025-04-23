@@ -1307,6 +1307,8 @@ class HawbReportTest extends CommonMocks {
         consolidationModel.setConsolidationAddresses(Arrays.asList(partiesModel));
         consolidationModel.setReferenceNumbersList(Arrays.asList(referenceNumbersModel));
         hawbModel.setConsolidationDetails(consolidationModel);
+        hawbModel.getAwb().getAwbCargoInfo().setRaNumber("abcd");
+        hawbModel.getAwb().getAwbCargoInfo().setScreeningTime(LocalDateTime.now());
 
         List<UnlocationsResponse> unlocationsResponses = new ArrayList<>();
         UnlocationsResponse unlocationsResponse = new UnlocationsResponse();
@@ -1542,6 +1544,8 @@ class HawbReportTest extends CommonMocks {
         shipmentModel.setDeliveryDetails(delivertDetails);
         hawbModel.setShipmentDetails(shipmentModel);
         hawbModel.setAwb(hawb);
+        hawbModel.getAwb().getAwbCargoInfo().setRaNumber("abcd12");
+        hawbModel.getAwb().getAwbCargoInfo().setScreeningStatus(Collections.singletonList("abcd"));
         UsersDto usersDto = new UsersDto();
         usersDto.setUsername("UserName");
         usersDto.setCompanyId(1);

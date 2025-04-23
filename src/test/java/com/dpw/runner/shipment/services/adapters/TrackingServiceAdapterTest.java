@@ -1,5 +1,20 @@
 package com.dpw.runner.shipment.services.adapters;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.dpw.runner.shipment.services.adapters.config.TrackingServiceConfig;
 import com.dpw.runner.shipment.services.adapters.impl.TrackingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
@@ -13,10 +28,15 @@ import com.dpw.runner.shipment.services.dao.impl.ConsolidationDao;
 import com.dpw.runner.shipment.services.dao.impl.ShipmentDao;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse;
+import com.dpw.runner.shipment.services.dto.trackingservice.TrackingServiceApiResponse.Event;
 import com.dpw.runner.shipment.services.dto.trackingservice.UniversalTrackingPayload;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
+import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
+import com.dpw.runner.shipment.services.entity.Events;
+import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -29,6 +49,12 @@ import com.dpw.runner.shipment.services.service_bus.ISBProperties;
 import com.dpw.runner.shipment.services.service_bus.ISBUtils;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,12 +69,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.RestTemplate;
-
-import java.io.IOException;
-import java.util.*;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
@@ -207,6 +227,15 @@ class TrackingServiceAdapterTest {
     }
 
     @Test
+    void checkIfAwbExists2() {
+        when(consoleShipmentMappingDao.findByConsolidationId(any())).thenReturn(List.of(new ConsoleShipmentMapping()));
+        when(shipmentDao.findById(any())).thenReturn(Optional.empty());
+        ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
+        boolean res = trackingServiceAdapter.checkIfAwbExists(consolidationDetails);
+        assertFalse(res);
+    }
+
+    @Test
     void checkIfConsolContainersExist() {
         ConsolidationDetails consolidationDetails = jsonTestUtility.getCompleteConsolidation();
         boolean res = trackingServiceAdapter.checkIfConsolContainersExist(consolidationDetails);
@@ -332,48 +361,66 @@ class TrackingServiceAdapterTest {
 
     @Test
     void convertTrackingEventCodeToShortCode_FlightArrival() {
-        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(
-                "someRole", EventConstants.FLIGHT_ARRIVAL, "Flight Arrival");
+        Event event = new Event();
+        event.setLocationRole("someRole");
+        event.setEventType(EventConstants.FLIGHT_ARRIVAL);
+        event.setDescription("Flight Arrival");
+        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event);
 
         assertEquals(EventConstants.FLAR, result);
     }
 
     @Test
     void convertTrackingEventCodeToShortCode_FlightDeparture() {
-        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(
-                "someRole", EventConstants.FLIGHT_DEPARTURE, "Flight Departure");
+        Event event = new Event();
+        event.setLocationRole("someRole");
+        event.setEventType(EventConstants.FLIGHT_DEPARTURE);
+        event.setDescription("Flight Departure");
+        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event);
 
         assertEquals(EventConstants.FLDR, result);
     }
 
     @Test
     void convertTrackingEventCodeToShortCode_Literal_ReceivedFromFlight() {
-        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(
-                "someRole", EventConstants.LITERAL, "Received from Flight");
+        Event event = new Event();
+        event.setLocationRole("someRole");
+        event.setEventType(EventConstants.LITERAL);
+        event.setDescription("Received from Flight");
+        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event);
 
         assertEquals(EventConstants.TRCF, result);
     }
 
     @Test
     void convertTrackingEventCodeToShortCode_Literal_ConsigneeNotified() {
-        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(
-                "someRole", EventConstants.LITERAL, "Consignee notified");
+        Event event = new Event();
+        event.setLocationRole("someRole");
+        event.setEventType(EventConstants.LITERAL);
+        event.setDescription("Consignee notified");
+        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event);
 
         assertEquals(EventConstants.TNFD, result);
     }
 
     @Test
     void convertTrackingEventCodeToShortCode_GateInWithContainerEmpty_Origin() {
-        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(
-                EventConstants.ORIGIN, EventConstants.GATE_IN_WITH_CONTAINER_EMPTY, "some description");
+        Event event = new Event();
+        event.setLocationRole(EventConstants.ORIGIN);
+        event.setEventType(EventConstants.GATE_IN_WITH_CONTAINER_EMPTY);
+        event.setDescription("some description");
+        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event);
 
         assertEquals(EventConstants.ECPK, result);
     }
 
     @Test
     void convertTrackingEventCodeToShortCode_NoMatch() {
-        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(
-                "someRole", "UNKNOWN_EVENT", "some description");
+        Event event = new Event();
+        event.setLocationRole("someRole");
+        event.setEventType("UNKNOWN_EVENT");
+        event.setDescription("some description");
+        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event);
 
         assertEquals("UNKNOWN_EVENT", result);
     }
@@ -381,11 +428,12 @@ class TrackingServiceAdapterTest {
     @Test
     void convertTrackingEventCodeToShortCode_TRCS() {
         // Scenario: EventCode is LITERAL and description is "Received from Shipper"
-        String eventCode = EventConstants.LITERAL;
-        String locationRole = "";
-        String description = "Received from Shipper";
+        Event event = new Event();
+        event.setLocationRole("");
+        event.setEventType(EventConstants.LITERAL);
+        event.setDescription("Received from Shipper");
 
-        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(locationRole, eventCode, description);
+        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event);
 
         assertEquals(EventConstants.TRCS, result);
     }
@@ -393,11 +441,12 @@ class TrackingServiceAdapterTest {
     @Test
     void convertTrackingEventCodeToShortCode_FUGO() {
         // Scenario: EventCode is GATE_OUT_WITH_CONTAINER_FULL and locationRole is "destinationPort"
-        String eventCode = EventConstants.GATE_OUT_WITH_CONTAINER_FULL;
-        String locationRole = "destinationPort";
-        String description = "";
+        Event event = new Event();
+        event.setLocationRole("destinationPort");
+        event.setEventType(EventConstants.GATE_OUT_WITH_CONTAINER_FULL);
+        event.setDescription("");
 
-        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(locationRole, eventCode, description);
+        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event);
 
         // Expect FUGO to be returned
         assertEquals(EventConstants.FUGO, result);
@@ -406,11 +455,12 @@ class TrackingServiceAdapterTest {
     @Test
     void convertTrackingEventCodeToShortCode_EMCR() {
         // Scenario: EventCode is GATE_IN_WITH_CONTAINER_EMPTY and locationRole starts with "DESTINATION"
-        String eventCode = EventConstants.GATE_IN_WITH_CONTAINER_EMPTY;
-        String locationRole = EventConstants.DESTINATION;
-        String description = "";
+        Event event = new Event();
+        event.setLocationRole(EventConstants.DESTINATION);
+        event.setEventType(EventConstants.GATE_IN_WITH_CONTAINER_EMPTY);
+        event.setDescription("");
 
-        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(locationRole, eventCode, description);
+        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event);
 
         // Expect EMCR to be returned
         assertEquals(EventConstants.EMCR, result);
@@ -454,6 +504,67 @@ class TrackingServiceAdapterTest {
         assertNotNull(response);
         assertEquals("APL", response.getCarrier());
         assertEquals("AU", response.getShipmentDetails().get(0).getCountryCode());
+    }
+
+    @Test
+    void testSetBookingReference_whenShipmentIsAPI_andRequestFromShipmentFalse_andConsolNotNull() {
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setSource("API");
+
+        ConsolidationDetails consol = new ConsolidationDetails();
+        consol.setReferenceNumber("CONSOL_REF_123");
+
+        UniversalTrackingPayload trackingPayload = new UniversalTrackingPayload();
+
+        trackingServiceAdapter.setBookingReferenceNumberInTrackingPayload(consol, shipment, false, trackingPayload);
+
+        assertEquals("CONSOL_REF_123", trackingPayload.getBookingReferenceNumber());
+    }
+
+    @Test
+    void testSetBookingReference_whenShipmentIsAPI_andRequestFromShipmentFalse_andConsolNull() {
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setSource("API");
+
+        UniversalTrackingPayload trackingPayload = new UniversalTrackingPayload();
+
+        trackingServiceAdapter.setBookingReferenceNumberInTrackingPayload(null, shipment, false, trackingPayload);
+
+        assertNull(trackingPayload.getBookingReferenceNumber());
+    }
+
+    @Test
+    void testSetBookingReference_whenShipmentIsAPI_andRequestFromShipmentTrue() {
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setSource("API");
+        shipment.setBookingReference("BOOK_REF_456");
+
+        UniversalTrackingPayload trackingPayload = new UniversalTrackingPayload();
+
+        trackingServiceAdapter.setBookingReferenceNumberInTrackingPayload(new ConsolidationDetails(), shipment, true, trackingPayload);
+
+        assertEquals("BOOK_REF_456", trackingPayload.getBookingReferenceNumber());
+    }
+
+    @Test
+    void testSetBookingReference_whenShipmentSourceIsNotAPI() {
+        ShipmentDetails shipment = new ShipmentDetails();
+        shipment.setSource("MANUAL");
+
+        UniversalTrackingPayload trackingPayload = new UniversalTrackingPayload();
+
+        trackingServiceAdapter.setBookingReferenceNumberInTrackingPayload(new ConsolidationDetails(), shipment, true, trackingPayload);
+
+        assertNull(trackingPayload.getBookingReferenceNumber());
+    }
+
+    @Test
+    void testSetBookingReference_whenShipmentIsNull() {
+        UniversalTrackingPayload trackingPayload = new UniversalTrackingPayload();
+
+        trackingServiceAdapter.setBookingReferenceNumberInTrackingPayload(new ConsolidationDetails(), null, false, trackingPayload);
+
+        assertNull(trackingPayload.getBookingReferenceNumber());
     }
 
 }
