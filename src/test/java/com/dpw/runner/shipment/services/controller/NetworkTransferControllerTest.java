@@ -2,9 +2,12 @@ package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.dto.request.NetworkTransferRequest;
 import com.dpw.runner.shipment.services.dto.request.ReassignRequest;
 import com.dpw.runner.shipment.services.dto.request.RequestForTransferRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.entitytransfer.dto.request.SendFileToExternalRequest;
+import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.INetworkTransferService;
 import org.junit.jupiter.api.BeforeEach;
@@ -95,5 +98,35 @@ class NetworkTransferControllerTest {
         when(networkTransferService.fetchEntityStatus(any())).thenReturn(ResponseHelper.buildSuccessResponse());
         var responseEntity = networkTransferController.fetchEntityStatus(UUID.randomUUID().toString());
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void createExternal() {
+        // Mock
+        when(networkTransferService.createExternal(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = networkTransferController.createExternal(NetworkTransferRequest.builder().build());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void createExternal2() {
+        // Mock
+        when(networkTransferService.createExternal(any())).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = networkTransferController.createExternal(NetworkTransferRequest.builder().build());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void createExternal3() {
+        // Mock
+        when(networkTransferService.createExternal(any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = networkTransferController.createExternal(NetworkTransferRequest.builder().build());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 }

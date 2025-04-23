@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.entitytransfer.service.impl;
 
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
+import com.dpw.runner.shipment.services.adapters.interfaces.IBridgeServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
@@ -150,6 +151,8 @@ class EntityTransferServiceTest extends CommonMocks {
     private IContainerDao containerDao;
     @Mock
     private IPackingDao packingDao;
+    @Mock
+    private IBridgeServiceAdapter bridgeServiceAdapter;
     @Mock
     private IConsoleShipmentMappingDao consoleShipmentMappingDao;
     @Mock
@@ -3287,6 +3290,86 @@ class EntityTransferServiceTest extends CommonMocks {
         when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(new TenantModel());
         var response = entityTransferService.importConsolidation(CommonRequestModel.buildRequest(importConsolidationRequest));
         assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testSendFileToExternalSystem_Shipment() throws RunnerException {
+        SendFileToExternalRequest request = SendFileToExternalRequest.builder()
+                .entityId(123L)
+                .entityType(Constants.SHIPMENT)
+                .sendToBranch("XYZ")
+                .build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        EntityTransferShipmentDetails entityTransferShipmentDetails = EntityTransferShipmentDetails.builder()
+                .shipmentId("SHP123")
+                .transportMode("AIR")
+                .build();
+
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.of(ShipmentDetails.builder().build()));
+        when(jsonHelper.convertValue(any(), eq(EntityTransferShipmentDetails.class))).thenReturn(entityTransferShipmentDetails);
+        when(jsonHelper.convertToJson(any())).thenReturn("Example");
+        when(jsonHelper.convertJsonToMap(any())).thenReturn(Map.of());
+        var response = entityTransferService.sendFileToExternalSystem(commonRequestModel);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testSendFileToExternalSystem_Shipment_Error() {
+        SendFileToExternalRequest request = SendFileToExternalRequest.builder()
+                .entityId(123L)
+                .entityType(Constants.SHIPMENT)
+                .sendToBranch("XYZ")
+                .build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+
+        when(shipmentDao.findById(anyLong())).thenReturn(Optional.empty());
+        assertThrows(DataRetrievalFailureException.class, () -> entityTransferService.sendFileToExternalSystem(commonRequestModel));
+    }
+
+    @Test
+    void testSendFileToExternalSystem_Consolidation() throws RunnerException {
+        SendFileToExternalRequest request = SendFileToExternalRequest.builder()
+                .entityId(123L)
+                .entityType(Constants.CONSOLIDATION)
+                .sendToBranch("XYZ")
+                .build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+        EntityTransferConsolidationDetails entityTransferConsolidationDetails = EntityTransferConsolidationDetails.builder()
+                .consolidationNumber("CONS233")
+                .transportMode("SEA")
+                .build();
+
+        var console = ConsolidationDetails.builder()
+                .shipmentsList(Set.of())
+                .build();
+        console.setTenantId(12);
+
+        V1TenantResponse mockV1TenantResponse = V1TenantResponse.builder().TenantName("mockTenant").build();
+        Map<Integer, Object> mockTenantNameMap = Map.ofEntries(
+                Map.entry(12, mockV1TenantResponse)
+        );
+
+        when(v1ServiceUtil.getTenantDetails(any())).thenReturn(mockTenantNameMap);
+        when(jsonHelper.convertValue(any(), eq(V1TenantResponse.class))).thenReturn(mockV1TenantResponse);
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.of(console));
+        when(jsonHelper.convertValue(any(), eq(EntityTransferConsolidationDetails.class))).thenReturn(entityTransferConsolidationDetails);
+        when(jsonHelper.convertToJson(any())).thenReturn("Example");
+        when(jsonHelper.convertJsonToMap(any())).thenReturn(Map.of());
+        var response = entityTransferService.sendFileToExternalSystem(commonRequestModel);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+    }
+
+    @Test
+    void testSendFileToExternalSystem_Consolidation_Error() {
+        SendFileToExternalRequest request = SendFileToExternalRequest.builder()
+                .entityId(123L)
+                .entityType(Constants.CONSOLIDATION)
+                .sendToBranch("XYZ")
+                .build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(request);
+
+        when(consolidationDetailsDao.findById(anyLong())).thenReturn(Optional.empty());
+        assertThrows(DataRetrievalFailureException.class, () -> entityTransferService.sendFileToExternalSystem(commonRequestModel));
     }
 
 }
