@@ -1377,7 +1377,7 @@ public class ShipmentService implements IShipmentService {
                 obj.setWeight(obj.getWeight().multiply(new BigDecimal(obj.getPacks())));
             if(obj.getVolume() != null)
                 obj.setVolume(obj.getVolume().multiply(new BigDecimal(obj.getPacks())));
-            if(customerBookingRequest.getTransportType().equalsIgnoreCase(TRANSPORT_MODE_AIR)) {
+            if(TRANSPORT_MODE_AIR.equalsIgnoreCase(customerBookingRequest.getTransportType())) {
                 calculateWeightVolumeForPacks(obj);
             }
 
