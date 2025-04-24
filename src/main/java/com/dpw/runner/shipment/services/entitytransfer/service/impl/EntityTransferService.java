@@ -130,17 +130,7 @@ import com.nimbusds.jose.util.Pair;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
@@ -2664,6 +2654,11 @@ public class EntityTransferService implements IEntityTransferService {
     }
 
     private List<ShipmentDetails> findShipmentsFromLogsHistory(List<UUID> guids, LocalDateTime timeStamp) throws RunnerException {
+        guids = Optional.ofNullable(guids).orElse(Collections.emptyList());
+        guids = guids.stream().filter(Objects::nonNull).toList();
+        if(CollectionUtils.isEmpty(guids) || timeStamp == null) {
+            return Collections.emptyList();
+        }
         List<LogHistoryResponse> logHistoryResponses = logsHistoryService.findByEntityGuidsAndTimeStamp(guids, timeStamp);
         List<ShipmentDetails> shipmentDetailsList = new ArrayList<>();
         Set<UUID> remainingGuids = new HashSet<>(guids);
