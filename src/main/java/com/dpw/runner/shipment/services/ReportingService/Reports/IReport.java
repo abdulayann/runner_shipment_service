@@ -209,6 +209,7 @@ public abstract class IReport {
             ship.VolumeUnitDescription = getMasterListItemDesc(ship.GrossVolumeUnit, MasterDataType.VOLUME_UNIT.name(), false);
             ship.WeightUnitDescription = getMasterListItemDesc(ship.GrossWeightUnit, MasterDataType.WEIGHT_UNIT.name(), false);
             ship.PacksUnitDescription = getMasterListItemDesc(ship.ShipmentPacksUnit, MasterDataType.PACKS_UNIT.name(), false);
+            ship.PacksUnitDesc = ship.PacksUnitDescription;
             ship.PackingGroup = getMasterListItemDesc(row.getPackingGroup(), MasterDataType.PACKING_GROUP.name(), true);
             ship.OceanDGClass = getMasterListItemDesc(row.getDgClass(), MasterDataType.DG_CLASS.name(), true);
             ship.DgClassDescription = ship.OceanDGClass;
