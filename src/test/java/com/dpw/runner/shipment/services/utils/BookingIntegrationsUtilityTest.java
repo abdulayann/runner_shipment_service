@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.utils;
 
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
+import com.dpw.runner.shipment.services.adapters.interfaces.IOrderManagementAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IPlatformServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
@@ -108,6 +109,9 @@ class BookingIntegrationsUtilityTest {
 
     @Mock
     private EventDao eventDao;
+
+    @Mock
+    private IOrderManagementAdapter orderManagementAdapter;
 
     private static JsonTestUtility jsonTestUtility;
 
