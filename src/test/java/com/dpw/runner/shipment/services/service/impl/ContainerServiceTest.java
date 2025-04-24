@@ -1555,10 +1555,10 @@ class ContainerServiceTest extends CommonMocks {
         ShipmentDetails shipmentDetails = new ShipmentDetails();
         shipmentDetails.setContainersList(Set.of(new Containers()));
 
-        List<ContainerResponse> containerResponses = List.of(new ContainerResponse());
+       ContainerResponse containerResponse = new ContainerResponse();
 
         when(shipmentDao.findByGuid(validGuid)).thenReturn(Optional.of(shipmentDetails));
-        when(jsonHelper.convertValueToList(any(), eq(ContainerResponse.class))).thenReturn(containerResponses);
+        when(commonUtils.setIncludedFieldsToResponse(any(), anySet(), any())).thenReturn(containerResponse);
 
         // When
         ResponseEntity<IRunnerResponse> response = containerService.getByModuleGuidAndModuleType(moduleGuid, moduleType);
@@ -1578,10 +1578,10 @@ class ContainerServiceTest extends CommonMocks {
         ConsolidationDetails consolidationDetails = new ConsolidationDetails();
         consolidationDetails.setContainersList(List.of(new Containers()));
 
-        List<ContainerResponse> containerResponses = List.of(new ContainerResponse());
+        ContainerResponse containerResponse = new ContainerResponse();
 
         when(consolidationDetailsDao.findByGuid(validGuid)).thenReturn(Optional.of(consolidationDetails));
-        when(jsonHelper.convertValueToList(any(), eq(ContainerResponse.class))).thenReturn(containerResponses);
+        when(commonUtils.setIncludedFieldsToResponse(any(), anySet(), any())).thenReturn(containerResponse);
 
         // When
         ResponseEntity<IRunnerResponse> response = containerService.getByModuleGuidAndModuleType(moduleGuid, moduleType);

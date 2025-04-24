@@ -931,7 +931,7 @@ public class ContainerService implements IContainerService {
         try {
             // Convert moduleGuid to UUID (throws IllegalArgumentException if invalid)
             UUID guid = UUID.fromString(moduleGuid);
-            List<ContainerResponse> containerResponseList = switch (moduleType.toUpperCase()) {
+            List<IRunnerResponse> containerResponseList = switch (moduleType.toUpperCase()) {
                 case Constants.SHIPMENT -> getContainerResponsesFromShipment(guid);
                 case Constants.CONSOLIDATION -> getContainerResponsesFromConsolidation(guid);
                 default -> throw new ValidationException("Invalid moduleType: " + moduleType);
@@ -953,12 +953,12 @@ public class ContainerService implements IContainerService {
      * @return List of container responses.
      * @throws DataRetrievalFailureException if no shipment data is found.
      */
-    private List<ContainerResponse> getContainerResponsesFromShipment(UUID guid) {
+    private List<IRunnerResponse> getContainerResponsesFromShipment(UUID guid) {
         ShipmentDetails shipmentDetails = shipmentDao.findByGuid(guid)
                 .orElseThrow(() -> new DataRetrievalFailureException("Data not available for provided shipment request"));
 
         // Convert shipment's container list to List<ContainerResponse>
-        return jsonHelper.convertValueToList(shipmentDetails.getContainersList().stream().toList(), ContainerResponse.class);
+        return convertEntityListToDtoList(shipmentDetails.getContainersList().stream().toList(), defaultIncludeColumns);
     }
 
     /**
@@ -968,12 +968,12 @@ public class ContainerService implements IContainerService {
      * @return List of container responses.
      * @throws DataRetrievalFailureException if no consolidation data is found.
      */
-    private List<ContainerResponse> getContainerResponsesFromConsolidation(UUID guid) {
+    private List<IRunnerResponse> getContainerResponsesFromConsolidation(UUID guid) {
         ConsolidationDetails consolidationDetails = consolidationDetailsDao.findByGuid(guid)
                 .orElseThrow(() -> new DataRetrievalFailureException("Data not available for provided consolidation request"));
 
         // Convert consolidation's container list to List<ContainerResponse>
-        return jsonHelper.convertValueToList(consolidationDetails.getContainersList(), ContainerResponse.class);
+        return convertEntityListToDtoList(consolidationDetails.getContainersList(), defaultIncludeColumns);
     }
 
     public void changeContainerWtVolForSeaFCLDetach(Containers container) {
