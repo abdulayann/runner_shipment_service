@@ -1377,26 +1377,42 @@ public class ShipmentService implements IShipmentService {
                 obj.setWeight(obj.getWeight().multiply(new BigDecimal(obj.getPacks())));
             if(obj.getVolume() != null)
                 obj.setVolume(obj.getVolume().multiply(new BigDecimal(obj.getPacks())));
+            if(customerBookingRequest.getTransportType().equalsIgnoreCase(TRANSPORT_MODE_AIR)) {
+                calculateWeightVolumeForPacks(obj);
+            }
 
-            try {
-                if(customerBookingRequest.getTransportType().equalsIgnoreCase(TRANSPORT_MODE_AIR)) {
-                    obj.setWeight(new BigDecimal(convertUnit(MASS, obj.getWeight(), obj.getWeightUnit(), WEIGHT_UNIT_KG).toString()));
-                    obj.setWeightUnit(Constants.WEIGHT_UNIT_KG);
-                    obj.setVolume(new BigDecimal(convertUnit(VOLUME, obj.getVolume(), obj.getVolumeUnit(), VOLUME_UNIT_M3).toString()));
-                    obj.setVolumeUnit(Constants.VOLUME_UNIT_M3);
-                    double factor = Constants.AIR_FACTOR_FOR_VOL_WT;
-                    BigDecimal wvInKG = obj.getVolume().multiply(BigDecimal.valueOf(factor));
-                    obj.setVolumeWeight(wvInKG);
-                    obj.setVolumeWeightUnit(Constants.WEIGHT_UNIT_KG);
-                    obj.setChargeable(wvInKG.max(obj.getWeight()));
-                    obj.setChargeableUnit(WEIGHT_UNIT_KG);
-                }
-            }
-            catch (Exception e) {
-                log.error("Error while unit conversion for AIR transport mode in shipment packs from booking", e);
-            }
             return obj;
         }).collect(Collectors.toList()) : null;
+    }
+
+    private void calculateWeightVolumeForPacks(PackingRequest obj) {
+        try {
+            // Convert Weight to KGs
+            if (Objects.nonNull(obj.getWeight())) {
+                obj.setWeight(new BigDecimal(convertUnit(MASS, obj.getWeight(), obj.getWeightUnit(), WEIGHT_UNIT_KG).toString()));
+                obj.setWeightUnit(Constants.WEIGHT_UNIT_KG);
+            }
+
+            // Convert Volume to M3
+            if (Objects.nonNull(obj.getVolume())) {
+                obj.setVolume(new BigDecimal(convertUnit(VOLUME, obj.getVolume(), obj.getVolumeUnit(), VOLUME_UNIT_M3).toString()));
+                obj.setVolumeUnit(Constants.VOLUME_UNIT_M3);
+
+                double factor = Constants.AIR_FACTOR_FOR_VOL_WT;
+                BigDecimal wvInKG = obj.getVolume().multiply(BigDecimal.valueOf(factor));
+                obj.setVolumeWeight(wvInKG);
+                obj.setVolumeWeightUnit(Constants.WEIGHT_UNIT_KG);
+            }
+
+            // Calculate chargeable
+            if (Objects.nonNull(obj.getWeight()) && Objects.nonNull(obj.getVolumeWeight())) {
+                obj.setChargeable(obj.getVolumeWeight().max(obj.getWeight()));
+                obj.setChargeableUnit(WEIGHT_UNIT_KG);
+            }
+        }
+        catch (Exception e) {
+            log.error("Error while unit conversion for AIR transport mode in shipment packs from booking", e);
+        }
     }
 
     private void setHeightWidthUnit(PackingRequest obj) {
