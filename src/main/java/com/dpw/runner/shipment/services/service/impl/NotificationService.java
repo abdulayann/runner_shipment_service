@@ -304,7 +304,7 @@ public class NotificationService implements INotificationService {
                 template = createReassignmentCancellationEmailBody(notification, reason, entityNumber);
             } else if(Objects.equals(notification.getNotificationRequestType(), NotificationRequestType.REQUEST_TRANSFER) && !emailList.isEmpty()) {
                 ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
-                if(shipmentSettingsDetails.getIsNteAdditionalEmailsEnabled())
+                if(Boolean.TRUE.equals(shipmentSettingsDetails.getIsNteAdditionalEmailsEnabled()))
                     template = createRequestToTranferCancellationEmailBody(notification, reason, entityNumber);
             }
             if(!emailList.isEmpty() && template.getBody() != null) {

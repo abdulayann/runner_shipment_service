@@ -466,7 +466,7 @@ public class ShipmentSettingsService implements IShipmentSettingsService {
 
     private void setNteAdditionalEmailsFlag(Optional<ShipmentSettingsDetails> oldEntity, ShipmentSettingRequest request) {
         if(request.getIsNteAdditionalEmailsEnabled() == null)
-            request.setIsNteAdditionalEmailsEnabled(oldEntity.get().getIsNteAdditionalEmailsEnabled());
+            request.setIsNteAdditionalEmailsEnabled(oldEntity.get().getIsNteAdditionalEmailsEnabled()); //NOSONAR
     }
 
     private ResponseEntity<IRunnerResponse> getfuncResponseEntity(Optional<ShipmentSettingsDetails> oldEntity, ShipmentSettingRequest request, ShipmentSettingsDetails shipmentSettingsDetails) throws RunnerException {
