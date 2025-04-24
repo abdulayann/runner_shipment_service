@@ -24,8 +24,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.UnsupportedEncodingException;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.isA;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -283,8 +282,8 @@ class DocumentManagerServiceImplTest {
     @Test
     void testList() {
         var mockResponse = createMockResponse();
-        when(documentManagerRestClient.list(any())).thenReturn(mockResponse);
-        var responseEntity = documentManagerServiceImpl.list(CommonRequestModel.builder().dependentData(new DocumentManagerUpdateFileEntitiesRequest()).build());
+        when(documentManagerRestClient.list(any(), any(), any())).thenReturn(mockResponse);
+        var responseEntity = documentManagerServiceImpl.list(CommonRequestModel.builder().dependentData(new DocumentManagerUpdateFileEntitiesRequest()).build(), 1L, 1L);
         assertNotNull(responseEntity);
         assertTrue(responseEntity.getBody() instanceof DependentServiceResponse);
         assertEquals(mockResponse.getData(), ((DependentServiceResponse) responseEntity.getBody()).getData());

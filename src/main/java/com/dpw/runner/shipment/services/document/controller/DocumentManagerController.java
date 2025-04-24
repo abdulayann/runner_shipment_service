@@ -135,10 +135,12 @@ public class DocumentManagerController {
             @ApiResponse(code = 404, message = Constants.NO_DATA, response = DependentServiceResponse.class)
     })
     @PostMapping(ApiConstants.API_LIST)
-    public ResponseEntity<IRunnerResponse> listDocuments(@RequestBody @Valid Object request) {
+    public ResponseEntity<IRunnerResponse> listDocuments(@RequestBody @Valid Object request,
+                                                         @ApiParam(value = "page") @RequestParam Long page,
+                                                         @ApiParam(value = "size") @RequestParam Long size) {
         String responseMsg;
         try {
-            return documentManagerService.list(CommonRequestModel.buildDependentDataRequest(request));
+            return documentManagerService.list(CommonRequestModel.buildDependentDataRequest(request), page, size);
         } catch (Exception e) {
             responseMsg = e.getMessage() != null ? e.getMessage()
                     : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
