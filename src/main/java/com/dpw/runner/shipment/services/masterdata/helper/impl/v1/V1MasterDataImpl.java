@@ -273,8 +273,15 @@ public class V1MasterDataImpl implements IMasterDataService {
     }
 
     @Override
-    public DependentServiceResponse fetchUnlocationData(Object request) {
+    public DependentServiceResponse fetchAllUnlocationData(Object request) {
         V1DataResponse v1DataResponse = v1Service.fetchUnlocation(request);
+        return DependentServiceResponse.builder().success(true)
+                .data(v1DataResponse.entities).pageSize(v1DataResponse.take).numberOfRecords(v1DataResponse.totalCount).pageNo(v1DataResponse.skip).build();
+    }
+
+    @Override
+    public DependentServiceResponse fetchUnlocationData(Object request) {
+        V1DataResponse v1DataResponse = v1Service.fetchActiveUnlocation(request);
         return DependentServiceResponse.builder().success(true)
                 .data(v1DataResponse.entities).pageSize(v1DataResponse.take).numberOfRecords(v1DataResponse.totalCount).pageNo(v1DataResponse.skip).build();
     }
