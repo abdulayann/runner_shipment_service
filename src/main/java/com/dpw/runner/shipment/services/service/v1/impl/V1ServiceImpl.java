@@ -430,6 +430,9 @@ public class V1ServiceImpl implements IV1Service {
     @Value("${v1service.url.base}${v1service.url.getUserWithGivenPermission}")
     private String getUserWithGivenPermission;
 
+    @Value("${v1service.url.base}${v1service.url.unlocationListAllByIdentifiers}")
+    private String unlocationListAllUrl;
+
     @Autowired
     private JsonHelper jsonHelper;
     @Autowired
@@ -1321,6 +1324,24 @@ public class V1ServiceImpl implements IV1Service {
         try {
             long time = System.currentTimeMillis();
             HttpEntity<Object> entity = new HttpEntity<>(request, V1AuthHelper.getHeaders());
+            locationResponse = this.restTemplate.postForEntity(this.unlocationListAllUrl, entity, V1DataResponse.class, new Object[0]);
+            log.info("Token time taken in fetchUnlocation() function {} with Request ID: {}", System.currentTimeMillis() - time, LoggerHelper.getRequestIdFromMDC());
+            return locationResponse.getBody();
+        } catch (HttpClientErrorException | HttpServerErrorException ex) {
+            log.error("HTTP Error: Status Code={}, Raw Status Code={}, Response Body={}", ex.getStatusCode().value(), ex.getRawStatusCode(), ex.getResponseBodyAsString(), ex);
+            throw new V1ServiceException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), V1ErrorResponse.class).getError().getMessage());
+        } catch (Exception var7) {
+            throw new V1ServiceException(var7.getMessage());
+        }
+    }
+
+    @Override
+    public V1DataResponse fetchActiveUnlocation(Object request) {
+        ResponseEntity<V1DataResponse> locationResponse = null;
+
+        try {
+            long time = System.currentTimeMillis();
+            HttpEntity<Object> entity = new HttpEntity<>(request, V1AuthHelper.getHeaders());
             locationResponse = this.restTemplate.postForEntity(this.UNLOCATION_URL, entity, V1DataResponse.class, new Object[0]);
             log.info("Token time taken in fetchUnlocation() function {} with Request ID: {}", System.currentTimeMillis() - time, LoggerHelper.getRequestIdFromMDC());
             return locationResponse.getBody();
@@ -1331,6 +1352,7 @@ public class V1ServiceImpl implements IV1Service {
             throw new V1ServiceException(var7.getMessage());
         }
     }
+
     @Override
     public V1DataResponse stateBasedList(Object request) {
         ResponseEntity<V1DataResponse> locationResponse = null;

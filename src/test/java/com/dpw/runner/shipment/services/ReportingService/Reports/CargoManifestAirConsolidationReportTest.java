@@ -12,7 +12,6 @@ import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSetting
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
-import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
@@ -542,7 +541,7 @@ class CargoManifestAirConsolidationReportTest extends CommonMocks {
     private void mockUnloc() {
         UnlocationsResponse unlocationsResponse = new UnlocationsResponse();
         DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(Arrays.asList(unlocationsResponse)).build();
-        when(v1MasterData.fetchUnlocationData(any())).thenReturn(dependentServiceResponse);
+        when(v1MasterData.fetchAllUnlocationData(any())).thenReturn(dependentServiceResponse);
         when(jsonHelper.convertValueToList(dependentServiceResponse.getData(), UnlocationsResponse.class)).thenReturn(Arrays.asList(unlocationsResponse));
     }
 

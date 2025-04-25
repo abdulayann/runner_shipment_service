@@ -2066,7 +2066,7 @@ public abstract class IReport {
                     arrivalDetails.getLastForeignPort()
             );
             CommonV1ListRequest commonV1ListRequest = CommonV1ListRequest.builder().skip(0).criteriaRequests(criteria).build();
-            Object unlocations = masterDataFactory.getMasterDataService().fetchUnlocationData(commonV1ListRequest).getData();
+            Object unlocations = masterDataFactory.getMasterDataService().fetchAllUnlocationData(commonV1ListRequest).getData();
             List<UnlocationsResponse> unlocationsResponse = jsonHelper.convertValueToList(unlocations, UnlocationsResponse.class);
             if(!unlocationsResponse.isEmpty())
                 lastForeignPort = unlocationsResponse.get(0);

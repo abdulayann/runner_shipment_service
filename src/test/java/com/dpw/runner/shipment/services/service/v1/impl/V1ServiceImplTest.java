@@ -6076,4 +6076,48 @@ class V1ServiceImplTest {
         v1ServiceImpl.setAuthContext();
         verify(userServiceV1, times(1)).getUserByToken(any());
     }
+
+    @Test
+    void testFetchActiveUnlocation() throws RestClientException {
+        var mock = mock(ResponseEntity.class);
+        when(restTemplate.postForEntity(Mockito.any(), Mockito.any(), Mockito.any(),
+                (Object[]) any())).thenReturn(ResponseEntity.ok(V1DataResponse.builder().entityId(1L).build()));
+        when(mock.getBody()).thenReturn(V1DataResponse.builder().entityId(1L).build());
+
+        var responseEntity = v1ServiceImpl.fetchActiveUnlocation("Request");
+
+        assertEquals(1L, responseEntity.getEntityId());
+    }
+
+    @Test
+    void testFetchActiveUnlocation2() throws RestClientException {
+        when(restTemplate.postForEntity(Mockito.any(), Mockito.any(), Mockito.any(),
+                (Object[]) any())).thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST, v1ErrorInString));
+        when(jsonHelper.readFromJson(anyString(), eq(V1ErrorResponse.class))).thenReturn(v1ErrorResponse);
+
+        Throwable throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchActiveUnlocation("Request"));
+
+        assertEquals(v1ErrorResponse.getError().getMessage(), throwable.getMessage());
+    }
+
+    @Test
+    void testFetchActiveUnlocation3() throws RestClientException {
+        when(restTemplate.postForEntity(Mockito.any(), Mockito.any(), Mockito.any(),
+                (Object[]) any())).thenThrow(new HttpServerErrorException(HttpStatus.BAD_REQUEST, v1ErrorInString));
+        when(jsonHelper.readFromJson(anyString(), eq(V1ErrorResponse.class))).thenReturn(v1ErrorResponse);
+
+        Throwable throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchActiveUnlocation("Request"));
+
+        assertEquals(v1ErrorResponse.getError().getMessage(), throwable.getMessage());
+    }
+
+    @Test
+    void testFetchActiveUnlocation4() throws RestClientException {
+        when(restTemplate.postForEntity(Mockito.any(), Mockito.any(), Mockito.any(),
+                (Object[]) any())).thenThrow(new RuntimeException("RuntimeException"));
+
+        Throwable throwable = assertThrows(Throwable.class, () -> v1ServiceImpl.fetchActiveUnlocation("Request"));
+
+        assertEquals("RuntimeException", throwable.getMessage());
+    }
 }
