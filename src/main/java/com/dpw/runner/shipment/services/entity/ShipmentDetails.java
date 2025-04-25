@@ -599,6 +599,89 @@ public class ShipmentDetails extends MultiTenancy {
     @Column(name = "is_frob")
     private Boolean isFrob;
 
+    @Column(name = "origin_branch")
+    @TenantIdData
+    private Long originBranch;
+
+    @Column(name = "incoterms_location")
+    private String incotermsLocation;
+
+    @Column(name = "controlled")
+    private String controlled;
+
+    @Column(name = "controlled_reference_number")
+    private String controlledReferenceNumber;
+
+    @Column(name = "partner")
+    private String partner;
+
+    @Column(name = "co_load_bkg_number")
+    private String coLoadBkgNumber;
+
+    @Column(name = "carrier_bkg_number")
+    private String carrierBkgNumber;
+
+    @Column(name = "carrier_bl_number")
+    private String carrierBlNumber;
+
+    @Column(name = "fmc_number")
+    private String fmcNumber;
+
+    @Column(name = "pickup_at_origin_type")
+    private String pickupAtOriginType;
+
+    @Column(name = "delivery_at_destination_type")
+    private String deliveryAtDestinationType;
+
+    @Column(name = "brokerage_at_origin_type")
+    private String brokerageAtOriginType;
+
+    @Column(name = "brokerage_at_destination_type")
+    private String brokerageAtDestinationType;
+
+    @Column(name = "pickup_at_origin")
+    private Long pickupAtOrigin;
+
+    @Column(name = "delivery_at_destination")
+    private Long deliveryAtDestination;
+
+    @Column(name = "brokerage_at_origin")
+    private Long brokerageAtOrigin;
+
+    @Column(name = "brokerage_at_destination")
+    private Long brokerageAtDestination;
+
+    @Column(name = "pickup_at_origin_date")
+    private LocalDateTime pickupAtOriginDate;
+
+    @Column(name = "delivery_at_destination_date")
+    private LocalDateTime deliveryAtDestinationDate;
+
+    @Column(name = "brokerage_at_origin_date")
+    private LocalDateTime brokerageAtOriginDate;
+
+    @Column(name = "brokerage_at_destination_date")
+    private LocalDateTime brokerageAtDestinationDate;
+
+    @Column(name = "terminal_date")
+    private LocalDateTime terminalDate;
+
+    @Column(name = "vgm_date")
+    private LocalDateTime vgmDate;
+
+    @Column(name = "si_date")
+    private LocalDateTime siDate;
+
+    @Column(name = "ear_epy_eq_pickup_date")
+    private LocalDateTime earEpyEqPickupDate;
+
+    @Column(name = "lat_full_eq_delivery_date")
+    private LocalDateTime latFullEqDeliveryDate;
+
+    @Column(name = "ear_drop_off_date")
+    private LocalDateTime earDropOffDate;
+
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
