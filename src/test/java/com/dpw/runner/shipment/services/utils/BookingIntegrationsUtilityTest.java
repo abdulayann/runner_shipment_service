@@ -294,6 +294,16 @@ class BookingIntegrationsUtilityTest {
     }
 
     @Test
+    void testUpdateBookingInPlatform_fromShipment_throwsException1() throws RunnerException {
+        var shipment = jsonTestUtility.getTestShipment();
+        shipment.setBookingType(CustomerBookingConstants.ONLINE);
+        shipment.setBookingReference("12345");
+        doThrow(new RuntimeException()).when(orderManagementAdapter).getOrdersByShipmentId(shipment.getShipmentId());
+        bookingIntegrationsUtility.updateBookingInPlatform(shipment);
+        verify(platformServiceAdapter, times((1))).createAtPlatform(any());
+    }
+
+    @Test
     void testUpdateBookingInPlatform_fromShipment_LCL_successfulUpdate() throws RunnerException {
         var shipment = jsonTestUtility.getTestShipment();
         shipment.setBookingType(CustomerBookingConstants.ONLINE);

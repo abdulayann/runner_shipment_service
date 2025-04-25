@@ -96,7 +96,7 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
     }
 
     @Override
-    public List<PurchaseOrdersResponse> getOrdersByShipmentId(String shipmentId) {
+    public List<PurchaseOrdersResponse> getOrdersByShipmentId(String shipmentId) throws RunnerException {
             String url = baseUrl + getOrderbyCriteria;
             // Create the request body
             Map<String, Object> requestBody = new HashMap<>();
@@ -118,7 +118,7 @@ public class OrderManagementAdapter implements IOrderManagementAdapter {
             return getPurchaseOrderDataFromOrders(orders);
         } catch (Exception e) {
             log.error(e.getMessage());
-            return Collections.emptyList();
+            throw new RunnerException(e.getMessage());
         }
     }
 

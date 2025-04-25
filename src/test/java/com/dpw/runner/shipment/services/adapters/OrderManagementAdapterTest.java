@@ -542,7 +542,7 @@ class OrderManagementAdapterTest {
     }
 
     @Test
-    void getOrdersUsingShipmentId() {
+    void getOrdersUsingShipmentId() throws RunnerException {
         OrderListResponse response = new OrderListResponse();
         OrderManagementDTO orderManagementDTO1 = OrderManagementDTO.builder().orderId("abc").orderNumber("ord1").build();
         response.setData(List.of(orderManagementDTO1));
@@ -580,10 +580,9 @@ class OrderManagementAdapterTest {
         when(v2AuthHelper.getOrderManagementServiceSourceHeader()).thenReturn(headers);
 
         doReturn(new ResponseEntity<>(response, HttpStatus.OK)).when(restTemplate).exchange("nullnull", HttpMethod.POST, null, OrderListResponse.class);
-
-        List<PurchaseOrdersResponse> responses = orderManagementAdapter.getOrdersByShipmentId("SHP000125865");
-        assertNotNull(responses);
-        assertEquals(0, responses.size());
+        assertThrows(RunnerException.class, () -> {
+            orderManagementAdapter.getOrdersByShipmentId("SHP000125865");
+        });
     }
 
 

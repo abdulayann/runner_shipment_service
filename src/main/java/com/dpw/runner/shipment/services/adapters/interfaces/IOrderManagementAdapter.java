@@ -13,7 +13,7 @@ public interface IOrderManagementAdapter {
 
     ShipmentDetails getOrderByGuid(String orderGuid) throws RunnerException;
 
-    List<PurchaseOrdersResponse> getOrdersByShipmentId(String shipmentId);
+    List<PurchaseOrdersResponse> getOrdersByShipmentId(String shipmentId) throws RunnerException;
 
     CustomerBookingResponse getOrderForBooking(String orderId) throws RunnerException;
 }
