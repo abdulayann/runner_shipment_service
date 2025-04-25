@@ -30,6 +30,7 @@ import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.PrintType;
+import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -62,7 +63,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import java.io.IOException;
+import java.net.URL;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
@@ -3962,7 +3965,45 @@ class ReportServiceTest extends CommonMocks {
 
         verify(hblDao, never()).save(any());
     }
+    @Test
+    void testPrintForPartiesAndBarcode_success() throws Exception {
+        reportRequest.setPrintingFor_str("1,2");
+        reportRequest.setPrintBarcode(true);
+        when(docPages.getMainPageId()).thenReturn("main-page-id");
+        // Sample byte arrays
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        URL resource = classLoader.getResource("test.pdf");
 
+        if (resource == null) {
+            throw new RuntimeException("PDF file not found in test resources!");
+        }
+
+        // Convert URL to Path
+        Path path = Paths.get(resource.toURI());
+
+        // Read all bytes
+        byte[] sampleDoc = Files.readAllBytes(path);
+        when(documentService.downloadDocumentTemplate(any(), any())).thenReturn(new ResponseEntity<>(sampleDoc, HttpStatus.OK));
+
+        Map<String, Object> data = new HashMap<>();
+        List<byte[]> pdfBytes = new ArrayList<>();
+
+        byte[] result = reportService.printForPartiesAndBarcode(reportRequest, pdfBytes, "M123", data, docPages);
+
+        assertNotNull(result);
+        assertEquals(2, pdfBytes.size());
+    }
+    @Test
+    void testPrintForPartiesAndBarcode_Failure() throws Exception {
+        reportRequest.setPrintingFor_str("1,2");
+        reportRequest.setPrintBarcode(true);
+        when(docPages.getMainPageId()).thenReturn("main-page-id");
+        // Read all bytes
+        doThrow(new RuntimeException()).when(documentService).downloadDocumentTemplate(any(), any());
+        Map<String, Object> data = new HashMap<>();
+        List<byte[]> pdfBytes = new ArrayList<>();
+        assertThrows(GenericException.class,() -> reportService.printForPartiesAndBarcode(reportRequest, pdfBytes, "M123", data, docPages));
+    }
     private Runnable mockRunnable() {
         return null;
     }
