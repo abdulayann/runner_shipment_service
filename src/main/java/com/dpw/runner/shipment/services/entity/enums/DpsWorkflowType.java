@@ -4,5 +4,5 @@ import lombok.Getter;
 
 @Getter
 public enum DpsWorkflowType {
-    HOLD, WARNING, SHIPMENT_INTERNAL, NO_ACTION
+    HOLD, WARNING, SHIPMENT_INTERNAL, NO_ACTION, DPS_HOLD
 }

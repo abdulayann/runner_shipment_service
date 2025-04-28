@@ -15,6 +15,7 @@ import java.io.Serializable;
 @AllArgsConstructor
 @Builder
 @Embeddable
+@SuppressWarnings("java:S1700") // A field should not duplicate the name of its containing class
 public class TriangulationPartner implements Serializable {
 
     @Column(name = "partner_id")

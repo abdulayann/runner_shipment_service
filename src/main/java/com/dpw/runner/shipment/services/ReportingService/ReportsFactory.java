@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Component
+@SuppressWarnings("java:S6539")
 public class ReportsFactory {
 
     private final Map<String, IReport> reportsMap;
@@ -78,7 +79,7 @@ public class ReportsFactory {
         reportsMap.put(ReportConstants.CONTAINER_MANIFEST_PRINT, containerManifestPrint);
         reportsMap.put(ReportConstants.SEAWAY_BILL, seawayBillReport);
         reportsMap.put(ReportConstants.SHIP_TRUCKWAY_BILL, shipTruckwayBillReport);
-        reportsMap.put(ReportConstants.CONS_TRUCKWAY_BIll, consTruckwayBillReport);
+        reportsMap.put(ReportConstants.CONS_TRUCKWAY_BILL, consTruckwayBillReport);
         reportsMap.put(ReportConstants.SHIP_TRUCK_DRIVER_PROOF, shipTruckDriverProof);
         reportsMap.put(ReportConstants.CONS_TRUCK_DRIVER_PROOF, consTruckDriverProof);
         reportsMap.put(ReportConstants.TRANSPORT_ORDER, transportOrderReport);

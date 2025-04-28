@@ -565,6 +565,9 @@ public class ShipmentSettingsDetails extends MultiTenancy {
     @Column(name = "is_automatic_transfer_enabled")
     private Boolean isAutomaticTransferEnabled = false;
 
+    @Column(name = "is_nte_additional_emails_enabled")
+    private Boolean isNteAdditionalEmailsEnabled = false;
+
     @Column(name = "events_revamp_enabled")
     private Boolean eventsRevampEnabled;
 
@@ -600,4 +603,7 @@ public class ShipmentSettingsDetails extends MultiTenancy {
 
     @Column(name = "is_amr_freight_enabled")
     private Boolean isAmrAirFreightEnabled;
+
+    @Column(name = "is_external_file_transfer_enabled")
+    private Boolean isExternalFileTransferEnabled;
 }

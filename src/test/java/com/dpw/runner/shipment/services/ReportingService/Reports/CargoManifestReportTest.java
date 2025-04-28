@@ -294,8 +294,8 @@ class CargoManifestReportTest extends CommonMocks {
         containerMap.put(GROSS_VOLUME, BigDecimal.TEN);
         containerMap.put(GROSS_WEIGHT, BigDecimal.TEN);
         containerMap.put(SHIPMENT_PACKS, BigDecimal.TEN);
-        containerMap.put(TareWeight, BigDecimal.TEN);
-        containerMap.put(VGMWeight, BigDecimal.TEN);
+        containerMap.put(TARE_WEIGHT, BigDecimal.TEN);
+        containerMap.put(VGM_WEIGHT, BigDecimal.TEN);
         doReturn(containerMap).when(jsonHelper).convertValue(any(ShipmentContainers.class), any(TypeReference.class));
         mockTenantSettings();
         assertNotNull(cargoManifestReport.populateDictionary(cargoManifestModel));
@@ -454,8 +454,8 @@ class CargoManifestReportTest extends CommonMocks {
         containerMap.put(GROSS_VOLUME, BigDecimal.TEN);
         containerMap.put(GROSS_WEIGHT, BigDecimal.TEN);
         containerMap.put(SHIPMENT_PACKS, BigDecimal.TEN);
-        containerMap.put(TareWeight, BigDecimal.TEN);
-        containerMap.put(VGMWeight, BigDecimal.TEN);
+        containerMap.put(TARE_WEIGHT, BigDecimal.TEN);
+        containerMap.put(VGM_WEIGHT, BigDecimal.TEN);
         doReturn(containerMap).when(jsonHelper).convertValue(any(ShipmentContainers.class), any(TypeReference.class));
         when(masterDataUtils.fetchDgSubstanceRow(any())).thenReturn(new EntityTransferDGSubstance());
         mockTenantSettings();
@@ -685,8 +685,8 @@ class CargoManifestReportTest extends CommonMocks {
         containerMap.put(GROSS_VOLUME, BigDecimal.TEN);
         containerMap.put(GROSS_WEIGHT, BigDecimal.TEN);
         containerMap.put(SHIPMENT_PACKS, BigDecimal.TEN);
-        containerMap.put(TareWeight, BigDecimal.TEN);
-        containerMap.put(VGMWeight, BigDecimal.TEN);
+        containerMap.put(TARE_WEIGHT, BigDecimal.TEN);
+        containerMap.put(VGM_WEIGHT, BigDecimal.TEN);
         doReturn(containerMap).when(jsonHelper).convertValue(any(ShipmentContainers.class), any(TypeReference.class));
         mockTenantSettings();
 

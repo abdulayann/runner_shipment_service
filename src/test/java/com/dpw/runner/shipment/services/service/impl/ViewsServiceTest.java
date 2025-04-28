@@ -23,11 +23,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataRetrievalFailureException;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -86,8 +84,6 @@ class ViewsServiceTest {
         request.setName("name");
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
         commonRequestModel.setData(request);
-        Views views = new Views(); // Provide necessary data for views
-        ViewsResponse viewsResponse = new ViewsResponse();
         when(viewsDao.findAllByUsername(anyString())).thenReturn(List.of("name"));
 
         assertThrows(ValidationException.class, () ->viewsService.create(commonRequestModel));
@@ -101,7 +97,6 @@ class ViewsServiceTest {
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
         commonRequestModel.setData(request);
         Views views = new Views(); // Provide necessary data for views
-        ViewsResponse viewsResponse = new ViewsResponse();
         when(viewsDao.save(views)).thenThrow(new RuntimeException());
         when(jsonHelper.convertValue(any(ViewsRequest.class), eq(Views.class))).thenReturn(views);
 
@@ -144,7 +139,6 @@ class ViewsServiceTest {
         commonRequestModel.setData(request);
         Views views = new Views(); // Provide necessary data for views
         views.setCreatedBy("user1");
-        ViewsResponse viewsResponse = new ViewsResponse();
         when(viewsDao.findById(anyLong())).thenReturn(Optional.of(views));
 
         assertThrows(ValidationException.class, () -> viewsService.update(commonRequestModel));
@@ -162,7 +156,6 @@ class ViewsServiceTest {
         commonRequestModel.setData(request);
         Views views = new Views(); // Provide necessary data for views
         views.setCreatedBy("user");
-        ViewsResponse viewsResponse = new ViewsResponse();
         when(viewsDao.findById(anyLong())).thenReturn(Optional.of(views));
         when(viewsDao.findAllByUsername(anyString())).thenReturn(List.of("test"));
 
@@ -180,7 +173,6 @@ class ViewsServiceTest {
         commonRequestModel.setData(request);
         Views views = new Views(); // Provide necessary data for views
         views.setCreatedBy("user");
-        ViewsResponse viewsResponse = new ViewsResponse();
         when(viewsDao.findById(anyLong())).thenReturn(Optional.of(views));
         when(viewsDao.save(any(Views.class))).thenThrow(new RuntimeException());
 
@@ -198,11 +190,9 @@ class ViewsServiceTest {
         request.setId(null);
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
         commonRequestModel.setData(request);
-        Views views = new Views(); // Provide necessary data for views
-        ViewsResponse viewsResponse = new ViewsResponse();
         when(viewsDao.findById(any())).thenReturn(Optional.empty());
 
-        var e = assertThrows(DataRetrievalFailureException.class, () -> viewsService.update(commonRequestModel));
+        assertThrows(DataRetrievalFailureException.class, () -> viewsService.update(commonRequestModel));
 
     }
 
@@ -216,7 +206,7 @@ class ViewsServiceTest {
         Views views = new Views(); // Provide necessary data for views
         views.setCreatedBy("user");
         views.setId(1L);
-        ViewsResponse viewsResponse = new ViewsResponse();
+
         DefaultViews defaultView = new DefaultViews();
         defaultView.setDefaultViewId(2L);
         when(viewsDao.findById(anyLong())).thenReturn(Optional.of(views));
@@ -224,6 +214,7 @@ class ViewsServiceTest {
         when(jsonHelper.convertValue(any(ViewsRequest.class), eq(Views.class))).thenReturn(views);
 
         ResponseEntity<IRunnerResponse> responseEntity = viewsService.update(commonRequestModel);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
     @Test
@@ -387,7 +378,7 @@ class ViewsServiceTest {
     void testRetrieveByIdWithIncludeColumns() {
 
         CommonGetRequest request = CommonGetRequest.builder().id(10L).build(); // Provide necessary data for request
-        request.setIncludeColumns(Arrays.asList("a"));
+        request.setIncludeColumns(List.of("a"));
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().build();
         commonRequestModel.setData(request);
         Views views = new Views(); // Provide necessary data for views

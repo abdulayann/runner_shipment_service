@@ -172,6 +172,8 @@ public class ExternalBillPayloadRequest implements IRunnerRequest {
         private String overseasSellCurrency;
         private Boolean noTax = false;
         private Boolean isRcm = false;
+        private String internalRemarks;
+        private String externalRemarks;
     }
 
     @Data

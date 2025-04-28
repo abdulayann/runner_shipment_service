@@ -1,6 +1,10 @@
 package com.dpw.runner.shipment.services.notification.service.impl;
 
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.responses.MDMServiceResponse;
 import com.dpw.runner.shipment.services.document.util.BASE64DecodedMultipartFile;
+import com.dpw.runner.shipment.services.dto.request.UsersDto;
+import com.dpw.runner.shipment.services.exception.exceptions.NotificationException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.notification.config.NotificationConfig;
@@ -10,19 +14,19 @@ import com.dpw.runner.shipment.services.notification.request.GetLogsRequest;
 import com.dpw.runner.shipment.services.notification.request.NotificationServiceSendEmailRequest;
 import com.dpw.runner.shipment.services.notification.request.SendEmailBaseRequest;
 import com.dpw.runner.shipment.services.notification.response.NotificationServiceResponse;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.json.JsonParseException;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
-
 import java.io.UnsupportedEncodingException;
+import org.springframework.web.client.HttpClientErrorException;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.isA;
@@ -43,7 +47,7 @@ class NotificationServiceImplTest {
     private JsonHelper jsonHelper;
 
     @Test
-    void testSendEmail() throws JsonProcessingException, UnsupportedEncodingException {
+    void testSendEmail() throws UnsupportedEncodingException {
         // Arrange
         when(jsonHelper.convertToJson(Mockito.<Object>any())).thenReturn("42");
 
@@ -79,11 +83,14 @@ class NotificationServiceImplTest {
     }
 
     @Test
-    void testSendEmail2() throws JsonProcessingException, UnsupportedEncodingException {
+    void testSendEmail2() throws UnsupportedEncodingException {
         // Arrange
+        UserContext.setUser(UsersDto.builder().Email("email").build());
         when(jsonHelper.convertToJson(Mockito.<Object>any())).thenReturn("42");
         when(notificationRestClient.sendEmail(Mockito.<NotificationServiceSendEmailRequest>any()))
-                .thenThrow(new RuntimeException("high"));
+                .thenThrow(new HttpClientErrorException(HttpStatus.BAD_REQUEST, "high"));
+
+        when(jsonHelper.readFromJson(anyString(), eq(MDMServiceResponse.class))).thenReturn(new MDMServiceResponse());
 
         SendEmailBaseRequest request = new SendEmailBaseRequest();
         request.setBcc("ada.lovelace@example.org");
@@ -98,6 +105,7 @@ class NotificationServiceImplTest {
         request.setTo("alice.liddell@example.org");
         request.setUserId("42");
         request.setUserName("janedoe");
+        request.setSendMeCopy(true);
 
         // Act and Assert
         assertThrows(RuntimeException.class, () -> notificationServiceImpl.sendEmail(request));
@@ -106,8 +114,9 @@ class NotificationServiceImplTest {
     }
 
     @Test
-    void testSendEmail3() throws JsonProcessingException, UnsupportedEncodingException {
+    void testSendEmail3() throws UnsupportedEncodingException {
         // Arrange
+        UserContext.setUser(UsersDto.builder().Email("email").build());
         NotificationServiceResponse notificationServiceResponse = new NotificationServiceResponse();
         notificationServiceResponse.setAcknowledgementId("42");
         notificationServiceResponse.setErrorCode("An error occurred");
@@ -128,8 +137,71 @@ class NotificationServiceImplTest {
         request.setTo("alice.liddell@example.org");
         request.setUserId("42");
         request.setUserName("janedoe");
+        request.setSendMeCopy(true);
 
         verify(jsonHelper, atLeast(0)).convertToJson(Mockito.<Object>any());
+    }
+
+    @Test
+    void testSendEmail4() throws UnsupportedEncodingException {
+        // Arrange
+        UserContext.setUser(UsersDto.builder().Email("email").build());
+        when(jsonHelper.convertToJson(Mockito.<Object>any())).thenThrow(new JsonParseException());
+
+        SendEmailBaseRequest request = new SendEmailBaseRequest();
+        request.setBcc("ada.lovelace@example.org");
+        request.setBranchId("janedoe/featurebranch");
+        request.setFile(new BASE64DecodedMultipartFile("AXAXAXAX".getBytes("UTF-8")));
+        request.setHtmlBody("Not all who wander are lost");
+        request.setItem("Item");
+        request.setModuleName("Module Name");
+        request.setSubject("Hello from the Dreaming Spires");
+        request.setTemplateName("Template Name");
+        request.setTo("alice.liddell@example.org");
+        request.setUserId("42");
+        request.setUserName("janedoe");
+        request.setSendMeCopy(true);
+
+        // Act and Assert
+        assertThrows(NotificationException.class, () -> notificationServiceImpl.sendEmail(request));
+        verify(jsonHelper, atLeast(1)).convertToJson(Mockito.<Object>any());
+    }
+
+    @Test
+    void testSendEmail5() throws UnsupportedEncodingException {
+        // Arrange
+        UserContext.setUser(UsersDto.builder().build());
+        when(jsonHelper.convertToJson(Mockito.<Object>any())).thenReturn("42");
+
+        NotificationServiceResponse notificationServiceResponse = new NotificationServiceResponse();
+        notificationServiceResponse.setAcknowledgementId("42");
+        notificationServiceResponse.setErrorCode("An error occurred");
+        notificationServiceResponse.setMessage("Not all who wander are lost");
+        notificationServiceResponse.setSuccess("Success");
+        when(notificationRestClient.sendEmail(Mockito.<NotificationServiceSendEmailRequest>any()))
+                .thenReturn(notificationServiceResponse);
+
+        when(jsonHelper.convertToJson(notificationServiceResponse)).thenThrow(new JsonParseException());
+
+        SendEmailBaseRequest request = new SendEmailBaseRequest();
+        request.setBcc("ada.lovelace@example.org");
+        request.setBranchId("janedoe/featurebranch");
+        request.setCc("ada.lovelace@example.org");
+        request.setFile(new BASE64DecodedMultipartFile("AXAXAXAX".getBytes("UTF-8")));
+        request.setHtmlBody("Not all who wander are lost");
+        request.setItem("Item");
+        request.setModuleName("Module Name");
+        request.setSubject("Hello from the Dreaming Spires");
+        request.setTemplateName("Template Name");
+        request.setTo("alice.liddell@example.org");
+        request.setUserId("42");
+        request.setUserName("janedoe");
+        request.setSendMeCopy(true);
+
+        // Assert
+        assertThrows(NotificationException.class, () -> notificationServiceImpl.sendEmail(request));
+        verify(notificationRestClient).sendEmail(isA(NotificationServiceSendEmailRequest.class));
+        verify(jsonHelper, atLeast(1)).convertToJson(Mockito.<Object>any());
     }
 
     @Test

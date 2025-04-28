@@ -361,7 +361,7 @@ class NetworkTransferServiceTest extends CommonMocks{
         shipmentDetails.setJobType(Constants.SHIPMENT_TYPE_DRT);
         shipmentDetails.setId(1L);
         assertDoesNotThrow(() -> networkTransferService.processNetworkTransferEntity(null, 132L,
-                Constants.Shipment, shipmentDetails, null, Constants.DIRECTION_EXP, null, false));
+                Constants.SHIPMENT_CAMELCASE, shipmentDetails, null, Constants.DIRECTION_EXP, null, false));
     }
 
     @Test
@@ -465,7 +465,6 @@ class NetworkTransferServiceTest extends CommonMocks{
 
     @Test
     void testUpdateStatusAndCreatedEntityId() {
-        when(networkTransferDao.findById(1L)).thenReturn(Optional.of(networkTransfer));
         assertDoesNotThrow(() -> networkTransferService.updateStatusAndCreatedEntityId(1L, NetworkTransferStatus.ACCEPTED.name(), 2L));
     }
 

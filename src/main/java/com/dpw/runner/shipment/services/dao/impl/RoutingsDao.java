@@ -101,13 +101,13 @@ public class RoutingsDao implements IRoutingsDao {
         String responseMsg;
         List<Routings> responseRoutings = new ArrayList<>();
         try {
-            // TODO- Handle Transactions here
+            // LATER- Handle Transactions here
             List<Routings> routings = findByShipmentId(shipmentId);
             Map<Long, Routings> hashMap = routings.stream()
                         .collect(Collectors.toMap(Routings::getId, Function.identity()));
             Map<Long, Routings> copyHashMap = new HashMap<>(hashMap);
             List<Routings> routingsRequestList = new ArrayList<>();
-            if (routingsList != null && routingsList.size() != 0) {
+            if (routingsList != null && !routingsList.isEmpty()) {
                 for (Routings request : routingsList) {
                     Long id = request.getId();
                     if (id != null) {
@@ -225,7 +225,7 @@ public class RoutingsDao implements IRoutingsDao {
             Map<Long, Routings> hashMap = routings.stream()
                     .collect(Collectors.toMap(Routings::getId, Function.identity()));
             List<Routings> routingsRequestList = new ArrayList<>();
-            if (routingsList != null && routingsList.size() != 0) {
+            if (routingsList != null && !routingsList.isEmpty()) {
                 for (Routings request : routingsList) {
                     Long id = request.getId();
                     if (id != null) {
@@ -290,13 +290,13 @@ public class RoutingsDao implements IRoutingsDao {
         String responseMsg;
         List<Routings> responseRoutings = new ArrayList<>();
         try {
-            // TODO- Handle Transactions here
+            // LATER- Handle Transactions here
             List<Routings> routings = findRoutingsByConsolidationId(consolidationId);
             Map<Long, Routings> hashMap = routings.stream()
                         .collect(Collectors.toMap(Routings::getId, Function.identity()));
             Map<Long, Routings> copyHashMap = new HashMap<>(hashMap);
             List<Routings> routingsRequestList = new ArrayList<>();
-            if (routingsList != null && routingsList.size() != 0) {
+            if (routingsList != null && !routingsList.isEmpty()) {
                 for (Routings request : routingsList) {
                     Long id = request.getId();
                     if (id != null) {
@@ -320,7 +320,7 @@ public class RoutingsDao implements IRoutingsDao {
     public List<Routings> updateEntityFromConsole(List<Routings> routingsList, Long consolidationId, List<Routings> oldEntityList) throws RunnerException {
         String responseMsg;
         Map<UUID, Routings> routingMap = new HashMap<>();
-        if (oldEntityList != null && oldEntityList.size() > 0) {
+        if (oldEntityList != null && !oldEntityList.isEmpty()) {
             for (Routings entity :
                     oldEntityList) {
                 routingMap.put(entity.getGuid(), entity);
@@ -331,7 +331,7 @@ public class RoutingsDao implements IRoutingsDao {
         try {
             Routings oldEntity;
             List<Routings> routingsRequestList = new ArrayList<>();
-            if (routingsList != null && routingsList.size() != 0) {
+            if (routingsList != null && !routingsList.isEmpty()) {
                 for (Routings request : routingsList) {
                     oldEntity = routingMap.get(request.getGuid());
                     if (oldEntity != null) {
@@ -429,7 +429,7 @@ public class RoutingsDao implements IRoutingsDao {
     public List<Routings> updateEntityFromShipment(List<Routings> routingsList, Long shipmentId, List<Routings> oldEntityList) throws RunnerException {
         String responseMsg;
         Map<UUID, Routings> routingMap = new HashMap<>();
-        if (oldEntityList != null && oldEntityList.size() > 0) {
+        if (oldEntityList != null && !oldEntityList.isEmpty()) {
             for (Routings entity :
                     oldEntityList) {
                 routingMap.put(entity.getGuid(), entity);
@@ -440,7 +440,7 @@ public class RoutingsDao implements IRoutingsDao {
         try {
             Routings oldEntity;
             List<Routings> routingsRequestList = new ArrayList<>();
-            if (routingsList != null && routingsList.size() != 0) {
+            if (routingsList != null && !routingsList.isEmpty()) {
                 for (Routings request : routingsList) {
                     oldEntity = routingMap.get(request.getGuid());
                     if (oldEntity != null) {
@@ -508,9 +508,9 @@ public class RoutingsDao implements IRoutingsDao {
         int nextLocation = 1; // Index for the next location to compare
         long legCounter = 1L;   // A counter for leg numbers
         // Loop through the locations to generate routing requests
-        while (currentLocation < 4 && nextLocation < 4) {
+        while (canProcessNextLocation(currentLocation, nextLocation)) {
             // Skip null locations or If locations are the same, move to the next pair
-            if (locations.get(currentLocation).getLeft() == null || locations.get(currentLocation).getLeft().equalsIgnoreCase(locations.get(nextLocation).getLeft())) {
+            if (skipSameLocation(locations, currentLocation, nextLocation)) {
                 currentLocation++;
                 nextLocation++;
             } else if (locations.get(nextLocation).getLeft() == null) {
@@ -519,13 +519,13 @@ public class RoutingsDao implements IRoutingsDao {
                 String mode = transportMode;
                 RoutingCarriage carriage = RoutingCarriage.MAIN_CARRIAGE;
 
-                if (locations.get(currentLocation).getRight() != null || locations.get(nextLocation).getRight() != null) {
+                if (canUpdateModeCarriage(locations, currentLocation, nextLocation)) {
                     mode = Constants.TRANSPORT_MODE_ROA; // Set mode to ROA if specific conditions are met
                     carriage = locations.get(currentLocation).getRight() != null  ? RoutingCarriage.PRE_CARRIAGE : RoutingCarriage.ON_CARRIAGE;
                 }
                 String flightNumber = "";
                 String flightCarrier = "";
-                if(Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster()) && Objects.equals(transportMode, Constants.TRANSPORT_MODE_AIR) && Objects.equals(carriage, RoutingCarriage.MAIN_CARRIAGE)) {
+                if(shouldIncludeFlightDetails(transportMode, carriage)) {
                     flightNumber = carrierDetails.getFlightNumber();
                     flightCarrier = carrierDetails.getShippingLine();
                 }
@@ -539,6 +539,24 @@ public class RoutingsDao implements IRoutingsDao {
 
         // Return the generated routing requests
         return routingRequests;
+    }
+
+    private boolean canProcessNextLocation(int currentLocation, int nextLocation) {
+        return currentLocation < 4 && nextLocation < 4;
+    }
+
+    private boolean canUpdateModeCarriage(List<Pair<String, String>> locations, int currentLocation, int nextLocation) {
+        return locations.get(currentLocation).getRight() != null || locations.get(nextLocation).getRight() != null;
+    }
+
+    private boolean skipSameLocation(List<Pair<String, String>> locations, int currentLocation, int nextLocation) {
+        return locations.get(currentLocation).getLeft() == null || locations.get(currentLocation).getLeft().equalsIgnoreCase(locations.get(nextLocation).getLeft());
+    }
+
+    private boolean shouldIncludeFlightDetails(String transportMode, RoutingCarriage carriage) {
+        return Boolean.TRUE.equals(commonUtils.getShipmentSettingFromContext().getEnableRouteMaster()) &&
+                Objects.equals(transportMode, Constants.TRANSPORT_MODE_AIR) &&
+                Objects.equals(carriage, RoutingCarriage.MAIN_CARRIAGE);
     }
 
     /**

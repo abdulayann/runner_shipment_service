@@ -46,11 +46,11 @@ public class AwbConstants {
     public static final String RESUBMIT_FZB_VALIDATION = "HAWB is updated, please resubmit the FZB by printing the original MAWB";
     public static final String RESUBMIT_FWB_VALIDATION = "MAWB is updated, please resubmit the FWB by printing the original MAWB";
     public static final String ORDER_NUMBER = "ORDER NO: %s";
-    public static final List<String> SecurityStatusList = List.of("SPX", "SHR", "SCO", "Exemption Cargo");
 
     public static final String AOM_SCREENING_STATUS = "AOM";
     public static final String NOT_SCREENING_STATUS = "NOT";
     public static final String EXEMPTION_CARGO_SECURITY_STATUS = "Exemption Cargo";
     public static final String SPX = "SPX";
+    public static final List<String> SecurityStatusList = List.of("SPX", "SHR", "SCO", EXEMPTION_CARGO_SECURITY_STATUS);
 
 }

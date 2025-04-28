@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConst
 import com.dpw.runner.shipment.services.ReportingService.Models.FCRDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.IDocumentModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.PartiesModel;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
@@ -63,6 +64,7 @@ public class FCRDocumentReport extends IReport{
     Map<String, Object> populateDictionary(IDocumentModel documentModel) throws RunnerException {
         FCRDocumentModel fcrDocumentModel = (FCRDocumentModel) documentModel;
         Map<String, Object> dictionary = new HashMap<>();
+        Set<String> unlocationCodeSet = new HashSet<>();
         if(fcrShipper != null)
             dictionary.put(ReportConstants.FCR_CONSIGNOR_IN_CAPS, getOrgAddressDetails(modelMapper.map(fcrShipper, PartiesModel.class)));
         dictionary.put(SHIP_CONSIGNEE_IN_CAPS, getOrgAddressDetails(fcrDocumentModel.getShipmentModel().getConsignee()));
@@ -80,15 +82,31 @@ public class FCRDocumentReport extends IReport{
                         .collect(Collectors.toList())
         );
         getPackingDetails(fcrDocumentModel.getShipmentModel(), dictionary);
-        if(!CommonUtils.IsStringNullOrEmpty(fcrDocumentModel.getShipmentModel().getAdditionalDetails().getPlaceOfIssue())) {
-            Map<String, EntityTransferUnLocations> map = masterDataUtils.getLocationDataFromCache(Set.of(fcrDocumentModel.getShipmentModel().getAdditionalDetails().getPlaceOfIssue()), EntityTransferConstants.LOCATION_SERVICE_GUID);
-            dictionary.put(PLACE_OF_ISSUE, map.get(fcrDocumentModel.getShipmentModel().getAdditionalDetails().getPlaceOfIssue()).Name);
+        unlocationCodeSet.add(fcrDocumentModel.getShipmentModel().getAdditionalDetails().getPlaceOfIssue());
+        unlocationCodeSet.add(this.placeOfIssue);
+        Map<String, EntityTransferUnLocations> unLocationsMap = masterDataUtils.getLocationDataFromCache(unlocationCodeSet, EntityTransferConstants.LOCATION_SERVICE_GUID);
+        if(!CommonUtils.isStringNullOrEmpty(fcrDocumentModel.getShipmentModel().getAdditionalDetails().getPlaceOfIssue())) {
+            dictionary.put(PLACE_OF_ISSUE, unLocationsMap.get(fcrDocumentModel.getShipmentModel().getAdditionalDetails().getPlaceOfIssue()).Name);
         }
-        dictionary.put(SHIPMENT_DETAIL_DATE_OF_ISSUE, ConvertToDPWDateFormat(fcrDocumentModel.getShipmentModel().getAdditionalDetails().getDateOfIssue()));
-        dictionary.put(FCR_PLACE_OF_ISSUE, this.placeOfIssue);
-        dictionary.put(FCR_DATE_OF_ISSUE, ConvertToDPWDateFormat(this.issueDate));
+        populateFcrPlaceOfIssue(dictionary, unLocationsMap);
+        dictionary.put(SHIPMENT_DETAIL_DATE_OF_ISSUE, convertToDPWDateFormat(fcrDocumentModel.getShipmentModel().getAdditionalDetails().getDateOfIssue()));
+        dictionary.put(FCR_DATE_OF_ISSUE, convertToDPWDateFormat(this.issueDate));
         return convertValuesToUpperCase(dictionary);
     }
+
+    private void populateFcrPlaceOfIssue(Map<String, Object> dictionary, Map<String, EntityTransferUnLocations> unLocationsMap) {
+        if(StringUtility.isEmpty(this.placeOfIssue)) return;
+
+        EntityTransferUnLocations unLocations = Optional.ofNullable(unLocationsMap.get(this.placeOfIssue)).orElse(new EntityTransferUnLocations());
+        StringBuilder sb = new StringBuilder(Optional.ofNullable(unLocations.getCityName()).orElse(Constants.EMPTY_STRING));
+        // USA region -> display city name with state code
+        if (StringUtility.convertToString(unLocations.getLocCode()).startsWith(USA_LOC_CODE_PREFIX) && !StringUtility.isEmpty(unLocations.getState())) {
+            sb.append(", ").append(unLocations.getState());
+        }
+
+        dictionary.put(FCR_PLACE_OF_ISSUE, sb.toString());
+    }
+
 
     public static Map<String, Object> convertValuesToUpperCase(Map<String, Object> map) {
         Map<String, Object> result = new HashMap<>();

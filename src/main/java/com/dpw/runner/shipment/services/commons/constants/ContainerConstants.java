@@ -27,4 +27,5 @@ public class ContainerConstants {
     public static final String EXCEL_SHEET_INVALID = "Excel sheet is not valid.";
     public static final String CONTAINER_UPDATE_MSG = "ContainerUpdate";
     public static final String HAZ = "HAZ";
+    public static final String ERROR_SYNCING_CONTAINERS = "Error syncing containers";
 }

@@ -11,6 +11,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @ToString
+@SuppressWarnings("java:S1948")
 public class FilterCriteria implements Serializable {
 
     private Criteria criteria;

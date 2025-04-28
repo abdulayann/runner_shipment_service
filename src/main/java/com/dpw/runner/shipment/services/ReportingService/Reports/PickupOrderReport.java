@@ -64,10 +64,55 @@ public class PickupOrderReport extends IReport {
         if(pickUpOrderReportModel.pickUpTransportAddress != null && pickUpOrderReportModel.pickUpTransportAddress.getAddressData() != null)
             dictionary.put(ReportConstants.PICKUP_TRANSPORT_CONTACT_PERSON, pickUpOrderReportModel.pickUpTransportAddress.getAddressData().get("ContactPerson"));
 
+        processPickupDetails(pickUpOrderReportModel, dictionary);
+        processHblShipment(pickUpOrderReportModel, dictionary, orgWithoutTranslation);
+        if(dictionary.containsKey(CHARGES_SMALL) && dictionary.get(CHARGES_SMALL) instanceof List){
+            List<Map<String, Object>> values = (List<Map<String, Object>>)dictionary.get(CHARGES_SMALL);
+            for (Map<String, Object> v: values) {
+                if(v.containsKey(CHARGE_TYPE_CODE) && v.get(CHARGE_TYPE_CODE) != null) {
+                    v.put(CHARGE_TYPE_DESCRIPTION_LL, getChargeTypeDescriptionLL((String)v.get(CHARGE_TYPE_CODE), chargeTypesWithoutTranslation));
+                }
+            }
+        }
+
+        populateUserFields(pickUpOrderReportModel.hblModel.getUser(), dictionary);
+        populateTenantFields(dictionary, pickUpOrderReportModel.hblModel.getTenant());
+
+        dictionary.put(ReportConstants.PRINT_USER, UserContext.getUser().getUsername());
+        populateRaKcData(dictionary, pickUpOrderReportModel.hblModel.shipment);
+        handleTranslationErrors(printWithoutTranslation, orgWithoutTranslation, chargeTypesWithoutTranslation);
+
+        // Add Party Details in Caps
+        ReportHelper.addPartyNameAndAddressInCaps(pickUpOrderReportModel.hblModel.shipment.getConsigner(), dictionary, SHIPPER_NAME_IN_CAPS, SHIPPER_ADDRESS_IN_CAPS);
+        ReportHelper.addPartyNameAndAddressInCaps(pickUpOrderReportModel.hblModel.shipment.getConsignee(), dictionary, CONSIGNEE_NAME_IN_CAPS, CONSIGNEE_ADDRESS_IN_CAPS);
+        ReportHelper.addPartyNameAndAddressInCaps(pickUpOrderReportModel.hblModel.shipment.getAdditionalDetails().getImportBroker(), dictionary, DESTINATION_AGENT_NAME_IN_CAPS, DESTINATION_AGENT_ADDRESS_IN_CAPS);
+        ReportHelper.addPartyNameAndAddressInCaps(pickUpOrderReportModel.hblModel.shipment.getAdditionalDetails().getExportBroker(), dictionary, ORIGIN_AGENT_NAME_IN_CAPS, ORIGIN_AGENT_ADDRESS_IN_CAPS);
+
+        ReportHelper.addTenantDetails(dictionary, pickUpOrderReportModel.hblModel.tenant);
+
+        return dictionary;
+    }
+
+    private void processHblShipment(PickUpOrderReportModel pickUpOrderReportModel, Map<String, Object> dictionary, List<String> orgWithoutTranslation) {
+        if(!Objects.isNull(pickUpOrderReportModel.hblModel.shipment)) {
+            populateShipmentOrganizationsLL(pickUpOrderReportModel.hblModel.shipment, dictionary, orgWithoutTranslation);
+            var shipmentConsigner = pickUpOrderReportModel.hblModel.shipment.getConsigner();
+            if(shipmentConsigner != null && shipmentConsigner.getAddressData() != null){
+                Map<String, Object> consignerAddress = shipmentConsigner.getAddressData();
+                var rawData = consignerAddress.containsKey(PartiesConstants.RAW_DATA) ? StringUtility.convertToString(consignerAddress.get(PartiesConstants.RAW_DATA)) : null;
+                var consignorFreeText = ReportHelper.getAddressList(rawData);
+                dictionary.put(ReportConstants.CONSIGNER_FREETEXT, consignorFreeText);
+                dictionary.put(ReportConstants.CONSIGNER_ADDRESS_FREE_TEXT_IN_CAPS, consignorFreeText == null ? null : consignorFreeText.stream().map(StringUtility::toUpperCase).collect(Collectors.toList()));
+                dictionary.put(ReportConstants.CONSIGNER_NAME_FREETEXT_INCAPS, consignorFreeText == null ? null : consignorFreeText.stream().map(StringUtility::toUpperCase).collect(Collectors.toList()));
+            }
+        }
+    }
+
+    private void processPickupDetails(PickUpOrderReportModel pickUpOrderReportModel, Map<String, Object> dictionary) {
         if (pickUpOrderReportModel.hblModel.shipment != null && pickUpOrderReportModel.hblModel.shipment.getPickupDetails() != null) {
             PickupDeliveryDetailsModel pickupDetails = pickUpOrderReportModel.hblModel.shipment.getPickupDetails();
             List<String> pickUpFrom = getOrgAddress(pickupDetails.getSourceDetail());
-            dictionary.put(ReportConstants.PickupFrom, pickUpFrom);
+            dictionary.put(ReportConstants.PICKUP_FROM, pickUpFrom);
 
             // P0 tags pickup order doc
             if(pickupDetails.getTransporterDetail() != null) {
@@ -86,34 +131,5 @@ public class PickupOrderReport extends IReport {
                 dictionary.put(CY_NAME_ADDRESS, String.join("\r\n", cyNameAddress));
             }
         }
-        if(!Objects.isNull(pickUpOrderReportModel.hblModel.shipment)) {
-            populateShipmentOrganizationsLL(pickUpOrderReportModel.hblModel.shipment, dictionary, orgWithoutTranslation);
-            var shipmentConsigner = pickUpOrderReportModel.hblModel.shipment.getConsigner();
-            if(shipmentConsigner != null && shipmentConsigner.getAddressData() != null){
-                Map<String, Object> consignerAddress = shipmentConsigner.getAddressData();
-                var rawData = consignerAddress != null && consignerAddress.containsKey(PartiesConstants.RAW_DATA) ? StringUtility.convertToString(consignerAddress.get(PartiesConstants.RAW_DATA)) : null;
-                var consignorFreeText = ReportHelper.getAddressList(rawData);
-                dictionary.put(ReportConstants.CONSIGNER_FREETEXT, consignorFreeText);
-                dictionary.put(ReportConstants.CONSIGNER_FREETEXTInCaps, consignorFreeText == null ? null : consignorFreeText.stream().map(StringUtility::toUpperCase).collect(Collectors.toList()));
-                dictionary.put(ReportConstants.CONSIGNER_NAME_FREETEXT_INCAPS, consignorFreeText == null ? null : consignorFreeText.stream().map(StringUtility::toUpperCase).collect(Collectors.toList()));
-            }
-        }
-        if(dictionary.containsKey(CHARGES_SMALL) && dictionary.get(CHARGES_SMALL) instanceof List){
-            List<Map<String, Object>> values = (List<Map<String, Object>>)dictionary.get(CHARGES_SMALL);
-            for (Map<String, Object> v: values) {
-                if(v.containsKey(CHARGE_TYPE_CODE) && v.get(CHARGE_TYPE_CODE) != null) {
-                    v.put(CHARGE_TYPE_DESCRIPTION_LL, GetChargeTypeDescriptionLL((String)v.get(CHARGE_TYPE_CODE), chargeTypesWithoutTranslation));
-                }
-            }
-        }
-
-        populateUserFields(pickUpOrderReportModel.hblModel.getUser(), dictionary);
-        populateTenantFields(dictionary, pickUpOrderReportModel.hblModel.getTenant());
-
-        dictionary.put(ReportConstants.PRINT_USER, UserContext.getUser().getUsername());
-        populateRaKcData(dictionary, pickUpOrderReportModel.hblModel.shipment);
-        HandleTranslationErrors(printWithoutTranslation, orgWithoutTranslation, chargeTypesWithoutTranslation);
-
-        return dictionary;
     }
 }

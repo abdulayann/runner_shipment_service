@@ -171,9 +171,7 @@ public class DefaultViewsService implements IDefaultViewsService {
 
     private List<IRunnerResponse> convertEntityListToDtoList(List<DefaultViews> lst) {
         List<IRunnerResponse> responseList = new ArrayList<>();
-        lst.forEach(view -> {
-            responseList.add(convertEntityToDto(view));
-        });
+        lst.forEach(view -> responseList.add(convertEntityToDto(view)));
         return responseList;
     }
 

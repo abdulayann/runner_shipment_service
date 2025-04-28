@@ -64,7 +64,7 @@ public class SBUtilsImpl implements ISBUtils {
             String subscriptionName,
             Consumer<ServiceBusReceivedMessageContext> onMessage,
             Consumer<ServiceBusErrorContext> onError) throws InterruptedException {
-
+        // This method is not required for the current implementation but exists due to interface compliance.
     }
 
     public void onServiceBusErrorContext(ServiceBusErrorContext context) {

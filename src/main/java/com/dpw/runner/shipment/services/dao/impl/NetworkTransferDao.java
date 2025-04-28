@@ -125,6 +125,11 @@ public class NetworkTransferDao implements INetworkTransferDao {
     }
 
     @Override
+    public List<NetworkTransfer> findByEntityNTList(Long entityId, String entityType) {
+        return networkTransferRepository.findByEntityNTList(entityId, entityType);
+    }
+
+    @Override
     public List<NetworkTransfer> getInterConsoleNTList(List<Long> entityIdList, String entityType) {
         return networkTransferRepository.getInterConsoleNTList(entityIdList, entityType);
     }
@@ -140,6 +145,10 @@ public class NetworkTransferDao implements INetworkTransferDao {
 
     public void updateStatusAndCreatedEntityId(Long id, String status, Long createdEntityId) {
         networkTransferRepository.updateStatusAndCreatedEntityId(id, status, createdEntityId);
+    }
+    @Override
+    public void updateStatus(Long id, String status) {
+        networkTransferRepository.updateStatus(id, status);
     }
     @Override
     public List<NetworkTransfer> findByEntityIdAndEntityTypeAndIsInterBranchEntity(List<Long> entityIds, String entityType, Boolean isInterBranchEntity, List<String> status, String jobType) {

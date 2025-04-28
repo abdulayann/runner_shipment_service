@@ -13,6 +13,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @ToString
+@SuppressWarnings("java:S1948")
 public class SendEmailBaseRequest implements Serializable {
     private String to;
     private String cc;

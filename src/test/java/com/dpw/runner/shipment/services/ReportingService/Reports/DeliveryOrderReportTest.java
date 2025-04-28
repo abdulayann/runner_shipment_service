@@ -9,12 +9,12 @@ import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.impl.NPMServiceAdapter;
+import com.dpw.runner.shipment.services.aspects.LicenseContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
-import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.config.CustomKeyGenerator;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
@@ -60,6 +60,7 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.springframework.cache.Cache;
@@ -405,8 +406,8 @@ class DeliveryOrderReportTest extends CommonMocks {
         containerMap.put(GROSS_VOLUME, BigDecimal.TEN);
         containerMap.put(GROSS_WEIGHT, BigDecimal.TEN);
         containerMap.put(SHIPMENT_PACKS, BigDecimal.TEN);
-        containerMap.put(TareWeight, BigDecimal.TEN);
-        containerMap.put(VGMWeight, BigDecimal.TEN);
+        containerMap.put(TARE_WEIGHT, BigDecimal.TEN);
+        containerMap.put(VGM_WEIGHT, BigDecimal.TEN);
         containerMap.put(NET_WEIGHT, BigDecimal.TEN);
         doReturn(containerMap).when(jsonHelper).convertValue(any(ShipmentContainers.class), any(TypeReference.class));
 
@@ -440,8 +441,8 @@ class DeliveryOrderReportTest extends CommonMocks {
         containerMap.put(GROSS_VOLUME, BigDecimal.TEN);
         containerMap.put(GROSS_WEIGHT, BigDecimal.TEN);
         containerMap.put(SHIPMENT_PACKS, BigDecimal.TEN);
-        containerMap.put(TareWeight, BigDecimal.TEN);
-        containerMap.put(VGMWeight, BigDecimal.TEN);
+        containerMap.put(TARE_WEIGHT, BigDecimal.TEN);
+        containerMap.put(VGM_WEIGHT, BigDecimal.TEN);
         containerMap.put(NET_WEIGHT, BigDecimal.TEN);
         doReturn(containerMap).when(jsonHelper).convertValue(any(ShipmentContainers.class), any(TypeReference.class));
 
@@ -479,8 +480,8 @@ class DeliveryOrderReportTest extends CommonMocks {
         containerMap.put(GROSS_VOLUME, BigDecimal.TEN);
         containerMap.put(GROSS_WEIGHT, BigDecimal.TEN);
         containerMap.put(SHIPMENT_PACKS, BigDecimal.TEN);
-        containerMap.put(TareWeight, BigDecimal.TEN);
-        containerMap.put(VGMWeight, BigDecimal.TEN);
+        containerMap.put(TARE_WEIGHT, BigDecimal.TEN);
+        containerMap.put(VGM_WEIGHT, BigDecimal.TEN);
         containerMap.put(NET_WEIGHT, BigDecimal.TEN);
         doReturn(containerMap).when(jsonHelper).convertValue(any(ShipmentContainers.class), any(TypeReference.class));
 
@@ -518,8 +519,8 @@ class DeliveryOrderReportTest extends CommonMocks {
         containerMap.put(GROSS_VOLUME, BigDecimal.TEN);
         containerMap.put(GROSS_WEIGHT, BigDecimal.TEN);
         containerMap.put(SHIPMENT_PACKS, BigDecimal.TEN);
-        containerMap.put(TareWeight, BigDecimal.TEN);
-        containerMap.put(VGMWeight, BigDecimal.TEN);
+        containerMap.put(TARE_WEIGHT, BigDecimal.TEN);
+        containerMap.put(VGM_WEIGHT, BigDecimal.TEN);
         containerMap.put(NET_WEIGHT, BigDecimal.TEN);
         doReturn(containerMap).when(jsonHelper).convertValue(any(ShipmentContainers.class), any(TypeReference.class));
 
@@ -699,7 +700,7 @@ class DeliveryOrderReportTest extends CommonMocks {
     private void mockUnloc() {
         UnlocationsResponse unlocationsResponse = new UnlocationsResponse();
         DependentServiceResponse dependentServiceResponse = DependentServiceResponse.builder().data(Arrays.asList(unlocationsResponse)).build();
-        when(v1MasterData.fetchUnlocationData(any())).thenReturn(dependentServiceResponse);
+        when(v1MasterData.fetchAllUnlocationData(any())).thenReturn(dependentServiceResponse);
         when(jsonHelper.convertValueToList(dependentServiceResponse.getData(), UnlocationsResponse.class)).thenReturn(Arrays.asList(unlocationsResponse));
     }
 
@@ -721,15 +722,15 @@ class DeliveryOrderReportTest extends CommonMocks {
         ShipmentModel shipmentModel = new ShipmentModel();
         shipmentModel.setTransportMode(SEA);
         shipmentModel.setDirection(EXP);
-        shipmentModel.setContainersList(Arrays.asList(new ContainerModel()));
+        shipmentModel.setContainersList(List.of(new ContainerModel()));
         ConsolidationModel consolidationModel = new ConsolidationModel();
         consolidationModel.setId(123L);
         consolidationModel.setPlaceOfIssue("Test");
-        shipmentModel.setConsolidationList(Arrays.asList(consolidationModel));
+        shipmentModel.setConsolidationList(List.of(consolidationModel));
         when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
         when(hblDao.findByShipmentId(any())).thenReturn(new ArrayList<>());
         V1DataResponse v1DataResponse = new V1DataResponse();
-        v1DataResponse.entities = Arrays.asList(new UnlocationsResponse());
+        v1DataResponse.entities = List.of(new UnlocationsResponse());
         when(v1Service.fetchUnlocation(any())).thenReturn(v1DataResponse);
         when(jsonHelper.convertValueToList(v1DataResponse.getEntities(), UnlocationsResponse.class)).thenReturn(Arrays.asList(new UnlocationsResponse()));
         V1MasterDataImpl mockV1MasterDataImpl = mock(V1MasterDataImpl.class);
@@ -743,33 +744,42 @@ class DeliveryOrderReportTest extends CommonMocks {
 
     @Test
     void getDocumentModel_CountryAirCargoSecurity() {
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setCountryAirCargoSecurity(true);
-        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
-        ShipmentModel shipmentModel = new ShipmentModel();
-        shipmentModel.setTransportMode(AIR);
-        shipmentModel.setDirection(EXP);
-        shipmentModel.setContainersList(Arrays.asList(new ContainerModel()));
+        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
+            mockedLicenseContext.when(LicenseContext::isAirSecurityLicense).thenReturn(false);
+            ShipmentSettingsDetailsContext.getCurrentTenantSettings()
+                .setCountryAirCargoSecurity(true);
+            when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+            ShipmentModel shipmentModel = new ShipmentModel();
+            shipmentModel.setTransportMode(AIR);
+            shipmentModel.setDirection(EXP);
+            shipmentModel.setContainersList(List.of(new ContainerModel()));
 
-        when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
-        mockShipmentSettings();
+            when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
+            mockShipmentSettings();
 
-        assertThrows(ValidationException.class, () -> deliveryOrderReport.getDocumentModel(123L));
+            assertThrows(ValidationException.class,
+                () -> deliveryOrderReport.getDocumentModel(123L));
+        }
     }
 
     @Test
     void getDocumentModel_CountryAirCargoSecurity2() {
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setCountryAirCargoSecurity(true);
-        UserContext.getUser().getPermissions().put(PermissionConstants.AIR_SECURITY_PERMISSION, true);
-        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
-        ShipmentModel shipmentModel = new ShipmentModel();
-        shipmentModel.setTransportMode(AIR);
-        shipmentModel.setDirection(EXP);
-        shipmentModel.setContainersList(Arrays.asList(new ContainerModel()));
-        shipmentModel.setContainsHazardous(true);
+        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
+            mockedLicenseContext.when(LicenseContext::isAirSecurityLicense).thenReturn(true);
+            ShipmentSettingsDetailsContext.getCurrentTenantSettings()
+                .setCountryAirCargoSecurity(true);
+            when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+            ShipmentModel shipmentModel = new ShipmentModel();
+            shipmentModel.setTransportMode(AIR);
+            shipmentModel.setDirection(EXP);
+            shipmentModel.setContainersList(List.of(new ContainerModel()));
+            shipmentModel.setContainsHazardous(true);
 
-        when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
-        mockShipmentSettings();
+            when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
+            mockShipmentSettings();
 
-        assertThrows(ValidationException.class, () -> deliveryOrderReport.getDocumentModel(123L));
+            assertThrows(ValidationException.class,
+                () -> deliveryOrderReport.getDocumentModel(123L));
+        }
     }
 }

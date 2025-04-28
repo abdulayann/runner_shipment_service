@@ -9,6 +9,7 @@ import java.util.List;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
+@SuppressWarnings("java:S1948")
 public class ListCousinBranchesForEtRequest implements IRunnerRequest {
     private String containsText;
     private List<String> includeColumns;

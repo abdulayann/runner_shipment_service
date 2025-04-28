@@ -4,6 +4,7 @@ import java.util.Objects;
 import lombok.Getter;
 
 @Getter
+@SuppressWarnings("java:S115") //Suppressing Rename this constant name to match the regular expression
 public enum MasterDataType {
     ORDER_STATUS(1, "OrderStatus"),
     QUOTE_STATUS(2, "QuoteStatus"),

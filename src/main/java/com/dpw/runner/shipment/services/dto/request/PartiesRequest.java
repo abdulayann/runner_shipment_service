@@ -13,6 +13,7 @@ import java.util.Map;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@SuppressWarnings("java:S1948")
 public class PartiesRequest extends CommonRequest implements IRunnerRequest {
     private Long id;
     private Long entityId;

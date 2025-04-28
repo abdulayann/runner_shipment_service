@@ -129,4 +129,8 @@ public class NotificationDao implements INotificationDao {
     public List<Long> findEntityIdsByEntityType(String entityType) {
         return notificationRepository.findEntityIdsByEntityType(entityType);
     }
+
+    public Integer findAllPendingNotificationCount(String entityType, Integer branchId) {
+        return notificationRepository.findAllPendingNotificationCount(entityType, branchId);
+    }
 }

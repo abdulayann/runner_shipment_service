@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.document.request.documentmanager.Documen
 import com.dpw.runner.shipment.services.document.response.DocumentManagerDataResponse;
 import com.dpw.runner.shipment.services.document.response.DocumentManagerResponse;
 import com.dpw.runner.shipment.services.document.service.IDocumentManagerService;
+import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -75,5 +76,216 @@ class DocumentManagerControllerTest {
 
         assertEquals(HttpStatus.OK, result.getStatusCode());
         assertEquals(response, result.getBody());
+    }
+
+    @Test
+    void testDeleteDocument() {
+        // Mock
+        when(documentManagerService.deleteFile(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = documentManagerController.deleteDocument(new Object());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testDeleteDocument2() {
+        // Mock
+        when(documentManagerService.deleteFile(any())).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = documentManagerController.deleteDocument(new Object());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testDeleteDocument3() {
+        // Mock
+        when(documentManagerService.deleteFile(any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = documentManagerController.deleteDocument(new Object());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testGetFileHistory() {
+        // Mock
+        when(documentManagerService.getFileHistory(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = documentManagerController.getFileHistory(123L);
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testGetFileHistory2() {
+        // Mock
+        when(documentManagerService.getFileHistory(any())).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = documentManagerController.getFileHistory(123L);
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testGetFileHistory3() {
+        // Mock
+        when(documentManagerService.getFileHistory(any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = documentManagerController.getFileHistory(123L);
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testDownloadDocument() {
+        // Mock
+        when(documentManagerService.downloadDocument(any())).thenReturn(new byte[] {});
+        // Test
+        var responseEntity = documentManagerController.downloadDocument(123L);
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testDownloadDocument2() {
+        // Mock
+        when(documentManagerService.downloadDocument(any())).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = documentManagerController.downloadDocument(123L);
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testDownloadDocument3() {
+        // Mock
+        when(documentManagerService.downloadDocument(any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = documentManagerController.downloadDocument(123L);
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+
+    @Test
+    void testListDocuments() {
+        // Mock
+        when(documentManagerService.list(any(), any(), any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = documentManagerController.listDocuments(new Object(), 1L, 1L);
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testListDocuments2() {
+        // Mock
+        when(documentManagerService.list(any(), any(), any())).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = documentManagerController.listDocuments(new Object(), 1L, 1L);
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testListDocuments3() {
+        // Mock
+        when(documentManagerService.list(any(), any(), any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = documentManagerController.listDocuments(new Object(), 1L, 1L);
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testTemporaryUpload() {
+        // Mock
+        when(documentManagerService.temporaryUpload(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = documentManagerController.temporaryUpload(new Object());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testTemporaryUpload2() {
+        // Mock
+        when(documentManagerService.temporaryUpload(any())).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = documentManagerController.temporaryUpload(new Object());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testTemporaryUpload3() {
+        // Mock
+        when(documentManagerService.temporaryUpload(any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = documentManagerController.temporaryUpload(new Object());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testBulkSaveDocument() {
+        // Mock
+        when(documentManagerService.bulkSave(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = documentManagerController.bulkSave(new Object());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testBulkSaveDocument2() {
+        // Mock
+        when(documentManagerService.bulkSave(any())).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = documentManagerController.bulkSave(new Object());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testBulkSaveDocument3() {
+        // Mock
+        when(documentManagerService.bulkSave(any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = documentManagerController.bulkSave(new Object());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testGetDocTypesList() {
+        // Mock
+        when(documentManagerService.listDocTypes(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        // Test
+        var responseEntity = documentManagerController.getDocTypesList(new Object());
+        // Assert
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testGetDocTypesList2() {
+        // Mock
+        when(documentManagerService.listDocTypes(any())).thenThrow(new RuntimeException());
+        // Test
+        var responseEntity = documentManagerController.getDocTypesList(new Object());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
+    }
+
+    @Test
+    void testGetDocTypesList3() {
+        // Mock
+        when(documentManagerService.listDocTypes(any())).thenThrow(new RuntimeException("RuntimeException"));
+        // Test
+        var responseEntity = documentManagerController.getDocTypesList(new Object());
+        // Assert
+        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
     }
 }

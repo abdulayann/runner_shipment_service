@@ -5,6 +5,7 @@ import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
+@SuppressWarnings("java:S115") //Suppressing Rename this constant name to match the regular expression
 public enum MeasurementBasis {
 
     ContainerCount(1, "ContainerCount", "Container_Count"),

@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConst
 import com.dpw.runner.shipment.services.ReportingService.Models.ArrivalNoticeModel;
 import com.dpw.runner.shipment.services.ReportingService.Models.Commons.ShipmentContainers;
 import com.dpw.runner.shipment.services.ReportingService.Models.ShipmentModel.*;
+import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
@@ -39,7 +40,6 @@ import com.dpw.runner.shipment.services.masterdata.helper.impl.v1.V1MasterDataIm
 import com.dpw.runner.shipment.services.masterdata.response.BillChargesResponse;
 import com.dpw.runner.shipment.services.masterdata.response.BillingResponse;
 import com.dpw.runner.shipment.services.masterdata.response.CommodityResponse;
-import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.service.v1.util.V1ServiceUtil;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
@@ -67,6 +67,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
@@ -344,12 +345,13 @@ class ArrivalNoticeReportTest extends CommonMocks {
         containerMap.put(GROSS_VOLUME, BigDecimal.TEN);
         containerMap.put(GROSS_WEIGHT, BigDecimal.TEN);
         containerMap.put(SHIPMENT_PACKS, BigDecimal.TEN);
-        containerMap.put(TareWeight, BigDecimal.TEN);
-        containerMap.put(VGMWeight, BigDecimal.TEN);
+        containerMap.put(TARE_WEIGHT, BigDecimal.TEN);
+        containerMap.put(VGM_WEIGHT, BigDecimal.TEN);
         containerMap.put(NET_WEIGHT, BigDecimal.TEN);
         doReturn(containerMap).when(jsonHelper).convertValue(any(ShipmentContainers.class), any(TypeReference.class));
 
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
+        when(v1MasterData.retrieveTenant()).thenReturn(DependentServiceResponse.builder().data(new TenantModel()).build());
 
         when(billingServiceUrlConfig.getEnableBillingIntegration()).thenReturn(Boolean.FALSE);
         when(cacheManager.getCache(any())).thenReturn(cache);
@@ -390,12 +392,13 @@ class ArrivalNoticeReportTest extends CommonMocks {
         containerMap.put(GROSS_VOLUME, BigDecimal.TEN);
         containerMap.put(GROSS_WEIGHT, BigDecimal.TEN);
         containerMap.put(SHIPMENT_PACKS, BigDecimal.TEN);
-        containerMap.put(TareWeight, BigDecimal.TEN);
-        containerMap.put(VGMWeight, BigDecimal.TEN);
+        containerMap.put(TARE_WEIGHT, BigDecimal.TEN);
+        containerMap.put(VGM_WEIGHT, BigDecimal.TEN);
         containerMap.put(NET_WEIGHT, BigDecimal.TEN);
         doReturn(containerMap).when(jsonHelper).convertValue(any(ShipmentContainers.class), any(TypeReference.class));
 
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
+        when(v1MasterData.retrieveTenant()).thenReturn(DependentServiceResponse.builder().data(new TenantModel()).build());
 
         when(billingServiceUrlConfig.getEnableBillingIntegration()).thenReturn(Boolean.FALSE);
         when(cacheManager.getCache(any())).thenReturn(cache);
@@ -435,12 +438,13 @@ class ArrivalNoticeReportTest extends CommonMocks {
         containerMap.put(GROSS_VOLUME, BigDecimal.TEN);
         containerMap.put(GROSS_WEIGHT, BigDecimal.TEN);
         containerMap.put(SHIPMENT_PACKS, BigDecimal.TEN);
-        containerMap.put(TareWeight, BigDecimal.TEN);
-        containerMap.put(VGMWeight, BigDecimal.TEN);
+        containerMap.put(TARE_WEIGHT, BigDecimal.TEN);
+        containerMap.put(VGM_WEIGHT, BigDecimal.TEN);
         containerMap.put(NET_WEIGHT, BigDecimal.TEN);
         doReturn(containerMap).when(jsonHelper).convertValue(any(ShipmentContainers.class), any(TypeReference.class));
 
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
+        when(v1MasterData.retrieveTenant()).thenReturn(DependentServiceResponse.builder().data(new TenantModel()).build());
 
         when(billingServiceUrlConfig.getEnableBillingIntegration()).thenReturn(Boolean.TRUE);
         when(cacheManager.getCache(any())).thenReturn(cache);
@@ -480,13 +484,13 @@ class ArrivalNoticeReportTest extends CommonMocks {
         containerMap.put(GROSS_VOLUME, BigDecimal.TEN);
         containerMap.put(GROSS_WEIGHT, BigDecimal.TEN);
         containerMap.put(SHIPMENT_PACKS, BigDecimal.TEN);
-        containerMap.put(TareWeight, BigDecimal.TEN);
-        containerMap.put(VGMWeight, BigDecimal.TEN);
+        containerMap.put(TARE_WEIGHT, BigDecimal.TEN);
+        containerMap.put(VGM_WEIGHT, BigDecimal.TEN);
         containerMap.put(NET_WEIGHT, BigDecimal.TEN);
         doReturn(containerMap).when(jsonHelper).convertValue(any(ShipmentContainers.class), any(TypeReference.class));
 
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
-
+        when(v1MasterData.retrieveTenant()).thenReturn(DependentServiceResponse.builder().data(new TenantModel()).build());
         when(billingServiceUrlConfig.getEnableBillingIntegration()).thenReturn(Boolean.FALSE);
         when(cacheManager.getCache(any())).thenReturn(cache);
 
@@ -522,13 +526,14 @@ class ArrivalNoticeReportTest extends CommonMocks {
         containerMap.put(GROSS_VOLUME, BigDecimal.TEN);
         containerMap.put(GROSS_WEIGHT, BigDecimal.TEN);
         containerMap.put(SHIPMENT_PACKS, BigDecimal.TEN);
-        containerMap.put(TareWeight, BigDecimal.TEN);
-        containerMap.put(VGMWeight, BigDecimal.TEN);
+        containerMap.put(TARE_WEIGHT, BigDecimal.TEN);
+        containerMap.put(VGM_WEIGHT, BigDecimal.TEN);
         containerMap.put(NET_WEIGHT, BigDecimal.TEN);
         doReturn(containerMap).when(jsonHelper).convertValue(any(ShipmentContainers.class), any(TypeReference.class));
 
         when(masterDataFactory.getMasterDataService()).thenReturn(v1MasterData);
-
+        when(v1MasterData.retrieveTenant()).thenReturn(DependentServiceResponse.builder().data(new TenantModel()).build());
+        when(modelMapper.map(any(), eq(TenantModel.class))).thenReturn(new TenantModel());
         when(billingServiceUrlConfig.getEnableBillingIntegration()).thenReturn(Boolean.TRUE);
         when(cacheManager.getCache(any())).thenReturn(cache);
 

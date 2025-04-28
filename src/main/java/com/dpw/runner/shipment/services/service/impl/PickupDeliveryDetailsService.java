@@ -1,10 +1,8 @@
 package com.dpw.runner.shipment.services.service.impl;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
-import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
-import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
@@ -17,42 +15,31 @@ import com.dpw.runner.shipment.services.dto.request.PickupDeliveryDetailsRequest
 import com.dpw.runner.shipment.services.dto.response.PickupDeliveryDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.RAKCDetailsResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
-import com.dpw.runner.shipment.services.entity.*;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
-import com.dpw.runner.shipment.services.dto.response.TIKafkaEventResponse;
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.PickupDeliveryDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
-import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
-import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
-import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
-import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
+import com.dpw.runner.shipment.services.service.interfaces.IKafkaAsyncService;
 import com.dpw.runner.shipment.services.service.interfaces.IPickupDeliveryDetailsService;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
-import com.dpw.runner.shipment.services.utils.MasterDataKeyUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -71,27 +58,22 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
 
     private CommonUtils commonUtils;
     private MasterDataUtils masterDataUtils;
-    private MasterDataKeyUtils masterDataKeyUtils;
     private ExecutorService executorService;
 
-    private KafkaProducer producer;
+    private IKafkaAsyncService kafkaAsyncService;
     private IV1Service v1Service;
 
-    @Value("${tiKafka.queue}")
-    private String senderQueue;
-
     @Autowired
-    public PickupDeliveryDetailsService(CommonUtils commonUtils, IPartiesDao partiesDao, IPickupDeliveryDetailsDao pickupDeliveryDetailsDao, JsonHelper jsonHelper, AuditLogService auditLogService, MasterDataUtils masterDataUtils, MasterDataKeyUtils masterDataKeyUtils, ExecutorService executorService, KafkaProducer producer,
-                                        IV1Service v1Service) {
+    public PickupDeliveryDetailsService(CommonUtils commonUtils, IPartiesDao partiesDao, IPickupDeliveryDetailsDao pickupDeliveryDetailsDao, JsonHelper jsonHelper, AuditLogService auditLogService, MasterDataUtils masterDataUtils, ExecutorService executorService,
+                                        KafkaAsyncService kafkaAsyncService, IV1Service v1Service) {
         this.pickupDeliveryDetailsDao = pickupDeliveryDetailsDao;
         this.jsonHelper = jsonHelper;
         this.auditLogService = auditLogService;
         this.partiesDao = partiesDao;
         this.commonUtils = commonUtils;
         this.masterDataUtils = masterDataUtils;
-        this.masterDataKeyUtils = masterDataKeyUtils;
         this.executorService = executorService;
-        this.producer = producer;
+        this.kafkaAsyncService = kafkaAsyncService;
         this.v1Service = v1Service;
     }
 
@@ -132,7 +114,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
         return ResponseHelper.buildSuccessResponse(convertEntityToDto(pickupDeliveryDetails));
     }
 
-    private void beforeSave(PickupDeliveryDetailsRequest request, PickupDeliveryDetails entity, PickupDeliveryDetails oldEntity) {
+    private void beforeSave(PickupDeliveryDetails entity) {
         Long id = entity.getId();
         // Set proper references
         CommonUtils.emptyIfNull(entity.getTiLegsList()).forEach(leg -> {
@@ -155,7 +137,10 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
         }
         if (pickupDeliveryDetails.getShipmentId() != null) {
             List<PickupDeliveryDetails> pickupDeliveryDetailsList = pickupDeliveryDetailsDao.findByShipmentId(pickupDeliveryDetails.getShipmentId());
-            pushToKafka(pickupDeliveryDetailsList, isCreate, pickupDeliveryDetails.getShipmentId());
+            if (!CommonUtils.listIsNullOrEmpty(pickupDeliveryDetailsList)) {
+                List<IRunnerResponse> pickupDeliveryDetailsResponses = convertEntityListToDtoList(pickupDeliveryDetailsList, false);
+                CompletableFuture.runAsync(masterDataUtils.withMdc(()-> kafkaAsyncService.pushToKafkaTI(pickupDeliveryDetailsResponses, isCreate, pickupDeliveryDetails.getShipmentId())), executorService);
+            }
         }
     }
 
@@ -188,7 +173,7 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
         pickupDeliveryDetails.setId(oldEntity.get().getId());
         try {
             String oldEntityJsonString = jsonHelper.convertToJson(oldEntity.get());
-            beforeSave(request, pickupDeliveryDetails, oldEntity.get());
+            beforeSave(pickupDeliveryDetails);
             pickupDeliveryDetails = pickupDeliveryDetailsDao.save(pickupDeliveryDetails);
 
             // audit logs
@@ -267,7 +252,10 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
 
             if (pickupDeliveryDetails.get().getShipmentId() != null) {
                 List<PickupDeliveryDetails> pickupDeliveryDetailsList = pickupDeliveryDetailsDao.findByShipmentId(pickupDeliveryDetails.get().getShipmentId());
-                pushToKafka(pickupDeliveryDetailsList, false, pickupDeliveryDetails.get().getShipmentId());
+                if (!CommonUtils.listIsNullOrEmpty(pickupDeliveryDetailsList)) {
+                    List<IRunnerResponse> pickupDeliveryDetailsResponses = convertEntityListToDtoList(pickupDeliveryDetailsList, false);
+                    CompletableFuture.runAsync(masterDataUtils.withMdc(()-> kafkaAsyncService.pushToKafkaTI(pickupDeliveryDetailsResponses, false, pickupDeliveryDetails.get().getShipmentId())), executorService);
+                }
             }
             auditLogService.addAuditLog(
                     AuditLogMetaData.builder()
@@ -358,26 +346,6 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
         return jsonHelper.convertValue(request, PickupDeliveryDetails.class);
     }
 
-    @Async
-    public void pushToKafka(List<PickupDeliveryDetails> pickupDeliveryDetails, boolean isCreate, Long shipmentId) {
-        try {
-            List<IRunnerResponse> pickupDeliveryDetailsResponses = null;
-            if (!CommonUtils.listIsNullOrEmpty(pickupDeliveryDetails)) {
-                pickupDeliveryDetailsResponses = convertEntityListToDtoList(pickupDeliveryDetails, false);
-            }
-            TIKafkaEventResponse tiKafkaEventResponse = new TIKafkaEventResponse();
-            tiKafkaEventResponse.setShipmentId(shipmentId);
-            tiKafkaEventResponse.setPickupDeliveryDetails(pickupDeliveryDetailsResponses);
-
-            KafkaResponse kafkaResponse = producer.getKafkaResponse(tiKafkaEventResponse, isCreate);
-            producer.produceToKafka(jsonHelper.convertToJson(kafkaResponse), senderQueue, UUID.randomUUID().toString());
-        }
-        catch (Exception e)
-        {
-            log.error("Error pushing awb to kafka: {}", e.getMessage());
-        }
-    }
-
     // V2 Endpoints
 
     // create
@@ -412,60 +380,6 @@ public class PickupDeliveryDetailsService implements IPickupDeliveryDetailsServi
         return this.retrieveById(commonRequestModel);
     }
 
-
-    private Map<String, Object> fetchAllMasterDataByKey(PickupDeliveryDetails pickupDeliveryDetails, PickupDeliveryDetailsResponse pickupDeliveryDetailsResponse) {
-        Map<String, Object> masterDataResponse = new HashMap<>();
-        var masterListFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllMasterDataInSingleCall(pickupDeliveryDetails, pickupDeliveryDetailsResponse, masterDataResponse)), executorService);
-        CompletableFuture.allOf(masterListFuture).join();
-        return masterDataResponse;
-    }
-
-    private CompletableFuture<ResponseEntity<IRunnerResponse>> addAllMasterDataInSingleCall (PickupDeliveryDetails pickupDeliveryDetails, PickupDeliveryDetailsResponse pickupDeliveryDetailsResponse, Map<String, Object> masterDataResponse) {
-        try {
-            Map<String, Object> cacheMap = new HashMap<>();
-            Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
-            AtomicInteger count = new AtomicInteger();
-            Set<MasterListRequest> listRequests = new HashSet<>(masterDataUtils.createInBulkMasterListRequest(pickupDeliveryDetailsResponse, PickupDeliveryDetails.class, fieldNameKeyMap, PickupDeliveryDetails.class.getSimpleName(), cacheMap));
-            // Populate all the master data in inner objects
-            if (!CommonUtils.listIsNullOrEmpty(pickupDeliveryDetails.getTiLegsList())) {
-                pickupDeliveryDetailsResponse.getTiLegsList().forEach(leg -> {
-                    listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(leg, TiLegs.class, fieldNameKeyMap, TiLegs.class.getSimpleName() + count.incrementAndGet(), cacheMap));
-                    // Add master data fields for sub entities
-                    if(!CommonUtils.listIsNullOrEmpty(leg.getTiReferences())) {
-                        leg.getTiReferences().forEach(i -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(i, TiReferences.class, fieldNameKeyMap, TiReferences.class.getSimpleName() + count.incrementAndGet(), cacheMap)));
-                    }
-                    if(!CommonUtils.listIsNullOrEmpty(leg.getTiPackages())) {
-                        leg.getTiPackages().forEach(i -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(i, TiPackages.class, fieldNameKeyMap, TiPackages.class.getSimpleName() + count.incrementAndGet(), cacheMap)));
-                    }
-                    if(!CommonUtils.listIsNullOrEmpty(leg.getTiContainers())) {
-                        leg.getTiContainers().forEach(i -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(i, TiContainers.class, fieldNameKeyMap, TiContainers.class.getSimpleName() + count.incrementAndGet(), cacheMap)));
-                    }
-                });
-            }
-
-            MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
-            masterListRequestV2.setMasterListRequests(listRequests.stream().toList());
-            masterListRequestV2.setIncludeCols(Arrays.asList(MasterDataConstants.ITEM_TYPE, MasterDataConstants.ITEM_VALUE, "ItemDescription", "ValuenDesc", "Cascade"));
-
-            Map<String, EntityTransferMasterLists> keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(masterListRequestV2);
-            Set<String> keys = new HashSet<>();
-            commonUtils.createMasterDataKeysList(listRequests, keys);
-            masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST, keys, new EntityTransferMasterLists(), cacheMap);
-
-            if(masterDataResponse != null) {
-                pickupDeliveryDetailsResponse.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(TiContainers.class.getSimpleName() + count.get()), CacheConstants.MASTER_LIST, cacheMap));
-            }
-            else {
-                masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.MASTER_LIST, masterDataResponse, cacheMap);
-            }
-
-            return CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
-        } catch (Exception ex) {
-            log.error("Request: {} | Error Occured in CompletableFuture: addAllMasterDataInSingleCall in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), AwbService.class.getSimpleName(), ex.getMessage());
-            return CompletableFuture.completedFuture(null);
-        }
-
-    }
 
     private void populateRAKCDetails(PickupDeliveryDetailsResponse pickupDeliveryDetails, Map<String, RAKCDetailsResponse> rakcDetailsMap) {
         if (CommonUtils.checkAddressNotNull(pickupDeliveryDetails.getTransporterDetail())) {

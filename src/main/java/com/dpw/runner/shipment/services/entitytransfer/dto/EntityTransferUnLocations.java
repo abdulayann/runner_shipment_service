@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.entitytransfer.dto;
 
 import com.dpw.runner.shipment.services.entitytransfer.common.request.IEntityTranferBaseEntity;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
 import java.io.Serializable;
@@ -39,4 +40,20 @@ public class EntityTransferUnLocations implements IEntityTranferBaseEntity, Seri
     public Boolean HasAirport;
     public Boolean HasTerminal;
     public String LocationsReferenceGUID;
+    @JsonProperty("Locality")
+    private String locality;
+    @JsonProperty("ZipCode")
+    private String zipCode;
+    @JsonProperty("StateName")
+    private String stateName;
+    @JsonProperty("CityName")
+    private String cityName;
+    @JsonProperty("CountryName")
+    private String countryName;
+    @JsonProperty("IsICD")
+    private Boolean isICD;
+    @JsonProperty("IsCFS")
+    private Boolean isCFS;
+    @JsonProperty("IsPFT")
+    private Boolean isPFT;
 }

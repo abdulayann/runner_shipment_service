@@ -278,8 +278,8 @@ class CustomsInstructionsReportTest extends CommonMocks {
         containerMap.put(GROSS_VOLUME, BigDecimal.TEN);
         containerMap.put(GROSS_WEIGHT, BigDecimal.TEN);
         containerMap.put(SHIPMENT_PACKS, BigDecimal.TEN);
-        containerMap.put(TareWeight, BigDecimal.TEN);
-        containerMap.put(VGMWeight, BigDecimal.TEN);
+        containerMap.put(TARE_WEIGHT, BigDecimal.TEN);
+        containerMap.put(VGM_WEIGHT, BigDecimal.TEN);
         containerMap.put(NET_WEIGHT, BigDecimal.TEN);
         containerMap.put(MIN_TEMP, BigDecimal.TEN);
         containerMap.put(MAX_TEMP, BigDecimal.TEN);

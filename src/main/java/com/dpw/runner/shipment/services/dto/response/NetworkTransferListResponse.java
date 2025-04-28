@@ -1,7 +1,9 @@
 package com.dpw.runner.shipment.services.dto.response;
 
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.config.CustomLocalDateTimeSerializer;
 import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -26,6 +28,7 @@ public class NetworkTransferListResponse implements IRunnerResponse {
     private Long sourceBranchId;
     private NetworkTransferStatus status;
     private String jobType;
+    @SuppressWarnings("java:S1948")
     private Map<String, Object> entityPayload;
     private Integer tenantId;
     private LocalDateTime createdAt;
@@ -33,4 +36,6 @@ public class NetworkTransferListResponse implements IRunnerResponse {
     private Map<String, String> tenantMasterData;
     private Map<String, String> masterData;
     private Boolean isHidden;
+    @JsonSerialize(using = CustomLocalDateTimeSerializer.class)
+    private LocalDateTime transferredDate;
 }

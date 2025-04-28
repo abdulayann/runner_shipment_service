@@ -116,13 +116,12 @@ public class ContainerResponse implements IRunnerResponse {
     private Map<String, String> textFieldData;
     private Boolean isPart;
     private Boolean isAttached;
-//    private List<TruckDriverDetailsResponse> truckingDetails;
     private List<EventsResponse> eventsList;
     private String hblNumber;
     private String invoiceNumber;
     private String invoiceCurrency;
     private BigDecimal invoiceValue;
-    private Long tenantId;
+    private Integer tenantId;
     private String unNumber;
     private String properShippingName;
     private String packingGroup;

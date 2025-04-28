@@ -15,6 +15,7 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@SuppressWarnings("java:S1948")
 public class FetchOffersResponse implements IRunnerResponse {
  
     @JsonProperty("offer_type")
@@ -93,6 +94,19 @@ public class FetchOffersResponse implements IRunnerResponse {
         private String required_currency;
         @JsonProperty("procured_currency")
         private String procured_currency;
+        @JsonProperty("notes")
+        private Notes notes;
+    }
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class Notes implements Serializable {
+        @JsonProperty("internal")
+        private String internal;
+        @JsonProperty("external")
+        private String external;
     }
 
     @Data

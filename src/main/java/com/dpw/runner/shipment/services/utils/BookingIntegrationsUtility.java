@@ -4,7 +4,7 @@ package com.dpw.runner.shipment.services.utils;
 import static com.dpw.runner.shipment.services.commons.constants.PartiesConstants.ACTIVE_CLIENT;
 import static com.dpw.runner.shipment.services.commons.constants.PartiesConstants.FULLNAME;
 import static com.dpw.runner.shipment.services.commons.constants.PartiesConstants.ORG_ID;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.IsStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 import static com.dpw.runner.shipment.services.validator.constants.CustomerBookingConstants.CONSIGNEE_REQUEST;
 import static com.dpw.runner.shipment.services.validator.constants.CustomerBookingConstants.CONSIGNOR_REQUEST;
 import static com.dpw.runner.shipment.services.validator.constants.CustomerBookingConstants.CUSTOMER_REQUEST;
@@ -12,6 +12,7 @@ import static com.dpw.runner.shipment.services.validator.constants.CustomerBooki
 
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
+import com.dpw.runner.shipment.services.adapters.interfaces.IOrderManagementAdapter;
 import com.dpw.runner.shipment.services.adapters.interfaces.IPlatformServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.RequestAuthContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
@@ -21,8 +22,6 @@ import com.dpw.runner.shipment.services.commons.constants.CustomerBookingConstan
 import com.dpw.runner.shipment.services.commons.constants.EventConstants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
-import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
-import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.DependentServiceResponse;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -34,18 +33,7 @@ import com.dpw.runner.shipment.services.dto.request.CustomerBookingRequest;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
-import com.dpw.runner.shipment.services.dto.request.platform.ChargesRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.DimensionDTO;
-import com.dpw.runner.shipment.services.dto.request.platform.DocumentMetaDTO;
-import com.dpw.runner.shipment.services.dto.request.platform.HazardousInfoRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.LoadRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.OrgRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.PlatformCreateRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.PlatformUpdateRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.ReeferInfoRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.ReferenceNumbersRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.RouteLegRequest;
-import com.dpw.runner.shipment.services.dto.request.platform.RouteRequest;
+import com.dpw.runner.shipment.services.dto.request.platform.*;
 import com.dpw.runner.shipment.services.dto.response.CheckCreditLimitResponse;
 import com.dpw.runner.shipment.services.dto.response.ListContractResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
@@ -60,7 +48,6 @@ import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
-import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
 import com.dpw.runner.shipment.services.entity.enums.BookingStatus;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
@@ -116,6 +103,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 @Slf4j
 @EnableAsync(proxyTargetClass = true)
+@SuppressWarnings({"java:S1066", "java:S1141", "java:1168"})
 public class BookingIntegrationsUtility {
 
     @Autowired
@@ -146,6 +134,8 @@ public class BookingIntegrationsUtility {
     private IEventService eventService;
     @Autowired
     private IAuditLogService auditLogService;
+    @Autowired
+    private IOrderManagementAdapter orderManagementAdapter;
 
     @Value("${platform.failure.notification.enabled}")
     private Boolean isFailureNotificationEnabled;
@@ -159,19 +149,21 @@ public class BookingIntegrationsUtility {
     private String lclBusinessCode;
     @Value("${platform.business.code.LSE}")
     private String lseBusinessCode;
+    @Value("${platform.document.path.update}")
+    private Boolean updateDocumentPath;
     @Autowired
     private BillingServiceAdapter billingServiceAdapter;
     @Autowired
     private BillingServiceUrlConfig billingServiceUrlConfig;
 
     static Integer maxAttempts = 5;
-    private RetryTemplate retryTemplate = RetryTemplate.builder()
+    private final RetryTemplate retryTemplate = RetryTemplate.builder()
             .maxAttempts(maxAttempts)
             .fixedBackoff(1000)
             .retryOn(Exception.class)
             .build();
 
-    private Map<BookingStatus, String> platformStatusMap = Map.ofEntries(
+    private final Map<BookingStatus, String> platformStatusMap = Map.ofEntries(
             Map.entry(BookingStatus.CANCELLED, "CANCELLED"),
             Map.entry(BookingStatus.READY_FOR_SHIPMENT, "CONFIRMED"),
             Map.entry(BookingStatus.PENDING_FOR_KYC, "BOOKED"),
@@ -265,7 +257,7 @@ public class BookingIntegrationsUtility {
             try {
                 try {
                     TimeUnit.SECONDS.sleep(5);
-                } catch (Exception ex) {
+                } catch (Exception ex) {  //NOSONAR - Ignoring interrupt intentionally
                     log.error("Wait failed due to {}", ex.getMessage());
                 }
                 this.createBill(customerBooking, false, true, shipmentResponse, headers);
@@ -301,8 +293,7 @@ public class BookingIntegrationsUtility {
 
     public ResponseEntity<IRunnerResponse> createShipmentInV2(CustomerBookingRequest customerBookingRequest) throws RunnerException {
         try {
-            var response = shipmentService.createShipmentInV2(customerBookingRequest);
-            return response;
+            return shipmentService.createShipmentInV2(customerBookingRequest);
         } catch (Exception ex) {
             log.error("Shipment Creation failed for booking number {} with error message: {}", customerBookingRequest.getBookingNumber(), ex.getMessage());
             throw ex;
@@ -350,7 +341,7 @@ public class BookingIntegrationsUtility {
                 .voyage(carrierDetails.getVoyage())
                 .load(createLoad(customerBooking))
                 .route(createRoute(customerBooking))
-                .source("RUNNER")
+                .source(CustomerBookingConstants.RUNNER)
                 .status(platformStatusMap.get(customerBooking.getBookingStatus()))
                 .referenceNumbers(new ArrayList<>())
                 .addresses(getPartyAddresses(customerBooking.getCustomer(), customerBooking.getConsignor(), customerBooking.getConsignee(), customerBooking.getNotifyParty()))
@@ -407,7 +398,7 @@ public class BookingIntegrationsUtility {
     }
 
     private String getCarrierSCACCodeFromItemValue(String itemValue) {
-        if(IsStringNullOrEmpty(itemValue))
+        if(isStringNullOrEmpty(itemValue))
             return null;
         Set<String> carrierCodes = new HashSet<>();
         carrierCodes.add(itemValue);
@@ -433,7 +424,7 @@ public class BookingIntegrationsUtility {
             List<Containers> containers = customerBooking.getContainersList();
             if(Objects.isNull(containers) || containers.isEmpty())
                 return loadRequests;
-            containers.forEach(container -> {
+            containers.forEach(container ->
                 loadRequests.add(LoadRequest.builder()
                         .load_uuid(container.getGuid())
                         .load_type(customerBooking.getCargoType())
@@ -448,15 +439,15 @@ public class BookingIntegrationsUtility {
                         .volume(container.getGrossVolume())
                         .volume_uom(container.getGrossVolumeUnit())
                         .dimensions(null) // Resolved
-                        .build());
-            });
+                        .build())
+            );
         }
 
         if (customerBooking.getCargoType() != null && (customerBooking.getCargoType().equals("LCL") || customerBooking.getCargoType().equals("LSE"))) {
             List<Packing> packings = customerBooking.getPackingList();
             if(Objects.isNull(packings) || packings.isEmpty())
                 return loadRequests;
-            packings.forEach(packing -> {
+            packings.forEach(packing ->
                 loadRequests.add(LoadRequest.builder()
                         .load_uuid(packing.getGuid())
                         .load_type(customerBooking.getCargoType())
@@ -471,8 +462,8 @@ public class BookingIntegrationsUtility {
                         .volume(packing.getVolume())
                         .volume_uom(packing.getVolumeUnit())
                         .dimensions(getDimension(customerBooking.getCargoType(), packing))
-                        .build());
-            });
+                        .build())
+            );
         }
 
         return loadRequests;
@@ -485,7 +476,7 @@ public class BookingIntegrationsUtility {
             Set<Containers> containers = shipmentDetails.getContainersList();
             if(Objects.isNull(containers) || containers.isEmpty())
                 return loadRequests;
-            containers.forEach(container -> {
+            containers.forEach(container ->
                 loadRequests.add(LoadRequest.builder()
                         .load_uuid(container.getGuid())
                         .load_type(shipmentDetails.getShipmentType())
@@ -497,22 +488,22 @@ public class BookingIntegrationsUtility {
                         .is_reefer(container.getIsReefer())
                         .reefer_info(ReeferInfoRequest.builder().temperature(!Objects.isNull(container.getMinTemp()) ? container.getMinTemp().intValue() : null).build())
                         .is_hazardous(container.getHazardous() != null && container.getHazardous())
-                        .hazardous_info(HazardousInfoRequest.builder().product_un_id(container.getUnNumber()).product_class(container.getDgClass()).build()) // TODO
+                        .hazardous_info(HazardousInfoRequest.builder().product_un_id(container.getUnNumber()).product_class(container.getDgClass()).build())
                         .weight(container.getGrossWeight())
                         .weight_uom(container.getGrossWeightUnit())
                         .quantity(container.getContainerCount())
                         .quantity_uom(CustomerBookingConstants.UNIT)
                         .volume(container.getGrossVolume())
                         .volume_uom(container.getGrossVolumeUnit())
-                        .build());
-            });
+                        .build())
+            );
         }
 
         if (Objects.equals(shipmentDetails.getShipmentType(), Constants.SHIPMENT_TYPE_LCL) || Objects.equals(shipmentDetails.getShipmentType(), Constants.SHIPMENT_TYPE_LSE)) {
             List<Packing> packings = shipmentDetails.getPackingList();
             if(Objects.isNull(packings) || packings.isEmpty())
                 return loadRequests;
-            packings.forEach(packing -> {
+            packings.forEach(packing ->
                 loadRequests.add(LoadRequest.builder()
                         .load_uuid(packing.getGuid())
                         .load_type(shipmentDetails.getShipmentType())
@@ -528,8 +519,8 @@ public class BookingIntegrationsUtility {
                         .volume_uom(packing.getVolumeUnit())
                         .dimensions(getDimension(shipmentDetails.getShipmentType(), packing))
                         .is_hazardous(packing.getHazardous() != null && packing.getHazardous())
-                        .build());
-            });
+                        .build())
+            );
         }
 
         return loadRequests;
@@ -565,6 +556,12 @@ public class BookingIntegrationsUtility {
             return RouteRequest.builder().legs(legRequestList).build();
         Map<String, EntityTransferVessels> entityTransferVesselsMap = masterDataUtils.fetchInBulkVessels(routingsList.stream().map(Routings::getVesselName).filter(Objects::nonNull).collect(Collectors.toSet()));
         Map<String, EntityTransferCarrier> entityTransferCarrierMap = masterDataUtils.fetchInBulkCarriers(routingsList.stream().map(Routings::getCarrier).filter(Objects::nonNull).collect(Collectors.toSet()));
+        processRoutingList(shipmentDetails, routingsList, entityTransferVesselsMap, entityTransferCarrierMap, legRequestList);
+
+        return RouteRequest.builder().legs(legRequestList).build();
+    }
+
+    private void processRoutingList(ShipmentDetails shipmentDetails, List<Routings> routingsList, Map<String, EntityTransferVessels> entityTransferVesselsMap, Map<String, EntityTransferCarrier> entityTransferCarrierMap, List<RouteLegRequest> legRequestList) {
         for (int counter = 0; counter < routingsList.size(); counter++) {
             var vessel = entityTransferVesselsMap.get(routingsList.get(counter).getVesselName());
             var carrier = entityTransferCarrierMap.get(routingsList.get(counter).getCarrier());
@@ -587,10 +584,6 @@ public class BookingIntegrationsUtility {
                     .vesselMmsi(!Objects.isNull(vessel) ? vessel.getMmsi() : null)
                     .build());
         }
-
-        return RouteRequest.builder()
-                .legs(legRequestList)
-                .build();
     }
 
     private DimensionDTO getDimension(String cargoType, Packing packing) {
@@ -614,7 +607,7 @@ public class BookingIntegrationsUtility {
         log.info("ChargeTypeMap from V1 Charge Codes: "+ jsonHelper.convertToJson(chargeTypeMap));
 
         bookingCharges.forEach(
-                bookingCharge -> {
+                bookingCharge ->
                     charges.add(
                             ChargesRequest.builder()
                                     .load_uuid(Objects.isNull(bookingCharge.getContainersList()) || bookingCharge.getContainersList().isEmpty() ? null : bookingCharge.getContainersList().stream().map(c -> c.getGuid()).collect(Collectors.toList()))
@@ -630,8 +623,7 @@ public class BookingIntegrationsUtility {
                                     .taxes(null) // optional
                                     .charge_id(bookingCharge.getGuid().toString())
                                     .build()
-                    );
-                }
+                    )
         );
 
         return charges;
@@ -663,7 +655,7 @@ public class BookingIntegrationsUtility {
                 .isDg(customerBooking.getIsDg())
                 .load(createLoad(customerBooking))
                 .route(createRoute(customerBooking))
-                .source("RUNNER")
+                .source(CustomerBookingConstants.RUNNER)
                 .branchId(UserContext.getUser().getTenantId())
                 .build();
         return CommonRequestModel.builder().data(platformUpdateRequest).build();
@@ -694,7 +686,8 @@ public class BookingIntegrationsUtility {
                 .shipmentMovement(shipmentDetails.getDirection())
                 .route(createRoute(shipmentDetails))
                 .referenceNumbers(createReferenceNumbers(shipmentDetails))
-                .source("RUNNER")
+                .purchaseOrders(getOrdersByShipmentId(shipmentDetails.getShipmentId()))
+                .source(CustomerBookingConstants.RUNNER)
                 .business_code(getBusinessCode(shipmentDetails.getShipmentType()))
                 .customer_org_id(shipmentDetails.getClient().getOrgCode())
                 .bill_to_party(Collections.singletonList(createOrgRequest(shipmentDetails.getClient())))
@@ -707,6 +700,15 @@ public class BookingIntegrationsUtility {
                 .addresses(getPartyAddresses(shipmentDetails.getClient(), shipmentDetails.getConsigner(), shipmentDetails.getConsignee(), shipmentDetails.getAdditionalDetails().getNotifyParty()))
                 .build();
         return CommonRequestModel.builder().data(platformUpdateRequest).build();
+    }
+
+    private List<PurchaseOrdersResponse> getOrdersByShipmentId(String shipmentId) {
+        try {
+            return orderManagementAdapter.getOrdersByShipmentId(shipmentId);
+        } catch (Exception e) {
+            log.error("Exception while retrieving orders for shipmentId {}: {}", shipmentId, e.getMessage(), e);
+            return null;
+        }
     }
 
     private List<ReferenceNumbersRequest> createReferenceNumbers(ShipmentDetails shipmentDetails) {
@@ -764,7 +766,7 @@ public class BookingIntegrationsUtility {
                 .build();
     }
 
-    private void setOrgDataInPartiesRequest(String partyType, Map<String, PartiesRequest> requestMap, Map organizationRow, PartiesRequest party,
+    private void setOrgDataInPartiesRequest(String partyType, Map<String, PartiesRequest> requestMap, Map<String, Object> organizationRow, PartiesRequest party,
                                             List<Long> orgIds) {
         if(requestMap.containsKey(partyType) && requestMap.get(partyType).getOrgCode().equals(organizationRow.get(PartiesConstants.ORGANIZATION_CODE))) {
             party.setOrgCode(organizationRow.get(PartiesConstants.ORGANIZATION_CODE).toString());
@@ -776,7 +778,7 @@ public class BookingIntegrationsUtility {
         }
     }
 
-    private void setAddressDataInPartiesRequest(String partyType, Map<String, PartiesRequest> requestMap, Map addressRow, PartiesRequest party) {
+    private void setAddressDataInPartiesRequest(String partyType, Map<String, PartiesRequest> requestMap, Map<String, Object> addressRow, PartiesRequest party) {
         if(addressRow.containsKey(ORG_ID) && party.getOrgId() != null && requestMap.containsKey(partyType) &&
                 Objects.equals(Long.valueOf(addressRow.get(ORG_ID).toString()), Long.valueOf(party.getOrgId())) &&
                 Objects.equals(requestMap.get(partyType).getAddressCode(), addressRow.get(PartiesConstants.ADDRESS_SHORT_CODE))) {
@@ -800,7 +802,7 @@ public class BookingIntegrationsUtility {
             }
             CommonV1ListRequest orgRequest = createCriteriaForTwoFields(PartiesConstants.ORGANIZATION_CODE, "in", List.of(orgCodes), ACTIVE_CLIENT, "=", Boolean.TRUE);
             DependentServiceResponse v1OrgResponse = masterDataFactory.getMasterDataService().fetchOrganizationData(orgRequest);
-            if (v1OrgResponse.getData() == null || ((ArrayList)v1OrgResponse.getData()).isEmpty()) {
+            if (v1OrgResponse.getData() == null || ((List<?>)v1OrgResponse.getData()).isEmpty()) {
                 log.error("Request: {} || No organization exist in Runner V1 with OrgCodes: {}", LoggerHelper.getRequestIdFromMDC() ,orgCodes);
                 throw new DataRetrievalFailureException("No organization exist in Runner V1 with OrgCodes: " + orgCodes);
             }
@@ -811,7 +813,7 @@ public class BookingIntegrationsUtility {
             List<Object> orgRows = jsonHelper.convertValueToList(v1OrgResponse.getData(), Object.class);
             List<Long> orgIds = new ArrayList<>();
             for(Object orgRow: orgRows) {
-                Map organizationRow = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(orgRow));
+                Map<String, Object> organizationRow = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(orgRow));
                 setOrgDataInPartiesRequest(CUSTOMER_REQUEST, requestMap, organizationRow, client, orgIds);
                 setOrgDataInPartiesRequest(CONSIGNOR_REQUEST, requestMap, organizationRow, consignor, orgIds);
                 setOrgDataInPartiesRequest(CONSIGNEE_REQUEST, requestMap, organizationRow, consignee, orgIds);
@@ -823,18 +825,8 @@ public class BookingIntegrationsUtility {
                     PartiesConstants.ADDRESS_SHORT_CODE, "in", List.of(addressCodes),
                     "Active", "=", Boolean.TRUE);
             DependentServiceResponse v1AddressResponse = masterDataFactory.getMasterDataService().addressList(addressRequest);
-            if (v1OrgResponse.getData() == null || ((ArrayList)v1AddressResponse.getData()).isEmpty()) {
-                log.error("Request: {} || No Address exist in Runner V1 with OrgCodes: {} with AddressCodes: {}", LoggerHelper.getRequestIdFromMDC(), orgCodes , addressCodes);
-                throw new DataRetrievalFailureException("No Address exist in Runner V1 with OrgCodes: " + orgCodes + " with AddressCodes: " + addressCodes);
-            }
-            List<Object> addressRows = jsonHelper.convertValueToList(v1AddressResponse.getData(), Object.class);
-            for(Object addressRow: addressRows) {
-                Map addressRowMap = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(addressRow));
-                setAddressDataInPartiesRequest(CUSTOMER_REQUEST, requestMap, addressRowMap, client);
-                setAddressDataInPartiesRequest(CONSIGNOR_REQUEST, requestMap, addressRowMap, consignor);
-                setAddressDataInPartiesRequest(CONSIGNEE_REQUEST, requestMap, addressRowMap, consignee);
-                setAddressDataInPartiesRequest(NOTIFY_PARTY_REQUEST, requestMap, addressRowMap, notifyParty);
-            }
+            validateV1OrgResponseData(v1OrgResponse, v1AddressResponse, orgCodes, addressCodes);
+            processAddressRows(requestMap, v1AddressResponse, client, consignor, consignee, notifyParty);
             if(client.getOrgId() != null && client.getAddressId() != null) {
                 requestMap.put("Customer", client);
             }
@@ -855,15 +847,33 @@ public class BookingIntegrationsUtility {
 
     }
 
+    private void processAddressRows(Map<String, PartiesRequest> requestMap, DependentServiceResponse v1AddressResponse, PartiesRequest client, PartiesRequest consignor, PartiesRequest consignee, PartiesRequest notifyParty) {
+        List<Object> addressRows = jsonHelper.convertValueToList(v1AddressResponse.getData(), Object.class);
+        for(Object addressRow: addressRows) {
+            Map<String, Object> addressRowMap = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(addressRow));
+            setAddressDataInPartiesRequest(CUSTOMER_REQUEST, requestMap, addressRowMap, client);
+            setAddressDataInPartiesRequest(CONSIGNOR_REQUEST, requestMap, addressRowMap, consignor);
+            setAddressDataInPartiesRequest(CONSIGNEE_REQUEST, requestMap, addressRowMap, consignee);
+            setAddressDataInPartiesRequest(NOTIFY_PARTY_REQUEST, requestMap, addressRowMap, notifyParty);
+        }
+    }
+
+    private void validateV1OrgResponseData(DependentServiceResponse v1OrgResponse, DependentServiceResponse v1AddressResponse, List<String> orgCodes, List<String> addressCodes) {
+        if (v1OrgResponse.getData() == null || ((List<?>) v1AddressResponse.getData()).isEmpty()) {
+            log.error("Request: {} || No Address exist in Runner V1 with OrgCodes: {} with AddressCodes: {}", LoggerHelper.getRequestIdFromMDC(), orgCodes, addressCodes);
+            throw new DataRetrievalFailureException("No Address exist in Runner V1 with OrgCodes: " + orgCodes + " with AddressCodes: " + addressCodes);
+        }
+    }
+
     public void transformOrgAndAddressPayload(PartiesRequest request, String addressCode, String orgCode) {
         try {
             CommonV1ListRequest orgRequest = createCriteriaForTwoFields(PartiesConstants.ORGANIZATION_CODE, "=", orgCode, ACTIVE_CLIENT, "=", Boolean.TRUE);
             DependentServiceResponse v1OrgResponse = masterDataFactory.getMasterDataService().fetchOrganizationData(orgRequest);
-            if (v1OrgResponse.getData() == null || ((ArrayList)v1OrgResponse.getData()).isEmpty()) {
+            if (v1OrgResponse.getData() == null || ((List<?>)v1OrgResponse.getData()).isEmpty()) {
                 log.error("Request: {} || No organization exist in Runner V1 with OrgCode: {}", LoggerHelper.getRequestIdFromMDC() ,orgCode);
                 throw new DataRetrievalFailureException("No organization exist in Runner V1 with OrgCode: " + orgCode);
             }
-            Map organizationRow = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(((ArrayList)v1OrgResponse.getData()).get(0)));
+            Map<String, Object> organizationRow = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(((List<?>)v1OrgResponse.getData()).get(0)));
             if(organizationRow.containsKey(PartiesConstants.ID))
                 request.setOrgId(String.valueOf(organizationRow.get(PartiesConstants.ID)));
             request.setOrgData(organizationRow);
@@ -873,11 +883,11 @@ public class BookingIntegrationsUtility {
                     PartiesConstants.ADDRESS_SHORT_CODE, "=", addressCode,
                     "Active", "=", Boolean.TRUE);
             DependentServiceResponse v1AddressResponse = masterDataFactory.getMasterDataService().addressList(addressRequest);
-            if (v1OrgResponse.getData() == null || ((ArrayList)v1AddressResponse.getData()).isEmpty()) {
+            if (v1OrgResponse.getData() == null || ((List<?>)v1AddressResponse.getData()).isEmpty()) {
                 log.error("Request: {} || No Address exist in Runner V1 with OrgCode: {} with AddressCode: {}", LoggerHelper.getRequestIdFromMDC(), orgCode , addressCode);
                 throw new DataRetrievalFailureException("No Address exist in Runner V1 with OrgCode: " + orgCode + " with AddressCode: " + addressCode);
             }
-            Map addressRow = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(((ArrayList)v1AddressResponse.getData()).get(0)));
+            Map<String, Object> addressRow = jsonHelper.convertJsonToMap(jsonHelper.convertToJson(((List<?>)v1AddressResponse.getData()).get(0)));
             if(addressRow.containsKey(PartiesConstants.ID))
                 request.setAddressId(String.valueOf(addressRow.get(PartiesConstants.ID)));
             request.setAddressData(addressRow);
@@ -890,11 +900,11 @@ public class BookingIntegrationsUtility {
     }
 
     private CommonV1ListRequest createCriteriaForTwoFields(String field1, String operator1, Object value1, String field2, String operator2, Object value2) {
-        List<Object> field1_ = new ArrayList<>(List.of(field1));
-        List<Object> criteria1 = new ArrayList<>(List.of(field1_, operator1, value1));
+        List<Object> fieldList1 = new ArrayList<>(List.of(field1));
+        List<Object> criteria1 = new ArrayList<>(List.of(fieldList1, operator1, value1));
 
-        List<Object> field2_ = new ArrayList<>(List.of(field2));
-        List<Object> criteria2 = new ArrayList<>(List.of(field2_, operator2, value2));
+        List<Object> fieldList2 = new ArrayList<>(List.of(field2));
+        List<Object> criteria2 = new ArrayList<>(List.of(fieldList2, operator2, value2));
 
         return CommonV1ListRequest.builder().criteriaRequests(List.of(criteria1, "and", criteria2)).build();
     }
@@ -902,14 +912,14 @@ public class BookingIntegrationsUtility {
     private CommonV1ListRequest createCriteriaForThreeFields(String field1, String operator1, Object value1,
                                                              String field2, String operator2, Object value2,
                                                              String field3, String operator3, Object value3) {
-        List<Object> field1_ = new ArrayList<>(List.of(field1));
-        List<Object> criteria1 = new ArrayList<>(List.of(field1_, operator1, value1));
+        List<Object> fieldList1 = new ArrayList<>(List.of(field1));
+        List<Object> criteria1 = new ArrayList<>(List.of(fieldList1, operator1, value1));
 
-        List<Object> field2_ = new ArrayList<>(List.of(field2));
-        List<Object> criteria2 = new ArrayList<>(List.of(field2_, operator2, value2));
+        List<Object> fieldList2 = new ArrayList<>(List.of(field2));
+        List<Object> criteria2 = new ArrayList<>(List.of(fieldList2, operator2, value2));
 
-        List<Object> field3_ = new ArrayList<>(List.of(field3));
-        List<Object> criteria3 = new ArrayList<>(List.of(field3_, operator3, value3));
+        List<Object> fieldList3 = new ArrayList<>(List.of(field3));
+        List<Object> criteria3 = new ArrayList<>(List.of(fieldList3, operator3, value3));
 
         return CommonV1ListRequest.builder().criteriaRequests(List.of(List.of(criteria1, "and", criteria2), "and", criteria3)).build();
     }
@@ -988,9 +998,7 @@ public class BookingIntegrationsUtility {
 
                 log.debug("Valid action and entity type. Fetching shipment details for entity ID: {}", payloadData.getEntityId());
 
-                if (payloadData.getEntityId() == null) {
-                    throw new IllegalArgumentException("Entity ID in payload data is null.");
-                }
+                validateEntityId(payloadData);
 
                 var shipmentDetails = shipmentDao.findShipmentsByGuids(Set.of(UUID.fromString(payloadData.getEntityId())))
                         .stream().findFirst().orElse(new ShipmentDetails());
@@ -1003,32 +1011,7 @@ public class BookingIntegrationsUtility {
                 boolean updatedExistingEvent = false;
 
                 // If existing events are found, iterate through them for potential updates
-                if (ObjectUtils.isNotEmpty(eventListFromDb)) {
-                    log.debug("Existing events found for shipment with entity ID: {}", payloadData.getEntityId());
-
-                    for (Events event : eventListFromDb) {
-                        if (Objects.equals(event.getEventCode(), payloadData.getEventCode()) &&
-                                Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER.equals(event.getSource())) {
-
-                            log.info("Updating event: {} with new actual time and entity type.", event.getEventCode());
-                            event.setActual(commonUtils.getUserZoneTime(LocalDateTime.now()));
-                            event.setEntityType(Constants.SHIPMENT);
-                            event.setUserName(payloadData.getUserDisplayName());
-                            event.setUserEmail(payloadData.getUserEmail());
-                            event.setBranchName(payloadData.getBranchDisplayName());
-                            event.setBranch(payloadData.getBranchCode());
-                            if (EventConstants.FNMU.equals(payloadData.getEventCode())) {
-                                event.setContainerNumber(shipmentDetails.getMasterBill());
-                            }
-
-                            // Update the event details and save in the database
-                            eventDao.updateEventDetails(event);
-                            eventDao.save(event);
-                            updatedExistingEvent = true;
-                            log.info("Event updated successfully for event code: {}", event.getEventCode());
-                        }
-                    }
-                }
+                updatedExistingEvent = getAndUpdateExistingEvent(payloadData, eventListFromDb, shipmentDetails, updatedExistingEvent);
                 if (!updatedExistingEvent && (EventConstants.DNMU.equals(payloadData.getEventCode()) || EventConstants.FNMU.equals(payloadData.getEventCode())
                     || (EventConstants.BOCO.equals(payloadData.getEventCode()) && Objects.equals(shipmentDetails.getDirection(), Constants.DIRECTION_EXP)))) {
                     log.debug("No existing events found for shipment with entity ID: {}. Checking conditions for auto-generation.", payloadData.getEntityId());
@@ -1045,7 +1028,6 @@ public class BookingIntegrationsUtility {
                     eventsRequest.setSource(Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER);
                     eventsRequest.setUserName(payloadData.getUserDisplayName());
                     eventsRequest.setUserEmail(payloadData.getUserEmail());
-                    eventsRequest.setBranchName(payloadData.getBranchDisplayName());
                     eventsRequest.setBranch(payloadData.getBranchCode());
                     if (EventConstants.FNMU.equals(payloadData.getEventCode())) {
                         eventsRequest.setContainerNumber(shipmentDetails.getMasterBill());
@@ -1065,6 +1047,41 @@ public class BookingIntegrationsUtility {
         }
     }
 
+    private void validateEntityId(Document payloadData) {
+        if (payloadData.getEntityId() == null) {
+            throw new IllegalArgumentException("Entity ID in payload data is null.");
+        }
+    }
+
+    private boolean getAndUpdateExistingEvent(Document payloadData, List<Events> eventListFromDb, ShipmentDetails shipmentDetails, boolean updatedExistingEvent) {
+        if (ObjectUtils.isNotEmpty(eventListFromDb)) {
+            log.debug("Existing events found for shipment with entity ID: {}", payloadData.getEntityId());
+
+            for (Events event : eventListFromDb) {
+                if (Objects.equals(event.getEventCode(), payloadData.getEventCode()) &&
+                        Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER.equals(event.getSource())) {
+
+                    log.info("Updating event: {} with new actual time and entity type.", event.getEventCode());
+                    event.setActual(commonUtils.getUserZoneTime(LocalDateTime.now()));
+                    event.setEntityType(Constants.SHIPMENT);
+                    event.setUserName(payloadData.getUserDisplayName());
+                    event.setUserEmail(payloadData.getUserEmail());
+                    event.setBranch(payloadData.getBranchCode());
+                    if (EventConstants.FNMU.equals(payloadData.getEventCode())) {
+                        event.setContainerNumber(shipmentDetails.getMasterBill());
+                    }
+
+                    // Update the event details and save in the database
+                    eventDao.updateEventDetails(event);
+                    eventDao.save(event);
+                    updatedExistingEvent = true;
+                    log.info("Event updated successfully for event code: {}", event.getEventCode());
+                }
+            }
+        }
+        return updatedExistingEvent;
+    }
+
     private void sendDocumentsToPlatform(ShipmentDetails shipmentDetails, DocumentDto payload) {
         var request = createPlatformDocumentRequest(shipmentDetails.getBookingReference(), payload.getData());
         try {
@@ -1082,7 +1099,7 @@ public class BookingIntegrationsUtility {
                         DocumentMetaDTO.builder()
                                 .name(document.getFileName())
                                 .document_type(document.getDocType())
-                                .document_link(document.getSecureDownloadLink())
+                                .document_link(Boolean.TRUE.equals(updateDocumentPath) ? document.getPath(): document.getSecureDownloadLink())
                                 .uploaded_by_user_id(document.getUploadedBy())
                                 .build()))
                 .build();

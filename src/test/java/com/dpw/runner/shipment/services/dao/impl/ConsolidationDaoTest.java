@@ -1,6 +1,7 @@
 package com.dpw.runner.shipment.services.dao.impl;
 
 import com.dpw.runner.shipment.services.CommonMocks;
+import com.dpw.runner.shipment.services.aspects.LicenseContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -15,7 +16,6 @@ import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
-import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
@@ -145,54 +145,69 @@ class ConsolidationDaoTest extends CommonMocks {
 
     @Test
     void testSave_Failure_Air_Validations1() {
-        ConsolidationDetails consolidationDetails = jsonTestUtility.getTestConsolidationAir();
-        consolidationDetails.setId(null);
-        consolidationDetails.setGuid(null);
-        consolidationDetails.setHazardous(true);
-        consolidationDetails.setConsolidationAddresses(jsonTestUtility.getConsoldiationAddressList());
-        ShipmentDetails shipmentDetails = jsonTestUtility.getTestShipment();
-        shipmentDetails.setContainsHazardous(true);
-        consolidationDetails.setShipmentsList(Set.of(shipmentDetails));
-        var spyService = Mockito.spy(consolidationsDao);
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
-        mockShipmentSettings();
-        assertThrows(ValidationException.class, () -> spyService.save(consolidationDetails, false));
+        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
+            mockedLicenseContext.when(LicenseContext::isAirSecurityLicense).thenReturn(true);
+            ConsolidationDetails consolidationDetails = jsonTestUtility.getTestConsolidationAir();
+            consolidationDetails.setId(null);
+            consolidationDetails.setGuid(null);
+            consolidationDetails.setHazardous(true);
+            consolidationDetails.setConsolidationAddresses(
+                jsonTestUtility.getConsoldiationAddressList());
+            ShipmentDetails shipmentDetails = jsonTestUtility.getTestShipment();
+            shipmentDetails.setContainsHazardous(true);
+            consolidationDetails.setShipmentsList(Set.of(shipmentDetails));
+            var spyService = Mockito.spy(consolidationsDao);
+            ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
+            mockShipmentSettings();
+            assertThrows(ValidationException.class,
+                () -> spyService.save(consolidationDetails, false));
+        }
     }
 
     @Test
     void testSave_Failure_Air_Validations() {
-        ConsolidationDetails consolidationDetails = jsonTestUtility.getTestConsolidationAir();
-        consolidationDetails.setId(null);
-        consolidationDetails.setGuid(null);
-        consolidationDetails.setHazardous(true);
-        consolidationDetails.setConsolidationAddresses(jsonTestUtility.getConsoldiationAddressList());
-        ShipmentDetails shipmentDetails = jsonTestUtility.getTestShipment();
-        shipmentDetails.setContainsHazardous(false);
-        consolidationDetails.setShipmentsList(Set.of(shipmentDetails));
-        var spyService = Mockito.spy(consolidationsDao);
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
-        Map<String, Boolean> permissions = new HashMap<>();
-        permissions.put(PermissionConstants.airDG, true);
-        UserContext.getUser().setPermissions(permissions);
-        mockShipmentSettings();
-        assertThrows(ValidationException.class, () -> spyService.save(consolidationDetails, false));
+        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
+            mockedLicenseContext.when(LicenseContext::isAirSecurityLicense).thenReturn(true);
+            ConsolidationDetails consolidationDetails = jsonTestUtility.getTestConsolidationAir();
+            consolidationDetails.setId(null);
+            consolidationDetails.setGuid(null);
+            consolidationDetails.setHazardous(true);
+            consolidationDetails.setConsolidationAddresses(
+                jsonTestUtility.getConsoldiationAddressList());
+            ShipmentDetails shipmentDetails = jsonTestUtility.getTestShipment();
+            shipmentDetails.setContainsHazardous(false);
+            consolidationDetails.setShipmentsList(Set.of(shipmentDetails));
+            var spyService = Mockito.spy(consolidationsDao);
+            ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
+            Map<String, Boolean> permissions = new HashMap<>();
+            permissions.put(PermissionConstants.AIR_DG, true);
+            UserContext.getUser().setPermissions(permissions);
+            mockShipmentSettings();
+            assertThrows(ValidationException.class,
+                () -> spyService.save(consolidationDetails, false));
+        }
     }
 
     @Test
     void testSave_Failure_Air_Validations_nullShipments() {
-        ConsolidationDetails consolidationDetails = jsonTestUtility.getTestConsolidationAir();
-        consolidationDetails.setId(null);
-        consolidationDetails.setGuid(null);
-        consolidationDetails.setHazardous(true);
-        consolidationDetails.setConsolidationAddresses(jsonTestUtility.getConsoldiationAddressList());
-        consolidationDetails.setShipmentsList(null);
-        var spyService = Mockito.spy(consolidationsDao);
-        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
-        Map<String, Boolean> permissions = new HashMap<>();
-        permissions.put(PermissionConstants.airDG, true);
-        UserContext.getUser().setPermissions(permissions);
-        mockShipmentSettings();
-        assertThrows(ValidationException.class, () -> spyService.save(consolidationDetails, false));
+        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
+            mockedLicenseContext.when(LicenseContext::isAirSecurityLicense).thenReturn(true);
+            ConsolidationDetails consolidationDetails = jsonTestUtility.getTestConsolidationAir();
+            consolidationDetails.setId(null);
+            consolidationDetails.setGuid(null);
+            consolidationDetails.setHazardous(true);
+            consolidationDetails.setConsolidationAddresses(
+                jsonTestUtility.getConsoldiationAddressList());
+            consolidationDetails.setShipmentsList(null);
+            var spyService = Mockito.spy(consolidationsDao);
+            ShipmentSettingsDetailsContext.getCurrentTenantSettings().setAirDGFlag(true);
+            Map<String, Boolean> permissions = new HashMap<>();
+            permissions.put(PermissionConstants.AIR_DG, true);
+            UserContext.getUser().setPermissions(permissions);
+            mockShipmentSettings();
+            assertThrows(ValidationException.class,
+                () -> spyService.save(consolidationDetails, false));
+        }
     }
 
     @Test
@@ -693,56 +708,79 @@ class ConsolidationDaoTest extends CommonMocks {
 
     @Test
     void applyConsolidationValidationsExpTest_CountryAirCargoSecurity() {
-        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().countryAirCargoSecurity(true).restrictedLocationsEnabled(true).build());
+        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
+            mockedLicenseContext.when(LicenseContext::isAirSecurityLicense).thenReturn(false);
+            ShipmentSettingsDetailsContext.setCurrentTenantSettings(
+                ShipmentSettingsDetails.builder().countryAirCargoSecurity(true)
+                    .restrictedLocationsEnabled(true).build());
 
-        ShipmentDetails shipmentDetails = ShipmentDetails.builder().containsHazardous(true).build();
+            ShipmentDetails shipmentDetails = ShipmentDetails.builder().containsHazardous(true)
+                .build();
 
-        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder()
+            ConsolidationDetails consolidationDetails = ConsolidationDetails.builder()
                 .hazardous(false)
                 .transportMode(Constants.TRANSPORT_MODE_AIR)
                 .shipmentsList(Set.of(shipmentDetails))
                 .shipmentType(Constants.DIRECTION_EXP)
                 .build();
 
-        mockShipmentSettings();
-        Set<String> errors = consolidationsDao.applyConsolidationValidations(consolidationDetails, false, false);
-        assertTrue(errors.contains("You don't have Air Security permission to create or update AIR EXP Consolidation."));
+            mockShipmentSettings();
+            Set<String> errors = consolidationsDao.applyConsolidationValidations(
+                consolidationDetails, false, false);
+            assertTrue(errors.contains(
+                "You don't have Air Security permission to create or update AIR EXP Consolidation."));
+        }
     }
 
     @Test
     void applyConsolidationValidationsExpTest_CountryAirCargoSecurity2() {
-        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().countryAirCargoSecurity(true).restrictedLocationsEnabled(true).build());
+        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
+            mockedLicenseContext.when(LicenseContext::isAirSecurityLicense).thenReturn(true);
+            ShipmentSettingsDetailsContext.setCurrentTenantSettings(
+                ShipmentSettingsDetails.builder().countryAirCargoSecurity(true)
+                    .restrictedLocationsEnabled(true).build());
 
-        ShipmentDetails shipmentDetails = ShipmentDetails.builder().containsHazardous(false).build();
+            ShipmentDetails shipmentDetails = ShipmentDetails.builder().containsHazardous(false)
+                .build();
 
-        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder()
+            ConsolidationDetails consolidationDetails = ConsolidationDetails.builder()
                 .hazardous(true)
                 .transportMode(Constants.TRANSPORT_MODE_AIR)
                 .shipmentsList(Set.of(shipmentDetails))
                 .shipmentType(Constants.DIRECTION_EXP)
                 .build();
 
-        mockShipmentSettings();
-        Set<String> errors = consolidationsDao.applyConsolidationValidations(consolidationDetails, false, false);
-        assertTrue(errors.contains("Consolidation cannot be marked as DG. Please attach at least one DG Shipment."));
+            mockShipmentSettings();
+            Set<String> errors = consolidationsDao.applyConsolidationValidations(
+                consolidationDetails, false, false);
+            assertTrue(errors.contains(
+                "Consolidation cannot be marked as DG. Please attach at least one DG Shipment."));
+        }
     }
 
     @Test
     void applyConsolidationValidationsExpTest_CountryAirCargoSecurity3() {
-        ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().countryAirCargoSecurity(true).restrictedLocationsEnabled(true).build());
+        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
+            mockedLicenseContext.when(LicenseContext::isAirSecurityLicense).thenReturn(true);
+            ShipmentSettingsDetailsContext.setCurrentTenantSettings(
+                ShipmentSettingsDetails.builder().countryAirCargoSecurity(true)
+                    .restrictedLocationsEnabled(true).build());
 
-        ShipmentDetails shipmentDetails = ShipmentDetails.builder().containsHazardous(false).build();
+            ShipmentDetails shipmentDetails = ShipmentDetails.builder().containsHazardous(false)
+                .build();
 
-        ConsolidationDetails consolidationDetails = ConsolidationDetails.builder()
+            ConsolidationDetails consolidationDetails = ConsolidationDetails.builder()
                 .hazardous(true)
                 .transportMode(Constants.TRANSPORT_MODE_AIR)
                 .shipmentsList(Set.of(shipmentDetails))
                 .shipmentType(Constants.DIRECTION_EXP)
                 .build();
 
-        mockShipmentSettings();
-        Set<String> errors = consolidationsDao.applyConsolidationValidations(consolidationDetails, true, false);
-        assertTrue(errors.contains("First load or Last Discharge can not be null."));
+            mockShipmentSettings();
+            Set<String> errors = consolidationsDao.applyConsolidationValidations(
+                consolidationDetails, true, false);
+            assertTrue(errors.contains("First load or Last Discharge can not be null."));
+        }
     }
 
     @Test

@@ -913,9 +913,9 @@ class MasterDataHelperTest {
         // Act
         masterDataHelper.setContainersPacksAutoUpdateData(shipmentDetailsResponse, new HashMap<>());
 
-        assertFalse(shipmentDetailsResponse.isCargoFinanceBooking());
-        assertFalse(shipmentDetailsResponse.isIntraBranch());
-        assertFalse(shipmentDetailsResponse.isShipmentReadOnly());
+        assertFalse(shipmentDetailsResponse.getCargoFinanceBooking());
+        assertFalse(shipmentDetailsResponse.getIntraBranch());
+        assertFalse(shipmentDetailsResponse.getIsShipmentReadOnly());
     }
 
     @Test
@@ -1066,7 +1066,7 @@ class MasterDataHelperTest {
         containerResponse.setStatus(ContainerStatus.DISCHARGED_FROM_BARGE);
         containerResponse.setTareWeight(new BigDecimal("2.3"));
         containerResponse.setTareWeightUnit("42");
-        containerResponse.setTenantId(3L);
+        containerResponse.setTenantId(3);
         containerResponse.setTerminalOperatorSealNumber("com.dpw.runner.shipment.services.dto.response.ContainerResponse");
         containerResponse.setTextFieldData(new HashMap<>());
         containerResponse.setTransportMode("42");

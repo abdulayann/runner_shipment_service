@@ -16,8 +16,8 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.aspectj.lang.JoinPoint;
-import static org.mockito.Mockito.*;
-import org.aspectj.lang.reflect.MethodSignature;
+
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,11 +26,7 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.UUID;
+import java.util.*;
 
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -51,13 +47,13 @@ class PermissionsAspectTest {
 
 
     @Test
-    void testListShipmentAspect() throws RunnerException {
+    void testListShipmentAspect() {
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
         mockUser.setPermissions(new HashMap<>());
         UserContext.setUser(mockUser);
-        PermissionsContext.setPermissions(new ArrayList<>(Arrays.asList("Shipments:List:All Shipment:AllShipmentList")));
+        PermissionsContext.setPermissions(new ArrayList<>(List.of("Shipments:List:All Shipment:AllShipmentList")));
         ShipmentDetails mockShipment = new ShipmentDetails();
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder().P100Branch(false).build());
@@ -73,18 +69,17 @@ class PermissionsAspectTest {
         ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockShipmentRequest);
         permissionsAspect = new PermissionsAspect();
-        permissionsAspect.beforeFindOfMultiTenancyRepository(joinPoint, commonRequestModel, true);
-        assert (true);
+        assertDoesNotThrow(() ->permissionsAspect.beforeFindOfMultiTenancyRepository(joinPoint, commonRequestModel, true));
     }
 
     @Test
-    void testListShipmentAspect2() throws RunnerException {
+    void testListShipmentAspect2() {
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
         mockUser.setPermissions(new HashMap<>());
         UserContext.setUser(mockUser);
-        PermissionsContext.setPermissions(new ArrayList<>(Arrays.asList("Shipments:List:All Shipment:AllShipmentList")));
+        PermissionsContext.setPermissions(new ArrayList<>(List.of("Shipments:List:All Shipment:AllShipmentList")));
         ShipmentDetails mockShipment = new ShipmentDetails();
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder().P100Branch(false).build());
@@ -97,15 +92,14 @@ class PermissionsAspectTest {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(constructListCommonRequest("id", 1, "="));
         permissionsAspect = new PermissionsAspect();
-        permissionsAspect.beforeFindOfMultiTenancyRepository(joinPoint, commonRequestModel, true);
+        assertDoesNotThrow(() ->permissionsAspect.beforeFindOfMultiTenancyRepository(joinPoint, commonRequestModel, true));
         assert (true);
     }
 
     @Test
-    void testListShipmentAspectException() throws RunnerException {
+    void testListShipmentAspectException() {
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
@@ -124,14 +118,13 @@ class PermissionsAspectTest {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(new ListCommonRequest());
         permissionsAspect = new PermissionsAspect();
         assertThrows(RunnerException.class, () -> permissionsAspect.beforeFindOfMultiTenancyRepository(joinPoint, commonRequestModel, true));
     }
 
     @Test
-    void testListShipmentAspectWithPermission() throws RunnerException {
+    void testListShipmentAspectWithPermission() {
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
@@ -150,21 +143,20 @@ class PermissionsAspectTest {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        ShipmentRequest mockShipmentRequest = objectMapper.convertValue(mockShipment, ShipmentRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(new ListCommonRequest());
         permissionsAspect = new PermissionsAspect();
-        permissionsAspect.beforeFindOfMultiTenancyRepository(joinPoint, commonRequestModel, true);
+        assertDoesNotThrow(() ->permissionsAspect.beforeFindOfMultiTenancyRepository(joinPoint, commonRequestModel, true));
         assert (true);
     }
 
     @Test
-    void testListConsolidationAspect() throws RunnerException {
+    void testListConsolidationAspect(){
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
         mockUser.setPermissions(new HashMap<>());
         UserContext.setUser(mockUser);
-        PermissionsContext.setPermissions(new ArrayList<>(Arrays.asList("Consolidations:List:All Consolidation:AllConsolidationList")));
+        PermissionsContext.setPermissions(new ArrayList<>(List.of("Consolidations:List:All Consolidation:AllConsolidationList")));
         ConsolidationDetails mockConsolidation = new ConsolidationDetails();
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder().P100Branch(false).build());
@@ -180,18 +172,18 @@ class PermissionsAspectTest {
         ConsolidationDetailsRequest mockConsolidationRequest = objectMapper.convertValue(mockConsolidation, ConsolidationDetailsRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(mockConsolidationRequest);
         permissionsAspect = new PermissionsAspect();
-        permissionsAspect.beforeConsolidationList(joinPoint, commonRequestModel, true);
+        assertDoesNotThrow(() ->permissionsAspect.beforeConsolidationList(joinPoint, commonRequestModel, true));
         assert (true);
     }
 
     @Test
-    void testListConsolidationAspect2() throws RunnerException {
+    void testListConsolidationAspect2() {
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
         mockUser.setPermissions(new HashMap<>());
         UserContext.setUser(mockUser);
-        PermissionsContext.setPermissions(new ArrayList<>(Arrays.asList("Consolidations:List:All Consolidation:AllConsolidationList")));
+        PermissionsContext.setPermissions(new ArrayList<>(List.of("Consolidations:List:All Consolidation:AllConsolidationList")));
         ConsolidationDetails mockConsolidation = new ConsolidationDetails();
         TenantSettingsDetailsContext.setCurrentTenantSettings(
                 V1TenantSettingsResponse.builder().P100Branch(false).build());
@@ -204,15 +196,13 @@ class PermissionsAspectTest {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        ConsolidationDetailsRequest mockConsolidationRequest = objectMapper.convertValue(mockConsolidation, ConsolidationDetailsRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(new ListCommonRequest());
         permissionsAspect = new PermissionsAspect();
-        permissionsAspect.beforeConsolidationList(joinPoint, commonRequestModel, true);
-        assert (true);
+        assertDoesNotThrow(() ->permissionsAspect.beforeConsolidationList(joinPoint, commonRequestModel, true));
     }
 
     @Test
-    void testListConsolidationAspectException() throws RunnerException {
+    void testListConsolidationAspectException(){
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
@@ -231,14 +221,13 @@ class PermissionsAspectTest {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        ConsolidationDetailsRequest mockConsolidationRequest = objectMapper.convertValue(mockConsolidation, ConsolidationDetailsRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(constructListCommonRequest("id", 1, "="));
         permissionsAspect = new PermissionsAspect();
         assertThrows(RunnerException.class, () -> permissionsAspect.beforeConsolidationList(joinPoint, commonRequestModel, true));
     }
 
     @Test
-    void testListConsolidationAspectWithPermission() throws RunnerException {
+    void testListConsolidationAspectWithPermission(){
         UsersDto mockUser = new UsersDto();
         mockUser.setTenantId(1);
         mockUser.setUsername("user");
@@ -257,10 +246,8 @@ class PermissionsAspectTest {
         ShipmentSettingsDetailsContext.setCurrentTenantSettings(ShipmentSettingsDetails.builder().autoEventCreate(false).build());
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        ConsolidationDetailsRequest mockConsolidationRequest = objectMapper.convertValue(mockConsolidation, ConsolidationDetailsRequest.class);
         CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(constructListCommonRequest("id", 1, "="));
         permissionsAspect = new PermissionsAspect();
-        permissionsAspect.beforeConsolidationList(joinPoint, commonRequestModel, true);
-        assert (true);
+        assertDoesNotThrow(() ->permissionsAspect.beforeConsolidationList(joinPoint, commonRequestModel, true));
     }
 }

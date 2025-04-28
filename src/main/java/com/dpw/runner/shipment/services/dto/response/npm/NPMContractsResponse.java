@@ -15,6 +15,7 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
+@SuppressWarnings("java:S1948")
 public class NPMContractsResponse implements IRunnerResponse {
     @JsonProperty("contracts")
     private List<NPMContractResponse> contracts;

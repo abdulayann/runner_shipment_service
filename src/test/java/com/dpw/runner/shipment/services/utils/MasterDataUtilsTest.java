@@ -6,6 +6,7 @@ import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.constants.PartiesConstants;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -15,6 +16,7 @@ import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.response.*;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entitytransfer.dto.*;
+import com.dpw.runner.shipment.services.exception.exceptions.GenericException;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helper.JsonTestUtility;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -168,7 +170,7 @@ class MasterDataUtilsTest {
 
         // Act and Assert
         var t = assertThrows(Throwable.class, () -> masterDataUtils.createInBulkMasterListRequest(mockShipmentDetailsResponse, ShipmentDetails.class, new HashMap<>(), "Code", new HashMap<>()));
-        assertEquals(RuntimeException.class.getSimpleName(), t.getClass().getSimpleName());
+        assertEquals(GenericException.class.getSimpleName(), t.getClass().getSimpleName());
     }
 
      @Test
@@ -256,7 +258,7 @@ class MasterDataUtilsTest {
 
         // Act and Assert
         var t = assertThrows(Throwable.class, () -> masterDataUtils.createInBulkUnLocationsRequest(mockShipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class, new HashMap<>(), "Code", new HashMap<>()));
-        assertEquals(RuntimeException.class.getSimpleName(), t.getClass().getSimpleName());
+        assertEquals(GenericException.class.getSimpleName(), t.getClass().getSimpleName());
     }
 
     @Test
@@ -357,7 +359,7 @@ class MasterDataUtilsTest {
 
         // Act and Assert
         var t = assertThrows(Throwable.class, () -> masterDataUtils.createInBulkChargeTypeRequest(mockCustomerBookingResponse.getBookingCharges().get(0), BookingCharges.class, new HashMap<>(), "Code", new HashMap<>()));
-        assertEquals(RuntimeException.class.getSimpleName(), t.getClass().getSimpleName());
+        assertEquals(GenericException.class.getSimpleName(), t.getClass().getSimpleName());
     }
 
     @Test
@@ -438,7 +440,7 @@ class MasterDataUtilsTest {
 
         // Act and Assert
         var t = assertThrows(Throwable.class, () -> masterDataUtils.createInBulkContainerTypeRequest(mockShipmentDetailsResponse.getContainersList().iterator().next(), Containers.class, new HashMap<>(), "Code", new HashMap<>()));
-        assertEquals(RuntimeException.class.getSimpleName(), t.getClass().getSimpleName());
+        assertEquals(GenericException.class.getSimpleName(), t.getClass().getSimpleName());
     }
 
     @Test
@@ -518,7 +520,7 @@ class MasterDataUtilsTest {
 
         // Act and Assert
         var t = assertThrows(Throwable.class, () -> masterDataUtils.createInBulkCommodityTypeRequest(mockShipmentDetailsResponse.getContainersList().iterator().next(), Containers.class, new HashMap<>(), "Code", new HashMap<>()));
-        assertEquals(RuntimeException.class.getSimpleName(), t.getClass().getSimpleName());
+        assertEquals(GenericException.class.getSimpleName(), t.getClass().getSimpleName());
     }
 
     @Test
@@ -600,7 +602,7 @@ class MasterDataUtilsTest {
 
         // Act and Assert
         var t = assertThrows(Throwable.class, () -> masterDataUtils.createInBulkCarriersRequest(mockShipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class, new HashMap<>(), "Code", new HashMap<>()));
-        assertEquals(RuntimeException.class.getSimpleName(), t.getClass().getSimpleName());
+        assertEquals(GenericException.class.getSimpleName(), t.getClass().getSimpleName());
     }
 
     @Test
@@ -702,7 +704,7 @@ class MasterDataUtilsTest {
 
         // Act and Assert
         var t = assertThrows(Throwable.class, () -> masterDataUtils.createInBulkVesselsRequest(mockShipmentDetailsResponse.getCarrierDetails(), CarrierDetails.class, new HashMap<>(), "Code", new HashMap<>()));
-        assertEquals(RuntimeException.class.getSimpleName(), t.getClass().getSimpleName());
+        assertEquals(GenericException.class.getSimpleName(), t.getClass().getSimpleName());
     }
 
     @Test
@@ -785,7 +787,7 @@ class MasterDataUtilsTest {
 
         // Act and Assert
         var t = assertThrows(Throwable.class, () -> masterDataUtils.createInBulkCurrencyRequest(mockShipmentDetailsResponse, ShipmentDetails.class, new HashMap<>(), "Code", new HashMap<>()));
-        assertEquals(RuntimeException.class.getSimpleName(), t.getClass().getSimpleName());
+        assertEquals(GenericException.class.getSimpleName(), t.getClass().getSimpleName());
     }
 
     @Test
@@ -885,7 +887,7 @@ class MasterDataUtilsTest {
 
         // Act and Assert
         var t = assertThrows(Throwable.class, () -> masterDataUtils.createInBulkTenantsRequest(mockShipmentDetailsResponse, ShipmentDetails.class, new HashMap<>(), "Code", new HashMap<>()));
-        assertEquals(RuntimeException.class.getSimpleName(), t.getClass().getSimpleName());
+        assertEquals(GenericException.class.getSimpleName(), t.getClass().getSimpleName());
     }
 
     @Test
@@ -982,7 +984,7 @@ class MasterDataUtilsTest {
 
         // Act and Assert
         var t = assertThrows(Throwable.class, () -> masterDataUtils.createInBulkDGSubstanceRequest(packing, Packing.class, new HashMap<>(), "Code", new HashMap<>()));
-        assertEquals(RuntimeException.class.getSimpleName(), t.getClass().getSimpleName());
+        assertEquals(GenericException.class.getSimpleName(), t.getClass().getSimpleName());
     }
 
     @Test
@@ -1069,7 +1071,7 @@ class MasterDataUtilsTest {
 
         // Act and Assert
         var t = assertThrows(Throwable.class, () -> masterDataUtils.createInBulkWareHouseRequest(mockShipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class, new HashMap<>(), "Code", new HashMap<>()));
-        assertEquals(RuntimeException.class.getSimpleName(), t.getClass().getSimpleName());
+        assertEquals(GenericException.class.getSimpleName(), t.getClass().getSimpleName());
     }
 
     @Test
@@ -1158,7 +1160,7 @@ class MasterDataUtilsTest {
 
         // Act and Assert
         var t = assertThrows(Throwable.class, () -> masterDataUtils.createInBulkActivityTypeRequest(mockShipmentDetailsResponse.getAdditionalDetails(), AdditionalDetails.class, new HashMap<>(), "Code", new HashMap<>()));
-        assertEquals(RuntimeException.class.getSimpleName(), t.getClass().getSimpleName());
+        assertEquals(GenericException.class.getSimpleName(), t.getClass().getSimpleName());
     }
 
     @Test
@@ -1248,7 +1250,7 @@ class MasterDataUtilsTest {
 
         // Act and Assert
         var t = assertThrows(Throwable.class, () -> masterDataUtils.createInBulkSalesAgentRequest(mockShipmentDetailsResponse, ShipmentDetails.class, new HashMap<>(), "Code", new HashMap<>()));
-        assertEquals(RuntimeException.class.getSimpleName(), t.getClass().getSimpleName());
+        assertEquals(GenericException.class.getSimpleName(), t.getClass().getSimpleName());
     }
 
     @Test
@@ -1550,7 +1552,7 @@ class MasterDataUtilsTest {
     @Test
     void getMasterListData4() {
 
-        var responseEntity = masterDataUtils.getMasterListData(MasterDataType.COMMODITY_GROUP, StringUtility.getEmptyString());
+        var responseEntity = masterDataUtils.getMasterListData(MasterDataType.COMMODITY_GROUP, Constants.EMPTY_STRING);
         assertNull(responseEntity);
     }
 

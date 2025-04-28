@@ -15,12 +15,15 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dto.request.NetworkTransferRequest;
 import com.dpw.runner.shipment.services.dto.request.ReassignRequest;
 import com.dpw.runner.shipment.services.dto.request.RequestForTransferRequest;
+import com.dpw.runner.shipment.services.dto.response.NetworkTransferExternalResponse;
 import com.dpw.runner.shipment.services.dto.response.NetworkTransferResponse;
 import com.dpw.runner.shipment.services.dto.response.NetworkTransferListResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
+import com.dpw.runner.shipment.services.entity.enums.NetworkTransferSource;
 import com.dpw.runner.shipment.services.entity.enums.NetworkTransferStatus;
 import com.dpw.runner.shipment.services.entity.enums.NotificationRequestType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
@@ -35,9 +38,9 @@ import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataKeyUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.nimbusds.jose.util.Pair;
+import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
-import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataRetrievalFailureException;
@@ -78,13 +81,11 @@ public class NetworkTransferService implements INetworkTransferService {
 
     private final INotificationDao notificationDao;
 
-    private final IShipmentSettingsDao shipmentSettingsDao;
-
     @Autowired
     public NetworkTransferService(ModelMapper modelMapper, JsonHelper jsonHelper, INetworkTransferDao networkTransferDao,
                                   MasterDataUtils masterDataUtils, ExecutorService executorService,
                                   CommonUtils commonUtils, MasterDataKeyUtils masterDataKeyUtils, INotificationDao notificationDao,
-                                  IShipmentSettingsDao shipmentSettingsDao, IConsoleShipmentMappingDao consoleShipmentMappingDao, IShipmentDao shipmentDao, IConsolidationDetailsDao consolidationDao) {
+                                  IConsoleShipmentMappingDao consoleShipmentMappingDao, IShipmentDao shipmentDao, IConsolidationDetailsDao consolidationDao) {
         this.modelMapper = modelMapper;
         this.jsonHelper = jsonHelper;
         this.networkTransferDao = networkTransferDao;
@@ -93,7 +94,6 @@ public class NetworkTransferService implements INetworkTransferService {
         this.commonUtils = commonUtils;
         this.masterDataKeyUtils = masterDataKeyUtils;
         this.notificationDao = notificationDao;
-        this.shipmentSettingsDao = shipmentSettingsDao;
         this.consoleShipmentMappingDao = consoleShipmentMappingDao;
         this.consolidationDao = consolidationDao;
         this.shipmentDao = shipmentDao;
@@ -108,7 +108,8 @@ public class NetworkTransferService implements INetworkTransferService {
             Map.entry("jobType", RunnerEntityMapping.builder().tableName(Constants.NETWORK_TRANSFER_ENTITY).dataType(String.class).isContainsText(true).build()),
             Map.entry("sourceBranchId", RunnerEntityMapping.builder().tableName(Constants.NETWORK_TRANSFER_ENTITY).dataType(Integer.class).fieldName("sourceBranchId").build()),
             Map.entry("entityNumber", RunnerEntityMapping.builder().tableName(Constants.NETWORK_TRANSFER_ENTITY).dataType(String.class).isContainsText(true).build()),
-            Map.entry("isHidden", RunnerEntityMapping.builder().tableName(Constants.NETWORK_TRANSFER_ENTITY).dataType(Boolean.class).fieldName("isHidden").build())
+            Map.entry("isHidden", RunnerEntityMapping.builder().tableName(Constants.NETWORK_TRANSFER_ENTITY).dataType(Boolean.class).fieldName("isHidden").build()),
+            Map.entry("transferredDate", RunnerEntityMapping.builder().tableName(Constants.NETWORK_TRANSFER_ENTITY).dataType(LocalDateTime.class).fieldName("transferredDate").build())
 
     );
 
@@ -334,11 +335,13 @@ public class NetworkTransferService implements INetworkTransferService {
                 String auditLogEntityType = getAuditLogEntityType(entityType);
                 optionalNetworkTransfer.ifPresent(dbNetworkTransfer -> {
                     if (dbNetworkTransfer.getStatus() == NetworkTransferStatus.ACCEPTED) {
-                        return; // Return if the status is ACCEPTED
+                        return;
                     }
                     networkTransferDao.deleteAndLog(dbNetworkTransfer, auditLogEntityType);
                 });
             }
+
+
 
             if (!Objects.isNull(networkTransfer) && networkTransfer.getTenantId() != null ) // Won't processing if tenant ID is null
                 createNetworkTransfer(networkTransfer, entityPayload);
@@ -384,6 +387,7 @@ public class NetworkTransferService implements INetworkTransferService {
         if(entityPayload!=null){
             networkTransfer.setStatus(NetworkTransferStatus.TRANSFERRED);
             networkTransfer.setEntityPayload(entityPayload);
+            networkTransfer.setTransferredDate(LocalDateTime.now());
         }
         networkTransferDao.save(networkTransfer);
     }
@@ -391,6 +395,7 @@ public class NetworkTransferService implements INetworkTransferService {
     public void updateNetworkTransferTransferred(NetworkTransfer networkTransfer, Map<String, Object> entityPayload) {
         networkTransfer.setEntityPayload(entityPayload);
         networkTransfer.setStatus(NetworkTransferStatus.TRANSFERRED);
+        networkTransfer.setTransferredDate(LocalDateTime.now());
         networkTransferDao.save(networkTransfer);
     }
 
@@ -472,17 +477,7 @@ public class NetworkTransferService implements INetworkTransferService {
         }
         List<NetworkTransfer> networkTransferList = new ArrayList<>();
         Integer receivingBranch = TenantContext.getCurrentTenant();
-        if(Objects.equals(networkTransfer.get().getEntityType(), Constants.CONSOLIDATION) && shipmentGuidReassignBranch != null && !shipmentGuidReassignBranch.isEmpty() &&
-                !Objects.equals(networkTransfer.get().getJobType(), Constants.DIRECTION_CTS)) {
-            var consolidation = consolidationDao.findConsolidationByIdWithQuery(networkTransfer.get().getEntityId());
-            if(consolidation.isPresent() && Boolean.TRUE.equals(consolidation.get().getInterBranchConsole())){
-                for(var ship: consolidation.get().getShipmentsList()) {
-                    if(shipmentGuidReassignBranch.containsKey(ship.getGuid().toString()) && shipmentGuidReassignBranch.get(ship.getGuid().toString()) != null) {
-                        this.createShipmentNotification(reassignRequest, ship.getId(), shipmentGuidReassignBranch.get(ship.getGuid().toString()), ship.getTenantId(), ship.getReceivingBranch().intValue(), networkTransferList);
-                    }
-                }
-            }
-        }
+        createShipmentNotificationForConsole(networkTransfer.get(), shipmentGuidReassignBranch, reassignRequest, networkTransferList);
         if(reassignRequest.getBranchId() != null) {
             networkTransfer.get().setStatus(NetworkTransferStatus.REASSIGNED);
             Notification notification = getNotificationEntity(networkTransfer.get().getSourceBranchId(), NotificationRequestType.REASSIGN, reassignRequest.getRemarks(), reassignRequest.getBranchId(), networkTransfer.get().getEntityType(), networkTransfer.get().getEntityId(), receivingBranch);
@@ -493,6 +488,20 @@ public class NetworkTransferService implements INetworkTransferService {
             networkTransferDao.saveAll(networkTransferList);
         }
         return ResponseHelper.buildSuccessResponse();
+    }
+
+    private void createShipmentNotificationForConsole(NetworkTransfer networkTransfer, Map<String, Integer> shipmentGuidReassignBranch, ReassignRequest reassignRequest, List<NetworkTransfer> networkTransferList) {
+        if(Objects.equals(networkTransfer.getEntityType(), Constants.CONSOLIDATION) && shipmentGuidReassignBranch != null && !shipmentGuidReassignBranch.isEmpty() &&
+                !Objects.equals(networkTransfer.getJobType(), Constants.DIRECTION_CTS)) {
+            var consolidation = consolidationDao.findConsolidationByIdWithQuery(networkTransfer.getEntityId());
+            if(consolidation.isPresent() && Boolean.TRUE.equals(consolidation.get().getInterBranchConsole())){
+                for(var ship: consolidation.get().getShipmentsList()) {
+                    if(shipmentGuidReassignBranch.containsKey(ship.getGuid().toString()) && shipmentGuidReassignBranch.get(ship.getGuid().toString()) != null) {
+                        this.createShipmentNotification(reassignRequest, ship.getId(), shipmentGuidReassignBranch.get(ship.getGuid().toString()), ship.getTenantId(), ship.getReceivingBranch().intValue(), networkTransferList);
+                    }
+                }
+            }
+        }
     }
 
     private void createShipmentNotification(ReassignRequest reassignRequest, Long entityId, Integer reassignBranchId, Integer sourceBranchId, Integer receivingBranchId, List<NetworkTransfer> networkTransferList) {
@@ -524,7 +533,6 @@ public class NetworkTransferService implements INetworkTransferService {
 
     @Override
     public void updateStatusAndCreatedEntityId(Long id, String status, Long createdEntityId) {
-        var networkTransfer = networkTransferDao.findById(id);
         networkTransferDao.updateStatusAndCreatedEntityId(id, status, createdEntityId);
     }
 
@@ -557,5 +565,20 @@ public class NetworkTransferService implements INetworkTransferService {
             return ResponseHelper.buildSuccessResponse(NetworkTransferResponse.builder().status(NetworkTransferStatus.valueOf(status)).build());
         }
         return ResponseHelper.buildSuccessResponse();
+    }
+
+    public ResponseEntity<IRunnerResponse> createExternal(CommonRequestModel commonRequestModel) {
+        NetworkTransferRequest networkTransferRequest = (NetworkTransferRequest) commonRequestModel.getData();
+        if (networkTransferRequest == null) {
+            throw new ValidationException("NetworkTransferRequest cannot be null");
+        }
+        NetworkTransfer networkTransfer = jsonHelper.convertCreateValue(networkTransferRequest, NetworkTransfer.class);
+        networkTransfer.setSource(NetworkTransferSource.EXTERNAL);
+        if(Objects.equals(networkTransfer.getStatus(), NetworkTransferStatus.TRANSFERRED)) {
+            networkTransfer.setTransferredDate(LocalDateTime.now(ZoneOffset.UTC));
+        }
+        networkTransfer = networkTransferDao.save(networkTransfer);
+        NetworkTransferExternalResponse networkTransferExternalResponse = jsonHelper.convertValue(networkTransfer, NetworkTransferExternalResponse.class);
+        return ResponseHelper.buildSuccessResponse(networkTransferExternalResponse);
     }
 }
