@@ -467,6 +467,7 @@ class TrackingServiceAdapterTest {
         Event event = new Event();
         event.setEventType(EventConstants.LOAD_ON_VESSEL);
         event.setDescriptionFromSource(EventConstants.EXPORT_LOADED_ON_VESSEL);
+        event.setLocationRole(EventConstants.ORIGIN_PORT);
         Container container = Container.builder()
                 .journey(Journey.builder().scacCode(EventConstants.MSCU).build())
                 .events(List.of(event)).build();
