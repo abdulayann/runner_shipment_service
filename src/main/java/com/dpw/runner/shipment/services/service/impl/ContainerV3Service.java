@@ -4,25 +4,23 @@ import com.dpw.runner.shipment.services.ReportingService.Reports.IReport;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
-import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
 import com.dpw.runner.shipment.services.commons.enums.DBOperationType;
 import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerNumberCheckResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
-import com.dpw.runner.shipment.services.dto.request.ContainersExcelModel;
 import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
-import com.dpw.runner.shipment.services.entity.*;
+import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
-import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -36,39 +34,27 @@ import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.interfaces.IContainersSync;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.ContainerV3Utils;
 import com.dpw.runner.shipment.services.utils.ContainerValidationUtil;
-import com.dpw.runner.shipment.services.utils.ExcelCell;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
-import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.xssf.usermodel.XSSFSheet;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
 import javax.servlet.http.HttpServletResponse;
-import java.io.OutputStream;
-import java.lang.reflect.Field;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.*;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.listIsNullOrEmpty;
 import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 @Service
@@ -122,6 +108,9 @@ public class ContainerV3Service implements IContainerV3Service {
 
     @Autowired
     private IConsolidationDetailsDao consolidationDetailsDao;
+
+    @Autowired
+    private ContainerV3Utils containerV3Utils;
 
     private final List<String> columnsSequenceForExcelDownload = List.of(
             "guid", "isOwnContainer", "isShipperOwned", "ownType", "isEmpty", "isReefer", "containerCode",
@@ -628,125 +617,7 @@ public class ContainerV3Service implements IContainerV3Service {
 
     @Override
     public void downloadContainers(HttpServletResponse response, @ModelAttribute BulkDownloadRequest request) throws RunnerException {
-        try {
-            List<ShipmentsContainersMapping> mappings;
-            List<Containers> result = new ArrayList<>();
-            if (request.getShipmentId() != null) {
-                ShipmentDetails shipmentDetails = shipmentDao.findById(Long.valueOf(request.getShipmentId())).get();
-                request.setTransportMode(shipmentDetails.getTransportMode());
-                request.setExport(shipmentDetails.getDirection() != null && shipmentDetails.getDirection().equalsIgnoreCase(Constants.DIRECTION_EXP));
-                mappings = shipmentsContainersMappingDao.findByShipmentId(Long.valueOf(request.getShipmentId()));
-                List<Long> containerId = new ArrayList<>(mappings.stream().map(ShipmentsContainersMapping::getContainerId).toList());
-
-                ListCommonRequest req = constructListCommonRequest("id", containerId, "IN");
-                Pair<Specification<Containers>, Pageable> pair = fetchData(req, Containers.class);
-                Page<Containers> containers = containerDao.findAll(pair.getLeft(), pair.getRight());
-                List<Containers> containersList = containers.getContent();
-                result.addAll(containersList);
-            }
-
-            if (request.getConsolidationId() != null) {
-                ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(Long.valueOf(request.getConsolidationId())).get();
-                request.setTransportMode(consolidationDetails.getTransportMode());
-                request.setExport(consolidationDetails.getShipmentType() != null && consolidationDetails.getShipmentType().equalsIgnoreCase(Constants.DIRECTION_EXP));
-                ListCommonRequest req2 = constructListCommonRequest(Constants.CONSOLIDATION_ID, Long.valueOf(request.getConsolidationId()), "=");
-                Pair<Specification<Containers>, Pageable> pair = fetchData(req2, Containers.class);
-                Page<Containers> containers = containerDao.findAll(pair.getLeft(), pair.getRight());
-                List<Containers> containersList = containers.getContent();
-                if (result.isEmpty()) {
-                    result.addAll(containersList);
-                } else {
-                    result = result.stream().filter(result::contains).toList();
-                }
-            }
-            LocalDateTime currentTime = LocalDateTime.now();
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_HH_MM_SS_FORMAT);
-            String timestamp = currentTime.format(formatter);
-            String filenameWithTimestamp = "Containers_" + timestamp + Constants.XLSX;
-
-            try(XSSFWorkbook workbook = new XSSFWorkbook()) {
-                XSSFSheet sheet = workbook.createSheet("Containers");
-
-                List<ContainersExcelModel> model = commonUtils.convertToList(result, ContainersExcelModel.class);
-                convertModelToExcel(model, sheet, request);
-
-                response.setContentType(Constants.CONTENT_TYPE_FOR_EXCEL);
-                response.setHeader(Constants.CONTENT_DISPOSITION, Constants.ATTACHMENT_FILENAME + filenameWithTimestamp);
-
-                try (OutputStream outputStream = response.getOutputStream()) {
-                    workbook.write(outputStream);
-                }
-            }
-
-        } catch (Exception ex) {
-            throw new RunnerException(ex.getMessage());
-        }
-
-    }
-
-    private void convertModelToExcel(List<ContainersExcelModel> modelList, XSSFSheet sheet, BulkDownloadRequest request) throws IllegalAccessException {
-
-        // Create header row using annotations for order
-        Row headerRow = sheet.createRow(0);
-        Field[] fields = ContainersExcelModel.class.getDeclaredFields();
-
-        Map<String, Field> fieldNameMap = Arrays.stream(fields).filter(f->f.isAnnotationPresent(ExcelCell.class)).collect(Collectors.toMap(Field::getName, c-> c));
-
-        if(!Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR) && fieldNameMap.containsKey("containerStuffingLocation")) {
-            Set<String> unlocationsRefGuids = new HashSet<>();
-            processUnlocationsRefGuid(modelList, unlocationsRefGuids);
-        }
-        List<Field> fieldsList = new ArrayList<>();
-        if(Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_SEA) || Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_ROA)
-                || Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_RF) || Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_RAI))
-            fieldsList = reorderFields(fieldNameMap, columnsSequenceForExcelDownload);
-        else if(Objects.equals(request.getTransportMode(), Constants.TRANSPORT_MODE_AIR))
-            fieldsList = reorderFields(fieldNameMap, columnsSequenceForExcelDownloadForAir);
-        int i = 0;
-        for (var field : fieldsList){
-            Cell cell = headerRow.createCell(i++);
-            cell.setCellValue(!field.getAnnotation(ExcelCell.class).displayName().isEmpty() ? field.getAnnotation(ExcelCell.class).displayName() : field.getName());
-        }
-
-        // Populate data
-        int rowIndex = 1;
-        for (ContainersExcelModel model : modelList) {
-            Row row = sheet.createRow(rowIndex++);
-            int cellIndex = 0;
-            for (Field field : fieldsList) {
-                field.setAccessible(true);
-                Object value = field.get(model);
-                Cell cell = row.createCell(cellIndex++);
-                cell.setCellValue(value != null ? value.toString() : "");
-            }
-        }
-    }
-
-    private void processUnlocationsRefGuid(List<ContainersExcelModel> modelList, Set<String> unlocationsRefGuids) {
-        for (ContainersExcelModel model : modelList){
-            unlocationsRefGuids.add(model.getContainerStuffingLocation());
-        }
-        if(!unlocationsRefGuids.isEmpty()) {
-            Map<String, EntityTransferUnLocations> keyMasterDataMap = masterDataUtils.fetchInBulkUnlocations(unlocationsRefGuids, EntityTransferConstants.LOCATION_SERVICE_GUID);
-            for (ContainersExcelModel model : modelList){
-                if(keyMasterDataMap.containsKey(model.getContainerStuffingLocation())){
-                    var locCode = keyMasterDataMap.get(model.getContainerStuffingLocation()).LocCode;
-                    model.setContainerStuffingLocation(locCode);
-                }
-            }
-        }
-    }
-
-    private List<Field> reorderFields(Map<String, Field> fieldNameMap, List<String> columnsName) {
-        List<Field> fields = new ArrayList<>();
-        for(var field: columnsName){
-            if(fieldNameMap.containsKey(field)) {
-                fields.add(fieldNameMap.get(field));
-                fieldNameMap.remove(field);
-            }
-        }
-        fields.addAll(fieldNameMap.values());
-        return fields;
+        containerV3Utils.downloadContainers(response, request);
     }
 
 }

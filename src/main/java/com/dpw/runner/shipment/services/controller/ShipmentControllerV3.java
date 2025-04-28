@@ -73,4 +73,11 @@ public class ShipmentControllerV3 {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
         return shipmentService.getPendingNotificationData(request);
     }
+
+    @GetMapping(ApiConstants.API_GET_SHIPMENT_ASSIGN_CONTAINER_TRAY)
+    public ResponseEntity<IRunnerResponse> getShipmentAssignContainerTray(@ApiParam Long containerId, @ApiParam Long consolidationId)  {
+        return ResponseHelper.buildSuccessResponse(shipmentService.getShipmentAndPacksForConsolidationAssignContainerTray(containerId, consolidationId));
+    }
+
+
 }

@@ -11,19 +11,24 @@ import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.INotificationDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.dto.response.NotificationCount;
 import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentPendingNotificationResponse;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksAssignContainerTrayDto;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.helpers.ShipmentMasterDataHelperV3;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
@@ -44,6 +49,7 @@ import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.Repo
 import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.andCriteria;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 
 @SuppressWarnings("ALL")
 @Service
@@ -55,17 +61,24 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     private CommonUtils commonUtils;
     private IShipmentRepository shipmentRepository;
     private IShipmentDao shipmentDao;
+    private IShipmentsContainersMappingDao shipmentsContainersMappingDao;
     private ShipmentMasterDataHelperV3 shipmentMasterDataHelper;
+    private JsonHelper jsonHelper;
+    private MasterDataUtils masterDataUtils;
 
     @Autowired
     public ShipmentServiceImplV3(IConsoleShipmentMappingDao consoleShipmentMappingDao, INotificationDao notificationDao, CommonUtils commonUtils, IShipmentRepository shipmentRepository,
-                                 IShipmentDao shipmentDao, ShipmentMasterDataHelperV3 shipmentMasterDataHelper) {
+                                 IShipmentDao shipmentDao, ShipmentMasterDataHelperV3 shipmentMasterDataHelper, JsonHelper jsonHelper, IShipmentsContainersMappingDao shipmentsContainersMappingDao,
+                                 MasterDataUtils masterDataUtils) {
         this.consoleShipmentMappingDao = consoleShipmentMappingDao;
         this.notificationDao = notificationDao;
         this.commonUtils = commonUtils;
         this.shipmentRepository = shipmentRepository;
         this.shipmentDao = shipmentDao;
         this.shipmentMasterDataHelper = shipmentMasterDataHelper;
+        this.jsonHelper = jsonHelper;
+        this.shipmentsContainersMappingDao = shipmentsContainersMappingDao;
+        this.masterDataUtils = masterDataUtils;
     }
 
     @Override
@@ -181,7 +194,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
     }
 
-    public ResponseEntity<IRunnerResponse> getPendingNotificationData(CommonGetRequest request){
+    @Override
+    public ResponseEntity<IRunnerResponse> getPendingNotificationData(CommonGetRequest request) {
 
         Optional<ShipmentDetails> optionalShipmentDetails = shipmentDao.findById(request.getId());
         if (!optionalShipmentDetails.isPresent()) {
@@ -198,6 +212,29 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         ShipmentPendingNotificationResponse shipmentResponse = (ShipmentPendingNotificationResponse) commonUtils.setIncludedFieldsToResponse(optionalShipmentDetails.get(), includeColumns, new ShipmentPendingNotificationResponse());
         shipmentMasterDataHelper.getMasterDataForEntity(shipmentResponse);
         return ResponseHelper.buildSuccessResponse(shipmentResponse);
+    }
+
+    @Override
+    public ShipmentPacksAssignContainerTrayDto getShipmentAndPacksForConsolidationAssignContainerTray(Long containerId, Long consolidationId) {
+        ListCommonRequest listCommonRequest = constructListCommonRequest(CONSOLIDATION_ID, consolidationId, "=");
+        Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listCommonRequest, ShipmentDetails.class, ShipmentService.tableNames);
+        Page<ShipmentDetails> shipmentDetails = shipmentDao.findAll(pair.getLeft(), pair.getRight());
+        ShipmentPacksAssignContainerTrayDto response = new ShipmentPacksAssignContainerTrayDto();
+        response.setShipmentsList(jsonHelper.convertValueToList(shipmentDetails.getContent(), ShipmentPacksAssignContainerTrayDto.Shipments.class));
+        List<ShipmentsContainersMapping> shipmentsContainersMappingsList = shipmentsContainersMappingDao.findByContainerId(containerId);
+        List<Long> assignedShipmentsList = shipmentsContainersMappingsList.stream().map(e -> e.getShipmentId()).toList();
+        response.setIsFCLShipmentAssigned(false);
+        for(ShipmentPacksAssignContainerTrayDto.Shipments shipments: response.getShipmentsList()) {
+            if(assignedShipmentsList.contains(shipments.getId())) {
+                shipments.setAssigned(true);
+                if(CARGO_TYPE_FCL.equals(shipments.getShipmentType()))
+                    response.setIsFCLShipmentAssigned(true);
+            } else {
+                shipments.setAssigned(false);
+            }
+        }
+        return response;
+
     }
 
 }
