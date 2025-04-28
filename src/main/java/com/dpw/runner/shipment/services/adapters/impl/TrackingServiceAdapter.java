@@ -675,8 +675,9 @@ public class TrackingServiceAdapter implements ITrackingServiceAdapter {
         boolean isMscuScac = EventConstants.MSCU.equalsIgnoreCase(safeJourneyScacCode);
 
         if (isMscuScac) {
-            boolean isExportLoadOnVessel = EventConstants.LOAD_ON_VESSEL.equalsIgnoreCase(safeEventType) &&
-                    EventConstants.EXPORT_LOADED_ON_VESSEL.equalsIgnoreCase(safeDescriptionFromSource);
+            boolean isExportLoadOnVessel = EventConstants.LOAD_ON_VESSEL.equalsIgnoreCase(safeEventType)
+                    && EventConstants.EXPORT_LOADED_ON_VESSEL.equalsIgnoreCase(safeDescriptionFromSource)
+                    && EventConstants.ORIGIN_PORT.equalsIgnoreCase(safeLocationRole);
 
             if (isExportLoadOnVessel) {
                 log.info("Matched condition: Export Load On Vessel (MSCU). Returning short code: {}", EventConstants.VSDP);
