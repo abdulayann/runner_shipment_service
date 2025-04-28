@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.controller;
 
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksAssignContainerTrayDto;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,8 +18,8 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
-import static org.junit.jupiter.api.Assertions.*;
 
 @ContextConfiguration(classes = {MasterDataController.class})
 @ExtendWith(MockitoExtension.class)
@@ -74,8 +74,11 @@ class ShipmentControllerV3Test {
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
-
-
-
+    @Test
+    void getShipmentAssignContainerTray() {
+        when(shipmentService.getShipmentAndPacksForConsolidationAssignContainerTray(anyLong(), anyLong())).thenReturn(new ShipmentPacksAssignContainerTrayDto());
+        var responseEntity = shipmentControllerV3.getShipmentAssignContainerTray(1L, 2L);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
 
 }
