@@ -463,6 +463,20 @@ class TrackingServiceAdapterTest {
     }
 
     @Test
+    void convertTrackingEventCodeToShortCode_VSDP() {
+        Event event = new Event();
+        event.setEventType(EventConstants.LOAD_ON_VESSEL);
+        event.setDescriptionFromSource(EventConstants.EXPORT_LOADED_ON_VESSEL);
+        Container container = Container.builder()
+                .journey(Journey.builder().scacCode(EventConstants.MSCU).build())
+                .events(List.of(event)).build();
+        String result = trackingServiceAdapter.convertTrackingEventCodeToShortCode(event, container);
+
+        // Expect VSDP to be returned
+        assertEquals(EventConstants.VSDP, result);
+    }
+
+    @Test
     void convertTrackingEventCodeToShortCode_FUGO() {
         // Scenario: EventCode is GATE_OUT_WITH_CONTAINER_FULL and locationRole is "destinationPort"
         Event event = new Event();
