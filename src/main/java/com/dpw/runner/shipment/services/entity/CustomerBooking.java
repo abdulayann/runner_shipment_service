@@ -120,6 +120,10 @@ public class CustomerBooking extends MultiTenancy {
     @MasterData(type = MasterDataType.WEIGHT_UNIT)
     private String weightVolumeUnit;
 
+    @Column(name = "payment_terms")
+    @MasterData(type = MasterDataType.PAYMENT)
+    private String paymentTerms;
+
     @Column(name = "chargeable")
     private BigDecimal chargeable;
 

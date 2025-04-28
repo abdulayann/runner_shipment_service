@@ -98,4 +98,5 @@ public class CustomerBookingResponse implements IRunnerResponse {
     private String rejectionRemarks;
     private List<ReferenceNumbersResponse> referenceNumbersList;
     private String shipmentReferenceNumber;
+    private String paymentTerms;
 }
