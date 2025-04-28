@@ -308,7 +308,7 @@ public class NotificationService implements INotificationService {
                     template = createRequestToTranferCancellationEmailBody(notification, reason, entityNumber);
             }
             if(!emailList.isEmpty() && template.getBody() != null) {
-                commonUtils.sendEmailNotification(template, emailList, List.of(UserContext.getUser().getEmail()));
+                commonUtils.sendEmailNotification(template, emailList, Arrays.asList(UserContext.getUser().getEmail()));
             }
         } catch (Exception ex) {
             log.error(String.format(ErrorConstants.ERROR_WHILE_EMAIL, ex.getMessage()));
