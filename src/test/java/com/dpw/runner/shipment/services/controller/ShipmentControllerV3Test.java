@@ -1,6 +1,5 @@
 package com.dpw.runner.shipment.services.controller;
 
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
@@ -15,8 +14,6 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -30,11 +27,9 @@ class ShipmentControllerV3Test {
     @InjectMocks
     ShipmentControllerV3 shipmentControllerV3;
 
-    private MockMvc mockMvc;
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        mockMvc = MockMvcBuilders.standaloneSetup(shipmentControllerV3).build();
     }
 
     @Test
@@ -74,8 +69,12 @@ class ShipmentControllerV3Test {
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
-
-
+    @Test
+    void pendingNotificationsData(){
+        when(shipmentService.getPendingNotificationData(any())).thenReturn(ResponseHelper.buildSuccessResponse());
+        var responseEntity = shipmentControllerV3.pendingNotificationsData(any());
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
 
 
 }

@@ -1,8 +1,10 @@
 package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
+import com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
+import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -10,6 +12,7 @@ import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
+import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
@@ -62,5 +65,12 @@ public class ShipmentControllerV3 {
         log.info("Received shipment list v3 request with RequestId: {}",
                 LoggerHelper.getRequestIdFromMDC());
         return shipmentService.listShipment(CommonRequestModel.buildRequest(listCommonRequest), getMasterData);
+    }
+
+    @GetMapping(ApiConstants.API_RETRIEVE_PENDING_NOTIFICATION_DATA)
+    public ResponseEntity<IRunnerResponse> pendingNotificationsData(@ApiParam(value = ConsolidationConstants.CONSOLIDATION_ID) @RequestParam Long id) {
+        log.info("Received pending notification shipment data v3 request with RequestId: {}", LoggerHelper.getRequestIdFromMDC());
+        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+        return shipmentService.getPendingNotificationData(request);
     }
 }

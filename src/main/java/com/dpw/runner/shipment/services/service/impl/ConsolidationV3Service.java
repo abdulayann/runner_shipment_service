@@ -51,7 +51,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.http.auth.AuthenticationException;
 import org.jetbrains.annotations.NotNull;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.CacheManager;
@@ -207,6 +209,9 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
 
     @Autowired
     private GetNextNumberHelper getNextNumberHelper;
+
+    @Autowired
+    private ModelMapper modelMapper;
 
     @Override
     @Transactional
@@ -2524,34 +2529,67 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         return consolidationDetails;
     }
 
+    private Optional<ConsolidationDetails> retrieveForNte(CommonGetRequest request) throws RunnerException, AuthenticationException {
+        Long id = request.getId();
+        Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findConsolidationByIdWithQuery(id);
+        if (!consolidationDetails.isPresent()) {
+            log.debug(ConsolidationConstants.CONSOLIDATION_DETAILS_NULL_ERROR_WITH_REQUEST_ID, request.getId(), LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+
+        List<TriangulationPartner> triangulationPartners = consolidationDetails.get().getTriangulationPartnerList();
+        Long currentTenant = TenantContext.getCurrentTenant().longValue();
+        if (
+                (triangulationPartners == null && !Objects.equals(consolidationDetails.get().getTriangulationPartner(), TenantContext.getCurrentTenant().longValue())
+                        && !Objects.equals(consolidationDetails.get().getReceivingBranch(), TenantContext.getCurrentTenant().longValue()))
+                        ||
+                        ((triangulationPartners == null || triangulationPartners.stream().filter(Objects::nonNull).noneMatch(tp -> Objects.equals(tp.getTriangulationPartner(), currentTenant)))
+                                && !Objects.equals(consolidationDetails.get().getReceivingBranch(), currentTenant))
+        ) {
+            throw new AuthenticationException(Constants.NOT_ALLOWED_TO_VIEW_CONSOLIDATION_FOR_NTE);
+        }
+        return consolidationDetails;
+    }
+
     @Override
-    public ConsolidationDetailsResponse retrieveById(CommonGetRequest request, boolean getMasterData) throws RunnerException {
+    public ConsolidationDetailsResponse retrieveById(CommonGetRequest request, boolean getMasterData, String source) throws RunnerException, AuthenticationException {
         if (request.getId() == null && request.getGuid() == null) {
             log.error("Request Id and Guid are null for Consolidation retrieve with Request Id {}", LoggerHelper.getRequestIdFromMDC());
             throw new RunnerException("Id and GUID can't be null. Please provide any one !");
         }
         Long id = request.getId();
         Optional<ConsolidationDetails> consolidationDetails;
-        if (id != null) {
-            consolidationDetails = consolidationDetailsDao.findById(id);
+        if(source == NETWORK_TRANSFER){
+            consolidationDetails = retrieveForNte(request);
+            getMasterData = true;
         } else {
-            UUID guid = UUID.fromString(request.getGuid());
-            consolidationDetails = consolidationDetailsDao.findByGuid(guid);
+            if (id != null) {
+                consolidationDetails = consolidationDetailsDao.findById(id);
+            } else {
+                UUID guid = UUID.fromString(request.getGuid());
+                consolidationDetails = consolidationDetailsDao.findByGuid(guid);
+            }
         }
         if (!consolidationDetails.isPresent()) {
             log.debug(ConsolidationConstants.CONSOLIDATION_DETAILS_NULL_ERROR_WITH_REQUEST_ID, request.getId(), LoggerHelper.getRequestIdFromMDC());
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
+        ConsolidationDetails consoleDetails = consolidationDetails.get();
         log.info(ConsolidationConstants.CONSOLIDATION_DETAILS_FETCHED_SUCCESSFULLY, id, LoggerHelper.getRequestIdFromMDC());
-        calculateAchievedValuesForRetrieve(consolidationDetails.get());
-        ConsolidationDetailsResponse response = jsonHelper.convertValue(consolidationDetails.get(), ConsolidationDetailsResponse.class);
-        var map = consoleShipmentMappingDao.pendingStateCountBasedOnConsolidation(Arrays.asList(consolidationDetails.get().getId()), ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED.ordinal());
-        var notificationMap = notificationDao.pendingNotificationCountBasedOnEntityIdsAndEntityType(Arrays.asList(consolidationDetails.get().getId()), CONSOLIDATION);
-        int pendingCount = map.getOrDefault(consolidationDetails.get().getId(), 0) + notificationMap.getOrDefault(consolidationDetails.get().getId(), 0);
-        response.setPendingActionCount((pendingCount == 0) ? null : pendingCount);
-        createConsolidationPayload(consolidationDetails.get(), response, getMasterData);
+        calculateAchievedValuesForRetrieve(consoleDetails);
+        ConsolidationDetailsResponse response = jsonHelper.convertValue(consoleDetails, ConsolidationDetailsResponse.class);
+        if(source != NETWORK_TRANSFER)
+            setPendingActionCountInResponse(consoleDetails, response);
+        createConsolidationPayload(consoleDetails, response, getMasterData);
 
         return response;
+    }
+
+    private void setPendingActionCountInResponse(ConsolidationDetails consolidationDetails, ConsolidationDetailsResponse response) {
+        var map = consoleShipmentMappingDao.pendingStateCountBasedOnConsolidation(Arrays.asList(consolidationDetails.getId()), ShipmentRequestedType.SHIPMENT_PUSH_REQUESTED.ordinal());
+        var notificationMap = notificationDao.pendingNotificationCountBasedOnEntityIdsAndEntityType(Arrays.asList(consolidationDetails.getId()), CONSOLIDATION);
+        int pendingCount = map.getOrDefault(consolidationDetails.getId(), 0) + notificationMap.getOrDefault(consolidationDetails.getId(), 0);
+        response.setPendingActionCount((pendingCount == 0) ? null : pendingCount);
     }
 
     private void calculateAchievedValuesForRetrieve(ConsolidationDetails consolidationDetails) {
@@ -3146,6 +3184,31 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
             log.error("Request: {} | Error Occurred in CompletableFuture: addAllContainerTypesInSingleCall in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), ConsolidationService.class.getSimpleName(), ex.getMessage());
             return CompletableFuture.completedFuture(null);
         }
+    }
+
+    public ResponseEntity<IRunnerResponse> getPendingNotificationData(CommonGetRequest request){
+
+        Optional<ConsolidationDetails> optionalConsolidationDetails = consolidationDetailsDao.findById(request.getId());
+        if (!optionalConsolidationDetails.isPresent()) {
+            log.debug("Id missing", request.getId(), LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+
+        if (request.getIncludeColumns() == null || request.getIncludeColumns().isEmpty()) {
+            request.setIncludeColumns(List.of("transportMode", "hazardous", "guid", "receivingBranch", "triangulationPartnerList", "tenantId",
+                    "consolidationNumber", "interBranchConsole"));
+        }
+        Set<String> includeColumns = new HashSet<>(request.getIncludeColumns());
+        CommonUtils.includeRequiredColumns(includeColumns);
+
+        ConsolidationPendingNotificationResponse consolidationDetailsResponse = (ConsolidationPendingNotificationResponse) commonUtils.setIncludedFieldsToResponse(optionalConsolidationDetails.get(), includeColumns, new ConsolidationPendingNotificationResponse());
+
+        Map<String, Object> response = new HashMap<>();
+        var tenantDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.addAllTenantDataInSingleCall(consolidationDetailsResponse, null)), executorService);
+        tenantDataFuture.join();
+        if(response.get("Tenants") != null)
+            consolidationDetailsResponse.setTenantMasterData((Map<String, Object>) response.get("Tenants"));
+        return ResponseHelper.buildSuccessResponse(consolidationDetailsResponse);
     }
 
 }

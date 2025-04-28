@@ -4,6 +4,7 @@ package com.dpw.runner.shipment.services.service.impl;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
+import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -12,6 +13,7 @@ import com.dpw.runner.shipment.services.dao.interfaces.INotificationDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.response.NotificationCount;
 import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentPendingNotificationResponse;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
@@ -26,6 +28,7 @@ import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -178,6 +181,23 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
     }
 
+    public ResponseEntity<IRunnerResponse> getPendingNotificationData(CommonGetRequest request){
 
+        Optional<ShipmentDetails> optionalShipmentDetails = shipmentDao.findById(request.getId());
+        if (!optionalShipmentDetails.isPresent()) {
+            log.debug(ShipmentConstants.SHIPMENT_DETAILS_FOR_GUID_MISSING_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+
+        if (request.getIncludeColumns() == null || request.getIncludeColumns().isEmpty()) {
+            request.setIncludeColumns(List.of("transportMode", "containsHazardous", "guid", "receivingBranch", "triangulationPartnerList", "tenantId"));
+        }
+        Set<String> includeColumns = new HashSet<>(request.getIncludeColumns());
+        CommonUtils.includeRequiredColumns(includeColumns);
+
+        ShipmentPendingNotificationResponse shipmentResponse = (ShipmentPendingNotificationResponse) commonUtils.setIncludedFieldsToResponse(optionalShipmentDetails.get(), includeColumns, new ShipmentPendingNotificationResponse());
+        shipmentMasterDataHelper.getMasterDataForEntity(shipmentResponse);
+        return ResponseHelper.buildSuccessResponse(shipmentResponse);
+    }
 
 }

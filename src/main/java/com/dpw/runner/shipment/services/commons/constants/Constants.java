@@ -266,6 +266,7 @@ public class Constants {
     public static final String ROUTING_CFD = "CFD";
     public static final String SHIPMENT_TYPE_STD = "STD";
     public static final String SYSTEM = "System";
+    public static final String NETWORK_TRANSFER = "network_transfer";
 
     public static final String METER = "M";
     public static final String ANGSTROM = "A";

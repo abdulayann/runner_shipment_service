@@ -145,4 +145,7 @@ public class ApiConstants {
     public static final String API_UPDATE_V3 = "/updateV3";
     public static final String API_LIST_V3 = "/listV3";
     public static final String API_RETRIEVE_BY_ID_V3 = "/retrieveV3/id";
+
+
+    public static final String API_RETRIEVE_PENDING_NOTIFICATION_DATA = "/pending/notification/data";
 }

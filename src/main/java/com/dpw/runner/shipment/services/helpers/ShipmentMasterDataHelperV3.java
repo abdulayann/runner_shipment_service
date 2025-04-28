@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dto.response.AttachListShipmentResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentPendingNotificationResponse;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
 import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
@@ -14,7 +15,9 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -30,11 +33,13 @@ public class ShipmentMasterDataHelperV3 {
     private Boolean includeMasterData;
     private final MasterDataUtils masterDataUtils;
     ExecutorService executorServiceMasterData;
+    private final MasterDataHelper masterDataHelper;
 
     @Autowired
-    public ShipmentMasterDataHelperV3(MasterDataUtils masterDataUtils, @Qualifier("executorServiceMasterData") ExecutorService executorServiceMasterData) {
+    public ShipmentMasterDataHelperV3(MasterDataUtils masterDataUtils, @Qualifier("executorServiceMasterData") ExecutorService executorServiceMasterData, MasterDataHelper masterDataHelper) {
         this.masterDataUtils = masterDataUtils;
         this.executorServiceMasterData = executorServiceMasterData;
+        this.masterDataHelper = masterDataHelper;
     }
 
     public void getMasterDataForList(List<ShipmentDetails> lst, List<IRunnerResponse> responseList, boolean getMasterData, boolean includeTenantData, Set<String> includeColumns) {
@@ -59,6 +64,21 @@ public class ShipmentMasterDataHelperV3 {
             catch (Exception ex) {
                 log.error(Constants.ERROR_OCCURRED_FOR_EVENT, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_SHIPMENT_LIST, ex.getLocalizedMessage());
             }
+        }
+    }
+
+    public void getMasterDataForEntity(ShipmentPendingNotificationResponse shipmentResponse) {
+        try {
+            double startTime = System.currentTimeMillis();
+            Map<String, Object> masterDataResponse = new HashMap<>();
+            var tenantDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> masterDataHelper.addAllTenantDataInSingleCall(shipmentResponse, masterDataResponse)), executorServiceMasterData);
+            tenantDataFuture.join();
+            if(masterDataResponse.get("Tenants") != null)
+                shipmentResponse.setTenantMasterData((Map<String, Object>) masterDataResponse.get("Tenants"));
+            log.info("Time taken to fetch Master-data for event: {} | Time: {} ms. || RequestId: {}", LoggerEvent.SHIPMENT_GET_MASTER_DATA, (System.currentTimeMillis() - startTime) , LoggerHelper.getRequestIdFromMDC());
+        }
+        catch (Exception ex) {
+            log.error(Constants.ERROR_OCCURRED_FOR_EVENT, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_SHIPMENT_LIST, ex.getLocalizedMessage());
         }
     }
 }
