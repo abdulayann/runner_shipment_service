@@ -723,4 +723,160 @@ public class ConsolidationDao implements IConsolidationDetailsDao {
         return false;
     }
 
+    @Override
+    public ConsolidationDetails saveV3(ConsolidationDetails consolidationDetails) {
+        Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(consolidationDetails), Constants.CONSOLIDATION, LifecycleHooks.ON_CREATE, false);
+        ConsolidationDetails oldConsole = null;
+        if(consolidationDetails.getId() != null) {
+            long id = consolidationDetails.getId();
+            Optional<ConsolidationDetails> oldEntity = findById(id);
+            if (!oldEntity.isPresent()) {
+                log.debug("Consolidation is null for Id {}", consolidationDetails.getId());
+                throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+            }
+            if(consolidationDetails.getShipmentsList() == null) {
+                consolidationDetails.setShipmentsList(oldEntity.get().getShipmentsList());
+            }
+            oldConsole = oldEntity.get();
+        }
+        onSaveV3(consolidationDetails, errors, oldConsole);
+        return consolidationDetails;
+    }
+
+    @Override
+    public ConsolidationDetails updateV3(ConsolidationDetails consolidationDetails) {
+        Set<String> errors = validatorUtility.applyValidation(jsonHelper.convertToJson(consolidationDetails) , Constants.CONSOLIDATION, LifecycleHooks.ON_CREATE, false);
+        validateLockStatus(consolidationDetails);
+        ConsolidationDetails oldConsole = null;
+        if(consolidationDetails.getId() != null) {
+            long id = consolidationDetails.getId();
+            ConsolidationDetails oldEntity = findById(id).get();
+            if(consolidationDetails.getShipmentsList() == null) {
+                consolidationDetails.setShipmentsList(oldEntity.getShipmentsList());
+            }
+            oldConsole = oldEntity;
+        }
+        onSaveV3(consolidationDetails, errors, oldConsole);
+        return consolidationDetails;
+    }
+
+    private void onSaveV3(ConsolidationDetails consolidationDetails, Set<String> errors, ConsolidationDetails oldConsole) {
+        errors.addAll(applyConsolidationValidationsV3(consolidationDetails));
+        if (!errors.isEmpty())
+            throw new ValidationException(String.join(",", errors));
+        validateTransportModeAndCarrierDetails(consolidationDetails);
+        // assign consolidation bol to mawb field as well
+        if (consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR)) {
+            consolidationDetails.setMawb(consolidationDetails.getBol());
+        }
+        if (consolidationDetails.getTransportMode() != null
+                && consolidationDetails.getTransportMode().equals(Constants.TRANSPORT_MODE_AIR))
+            consolidationMAWBCheck(consolidationDetails, oldConsole != null ? oldConsole.getMawb() : null);
+
+        if(!Objects.isNull(oldConsole)) {
+            consolidationDetails.setCreatedAt(oldConsole.getCreatedAt());
+            consolidationDetails.setCreatedBy(oldConsole.getCreatedBy());
+        }
+        processOldConsole(consolidationDetails, oldConsole);
+        consolidationDetails = consolidationRepository.save(consolidationDetails);
+        if (StringUtility.isNotEmpty(consolidationDetails.getMawb()) && StringUtility.isNotEmpty(consolidationDetails.getShipmentType()) && !consolidationDetails.getShipmentType().equalsIgnoreCase(Constants.IMP)) {
+            setMawbStock(consolidationDetails);
+        }
+    }
+
+    public Set<String> applyConsolidationValidationsV3(ConsolidationDetails request) {
+        Set<String> errors = new LinkedHashSet<>();
+        ShipmentSettingsDetails shipmentSettingsDetails = commonUtils.getShipmentSettingFromContext();
+
+        Boolean countryAirCargoSecurity = shipmentSettingsDetails.getCountryAirCargoSecurity();
+        if (Boolean.TRUE.equals(countryAirCargoSecurity)) {
+            addAirCargoSecurityValidationsErrors(request, errors);
+        } else {
+            addNonDgValidationsErrors(request, shipmentSettingsDetails, errors);
+        }
+
+        // Container Number can not be repeated
+        addContainerNumberValidationErrors(request, errors);
+
+        // MBL number must be unique
+        addMBLNumberValidationErrors(request, errors);
+
+        // Duplicate party types not allowed
+        addPartyTypeValidationErrors(request, errors);
+
+        // Shipment restricted unlocations validation
+        addUnLocationValidationErrors(request, shipmentSettingsDetails, errors);
+
+        // Reference No can not be repeated
+        addReferenceNumberValidationErrors(request, errors);
+
+        addCarrierDetailsValidationErrors(request, shipmentSettingsDetails, errors);
+
+        return errors;
+    }
+
+    private void addAirCargoSecurityValidationsErrors(ConsolidationDetails request, Set<String> errors) {
+        if (!CommonUtils.checkAirSecurityForConsolidation(request)) {
+            errors.add("You don't have Air Security permission to create or update AIR EXP Consolidation.");
+        }
+        // Non dg consolidation validations
+        if (!Boolean.TRUE.equals(request.getHazardous())) {
+            // Non dg Consolidations can not have dg shipments
+            boolean isDGShipmentAttached = checkContainsDGShipment(request, false);
+            if (isDGShipmentAttached) {
+                errors.add("The consolidation contains DG shipment. Marking the consolidation as non DG is not allowed");
+            }
+
+            // Non dg Consolidations can not have dg packs
+            if(request.getPackingList() != null && !isDGShipmentAttached && checkContainsDGPackage(request)) {
+                errors.add("The consolidation contains DG package. Marking the consolidation as non DG is not allowed");
+            }
+        }
+        if (Boolean.TRUE.equals(request.getHazardous())) {
+            // Dg consolidation must have at least one dg shipment
+            boolean containsDgShipment = checkContainsDGShipment(request);
+            if (!containsDgShipment)
+                errors.add("Consolidation cannot be marked as DG. Please attach at least one DG Shipment.");
+        }
+    }
+
+    private void addNonDgValidationsErrors(ConsolidationDetails request, ShipmentSettingsDetails shipmentSettingsDetails, Set<String> errors) {
+        // Non dg consolidation validations
+        if(checkForNonDGConsoleAndAirDGFlag(request, shipmentSettingsDetails)) {
+            // Non dg Consolidations can not have dg shipments
+            boolean isDGShipmentAttached = checkContainsDGShipment(request, false);
+            if (isDGShipmentAttached) {
+                errors.add("The consolidation contains DG shipment. Marking the consolidation as non DG is not allowed");
+            }
+
+            // Non dg Consolidations can not have dg packs
+            if(request.getPackingList() != null && !isDGShipmentAttached && checkContainsDGPackage(request)) {
+                errors.add("The consolidation contains DG package. Marking the consolidation as non DG is not allowed");
+            }
+        }
+        // Dg consolidation validations
+        if (checkForDGConsoleAndAirDGFlag(request, shipmentSettingsDetails)) {
+
+            // Non dg user cannot save dg consolidation
+            if (! LicenseContext.isDgAirLicense())
+                errors.add("You don't have permission to update DG Consolidation");
+
+            // Dg consolidation must have at least one dg shipment
+            boolean containsDgShipment = checkContainsDGShipment(request);
+            if (!containsDgShipment)
+                errors.add("Consolidation cannot be marked as DG. Please attach at least one DG Shipment.");
+        }
+    }
+
+    private boolean checkContainsDGShipment(ConsolidationDetails request) {
+        if (!CommonUtils.setIsNullOrEmpty(request.getShipmentsList())) {
+            for (ShipmentDetails shipmentDetails : request.getShipmentsList()) {
+                if (Boolean.TRUE.equals(shipmentDetails.getContainsHazardous())) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
 }

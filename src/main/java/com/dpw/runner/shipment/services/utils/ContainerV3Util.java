@@ -41,7 +41,7 @@ import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCo
 
 @Slf4j
 @Component
-public class ContainerV3Utils {
+public class ContainerV3Util {
 
     @Autowired
     private IShipmentDao shipmentDao;
