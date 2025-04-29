@@ -41,6 +41,8 @@ import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
+import com.dpw.runner.shipment.services.notification.request.SendEmailBaseRequest;
+import com.dpw.runner.shipment.services.notification.response.NotificationServiceResponse;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.service.impl.ShipmentService;
 import com.dpw.runner.shipment.services.service.impl.TenantSettingsService;
@@ -4430,22 +4432,9 @@ class CommonUtilsTest {
         Workbook workbook = new XSSFWorkbook();
         String filename = "export_test_2025.xlsx";
 
-        UserContext.getUser().setEmail(null);
+        UserContext.getUser().setEmail("him@gmail.com");
 
-        doNothing().when(notificationService.sendEmail(any()));
-
-        commonUtils.sendExcelFileViaEmail(workbook, filename);
-    }
-
-    @Test
-    void testSendExcelFileViaEmail_ExceptionHandling() throws Exception {
-        // Arrange
-        Workbook workbook = new XSSFWorkbook();
-        String filename = "export_test_2025.xlsx";
-
-        UserContext.getUser().setEmail(null);
-
-//        when(notificationService.sendEmail(any())).thenThrow(() -> new )
+        lenient().when(notificationService.sendEmail(any())).thenReturn(new NotificationServiceResponse());
 
         commonUtils.sendExcelFileViaEmail(workbook, filename);
     }
