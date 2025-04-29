@@ -1,37 +1,41 @@
 package com.dpw.runner.shipment.services.utils;
 
-import static com.dpw.runner.shipment.services.commons.constants.Constants.AIR_CONSOLIDATION_NOT_ALLOWED_WITH_INTER_BRANCH_DG_SHIPMENT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.AIR_DG_CONSOLIDATION_NOT_ALLOWED_MORE_THAN_ONE_SHIPMENT;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.AIR_DG_SHIPMENT_NOT_ALLOWED_WITH_INTER_BRANCH_CONSOLIDATION;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.AIR_SHIPMENT_NOT_ALLOWED_WITH_INTER_BRANCH_DG_CONSOLIDATION;
-import static com.dpw.runner.shipment.services.commons.constants.Constants.CAN_NOT_ATTACH_MORE_SHIPMENTS_IN_DG_CONSOL;
-import static com.dpw.runner.shipment.services.utils.CommonUtils.listIsNullOrEmpty;
-
+import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.DpsConstants;
+import com.dpw.runner.shipment.services.commons.constants.PermissionConstants;
 import com.dpw.runner.shipment.services.entity.ConsoleShipmentMapping;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.service.interfaces.IDpsEventService;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+
+import static com.dpw.runner.shipment.services.commons.constants.Constants.*;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.listIsNullOrEmpty;
+
 @Slf4j
 @Component
-public class ConsolidationValidationUtil {
+public class ConsolidationValidationV3Util {
 
     @Autowired
     private IDpsEventService dpsEventService;
 
     @Autowired
     private CommonUtils commonUtils;
+
+    @Autowired
+    private ConsolidationV3Util consolidationV3Util;
 
     /**
      * Validates that both the consolidation ID and the shipment ID list are present and valid.
@@ -217,6 +221,45 @@ public class ConsolidationValidationUtil {
 
         // Return true only if the transport mode is AIR
         return Constants.TRANSPORT_MODE_AIR.equals(consolidationDetails.getTransportMode());
+    }
+
+    public void checkCFSValidation(ConsolidationDetails consolidationDetails, Boolean isCreate, List<ShipmentDetails> shipmentDetails) throws RunnerException {
+        if(!Boolean.TRUE.equals(isCreate) && consolidationV3Util.checkConsolidationEligibleForCFSValidation(consolidationDetails)) {
+            if(shipmentDetails == null)
+                shipmentDetails = consolidationV3Util.getShipmentsList(consolidationDetails.getId());
+            if(!listIsNullOrEmpty(shipmentDetails)) {
+                for(ShipmentDetails i: shipmentDetails) {
+                    if(checkIfShipmentDateGreaterThanConsole(i.getShipmentGateInDate(), consolidationDetails.getCfsCutOffDate()))
+                        throw new RunnerException("Cut Off Date entered is lesser than the Shipment Cargo Gate In Date, please check and enter correct dates.");
+                }
+            }
+        }
+    }
+
+    /**
+     * Checks if the shipment date is after the consolidation date.
+     *
+     * @param shipmentDate      the date of the shipment
+     * @param consolidationDate the date of the consolidation
+     * @return true if shipment date is after consolidation date, false otherwise
+     */
+    public boolean checkIfShipmentDateGreaterThanConsole(LocalDateTime shipmentDate, LocalDateTime consolidationDate) {
+        // If either date is null, comparison can't be made
+        if (shipmentDate == null || consolidationDate == null) {
+            return false;
+        }
+
+        // Return true if shipmentDate is after consolidationDate
+        return shipmentDate.isAfter(consolidationDate);
+    }
+
+    public void checkInterBranchPermission(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity) {
+        if(((Objects.isNull(oldEntity) && Boolean.TRUE.equals(consolidationDetails.getInterBranchConsole())) || (!Objects.isNull(oldEntity)
+                && !Objects.equals(consolidationDetails.getInterBranchConsole(), oldEntity.getInterBranchConsole())))
+                && (!UserContext.getUser().getPermissions().containsKey(PermissionConstants.CONSOLIDATIONS_AIR_INTER_BRANCH)
+                || Boolean.FALSE.equals(UserContext.getUser().getPermissions().get(PermissionConstants.CONSOLIDATIONS_AIR_INTER_BRANCH)))) {
+            throw new ValidationException("User don't have InterBranch Consolidation Permission to change InterBranch Flag");
+        }
     }
 
 }

@@ -15,7 +15,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
-import com.dpw.runner.shipment.services.utils.ContainerV3Utils;
+import com.dpw.runner.shipment.services.utils.ContainerV3Util;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
@@ -33,14 +33,14 @@ public class ContainerV3Controller {
 
     private final JsonHelper jsonHelper;
     private final IContainerV3Service containerV3Service;
-    private final ContainerV3Utils containerV3Utils;
+    private final ContainerV3Util containerV3Util;
 
     private static class ContainerNumberCheckResponseClass extends RunnerResponse<ContainerNumberCheckResponse>{}
 
-    public ContainerV3Controller(JsonHelper jsonHelper, IContainerV3Service containerV3Service, ContainerV3Utils containerV3Utils) {
+    public ContainerV3Controller(JsonHelper jsonHelper, IContainerV3Service containerV3Service, ContainerV3Util containerV3Util) {
         this.jsonHelper = jsonHelper;
         this.containerV3Service = containerV3Service;
-        this.containerV3Utils = containerV3Utils;
+        this.containerV3Util = containerV3Util;
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_CREATE_SUCCESSFUL, response = ConsolidationDetailsResponse.class),
@@ -71,7 +71,7 @@ public class ContainerV3Controller {
 
     @GetMapping(ApiConstants.API_DOWNLOAD)
     public void downloadCSV(HttpServletResponse response, @ModelAttribute BulkDownloadRequest request) throws RunnerException {
-        containerV3Utils.downloadContainers(response, request);
+        containerV3Util.downloadContainers(response, request);
     }
 
     @ApiResponses(value = { @ApiResponse(code = 200, message = ContainerConstants.CALCULATION_SUCCESSFUL, response = RunnerResponse.class) })
