@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.dao.impl.NotesDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
@@ -230,13 +231,13 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> getPendingNotificationCount() {
+    public NotificationCount getPendingNotificationCount() {
 
         Integer tenantId = TenantContext.getCurrentTenant();
         Integer count = consoleShipmentMappingDao.pendingStateCountBasedOnRequestType(ShipmentRequestedType.SHIPMENT_PULL_REQUESTED.ordinal(), tenantId);
         count += notificationDao.findAllPendingNotificationCount(SHIPMENT, tenantId);
 
-        return ResponseHelper.buildSuccessResponse(NotificationCount.builder().count(count).build());
+        return NotificationCount.builder().count(count).build();
     }
 
     @Override
@@ -303,21 +304,13 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> delete(CommonRequestModel commonRequestModel) {
-        return null;
+    public void delete(CommonRequestModel commonRequestModel) {
+        // Implement this method.
     }
 
     @Override
-    public ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel, boolean getMasterData) {
-        String responseMsg;
-        try {
-            return ResponseHelper.buildSuccessResponse(retireveShipmentData(commonRequestModel));
-        } catch (Exception e) {
-            responseMsg = e.getMessage() != null ? e.getMessage()
-                    : DaoConstants.DAO_GENERIC_RETRIEVE_EXCEPTION_MSG;
-            log.error(responseMsg, e);
-            return ResponseHelper.buildFailedResponse(responseMsg);
-        }
+    public ShipmentRetrieveLiteResponse retrieveById(CommonRequestModel commonRequestModel, boolean getMasterData) throws RunnerException {
+        return retireveShipmentData(commonRequestModel);
     }
 
     public ShipmentRetrieveLiteResponse retireveShipmentData(CommonRequestModel commonRequestModel) throws RunnerException {
