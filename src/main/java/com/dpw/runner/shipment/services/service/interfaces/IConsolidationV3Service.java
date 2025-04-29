@@ -6,10 +6,12 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentGridChang
 import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentAttachDetachV3Request;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsV3Response;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Routings;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+
 import java.util.List;
 import java.util.Map;
 
@@ -26,6 +28,6 @@ public interface IConsolidationV3Service {
     void syncMainCarriageRoutingToShipment(List<Routings> consolidationRoutings, ShipmentDetails shipmentDetails, boolean saveRoutes) throws RunnerException;
     void checkSciForAttachConsole(Long consoleId) throws RunnerException;
     void pushShipmentDataToDependentService(ConsolidationDetails consolidationDetails, boolean isCreate, ConsolidationDetails oldEntity);
-    ConsolidationDetailsResponse retrieveById(CommonGetRequest commonGetRequest, boolean getMasterData) throws RunnerException;
+    ConsolidationDetailsV3Response retrieveById(CommonGetRequest commonGetRequest, boolean getMasterData) throws RunnerException;
     Map<String, Object> getAllMasterData(CommonGetRequest commonGetRequest);
 }

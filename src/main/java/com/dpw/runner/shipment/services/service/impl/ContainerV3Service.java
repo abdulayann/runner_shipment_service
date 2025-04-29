@@ -34,7 +34,7 @@ import com.dpw.runner.shipment.services.service.interfaces.IContainerV3Service;
 import com.dpw.runner.shipment.services.service.v1.IV1Service;
 import com.dpw.runner.shipment.services.syncing.interfaces.IContainersSync;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
-import com.dpw.runner.shipment.services.utils.ContainerV3Utils;
+import com.dpw.runner.shipment.services.utils.ContainerV3Util;
 import com.dpw.runner.shipment.services.utils.ContainerValidationUtil;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -110,7 +110,7 @@ public class ContainerV3Service implements IContainerV3Service {
     private IConsolidationDetailsDao consolidationDetailsDao;
 
     @Autowired
-    private ContainerV3Utils containerV3Utils;
+    private ContainerV3Util containerV3Util;
 
     private final List<String> columnsSequenceForExcelDownload = List.of(
             "guid", "isOwnContainer", "isShipperOwned", "ownType", "isEmpty", "isReefer", "containerCode",
@@ -617,7 +617,7 @@ public class ContainerV3Service implements IContainerV3Service {
 
     @Override
     public void downloadContainers(HttpServletResponse response, @ModelAttribute BulkDownloadRequest request) throws RunnerException {
-        containerV3Utils.downloadContainers(response, request);
+        containerV3Util.downloadContainers(response, request);
     }
 
 }
