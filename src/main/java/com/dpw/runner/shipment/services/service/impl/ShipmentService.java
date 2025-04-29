@@ -34,6 +34,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANS
 import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME_UNIT_M3;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.WEIGHT_UNIT_KG;
+import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.EXPORT_EXCEL_LIMIT;
 import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.PADDING_10_PX;
 import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.STYLE;
 import static com.dpw.runner.shipment.services.commons.enums.DBOperationType.COMMERCIAL_APPROVE;
@@ -4178,13 +4179,21 @@ public class ShipmentService implements IShipmentService {
             String timestamp = currentTime.format(formatter);
             String filenameWithTimestamp = "Shipments_" + timestamp + Constants.XLSX;
 
-            response.setContentType(Constants.CONTENT_TYPE_FOR_EXCEL);
-            response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
+            if (shipmentListResponseData.size() > EXPORT_EXCEL_LIMIT) {
+                // Send the file via email
+                commonUtils.sendExcelFileViaEmail(workbook, filenameWithTimestamp);
+            } else {
+                // Download it
+                response.setContentType(Constants.CONTENT_TYPE_FOR_EXCEL);
+                response.setHeader("Content-Disposition",
+                    "attachment; filename=" + filenameWithTimestamp);
 
-            try (OutputStream outputStream = new BufferedOutputStream(response.getOutputStream(), 8192 * 10)) {
-                workbook.write(outputStream);
-            } catch (IOException e) {
-                log.error("Time out " + e.getMessage());
+                try (OutputStream outputStream = new BufferedOutputStream(
+                    response.getOutputStream(), 8192 * 10)) {
+                    workbook.write(outputStream);
+                } catch (IOException e) {
+                    log.error("Time out " + e.getMessage());
+                }
             }
         }
 

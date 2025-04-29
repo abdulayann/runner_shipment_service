@@ -27,6 +27,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPM
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SYSTEM_GENERATED;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
+import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.EXPORT_EXCEL_LIMIT;
 import static com.dpw.runner.shipment.services.entity.enums.GenerationType.Random;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.APPROVE;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_DETACH;
@@ -4656,11 +4657,17 @@ public class ConsolidationService implements IConsolidationService {
             String timestamp = currentTime.format(formatter);
             String filenameWithTimestamp = "Consolidations_" + timestamp + Constants.XLSX;
 
-            response.setContentType(Constants.CONTENT_TYPE_FOR_EXCEL);
-            response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
+            if (consoleResponse.size() > EXPORT_EXCEL_LIMIT) {
+                // Send the file via email
+                commonUtils.sendExcelFileViaEmail(workbook, filenameWithTimestamp);
+            }else {
+                response.setContentType(Constants.CONTENT_TYPE_FOR_EXCEL);
+                response.setHeader("Content-Disposition",
+                    "attachment; filename=" + filenameWithTimestamp);
 
-            try (OutputStream outputStream = response.getOutputStream()) {
-                workbook.write(outputStream);
+                try (OutputStream outputStream = response.getOutputStream()) {
+                    workbook.write(outputStream);
+                }
             }
         }
 

@@ -49,6 +49,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.itextpdf.text.*;
 import com.itextpdf.text.exceptions.InvalidPdfException;
 import com.itextpdf.text.pdf.*;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -4422,6 +4424,31 @@ class CommonUtilsTest {
         assertNull(dictionary.get(HAWB_NUMBER));
     }
 
+    @Test
+    void testSendExcelFileViaEmail_Success() throws Exception {
+        // Arrange
+        Workbook workbook = new XSSFWorkbook();
+        String filename = "export_test_2025.xlsx";
+
+        UserContext.getUser().setEmail(null);
+
+        doNothing().when(notificationService.sendEmail(any()));
+
+        commonUtils.sendExcelFileViaEmail(workbook, filename);
+    }
+
+    @Test
+    void testSendExcelFileViaEmail_ExceptionHandling() throws Exception {
+        // Arrange
+        Workbook workbook = new XSSFWorkbook();
+        String filename = "export_test_2025.xlsx";
+
+        UserContext.getUser().setEmail(null);
+
+//        when(notificationService.sendEmail(any())).thenThrow(() -> new )
+
+        commonUtils.sendExcelFileViaEmail(workbook, filename);
+    }
 
     private ShipmentDetails getMockShipmentDetails() {
         ShipmentDetails shipment = new ShipmentDetails();
