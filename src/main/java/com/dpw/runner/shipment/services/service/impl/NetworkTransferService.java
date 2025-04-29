@@ -596,7 +596,7 @@ public class NetworkTransferService implements INetworkTransferService {
                 emailList.add(usernameEmailsMap.get(assignedTo));
             EmailTemplatesRequest template = createRequestTransferEmailBody(entityType, reason, entityNumber);
             if(!emailList.isEmpty() && template.getBody() != null) {
-                commonUtils.sendEmailNotification(template, emailList, List.of(UserContext.getUser().getEmail()));
+                commonUtils.sendEmailNotification(template, emailList, Collections.singletonList(UserContext.getUser().getEmail()));
             }
         } catch (Exception ex) {
             log.error(String.format(ErrorConstants.ERROR_WHILE_EMAIL, ex.getMessage()));
@@ -665,7 +665,7 @@ public class NetworkTransferService implements INetworkTransferService {
 
             EmailTemplatesRequest template = createRequestReassignEmailBody(networkTransfer, reason);
             if(!emailList.isEmpty() && template.getBody() != null) {
-                commonUtils.sendEmailNotification(template, emailList, List.of(UserContext.getUser().getEmail()));
+                commonUtils.sendEmailNotification(template, emailList, Collections.singletonList(UserContext.getUser().getEmail()));
             }
         } catch (Exception ex) {
             log.error(String.format(ErrorConstants.ERROR_WHILE_EMAIL, ex.getMessage()));
