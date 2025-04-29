@@ -15,6 +15,8 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
@@ -27,10 +29,11 @@ class ShipmentControllerV3Test {
     IShipmentServiceV3 shipmentService;
     @InjectMocks
     ShipmentControllerV3 shipmentControllerV3;
-
+    private MockMvc mockMvc;
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
+        mockMvc = MockMvcBuilders.standaloneSetup(shipmentControllerV3).build();
     }
 
     @Test

@@ -26,6 +26,7 @@ import com.dpw.runner.shipment.services.helpers.ShipmentMasterDataHelperV3;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
@@ -60,11 +61,13 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     private IShipmentsContainersMappingDao shipmentsContainersMappingDao;
     private ShipmentMasterDataHelperV3 shipmentMasterDataHelper;
     private JsonHelper jsonHelper;
+    private MasterDataUtils masterDataUtils;
 
 
     @Autowired
     public ShipmentServiceImplV3(IConsoleShipmentMappingDao consoleShipmentMappingDao, INotificationDao notificationDao, CommonUtils commonUtils, IShipmentRepository shipmentRepository,
-                                 IShipmentDao shipmentDao, ShipmentMasterDataHelperV3 shipmentMasterDataHelper, JsonHelper jsonHelper, IShipmentsContainersMappingDao shipmentsContainersMappingDao) {
+                                 IShipmentDao shipmentDao, ShipmentMasterDataHelperV3 shipmentMasterDataHelper, JsonHelper jsonHelper, IShipmentsContainersMappingDao shipmentsContainersMappingDao,
+                                 MasterDataUtils masterDataUtils) {
         this.consoleShipmentMappingDao = consoleShipmentMappingDao;
         this.notificationDao = notificationDao;
         this.commonUtils = commonUtils;
@@ -73,6 +76,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         this.shipmentMasterDataHelper = shipmentMasterDataHelper;
         this.jsonHelper = jsonHelper;
         this.shipmentsContainersMappingDao = shipmentsContainersMappingDao;
+        this.masterDataUtils = masterDataUtils;
     }
 
     @Override
@@ -208,7 +212,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             }
         }
         return response;
-
     }
 
 }

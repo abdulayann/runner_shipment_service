@@ -31,7 +31,6 @@ public class ShipmentMasterDataHelperV3 {
     private final MasterDataUtils masterDataUtils;
     ExecutorService executorServiceMasterData;
 
-
     @Autowired
     public ShipmentMasterDataHelperV3(MasterDataUtils masterDataUtils, @Qualifier("executorServiceMasterData") ExecutorService executorServiceMasterData) {
         this.masterDataUtils = masterDataUtils;

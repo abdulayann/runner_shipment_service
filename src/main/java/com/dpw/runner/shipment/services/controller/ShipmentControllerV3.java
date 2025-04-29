@@ -70,5 +70,4 @@ public class ShipmentControllerV3 {
         return ResponseHelper.buildSuccessResponse(shipmentService.getShipmentAndPacksForConsolidationAssignContainerTray(containerId, consolidationId));
     }
 
-
 }
