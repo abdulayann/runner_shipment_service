@@ -107,6 +107,11 @@ class BookingIntegrationsUtilityTest {
     static void setup() throws IOException {
         jsonTestUtility = new JsonTestUtility();
         objectMapper = JsonTestUtility.getMapper();
+        UsersDto mockUser = new UsersDto();
+        mockUser.setTenantId(1);
+        mockUser.setUsername("user");
+        mockUser.setPermissions(new HashMap<>());
+        UserContext.setUser(mockUser);
     }
 
     @BeforeEach
