@@ -9,6 +9,7 @@ public class EventConstants {
     private EventConstants(){}
     public static final String SHIPMENT = "SHIPMENT";
     public static final String EVENT_API_HANDLE = "api/v2/events";
+    public static final String EVENT_V3_API_HANDLE = "api/v3/events";
     public static final String EVENT_CREATE_SUCCESS = "Events created successfully !";
     public static final String EVENT_UPDATE_SUCCESS = "Events updated successfully !";
     public static final String EVENT_LIST_SUCCESS = "Events fetched successfully !";

@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ShipmentGridChang
 import com.dpw.runner.shipment.services.dto.request.ConsolidationDetailsRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentAttachDetachV3Request;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ConsolidationPendingNotificationResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -110,7 +111,8 @@ public class ConsolidationV3Controller {
     public ResponseEntity<IRunnerResponse> pendingNotificationsData(@ApiParam(value = ConsolidationConstants.CONSOLIDATION_ID) @RequestParam Long id) {
         log.info("Received pending notification consolidation data v3 request with RequestId: {}", LoggerHelper.getRequestIdFromMDC());
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
-        return consolidationV3Service.getPendingNotificationData(request);
+        ConsolidationPendingNotificationResponse consolidationPendingNotificationResponse =  consolidationV3Service.getPendingNotificationData(request);
+        return ResponseHelper.buildSuccessResponse(consolidationPendingNotificationResponse);
     }
 
 }

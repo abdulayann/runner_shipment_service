@@ -2973,7 +2973,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         }
     }
 
-    public ResponseEntity<IRunnerResponse> getPendingNotificationData(CommonGetRequest request){
+    public ConsolidationPendingNotificationResponse getPendingNotificationData(CommonGetRequest request){
 
         Optional<ConsolidationDetails> optionalConsolidationDetails = consolidationDetailsDao.findById(request.getId());
         if (!optionalConsolidationDetails.isPresent()) {
@@ -2995,7 +2995,7 @@ public class ConsolidationV3Service implements IConsolidationV3Service {
         tenantDataFuture.join();
         if(response.get("Tenants") != null)
             consolidationDetailsResponse.setTenantMasterData((Map<String, Object>) response.get("Tenants"));
-        return ResponseHelper.buildSuccessResponse(consolidationDetailsResponse);
+        return consolidationDetailsResponse;
     }
 
 }

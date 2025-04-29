@@ -1,10 +1,8 @@
 package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
-import com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
-import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -65,13 +63,6 @@ public class ShipmentControllerV3 {
         log.info("Received shipment list v3 request with RequestId: {}",
                 LoggerHelper.getRequestIdFromMDC());
         return shipmentService.listShipment(CommonRequestModel.buildRequest(listCommonRequest), getMasterData);
-    }
-
-    @GetMapping(ApiConstants.API_RETRIEVE_PENDING_NOTIFICATION_DATA)
-    public ResponseEntity<IRunnerResponse> pendingNotificationsData(@ApiParam(value = ConsolidationConstants.CONSOLIDATION_ID) @RequestParam Long id) {
-        log.info("Received pending notification shipment data v3 request with RequestId: {}", LoggerHelper.getRequestIdFromMDC());
-        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
-        return shipmentService.getPendingNotificationData(request);
     }
 
     @GetMapping(ApiConstants.API_GET_SHIPMENT_ASSIGN_CONTAINER_TRAY)

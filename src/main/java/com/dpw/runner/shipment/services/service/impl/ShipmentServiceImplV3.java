@@ -4,7 +4,6 @@ package com.dpw.runner.shipment.services.service.impl;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantContext;
 import com.dpw.runner.shipment.services.commons.constants.DaoConstants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
-import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -14,7 +13,6 @@ import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.dto.response.NotificationCount;
 import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentPendingNotificationResponse;
 import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksAssignContainerTrayDto;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
@@ -28,12 +26,10 @@ import com.dpw.runner.shipment.services.helpers.ShipmentMasterDataHelperV3;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
-import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataRetrievalFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -64,12 +60,11 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     private IShipmentsContainersMappingDao shipmentsContainersMappingDao;
     private ShipmentMasterDataHelperV3 shipmentMasterDataHelper;
     private JsonHelper jsonHelper;
-    private MasterDataUtils masterDataUtils;
+
 
     @Autowired
     public ShipmentServiceImplV3(IConsoleShipmentMappingDao consoleShipmentMappingDao, INotificationDao notificationDao, CommonUtils commonUtils, IShipmentRepository shipmentRepository,
-                                 IShipmentDao shipmentDao, ShipmentMasterDataHelperV3 shipmentMasterDataHelper, JsonHelper jsonHelper, IShipmentsContainersMappingDao shipmentsContainersMappingDao,
-                                 MasterDataUtils masterDataUtils) {
+                                 IShipmentDao shipmentDao, ShipmentMasterDataHelperV3 shipmentMasterDataHelper, JsonHelper jsonHelper, IShipmentsContainersMappingDao shipmentsContainersMappingDao) {
         this.consoleShipmentMappingDao = consoleShipmentMappingDao;
         this.notificationDao = notificationDao;
         this.commonUtils = commonUtils;
@@ -78,7 +73,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         this.shipmentMasterDataHelper = shipmentMasterDataHelper;
         this.jsonHelper = jsonHelper;
         this.shipmentsContainersMappingDao = shipmentsContainersMappingDao;
-        this.masterDataUtils = masterDataUtils;
     }
 
     @Override
@@ -192,26 +186,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
                 response.getPickupDetails().setShipperRef(srnReferenceNumber.get());
             }
         }
-    }
-
-    @Override
-    public ResponseEntity<IRunnerResponse> getPendingNotificationData(CommonGetRequest request) {
-
-        Optional<ShipmentDetails> optionalShipmentDetails = shipmentDao.findById(request.getId());
-        if (!optionalShipmentDetails.isPresent()) {
-            log.debug(ShipmentConstants.SHIPMENT_DETAILS_FOR_GUID_MISSING_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
-            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
-        }
-
-        if (request.getIncludeColumns() == null || request.getIncludeColumns().isEmpty()) {
-            request.setIncludeColumns(List.of("transportMode", "containsHazardous", "guid", "receivingBranch", "triangulationPartnerList", "tenantId"));
-        }
-        Set<String> includeColumns = new HashSet<>(request.getIncludeColumns());
-        CommonUtils.includeRequiredColumns(includeColumns);
-
-        ShipmentPendingNotificationResponse shipmentResponse = (ShipmentPendingNotificationResponse) commonUtils.setIncludedFieldsToResponse(optionalShipmentDetails.get(), includeColumns, new ShipmentPendingNotificationResponse());
-        shipmentMasterDataHelper.getMasterDataForEntity(shipmentResponse);
-        return ResponseHelper.buildSuccessResponse(shipmentResponse);
     }
 
     @Override

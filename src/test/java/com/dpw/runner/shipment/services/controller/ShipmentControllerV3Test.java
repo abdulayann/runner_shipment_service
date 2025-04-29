@@ -71,13 +71,6 @@ class ShipmentControllerV3Test {
     }
 
     @Test
-    void pendingNotificationsData(){
-        when(shipmentService.getPendingNotificationData(any())).thenReturn(ResponseHelper.buildSuccessResponse());
-        var responseEntity = shipmentControllerV3.pendingNotificationsData(any());
-        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
-    }
-
-    @Test
     void getShipmentAssignContainerTray() {
         when(shipmentService.getShipmentAndPacksForConsolidationAssignContainerTray(anyLong(), anyLong())).thenReturn(new ShipmentPacksAssignContainerTrayDto());
         var responseEntity = shipmentControllerV3.getShipmentAssignContainerTray(1L, 2L);
