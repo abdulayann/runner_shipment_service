@@ -3568,6 +3568,7 @@ class ReportServiceTest extends CommonMocks {
     @Test
     void testPushFileToDocumentMasterForFCR() {
         reportRequest.setReportInfo(ReportConstants.FCR_DOCUMENT);
+        reportRequest.setEntityName(Constants.SHIPMENTS_WITH_SQ_BRACKETS);
         Map<String, Object> dataRetrieved = new HashMap<>();
         dataRetrieved.put(ReportConstants.FCR_NO, "FCR_SHP00001004");
 
@@ -3582,6 +3583,7 @@ class ReportServiceTest extends CommonMocks {
     @Test
     void testPushFileToDocumentMasterForTO() {
         reportRequest.setReportInfo(ReportConstants.TRANSPORT_ORDER);
+        reportRequest.setEntityName(Constants.SHIPMENTS_WITH_SQ_BRACKETS);
         Map<String, Object> dataRetrieved = new HashMap<>();
         dataRetrieved.put(ReportConstants.REFERENCE_NO, "FCR_SHP00001004");
 

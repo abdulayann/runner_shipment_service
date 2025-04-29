@@ -186,7 +186,10 @@ public class ReportService implements IReportService {
         validateOriginalAwbPrintForLinkedShipment(reportRequest);
 
         byte[] dataByteList = getCombinedDataForCargoManifestAir(reportRequest);
-        if (dataByteList != null) return dataByteList;
+        if (dataByteList != null) {
+            pushFileToDocumentMaster(reportRequest, dataByteList, new HashMap<>());
+            return dataByteList;
+        }
 
         ShipmentSettingsDetails tenantSettingsRow = shipmentSettingsDao.findByTenantId(TenantContext.getCurrentTenant()).orElse(ShipmentSettingsDetails.builder().build());
 
@@ -2348,6 +2351,24 @@ public class ReportService implements IReportService {
             String filename;
             String childType;
             String docType = reportRequest.getReportInfo();
+            String transportMode;
+            String shipmentType;
+
+            switch (reportRequest.getEntityName()) {
+                case Constants.SHIPMENTS_WITH_SQ_BRACKETS:
+                    transportMode = StringUtility.convertToString(dataRetrieved.get(TRANSPORT_MODE));
+                    shipmentType = StringUtility.convertToString(dataRetrieved.get(DIRECTION));
+                    break;
+
+                case Constants.CONSOLIDATIONS_WITH_SQ_BRACKETS:
+                    transportMode = StringUtility.convertToString(dataRetrieved.get(TRANSPORT_MODE));
+                    shipmentType = StringUtility.convertToString(dataRetrieved.get(SHIPMENT_TYPE));
+                    break;
+
+                default:
+                    transportMode = reportRequest.getTransportMode();
+                    shipmentType = null;
+            }
 
             // Generate FileName, childType & DocType based on request Type
             switch (reportRequest.getReportInfo()) {
@@ -2384,7 +2405,8 @@ public class ReportService implements IReportService {
             docUploadRequest.setKey(reportRequest.getEntityGuid());
             docUploadRequest.setDocType(docType);
             docUploadRequest.setChildType(childType);
-
+            docUploadRequest.setTransportMode(transportMode);
+            docUploadRequest.setShipmentType(shipmentType);
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> documentManagerService.pushSystemGeneratedDocumentToDocMaster(new BASE64DecodedMultipartFile(pdfByteContent), filename, docUploadRequest)), executorService);
         }
     }
