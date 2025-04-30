@@ -9,7 +9,6 @@ import com.dpw.runner.shipment.services.ReportingService.Models.TenantModel;
 import com.dpw.runner.shipment.services.adapters.config.BillingServiceUrlConfig;
 import com.dpw.runner.shipment.services.adapters.impl.BillingServiceAdapter;
 import com.dpw.runner.shipment.services.adapters.impl.NPMServiceAdapter;
-import com.dpw.runner.shipment.services.aspects.LicenseContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
@@ -60,7 +59,6 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.modelmapper.ModelMapper;
 import org.springframework.cache.Cache;
@@ -744,42 +742,33 @@ class DeliveryOrderReportTest extends CommonMocks {
 
     @Test
     void getDocumentModel_CountryAirCargoSecurity() {
-        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
-            mockedLicenseContext.when(LicenseContext::isAirSecurityLicense).thenReturn(false);
-            ShipmentSettingsDetailsContext.getCurrentTenantSettings()
-                .setCountryAirCargoSecurity(true);
-            when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
-            ShipmentModel shipmentModel = new ShipmentModel();
-            shipmentModel.setTransportMode(AIR);
-            shipmentModel.setDirection(EXP);
-            shipmentModel.setContainersList(List.of(new ContainerModel()));
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setCountryAirCargoSecurity(true);
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        ShipmentModel shipmentModel = new ShipmentModel();
+        shipmentModel.setTransportMode(AIR);
+        shipmentModel.setDirection(EXP);
+        shipmentModel.setContainersList(List.of(new ContainerModel()));
 
-            when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
-            mockShipmentSettings();
+        when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
+        mockShipmentSettings();
 
-            assertThrows(ValidationException.class,
-                () -> deliveryOrderReport.getDocumentModel(123L));
-        }
+        assertThrows(ValidationException.class, () -> deliveryOrderReport.getDocumentModel(123L));
     }
 
     @Test
     void getDocumentModel_CountryAirCargoSecurity2() {
-        try (MockedStatic<LicenseContext> mockedLicenseContext = mockStatic(LicenseContext.class)) {
-            mockedLicenseContext.when(LicenseContext::isAirSecurityLicense).thenReturn(true);
-            ShipmentSettingsDetailsContext.getCurrentTenantSettings()
-                .setCountryAirCargoSecurity(true);
-            when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
-            ShipmentModel shipmentModel = new ShipmentModel();
-            shipmentModel.setTransportMode(AIR);
-            shipmentModel.setDirection(EXP);
-            shipmentModel.setContainersList(List.of(new ContainerModel()));
-            shipmentModel.setContainsHazardous(true);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setCountryAirCargoSecurity(true);
+        UserContext.getUser().getPermissions().put(PermissionConstants.AIR_SECURITY_PERMISSION, true);
+        when(shipmentDao.findById(any())).thenReturn(Optional.of(shipmentDetails));
+        ShipmentModel shipmentModel = new ShipmentModel();
+        shipmentModel.setTransportMode(AIR);
+        shipmentModel.setDirection(EXP);
+        shipmentModel.setContainersList(List.of(new ContainerModel()));
+        shipmentModel.setContainsHazardous(true);
 
-            when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
-            mockShipmentSettings();
+        when(modelMapper.map(shipmentDetails, ShipmentModel.class)).thenReturn(shipmentModel);
+        mockShipmentSettings();
 
-            assertThrows(ValidationException.class,
-                () -> deliveryOrderReport.getDocumentModel(123L));
-        }
+        assertThrows(ValidationException.class, () -> deliveryOrderReport.getDocumentModel(123L));
     }
 }
