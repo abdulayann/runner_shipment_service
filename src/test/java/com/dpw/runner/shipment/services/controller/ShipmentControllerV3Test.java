@@ -29,7 +29,6 @@ class ShipmentControllerV3Test {
     IShipmentServiceV3 shipmentService;
     @InjectMocks
     ShipmentControllerV3 shipmentControllerV3;
-
     private MockMvc mockMvc;
     @BeforeEach
     void setUp() {
