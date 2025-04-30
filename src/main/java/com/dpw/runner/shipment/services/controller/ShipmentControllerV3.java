@@ -8,6 +8,7 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
+import com.dpw.runner.shipment.services.dto.response.ShipmentPendingNotificationResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -92,5 +93,13 @@ public class ShipmentControllerV3 {
         guid.ifPresent(request::setGuid);
         log.info("Received Shipment retrieve request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
         return shipmentService.retrieveById(CommonRequestModel.buildRequest(request), getMasterData);
+    }
+
+    @GetMapping(ApiConstants.API_RETRIEVE_PENDING_NOTIFICATION_DATA)
+    public ResponseEntity<IRunnerResponse> pendingNotificationsData(@ApiParam(value = ShipmentConstants.SHIPMENT_ID) @RequestParam Long id) {
+        log.info("Received pending notification shipment data v3 request with RequestId: {}", LoggerHelper.getRequestIdFromMDC());
+        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+        ShipmentPendingNotificationResponse shipmentPendingNotificationResponse = shipmentService.getPendingNotificationData(request);
+        return ResponseHelper.buildSuccessResponse(shipmentPendingNotificationResponse);
     }
 }

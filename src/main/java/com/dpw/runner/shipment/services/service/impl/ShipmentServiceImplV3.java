@@ -34,11 +34,7 @@ import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.TruckDriverDetailsRequest;
-import com.dpw.runner.shipment.services.dto.response.NotesResponse;
-import com.dpw.runner.shipment.services.dto.response.NotificationCount;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentRetrieveLiteResponse;
+import com.dpw.runner.shipment.services.dto.response.*;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.AdditionalDetails;
 import com.dpw.runner.shipment.services.entity.Awb;
@@ -1767,5 +1763,24 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         }
     }
 
+    @Override
+    public ShipmentPendingNotificationResponse getPendingNotificationData(CommonGetRequest request) {
+
+        Optional<ShipmentDetails> optionalShipmentDetails = shipmentDao.findById(request.getId());
+        if (!optionalShipmentDetails.isPresent()) {
+            log.debug(ShipmentConstants.SHIPMENT_DETAILS_FOR_GUID_MISSING_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
+            throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
+        }
+
+        if (request.getIncludeColumns() == null || request.getIncludeColumns().isEmpty()) {
+            request.setIncludeColumns(List.of("transportMode", "containsHazardous", "guid", "receivingBranch", "triangulationPartnerList", "tenantId"));
+        }
+        Set<String> includeColumns = new HashSet<>(request.getIncludeColumns());
+        CommonUtils.includeRequiredColumns(includeColumns);
+
+        ShipmentPendingNotificationResponse shipmentResponse = (ShipmentPendingNotificationResponse) commonUtils.setIncludedFieldsToResponse(optionalShipmentDetails.get(), includeColumns, new ShipmentPendingNotificationResponse());
+        shipmentMasterDataHelper.getMasterDataForEntity(shipmentResponse);
+        return shipmentResponse;
+    }
 
 }

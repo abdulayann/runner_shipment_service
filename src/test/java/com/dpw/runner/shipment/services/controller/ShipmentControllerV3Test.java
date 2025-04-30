@@ -1,7 +1,8 @@
 package com.dpw.runner.shipment.services.controller;
 
-import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ShipmentPendingNotificationResponse;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
 import org.junit.jupiter.api.BeforeEach;
@@ -74,8 +75,12 @@ class ShipmentControllerV3Test {
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
-
-
-
+    @Test
+    void pendingNotificationsData(){
+        ShipmentPendingNotificationResponse shipmentPendingNotificationResponse = (ShipmentPendingNotificationResponse) ShipmentDetailsResponse.builder().build();
+        when(shipmentService.getPendingNotificationData(any())).thenReturn(shipmentPendingNotificationResponse);
+        var responseEntity = shipmentControllerV3.pendingNotificationsData(any());
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
 
 }
