@@ -4660,8 +4660,8 @@ public class ConsolidationService implements IConsolidationService {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_HH_MM_SS_FORMAT);
             String timestamp = currentTime.format(formatter);
             String filenameWithTimestamp = "Consolidations_" + timestamp + Constants.XLSX;
-            String configuredLimitValue = applicationConfigService.getValue(EXPORT_EXCEL_LIMIT);
-            Integer exportExcelLimit = StringUtility.isEmpty(configuredLimitValue) ? 1000 : Integer.parseInt(configuredLimitValue);
+
+            Integer exportExcelLimit = getExportExcelLimit();
             if (consoleResponse.size() > exportExcelLimit) {
                 // Send the file via email
                 commonUtils.sendExcelFileViaEmail(workbook, filenameWithTimestamp);
@@ -4676,6 +4676,11 @@ public class ConsolidationService implements IConsolidationService {
             }
         }
 
+    }
+
+    private Integer getExportExcelLimit(){
+        String configuredLimitValue = applicationConfigService.getValue(EXPORT_EXCEL_LIMIT);
+        return StringUtility.isEmpty(configuredLimitValue) ? 1000 : Integer.parseInt(configuredLimitValue);
     }
 
     private void addPolPodItemRow(Row itemRow, Map<String, Integer> headerMap, ConsolidationListResponse consol) {

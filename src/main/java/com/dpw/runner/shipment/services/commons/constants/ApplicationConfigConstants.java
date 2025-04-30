@@ -1,7 +1,7 @@
 package com.dpw.runner.shipment.services.commons.constants;
 
 public class ApplicationConfigConstants {
-  private ApplicationConfigConstants(){};
+  private ApplicationConfigConstants(){}
   public static final String APPLICATION_CONFIG_API_HANDLE = "/api/v2/config";
   public static final String GET_ALL = "/all";
   public static final String REFRESH_JVM_KEYS = "/refreshJvmKeys";
