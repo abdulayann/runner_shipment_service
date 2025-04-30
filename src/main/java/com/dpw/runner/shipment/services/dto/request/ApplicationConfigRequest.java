@@ -14,7 +14,7 @@ import lombok.Setter;
 public class ApplicationConfigRequest implements IRunnerRequest {
 
   private Long id;
-  @NotBlank(message = "Key should nt be empty")
+  @NotBlank(message = "Key should not be empty")
   private String key;
   @NotBlank(message = "Value should not be empty")
   private String value;

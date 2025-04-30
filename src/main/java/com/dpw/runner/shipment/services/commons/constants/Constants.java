@@ -636,6 +636,7 @@ public class Constants {
     public static final String APPLICATION_CONFIG_ID_EMPTY_ERROR_MESSAGE = "Application config id can not be empty";
 
     public static final String TESLA = "Tesla";
+    public static final Integer EXPORT_EXCEL_DEFAULT_LIMIT = 1000;
 
     private Constants() {
     }

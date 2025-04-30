@@ -17,6 +17,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.CREAT
 import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_CTS;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.ERROR_WHILE_SENDING_EMAIL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.EXPORT_EXCEL_DEFAULT_LIMIT;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.ID;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.IMPORT_SHIPMENT_PUSH_ATTACHMENT_EMAIL;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.MASS;
@@ -4183,7 +4184,7 @@ public class ShipmentService implements IShipmentService {
             String timestamp = currentTime.format(formatter);
             String filenameWithTimestamp = "Shipments_" + timestamp + Constants.XLSX;
             String configuredLimitValue = applicationConfigService.getValue(EXPORT_EXCEL_LIMIT);
-            Integer exportExcelLimit = StringUtility.isEmpty(configuredLimitValue) ? 1000 : Integer.parseInt(configuredLimitValue);
+            Integer exportExcelLimit = StringUtility.isEmpty(configuredLimitValue) ? EXPORT_EXCEL_DEFAULT_LIMIT  : Integer.parseInt(configuredLimitValue);
             if (shipmentListResponseData.size() > exportExcelLimit) {
                 // Send the file via email
                 commonUtils.sendExcelFileViaEmail(workbook, filenameWithTimestamp);
