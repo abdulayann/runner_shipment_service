@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.service.impl;
 import com.dpw.runner.shipment.services.CommonMocks;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
@@ -86,6 +87,26 @@ class EventV3ServiceTest extends CommonMocks {
     }
 
     @Test
+    void testListEventsV2ForInputShipmentId2() {
+        Long shipmentId = 1L;
+
+        TrackingEventsRequest trackingEventsRequest = new TrackingEventsRequest();
+        trackingEventsRequest.setShipmentId(shipmentId);
+        List<EventsResponse> eventsResponseList = new ArrayList<>();
+
+        when(eventDao.findAllWithoutTenantFilter(any(), any())).thenReturn(new PageImpl<>(List.of(new Events())));
+        when(jsonHelper.convertValueToList(any(), eq(EventsResponse.class))).thenReturn(eventsResponseList);
+        mockShipmentSettings();
+
+        var httpResponse = eventService.listV2(CommonRequestModel.buildRequest(trackingEventsRequest), Constants.NETWORK_TRANSFER);
+
+        ResponseEntity<IRunnerResponse> expectedResponse = ResponseHelper.buildSuccessResponse(eventsResponseList);
+
+        assertNotNull(httpResponse);
+        assertEquals(expectedResponse, httpResponse);
+    }
+
+    @Test
     void testListEventsV2ForInputConsolidationId() {
         Long consolidation = 1L;
 
@@ -98,6 +119,26 @@ class EventV3ServiceTest extends CommonMocks {
         mockShipmentSettings();
 
         var httpResponse = eventService.listV2(CommonRequestModel.buildRequest(trackingEventsRequest), any());
+
+        ResponseEntity<IRunnerResponse> expectedResponse = ResponseHelper.buildSuccessResponse(eventsResponseList);
+
+        assertNotNull(httpResponse);
+        assertEquals(expectedResponse, httpResponse);
+    }
+
+    @Test
+    void testListEventsV2ForInputConsolidationId2() {
+        Long consolidation = 1L;
+
+        TrackingEventsRequest trackingEventsRequest = new TrackingEventsRequest();
+        trackingEventsRequest.setConsolidationId(consolidation);
+        List<EventsResponse> eventsResponseList = new ArrayList<>();
+
+        when(eventDao.findAllWithoutTenantFilter(any(), any())).thenReturn(new PageImpl<>(List.of(new Events())));
+        when(jsonHelper.convertValueToList(any(), eq(EventsResponse.class))).thenReturn(eventsResponseList);
+        mockShipmentSettings();
+
+        var httpResponse = eventService.listV2(CommonRequestModel.buildRequest(trackingEventsRequest), Constants.NETWORK_TRANSFER);
 
         ResponseEntity<IRunnerResponse> expectedResponse = ResponseHelper.buildSuccessResponse(eventsResponseList);
 
