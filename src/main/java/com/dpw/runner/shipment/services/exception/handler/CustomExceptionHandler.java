@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.SectionDetailsException;
 import com.dpw.runner.shipment.services.exception.exceptions.SectionFieldsException;
 import com.dpw.runner.shipment.services.exception.exceptions.SectionVisibilityException;
+import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.exception.exceptions.billing.BillingException;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.utils.Generated;
@@ -41,7 +42,8 @@ public class CustomExceptionHandler extends ResponseEntityExceptionHandler {
             ReportException.class,
             RoutingException.class,
             NotificationException.class,
-            GenericException.class
+            GenericException.class,
+            ValidationException.class
     })
     private ResponseEntity<IRunnerResponse> handleCustomExceptions(final RuntimeException ex) {
         return ResponseHelper.buildFailedResponse(ex.getMessage(), HttpStatus.BAD_REQUEST);
