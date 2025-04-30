@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.service.impl;
 
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.KCRA_EXPIRY;
+import static com.dpw.runner.shipment.services.commons.constants.ApplicationConfigConstants.EXPORT_EXCEL_LIMIT;
 import static com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants.CONSOLIDATION_DETAILS_NULL;
 import static com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants.CONSOLIDATION_LIST_REQUEST_EMPTY_ERROR;
 import static com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants.CONSOLIDATION_LIST_REQUEST_NULL_ERROR;
@@ -19,6 +20,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSO
 import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_CTS;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_IMP;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.EXPORT_EXCEL_DEFAULT_LIMIT;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.IMPORT_SHIPMENT_PULL_ATTACHMENT_EMAIL;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.OCEAN_DG_CONTAINER_FIELDS_VALIDATION;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.ROAD_FACTOR_FOR_VOL_WT;
@@ -219,6 +221,7 @@ import com.dpw.runner.shipment.services.masterdata.response.CarrierResponse;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.projection.ConsolidationDetailsProjection;
 import com.dpw.runner.shipment.services.repository.impl.CustomConsolidationDetailsRepositoryImpl;
+import com.dpw.runner.shipment.services.service.interfaces.IApplicationConfigService;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
@@ -381,6 +384,9 @@ public class ConsolidationService implements IConsolidationService {
 
     @Autowired
     private IShipmentSync shipmentSync;
+
+    @Autowired
+    private IApplicationConfigService applicationConfigService;
 
     @Autowired
     private IShipmentSettingsDao shipmentSettingsDao;
@@ -4565,12 +4571,7 @@ public class ConsolidationService implements IConsolidationService {
     @Override
     public void exportExcel(HttpServletResponse response, CommonRequestModel commonRequestModel) throws IOException, IllegalAccessException, RunnerException {
         ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-        if (request == null) {
-            log.error(CONSOLIDATION_LIST_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
-        }
-        if (commonRequestModel.getData() == null || !commonRequestModel.getData().getClass().isAssignableFrom(ListCommonRequest.class)) {
-            return;
-        }
+        if (invalidateExcel(commonRequestModel, request)) return;
 
         applyPermissionFilter(commonRequestModel);
         Pair<Specification<ConsolidationDetails>, Pageable> tuple = fetchData(request, ConsolidationDetails.class, tableNames);
@@ -4656,14 +4657,37 @@ public class ConsolidationService implements IConsolidationService {
             String timestamp = currentTime.format(formatter);
             String filenameWithTimestamp = "Consolidations_" + timestamp + Constants.XLSX;
 
-            response.setContentType(Constants.CONTENT_TYPE_FOR_EXCEL);
-            response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
+            Integer exportExcelLimit = getExportExcelLimit();
+            if (consoleResponse.size() > exportExcelLimit) {
+                // Send the file via email
+                commonUtils.sendExcelFileViaEmail(workbook, filenameWithTimestamp);
+            }else {
+                response.setContentType(Constants.CONTENT_TYPE_FOR_EXCEL);
+                response.setHeader("Content-Disposition",
+                    "attachment; filename=" + filenameWithTimestamp);
 
-            try (OutputStream outputStream = response.getOutputStream()) {
-                workbook.write(outputStream);
+                try (OutputStream outputStream = response.getOutputStream()) {
+                    workbook.write(outputStream);
+                }
             }
         }
 
+    }
+
+  private boolean invalidateExcel(CommonRequestModel commonRequestModel, ListCommonRequest request) {
+    if (request == null) {
+      log.error(CONSOLIDATION_LIST_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
+    }
+    boolean isInvalidateExcel = false;
+    if (commonRequestModel.getData() == null || !commonRequestModel.getData().getClass().isAssignableFrom(ListCommonRequest.class)) {
+      isInvalidateExcel = true;
+    }
+    return isInvalidateExcel;
+  }
+
+    private Integer getExportExcelLimit(){
+        String configuredLimitValue = applicationConfigService.getValue(EXPORT_EXCEL_LIMIT);
+        return StringUtility.isEmpty(configuredLimitValue) ? EXPORT_EXCEL_DEFAULT_LIMIT : Integer.parseInt(configuredLimitValue);
     }
 
     private void addPolPodItemRow(Row itemRow, Map<String, Integer> headerMap, ConsolidationListResponse consol) {

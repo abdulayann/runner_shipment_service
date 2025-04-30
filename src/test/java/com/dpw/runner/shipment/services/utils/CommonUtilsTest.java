@@ -41,6 +41,8 @@ import com.dpw.runner.shipment.services.masterdata.dto.CarrierMasterData;
 import com.dpw.runner.shipment.services.masterdata.request.CommonV1ListRequest;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
+import com.dpw.runner.shipment.services.notification.request.SendEmailBaseRequest;
+import com.dpw.runner.shipment.services.notification.response.NotificationServiceResponse;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.service.impl.ShipmentService;
 import com.dpw.runner.shipment.services.service.impl.TenantSettingsService;
@@ -49,6 +51,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.itextpdf.text.*;
 import com.itextpdf.text.exceptions.InvalidPdfException;
 import com.itextpdf.text.pdf.*;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -4422,6 +4426,20 @@ class CommonUtilsTest {
         assertNull(dictionary.get(HAWB_NUMBER));
     }
 
+    @Test
+    void testSendExcelFileViaEmail_Success() throws Exception {
+        // Arrange
+        Workbook workbook = new XSSFWorkbook();
+        String filename = "export_test_2025.xlsx";
+
+        UserContext.getUser().setEmail("him@gmail.com");
+
+        lenient().when(notificationService.sendEmail(any())).thenReturn(new NotificationServiceResponse());
+
+        commonUtils.sendExcelFileViaEmail(workbook, filename);
+        assertEquals("him@gmail.com", UserContext.getUser().getEmail());
+
+    }
 
     private ShipmentDetails getMockShipmentDetails() {
         ShipmentDetails shipment = new ShipmentDetails();

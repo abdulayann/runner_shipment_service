@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.service.impl;
 
+import static com.dpw.runner.shipment.services.commons.constants.ApplicationConfigConstants.EXPORT_EXCEL_LIMIT;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.IMP;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.MASTER_DATA_SOURCE_CARGOES_RUNNER;
@@ -234,6 +235,7 @@ import com.dpw.runner.shipment.services.projection.ConsolidationDetailsProjectio
 import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection;
 import com.dpw.runner.shipment.services.repository.interfaces.IQuartzJobInfoRepository;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
+import com.dpw.runner.shipment.services.service.interfaces.IApplicationConfigService;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IAwbService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
@@ -329,6 +331,8 @@ ShipmentServiceTest extends CommonMocks {
     private ShipmentService shipmentService;
     @Mock
     private IShipmentDao shipmentDao;
+    @Mock
+    private IApplicationConfigService applicationConfigService;
     @Mock
     private IHblDao hblDao;
     @Mock
@@ -2877,6 +2881,7 @@ ShipmentServiceTest extends CommonMocks {
         CommonRequestModel commonRequestModel = CommonRequestModel.builder().data(sampleRequest).build();
         ShipmentListResponse listResponse = ShipmentListResponse.builder().carrierDetails(carrierDetailResponse).status(1).build();
         when(jsonHelper.convertValue(any(), eq(ShipmentListResponse.class))).thenReturn(listResponse);
+        when(applicationConfigService.getValue(EXPORT_EXCEL_LIMIT)).thenReturn("100");
         shipmentService.exportExcel(response, commonRequestModel);
 
         verify(response, times(1)).setContentType(anyString());
@@ -4446,6 +4451,7 @@ ShipmentServiceTest extends CommonMocks {
             .build();
         ShipmentListResponse listResponse = ShipmentListResponse.builder().carrierDetails(carrierDetailResponse).status(1).build();
         when(jsonHelper.convertValue(any(), eq(ShipmentListResponse.class))).thenReturn(listResponse);
+        when(applicationConfigService.getValue(EXPORT_EXCEL_LIMIT)).thenReturn("100");
         shipmentService.exportExcel(response, commonRequestModel);
 
         verify(response, times(1)).setContentType(anyString());

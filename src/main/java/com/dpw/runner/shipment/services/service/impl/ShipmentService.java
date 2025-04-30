@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.KCRA_EXPIRY;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SRN;
+import static com.dpw.runner.shipment.services.commons.constants.ApplicationConfigConstants.EXPORT_EXCEL_LIMIT;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.AIR_DG_CONSOLIDATION_NOT_ALLOWED_WITH_INTER_BRANCH_SHIPMENT;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.AIR_DG_SHIPMENT_NOT_ALLOWED_WITH_INTER_BRANCH_CONSOLIDATION;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.AUTO_REJECTION_REMARK;
@@ -16,6 +17,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.CREAT
 import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_CTS;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.DIRECTION_EXP;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.ERROR_WHILE_SENDING_EMAIL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.EXPORT_EXCEL_DEFAULT_LIMIT;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.ID;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.IMPORT_SHIPMENT_PUSH_ATTACHMENT_EMAIL;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.MASS;
@@ -282,6 +284,7 @@ import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.projection.ConsolidationDetailsProjection;
 import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection;
+import com.dpw.runner.shipment.services.service.interfaces.IApplicationConfigService;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
@@ -406,6 +409,9 @@ public class ShipmentService implements IShipmentService {
     ExecutorService executorServiceMasterData;
     @Autowired
     private ModelMapper modelMapper;
+
+    @Autowired
+    private IApplicationConfigService applicationConfigService;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -4177,14 +4183,23 @@ public class ShipmentService implements IShipmentService {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_HH_MM_SS_FORMAT);
             String timestamp = currentTime.format(formatter);
             String filenameWithTimestamp = "Shipments_" + timestamp + Constants.XLSX;
+            String configuredLimitValue = applicationConfigService.getValue(EXPORT_EXCEL_LIMIT);
+            Integer exportExcelLimit = StringUtility.isEmpty(configuredLimitValue) ? EXPORT_EXCEL_DEFAULT_LIMIT  : Integer.parseInt(configuredLimitValue);
+            if (shipmentListResponseData.size() > exportExcelLimit) {
+                // Send the file via email
+                commonUtils.sendExcelFileViaEmail(workbook, filenameWithTimestamp);
+            } else {
+                // Download it
+                response.setContentType(Constants.CONTENT_TYPE_FOR_EXCEL);
+                response.setHeader("Content-Disposition",
+                    "attachment; filename=" + filenameWithTimestamp);
 
-            response.setContentType(Constants.CONTENT_TYPE_FOR_EXCEL);
-            response.setHeader("Content-Disposition", "attachment; filename=" + filenameWithTimestamp);
-
-            try (OutputStream outputStream = new BufferedOutputStream(response.getOutputStream(), 8192 * 10)) {
-                workbook.write(outputStream);
-            } catch (IOException e) {
-                log.error("Time out " + e.getMessage());
+                try (OutputStream outputStream = new BufferedOutputStream(
+                    response.getOutputStream(), 8192 * 10)) {
+                    workbook.write(outputStream);
+                } catch (IOException e) {
+                    log.error("Time out " + e.getMessage());
+                }
             }
         }
 
