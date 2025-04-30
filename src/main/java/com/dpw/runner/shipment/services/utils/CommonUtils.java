@@ -2729,7 +2729,6 @@ public class CommonUtils {
             SendEmailBaseRequest request = new SendEmailBaseRequest();
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             workbook.write(out);
-            byte[] bytes = out.toByteArray();
             out.close();
 
             MultipartFile multipartFile = new WorkbookMultipartFile(workbook, filenameWithTimestamp);

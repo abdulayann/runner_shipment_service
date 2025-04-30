@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.service.impl;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.KCRA_EXPIRY;
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SRN;
+import static com.dpw.runner.shipment.services.commons.constants.ApplicationConfigConstants.EXPORT_EXCEL_LIMIT;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.AIR_DG_CONSOLIDATION_NOT_ALLOWED_WITH_INTER_BRANCH_SHIPMENT;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.AIR_DG_SHIPMENT_NOT_ALLOWED_WITH_INTER_BRANCH_CONSOLIDATION;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.AUTO_REJECTION_REMARK;
@@ -34,7 +35,6 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANS
 import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.VOLUME_UNIT_M3;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.WEIGHT_UNIT_KG;
-import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.EXPORT_EXCEL_LIMIT;
 import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.PADDING_10_PX;
 import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.STYLE;
 import static com.dpw.runner.shipment.services.commons.enums.DBOperationType.COMMERCIAL_APPROVE;
@@ -283,6 +283,7 @@ import com.dpw.runner.shipment.services.masterdata.response.VesselsResponse;
 import com.dpw.runner.shipment.services.notification.service.INotificationService;
 import com.dpw.runner.shipment.services.projection.ConsolidationDetailsProjection;
 import com.dpw.runner.shipment.services.projection.ShipmentDetailsProjection;
+import com.dpw.runner.shipment.services.service.interfaces.IApplicationConfigService;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
@@ -407,6 +408,9 @@ public class ShipmentService implements IShipmentService {
     ExecutorService executorServiceMasterData;
     @Autowired
     private ModelMapper modelMapper;
+
+    @Autowired
+    private IApplicationConfigService applicationConfigService;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -4178,8 +4182,9 @@ public class ShipmentService implements IShipmentService {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_HH_MM_SS_FORMAT);
             String timestamp = currentTime.format(formatter);
             String filenameWithTimestamp = "Shipments_" + timestamp + Constants.XLSX;
-
-            if (shipmentListResponseData.size() > EXPORT_EXCEL_LIMIT) {
+            String configuredLimitValue = applicationConfigService.getValue(EXPORT_EXCEL_LIMIT);
+            Integer exportExcelLimit = StringUtility.isEmpty(configuredLimitValue) ? 1000 : Integer.parseInt(configuredLimitValue);
+            if (shipmentListResponseData.size() > exportExcelLimit) {
                 // Send the file via email
                 commonUtils.sendExcelFileViaEmail(workbook, filenameWithTimestamp);
             } else {

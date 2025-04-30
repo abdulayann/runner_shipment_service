@@ -23,13 +23,9 @@ public class WorkbookMultipartFile implements MultipartFile {
     this.originalFilename = originalFilename;
     this.contentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
-    ByteArrayOutputStream bos = new ByteArrayOutputStream();
-    try {
+    try (workbook; ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
       workbook.write(bos);
       this.content = bos.toByteArray();
-    }finally {
-      bos.close();
-      workbook.close();
     }
   }
 

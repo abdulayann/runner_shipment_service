@@ -4437,6 +4437,8 @@ class CommonUtilsTest {
         lenient().when(notificationService.sendEmail(any())).thenReturn(new NotificationServiceResponse());
 
         commonUtils.sendExcelFileViaEmail(workbook, filename);
+        assertEquals("him@gmail.com", UserContext.getUser().getEmail());
+
     }
 
     private ShipmentDetails getMockShipmentDetails() {

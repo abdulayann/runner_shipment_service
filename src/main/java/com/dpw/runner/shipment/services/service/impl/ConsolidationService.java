@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.service.impl;
 
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.KCRA_EXPIRY;
+import static com.dpw.runner.shipment.services.commons.constants.ApplicationConfigConstants.EXPORT_EXCEL_LIMIT;
 import static com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants.CONSOLIDATION_DETAILS_NULL;
 import static com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants.CONSOLIDATION_LIST_REQUEST_EMPTY_ERROR;
 import static com.dpw.runner.shipment.services.commons.constants.ConsolidationConstants.CONSOLIDATION_LIST_REQUEST_NULL_ERROR;
@@ -27,7 +28,6 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPM
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SYSTEM_GENERATED;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_AIR;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
-import static com.dpw.runner.shipment.services.commons.constants.ShipmentConstants.EXPORT_EXCEL_LIMIT;
 import static com.dpw.runner.shipment.services.entity.enums.GenerationType.Random;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.APPROVE;
 import static com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType.SHIPMENT_DETACH;
@@ -220,6 +220,7 @@ import com.dpw.runner.shipment.services.masterdata.response.CarrierResponse;
 import com.dpw.runner.shipment.services.masterdata.response.UnlocationsResponse;
 import com.dpw.runner.shipment.services.projection.ConsolidationDetailsProjection;
 import com.dpw.runner.shipment.services.repository.impl.CustomConsolidationDetailsRepositoryImpl;
+import com.dpw.runner.shipment.services.service.interfaces.IApplicationConfigService;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import com.dpw.runner.shipment.services.service.interfaces.IContainerService;
@@ -382,6 +383,9 @@ public class ConsolidationService implements IConsolidationService {
 
     @Autowired
     private IShipmentSync shipmentSync;
+
+    @Autowired
+    private IApplicationConfigService applicationConfigService;
 
     @Autowired
     private IShipmentSettingsDao shipmentSettingsDao;
@@ -4656,8 +4660,9 @@ public class ConsolidationService implements IConsolidationService {
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Constants.YYYY_MM_DD_HH_MM_SS_FORMAT);
             String timestamp = currentTime.format(formatter);
             String filenameWithTimestamp = "Consolidations_" + timestamp + Constants.XLSX;
-
-            if (consoleResponse.size() > EXPORT_EXCEL_LIMIT) {
+            String configuredLimitValue = applicationConfigService.getValue(EXPORT_EXCEL_LIMIT);
+            Integer exportExcelLimit = StringUtility.isEmpty(configuredLimitValue) ? 1000 : Integer.parseInt(configuredLimitValue);
+            if (consoleResponse.size() > exportExcelLimit) {
                 // Send the file via email
                 commonUtils.sendExcelFileViaEmail(workbook, filenameWithTimestamp);
             }else {
