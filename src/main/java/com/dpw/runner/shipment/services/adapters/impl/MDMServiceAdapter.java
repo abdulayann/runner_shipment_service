@@ -173,9 +173,12 @@ public class MDMServiceAdapter implements IMDMServiceAdapter {
                 DependentServiceResponse.class
             );
 
-        Object nestedData = ((Map<?, ?>) response.getBody().getData()).get("data");
+        List<LicenseResponse> licenseResponses = jsonHelper.convertValue(
+            Objects.requireNonNull(response.getBody()).getData(),
+            new TypeReference<List<LicenseResponse>>() {}
+        );
 
-        return objectMapper.convertValue(nestedData, LicenseResponse.class);
+        return CollectionUtils.isNotEmpty(licenseResponses) ? licenseResponses.get(0) : new LicenseResponse();
         } catch (Exception ex) {
             log.error("MDM Credit Details Failed due to: {}", jsonHelper.convertToJson(ex.getMessage()));
             return new LicenseResponse();
