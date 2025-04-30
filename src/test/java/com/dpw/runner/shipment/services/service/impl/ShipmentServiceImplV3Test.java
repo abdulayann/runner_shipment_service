@@ -101,7 +101,7 @@ class ShipmentServiceImplV3Test {
         when(notificationDao.findAllPendingNotificationCount(any(), any())).thenReturn(1);
 
         var response = shipmentServiceImplV3.getPendingNotificationCount();
-        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(2, response.getCount());
     }
 
     @Test
