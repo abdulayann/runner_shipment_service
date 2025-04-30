@@ -42,8 +42,8 @@ public class ShipmentControllerV3 {
 
     private static class MyResponseClass extends RunnerResponse<ShipmentDetailsV3Response> {}
 
-    private final IShipmentServiceV3 shipmentService;
-    private final JsonHelper jsonHelper;
+    private IShipmentServiceV3 shipmentService;
+    private JsonHelper jsonHelper;
 
     @Autowired
     public ShipmentControllerV3(IShipmentServiceV3 shipmentService, JsonHelper jsonHelper) {
