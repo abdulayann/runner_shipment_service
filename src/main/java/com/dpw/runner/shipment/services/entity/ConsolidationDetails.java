@@ -263,6 +263,10 @@ public class ConsolidationDetails extends MultiTenancy {
     @TenantIdData
     private Long receivingBranch;
 
+    @Column(name = "origin_branch")
+    @TenantIdData
+    private Long originBranch;
+
     @Column(name = "intra_branch")
     private boolean intraBranch;
 

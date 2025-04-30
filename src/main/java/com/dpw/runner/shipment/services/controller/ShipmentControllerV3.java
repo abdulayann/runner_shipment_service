@@ -1,13 +1,16 @@
 package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.ShipmentConstants;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerResponse;
-import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
+import com.dpw.runner.shipment.services.dto.response.ShipmentPendingNotificationResponse;
+import com.dpw.runner.shipment.services.dto.v3.request.ShipmentV3Request;
+import com.dpw.runner.shipment.services.dto.v3.response.ShipmentDetailsV3Response;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
@@ -37,8 +40,10 @@ import java.util.Optional;
 @Slf4j
 public class ShipmentControllerV3 {
 
-    private final IShipmentServiceV3 shipmentService;
-    private final JsonHelper jsonHelper;
+    private static class MyResponseClass extends RunnerResponse<ShipmentDetailsV3Response> {}
+
+    private IShipmentServiceV3 shipmentService;
+    private JsonHelper jsonHelper;
 
     @Autowired
     public ShipmentControllerV3(IShipmentServiceV3 shipmentService, JsonHelper jsonHelper) {
@@ -52,7 +57,7 @@ public class ShipmentControllerV3 {
     @GetMapping(ShipmentConstants.COUNT_PENDING_NOTIFICATION_API)
     public ResponseEntity<IRunnerResponse> getPendingNotificationCount() {
         log.info("Received shipment notification pending count request with RequestId: {}", LoggerHelper.getRequestIdFromMDC());
-        return shipmentService.getPendingNotificationCount();
+        return ResponseHelper.buildSuccessResponse(shipmentService.getPendingNotificationCount());
     }
 
     @PostMapping(ApiConstants.API_LIST)
@@ -61,18 +66,25 @@ public class ShipmentControllerV3 {
             @RequestParam(required = false, defaultValue = "false") boolean getMasterData) {
         log.info("Received shipment list v3 request with RequestId: {}",
                 LoggerHelper.getRequestIdFromMDC());
-        return shipmentService.listShipment(CommonRequestModel.buildRequest(listCommonRequest), getMasterData);
+        return ResponseHelper.buildSuccessResponse(shipmentService.listShipment(CommonRequestModel.buildRequest(listCommonRequest), getMasterData));
     }
 
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = ShipmentConstants.CREATE_SUCCESSFUL, response = ShipmentControllerV3.MyResponseClass.class),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
     @PostMapping(ApiConstants.API_CREATE)
-    public ResponseEntity<IRunnerResponse> create(@RequestBody @Valid ShipmentRequest request) {
+    public ResponseEntity<IRunnerResponse> create(@RequestBody @Valid ShipmentV3Request request) {
         log.info("Received Shipment create request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
         return ResponseHelper.buildSuccessResponse(shipmentService.create(CommonRequestModel.buildRequest(request)));
     }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ShipmentConstants.UPDATE_SUCCESSFUL, response = RunnerResponse.class)})
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = ShipmentConstants.UPDATE_SUCCESSFUL, response = ShipmentControllerV3.MyResponseClass.class),
+            @ApiResponse(code = 404, message = Constants.NO_DATA, response = RunnerResponse.class)
+    })
     @PutMapping(ApiConstants.API_UPDATE)
-    public ResponseEntity<IRunnerResponse> completeUpdate(@RequestBody @Valid ShipmentRequest request) throws RunnerException {
+    public ResponseEntity<IRunnerResponse> completeUpdate(@RequestBody @Valid ShipmentV3Request request) throws RunnerException {
         log.info("Received Shipment update request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
         return ResponseHelper.buildSuccessResponse(shipmentService.completeUpdate(CommonRequestModel.buildRequest(request)));
     }
@@ -81,16 +93,31 @@ public class ShipmentControllerV3 {
     @DeleteMapping(ApiConstants.API_DELETE)
     public ResponseEntity<IRunnerResponse> delete(@RequestParam @Valid Long id) {
         CommonGetRequest request = CommonGetRequest.builder().id(id).build();
-        return shipmentService.delete(CommonRequestModel.buildRequest(request));
+        shipmentService.delete(CommonRequestModel.buildRequest(request));
+        return ResponseHelper.buildSuccessResponse();
     }
 
     @ApiResponses(value = {@ApiResponse(code = 200, response = RunnerResponse.class, message = ShipmentConstants.RETRIEVE_BY_ID_SUCCESSFUL)})
     @GetMapping(ApiConstants.API_RETRIEVE_BY_ID)
-    public ResponseEntity<IRunnerResponse> retrieveById(@ApiParam(value = ShipmentConstants.SHIPMENT_ID) @RequestParam Optional<Long> id, @ApiParam(value = ShipmentConstants.SHIPMENT_GUID) @RequestParam Optional<String> guid, @RequestParam(required = false, defaultValue = "false") boolean getMasterData) {
+    public ResponseEntity<IRunnerResponse> retrieveById(@ApiParam(value = ShipmentConstants.SHIPMENT_ID) @RequestParam Optional<Long> id, @ApiParam(value = ShipmentConstants.SHIPMENT_GUID) @RequestParam Optional<String> guid, @RequestParam(required = false, defaultValue = "false") boolean getMasterData) throws RunnerException {
         CommonGetRequest request = CommonGetRequest.builder().build();
         id.ifPresent(request::setId);
         guid.ifPresent(request::setGuid);
         log.info("Received Shipment retrieve request with RequestId: {} and payload: {}", LoggerHelper.getRequestIdFromMDC(), jsonHelper.convertToJson(request));
-        return shipmentService.retrieveById(CommonRequestModel.buildRequest(request), getMasterData);
+        return ResponseHelper.buildSuccessResponse(shipmentService.retrieveById(CommonRequestModel.buildRequest(request), getMasterData));
     }
+
+    @GetMapping(ApiConstants.API_RETRIEVE_PENDING_NOTIFICATION_DATA)
+    public ResponseEntity<IRunnerResponse> pendingNotificationsData(@ApiParam(value = ShipmentConstants.SHIPMENT_ID) @RequestParam Long id) {
+        log.info("Received pending notification shipment data v3 request with RequestId: {}", LoggerHelper.getRequestIdFromMDC());
+        CommonGetRequest request = CommonGetRequest.builder().id(id).build();
+        ShipmentPendingNotificationResponse shipmentPendingNotificationResponse = shipmentService.getPendingNotificationData(request);
+        return ResponseHelper.buildSuccessResponse(shipmentPendingNotificationResponse);
+    }
+
+    @GetMapping(ApiConstants.API_GET_SHIPMENT_ASSIGN_CONTAINER_TRAY)
+    public ResponseEntity<IRunnerResponse> getShipmentAssignContainerTray(@ApiParam Long containerId, @ApiParam Long consolidationId)  {
+        return ResponseHelper.buildSuccessResponse(shipmentService.getShipmentAndPacksForConsolidationAssignContainerTray(containerId, consolidationId));
+    }
+
 }

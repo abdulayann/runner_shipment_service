@@ -4,29 +4,35 @@ import com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConst
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.ShipmentSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.TenantSettingsDetailsContext;
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.UserContext;
+import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.INotificationDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.dto.mapper.ShipmentMapper;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
 import com.dpw.runner.shipment.services.dto.response.PickupDeliveryDetailsListResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksAssignContainerTrayDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
 import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentRequestedType;
 import com.dpw.runner.shipment.services.entity.enums.ShipmentStatus;
-import com.dpw.runner.shipment.services.helper.JsonTestUtility;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.helpers.ShipmentMasterDataHelperV3;
 import com.dpw.runner.shipment.services.repository.interfaces.IShipmentRepository;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import org.apache.commons.lang3.ObjectUtils;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
@@ -44,8 +50,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.*;
-import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
@@ -65,6 +72,10 @@ class ShipmentServiceImplV3Test {
     private IShipmentDao shipmentDao;
     @Mock
     private ShipmentMasterDataHelperV3 shipmentMasterDataHelper;
+    @Mock
+    private IShipmentsContainersMappingDao shipmentsContainersMappingDao;
+    @Mock
+    private JsonHelper jsonHelper;
 
 
     @BeforeAll
@@ -90,7 +101,7 @@ class ShipmentServiceImplV3Test {
         when(notificationDao.findAllPendingNotificationCount(any(), any())).thenReturn(1);
 
         var response = shipmentServiceImplV3.getPendingNotificationCount();
-        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(2, response.getCount());
     }
 
     @Test
@@ -182,7 +193,48 @@ class ShipmentServiceImplV3Test {
         assertEquals(HttpStatus.OK, httpResponse.getStatusCode());
     }
 
+    @Test
+    void testGetShipmentAndPacksForConsolidationAssignContainerTray() {
+        when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>()));
+        ShipmentPacksAssignContainerTrayDto.Shipments shipments = ShipmentPacksAssignContainerTrayDto.Shipments.builder().id(4L).build();
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(shipments));
+        when(shipmentsContainersMappingDao.findByContainerId(any())).thenReturn(new ArrayList<>());
+        ShipmentPacksAssignContainerTrayDto response =
+                shipmentServiceImplV3.getShipmentAndPacksForConsolidationAssignContainerTray(1L, 2L);
+        assertNotNull(response);
+    }
 
+    @Test
+    void testGetShipmentAndPacksForConsolidationAssignContainerTrayAssignedFCL() {
+        when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>()));
+        ShipmentPacksAssignContainerTrayDto.Shipments shipments = ShipmentPacksAssignContainerTrayDto.Shipments.builder()
+                .id(4L)
+                .shipmentType(Constants.CARGO_TYPE_FCL)
+                .build();
+        ShipmentPacksAssignContainerTrayDto.Shipments shipments1 = ShipmentPacksAssignContainerTrayDto.Shipments.builder()
+                .id(5L)
+                .build();
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(shipments1, shipments));
+        when(shipmentsContainersMappingDao.findByContainerId(any())).thenReturn(List.of(ShipmentsContainersMapping.builder().shipmentId(4L).build()));
+        ShipmentPacksAssignContainerTrayDto response =
+                shipmentServiceImplV3.getShipmentAndPacksForConsolidationAssignContainerTray(1L, 2L);
+        assertNotNull(response);
+    }
 
+    @Test
+    void testGetShipmentAndPacksForConsolidationAssignContainerTrayAssigned() {
+        when(shipmentDao.findAll(any(), any())).thenReturn(new PageImpl<>(new ArrayList<>()));
+        ShipmentPacksAssignContainerTrayDto.Shipments shipments = ShipmentPacksAssignContainerTrayDto.Shipments.builder()
+                .id(4L)
+                .build();
+        ShipmentPacksAssignContainerTrayDto.Shipments shipments1 = ShipmentPacksAssignContainerTrayDto.Shipments.builder()
+                .id(5L)
+                .build();
+        when(jsonHelper.convertValueToList(any(), any())).thenReturn(List.of(shipments1, shipments));
+        when(shipmentsContainersMappingDao.findByContainerId(any())).thenReturn(List.of(ShipmentsContainersMapping.builder().shipmentId(4L).build()));
+        ShipmentPacksAssignContainerTrayDto response =
+                shipmentServiceImplV3.getShipmentAndPacksForConsolidationAssignContainerTray(1L, 2L);
+        assertNotNull(response);
+    }
 
 }

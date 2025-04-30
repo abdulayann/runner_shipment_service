@@ -284,6 +284,10 @@ public class ShipmentDetails extends MultiTenancy {
     @TenantIdData
     private Long receivingBranch;
 
+    @Column(name = "origin_branch")
+    @TenantIdData
+    private Long originBranch;
+
     @Column(name = "intra_branch")
     private Boolean intraBranch;
 
