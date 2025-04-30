@@ -148,4 +148,5 @@ public class ApiConstants {
 
     public static final String API_RETRIEVE_PENDING_NOTIFICATION_DATA = "/pending/notification/data";
 
+    public static final String API_GET_SHIPMENT_ASSIGN_CONTAINER_TRAY = "/get/shipments/assignContainerTray";
 }

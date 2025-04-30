@@ -128,29 +128,29 @@ class ContainerV3ServiceTest extends CommonMocks {
         MockitoAnnotations.initMocks(this);
     }
 
-//    @Test
-//    void calculateContainerSummary() throws RunnerException {
-//        List<Containers> containersList = List.of(testContainer);
-//        mockShipmentSettings();
-//        mockTenantSettings();
-//        when(shipmentsContainersMappingDao.findByContainerIdIn(any())).thenReturn(List.of(new ShipmentsContainersMapping()));
-//        ContainerSummaryResponse containerSummaryResponse = containerV3Service.calculateContainerSummary(containersList, Constants.TRANSPORT_MODE_SEA, Constants.SHIPMENT_TYPE_LCL);
-//        assertNotNull(containerSummaryResponse);
-//    }
+    @Test
+    void calculateContainerSummary() throws RunnerException {
+        List<Containers> containersList = List.of(testContainer);
+        mockShipmentSettings();
+        mockTenantSettings();
+        when(shipmentsContainersMappingDao.findByContainerIdIn(any())).thenReturn(List.of(new ShipmentsContainersMapping()));
+        ContainerSummaryResponse containerSummaryResponse = containerV3Service.calculateContainerSummary(containersList);
+        assertNotNull(containerSummaryResponse);
+    }
 
-//    @Test
-//    void calculateContainerSummary_Branches() throws RunnerException{
-//        testContainer.setPacks(null);
-//        testContainer.setContainerCount(null);
-//        List<Containers> containersList = List.of(testContainer);
-//        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setWeightChargeableUnit(null);
-//        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setVolumeChargeableUnit(null);
-//        mockShipmentSettings();
-//        mockTenantSettings();
-//        when(shipmentsContainersMappingDao.findByContainerIdIn(any())).thenReturn(List.of(new ShipmentsContainersMapping()));
-//        ContainerSummaryResponse containerSummaryResponse = containerV3Service.calculateContainerSummary(containersList, Constants.TRANSPORT_MODE_SEA, Constants.SHIPMENT_TYPE_LCL);
-//        assertNotNull(containerSummaryResponse);
-//    }
+    @Test
+    void calculateContainerSummary_Branches() throws RunnerException{
+        testContainer.setPacks(null);
+        testContainer.setContainerCount(null);
+        List<Containers> containersList = List.of(testContainer);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setWeightChargeableUnit(null);
+        ShipmentSettingsDetailsContext.getCurrentTenantSettings().setVolumeChargeableUnit(null);
+        mockShipmentSettings();
+        mockTenantSettings();
+        when(shipmentsContainersMappingDao.findByContainerIdIn(any())).thenReturn(List.of(new ShipmentsContainersMapping()));
+        ContainerSummaryResponse containerSummaryResponse = containerV3Service.calculateContainerSummary(containersList);
+        assertNotNull(containerSummaryResponse);
+    }
 
     @Test
     void testValidateContainerNumber_Success() {

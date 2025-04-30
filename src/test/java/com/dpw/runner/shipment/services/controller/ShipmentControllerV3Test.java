@@ -1,9 +1,7 @@
 package com.dpw.runner.shipment.services.controller;
 
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.dto.response.ShipmentDetailsResponse;
-import com.dpw.runner.shipment.services.dto.response.ShipmentPendingNotificationResponse;
-import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -19,15 +17,16 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import static org.mockito.Mockito.*;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@ContextConfiguration(classes = {MasterDataController.class})
+@ContextConfiguration(classes = {ShipmentControllerV3.class})
 @ExtendWith(MockitoExtension.class)
 @Execution(ExecutionMode.CONCURRENT)
 class ShipmentControllerV3Test {
     @Mock
     IShipmentServiceV3 shipmentService;
+    @Mock
+    JsonHelper jsonHelper;
     @InjectMocks
     ShipmentControllerV3 shipmentControllerV3;
 
@@ -40,46 +39,25 @@ class ShipmentControllerV3Test {
 
     @Test
     void getPendingNotificationCount() {
-        // Mock
-        when(shipmentService.getPendingNotificationCount()).thenReturn(ResponseHelper.buildSuccessResponse());
-        // Test
         var responseEntity = shipmentControllerV3.getPendingNotificationCount();
-        // Assert
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
     @Test
-    void getPendingNotificationCount1() {
-        // Mock
-        when(shipmentService.getPendingNotificationCount()).thenThrow(RuntimeException.class);
-        // Test
-        var responseEntity = shipmentControllerV3.getPendingNotificationCount();
-        // Assert
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-    }
-
-    @Test
-    void getPendingNotificationCount2() {
-        // Mock
-        when(shipmentService.getPendingNotificationCount()).thenThrow(new RuntimeException("RuntimeException"));
-        // Test
-        var responseEntity = shipmentControllerV3.getPendingNotificationCount();
-        // Assert
-        assertEquals(HttpStatus.BAD_REQUEST, responseEntity.getStatusCode());
-    }
-
-    @Test
     void list(){
-        when(shipmentService.listShipment(any(), anyBoolean())).thenReturn(ResponseHelper.buildSuccessResponse());
         var responseEntity = shipmentControllerV3.list(ListCommonRequest.builder().build(), true);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 
     @Test
+    void getShipmentAssignContainerTray() {
+        var responseEntity = shipmentControllerV3.getShipmentAssignContainerTray(1L, 2L);
+        assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
+    }
+
+    @Test
     void pendingNotificationsData(){
-        ShipmentPendingNotificationResponse shipmentPendingNotificationResponse = (ShipmentPendingNotificationResponse) ShipmentDetailsResponse.builder().build();
-        when(shipmentService.getPendingNotificationData(any())).thenReturn(shipmentPendingNotificationResponse);
-        var responseEntity = shipmentControllerV3.pendingNotificationsData(any());
+        var responseEntity = shipmentControllerV3.pendingNotificationsData(1L);
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
     }
 

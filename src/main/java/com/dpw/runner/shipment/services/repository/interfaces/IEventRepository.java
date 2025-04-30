@@ -2,6 +2,7 @@ package com.dpw.runner.shipment.services.repository.interfaces;
 
 import com.dpw.runner.shipment.services.aspects.MultitenancyAspect.MultiTenancyRepository;
 import com.dpw.runner.shipment.services.entity.Events;
+import com.dpw.runner.shipment.services.utils.ExcludeTenantFilter;
 import com.dpw.runner.shipment.services.utils.Generated;
 import com.dpw.runner.shipment.services.utils.InterBranchEntity;
 import org.springframework.data.domain.Page;
@@ -22,6 +23,11 @@ import java.util.UUID;
 @InterBranchEntity
 public interface IEventRepository extends MultiTenancyRepository<Events> {
     Page<Events> findAll(Specification<Events> spec, Pageable pageable);
+
+    @ExcludeTenantFilter
+    default Page<Events> findAllWithoutTenantFilter(Specification<Events> spec, Pageable pageable) {
+        return findAll(spec, pageable);
+    }
 
     List<Events> findAll();
 

@@ -13,7 +13,6 @@ import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.dao.impl.NotesDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IAwbDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IConsoleShipmentMappingDao;
@@ -30,6 +29,7 @@ import com.dpw.runner.shipment.services.dto.request.PartiesRequest;
 import com.dpw.runner.shipment.services.dto.request.ReferenceNumbersRequest;
 import com.dpw.runner.shipment.services.dto.request.ShipmentRequest;
 import com.dpw.runner.shipment.services.dto.request.TruckDriverDetailsRequest;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.dto.response.NotificationCount;
 import com.dpw.runner.shipment.services.dto.response.ShipmentListResponse;
 import com.dpw.runner.shipment.services.dto.response.ShipmentRetrieveLiteResponse;
@@ -47,7 +47,9 @@ import com.dpw.runner.shipment.services.entity.Hbl;
 import com.dpw.runner.shipment.services.entity.MblDuplicatedLog;
 import com.dpw.runner.shipment.services.entity.Parties;
 import com.dpw.runner.shipment.services.entity.ReferenceNumbers;
+import com.dpw.runner.shipment.services.dto.shipment_console_dtos.ShipmentPacksAssignContainerTrayDto;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.TriangulationPartner;
 import com.dpw.runner.shipment.services.entity.TruckDriverDetails;
@@ -117,6 +119,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.ReportingService.CommonUtils.ReportConstants.SRN;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CARGO_TYPE_FCL;
+import static com.dpw.runner.shipment.services.commons.constants.Constants.CONSOLIDATION_ID;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.ORDERS_COUNT;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT;
 import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPMENT_STATUS_FIELDS;
@@ -124,6 +128,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.SHIPP
 import static com.dpw.runner.shipment.services.commons.constants.Constants.TRANSPORT_MODE_SEA;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.andCriteria;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.setIsNullOrEmpty;
 
@@ -140,6 +145,7 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     private CommonUtils commonUtils;
     private IShipmentRepository shipmentRepository;
     private IShipmentDao shipmentDao;
+    private IShipmentsContainersMappingDao shipmentsContainersMappingDao;
     private ShipmentMasterDataHelperV3 shipmentMasterDataHelper;
     private JsonHelper jsonHelper;
     private MasterDataUtils masterDataUtils;
@@ -164,7 +170,6 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
     private EventsV3Util eventsV3Util;
     private ShipmentValidationV3Util shipmentValidationV3Util;
     private final IDpsEventService dpsEventService;
-    private final NotesDao notesDao;
     private final ModelMapper modelMapper;
 
     @Autowired
@@ -197,7 +202,8 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
             ShipmentsV3Util shipmentsV3Util,
             EventsV3Util eventsV3Util,
             ShipmentValidationV3Util shipmentValidationV3Util,
-            IDpsEventService dpsEventService, NotesDao notesDao, ModelMapper modelMapper) {
+            IShipmentsContainersMappingDao shipmentsContainersMappingDao,
+            IDpsEventService dpsEventService, ModelMapper modelMapper) {
         this.consoleShipmentMappingDao = consoleShipmentMappingDao;
         this.notificationDao = notificationDao;
         this.commonUtils = commonUtils;
@@ -224,11 +230,11 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         this.truckDriverDetailsDao = truckDriverDetailsDao;
         this.referenceNumbersDao = referenceNumbersDao;
         this.dpsEventService = dpsEventService;
-        this.notesDao = notesDao;
         this.modelMapper = modelMapper;
         this.shipmentsV3Util = shipmentsV3Util;
         this.eventsV3Util = eventsV3Util;
         this.shipmentValidationV3Util = shipmentValidationV3Util;
+        this.shipmentsContainersMappingDao = shipmentsContainersMappingDao;
     }
 
     @Override
@@ -1159,6 +1165,28 @@ public class ShipmentServiceImplV3 implements IShipmentServiceV3 {
         ShipmentPendingNotificationResponse shipmentResponse = (ShipmentPendingNotificationResponse) commonUtils.setIncludedFieldsToResponse(optionalShipmentDetails.get(), includeColumns, new ShipmentPendingNotificationResponse());
         shipmentMasterDataHelper.getMasterDataForEntity(shipmentResponse);
         return shipmentResponse;
+    }
+
+    @Override
+    public ShipmentPacksAssignContainerTrayDto getShipmentAndPacksForConsolidationAssignContainerTray(Long containerId, Long consolidationId) {
+        ListCommonRequest listCommonRequest = constructListCommonRequest(CONSOLIDATION_ID, consolidationId, "=");
+        Pair<Specification<ShipmentDetails>, Pageable> pair = fetchData(listCommonRequest, ShipmentDetails.class, ShipmentService.tableNames);
+        Page<ShipmentDetails> shipmentDetails = shipmentDao.findAll(pair.getLeft(), pair.getRight());
+        ShipmentPacksAssignContainerTrayDto response = new ShipmentPacksAssignContainerTrayDto();
+        response.setShipmentsList(jsonHelper.convertValueToList(shipmentDetails.getContent(), ShipmentPacksAssignContainerTrayDto.Shipments.class));
+        List<ShipmentsContainersMapping> shipmentsContainersMappingsList = shipmentsContainersMappingDao.findByContainerId(containerId);
+        List<Long> assignedShipmentsList = shipmentsContainersMappingsList.stream().map(e -> e.getShipmentId()).toList();
+        response.setIsFCLShipmentAssigned(false);
+        for(ShipmentPacksAssignContainerTrayDto.Shipments shipments: response.getShipmentsList()) {
+            if(assignedShipmentsList.contains(shipments.getId())) {
+                shipments.setAssigned(true);
+                if(CARGO_TYPE_FCL.equals(shipments.getShipmentType()))
+                    response.setIsFCLShipmentAssigned(true);
+            } else {
+                shipments.setAssigned(false);
+            }
+        }
+        return response;
     }
 
 }
