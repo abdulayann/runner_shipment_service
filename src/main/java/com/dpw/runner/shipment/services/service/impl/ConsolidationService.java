@@ -4571,12 +4571,7 @@ public class ConsolidationService implements IConsolidationService {
     @Override
     public void exportExcel(HttpServletResponse response, CommonRequestModel commonRequestModel) throws IOException, IllegalAccessException, RunnerException {
         ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-        if (request == null) {
-            log.error(CONSOLIDATION_LIST_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
-        }
-        if (commonRequestModel.getData() == null || !commonRequestModel.getData().getClass().isAssignableFrom(ListCommonRequest.class)) {
-            return;
-        }
+        if (invalidateExcel(commonRequestModel, request)) return;
 
         applyPermissionFilter(commonRequestModel);
         Pair<Specification<ConsolidationDetails>, Pageable> tuple = fetchData(request, ConsolidationDetails.class, tableNames);
@@ -4678,6 +4673,17 @@ public class ConsolidationService implements IConsolidationService {
         }
 
     }
+
+  private boolean invalidateExcel(CommonRequestModel commonRequestModel, ListCommonRequest request) {
+    if (request == null) {
+      log.error(CONSOLIDATION_LIST_REQUEST_EMPTY_ERROR, LoggerHelper.getRequestIdFromMDC());
+    }
+    boolean isInvalidateExcel = false;
+    if (commonRequestModel.getData() == null || !commonRequestModel.getData().getClass().isAssignableFrom(ListCommonRequest.class)) {
+      isInvalidateExcel = true;
+    }
+    return isInvalidateExcel;
+  }
 
     private Integer getExportExcelLimit(){
         String configuredLimitValue = applicationConfigService.getValue(EXPORT_EXCEL_LIMIT);
