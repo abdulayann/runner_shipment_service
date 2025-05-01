@@ -27,7 +27,6 @@ import com.dpw.runner.shipment.services.dto.request.CustomAutoEventRequest;
 import com.dpw.runner.shipment.services.dto.request.EmailTemplatesRequest;
 import com.dpw.runner.shipment.services.dto.request.EventsRequest;
 import com.dpw.runner.shipment.services.dto.request.ReportRequest;
-import com.dpw.runner.shipment.services.dto.request.hbl.HblDataDto;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.entity.*;
 import com.dpw.runner.shipment.services.entity.enums.*;
@@ -60,7 +59,6 @@ import com.itextpdf.text.pdf.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.tuple.Pair;
-import org.jetbrains.annotations.Nullable;
 import org.modelmapper.ModelMapper;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -2360,7 +2358,7 @@ public class ReportService implements IReportService {
     public void pushFileToDocumentMaster(ReportRequest reportRequest, byte[] pdfByteContent, Map<String, Object> dataRetrieved) {
         var shipmentSettings = commonUtils.getShipmentSettingFromContext();
         // If Shipment V3 is enabled && when this method is called for first time, should not push when this method is called internally
-        if (shipmentSettings != null && Boolean.TRUE.equals(shipmentSettings.getIsRunnerV3Enabled()) && Boolean.FALSE.equals(reportRequest.isSelfCall())) {
+        if (shipmentSettings != null  && Boolean.TRUE.equals(shipmentSettings.getIsRunnerV3Enabled()) && Boolean.FALSE.equals(reportRequest.isSelfCall())) {
             String filename;
             String childType;
             String docType = reportRequest.getReportInfo();
@@ -2395,43 +2393,52 @@ public class ReportService implements IReportService {
                     childType = reportRequest.getPrintType();
             }
 
-            DocUploadRequest docUploadRequest = this.setDocumentServiceParameters(reportRequest, dataRetrieved);
-
-            docUploadRequest.setDocType(docType);
-            docUploadRequest.setChildType(childType);
-
-            CompletableFuture.runAsync(masterDataUtils.withMdc(() -> documentManagerService.pushSystemGeneratedDocumentToDocMaster(new BASE64DecodedMultipartFile(pdfByteContent), filename, docUploadRequest)), executorService);
+            try {
+                DocUploadRequest docUploadRequest = new DocUploadRequest();
+                docUploadRequest.setDocType(docType);
+                docUploadRequest.setChildType(childType);
+                docUploadRequest.setFileName(filename);
+                CompletableFuture.runAsync(masterDataUtils.withMdc(() -> this.setDocumentServiceParameters(reportRequest, docUploadRequest, pdfByteContent)), executorService);
+            } catch (Exception e) {
+                log.error("{} | {} : Exception: {}", LoggerHelper.getRequestIdFromMDC(), "pushFileToDocumentMaster", e.getMessage());
+            }
         }
     }
 
-    private DocUploadRequest setDocumentServiceParameters(ReportRequest reportRequest, Map<String, Object> dataRetrieved) {
-        String transportMode = reportRequest.getTransportMode();
-        String shipmentType = reportRequest.getShipmentType();
+    private void setDocumentServiceParameters(ReportRequest reportRequest,  DocUploadRequest docUploadRequest, byte[] pdfByteContent) {
+        String transportMode;
+        String shipmentType;
+        String entityGuid;
+        String entityType;
 
-        // Set TransportMode & ShipmentType based on dataRetrieved from db
+        // Set TransportMode, ShipmentType, EntityKey, EntityType based on report Module Type
         switch (reportRequest.getEntityName()) {
             case Constants.SHIPMENTS_WITH_SQ_BRACKETS:
-                transportMode = Objects.nonNull(dataRetrieved.get(TRANSPORT_MODE)) ? StringUtility.convertToString(dataRetrieved.get(TRANSPORT_MODE)) : transportMode;
-                shipmentType = Objects.nonNull(dataRetrieved.get(DIRECTION)) ? StringUtility.convertToString(dataRetrieved.get(DIRECTION)) : shipmentType;
+                ShipmentDetails shipmentDetails = shipmentDao.findById(Long.valueOf(reportRequest.getReportId())).orElse(new ShipmentDetails());
+                transportMode = shipmentDetails.getTransportMode();
+                shipmentType = shipmentDetails.getDirection();
+                entityGuid = StringUtility.convertToString(shipmentDetails.getGuid());
+                entityType = Constants.SHIPMENTS_WITH_SQ_BRACKETS;
                 break;
 
             case Constants.CONSOLIDATIONS_WITH_SQ_BRACKETS:
-                transportMode = Objects.nonNull(dataRetrieved.get(TRANSPORT_MODE)) ? StringUtility.convertToString(dataRetrieved.get(TRANSPORT_MODE)) : transportMode;
-                shipmentType = Objects.nonNull(dataRetrieved.get(SHIPMENT_TYPE)) ? StringUtility.convertToString(dataRetrieved.get(SHIPMENT_TYPE)) : shipmentType;
+                ConsolidationDetails consolidationDetails = consolidationDetailsDao.findById(Long.valueOf(reportRequest.getReportId())).orElse(new ConsolidationDetails());
+                transportMode = consolidationDetails.getTransportMode();
+                shipmentType = consolidationDetails.getShipmentType();
+                entityGuid = StringUtility.convertToString(consolidationDetails.getGuid());
+                entityType = Constants.CONSOLIDATIONS_WITH_SQ_BRACKETS;
                 break;
 
             default:
-                transportMode = reportRequest.getTransportMode();
-                shipmentType = reportRequest.getShipmentType();
+                log.warn("{} | {} | Invalid Module Type: {}", LoggerHelper.getRequestIdFromMDC(), "setDocumentServiceParameters", reportRequest.getEntityName());
+                return;
         }
 
-        DocUploadRequest docUploadRequest = new DocUploadRequest();
-
-        docUploadRequest.setEntityType(reportRequest.getEntityName());
-        docUploadRequest.setKey(reportRequest.getEntityGuid());
+        docUploadRequest.setEntityType(entityType);
+        docUploadRequest.setKey(entityGuid);
         docUploadRequest.setTransportMode(transportMode);
         docUploadRequest.setShipmentType(shipmentType);
 
-        return docUploadRequest;
+        documentManagerService.pushSystemGeneratedDocumentToDocMaster(new BASE64DecodedMultipartFile(pdfByteContent), docUploadRequest.getFileName(), docUploadRequest);
     }
 }

@@ -3607,7 +3607,6 @@ class ReportServiceTest extends CommonMocks {
         reportRequest.setReportInfo(ReportConstants.HOUSE_BILL);
         reportRequest.setPrintType(ReportConstants.ORIGINAL);
         reportRequest.setReportId("123");
-        reportRequest.setEntityGuid(UUID.randomUUID().toString());
         reportRequest.setEntityName(Constants.SHIPMENTS_WITH_SQ_BRACKETS);
 
         Map<String, Object> dataRetrieved = new HashMap<>();
@@ -3625,7 +3624,6 @@ class ReportServiceTest extends CommonMocks {
     void testPushFileToDocumentMasterForSeawayBill() {
         reportRequest.setReportInfo(ReportConstants.SEAWAY_BILL);
         reportRequest.setReportId("123");
-        reportRequest.setEntityGuid(UUID.randomUUID().toString());
         reportRequest.setEntityName(Constants.CONSOLIDATIONS_WITH_SQ_BRACKETS);
 
         Map<String, Object> dataRetrieved = new HashMap<>();
@@ -3643,7 +3641,6 @@ class ReportServiceTest extends CommonMocks {
         reportRequest.setReportInfo(ReportConstants.HAWB);
         reportRequest.setPrintType(ReportConstants.ORIGINAL);
         reportRequest.setReportId("123");
-        reportRequest.setEntityGuid(UUID.randomUUID().toString());
         reportRequest.setEntityName(Constants.SHIPMENTS_WITH_SQ_BRACKETS);
 
         Map<String, Object> dataRetrieved = new HashMap<>();
@@ -3661,7 +3658,6 @@ class ReportServiceTest extends CommonMocks {
         reportRequest.setReportInfo(ReportConstants.MAWB);
         reportRequest.setPrintType(ReportConstants.DRAFT);
         reportRequest.setReportId("123");
-        reportRequest.setEntityGuid(UUID.randomUUID().toString());
         reportRequest.setEntityName(Constants.SHIPMENTS_WITH_SQ_BRACKETS);
 
         Map<String, Object> dataRetrieved = new HashMap<>();
@@ -3693,7 +3689,6 @@ class ReportServiceTest extends CommonMocks {
     void testPushFileToDocumentMasterForDefault(String entityName) {
         reportRequest.setReportInfo(ReportConstants.CSD_INFO);
         reportRequest.setReportId("123");
-        reportRequest.setEntityGuid(UUID.randomUUID().toString());
         reportRequest.setEntityName(entityName);
 
         Map<String, Object> dataRetrieved = new HashMap<>();

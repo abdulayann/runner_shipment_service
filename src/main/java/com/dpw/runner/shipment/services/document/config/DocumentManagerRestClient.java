@@ -137,7 +137,7 @@ public class DocumentManagerRestClient {
                     new ParameterizedTypeReference<>() {
                     }
             );
-
+            log.info("{} | URL: {} | saveFile response: {}", LoggerHelper.getRequestIdFromMDC(), url, jsonHelper.convertToJson(responseEntity.getBody()));
             return responseEntity.getBody();
         }
         catch (Exception ex) {
