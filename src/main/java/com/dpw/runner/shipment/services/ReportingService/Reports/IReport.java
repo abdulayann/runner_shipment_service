@@ -3803,7 +3803,7 @@ public abstract class IReport {
         List<Map<String, Object>> partiesAddressData = (List<Map<String, Object>>) partiesOrgData.get(Constants.ORG_ADDRESS);
         if (partiesAddressData != null) {
             for (Map<String, Object> addressData : partiesAddressData) {
-                if (Objects.equals(addressData.get(Constants.ADDRESS_SHORT_CODE), party.getAddressCode())) {
+                if (Objects.nonNull(addressData) && Objects.equals(addressData.get(Constants.ADDRESS_SHORT_CODE), party.getAddressCode())) {
                     return addressData;
                 }
             }
