@@ -156,4 +156,6 @@ public class ShipmentListResponse implements IRunnerResponse {
     // dps items
     private String dpsStatus;
     private String cgsStatus;
+    
+    private Boolean isFrob;
 }
