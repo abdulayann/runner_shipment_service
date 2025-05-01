@@ -3685,7 +3685,7 @@ class ReportServiceTest extends CommonMocks {
 
 
     @ParameterizedTest
-    @ValueSource(strings = {Constants.SHIPMENTS_WITH_SQ_BRACKETS, Constants.CONSOLIDATIONS_WITH_SQ_BRACKETS, Constants.SHIPMENT})  // Runs test for both true and false cases
+    @ValueSource(strings = {Constants.SHIPMENTS_WITH_SQ_BRACKETS, Constants.CONSOLIDATIONS_WITH_SQ_BRACKETS})
     void testPushFileToDocumentMasterForDefault(String entityName) {
         reportRequest.setReportInfo(ReportConstants.CSD_INFO);
         reportRequest.setReportId("123");
@@ -3694,8 +3694,42 @@ class ReportServiceTest extends CommonMocks {
         Map<String, Object> dataRetrieved = new HashMap<>();
 
         when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
-        when(masterDataUtils.withMdc(any())).thenReturn(() -> mockRunnable());
 
+        Runnable mockRunnable = mock(Runnable.class);
+
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+            // Get the argument passed to the withMdc method
+            Runnable argument = invocation.getArgument(0);
+            // Call the run method of the argument
+            argument.run();
+            // Add any additional behavior or return value as needed
+            return mockRunnable;
+        });
+        reportService.pushFileToDocumentMaster(reportRequest, new byte[1024], dataRetrieved);
+
+        verify(documentManagerService, times(1)).pushSystemGeneratedDocumentToDocMaster(any(), any(), any());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {Constants.SHIPMENT})
+    void testPushFileToDocumentMasterForInvalidEntityType(String entityName) {
+        reportRequest.setReportInfo(ReportConstants.CSD_INFO);
+        reportRequest.setReportId("123");
+        reportRequest.setEntityName(entityName);
+
+        Map<String, Object> dataRetrieved = new HashMap<>();
+
+        when(commonUtils.getShipmentSettingFromContext()).thenReturn(ShipmentSettingsDetails.builder().isRunnerV3Enabled(true).build());
+        Runnable mockRunnable = mock(Runnable.class);
+
+        when(masterDataUtils.withMdc(any(Runnable.class))).thenAnswer(invocation -> {
+            // Get the argument passed to the withMdc method
+            Runnable argument = invocation.getArgument(0);
+            // Call the run method of the argument
+            argument.run();
+            // Add any additional behavior or return value as needed
+            return mockRunnable;
+        });
         reportService.pushFileToDocumentMaster(reportRequest, new byte[1024], dataRetrieved);
 
         verify(documentManagerService, times(0)).pushSystemGeneratedDocumentToDocMaster(any(), any(), any());
