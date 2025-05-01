@@ -28,6 +28,7 @@ public class ReportRequest implements IRunnerRequest {
     Boolean displayOtherAmount;
     String inLocalCurrency = null;
     String transportMode = null;
+    String shipmentType = null;
     String multiTemplateCode = null;
     String requestSource = null;
     String noOfCopies = null;
@@ -58,6 +59,7 @@ public class ReportRequest implements IRunnerRequest {
     List<HawbInfo> hawbInfo;
     String entityGuid;
     String entityName;
+    boolean isSelfCall = false;
 
     @Getter
     @Setter

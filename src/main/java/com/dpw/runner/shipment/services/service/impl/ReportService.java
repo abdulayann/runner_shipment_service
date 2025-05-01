@@ -240,7 +240,9 @@ public class ReportService implements IReportService {
             List<byte[]> pdfBytes = new ArrayList<>();
             DocPages pages = getFromTenantSettings(reportRequest.getReportInfo(), null, reportRequest.getPrintType(), reportRequest.getFrontTemplateCode(), reportRequest.getBackTemplateCode(), null, false);
             generatePdfBytes(reportRequest, pages, dataRetrived, pdfBytes);
-            return CommonUtils.concatAndAddContent(pdfBytes);
+            var byteContent = CommonUtils.concatAndAddContent(pdfBytes);
+            pushFileToDocumentMaster(reportRequest, byteContent, dataRetrived);
+            return byteContent;
         }
         else if(reportRequest.getReportInfo().equalsIgnoreCase(ReportConstants.MAWB))
         {
@@ -296,6 +298,7 @@ public class ReportService implements IReportService {
         processPreAlert(reportRequest, pdfByteContent, dataRetrived);
 
         triggerAutomaticTransfer(report, reportRequest);
+        // Push document to document master
         pushFileToDocumentMaster(reportRequest, pdfByteContent, dataRetrived);
         return pdfByteContent;
     }
@@ -399,6 +402,9 @@ public class ReportService implements IReportService {
         byte[] pdfByteContent = getFromDocumentService(dataRetrived, pages.getMainPageId());
         if(pdfByteContent == null) throw new ValidationException(ReportConstants.PLEASE_UPLOAD_VALID_TEMPLATE);
 
+        // Push document to document master
+        pushFileToDocumentMaster(reportRequest, pdfByteContent, dataRetrived);
+
         return pdfByteContent;
     }
 
@@ -451,6 +457,9 @@ public class ReportService implements IReportService {
         addDocumentToDocumentMaster(reportRequest, pdfByteContent);
 
         triggerAutomaticTransfer(report, reportRequest);
+
+        // Push document to document master
+        pushFileToDocumentMaster(reportRequest, pdfByteContent, dataRetrived);
 
         //Update shipment issue date
         return pdfByteContent;
@@ -580,7 +589,7 @@ public class ReportService implements IReportService {
         addDocumentToDocumentMaster(reportRequest, pdfByteContentForMawb);
 
         triggerAutomaticTransfer(report, reportRequest);
-
+        pushFileToDocumentMaster(reportRequest, pdfByteContentForMawb, dataRetrived);
         return pdfByteContentForMawb;
     }
 
@@ -940,7 +949,11 @@ public class ReportService implements IReportService {
             Optional<ConsolidationDetails> optionalConsolidationDetails = consolidationDetailsDao.findById(Long.valueOf(reportRequest.getReportId()));
             if(optionalConsolidationDetails.isPresent()) {
                 ConsolidationDetails consolidationDetails = optionalConsolidationDetails.get();
+                reportRequest.setSelfCall(true);
                 List<byte[]> dataByteList = getDataByteList(reportRequest, consolidationDetails);
+                reportRequest.setSelfCall(false);
+                reportRequest.setTransportMode(consolidationDetails.getTransportMode());
+                reportRequest.setShipmentType(consolidationDetails.getShipmentType());
                 return CommonUtils.concatAndAddContent(dataByteList);
             }
         }
@@ -2346,29 +2359,11 @@ public class ReportService implements IReportService {
 
     public void pushFileToDocumentMaster(ReportRequest reportRequest, byte[] pdfByteContent, Map<String, Object> dataRetrieved) {
         var shipmentSettings = commonUtils.getShipmentSettingFromContext();
-        // If Shipment V3 is enabled
-        if (shipmentSettings != null && Boolean.TRUE.equals(shipmentSettings.getIsRunnerV3Enabled())) {
+        // If Shipment V3 is enabled && when this method is called for first time, should not push when this method is called internally
+        if (shipmentSettings != null && Boolean.TRUE.equals(shipmentSettings.getIsRunnerV3Enabled()) && Boolean.FALSE.equals(reportRequest.isSelfCall())) {
             String filename;
             String childType;
             String docType = reportRequest.getReportInfo();
-            String transportMode;
-            String shipmentType;
-
-            switch (reportRequest.getEntityName()) {
-                case Constants.SHIPMENTS_WITH_SQ_BRACKETS:
-                    transportMode = StringUtility.convertToString(dataRetrieved.get(TRANSPORT_MODE));
-                    shipmentType = StringUtility.convertToString(dataRetrieved.get(DIRECTION));
-                    break;
-
-                case Constants.CONSOLIDATIONS_WITH_SQ_BRACKETS:
-                    transportMode = StringUtility.convertToString(dataRetrieved.get(TRANSPORT_MODE));
-                    shipmentType = StringUtility.convertToString(dataRetrieved.get(SHIPMENT_TYPE));
-                    break;
-
-                default:
-                    transportMode = reportRequest.getTransportMode();
-                    shipmentType = null;
-            }
 
             // Generate FileName, childType & DocType based on request Type
             switch (reportRequest.getReportInfo()) {
@@ -2400,14 +2395,43 @@ public class ReportService implements IReportService {
                     childType = reportRequest.getPrintType();
             }
 
-            DocUploadRequest docUploadRequest = new DocUploadRequest();
-            docUploadRequest.setEntityType(reportRequest.getEntityName());
-            docUploadRequest.setKey(reportRequest.getEntityGuid());
+            DocUploadRequest docUploadRequest = this.setDocumentServiceParameters(reportRequest, dataRetrieved);
+
             docUploadRequest.setDocType(docType);
             docUploadRequest.setChildType(childType);
-            docUploadRequest.setTransportMode(transportMode);
-            docUploadRequest.setShipmentType(shipmentType);
+
             CompletableFuture.runAsync(masterDataUtils.withMdc(() -> documentManagerService.pushSystemGeneratedDocumentToDocMaster(new BASE64DecodedMultipartFile(pdfByteContent), filename, docUploadRequest)), executorService);
         }
+    }
+
+    private DocUploadRequest setDocumentServiceParameters(ReportRequest reportRequest, Map<String, Object> dataRetrieved) {
+        String transportMode = reportRequest.getTransportMode();
+        String shipmentType = reportRequest.getShipmentType();
+
+        // Set TransportMode & ShipmentType based on dataRetrieved from db
+        switch (reportRequest.getEntityName()) {
+            case Constants.SHIPMENTS_WITH_SQ_BRACKETS:
+                transportMode = Objects.nonNull(dataRetrieved.get(TRANSPORT_MODE)) ? StringUtility.convertToString(dataRetrieved.get(TRANSPORT_MODE)) : transportMode;
+                shipmentType = Objects.nonNull(dataRetrieved.get(DIRECTION)) ? StringUtility.convertToString(dataRetrieved.get(DIRECTION)) : shipmentType;
+                break;
+
+            case Constants.CONSOLIDATIONS_WITH_SQ_BRACKETS:
+                transportMode = Objects.nonNull(dataRetrieved.get(TRANSPORT_MODE)) ? StringUtility.convertToString(dataRetrieved.get(TRANSPORT_MODE)) : transportMode;
+                shipmentType = Objects.nonNull(dataRetrieved.get(SHIPMENT_TYPE)) ? StringUtility.convertToString(dataRetrieved.get(SHIPMENT_TYPE)) : shipmentType;
+                break;
+
+            default:
+                transportMode = reportRequest.getTransportMode();
+                shipmentType = reportRequest.getShipmentType();
+        }
+
+        DocUploadRequest docUploadRequest = new DocUploadRequest();
+
+        docUploadRequest.setEntityType(reportRequest.getEntityName());
+        docUploadRequest.setKey(reportRequest.getEntityGuid());
+        docUploadRequest.setTransportMode(transportMode);
+        docUploadRequest.setShipmentType(shipmentType);
+
+        return docUploadRequest;
     }
 }
