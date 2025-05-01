@@ -350,7 +350,6 @@ public class DocumentManagerRestClient {
             );
             return jsonHelper.convertValue(response.getBody(), DocumentManagerResponse.class);
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
-            this.logError("temporaryUpload", object, ex);
             if (ex.getStatusCode() == HttpStatus.UNAUTHORIZED)
                 throw new UnAuthorizedException(UN_AUTHORIZED_EXCEPTION_STRING);
             throw new DocumentClientException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), DocumentManagerResponse.class).getErrorMessage());
@@ -377,7 +376,6 @@ public class DocumentManagerRestClient {
             );
             return jsonHelper.convertValue(response.getBody(), DocumentManagerResponse.class);
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
-            this.logError("list", object, ex);
             if (ex.getStatusCode() == HttpStatus.UNAUTHORIZED)
                 throw new UnAuthorizedException(UN_AUTHORIZED_EXCEPTION_STRING);
             throw new DocumentClientException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), DocumentManagerResponse.class).getErrorMessage());
@@ -400,7 +398,6 @@ public class DocumentManagerRestClient {
             );
             return jsonHelper.convertValue(response.getBody(), DocumentManagerResponse.class);
         } catch (HttpClientErrorException | HttpServerErrorException ex) {
-            this.logError("listDocTypes", object, ex);
             if (ex.getStatusCode() == HttpStatus.UNAUTHORIZED)
                 throw new UnAuthorizedException(UN_AUTHORIZED_EXCEPTION_STRING);
             throw new DocumentClientException(jsonHelper.readFromJson(ex.getResponseBodyAsString(), DocumentManagerResponse.class).getErrorMessage());
