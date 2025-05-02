@@ -38,9 +38,11 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
 import javax.servlet.http.HttpServletResponse;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -158,32 +160,57 @@ public class PackingV3Service implements IPackingV3Service {
     @Override
     @Transactional
     public BulkPackingResponse updateBulk(List<PackingV3Request> packingRequestList, String module) {
-        // Validate the incoming request to ensure all mandatory fields are present
-        packingValidationV3Util.validateUpdateBulkRequest(packingRequestList);
-
-        List<Long> packingIds = packingRequestList.stream()
+        // Separate IDs and determine existing packings
+        List<Long> incomingIds = packingRequestList.stream()
                 .map(PackingV3Request::getId)
+                .filter(Objects::nonNull)
                 .distinct()
                 .toList();
 
-        List<Packing> oldPackings = packingDao.findByIdIn(packingIds);
+        List<Packing> existingPackings = packingDao.findByIdIn(incomingIds);
 
-        List<Packing> oldConvertedPackings = jsonHelper.convertValueToList(oldPackings, Packing.class);
-        // Convert the request DTOs to entity models for persistence
-        List<Packing> newPackings = jsonHelper.convertValueToList(packingRequestList, Packing.class);
+        // Validate incoming request
+        packingValidationV3Util.validateUpdateBulkRequest(packingRequestList, existingPackings);
 
-        // Save the updated packings to the database
-        List<Packing> updatedPackings = packingDao.saveAll(newPackings);
+        Set<Long> existingIds = existingPackings.stream()
+                .map(Packing::getId)
+                .collect(Collectors.toSet());
 
-        ParentResult parentResult = getParentDetails(updatedPackings, module);
+        // Separate into create and update requests
+        List<PackingV3Request> updateRequests = new ArrayList<>();
+        List<PackingV3Request> createRequests = new ArrayList<>();
 
-        // Add audit logs for all updated packings
-        recordAuditLogs(oldConvertedPackings, updatedPackings, DBOperationType.UPDATE, parentResult);
+        for (PackingV3Request request : packingRequestList) {
+            if (request.getId() != null && existingIds.contains(request.getId())) {
+                updateRequests.add(request);
+            } else {
+                createRequests.add(request);
+            }
+        }
 
-        // Convert saved entities into response DTOs
-        List<PackingResponse> packingResponses = jsonHelper.convertValueToList(updatedPackings, PackingResponse.class);
+        // Convert and process updates
+        List<Packing> oldConvertedPackings = jsonHelper.convertValueToList(existingPackings, Packing.class);
+        List<Packing> updatedPackings = jsonHelper.convertValueToList(updateRequests, Packing.class);
+        List<Packing> savedUpdatedPackings = packingDao.saveAll(updatedPackings);
 
-        // Build and return the response
+        // Convert and process creates
+        List<Packing> newPackings = jsonHelper.convertValueToList(createRequests, Packing.class);
+        List<Packing> savedNewPackings = packingDao.saveAll(newPackings);
+
+        // Combine results for parent calculation and auditing
+        List<Packing> allSavedPackings = new ArrayList<>();
+        allSavedPackings.addAll(savedNewPackings);
+        allSavedPackings.addAll(savedUpdatedPackings);
+
+        ParentResult parentResult = getParentDetails(allSavedPackings, module);
+
+        // Audit logs
+        recordAuditLogs(oldConvertedPackings, savedUpdatedPackings, DBOperationType.UPDATE, parentResult);
+        recordAuditLogs(null, savedNewPackings, DBOperationType.CREATE, parentResult);
+
+        // Convert to response
+        List<PackingResponse> packingResponses = jsonHelper.convertValueToList(allSavedPackings, PackingResponse.class);
+
         return BulkPackingResponse.builder()
                 .packingResponseList(packingResponses)
                 .message(prepareBulkUpdateMessage(packingResponses))
@@ -193,9 +220,7 @@ public class PackingV3Service implements IPackingV3Service {
     @Override
     @Transactional
     public BulkPackingResponse deleteBulk(List<PackingV3Request> packingRequestList, String module) {
-        // Validate that all necessary packing IDs are present in the request
-        packingValidationV3Util.validateUpdateBulkRequest(packingRequestList);
-
+        packingValidationV3Util.validateDeleteBulkRequest(packingRequestList);
         // Extract unique packing IDs from the request
         List<Long> packingIds = packingRequestList.stream()
                 .map(PackingV3Request::getId)
@@ -206,8 +231,11 @@ public class PackingV3Service implements IPackingV3Service {
         List<Packing> packingsToDelete = packingDao.findByIdIn(packingIds);
 
         if (packingsToDelete.isEmpty()) {
-            throw new IllegalArgumentException("No packing found for the given IDs.");
+            throw new DataRetrievalFailureException("No packing found for the given Ids.");
         }
+
+        // Validate that all necessary packing IDs are present in the request
+        packingValidationV3Util.validateUpdateBulkRequest(packingRequestList, packingsToDelete);
 
         ParentResult parentResult = getParentDetails(packingsToDelete, module);
 
