@@ -10,7 +10,10 @@ import com.dpw.runner.shipment.services.entity.enums.ContainerStatus;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.swagger.annotations.ApiModel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
@@ -22,6 +25,9 @@ import java.util.UUID;
 @Data
 @Setter
 @ApiModel("Container Response Model")
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class ContainerListResponse implements IRunnerResponse {
     private List<ContainerBaseResponse> containers;
     @JsonIgnore
