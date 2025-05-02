@@ -10,6 +10,7 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.*;
+import com.dpw.runner.shipment.services.dto.request.NetworkTransferRequest;
 import com.dpw.runner.shipment.services.dto.request.ReassignRequest;
 import com.dpw.runner.shipment.services.dto.request.RequestForTransferRequest;
 import com.dpw.runner.shipment.services.dto.request.UsersDto;
@@ -505,6 +506,15 @@ class NetworkTransferServiceTest extends CommonMocks{
         shipmentDetails1.setReceivingBranch(2L);
         networkTransferService.bulkProcessInterConsoleNte(Collections.singletonList(shipmentDetails1));
         verify(networkTransferDao, times(1)).saveAll(any());
+    }
+
+    @Test
+    void testCreateExternal() {
+        NetworkTransferRequest networkTransferRequest = NetworkTransferRequest.builder().build();
+        CommonRequestModel commonRequestModel = CommonRequestModel.buildRequest(networkTransferRequest);
+        when(jsonHelper.convertCreateValue(any(), eq(NetworkTransfer.class))).thenReturn(NetworkTransfer.builder().status(NetworkTransferStatus.TRANSFERRED).build());
+        var response = networkTransferService.createExternal(commonRequestModel);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
     }
 
 }
