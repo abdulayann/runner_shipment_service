@@ -13,6 +13,7 @@ import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
+import com.dpw.runner.shipment.services.dto.response.PackingListResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
@@ -26,9 +27,11 @@ import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
+import com.dpw.runner.shipment.services.projection.PackingAssignmentProjection;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
+import com.dpw.runner.shipment.services.utils.FieldUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.v3.PackingV3Util;
 import com.dpw.runner.shipment.services.utils.v3.PackingValidationV3Util;
@@ -45,8 +48,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
+import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletResponse;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -89,6 +94,10 @@ public class PackingV3Service implements IPackingV3Service {
 
     @Autowired
     private MasterDataUtils masterDataUtils;
+
+    @Autowired
+    private CommonUtils commonUtils;
+    private List<String> defaultIncludeColumns = new ArrayList<>();
 
     @Data
     @AllArgsConstructor
@@ -335,7 +344,7 @@ public class PackingV3Service implements IPackingV3Service {
     }
 
     @Override
-    public PackingResponse retrieveById(CommonRequestModel commonRequestModel){
+    public PackingResponse retrieveById(CommonRequestModel commonRequestModel) {
         String responseMsg;
         try {
             CommonGetRequest request = (CommonGetRequest) commonRequestModel.getData();
@@ -345,13 +354,13 @@ public class PackingV3Service implements IPackingV3Service {
             }
             Long id = request.getId();
             Optional<Packing> packing;
-            if(id != null) {
+            if (id != null) {
                 packing = packingDao.findById(id);
             } else {
                 UUID guid = UUID.fromString(request.getGuid());
                 packing = packingDao.findByGuid(guid);
             }
-            if(packing.isEmpty()) {
+            if (packing.isEmpty()) {
                 log.debug(PackingConstants.PACKING_RETRIEVE_BY_ID_ERROR, request.getId(), LoggerHelper.getRequestIdFromMDC());
                 throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
             }
@@ -383,44 +392,80 @@ public class PackingV3Service implements IPackingV3Service {
                 numberOfRecords(packingPage.getTotalElements()).build();
     }
 
-    private List<PackingResponse> convertEntityListToDtoList(List<Packing> lst) {
-        List<PackingResponse> responseList = new ArrayList<>();
-        if (CommonUtils.listIsNullOrEmpty(lst))
-            return responseList;
-        lst.forEach(packing -> responseList.add(convertEntityToDto(packing)));
-        return responseList;
-    }
-
     private void getMasterDataForList(List<PackingResponse> responseList, boolean getMasterData) {
-        if(getMasterData) {
+        if (getMasterData) {
             try {
                 double startTime = System.currentTimeMillis();
                 var locationDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> packingV3Util.addAllUnlocationInSingleCallList(responseList)), executorServiceMasterData);
                 var masterDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> packingV3Util.addAllMasterDataInSingleCallList(responseList)), executorServiceMasterData);
                 var commodityTypeFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> packingV3Util.addAllCommodityTypesInSingleCall(responseList)), executorServiceMasterData);
                 CompletableFuture.allOf(locationDataFuture, masterDataFuture, commodityTypeFuture).join();
-                log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.PACKING_LIST_MASTER_DATA, (System.currentTimeMillis() - startTime) , LoggerHelper.getRequestIdFromMDC());
-            }
-            catch (Exception ex) {
+                log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.PACKING_LIST_MASTER_DATA, (System.currentTimeMillis() - startTime), LoggerHelper.getRequestIdFromMDC());
+            } catch (Exception ex) {
                 log.error(Constants.ERROR_OCCURRED_FOR_EVENT, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_PACKING_LIST, ex.getLocalizedMessage());
             }
         }
+    }
+
+    @Override
+    public PackingListResponse fetchShipmentPackages(CommonRequestModel commonRequestModel) {
+        RunnerListResponse<IRunnerResponse> responses = list(commonRequestModel, true);
+        log.info("Packing list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
+        PackingListResponse packingListResponse = new PackingListResponse();
+        if (!CollectionUtils.isEmpty(responses.getData())) {
+            packingListResponse.setPackings((List<PackingResponse>) responses.getData());
+            packingListResponse.setTotalPages(responses.getTotalPages());
+            packingListResponse.setTotalCount(responses.getNumberOfRecords());
+            //get assigned packages
+            Long shipmentId = null;
+            for (IRunnerResponse response : responses.getData()) {
+                PackingResponse packingResponse = (PackingResponse) response;
+                if (packingResponse.getShipmentId() != null) {
+                    shipmentId = packingResponse.getShipmentId();
+                    break;
+                }
+            }
+            if (shipmentId != null) {
+                PackingAssignmentProjection assignedPackages = packingDao.getPackingAssignmentCountByShipment(shipmentId);
+                packingListResponse.setAssignedPackageCount(assignedPackages.getAssignedCount());
+                packingListResponse.setUnassignedPackageCount(assignedPackages.getUnassignedCount());
+            }
+
+        }
+        return packingListResponse;
     }
 
     private PackingResponse convertEntityToDto(Packing packing) {
         return jsonHelper.convertValue(packing, PackingResponse.class);
     }
 
+    private List<PackingResponse> convertEntityListToDtoList(List<Packing> lst) {
+        List<PackingResponse> responseList = new ArrayList<>();
+        lst.forEach(containers -> responseList.add(convertEntityToDto(containers, defaultIncludeColumns)));
+        return responseList;
+    }
+
+    private PackingResponse convertEntityToDto(Packing packing, List<String> includesFields) {
+        return (PackingResponse) commonUtils.setIncludedFieldsToResponse(packing, new HashSet<>(includesFields), new PackingResponse());
+    }
+
     public ParentResult getParentDetails(List<Packing> packingList, String moduleType) {
         Packing firstPacking = packingList.get(0);
 
         return switch (moduleType) {
-            case Constants.SHIPMENT -> new ParentResult(ShipmentDetails.class.getSimpleName(), firstPacking.getShipmentId());
+            case Constants.SHIPMENT ->
+                    new ParentResult(ShipmentDetails.class.getSimpleName(), firstPacking.getShipmentId());
             case Constants.CONSOLIDATION ->
                     new ParentResult(ConsolidationDetails.class.getSimpleName(), firstPacking.getConsolidationId());
-            case Constants.BOOKING -> new ParentResult(CustomerBooking.class.getSimpleName(), firstPacking.getBookingId());
-            default -> throw new ValidationException("Unsupported module type: " + moduleType);
+            case Constants.BOOKING ->
+                    new ParentResult(CustomerBooking.class.getSimpleName(), firstPacking.getBookingId());
+            default -> throw new IllegalArgumentException("Unsupported module type: " + moduleType);
         };
     }
 
+    @PostConstruct
+    private void setDefaultIncludeColumns() {
+        defaultIncludeColumns = FieldUtils.getNonRelationshipFields(Packing.class);
+        defaultIncludeColumns.addAll(List.of("id", "guid", "tenantId"));
+    }
 }

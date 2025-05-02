@@ -19,6 +19,7 @@ import com.dpw.runner.shipment.services.entity.enums.LifecycleHooks;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.projection.PackingAssignmentProjection;
 import com.dpw.runner.shipment.services.repository.interfaces.IPackingRepository;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.validator.ValidatorUtility;
@@ -540,5 +541,10 @@ public class PackingDao implements IPackingDao {
     @Override
     public void deleteByIdIn(List<Long> packingIds) {
         packingRepository.deleteAllById(packingIds);
+    }
+
+    @Override
+    public PackingAssignmentProjection getPackingAssignmentCountByShipment(Long shipmentId) {
+        return packingRepository.getPackingAssignmentCountByShipment(shipmentId);
     }
 }
