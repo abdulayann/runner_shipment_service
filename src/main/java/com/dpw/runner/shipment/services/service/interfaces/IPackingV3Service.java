@@ -4,6 +4,7 @@ import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
+import com.dpw.runner.shipment.services.dto.response.PackingListResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
 import com.dpw.runner.shipment.services.dto.v3.response.BulkPackingResponse;
@@ -22,4 +23,6 @@ public interface IPackingV3Service {
     void downloadPacking(HttpServletResponse response, @ModelAttribute BulkDownloadRequest request) throws RunnerException;
     PackingResponse retrieveById(CommonRequestModel commonRequestModel);
     RunnerListResponse<IRunnerResponse> list(CommonRequestModel commonRequestModel, boolean getMasterData);
+
+    PackingListResponse fetchShipmentPackages(CommonRequestModel commonRequestModel);
 }
