@@ -33,4 +33,6 @@ public interface IPackingRepository extends MultiTenancyRepository<Packing> {
     List<Packing> findByConsolidationId(Long consolidationId);
 
     List<Packing> findByContainerIdIn(List<Long> deleteContainerIds);
+
+    List<Packing> findByIdIn(List<Long> packingIds);
 }
