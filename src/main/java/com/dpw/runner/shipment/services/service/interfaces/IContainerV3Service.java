@@ -1,12 +1,14 @@
 package com.dpw.runner.shipment.services.service.interfaces;
 
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerNumberCheckResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.ContainerListV3Response;
 import com.dpw.runner.shipment.services.dto.response.ContainerListResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -22,10 +24,8 @@ public interface IContainerV3Service {
     BulkContainerResponse deleteBulk(List<ContainerRequest> request);
 
     ContainerSummaryResponse calculateContainerSummary(Long shipmentId, Long consolidationId) throws RunnerException;
-
     ContainerListResponse fetchShipmentContainers(CommonRequestModel commonRequestModel);
-
     ContainerNumberCheckResponse validateContainerNumber(String containerNumber);
-
     void downloadContainers(HttpServletResponse response, BulkDownloadRequest request) throws RunnerException;
+    ContainerListV3Response list(ListCommonRequest listCommonRequest) throws RunnerException;
 }
