@@ -48,4 +48,8 @@ public interface IPackingDao {
 
     List<Packing> findByConsolidationId(Long consolidationId);
     List<Packing> findByContainerIdIn(List<Long> containerIds);
+
+    List<Packing> findByIdIn(List<Long> packingIds);
+
+    void deleteByIdIn(List<Long> deletePackingIds);
 }

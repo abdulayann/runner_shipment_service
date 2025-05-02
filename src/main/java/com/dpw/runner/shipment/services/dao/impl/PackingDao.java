@@ -531,4 +531,14 @@ public class PackingDao implements IPackingDao {
     public List<Packing> findByContainerIdIn(List<Long> deleteContainerIds) {
         return packingRepository.findByContainerIdIn(deleteContainerIds);
     }
+
+    @Override
+    public List<Packing> findByIdIn(List<Long> packingIds) {
+        return packingRepository.findByIdIn(packingIds);
+    }
+
+    @Override
+    public void deleteByIdIn(List<Long> packingIds) {
+        packingRepository.deleteAllById(packingIds);
+    }
 }
