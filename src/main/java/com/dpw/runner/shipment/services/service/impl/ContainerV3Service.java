@@ -756,10 +756,14 @@ public class ContainerV3Service implements IContainerV3Service {
             } else {
                 includeColumns = request.getIncludeColumns();
             }
-            ContainerListResponse containerListResponse = new ContainerListResponse();
+
            List<ContainerBaseResponse> responseList = convertEntityListWithFieldFilter(containersPage.getContent(), includeColumns);
            this.getMasterDataForList(responseList, getMasterData);
-           return containerListResponse;
+           return ContainerListResponse.builder()
+               .containers(responseList)
+               .totalCount(containersPage.getTotalElements())
+               .totalPages(containersPage.getTotalPages())
+               .build();
         } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
             log.error(responseMsg, e);
@@ -775,9 +779,9 @@ public class ContainerV3Service implements IContainerV3Service {
                 var masterDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> containerV3Util.addAllMasterDataInSingleCallList(responseList)), executorServiceMasterData);
                 var commodityTypeFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> containerV3Util.addAllCommodityTypesInSingleCall(responseList)), executorServiceMasterData);
                 CompletableFuture.allOf(locationDataFuture, masterDataFuture, commodityTypeFuture).join();
-                log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.PACKING_LIST_MASTER_DATA, (System.currentTimeMillis() - startTime), LoggerHelper.getRequestIdFromMDC());
+                log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.CONTAINER_LIST_MASTER_DATA, (System.currentTimeMillis() - startTime), LoggerHelper.getRequestIdFromMDC());
             } catch (Exception ex) {
-                log.error(Constants.ERROR_OCCURRED_FOR_EVENT, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_PACKING_LIST, ex.getLocalizedMessage());
+                log.error(Constants.ERROR_OCCURRED_FOR_EVENT, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_CONTAINER_LIST, ex.getLocalizedMessage());
             }
         }
     }
