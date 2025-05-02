@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.utils;
 import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
+import com.dpw.runner.shipment.services.commons.constants.MasterDataConstants;
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
@@ -12,16 +13,26 @@ import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.request.ContainersExcelModel;
+import com.dpw.runner.shipment.services.dto.response.ContainerBaseResponse;
+import com.dpw.runner.shipment.services.dto.response.ContainerListV3Response;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
+import com.dpw.runner.shipment.services.dto.response.PackingResponse;
 import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
+import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferMasterLists;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
+import com.dpw.runner.shipment.services.helpers.LoggerHelper;
+import com.dpw.runner.shipment.services.helpers.ResponseHelper;
+import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest;
+import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.nimbusds.jose.util.Pair;
+import java.util.concurrent.CompletableFuture;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
@@ -211,61 +222,68 @@ public class ContainerV3Util {
         return fields;
     }
 
-    public List<IRunnerResponse> convertEntityListToDtoList(List<Containers> lst, List<String> includeColumns, boolean withMasterData) {
-        long start = System.currentTimeMillis();
-        List<IRunnerResponse> responseList = new ArrayList<>();
-        Map<String, Object> cacheMap = new HashMap<>();
-        Set<String> commodityTypes = new HashSet<>();
-        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+    public void addAllUnlocationInSingleCallList(List<ContainerBaseResponse> containerBaseResponses) {
+        try {
+            Map<String, Object> cacheMap = new HashMap<>();
+            Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+            Set<String> locationCodes = new HashSet<>();
 
-        for (Containers container : lst) {
-            ContainerResponse response;
+            containerBaseResponses.forEach(container -> locationCodes.addAll(masterDataUtils.createInBulkUnLocationsRequest(container, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() + container.getId(), cacheMap)));
 
-            if (includeColumns != null && !includeColumns.isEmpty()) {
-                response = (ContainerResponse) commonUtils.setIncludedFieldsToResponse(
-                    container,
-                    new HashSet<>(includeColumns),
-                    new ContainerResponse()
-                );
-            } else {
-                response = (ContainerResponse) convertEntityToDto(container);
-            }
+            Map<String, EntityTransferUnLocations> keyMasterDataMap = masterDataUtils.fetchInBulkUnlocations(locationCodes, EntityTransferConstants.LOCATION_SERVICE_GUID);
+            masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.UNLOCATIONS, locationCodes, new EntityTransferUnLocations(), cacheMap);
 
-            responseList.add(response);
+            containerBaseResponses.forEach(container -> container.setUnlocationData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Packing.class.getSimpleName() + container.getId()), CacheConstants.UNLOCATIONS, cacheMap)));
 
-            if (withMasterData) {
-                String cacheKey = Containers.class.getSimpleName() + container.getId();
-                commodityTypes.addAll(masterDataUtils.createInBulkCommodityTypeRequest(
-                    response, Containers.class, fieldNameKeyMap, cacheKey, cacheMap
-                ));
-            }
+            CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
+        } catch (Exception ex) {
+            log.error("Request: {} | Error Occurred in CompletableFuture: addAllUnlocationInSingleCallListPacksList in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), Packing.class.getSimpleName(), ex.getMessage());
+            CompletableFuture.completedFuture(null);
         }
-
-        if (withMasterData) {
-            Map<String, EntityTransferCommodityType> v1Data =
-                masterDataUtils.fetchInBulkCommodityTypes(List.copyOf(commodityTypes));
-            masterDataUtils.pushToCache(v1Data, CacheConstants.COMMODITY, commodityTypes,
-                new EntityTransferCommodityType(), cacheMap);
-
-            for (IRunnerResponse runnerResponse : responseList) {
-                ContainerResponse containerResponse = (ContainerResponse) runnerResponse;
-                String cacheKey = Containers.class.getSimpleName() + containerResponse.getId();
-                containerResponse.setCommodityTypeData(
-                    masterDataUtils.setMasterData(
-                        fieldNameKeyMap.get(cacheKey),
-                        CacheConstants.COMMODITY,
-                        cacheMap
-                    )
-                );
-            }
-        }
-
-        log.info("Total time taken to set container response: {} ms", (System.currentTimeMillis() - start));
-        return responseList;
     }
 
+    public void addAllCommodityTypesInSingleCall(List<ContainerBaseResponse> containerBaseResponses) {
+        try {
+            Map<String, Object> cacheMap = new HashMap<>();
+            Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+            Set<String> commodityTypes = new HashSet<>();
+            containerBaseResponses.forEach(container -> commodityTypes.addAll(masterDataUtils.createInBulkCommodityTypeRequest(container, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() + container.getId(), cacheMap)));
 
-    private IRunnerResponse convertEntityToDto(Containers container) {
-        return jsonHelper.convertValue(container, ContainerResponse.class);
+            Map<String, EntityTransferCommodityType> v1Data = masterDataUtils.fetchInBulkCommodityTypes(commodityTypes.stream().toList());
+            masterDataUtils.pushToCache(v1Data, CacheConstants.COMMODITY, commodityTypes, new EntityTransferCommodityType(), cacheMap);
+
+            containerBaseResponses.forEach(container -> container.setCommodityTypeData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Containers.class.getSimpleName() + container.getId()), CacheConstants.COMMODITY, cacheMap)));
+
+            CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(v1Data));
+        } catch (Exception ex) {
+            log.error("Request: {} | Error Occurred in CompletableFuture: addAllCommodityTypesInSingleCallListPacksList in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), Packing.class.getSimpleName(), ex.getMessage());
+            CompletableFuture.completedFuture(null);
+        }
+    }
+
+    public void addAllMasterDataInSingleCallList(List<ContainerBaseResponse> containerBaseResponses) {
+        try {
+            Map<String, Object> cacheMap = new HashMap<>();
+            Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+            Set<MasterListRequest> listRequests = new HashSet<>();
+
+            containerBaseResponses.forEach(container -> listRequests.addAll(masterDataUtils.createInBulkMasterListRequest(container, Containers.class, fieldNameKeyMap, Containers.class.getSimpleName() + container.getId(), cacheMap)));
+
+            MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
+            masterListRequestV2.setMasterListRequests(listRequests.stream().toList());
+            masterListRequestV2.setIncludeCols(Arrays.asList(MasterDataConstants.ITEM_TYPE, MasterDataConstants.ITEM_VALUE, MasterDataConstants.ITEM_DESCRIPTION, MasterDataConstants.VALUE_N_DESC, MasterDataConstants.CASCADE));
+
+            Map<String, EntityTransferMasterLists> keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(masterListRequestV2);
+            Set<String> keys = new HashSet<>();
+            commonUtils.createMasterDataKeysList(listRequests, keys);
+            masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST, keys, new EntityTransferMasterLists(), cacheMap);
+
+            containerBaseResponses.forEach(container -> container.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Containers.class.getSimpleName() + container.getId()), CacheConstants.MASTER_LIST, cacheMap)));
+
+            CompletableFuture.completedFuture(ResponseHelper.buildSuccessResponse(keyMasterDataMap));
+        } catch (Exception ex) {
+            log.error("Request: {} | Error Occurred in CompletableFuture: addAllMasterDataInSingleCallPacksList in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), Packing.class.getSimpleName(), ex.getMessage());
+            CompletableFuture.completedFuture(null);
+        }
     }
 }
