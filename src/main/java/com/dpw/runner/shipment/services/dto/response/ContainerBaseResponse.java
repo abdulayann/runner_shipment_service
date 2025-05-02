@@ -5,6 +5,7 @@ import com.dpw.runner.shipment.services.config.CustomVolumeValueSerializer;
 import com.dpw.runner.shipment.services.config.CustomWeightValueSerializer;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import io.swagger.annotations.ApiModel;
+import java.util.Map;
 import lombok.Data;
 import lombok.Setter;
 
@@ -26,6 +27,9 @@ public class ContainerBaseResponse implements IRunnerResponse {
     private String netWeightUnit;
     @JsonSerialize(using = CustomWeightValueSerializer.class)
     private BigDecimal grossWeight;
+    private Map<String, String> unlocationData;
+    private Map<String, String> masterData;
+    private Map<String, String> commodityTypeData;
     private String grossWeightUnit;
     private String hsCode;
     private String packs;

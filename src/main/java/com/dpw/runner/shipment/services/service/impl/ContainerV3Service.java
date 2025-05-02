@@ -16,8 +16,6 @@ import com.dpw.runner.shipment.services.dao.interfaces.IContainerDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IShipmentsContainersMappingDao;
-import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.dao.interfaces.*;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerNumberCheckResponse;
 import com.dpw.runner.shipment.services.dto.CalculationAPIsDto.ContainerSummaryResponse;
 import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
@@ -25,7 +23,6 @@ import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerBaseResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerListResponse;
-import com.dpw.runner.shipment.services.dto.response.ContainerListV3Response;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1DataResponse;
 import com.dpw.runner.shipment.services.dto.v1.response.V1TenantSettingsResponse;
@@ -34,11 +31,11 @@ import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentSettingsDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
 import com.dpw.runner.shipment.services.entity.commons.BaseEntity;
+import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
+import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
-import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
-import com.dpw.runner.shipment.services.helpers.ResponseHelper;
 import com.dpw.runner.shipment.services.kafka.dto.KafkaResponse;
 import com.dpw.runner.shipment.services.kafka.producer.KafkaProducer;
 import com.dpw.runner.shipment.services.masterdata.dto.MasterData;
@@ -54,10 +51,10 @@ import com.dpw.runner.shipment.services.utils.ContainerValidationUtil;
 import com.dpw.runner.shipment.services.utils.FieldUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.nimbusds.jose.util.Pair;
-import com.nimbusds.jose.util.Pair;
 import javax.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -68,7 +65,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
-import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletResponse;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -113,6 +109,10 @@ public class ContainerV3Service implements IContainerV3Service {
 
     @Autowired
     private IAuditLogService auditLogService;
+
+    @Autowired
+    @Qualifier("executorServiceMasterData")
+    ExecutorService executorServiceMasterData;
 
     @Autowired
     private KafkaProducer producer;
@@ -486,6 +486,14 @@ public class ContainerV3Service implements IContainerV3Service {
         return responseList;
     }
 
+    private List<ContainerBaseResponse> convertEntityListWithFieldFilter(List<Containers> lst, List<String> includeColumns) {
+        List<ContainerBaseResponse> responseList = new ArrayList<>();
+        long start = System.currentTimeMillis();
+        lst.forEach(containers -> responseList.add((ContainerBaseResponse) commonUtils.setIncludedFieldsToResponse(containers, includeColumns.stream().collect(Collectors.toSet()), new ContainerBaseResponse())));
+        log.info("Total time take to set container response {} ms", (System.currentTimeMillis() - start));
+        return responseList;
+    }
+
     private ContainerBaseResponse convertEntityToDto(Containers container) {
         return (ContainerBaseResponse) commonUtils.setIncludedFieldsToResponse(container, new HashSet<>(defaultIncludeColumns), new ContainerBaseResponse());
     }
@@ -732,7 +740,7 @@ public class ContainerV3Service implements IContainerV3Service {
     }
 
     @Override
-    public ContainerListV3Response list(ListCommonRequest request) throws RunnerException {
+    public ContainerListResponse list(ListCommonRequest request, boolean getMasterData) throws RunnerException {
         try {
             if (request == null) {
                 log.error("Request is empty for container list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
@@ -748,17 +756,32 @@ public class ContainerV3Service implements IContainerV3Service {
             } else {
                 includeColumns = request.getIncludeColumns();
             }
-            return ContainerListV3Response.builder()
-                .containerResponseList(containerV3Util.convertEntityListToDtoList(containersPage.getContent(), includeColumns, true))
-                .totalPages(containersPage.getTotalPages())
-                .totalElements(containersPage.getTotalElements())
-                .build();
+            ContainerListResponse containerListResponse = new ContainerListResponse();
+           List<ContainerBaseResponse> responseList = convertEntityListWithFieldFilter(containersPage.getContent(), includeColumns);
+           this.getMasterDataForList(responseList, getMasterData);
+           return containerListResponse;
         } catch (Exception e) {
             String responseMsg = e.getMessage() != null ? e.getMessage() : DaoConstants.DAO_GENERIC_LIST_EXCEPTION_MSG;
             log.error(responseMsg, e);
             throw new RunnerException(responseMsg);
         }
     }
+
+    private void getMasterDataForList(List<ContainerBaseResponse> responseList, boolean getMasterData) {
+        if (getMasterData) {
+            try {
+                double startTime = System.currentTimeMillis();
+                var locationDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> containerV3Util.addAllUnlocationInSingleCallList(responseList)), executorServiceMasterData);
+                var masterDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> containerV3Util.addAllMasterDataInSingleCallList(responseList)), executorServiceMasterData);
+                var commodityTypeFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> containerV3Util.addAllCommodityTypesInSingleCall(responseList)), executorServiceMasterData);
+                CompletableFuture.allOf(locationDataFuture, masterDataFuture, commodityTypeFuture).join();
+                log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.PACKING_LIST_MASTER_DATA, (System.currentTimeMillis() - startTime), LoggerHelper.getRequestIdFromMDC());
+            } catch (Exception ex) {
+                log.error(Constants.ERROR_OCCURRED_FOR_EVENT, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_PACKING_LIST, ex.getLocalizedMessage());
+            }
+        }
+    }
+
 
     @PostConstruct
     private void setDefaultIncludeColumns() {
