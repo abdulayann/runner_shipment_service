@@ -3,6 +3,8 @@ package com.dpw.runner.shipment.services.controller;
 import com.dpw.runner.shipment.services.commons.constants.ApiConstants;
 import com.dpw.runner.shipment.services.commons.constants.ContainerConstants;
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
+import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
@@ -12,6 +14,7 @@ import com.dpw.runner.shipment.services.dto.request.ContainerRequest;
 import com.dpw.runner.shipment.services.dto.request.ContainerV3Request;
 import com.dpw.runner.shipment.services.dto.response.BulkContainerResponse;
 import com.dpw.runner.shipment.services.dto.response.ConsolidationDetailsResponse;
+import com.dpw.runner.shipment.services.dto.response.ContainerListResponse;
 import com.dpw.runner.shipment.services.dto.response.ContainerListV3Response;
 import com.dpw.runner.shipment.services.dto.response.ContainerResponse;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
@@ -34,8 +37,6 @@ import java.util.List;
 @RequestMapping(ContainerConstants.CONTAINER_V3_API_HANDLE)
 @Slf4j
 public class ContainerV3Controller {
-
-    private class MyListResponseClass extends RunnerListResponse<ContainerResponse> {}
 
     private final JsonHelper jsonHelper;
     private final IContainerV3Service containerV3Service;
@@ -85,13 +86,19 @@ public class ContainerV3Controller {
     public ResponseEntity<IRunnerResponse> calculateContainerSummary(@RequestParam (required = false) Long shipmentId, @RequestParam (required = false) Long consolidationId) throws RunnerException {
         return ResponseHelper.buildSuccessResponse(containerV3Service.calculateContainerSummary(shipmentId, consolidationId));
     }
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_LIST_SUCCESSFUL, response = ContainerListResponse.class)})
+    @PostMapping(ContainerConstants.SHIPMENT_CONTAINERS)
+    public ResponseEntity<IRunnerResponse> fetchShipmentContainers(@RequestBody @Valid ListCommonRequest listCommonRequest) {
+        ContainerListResponse containerListResponse = containerV3Service.fetchShipmentContainers(CommonRequestModel.buildRequest(listCommonRequest));
+        return ResponseHelper.buildSuccessResponse(containerListResponse, containerListResponse.getTotalPages(), containerListResponse.getTotalCount());
+    }
 
-    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_LIST_SUCCESSFUL, response = MyListResponseClass.class)})
+    @ApiResponses(value = {@ApiResponse(code = 200, message = ContainerConstants.CONTAINER_LIST_SUCCESSFUL, response = ContainerListV3Response.class)})
     @PostMapping(ContainerConstants.GET_CONTAINERS)
     public ResponseEntity<IRunnerResponse> list(@RequestBody @Valid ListCommonRequest listCommonRequest)
         throws RunnerException {
         ContainerListV3Response containerListV3Response = containerV3Service.list(listCommonRequest);
-        return ResponseHelper.buildListSuccessResponse(containerListV3Response.getContainerResponseList(),
+        return ResponseHelper.buildSuccessResponse(containerListV3Response,
             containerListV3Response.getTotalPages(),containerListV3Response.getTotalElements());
     }
 }

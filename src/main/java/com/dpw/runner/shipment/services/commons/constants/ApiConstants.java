@@ -149,4 +149,11 @@ public class ApiConstants {
     public static final String API_RETRIEVE_PENDING_NOTIFICATION_DATA = "/pending/notification/data";
 
     public static final String API_GET_SHIPMENT_ASSIGN_CONTAINER_TRAY = "/get/shipments/assignContainerTray";
+
+    public static final String SHIPMENT = "/shipment";
+    public static final String CONSOLIDATION = "/consolidation";
+    public static final String CUSTOMER_BOOKING = "/customer-booking";
+    public static final String SHIPMENT_PACKINGS = "/shipment-packings";
+
+
 }

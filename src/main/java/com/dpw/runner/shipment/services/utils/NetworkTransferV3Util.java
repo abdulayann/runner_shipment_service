@@ -549,4 +549,457 @@ public class NetworkTransferV3Util {
         }
     }
 
+    public void createOrUpdateNetworkTransferEntity(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
+        try{
+            if(shipmentDetails.getDirection()!=null && Constants.DIRECTION_EXP.equals(shipmentDetails.getDirection()))
+                processInterBranchEntityCase(shipmentDetails, oldEntity);
+            if (isInterBranchConsole(shipmentDetails) || oldEntityHasInterBranchConsole(oldEntity))
+                return;
+
+            // Check if the shipment is eligible for network transfer
+            if (isEligibleForNetworkTransfer(shipmentDetails)) {
+
+                // Process the receiving branch for network transfer
+                processNetworkTransferEntity(shipmentDetails.getReceivingBranch(),
+                        oldEntity != null ? oldEntity.getReceivingBranch() : null, shipmentDetails,
+                        reverseDirection(shipmentDetails.getDirection()));
+
+                if (shipmentDetails.getTriangulationPartnerList() != null) {
+                    processTriangulationPartnerList(shipmentDetails, oldEntity);
+                } else if (shipmentDetails.getTriangulationPartner() != null) {
+                    processEmptyTriangulationPartner(shipmentDetails, oldEntity);
+                } else if(shipmentDetails.getTriangulationPartnerList() == null) {
+                    processEmptyTriangulationPartnerList(shipmentDetails, oldEntity);
+                }
+
+            } else {
+                // If not eligible for network transfer, handle deletion of old network transfer entities
+                processNonEligibleNTE(oldEntity);
+
+            }
+        } catch (Exception ex) {
+            log.error("Exception during creation or updation of Network Transfer entity for shipment Id: {} with exception: {}", shipmentDetails.getShipmentId(), ex.getMessage());
+        }
+    }
+
+    private void processEmptyTriangulationPartner(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
+        processNetworkTransferEntity(shipmentDetails.getTriangulationPartner(),
+                oldEntity != null ? oldEntity.getTriangulationPartner() : null, shipmentDetails,
+                Constants.DIRECTION_CTS);
+    }
+
+    private void processNonEligibleNTE(ShipmentDetails oldEntity) {
+        if(oldEntity !=null && oldEntity.getReceivingBranch() != null)
+            networkTransferService.deleteValidNetworkTransferEntity(oldEntity.getReceivingBranch(),
+                    oldEntity.getId(), Constants.SHIPMENT);
+
+        // Delete network transfer entries for old triangulation partners
+        if (oldEntity != null && ObjectUtils.isNotEmpty(oldEntity.getTriangulationPartnerList())) {
+            for (TriangulationPartner triangularPartner : oldEntity.getTriangulationPartnerList()) {
+                if (triangularPartner != null)
+                    networkTransferService.deleteValidNetworkTransferEntity(triangularPartner.getTriangulationPartner(),
+                            oldEntity.getId(), Constants.SHIPMENT);
+            }
+        } else if (oldEntity != null && oldEntity.getTriangulationPartnerList() == null
+                && oldEntity.getTriangulationPartner() != null) {
+            networkTransferService.deleteValidNetworkTransferEntity(oldEntity.getTriangulationPartner(),
+                    oldEntity.getId(), Constants.SHIPMENT);
+        }
+    }
+
+    private void processEmptyTriangulationPartnerList(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
+        List<Long> oldPartners = oldEntity != null ? commonUtils.getTriangulationPartnerList(oldEntity.getTriangulationPartnerList())
+                : Collections.emptyList();
+        Set<Long> oldTenantIds = new HashSet<>(oldPartners);
+        oldTenantIds.forEach(oldTenantId -> processNetworkTransferEntity(null, oldTenantId, shipmentDetails, Constants.DIRECTION_CTS));
+    }
+
+    private void processTriangulationPartnerList(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
+        // Retrieve current and old triangulation partners
+        List<Long> currentPartners = commonUtils.getTriangulationPartnerList(shipmentDetails.getTriangulationPartnerList());
+        List<Long> oldPartners = oldEntity != null ? commonUtils.getTriangulationPartnerList(oldEntity.getTriangulationPartnerList())
+                : Collections.emptyList();
+
+        // Determine new tenant IDs by removing old partners from the current partners
+        Set<Long> newTenantIds = new HashSet<>(currentPartners);
+        newTenantIds.removeAll(oldPartners);
+
+        // Determine old tenant IDs by removing current partners from the old partners
+        Set<Long> oldTenantIds = new HashSet<>(oldPartners);
+        oldTenantIds.removeAll(currentPartners);
+
+        // Process new tenant IDs for network transfer
+        newTenantIds.forEach(newTenantId -> processNetworkTransferEntity(newTenantId, null, shipmentDetails, Constants.DIRECTION_CTS));
+
+        // Process old tenant IDs for removal from network transfer
+        oldTenantIds.forEach(oldTenantId -> processNetworkTransferEntity(null, oldTenantId, shipmentDetails, Constants.DIRECTION_CTS));
+    }
+
+    public void triggerAutomaticTransfer(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, Boolean isDocAdded) {
+        try{
+            if (isInterBranchConsole(shipmentDetails) || oldEntityHasInterBranchConsole(oldEntity))
+                return;
+            Optional<QuartzJobInfo> optionalQuartzJobInfo = quartzJobInfoDao.findByJobFilters(
+                    shipmentDetails.getTenantId(), shipmentDetails.getId(), SHIPMENT);
+
+            QuartzJobInfo quartzJobInfo = optionalQuartzJobInfo.orElse(null);
+
+            if(isEligibleForNetworkTransfer(shipmentDetails) && ObjectUtils.isNotEmpty(shipmentDetails.getReceivingBranch())){
+
+                if (automaticTriggerNotValid(shipmentDetails, quartzJobInfo)) return;
+
+                if (shouldCreateOrUpdateQuartzJob(quartzJobInfo, oldEntity, shipmentDetails, isDocAdded)) {
+                    createOrUpdateQuartzJob(shipmentDetails, quartzJobInfo);
+                }
+            } else if (isEligibleForNetworkTransfer(shipmentDetails) && ObjectUtils.isEmpty(shipmentDetails.getReceivingBranch())
+                    && oldEntity != null && ObjectUtils.isNotEmpty(oldEntity.getReceivingBranch())) {
+                commonErrorLogsDao.deleteShipmentErrorsLogs(shipmentDetails.getId());
+            }
+            if (hasHouseBillChange(shipmentDetails, oldEntity) || hasMasterBillChange(shipmentDetails, oldEntity)) {
+                triggerConsoleTransfer(shipmentDetails);
+            }
+        } catch (Exception e) {
+            log.error("Exception during creation or updation of Automatic transfer flow for shipment Id: {} with exception: {}", shipmentDetails.getShipmentId(), e.getMessage());
+        }
+    }
+
+    private boolean automaticTriggerNotValid(ShipmentDetails shipmentDetails, QuartzJobInfo quartzJobInfo) {
+        if (isInvalidNetworkTransfer(shipmentDetails)){
+            commonErrorLogsDao.deleteShipmentErrorsLogs(shipmentDetails.getId());
+            return true;
+        }
+
+        List<V1TenantSettingsResponse.FileTransferConfigurations> fileTransferConfigurations = quartzJobInfoService.getActiveFileTransferConfigurations(shipmentDetails.getTransportMode());
+        if (ObjectUtils.isEmpty(fileTransferConfigurations)) {
+            commonErrorLogsDao.deleteShipmentErrorsLogs(shipmentDetails.getId());
+            return true;
+        }
+
+        if (isCarrierDetailsInvalid(shipmentDetails)) {
+            handleInvalidCarrierDetails(quartzJobInfo);
+            return true;
+        }
+        return false;
+    }
+
+    private boolean isInvalidNetworkTransfer(ShipmentDetails shipmentDetails) {
+        Optional<NetworkTransfer> optionalNetworkTransfer = networkTransferDao.findByTenantAndEntity(
+                Math.toIntExact(shipmentDetails.getReceivingBranch()), shipmentDetails.getId(), SHIPMENT);
+        return optionalNetworkTransfer.isPresent() &&
+                (optionalNetworkTransfer.get().getStatus() == NetworkTransferStatus.TRANSFERRED ||
+                        optionalNetworkTransfer.get().getStatus() == NetworkTransferStatus.ACCEPTED);
+    }
+
+    private boolean isCarrierDetailsInvalid(ShipmentDetails shipmentDetails) {
+        CarrierDetails carrierDetails = shipmentDetails.getCarrierDetails();
+        return carrierDetails == null || (
+                ObjectUtils.isEmpty(carrierDetails.getEta()) &&
+                        ObjectUtils.isEmpty(carrierDetails.getEtd()) &&
+                        ObjectUtils.isEmpty(carrierDetails.getAta()) &&
+                        ObjectUtils.isEmpty(carrierDetails.getAtd()));
+    }
+
+    private void handleInvalidCarrierDetails(QuartzJobInfo quartzJobInfo) {
+        if (quartzJobInfo != null && quartzJobInfo.getJobStatus() == JobState.QUEUED) {
+            quartzJobInfoService.deleteJobById(quartzJobInfo.getId());
+        }
+    }
+
+    private boolean shouldCreateOrUpdateQuartzJob(QuartzJobInfo quartzJobInfo, ShipmentDetails oldEntity, ShipmentDetails shipmentDetails, Boolean isDocAdded) {
+        return (quartzJobInfo == null && oldEntity == null) ||
+                shouldUpdateExistingJob(quartzJobInfo, oldEntity, shipmentDetails, isDocAdded);
+    }
+
+    private void triggerConsoleTransfer(ShipmentDetails shipmentDetails){
+        if(ObjectUtils.isEmpty(shipmentDetails.getConsolidationList())){
+            return;
+        }
+
+        for(ConsolidationDetails consolidationDetails: shipmentDetails.getConsolidationList()){
+            Optional<QuartzJobInfo> optionalQuartzJobInfo = quartzJobInfoDao.findByJobFilters(
+                    consolidationDetails.getTenantId(), consolidationDetails.getId(), CONSOLIDATION);
+
+            QuartzJobInfo quartzJobInfo = optionalQuartzJobInfo.orElse(null);
+            if(quartzJobInfo!=null && quartzJobInfo.getJobStatus()==JobState.ERROR){
+                if(TRANSPORT_MODE_AIR.equals(consolidationDetails.getTransportMode()) &&
+                        !Objects.equals(shipmentDetails.getJobType(), SHIPMENT_TYPE_DRT) &&
+                        !Objects.equals(shipmentDetails.getJobType(), SHIPMENT_TYPE_STD)) {
+                    triggerAutomaticTransfer(consolidationDetails, null, true);
+                }
+                if(TRANSPORT_MODE_SEA.equals(consolidationDetails.getTransportMode()) &&
+                        !Objects.equals(shipmentDetails.getJobType(), SHIPMENT_TYPE_DRT)) {
+                    triggerAutomaticTransfer(consolidationDetails, null, true);
+                }
+            }
+        }
+    }
+
+    private boolean hasHouseBillChange(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
+        return (oldEntity == null && shipmentDetails.getHouseBill() != null)
+                || (oldEntity != null && isValueChanged(shipmentDetails.getHouseBill(), oldEntity.getHouseBill()));
+    }
+
+    private boolean hasMasterBillChange(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
+        return (oldEntity == null && shipmentDetails.getMasterBill() != null)
+                || (oldEntity != null && isValueChanged(shipmentDetails.getMasterBill(), oldEntity.getMasterBill()));
+    }
+
+    private void createOrUpdateQuartzJob(ShipmentDetails shipmentDetails, QuartzJobInfo existingJob) {
+        CarrierDetails carrierDetails = shipmentDetails.getCarrierDetails();
+
+        LocalDateTime jobTime = quartzJobInfoService.getQuartzJobTime(
+                carrierDetails.getEta(), carrierDetails.getEtd(), carrierDetails.getAta(), carrierDetails.getAtd(),
+                shipmentDetails.getTransportMode());
+
+        if(jobTime == null)
+            return;
+
+        QuartzJobInfo quartzJobInfo = (existingJob != null) ? existingJob : createNewQuartzJob(shipmentDetails);
+        quartzJobInfo.setJobStatus(JobState.QUEUED);
+        quartzJobInfo.setStartTime(jobTime);
+        quartzJobInfo.setErrorMessage(null);
+        QuartzJobInfo newQuartzJobInfo = quartzJobInfoDao.save(quartzJobInfo);
+
+        if(existingJob!=null && newQuartzJobInfo.getId()!=null && quartzJobInfoService.isJobWithNamePresent(newQuartzJobInfo.getId().toString())){
+            quartzJobInfoService.updateSimpleJob(newQuartzJobInfo);
+        }else{
+            quartzJobInfoService.createSimpleJob(newQuartzJobInfo);
+        }
+        commonErrorLogsDao.deleteShipmentErrorsLogs(shipmentDetails.getId());
+    }
+
+    private QuartzJobInfo createNewQuartzJob(ShipmentDetails shipmentDetails) {
+        return QuartzJobInfo.builder()
+                .entityId(shipmentDetails.getId())
+                .entityType(SHIPMENT)
+                .tenantId(shipmentDetails.getTenantId())
+                .jobType(JobType.SIMPLE_JOB)
+                .build();
+    }
+
+    private boolean shouldUpdateExistingJob(QuartzJobInfo quartzJobInfo, ShipmentDetails oldEntity, ShipmentDetails shipmentDetails, Boolean isDocAdded) {
+        return (isValidforAutomaticTransfer(quartzJobInfo, shipmentDetails, oldEntity, isDocAdded))
+                || (isValidReceivingBranchChange(shipmentDetails, oldEntity));
+    }
+
+    private boolean isValidforAutomaticTransfer(QuartzJobInfo quartzJobInfo, ShipmentDetails shipmentDetails, ShipmentDetails oldEntity, Boolean isDocAdded) {
+        if (isValidDateChange(shipmentDetails, oldEntity))
+            return true;
+
+        if(quartzJobInfo==null ||( quartzJobInfo.getJobStatus() != JobState.ERROR))
+            return false;
+
+        if(Boolean.TRUE.equals(isDocAdded))
+            return true;
+
+        CarrierDetails newCarrierDetails = shipmentDetails.getCarrierDetails();
+
+        // If oldCarrierDetails is null, check if newCarrierDetails has any populated fields.
+        if (oldEntity == null || oldEntity.getCarrierDetails()==null) {
+            return newCarrierDetails.getEta() != null
+                    || newCarrierDetails.getEtd() != null
+                    || newCarrierDetails.getAta() != null
+                    || newCarrierDetails.getAtd() != null;
+        }
+
+        CarrierDetails oldCarrierDetails = oldEntity.getCarrierDetails();
+        // Compare individual fields for changes.
+        return isValueChanged(newCarrierDetails.getFlightNumber(), oldCarrierDetails.getFlightNumber());
+    }
+
+    private boolean isValidDateChange(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity){
+        CarrierDetails newCarrierDetails = shipmentDetails.getCarrierDetails();
+        if(oldEntity!=null && oldEntity.getCarrierDetails()!=null && newCarrierDetails!=null){
+            CarrierDetails oldCarrierDetails = oldEntity.getCarrierDetails();
+            return isValueChanged(newCarrierDetails.getEta(), oldCarrierDetails.getEta())
+                    || isValueChanged(newCarrierDetails.getEtd(), oldCarrierDetails.getEtd())
+                    || isValueChanged(newCarrierDetails.getAta(), oldCarrierDetails.getAta())
+                    || isValueChanged(newCarrierDetails.getAtd(), oldCarrierDetails.getAtd());
+        }
+        return false;
+    }
+
+    private boolean isValidReceivingBranchChange(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
+        if (oldEntity == null) {
+            return false;
+        }
+
+        if (oldEntity.getReceivingBranch()==null) {
+            return true;
+        }
+
+        boolean isBranchChanged = !Objects.equals(oldEntity.getReceivingBranch(), shipmentDetails.getReceivingBranch());
+        if (!isBranchChanged) {
+            return false;
+        }
+
+        Optional<NetworkTransfer> oldOptionalNetworkTransfer = networkTransferDao.findByTenantAndEntity(
+                Math.toIntExact(oldEntity.getReceivingBranch()), oldEntity.getId(), SHIPMENT);
+
+        return ((oldOptionalNetworkTransfer.isEmpty()) || oldOptionalNetworkTransfer
+                .map(networkTransfer -> networkTransfer.getStatus() != NetworkTransferStatus.ACCEPTED)
+                .orElse(false));
+    }
+
+    private boolean isEligibleForNetworkTransfer(ShipmentDetails details) {
+        return TRANSPORT_MODE_AIR.equals(details.getTransportMode())
+                && Constants.SHIPMENT_TYPE_DRT.equals(details.getJobType()) && Constants.DIRECTION_EXP.equals(details.getDirection());
+    }
+
+    private void processInterBranchEntityCase(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
+        if (isInterBranchConsole(shipmentDetails)) {
+            processReceivingBranchChanges(shipmentDetails, oldEntity);
+        } else if ((shipmentDetails.getConsolidationList()==null || shipmentDetails.getConsolidationList().isEmpty()) && oldEntityHasInterBranchConsole(oldEntity)) {
+            deleteOldConsolidationTransfers(oldEntity);
+        }
+    }
+
+    private boolean isInterBranchConsole(ShipmentDetails shipmentDetails) {
+        return shipmentDetails.getConsolidationList() != null
+                && shipmentDetails.getConsolidationList().stream().anyMatch(consolidation -> Boolean.TRUE.equals(consolidation.getInterBranchConsole()));
+    }
+
+    private boolean oldEntityHasInterBranchConsole(ShipmentDetails oldEntity) {
+        return oldEntity != null && oldEntity.getConsolidationList() != null &&
+                oldEntity.getConsolidationList().stream().anyMatch(consolidation -> Boolean.TRUE.equals(consolidation.getInterBranchConsole()));
+    }
+
+    private boolean isConsoleAccepted(ConsolidationDetails console){
+        List<NetworkTransfer> networkTransferList = networkTransferDao.getInterConsoleNTList(Collections.singletonList(console.getId()), CONSOLIDATION);
+        if(networkTransferList!=null && !networkTransferList.isEmpty() ){
+            for(NetworkTransfer networkTransfer: networkTransferList) {
+                if(Objects.equals(networkTransfer.getJobType(), DIRECTION_CTS))
+                    continue;
+                if(networkTransfer.getStatus()==NetworkTransferStatus.ACCEPTED)
+                    return true;
+            }
+        }
+        return false;
+    }
+
+    private void processReceivingBranchChanges(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
+        ConsolidationDetails consolidationDetails = shipmentDetails.getConsolidationList().iterator().next();
+        boolean isConsoleAcceptedCase = isConsoleAccepted(consolidationDetails);
+        if(isConsoleAcceptedCase){
+            return;
+        }
+        if(consolidationDetails.getReceivingBranch()!=null) {
+            List<Long> shipmentIdsList = shipmentDetails.getConsolidationList().iterator().next().getShipmentsList().stream()
+                    .map(ShipmentDetails::getId).toList();
+            List<NetworkTransfer> nteList = networkTransferDao.getInterConsoleNTList(shipmentIdsList, SHIPMENT);
+            Map<Long, NetworkTransfer> shipmentNetworkTransferMap = nteList!=null ? nteList.stream()
+                    .collect(Collectors.toMap(NetworkTransfer::getEntityId, transfer -> transfer)) : null;
+            NetworkTransfer existingNTE = shipmentNetworkTransferMap != null ? shipmentNetworkTransferMap.get(shipmentDetails.getId()) : null;
+            if(existingNTE!=null && existingNTE.getStatus() == NetworkTransferStatus.ACCEPTED)
+                return;
+            if (shipmentDetails.getReceivingBranch() != null) {
+                handleReceivingBranchUpdates(shipmentDetails, oldEntity, consolidationDetails, existingNTE, shipmentNetworkTransferMap);
+            } else if (shouldDeleteOldTransfer(oldEntity, existingNTE)) {
+                networkTransferService.deleteNetworkTransferEntity(existingNTE);
+            }
+        }else{
+            List<NetworkTransfer> nteList = networkTransferDao.getInterConsoleNTList(Collections.singletonList(shipmentDetails.getId()), SHIPMENT);
+            if(nteList!=null){
+                nteList.forEach(nte -> networkTransferService.deleteNetworkTransferEntity(nte));
+            }
+        }
+    }
+
+    private void handleReceivingBranchUpdates(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity,
+                                              ConsolidationDetails consolidationDetails, NetworkTransfer existingNTE,
+                                              Map<Long, NetworkTransfer> shipmentNetworkTransferMap) {
+        if (isBranchChanged(shipmentDetails, oldEntity)) {
+            processBranchChangeOrUpdate(shipmentDetails, oldEntity, consolidationDetails, existingNTE, shipmentNetworkTransferMap);
+        } else if (shouldUpdateConsole(shipmentDetails, consolidationDetails)) {
+            processNetworkTransferEntity(shipmentDetails, existingNTE);
+        } else {
+            networkTransferService.deleteValidNetworkTransferEntity(shipmentDetails.getReceivingBranch(),
+                    shipmentDetails.getId(), Constants.SHIPMENT);
+        }
+    }
+
+    private boolean isBranchChanged(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity) {
+        return oldEntity == null || oldEntity.getReceivingBranch()==null || (
+                oldEntity.getReceivingBranch() != null &&
+                        !Objects.equals(oldEntity.getReceivingBranch(), shipmentDetails.getReceivingBranch()));
+    }
+
+    private boolean shouldDeleteOldTransfer(ShipmentDetails oldEntity, NetworkTransfer existingNTE) {
+        return oldEntity != null && oldEntity.getReceivingBranch() != null && existingNTE!=null &&
+                Boolean.TRUE.equals(existingNTE.getIsInterBranchEntity());
+    }
+
+    private boolean shouldUpdateConsole(ShipmentDetails shipmentDetails, ConsolidationDetails consolidationDetails) {
+        return !Objects.equals(shipmentDetails.getReceivingBranch(), consolidationDetails.getReceivingBranch());
+    }
+
+    private void processBranchChangeOrUpdate(ShipmentDetails shipmentDetails, ShipmentDetails oldEntity,
+                                             ConsolidationDetails consolidationDetails, NetworkTransfer existingNTE,
+                                             Map<Long, NetworkTransfer> shipmentNetworkTransferMap) {
+        if (!Objects.equals(shipmentDetails.getReceivingBranch(), consolidationDetails.getReceivingBranch())) {
+            Long oldReceivingBranch = oldEntity!=null? oldEntity.getReceivingBranch(): null;
+            networkTransferService.processNetworkTransferEntity(shipmentDetails.getReceivingBranch(), oldReceivingBranch,
+                    Constants.SHIPMENT, shipmentDetails, null, reverseDirection(shipmentDetails.getDirection()), null, true);
+        } else {
+            if (existingNTE!=null) {
+                networkTransferService.deleteNetworkTransferEntity(existingNTE);
+                networkTransferService.bulkProcessInterConsoleNte(Collections.singletonList(shipmentDetails));
+            } else {
+                networkTransferService.bulkProcessInterConsoleNte(Collections.singletonList(shipmentDetails));
+            }
+        }
+        // empty entity payload here
+        updateNetworkTransfersForShipments(shipmentDetails.getId(), shipmentNetworkTransferMap);
+        updateConsoleNetworkTransfer(consolidationDetails);
+    }
+
+    private void updateNetworkTransfersForShipments(Long currentShipmentId, Map<Long, NetworkTransfer> shipmentNetworkTransferMap) {
+        if(shipmentNetworkTransferMap==null)
+            return;
+        shipmentNetworkTransferMap.values().stream()
+                .filter(networkTransfer -> !Objects.equals(networkTransfer.getEntityId(), currentShipmentId))
+                .forEach(this::resetNetworkTransferIfNeeded);
+    }
+
+    private void resetNetworkTransferIfNeeded(NetworkTransfer networkTransfer) {
+        if (networkTransfer.getEntityPayload() != null && !networkTransfer.getEntityPayload().isEmpty()
+                && networkTransfer.getStatus() != NetworkTransferStatus.ACCEPTED) {
+            if(networkTransfer.getStatus() != NetworkTransferStatus.REASSIGNED)
+                networkTransfer.setStatus(NetworkTransferStatus.SCHEDULED);
+            networkTransfer.setEntityPayload(null);
+            networkTransferDao.save(networkTransfer);
+        }
+    }
+
+    private void updateConsoleNetworkTransfer(ConsolidationDetails consolidationDetails) {
+        Optional<NetworkTransfer> optionalConsoleNetworkTransfer = networkTransferDao
+                .getInterConsoleNTList(Collections.singletonList(consolidationDetails.getId()), CONSOLIDATION).stream().findFirst();
+        optionalConsoleNetworkTransfer.ifPresent(this::resetNetworkTransferIfNeeded);
+    }
+
+    private void processNetworkTransferEntity(ShipmentDetails shipmentDetails, NetworkTransfer existingNTE) {
+        Long oldTenantId = (existingNTE != null && Objects.equals(existingNTE.getTenantId(), shipmentDetails.getReceivingBranch().intValue()))
+                ? Long.valueOf(existingNTE.getTenantId()) : null;
+        networkTransferService.processNetworkTransferEntity(shipmentDetails.getReceivingBranch(), oldTenantId, Constants.SHIPMENT,
+                shipmentDetails, null, reverseDirection(shipmentDetails.getDirection()), null, true);
+    }
+
+    private void processNetworkTransferEntity(Long tenantId, Long oldTenantId, ShipmentDetails shipmentDetails, String jobType) {
+        try {
+            networkTransferService.processNetworkTransferEntity(tenantId, oldTenantId, Constants.SHIPMENT, shipmentDetails,
+                    null, jobType, null, false);
+        } catch (Exception ex) {
+            log.error("Exception during processing Network Transfer entity for shipment Id: {} with exception: {}", shipmentDetails.getShipmentId(), ex.getMessage());
+        }
+    }
+
+    private void deleteOldConsolidationTransfers(ShipmentDetails oldEntity) {
+        List<NetworkTransfer> networkTransferList = networkTransferDao.getInterConsoleNTList(Collections.singletonList(oldEntity.getId()), SHIPMENT);
+        if(networkTransferList!=null) {
+            for (NetworkTransfer networkTransfer : networkTransferList) {
+                networkTransferService.deleteNetworkTransferEntity(networkTransfer);
+            }
+        }
+    }
+
 }

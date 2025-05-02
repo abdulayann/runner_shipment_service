@@ -3,6 +3,7 @@ package com.dpw.runner.shipment.services.dao.interfaces;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
+import com.dpw.runner.shipment.services.projection.PackingAssignmentProjection;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -48,4 +49,10 @@ public interface IPackingDao {
 
     List<Packing> findByConsolidationId(Long consolidationId);
     List<Packing> findByContainerIdIn(List<Long> containerIds);
+
+    List<Packing> findByIdIn(List<Long> packingIds);
+
+    void deleteByIdIn(List<Long> deletePackingIds);
+
+    PackingAssignmentProjection getPackingAssignmentCountByShipment(Long shipmentId);
 }
