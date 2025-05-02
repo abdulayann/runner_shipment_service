@@ -9,6 +9,9 @@ import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
@@ -17,15 +20,19 @@ import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
+import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.v3.PackingV3Util;
 import com.dpw.runner.shipment.services.utils.v3.PackingValidationV3Util;
+import com.nimbusds.jose.util.Pair;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -33,20 +40,28 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.DataRetrievalFailureException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
 import javax.servlet.http.HttpServletResponse;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
 
 @Service
@@ -158,32 +173,53 @@ public class PackingV3Service implements IPackingV3Service {
     @Override
     @Transactional
     public BulkPackingResponse updateBulk(List<PackingV3Request> packingRequestList, String module) {
-        // Validate the incoming request to ensure all mandatory fields are present
-        packingValidationV3Util.validateUpdateBulkRequest(packingRequestList);
-
-        List<Long> packingIds = packingRequestList.stream()
+        // Separate IDs and determine existing packings
+        List<Long> incomingIds = packingRequestList.stream()
                 .map(PackingV3Request::getId)
+                .filter(Objects::nonNull)
                 .distinct()
                 .toList();
 
-        List<Packing> oldPackings = packingDao.findByIdIn(packingIds);
+        List<Packing> existingPackings = packingDao.findByIdIn(incomingIds);
 
-        List<Packing> oldConvertedPackings = jsonHelper.convertValueToList(oldPackings, Packing.class);
-        // Convert the request DTOs to entity models for persistence
-        List<Packing> newPackings = jsonHelper.convertValueToList(packingRequestList, Packing.class);
+        // Validate incoming request
+        packingValidationV3Util.validateUpdateBulkRequest(packingRequestList, existingPackings);
 
-        // Save the updated packings to the database
-        List<Packing> updatedPackings = packingDao.saveAll(newPackings);
+        // Separate into create and update requests
+        List<PackingV3Request> updateRequests = new ArrayList<>();
+        List<PackingV3Request> createRequests = new ArrayList<>();
 
-        ParentResult parentResult = getParentDetails(updatedPackings, module);
+        for (PackingV3Request request : packingRequestList) {
+            if (request.getId() != null && incomingIds.contains(request.getId())) {
+                updateRequests.add(request);
+            } else {
+                createRequests.add(request);
+            }
+        }
 
-        // Add audit logs for all updated packings
-        recordAuditLogs(oldConvertedPackings, updatedPackings, DBOperationType.UPDATE, parentResult);
+        // Convert and process updates
+        List<Packing> oldConvertedPackings = jsonHelper.convertValueToList(existingPackings, Packing.class);
+        List<Packing> updatedPackings = jsonHelper.convertValueToList(updateRequests, Packing.class);
+        List<Packing> savedUpdatedPackings = packingDao.saveAll(updatedPackings);
 
-        // Convert saved entities into response DTOs
-        List<PackingResponse> packingResponses = jsonHelper.convertValueToList(updatedPackings, PackingResponse.class);
+        // Convert and process creates
+        List<Packing> newPackings = jsonHelper.convertValueToList(createRequests, Packing.class);
+        List<Packing> savedNewPackings = packingDao.saveAll(newPackings);
 
-        // Build and return the response
+        // Combine results for parent calculation and auditing
+        List<Packing> allSavedPackings = new ArrayList<>();
+        allSavedPackings.addAll(savedNewPackings);
+        allSavedPackings.addAll(savedUpdatedPackings);
+
+        ParentResult parentResult = getParentDetails(allSavedPackings, module);
+
+        // Audit logs
+        recordAuditLogs(oldConvertedPackings, savedUpdatedPackings, DBOperationType.UPDATE, parentResult);
+        recordAuditLogs(null, savedNewPackings, DBOperationType.CREATE, parentResult);
+
+        // Convert to response
+        List<PackingResponse> packingResponses = jsonHelper.convertValueToList(allSavedPackings, PackingResponse.class);
+
         return BulkPackingResponse.builder()
                 .packingResponseList(packingResponses)
                 .message(prepareBulkUpdateMessage(packingResponses))
@@ -193,9 +229,7 @@ public class PackingV3Service implements IPackingV3Service {
     @Override
     @Transactional
     public BulkPackingResponse deleteBulk(List<PackingV3Request> packingRequestList, String module) {
-        // Validate that all necessary packing IDs are present in the request
-        packingValidationV3Util.validateUpdateBulkRequest(packingRequestList);
-
+        packingValidationV3Util.validateDeleteBulkRequest(packingRequestList);
         // Extract unique packing IDs from the request
         List<Long> packingIds = packingRequestList.stream()
                 .map(PackingV3Request::getId)
@@ -206,8 +240,11 @@ public class PackingV3Service implements IPackingV3Service {
         List<Packing> packingsToDelete = packingDao.findByIdIn(packingIds);
 
         if (packingsToDelete.isEmpty()) {
-            throw new IllegalArgumentException("No packing found for the given IDs.");
+            throw new DataRetrievalFailureException("No packing found for the given Ids.");
         }
+
+        // Validate that all necessary packing IDs are present in the request
+        packingValidationV3Util.validateUpdateBulkRequest(packingRequestList, packingsToDelete);
 
         ParentResult parentResult = getParentDetails(packingsToDelete, module);
 
@@ -273,14 +310,7 @@ public class PackingV3Service implements IPackingV3Service {
         if (packingResponses.size() > 1) {
             message = "Bulk edit success! All selected packs have been updated.";
         } else {
-            // For a single packing update, include packs and optionally its packsType
-            PackingResponse response = packingResponses.get(0);
-            String packs = response.getPacks();
-            String packsType = response.getPacksType();
-
-            message = packsType != null
-                    ? String.format("Packing %s - %s updated successfully!", packs, packsType)
-                    : String.format("Packing %s updated successfully!", packs);
+            message = "Packing saved successfully.";
         }
 
         return message;
@@ -293,14 +323,7 @@ public class PackingV3Service implements IPackingV3Service {
         if (packings.size() > 1) {
             message = "Packings deleted successfully!";
         } else {
-            // For a single packing delete, include packs and optionally its packsType
-            Packing response = packings.get(0);
-            String packs = response.getPacks();
-            String packsType = response.getPacksType();
-
-            message = packsType != null
-                    ? String.format("Packing %s - %s deleted successfully!", packs, packsType)
-                    : String.format("Packing %s deleted successfully!", packs);
+            message = "Packing deleted successfully!";
         }
 
         return message;
@@ -342,6 +365,48 @@ public class PackingV3Service implements IPackingV3Service {
         }
     }
 
+    @Override
+    public RunnerListResponse<IRunnerResponse> list(CommonRequestModel commonRequestModel, boolean getMasterData) {
+        ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+        if (request == null) {
+            log.error("Request is empty for Packing list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
+        // construct specifications for filter request
+        Pair<Specification<Packing>, Pageable> tuple = fetchData(request, Packing.class);
+        Page<Packing> packingPage = packingDao.findAll(tuple.getLeft(), tuple.getRight());
+        log.info("Packing list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
+        List<PackingResponse> responseList = convertEntityListToDtoList(packingPage.getContent());
+        this.getMasterDataForList(responseList, getMasterData);
+        return RunnerListResponse.builder().
+                data(responseList).
+                totalPages(packingPage.getTotalPages()).
+                numberOfRecords(packingPage.getTotalElements()).build();
+    }
+
+    private List<PackingResponse> convertEntityListToDtoList(List<Packing> lst) {
+        List<PackingResponse> responseList = new ArrayList<>();
+        if (CommonUtils.listIsNullOrEmpty(lst))
+            return responseList;
+        lst.forEach(packing -> responseList.add(convertEntityToDto(packing)));
+        return responseList;
+    }
+
+    private void getMasterDataForList(List<PackingResponse> responseList, boolean getMasterData) {
+        if(getMasterData) {
+            try {
+                double startTime = System.currentTimeMillis();
+                var locationDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> packingV3Util.addAllUnlocationInSingleCallList(responseList)), executorServiceMasterData);
+                var masterDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> packingV3Util.addAllMasterDataInSingleCallList(responseList)), executorServiceMasterData);
+                var commodityTypeFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> packingV3Util.addAllCommodityTypesInSingleCall(responseList)), executorServiceMasterData);
+                CompletableFuture.allOf(locationDataFuture, masterDataFuture, commodityTypeFuture).join();
+                log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.PACKING_LIST_MASTER_DATA, (System.currentTimeMillis() - startTime) , LoggerHelper.getRequestIdFromMDC());
+            }
+            catch (Exception ex) {
+                log.error(Constants.ERROR_OCCURRED_FOR_EVENT, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_PACKING_LIST, ex.getLocalizedMessage());
+            }
+        }
+    }
+
     private PackingResponse convertEntityToDto(Packing packing) {
         return jsonHelper.convertValue(packing, PackingResponse.class);
     }
@@ -354,7 +419,7 @@ public class PackingV3Service implements IPackingV3Service {
             case Constants.CONSOLIDATION ->
                     new ParentResult(ConsolidationDetails.class.getSimpleName(), firstPacking.getConsolidationId());
             case Constants.BOOKING -> new ParentResult(CustomerBooking.class.getSimpleName(), firstPacking.getBookingId());
-            default -> throw new IllegalArgumentException("Unsupported module type: " + moduleType);
+            default -> throw new ValidationException("Unsupported module type: " + moduleType);
         };
     }
 
