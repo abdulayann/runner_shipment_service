@@ -652,7 +652,7 @@ public class ContainerV3Service implements IContainerV3Service {
                 includeColumns = request.getIncludeColumns();
             }
             return ContainerListV3Response.builder()
-                .containerResponseList(containerV3Util.convertEntityListToDtoList(containersPage.getContent(), includeColumns))
+                .containerResponseList(containerV3Util.convertEntityListToDtoList(containersPage.getContent(), includeColumns, true))
                 .totalPages(containersPage.getTotalPages())
                 .totalElements(containersPage.getTotalElements())
                 .build();

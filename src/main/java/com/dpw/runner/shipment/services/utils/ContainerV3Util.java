@@ -1,5 +1,6 @@
 package com.dpw.runner.shipment.services.utils;
 
+import com.dpw.runner.shipment.services.commons.constants.CacheConstants;
 import com.dpw.runner.shipment.services.commons.constants.Constants;
 import com.dpw.runner.shipment.services.commons.constants.EntityTransferConstants;
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
@@ -16,6 +17,7 @@ import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.Containers;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
 import com.dpw.runner.shipment.services.entity.ShipmentsContainersMapping;
+import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferCommodityType;
 import com.dpw.runner.shipment.services.entitytransfer.dto.EntityTransferUnLocations;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
@@ -209,11 +211,61 @@ public class ContainerV3Util {
         return fields;
     }
 
-    public List<IRunnerResponse> convertEntityListToDtoList(List<Containers> lst, List<String> includeColumns) {
-        List<IRunnerResponse> responseList = new ArrayList<>();
+    public List<IRunnerResponse> convertEntityListToDtoList(List<Containers> lst, List<String> includeColumns, boolean withMasterData) {
         long start = System.currentTimeMillis();
-        lst.forEach(containers -> responseList.add((IRunnerResponse) commonUtils.setIncludedFieldsToResponse(containers, includeColumns.stream().collect(Collectors.toSet()), new ContainerResponse())));
-        log.info("Total time take to set container response {} ms", (System.currentTimeMillis() - start));
+        List<IRunnerResponse> responseList = new ArrayList<>();
+        Map<String, Object> cacheMap = new HashMap<>();
+        Set<String> commodityTypes = new HashSet<>();
+        Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+
+        for (Containers container : lst) {
+            ContainerResponse response;
+
+            if (includeColumns != null && !includeColumns.isEmpty()) {
+                response = (ContainerResponse) commonUtils.setIncludedFieldsToResponse(
+                    container,
+                    new HashSet<>(includeColumns),
+                    new ContainerResponse()
+                );
+            } else {
+                response = (ContainerResponse) convertEntityToDto(container);
+            }
+
+            responseList.add(response);
+
+            if (withMasterData) {
+                String cacheKey = Containers.class.getSimpleName() + container.getId();
+                commodityTypes.addAll(masterDataUtils.createInBulkCommodityTypeRequest(
+                    response, Containers.class, fieldNameKeyMap, cacheKey, cacheMap
+                ));
+            }
+        }
+
+        if (withMasterData) {
+            Map<String, EntityTransferCommodityType> v1Data =
+                masterDataUtils.fetchInBulkCommodityTypes(List.copyOf(commodityTypes));
+            masterDataUtils.pushToCache(v1Data, CacheConstants.COMMODITY, commodityTypes,
+                new EntityTransferCommodityType(), cacheMap);
+
+            for (IRunnerResponse runnerResponse : responseList) {
+                ContainerResponse containerResponse = (ContainerResponse) runnerResponse;
+                String cacheKey = Containers.class.getSimpleName() + containerResponse.getId();
+                containerResponse.setCommodityTypeData(
+                    masterDataUtils.setMasterData(
+                        fieldNameKeyMap.get(cacheKey),
+                        CacheConstants.COMMODITY,
+                        cacheMap
+                    )
+                );
+            }
+        }
+
+        log.info("Total time taken to set container response: {} ms", (System.currentTimeMillis() - start));
         return responseList;
+    }
+
+
+    private IRunnerResponse convertEntityToDto(Containers container) {
+        return jsonHelper.convertValue(container, ContainerResponse.class);
     }
 }
