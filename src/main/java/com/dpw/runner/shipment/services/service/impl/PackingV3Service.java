@@ -172,16 +172,12 @@ public class PackingV3Service implements IPackingV3Service {
         // Validate incoming request
         packingValidationV3Util.validateUpdateBulkRequest(packingRequestList, existingPackings);
 
-        Set<Long> existingIds = existingPackings.stream()
-                .map(Packing::getId)
-                .collect(Collectors.toSet());
-
         // Separate into create and update requests
         List<PackingV3Request> updateRequests = new ArrayList<>();
         List<PackingV3Request> createRequests = new ArrayList<>();
 
         for (PackingV3Request request : packingRequestList) {
-            if (request.getId() != null && existingIds.contains(request.getId())) {
+            if (request.getId() != null && incomingIds.contains(request.getId())) {
                 updateRequests.add(request);
             } else {
                 createRequests.add(request);
@@ -301,14 +297,7 @@ public class PackingV3Service implements IPackingV3Service {
         if (packingResponses.size() > 1) {
             message = "Bulk edit success! All selected packs have been updated.";
         } else {
-            // For a single packing update, include packs and optionally its packsType
-            PackingResponse response = packingResponses.get(0);
-            String packs = response.getPacks();
-            String packsType = response.getPacksType();
-
-            message = packsType != null
-                    ? String.format("Packing %s - %s updated successfully!", packs, packsType)
-                    : String.format("Packing %s updated successfully!", packs);
+            message = "Packing saved successfully.";
         }
 
         return message;
@@ -321,14 +310,7 @@ public class PackingV3Service implements IPackingV3Service {
         if (packings.size() > 1) {
             message = "Packings deleted successfully!";
         } else {
-            // For a single packing delete, include packs and optionally its packsType
-            Packing response = packings.get(0);
-            String packs = response.getPacks();
-            String packsType = response.getPacksType();
-
-            message = packsType != null
-                    ? String.format("Packing %s - %s deleted successfully!", packs, packsType)
-                    : String.format("Packing %s deleted successfully!", packs);
+            message = "Packing deleted successfully!";
         }
 
         return message;
