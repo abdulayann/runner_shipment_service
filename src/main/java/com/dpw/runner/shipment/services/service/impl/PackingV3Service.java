@@ -9,6 +9,9 @@ import com.dpw.runner.shipment.services.commons.requests.AuditLogMetaData;
 import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
+import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
+import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
+import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
 import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
@@ -17,15 +20,19 @@ import com.dpw.runner.shipment.services.entity.ConsolidationDetails;
 import com.dpw.runner.shipment.services.entity.CustomerBooking;
 import com.dpw.runner.shipment.services.entity.Packing;
 import com.dpw.runner.shipment.services.entity.ShipmentDetails;
+import com.dpw.runner.shipment.services.entity.enums.IntegrationType;
+import com.dpw.runner.shipment.services.entity.enums.LoggerEvent;
 import com.dpw.runner.shipment.services.exception.exceptions.RunnerException;
 import com.dpw.runner.shipment.services.exception.exceptions.ValidationException;
 import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
+import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.dpw.runner.shipment.services.utils.v3.PackingV3Util;
 import com.dpw.runner.shipment.services.utils.v3.PackingValidationV3Util;
+import com.nimbusds.jose.util.Pair;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -33,6 +40,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.dao.DataRetrievalFailureException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -46,9 +56,12 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 
 
 @Service
@@ -352,6 +365,48 @@ public class PackingV3Service implements IPackingV3Service {
         }
     }
 
+    @Override
+    public RunnerListResponse<IRunnerResponse> list(CommonRequestModel commonRequestModel, boolean getMasterData) {
+        ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
+        if (request == null) {
+            log.error("Request is empty for Packing list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
+        }
+        // construct specifications for filter request
+        Pair<Specification<Packing>, Pageable> tuple = fetchData(request, Packing.class);
+        Page<Packing> packingPage = packingDao.findAll(tuple.getLeft(), tuple.getRight());
+        log.info("Packing list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
+        List<PackingResponse> responseList = convertEntityListToDtoList(packingPage.getContent());
+        this.getMasterDataForList(responseList, getMasterData);
+        return RunnerListResponse.builder().
+                data(responseList).
+                totalPages(packingPage.getTotalPages()).
+                numberOfRecords(packingPage.getTotalElements()).build();
+    }
+
+    private List<PackingResponse> convertEntityListToDtoList(List<Packing> lst) {
+        List<PackingResponse> responseList = new ArrayList<>();
+        if (CommonUtils.listIsNullOrEmpty(lst))
+            return responseList;
+        lst.forEach(packing -> responseList.add(convertEntityToDto(packing)));
+        return responseList;
+    }
+
+    private void getMasterDataForList(List<PackingResponse> responseList, boolean getMasterData) {
+        if(getMasterData) {
+            try {
+                double startTime = System.currentTimeMillis();
+                var locationDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> packingV3Util.addAllUnlocationInSingleCallList(responseList)), executorServiceMasterData);
+                var masterDataFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> packingV3Util.addAllMasterDataInSingleCallList(responseList)), executorServiceMasterData);
+                var commodityTypeFuture = CompletableFuture.runAsync(masterDataUtils.withMdc(() -> packingV3Util.addAllCommodityTypesInSingleCall(responseList)), executorServiceMasterData);
+                CompletableFuture.allOf(locationDataFuture, masterDataFuture, commodityTypeFuture).join();
+                log.info("Time taken to fetch Master-data for event:{} | Time: {} ms. || RequestId: {}", LoggerEvent.PACKING_LIST_MASTER_DATA, (System.currentTimeMillis() - startTime) , LoggerHelper.getRequestIdFromMDC());
+            }
+            catch (Exception ex) {
+                log.error(Constants.ERROR_OCCURRED_FOR_EVENT, LoggerHelper.getRequestIdFromMDC(), IntegrationType.MASTER_DATA_FETCH_FOR_PACKING_LIST, ex.getLocalizedMessage());
+            }
+        }
+    }
+
     private PackingResponse convertEntityToDto(Packing packing) {
         return jsonHelper.convertValue(packing, PackingResponse.class);
     }
@@ -364,7 +419,7 @@ public class PackingV3Service implements IPackingV3Service {
             case Constants.CONSOLIDATION ->
                     new ParentResult(ConsolidationDetails.class.getSimpleName(), firstPacking.getConsolidationId());
             case Constants.BOOKING -> new ParentResult(CustomerBooking.class.getSimpleName(), firstPacking.getBookingId());
-            default -> throw new IllegalArgumentException("Unsupported module type: " + moduleType);
+            default -> throw new ValidationException("Unsupported module type: " + moduleType);
         };
     }
 
