@@ -445,18 +445,17 @@ public class ContainerV3Service implements IContainerV3Service {
     }
 
     @Override
-    public ContainerListResponse fetchShipmentContainers(CommonRequestModel commonRequestModel) {
+    public ContainerListResponse fetchShipmentContainers(CommonRequestModel commonRequestModel) throws RunnerException {
         ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
-        Pair<Specification<Containers>, Pageable> pair = fetchData(request, Containers.class);
-        Page<Containers> containersPage = containerDao.findAll(pair.getLeft(), pair.getRight());
+        ContainerListResponse containerListResponse = list(request, true);
 
         log.info("Container detail list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
-        ContainerListResponse containerListResponse = new ContainerListResponse();
-        containerListResponse.setContainers(convertEntityListToDtoList(containersPage.getContent()));
+        //ContainerListResponse containerListResponse = new ContainerListResponse();
+      //  containerListResponse.setContainers(convertEntityListToDtoList(containersPage.getContent()));
         //set assigned container to yes/no, if any package is assigned to container or not
         setAssignedContainer(containerListResponse);
-        containerListResponse.setTotalPages(containersPage.getTotalPages());
-        containerListResponse.setTotalCount(containersPage.getTotalElements());
+        containerListResponse.setTotalPages(containerListResponse.getTotalPages());
+        containerListResponse.setNumberOfRecords(containerListResponse.getNumberOfRecords());
 
         return containerListResponse;
 
@@ -471,10 +470,11 @@ public class ContainerV3Service implements IContainerV3Service {
             List<Packing> packs = packingDao.findByContainerIdIn(containersId);
             Set<Long> uniqueContainers = packs.stream().map(Packing::getContainerId).collect(Collectors.toSet());
             containerListResponse.getContainers().forEach(containerBaseResponse -> {
-                if (uniqueContainers.contains(containerBaseResponse.getId())) {
-                    containerBaseResponse.setAssignedContainer(Constants.YES);
+                ContainerBaseResponse baseResponse = containerBaseResponse;
+                if (uniqueContainers.contains(baseResponse.getId())) {
+                    baseResponse.setAssignedContainer(Constants.YES);
                 } else {
-                    containerBaseResponse.setAssignedContainer(Constants.NO);
+                    baseResponse.setAssignedContainer(Constants.NO);
                 }
             });
         }
@@ -761,7 +761,7 @@ public class ContainerV3Service implements IContainerV3Service {
            this.getMasterDataForList(responseList, getMasterData);
            return ContainerListResponse.builder()
                .containers(responseList)
-               .totalCount(containersPage.getTotalElements())
+               .numberOfRecords(containersPage.getTotalElements())
                .totalPages(containersPage.getTotalPages())
                .build();
         } catch (Exception e) {
