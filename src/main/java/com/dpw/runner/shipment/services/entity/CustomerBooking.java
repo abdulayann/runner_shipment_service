@@ -63,6 +63,9 @@ public class CustomerBooking extends MultiTenancy {
     @Column(name = "is_notify_party_free_text")
     private Boolean isNotifyPartyFreeText;
 
+    @Transient
+    private List<Parties> additionalParties;
+
     @Column(name = "customer_email")
     private String customerEmail;
 
