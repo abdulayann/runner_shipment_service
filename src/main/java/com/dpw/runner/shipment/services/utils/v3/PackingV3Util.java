@@ -20,6 +20,7 @@ import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequest
 import com.dpw.runner.shipment.services.masterdata.dto.request.MasterListRequestV2;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.ExcelCell;
+import com.dpw.runner.shipment.services.utils.MasterDataKeyUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
 import com.nimbusds.jose.util.Pair;
 import lombok.extern.slf4j.Slf4j;
@@ -51,6 +52,7 @@ import static com.dpw.runner.shipment.services.commons.constants.Constants.CONTE
 import static com.dpw.runner.shipment.services.commons.constants.Constants.YYYY_MM_DD_HH_MM_SS_FORMAT;
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
 import static com.dpw.runner.shipment.services.utils.CommonUtils.constructListCommonRequest;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
 
 @Slf4j
 @Component
@@ -64,6 +66,9 @@ public class PackingV3Util {
 
     @Autowired
     private MasterDataUtils masterDataUtils;
+
+    @Autowired
+    private MasterDataKeyUtils masterDataKeyUtils;
 
     private List<String> columnsSequenceForExcelDownloadForCargo = List.of(
             "guid", "shipmentNumber", "packs", "packsType", "innerPackageNumber", "innerPackageType", "origin", "packingOrder",
@@ -152,10 +157,11 @@ public class PackingV3Util {
     }
 
     private void processOriginFieldNameMap(List<PackingExcelModel> modelList, Map<String, Field> fieldNameMap) {
-        if(fieldNameMap.containsKey("Origin")) {
+        if(fieldNameMap.containsKey("origin")) {
             Set<String> unlocationsRefGuids = new HashSet<>();
-            for (PackingExcelModel model : modelList){
-                unlocationsRefGuids.add(model.getOrigin());
+            for (PackingExcelModel model : modelList) {
+                if (!isStringNullOrEmpty(model.getOrigin()))
+                    unlocationsRefGuids.add(model.getOrigin());
             }
             if(!unlocationsRefGuids.isEmpty()) {
                 Map<String, EntityTransferUnLocations> keyMasterDataMap = masterDataUtils.fetchInBulkUnlocations(unlocationsRefGuids, EntityTransferConstants.LOCATION_SERVICE_GUID);
@@ -235,7 +241,7 @@ public class PackingV3Util {
         }
     }
 
-    public void addAllCommodityTypesInSingleCall(List<PackingResponse> packingListResponse) {
+    public void addAllCommodityTypesInSingleCallList(List<PackingResponse> packingListResponse) {
         try {
             Map<String, Object> cacheMap = new HashMap<>();
             Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
@@ -251,6 +257,81 @@ public class PackingV3Util {
         } catch (Exception ex) {
             log.error("Request: {} | Error Occurred in CompletableFuture: addAllCommodityTypesInSingleCallListPacksList in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), Packing.class.getSimpleName(), ex.getMessage());
             CompletableFuture.completedFuture(null);
+        }
+    }
+
+    public CompletableFuture<Map<String, EntityTransferMasterLists>> addAllMasterDataInSingleCall(PackingResponse packingResponse, Map<String, Object> masterDataResponse) {
+        try {
+            Map<String, Object> cacheMap = new HashMap<>();
+            Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+            Set<MasterListRequest> listRequests = new HashSet<>(masterDataUtils.createInBulkMasterListRequest(packingResponse, Packing.class, fieldNameKeyMap, Packing.class.getSimpleName(), cacheMap));
+
+            MasterListRequestV2 masterListRequestV2 = new MasterListRequestV2();
+            masterListRequestV2.setMasterListRequests(listRequests.stream().toList());
+            masterListRequestV2.setIncludeCols(Arrays.asList("ItemType", "ItemValue", "ItemDescription", "ValuenDesc", "Cascade"));
+
+            Map<String, EntityTransferMasterLists> keyMasterDataMap = masterDataUtils.fetchInBulkMasterList(masterListRequestV2);
+            Set<String> keys = new HashSet<>();
+            commonUtils.createMasterDataKeysList(listRequests, keys);
+            masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.MASTER_LIST, keys, new EntityTransferMasterLists(), cacheMap);
+
+            if(masterDataResponse == null) {
+                packingResponse.setMasterData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Packing.class.getSimpleName()), CacheConstants.MASTER_LIST, cacheMap));
+            }
+            else {
+                masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.MASTER_LIST, masterDataResponse, cacheMap);
+            }
+
+            return CompletableFuture.completedFuture(keyMasterDataMap);
+        } catch (Exception ex) {
+            log.error("Request: {} | Error Occurred in CompletableFuture: addAllMasterDataInSingleCall in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), PackingV3Util.class.getSimpleName(), ex.getMessage());
+            return CompletableFuture.completedFuture(null);
+        }
+    }
+
+    public CompletableFuture<Map<String, EntityTransferUnLocations>> addAllUnlocationDataInSingleCall(PackingResponse packingResponse, Map<String, Object> masterDataResponse) {
+        try {
+            Map<String, Object> cacheMap = new HashMap<>();
+            Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+            Set<String> locationCodes = new HashSet<>(masterDataUtils.createInBulkUnLocationsRequest(packingResponse, Packing.class, fieldNameKeyMap, Packing.class.getSimpleName(), cacheMap));
+
+            Map<String, EntityTransferUnLocations> keyMasterDataMap = masterDataUtils.fetchInBulkUnlocations(locationCodes, EntityTransferConstants.LOCATION_SERVICE_GUID);
+            masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.UNLOCATIONS, locationCodes, new EntityTransferUnLocations(), cacheMap);
+
+            if(masterDataResponse == null) {
+                packingResponse.setUnlocationData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Packing.class.getSimpleName()), CacheConstants.UNLOCATIONS, cacheMap));
+            }
+            else {
+                masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.UNLOCATIONS, masterDataResponse, cacheMap);
+            }
+
+            return CompletableFuture.completedFuture(keyMasterDataMap);
+        } catch (Exception ex) {
+            log.error("Request: {} | Error Occurred in CompletableFuture: addAllUnlocationDataInSingleCall in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), PackingV3Util.class.getSimpleName(), ex.getMessage());
+            return CompletableFuture.completedFuture(null);
+        }
+    }
+
+    public CompletableFuture<Map<String, EntityTransferCommodityType>> addAllCommodityTypesInSingleCall(PackingResponse packingResponse, Map<String, Object> masterDataResponse) {
+        try {
+            Map<String, Object> cacheMap = new HashMap<>();
+            Map<String, Map<String, String>> fieldNameKeyMap = new HashMap<>();
+            Set<String> commodityTypes = new HashSet<>(masterDataUtils.createInBulkCommodityTypeRequest(packingResponse, Packing.class, fieldNameKeyMap, Packing.class.getSimpleName(), cacheMap));
+
+            Map<String, EntityTransferCommodityType> keyMasterDataMap = masterDataUtils.fetchInBulkCommodityTypes(commodityTypes.stream().toList());
+            masterDataUtils.pushToCache(keyMasterDataMap, CacheConstants.COMMODITY, commodityTypes, new EntityTransferCommodityType(), cacheMap);
+
+            if(masterDataResponse == null) {
+                packingResponse.setCommodityTypeData(masterDataUtils.setMasterData(fieldNameKeyMap.get(Packing.class.getSimpleName()), CacheConstants.COMMODITY, cacheMap));
+            }
+            else {
+                masterDataKeyUtils.setMasterDataValue(fieldNameKeyMap, CacheConstants.COMMODITY, masterDataResponse, cacheMap);
+            }
+
+            return CompletableFuture.completedFuture(keyMasterDataMap);
+        } catch (Exception ex) {
+            log.error("Request: {} | Error Occurred in CompletableFuture: addAllCommodityTypesInSingleCall in class: {} with exception: {}", LoggerHelper.getRequestIdFromMDC(), PackingV3Util.class.getSimpleName(), ex.getMessage());
+            return CompletableFuture.completedFuture(null);
         }
     }
 

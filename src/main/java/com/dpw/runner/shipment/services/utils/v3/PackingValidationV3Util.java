@@ -86,7 +86,7 @@ public class PackingValidationV3Util {
             throw new ValidationException("Booking id is empty");
         }
         Optional<CustomerBooking> customerBooking = customerBookingService.findById(packingRequest.getBookingId());
-        if (!customerBooking.isPresent()) {
+        if (customerBooking.isEmpty()) {
             throw new ValidationException("Please provide the valid booking id");
         }
     }
@@ -96,7 +96,7 @@ public class PackingValidationV3Util {
             throw new ValidationException("Consolidation id is empty");
         }
         Optional<ConsolidationDetails> consolidationDetails = consolidationService.findById(packingRequest.getConsolidationId());
-        if (!consolidationDetails.isPresent()) {
+        if (consolidationDetails.isEmpty()) {
             throw new ValidationException("Please provide the valid consolidation id");
         }
     }
@@ -106,7 +106,7 @@ public class PackingValidationV3Util {
             throw new ValidationException("Shipment id is empty");
         }
         Optional<ShipmentDetails> shipmentDetails = shipmentService.findById(packingRequest.getShipmentId());
-        if (!shipmentDetails.isPresent()) {
+        if (shipmentDetails.isEmpty()) {
             throw new ValidationException("Please provide the valid shipment id");
         }
     }
