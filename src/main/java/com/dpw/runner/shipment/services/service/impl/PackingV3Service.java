@@ -12,7 +12,12 @@ import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
 import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
 import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
+import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
+import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
+import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
+import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
+import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingListResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingResponse;
 import com.dpw.runner.shipment.services.dto.v3.request.PackingV3Request;
@@ -29,6 +34,7 @@ import com.dpw.runner.shipment.services.helpers.JsonHelper;
 import com.dpw.runner.shipment.services.helpers.LoggerHelper;
 import com.dpw.runner.shipment.services.projection.PackingAssignmentProjection;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
+import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.FieldUtils;
@@ -53,6 +59,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletResponse;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -67,6 +74,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.dpw.runner.shipment.services.helpers.DbAccessHelper.fetchData;
+import static com.dpw.runner.shipment.services.utils.CommonUtils.isStringNullOrEmpty;
+import static com.dpw.runner.shipment.services.utils.UnitConversionUtility.convertUnit;
 
 
 @Service
@@ -97,6 +106,19 @@ public class PackingV3Service implements IPackingV3Service {
 
     @Autowired
     private CommonUtils commonUtils;
+
+    @Autowired
+    private IShipmentDao shipmentDao;
+
+    @Autowired
+    private IConsolidationDetailsDao consolidationDetailsDao;
+
+    @Autowired
+    private ICustomerBookingDao customerBookingDao;
+
+    @Autowired
+    private IConsolidationService consolidationService;
+
     private List<String> defaultIncludeColumns = new ArrayList<>();
 
     @Data
@@ -109,11 +131,11 @@ public class PackingV3Service implements IPackingV3Service {
 
     @Override
     @Transactional
-    public PackingResponse create(PackingV3Request packingRequest, String module) {
+    public PackingResponse create(PackingV3Request packingRequest, String module) throws RunnerException {
         String requestId = LoggerHelper.getRequestIdFromMDC();
 
         log.info("Starting packing creation | Request ID: {} | Request Body: {}", requestId, packingRequest);
-
+        validateModule(packingRequest, module);
         // Convert DTO to Entity
         Packing packing = jsonHelper.convertValue(packingRequest, Packing.class);
         log.debug("Converted packing request to entity | Entity: {}", packing);
@@ -129,8 +151,63 @@ public class PackingV3Service implements IPackingV3Service {
 
         PackingResponse response = jsonHelper.convertValue(savedPacking, PackingResponse.class);
         log.info("Returning packing response | Packing ID: {} | Response: {}", savedPacking.getId(), response);
-
+        if (Constants.SHIPMENT.equalsIgnoreCase(module)) {
+            updateCargoDetailsInShipment(packingRequest.getShipmentId());
+        }
         return response;
+    }
+
+    private void updateCargoDetailsInShipment(Long shipmentId) throws RunnerException {
+        List<Packing> packings = packingDao.findByShipmentId(shipmentId);
+        if (!CollectionUtils.isEmpty(packings)) {
+            Optional<ShipmentDetails> shipmentEntity = shipmentDao.findById(shipmentId);
+            if(shipmentEntity.isPresent()) {
+               ShipmentDetails shipmentDetails = shipmentEntity.get();
+                CargoDetailsResponse cargoDetailsResponse = new CargoDetailsResponse();
+                cargoDetailsResponse.setTransportMode(shipmentDetails.getTransportMode());
+                cargoDetailsResponse.setShipmentType(shipmentDetails.getShipmentType());
+                cargoDetailsResponse = calculateCargoDetails(packings, cargoDetailsResponse);
+                shipmentDao.updateCargoDetailsInShipment(shipmentId,
+                        cargoDetailsResponse.getNoOfPacks(),
+                        cargoDetailsResponse.getPacksUnit(),
+                        cargoDetailsResponse.getVolume(),
+                        cargoDetailsResponse.getVolumeUnit(),
+                        cargoDetailsResponse.getWeight(),
+                        cargoDetailsResponse.getWeightUnit(),
+                        cargoDetailsResponse.getVolumetricWeight(),
+                        cargoDetailsResponse.getVolumetricWeightUnit(),
+                        cargoDetailsResponse.getChargable(),
+                        cargoDetailsResponse.getChargeableUnit());
+            }
+        }
+    }
+
+    private void validateModule(PackingV3Request packingRequest, String module) {
+        if (Constants.SHIPMENT.equalsIgnoreCase(module)) {
+            if (packingRequest.getShipmentId() == null || Long.valueOf(packingRequest.getShipmentId()) <= 0) {
+                throw new ValidationException("Shipment id is empty");
+            }
+            Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(packingRequest.getShipmentId());
+            if (!shipmentDetails.isPresent()) {
+                throw new ValidationException("Please provide the valid shipment id");
+            }
+        } else if (Constants.CONSOLIDATION.equalsIgnoreCase(module)) {
+            if (packingRequest.getConsolidationId() == null || Long.valueOf(packingRequest.getConsolidationId()) <= 0) {
+                throw new ValidationException("Consolidation id is empty");
+            }
+            Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(packingRequest.getConsolidationId());
+            if (!consolidationDetails.isPresent()) {
+                throw new ValidationException("Please provide the valid consolidation id");
+            }
+        } else if (Constants.BOOKING.equalsIgnoreCase(module)) {
+            if (packingRequest.getBookingId() == null || Long.valueOf(packingRequest.getBookingId()) <= 0) {
+                throw new ValidationException("Booking id is empty");
+            }
+            Optional<CustomerBooking> customerBooking = customerBookingDao.findById(packingRequest.getBookingId());
+            if (!customerBooking.isPresent()) {
+                throw new ValidationException("Please provide the valid booking id");
+            }
+        }
     }
 
     @Override
@@ -141,6 +218,7 @@ public class PackingV3Service implements IPackingV3Service {
         if (optionalPacking.isEmpty()) {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
+        validateModule(packingRequest, module);
         Packing oldPacking = optionalPacking.get();
         Packing oldConvertedPacking = jsonHelper.convertValue(oldPacking, Packing.class);
         Packing newPacking = jsonHelper.convertValue(packingRequest, Packing.class);
@@ -150,13 +228,15 @@ public class PackingV3Service implements IPackingV3Service {
         ParentResult parentResult = getParentDetails(List.of(updatedPacking), module);
 
         recordAuditLogs(List.of(oldConvertedPacking), List.of(updatedPacking), DBOperationType.UPDATE, parentResult);
-
+        if (Constants.SHIPMENT.equalsIgnoreCase(module)) {
+            updateCargoDetailsInShipment(packingRequest.getShipmentId());
+        }
         return convertEntityToDto(updatedPacking);
     }
 
     @Override
     @Transactional
-    public String delete(Long id, String module) {
+    public String delete(Long id, String module) throws RunnerException {
         if (id == null) {
             throw new IllegalArgumentException("Packing Id cannot be null or empty.");
         }
@@ -173,7 +253,9 @@ public class PackingV3Service implements IPackingV3Service {
 
         String packs = packing.getPacks();
         String packsType = packing.getPacksType();
-
+        if (Constants.SHIPMENT.equalsIgnoreCase(module)) {
+            updateCargoDetailsInShipment(packing.getShipmentId());
+        }
         return packsType != null
                 ? String.format("Packing %s - %s deleted successfully!", packs, packsType)
                 : String.format("Packing %s deleted successfully!", packs);
@@ -181,7 +263,7 @@ public class PackingV3Service implements IPackingV3Service {
 
     @Override
     @Transactional
-    public BulkPackingResponse updateBulk(List<PackingV3Request> packingRequestList, String module) {
+    public BulkPackingResponse updateBulk(List<PackingV3Request> packingRequestList, String module) throws RunnerException {
         // Separate IDs and determine existing packings
         List<Long> incomingIds = packingRequestList.stream()
                 .map(PackingV3Request::getId)
@@ -228,7 +310,9 @@ public class PackingV3Service implements IPackingV3Service {
 
         // Convert to response
         List<PackingResponse> packingResponses = jsonHelper.convertValueToList(allSavedPackings, PackingResponse.class);
-
+        if (Constants.SHIPMENT.equalsIgnoreCase(module)) {
+            updateCargoDetailsInShipment(existingPackings.get(0).getShipmentId());
+        }
         return BulkPackingResponse.builder()
                 .packingResponseList(packingResponses)
                 .message(prepareBulkUpdateMessage(packingResponses))
@@ -461,6 +545,69 @@ public class PackingV3Service implements IPackingV3Service {
                     new ParentResult(CustomerBooking.class.getSimpleName(), firstPacking.getBookingId());
             default -> throw new IllegalArgumentException("Unsupported module type: " + moduleType);
         };
+    }
+
+    private CargoDetailsResponse calculateCargoDetails(List<Packing> packings, CargoDetailsResponse response) throws RunnerException {
+        Integer totalPacks = 0;
+        BigDecimal totalWeight = BigDecimal.ZERO;
+        BigDecimal totalVolume = BigDecimal.ZERO;
+        response.setWeight(totalWeight);
+        response.setVolume(totalVolume);
+        response.setNoOfPacks(totalPacks);
+        response.setWeightUnit(Constants.WEIGHT_UNIT_KG);
+        response.setVolumeUnit(Constants.VOLUME_UNIT_M3);
+        response.setPacksUnit(Constants.PACKAGES);
+        if (!CollectionUtils.isEmpty(packings)) {
+            for (Packing packing : packings) {
+                if (packing.getWeight() != null && !isStringNullOrEmpty(packing.getWeightUnit())) {
+                    totalWeight = totalWeight.add(new BigDecimal(convertUnit(Constants.MASS, packing.getWeight(), packing.getWeightUnit(), response.getWeightUnit()).toString()));
+                }
+                if (packing.getVolume() != null && !isStringNullOrEmpty(packing.getVolumeUnit())) {
+                    totalVolume = totalVolume.add(new BigDecimal(convertUnit(Constants.VOLUME, packing.getVolume(), packing.getVolumeUnit(), response.getVolumeUnit()).toString()));
+                }
+                if (!isStringNullOrEmpty(packing.getPacks())) {
+                    totalPacks = totalPacks + Integer.parseInt(packing.getPacks());
+                }
+            }
+            response.setNoOfPacks(totalPacks);
+            response.setWeight(totalWeight);
+            response.setVolume(totalVolume);
+            response = calculateVW(response);
+        }
+        return response;
+    }
+
+    private CargoDetailsResponse calculateVW(CargoDetailsResponse response) throws RunnerException {
+        if (isStringNullOrEmpty(response.getTransportMode()))
+            return response;
+        if (!isStringNullOrEmpty(response.getWeightUnit()) && !isStringNullOrEmpty(response.getVolumeUnit())) {
+            VolumeWeightChargeable vwOb = consolidationService.calculateVolumeWeight(response.getTransportMode(), response.getWeightUnit(), response.getVolumeUnit(), response.getWeight(), response.getVolume());
+            response.setChargable(vwOb.getChargeable());
+            if (Constants.TRANSPORT_MODE_AIR.equals(response.getTransportMode())) {
+                response.setChargable(BigDecimal.valueOf(roundOffAirShipment(response.getChargable().doubleValue())));
+            }
+            response.setChargeableUnit(vwOb.getChargeableUnit());
+            if (Constants.TRANSPORT_MODE_SEA.equals(response.getTransportMode()) && !isStringNullOrEmpty(response.getShipmentType()) && Constants.SHIPMENT_TYPE_LCL.equals(response.getShipmentType())) {
+                double volInM3 = convertUnit(Constants.VOLUME, response.getVolume(), response.getVolumeUnit(), Constants.VOLUME_UNIT_M3).doubleValue();
+                double wtInKg = convertUnit(Constants.MASS, response.getWeight(), response.getWeightUnit(), Constants.WEIGHT_UNIT_KG).doubleValue();
+                response.setChargable(BigDecimal.valueOf(Math.max(wtInKg / 1000, volInM3)));
+                response.setChargeableUnit(Constants.VOLUME_UNIT_M3);
+                vwOb = consolidationService.calculateVolumeWeight(response.getTransportMode(), Constants.WEIGHT_UNIT_KG, Constants.VOLUME_UNIT_M3, BigDecimal.valueOf(wtInKg), BigDecimal.valueOf(volInM3));
+            }
+
+            response.setVolumetricWeight(vwOb.getVolumeWeight());
+            response.setVolumetricWeightUnit(vwOb.getVolumeWeightUnit());
+        }
+        return response;
+    }
+
+    private double roundOffAirShipment(double charge) {
+        if (charge - 0.50 <= Math.floor(charge) && charge != Math.floor(charge)) {
+            charge = Math.floor(charge) + 0.5;
+        } else {
+            charge = Math.ceil(charge);
+        }
+        return charge;
     }
 
     @PostConstruct

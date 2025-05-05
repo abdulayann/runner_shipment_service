@@ -15,10 +15,10 @@ import javax.servlet.http.HttpServletResponse;
 import java.util.List;
 
 public interface IPackingV3Service {
-    PackingResponse create(PackingV3Request packingRequest, String module);
+    PackingResponse create(PackingV3Request packingRequest, String module) throws RunnerException;
     PackingResponse update(PackingV3Request packingRequest, String module) throws RunnerException;
-    String delete(Long id, String module);
-    BulkPackingResponse updateBulk(List<PackingV3Request> request, String module);
+    String delete(Long id, String module) throws RunnerException;
+    BulkPackingResponse updateBulk(List<PackingV3Request> request, String module) throws RunnerException;
     BulkPackingResponse deleteBulk(List<PackingV3Request> request, String module);
     void downloadPacking(HttpServletResponse response, @ModelAttribute BulkDownloadRequest request) throws RunnerException;
     PackingResponse retrieveById(CommonRequestModel commonRequestModel);
