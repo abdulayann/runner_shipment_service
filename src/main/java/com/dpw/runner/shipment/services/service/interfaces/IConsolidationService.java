@@ -16,6 +16,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import javax.servlet.http.HttpServletResponse;
@@ -98,4 +99,6 @@ public interface IConsolidationService extends ICommonService{
     ResponseEntity<IRunnerResponse> retrieveById(CommonRequestModel commonRequestModel, boolean getMasterData);
     ResponseEntity<IRunnerResponse> retrieveForNTE(CommonRequestModel commonRequestModel);
     void triggerAutomaticTransfer(ConsolidationDetails consolidationDetails, ConsolidationDetails oldEntity, Boolean isDocOrHawbNumAdded);
+
+    Optional<ConsolidationDetails> findById(Long consolidationId);
 }

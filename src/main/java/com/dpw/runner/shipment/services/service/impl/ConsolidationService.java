@@ -5378,6 +5378,11 @@ public class ConsolidationService implements IConsolidationService {
         }
     }
 
+    @Override
+    public Optional<ConsolidationDetails> findById(Long consolidationId) {
+        return consolidationDetailsDao.findById(consolidationId);
+    }
+
     private boolean isCarrierDetailsInvalid(ConsolidationDetails consolidationDetails, QuartzJobInfo quartzJobInfo) {
         CarrierDetails carrierDetails = consolidationDetails.getCarrierDetails();
         if (carrierDetails==null || (ObjectUtils.isEmpty(carrierDetails.getEta()) && ObjectUtils.isEmpty(carrierDetails.getEtd()) &&
