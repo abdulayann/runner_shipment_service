@@ -4,6 +4,11 @@ SET description = 'Arrived at Destination Port',
 WHERE event_code = 'ARDP' AND "source" = 'Cargoes Tracking' AND is_deleted = false;
 
 UPDATE events
+SET description = 'Empty Container Picked Up (Export)',
+    direction = 'EXP'
+WHERE event_code = 'ECPK' AND "source" = 'Cargoes Tracking' AND is_deleted = false;
+
+UPDATE events
 SET description = 'Empty Container Returned',
     direction = 'IMP'
 WHERE event_code = 'EMCR' AND "source" = 'Cargoes Tracking' AND is_deleted = false;
@@ -37,6 +42,11 @@ UPDATE events
 SET description = 'Received from Flight',
     direction = 'IMP'
 WHERE event_code = 'TRCF' AND "source" = 'Cargoes Tracking' AND is_deleted = false;
+
+UPDATE events
+SET description = 'Received from Shipper',
+    direction = 'EXP'
+WHERE event_code = 'TRCS' AND "source" = 'Cargoes Tracking' AND is_deleted = false;
 
 UPDATE events
 SET description = 'Vessel Departed',
