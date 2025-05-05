@@ -14,7 +14,7 @@ public class PartiesValidationUtil {
         }
 
         if (request.getId() == null) {
-            throw new IllegalArgumentException("Container ID is missing for item. All items must have a valid ID.");
+            throw new IllegalArgumentException("Party ID is missing for item. All items must have a valid ID.");
         }
     }
 }
