@@ -847,7 +847,9 @@ public class EventService implements IEventService {
             event.setId(existingEvent.getId());
             event.setGuid(existingEvent.getGuid());
             event.setTenantId(existingEvent.getTenantId());
-            log.info("Event already exists. Updated ID and GUID from existing event. messageId {}", messageId);
+            event.setDirection(existingEvent.getDirection());
+            event.setDescription(existingEvent.getDescription());
+            log.info("Event already exists. Updated details from existing event. messageId {}", messageId);
         } else {
             event.setTenantId(tenantId);
             log.info("Event is new. No existing event found. messageId {}", messageId);
