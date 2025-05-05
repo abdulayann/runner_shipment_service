@@ -294,29 +294,33 @@ public class NotificationService implements INotificationService {
             // Revert Status for each console and shipment in case of interbranch
             List<NetworkTransfer> networkTransferList = new ArrayList<>();
             networkTransferList.add(networkTransfer);
-            // For Overarching Shipment
-            if(Boolean.TRUE.equals(networkTransfer.getIsInterBranchEntity()) && Objects.equals(notification.getNotificationRequestType(), NotificationRequestType.REQUEST_TRANSFER)
-                    && Objects.equals(networkTransfer.getEntityType(), Constants.SHIPMENT)) {
-                var consoleShipmentMapping = consoleShipmentMappingDao.findByShipmentId(networkTransfer.getEntityId());
-                if(!CommonUtils.listIsNullOrEmpty(consoleShipmentMapping)) {
-                    Long entityId = consoleShipmentMapping.get(0).getConsolidationId();
-                    var consoleNTE = networkTransferDao.findByEntityIdAndEntityTypeAndIsInterBranchEntity(List.of(entityId), Constants.CONSOLIDATION, true, List.of(NetworkTransferStatus.REQUESTED_TO_TRANSFER.name()), Constants.DIRECTION_CTS);
-                    if (!CommonUtils.listIsNullOrEmpty(consoleNTE)) {
-                        NetworkTransferStatus consoleStatus = consoleNTE.get(0).getEntityPayload() != null? NetworkTransferStatus.TRANSFERRED: NetworkTransferStatus.SCHEDULED;
-                        consoleNTE.get(0).setStatus(consoleStatus);
-                        networkTransferList.add(consoleNTE.get(0));
-                    }
-                    this.fetchOverarchingConsoleAndShipmentNTE(networkTransferList, entityId, networkTransfer.getEntityId());
-                }
-            } else if(Boolean.TRUE.equals(networkTransfer.getIsInterBranchEntity()) && Objects.equals(notification.getNotificationRequestType(), NotificationRequestType.REQUEST_TRANSFER)
-                    && Objects.equals(networkTransfer.getEntityType(), Constants.CONSOLIDATION)) {
-                this.fetchOverarchingConsoleAndShipmentNTE(networkTransferList, networkTransfer.getEntityId(), null);
-            }
+            // Overarching Shipment and console update for request to tranfer case
+            overArchingCaseForRequestToTransfer(networkTransfer, notification, networkTransferList);
             networkTransferDao.saveAll(networkTransferList);
             entityNumber.append(networkTransfer.getEntityNumber());
         } else {
             log.error("No network transfer entity found for given notification");
             throw new DataRetrievalFailureException("No network transfer entity found for given notification");
+        }
+    }
+
+    void overArchingCaseForRequestToTransfer(NetworkTransfer networkTransfer, Notification notification, List<NetworkTransfer> networkTransferList) {
+        if(Boolean.TRUE.equals(networkTransfer.getIsInterBranchEntity()) && Objects.equals(notification.getNotificationRequestType(), NotificationRequestType.REQUEST_TRANSFER)
+                && Objects.equals(networkTransfer.getEntityType(), Constants.SHIPMENT)) {
+            var consoleShipmentMapping = consoleShipmentMappingDao.findByShipmentId(networkTransfer.getEntityId());
+            if(!CommonUtils.listIsNullOrEmpty(consoleShipmentMapping)) {
+                Long entityId = consoleShipmentMapping.get(0).getConsolidationId();
+                var consoleNTE = networkTransferDao.findByEntityIdAndEntityTypeAndIsInterBranchEntity(List.of(entityId), Constants.CONSOLIDATION, true, List.of(NetworkTransferStatus.REQUESTED_TO_TRANSFER.name()), Constants.DIRECTION_CTS);
+                if (!CommonUtils.listIsNullOrEmpty(consoleNTE)) {
+                    NetworkTransferStatus consoleStatus = consoleNTE.get(0).getEntityPayload() != null? NetworkTransferStatus.TRANSFERRED: NetworkTransferStatus.SCHEDULED;
+                    consoleNTE.get(0).setStatus(consoleStatus);
+                    networkTransferList.add(consoleNTE.get(0));
+                }
+                this.fetchOverarchingConsoleAndShipmentNTE(networkTransferList, entityId, networkTransfer.getEntityId());
+            }
+        } else if(Boolean.TRUE.equals(networkTransfer.getIsInterBranchEntity()) && Objects.equals(notification.getNotificationRequestType(), NotificationRequestType.REQUEST_TRANSFER)
+                && Objects.equals(networkTransfer.getEntityType(), Constants.CONSOLIDATION)) {
+            this.fetchOverarchingConsoleAndShipmentNTE(networkTransferList, networkTransfer.getEntityId(), null);
         }
     }
 
