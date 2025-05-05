@@ -10,12 +10,7 @@ import com.dpw.runner.shipment.services.commons.requests.BulkDownloadRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonGetRequest;
 import com.dpw.runner.shipment.services.commons.requests.CommonRequestModel;
 import com.dpw.runner.shipment.services.commons.requests.ListCommonRequest;
-import com.dpw.runner.shipment.services.commons.responses.IRunnerResponse;
-import com.dpw.runner.shipment.services.commons.responses.RunnerListResponse;
-import com.dpw.runner.shipment.services.dao.interfaces.IConsolidationDetailsDao;
-import com.dpw.runner.shipment.services.dao.interfaces.ICustomerBookingDao;
 import com.dpw.runner.shipment.services.dao.interfaces.IPackingDao;
-import com.dpw.runner.shipment.services.dao.interfaces.IShipmentDao;
 import com.dpw.runner.shipment.services.dto.GeneralAPIRequests.VolumeWeightChargeable;
 import com.dpw.runner.shipment.services.dto.response.CargoDetailsResponse;
 import com.dpw.runner.shipment.services.dto.response.PackingListResponse;
@@ -36,6 +31,7 @@ import com.dpw.runner.shipment.services.projection.PackingAssignmentProjection;
 import com.dpw.runner.shipment.services.service.interfaces.IAuditLogService;
 import com.dpw.runner.shipment.services.service.interfaces.IConsolidationService;
 import com.dpw.runner.shipment.services.service.interfaces.IPackingV3Service;
+import com.dpw.runner.shipment.services.service.interfaces.IShipmentServiceV3;
 import com.dpw.runner.shipment.services.utils.CommonUtils;
 import com.dpw.runner.shipment.services.utils.FieldUtils;
 import com.dpw.runner.shipment.services.utils.MasterDataUtils;
@@ -108,13 +104,7 @@ public class PackingV3Service implements IPackingV3Service {
     private CommonUtils commonUtils;
 
     @Autowired
-    private IShipmentDao shipmentDao;
-
-    @Autowired
-    private IConsolidationDetailsDao consolidationDetailsDao;
-
-    @Autowired
-    private ICustomerBookingDao customerBookingDao;
+    private IShipmentServiceV3 shipmentService;
 
     @Autowired
     private IConsolidationService consolidationService;
@@ -135,7 +125,7 @@ public class PackingV3Service implements IPackingV3Service {
         String requestId = LoggerHelper.getRequestIdFromMDC();
 
         log.info("Starting packing creation | Request ID: {} | Request Body: {}", requestId, packingRequest);
-        validateModule(packingRequest, module);
+        packingValidationV3Util.validateModule(packingRequest, module);
         // Convert DTO to Entity
         Packing packing = jsonHelper.convertValue(packingRequest, Packing.class);
         log.debug("Converted packing request to entity | Entity: {}", packing);
@@ -160,55 +150,19 @@ public class PackingV3Service implements IPackingV3Service {
     private void updateCargoDetailsInShipment(Long shipmentId) throws RunnerException {
         List<Packing> packings = packingDao.findByShipmentId(shipmentId);
         if (!CollectionUtils.isEmpty(packings)) {
-            Optional<ShipmentDetails> shipmentEntity = shipmentDao.findById(shipmentId);
-            if(shipmentEntity.isPresent()) {
-               ShipmentDetails shipmentDetails = shipmentEntity.get();
+            Optional<ShipmentDetails> shipmentEntity = shipmentService.findById(shipmentId);
+            if (shipmentEntity.isPresent()) {
+                ShipmentDetails shipmentDetails = shipmentEntity.get();
                 CargoDetailsResponse cargoDetailsResponse = new CargoDetailsResponse();
                 cargoDetailsResponse.setTransportMode(shipmentDetails.getTransportMode());
                 cargoDetailsResponse.setShipmentType(shipmentDetails.getShipmentType());
                 cargoDetailsResponse = calculateCargoDetails(packings, cargoDetailsResponse);
-                shipmentDao.updateCargoDetailsInShipment(shipmentId,
-                        cargoDetailsResponse.getNoOfPacks(),
-                        cargoDetailsResponse.getPacksUnit(),
-                        cargoDetailsResponse.getVolume(),
-                        cargoDetailsResponse.getVolumeUnit(),
-                        cargoDetailsResponse.getWeight(),
-                        cargoDetailsResponse.getWeightUnit(),
-                        cargoDetailsResponse.getVolumetricWeight(),
-                        cargoDetailsResponse.getVolumetricWeightUnit(),
-                        cargoDetailsResponse.getChargable(),
-                        cargoDetailsResponse.getChargeableUnit());
+                shipmentService.updateCargoDetailsInShipment(shipmentId, cargoDetailsResponse);
             }
         }
     }
 
-    private void validateModule(PackingV3Request packingRequest, String module) {
-        if (Constants.SHIPMENT.equalsIgnoreCase(module)) {
-            if (packingRequest.getShipmentId() == null || Long.valueOf(packingRequest.getShipmentId()) <= 0) {
-                throw new ValidationException("Shipment id is empty");
-            }
-            Optional<ShipmentDetails> shipmentDetails = shipmentDao.findById(packingRequest.getShipmentId());
-            if (!shipmentDetails.isPresent()) {
-                throw new ValidationException("Please provide the valid shipment id");
-            }
-        } else if (Constants.CONSOLIDATION.equalsIgnoreCase(module)) {
-            if (packingRequest.getConsolidationId() == null || Long.valueOf(packingRequest.getConsolidationId()) <= 0) {
-                throw new ValidationException("Consolidation id is empty");
-            }
-            Optional<ConsolidationDetails> consolidationDetails = consolidationDetailsDao.findById(packingRequest.getConsolidationId());
-            if (!consolidationDetails.isPresent()) {
-                throw new ValidationException("Please provide the valid consolidation id");
-            }
-        } else if (Constants.BOOKING.equalsIgnoreCase(module)) {
-            if (packingRequest.getBookingId() == null || Long.valueOf(packingRequest.getBookingId()) <= 0) {
-                throw new ValidationException("Booking id is empty");
-            }
-            Optional<CustomerBooking> customerBooking = customerBookingDao.findById(packingRequest.getBookingId());
-            if (!customerBooking.isPresent()) {
-                throw new ValidationException("Please provide the valid booking id");
-            }
-        }
-    }
+
 
     @Override
     @Transactional
@@ -218,7 +172,7 @@ public class PackingV3Service implements IPackingV3Service {
         if (optionalPacking.isEmpty()) {
             throw new DataRetrievalFailureException(DaoConstants.DAO_DATA_RETRIEVAL_FAILURE);
         }
-        validateModule(packingRequest, module);
+        packingValidationV3Util.validateModule(packingRequest, module);
         Packing oldPacking = optionalPacking.get();
         Packing oldConvertedPacking = jsonHelper.convertValue(oldPacking, Packing.class);
         Packing newPacking = jsonHelper.convertValue(packingRequest, Packing.class);
@@ -459,7 +413,7 @@ public class PackingV3Service implements IPackingV3Service {
     }
 
     @Override
-    public RunnerListResponse<IRunnerResponse> list(CommonRequestModel commonRequestModel, boolean getMasterData) {
+    public PackingListResponse list(CommonRequestModel commonRequestModel, boolean getMasterData) {
         ListCommonRequest request = (ListCommonRequest) commonRequestModel.getData();
         if (request == null) {
             log.error("Request is empty for Packing list with Request Id {}", LoggerHelper.getRequestIdFromMDC());
@@ -470,10 +424,11 @@ public class PackingV3Service implements IPackingV3Service {
         log.info("Packing list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
         List<PackingResponse> responseList = convertEntityListToDtoList(packingPage.getContent());
         this.getMasterDataForList(responseList, getMasterData);
-        return RunnerListResponse.builder().
-                data(responseList).
-                totalPages(packingPage.getTotalPages()).
-                numberOfRecords(packingPage.getTotalElements()).build();
+        PackingListResponse packingListResponse = new PackingListResponse();
+        packingListResponse.setPackings(responseList);
+        packingListResponse.setTotalPages(packingPage.getTotalPages());
+        packingListResponse.setTotalCount(packingPage.getTotalElements());
+        return packingListResponse;
     }
 
     private void getMasterDataForList(List<PackingResponse> responseList, boolean getMasterData) {
@@ -493,17 +448,12 @@ public class PackingV3Service implements IPackingV3Service {
 
     @Override
     public PackingListResponse fetchShipmentPackages(CommonRequestModel commonRequestModel) {
-        RunnerListResponse<IRunnerResponse> responses = list(commonRequestModel, true);
+        PackingListResponse packingListResponse = list(commonRequestModel, true);
         log.info("Packing list retrieved successfully for Request Id {} ", LoggerHelper.getRequestIdFromMDC());
-        PackingListResponse packingListResponse = new PackingListResponse();
-        if (!CollectionUtils.isEmpty(responses.getData())) {
-            packingListResponse.setPackings((List<PackingResponse>) responses.getData());
-            packingListResponse.setTotalPages(responses.getTotalPages());
-            packingListResponse.setTotalCount(responses.getNumberOfRecords());
+        if (!CollectionUtils.isEmpty(packingListResponse.getPackings())) {
             //get assigned packages
             Long shipmentId = null;
-            for (IRunnerResponse response : responses.getData()) {
-                PackingResponse packingResponse = (PackingResponse) response;
+            for (PackingResponse packingResponse : packingListResponse.getPackings()) {
                 if (packingResponse.getShipmentId() != null) {
                     shipmentId = packingResponse.getShipmentId();
                     break;
