@@ -232,4 +232,5 @@ public class ShipmentDetailsResponse implements IRunnerResponse {
     private UUID customerBookingGuid;
     private Boolean isFrob;
     private String consolidationNumber;
+    private Long containerAssignedToShipmentCargo;
 }
